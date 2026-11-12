@@ -33,7 +33,7 @@ dnspython = ">=2.9.2,<3.0"
 cryptography = ">=46,<49"
 quickjs = "^1.19.4"
 segno = "^1.6"
-pillow = ">=11,<13"
+pillow = ">=13.0.0,<14"
 truststore = "^0.10.5"
 
 [tool.poetry.group.dev.dependencies]
