@@ -1,0 +1,34 @@
+# Weekly dependency updates, grouped so each ecosystem opens at most one pull request for minor
+# and patch versions; a major version opens its own. Security updates come as they are found.
+version: 2
+updates:
+  - package-ecosystem: pip          # Poetry: pyproject.toml and poetry.lock
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      python:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm          # the desktop app
+    directory: /app
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      app:
+        update-types: [minor, patch]
+    ignore:
+      # Electron is pinned on one major line (CLAUDE.md); moving it is a deliberate change.
+      - dependency-name: electron
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
