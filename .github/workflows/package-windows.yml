@@ -1,9 +1,10 @@
 name: Package (Windows)
 
-# The packaged app on Windows (#355, #223): build the bundle (Python, door, Tectonic) and the NSIS installer,
-# install it silently for this user (no admin), smoke-test the installed app, then uninstall silently: the app
-# goes, the data folder (%APPDATA%\The other door) stays. Only when the packaging itself changes: no schedule, no
-# manual trigger. About 15–20 minutes on windows-latest, which counts double (2x minutes).
+# The packaged app on Windows: build the bundle (Python, door, Tectonic) and the NSIS installer, install it
+# silently for this user (no admin), smoke-test the installed app, then uninstall silently: the app goes, the
+# data folder (%APPDATA%\The other door) stays. Runs on pull requests that change the packaging, on every change
+# to main that goes into the app, and by hand (Actions → Package (Windows) → Run workflow); the installer is
+# kept on the run's page for 14 days. About 15–20 minutes on windows-latest.
 on:
   pull_request:
     paths:
@@ -15,17 +16,19 @@ on:
       - "app/e2e-package/**"
       - "app/playwright.package.config.ts"
       - ".github/workflows/package-windows.yml"
+      - "poetry.lock"
+      - "app/package-lock.json"
+  # every change to what goes into the app builds installers to try, kept 14 days on the run's page
   push:
     branches: [main]
     paths:
-      - "app/electron-builder.config.cjs"
-      - "app/build/**"
-      - "app/scripts/bundle-python.ps1"
-      - "app/scripts/bundle.lock.json"
-      - "app/scripts/lock_requirements.py"
-      - "app/e2e-package/**"
-      - "app/playwright.package.config.ts"
+      - "src/**"
+      - "app/**"
+      - "profile.example/**"
+      - "pyproject.toml"
+      - "poetry.lock"
       - ".github/workflows/package-windows.yml"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -89,12 +92,11 @@ jobs:
           if (Test-Path $env:DOOR_PACKAGED_APP) { throw 'the app is still installed' }
           if ((Get-Content (Join-Path $data 'marker')) -ne 'kept') { throw 'the data folder was removed' }
 
-      # a passing run already installed and started them; only a failure's are worth downloading
-      - name: Keep a failed run's installer for 3 days
-        if: failure()
+      - name: Keep the installer for 14 days
+        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: door-windows
+          name: the-other-door-windows
           path: app/dist/*.exe
-          retention-days: 3
+          retention-days: 14
           if-no-files-found: ignore
