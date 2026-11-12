@@ -1,9 +1,10 @@
 name: Package (Linux)
 
-# The packaged app on Linux (#356, #223): build the bundle (Python, door, Tectonic), the AppImage and the
-# .deb, then smoke-test both as installed: the AppImage extracted and run, the .deb installed with apt and
-# removed again (the data folder must stay). Only when the packaging itself changes: no schedule, no manual
-# trigger (CI minutes are budgeted, see the PR). About 10–15 minutes on ubuntu-latest (1x minutes).
+# The packaged app on Linux: build the bundle (Python, door, Tectonic), the AppImage and the .deb, then
+# smoke-test both as installed: the AppImage extracted and run, the .deb installed with apt and removed again
+# (the data folder must stay). Runs on pull requests that change the packaging, on every change to main that
+# goes into the app, and by hand (Actions → Package (Linux) → Run workflow); the packages are kept on the run's
+# page for 14 days. About 10–15 minutes on ubuntu-latest.
 on:
   pull_request:
     paths:
@@ -20,22 +21,17 @@ on:
       # the cheap one also follows the locked packages, Python's and the app's (an Electron or electron-builder bump)
       - "poetry.lock"
       - "app/package-lock.json"
+  # every change to what goes into the app builds installers to try, kept 14 days on the run's page
   push:
     branches: [main]
     paths:
-      - "app/electron-builder.config.cjs"
-      - "app/build/**"
-      - "app/scripts/bundle-python.sh"
-      - "app/scripts/bundle.lock.json"
-      - "app/scripts/lock_requirements.py"
-      - "app/scripts/check-bundle.sh"
-      - "app/scripts/after-pack.cjs"
-      - "app/e2e-package/**"
-      - "app/playwright.package.config.ts"
-      - ".github/workflows/package-linux.yml"
-      # the cheap one also follows the locked packages, Python's and the app's (an Electron or electron-builder bump)
+      - "src/**"
+      - "app/**"
+      - "profile.example/**"
+      - "pyproject.toml"
       - "poetry.lock"
-      - "app/package-lock.json"
+      - ".github/workflows/package-linux.yml"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -98,14 +94,13 @@ jobs:
           test ! -e "/opt/The other door/the-other-door"
           test "$(cat ~/".config/The other door/profile/marker")" = kept
 
-      # a passing run already installed and started them; only a failure's are worth downloading
-      - name: Keep a failed run's packages for 3 days
-        if: failure()
+      - name: Keep the packages for 14 days
+        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: door-linux
+          name: the-other-door-linux
           path: |
             app/dist/*.AppImage
             app/dist/*.deb
-          retention-days: 3
+          retention-days: 14
           if-no-files-found: ignore

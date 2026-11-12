@@ -1,12 +1,11 @@
 name: Package (macOS)
 
-# The packaged app on macOS (#354, #223), on Apple silicon (macos-14): build the bundle and the .dmg, install it
-# the way a user does (mount, copy into Applications) and smoke-test it. It is not marked as downloaded: an
-# unsigned app with the quarantine flag waits for a person at Gatekeeper's prompt (#224's notarization ends that). This is where the
-# ad-hoc signing (scripts/after-pack.cjs) is proven: Apple silicon refuses an unsigned binary. Intel Macs are
-# checked by hand (the developer's own Mac is one). macOS minutes count 10x: about 15–20 minutes of runtime,
-# so 150–200 of the 2,000 monthly minutes per run. Pull requests that change the packaging only: no push to
-# main (the merged tree is the one the PR ran), no schedule, no manual trigger.
+# The packaged app on macOS, on Apple silicon (macos-15) and Intel (macos-15-intel): build the bundle and the
+# .dmg, install it the way a user does (mount, copy into Applications) and smoke-test it. It is not marked as
+# downloaded: an unsigned app with the quarantine flag waits for a person at Gatekeeper's prompt. This is where
+# the ad-hoc signing (scripts/after-pack.cjs) is proven: Apple silicon refuses an unsigned binary. Runs on pull
+# requests that change the packaging, on every change to main that goes into the app, and by hand
+# (Actions → Package (macOS) → Run workflow); the .dmg is kept on the run's page for 14 days.
 on:
   pull_request:
     paths:
@@ -20,6 +19,19 @@ on:
       - "app/e2e-package/**"
       - "app/playwright.package.config.ts"
       - ".github/workflows/package-macos.yml"
+      - "poetry.lock"
+      - "app/package-lock.json"
+  # every change to what goes into the app builds installers to try, kept 14 days on the run's page
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "app/**"
+      - "profile.example/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/package-macos.yml"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -27,7 +39,13 @@ concurrency:
 
 jobs:
   macos:
-    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, arch: arm64 }
+          - { os: macos-15-intel, arch: x64 }
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     defaults:
       run:
@@ -46,7 +64,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/.bundle-cache
-          key: bundle-macos-arm64-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+          key: bundle-macos-${{ matrix.arch }}-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
 
       - name: Install the app's packages
         run: npm ci
@@ -62,7 +80,7 @@ jobs:
 
       - name: Install it like a user
         run: |
-          mnt="$(hdiutil attach -nobrowse -readonly dist/the-other-door-*-mac-arm64.dmg | tail -1 | awk -F'\t' '{print $NF}')"
+          mnt="$(hdiutil attach -nobrowse -readonly dist/the-other-door-*-mac-${{ matrix.arch }}.dmg | tail -1 | awk -F'\t' '{print $NF}')"
           mkdir -p ~/Applications
           cp -R "$mnt/The other door.app" ~/Applications/
           hdiutil detach -quiet "$mnt"
@@ -72,12 +90,11 @@ jobs:
       - name: Smoke-test the installed app
         run: npm run test:package
 
-      # a passing run already installed and started them; only a failure's are worth downloading
-      - name: Keep a failed run's .dmg for 3 days
-        if: failure()
+      - name: Keep the .dmg for 14 days
+        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: door-macos-arm64
+          name: the-other-door-macos-${{ matrix.arch }}
           path: app/dist/*.dmg
-          retention-days: 3
+          retention-days: 14
           if-no-files-found: ignore

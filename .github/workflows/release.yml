@@ -1,9 +1,9 @@
 name: Release
 
 # A release (#224): pushing the tag vX.Y.Z (after scripts/set_version.py X.Y.Z) builds the app on every system,
-# smoke-tests each, and uploads the installers to a DRAFT release of this repo (private: installed apps do not
-# update themselves from it; the next version is downloaded from the release page). Check the draft, then
-# publish it by hand. Only on tags: no pull requests, no schedule.
+# smoke-tests each, and uploads the installers to a DRAFT release of this repo. Check the draft, then publish it
+# by hand: installed apps find a published release through DOOR_UPDATE_FEED (a repository variable, Settings →
+# Secrets and variables → Actions → Variables). Only on tags: no pull requests, no schedule.
 #
 # Secrets (Settings → Secrets and variables → Actions):
 # The workflow's own GITHUB_TOKEN writes the release (permissions below); no other token is needed.
@@ -12,7 +12,6 @@ name: Release
 #                                                 without them the macOS build is unsigned (signed ad hoc)
 #   WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD      an Authenticode certificate; without, unsigned
 # Before publishing, go through docs/releasing.md (a clean-machine install on each system, release notes).
-# Cost: about 20 min on each of two macOS runners (10x), 20 on Windows (2x) and 15 on Linux: ~450 minutes a release.
 on:
   push:
     tags: ["v*"]
@@ -41,7 +40,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-14, name: macos-arm64 }
+          - { os: macos-15, name: macos-arm64 }
           - { os: macos-15-intel, name: macos-x64 }
           - { os: windows-latest, name: windows-x64 }
           - { os: ubuntu-latest, name: linux-x64 }
