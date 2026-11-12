@@ -1,5 +1,7 @@
-# Weekly dependency updates, grouped so each ecosystem opens at most one pull request for minor
-# and patch versions; a major version opens its own. Security updates come as they are found.
+# Weekly dependency updates, grouped so each ecosystem opens at most one pull request for its
+# version updates (majors included) and one for its security updates, which come as they are found.
+# A new version is offered only once it has been out for a while (cooldown), so a broken or
+# compromised release has time to be noticed and pulled first; security updates skip the wait.
 version: 2
 updates:
   - package-ecosystem: pip          # Poetry: pyproject.toml and poetry.lock
@@ -7,9 +9,16 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     groups:
       python:
-        update-types: [minor, patch]
+        applies-to: version-updates
+        patterns: ["*"]
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
     ignore:
       # mcp 2.x renamed FastMCP and changed the server API: moving is its own change (#14).
       - dependency-name: mcp
@@ -24,9 +33,16 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     groups:
       app:
-        update-types: [minor, patch]
+        applies-to: version-updates
+        patterns: ["*"]
+      app-security:
+        applies-to: security-updates
+        patterns: ["*"]
     ignore:
       # Electron is pinned on one major line (CLAUDE.md); moving it is a deliberate change.
       - dependency-name: electron
@@ -43,6 +59,13 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     groups:
       actions:
+        applies-to: version-updates
+        patterns: ["*"]
+      actions-security:
+        applies-to: security-updates
         patterns: ["*"]
