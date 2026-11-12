@@ -10,6 +10,14 @@ updates:
     groups:
       python:
         update-types: [minor, patch]
+    ignore:
+      # mcp 2.x renamed FastMCP and changed the server API: moving is its own change (#14).
+      - dependency-name: mcp
+        update-types: [version-update:semver-major]
+      # cryptography 49 and later ship no Intel macOS wheel, and the app is still built for Intel Macs
+      # (pyproject.toml keeps it below 49).
+      - dependency-name: cryptography
+        versions: [">=49"]
 
   - package-ecosystem: npm          # the desktop app
     directory: /app
@@ -22,6 +30,12 @@ updates:
     ignore:
       # Electron is pinned on one major line (CLAUDE.md); moving it is a deliberate change.
       - dependency-name: electron
+        update-types: [version-update:semver-major]
+      # TypeScript 7 needs a declaration for the side-effect CSS imports first (#15).
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # The app runs on Node 22: its types stay on the same major.
+      - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
