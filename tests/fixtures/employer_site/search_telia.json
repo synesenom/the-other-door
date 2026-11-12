@@ -1,0 +1,204 @@
+{
+ "search": [
+  {
+   "id": "Q97998570",
+   "label": "Telia",
+   "description": "motion by Roland Larsson et al. 1997",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q97998379",
+   "label": "Telia",
+   "description": "motion by Karl-Erik Persson et al. 1996",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q97998664",
+   "label": "Telia",
+   "description": "motion by Birgitta Hambraeus et al. 1997",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q99426677",
+   "label": "Telia",
+   "description": "written question from Pilsäter, Karin (fp) to näringsminister Björn Rosengren",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q99423470",
+   "label": "Telia",
+   "description": "written question from Engström, Marie (v) to näringsminister Björn Rosengren",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q99425489",
+   "label": "Telia",
+   "description": "written question from Karlsson, Ola (m) to näringsminister Björn Rosengren",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q6515085",
+   "label": "Telia Norge",
+   "description": "Norwegian telecommunications and broadband company",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Telia Norge"
+   }
+  },
+  {
+   "id": "Q1109171",
+   "label": "telium",
+   "description": "structure produced by rust fungi as part of the reproductive cycle",
+   "match": {
+    "type": "alias",
+    "language": "en",
+    "text": "telia"
+   }
+  },
+  {
+   "id": "Q862303",
+   "label": "Telia Company",
+   "description": "Swedish multinational telecommunication provider",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia Company"
+   }
+  },
+  {
+   "id": "Q7697232",
+   "label": "Telia",
+   "description": "village development committee in Dhankuta District, Kosi Zone, Nepal",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q60436478",
+   "label": "Telia",
+   "description": "human settlement in Bhagawangola I, India",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q60616044",
+   "label": "Telia",
+   "description": "human settlement in Deganga, India",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q60759763",
+   "label": "Telia",
+   "description": "human settlement in Nayagram, India",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q89397830",
+   "label": "Telia",
+   "description": null,
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q134407629",
+   "label": "Telia",
+   "description": "Wikimedia disambiguation page (თელია)",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q134838545",
+   "label": "Telia",
+   "description": "family name (თელია)",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Telia"
+   }
+  },
+  {
+   "id": "Q1139227",
+   "label": "Bolt Arena",
+   "description": "football stadium in Helsinki, Finland",
+   "match": {
+    "type": "alias",
+    "language": "sv",
+    "text": "Telia 5G -areena"
+   }
+  },
+  {
+   "id": "Q34410",
+   "label": "Teliana Pereira",
+   "description": "Brazilian tennis player",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Teliana Pereira"
+   }
+  },
+  {
+   "id": "Q1295663",
+   "label": "Telia Eesti",
+   "description": "Telecommunications company",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia Eesti"
+   }
+  },
+  {
+   "id": "Q4567911",
+   "label": "Telia Sverige",
+   "description": "Swedish telecommunications company",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia Sverige"
+   }
+  }
+ ]
+}

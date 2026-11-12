@@ -1,0 +1,46 @@
+{
+ "items": [
+  {
+   "SearchId": 1,
+   "Offset": 0,
+   "Limit": 2,
+   "TotalJobsCount": 3,
+   "SortBy": "POSTING_DATES_DESC",
+   "SiteNumber": "CX_1001",
+   "requisitionList": [
+    {
+     "Id": "24218",
+     "Title": "Product Owner - Platform",
+     "PostedDate": "2026-10-30",
+     "PostingEndDate": null,
+     "Language": "US",
+     "PrimaryLocationCountry": "HU",
+     "WorkplaceTypeCode": "ORA_HYBRID",
+     "JobFamily": null,
+     "ShortDescriptionStr": "\n\nJoin the platform team and lead four product teams.\n",
+     "PrimaryLocation": "Budapest, Hungary",
+     "WorkplaceType": null,
+     "secondaryLocations": []
+    },
+    {
+     "Id": "24100",
+     "Title": "Data Engineer",
+     "PostedDate": "2026-10-28",
+     "PostingEndDate": null,
+     "Language": "US",
+     "PrimaryLocationCountry": "DK",
+     "WorkplaceTypeCode": "ORA_ON_SITE",
+     "JobFamily": null,
+     "ShortDescriptionStr": "\n\nBuild data pipelines for the bank.\n",
+     "PrimaryLocation": "Birkerod, Denmark",
+     "WorkplaceType": null,
+     "secondaryLocations": []
+    }
+   ]
+  }
+ ],
+ "count": 1,
+ "hasMore": false,
+ "limit": 2,
+ "offset": 0
+}

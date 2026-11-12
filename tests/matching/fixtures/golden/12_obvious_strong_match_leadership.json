@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-obvious-strong-match-leadership",
+    "title": "Principal Data Scientist",
+    "company": "Aurora Biotech Nordics",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-obvious-strong-match-leadership",
+    "description": "About the role:\nAurora Biotech Nordics develops ML-driven drug-discovery tools. We are hiring a Principal Data Scientist to define our AI strategy and report directly to the CTO.\n\nResponsibilities:\nThis role reports directly to the CTO and will define the company's AI strategy end to end. You will design ML pipelines using Python and Spark on AWS, and build LLM-based tools for literature review and hypothesis generation. You will mentor a growing team of data scientists and represent data science in leadership meetings.\n\nRequirements:\n8+ years of experience in data science or applied ML, including experience operating at a principal or lead level, is required. Strong hands-on experience with Python (scikit-learn, PyTorch, pandas), SQL, AWS, and Spark is required. Experience with LLMs and prompt engineering is required. A PhD in a quantitative field is a plus but not required.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, three days a week on-site.\n\nWhat we offer:\nA competitive salary, equity, and the chance to shape AI strategy at a growing biotech company.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.75,
+    "score_max": 1.0,
+    "language_requirement": "none"
+  }
+}

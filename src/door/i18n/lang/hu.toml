@@ -1,0 +1,84 @@
+# Hungarian. Word lists match whole words, case-insensitively; a trailing "*" also
+# matches longer words (Hungarian suffixes and compounds: "fejlesztőként"). Heading lists
+# match as substrings of a heading line, so keep them specific enough not to occur in
+# an ordinary bullet. See src/door/i18n/__init__.py.
+
+code = "hu"
+name = "Hungarian"
+
+names = ["hungarian", "magyar", "magyarul"]
+
+# Hungarian writes compounds as one word: a topic term of six letters or more also matches inside
+# a word. Endings of the plural ("ápolók", "fejlesztők").
+compounds = true
+plural_suffixes = ["k", "ak", "ek", "ok", "ök"]
+
+# Generic words of a job title that name no field: left out of the content words of a keyword.
+role_nouns = [
+    "tanácsadó", "szakértő", "munkatárs", "vezető", "koordinátor", "asszisztens", "specialista",
+    "partner", "manager", "officer",
+]
+
+# Filler words with no topic, left out of the search keywords' content words.
+stop_words = ["és", "vagy", "a", "az", "egy", "valamint"]
+
+# Generic words around an employer's name in a careers site's title.
+career_site_words = ["karrier", "állások", "állás", "állásajánlatok", "nyitott pozíciók", "munkalehetőségek"]
+
+[headings]
+requirement = ["elvárások", "követelmények", "amit várunk", "mit várunk", "milyen vagy", "kit keresünk", "ideális jelölt", "a te profilod"]
+responsibility = ["a pozícióról", "a munkakörről", "feladatok", "amit csinálsz", "mi lesz a feladatod"]
+drop = ["rólunk", "a cégről", "cégünkről", "amit kínálunk", "mit kínálunk", "jelentkezés", "juttatások"]
+
+[markers]
+requirement = ["elvárás*", "követelmény*", "tapasztalat*", "szükséges", "kötelező", "folyékony*"]
+remote_pinned = ["távmunka"]
+remote = ["távmunka", "otthonról", "home office", "hibrid*"]
+salary = ["fizetés*", "bruttó", "nettó", "bérezés"]
+
+[seniority]
+junior = ["junior*", "gyakornok*", "pályakezdő*"]
+senior = ["senior*", "szenior*"]
+manager = ["vezető", "csoportvezető", "osztályvezető", "csapatvezető", "projektvezető"]
+head = ["igazgató*", "ügyvezető"]
+
+[language_requirement]
+required = [
+    "magyar nyelvtudás elvárás", "magyar nyelvtudás szükséges", "magyar nyelv ismerete elvárás",
+    "folyékony magyar", "anyanyelvi szintű magyar", "magyar anyanyelv",
+    "Hungarian required", "Hungarian is required", "fluent in Hungarian", "fluent Hungarian",
+    "must speak Hungarian", "Hungarian is a must", "native Hungarian",
+]
+advantage = [
+    "magyar nyelvtudás előny", "magyar nyelv ismerete előny",
+    "Hungarian is a plus", "Hungarian is an advantage",
+]
+
+
+[work_permit]
+no_sponsorship = [
+    "nem tudunk vízumot támogatni", "nem vállalunk vízumtámogatást", "nem biztosítunk vízumtámogatást",
+    "munkavállalási engedély nem biztosított",
+    "unable to offer visa sponsorship", "cannot offer visa sponsorship", "unable to sponsor",
+    "cannot sponsor", "no visa sponsorship",
+]
+permit_required = [
+    "érvényes munkavállalási engedély", "munkavállalási engedély szükséges",
+    "munkavállalási engedély elvárás", "jogosult magyarországon dolgozni",
+    "valid work permit", "right to work in Hungary",
+]
+sponsorship_offered = [
+    "munkavállalási engedély ügyintézésében segítünk", "vízumtámogatást biztosítunk",
+    "visa sponsorship available", "we offer visa sponsorship",
+]
+
+[careers]
+link = [
+    "karrier", "állás", "állások", "állásajánlatok", "álláslehetőségek", "nyitott pozíciók",
+    "szabad pozíciók", "csatlakozz hozzánk", "csatlakozz a csapatunkhoz", "dolgozz velünk",
+]
+path = ["allas", "karrier", "pozicio"]
+nav = [
+    "karrier", "állások", "összes állás", "összes pozíció", "további állások", "következő", "előző",
+    "vissza", "több", "jelentkezés", "jelentkezem", "keresés", "főoldal", "bejelentkezés",
+]

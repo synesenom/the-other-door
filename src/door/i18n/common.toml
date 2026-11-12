@@ -1,0 +1,118 @@
+# Data that applies whatever the country or language. See src/door/i18n/__init__.py.
+
+# Company-form suffixes stripped before cross-site dedup compares company names
+# (each country file adds its own).
+legal_suffixes = ["ltd", "gmbh"]
+
+# Words a subsidiary's or branch's name ends with that are no part of the employer's own name ("H & M Hennes &
+# Mauritz GBC AB"); each country file adds its own. Only trimmed from the end of a name looked up on Wikidata.
+subsidiary_words = ["gbc", "branch", "division"]
+
+# Host labels that name no employer ("apply.acme.com"); the careers words of every language and the
+# countries' `career_hosts` join them (`i18n.generic_host_labels()`).
+generic_host_labels = ["www", "career", "careers", "job", "jobs", "apply", "boards", "recruiting"]
+
+# A platform's demo or sample account, found under a big brand's name (`ats_detect.feed_looks_demo`, #435): a
+# job title holding one of `demo_title_marks` or starting with one of `demo_title_prefixes` (lower case), or a
+# job's text holding one of `demo_text_marks` (placeholder text).
+demo_title_marks = ["(sample)", "[sample]", "(demo)", "[demo]", "(example)", "(test)", "[test]"]
+demo_title_prefixes = ["copy of ", "sample job", "demo job", "test job"]
+demo_text_marks = ["lorem ipsum", "dolor sit amet", "vape tattooed", "gentrify pug", "hipster ipsum", "this is a sample job"]
+
+# Domain endings every country shares, besides each country file's `tlds`.
+tlds = ["com", "net", "org", "io", "eu", "co"]
+
+# More words around an employer's name that are no part of its URL slug (`ats_detect.slug_candidates`), besides
+# every country's legal forms and names. Not for dedup: "Flugger" and "Flügger group A/S" stay two names there.
+slug_suffixes = [
+    "a/s", "as", "asa", "ab", "oy", "ag", "limited", "inc", "plc", "llc", "bv", "nv", "sa",
+    "group", "holding", "nordic",
+]
+
+# Places in other parts of the world that name a job as non-local in a global employer's job URL or location
+# (country names and the larger cities); a name of the profile's own country is never foreign.
+foreign_places = [
+    "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+    "Bahrain", "Bangladesh", "Belarus", "Belgium", "Bolivia", "Bosnia", "Brazil", "Bulgaria", "Cambodia",
+    "Cameroon", "Canada", "Chile", "China", "Colombia", "Costa Rica", "Croatia", "Cyprus", "Czechia",
+    "Czech Republic", "Ecuador", "Egypt", "Estonia", "Ethiopia", "Finland", "France", "Germany", "Ghana",
+    "Greece", "Guatemala", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel",
+    "Italy", "Japan", "Jordan", "Kazakhstan", "Kenya", "Korea", "Kuwait", "Latvia", "Lebanon", "Lithuania",
+    "Luxembourg", "Malaysia", "Malta", "Mexico", "Morocco", "Netherlands", "New Zealand", "Nigeria", "Norway",
+    "Oman", "Pakistan", "Panama", "Peru", "Philippines", "Poland", "Portugal", "Puerto Rico", "Qatar",
+    "Romania", "Russia", "Saudi Arabia", "Serbia", "Singapore", "Slovakia", "Slovenia", "South Africa",
+    "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan", "Thailand", "Tunisia", "Turkey", "Uganda",
+    "Ukraine", "United Kingdom", "United States", "USA", "UAE", "Uruguay", "Venezuela", "Vietnam",
+    "London", "Manchester", "Edinburgh", "Paris", "Berlin", "Munich", "Frankfurt", "Hamburg", "Stockholm",
+    "Gothenburg", "Malmo", "Oslo", "Helsinki", "Amsterdam", "Rotterdam", "Madrid", "Barcelona", "Milan",
+    "Rome", "Dublin", "Warsaw", "Krakow", "Wroclaw", "Prague", "Budapest", "Bucharest", "Sofia", "Vienna",
+    "Zurich", "Geneva", "Brussels", "Lisbon", "Athens", "Istanbul", "Tel Aviv", "Dubai", "Riyadh", "Cairo",
+    "Lagos", "Nairobi", "Johannesburg", "Cape Town", "Mumbai", "Bangalore", "Bengaluru", "Hyderabad", "Pune",
+    "Chennai", "Delhi", "Gurgaon", "Noida", "Beijing", "Shanghai", "Shenzhen", "Hong Kong", "Taipei", "Seoul",
+    "Tokyo", "Osaka", "Kuala Lumpur", "Bangkok", "Jakarta", "Manila", "Sydney", "Melbourne", "Auckland",
+    "Toronto", "Vancouver", "Montreal", "New York", "San Francisco", "San Jose", "Seattle", "Austin",
+    "Boston", "Chicago", "Atlanta", "Dallas", "Houston", "Denver", "Los Angeles", "San Diego", "Washington",
+    "Raleigh", "Mexico City", "Sao Paulo", "Buenos Aires", "Bogota", "Santiago", "Lima", "Charlotte",
+    "Phoenix", "Miami", "Minneapolis", "Pittsburgh", "Philadelphia", "Salt Lake City", "Portland",
+    "Cambridge", "Bristol", "Leeds", "Glasgow", "Cork", "Galway", "Lyon", "Eindhoven", "Utrecht",
+    "Luxembourg City",
+    "England", "Scotland", "Wales", "Northern Ireland", "Great Britain", "Britain", "UK",
+    # Every other country of the world and the words for "not here", so that keeping or dropping a posting
+    # never depends on which cities the list names (#432). ISO 3166 short names in English,
+    # common variants, and the Danish and Hungarian names that differ.
+    "Andorra", "Angola", "Antigua and Barbuda", "Bahamas", "Barbados", "Belize", "Benin", "Bhutan",
+    "Bosnia and Herzegovina", "Botswana", "Brunei", "Burkina Faso", "Burundi", "Cabo Verde", "Cape Verde",
+    "Central African Republic", "Chad", "Comoros", "Congo", "DR Congo", "DRC", "Democratic Republic of the Congo",
+    "Cote d'Ivoire", "Côte d'Ivoire", "Ivory Coast", "Cuba", "Djibouti", "Dominica", "Dominican Republic",
+    "El Salvador", "Equatorial Guinea", "Eritrea", "Eswatini", "Swaziland", "Fiji", "Gabon", "Gambia", "Georgia",
+    "Grenada", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Jamaica", "Kiribati", "Kosovo",
+    "Kyrgyzstan", "Laos", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Madagascar", "Malawi", "Maldives",
+    "Mali", "Marshall Islands", "Mauritania", "Mauritius", "Micronesia", "Moldova", "Monaco", "Mongolia",
+    "Montenegro", "Mozambique", "Myanmar", "Burma", "Namibia", "Nauru", "Nepal", "Nicaragua", "Niger",
+    "North Korea", "North Macedonia", "Palau", "Palestine", "Occupied Palestinian Territory", "Gaza", "West Bank",
+    "Papua New Guinea", "Paraguay", "Rwanda", "Saint Lucia", "Samoa", "San Marino", "Sao Tome and Principe",
+    "Senegal", "Seychelles", "Sierra Leone", "Solomon Islands", "Somalia", "Somaliland", "South Korea",
+    "South Sudan", "Sudan", "Suriname", "Syria", "Tajikistan", "Tanzania", "Timor-Leste", "East Timor", "Togo",
+    "Tonga", "Trinidad and Tobago", "Turkmenistan", "Tuvalu", "United Arab Emirates", "Uzbekistan", "Vanuatu",
+    "Yemen", "Zambia", "Zimbabwe",
+    # Official names (the UN's, as ReliefWeb writes them) that the short names above do not match as whole words
+    "Syrian Arab Republic", "Russian Federation", "Türkiye", "Viet Nam", "Lao People's Democratic Republic",
+    "United Republic of Tanzania", "Bolivarian Republic of Venezuela", "Islamic Republic of Iran", "occupied Palestinian territory",
+    # Not here
+    "abroad", "overseas", "udlandet", "i udlandet", "külföld", "külföldön", "utlandet", "i utlandet", "utomlands",
+    # Danish
+    "Tyskland", "Sverige", "Norge", "Storbritannien", "Spanien", "Frankrig", "Italien", "Holland", "Schweiz",
+    "Polen", "Tyrkiet", "Kina", "Indien", "Grækenland", "Irland", "Letland", "Litauen", "Rusland", "Etiopien",
+    "Sydsudan", "Sydafrika", "Ungarn", "Rumænien", "Egypten", "Marokko", "Tunesien", "Libanon",
+    "Syrien", "Irak", "Denmark", "Danmark", "Magyarország",
+    # Hungarian
+    "Németország", "Ausztria", "Svédország", "Norvégia", "Egyesült Királyság", "Franciaország", "Olaszország",
+    "Spanyolország", "Lengyelország", "Szlovákia", "Szerbia", "Ukrajna", "Törökország", "Kína", "Japán",
+    "Egyiptom", "Dánia",
+]
+
+# Query parameters that carry a job's id in an ad link (lower case); a listing links its ads
+# on another host only through these (shared systems such as SuccessFactors career2).
+# Terms that mean the same in a job title: one counts for the others when a title is compared with the
+# search keywords (lower case; a group is a list of equivalent words or phrases).
+synonyms = [
+    ["ai", "artificial intelligence", "kunstig intelligens", "mesterséges intelligencia", "intelligence artificielle", "artificiell intelligens"],
+    ["ml", "machine learning", "gépi tanulás", "apprentissage automatique", "maskininlärning"],
+    ["hr", "human resources", "ressources humaines", "rh"],
+    ["ceo", "chief executive officer"],
+    ["cfo", "chief financial officer"],
+    ["coo", "chief operating officer"],
+    ["rn", "registered nurse", "infirmier", "infirmière"],
+    ["kam", "key account"],
+    ["qa", "quality assurance", "assurance qualité"],
+    ["hse", "health and safety", "hygiène sécurité environnement"],
+]
+
+job_id_params = ["career_job_req_id", "jobid", "job_id", "jobreqid", "reqid"]
+
+# Letters of languages without a file here that a URL slug spells out ("Müller" -> "mueller").
+[slug_transliterate]
+"ä" = "ae"
+"ö" = "oe"
+"ü" = "ue"
+"ß" = "ss"

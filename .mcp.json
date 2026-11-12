@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "door": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "door.mcp_server"],
+      "env": {"PYTHONPATH": "src"}
+    }
+  }
+}

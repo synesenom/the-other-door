@@ -1,0 +1,17 @@
+{
+ "items": [
+  {
+   "SearchId": 1,
+   "Offset": 0,
+   "Limit": 1,
+   "TotalJobsCount": 0,
+   "SortBy": "POSTING_DATES_DESC",
+   "SiteNumber": "CX_1001",
+   "requisitionList": []
+  }
+ ],
+ "count": 1,
+ "hasMore": false,
+ "limit": 1,
+ "offset": 0
+}

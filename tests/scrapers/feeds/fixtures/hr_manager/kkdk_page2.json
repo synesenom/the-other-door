@@ -1,0 +1,68 @@
+{
+ "CustomerAlias": "KKDK",
+ "CustomerName": "Københavns Kommune",
+ "TransactionStatus": {
+  "Description": "The operation completed successfully.",
+  "StatusCode": 0
+ },
+ "Items": [
+  {
+   "Id": 216495,
+   "Name": "Administrativ medarbejder til Valby, Vesterbro og Kgs. Enghave i Børne- og Ungdomsforvaltningen (barselsvikariat)",
+   "Published": "/Date(1790253021000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=1518&ProjectId=216495&DepartmentId=23270&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p><strong>Kan du lide at have mange bolde i luften, og giver du god service?<br />\r\nVil du være med i et kontor, der arbejder for gode fællesskaber for byens børn?</strong><br />\r\nSå søger vi dig som barselsvikar i vores administrative team i område Valby, Vesterbro og Kgs. Enghave. Stillingen er på fuld tid og løber i første omgang et år, med mulighed for forlængelse.</p>\r\n\r\n<p><strong>Om stillingen</strong><br />\r\nDu bliver en del af en gruppe administrative medarbejdere, der giver medarbejdere og ledelse i området den støtte, de har brug for i hverdagen. Dine opgaver vil især være:</p>\r\n\r\n<ul>\r\n\t<li>personaleadministration, fx stillingsopslag, indkaldelser til samtale og opgaver omkring løn, sygdom og adgange</li>\r\n\t<li>IT-opgaver, fx klargøring af computere og telefoner til nye kolleger og vedligehold af lister og printere</li>\r\n\t<li>indkøb af kontorartikler og andre varer</li>\r\n\t<li>telefon, mail og fremmøde som områdets første kontakt</li>\r\n\t<li>kontakt til håndværkere og andre eksterne samarbejdspartnere</li>\r\n\t<li>behandling af anmodninger om aktindsigt</li>\r\n</ul>\r\n\r\n<p><strong>Vi arbejder for mangfoldighed</strong><br />\r\nForvaltningen arbejder for, at alle børn kan være en del af et fællesskab. Som administrativ medarbejder er du med til at få hverdagen til at fungere, så de pædagogiske medarbejdere kan lykkes.</p>\r\n\r\n<p><strong>Samarbejde på tværs</strong><br />\r\nDu arbejder hver dag sammen med mange faggrupper, bl.a. konsulenter, psykologer og sundhedsplejersker, og bliver bindeleddet mellem dem.</p>\r\n\r\n<p><strong>Vi søger dig, der</strong></p>\r\n\r\n<ul>\r\n\t<li>har erfaring med administration, gerne fra det offentlige</li>\r\n\t<li>er venlig, fleksibel og giver god service</li>\r\n\t<li>er teknisk nysgerrig og ikke bange for IT</li>\r\n\t<li>holder overblikket, når der er travlt</li>\r\n\t<li>bidrager til et godt arbejdsmiljø</li>\r\n\t<li>skriver og taler klart og professionelt.</li>\r\n</ul>\r\n\r\n<p><strong>Vi tilbyder</strong></p>\r\n\r\n<ul>\r\n\t<li>en varieret hverdag</li>\r\n\t<li>engagerede kolleger og et godt arbejdsmiljø</li>\r\n\t<li>plads til faglig og personlig udvikling</li>\r\n\t<li>indsigt i arbejdet med børnefællesskaber i Københavns Kommune.</li>\r\n</ul>\r\n\r\n<p><strong>Ansættelsesvilkår</strong><br />\r\nVikariatet er på fuld tid med start 1. december 2026. Løn og vilkår følger overenskomsten. Vi indhenter børne- og straffeattest og referencer.</p>\r\n\r\n<p><strong>Kontakt</strong><br />\r\nHar du spørgsmål, kan du kontakte Rikke Holm på 00 00 00 00 eller kontakt@example.com.</p>\r\n\r\n<p>Vedhæft CV og eksamensbevis til din ansøgning.<br />\r\nVi glæder os til at høre fra dig.</p>\r\n\r\n<p><strong>Søg via linket senest mandag den 12. oktober 2026</strong><br />\r\nVi forventer at holde samtaler i uge 43.</p>\r\n"
+    }
+   ],
+   "Department": {
+    "Name": "Faglig Støttefunktion 2 - Valby/Vesterbro/Kgs. Enghave",
+    "City": "Valby"
+   },
+   "DepartmentTree": {
+    "Name": "Københavns Kommune ",
+    "City": "",
+    "SubItems": [
+     {
+      "Name": "Børne- og Ungdomsforvaltningen",
+      "City": "København V",
+      "SubItems": [
+       {
+        "Name": "Direktion",
+        "City": "København V",
+        "SubItems": [
+         {
+          "Name": "Område Valby/Vesterbro/Kgs. Enghave",
+          "City": "Valby",
+          "SubItems": [
+           {
+            "Name": "Dagtilbud og Support - Valby/Vesterbro/Kgs. Enghave",
+            "City": "Valby",
+            "SubItems": [
+             {
+              "Name": "Administration VVK",
+              "City": "Valby",
+              "SubItems": [
+               {
+                "Name": "Faglig Støttefunktion 2 - Valby/Vesterbro/Kgs. Enghave",
+                "City": "Valby"
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "PositionLocation": {
+    "Name": "Børne- og Ungdomsforvaltningen"
+   }
+  }
+ ]
+}

@@ -1,0 +1,66 @@
+[
+ {
+  "id": 510393,
+  "date": "2026-10-27T09:12:50",
+  "date_gmt": "2026-10-27T09:12:50",
+  "modified": "2026-10-27T09:12:50",
+  "slug": "mhpss-advisor",
+  "status": "publish",
+  "type": "stilling",
+  "link": "https://globalnyt.dk/stilling/mhpss-advisor/",
+  "title": {
+   "rendered": "MHPSS Advisor"
+  },
+  "content": {
+   "rendered": "\n<p class=\"wp-block-paragraph\">The advisor supports national societies with community-based psychosocial support in humanitarian settings.</p>\n"
+  }
+ },
+ {
+  "id": 510291,
+  "date": "2026-10-26T08:21:08",
+  "date_gmt": "2026-10-26T08:21:08",
+  "modified": "2026-10-26T08:21:08",
+  "slug": "maternity-cover-partnership-manager",
+  "status": "publish",
+  "type": "stilling",
+  "link": "https://globalnyt.dk/stilling/maternity-cover-partnership-manager/",
+  "title": {
+   "rendered": "Maternity cover: Partnership Manager for Oxfam Denmark&#8217;s international programme"
+  },
+  "content": {
+   "rendered": "\n<p class=\"wp-block-paragraph\">Maternity cover for the partnership manager of the international programme.</p>\n"
+  }
+ },
+ {
+  "id": 508636,
+  "date": "2026-10-09T13:35:17",
+  "date_gmt": "2026-10-09T13:35:17",
+  "modified": "2026-10-09T13:35:17",
+  "slug": "head-of-programmes-ukraine",
+  "status": "publish",
+  "type": "stilling",
+  "link": "https://globalnyt.dk/stilling/head-of-programmes-ukraine/",
+  "title": {
+   "rendered": "Head of Programmes &#8211; Ukraine"
+  },
+  "content": {
+   "rendered": "\n<p class=\"wp-block-paragraph\">Leads the programme team in Ukraine.</p>\n"
+  }
+ },
+ {
+  "id": 456923,
+  "date": "2024-11-01T13:22:36",
+  "date_gmt": "2024-11-01T13:22:36",
+  "modified": "2024-11-01T13:22:36",
+  "slug": "universitetspraktikant",
+  "status": "publish",
+  "type": "stilling",
+  "link": "https://globalnyt.dk/stilling/universitetspraktikant/",
+  "title": {
+   "rendered": "Universitetspraktikant til Globalnyt i foråret 2027"
+  },
+  "content": {
+   "rendered": "\n<p class=\"wp-block-paragraph\">Praktik i redaktionen.</p>\n"
+  }
+ }
+]

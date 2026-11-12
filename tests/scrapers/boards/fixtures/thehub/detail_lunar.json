@@ -1,0 +1,11 @@
+{
+  "id": "6a8e2cfa6f40d9d0b631fedd",
+  "key": "lunar-1-data-scientist-8264790",
+  "title": "(Senior) Data Scientist",
+  "company": {"name": "Lunar"},
+  "location": {"address": "Aarhus, Denmark", "locality": "Aarhus", "country": "Denmark"},
+  "isRemote": false,
+  "description": "<p>We want a Senior Data Scientist for the team that guards payments against fraud and credit risk.</p><ul><li>Train models that flag suspicious payments as they happen.</li><li>Work with engineers to run those models in production.</li></ul>",
+  "publishedAt": null,
+  "link": "https://lunar.app/careers/senior-data-scientist"
+}

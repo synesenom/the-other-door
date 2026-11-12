@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Finsktalande barnskötare  till Tiunda förskola",
+  "County": "Uppsala län",
+  "Municipality": "Uppsala",
+  "ApplicationEndDateFormatted": "2026-11-13"
+ },
+ "Assignment": {
+  "Guid": "8e4247a8-d09b-418d-b4a4-a9fb3999de6e",
+  "Title": "Finsktalande barnskötare  till Tiunda förskola",
+  "ReferenceNumber": "UBN-2026-05442",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Finsktalande barnskötare  till Tiunda förskola\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "",
+  "Qualifications": "",
+  "AdditionalInfo": ""
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Finsktalande barnskötare  till Tiunda förskola\",\"description\":\"I rollen ansvarar du för uppgifterna som hör till finsktalande barnskötare  till tiunda förskola och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Uppsala kommun\"},\"datePosted\":\"2026-10-27T00:00:00\",\"validThrough\":\"2026-11-13T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Uppsala\"},\"employmentType\":[\"FULL_TIME\"],\"directApply\":true}"
+}

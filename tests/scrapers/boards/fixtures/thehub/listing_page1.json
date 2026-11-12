@@ -1,0 +1,22 @@
+{
+  "total": 4,
+  "limit": 15,
+  "page": 1,
+  "pages": 2,
+  "docs": [
+    {
+      "id": "6aa1f3cc961a30471ccb36b8",
+      "title": "Data Scientist",
+      "company": {"name": "Flatpay"},
+      "location": {"address": "Copenhagen, Denmark"},
+      "isRemote": false
+    },
+    {
+      "id": "6a918622eb2ed4dae7b2f5fa",
+      "title": "Data Scientist — Computer Vision",
+      "company": {"name": "Envira "},
+      "location": {"address": "Copenhagen, Denmark"},
+      "isRemote": false
+    }
+  ]
+}

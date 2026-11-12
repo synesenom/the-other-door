@@ -1,0 +1,111 @@
+name: Package (Linux)
+
+# The packaged app on Linux (#356, #223): build the bundle (Python, door, Tectonic), the AppImage and the
+# .deb, then smoke-test both as installed: the AppImage extracted and run, the .deb installed with apt and
+# removed again (the data folder must stay). Only when the packaging itself changes: no schedule, no manual
+# trigger (CI minutes are budgeted, see the PR). About 10–15 minutes on ubuntu-latest (1x minutes).
+on:
+  pull_request:
+    paths:
+      - "app/electron-builder.config.cjs"
+      - "app/build/**"
+      - "app/scripts/bundle-python.sh"
+      - "app/scripts/bundle.lock.json"
+      - "app/scripts/lock_requirements.py"
+      - "app/scripts/check-bundle.sh"
+      - "app/scripts/after-pack.cjs"
+      - "app/e2e-package/**"
+      - "app/playwright.package.config.ts"
+      - ".github/workflows/package-linux.yml"
+      # the cheap one also follows the locked packages, Python's and the app's (an Electron or electron-builder bump)
+      - "poetry.lock"
+      - "app/package-lock.json"
+  push:
+    branches: [main]
+    paths:
+      - "app/electron-builder.config.cjs"
+      - "app/build/**"
+      - "app/scripts/bundle-python.sh"
+      - "app/scripts/bundle.lock.json"
+      - "app/scripts/lock_requirements.py"
+      - "app/scripts/check-bundle.sh"
+      - "app/scripts/after-pack.cjs"
+      - "app/e2e-package/**"
+      - "app/playwright.package.config.ts"
+      - ".github/workflows/package-linux.yml"
+      # the cheap one also follows the locked packages, Python's and the app's (an Electron or electron-builder bump)
+      - "poetry.lock"
+      - "app/package-lock.json"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # The Python runtime, Tectonic and the wheels, keyed by what pins them.
+      - name: Restore the bundle's downloads
+        uses: actions/cache@v6
+        with:
+          path: app/.bundle-cache
+          key: bundle-linux-x64-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+
+      - name: Install the app's packages
+        run: npm ci
+
+      - name: Build the bundle
+        run: scripts/bundle-python.sh
+
+      - name: Check the bundle on its own
+        run: scripts/check-bundle.sh
+
+      - name: Package the AppImage and the .deb
+        run: npm run package
+
+      - name: Smoke-test the AppImage
+        run: |
+          chmod +x dist/the-other-door-*.AppImage
+          mkdir -p "$RUNNER_TEMP/appimage" && cd "$RUNNER_TEMP/appimage"
+          "$GITHUB_WORKSPACE"/app/dist/the-other-door-*.AppImage --appimage-extract >/dev/null
+          cd "$GITHUB_WORKSPACE/app"
+          DOOR_PACKAGED_APP="$RUNNER_TEMP/appimage/squashfs-root/the-other-door" xvfb-run -a npm run test:package
+
+      - name: Install the .deb and smoke-test it
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ./dist/the-other-door-*.deb
+          DOOR_PACKAGED_APP="/opt/The other door/the-other-door" xvfb-run -a npm run test:package
+
+      - name: Removing the .deb keeps the data folder
+        run: |
+          mkdir -p ~/".config/The other door/profile" && echo kept > ~/".config/The other door/profile/marker"
+          sudo apt-get remove -y -qq "$(dpkg-deb -f dist/the-other-door-*.deb Package)"
+          test ! -e "/opt/The other door/the-other-door"
+          test "$(cat ~/".config/The other door/profile/marker")" = kept
+
+      # a passing run already installed and started them; only a failure's are worth downloading
+      - name: Keep a failed run's packages for 3 days
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: door-linux
+          path: |
+            app/dist/*.AppImage
+            app/dist/*.deb
+          retention-days: 3
+          if-no-files-found: ignore

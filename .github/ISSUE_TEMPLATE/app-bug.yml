@@ -1,0 +1,38 @@
+name: Desktop app bug
+description: Something went wrong in The other door desktop app
+labels: ["app", "bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The other door is a personal project: every report is read, but no reply or fix is promised.
+        A security problem? See SECURITY.md instead of opening an issue.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: In the window's About menu, or the installer's name (the-other-door-0.2.0-…).
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: System
+      options: [macOS (Apple silicon), macOS (Intel), Windows, Linux (AppImage), Linux (.deb)]
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Settings → Maintenance → Checks
+      description: What the checks say (copy the lines that are not fine). Leave out anything personal.

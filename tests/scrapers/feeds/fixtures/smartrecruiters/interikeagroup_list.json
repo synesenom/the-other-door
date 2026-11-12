@@ -1,0 +1,50 @@
+{
+ "totalFound": 3,
+ "content": [
+  {
+   "id": "744000155037995",
+   "name": "Customs Analyst",
+   "company": {
+    "identifier": "InterIKEAGroup",
+    "name": "Inter IKEA Group"
+   },
+   "releasedDate": "2026-10-12T14:34:44.177Z",
+   "location": {
+    "city": "Älmhult",
+    "country": "se",
+    "remote": false,
+    "fullLocation": "Älmhult, , Sweden"
+   }
+  },
+  {
+   "id": "744000154989708",
+   "name": "Elektrikár/ka - údržbár/ka liniek - nástupný bonus 1 000 €",
+   "company": {
+    "identifier": "InterIKEAGroup",
+    "name": "Inter IKEA Group"
+   },
+   "releasedDate": "2026-10-12T11:08:53.926Z",
+   "location": {
+    "city": "OTHER",
+    "country": "sk",
+    "remote": false,
+    "fullLocation": "OTHER, , Slovakia (Slovak Republic)"
+   }
+  },
+  {
+   "id": "744000154955779",
+   "name": "Purchasing Business Analyst",
+   "company": {
+    "identifier": "InterIKEAGroup",
+    "name": "Inter IKEA Group"
+   },
+   "releasedDate": "2026-10-12T08:42:17.849Z",
+   "location": {
+    "city": "Shanghai",
+    "country": "cn",
+    "remote": false,
+    "fullLocation": "Shanghai, , China"
+   }
+  }
+ ]
+}

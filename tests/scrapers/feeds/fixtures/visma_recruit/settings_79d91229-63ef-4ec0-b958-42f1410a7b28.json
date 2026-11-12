@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Systemförvaltare till IT-stödsystem ",
+  "County": "Gävleborgs län",
+  "Municipality": "Gävle",
+  "ApplicationEndDateFormatted": "2026-11-15"
+ },
+ "Assignment": {
+  "Guid": "79d91229-63ef-4ec0-b958-42f1410a7b28",
+  "Title": "Systemförvaltare till IT-stödsystem ",
+  "ReferenceNumber": "RS 2026/2817",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Systemförvaltare till IT-stödsystem\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "I rollen ansvarar du för uppgifterna som hör till systemförvaltare till it-stödsystem och samarbetar med kollegor i det dagliga arbetet.",
+  "Qualifications": "Du har relevant utbildning eller erfarenhet och trivs med att samarbeta och ta eget ansvar.",
+  "AdditionalInfo": "Vi tillämpar löpande urval, så skicka din ansökan i god tid. Kontakta oss via växeln vid frågor."
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Systemförvaltare till IT-stödsystem \",\"description\":\"I rollen ansvarar du för uppgifterna som hör till systemförvaltare till it-stödsystem och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Region Gävleborg\"},\"datePosted\":\"2026-10-30T00:00:00\",\"validThrough\":\"2026-11-15T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Gävle\"},\"employmentType\":[\"FULL_TIME\"],\"directApply\":true}"
+}

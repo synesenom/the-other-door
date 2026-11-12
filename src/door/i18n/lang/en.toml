@@ -1,0 +1,191 @@
+# English. Word lists match whole words, case-insensitively; a trailing "*" also
+# matches longer words. Heading lists match as substrings of a heading line.
+# See src/door/i18n/__init__.py.
+
+code = "en"
+name = "English"
+
+# Connecting words that carry no meaning in a job title ("Head of Customer Service").
+
+# Words that name this language inside an ad, in any language.
+names = ["english"]
+
+# Endings a plural adds to a word ("rewards", "benefits", "branches").
+plural_suffixes = ["s", "es"]
+
+# Generic words of a job title that name no field: left out of the content words of a keyword.
+role_nouns = [
+    "advisor", "adviser", "specialist", "partner", "officer", "consultant", "management", "total",
+    "coordinator", "assistant", "manager",
+]
+
+# Filler words with no topic, left out of the search keywords' content words.
+stop_words = ["and", "or", "of", "the", "a", "an", "in", "for", "to", "with", "at", "on", "as"]
+
+# Generic words that are not a skill, tool or certification by themselves: soft skills,
+# months, weekdays. The facts check never claims them.
+skill_stop_words = [
+    "communication", "leadership", "teamwork", "collaboration", "creativity", "adaptability",
+    "initiative", "ownership", "commitment", "motivation", "flexibility", "responsibility",
+    "problem solving", "time management", "stakeholder management", "management", "analytical",
+    "january", "february", "march", "april", "may", "june", "july", "august", "september",
+    "october", "november", "december",
+    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+    "cv", "pdf", "ceo", "cfo", "cto", "coo", "hr", "pr", "kpi", "roi", "vat", "fte", "ok", "linkedin", "jobindex",
+    "eu", "uk", "us", "usa", "dk", "dkk", "eur", "usd", "gbp", "nok", "sek", "covid",
+    "present", "current", "fluent", "native", "conversational", "advanced", "basic",
+]
+
+
+# Generic words around an employer's name in a careers site's title.
+career_site_words = ["careers", "career", "jobs", "job", "vacancies", "open positions", "career opportunities"]
+
+# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
+[cv_sections]
+skills = ["skills", "key skills", "technical skills", "core competencies", "competencies", "tools", "technologies"]
+education = ["education", "education and training", "academic background"]
+certifications = ["certifications", "certificates", "licences", "licenses", "certifications and licences", "certifications and licenses", "courses"]
+
+[headings]
+requirement = ["requirements", "qualifications", "who you are", "nice to have"]
+responsibility = ["responsibilities", "what you'll do", "your role"]
+drop = [
+    "about us", "who we are", "benefits", "what we offer", "perks",
+    "equal opportunity", "diversity", "how to apply", "application process",
+    "gdpr", "privacy",
+]
+
+[markers]
+requirement = [
+    "must", "required", "require", "requires", "experience", "year", "years",
+    "proficient", "fluent",
+]
+remote = ["remote", "hybrid", "home-based", "home based", "homebased", "hybrid working", "work from home", "wfh"]
+remote_pinned = ["remote"]
+onsite = ["on-site", "onsite", "office based", "office-based", "site based"]
+salary = ["salary", "per annum", "p.a.", "pro rata", "day rate", "per day", "per hour", "competitive salary"]
+
+# Canonical level -> words in this language.
+[seniority]
+junior = ["junior", "graduate", "trainee", "entry level", "entry-level"]
+senior = ["senior"]
+lead = ["lead", "team leader"]
+principal = ["principal"]
+head = ["head", "director"]
+manager = ["manager"]
+# Academic ranks are one level: any of them matches any other. "assistant" and "associate" alone are
+# ordinary words, so only the phrases count.
+academic = ["postdoc", "postdoctoral", "assistant professor", "associate professor", "professor",
+            "tenure track", "tenure-track"]
+
+# Phrases that make English a requirement or only an advantage.
+[language_requirement]
+required = ["fluent in English", "fluent English", "English is required", "excellent English"]
+advantage = ["English is a plus", "English is an advantage"]
+
+# Words and phrases that make a link on an employer's site a careers page, in its
+# text or its address ("-" and "_" in an address count as spaces).
+
+# What an ad says about a visa or work permit; condense keeps matching sentences, the scorer
+# prompt lists them. Phrases of every language apply to every ad.
+[work_permit]
+no_sponsorship = [
+    "unable to offer visa sponsorship", "unable to offer sponsorship", "unable to sponsor",
+    "cannot offer visa sponsorship", "cannot offer sponsorship", "cannot sponsor",
+    "can't sponsor", "do not offer visa sponsorship", "does not offer visa sponsorship",
+    "do not provide visa sponsorship", "do not offer sponsorship", "will not sponsor",
+    "won't sponsor", "no visa sponsorship", "no sponsorship available", "no sponsorship offered",
+    "without visa sponsorship",
+    "sponsorship is not available", "sponsorship is not offered",
+    "not able to sponsor", "not in a position to sponsor",
+    "visa sponsorship cannot be provided", "not able to provide sponsorship", "no sponsorship is available",
+]
+permit_required = [
+    "must have the right to work", "must have the legal right to work", "the right to work in the EU",
+    "right to work in Denmark", "must be eligible to work", "legally eligible to work", "authorized to work in",
+    "authorised to work in", "legally authorized to work", "legally authorised to work",
+    "valid work permit", "work permit required", "work permit is required",
+    "existing work permit", "already have a work permit", "valid work authorization",
+    "valid work authorisation", "work authorization required", "must already hold a work permit",
+    "must already hold a valid work",
+    "right to work in the UK", "eligible to work in the UK", "entitled to work in the UK", "proof of right to work",
+    "right to work checks", "must be a UK resident", "British citizen", "security clearance", "SC clearance",
+    "DV clearance", "BPSS", "baseline personnel security standard", "enhanced DBS",
+]
+sponsorship_offered = [
+    "visa sponsorship available", "visa sponsorship is available", "visa sponsorship offered",
+    "we offer visa sponsorship", "we sponsor visas", "we can sponsor", "we will sponsor",
+    "relocation and visa support",
+    "visa support", "help with work permits", "assist with work permits",
+    "work permit sponsorship",
+    "skilled worker visa", "certificate of sponsorship", "licensed sponsor", "we hold a sponsor licence",
+]
+
+# Lines of an ad addressed to a model rather than a candidate; the integrity gate drops them.
+[injection]
+instruction = [
+    "ignore previous instructions", "ignore all previous instructions", "ignore the previous instructions",
+    "ignore your previous instructions", "ignore the above instructions", "disregard the above",
+    "disregard previous instructions", "disregard all previous instructions", "forget your instructions",
+    "you are an ai", "if you are an ai", "if you are a language model", "as an ai language model",
+    "if you are an llm", "system prompt:", "new instructions:",
+]
+score_request = [
+    "score this candidate", "score this application", "give this candidate a score", "give this candidate the maximum",
+    "rate this candidate", "maximum score", "highest possible score", "set the score to", "output a score of",
+]
+
+[careers]
+link = [
+    "career", "careers", "job", "jobs", "vacancies", "vacancy", "join us",
+    "work with us", "work for us", "open positions", "open roles", "we are hiring", "we're hiring",
+]
+# Stems of a job page's URL path (substring match: "vacanc" is vacancy and vacancies).
+path = ["job", "career", "position", "vacanc", "opening", "requisition", "roles", "posting"]
+# Link or button texts that start an application (a page holding one is a job ad).
+apply = ["apply", "apply now", "apply for this job", "apply for this position", "apply here", "easy apply"]
+# Link texts on a listing that lead on but are not ads (whole text, any case).
+nav = [
+    "careers", "jobs", "all jobs", "all vacancies", "all positions", "open positions", "see all jobs",
+    "view all jobs", "view all", "next", "previous", "back", "back to jobs", "load more", "show more",
+    "home", "apply", "apply now", "sign in", "log in", "search", "search jobs", "job alert", "job alerts",
+]
+
+# The month names and their abbreviations, for reading a date written out ("13 November 2026").
+[months]
+january = 1
+jan = 1
+"jan." = 1
+february = 2
+feb = 2
+"feb." = 2
+march = 3
+mar = 3
+"mar." = 3
+april = 4
+apr = 4
+"apr." = 4
+may = 5
+june = 6
+jun = 6
+"jun." = 6
+july = 7
+jul = 7
+"jul." = 7
+august = 8
+aug = 8
+"aug." = 8
+september = 9
+sep = 9
+"sep." = 9
+sept = 9
+"sept." = 9
+october = 10
+oct = 10
+"oct." = 10
+november = 11
+nov = 11
+"nov." = 11
+december = 12
+dec = 12
+"dec." = 12

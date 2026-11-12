@@ -1,0 +1,1754 @@
+[
+  {
+    "name": "add_company",
+    "description": "Follow employers: find each one's job feed and record it in profile/companies.json.\n\n    \"Add Trustpilot\", \"follow careers.trackman.com\": give each company name,\n    careers link or career host. Public signals only: the link's shape, the\n    host's DNS CNAME, the careers page (robots.txt honoured), and for a bare\n    name each feed's public endpoint with the name's likely slugs. A feed The other door\n    can follow is recorded as followed (and its site enabled); a platform it\n    cannot follow (HR-ON, or Phenom with no readable Workday site behind it) as\n    unfollowable with its ``refusal`` (\"must_not\" or \"cant_yet\"), and a\n    miss as unresolved, each with the reason. Use `dry_run=True` to show the\n    user what would be recorded first. Identical to `./door companies add`.\n\n    Args:\n        inputs: Company names, careers links or career hosts.\n        dry_run: Show what would be recorded; write nothing.\n        probe: Probe feed endpoints for a bare name and read careers pages;\n            False uses only the links' own shape and DNS.\n\n    Returns:\n        ``{\"dry_run\", \"results\": [{\"input\", \"name\", \"status\", \"platform\", \"entry\",\n        \"reason\", \"refusal\", \"evidence\", \"candidates\", \"new\"}]}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "probe": {
+          "default": true,
+          "title": "Probe",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "inputs"
+      ],
+      "title": "add_companyArguments"
+    }
+  },
+  {
+    "name": "ask",
+    "description": "Answer one question about the jobs data in a sentence or two — the desktop app's question box\n    and `./door ask`. In a conversation, call the read tools directly instead. One short Claude call\n    (Haiku) with the read tools only: it can never change profile/ or jobs/. Identical to `./door ask`.\n\n    Args:\n        question: The question, in the user's words.\n        model: Claude model to answer with (default: haiku).\n\n    Returns:\n        ``{\"answer\", \"go_to\": {\"screen\": \"matches\" | \"posting\" | \"applications\" | \"employers\" | \"cv\",\n        \"job_ids\"?} | None, \"sources\"}``, or ``{\"error\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "required": [
+        "question"
+      ],
+      "title": "askArguments"
+    }
+  },
+  {
+    "name": "cancel_job",
+    "description": "Stop the running find_jobs or prepare (it stops at its next step; nothing is lost: the next run picks up).\n\n    Returns:\n        ``{\"cancelling\": tool}``, or ``{\"error\"}`` when nothing runs.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "cancel_jobArguments"
+    }
+  },
+  {
+    "name": "compile",
+    "description": "Compile LaTeX sources for a job application into PDFs.\n\n    The tailor agent's tool (`revise` recompiles on its own); there is no\n    command, since PDFs are never built by hand.\n\n    Args:\n        job_id: The job: its id, or words from its company and title\n            (\"trustpilot\").\n        render: Also render each compiled PDF's pages to PNGs (read them to\n            see the pages), with page counts.\n\n    Returns:\n        The output directory and a per-file compile result (compiled/\n        skipped/error, with the resulting PDF path or compiler stderr); with\n        ``render``, also ``\"render\": [{\"file\", \"status\", \"pages\",\n        \"page_count\"}, ...]``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "render": {
+          "default": false,
+          "title": "Render",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "compileArguments"
+    }
+  },
+  {
+    "name": "connect_drive",
+    "description": "Connect this computer to the user's Google Drive, once.\n\n    A browser window opens for the user to allow access (The other door then sees only\n    its own folder `door/` on Drive); the call waits for them, up to five\n    minutes. After that profile/ and jobs/ are pulled before and pushed after\n    every command that writes, by themselves. Identical to `./door data connect`.\n    If Drive already holds The other door data, call `sync_data` next to bring it here.\n\n    Returns:\n        ``{\"account\"}`` or ``{\"error\": ...}`` (e.g. not configured in this build).\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "connect_driveArguments"
+    }
+  },
+  {
+    "name": "disconnect_drive",
+    "description": "Forget this computer's Google Drive connection. The archive on Drive stays.\n\n    Identical to `./door data disconnect`.\n\n    Returns:\n        ``{\"disconnected\"}``: False when it was not connected.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "disconnect_driveArguments"
+    }
+  },
+  {
+    "name": "doctor",
+    "description": "Check every prerequisite: Python, profile, LaTeX, the `claude` CLI,\n    the MCP server entry and dev deps.\n\n    Instant and offline by default. With ``probe=True`` it also probes each\n    configured site's live scraper (one ``scraper: <site>`` check per site,\n    page 1 only; live requests, so it can take a\n    while) and saves the raw response of a suspicious probe under\n    ``jobs/drift/<site>/``. Call it when a command fails for an environment\n    reason, or first thing in a setup conversation; pass ``probe`` when a\n    site returned nothing and the user wants to know whether its scraper\n    broke. Identical to `./door doctor [--probe]`.\n\n    Args:\n        probe: Also run the live ``scraper: <site>`` probes.\n\n    Returns:\n        ``{\"ok\", \"checks\": [{\"name\", \"status\": \"ok\" | \"missing\" | \"warn\" |\n        \"drift\", \"required\", \"detail\", \"fix\"}], \"last_run\", \"last_scrape\"}`` —\n        ``fix`` is the command to run for a failed check. ``drift`` means a\n        site's page no longer has the structure its scraper reads (offered a\n        fix by `setup` with ``probe=True``); a ``scraper:`` ``warn`` is an unreachable site, a\n        login/bot wall or a result count far from the recent runs. Neither\n        makes ``ok`` false.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "probe": {
+          "default": false,
+          "title": "Probe",
+          "type": "boolean"
+        }
+      },
+      "title": "doctorArguments"
+    }
+  },
+  {
+    "name": "draft_cv",
+    "description": "Draft profile/cv.md from the user's existing CV and public pages.\n\n    `/onboard`'s CV step: give it file paths (their most recent CV as PDF,\n    DOCX or Markdown; a LinkedIn \"Save to PDF\" export) and URLs (a personal\n    site or portfolio). The files are read here, the URLs by one\n    `claude -p` call with WebFetch, which writes the CV in\n    profile.example/cv.md's structure — the newest CV is the backbone, the\n    other sources only add, nothing is invented (missing facts are TODOs).\n    Works before profile/config.json exists. Writes `profile/cv.draft.md`:\n    read it, show it to the user with `provenance` and `todos`, take their\n    edits, and only then put it in place (Write to profile/cv.md), or call\n    again with `write=True` to replace profile/cv.md directly (the previous\n    one is kept as cv.md.bak). The same call as `./door init`'s CV step.\n\n    Args:\n        sources: File paths and URLs. A LinkedIn profile URL is never\n            fetched; ask for its PDF export instead.\n        write: Replace profile/cv.md with the draft instead of writing\n            profile/cv.draft.md.\n        model: Claude model to draft with (default: sonnet).\n\n    Returns:\n        ``{\"draft_path\" | \"cv_path\" + \"backup\", \"written\", \"sources\",\n        \"provenance\": [{\"source\", \"contributed\"}], \"todos\", \"markdown\"}``\n        (``markdown`` is the draft text).\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "write": {
+          "default": false,
+          "title": "Write",
+          "type": "boolean"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "required": [
+        "sources"
+      ],
+      "title": "draft_cvArguments"
+    }
+  },
+  {
+    "name": "draft_stories",
+    "description": "Propose stories for the story bank from some text the user wrote about something they did\n    (read beside profile/cv.md, which fills in what the text leaves out; where they differ the text wins and\n    `conflicts` says what), or (`from_cv`) one story from the CV alone (profile/cv.draft.md while onboarding), to show\n    what a story is: the bank holds what the CV does not say, so stories come from the user. One `claude -p` call. Nothing is saved:\n    show the proposals and their `conflicts`, let the user fill what is empty (`missing`) and pick, then call `save_story` for each. Exactly one of `text` and\n    `from_cv`. Identical to `./door cv stories draft`.\n\n    Args:\n        text: The user's account of one thing they did.\n        from_cv: Propose one story from the CV (onboarding's example; not one already in the bank).\n        model: Claude model to ask (default: sonnet).\n\n    Returns:\n        ``{\"outcome\": \"proposed\" | \"nothing_new\", \"stories\": [{\"title\", \"context\", \"action\",\n        \"result\", \"learning\", \"missing\", \"conflicts\"}]}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        },
+        "from_cv": {
+          "default": false,
+          "title": "From Cv",
+          "type": "boolean"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "title": "draft_storiesArguments"
+    }
+  },
+  {
+    "name": "enrich",
+    "description": "Propose additions to profile/cv.md from public URLs, then add the chosen ones.\n\n    Two calls: first with `urls` (or none, for the profile's\n    `enrich_sources`) — one `claude -p` call reads the pages with WebFetch\n    and returns numbered `proposals` (section, text, source), evidenced on\n    the pages and not already in the CV; nothing is written. Show them,\n    ask which to add, then call again with `apply=[n, ...]` or `all=True`,\n    which inserts them under their `##` sections (a `.bak` keeps the\n    previous CV). Identical to `./door cv enrich`.\n\n    Args:\n        urls: Pages to read (portfolio, publication list, course syllabus, GitHub user …).\n            Omit for `enrich_sources`.\n        apply: Proposal numbers from the previous call to add.\n        all: Add every proposal from the previous call.\n        model: Claude model to read the pages with (default: sonnet).\n\n    Returns:\n        Propose: ``{\"outcome\": \"proposed\" | \"nothing_new\", \"urls\",\n        \"proposals\": [{\"n\", \"section\", \"text\", \"source\"}], \"unreachable\"}``.\n        Apply: ``{\"outcome\": \"applied\", \"added\", \"cv_path\", \"backup\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "urls": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Urls"
+        },
+        "apply": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Apply"
+        },
+        "all": {
+          "default": false,
+          "title": "All",
+          "type": "boolean"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "title": "enrichArguments"
+    }
+  },
+  {
+    "name": "export_data",
+    "description": "Pack profile/ and jobs/ into one .tar.gz to carry to another computer.\n\n    Never overwrites an existing file.\n    Identical to `./door data export`.\n\n    Args:\n        path: The archive to write, or a directory to write\n            door-export-<date>.tar.gz into. Omit for the repo root.\n\n    Returns:\n        ``{\"path\", \"files\", \"bytes\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        }
+      },
+      "title": "export_dataArguments"
+    }
+  },
+  {
+    "name": "find_jobs",
+    "description": "Find new jobs and score them: search -> discover -> follow -> collect -> match (or one step of it).\n\n    The usual way to fetch fresh jobs when the user asks (\"get me today's\n    jobs\"), and the only one. Five steps, in this order: `search` (the job\n    boards with the profile's keywords; their employers are queued),\n    `discover` (LinkedIn shows which employers hire for the keywords; skipped\n    while it rests after a refusal), `follow` (finds each queued employer's\n    own job feed and records it in profile/companies.json), `collect` (reads\n    every followed employer's feed: a posting is new when The other door has not seen\n    it before), `match` (filters, dedups, scores every unscored posting with\n    Haiku, including any an interrupted earlier run left, so calling it again\n    resumes, and picks the matches). Takes minutes, `collect` the longest;\n    the per-site cap is profile/config.json's `max_postings_per_site`. Boards\n    are read since their last search (at most `max_age_days` back); matches\n    are picked at the profile's `min_score`.\n\n    Args:\n        step: Run just this step: search, discover, follow, collect or\n            match. Omit to run all five.\n        skip: Steps to leave out of a full run (not with `step`).\n        boards: `search` only: boards to search instead of every board of the\n            profile's country (jobindex, thehub, workable).\n        company: `collect` only: collect just these followed employers\n            (names as `list_companies` shows them).\n        dry_run: `follow` only: show what would be recorded, write nothing.\n\n    Returns:\n        ``{\"started_at\", \"finished_at\", \"elapsed_s\", \"steps\", \"skipped\",\n        \"search\", \"discover\", \"follow\", \"collect\", \"match\", \"new_above_threshold\",\n        \"top\", \"failures\"}`` — a run record\n        identical to the one written under jobs/runs/ (a block per step that\n        ran, None for the others; each has a \"summary\").\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "step": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Step"
+        },
+        "skip": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skip"
+        },
+        "boards": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Boards"
+        },
+        "company": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Company"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        }
+      },
+      "title": "find_jobsArguments"
+    }
+  },
+  {
+    "name": "import_data",
+    "description": "Replace profile/ and jobs/ with an archive made by `export_data`.\n\n    Destructive: the current profile, postings, ledgers and materials are\n    replaced (moved to backups/<timestamp>/ first, so nothing is lost).\n    Confirm with the user before calling. Identical to `./door data import`.\n\n    Args:\n        archive: Path to the .tar.gz.\n\n    Returns:\n        ``{\"archive\", \"files\", \"profile_dir\", \"jobs_dir\", \"backup_dir\",\n        \"warnings\"}`` — tell the user about each warning (a\n        config path this computer doesn't have) and where the backup is.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "archive": {
+          "title": "Archive",
+          "type": "string"
+        }
+      },
+      "required": [
+        "archive"
+      ],
+      "title": "import_dataArguments"
+    }
+  },
+  {
+    "name": "import_posting",
+    "description": "Import a job ad the user found outside the scraped boards.\n\n    Give the ad as pasted ``text`` (the usual case in a conversation — ask\n    for the title and company if the ad doesn't make them obvious), as a\n    ``path`` to a text/Markdown file or a JSON posting, or as its ``url``\n    alone (\"here's a link\": pass only the url — the page is fetched, its\n    readable text becomes the description and Haiku reads the title,\n    company and location off it; a login-walled or JavaScript-only page comes\n    back as an error — paste the text then). It becomes an\n    ordinary posting (``source=\"manual\"``) under jobs/postings/<today>/manual/,\n    scored right away (Haiku, like `find_jobs`): tell the user its score and\n    reason; `show`, `prepare` and `set_status` work on its ``job_id``.\n    Identical to `./door jobs add`.\n\n    Args:\n        path: A file with the ad. Exactly one of path/text/url.\n        text: The ad's text.\n        url: Where the ad lives; with no path/text, the ad is fetched from it.\n        title, company: Required for a text ad; read off the page for a url.\n        location: Optional.\n        force: Replace a posting already stored under the same id.\n\n    Returns:\n        ``{\"job_id\", \"path\", \"replaced\", \"score\", \"score_reason\",\n        \"score_error\"?}`` — ``score`` is None when scoring failed (the\n        posting is kept; the next `find_jobs` scores it).\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "company": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Company"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "force": {
+          "default": false,
+          "title": "Force",
+          "type": "boolean"
+        }
+      },
+      "title": "import_postingArguments"
+    }
+  },
+  {
+    "name": "infer_basics",
+    "description": "Read the profile basics from the CV: name, email, city, job-ad languages and a `remote` default.\n\n    Onboarding's reading step, right after `draft_cv`. The header is parsed; one `claude -p` call (Haiku by\n    default) reads only what parsing leaves. Works before profile/config.json exists. Ask the user only about\n    the keys in `missing`, one question each; show the rest in the review. Writes nothing.\n\n    Args:\n        markdown: The CV text. Omit for `profile/cv.draft.md`, or `profile/cv.md` when there is no draft.\n        model: Claude model to ask (default: haiku).\n\n    Returns:\n        ``{\"name\", \"email\", \"location\", \"languages\", \"remote\", \"missing\"}`` (`None` for what was not found),\n        plus ``\"unsupported_location\"`` (a place outside the covered countries, to ask about) and ``\"warning\"``\n        (the model call failed, so what it would have read is in `missing`).\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "markdown": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Markdown"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "title": "infer_basicsArguments"
+    }
+  },
+  {
+    "name": "init_profile",
+    "description": "Create or update profile/config.json — the non-interactive `init`.\n\n    Ask the user for the values first, then call this once. Missing files\n    from profile.example/ (except its example CV and story bank) are copied into\n    profile/ (never overwritten);\n    the given fields are merged over the current config (or the example\n    one on a fresh clone); the result is validated before anything is\n    written. Only the arguments you pass change, except that the current\n    config's invalid keys you do not pass are dropped (named in `dropped`:\n    tell the user).\n\n    Args:\n        name: Candidate's full name.\n        email: Candidate's email.\n        location: City/region to search in (e.g. \"Copenhagen\"); every job board\n            of its country is searched.\n        languages: The job-ad languages to consider, any of the supported\n            ones: English, Danish, French, Hungarian, Swedish (the candidate's own language levels\n            go in the CV).\n        role_targets: Job titles to look for (at least one).\n        search_keywords: Broader search terms (default: role_targets).\n        topic_terms: Words and phrases that make a job title relevant, in every\n            ad language (from `keywords`; default: any word of the keywords).\n        remote: \"yes\", \"no\" or \"hybrid\".\n        min_score: Match threshold, 0-1.\n        exclude_companies: Companies to skip.\n        exclude_keywords: Keywords that disqualify a posting.\n        other: Any other profile/config.json key, e.g.\n            {\"max_age_days\": 14} or {\"min_score\": 0.7}\n            (`init --set key=value` in a shell).\n\n    Returns:\n        ``{\"config_path\", \"copied\": [path, ...], \"dropped\": [key, ...], \"disclaimers\": [{\"key\", \"text\"}, ...]}``,\n        or ``{\"error\": ...}`` with one line per invalid field. A source turned on (`other`, e.g.\n        ``{\"linkedin_discovery\": true}``) comes back with its disclaimer in `disclaimers`: show each text to\n        the user verbatim. A source stays off unless the user chose it.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Email"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "languages": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Languages"
+        },
+        "role_targets": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role Targets"
+        },
+        "search_keywords": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Search Keywords"
+        },
+        "topic_terms": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topic Terms"
+        },
+        "remote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remote"
+        },
+        "min_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Score"
+        },
+        "exclude_companies": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exclude Companies"
+        },
+        "exclude_keywords": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exclude Keywords"
+        },
+        "other": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Other"
+        }
+      },
+      "title": "init_profileArguments"
+    }
+  },
+  {
+    "name": "job_result",
+    "description": "The last run of a long tool (find_jobs or prepare): whether it still runs, and how the last one ended.\n\n    Over `door serve` (a phone) those tools start their run and return at\n    once; this is where the run's answer is collected. Its progress is\n    `status_summary`'s `in_progress`.\n\n    Args:\n        tool: find_jobs or prepare.\n\n    Returns:\n        ``{\"tool\", \"running\"}``, plus ``started_at`` while it runs; after a\n        run, ``started_at``, ``finished_at`` and its ``result`` (what the tool\n        returns over stdio), or ``cancelled``, or ``error``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "tool": {
+          "default": "find_jobs",
+          "title": "Tool",
+          "type": "string"
+        }
+      },
+      "title": "job_resultArguments"
+    }
+  },
+  {
+    "name": "keywords",
+    "description": "Propose job-board search terms (`search_keywords`) and title terms (`topic_terms`) from the role targets.\n\n    \"Expand my search keywords\": one `claude -p` call (Haiku by default)\n    proposes 8-15 short terms per job-ad language — each target verbatim, noun\n    forms, abbreviations, seniority variants, close synonyms — and the words that\n    make a job title relevant (`topic_terms`: the field, its subjects and neighbours,\n    never a bare role noun like \"analyst\"). Show both to the user and confirm (use\n    all / drop some / add some); then save the final lists with\n    `init_profile(search_keywords=..., topic_terms=...)`, or call this again with\n    `save=True` when they take them all. The same call as `./door init`'s\n    keywords step.\n\n    Args:\n        role_targets: Titles to propose from. Omit for profile/config.json's\n            `role_targets`.\n        languages: The job-ad languages the terms are given in, besides English\n            (`[\"Hungarian\"]`). Omit for profile/config.json's `languages`.\n        save: Also write the proposed terms to `search_keywords` and `topic_terms`.\n        model: Claude model to ask (default: haiku).\n\n    Returns:\n        ``{\"role_targets\", \"keywords\", \"topic_terms\", \"saved\"}`` plus\n        ``\"config_path\"`` when saved.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "role_targets": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role Targets"
+        },
+        "languages": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Languages"
+        },
+        "save": {
+          "default": false,
+          "title": "Save",
+          "type": "boolean"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "title": "keywordsArguments"
+    }
+  },
+  {
+    "name": "list_companies",
+    "description": "The employers The other door follows (profile/companies.json), one entry each.\n\n    Use it for \"which companies do I follow?\", \"which ones couldn't be followed?\".\n    Identical to `./door companies` / `companies list`.\n\n    Args:\n        status: Only employers with this status: \"followed\", \"unfollowable\" or \"unresolved\".\n        found_via: Only employers found this way: \"manual\", \"ai\", or the\n            board or discovery source that brought them in (e.g. \"jobindex\", \"linkedin\").\n\n    Returns:\n        ``{\"companies\": [{\"name\", \"feed\": {\"platform\", \"id\"} | None, \"status\", \"reason\",\n        \"refusal\", \"found_via\", \"evidence\", \"first_seen\", \"last_checked\"}], \"counts\": {status: n}}``;\n        ``refusal`` on an unfollowable employer is ``\"must_not\"`` (its terms forbid it) or ``\"cant_yet\"``\n        (no way in yet), else None.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
+        },
+        "found_via": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Found Via"
+        }
+      },
+      "title": "list_companiesArguments"
+    }
+  },
+  {
+    "name": "list_matches",
+    "description": "List job matches, best first — ids and headline fields only, never descriptions.\n\n    Like `./door jobs`, except that without `score` it stops at the config's\n    min_score (the shell's default is anything above 0), so a review session\n    sees the matches, not every scored posting. Use `show` for one posting's\n    full text. Refer to postings by title and company when talking to the\n    user; pass the ``id`` (or the user's words) to the next tool.\n\n    Args:\n        score: Only matches scoring at least this (default: profile/config.json's\n            min_score).\n        new_only: Only postings first seen since the last `mark_reviewed`\n            — the answer to \"anything new since I last looked?\".\n        status: Only postings with this status (``unapplied``, ``prepared``,\n            ``applied``, ``interview:screening``, ``interview:impression``,\n            ``interview:assessment``, ``interview:technical``, ``ghosted``,\n            ``rejected``, ``offer``, ``discarded``) instead of the ones not yet\n            acted on; \"what did I apply to?\". They\n            stay listed however old, and `score` defaults to anything above 0.\n        ongoing: Only postings still in play (``prepared``, ``applied``,\n            any ``interview:<kind>``, ``offer``) — \"what's in progress?\"; listed like\n            `status`, and not together with it.\n        closed: Only applications that ended (``rejected``, ``ghosted``, or\n            ``discarded`` after being prepared or sent) — \"which ones didn't work out?\".\n\n    Returns:\n        ``{\"min_score\", \"last_reviewed_at\", \"matches\": [{\"id\",\n        \"score\", \"title\", \"title_en\", \"company\", \"location\", \"status\",\n        \"is_new\", \"updated_at\", \"rounds\"}, ...]}``, best first; ``updated_at`` is\n        when the status last changed, ``rounds`` the interview rounds ``[{\"stage\", \"result\"}]``. ``title_en`` is the English\n        translation of a title in another language, else ``None``: show it\n        next to the title. ``scored`` is how many postings the model has scored. ``weak`` is\n        None, or, when no posting has ever reached the bar (default view only), ``{\"matches\": [the best\n        3 below it, rows like the above], \"hint\": \"sources\" | \"keywords\", \"sources\": [{\"key\", \"label\"}]}``:\n        present them as weak matches, not as matches, and say the hint (more discovery sources\n        serving the city are off, or broaden the search keywords).\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        },
+        "new_only": {
+          "default": false,
+          "title": "New Only",
+          "type": "boolean"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
+        },
+        "ongoing": {
+          "default": false,
+          "title": "Ongoing",
+          "type": "boolean"
+        },
+        "closed": {
+          "default": false,
+          "title": "Closed",
+          "type": "boolean"
+        }
+      },
+      "title": "list_matchesArguments"
+    }
+  },
+  {
+    "name": "list_stories",
+    "description": "The story bank (profile/story_bank.md): the CARL (context, action, result, learning) stories the tailor draws on when it\n    prepares an application. Identical to `./door cv stories`.\n\n    Returns:\n        ``{\"path\", \"exists\", \"is_example\", \"stories\": [{\"title\", \"context\", \"action\", \"result\",\n        \"learning\"}]}``. `is_example`: the bank is still the made-up example, which `save_story`\n        and `remove_story` refuse to change unless `save_story` is told to replace it.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "list_storiesArguments"
+    }
+  },
+  {
+    "name": "mark_reviewed",
+    "description": "Mark the end of a review session (stamps jobs/last_review.json).\n\n    Call it when the user says they are done reviewing: the next\n    `status_summary`'s ``since_last_review`` and `list_matches(new_only=True)`\n    count from this moment. Conversation-only: there is no command.\n\n    Returns:\n        ``{\"reviewed_at\", \"previous\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "mark_reviewedArguments"
+    }
+  },
+  {
+    "name": "mark_seen",
+    "description": "Mark one match as seen: it is no longer new (`list_matches`' ``is_new``,\n    ``new_only``, `status_summary`'s ``new_matches``).\n\n    The desktop app calls it when the user opens a posting; `mark_reviewed`\n    marks every match at once. Conversation-only: there is no command.\n\n    Args:\n        job_id: The job's id, or words from its company and title.\n\n    Returns:\n        ``{\"job_id\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "mark_seenArguments"
+    }
+  },
+  {
+    "name": "market",
+    "description": "What the scraped ads ask for: \"How does the market look?\".\n\n    Counts the ads of the last `days` days (seconds; one Haiku call only for\n    skill names not yet in `jobs/skill_aliases.json`, which groups variants like\n    \"Excel\" and \"Microsoft Excel\" and drops non-skills): the most\n    requested skills (and whether the user has each; a trend when both windows\n    have 50+ scored ads), near misses (what kept ads just under `min_score`\n    below it), titles in the matches that no search keyword covers, and\n    companies posting repeatedly. Saved to `jobs/market/report-<date>.md`.\n    Next steps: \"plan for the top 3 gaps\" -> `skill_gaps` with those skills as\n    targets; \"add those titles\" -> confirm, then `init_profile` with\n    `search_keywords`. Identical to `./door market`.\n\n    Args:\n        days: Window length in days (default 30).\n        save: Write the report to `jobs/market/` (default true).\n        scored_companies: Count repeat companies over scored ads only (default: all scraped ads).\n\n    Returns:\n        ``{\"window\", \"counts\": {\"scraped\", \"scored\", \"above_min_score\"},\n        \"skills\": [{\"name\", \"count\", \"share\", \"have\", \"trend\"}],\n        \"near_misses\": {\"n\", \"rows\": [{\"skill\", \"count\"}]},\n        \"uncovered_titles\": [{\"title\", \"count\"}],\n        \"companies\": {\"population\": \"scraped\"|\"scored\", \"rows\": [{\"name\", \"count\", \"followed\"}]},\n        \"warning\" (text when grouping failed, else null), \"report_path\"}``. An unfollowed repeat employer can be followed with `add_company`.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "default": 30,
+          "title": "Days",
+          "type": "integer"
+        },
+        "save": {
+          "default": true,
+          "title": "Save",
+          "type": "boolean"
+        },
+        "scored_companies": {
+          "default": false,
+          "title": "Scored Companies",
+          "type": "boolean"
+        }
+      },
+      "title": "marketArguments"
+    }
+  },
+  {
+    "name": "merge_companies",
+    "description": "Merge two employers on the list that are really one (LEGO and LEGO System A/S).\n\n    With no `names`, nothing is changed: it returns the groups of entries that share a feed or a name, for\n    you to show the user. Merge only what the user confirms, one pair at a time: give two names, the employer\n    to keep and the one to fold into it (its name and aliases become aliases of the first). Two employers\n    followed on different feeds are not merged. Identical to `./door companies merge`.\n\n    Args:\n        names: Nothing, or exactly two employer names (case and suffixes such as A/S are ignored).\n\n    Returns:\n        ``{\"candidates\": [{\"names\": [...], \"reason\"}]}``, or ``{\"merged\": <the entry kept>, \"removed\": <name folded in>}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Names"
+        }
+      },
+      "title": "merge_companiesArguments"
+    }
+  },
+  {
+    "name": "pair_phone",
+    "description": "A QR code that pairs one phone with this data folder: show it on this screen; the phone's camera opens it.\n\n    The code inside is long (about 2^119), works once and only for five\n    minutes; it is never returned as text, and the phone's own token never\n    passes through here.\n\n    Args:\n        device: A name for the phone (\"Ada's Pixel\").\n\n    Returns:\n        ``{\"device\", \"qr_svg\", \"expires_at\"}`` (an SVG to show), or ``{\"error\"}`` when\n        nothing is serving or the name is already paired.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "title": "Device",
+          "type": "string"
+        }
+      },
+      "required": [
+        "device"
+      ],
+      "title": "pair_phoneArguments"
+    }
+  },
+  {
+    "name": "phone_start",
+    "description": "Serve this data folder to a phone: `door serve` plus a connection the phone can reach.\n\n    Args:\n        connection: \"cloudflare\" (a quick tunnel: nothing to install and no\n            account, but the address changes on restart, when the phone scans a\n            new code) or \"tailscale\" (a lasting, private address; Tailscale on\n            this computer and the phone, the same account).\n\n    Returns:\n        `phone_status`'s answer; or ``{\"needs\": \"install_tailscale\" |\n        \"sign_in_tailscale\" | \"enable_https\", \"link\"}`` for a step the user\n        takes (the link says where); or ``{\"error\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "connection": {
+          "default": "cloudflare",
+          "title": "Connection",
+          "type": "string"
+        }
+      },
+      "title": "phone_startArguments"
+    }
+  },
+  {
+    "name": "phone_status",
+    "description": "Whether The other door is serving this data folder to a phone, where, over what, and which phones are paired.\n\n    Returns:\n        ``{\"running\", \"devices\", \"web_built\", \"tailscale_installed\"}``, plus\n        ``\"connection\"`` (cloudflare or tailscale), ``\"address\"``, ``\"port\"`` and\n        ``\"lasting\"`` (Tailscale's address never changes; a quick tunnel's does)\n        while it runs.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "phone_statusArguments"
+    }
+  },
+  {
+    "name": "phone_stop",
+    "description": "Stop serving this data folder to phones (the server, the connection, keeping the Mac awake).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "phone_stopArguments"
+    }
+  },
+  {
+    "name": "prepare",
+    "description": "Tailor a CV and cover letter for one posting and mark it \"prepared\".\n\n    Runs the tailor agent through `claude -p` (minutes, not seconds — the\n    call blocks until it finishes or `timeout_min` passes). The status only\n    becomes \"prepared\" once posting.json, cv.tex, cover_letter.tex, cv.pdf\n    and cover_letter.pdf are all in `jobs/output/<job_id>/`. Identical to\n    `./door jobs prepare [job_id]`. Then call `show` to summarise the materials.\n    A prepared job also gets its salary estimate (`salary_estimate`, one Haiku web\n    search, reused while under 90 days old; skipped when the plan is close to its limit):\n    mention the range as an estimate with its sources; say nothing when it is null.\n\n    Args:\n        job_id: The job: its id, or words from its company and title (\"trustpilot\").\n            Omit for the single highest-scoring unapplied match.\n        force: Regenerate even if complete materials already exist.\n        timeout_min: Minutes to wait for the tailor agent.\n\n    Returns:\n        ``{\"job_id\", \"outcome\": \"prepared\" | \"skipped\" | \"failed\",\n        \"output_dir\", \"files\", \"regenerated_incomplete\", \"error\"?,\n        \"missing\"?, \"salary\"?}`` (``salary``: the estimate or null), or ``{\"job_id\": None, \"outcome\": \"no_matches\"}``\n        when `job_id` is omitted and nothing clears min_score.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Id"
+        },
+        "force": {
+          "default": false,
+          "title": "Force",
+          "type": "boolean"
+        },
+        "timeout_min": {
+          "default": 20,
+          "title": "Timeout Min",
+          "type": "number"
+        }
+      },
+      "title": "prepareArguments"
+    }
+  },
+  {
+    "name": "preview_matches",
+    "description": "Onboarding's first look: score a handful of ads of one board against the CV, in about a minute.\n\n    Call it once the reading step knows the titles and search terms, before the review. Works before\n    profile/config.json exists, and writes nothing to `jobs/`; the first run still follows. Show `matches` by title and\n    company; `warning` is one friendly line, never a reason to stop.\n\n    Args:\n        location: The city.\n        role_targets: The titles picked so far.\n        search_keywords: The search terms (only the first is searched). Default: `role_targets`.\n        topic_terms: What makes a title relevant.\n        languages: The job-ad languages.\n        remote: `yes`, `no` or `hybrid`.\n        markdown: The CV text. Omit for `profile/cv.draft.md`, or `profile/cv.md` when there is no draft.\n        limit: How many ads to score.\n\n    Returns:\n        ``{\"board\", \"matches\": [{\"title\", \"company\", \"location\", \"score\", \"score_reason\", \"url\"}]}``, best first,\n        plus ``\"warning\"`` when there is nothing to show.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "location": {
+          "title": "Location",
+          "type": "string"
+        },
+        "role_targets": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Role Targets",
+          "type": "array"
+        },
+        "search_keywords": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Search Keywords"
+        },
+        "topic_terms": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topic Terms"
+        },
+        "languages": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Languages"
+        },
+        "remote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remote"
+        },
+        "markdown": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Markdown"
+        },
+        "limit": {
+          "default": 5,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "location",
+        "role_targets"
+      ],
+      "title": "preview_matchesArguments"
+    }
+  },
+  {
+    "name": "query_jobs",
+    "description": "Count and list postings by filter — for questions no other tool answers (\"how many\n    Teamtailor postings this month?\", \"average score of the Danish ads in September\"). Read only:\n    nothing is written. Identical to `./door jobs query`.\n\n    Args:\n        since: First seen on or after this day (``2026-09-01``).\n        until: First seen on or before this day.\n        site: Only postings from this site (``jobindex``, ``teamtailor``, ...).\n        company: Only companies whose name contains this (any case).\n        status: A ledger status (``applied``, ``rejected``, ...), ``unapplied`` for the untracked,\n            or ``interview`` for any round.\n        min_score: Only postings scoring at least this.\n        max_score: Only postings scoring at most this.\n        language: Only ads in this language (a code: ``en``, ``da``, ``hu``).\n        has_materials: Only postings with (True) or without (False) a prepared CV and letter.\n        limit: How many of the best postings to list (default 10).\n\n    Returns:\n        ``{\"count\", \"average_score\", \"by_site\", \"by_company\", \"by_status\", \"by_month\",\n        \"rows\": [{\"id\", \"title\", \"company\", \"score\", \"status\", \"site\", \"scraped_at\",\n        \"posted_at\"}]}``, the rows best first. Name postings by title and company to the user.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "since": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Since"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Until"
+        },
+        "site": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Site"
+        },
+        "company": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Company"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
+        },
+        "min_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Score"
+        },
+        "max_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Score"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Language"
+        },
+        "has_materials": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Materials"
+        },
+        "limit": {
+          "default": 10,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "title": "query_jobsArguments"
+    }
+  },
+  {
+    "name": "remove_company",
+    "description": "Stop following employers: remove each named one from profile/companies.json.\n\n    Identical to `./door companies remove`.\n\n    Args:\n        names: Employer names (case and company suffixes such as A/S are ignored).\n\n    Returns:\n        ``{\"removed\": [{\"name\", \"feed\"}], \"not_found\": [name, ...]}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Names",
+          "type": "array"
+        }
+      },
+      "required": [
+        "names"
+      ],
+      "title": "remove_companyArguments"
+    }
+  },
+  {
+    "name": "remove_photo",
+    "description": "Delete the CV photo (profile/photo.jpg) and clear the `photo` key: later CVs carry none.\n\n    Returns:\n        ``{\"removed\"}``: False when there was none.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "remove_photoArguments"
+    }
+  },
+  {
+    "name": "remove_story",
+    "description": "Remove a story from the story bank by its title (ask the user first). Identical to\n    `./door cv stories remove`.\n\n    Returns:\n        ``{\"outcome\": \"removed\", \"title\", \"count\"}`` or ``{\"error\"}`` (no such title: the titles are listed).\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "remove_storyArguments"
+    }
+  },
+  {
+    "name": "report_problem",
+    "description": "Save one archive to send to whoever helps with The other door when something went wrong.\n\n    It holds the problem log (`logs/door.log`: failed tool calls, failed sites, unscored ads,\n    warnings, crashes), the last few run records cut to counts, outcomes and errors, doctor's\n    checks, and the version and OS. Emails and home folders are masked; nothing from profile/\n    (no CV, no profile values), no postings and no applications. Never overwrites a file.\n    Identical to `./door data report`.\n\n    Args:\n        path: The .zip to write, or a directory to write door-report-<date>.zip into.\n            Omit for the current directory.\n\n    Returns:\n        ``{\"path\", \"files\": [names in the archive], \"bytes\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        }
+      },
+      "title": "report_problemArguments"
+    }
+  },
+  {
+    "name": "revise",
+    "description": "One targeted edit to the CV or cover letter, recompiled and re-rendered.\n\n    For \"tighten the letter's second paragraph\" — no full tailor re-run.\n    One `claude -p` call rewrites the document body (never the preamble);\n    the previous version is kept as `<file>.tex.bak`, and ``undo=True``\n    restores it. Call `show` afterwards to check the pages. This is the\n    only way to change a prepared document: never edit a `.tex` with Write\n    or Edit, since `revise` is what recompiles and re-renders the PDF.\n    Conversation-only: there is no command.\n\n    Args:\n        job_id: The job: its id, or words from its company and title (\"trustpilot\").\n        file: \"cover_letter\" or \"cv\".\n        instruction: What to change, in the user's words. Required unless\n            ``undo``.\n        undo: Restore the version before the last revise instead.\n\n    Returns:\n        ``{\"outcome\": \"revised\" | \"undone\", \"job_id\", \"file\", \"backup\",\n        \"compile\", \"render\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "file": {
+          "default": "cover_letter",
+          "title": "File",
+          "type": "string"
+        },
+        "instruction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Instruction"
+        },
+        "undo": {
+          "default": false,
+          "title": "Undo",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "reviseArguments"
+    }
+  },
+  {
+    "name": "salary_estimate",
+    "description": "The salary range the user can expect for one job: \"What salary can I expect for the Trustpilot one?\".\n\n    One Haiku call with a web search (a minute at most), when the user asks (`prepare` asks by itself\n    for a job it prepared, so look at `show`'s ``salary`` first): the market range for\n    the title, seniority and city, adjusted to the CV's experience against what the ad asks, with the\n    pages it was read from. The ad's own figure, when it states one, comes first. Saved in\n    `jobs/salary.json`: asking again about the same job makes no call unless `refresh`. Say it is an\n    estimate from public pages, with its sources, not advice. Identical to `./door jobs salary`.\n\n    Args:\n        job_id: The job: its id, or words from its company and title (\"trustpilot\").\n        refresh: Ask again even if an estimate is saved.\n        model: Claude model to ask (default: haiku).\n\n    Returns:\n        ``{\"job_id\", \"title\", \"company\", \"found\": true, \"low\", \"high\", \"currency\", \"period\"\n        (\"month\"|\"year\"), \"gross\", \"position\" (\"below\"|\"within\"|\"above\"), \"basis\", \"sources\":\n        [{\"title\", \"url\"}], \"ad_salary\", \"as_of\", \"cached\"}``; or ``{\"found\": false, \"message\"}`` when no\n        source could be cited: say so, give no number.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "refresh": {
+          "default": false,
+          "title": "Refresh",
+          "type": "boolean"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "salary_estimateArguments"
+    }
+  },
+  {
+    "name": "save_cv",
+    "description": "Put reviewed CV text in place as profile/cv.md (the previous one is kept as cv.md.bak; the scratch\n    profile/cv.draft.md is removed). The desktop app's onboarding calls it after the user read and edited the\n    text; `./door init`'s CV step does the same. Empty text is refused. Creates profile/ when missing.\n\n    Args:\n        markdown: The whole CV, in profile.example/cv.md's structure.\n\n    Returns:\n        ``{\"cv_path\", \"backup\"}`` (``backup`` None when there was no CV before) or ``{\"error\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "markdown": {
+          "title": "Markdown",
+          "type": "string"
+        }
+      },
+      "required": [
+        "markdown"
+      ],
+      "title": "save_cvArguments"
+    }
+  },
+  {
+    "name": "save_photo",
+    "description": "Keep a picture as the CV photo: checked (a JPEG or PNG, at most 10 MB, at least 200 px a side), upright,\n    with its EXIF and GPS data dropped and scaled to the size a CV photo is printed at, then saved as\n    profile/photo.jpg and named in the `photo` key. The user's own file is not touched. Whether a CV carries it\n    is up to the country of the job (`prepare` hands the tailor its conventions): never in the UK, optional in\n    Denmark, France, Hungary and Sweden. Ask only when the city's country has `photo` \"optional\" or \"expected\"\n    (its `cv` block in `show_profile`'s `options`), once, and the user may skip it. The desktop app's file\n    picker and `./door init`'s photo question do the same.\n\n    Args:\n        path: The picture; a path inside the data folder (the desktop app passes the one its file dialog chose).\n\n    Returns:\n        ``{\"photo_path\"}`` or ``{\"error\": <why the picture was refused>}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "save_photoArguments"
+    }
+  },
+  {
+    "name": "save_story",
+    "description": "Add a story to the story bank, or replace one. Only what the user said or the CV shows: never invent\n    a field. All four text fields are required (an empty one is named in the error); newlines are collapsed.\n    Show a drafted story and get the user's go-ahead before saving it. Identical to `./door cv stories add`.\n\n    Args:\n        title: The story's headline (past tense, short).\n        context: The situation and what was asked of the user.\n        action: What the user did.\n        result: What came of it, with numbers when there are some.\n        learning: What was learned.\n        replace: The title of the story to replace; the new `title` renames it. Without it a title already\n            in the bank is an error.\n        replace_example: True to start the user's own bank in place of the made-up example one (ask first).\n\n    Returns:\n        ``{\"outcome\": \"added\" | \"replaced\", \"story\", \"count\", \"path\"}`` or ``{\"error\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "context": {
+          "title": "Context",
+          "type": "string"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "result": {
+          "title": "Result",
+          "type": "string"
+        },
+        "learning": {
+          "title": "Learning",
+          "type": "string"
+        },
+        "replace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Replace"
+        },
+        "replace_example": {
+          "default": false,
+          "title": "Replace Example",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "title",
+        "context",
+        "action",
+        "result",
+        "learning"
+      ],
+      "title": "save_storyArguments"
+    }
+  },
+  {
+    "name": "set_status",
+    "description": "Set the application status for a job posting.\n\n    \"Applied\" → ``status=\"applied\"``; \"not this one\" → ``status=\"discarded\"``\n    with the user's reason in ``notes`` (`list_matches` hides it afterwards).\n    Identical to `./door jobs status <job_id> <status> [--notes ...] [--at ...]`.\n    These records feed the analysis of which applications pass, so: when the\n    user says it happened on another day (\"I applied on the 3rd\", \"the\n    screening was last week\"), pass ``at``. Relay a returned ``warning`` (the\n    ad is not on disk or is only a snippet) in one line.\n\n    Args:\n        job_id: The job: its id, or words from its company and title (\"trustpilot\").\n        status: One of: unapplied, prepared, applied, interview:screening\n            (pre-screening, recruiter/HR call), interview:impression (first\n            non-technical interview), interview:assessment (personality or\n            cognitive test), interview:technical (technical interview, case\n            or take-home), ghosted (\"they stopped answering\"), rejected,\n            offer, discarded. One interview:<kind> per round; rejected or\n            ghosted ends the last one. When the user doesn't say which kind\n            of interview, ask with the four as options.\n        notes: Optional notes, stored with the ledger entry and its history:\n            why (a discard's reason), or for an interview what it covered, what\n            was said, what felt weak, any feedback.\n        at: When it happened, ``YYYY-MM-DD`` (or an ISO datetime); omitted\n            is now. An event dated before the latest one is filed in date\n            order and leaves the current status.\n\n    Returns:\n        ``{\"job_id\", \"status\", \"notes\", \"at\", \"current\",\n        \"sent_dir\"?, \"warning\"?}`` once the ledger at `jobs/applications.json`\n        has been updated: ``current`` is the job's status now, ``sent_dir``\n        the copy of the materials taken when the application was first sent.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "At"
+        }
+      },
+      "required": [
+        "job_id",
+        "status"
+      ],
+      "title": "set_statusArguments"
+    }
+  },
+  {
+    "name": "setup",
+    "description": "Install missing prerequisites (TeX, the `claude` CLI).\n\n    Call it first WITHOUT `yes`: nothing runs, and ``plan`` lists the exact\n    command(s) per tool. Show them to the user, then call again with\n    ``yes=True`` and ``install`` = the tools they approved. Nothing here\n    needs sudo; a step that fails can be run in a terminal, or via `./scripts/setup.sh`.\n    The profile is not created here: collect the fields and call\n    `init_profile`. Same logic as `./door doctor --fix`.\n\n    Args:\n        install: Tools to install: \"latex\", \"claude\". Omit\n            for every tool `doctor` reports missing.\n        yes: The user approved the plan — run it.\n        probe: Probe each configured site live (as `doctor` with\n            ``probe=True``) so ``fixes`` can offer a drifted scraper.\n            Off by default — the installs need no network.\n        fix_scrapers: Sites whose drifted scraper to repair\n            (``doctor`` with ``probe=True`` shows them as ``scraper: <site>``\n            with status ``drift``; the plan's ``fixes`` lists the offers). Only with\n            ``yes``, and only for sites the user approved: each runs the\n            headless scraper-fixer on a new branch, gates it on the offline\n            tests plus a fresh probe, then pushes and opens a PR. Refused\n            while a run is in progress or the working tree is dirty.\n\n    Returns:\n        ``{\"outcome\": \"needs_confirmation\" | \"ok\" | \"incomplete\", \"platform\",\n        \"plan\", \"results\", \"doctor\", \"todo\", \"fixes\"}``. ``fixes`` holds the\n        offers (``[{\"site\", \"check\"}]``) until fixes run, then one outcome\n        per site: ``pr`` (with ``url``), ``local_branch`` (with ``branch``\n        and the ``commands`` to finish by hand), ``gate_failed``,\n        ``fixer_failed`` or ``refused``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "install": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Install"
+        },
+        "yes": {
+          "default": false,
+          "title": "Yes",
+          "type": "boolean"
+        },
+        "fix_scrapers": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fix Scrapers"
+        },
+        "probe": {
+          "default": false,
+          "title": "Probe",
+          "type": "boolean"
+        }
+      },
+      "title": "setupArguments"
+    }
+  },
+  {
+    "name": "show",
+    "description": "Return one posting in full — the only tool that returns a description —\n    plus, once prepared, everything needed to judge its materials.\n\n    Call it after `prepare` or `revise` to summarise the result: PDF paths,\n    page PNG paths (rendered first if missing — read them to see the\n    pages), the keywords the tailor emphasised (`% Keywords:` in cv.tex),\n    what it cut, kept or condensed per section (`% Tailoring:`), page\n    counts and the cover letter's word count. Identical to\n    `./door jobs show <job_id> [--open]`.\n\n    Args:\n        job_id: The job: its id, or words from its company and title (\"trustpilot\").\n        open: Also open both PDFs in the default viewer of the machine\n            hosting the server (`show --open`); only useful on a desktop.\n\n    Returns:\n        The posting's fields (title, title_en, company, location, url,\n        description, score, score_reason, language, language_requirement,\n        ...) plus its ledger ``status``, ``history`` (every status change,\n        oldest first: ``{\"status\", \"at\", \"notes\"?, \"result\"?}``, ``result``\n        on each interview round: passed, rejected, ghosted, withdrawn or\n        pending) and ``materials``: null until\n        prepared, else ``{\"output_dir\", \"pdfs\", \"pngs\", \"keywords\",\n        \"tailoring\", \"page_counts\", \"cover_letter_words\", \"rendered\", \"file_names\", \"sent\"}``\n        (``file_names``: what to save each PDF as, the candidate's name first);\n        ``sent`` true once the application went out, and then the files are the\n        copy taken when it was sent (what the employer has), not ones a later\n        ``revise`` changed. ``salary`` is the saved estimate (`salary_estimate`'s\n        fields, from ``low`` to ``as_of``) or null; `show` never asks for one.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "open": {
+          "default": false,
+          "title": "Open",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "showArguments"
+    }
+  },
+  {
+    "name": "show_profile",
+    "description": "Read the profile in one call: the validated config (or the `errors` lines when it is invalid or missing),\n    the CV text with its headline and sections, which of the CV, the two templates and the story bank are still\n    profile.example/'s (`is_example`), the enrich sources, and `options` for a profile form (the known `cities`\n    with their country and boards, the supported `languages`, the `worldwide_boards`). Read-only; never fails on\n    a fresh folder.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "show_profileArguments"
+    }
+  },
+  {
+    "name": "skill_gaps",
+    "description": "A skill-gap report with a WebSearch-cited learning plan, written to\n    `upskill/report-<today>.md`.\n\n    \"What should I learn for the Trustpilot job?\" / `/upskill`: one `claude -p` call (minutes)\n    compares the CV with the targets — a hard-skill diff, then broader gaps\n    (soft skills, domain depth, tooling maturity, credentials, evidence) —\n    searches for real resources and writes the prioritised plan. Read the\n    report back to summarise it. Identical to `./door cv gaps`.\n\n    Args:\n        targets: Role names (\"Senior Accountant\") or skills.\n        jobs: Postings to analyse: each a job id or words from its company\n            and title (\"trustpilot\"). Never ask the user for an id.\n        top: Also analyse the top N matches.\n        model: Claude model to analyse with (default: sonnet).\n\n    Returns:\n        ``{\"report_path\", \"report\" (its Markdown), \"targets\": [{\"kind\", \"label\", \"job_id\"?}], \"plan_items\"}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "targets": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Targets"
+        },
+        "jobs": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Jobs"
+        },
+        "top": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "title": "skill_gapsArguments"
+    }
+  },
+  {
+    "name": "status_summary",
+    "description": "Pipeline counts and the applications-ledger breakdown.\n\n    Identical to `./door jobs summary`. A good first\n    call in a review session: it says how many postings are on disk, how\n    many clear min_score, and how many are still unapplied.\n\n    Returns:\n        ``{\"min_score\", \"pipeline\": {\"total\", \"excluded\", \"applicable\",\n        \"above_threshold\", \"unapplied\", \"above_threshold_by_status\":\n        {\"unapplied\", \"prepared\", \"applied\", \"discarded\"}}, \"ledger\": {<each status>: count}, \"interviews\":\n        {<stage>: {\"passed\", \"rejected\", \"ghosted\", \"withdrawn\", \"pending\"}}, \"since_last_review\":\n        {\"last_reviewed_at\", \"runs\", \"last_run\", \"new_matches\",\n        \"site_failures\"}, \"in_progress\": None | {\"purpose\", \"pid\",\n        \"started_at\", \"message\", \"done\", \"total\", \"site\", \"stage\",\n        \"updated_at\"}}`` — ``since_last_review`` says what the\n        runs did since the last `mark_reviewed`, without re-scraping.\n        ``in_progress`` is set while a `find` run is going (here or in\n        another terminal) and says how far it is — its latest progress event;\n        it is null when nothing is running. ``drive`` is ``{\"connected\",\n        \"account\", \"last_synced\", \"last_error\"}``: whether Google Drive sync\n        is on, and the last time it worked or why it did not (mention a\n        ``last_error`` briefly; do not try to fix it unasked). ``recurring_problem``\n        is true when something keeps going wrong (a site failing run after run,\n        scoring failing, the server crashing, a tool failing again and again) since\n        the last problem report: offer `report_problem` to the user. ``plan`` is null\n        until a call has read the Claude plan, then ``{\"as_of\", \"status\", \"five_hour\":\n        {\"used\", \"resets_at\"}, \"seven_day\": {...}, \"room\": {\"find\", \"prepare\"} | null,\n        \"binding\", \"warning\"?, \"week\": {\"activities\": [{\"label\", \"share\", \"count\", \"of\"}],\n        \"heaviest\"}}``: how full the plan's 5-hour and 7-day windows were after the latest\n        call (``used`` a 0-1 fraction), about how many more finds and prepares fit before\n        the window that binds is full (null until this computer has measured enough), and\n        what used the plan this week. It is an estimate as of ``as_of``: the user's own\n        Claude chats since then are not in it. Mention it when ``warning`` is set or room is\n        short; answer \"can I prepare three more?\" or \"why did I hit my limit?\" from it.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "status_summaryArguments"
+    }
+  },
+  {
+    "name": "suggest_titles",
+    "description": "Suggest job titles from the CV and the career progression. \"What titles should I look for?\"\n\n    One `claude -p` call (Haiku by default) reads `profile/cv.draft.md` (while onboarding) or `profile/cv.md`:\n    the latest title, the progression across roles, titles next to the user's field, a seniority that fits. Works\n    before profile/config.json exists. Show them with their reasons, let the user pick and add, save the picks as\n    `role_targets` with `init_profile`, then call `keywords` on them. The same call as `./door cv titles`.\n\n    Args:\n        titles: Titles the user already named: always listed and recommended.\n        hint: What they are looking for, in their own words.\n        languages: The job-ad languages (`[\"Danish\"]`). Omit for profile/config.json's `languages`.\n        model: Claude model to ask (default: haiku).\n\n    Returns:\n        ``{\"titles\": [{\"title\", \"reason\", \"recommended\"}]}``, plus ``\"warning\"`` when the model failed or\n        answered nothing (then only the given `titles` are listed): ask for the titles in free text.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "titles": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Titles"
+        },
+        "hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hint"
+        },
+        "languages": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Languages"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "title": "suggest_titlesArguments"
+    }
+  },
+  {
+    "name": "sync_data",
+    "description": "Push or pull profile/ and jobs/ to or from Google Drive now, whichever is needed.\n\n    Identical to `./door data sync`. When both sides changed it refuses and says so\n    (``{\"error\": ...}``): ask the user which side to keep, then call again with\n    ``keep_local`` (replace Drive with this computer) or ``keep_drive`` (replace\n    this computer with Drive; its data goes to backups/).\n\n    Args:\n        keep_local: After a both-sides change, keep this computer's data.\n        keep_drive: After a both-sides change, keep Drive's data.\n\n    Returns:\n        ``{\"action\": \"push\" | \"pull\" | \"nothing\" | \"skipped\", ...}``.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "keep_local": {
+          "default": false,
+          "title": "Keep Local",
+          "type": "boolean"
+        },
+        "keep_drive": {
+          "default": false,
+          "title": "Keep Drive",
+          "type": "boolean"
+        }
+      },
+      "title": "sync_dataArguments"
+    }
+  },
+  {
+    "name": "unpair_phone",
+    "description": "Take a phone away (`serve unpair`): its token stops working at once.\n\n    Returns:\n        ``{\"removed\": device}``, or ``{\"error\"}`` when no phone has that name.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "title": "Device",
+          "type": "string"
+        }
+      },
+      "required": [
+        "device"
+      ],
+      "title": "unpair_phoneArguments"
+    }
+  },
+  {
+    "name": "why_company",
+    "description": "Everything known about one employer: its feed, status, the reason or evidence, how it\n    was found, when, and how many postings in jobs/ came from it.\n\n    Identical to `./door companies why`.\n\n    Args:\n        name: The employer's name.\n\n    Returns:\n        ``{\"company\": {...its list entry...}, \"postings\": n, \"by_source\": {site: n}}``,\n        or ``{\"error\": ...}`` when it is not on the list.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "why_companyArguments"
+    }
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "comment": "What a packaged app carries (#223), pinned by sha256 from each release's metadata. bundle-python.sh reads this; change a version here and the checksums with it.",
+  "python": {
+    "version": "3.12.16",
+    "tag": "20261026",
+    "url": "https://github.com/astral-sh/python-build-standalone/releases/download/{tag}/cpython-{version}+{tag}-{triple}-install_only_stripped.tar.gz",
+    "sha256": {
+      "aarch64-apple-darwin": "353d5f1b4fd2715e7053f12f068435d5bbad16b91e057006b5d01e0925709a7e",
+      "x86_64-apple-darwin": "37c38fda76fec1fbf310adcbafb7f0d96af13b5511bf8ea954c3aa8eec185734",
+      "x86_64-unknown-linux-gnu": "ce4f6d0a6cfdb3bed6e44c2f9affd85943c76a42e25ad3a259002f31d6fb8a20",
+      "x86_64-pc-windows-msvc": "1f2ab53880fc67ea323398c6388e05af28addc99a8e389209f08a51fdff4b149"
+    }
+  },
+  "tectonic": {
+    "version": "0.17.0",
+    "url": "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40{version}/tectonic-{version}-{triple}.{ext}",
+    "sha256": {
+      "aarch64-apple-darwin": "a3f1cac7c5678f01661a92212f58480ae3b0634115d880dbc59e2953ded45667",
+      "x86_64-apple-darwin": "7c90ef5b6ddb1eb1937e4337add5237b79338e4b9676459fa91187d24d6cdf80",
+      "x86_64-unknown-linux-musl": "8533d07f9ccbd7a65824b9e0459041bca34af1eb33daba48f59215593753a3b7",
+      "x86_64-pc-windows-msvc": "f61ce51f0b0ade1015b7de7ef368541c5424e9756ecbd0d7af97d6d48030845f"
+    }
+  }
+}

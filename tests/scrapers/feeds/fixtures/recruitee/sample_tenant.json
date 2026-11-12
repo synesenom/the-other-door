@@ -1,0 +1,37 @@
+{
+ "offers": [
+  {
+   "id": 2078127,
+   "title": "Software developer",
+   "company_name": "EY",
+   "city": "Amsterdam",
+   "country": "Netherlands",
+   "country_code": "NL",
+   "location": "Amsterdam, Noord-Holland, Netherlands",
+   "careers_url": "https://ey.recruitee.com/o/software-developer-1",
+   "description": "<h3>Software Developer at EY - Human Resources Department</h3><p>We are seeking a talented Software Developer to join our Human Resources department at EY. As a Software Developer, you will be responsible for designing, developing, and implementing software solutions to enhance our HR processes and "
+  },
+  {
+   "id": 2078096,
+   "title": "Software Developer",
+   "company_name": "EY",
+   "city": "Amsterdam",
+   "country": "Netherlands",
+   "country_code": "NL",
+   "location": "Remote job",
+   "careers_url": "https://ey.recruitee.com/o/software-developer",
+   "description": "<h3>Software Developer at EY - Human Resources Department</h3><p>EY is seeking a talented Software Developer to join our Human Resources department. As a Software Developer, you will play a key role in designing, developing, and implementing software solutions to enhance our HR processes and systems"
+  },
+  {
+   "id": 2078020,
+   "title": "Senior Marketer (Sample)",
+   "company_name": "EY",
+   "city": "Amsterdam",
+   "country": "Netherlands",
+   "country_code": "NL",
+   "location": "Amsterdam, Noord-Holland, Netherlands",
+   "careers_url": "https://ey.recruitee.com/o/senior-marketer-sample-london",
+   "description": "<p>We are searching for a professional Marketeer. You will contribute to a variety of projects from content and graphics to publishing final materials.</p><ul><li><p>Contribute to the development of the overall marketing strategy.</p></li><li><p>Design branding materials, including logos, graphics, "
+  }
+ ]
+}

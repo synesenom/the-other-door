@@ -1,0 +1,82 @@
+# United Kingdom. See src/door/i18n/__init__.py.
+
+code = "gb"
+name = "United Kingdom"
+# "uk" is what an ad writes (and what a bare ", UK" location part says); locality reads it as gb.
+# No bare "ireland": Dublin and Ireland stay foreign, "northern ireland" is local.
+names = ["uk", "u.k.", "united kingdom", "great britain", "britain", "england", "scotland", "wales", "northern ireland", "gb",
+         "storbritannien", "egyesült királyság"]
+languages = ["en"]
+
+currency = ["£", "gbp", "pound", "pounds"]
+legal_suffixes = ["ltd", "limited", "plc", "llp", "lp", "cic", "cio", "uk ltd", "(uk)"]
+# Words a subsidiary's or branch's name ends with that are no part of the employer's own name; the country's names count too.
+subsidiary_words = ["uk", "uk&i", "uk and ireland", "united kingdom", "great britain", "europe"]
+
+# Domain endings (the first is the one `follow` joins to a guessed host: careers.acme.co.uk), host labels
+# its employers' career sites use, and whole domains of its job boards.
+tlds = ["co.uk", "uk", "org.uk", "ac.uk", "gov.uk", "nhs.uk"]
+career_hosts = ["careers", "jobs", "recruitment", "vacancies", "work-for-us", "join-us", "working-for", "workwithus"]
+job_boards = [
+    "reed.co.uk", "totaljobs.com", "cv-library.co.uk", "adzuna.co.uk", "jobs.theguardian.com", "jobs.ac.uk",
+    "findajob.dwp.gov.uk", "jobs.nhs.uk", "civilservicejobs.service.gov.uk", "monster.co.uk", "jobsite.co.uk",
+    "cwjobs.co.uk", "technojobs.co.uk", "uk.jooble.org", "glassdoor.co.uk", "fish4.co.uk", "jobs.telegraph.co.uk",
+    "leisurejobs.com", "caterer.com", "retailchoice.com",
+]
+
+# How a CV is written there (#605; sources in the pull request): photo "no" | "optional" | "expected"; whether a
+# date of birth belongs on it (it is only kept when cv.md has one, never added); the page limit; the country's
+# all-numeric full date.
+[cv]
+photo = "no"
+date_of_birth = false
+max_pages = 2
+date_format = "DD/MM/YYYY"
+
+# Canonical city -> other names it goes by in ads (boroughs, districts and towns a commuter accepts).
+[cities]
+london = [
+    "greater london", "london*", "city of london", "canary wharf", "docklands", "westminster", "camden",
+    "islington", "hackney", "southwark", "lambeth", "tower hamlets", "greenwich", "croydon", "bromley",
+    "kingston upon thames", "richmond upon thames", "ealing", "hounslow", "hillingdon", "uxbridge", "harrow",
+    "barnet", "enfield", "shoreditch", "wembley", "heathrow", "watford", "slough",
+]
+manchester = [
+    "greater manchester", "salford", "trafford", "stockport", "oldham", "bolton", "rochdale", "wigan",
+    "altrincham", "media city", "mediacity", "didsbury",
+]
+birmingham = ["west midlands", "solihull", "dudley", "walsall", "wolverhampton", "sutton coldfield", "west bromwich", "edgbaston"]
+edinburgh = ["midlothian", "east lothian", "west lothian", "livingston", "leith"]
+glasgow = ["lanarkshire", "paisley", "renfrewshire", "east kilbride", "clydebank", "lanark"]
+leeds = ["west yorkshire", "wakefield", "bradford", "harrogate"]
+bristol = ["south gloucestershire", "filton", "bradley stoke", "almondsbury"]
+cambridge = ["cambridgeshire", "granta park", "babraham", "addenbrooke*", "trumpington"]
+oxford = ["oxfordshire", "abingdon", "harwell", "culham", "didcot", "kidlington", "begbroke"]
+cardiff = ["caerdydd", "south wales", "newport", "penarth"]
+belfast = ["lisburn", "newtownabbey"]
+newcastle = ["gateshead", "tyne and wear"]
+sheffield = []
+nottingham = []
+liverpool = []
+southampton = []
+leicester = []
+aberdeen = []
+brighton = []
+
+# City -> towns within about an hour's commute by train, which an on-site candidate accepts.
+[commute]
+london = [
+    "surrey", "kent", "essex", "hertfordshire", "berkshire", "buckinghamshire", "guildford", "woking", "staines",
+    "windsor", "maidenhead", "reading", "st albans", "stevenage", "luton", "dartford", "gravesend", "chelmsford",
+    "brentwood", "romford", "epsom", "crawley", "gatwick", "redhill", "sevenoaks", "bracknell", "basingstoke",
+]
+manchester = ["warrington", "macclesfield", "preston", "chester", "crewe", "huddersfield"]
+birmingham = ["coventry", "leamington spa", "warwick", "worcester", "redditch", "lichfield", "tamworth"]
+edinburgh = ["fife", "glenrothes", "dunfermline", "falkirk", "stirling"]
+glasgow = ["motherwell", "ayr", "dumbarton", "stirling"]
+leeds = ["halifax"]
+bristol = ["bath", "weston-super-mare", "gloucester", "swindon"]
+cambridge = ["ely", "huntingdon", "royston", "st neots", "newmarket", "saffron walden", "peterborough"]
+oxford = ["banbury", "witney", "bicester", "swindon"]
+cardiff = ["bridgend", "barry", "pontypridd", "merthyr tydfil"]
+belfast = ["antrim", "carrickfergus", "holywood"]

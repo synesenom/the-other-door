@@ -1,0 +1,3 @@
+# ./door runs under bash and door.cmd under cmd.exe, whatever the checkout's platform.
+/door text eol=lf
+/door.cmd text eol=crlf

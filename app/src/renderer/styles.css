@@ -1,0 +1,645 @@
+* { box-sizing: border-box; /* thin scrollbars in the paper colours: a quiet thumb, no track */ scrollbar-width: thin; scrollbar-color: var(--color-border) transparent; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+  font-variant-numeric: tabular-nums;
+}
+button, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; }
+/* Buttons that read as text or as a line: no box of their own (each adds only what makes it different). */
+:is(.link-inline, .back, .chip-x, .switch, .hint-icon, .nav-item, .row, .quiet) { background: none; border: 0; padding: 0; }
+
+.display-l, .display-s, .score-l, .score-s {
+  font-family: var(--font-display);
+  margin: 0;
+}
+.display-l { font-size: var(--text-display-l-size); line-height: var(--text-display-l-line); font-weight: var(--text-display-l-weight); letter-spacing: var(--text-display-l-tracking); }
+.display-s { font-size: var(--text-display-s-size); line-height: var(--text-display-s-line); font-weight: var(--text-display-s-weight); }
+.score-l { font-size: var(--text-score-l-size); line-height: var(--text-score-l-line); font-weight: var(--text-score-l-weight); }
+.score-s { font-size: var(--text-score-s-size); line-height: var(--text-score-s-line); font-weight: var(--text-score-s-weight); }
+.body { font-size: var(--text-body-size); line-height: var(--text-body-line); margin: 0; }
+.small { font-size: var(--text-small-size); line-height: var(--text-small-line); margin: 0; }
+.muted { color: var(--color-ink-muted); }
+.label {
+  font-size: var(--text-label-size);
+  line-height: var(--text-label-line);
+  font-weight: var(--text-label-weight);
+  letter-spacing: var(--text-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin: 0 0 var(--space-2);
+}
+
+.shell { display: grid; grid-template-columns: var(--size-sidebar-width) 1fr; height: 100%; }
+.sidebar {
+  display: flex; flex-direction: column; gap: 28px;
+  padding: 28px 20px 20px; /* the foot as far from the bottom as from the side */
+  border-right: 1px solid var(--color-border);
+}
+.demo-tag { align-self: flex-start; margin: 0; padding: 2px var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-m); background: var(--color-surface); color: var(--color-ink-muted); cursor: help; }
+.sidebar nav { display: flex; flex-direction: column; gap: var(--space-1); }
+.nav-item {
+  min-height: 40px;
+  text-align: left;
+  padding: 0 var(--space-3); border-radius: var(--radius-m);
+}
+.nav-item[aria-current='page'] { background: var(--color-surface); font-weight: 600; }
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-2); }
+.sidebar-foot .secondary { width: 100%; }
+
+.main { min-width: 0; overflow: hidden; }
+
+.matches { display: flex; height: 100%; }
+.list-pane { flex: 1 1 340px; min-width: 340px; overflow-y: auto; padding: 0 0 var(--space-6); border-right: 1px solid var(--color-border); }
+.list-head { padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); }
+.subtitle { margin: var(--size-gap-s) 0 0; font-size: var(--text-body-size); line-height: var(--text-body-line); color: var(--color-ink-muted); }
+.list-pane > .notice, .list-pane > .error, .list-pane > .body, .list-pane > .spinner-line { margin-left: var(--size-screen-gutter); margin-right: var(--size-screen-gutter); }
+.reading-pane { flex: 999 1 480px; min-width: 0; overflow-y: auto; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-8); }
+/* The posting fills its pane (the ad reads as wide as the window); the reason keeps its 60ch. */
+.posting { display: flex; flex-direction: column; gap: var(--space-6); }
+.posting > * { margin: 0; }
+.posting-head { display: flex; flex-direction: column; gap: var(--space-2); }
+.posting-head > * { margin: 0; }
+.posting-head .dash { margin-bottom: var(--space-2); }
+.reason { max-width: 60ch; }
+.score-line { position: relative; display: flex; align-items: center; gap: var(--size-gap-s); }
+.score-line .hint-pop { left: 0; right: auto; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); border-top: 1px solid var(--color-border); padding-top: var(--space-6); }
+.columns .label { margin: 0 0 var(--space-2); }
+/* Each side (fits, gaps) is two columns of its own: the window is wider than the terminal `jobs show` fills. */
+.skill-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); }
+.skill-fits > .mark { color: var(--color-success); }
+.skill-gap > .mark { color: var(--color-danger); }
+.posting a, .link { color: var(--color-accent); }
+.link-inline { color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; }
+.doc-text { overflow-y: auto; }
+.doc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+
+/* An info icon and the words behind it (Hint.tsx). The ::before bridges the gap, so the pointer can reach the words. */
+.hint { display: inline-flex; }
+.hint-icon { display: inline-flex; padding: var(--space-1); border-radius: var(--radius-pill); color: var(--color-ink-muted); cursor: help; }
+.hint-icon:hover { color: var(--color-ink); }
+.hint-pop { position: absolute; z-index: 10; bottom: calc(100% + var(--space-1)); right: 0; width: 280px; max-width: calc(100vw - var(--space-8)); padding: var(--space-2) var(--space-3); background: var(--color-ink); border-radius: var(--radius-m); color: var(--color-ground); }
+.hint-pop::before { content: ""; position: absolute; left: 0; right: 0; bottom: calc(-1 * var(--space-1) - 1px); height: var(--space-1); }
+.app-name { font-family: var(--font-display); }
+.dash { width: var(--size-dash-width); height: var(--size-dash-height); border-radius: var(--radius-pill); background: var(--color-accent); }
+.new-dot { display: inline-block; width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--color-accent); margin-right: var(--space-2); }
+
+.pills { display: flex; gap: var(--size-gap-s); margin-top: var(--space-4); }
+.pill {
+  min-height: var(--size-chip-height); padding: 0 var(--space-3); font-size: var(--text-small-size);
+  border: 1px solid var(--color-border); border-radius: var(--radius-pill);
+  background: none;
+}
+.pill[aria-pressed='true'] { background: var(--color-ink); color: var(--color-ground); border-color: var(--color-ink); }
+
+.rows { list-style: none; margin: 0; padding: 0 calc(var(--size-screen-gutter) - 16px); /* a row's text on the gutter */ display: flex; flex-direction: column; gap: var(--space-1); }
+.row {
+  width: 100%; min-height: 64px;
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-4);
+  padding: var(--space-3) var(--space-4); text-align: left;
+  border-radius: var(--radius-l);
+}
+.row[aria-current='true'] { background: var(--color-surface); }
+.row-main { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.row-title { display: flex; align-items: center; }
+.title { font-size: var(--text-body-size); font-weight: 600; }
+.row .score-s { text-align: center; }
+
+.actions { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.actions button { white-space: nowrap; }
+.primary, .secondary, .quiet {
+  min-height: var(--size-control-height); padding: 0 var(--space-5);
+  border-radius: var(--radius-m); font-weight: 600;
+}
+.primary { background: var(--color-ink); color: var(--color-ground); border: 1px solid var(--color-ink); }
+.photo-preview { display: block; height: auto; border-radius: var(--radius-m); }
+.secondary { background: none; border: 1px solid var(--color-border); }
+.quiet { color: var(--color-ink-muted); }
+
+.description { white-space: pre-wrap; }
+/* One box for a note and an error; an error starts with the failed mark (the ✕ of a board that failed) in the danger colour,
+   drawn here so every error has it, whatever element it is (a line, a list of them). */
+.notice, .error { color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-m); padding: var(--space-2) var(--space-3); margin: var(--space-2) 0; }
+.error { position: relative; padding-left: calc(var(--space-3) + 1.15em + var(--size-gap-s)); }
+.error::before {
+  content: ''; position: absolute; left: var(--space-3); top: calc(var(--space-2) + (1lh - 1.15em) / 2); width: 1.15em; height: 1.15em;
+  background: var(--color-danger);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4,4 L12,12 M12,4 L4,12' stroke='black' stroke-width='1.75' fill='none'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.scrim { position: fixed; inset: 0; z-index: 100; /* above every positioned part of the page: a sticky bar, a label row, a hint */ display: grid; place-items: center; background: var(--color-scrim); }
+.dialog { width: min(480px, calc(100vw - var(--space-8))); background: var(--color-page); border: 1px solid var(--color-border); border-radius: var(--radius-l); padding: var(--space-6); box-shadow: var(--shadow-page); max-height: calc(100vh - var(--space-8)); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-4); }
+.field { display: flex; flex-direction: column; gap: var(--size-gap-s); }
+textarea { resize: none; }
+.field textarea { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-m); background: var(--color-page); }
+.dialog .actions { justify-content: flex-end; }
+.dialog-pills { margin-top: 0; } /* in a dialog the gap above comes from the dialog */
+/* a long dialog scrolls; its parts keep their height (a fieldset would otherwise be squeezed when it re-lays out) */
+.dialog > * { flex-shrink: 0; }
+
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.chips { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-3); }
+
+.spinner-line { display: flex; align-items: center; gap: var(--space-2); margin-left: var(--size-screen-gutter); margin-right: var(--size-screen-gutter); }
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-ink);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+/* The splash (Splash.tsx, and the same markup in index.html): the logo's d in ink on the ground, and
+   under it the logo's blue bar, growing out from the left, then shrinking away to the right, again and
+   again while the window starts (how long is not known, so it never stays full). No track, no words. */
+.splash { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--color-ink); }
+.splash-logo { display: block; }
+/* The bar of the logo (docs/logo/door.svg) at the size of this d: 40 x 5, just under it. */
+.splash-dash { position: relative; display: block; width: 40px; height: 5px; }
+.splash-dash::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; right: 100%; border-radius: var(--radius-pill); background: var(--color-accent); animation: splash-head 1.7s infinite, splash-tail 1.7s infinite; }
+/* The two ends move on their own curves: the head shoots out from the left and eases to a stop at the
+   right; the tail sets off a little later, slowly, and speeds up to catch it. So the bar stretches while
+   the head leads and shortens as the tail closes in, then is gone for a breath before the next one. */
+@keyframes splash-head {
+  0% { right: 100%; animation-timing-function: cubic-bezier(0.3, 0.6, 0.25, 1); }
+  60%, 100% { right: 0; }
+}
+@keyframes splash-tail {
+  0%, 18% { left: 0; animation-timing-function: cubic-bezier(0.55, 0, 0.45, 1); }
+  88%, 100% { left: 100%; }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Finding jobs: one centred column, five step rows, then Stop or the summary card. */
+.main:has(> .finding) { overflow-y: auto; }
+.finding { box-sizing: content-box; max-width: 620px; margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-9); /* on the gutter, like every screen */ display: flex; flex-direction: column; gap: var(--space-4); }
+.finding > * { margin: 0; }
+.finding .subtitle { margin: 0; }
+.steps { list-style: none; margin: var(--space-5) 0 0; padding: 0; }
+/* A step of the run and a connection are the same row: a circle, then the text. Space, no rule, between rows:
+   the column of circles keeps them apart. */
+.step, .connection { display: grid; grid-template-columns: 32px 1fr; column-gap: var(--space-4); padding: var(--space-3) 0; align-items: start; }
+.step { grid-template-columns: 32px 1fr auto; }
+.step-mark, .connection-mark { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: var(--text-small-size); border: 1px solid var(--color-ink-muted); color: var(--color-ink-muted); }
+.step-done .step-mark, .connection-fine { background: var(--color-success); border-color: var(--color-success); color: var(--color-ground); }
+.step-running .step-mark { border: 2px solid var(--color-accent); color: var(--color-accent); font-weight: 600; }
+/* a step at work turns a ring drawn behind its number, so the number stays still */
+.step-working .step-mark { position: relative; border-color: transparent; }
+.step-working .step-mark::before { content: ''; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--color-border); border-top-color: var(--color-accent); animation: step-spin 0.8s linear infinite; }
+/* a step to come: its number in the colour of its ring */
+/* A small mark before a label (a board's check, a warning), the label trimmed to its capitals so the
+   mark centres on the letters of its first line, not on the line box. */
+.marked { display: flex; align-items: flex-start; gap: var(--size-gap-s); }
+.marked > .mark { --mark: 14px; width: var(--mark); height: var(--mark); flex: none; display: grid; place-items: center; margin-top: calc((1cap - var(--mark)) / 2); }
+.marked > .mark + * { text-box: trim-both cap alphabetic; }
+.warning-mark { display: block; width: 100%; height: 100%; }
+.warning-mark-shape { fill: var(--color-warning); stroke: var(--color-warning); stroke-width: 1.5; stroke-linejoin: round; }
+.warning-mark-bang { fill: none; stroke: var(--color-on-warning); stroke-width: 1.75; stroke-linecap: round; }
+.check-mark { display: block; width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linejoin: miter; stroke-linecap: butt; }
+.step-waiting .step-name, .step-skipped .step-name { color: var(--color-ink-muted); }
+.step-body { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.step-name { margin: 0; }
+/* A title with a short muted note beside it, on its baseline: a step and what it does, a connection and Required. */
+.title-line { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: var(--space-3); }
+.title-line > * { margin: 0; }
+.step-time { white-space: nowrap; }
+.step-sites { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.bar { height: 4px; border-radius: var(--radius-pill); background: var(--color-border); margin-top: var(--space-2); overflow: hidden; }
+.step-items { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-2) var(--space-4); font-size: var(--text-small-size); }
+.step-item { color: var(--color-ink-muted); }
+.step-item-mark { border-radius: 50%; }
+.step-item-waiting .step-item-mark { border: 1px solid var(--color-border); }
+.step-item-running { color: var(--color-ink); }
+.step-item-running .step-item-mark { border: 2px solid var(--color-border); border-top-color: var(--color-accent); animation: step-spin 0.8s linear infinite; }
+.step-item-done { color: var(--color-ink); }
+.step-item-done .step-item-mark { color: var(--color-success); }
+.step-item-failed .step-item-mark { color: var(--color-danger); }
+@keyframes step-spin { to { transform: rotate(360deg); } }
+.bar > span { display: block; height: 100%; background: var(--color-accent); border-radius: var(--radius-pill); }
+.finding-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.finding-head > * { margin: 0; }
+.summary-card { margin-top: var(--space-6); padding: var(--space-6); background: var(--color-page); border: 1px solid var(--color-border); border-radius: var(--radius-l); box-shadow: var(--shadow-page); display: flex; flex-direction: column; gap: var(--space-4); }
+.summary-card > * { margin: 0; }
+.summary-top { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.summary-top li { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--color-border); }
+.summary-job { display: flex; flex-direction: column; min-width: 0; }
+
+.tab-dash { display: none; }
+.tab-icon { display: none; }
+/* Navigation, not what is current: quiet, the blue is for links in text (docs/design/README.md). */
+.back { margin-bottom: var(--space-4); color: var(--color-ink-muted); }
+.pushed-bar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4); }
+.matches.pushed .pushed-bar .back { margin-bottom: 0; align-self: center; }
+.stepper { display: flex; align-items: center; gap: var(--space-1); }
+.stepper .small { margin-right: var(--space-2); font-variant-numeric: tabular-nums; }
+.quiet.step { width: 28px; min-width: 0; height: 28px; min-height: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.25em; line-height: 1; border-radius: var(--radius-m); }
+.quiet.step:disabled { opacity: 0.35; }
+/* The list alone on the screen: no rule beside it, and rows no wider than they read. */
+.matches:not(.pushed) .list-pane { border-right: 0; }
+.matches:not(.pushed) .list-pane > :not(.list-head) { max-width: 620px; }
+
+@media (max-width: 899px) {
+  .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); }
+  .page-aside { display: none; }
+  .board-screen { padding: var(--space-6) var(--space-4) var(--space-8); }
+  .shell { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .shell.pushed { grid-template-rows: 1fr; }
+  .main { grid-row: 1; }
+  .sidebar { grid-row: 2; flex-direction: row; padding: var(--space-2) var(--phone-gutter) var(--phone-tab-bar-bottom-inset); border-right: 0; border-top: 1px solid var(--color-border); }
+  .sidebar-foot { display: none; }
+  .sidebar nav { flex: 1; flex-direction: row; justify-content: space-between; }
+  .nav-item { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); text-align: center; padding: var(--space-3) 0 0; font-size: var(--phone-tab-bar-label); background: none; }
+  .tab-icon { display: block; }
+  .board-list { display: flex; flex-direction: column; gap: var(--space-5); }
+  .board-list .board-column { width: auto; min-width: 0; }
+  .board-list .board-cards { gap: 0; }
+  .board-list .board-card { border-radius: 0; border-width: 0 0 1px; background: none; padding: var(--space-3) 0; }
+  .narrow-top { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--phone-gutter) 0; }
+  .nav-item[aria-current='page'] { background: none; color: var(--color-ink); font-weight: 600; }
+  .nav-item:not([aria-current='page']) { color: var(--color-ink-muted); }
+  .tab-dash { display: block; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: var(--phone-tab-bar-dash-width); height: var(--phone-tab-bar-dash-height); border-radius: var(--radius-pill); background: var(--color-accent); }
+  .list-pane { min-width: 0; border-right: 0; }
+  .list-head { padding: var(--space-6) var(--phone-gutter) var(--space-4); }
+  .list-pane > .notice, .list-pane > .error, .list-pane > .body, .list-pane > .spinner-line { margin-left: var(--phone-gutter); margin-right: var(--phone-gutter); }
+  .rows { padding: 0 var(--phone-gutter); gap: 0; }
+  .row { min-height: var(--phone-row-min-height); border-radius: 0; padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }
+  .reading-pane { padding: var(--space-6) var(--phone-gutter); }
+  .step-name { font-size: var(--phone-text-display-s-size); }
+  .finding { padding: var(--space-6) var(--phone-gutter); }
+  .onb { padding: var(--space-6) var(--phone-gutter); }
+  .display-l { font-size: var(--phone-text-display-l-size); }
+  .display-s { font-size: var(--phone-text-display-s-size); }
+  .score-l { font-size: var(--phone-text-score-l-size); }
+  .columns { grid-template-columns: 1fr; }
+  /* A pushed posting fills the window, so its action bar sits at the bottom even when the ad is short. */
+  .matches.pushed .reading-pane { display: flex; flex-direction: column; padding-bottom: 0; }
+  .matches.pushed .posting { flex: 1; }
+  .matches.pushed .back { align-self: flex-start; }
+  .matches.pushed .materials { flex: 1; }
+  .materials-body { flex-direction: column; gap: var(--space-5); }
+  .pages { flex-basis: auto; width: 100%; }
+  .paper-figure { width: 100%; }
+  .materials-aside { flex-basis: auto; width: 100%; }
+  .action-bar {
+    position: sticky; bottom: 0;
+    display: flex; gap: var(--space-3); flex-wrap: wrap;
+    /* auto on top: the bar sits at the bottom of a pushed posting even when the ad is short */
+    margin: auto calc(-1 * var(--phone-gutter)) 0;
+    padding: var(--space-3) var(--phone-gutter) var(--phone-action-bar-bottom-inset);
+    background: var(--color-ground); border-top: 1px solid var(--color-border);
+  }
+  .action-bar button { min-height: var(--phone-action-bar-button-height); }
+  .action-bar .primary { flex: 1; }
+}
+
+.choices { display: flex; flex-direction: column; gap: var(--space-2); border: 0; margin: 0; padding: 0; }
+.choices.nested { margin: var(--space-2) 0 var(--space-2) var(--space-6); }
+.choice { display: flex; gap: var(--space-2); align-items: flex-start; cursor: pointer; }
+/* On the first line's middle: the same as centred for one line, and it stays by the label when a line wraps. */
+.choice input[type="checkbox"], .choice input[type="radio"] { font: inherit; margin-top: calc((1lh - 18px) / 2); }
+.head-actions { margin: 0 0 var(--space-3); /* top on the screen top, as far from it as from the right edge */ flex-wrap: wrap; }
+
+.primary:disabled, .secondary:disabled, .quiet:disabled, .pill:disabled { opacity: 0.4; }
+/* Buttons answer the pointer: a quick colour change, the same for each kind everywhere; a disabled one stays still.
+   Only where there is a pointer to hover with: a tap on a phone leaves nothing lit. */
+.primary, .secondary, .quiet, .pill, .nav-item, .back { transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease; }
+@media (hover: hover) {
+  .primary:hover:not(:disabled) { background: var(--color-ink-muted); border-color: var(--color-ink-muted); }
+  .secondary:hover:not(:disabled) { border-color: var(--color-ink); background: var(--color-surface); }
+  .quiet:hover:not(:disabled) { color: var(--color-ink); background: var(--color-surface); }
+  .back:hover { color: var(--color-ink); }
+  .pill:hover:not(:disabled):not([aria-pressed='true']) { border-color: var(--color-ink); }
+  .nav-item:hover:not([aria-current='page']) { background: var(--color-surface); }
+  .row:hover { background: var(--color-surface); }
+  .switch:hover .switch-track { box-shadow: 0 0 0 1px var(--color-ink); }
+  /* a line of text, not a box: it underlines instead (below) */
+  .quiet.sidebar-problem:hover { background: none; }
+}
+.primary:active:not(:disabled) { background: var(--color-ink); border-color: var(--color-ink); }
+.secondary:active:not(:disabled), .quiet:active:not(:disabled) { background: var(--color-border); }
+.quiet.sidebar-problem:active { background: none; }
+
+.materials { display: flex; flex-direction: column; gap: var(--space-5); }
+.materials > * { margin: 0; }
+.materials .back { align-self: flex-start; }
+.materials-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-5); flex-wrap: wrap; }
+.materials-body { display: flex; gap: var(--space-7); align-items: flex-start; }
+/* The document takes all the room a wider window gives; the notes and Revise beside it keep their width. */
+.pages { display: flex; gap: var(--space-6); flex: 1 1 600px; min-width: 0; }
+.pages.dimmed { opacity: 0.45; }
+.paper-figure { margin: 0; width: 100%; display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.pages-stack { display: flex; flex-direction: column; gap: var(--space-3); width: 100%; }
+.paper { display: block; width: 100%; height: auto; background: var(--color-page); border-radius: var(--radius-s); }
+.materials-aside { flex: 0 1 360px; min-width: 280px; display: flex; flex-direction: column; gap: var(--space-5); }
+.materials-aside section { display: flex; flex-direction: column; gap: var(--space-2); }
+.revise textarea { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-m); background: var(--color-page); }
+.revise .pills { margin-top: 0; }
+.doc-switch { display: flex; gap: var(--size-gap-s); flex-wrap: wrap; }
+/* A switch: a pill-shaped track with a round thumb, off on the left in the border colour, on to the right in ink (as a pressed pill).
+   The whole line, name included, is the button. */
+.switch { display: inline-flex; align-items: center; gap: var(--space-2); align-self: flex-start; min-height: var(--size-control-height); color: var(--color-ink); }
+.switch-track { position: relative; width: 36px; height: 20px; flex: none; border-radius: var(--radius-pill); background: var(--color-border); transition: background-color 120ms ease; }
+.switch-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--color-ink-muted); transition: transform 120ms ease, background-color 120ms ease; }
+.switch[aria-checked='true'] .switch-track { background: var(--color-ink); }
+.switch[aria-checked='true'] .switch-thumb { transform: translateX(16px); background: var(--color-ground); }
+.preparing { display: flex; flex-direction: column; gap: var(--space-1); }
+.preparing .spinner-line { margin-left: 0; margin-right: 0; }
+
+/* Wherever the page and Revise sit side by side (900 px and up; the phone stacks them), Ready to send fits the window:
+   the document scrolls its own pages and the Revise column its own content, so Revise always stays in view. */
+@media (min-width: 900px) {
+  /* A pushed screen's back link lives in the top margin (28 px tall, 6 px from the window's top and from
+     the title), so its title starts at screen-top like every other screen's. The phone keeps its own top. */
+  .matches.pushed .reading-pane > .back,
+  .matches.pushed .reading-pane > .pushed-bar,
+  .matches.pushed .materials > .back { display: flex; align-items: center; height: 28px; margin-top: calc(6px - var(--size-screen-top)); margin-bottom: 6px; }
+  /* the column's gap comes after it too */
+  .matches.pushed .materials > .back { margin-bottom: calc(6px - var(--space-5)); }
+  /* 20 px at the foot, as the sidebar's: Save and Find new jobs end on one line. */
+  .matches.pushed .reading-pane:has(> .materials) { display: flex; flex-direction: column; overflow: hidden; padding-bottom: var(--space-5); }
+  .materials { height: 100%; flex: 1; min-height: 0; }
+  .materials-body { flex: 1; min-height: 0; flex-wrap: nowrap; align-items: stretch; }
+  .pages { min-height: 0; }
+  .paper-figure { min-height: 0; width: 100%; }
+  .pages-stack { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 10px 12px 2px; }
+  .materials-aside { min-height: 0; overflow-y: auto; }
+}
+
+/* Onboarding: the first-launch wizard, one centred column like Finding, a strip of segments above it. */
+.main:has(> .onb) { overflow-y: auto; }
+.onb { max-width: 620px; margin: 0 auto; padding: var(--space-7) var(--space-6) var(--space-9); display: flex; flex-direction: column; gap: var(--space-6); }
+.onb > * { margin: 0; }
+.segments { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-2); }
+.segment { flex: 1; height: 4px; border-radius: var(--radius-pill); background: var(--color-border); }
+.segment-done { background: var(--color-ink); }
+.segment[aria-current='step'] { background: var(--color-accent); }
+.onb-step { display: flex; flex-direction: column; gap: var(--space-4); }
+.onb-step > * { margin: 0; }
+.onb-step .subtitle { margin: 0; }
+/* A field's name: 4 px above its own box, far from the field above. */
+.onb-field { gap: var(--space-1); }
+/* A help icon beside a field's name, as tall as its line, so the name stays as close to its box. */
+.field-name { position: relative; display: flex; align-items: center; gap: var(--space-1); }
+.field-name .hint-icon { padding: 2px; margin: -2px 0; }
+.field-name .hint-icon svg { width: 15px; height: 15px; }
+.field-name .hint-pop { left: 0; right: auto; }
+.choices.onb-field { gap: var(--space-1); }
+/* a group of checkboxes under one legend: one under another, as the choices of one field */
+.checks > .field { gap: 0; }
+/* a long list of short choices (Profile's ad languages) in three columns, read down each */
+.choice-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 2), auto); column-gap: var(--space-4); row-gap: var(--space-1); }
+/* A field's name: body size, 500, ink, sentence case, the same in every form (the wizard, Profile, dialogs). `.label` is a heading over a group. */
+.field-label { display: block; font-size: var(--text-body-size); line-height: var(--text-body-line); font-weight: 500; color: var(--color-ink); margin: 0; }
+legend { padding: 0; }
+/* Padding: a fieldset's rendered legend ignores a bottom margin here. */
+legend.field-label { padding-bottom: var(--space-2); }
+.onb-input { min-height: var(--size-control-height); padding: 0 var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-m); background: var(--color-page); color: var(--color-ink); font: inherit; }
+.onb-chips { margin: 0; gap: var(--size-gap-s); /* as far apart as the box is from them: pills in a row (docs/design/README.md) */ }
+.onb-chips .chip { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%; padding-right: var(--size-gap-s); /* the × on the centre of the round end */ }
+/* A pill is one line, however long what it holds: the rest is on hover. */
+.chip-text { min-width: 0; max-width: 40ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-x { padding: 0 var(--space-1); color: var(--color-ink-muted); }
+.onb-actions { margin-top: var(--space-4); }
+.onb-reason { margin: 0; }
+.onb-errors { list-style: none; margin: 0; }
+.part { display: flex; flex-direction: column; gap: 28px; padding-top: var(--space-4); /* no rule: the heading and the space above it start a part */ }
+.part > * { margin: 0; }
+.part-head { display: flex; flex-direction: column; gap: var(--space-1); }
+.part-head > * { margin: 0; }
+/* A part of a screen (the review, Profile, Settings): a serif title over a thin rule. Its heading stays with
+   what it heads; the wider gap is between its fields. */
+.part > :is(.part-head, h2) + * { margin-top: calc(var(--space-4) - 28px); }
+details.part { display: block; }
+details.part > * + * { margin-top: 28px; }
+details.part > summary + * { margin-top: var(--space-4); }
+.onb-drop-area, .onb-url { position: relative; }
+.onb-drop-area .hint { position: absolute; top: var(--space-2); right: var(--space-2); }
+.onb-url .onb-input { width: 100%; padding-right: var(--space-8); }
+.onb-url .hint { position: absolute; top: 50%; right: var(--space-2); transform: translateY(-50%); }
+.onb-drop { width: 100%; padding: calc(var(--space-10) + var(--space-8)) var(--space-4); background: var(--color-surface); border: 1px dashed var(--color-border); border-radius: var(--radius-m); color: var(--color-ink); text-align: center; cursor: pointer; }
+.onb-drop:hover { border-color: var(--color-accent); }
+.onb-drop-over { border-color: var(--color-accent); }
+.cv-text { min-height: 320px; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-m); background: var(--color-page); color: var(--color-ink); font-family: var(--font-text); }
+.onb .spinner-line { margin-left: 0; margin-right: 0; }
+.onb .finding { padding: 0; }
+
+/* The first-launch gate: nothing while it asks, the wizard without the sidebar, a quiet notice over Matches. */
+.shell-bare { height: 100%; }
+.shell-bare .main { height: 100%; }
+
+/* Settings (issues 222 and 393): one reading-width column of sections, each under a section label. */
+.settings { box-sizing: content-box; max-width: 620px; margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); /* on the gutter, like every screen; it ends level with the sidebar's foot (20 px up), no room to scroll below its last buttons */ display: flex; flex-direction: column; gap: var(--space-7); }
+.main:has(> .settings), .main:has(> .page-with-aside) { overflow-y: auto; }
+/* A one-column screen with a list of its sections beside it, on a wide window only. */
+.page-with-aside { display: flex; align-items: flex-start; }
+/* the list keeps its width; the page takes the rest of the window */
+.page-with-aside > .settings { flex: 1; min-width: 0; max-width: none; }
+/* its rows keep a reading width, as Matches' list does, the list of sections staying at the window's edge */
+.page-with-aside > .settings > * { max-width: 620px; }
+.page-aside { position: sticky; top: 0; flex: 0 0 calc(140px + var(--size-screen-gutter)); padding: calc(var(--size-screen-top) + 8px) var(--size-screen-gutter) 0 0; /* level with the title */ }
+.page-aside ul { list-style: none; margin: 0; padding: 0 0 0 var(--space-4); border-left: 1px solid var(--color-border); display: flex; flex-direction: column; gap: var(--space-1); }
+.page-aside a { display: block; position: relative; padding: var(--space-1) 0; font-size: var(--text-small-size); color: var(--color-ink-muted); text-decoration: none; }
+.page-aside a:hover { color: var(--color-ink); }
+/* the other views of the screen after its sections, set apart by a gap */
+.page-aside .page-aside-parts { margin-top: var(--space-4); }
+.page-aside a:is([aria-current='location'], [aria-current='page']) { color: var(--color-ink); font-weight: 600; }
+.page-aside a:is([aria-current='location'], [aria-current='page'])::before { content: ''; position: absolute; left: calc(-1 * var(--space-4) - 1px); top: 4px; bottom: 4px; width: 2px; background: var(--color-accent); }
+.page-with-aside :is(h2, summary)[id] { scroll-margin-top: var(--size-screen-top); }
+/* the part's own gaps are above its first row and under its last */
+.part .connection:first-child { padding-top: 0; }
+.part .connection:last-child { padding-bottom: 0; }
+.settings > * { margin: 0; }
+.settings-section { display: flex; flex-direction: column; gap: var(--space-3); }
+.settings-section > * { margin: 0; }
+.settings-section > .label { color: var(--color-ink-muted); }
+.settings-path { overflow-wrap: anywhere; }
+/* The data folder's path opens the folder: it wraps inside the sentence like any word. */
+.settings-path .link-inline { cursor: pointer; }
+/* Connections: rows like the run's steps, the state in words; a green circle with a check when fine, a quiet ring when not. */
+.connections { list-style: none; margin: 0; padding: 0; }
+.connection { grid-template-columns: 32px 1fr auto; padding: var(--space-4) 0; }
+.connection-body { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+/* the everyday buttons on the right, level with the name and its state */
+.connection-actions { grid-column: 3; grid-row: 1; align-self: start; flex-wrap: nowrap; }
+.connection-body > * { margin: 0; }
+.connection-choice { display: flex; flex-direction: column; gap: var(--space-2); }
+.connection-choice > * { margin: 0; }
+.connection-choice ul { padding-left: var(--space-5); }
+/* Profile (issue 222): the Settings column; the save bar stays in reach at the foot. */
+.profile-chips > * { margin: 0; }
+.profile-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) 0; background: var(--color-ground); }
+.profile-save > p { margin: 0; }
+/* a page that ends with its sticky save bar ends at the bar: no room to scroll below it */
+.settings:has(> .profile-save:last-child) { padding-bottom: 0; }
+/* In Profile an error is a sentence under its field. */
+.field-error { margin: 0; font-size: var(--text-small-size); font-weight: 600; color: var(--color-ink); }
+.field-error::before { content: '↳ '; color: var(--color-ink-muted); }
+/* The CV (issue 222): the editor on the page colour, the example line a quiet surface strip in words. */
+.cv-editor { display: flex; flex-direction: column; gap: var(--space-4); }
+.cv-editor > * { margin: 0; }
+/* the pages line above the CV: a label, then the pages as chips */
+.cv-pages { display: flex; align-items: baseline; gap: var(--space-3); }
+.cv-pages-label { flex: none; }
+.cv-pages-list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: var(--space-2) var(--space-3); flex-wrap: wrap; min-width: 0; }
+.cv-pages-list .chip { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%; padding-right: var(--size-gap-s); }
+/* the CV's name on the left, the Preview switch on the right; the text right under them */
+.cv-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3); }
+.cv-head .field-name { align-items: baseline; } /* the small Markdown link on the label's line */
+.cv-head + * { margin-top: calc(-1 * var(--space-2)); }
+.cv-editor .cv-text { min-height: 480px; font-size: var(--text-small-size); line-height: 1.55; }
+.cv-example { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-m); }
+.cv-preview, .cv-report { padding: var(--space-6); background: var(--color-page); border: 1px solid var(--color-border); border-radius: var(--radius-l); }
+.cv-tools { flex-wrap: wrap; }
+.cv-panel { display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-4); }
+.cv-panel > * { margin: 0; }
+.cv-proposal > span { display: flex; flex-direction: column; }
+/* the proposals of a read: one block per CV section, fixed gaps between and within them */
+.cv-proposals { display: flex; flex-direction: column; gap: var(--space-5); }
+.cv-proposal-group { display: flex; flex-direction: column; gap: var(--space-2); }
+.cv-proposal-group > * { margin: 0; }
+/* Markdown read in the app (Markdown.tsx). */
+.markdown { line-height: 1.55; }
+.markdown > :first-child { margin-top: 0; }
+.markdown > :last-child { margin-bottom: 0; }
+.markdown .display-s, .markdown .md-heading { margin: var(--space-5) 0 var(--space-2); }
+.markdown .md-heading { font-size: var(--text-body-size); font-weight: 600; }
+.markdown p, .markdown ul, .markdown ol { margin: 0 0 var(--space-3); }
+.markdown ul, .markdown ol { padding-left: var(--space-5); }
+.markdown code { font-family: ui-monospace, monospace; font-size: 0.92em; }
+/* the editor over a copy of its text, the copy tinting what was just added; both wrap and scroll alike */
+.cv-text-wrap { display: grid; }
+.cv-text-wrap > * { grid-area: 1 / 1; box-sizing: border-box; width: 100%; scrollbar-gutter: stable; }
+.cv-backdrop { overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; color: transparent; pointer-events: none; }
+.cv-backdrop + textarea { position: relative; background: transparent; }
+.cv-backdrop .md-added { color: transparent; border-radius: 3px; }
+/* what "Add … to my CV" just put in, tinted in the preview: the accent, faint, so it reads in both themes */
+.md-added { background: var(--color-accent-tint); border-radius: var(--radius-m); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.todo-mark { display: inline-block; margin: 0 2px; padding: 0 var(--space-2); border: 1px solid var(--color-accent); border-radius: var(--radius-pill); background: none; font-size: var(--text-small-size); line-height: 1.5; color: var(--color-accent); }
+/* Settings' Your data (issue 222) and Report a problem (issue 593): what is under the part's title, 12 px apart, as the title is from it. */
+.data-moves, .report-problem { display: flex; flex-direction: column; gap: var(--space-3); }
+.data-moves > *, .report-problem > * { margin: 0; }
+.item-name { margin: 0; font-weight: 600; } /* a row's name in a list under a part's title: Connections */
+/* The applications board (issue 222): five columns of plain cards; it scrolls sideways in its own box when narrow. */
+.board-screen { height: 100%; overflow-y: auto; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-9); display: flex; flex-direction: column; gap: var(--space-6); box-sizing: border-box; }
+.board-screen > * { margin: 0; }
+.board-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.board-head h1, .board-head .subtitle { margin: 0; }
+.board { display: grid; grid-template-columns: repeat(5, minmax(160px, 1fr)); gap: var(--space-4); overflow-x: auto; padding-bottom: var(--space-3); }
+.board-column { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.board-column-head { display: flex; align-items: baseline; white-space: pre; }
+.board-column-head .label { margin: 0; color: var(--color-ink-muted); }
+.board-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.board-card { width: 100%; text-align: left; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) var(--space-5); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-l); color: var(--color-ink); }
+.board-card-title { font-weight: 600; }
+.board-card-note { display: flex; align-items: center; gap: var(--size-gap-s); margin-top: var(--space-2); }
+.round-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.round-passed { background: var(--color-ink); }
+.round-next { border: 2px solid var(--color-accent); width: 6px; height: 6px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* What needs you (issue 404): a short line each at the sidebar's foot, opening where it is fixed. */
+.sidebar-problems { display: flex; flex-direction: column; gap: var(--space-2); }
+.sidebar-problem { min-height: 0; padding: 0; text-align: left; font-size: var(--text-small-size); color: var(--color-ink); text-underline-offset: 3px; }
+button.sidebar-problem:hover > .mark + * { text-decoration: underline; }
+p.sidebar-problem { margin: 0; color: var(--color-ink-muted, var(--color-ink)); }
+.market-fold { align-self: flex-start; padding: 0; color: var(--color-ink); font-weight: 600; }
+.market-fold[aria-expanded='false']::before { content: '▸ '; color: var(--color-ink-muted); }
+.market-fold[aria-expanded='true']::before { content: '▾ '; color: var(--color-ink-muted); }
+.market-body { display: flex; flex-direction: column; gap: var(--space-3); }
+.market-body > * { margin: 0; }
+.market-skills { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+/* Profile's Employers. */
+/* Profile's Stories: the intro, the ways to add one, then the stories, each with room around it */
+.stories { display: flex; flex-direction: column; gap: var(--space-4); } /* starts under the pills where the CV part does */
+.stories > * { margin: 0; }
+.stories-add { gap: var(--space-3); }
+/* rows on hairlines, as Employers: a story reads under its title, labels beside the text, with no box around it */
+.story-list { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--color-border); }
+.story { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) 0; border-top: 1px solid var(--color-border); }
+.story-title { min-width: 0; font-weight: 600; }
+.story-text { display: flex; flex-direction: column; gap: var(--space-1); margin: 0; }
+/* the part's name on the left, its text on the right; one under the other on a narrow window (the media query below) */
+.story-text > div { display: grid; grid-template-columns: 88px minmax(0, 1fr); column-gap: var(--space-4); align-items: baseline; }
+.story-text dt, .story-text dd { margin: 0; }
+.stories-fields { display: flex; flex-direction: column; gap: 28px; /* as far apart as Profile's fields */ }
+.stories-draft { display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+.stories-draft > * { margin: 0; }
+.employers { display: flex; flex-direction: column; gap: var(--space-3); }
+.employers > * { margin: 0; }
+.employer-list { list-style: none; margin: 0; padding: 0; }
+.employer { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) 0; border-top: 1px solid var(--color-border); }
+.employer > * { margin: 0; }
+.employer-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+
+/* Ask about your jobs (issue 339): a field at the top of the sidebar, the answer under it. */
+.ask { display: flex; flex-direction: column; gap: var(--space-2); }
+.ask-form { display: flex; gap: var(--space-2); }
+.ask-input { flex: 1; min-width: 0; font-size: var(--text-small-size); }
+.ask-send { flex: none; }
+.ask-answer { display: flex; flex-direction: column; gap: var(--space-2); }
+.ask-answer > * { margin: 0; }
+.ask-answer .body { font-size: var(--text-small-size); line-height: 1.5; }
+
+/* Your phone (issue 444): the paired phones, the setup's steps and its QR code. */
+.phone-step { display: flex; flex-direction: column; gap: var(--space-4); }
+.phone-step > * { margin: 0; }
+.phone-qr { width: 240px; height: 240px; align-self: center; background: var(--color-page); padding: var(--space-3); border-radius: var(--radius-m); image-rendering: pixelated; }
+.phone-home { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+
+/* A field in focus: its border turns blue, no ring (buttons and links keep the ring of :focus-visible). Last, to win over each field's own border. */
+input:not([type="checkbox"], [type="radio"]):focus, select:focus, textarea:focus { outline: none; border-color: var(--color-accent); }
+
+/* Checkboxes and radios: a quiet box or ring on the field's fill, ink when on. The check is CheckMark's shape. */
+input[type="checkbox"], input[type="radio"] { appearance: none; flex: none; width: 18px; height: 18px; margin: 0; display: inline-grid; place-items: center; background: var(--color-page); border: 1px solid var(--color-ink-muted); cursor: pointer; }
+input[type="checkbox"] { border-radius: var(--radius-s); }
+input[type="radio"] { border-radius: 50%; }
+input[type="checkbox"]:hover:not(:disabled), input[type="radio"]:hover:not(:disabled) { border-color: var(--color-ink); }
+input[type="checkbox"]:checked { background: var(--color-ink); border-color: var(--color-ink); }
+input[type="checkbox"]:checked::before { content: ''; width: 14px; height: 14px; background: var(--color-ground); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpolyline points='2.75,8.25 6.25,11.75 13.25,4.75' fill='none' stroke='black' stroke-width='1.75'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpolyline points='2.75,8.25 6.25,11.75 13.25,4.75' fill='none' stroke='black' stroke-width='1.75'/%3E%3C/svg%3E") center / contain no-repeat; }
+input[type="radio"]:checked { border-color: var(--color-ink); }
+input[type="radio"]:checked::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--color-ink); }
+input[type="checkbox"]:disabled, input[type="radio"]:disabled { opacity: 0.4; cursor: default; }
+
+/* Dropdowns: the field's own look, and a thin right-angled chevron drawn in the theme's muted ink. */
+select:not([multiple]) { appearance: none; cursor: pointer; padding-right: var(--space-8);
+  background-image:
+    linear-gradient(45deg, transparent calc(50% - 0.75px), var(--color-ink-muted) calc(50% - 0.75px), var(--color-ink-muted) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.75px), var(--color-ink-muted) calc(50% - 0.75px), var(--color-ink-muted) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+  background-size: 6px 6px; background-repeat: no-repeat;
+  background-position: right calc(var(--space-3) + 5.5px) center, right var(--space-3) center; }
+
+/* Folded sections: the dropdown's thin chevron, pointing right when closed and down when open, centred on the line. */
+summary { display: flex; align-items: baseline; gap: var(--space-2); cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: ''; flex: none; align-self: center; width: 12px; height: 12px; background: var(--color-ink-muted); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='4.25,2.5 7.75,6 4.25,9.5' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='4.25,2.5 7.75,6 4.25,9.5' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") center / contain no-repeat; }
+details[open] > summary::before { transform: rotate(90deg); }
+/* The serif's capitals sit above the middle of its line. */
+.part > summary::before { margin-top: -4px; }
+/* A folded part's heading starts where the other headings do: its chevron hangs in the margin (12 px and the
+   gap), from 900 px, where the margin has room for it. */
+@media (min-width: 900px) {
+  .part > summary { margin-left: calc(-12px - var(--space-2)); }
+}
+
+/* Placeholders say how to use a box, so they have to be readable in both themes. */
+::placeholder { color: var(--color-ink-muted); opacity: 1; }
+
+/* Everything that moves stands still for someone who asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+  .splash-dash::before { animation: none; left: 0; right: 0; }
+  .step-working .step-mark::before { animation: none; border-color: var(--color-accent); }
+  .step-item-running .step-item-mark { animation: none; }
+  .primary, .secondary, .quiet, .pill, .nav-item, .switch-track, .switch-thumb { transition: none; }
+}

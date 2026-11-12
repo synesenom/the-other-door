@@ -1,0 +1,67 @@
+# Dependencies
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Environment and secrets
+.env
+.env.*
+
+# Profile directory (personal data, CV)
+profile/
+
+# Scraped postings, matched postings, and generated application materials
+jobs/
+
+# Upskill reports (top-level output directory only)
+/upskill/
+
+# The problem log of a checkout used as the data folder (core/problem_log.py)
+/logs/
+
+# Claude research/plan/validation scratch files
+/thoughts/
+
+# OS
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Test + coverage artifacts (the badge SVG under docs/ is committed)
+.pytest_cache/
+.coverage
+coverage.xml
+.claude/worktrees/
+
+# What `import` replaced (src/door/core/workspace.py BACKUPS_DIR), and exports written at the root
+/backups/
+/door-export-*.tar.gz
+
+# Desktop app (app/)
+node_modules/
+app/out/
+app/dist/
+app/test-results/
+app/journeys-report/
+app/install-report/
+app/.demo/
+app/.onboard/
+
+# the packaged app (#223): the bundle, its download cache and the installers
+app/resources/
+app/.bundle-cache/
+app/.gif-frames/
+
+# door serve (#302) in the checkout: paired phones (hashes) and the server log
+.serve/
+logs/
+app/journeys-coverage/

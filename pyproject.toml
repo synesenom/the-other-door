@@ -1,0 +1,78 @@
+[project]
+name = "door"
+version = "0.1.0"
+description = "Finding your next job, the way it should be."
+license = "MIT"
+authors = [
+    { name = "Enys Mones", email = "enys.mones@gmail.com" },
+]
+requires-python = ">=3.12,<3.13"
+dynamic = ["dependencies"]
+
+[tool.poetry]
+# Poetry manages dependencies only. The repo is run in-place rather than
+# built/installed as a package: src/ (which holds the `door` package) is put
+# on sys.path by ./door and door.cmd, by .mcp.json for the MCP server, and by
+# `pythonpath` below for tests.
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+requests = ">=2.0,<3.0"
+beautifulsoup4 = ">=4.12,<5.0"
+pydantic = ">=2.0,<3.0"
+click = ">=8.0,<9.0"
+pypdfium2 = ">=4.30,<6"
+mcp = ">=1.0,<2.0"
+py3langid = "^0.4.0"
+inquirer = "^3.4"
+rich = ">=13,<16"
+dnspython = ">=2.6,<3.0"
+# Comes in through mcp (pyjwt[crypto]). Kept below 49, the first release with no Intel macOS wheel, so the
+# packaged app's locked packages install on every system it ships for (#223).
+cryptography = ">=46,<49"
+quickjs = "^1.19.4"
+segno = "^1.6"
+pillow = ">=11,<13"
+truststore = "^0.10.5"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+pytest-cov = "*"
+responses = "*"
+genbadge = { extras = ["coverage"], version = "*" }
+pytest-xdist = "*"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# tests/ mirrors the package layout in subfolders, so test modules are imported by
+# path (importlib mode: same-named files in different folders don't clash), and the
+# src/ (for `import door`) and the shared helpers in tests/ (profile_utils,
+# golden_utils, paths) are put on sys.path explicitly.
+pythonpath = ["src", "tests"]
+# `live` tests hit real external sites; they are opt-in and excluded by default.
+# Run them explicitly with: pytest -m live
+addopts = "-m 'not live' --import-mode=importlib"
+markers = [
+    "live: hits a real external site over the network (opt-in, network-dependent)",
+    "acceptance: a long live run (a full search per profile); left out of the weekly CI smoke run",
+    "real_robots: fetch robots.txt for real instead of the allow-all stub (tests/conftest.py)",
+]
+
+[tool.coverage.run]
+source = ["."]
+branch = true
+omit = [
+    "tests/*",
+    "profile/*",
+    "profile.example/*",
+    "jobs/*",
+    ".venv/*",
+    "app/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.xml]
+output = "coverage.xml"

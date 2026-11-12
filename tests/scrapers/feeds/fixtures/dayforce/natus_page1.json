@@ -1,0 +1,29 @@
+{
+ "jobPostings": [
+  {
+   "jobPostingId": 3518,
+   "jobTitle": "Senior AI Engineer – Agentic Software Development",
+   "jobDescription": "\n&nbsp;\nJob Function: Engineering | Job Family: Software Engineering\n&nbsp;\n&nbsp;\nThe opportunity\nOur hearing-care division makes the instruments clinicians use to test and fit patients. The R&amp;D group writes the software, electronics and test systems behind them, and we are now deciding how AI tools become part of that daily work.\n&nbsp;\nCoding assistants are moving fast, but in a regulated product every change still has to be reviewed and traced back to a requirement. You will design the AI-supported way of working together with our architect and developers, teach the teams to use it and keep improving it as it grows. You will report to the head of the digital engineering group.\n&nbsp;\nWhat you will do\n\nWork hands-on with AI coding tools next to our developers and turn the patterns that work into shared templates and guidelines.\nBuild what is still missing: pipelines for AI-assisted changes, reusable agent parts, links to sources such as PLM, test management and regulatory records, access and data-location rules, and tracking of usage and cost.\nKeep the architecture and module boundaries clean enough, with the architect, that agents can work inside them safely.\nAgree with RA/QA how AI-assisted work meets IEC 62304 and our quality system.\nTake the teams with you: pair, coach, demo and write it down until AI-assisted development is the normal way of working, not one expert's sid",
+   "hasVirtualLocation": false,
+   "postingStartTimestampUTC": "2026-10-08T04:00:00+00:00",
+   "postingLocations": [
+    {
+     "formattedAddress": "Denmark - Taastrup (Sensory), Hørskætten 9, Klovtofte, Taastrup, Hovedstaden, Denmark"
+    }
+   ]
+  },
+  {
+   "jobPostingId": 3288,
+   "jobTitle": "Project Manager (remote in Europe)",
+   "jobDescription": "Location: Remote somewhere in EuropeJob Overview\nWe are looking for an experienced, structured Project Manager with 6 to 9 years in the role to run the rollout, integration and improvement of our ERP platform, our AI projects and the wider set of business applications.\n&nbsp;\nYou will be the link between engineers, data scientists and the business. You will lead delivery of large software programmes from start to finish and make sure the systems fit where the company is going and grow with it. Knowing Salesforce&nbsp;helps, but it is not required.\n&nbsp;\nKey Responsibilities\n\nProject Lifecycle Management: Run application projects from scope and requirements through design, build, UAT, go-live and support after launch.\nERP &amp; Systems Integration: Plan, configure and roll out ERP modules and connect them to the internal applications people already use, so daily work runs more smoothly.\nAI Solution Delivery: Work with data science and engineering to bring AI-based tools, automation and models into everyday operations.\nStakeholder &amp; Change Management: Work with senior leaders and department heads to set and hold expecta",
+   "hasVirtualLocation": false,
+   "postingStartTimestampUTC": "2026-09-09T04:00:00+00:00",
+   "postingLocations": [
+    {
+     "formattedAddress": "Denmark - Remote (Sensory), Hørskætten 9, Klovtofte, Taastrup, Hovedstaden, Denmark"
+    }
+   ]
+  }
+ ],
+ "maxCount": 3
+}

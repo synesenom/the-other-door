@@ -1,0 +1,44 @@
+{
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "location": "Copenhagen",
+  "cv_template": "profile/cv.template.tex",
+  "cv_content": "profile/cv.md",
+  "cover_letter_template": "profile/cover-letter.template.tex",
+  "role_targets": [
+    "Financial Controller",
+    "Senior Financial Controller",
+    "Head of Finance",
+    "Finance Manager",
+    "Group Controller"
+  ],
+  "search_keywords": [
+    "financial controller",
+    "finance manager",
+    "head of finance",
+    "group controller",
+    "business controller",
+    "finance business partner",
+    "accounting manager",
+    "controller"
+  ],
+  "remote": "hybrid",
+  "exclude": {
+    "companies": [],
+    "keywords": [
+      "unpaid",
+      "intern",
+      "internship",
+      "junior"
+    ]
+  },
+  "min_score": 0.65,
+  "languages": [
+    "English"
+  ],
+  "enrich_sources": [],
+  "recheck_after_days": 30,
+  "verify_liveness": false,
+  "prescreen_top_n": 40,
+  "prescreen_min": 0.15
+}

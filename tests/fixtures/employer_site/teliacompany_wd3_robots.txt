@@ -1,0 +1,8 @@
+Sitemap: https://teliacompany.wd3.myworkdayjobs.com/Telia_careers/siteMap.xml
+Sitemap: https://teliacompany.wd3.myworkdayjobs.com/MTV_careers/siteMap.xml
+
+User-agent: *
+Allow: /Telia_careers/
+Allow: /MTV_careers/
+Disallow: /sweden_vacancies/
+Disallow: /refreshFacet/

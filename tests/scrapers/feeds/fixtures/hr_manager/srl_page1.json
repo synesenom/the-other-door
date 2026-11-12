@@ -1,0 +1,44 @@
+{
+ "CustomerAlias": "statensrekrutteringsloesning_tr",
+ "CustomerName": "Statens Rekrutteringsløsning",
+ "TransactionStatus": {
+  "Description": "The operation completed successfully.",
+  "StatusCode": 0
+ },
+ "Items": [
+  {
+   "Id": 170124,
+   "Name": "AC-fuldmægtige og barselsvikarer til producentansvar og globalt myndighedssamarbejde i Cirkulær Økonomi i Energistyrelsen",
+   "Published": "/Date(1790768209000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=3010&ProjectId=170124&DepartmentId=19135&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p><em>Er du grundig, kan du lide struktur, og vil du arbejde for et mere bæredygtigt forbrug? Så kan du blive en af vores nye kolleger i Energistyrelsens Center for Cirkulær Økonomi.</em></p>\r\n\r\n<h2>Energistyrelsens center for Cirkulær Økonomi</h2>\r\n\r\n<p>Vi bruger flere ressourcer end nogensinde, og det sætter spor i miljø og klima. I centret arbejder vi for, at produkter bliver designet og brugt, så de holder længere, og for at affald bliver forebygget, genbrugt og genanvendt. Vi arbejder både i Danmark og i samarbejder med myndigheder i andre lande.</p>\r\n\r\n<p>En stor del af arbejdet er producentansvar: virksomheder, der sælger et produkt, skal også tage hånd om det, når det bliver til affald. Ordningerne dækker allerede flere produktgrupper, og flere er på vej. </p>\r\n\r\n<p>Centret har kolleger med mange baggrunde, og vi løser opgaverne i fællesskab. Vi holder af et godt fagligt miljø og en god stemning.</p>\r\n\r\n<p>Vi søger tre nye kolleger og to barselsvikarer til kontoret for ’Producentansvar og produkter’, der skal hjælpe med administrationen af ordningerne og med vores internationale projekter.</p>\r\n\r\n<p>Vi er en fleksibel arbejdsplads med kolleger fra hele landet.</p>\r\n\r\n<p><strong>Dine opgaver vil bl.a. være:</strong></p>\r\n\r\n<ul>\r\n\t<li>fakturering af virksomheder og kontakt til vores økonomiafdeling</li>\r\n\t<li>administrative tilsyn med virksomhederne</li>\r\n\t<li>svar på henvendelser og udsendelse af breve</li>\r\n\t<li>vejledning af virksomheder om reglerne</li>\r\n\t<li>anden sagsbehandling og ad hoc-opgaver</li>\r\n\t<li>støtte til projektstyring og udbud i et nordisk projekt</li>\r\n\t<li>støtte til vores internationale myndighedssamarbejder</li>\r\n</ul>\r\n\r\n<p><strong>Vi forventer, at du:</strong></p>\r\n\r\n<ul>\r\n\t<li>har en relevant uddannelse, fx naturvidenskabelig eller samfundsfaglig</li>\r\n\t<li>har erfaring med sagsbehandling og vejledning</li>\r\n\t<li>gerne kender det cirkulære område</li>\r\n\t<li>er fortrolig med journalisering og almindelige kontorprogrammer</li>\r\n\t<li>skriver klart og præcist</li>\r\n\t<li>er omhyggelig med detaljerne</li>\r\n\t<li>arbejder selvstændigt og sikrer fremdrift </li>\r\n\t<li>bidrager aktivt i et team </li>\r\n\t<li>bevarer overblikket, når der er travlt.</li>\r\n</ul>\r\n\r\n<p>Til gengæld får du engagerede kolleger med en uformel tone, der hjælper hinanden – også når der er travlt.     </p>\r\n\r\n<h2>Løn- og ansættelsesvilkår   </h2>\r\n\r\n<p>Stillingerne er på fuld tid med start hurtigst muligt og senest 1. december 2026. Barselsvikariaterne løber til 30. november 2027. Løn og vilkår følger overenskomsten for akademikere i staten. <br />\r\n <br />\r\nTjenestestedet er Energistyrelsen i Odense.</p>\r\n\r\n<p>Du skal kunne sikkerhedsgodkendes, hvis stillingen kræver det.  </p>\r\n\r\n<p>Vil du vide mere, så kontakt teamleder Rikke Holm på tlf. 00000000 eller skriv til kontakt@example.com.<br />\r\n  <br />\r\nVi opfordrer alle uanset baggrund til at søge.  </p>\r\n\r\n<h2>Sådan ansøger du   </h2>\r\n\r\n<p>Send ansøgning, CV og eksamensbevis senest den 18. oktober. Skriv i ansøgningen, om du også vil overveje et barselsvikariat.</p>\r\n\r\n<p>Vi holder samtaler løbende, og der kan indgå en case eller en test.  </p>\r\n"
+    }
+   ],
+   "Department": {
+    "Name": "Energistyrelsen",
+    "City": "København V"
+   },
+   "DepartmentTree": {
+    "Name": "Statens Rekrutteringsløsning",
+    "City": "",
+    "SubItems": [
+     {
+      "Name": "§ 29 KEFM (L-HR) - Klima-, Energi- og Forsyningsministeriet",
+      "City": "",
+      "SubItems": [
+       {
+        "Name": "Energistyrelsen",
+        "City": "København V"
+       }
+      ]
+     }
+    ]
+   },
+   "PositionLocation": {
+    "Name": "Energistyrelsen Odense"
+   }
+  }
+ ]
+}

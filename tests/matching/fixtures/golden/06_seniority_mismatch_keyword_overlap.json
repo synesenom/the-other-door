@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-seniority-mismatch-keyword-overlap",
+    "title": "Graduate Data Scientist (Entry Level)",
+    "company": "Fjordwave Insights",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-seniority-mismatch-keyword-overlap",
+    "description": "About the role:\nFjordwave Insights runs a two-year graduate programme for people starting their career in data science. We are looking for a recent graduate to join our data team on a rotational basis.\n\nResponsibilities:\nYou will assist senior data scientists with building and maintaining ML pipelines, write SQL queries against our data warehouse, and help process data on AWS and Spark under close supervision.\n\nRequirements:\n0-1 years of professional experience is expected — this is an entry-level, rotational graduate programme, not a leadership position, and you will report to a senior data scientist throughout. Familiarity with Python (scikit-learn, PyTorch, pandas) and SQL from your studies is required. Exposure to AWS and Spark is a plus but will be taught on the job.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, three days a week on-site.\n\nWhat we offer:\nA structured onboarding programme, a dedicated mentor, and a clear path to a permanent data scientist role after the programme.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.2,
+    "score_max": 0.55,
+    "language_requirement": "none"
+  }
+}

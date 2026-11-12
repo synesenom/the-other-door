@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Lärare i svenska åk 7-9  - Sverkerskolan",
+  "County": "Uppsala län",
+  "Municipality": "Uppsala",
+  "ApplicationEndDateFormatted": "2026-11-16"
+ },
+ "Assignment": {
+  "Guid": "d357eabb-9964-4c24-854a-e74da880c1ae",
+  "Title": "Lärare i svenska åk 7-9  - Sverkerskolan",
+  "ReferenceNumber": "UBN-2026-05557",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Lärare i svenska åk 7-9  - Sverkerskolan\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "",
+  "Qualifications": "",
+  "AdditionalInfo": ""
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Lärare i svenska åk 7-9  - Sverkerskolan\",\"description\":\"I rollen ansvarar du för uppgifterna som hör till lärare i svenska åk 7-9  - sverkerskolan och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Uppsala kommun\"},\"datePosted\":\"2026-10-30T00:00:00\",\"validThrough\":\"2026-11-16T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Sverkerskolan, Götgatan 17-21, 752 22 Uppsala\"},\"employmentType\":[\"FULL_TIME\"],\"directApply\":true}"
+}

@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-exclude-unpaid-fellowship",
+    "title": "Unpaid Data Science Fellowship",
+    "company": "Civic Impact Lab",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-exclude-unpaid-fellowship",
+    "description": "About the role:\nCivic Impact Lab runs an unpaid six-month fellowship for people who want to apply data science to social-good projects.\n\nResponsibilities:\nYou will build ML models in Python for non-profit partner organizations, working with SQL and AWS on small-scale civic data projects.\n\nRequirements:\nStrong hands-on experience with Python (scikit-learn, PyTorch, pandas), SQL, and AWS is required. This is an unpaid fellowship position — fellows are expected to have independent means of financial support for the duration of the programme.\n\nLocation and work mode:\nHybrid, based in our Copenhagen co-working space.\n\nWhat we offer:\nMentorship from senior practitioners, a certificate of completion, and a strong professional network in the civic-tech space.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.0,
+    "score_max": 0.1,
+    "language_requirement": "none"
+  }
+}

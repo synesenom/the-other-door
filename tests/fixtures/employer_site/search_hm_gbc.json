@@ -1,0 +1,14 @@
+{
+ "search": [
+  {
+   "id": "Q64023001",
+   "label": "H & M Hennes & Mauritz GBC",
+   "description": "Swedish company",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "H & M Hennes & Mauritz GBC"
+   }
+  }
+ ]
+}

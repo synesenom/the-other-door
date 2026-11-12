@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<workzag-jobs>
+
+<position>
+    <id>2803716</id>
+    <subcompany>PNO Consultants SAS (France)</subcompany>
+    <office>France</office>
+    <additionalOffices>
+        <office>Paris</office>
+    </additionalOffices>
+    <department>PNO France</department>
+    <recruitingCategory>PNO Europe default</recruitingCategory>
+    <name>Administrative Assistant</name>
+    <jobDescriptions>
+        <jobDescription>
+            <name>Job summary (Short promotional text) </name>
+            <value>
+                <![CDATA[<p>We need an administrative assistant for our Paris office.</p>Day-to-day support for the finance team across three French entities.]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your tasks 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Keep contracts and files up to date.</li><li>Follow up on supplier orders and invoices.</li></ul>]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your profile 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Two years of experience in an administrative role.</li><li>Fluent English and French.</li></ul>]]>
+            </value>
+        </jobDescription>
+    </jobDescriptions>
+    <employmentType>permanent</employmentType>
+    <seniority>experienced</seniority>
+    <schedule>full-time</schedule>
+    <yearsOfExperience>2-5</yearsOfExperience>
+    <occupation>general_other_administrative_clerical</occupation>
+    <occupationCategory>administrative_and_clerical</occupationCategory>
+    <createdAt>2026-09-18T14:43:10+00:00</createdAt>
+</position>
+
+<position>
+    <id>1401049</id>
+    <subcompany>PNO Consultants GmbH</subcompany>
+    <office>Germany</office>
+    <additionalOffices>
+        <office>Leipzig</office>
+    </additionalOffices>
+    <department>PNO Germany</department>
+    <recruitingCategory>Fixed position</recruitingCategory>
+    <name>Werkstudent (m/w/d)</name>
+    <jobDescriptions>
+        <jobDescription>
+            <name>Job summary (Short promotional text) </name>
+            <value>
+                <![CDATA[<p>Wir suchen eine Werkstudentin oder einen Werkstudenten für unser Büro in Leipzig.</p>Du unterstützt das Team bei Förderanträgen.]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your tasks 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Recherche zu Förderprogrammen.</li><li>Unterstützung bei der Angebotserstellung.</li></ul>]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your profile 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Eingeschrieben an einer Hochschule.</li><li>Gute Deutsch- und Englischkenntnisse.</li></ul>]]>
+            </value>
+        </jobDescription>
+    </jobDescriptions>
+    <employmentType>trainee</employmentType>
+    <seniority>entry-level</seniority>
+    <schedule>part-time</schedule>
+    <yearsOfExperience>lt-1</yearsOfExperience>
+    <keywords>werkstudent ,consultancy,Grants</keywords>
+    <occupation>other</occupation>
+    <occupationCategory>other</occupationCategory>
+    <createdAt>2024-01-25T10:38:27+00:00</createdAt>
+</position>
+
+<position>
+    <id>2185891</id>
+    <subcompany>PNO Consultants bv (Netherlands)</subcompany>
+    <office>Netherlands</office>
+    <additionalOffices>
+        <office>Rijswijk</office>
+    </additionalOffices>
+    <department>HR</department>
+    <recruitingCategory>PNO Europe default</recruitingCategory>
+    <name>Fiscaal Adviseur</name>
+    <jobDescriptions>
+        <jobDescription>
+            <name>Job summary (Short promotional text) </name>
+            <value>
+                <![CDATA[<p>Voor ons kantoor in Rijswijk zoeken wij een fiscaal adviseur.</p>Je adviseert klanten over subsidies en fiscale regelingen.]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your tasks 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Opstellen van adviesrapporten.</li><li>Begeleiden van aanvragen.</li></ul>]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your profile 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Afgeronde opleiding fiscaal recht.</li><li>Goede beheersing van Nederlands en Engels.</li></ul>]]>
+            </value>
+        </jobDescription>
+    </jobDescriptions>
+    <employmentType>permanent</employmentType>
+    <seniority>experienced</seniority>
+    <schedule>full-time</schedule>
+    <yearsOfExperience>2-5</yearsOfExperience>
+    <occupation>other</occupation>
+    <occupationCategory>other</occupationCategory>
+    <createdAt>2025-06-25T11:51:57+00:00</createdAt>
+</position>
+
+<position>
+    <id>2461874</id>
+    <subcompany>PNO Consultants SAS (France)</subcompany>
+    <office>France</office>
+    <additionalOffices>
+        <office>Paris</office>
+    </additionalOffices>
+    <department>PNO France</department>
+    <recruitingCategory>PNO Europe default</recruitingCategory>
+    <name>IT Consultant – Public Funding for Innovation</name>
+    <jobDescriptions>
+        <jobDescription>
+            <name>Job summary (Short promotional text) </name>
+            <value>
+                <![CDATA[<p>Join our Paris team as an IT consultant on public funding for innovation.</p>You help clients prepare grant applications for software projects.]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your tasks 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Describe technical projects for funding bodies.</li><li>Prepare cost statements with the finance team.</li></ul>]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your profile 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>A degree in computer science or similar.</li><li>Fluent English and French.</li></ul>]]>
+            </value>
+        </jobDescription>
+    </jobDescriptions>
+    <employmentType>permanent</employmentType>
+    <seniority>entry-level</seniority>
+    <schedule>full-time</schedule>
+    <yearsOfExperience>lt-1</yearsOfExperience>
+    <occupation>other</occupation>
+    <occupationCategory>other</occupationCategory>
+    <createdAt>2025-12-15T11:04:03+00:00</createdAt>
+</position>
+
+<position>
+    <id>2754179</id>
+    <subcompany>PNO Consultants Ltd. (UK)</subcompany>
+    <office>UK</office>
+    <additionalOffices>
+        <office>UK Remote</office>
+    </additionalOffices>
+    <department>PNO UK</department>
+    <recruitingCategory>PNO Europe default</recruitingCategory>
+    <name>Senior Innovation Consultant</name>
+    <jobDescriptions>
+        <jobDescription>
+            <name>Job summary (Short promotional text) </name>
+            <value>
+                <![CDATA[<p>We are hiring a senior innovation consultant who works remotely from the UK.</p>You lead proposals for national and European grants.]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your tasks 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Lead proposal writing for clients.</li><li>Coach junior consultants.</li></ul>]]>
+            </value>
+        </jobDescription>
+        <jobDescription>
+            <name>Your profile 1st part  (in max 4 bullets)</name>
+            <value>
+                <![CDATA[<ul><li>Five years in grant consulting.</li><li>Strong written English.</li></ul>]]>
+            </value>
+        </jobDescription>
+    </jobDescriptions>
+    <employmentType>permanent</employmentType>
+    <seniority>experienced</seniority>
+    <schedule>full-time</schedule>
+    <yearsOfExperience>5-10</yearsOfExperience>
+    <occupation>other</occupation>
+    <occupationCategory>other</occupationCategory>
+    <createdAt>2026-08-13T17:12:15+00:00</createdAt>
+</position>
+
+</workzag-jobs>

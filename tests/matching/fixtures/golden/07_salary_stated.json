@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-salary-stated",
+    "title": "Head of Data Science",
+    "company": "Meridian Health Analytics",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-salary-stated",
+    "description": "About the role:\nMeridian Health Analytics builds predictive models for hospital resource planning across Danish and Swedish hospitals. We are hiring a Head of Data Science to build and lead our data science function.\n\nResponsibilities:\nYou will define the data science strategy, build ML pipelines for patient-flow forecasting using Python and Spark, and manage a growing team of data scientists. You will work closely with engineering and clinical stakeholders.\n\nRequirements:\n7+ years of experience in data science, including experience leading a team, is required. Strong hands-on experience with Python (scikit-learn, PyTorch, pandas), SQL, AWS, and Spark is required.\n\nCompensation:\nThe salary for this position is 750,000-850,000 DKK per year, depending on experience, plus a pension contribution and annual bonus.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, three days a week on-site.\n\nWhat we offer:\nA mission-driven team working on healthcare capacity planning, and a generous professional-development budget.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.6,
+    "score_max": 1.0,
+    "language_requirement": "none"
+  }
+}

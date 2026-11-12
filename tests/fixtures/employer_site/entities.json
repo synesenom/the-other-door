@@ -1,0 +1,1859 @@
+{
+ "_note": "Saved wbgetentities answers (props=claims|labels, languages=en|sv), each item's claims trimmed to P31, P17, P159, P452, P1454, P1128, P749, P355, P856",
+ "entities": {
+  "Q1109171": {
+   "id": "Q1109171",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "telium"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 56883667,
+         "id": "Q56883667"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q123581685": {
+   "id": "Q123581685",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Hilti"
+    },
+    "sv": {
+     "language": "sv",
+     "value": "Hilti"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 101352,
+         "id": "Q101352"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q1295663": {
+   "id": "Q1295663",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Telia Eesti"
+    },
+    "sv": {
+     "language": "sv",
+     "value": "Telia Eesti"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4830453,
+         "id": "Q4830453"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 191,
+         "id": "Q191"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P159": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1770,
+         "id": "Q1770"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P452": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 418,
+         "id": "Q418"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1454": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 54943230,
+         "id": "Q54943230"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P749": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 862303,
+         "id": "Q862303"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P856": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.telia.ee",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q130985202": {
+   "id": "Q130985202",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "HILTI"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 13442814,
+         "id": "Q13442814"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q1361530": {
+   "id": "Q1361530",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Hilti"
+    },
+    "sv": {
+     "language": "sv",
+     "value": "Hilti"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4830453,
+         "id": "Q4830453"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 6881511,
+         "id": "Q6881511"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 347,
+         "id": "Q347"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P159": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 49657,
+         "id": "Q49657"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P452": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 187939,
+         "id": "Q187939"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 107597925,
+         "id": "Q107597925"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1454": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 111152726,
+         "id": "Q111152726"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 134161,
+         "id": "Q134161"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1128": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+28000",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+25000",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+30000",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "preferred"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+31115",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P355": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 108269113,
+         "id": "Q108269113"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P856": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.hilti.group/",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.hilti.ch/",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.hilti.de/",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.hilti.com/",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q188326": {
+   "id": "Q188326",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "H&M"
+    },
+    "sv": {
+     "language": "sv",
+     "value": "Hennes & Mauritz"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 76213285,
+         "id": "Q76213285"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 726870,
+         "id": "Q726870"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1618899,
+         "id": "Q1618899"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4830453,
+         "id": "Q4830453"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 891723,
+         "id": "Q891723"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 34,
+         "id": "Q34"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P159": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1754,
+         "id": "Q1754"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P452": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 126793,
+         "id": "Q126793"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 3231404,
+         "id": "Q3231404"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1454": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 422007,
+         "id": "Q422007"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1128": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+123283",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+120191",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+114586",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+104634",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+93351",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+177000",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "preferred"
+     }
+    ],
+    "P749": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 64023431,
+         "id": "Q64023431"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P355": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 64023001,
+         "id": "Q64023001"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 10493459,
+         "id": "Q10493459"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 58219499,
+         "id": "Q58219499"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 85322338,
+         "id": "Q85322338"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 121483919,
+         "id": "Q121483919"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 86668300,
+         "id": "Q86668300"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P856": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.hm.com/",
+        "type": "string"
+       }
+      },
+      "rank": "deprecated"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www2.hm.com",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q35464379": {
+   "id": "Q35464379",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Hilti"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 124714,
+         "id": "Q124714"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 843,
+         "id": "Q843"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q4567911": {
+   "id": "Q4567911",
+   "labels": {
+    "sv": {
+     "language": "sv",
+     "value": "Telia Sverige"
+    },
+    "en": {
+     "language": "en",
+     "value": "Telia Sverige"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4830453,
+         "id": "Q4830453"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 34,
+         "id": "Q34"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P159": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 10417432,
+         "id": "Q10417432"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P452": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 2401742,
+         "id": "Q2401742"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 56598901,
+         "id": "Q56598901"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1454": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 422007,
+         "id": "Q422007"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P749": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 862303,
+         "id": "Q862303"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P856": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "http://www.telia.se",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q60436478": {
+   "id": "Q60436478",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Telia"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 56436498,
+         "id": "Q56436498"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 668,
+         "id": "Q668"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q64023001": {
+   "id": "Q64023001",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "H & M Hennes & Mauritz GBC"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4830453,
+         "id": "Q4830453"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 34,
+         "id": "Q34"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P159": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1754,
+         "id": "Q1754"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1454": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 422007,
+         "id": "Q422007"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P749": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 188326,
+         "id": "Q188326"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P355": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 110235497,
+         "id": "Q110235497"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q64023431": {
+   "id": "Q64023431",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Ramsbury Invest"
+    },
+    "sv": {
+     "language": "sv",
+     "value": "Ramsbury Invest"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4830453,
+         "id": "Q4830453"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 34,
+         "id": "Q34"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P159": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1754,
+         "id": "Q1754"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1454": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 422007,
+         "id": "Q422007"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q6515085": {
+   "id": "Q6515085",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Telia Norge"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4830453,
+         "id": "Q4830453"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 20,
+         "id": "Q20"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P159": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 585,
+         "id": "Q585"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P452": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 2401742,
+         "id": "Q2401742"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 56598901,
+         "id": "Q56598901"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 721830,
+         "id": "Q721830"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1454": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 15042660,
+         "id": "Q15042660"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1128": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+1734",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P749": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 862303,
+         "id": "Q862303"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P355": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 11993855,
+         "id": "Q11993855"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 25424437,
+         "id": "Q25424437"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 5093296,
+         "id": "Q5093296"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 5553795,
+         "id": "Q5553795"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P856": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://telia.no/",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.telia.fi/",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q7697232": {
+   "id": "Q7697232",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Telia"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 486972,
+         "id": "Q486972"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1530705,
+         "id": "Q1530705"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 837,
+         "id": "Q837"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q862303": {
+   "id": "Q862303",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Telia Company"
+    },
+    "sv": {
+     "language": "sv",
+     "value": "Telia Company"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4830453,
+         "id": "Q4830453"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 6881511,
+         "id": "Q6881511"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 891723,
+         "id": "Q891723"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P17": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 34,
+         "id": "Q34"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P159": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1754,
+         "id": "Q1754"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 10673294,
+         "id": "Q10673294"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P452": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 2401742,
+         "id": "Q2401742"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 56598901,
+         "id": "Q56598901"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1454": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 422007,
+         "id": "Q422007"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1128": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+26166",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "amount": "+20800",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "preferred"
+     }
+    ],
+    "P355": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4567911,
+         "id": "Q4567911"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 3359335,
+         "id": "Q3359335"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 494274,
+         "id": "Q494274"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4993620,
+         "id": "Q4993620"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 6515085,
+         "id": "Q6515085"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1295663,
+         "id": "Q1295663"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P856": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.teliacompany.com/sv",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "https://www.teliacompany.com/en",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q97998379": {
+   "id": "Q97998379",
+   "labels": {
+    "sv": {
+     "language": "sv",
+     "value": "Telia"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 452237,
+         "id": "Q452237"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q97998570": {
+   "id": "Q97998570",
+   "labels": {
+    "sv": {
+     "language": "sv",
+     "value": "Telia"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 452237,
+         "id": "Q452237"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q97998664": {
+   "id": "Q97998664",
+   "labels": {
+    "sv": {
+     "language": "sv",
+     "value": "Telia"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 452237,
+         "id": "Q452237"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q99423470": {
+   "id": "Q99423470",
+   "labels": {
+    "sv": {
+     "language": "sv",
+     "value": "Telia"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 99045339,
+         "id": "Q99045339"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q99425489": {
+   "id": "Q99425489",
+   "labels": {
+    "sv": {
+     "language": "sv",
+     "value": "Telia"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 99045339,
+         "id": "Q99045339"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q99426677": {
+   "id": "Q99426677",
+   "labels": {
+    "sv": {
+     "language": "sv",
+     "value": "Telia"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 99045339,
+         "id": "Q99045339"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  }
+ }
+}

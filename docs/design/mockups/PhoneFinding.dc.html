@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The other door phone — Finding jobs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; overflow: hidden">
+  <main style="flex: 1; min-height: 0; overflow: hidden; padding: 40px 20px 0; display: flex; flex-direction: column; gap: 22px">
+    <div>
+      <span aria-hidden="true" style="display: block; width: 32px; height: 4px; border-radius: 2px; background: #4169E1; margin-bottom: 14px"></span>
+      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Finding jobs</h1>
+      <p style="margin: 6px 0 0; color: #5C5249">Started 08:02 on the computer running The other door. You can lock the phone.</p>
+    </div>
+    <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+        <li style="display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 13px 0; border-top: 1px solid #E2D5BA">
+          <span aria-hidden="true" style="{{s.dot}}">{{s.mark}}</span>
+          <span style="display: flex; flex-direction: column">
+            <span style="{{s.nameStyle}}">{{s.name}}</span>
+            <span style="color: #5C5249; font-size: 13px">{{s.detail}}</span>
+            <sc-if value="{{s.running}}" hint-placeholder-val="{{ false }}">
+              <span style="display: block; height: 4px; border-radius: 2px; background: #E2D5BA; margin-top: 8px; overflow: hidden"><span style="display: block; height: 4px; width: 40%; background: #4169E1"></span></span>
+            </sc-if>
+          </span>
+          <span style="color: #5C5249; font-size: 13px; font-variant-numeric: tabular-nums">{{s.time}}</span>
+        </li>
+      </sc-for>
+    </ol>
+    <button type="button" style="align-self: flex-start; height: 44px; padding: 0 16px; border: 1px solid #D6C7A8; border-radius: 10px; background: transparent; color: #1E1A16">Stop after this step</button>
+  </main>
+  <nav aria-label="Main" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 22px; border-top: 1px solid #E2D5BA; background: #F1E6CF">
+    <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">
+      <a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; text-decoration: none; font-size: 11px; color: {{tab.color}}; font-weight: {{tab.weight}}">
+        <span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: {{tab.dash}}"></span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tab.icon}}"></path></svg>
+        <span>{{tab.label}}</span>
+      </a>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const done = 'width: 26px; height: 26px; border-radius: 13px; background: #1E1A16; color: #F8F1E2; display: flex; align-items: center; justify-content: center; font-size: 12px;';
+    const run = 'width: 26px; height: 26px; box-sizing: border-box; border-radius: 13px; border: 2px solid #4169E1; color: #2F55C8; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;';
+    const wait = 'width: 26px; height: 26px; box-sizing: border-box; border-radius: 13px; border: 1px solid #C9B993; color: #5C5249; display: flex; align-items: center; justify-content: center; font-size: 12px;';
+    const name = 'font-family: \'Young Serif\', Georgia, serif; font-size: 19px; font-weight: 400; line-height: 1.3;';
+    const steps = [
+      { name: 'Search', detail: '6 boards · 142 new ads', time: '3 min', state: 'done' },
+      { name: 'Discover', detail: '38 employers on LinkedIn', time: '9 min', state: 'done' },
+      { name: 'Follow', detail: '11 career pages followed', time: '4 min', state: 'done' },
+      { name: 'Collect', detail: 'Example Health · 23 of 57', time: '6 min', state: 'run' },
+      { name: 'Match', detail: 'Scores the new ads', time: '', state: 'wait' }
+    ].map((s, i) => ({ ...s, running: s.state === 'run', mark: s.state === 'done' ? '✓' : String(i + 1), dot: s.state === 'done' ? done : s.state === 'run' ? run : wait, nameStyle: name + (s.state === 'wait' ? ' color: #5C5249;' : '') }));
+    const icons = {
+      Home: 'M4 11l8-7 8 7v9h-5v-6h-6v6H4z',
+      Matches: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+      Applications: 'M4 4h6v16H4zM14 4h6v10h-6z',
+      Profile: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c1.5-4 4.5-6 8-6s6.5 2 8 6',
+      Settings: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4'
+    };
+    const tabs = Object.keys(icons).map(label => ({ label, icon: icons[label], color: label === 'Home' ? '#1E1A16' : '#5C5249', weight: label === 'Home' ? '600' : '400', dash: label === 'Home' ? '#4169E1' : 'transparent' }));
+    return { steps, tabs };
+  }
+}
+</script>
+</body>
+</html>

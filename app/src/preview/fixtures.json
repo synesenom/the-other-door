@@ -1,0 +1,1968 @@
+{
+ "show_profile": {
+  "path": "/demo/profile",
+  "options": {
+   "cities": [
+    {
+     "name": "Copenhagen",
+     "country": "Denmark",
+     "boards": [
+      "jobindex",
+      "thehub",
+      "euraxess",
+      "globalnyt",
+      "jobbank",
+      "jobmaskinen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      }
+     ]
+    },
+    {
+     "name": "Aarhus",
+     "country": "Denmark",
+     "boards": [
+      "jobindex",
+      "thehub",
+      "euraxess",
+      "globalnyt",
+      "jobbank",
+      "jobmaskinen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      }
+     ]
+    },
+    {
+     "name": "Odense",
+     "country": "Denmark",
+     "boards": [
+      "jobindex",
+      "thehub",
+      "euraxess",
+      "globalnyt",
+      "jobbank",
+      "jobmaskinen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      }
+     ]
+    },
+    {
+     "name": "Aalborg",
+     "country": "Denmark",
+     "boards": [
+      "jobindex",
+      "thehub",
+      "euraxess",
+      "globalnyt",
+      "jobbank",
+      "jobmaskinen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      }
+     ]
+    },
+    {
+     "name": "Paris",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Lyon",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Toulouse",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Marseille",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Lille",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Bordeaux",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Nantes",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Nice",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Strasbourg",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Rennes",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Grenoble",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Montpellier",
+     "country": "France",
+     "boards": [
+      "euraxess",
+      "francetravail",
+      "choisirleservicepublic",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "hellowork_discovery",
+       "label": "HelloWork"
+      }
+     ]
+    },
+    {
+     "name": "Budapest",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Debrecen",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Szeged",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Miskolc",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Pecs",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Gyor",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Szekesfehervar",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Kecskemet",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Nyiregyhaza",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Szombathely",
+     "country": "Hungary",
+     "boards": [
+      "euraxess",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "profession_discovery",
+       "label": "profession.hu"
+      }
+     ]
+    },
+    {
+     "name": "Stockholm",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Göteborg",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Malmö",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Uppsala",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Linköping",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Västerås",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Örebro",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Norrköping",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Jönköping",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    },
+    {
+     "name": "Umeå",
+     "country": "Sweden",
+     "boards": [
+      "euraxess",
+      "arbetsformedlingen",
+      "workable",
+      "reliefweb"
+     ],
+     "discovery": [
+      {
+       "key": "linkedin_discovery",
+       "label": "LinkedIn"
+      },
+      {
+       "key": "jobbsafari_discovery",
+       "label": "Jobbsafari"
+      }
+     ]
+    }
+   ],
+   "languages": [
+    "English",
+    "Danish",
+    "French",
+    "Hungarian",
+    "Swedish"
+   ],
+   "worldwide_boards": [
+    "workable",
+    "reliefweb"
+   ],
+   "worldwide_discovery": [
+    {
+     "key": "linkedin_discovery",
+     "label": "LinkedIn"
+    }
+   ],
+   "board_names": {
+    "arbetsformedlingen": "Platsbanken",
+    "choisirleservicepublic": "Choisir le service public",
+    "euraxess": "EURAXESS",
+    "francetravail": "France Travail",
+    "globalnyt": "Globalnyt",
+    "jobbank": "Akademikernes Jobbank",
+    "jobindex": "Jobindex",
+    "jobmaskinen": "Jobmaskinen",
+    "reliefweb": "ReliefWeb",
+    "thehub": "The Hub",
+    "workable": "Workable"
+   },
+   "fields": [
+    {
+     "key": "name",
+     "type": "string",
+     "required": true,
+     "nullable": false
+    },
+    {
+     "key": "email",
+     "type": "string",
+     "required": true,
+     "nullable": false
+    },
+    {
+     "key": "location",
+     "type": "string",
+     "required": true,
+     "nullable": false
+    },
+    {
+     "key": "cv_template",
+     "type": "path",
+     "required": true,
+     "nullable": false
+    },
+    {
+     "key": "cv_content",
+     "type": "path",
+     "required": true,
+     "nullable": false
+    },
+    {
+     "key": "cover_letter_template",
+     "type": "path",
+     "required": true,
+     "nullable": false
+    },
+    {
+     "key": "role_targets",
+     "type": "list",
+     "required": true,
+     "nullable": false
+    },
+    {
+     "key": "search_keywords",
+     "type": "list",
+     "required": false,
+     "nullable": false,
+     "default": []
+    },
+    {
+     "key": "topic_terms",
+     "type": "list",
+     "required": false,
+     "nullable": false,
+     "default": []
+    },
+    {
+     "key": "remote",
+     "type": "choice",
+     "required": true,
+     "nullable": false,
+     "choices": [
+      "yes",
+      "no",
+      "hybrid"
+     ]
+    },
+    {
+     "key": "linkedin_discovery",
+     "type": "boolean",
+     "required": false,
+     "nullable": false,
+     "default": false
+    },
+    {
+     "key": "profession_discovery",
+     "type": "boolean",
+     "required": false,
+     "nullable": false,
+     "default": false
+    },
+    {
+     "key": "hellowork_discovery",
+     "type": "boolean",
+     "required": false,
+     "nullable": false,
+     "default": false
+    },
+    {
+     "key": "jobbsafari_discovery",
+     "type": "boolean",
+     "required": false,
+     "nullable": false,
+     "default": false
+    },
+    {
+     "key": "exclude",
+     "type": "exclude",
+     "required": false,
+     "nullable": false,
+     "default": {
+      "companies": [],
+      "keywords": []
+     }
+    },
+    {
+     "key": "min_score",
+     "type": "number",
+     "required": false,
+     "nullable": false,
+     "default": 0.65
+    },
+    {
+     "key": "languages",
+     "type": "list",
+     "required": false,
+     "nullable": false,
+     "default": []
+    },
+    {
+     "key": "needs_work_permit",
+     "type": "boolean",
+     "required": false,
+     "nullable": false,
+     "default": false
+    },
+    {
+     "key": "enrich_sources",
+     "type": "list",
+     "required": false,
+     "nullable": false,
+     "default": []
+    },
+    {
+     "key": "claude_config_dir",
+     "type": "string",
+     "required": false,
+     "nullable": true,
+     "default": null
+    },
+    {
+     "key": "recheck_after_days",
+     "type": "integer",
+     "required": false,
+     "nullable": true,
+     "default": null,
+     "min": 0
+    },
+    {
+     "key": "scrape_workers",
+     "type": "integer",
+     "required": false,
+     "nullable": true,
+     "default": null,
+     "min": 1
+    },
+    {
+     "key": "verify_liveness",
+     "type": "boolean",
+     "required": false,
+     "nullable": false,
+     "default": false
+    },
+    {
+     "key": "liveness_expiry_phrases",
+     "type": "list",
+     "required": false,
+     "nullable": false,
+     "default": []
+    },
+    {
+     "key": "dedup_source_priority",
+     "type": "list",
+     "required": false,
+     "nullable": false,
+     "default": []
+    },
+    {
+     "key": "dedup_similarity_threshold",
+     "type": "number",
+     "required": false,
+     "nullable": false,
+     "default": 1.0,
+     "min": 0.0,
+     "max": 1.0
+    },
+    {
+     "key": "max_postings_per_site",
+     "type": "integer",
+     "required": false,
+     "nullable": true,
+     "default": null,
+     "min": 1
+    },
+    {
+     "key": "max_pages_per_keyword",
+     "type": "integer",
+     "required": false,
+     "nullable": true,
+     "default": null,
+     "min": 1
+    },
+    {
+     "key": "condense_max_chars",
+     "type": "integer",
+     "required": false,
+     "nullable": true,
+     "default": null,
+     "min": 1
+    },
+    {
+     "key": "prescreen_top_n",
+     "type": "integer",
+     "required": false,
+     "nullable": true,
+     "default": null,
+     "min": 1
+    },
+    {
+     "key": "prescreen_min",
+     "type": "number",
+     "required": false,
+     "nullable": true,
+     "default": null,
+     "min": 0.0,
+     "max": 1.0
+    },
+    {
+     "key": "translate_titles",
+     "type": "boolean",
+     "required": false,
+     "nullable": false,
+     "default": true
+    },
+    {
+     "key": "translate_model",
+     "type": "string",
+     "required": false,
+     "nullable": true,
+     "default": null
+    },
+    {
+     "key": "max_age_days",
+     "type": "integer",
+     "required": false,
+     "nullable": true,
+     "default": 30,
+     "min": 1
+    },
+    {
+     "key": "follow_ai_fallback",
+     "type": "boolean",
+     "required": false,
+     "nullable": false,
+     "default": true
+    },
+    {
+     "key": "retire_after_days",
+     "type": "integer",
+     "required": false,
+     "nullable": false,
+     "default": 90,
+     "min": 0
+    },
+    {
+     "key": "revise_model",
+     "type": "string",
+     "required": false,
+     "nullable": true,
+     "default": null
+    }
+   ]
+  },
+  "config": {
+   "name": "Jane Doe",
+   "email": "jane.doe@example.com",
+   "location": "Copenhagen",
+   "cv_template": "/demo/profile/cv.template.tex",
+   "cv_content": "/demo/profile/cv.md",
+   "cover_letter_template": "/demo/profile/cover-letter.template.tex",
+   "role_targets": [
+    "Financial Controller",
+    "Senior Financial Controller",
+    "Head of Finance",
+    "Finance Manager",
+    "Group Controller"
+   ],
+   "search_keywords": [
+    "financial controller",
+    "finance manager",
+    "head of finance",
+    "group controller",
+    "business controller",
+    "finance business partner",
+    "accounting manager",
+    "controller"
+   ],
+   "remote": "hybrid",
+   "exclude": {
+    "companies": [],
+    "keywords": [
+     "unpaid",
+     "intern",
+     "internship",
+     "junior"
+    ]
+   },
+   "min_score": 0.65,
+   "languages": [
+    "English"
+   ],
+   "enrich_sources": [
+    "https://janedoe.example/portfolio",
+    "https://github.example/janedoe"
+   ],
+   "recheck_after_days": 30,
+   "verify_liveness": false,
+   "prescreen_top_n": 40,
+   "prescreen_min": 0.15
+  },
+  "errors": [],
+  "cv": {
+   "path": "/demo/profile/cv.md",
+   "exists": true,
+   "is_example": true,
+   "text": "# Jane Doe\n\n**Phone:** +45 00 00 00 00 | **Email:** jane.doe@example.com | **Web:** janedoe.example.com | **Location:** Copenhagen\n\n## Profile\n\nFinancial controller with a strong background in group reporting, budgeting and process improvement across retail and banking.\n\n## Work Experience\n\n### Senior Financial Controller | Acme Corp — 2021 - present\n\n- Built the group controlling function from scratch and defined the monthly reporting calendar.\n- Cut the month-end close from ten working days to five by standardising reconciliations.\n- Mentored two junior controllers and the finance trainees.\n- Partnered with sales and operations leaders on budgets, forecasts and pricing decisions.\n\n### Financial Controller | Big Bank — 2018 - 2021\n\n- Owned the IFRS reporting for three Nordic subsidiaries and the yearly external audit.\n- Introduced a rolling forecast that replaced the annual budget for the retail division.\n- Led the finance workstream of a core-system migration for a team of five.\n\n### Accountant | Example Retail — 2015 - 2018\n\n- Ran accounts payable and receivable for 40 stores.\n- Built monthly store KPI reports for regional managers.\n\n## Education\n\n### MSc in Business Economics and Auditing | Copenhagen Business School — 2015\n\nThesis on revenue recognition under IFRS 15 (with distinction)\n\n### BSc in Business Administration | Aarhus University — 2013\n\nAccounting and finance\n\n## Skills\n\nIFRS and Danish GAAP, group consolidation, budgeting and forecasting, SAP S/4HANA, Microsoft Dynamics 365, Excel (advanced), Power BI, internal controls, stakeholder management.\n\n## Certifications\n\n- **Certified Management Accountant (CMA)** — 2019\n- **SAP S/4HANA Finance** — 2022\n\n## Languages\n\n- **English** — fluent\n- **Danish** — conversational\n",
+   "headline": "Jane Doe",
+   "sections": [
+    {
+     "title": "Profile",
+     "roles": [],
+     "bullets": 0
+    },
+    {
+     "title": "Work Experience",
+     "roles": [
+      "Senior Financial Controller | Acme Corp — 2021 - present",
+      "Financial Controller | Big Bank — 2018 - 2021",
+      "Accountant | Example Retail — 2015 - 2018"
+     ],
+     "bullets": 9
+    },
+    {
+     "title": "Education",
+     "roles": [
+      "MSc in Business Economics and Auditing | Copenhagen Business School — 2015",
+      "BSc in Business Administration | Aarhus University — 2013"
+     ],
+     "bullets": 0
+    },
+    {
+     "title": "Skills",
+     "roles": [],
+     "bullets": 0
+    },
+    {
+     "title": "Certifications",
+     "roles": [],
+     "bullets": 2
+    },
+    {
+     "title": "Languages",
+     "roles": [],
+     "bullets": 2
+    }
+   ]
+  },
+  "templates": {
+   "cv": {
+    "path": "/demo/profile/cv.template.tex",
+    "exists": true,
+    "is_example": true
+   },
+   "cover_letter": {
+    "path": "/demo/profile/cover-letter.template.tex",
+    "exists": true,
+    "is_example": true
+   }
+  },
+  "story_bank": {
+   "path": "/demo/profile/story_bank.md",
+   "exists": true,
+   "is_example": true
+  },
+  "enrich_sources": [
+   "https://janedoe.example/portfolio",
+   "https://github.example/janedoe"
+  ],
+  "discovery_unchosen": [
+   {
+    "key": "linkedin_discovery",
+    "label": "LinkedIn"
+   }
+  ]
+ },
+ "status_summary": {
+  "min_score": 0.65,
+  "pipeline": {
+   "total": 9,
+   "excluded": 0,
+   "applicable": 9,
+   "above_threshold": 9,
+   "unapplied": 5,
+   "above_threshold_by_status": {
+    "unapplied": 5,
+    "prepared": 1,
+    "applied": 2,
+    "discarded": 1
+   }
+  },
+  "ledger": {
+   "unapplied": 0,
+   "prepared": 1,
+   "applied": 1,
+   "interview:screening": 1,
+   "interview:impression": 0,
+   "interview:assessment": 0,
+   "interview:technical": 0,
+   "ghosted": 0,
+   "rejected": 0,
+   "offer": 0,
+   "discarded": 1
+  },
+  "since_last_review": {
+   "last_reviewed_at": "2026-10-31T18:04:12.319Z",
+   "runs": 0,
+   "last_run": null,
+   "new_matches": 2,
+   "site_failures": []
+  },
+  "interviews": {
+   "screening": {
+    "passed": 0,
+    "rejected": 0,
+    "ghosted": 0,
+    "withdrawn": 0,
+    "pending": 1
+   }
+  },
+  "application": {
+   "passed": 1,
+   "rejected": 0,
+   "ghosted": 0,
+   "withdrawn": 0,
+   "pending": 1
+  },
+  "pass_rates": {
+   "application": {
+    "passed": 1,
+    "decided": 1,
+    "rate": 1.0,
+    "low": 0.5,
+    "high": 1.0
+   },
+   "screening": {
+    "passed": 0,
+    "decided": 0,
+    "rate": null,
+    "low": null,
+    "high": null
+   }
+  },
+  "in_progress": null,
+  "employers": {
+   "followed": 5,
+   "unfollowable": 1,
+   "unresolved": 1,
+   "dormant": 0
+  },
+  "drive": {
+   "connected": false,
+   "account": null,
+   "last_synced": null,
+   "last_error": null,
+   "configured": true
+  }
+ },
+ "list_matches": {
+  "min_score": 0.65,
+  "last_reviewed_at": "2026-10-31T18:04:12.319Z",
+  "matches": [
+   {
+    "id": "jobindex.demo-1",
+    "score": 0.88,
+    "title": "Senior Financial Controller",
+    "title_en": null,
+    "company": "Oceanic Shipping",
+    "location": "København",
+    "work_permit": null,
+    "status": "unapplied",
+    "is_new": true,
+    "updated_at": null,
+    "rounds": []
+   },
+   {
+    "id": "thehub.demo-2",
+    "score": 0.82,
+    "title": "Økonomichef",
+    "title_en": "Head of Finance",
+    "company": "Acme Foods",
+    "location": "Aarhus",
+    "work_permit": null,
+    "status": "unapplied",
+    "is_new": true,
+    "updated_at": null,
+    "rounds": []
+   },
+   {
+    "id": "greenhouse.demo-3",
+    "score": 0.76,
+    "title": "Group Controller",
+    "title_en": null,
+    "company": "Globex Energy",
+    "location": "Esbjerg",
+    "work_permit": null,
+    "status": "unapplied",
+    "is_new": false,
+    "updated_at": null,
+    "rounds": []
+   },
+   {
+    "id": "teamtailor.demo-4",
+    "score": 0.71,
+    "title": "Finance Business Partner",
+    "title_en": null,
+    "company": "Hooli Software",
+    "location": "København (hybrid)",
+    "work_permit": null,
+    "status": "unapplied",
+    "is_new": false,
+    "updated_at": null,
+    "rounds": []
+   },
+   {
+    "id": "jobindex.demo-5",
+    "score": 0.67,
+    "title": "Business Controller",
+    "title_en": null,
+    "company": "Contoso Retail",
+    "location": "Odense",
+    "work_permit": null,
+    "status": "unapplied",
+    "is_new": false,
+    "updated_at": null,
+    "rounds": []
+   }
+  ]
+ },
+ "list_matches_ongoing": {
+  "min_score": 0.0,
+  "last_reviewed_at": "2026-10-31T18:04:12.319Z",
+  "matches": [
+   {
+    "id": "greenhouse.demo-8",
+    "score": 0.9,
+    "title": "Head of Finance",
+    "title_en": null,
+    "company": "Example Bank",
+    "location": "København",
+    "work_permit": null,
+    "status": "interview:screening",
+    "is_new": false,
+    "updated_at": "2026-10-30T18:04:12.319Z",
+    "rounds": [
+     {
+      "stage": "screening",
+      "result": "pending"
+     }
+    ]
+   },
+   {
+    "id": "successfactors.demo-6",
+    "score": 0.84,
+    "title": "Finance Manager",
+    "title_en": null,
+    "company": "Initech Pharma",
+    "location": "Hillerød",
+    "work_permit": null,
+    "status": "prepared",
+    "is_new": false,
+    "updated_at": "2026-10-31T18:04:12.319Z",
+    "rounds": []
+   },
+   {
+    "id": "jobindex.demo-7",
+    "score": 0.74,
+    "title": "Accounting Manager",
+    "title_en": null,
+    "company": "Vandelay Logistics",
+    "location": "Køge",
+    "work_permit": null,
+    "status": "applied",
+    "is_new": false,
+    "updated_at": "2026-10-25T18:04:12.319Z",
+    "rounds": []
+   }
+  ]
+ },
+ "list_matches_closed": {
+  "min_score": 0.0,
+  "last_reviewed_at": "2026-10-31T18:04:12.319Z",
+  "matches": [
+   {
+    "id": "jobindex.demo-9",
+    "score": 0.67,
+    "title": "Finance Business Partner",
+    "title_en": null,
+    "company": "Dunder Logistik",
+    "location": "Odense",
+    "work_permit": null,
+    "status": "rejected",
+    "is_new": false,
+    "updated_at": "2026-10-20T09:00:00+00:00",
+    "rounds": []
+   }
+  ]
+ },
+ "list_companies": {
+  "companies": [
+   {
+    "name": "Region Hovedstaden",
+    "feed": {
+     "platform": "hr_manager",
+     "id": "regionh"
+    },
+    "status": "followed",
+    "reason": null,
+    "found_via": "manual",
+    "evidence": "HR-Manager feed regionh lists open jobs",
+    "aliases": [],
+    "first_seen": "2026-01-01T00:00:00+00:00",
+    "last_checked": "2026-01-01T00:00:00+00:00",
+    "refusal": null,
+    "collect_problem": null,
+    "last_relevant": null
+   },
+   {
+    "name": "Københavns Kommune",
+    "feed": {
+     "platform": "hr_manager",
+     "id": "kkdk"
+    },
+    "status": "followed",
+    "reason": null,
+    "found_via": "manual",
+    "evidence": "HR-Manager feed kkdk lists open jobs",
+    "aliases": [],
+    "first_seen": "2026-01-01T00:00:00+00:00",
+    "last_checked": "2026-01-01T00:00:00+00:00",
+    "refusal": null,
+    "collect_problem": null,
+    "last_relevant": null
+   },
+   {
+    "name": "Pleo",
+    "feed": {
+     "platform": "ashby",
+     "id": "pleo"
+    },
+    "status": "followed",
+    "reason": null,
+    "found_via": "manual",
+    "evidence": "Ashby board pleo lists open jobs",
+    "aliases": [],
+    "first_seen": "2026-01-01T00:00:00+00:00",
+    "last_checked": "2026-01-01T00:00:00+00:00",
+    "refusal": null,
+    "collect_problem": null,
+    "last_relevant": null
+   },
+   {
+    "name": "Famly",
+    "feed": {
+     "platform": "recruitee",
+     "id": "famly"
+    },
+    "status": "followed",
+    "reason": null,
+    "found_via": "manual",
+    "evidence": "Recruitee site famly lists open jobs",
+    "aliases": [],
+    "first_seen": "2026-01-01T00:00:00+00:00",
+    "last_checked": "2026-01-01T00:00:00+00:00",
+    "refusal": null,
+    "collect_problem": null,
+    "last_relevant": null
+   },
+   {
+    "name": "Publicis Sapient",
+    "feed": {
+     "platform": "career_sites",
+     "id": "careers.publicissapient.com"
+    },
+    "status": "followed",
+    "reason": null,
+    "found_via": "manual",
+    "evidence": "careers.publicissapient.com carries schema.org JobPosting markup",
+    "aliases": [],
+    "first_seen": "2026-01-01T00:00:00+00:00",
+    "last_checked": "2026-01-01T00:00:00+00:00",
+    "refusal": null,
+    "collect_problem": null,
+    "last_relevant": null
+   },
+   {
+    "name": "Oracle Example ApS",
+    "feed": null,
+    "status": "unfollowable",
+    "reason": "Oracle Cloud HCM: Oracle's terms forbid robots on its systems; not followed",
+    "found_via": "jobindex",
+    "evidence": null,
+    "aliases": [],
+    "first_seen": "2026-01-01T00:00:00+00:00",
+    "last_checked": "2026-01-01T00:00:00+00:00",
+    "refusal": null,
+    "collect_problem": null,
+    "last_relevant": null
+   },
+   {
+    "name": "Nowhere ApS",
+    "feed": null,
+    "status": "unresolved",
+    "reason": "no job feed found",
+    "found_via": "linkedin",
+    "evidence": null,
+    "aliases": [],
+    "first_seen": "2026-01-01T00:00:00+00:00",
+    "last_checked": "2026-01-01T00:00:00+00:00",
+    "refusal": null,
+    "collect_problem": null,
+    "last_relevant": null
+   }
+  ],
+  "counts": {
+   "followed": 5,
+   "unfollowable": 1,
+   "unresolved": 1,
+   "dormant": 0
+  }
+ },
+ "show": {
+  "greenhouse.demo-3": {
+   "id": "greenhouse.demo-3",
+   "title": "Group Controller",
+   "company": "Globex Energy",
+   "location": "Esbjerg",
+   "score": 0.76,
+   "score_reason": "Group reporting across subsidiaries matches the consolidation work in the CV.",
+   "matching_skills": [
+    "group reporting",
+    "consolidation",
+    "IFRS",
+    "month-end close",
+    "internal controls",
+    "audit",
+    "budgeting"
+   ],
+   "missing_skills": [
+    "energy sector",
+    "hedge accounting",
+    "SAP S/4HANA"
+   ],
+   "language": "en",
+   "language_requirement": "none",
+   "description": "Globex Energy is looking for a Group Controller to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You report to the CFO and travel to our sites a few times a year.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.\n\nAbout the role\n\nAs our Group Controller you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense.\n\nYour responsibilities\n\n- Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations\n- Prepare the management reporting pack and present it to the management team every month\n- Lead the budget and forecast cycle together with the business partners, three times a year\n- Keep our accounting policies in line with IFRS and document the judgements behind them\n- Be the main contact for the external auditors and drive the year-end audit\n- Develop the internal controls, and make sure they are followed in every entity\n- Coach two accountants and take part in hiring as the team grows\n\nWhat you bring\n\n- A master's degree in finance, accounting or economics, or a state-authorised auditor's background\n- Five or more years in controlling or audit, some of it in an international group\n- A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics\n- Strong Excel, and the curiosity to automate what you do more than twice\n- Clear written and spoken English; Danish is an advantage but not a requirement\n\nWhat we offer\n\nGlobex Energy offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other.\n\nHow to apply\n\nSend your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply.",
+   "url": "https://example.com/jobs/greenhouse.demo-3",
+   "posted_at": "2026-10-28T18:04:12.319Z",
+   "scraped_at": "2026-10-29T16:04:12.319Z",
+   "source": "greenhouse",
+   "source_name": "Greenhouse",
+   "status": "unapplied",
+   "history": [],
+   "materials": null
+  },
+  "greenhouse.demo-8": {
+   "id": "greenhouse.demo-8",
+   "title": "Head of Finance",
+   "company": "Example Bank",
+   "location": "København",
+   "score": 0.9,
+   "score_reason": "Head of Finance in financial services; the strongest match of the week.",
+   "matching_skills": [
+    "IFRS",
+    "team leadership",
+    "regulatory reporting",
+    "consolidation",
+    "budgeting",
+    "forecasting",
+    "board reporting",
+    "audit"
+   ],
+   "missing_skills": [
+    "Basel III",
+    "treasury",
+    "ALM"
+   ],
+   "language": "en",
+   "language_requirement": "none",
+   "description": "Example Bank is looking for a Head of Finance to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You sit on the management team.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.\n\nAbout the role\n\nAs our Head of Finance you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense.\n\nYour responsibilities\n\n- Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations\n- Prepare the management reporting pack and present it to the management team every month\n- Lead the budget and forecast cycle together with the business partners, three times a year\n- Keep our accounting policies in line with IFRS and document the judgements behind them\n- Be the main contact for the external auditors and drive the year-end audit\n- Develop the internal controls, and make sure they are followed in every entity\n- Coach two accountants and take part in hiring as the team grows\n\nWhat you bring\n\n- A master's degree in finance, accounting or economics, or a state-authorised auditor's background\n- Five or more years in controlling or audit, some of it in an international group\n- A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics\n- Strong Excel, and the curiosity to automate what you do more than twice\n- Clear written and spoken English; Danish is an advantage but not a requirement\n\nWhat we offer\n\nExample Bank offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other.\n\nHow to apply\n\nSend your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply.",
+   "url": "https://example.com/jobs/greenhouse.demo-8",
+   "posted_at": "2026-10-21T18:04:12.319Z",
+   "scraped_at": "2026-10-22T16:04:12.319Z",
+   "source": "greenhouse",
+   "source_name": "Greenhouse",
+   "status": "interview:screening",
+   "history": [
+    {
+     "status": "applied",
+     "at": "2026-10-24T18:04:12.319Z"
+    },
+    {
+     "status": "interview:screening",
+     "at": "2026-10-30T18:04:12.319Z",
+     "notes": "Recruiter call went well; salary range fits.",
+     "result": "pending"
+    }
+   ],
+   "materials": {
+    "output_dir": "/demo/jobs/output/greenhouse.demo-8/sent",
+    "pdfs": {
+     "cv": "/demo/jobs/output/greenhouse.demo-8/sent/cv.pdf",
+     "cover_letter": "/demo/jobs/output/greenhouse.demo-8/sent/cover_letter.pdf"
+    },
+    "pngs": {
+     "cv": [
+      "/demo/jobs/output/greenhouse.demo-8/sent/cv_page_1.png",
+      "/demo/jobs/output/greenhouse.demo-8/sent/cv_page_2.png"
+     ],
+     "cover_letter": [
+      "/demo/jobs/output/greenhouse.demo-8/sent/cover_letter_page_1.png"
+     ]
+    },
+    "keywords": [
+     "SQL",
+     "dashboards",
+     "stakeholder reporting"
+    ],
+    "tailoring": [
+     "Led with the dashboards project",
+     "Cut the retail job",
+     "Condensed education"
+    ],
+    "page_counts": {
+     "cv": 2,
+     "cover_letter": 1
+    },
+    "cover_letter_words": 311,
+    "rendered": false,
+    "unsupported": [],
+    "sent": true,
+    "file_names": {
+     "cv": "Jane Doe - CV.pdf",
+     "cover_letter": "Jane Doe - Cover letter.pdf"
+    }
+   }
+  },
+  "jobindex.demo-1": {
+   "id": "jobindex.demo-1",
+   "title": "Senior Financial Controller",
+   "company": "Oceanic Shipping",
+   "location": "København",
+   "score": 0.88,
+   "score_reason": "Senior controller role with IFRS consolidation and month-end close, both central in the CV.",
+   "matching_skills": [
+    "IFRS",
+    "consolidation",
+    "month-end close",
+    "group reporting",
+    "budgeting",
+    "forecasting",
+    "internal controls",
+    "team leadership"
+   ],
+   "missing_skills": [
+    "SAP S/4HANA",
+    "transfer pricing",
+    "Power BI"
+   ],
+   "language": "en",
+   "language_requirement": "none",
+   "description": "Our group finance team in Copenhagen is looking for a Senior Financial Controller to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. Experience with SAP S/4HANA is a plus.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.\n\nAbout the role\n\nAs our Senior Financial Controller you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense.\n\nYour responsibilities\n\n- Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations\n- Prepare the management reporting pack and present it to the management team every month\n- Lead the budget and forecast cycle together with the business partners, three times a year\n- Keep our accounting policies in line with IFRS and document the judgements behind them\n- Be the main contact for the external auditors and drive the year-end audit\n- Develop the internal controls, and make sure they are followed in every entity\n- Coach two accountants and take part in hiring as the team grows\n\nWhat you bring\n\n- A master's degree in finance, accounting or economics, or a state-authorised auditor's background\n- Five or more years in controlling or audit, some of it in an international group\n- A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics\n- Strong Excel, and the curiosity to automate what you do more than twice\n- Clear written and spoken English; Danish is an advantage but not a requirement\n\nWhat we offer\n\nOceanic Shipping offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other.\n\nHow to apply\n\nSend your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply.",
+   "url": "https://example.com/jobs/jobindex.demo-1",
+   "posted_at": "2026-10-31T18:04:12.319Z",
+   "scraped_at": "2026-11-01T16:04:12.319Z",
+   "source": "jobindex",
+   "source_name": "Jobindex",
+   "status": "unapplied",
+   "history": [],
+   "materials": null
+  },
+  "jobindex.demo-5": {
+   "id": "jobindex.demo-5",
+   "title": "Business Controller",
+   "company": "Contoso Retail",
+   "location": "Odense",
+   "score": 0.67,
+   "score_reason": "Store-level controlling; close to the threshold because retail is new.",
+   "matching_skills": [
+    "controlling",
+    "Excel modelling",
+    "budgeting",
+    "forecasting",
+    "variance analysis",
+    "KPI reporting",
+    "stakeholder management"
+   ],
+   "missing_skills": [
+    "retail",
+    "Power BI",
+    "category management"
+   ],
+   "language": "en",
+   "language_requirement": "none",
+   "description": "Contoso Retail is looking for a Business Controller to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You follow 40 stores and their monthly results.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.",
+   "url": "https://example.com/jobs/jobindex.demo-5",
+   "posted_at": "2026-10-25T18:04:12.319Z",
+   "scraped_at": "2026-10-26T16:04:12.319Z",
+   "source": "jobindex",
+   "source_name": "Jobindex",
+   "status": "unapplied",
+   "history": [],
+   "materials": null
+  },
+  "jobindex.demo-7": {
+   "id": "jobindex.demo-7",
+   "title": "Accounting Manager",
+   "company": "Vandelay Logistics",
+   "location": "Køge",
+   "score": 0.74,
+   "score_reason": "Accounting team lead; the close and team leadership match.",
+   "matching_skills": [
+    "team leadership",
+    "month-end close",
+    "IFRS",
+    "accounts payable",
+    "accounts receivable",
+    "internal controls",
+    "budgeting"
+   ],
+   "missing_skills": [
+    "Navision",
+    "logistics"
+   ],
+   "language": "en",
+   "language_requirement": "none",
+   "description": "Vandelay Logistics is looking for a Accounting Manager to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You lead a team of four accountants.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.",
+   "url": "https://example.com/jobs/jobindex.demo-7",
+   "posted_at": "2026-10-22T18:04:12.319Z",
+   "scraped_at": "2026-10-23T16:04:12.319Z",
+   "source": "jobindex",
+   "source_name": "Jobindex",
+   "status": "applied",
+   "history": [
+    {
+     "status": "applied",
+     "at": "2026-10-25T18:04:12.319Z"
+    }
+   ],
+   "materials": {
+    "output_dir": "/demo/jobs/output/jobindex.demo-7/sent",
+    "pdfs": {
+     "cv": "/demo/jobs/output/jobindex.demo-7/sent/cv.pdf",
+     "cover_letter": "/demo/jobs/output/jobindex.demo-7/sent/cover_letter.pdf"
+    },
+    "pngs": {
+     "cv": [
+      "/demo/jobs/output/jobindex.demo-7/sent/cv_page_1.png",
+      "/demo/jobs/output/jobindex.demo-7/sent/cv_page_2.png"
+     ],
+     "cover_letter": [
+      "/demo/jobs/output/jobindex.demo-7/sent/cover_letter_page_1.png"
+     ]
+    },
+    "keywords": [
+     "SQL",
+     "dashboards",
+     "stakeholder reporting"
+    ],
+    "tailoring": [
+     "Led with the dashboards project",
+     "Cut the retail job",
+     "Condensed education"
+    ],
+    "page_counts": {
+     "cv": 2,
+     "cover_letter": 1
+    },
+    "cover_letter_words": 311,
+    "rendered": false,
+    "unsupported": [],
+    "sent": true,
+    "file_names": {
+     "cv": "Jane Doe - CV.pdf",
+     "cover_letter": "Jane Doe - Cover letter.pdf"
+    }
+   }
+  },
+  "successfactors.demo-6": {
+   "id": "successfactors.demo-6",
+   "title": "Finance Manager",
+   "company": "Initech Pharma",
+   "location": "Hillerød",
+   "score": 0.84,
+   "score_reason": "Finance manager for a pharma site; close, budgeting and audit all match.",
+   "matching_skills": [
+    "audit",
+    "budgeting",
+    "month-end close",
+    "IFRS",
+    "internal controls",
+    "forecasting",
+    "team leadership",
+    "stakeholder management"
+   ],
+   "missing_skills": [
+    "GxP",
+    "SAP S/4HANA",
+    "pharma regulatory reporting"
+   ],
+   "language": "en",
+   "language_requirement": "none",
+   "description": "Initech Pharma is looking for a Finance Manager to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You own the relationship with our external auditors.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.\n\nAbout the role\n\nAs our Finance Manager you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense.\n\nYour responsibilities\n\n- Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations\n- Prepare the management reporting pack and present it to the management team every month\n- Lead the budget and forecast cycle together with the business partners, three times a year\n- Keep our accounting policies in line with IFRS and document the judgements behind them\n- Be the main contact for the external auditors and drive the year-end audit\n- Develop the internal controls, and make sure they are followed in every entity\n- Coach two accountants and take part in hiring as the team grows\n\nWhat you bring\n\n- A master's degree in finance, accounting or economics, or a state-authorised auditor's background\n- Five or more years in controlling or audit, some of it in an international group\n- A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics\n- Strong Excel, and the curiosity to automate what you do more than twice\n- Clear written and spoken English; Danish is an advantage but not a requirement\n\nWhat we offer\n\nInitech Pharma offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other.\n\nHow to apply\n\nSend your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply.",
+   "url": "https://example.com/jobs/successfactors.demo-6",
+   "posted_at": "2026-10-26T18:04:12.319Z",
+   "scraped_at": "2026-10-27T16:04:12.319Z",
+   "source": "successfactors",
+   "source_name": "SuccessFactors",
+   "status": "prepared",
+   "history": [
+    {
+     "status": "prepared",
+     "at": "2026-10-31T18:04:12.319Z"
+    }
+   ],
+   "materials": {
+    "output_dir": "/demo/jobs/output/successfactors.demo-6",
+    "pdfs": {
+     "cv": "/demo/jobs/output/successfactors.demo-6/cv.pdf",
+     "cover_letter": "/demo/jobs/output/successfactors.demo-6/cover_letter.pdf"
+    },
+    "pngs": {
+     "cv": [
+      "/demo/jobs/output/successfactors.demo-6/cv_page_1.png",
+      "/demo/jobs/output/successfactors.demo-6/cv_page_2.png"
+     ],
+     "cover_letter": [
+      "/demo/jobs/output/successfactors.demo-6/cover_letter_page_1.png"
+     ]
+    },
+    "keywords": [
+     "SQL",
+     "dashboards",
+     "stakeholder reporting"
+    ],
+    "tailoring": [
+     "Led with the dashboards project",
+     "Cut the retail job",
+     "Condensed education"
+    ],
+    "page_counts": {
+     "cv": 2,
+     "cover_letter": 1
+    },
+    "cover_letter_words": 311,
+    "rendered": false,
+    "unsupported": [
+     {
+      "kind": "skill",
+      "value": "ApS",
+      "context": "Analyst at Example ApS.",
+      "file": "cv"
+     }
+    ],
+    "sent": false,
+    "file_names": {
+     "cv": "Jane Doe - CV.pdf",
+     "cover_letter": "Jane Doe - Cover letter.pdf"
+    }
+   }
+  },
+  "teamtailor.demo-4": {
+   "id": "teamtailor.demo-4",
+   "title": "Finance Business Partner",
+   "company": "Hooli Software",
+   "location": "København (hybrid)",
+   "score": 0.71,
+   "score_reason": "Business partnering with product teams; forecasting fits, SaaS metrics are new.",
+   "matching_skills": [
+    "forecasting",
+    "stakeholder management",
+    "budgeting",
+    "Excel modelling",
+    "business cases",
+    "KPI reporting"
+   ],
+   "missing_skills": [
+    "SaaS metrics",
+    "Looker",
+    "revenue recognition (ASC 606)"
+   ],
+   "language": "en",
+   "language_requirement": "none",
+   "description": "Hooli Software is looking for a Finance Business Partner to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You will be the finance partner for two product lines.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.\n\nAbout the role\n\nAs our Finance Business Partner you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense.\n\nYour responsibilities\n\n- Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations\n- Prepare the management reporting pack and present it to the management team every month\n- Lead the budget and forecast cycle together with the business partners, three times a year\n- Keep our accounting policies in line with IFRS and document the judgements behind them\n- Be the main contact for the external auditors and drive the year-end audit\n- Develop the internal controls, and make sure they are followed in every entity\n- Coach two accountants and take part in hiring as the team grows\n\nWhat you bring\n\n- A master's degree in finance, accounting or economics, or a state-authorised auditor's background\n- Five or more years in controlling or audit, some of it in an international group\n- A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics\n- Strong Excel, and the curiosity to automate what you do more than twice\n- Clear written and spoken English; Danish is an advantage but not a requirement\n\nWhat we offer\n\nHooli Software offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other.\n\nHow to apply\n\nSend your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply.",
+   "url": "https://example.com/jobs/teamtailor.demo-4",
+   "posted_at": "2026-10-27T18:04:12.319Z",
+   "scraped_at": "2026-10-28T16:04:12.319Z",
+   "source": "teamtailor",
+   "source_name": "Teamtailor",
+   "status": "unapplied",
+   "history": [],
+   "materials": null
+  },
+  "thehub.demo-2": {
+   "id": "thehub.demo-2",
+   "title": "Økonomichef",
+   "title_en": "Head of Finance",
+   "company": "Acme Foods",
+   "location": "Aarhus",
+   "score": 0.82,
+   "score_reason": "Head of Finance for a mid-sized food producer; leadership and budgeting match, Danish is required.",
+   "matching_skills": [
+    "budgeting",
+    "team leadership",
+    "cash flow management",
+    "month-end close",
+    "forecasting",
+    "board reporting"
+   ],
+   "missing_skills": [
+    "Danish (business level)",
+    "e-conomic",
+    "startup fundraising"
+   ],
+   "language": "da",
+   "language_requirement": "required",
+   "description": "Acme Foods søger en økonomichef, der vil stå for regnskab, budget og rapportering.\n\nDu leder et team på fem og arbejder tæt sammen med direktionen.",
+   "url": "https://example.com/jobs/thehub.demo-2",
+   "posted_at": "2026-10-31T18:04:12.319Z",
+   "scraped_at": "2026-11-01T16:04:12.319Z",
+   "source": "thehub",
+   "source_name": "The Hub",
+   "status": "unapplied",
+   "history": [],
+   "materials": null
+  },
+  "jobindex.demo-9": {
+   "id": "jobindex.demo-9",
+   "title": "Finance Business Partner",
+   "company": "Dunder Logistik",
+   "location": "Odense",
+   "score": 0.67,
+   "score_reason": "Store-level controlling; close to the threshold because retail is new.",
+   "matching_skills": [
+    "controlling",
+    "Excel modelling",
+    "budgeting",
+    "forecasting",
+    "variance analysis",
+    "business cases"
+   ],
+   "missing_skills": [
+    "retail",
+    "Power BI"
+   ],
+   "language": "en",
+   "language_requirement": "none",
+   "description": "Contoso Retail is looking for a Business Controller to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You follow 40 stores and their monthly results.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.",
+   "url": "https://example.com/jobs/jobindex.demo-5",
+   "posted_at": "2026-10-25T18:04:12.319Z",
+   "scraped_at": "2026-10-26T16:04:12.319Z",
+   "source": "jobindex",
+   "source_name": "Jobindex",
+   "status": "rejected",
+   "history": [
+    {
+     "status": "applied",
+     "at": "2026-10-01T09:00:00+00:00"
+    },
+    {
+     "status": "rejected",
+     "at": "2026-10-20T09:00:00+00:00",
+     "notes": "They went with an internal candidate."
+    }
+   ],
+   "materials": null
+  }
+ },
+ "list_stories": {
+  "path": "/demo/profile/story_bank.md",
+  "exists": true,
+  "is_example": false,
+  "stories": [
+   {
+    "title": "Halved the month-end close at Oceanic Shipping",
+    "context": "The group close took ten working days, so management saw last month's numbers in the third week; the goal was five working days within two quarters, without more people.",
+    "action": "Mapped every close task and owner, standardised the reconciliations and agreed cut-off dates with operations.",
+    "result": "Close down to five working days; audit adjustments fell from 14 to 3 a year.",
+    "learning": "The gain came from agreeing cut-offs with the teams outside finance."
+   },
+   {
+    "title": "Rebuilt the cash forecast at Acme Foods",
+    "context": "Treasury worked from a weekly spreadsheet nobody trusted, and the CFO needed a rolling 13-week view.",
+    "action": "Pulled bank and ledger data into one model and reviewed variances every Monday.",
+    "result": "Forecast error under 5% within two months.",
+    "learning": "A weekly review habit mattered more than the model."
+   }
+  ]
+ }
+}

@@ -1,0 +1,26 @@
+{
+ "items": [
+  {
+   "SiteName": "Old",
+   "SiteNumber": "CX",
+   "StatusCode": "ORA_INACTIVE",
+   "Language": "US"
+  },
+  {
+   "SiteName": "Modern",
+   "SiteNumber": "CX_4001",
+   "StatusCode": "ORA_INACTIVE",
+   "Language": "US"
+  },
+  {
+   "SiteName": "Careers",
+   "SiteNumber": "CX_1001",
+   "StatusCode": "ORA_ACTIVE",
+   "Language": "US"
+  }
+ ],
+ "count": 3,
+ "hasMore": false,
+ "offset": 0,
+ "limit": 25
+}

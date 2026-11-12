@@ -1,0 +1,100 @@
+name: Package (Windows)
+
+# The packaged app on Windows (#355, #223): build the bundle (Python, door, Tectonic) and the NSIS installer,
+# install it silently for this user (no admin), smoke-test the installed app, then uninstall silently: the app
+# goes, the data folder (%APPDATA%\The other door) stays. Only when the packaging itself changes: no schedule, no
+# manual trigger. About 15–20 minutes on windows-latest, which counts double (2x minutes).
+on:
+  pull_request:
+    paths:
+      - "app/electron-builder.config.cjs"
+      - "app/build/**"
+      - "app/scripts/bundle-python.ps1"
+      - "app/scripts/bundle.lock.json"
+      - "app/scripts/lock_requirements.py"
+      - "app/e2e-package/**"
+      - "app/playwright.package.config.ts"
+      - ".github/workflows/package-windows.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app/electron-builder.config.cjs"
+      - "app/build/**"
+      - "app/scripts/bundle-python.ps1"
+      - "app/scripts/bundle.lock.json"
+      - "app/scripts/lock_requirements.py"
+      - "app/e2e-package/**"
+      - "app/playwright.package.config.ts"
+      - ".github/workflows/package-windows.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Restore the bundle's downloads
+        uses: actions/cache@v6
+        with:
+          path: app/.bundle-cache
+          key: bundle-windows-x64-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+
+      - name: Install the app's packages
+        run: npm ci
+
+      - name: Build the bundle
+        run: ./scripts/bundle-python.ps1
+
+      - name: Package the installer
+        run: npm run package
+
+      - name: Install it silently, for this user
+        run: |
+          $installer = Get-ChildItem dist\the-other-door-*.exe | Select-Object -First 1
+          Start-Process -Wait -FilePath $installer.FullName -ArgumentList '/S'
+          # a per-user install goes under %LOCALAPPDATA%\Programs; find it rather than guess the folder's name
+          $exe = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Depth 2 -Filter 'the-other-door.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Depth 1 | Select-Object FullName; throw 'the-other-door.exe was not installed under %LOCALAPPDATA%\Programs' }
+          Write-Host "installed at $($exe.FullName)"
+          "DOOR_PACKAGED_APP=$($exe.FullName)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "DOOR_INSTALL_DIR=$($exe.DirectoryName)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - name: Smoke-test the installed app
+        run: npm run test:package
+
+      - name: Uninstall silently; the data stays
+        run: |
+          $data = Join-Path $env:APPDATA 'The other door\profile'
+          New-Item -ItemType Directory -Force -Path $data | Out-Null
+          'kept' | Set-Content (Join-Path $data 'marker')
+          $uninstaller = Get-ChildItem $env:DOOR_INSTALL_DIR -Filter 'Uninstall*.exe' | Select-Object -First 1
+          Start-Process -Wait -FilePath $uninstaller.FullName -ArgumentList '/S'
+          Start-Sleep -Seconds 10
+          if (Test-Path $env:DOOR_PACKAGED_APP) { throw 'the app is still installed' }
+          if ((Get-Content (Join-Path $data 'marker')) -ne 'kept') { throw 'the data folder was removed' }
+
+      # a passing run already installed and started them; only a failure's are worth downloading
+      - name: Keep a failed run's installer for 3 days
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: door-windows
+          path: app/dist/*.exe
+          retention-days: 3
+          if-no-files-found: ignore

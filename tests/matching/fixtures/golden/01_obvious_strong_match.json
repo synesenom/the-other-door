@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-obvious-strong-match",
+    "title": "Lead Data Scientist",
+    "company": "Nordbridge Analytics",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-obvious-strong-match",
+    "description": "About the role:\nNordbridge Analytics is a Copenhagen-based fintech scale-up building forecasting and risk-scoring products for Nordic banks. We are hiring a Lead Data Scientist to build out our data science function from the ground up and set the technical direction for the team.\n\nResponsibilities:\nYou will design and own end-to-end ML pipelines for credit-risk and churn models, working closely with engineering to ship them to production. You will define the data science roadmap and mentor a small team of data scientists. You will collaborate with product and engineering leadership on data-driven feature decisions.\n\nRequirements:\n5+ years of experience in data science or applied machine learning, including some experience leading a small team or workstream is required. Strong hands-on experience with Python (scikit-learn, PyTorch, pandas) is required. Solid SQL skills and experience with AWS and Spark for large-scale data processing are required. Experience with data visualization tools (d3, matplotlib) is a plus. Experience mentoring junior team members is a plus.\n\nLocation and work mode:\nThis is a hybrid role based in our Copenhagen office, with three days a week in the office and flexibility to work from home the rest of the week.\n\nWhat we offer:\nCompetitive salary, pension contributions, and a collaborative, low-ego engineering culture.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.75,
+    "score_max": 1.0,
+    "language_requirement": "none"
+  }
+}

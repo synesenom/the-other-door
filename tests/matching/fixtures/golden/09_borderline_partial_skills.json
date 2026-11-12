@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-borderline-partial-skills",
+    "title": "Data Analyst",
+    "company": "Nordic Retail Group",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-borderline-partial-skills",
+    "description": "About the role:\nNordic Retail Group operates a chain of grocery stores across Denmark. We are hiring a Data Analyst to support our commercial team with reporting and dashboards.\n\nResponsibilities:\nYou will build and maintain SQL-based reports on sales and inventory data, create dashboards in Power BI for store managers, and support ad-hoc analysis requests from the commercial team.\n\nRequirements:\n3+ years of experience in a data or business analyst role is required. Strong SQL skills are required. Experience with Power BI or a similar BI tool is required. No programming or machine learning experience is required for this role.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, two days a week on-site.\n\nWhat we offer:\nA friendly commercial team and standard Danish employment benefits.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.15,
+    "score_max": 0.5,
+    "language_requirement": "none"
+  }
+}

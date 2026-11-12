@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-danish-advantage",
+    "title": "Lead Data Scientist",
+    "company": "Polaris FinTech",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-danish-advantage",
+    "description": "About the role:\nPolaris FinTech builds payment-fraud detection systems for Nordic banks and merchants. We are hiring a Lead Data Scientist to own our fraud-detection modeling stack and grow a small data science team.\n\nResponsibilities:\nYou will design and productionize ML pipelines for fraud and anomaly detection, working closely with engineering. You will set technical direction and mentor two junior data scientists.\n\nRequirements:\n5+ years of experience in data science or applied ML, including team leadership experience, is required. Strong hands-on experience with Python (scikit-learn, PyTorch, pandas), SQL, AWS, and Spark is required.\n\nNice to have:\nDanish is an advantage but not required — most of the team communicates in English day to day, and all documentation and meetings are in English. Experience with LLMs and prompt engineering is a plus.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, three days a week on-site.\n\nWhat we offer:\nCompetitive salary and equity, plus a strong engineering culture.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.7,
+    "score_max": 1.0,
+    "language_requirement": "advantage"
+  }
+}

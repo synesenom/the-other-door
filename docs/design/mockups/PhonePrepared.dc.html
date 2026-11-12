@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The other door phone — Ready to send</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2F55C8}
+button,input{font:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; overflow: hidden">
+  <header style="flex: none; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px 0">
+    <a href="#" style="min-height: 44px; display: flex; align-items: center; gap: 4px; padding: 0 8px; text-decoration: none; font-size: 15px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      Posting
+    </a>
+    <button type="button" aria-label="Share PDF" style="width: 44px; height: 44px; border: 0; background: transparent; color: #1E1A16; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v7h14v-7"></path></svg>
+    </button>
+  </header>
+  <main style="flex: 1; min-height: 0; overflow: hidden; padding: 4px 20px 0; display: flex; flex-direction: column; gap: 14px">
+    <div>
+      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 30px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.15">Ready to send</h1>
+      <p style="margin: 2px 0 0; color: #5C5249">Senior Data Scientist · Hooli Labs</p>
+    </div>
+    <div role="group" aria-label="Document" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; border-radius: 10px; background: #E7DABF">
+      <button type="button" style="height: 36px; border: 0; border-radius: 8px; background: #FFFCF5; color: #1E1A16; font-weight: 600; font-size: 13px">CV · 2 pages</button>
+      <button type="button" style="height: 36px; border: 0; border-radius: 8px; background: transparent; color: #5C5249; font-size: 13px">Letter · 310 words</button>
+    </div>
+    <div style="display: flex; gap: 14px; margin-right: -20px">
+      <sc-for list="{{pages}}" as="pg" hint-placeholder-count="2">
+        <div aria-hidden="true" style="flex: none; width: 236px; height: 334px; box-sizing: border-box; background: #FFFCF5; border-radius: 4px; box-shadow: 0 1px 2px rgba(30,26,22,0.08), 0 10px 24px rgba(30,26,22,0.08); padding: 26px 22px; display: flex; flex-direction: column; gap: 7px">
+          <sc-if value="{{pg.first}}" hint-placeholder-val="{{ true }}">
+            <span style="display: block; width: 96px; height: 8px; border-radius: 2px; background: #1E1A16"></span>
+            <span style="display: block; width: 28px; height: 3px; border-radius: 2px; background: #4169E1; margin: 4px 0 8px"></span>
+          </sc-if>
+          <sc-for list="{{pg.lines}}" as="w" hint-placeholder-count="14">
+            <span style="display: block; height: 4px; border-radius: 2px; background: #D6C7A8; width: {{w}}"></span>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <div aria-hidden="true" style="display: flex; justify-content: center; gap: 6px">
+      <span style="width: 16px; height: 4px; border-radius: 2px; background: #1E1A16"></span>
+      <span style="width: 4px; height: 4px; border-radius: 2px; background: #C9B993"></span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center">
+      <label for="revise" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">What should change?</label>
+      <input id="revise" placeholder="What should change?" style="flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid #D6C7A8; border-radius: 10px; background: #FFFCF5; color: #1E1A16">
+      <button type="button" style="height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: #4169E1; color: #FFFFFF; font-weight: 600">Revise</button>
+    </div>
+  </main>
+  <div style="flex: none; display: flex; gap: 10px; padding: 12px 20px 30px; border-top: 1px solid #E2D5BA; background: #F1E6CF">
+    <button type="button" style="flex: 0 0 auto; height: 48px; padding: 0 16px; border: 1px solid #D6C7A8; border-radius: 10px; background: transparent; color: #1E1A16">Open PDF</button>
+    <button type="button" style="flex: 1; height: 48px; border: 0; border-radius: 10px; background: #1E1A16; color: #F8F1E2; font-weight: 600">I've applied</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const a = ['92%','100%','84%','96%','70%','100%','88%','60%','94%','100%','78%','90%','66%','100%','82%','58%','96%','74%'];
+    const b = ['100%','88%','96%','72%','100%','90%','64%','98%','100%','84%','92%','70%','100%','86%','56%','94%','100%','80%','62%','90%','100%','76%'];
+    return { pages: [{ first: true, lines: a }, { first: false, lines: b }] };
+  }
+}
+</script>
+</body>
+</html>

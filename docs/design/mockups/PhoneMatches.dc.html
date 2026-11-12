@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The other door phone — Matches</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: {{t.ground}}; color: {{t.ink}}; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; overflow: hidden">
+  <main style="flex: 1; min-height: 0; overflow: hidden; padding: 28px 20px 0; display: flex; flex-direction: column">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-family: 'Young Serif', Georgia, serif; font-size: 20px; font-weight: 400">The other door</span>
+      <button type="button" style="height: 36px; padding: 0 14px; border: 1px solid {{t.border}}; border-radius: 18px; background: transparent; color: {{t.ink}}; font-size: 13px">Find new jobs</button>
+    </div>
+    <h1 style="margin: 20px 0 0; font-family: 'Young Serif', Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Matches</h1>
+    <p style="margin: 4px 0 0; color: {{t.muted}}">12 new since your last review</p>
+    <div style="display: flex; gap: 6px; margin: 16px 0 8px">
+      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid {{t.ink}}; background: {{t.ink}}; color: {{t.ground}}; font-size: 13px">New</button>
+      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid {{t.border}}; background: transparent; color: {{t.ink}}; font-size: 13px">All</button>
+    </div>
+    <ul style="list-style: none; margin: 0 -8px; padding: 0; display: flex; flex-direction: column">
+      <sc-for list="{{jobs}}" as="job" hint-placeholder-count="6">
+        <li style="border-bottom: 1px solid {{t.rule}}">
+          <button type="button" style="width: 100%; min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 8px; border: 0; background: transparent; color: {{t.ink}}; text-align: left">
+            <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+              <span style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px">
+                <sc-if value="{{job.isNew}}" hint-placeholder-val="{{ false }}"><span aria-label="new" style="flex: none; width: 6px; height: 6px; border-radius: 3px; background: {{t.accent}}"></span></sc-if>
+                <span>{{job.title}}</span>
+              </span>
+              <span style="color: {{t.muted}}; font-size: 13px">{{job.company}} · {{job.place}}</span>
+            </span>
+            <span style="font-family: 'Young Serif', Georgia, serif; font-size: 20px; font-weight: 400; font-variant-numeric: tabular-nums">{{job.score}}</span>
+          </button>
+        </li>
+      </sc-for>
+    </ul>
+  </main>
+  <nav aria-label="Main" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 22px; border-top: 1px solid {{t.rule}}; background: {{t.ground}}">
+    <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">
+      <a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; text-decoration: none; font-size: 11px; color: {{tab.color}}; font-weight: {{tab.weight}}">
+        <span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: {{tab.dash}}"></span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tab.icon}}"></path></svg>
+        <span>{{tab.label}}</span>
+      </a>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = !!this.props.dark;
+    const t = dark
+      ? { ground: '#1E1A16', ink: '#F1E6CF', muted: '#B5A890', rule: '#3A332C', border: '#4A423A', accent: '#6F8FEF' }
+      : { ground: '#F1E6CF', ink: '#1E1A16', muted: '#5C5249', rule: '#E2D5BA', border: '#D6C7A8', accent: '#4169E1' };
+    const jobs = [
+      { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '0.86', isNew: true },
+      { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '0.81', isNew: true },
+      { title: 'Analytics Lead', company: 'Initech Insurance', place: 'Aarhus', score: '0.77', isNew: true },
+      { title: 'Forecasting Specialist', company: 'Globex Energy', place: 'Fredericia', score: '0.74', isNew: false },
+      { title: 'Data Engineer', company: 'Vandelay Industries', place: 'Copenhagen', score: '0.71', isNew: false },
+      { title: 'Quantitative Analyst', company: 'Acme Capital', place: 'Hellerup', score: '0.70', isNew: false }
+    ];
+    const icons = {
+      Home: 'M4 11l8-7 8 7v9h-5v-6h-6v6H4z',
+      Matches: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+      Applications: 'M4 4h6v16H4zM14 4h6v10h-6z',
+      Profile: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c1.5-4 4.5-6 8-6s6.5 2 8 6',
+      Settings: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4'
+    };
+    const active = this.props.tab ?? 'Matches';
+    const tabs = Object.keys(icons).map(label => ({
+      label, icon: icons[label],
+      color: label === active ? t.ink : t.muted,
+      weight: label === active ? '600' : '400',
+      dash: label === active ? t.accent : 'transparent'
+    }));
+    return { t, jobs, tabs };
+  }
+}
+</script>
+</body>
+</html>

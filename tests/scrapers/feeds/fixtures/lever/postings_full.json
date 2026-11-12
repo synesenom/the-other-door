@@ -1,0 +1,53 @@
+[
+  {
+    "id": "2193db3f-77c5-43b8-b030-8f92c9882bf1",
+    "text": "Android Engineer - Experience",
+    "categories": {
+      "location": "London"
+    },
+    "hostedUrl": "https://jobs.lever.co/spotify/2193db3f-77c5-43b8-b030-8f92c9882bf1",
+    "createdAt": 1782214185805,
+    "descriptionPlain": "Our consumer experience group looks after everything a listener sees and hears, on every screen and device where Spotify runs. The aim is simple: listening should feel easy, personal and fun, whether it happens on a phone, a desktop, a speaker, a TV or in a car. We combine research into how people behave with design and engineering to build features that feel natural and recognisably ours.\nThe Stream Reporting team collects and processes the playback signals that several key products and business processes depend on. Our pipelines feed royalty reporting, experiments and analytics, and give recommendation and personalisation teams data they can rely on.\nWe are hiring an Android Engineer for a close-knit team where mobile development meets data and platform work. You will write code that runs for a very large audience every day, and help decide how playback and engagement events are recorded in our mobile apps and turned into datasets the rest of the company trusts.\n \n",
+    "lists": [
+      {
+        "text": "What You'll Do",
+        "content": "<div>\n\n<li>\n<p>Develop and maintain mobile client components that record playback and interaction events in the Spotify apps.</p>\n</li>\n<li>\n<p>Write clean, tested and documented Kotlin that feeds datasets used for royalties, analytics, experiments and personalisation.</p>\n</li>\n<li>\n<p>Work with Android, iOS, backend and data engineers to ship complete features.</p>\n</li>\n<li>\n<p>Make the event collection systems sturdier, simpler and easier to reason about.</p>\n</li>\n<li>\n<p>Add new kinds of signals as our product experiences change.</p>\n</li>\n<li>\n<p>Make it easier for other teams to add, check and maintain their own event reporting.</p>\n</li>\n<li>\n<p>Use AI-assisted engineering tools where they speed up work or raise quality.</p>\n</li>\n<li>\n<p>Help keep a team culture of learning, sharing and careful engineering.</p>\n</li>\n\n</div>"
+      },
+      {
+        "text": "Who You Are",
+        "content": "<div>\n\n<li>\n<p>You have built Android and iOS apps in Kotlin and Swift or Objective-C</p>\n</li>\n<li>\n<p>You have solid experience as an Engineer I</p>\n</li>\n<li>\n<p>You build software that is easy to maintain, scales well and is properly tested.</p>\n</li>\n<li>\n<p>You find your way around large codebases and pick up new domains quickly.</p>\n</li>\n<li>\n<p>You have worked with engineers and stakeholders in several teams.</p>\n</li>\n<li>\n<p>You care about quality, tests, documentation and code that ages well.</p>\n</li>\n<li>\n<p>You are curious, take ownership and step beyond your own area when it helps.</p>\n</li>\n<li>\n<p>You are at ease with modern tooling, AI coding assistants included.</p>\n</li>\n<li>\n<p>You like places that value learning and long-term growth.</p>\n</li>\n<li>\n<p>You might know some C++ and how native code fits into mobile apps.</p>\n</li>\n<li>\n<p>You might know SQL, analytics systems or data engineering basics.</p>\n</li>\n<li>\n<p>You have worked on instrumentation, telemetry or client-side event collection at scale.</p>\n</li>\n<li>\n<p>You have shipped mobile apps with high demands on scale and reliability.</p>\n</li>\n\n</div>"
+      },
+      {
+        "text": "Where You'll Be",
+        "content": "<div>\n\n<li>\n<p>This role is based in London or Stockholm.</p>\n</li>\n<li>\n<p>You can work where you work best: we meet in person now and then, and working from home is fine the rest of the time.</p>\n</li>\n\n</div>"
+      }
+    ],
+    "additionalPlain": "Spotify is an equal opportunity employer. We want people of every background, look and taste in music to feel at home here. A service built for everyone needs a team that reflects everyone, and different points of view make our work better. Bring your own story, your ideas and your way of seeing things; that mix is what keeps us improving how people listen.\n \nWe want every step of hiring to be accessible. If you need an adjustment at any point in the application or interviews, tell us and we will work out together what helps.\n \n"
+  },
+  {
+    "id": "71eb64a0-ce99-4166-8462-bad3901a967c",
+    "text": "Backend Engineer - Platform Security",
+    "categories": {
+      "location": "London"
+    },
+    "hostedUrl": "https://jobs.lever.co/spotify/71eb64a0-ce99-4166-8462-bad3901a967c",
+    "createdAt": 1791273788452,
+    "descriptionPlain": "",
+    "description": "<div>\n<p>The Platform team creates the technology that lets the rest of Spotify move fast and grow without friction. We cover many disciplines and build the infrastructure, tools and frameworks that the business runs on as our audience keeps growing.</p>\n<p>We are hiring a Backend Engineer II for our Security Compliance Engineering team. You will turn security, risk and compliance rules into software that makes secure work the easy default for teams across the company, and work with security colleagues to strengthen our technical Governance, Risk, and Compliance (GRC) tooling.</p>\n</div>",
+    "lists": [
+      {
+        "text": "What You'll Do",
+        "content": "<div>\n<ul>\n<li>\n<p>Design and build backend services and infrastructure that support our technical security Governance, Risk, and Compliance work.</p>\n</li>\n<li>\n<p>Build tooling that applies regulatory requirements and security controls across a large distributed estate.</p>\n</li>\n<li>\n<p>Automate security and compliance checks so engineers spend less time on paperwork and know where they stand.</p>\n</li>\n<li>\n<p>Work with security, engineering and other partners to turn requirements into workable technical designs.</p>\n</li>\n<li>\n<p>Help set shared engineering practices for security, risk and compliance that scale to many teams.</p>\n</li>\n<li>\n<p>Own your work from design through rollout, operation and improvement.</p>\n</li>\n\n</ul></div>"
+      },
+      {
+        "text": "Who You Are",
+        "content": "<div>\n<ul>\n<li>\n<p>You have written backend software in an object-oriented language such as Java and are at home with data.</p>\n</li>\n<li>\n<p>You have built and run distributed, high-traffic services in production.</p>\n</li>\n<li>\n<p>You know system design, data structures and algorithms and use them on real problems.</p>\n</li>\n<li>\n<p>You care about quality and build things that last.</p>\n</li>\n<li>\n<p>You have put security controls into software and know cybersecurity or security GRC frameworks.</p>\n</li>\n<li>\n<p>You like working with others to pin down requirements, weigh options and iterate.</p>\n</li>\n<li>\n<p>You are interested in security governance, risk and compliance and want to learn more about it.</p>\n</li>\n<li>\n<p>You explain complex topics clearly to technical and non-technical people alike.</p>\n</li>\n\n</ul></div>"
+      },
+      {
+        "text": "Where You'll Be",
+        "content": "<div>\n<ul>\n<li>\n<p>This role is based in London or Stockholm</p>\n</li>\n<li>\n<p>You can work where you work best: we meet in person now and then, and working from home is fine the rest of the time</p>\n</li>\n\n</ul></div>"
+      }
+    ],
+    "additionalPlain": "Spotify is an equal opportunity employer. We want people of every background, look and taste in music to feel at home here. A service built for everyone needs a team that reflects everyone, and different points of view make our work better. Bring your own story, your ideas and your way of seeing things; that mix is what keeps us improving how people listen.\n \nWe want every step of hiring to be accessible. If you need an adjustment at any point in the application or interviews, tell us and we will work out together what helps.\n \n"
+  }
+]

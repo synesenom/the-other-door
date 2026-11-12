@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-hybrid-aarhus",
+    "title": "Lead Data Scientist",
+    "company": "Baltic Analytics ApS",
+    "location": "Aarhus, Denmark",
+    "url": "https://example.com/jobs/golden-hybrid-aarhus",
+    "description": "About the role:\nBaltic Analytics ApS builds supply-chain optimization software for manufacturers across the Baltic Sea region. We are hiring a Lead Data Scientist to own our optimization and forecasting model stack.\n\nResponsibilities:\nYou will design and productionize ML pipelines for demand forecasting and route optimization using Python, SQL, AWS, and Spark. You will mentor two data scientists and set technical direction.\n\nRequirements:\n5+ years of experience in data science or applied ML, including some team-leadership experience, is required. Strong hands-on experience with Python (scikit-learn, PyTorch, pandas), SQL, AWS, and Spark is required.\n\nLocation and work mode:\nOur office is in Aarhus, but this role can be worked primarily remotely with occasional travel to the Aarhus office (roughly once a month) — most of the team already works this way, including colleagues based in Copenhagen.\n\nWhat we offer:\nCompetitive salary, a home-office budget, and a flexible schedule.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.6,
+    "score_max": 0.95,
+    "language_requirement": "none"
+  }
+}

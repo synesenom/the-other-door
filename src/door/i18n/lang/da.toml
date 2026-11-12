@@ -1,0 +1,143 @@
+# Danish. Word lists match whole words, case-insensitively; a trailing "*" also
+# matches longer words (Danish compounds: "seniorudvikler"). Heading lists match
+# as substrings of a heading line, so keep them specific enough not to occur in
+# an ordinary bullet. See src/door/i18n/__init__.py.
+
+code = "da"
+name = "Danish"
+
+names = ["danish", "dansk*"]
+
+# The gender tags of a job title ("Sygeplejerske (m/k)"): dropped from a stored title.
+title_tags = ["M/K", "K/M"]
+
+# Danish writes compounds as one word ("intensivsygeplejerske"): a topic term of six letters or
+# more also matches inside a word. Endings a plural adds ("sygeplejersker", "kontor" -> "kontorer").
+compounds = true
+plural_suffixes = ["er", "e", "r"]
+
+# Generic words of a job title that name no field: left out of the content words of a keyword.
+role_nouns = [
+    "konsulent", "rådgiver", "medarbejder", "specialist", "partner", "ansvarlig", "chef", "leder",
+    "koordinator", "assistent", "manager", "officer", "total",
+]
+
+# Connecting words that carry no meaning in a job title ("Chef for data").
+
+
+# English words that mean something unrelated in Danish: an exclude keyword
+# equal to one of these is not applied to a Danish ad.
+false_friends = ["intern", "chef"]  # intern = internal, chef = boss
+
+# Filler words with no topic, left out of the search keywords' content words.
+stop_words = ["og", "i", "til", "for", "af", "med", "på", "en", "et", "den", "det", "som", "at"]
+
+# Generic words that are not a skill, tool or certification by themselves: soft skills,
+# months, weekdays. The facts check never claims them.
+skill_stop_words = [
+    "kommunikation", "ledelse", "samarbejde", "kreativitet", "fleksibilitet", "ansvar",
+    "initiativ", "motivation", "analytisk", "problemløsning", "tidsstyring",
+    "januar", "februar", "marts", "maj", "juni", "juli", "oktober", "december",
+    "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag",
+    "nu", "nuværende", "flydende", "modersmål", "grundlæggende",
+]
+
+# Generic words around an employer's name in a careers site's title.
+career_site_words = ["karriere", "job", "jobs", "ledige stillinger", "stillinger", "karrieremuligheder"]
+
+# ASCII spellings of the special letters, for comparing names across sites
+# (cross-site dedup).
+[transliterate]
+"æ" = "ae"
+"ø" = "oe"
+"å" = "aa"
+
+# The look-alike letters (and, for å, the old spelling) URL slugs fold them to:
+# Hørsholm -> horsholm. Slugs that drop the letter instead (hrsholm) need no entry.
+[slug_fold]
+"æ" = "ae"
+"ø" = "o"
+"å" = "aa"
+
+# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
+[cv_sections]
+skills = ["kompetencer", "færdigheder", "it-kompetencer", "nøglekompetencer", "værktøjer"]
+education = ["uddannelse", "uddannelser", "uddannelse og kurser"]
+certifications = ["certificeringer", "certifikater", "kurser", "certificeringer og kurser"]
+
+[headings]
+requirement = ["vi forventer", "kvalifikationer", "krav", "hvem er du", "din profil"]
+responsibility = ["om jobbet", "dine opgaver", "om stillingen", "arbejdsopgaver", "ansvarsområder"]
+drop = ["om os", "vi tilbyder", "vi kan tilbyde", "ansøgning", "om virksomheden"]
+
+[markers]
+requirement = ["skal", "erfaring", "krav", "kræver", "flydende"]
+remote_pinned = ["fjernarbejde"]
+remote = ["hjemmearbejde", "fjernarbejde", "hjemmebaseret", "hjemmefra", "hybrid*"]
+salary = ["løn*"]
+
+[seniority]
+junior = ["junior*"]
+senior = ["senior*"]
+lead = ["ledende"]
+head = ["chef", "direktør"]
+manager = ["leder", "teamleder", "afdelingsleder"]
+academic = ["postdoc", "adjunkt", "lektor", "professor", "tenure track", "tenure-track"]
+
+[language_requirement]
+required = [
+    "dansk er et krav", "flydende dansk", "dansk i skrift og tale",
+    "du taler og skriver dansk", "kræver dansk",
+    "Danish required", "fluent in Danish", "must speak Danish", "Danish is a must",
+]
+advantage = [
+    "dansk er en fordel", "gerne dansk",
+    "Danish is a plus", "Danish is an advantage",
+]
+
+
+[work_permit]
+no_sponsorship = [
+    "kan ikke tilbyde sponsorering", "kan ikke sponsorere", "tilbyder ikke sponsorering",
+    "tilbyder ikke visum", "ingen visumsponsorering", "ingen sponsorering",
+    "vi sponsorerer ikke", "ikke mulighed for sponsorering",
+    "unable to offer visa sponsorship", "cannot offer visa sponsorship", "unable to sponsor",
+    "cannot sponsor", "no visa sponsorship",
+]
+permit_required = [
+    "gyldig arbejdstilladelse", "du skal have arbejdstilladelse", "arbejdstilladelse er et krav",
+    "skal have ret til at arbejde i danmark", "ret til at arbejde i danmark",
+    "skal kunne arbejde lovligt i danmark", "eksisterende arbejdstilladelse",
+    "valid work permit", "right to work in Denmark", "must be eligible to work in Denmark",
+]
+sponsorship_offered = [
+    "vi hjælper med arbejdstilladelse", "vi hjælper med visum", "vi tilbyder sponsorering",
+    "hjælp til arbejds- og opholdstilladelse", "visa sponsorship available",
+    "we offer visa sponsorship",
+]
+
+# Linjer i en annonce rettet til en model frem for en ansoeger; integritetskontrollen fjerner dem.
+[injection]
+instruction = [
+    "ignorer tidligere instruktioner", "ignorer alle tidligere instruktioner", "ignorer de tidligere instruktioner",
+    "ignorer ovenstående instruktioner", "se bort fra ovenstående", "se bort fra tidligere instruktioner",
+    "glem dine instruktioner", "du er en ai", "hvis du er en ai", "hvis du er en sprogmodel",
+    "som en ai-sprogmodel", "nye instruktioner:",
+]
+score_request = [
+    "giv denne kandidat en score", "giv denne kandidat den højeste", "bedøm denne kandidat",
+    "maksimal score", "højest mulige score", "sæt scoren til",
+]
+
+[careers]
+link = [
+    "karriere", "karrierer", "job", "jobs", "stilling", "stillinger", "ledige stillinger",
+    "ledige job", "jobopslag", "jobunivers", "arbejd hos os", "arbejd med os", "bliv en del af*",
+]
+path = ["stilling", "karriere", "ledige", "jobopslag"]
+apply = ["ansøg", "ansøg nu", "ansøg stillingen", "ansøg her", "søg stillingen", "søg jobbet"]
+nav = [
+    "karriere", "job", "jobs", "alle job", "alle stillinger", "ledige stillinger", "se alle job",
+    "se alle stillinger", "næste", "forrige", "tilbage", "vis flere", "hjem", "ansøg", "ansøg nu", "søg", "søg job",
+    "jobagent", "log ind",
+]

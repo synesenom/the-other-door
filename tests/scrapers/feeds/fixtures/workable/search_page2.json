@@ -1,0 +1,38 @@
+{
+  "jobs": [
+    {
+      "id": "f83445e5-62c2-4411-9cad-4767535f1199",
+      "title": "AI Engineer (Algorithms)",
+      "description": "<h3>About Arondite</h3><p>Arondite builds software that lets teams coordinate autonomous systems, data and AI across many platforms, so the people in charge can make critical calls sooner and with more confidence.</p>",
+      "requirementsSection": "<p><em>We want a team with many kinds of background and outlook, so nobody is expected to cover every point below. Apply even if you match only part of the lists.</em></p><h3>You should have:</h3><ul>",
+      "benefitsSection": "<ul><li>Strong base salary</li><li>Meaningful EMI share options in a funded, growing company</li><li>7% employer pension contribution</li><li>Lunch provided in the office</li><li>Private health and dental cover, dependents optional</li><li>Cycle to work scheme</li><li>Help with relocation</li>",
+      "url": "https://jobs.workable.com/view/wDEhvuML6gjznWzqjiioiP/hybrid-ai-engineer-(algorithms)-in-london-at-arondite",
+      "location": {
+        "city": "London",
+        "countryName": "United Kingdom"
+      },
+      "created": "2026-07-22T00:56:24.313Z",
+      "company": {
+        "title": "Arondite"
+      },
+      "workplace": "hybrid"
+    },
+    {
+      "id": "55027311-9da7-4ab4-af37-2f70036de0c4",
+      "title": "AVP Data Science",
+      "description": "<p><strong>About LoopMe</strong></p>",
+      "requirementsSection": "",
+      "benefitsSection": "",
+      "url": "https://jobs.workable.com/view/buR4Lnw2mkUTiZ8HdmjWdC/hybrid-avp-data-science-in-london-at-loopme",
+      "location": {
+        "city": "London",
+        "countryName": "United Kingdom"
+      },
+      "created": "2026-07-14T18:11:36.030Z",
+      "company": {
+        "title": "LoopMe"
+      },
+      "workplace": "hybrid"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Redovisningsekonom",
+  "County": "Kronobergs län",
+  "Municipality": "Uppvidinge",
+  "ApplicationEndDateFormatted": "2026-11-20"
+ },
+ "Assignment": {
+  "Guid": "27f683a8-4c5f-4420-b155-a61379984ba9",
+  "Title": "Redovisningsekonom",
+  "ReferenceNumber": "C352584",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Redovisningsekonom\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "I rollen ansvarar du för uppgifterna som hör till redovisningsekonom och samarbetar med kollegor i det dagliga arbetet.",
+  "Qualifications": "Du har relevant utbildning eller erfarenhet och trivs med att samarbeta och ta eget ansvar.",
+  "AdditionalInfo": "Vi tillämpar löpande urval, så skicka din ansökan i god tid. Kontakta oss via växeln vid frågor."
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Redovisningsekonom\",\"description\":\"I rollen ansvarar du för uppgifterna som hör till redovisningsekonom och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Uppvidinge kommun\"},\"datePosted\":\"2026-10-30T00:00:00\",\"validThrough\":\"2026-11-20T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Kyrkbacken 1, Åseda\"},\"employmentType\":[\"FULL_TIME\"],\"directApply\":true}"
+}

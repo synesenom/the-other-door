@@ -1,0 +1,102 @@
+name: Release
+
+# A release (#224): pushing the tag vX.Y.Z (after scripts/set_version.py X.Y.Z) builds the app on every system,
+# smoke-tests each, and uploads the installers to a DRAFT release of this repo (private: installed apps do not
+# update themselves from it; the next version is downloaded from the release page). Check the draft, then
+# publish it by hand. Only on tags: no pull requests, no schedule.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+# The workflow's own GITHUB_TOKEN writes the release (permissions below); no other token is needed.
+#   MAC_CERTIFICATE, MAC_CERTIFICATE_PASSWORD     a Developer ID Application certificate (.p12, base64) and its
+#   APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID   password, and the Apple account that notarizes;
+#                                                 without them the macOS build is unsigned (signed ad hoc)
+#   WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD      an Authenticode certificate; without, unsigned
+# Before publishing, go through docs/releasing.md (a clean-machine install on each system, release notes).
+# Cost: about 20 min on each of two macOS runners (10x), 20 on Windows (2x) and 15 on Linux: ~450 minutes a release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: The tag is the version
+        run: |
+          version="$(node -p "require('./app/package.json').version")"
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, but the version is $version: run scripts/set_version.py first" >&2; exit 1; }
+          grep -q "VERSION = \"$version\"" src/door/version.py
+
+  build:
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-14, name: macos-arm64 }
+          - { os: macos-15-intel, name: macos-x64 }
+          - { os: windows-latest, name: windows-x64 }
+          - { os: ubuntu-latest, name: linux-x64 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Restore the bundle's downloads
+        uses: actions/cache@v6
+        with:
+          path: app/.bundle-cache
+          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build the bundle
+        if: runner.os != 'Windows'
+        run: scripts/bundle-python.sh
+
+      - name: Build the bundle (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/bundle-python.ps1
+
+      # Signing only when the certificates are there; electron-builder.config.cjs follows CSC_LINK.
+      - name: Package, signed when the certificates are there, and upload to the draft release
+        env:
+          CSC_LINK: ${{ runner.os == 'macOS' && secrets.MAC_CERTIFICATE || runner.os == 'Windows' && secrets.WINDOWS_CERTIFICATE || '' }}
+          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.MAC_CERTIFICATE_PASSWORD || runner.os == 'Windows' && secrets.WINDOWS_CERTIFICATE_PASSWORD || '' }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # The update check's feed (#501), e.g. https://api.github.com/repos/<owner>/<repo>/releases/latest; empty = no check.
+          DOOR_UPDATE_FEED: ${{ vars.DOOR_UPDATE_FEED }}
+        run: |
+          [ -n "$CSC_LINK" ] || unset CSC_LINK CSC_KEY_PASSWORD
+          npm run build && npm run build:web
+          npx electron-builder --config electron-builder.config.cjs --publish always
+
+      - name: Smoke-test the packaged app
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a npm run test:package; else npm run test:package; fi

@@ -1,0 +1,20 @@
+{
+ "totalFound": 1,
+ "content": [
+  {
+   "id": "744000119638898",
+   "name": "Licensed Benefit Advisor – Work From Home (Multiple Locations) |2026",
+   "company": {
+    "identifier": "WTW",
+    "name": "WTW"
+   },
+   "releasedDate": "2026-04-09T15:17:28.197Z",
+   "location": {
+    "city": "Arlington",
+    "region": "VA",
+    "country": "us",
+    "remote": true
+   }
+  }
+ ]
+}

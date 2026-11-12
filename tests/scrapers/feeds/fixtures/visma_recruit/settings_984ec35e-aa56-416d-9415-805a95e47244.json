@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Socialsekreterare till, Barn- och familjeenheten",
+  "County": "Kronobergs län",
+  "Municipality": "Uppvidinge",
+  "ApplicationEndDateFormatted": "2026-11-15"
+ },
+ "Assignment": {
+  "Guid": "984ec35e-aa56-416d-9415-805a95e47244",
+  "Title": "Socialsekreterare till, Barn- och familjeenheten",
+  "ReferenceNumber": "C352737",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Socialsekreterare till, Barn- och familjeenheten\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "I rollen ansvarar du för uppgifterna som hör till socialsekreterare till, barn- och familjeenheten och samarbetar med kollegor i det dagliga arbetet.",
+  "Qualifications": "Du har relevant utbildning eller erfarenhet och trivs med att samarbeta och ta eget ansvar.",
+  "AdditionalInfo": "Vi tillämpar löpande urval, så skicka din ansökan i god tid. Kontakta oss via växeln vid frågor."
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Socialsekreterare till, Barn- och familjeenheten\",\"description\":\"I rollen ansvarar du för uppgifterna som hör till socialsekreterare till, barn- och familjeenheten och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Uppvidinge kommun\"},\"datePosted\":\"2026-10-30T00:00:00\",\"validThrough\":\"2026-11-15T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Storgatan 29, Lenhovda\"},\"employmentType\":[\"FULL_TIME\"],\"directApply\":true}"
+}

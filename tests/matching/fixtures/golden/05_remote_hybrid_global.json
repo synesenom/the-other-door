@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-remote-global",
+    "title": "ML Lead",
+    "company": "Vantage Cloud Systems",
+    "location": "Berlin, Germany",
+    "url": "https://example.com/jobs/golden-remote-global",
+    "description": "About the role:\nVantage Cloud Systems is a distributed, EU-based SaaS company building demand-forecasting tools for e-commerce retailers. We are hiring an ML Lead to own our forecasting model stack and lead a small team of ML engineers.\n\nResponsibilities:\nYou will design and maintain forecasting pipelines using Python and Spark, own our AWS-based ML infrastructure, and set technical direction for the ML team. You will mentor two ML engineers and collaborate closely with product.\n\nRequirements:\n5+ years of experience in applied machine learning, with some team-leadership experience, is required. Strong hands-on experience with Python (scikit-learn, PyTorch, pandas), SQL, AWS, and Spark is required.\n\nLocation and work mode:\nThis role is fully remote — you can work from anywhere in the EU, including Denmark, with no requirement to relocate. Our team is distributed across Europe and gathers in person twice a year for an offsite.\n\nWhat we offer:\nCompetitive salary, a home-office budget, and flexible working hours.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.6,
+    "score_max": 0.95,
+    "language_requirement": "none"
+  }
+}

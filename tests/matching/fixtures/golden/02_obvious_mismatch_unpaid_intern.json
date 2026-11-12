@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-obvious-mismatch",
+    "title": "Unpaid Marketing Intern (Junior)",
+    "company": "BrightSpark Retail",
+    "location": "Odense, Denmark",
+    "url": "https://example.com/jobs/golden-obvious-mismatch",
+    "description": "About the role:\nBrightSpark Retail is looking for an enthusiastic junior intern to join our social media team for an unpaid three-month internship, with the possibility of a paid position afterwards for the right candidate.\n\nResponsibilities:\nYou will help schedule Instagram and TikTok posts, reply to customer comments, and assist with basic photo editing for our online store.\n\nRequirements:\nNo prior experience is required — this is an entry-level, junior position aimed at students or recent school leavers who want to learn the basics of social media marketing. A genuine interest in retail and fashion is more important than a CV.\n\nWhat we offer:\nA fun, informal office environment, free lunch on Fridays, and a certificate of completion at the end of the internship. This role is unpaid but travel expenses are reimbursed.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.0,
+    "score_max": 0.1,
+    "language_requirement": "none"
+  }
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The other door — Finding jobs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#F1E6CF}
+button{font:inherit}
+</style>
+</helmet>
+<div style="min-height: 800px; box-sizing: border-box; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; padding: 72px 24px; display: flex; justify-content: center">
+  <div style="width: 100%; max-width: 620px; display: flex; flex-direction: column; gap: 40px">
+    <div>
+      <span aria-hidden="true" style="display: block; width: 40px; height: 5px; border-radius: 2px; background: #4169E1; margin-bottom: 18px"></span>
+      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 48px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Finding jobs</h1>
+      <p style="margin: 8px 0 0; color: #5C5249; font-size: 15px">Started 08:02 · you can close this window, the run keeps going</p>
+    </div>
+
+    <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+        <li style="display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 16px; align-items: start; padding: 18px 0; border-top: 1px solid #E2D5BA">
+          <span aria-hidden="true" style="{{s.dot}}">{{s.mark}}</span>
+          <span style="display: flex; flex-direction: column; gap: 2px">
+            <span style="{{s.nameStyle}}">{{s.name}}</span>
+            <span style="color: #5C5249">{{s.detail}}</span>
+            <sc-if value="{{s.running}}" hint-placeholder-val="{{ false }}">
+              <span style="display: block; height: 4px; border-radius: 2px; background: #E2D5BA; margin-top: 10px; overflow: hidden"><span style="display: block; height: 4px; width: 40%; background: #4169E1"></span></span>
+            </sc-if>
+          </span>
+          <span style="color: #5C5249; font-variant-numeric: tabular-nums">{{s.time}}</span>
+        </li>
+      </sc-for>
+    </ol>
+
+    <div style="display: flex; gap: 10px">
+      <button type="button" style="height: 44px; padding: 0 18px; border: 1px solid #D6C7A8; border-radius: 8px; background: transparent; color: #1E1A16">Stop after this step</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const done = 'width: 28px; height: 28px; border-radius: 14px; background: #1E1A16; color: #F8F1E2; display: flex; align-items: center; justify-content: center; font-size: 13px;';
+    const run = 'width: 28px; height: 28px; box-sizing: border-box; border-radius: 14px; border: 2px solid #4169E1; color: #2F55C8; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;';
+    const wait = 'width: 28px; height: 28px; box-sizing: border-box; border-radius: 14px; border: 1px solid #C9B993; color: #5C5249; display: flex; align-items: center; justify-content: center; font-size: 13px;';
+    const name = 'font-family: \'Young Serif\', Georgia, serif; font-size: 22px; font-weight: 400;';
+    const steps = [
+      { name: 'Search', detail: '6 boards read · 142 new ads', time: '3 min', state: 'done' },
+      { name: 'Discover', detail: '38 employers found on LinkedIn', time: '9 min', state: 'done' },
+      { name: 'Follow', detail: '11 new career pages followed', time: '4 min', state: 'done' },
+      { name: 'Collect', detail: 'Reading Example Health · 23 of 57 employers', time: '6 min', state: 'run' },
+      { name: 'Match', detail: 'Scores every new ad against your CV', time: '', state: 'wait' }
+    ];
+    return {
+      steps: steps.map((s, i) => ({
+        ...s,
+        running: s.state === 'run',
+        mark: s.state === 'done' ? '✓' : String(i + 1),
+        dot: s.state === 'done' ? done : s.state === 'run' ? run : wait,
+        nameStyle: name + (s.state === 'wait' ? ' color: #5C5249;' : '')
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

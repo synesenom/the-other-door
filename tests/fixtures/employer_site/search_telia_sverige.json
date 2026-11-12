@@ -1,0 +1,14 @@
+{
+ "search": [
+  {
+   "id": "Q4567911",
+   "label": "Telia Sverige",
+   "description": "Swedish telecommunications company",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Telia Sverige"
+   }
+  }
+ ]
+}

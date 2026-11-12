@@ -1,0 +1,87 @@
+\documentclass[10pt, a4paper]{article}
+
+% ---------------------------------------------------------------------------
+% Cover letter template: preamble and macros only.
+%
+% The tailor agent writes the whole body between \begin{document} and
+% \end{document} from profile/cv.md, profile/config.json and the posting,
+% using the macros below. Change the preamble to restyle every generated
+% letter; leave the body section as it is.
+% ---------------------------------------------------------------------------
+
+% Packages
+\usepackage{fontspec}
+% English is the default. For a French application the tailor starts the body with
+% \selectlanguage{french}: babel then sets the non-breaking space before : ; ! ?, the French date
+% and the guillemets (\og ... \fg{}, or « » typed with the space after the opening one and before the closing one).
+\usepackage[french,main=english]{babel}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage[top=2.2cm, bottom=2cm, left=2.4cm, right=2.4cm]{geometry}
+
+% Preamble
+\pagenumbering{gobble}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+% The CV's type: Figtree for the text, Young Serif for the name (both under the SIL Open Font License, in the
+% profile's fonts/ folder). `compile` puts that folder's path where <<fonts>> stands.
+\setmainfont{Figtree-Regular.otf}[Path=<<fonts>>/, ItalicFont=Figtree-Italic.otf, BoldFont=Figtree-SemiBold.otf, BoldItalicFont=Figtree-SemiBoldItalic.otf]
+\newfontfamily\headingfont{YoungSerif-Bold.otf}[Path=<<fonts>>/]
+\definecolor{ink}{HTML}{1E1A16}
+\definecolor{inkmuted}{HTML}{6B6157}
+\definecolor{hairline}{HTML}{D6C7A8}
+\definecolor{accent}{HTML}{2F55C8}
+\hypersetup{colorlinks, urlcolor=accent, linkcolor=ink}
+\AtBeginDocument{\color{ink}}
+
+% \letterheader{<Name>}{<phone>}{<email>}{<web>}{<location>} — the name and the contact line at the top of the
+% page, as on the CV (an empty argument for a missing detail).
+\makeatletter
+\newcommand{\cv@sep}{}
+\newcommand{\cv@detail}[2]{\if\relax\detokenize{#1}\relax\else\cv@sep#2\gdef\cv@sep{\enspace·\enspace}\fi}
+\newcommand{\contactline}[4]{%
+  {\small\color{inkmuted}\gdef\cv@sep{}%
+   \cv@detail{#1}{#1}%
+   \cv@detail{#2}{\href{mailto:#2}{#2}}%
+   \cv@detail{#3}{\href{https://#3}{#3}}%
+   \cv@detail{#4}{#4}\par}%
+}
+\makeatother
+\newcommand{\letterheader}[5]{%
+  {\headingfont\fontsize{28}{32}\selectfont #1\par}%
+  \vspace{8pt}%
+  \contactline{#2}{#3}{#4}{#5}%
+  \vspace{8pt}%
+  {\color{hairline}\hrule height 0.6pt}%
+  \vspace{1.2cm}%
+}
+
+% \recipient{<Recipient name or team>}{<Company>}{<City>} — the address block,
+% followed by today's date.
+\newcommand{\recipient}[3]{%
+  {\setlength{\parskip}{0pt}#1\par #2\par #3\par}%
+  \vspace{0.6cm}%
+  {\color{inkmuted}\today}\par
+  \vspace{0.8cm}%
+}
+
+% The sign-off line; a letter in another language redefines it
+% (\renewcommand{\signoff}{Med venlig hilsen,}) before \closing.
+\newcommand{\signoff}{Kind regards,}
+
+% \closing{<Name>} — the sign-off.
+\newcommand{\closing}[1]{%
+  \par\vspace{0.6cm}%
+  \signoff\par
+  \vspace{0.3cm}%
+  #1\par
+}
+
+
+% Start document
+\begin{document}
+
+% Written by the tailor agent for each application: \letterheader, \recipient,
+% the letter's paragraphs (\noindent before the first), then \closing.
+
+\end{document}

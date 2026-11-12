@@ -1,0 +1,98 @@
+name: App tests
+
+# The desktop app (app/): type check, unit tests, then the end-to-end smoke test and
+# the core journeys, which build the app and drive it against the real Python server. So it runs
+# when the app or the server's code changes, not for docs or Python tests alone.
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/app.yml"
+
+# A newer push to the same pull request cancels the run it makes pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      # Restore only: the Offline tests workflow saves this cache under the same key.
+      - name: Restore the Poetry virtualenv
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Point the app at the Poetry interpreter
+        run: echo "DOOR_PYTHON=$(poetry run which python)" >> "$GITHUB_ENV"
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Type check
+        working-directory: app
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: app
+        run: npm test
+
+      # Builds the app first (npm run build), so the build is checked here too.
+      - name: End-to-end smoke test
+        working-directory: app
+        run: xvfb-run -a npm run test:e2e
+        env:
+          CI: "1"
+
+      # The core journeys (app/journeys, tagged @core): the main paths through the built app against
+      # the real server in a test world (app/test/world), whose stand-ins run on DOOR_PYTHON above.
+      - name: Core journeys
+        working-directory: app
+        run: xvfb-run -a npm run test:journeys:core
+        env:
+          CI: "1"
+
+      - name: Keep the journeys report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: journeys-report
+          path: app/journeys-report
+          retention-days: 7
+
+      # The phone app (#303): its web build against a real `door serve` on made-up data, at phone sizes.
+      - name: Phone app end-to-end test
+        working-directory: app
+        run: xvfb-run -a npm run test:web
+        env:
+          CI: "1"

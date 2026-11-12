@@ -1,0 +1,22 @@
+[
+  {
+    "id": "abc-123-def-456-ghi",
+    "text": "Senior Data Scientist",
+    "categories": {
+      "location": "Copenhagen, Denmark"
+    },
+    "hostedUrl": "https://jobs.lever.co/acme/abc-123-def-456-ghi",
+    "createdAt": 1746100800000,
+    "descriptionPlain": "We are looking for a talented data scientist to join our team."
+  },
+  {
+    "id": "xyz-789-uvw-012-rst",
+    "text": "ML Engineer",
+    "categories": {
+      "location": "Remote"
+    },
+    "hostedUrl": "https://jobs.lever.co/acme/xyz-789-uvw-012-rst",
+    "createdAt": 1746360000000,
+    "descriptionPlain": "Join us to build state-of-the-art ML infrastructure."
+  }
+]

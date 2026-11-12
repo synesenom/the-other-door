@@ -1,0 +1,18 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Skurups kommun söker skolsköterska ",
+  "DepartmentLogoUrl": "https://recruit.visma.com/Upload/Department/bbf72273-006a-4c22-9bd2-c16f2f55bb17.png",
+  "County": "Skåne län",
+  "Municipality": "Skurup",
+  "ApplicationEndDateFormatted": "2026-11-01",
+  "AdHeaderBackgroundColor": "#ffffff",
+  "AdHeaderTextColor": "#000000",
+  "WorkplaceType": "På plats"
+ },
+ "Assignment": {
+  "Guid": "9ca86cfd-e913-4be2-8f08-66d7c7a7c671",
+  "Title": "Skurups kommun söker skolsköterska "
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Skurups kommun söker skolsköterska \",\"description\":\"Du arbetar tillsammans med skolans elevhälsoteam för att varje elev ska få det stöd som behövs.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Skurups kommun\"},\"datePosted\":\"2026-10-06T00:00:00\",\"validThrough\":\"2026-11-01T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Västergatan 10 , Rydsgård \"},\"employmentType\":[\"FULL_TIME\",\"PART_TIME\"],\"directApply\":true}"
+}

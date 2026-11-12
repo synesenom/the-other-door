@@ -1,0 +1,50 @@
+{
+ "total": 1392,
+ "jobPostings": [
+  {
+   "externalPath": "/job/Armenia/ASIC-Physical-Design-Engineer_2025096"
+  },
+  {
+   "externalPath": "/job/Krakow-Poland/Software-Engineering-Technical-Leader_2025809"
+  },
+  {
+   "externalPath": "/job/Krakow-Poland/AI-Software-Engineer_2025798"
+  }
+ ],
+ "facets": [
+  {
+   "facetParameter": "locationMainGroup",
+   "values": [
+    {
+     "facetParameter": "locations",
+     "values": [
+      {
+       "descriptor": "Acton, Massachusetts, US",
+       "id": "026fa05becb01001f51296c6934d0000"
+      },
+      {
+       "descriptor": "Ahmedabad, India",
+       "id": "0696c83bbe641001f4f0800dae0d0000"
+      },
+      {
+       "descriptor": "Allen, Texas, US",
+       "id": "1cf8ea09530d1001f4d02c51bde80000"
+      },
+      {
+       "descriptor": "Amsterdam, Netherlands",
+       "id": "1cf8ea09530d1001f4c67303db070000"
+      },
+      {
+       "descriptor": "Armenia",
+       "id": "0696c83bbe641001f4fbedc90abe0000"
+      },
+      {
+       "descriptor": "Copenhagen, Denmark",
+       "id": "8676de3331b41001f4ea5fef5dcf0000"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

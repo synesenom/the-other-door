@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "companies": [
+    {
+      "name": "Region Hovedstaden",
+      "feed": {
+        "platform": "hr_manager",
+        "id": "regionh"
+      },
+      "status": "followed",
+      "reason": null,
+      "found_via": "manual",
+      "evidence": "HR-Manager feed regionh lists open jobs",
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_checked": "2026-01-01T00:00:00+00:00"
+    },
+    {
+      "name": "Københavns Kommune",
+      "feed": {
+        "platform": "hr_manager",
+        "id": "kkdk"
+      },
+      "status": "followed",
+      "reason": null,
+      "found_via": "manual",
+      "evidence": "HR-Manager feed kkdk lists open jobs",
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_checked": "2026-01-01T00:00:00+00:00"
+    },
+    {
+      "name": "Pleo",
+      "feed": {
+        "platform": "ashby",
+        "id": "pleo"
+      },
+      "status": "followed",
+      "reason": null,
+      "found_via": "manual",
+      "evidence": "Ashby board pleo lists open jobs",
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_checked": "2026-01-01T00:00:00+00:00"
+    },
+    {
+      "name": "Famly",
+      "feed": {
+        "platform": "recruitee",
+        "id": "famly"
+      },
+      "status": "followed",
+      "reason": null,
+      "found_via": "manual",
+      "evidence": "Recruitee site famly lists open jobs",
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_checked": "2026-01-01T00:00:00+00:00"
+    },
+    {
+      "name": "Publicis Sapient",
+      "feed": {
+        "platform": "career_sites",
+        "id": "careers.publicissapient.com"
+      },
+      "status": "followed",
+      "reason": null,
+      "found_via": "manual",
+      "evidence": "careers.publicissapient.com carries schema.org JobPosting markup",
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_checked": "2026-01-01T00:00:00+00:00"
+    },
+    {
+      "name": "Oracle Example ApS",
+      "feed": null,
+      "status": "unfollowable",
+      "reason": "Oracle Cloud HCM: Oracle's terms forbid robots on its systems; not followed",
+      "found_via": "jobindex",
+      "evidence": null,
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_checked": "2026-01-01T00:00:00+00:00"
+    },
+    {
+      "name": "Nowhere ApS",
+      "feed": null,
+      "status": "unresolved",
+      "reason": "no job feed found",
+      "found_via": "linkedin",
+      "evidence": null,
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_checked": "2026-01-01T00:00:00+00:00"
+    }
+  ]
+}

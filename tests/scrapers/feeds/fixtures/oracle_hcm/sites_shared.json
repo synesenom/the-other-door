@@ -1,0 +1,26 @@
+{
+ "items": [
+  {
+   "SiteName": "Agency A",
+   "SiteNumber": "CX_1",
+   "StatusCode": "ORA_ACTIVE",
+   "Language": "US"
+  },
+  {
+   "SiteName": "Agency B",
+   "SiteNumber": "CX_2003",
+   "StatusCode": "ORA_ACTIVE",
+   "Language": "US"
+  },
+  {
+   "SiteName": "Old",
+   "SiteNumber": "CX_7",
+   "StatusCode": "ORA_INACTIVE",
+   "Language": "US"
+  }
+ ],
+ "count": 3,
+ "hasMore": false,
+ "offset": 0,
+ "limit": 25
+}

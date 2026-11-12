@@ -1,0 +1,103 @@
+# France. See src/door/i18n/__init__.py.
+
+code = "fr"
+name = "France"
+names = ["république française", "republique francaise"]  # the country's other names an ad or a profile may use
+languages = ["fr"]
+
+# Salary words that are not currency ("brut", "net") are salary markers in lang/fr.toml. "euro" and "euros"
+# are whole words (a prefix would match "europe").
+currency = ["€", "eur", "euro", "euros", "k€"]
+legal_suffixes = ["sas", "sasu", "sarl", "eurl", "sa", "snc", "scop", "sca", "se", "sci", "sep", "s.a.s.", "s.a.r.l.", "s.a."]
+# Words a subsidiary's or branch's name ends with that are no part of the employer's own name; the country's names count too.
+subsidiary_words = ["france", "française", "francaise", "succursale"]
+
+# Domain ending, host labels its employers' career sites use, and whole domains of its job boards.
+tlds = ["fr"]
+career_hosts = ["carrieres", "carriere", "recrutement", "emploi", "jobs", "talent"]
+job_boards = [
+    "francetravail.fr", "pole-emploi.fr", "hellowork.com", "meteojob.com", "jobijoba.com", "free-work.com",
+    "choisirleservicepublic.gouv.fr", "welcometothejungle.com", "apec.fr", "cadremploi.fr", "lefigaro.fr",
+    "monster.fr", "regionsjob.com", "keljob.com", "talent.io", "jobteaser.com",
+]
+
+# How a CV is written there (#605; sources in the pull request): photo "no" | "optional" | "expected"; whether a
+# date of birth belongs on it (it is only kept when cv.md has one, never added); the page limit; the country's
+# all-numeric full date.
+[cv]
+photo = "optional"
+date_of_birth = false
+max_pages = 2
+date_format = "DD/MM/YYYY"
+
+# Canonical city -> other names it goes by in ads (the arrondissements, the suburbs and departments around
+# it). France Travail writes a place as "75 - Paris 8e Arrondissement": a department number,
+# a dash, the place. The pre-filter keeps a posting whose location names any of them when the profile's
+# `location` names the city. A name with an apostrophe is listed with ' and with ’.
+[cities]
+paris = [
+    "paris*", "île-de-france", "ile-de-france", "idf", "région parisienne", "region parisienne",
+    "la défense", "la defense", "courbevoie", "puteaux", "nanterre", "boulogne-billancourt",
+    "issy-les-moulineaux", "levallois-perret", "neuilly-sur-seine", "clichy", "saint-denis", "saint-ouen",
+    "montreuil", "pantin", "montrouge", "ivry-sur-seine", "bois-colombes", "asnières-sur-seine",
+    "asnieres-sur-seine", "rueil-malmaison", "suresnes", "vincennes", "versailles", "hauts-de-seine",
+    "seine-saint-denis", "val-de-marne",
+]
+lyon = [
+    "lyon*", "villeurbanne", "vénissieux", "venissieux", "bron", "caluire-et-cuire", "écully", "ecully",
+    "tassin-la-demi-lune", "vaulx-en-velin", "saint-priest", "décines", "decines", "oullins", "part-dieu",
+    "gerland", "confluence", "rhône", "rhone", "métropole de lyon", "metropole de lyon",
+]
+toulouse = [
+    "toulouse*", "blagnac", "colomiers", "labège", "labege", "balma", "tournefeuille", "ramonville-saint-agne",
+    "cugnaux", "l'union", "l’union", "muret", "montaudran", "haute-garonne", "toulouse métropole",
+]
+marseille = [
+    "marseille*", "aix-en-provence", "aubagne", "vitrolles", "marignane", "les milles", "bouches-du-rhône",
+    "bouches-du-rhone",
+]
+lille = [
+    "lille*", "villeneuve-d'ascq", "villeneuve-d’ascq", "roubaix", "tourcoing", "marcq-en-barœul",
+    "marcq-en-baroeul", "euralille", "lambersart", "wasquehal", "ronchin", "lomme", "métropole européenne de lille",
+]
+bordeaux = [
+    "bordeaux*", "mérignac", "merignac", "pessac", "talence", "bègles", "begles", "le haillan", "lormont", "cenon",
+    "villenave-d'ornon", "villenave-d’ornon", "eysines", "gironde",
+]
+nantes = [
+    "nantes*", "saint-herblain", "rezé", "reze", "orvault", "carquefou", "vertou", "saint-sébastien-sur-loire",
+    "bouguenais", "loire-atlantique",
+]
+nice = [
+    "sophia antipolis", "sophia-antipolis", "valbonne", "antibes", "cagnes-sur-mer", "saint-laurent-du-var",
+    "biot", "mougins", "alpes-maritimes",
+]
+strasbourg = ["strasbourg*", "schiltigheim", "illkirch-graffenstaden", "lingolsheim", "bas-rhin"]
+rennes = ["rennes*", "cesson-sévigné", "cesson-sevigne", "saint-grégoire", "bruz", "ille-et-vilaine"]
+grenoble = ["grenoble*", "meylan", "échirolles", "echirolles", "isère", "isere"]
+montpellier = ["montpellier*", "hérault", "herault"]
+
+# City -> towns within about an hour's commute, which an on-site candidate accepts. Same word syntax as
+# [cities]; every key is a city above. The pre-filter keeps these for `remote: "no"`.
+[commute]
+paris = [
+    "massy", "palaiseau", "saclay", "gif-sur-yvette", "orsay", "guyancourt", "saint-quentin-en-yvelines",
+    "vélizy-villacoublay", "velizy-villacoublay", "cergy", "évry", "evry", "saint-germain-en-laye", "créteil",
+    "creteil", "noisy-le-grand", "marne-la-vallée", "marne-la-vallee", "roissy", "melun", "yvelines", "essonne",
+    "val-d'oise", "val-d’oise", "seine-et-marne",
+]
+lyon = [
+    "meyzieu", "limonest", "dardilly", "charbonnières-les-bains", "francheville", "givors", "l'isle-d'abeau",
+    "l’isle-d’abeau", "villefranche-sur-saône", "vienne", "bourgoin-jallieu", "saint-étienne", "saint-etienne",
+]
+toulouse = [
+    "castanet-tolosan", "portet-sur-garonne", "plaisance-du-touch", "saint-orens-de-gameville", "fonsorbes",
+    "castelginest", "aucamville",
+]
+marseille = ["la ciotat", "martigues", "salon-de-provence", "gardanne"]
+lille = ["lens", "douai", "arras", "valenciennes", "armentières", "armentieres", "seclin", "béthune", "bethune"]
+bordeaux = ["saint-médard-en-jalles", "saint-medard-en-jalles", "blanquefort", "cestas", "libourne", "arcachon"]
+nantes = ["saint-nazaire", "ancenis", "clisson"]
+nice = ["cannes", "grasse", "menton", "mandelieu-la-napoule", "monaco"]
+strasbourg = ["haguenau", "molsheim", "sélestat", "selestat", "kehl"]
+rennes = ["vitré", "vitre", "fougères", "fougeres", "saint-malo"]

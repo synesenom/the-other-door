@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The other door — Review, one at a time</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#1E1A16}
+a{color:#9DB4F5}a:hover{color:#C3D1FA}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height: 800px; box-sizing: border-box; background: #1E1A16; color: #F1E6CF; font-family: Figtree, system-ui, sans-serif; font-size: 15px; line-height: 1.55; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 48px">
+
+  <div style="width: 100%; max-width: 680px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-family: 'Young Serif', Georgia, serif; font-size: 22px; font-weight: 400">The other door</span>
+    <span style="color: #B5A890; font-size: 13px; font-variant-numeric: tabular-nums">{{pos}} of {{total}} new</span>
+  </div>
+
+  <div aria-hidden="true" style="width: 100%; max-width: 680px; display: flex; gap: 4px">
+    <sc-for list="{{ticks}}" as="t" hint-placeholder-count="6">
+      <span style="{{t}}"></span>
+    </sc-for>
+  </div>
+
+  <article style="width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 24px">
+      <div>
+        <span aria-hidden="true" style="display: block; width: 40px; height: 5px; border-radius: 2px; background: #6F8FEF; margin-bottom: 18px"></span>
+        <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 44px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">{{job.title}}</h1>
+        <p style="margin: 10px 0 0; color: #B5A890">{{job.company}} · {{job.place}}</p>
+      </div>
+      <span style="font-family: 'Young Serif', Georgia, serif; font-size: 52px; font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums">{{job.score}}</span>
+    </div>
+    <p style="margin: 0; font-size: 17px; max-width: 58ch; color: #E6DAC2">{{job.why}}</p>
+    <a href="#" style="font-weight: 500">Read the full ad</a>
+  </article>
+
+  <div style="width: 100%; max-width: 680px; display: flex; gap: 12px; flex-wrap: wrap; margin-top: auto">
+    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 1px solid #4A423A; border-radius: 10px; background: transparent; color: #F1E6CF">Not for me <span style="color: #B5A890; font-size: 12px; margin-left: 6px">X</span></button>
+    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 1px solid #4A423A; border-radius: 10px; background: transparent; color: #F1E6CF">Later <span style="color: #B5A890; font-size: 12px; margin-left: 6px">Space</span></button>
+    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 0; border-radius: 10px; background: #F1E6CF; color: #1E1A16; font-weight: 600">Prepare <span style="color: #5C5249; font-size: 12px; margin-left: 6px">P</span></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { i: 0 }; }
+  renderVals() {
+    const jobs = [
+      { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '0.86', why: 'Your forecasting work and Python depth line up with the core of the role. They want dbt, which your CV does not mention yet.' },
+      { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '0.81', why: 'Strong on modelling and production Python. The ad leans on MLOps tooling you have used only briefly.' },
+      { title: 'Analytics Lead', company: 'Initech Insurance', place: 'Aarhus', score: '0.77', why: 'Leadership of a small analytics team matches your last role. Aarhus is outside your preferred area.' }
+    ];
+    const i = this.state.i % jobs.length;
+    const ticks = Array.from({ length: 12 }, (_, k) => 'flex: 1; height: 3px; border-radius: 2px; background: ' + (k < i + 1 ? '#6F8FEF' : '#3A332C') + ';');
+    return { job: jobs[i], pos: String(i + 1), total: '12', ticks, next: () => this.setState({ i: this.state.i + 1 }) };
+  }
+}
+</script>
+</body>
+</html>

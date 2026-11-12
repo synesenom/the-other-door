@@ -1,0 +1,68 @@
+{
+ "vacancies": [
+  {
+   "id": "87a15119-174d-499c-874b-b3d0a55848b3",
+   "title": "Intern - Digital Learning, Learning Lab (DanChurchAid)",
+   "titleAsUrl": "intern-digital-learning-learning-lab-danchurchaid",
+   "published": "2026-10-12T12:32:47.8676562Z",
+   "created": "2026-10-12T12:29:33.5748925Z",
+   "deadline": "2026-11-01T22:59:00Z",
+   "department": "DanChurchAid",
+   "location": "Meldahlsgade, 3, 1613, København, Denmark",
+   "shortId": "06mqt4",
+   "externalApply": false,
+   "externalCseAdLink": null,
+   "translations": [
+    {
+     "title": "Intern - Digital Learning, Learning Lab (DanChurchAid)",
+     "content": "<p>Join the learning team for a placeholder internship. You will help prepare online courses.</p><p>You bring curiosity and good spoken English.</p>",
+     "languageKey": "en-GB",
+     "factDatas": []
+    }
+   ]
+  },
+  {
+   "id": "837f4bc6-7759-429c-ba2e-0793ebab78de",
+   "title": "Rådgiver til Politik og Interessevaretagelse i Folkekirkens Nødhjælp (tidsbegrænset)",
+   "titleAsUrl": "radgiver-til-politik-og-interessevaretagelse-i-folkekirkens-nodhjaelp-tidsbegraens",
+   "published": "2026-10-28T13:19:03.0128838Z",
+   "created": "2026-10-28T13:15:54.4693736Z",
+   "deadline": "2026-11-12T11:00:00Z",
+   "department": "DanChurchAid",
+   "location": "Meldahlsgade, 3, 1613, København, Denmark",
+   "shortId": "g9z45r",
+   "externalApply": false,
+   "externalCseAdLink": null,
+   "translations": [
+    {
+     "title": "Rådgiver til Politik og Interessevaretagelse i Folkekirkens Nødhjælp (tidsbegrænset)",
+     "content": "<p>Vi søger en rådgiver til et eksempelteam. Du skal arbejde med politiske analyser.</p><p>Du har erfaring med interessevaretagelse.</p>",
+     "languageKey": "da-DK",
+     "factDatas": []
+    }
+   ]
+  },
+  {
+   "id": "c235b991-416c-4dcf-af0a-c11306f84eb7",
+   "title": "International Communications Intern ",
+   "titleAsUrl": "international-communications-intern",
+   "published": "2026-10-29T10:00:49.3790127Z",
+   "created": "2026-10-29T09:56:26.1734556Z",
+   "deadline": "2026-11-16T22:59:00Z",
+   "department": "DanChurchAid",
+   "location": "Meldahlsgade, 3, 1613, København, Denmark",
+   "shortId": "clf6eg",
+   "externalApply": false,
+   "externalCseAdLink": null,
+   "translations": [
+    {
+     "title": "International Communications Intern ",
+     "content": "<p>Support the communications team with example stories and social posts.</p>",
+     "languageKey": "en-GB",
+     "factDatas": []
+    }
+   ]
+  }
+ ],
+ "count": 3
+}

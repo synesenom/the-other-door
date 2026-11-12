@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Sjuksköterska till ortopedmottagning",
+  "County": "Gävleborgs län",
+  "Municipality": "Hudiksvall",
+  "ApplicationEndDateFormatted": "2026-11-20"
+ },
+ "Assignment": {
+  "Guid": "f76c7b12-a518-49d2-9303-951574c2d1e3",
+  "Title": "Sjuksköterska till ortopedmottagning",
+  "ReferenceNumber": "RS 2026/2800",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Sjuksköterska till ortopedmottagning\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "I rollen ansvarar du för uppgifterna som hör till sjuksköterska till ortopedmottagning och samarbetar med kollegor i det dagliga arbetet.",
+  "Qualifications": "Du har relevant utbildning eller erfarenhet och trivs med att samarbeta och ta eget ansvar.",
+  "AdditionalInfo": "Vi tillämpar löpande urval, så skicka din ansökan i god tid. Kontakta oss via växeln vid frågor."
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Sjuksköterska till ortopedmottagning\",\"description\":\"I rollen ansvarar du för uppgifterna som hör till sjuksköterska till ortopedmottagning och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Region Gävleborg\"},\"datePosted\":\"2026-10-29T00:00:00\",\"validThrough\":\"2026-11-20T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Hudiksvall\"},\"employmentType\":[\"TEMPORARY\",\"FULL_TIME\"],\"directApply\":true}"
+}

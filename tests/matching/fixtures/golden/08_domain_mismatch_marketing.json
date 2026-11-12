@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-domain-mismatch",
+    "title": "Senior Marketing Manager",
+    "company": "Lumen Consumer Goods",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-domain-mismatch",
+    "description": "About the role:\nLumen Consumer Goods is a Nordic FMCG brand looking for a Senior Marketing Manager to own our brand strategy across Denmark, Norway, and Sweden.\n\nResponsibilities:\nYou will develop and execute integrated marketing campaigns across TV, print, and social media, manage our external creative agency relationship, and own the annual brand marketing budget.\n\nRequirements:\n7+ years of experience in brand or product marketing within FMCG or consumer goods is required. Strong storytelling and stakeholder-management skills, and experience briefing creative agencies, are required. Experience with marketing analytics tools is a plus.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, four days a week on-site.\n\nWhat we offer:\nCompetitive salary, a company car allowance, and a collaborative brand team.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.0,
+    "score_max": 0.25,
+    "language_requirement": "none"
+  }
+}

@@ -1,0 +1,121 @@
+{
+ "CustomerAlias": "bec",
+ "CustomerName": "Bankernes EDB Central",
+ "TransactionStatus": {
+  "Description": "The operation completed successfully.",
+  "StatusCode": 0
+ },
+ "Items": [
+  {
+   "Id": 71567,
+   "Name": "AI engineer (senior)",
+   "Published": "/Date(1784098393000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=1017&ProjectId=71567&DepartmentId=9752&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p>Trimmed.</p>"
+    }
+   ],
+   "Department": {
+    "Name": "41015 - AI HUB",
+    "City": ""
+   },
+   "DepartmentTree": {
+    "Name": "10000 - Executive Board",
+    "City": "Roskilde",
+    "SubItems": [
+     {
+      "Name": "40000 - Architecture & Developer Experience",
+      "City": "",
+      "SubItems": [
+       {
+        "Name": "41000 - Architecture & Developer Experience Mgmt",
+        "City": "",
+        "SubItems": [
+         {
+          "Name": "41015 - AI HUB",
+          "City": ""
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "Id": 71533,
+   "Name": "Application architect (Java)",
+   "Published": "/Date(1787570639000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=1017&ProjectId=71533&DepartmentId=9526&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p>Trimmed.</p>"
+    }
+   ],
+   "Department": {
+    "Name": "61517 - Nykredit Staff",
+    "City": ""
+   },
+   "DepartmentTree": {
+    "Name": "10000 - Executive Board",
+    "City": "Roskilde",
+    "SubItems": [
+     {
+      "Name": "60000 - Business Innovation",
+      "City": "",
+      "SubItems": [
+       {
+        "Name": "61500 - BEC Poland Country Management",
+        "City": "",
+        "SubItems": [
+         {
+          "Name": "61517 - Nykredit Staff",
+          "City": ""
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "Id": 71662,
+   "Name": "Business analyst (senior) - Collateral & Impairment Team",
+   "Published": "/Date(1790941851000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=1017&ProjectId=71662&DepartmentId=9710&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p>Trimmed.</p>"
+    }
+   ],
+   "Department": {
+    "Name": "48315 - Collateral & Impairment",
+    "City": ""
+   },
+   "DepartmentTree": {
+    "Name": "10000 - Executive Board",
+    "City": "Roskilde",
+    "SubItems": [
+     {
+      "Name": "46000 - Data & Analytics & Reporting",
+      "City": "",
+      "SubItems": [
+       {
+        "Name": "48300 - Reporting Solutions",
+        "City": "",
+        "SubItems": [
+         {
+          "Name": "48315 - Collateral & Impairment",
+          "City": ""
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

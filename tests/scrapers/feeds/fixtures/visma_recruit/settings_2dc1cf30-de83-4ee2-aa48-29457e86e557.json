@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Sjuksköterska, Intermediärvårdsavdelningen, AnOpIva, Umeå",
+  "County": "Västerbottens län",
+  "Municipality": "Umeå",
+  "ApplicationEndDateFormatted": "2026-11-01"
+ },
+ "Assignment": {
+  "Guid": "2dc1cf30-de83-4ee2-aa48-29457e86e557",
+  "Title": "Sjuksköterska, Intermediärvårdsavdelningen, AnOpIva, Umeå",
+  "ReferenceNumber": "C344343",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Sjuksköterska, Intermediärvårdsavdelningen, AnOpIva, Umeå\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "I rollen ansvarar du för uppgifterna som hör till sjuksköterska, intermediärvårdsavdelningen, anopiva, umeå och samarbetar med kollegor i det dagliga arbetet.",
+  "Qualifications": "Du har relevant utbildning eller erfarenhet och trivs med att samarbeta och ta eget ansvar.",
+  "AdditionalInfo": "Vi tillämpar löpande urval, så skicka din ansökan i god tid. Kontakta oss via växeln vid frågor."
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Sjuksköterska, Intermediärvårdsavdelningen, AnOpIva, Umeå\",\"description\":\"I rollen ansvarar du för uppgifterna som hör till sjuksköterska, intermediärvårdsavdelningen, anopiva, umeå och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\" Region Västerbotten\"},\"datePosted\":\"2026-09-16T00:00:00\",\"validThrough\":\"2026-11-01T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Umeå\"},\"employmentType\":[\"TEMPORARY\",\"FULL_TIME\"],\"directApply\":true}"
+}

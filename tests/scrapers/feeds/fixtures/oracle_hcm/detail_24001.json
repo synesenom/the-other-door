@@ -1,0 +1,17 @@
+{
+ "items": [
+  {
+   "Id": "24001",
+   "Title": "Remote Analyst",
+   "Category": "Technology",
+   "JobSchedule": "Full time",
+   "ExternalPostedStartDate": "2026-10-20T08:00:00+00:00",
+   "ExternalPostedEndDate": "2026-11-30T23:00:00+00:00",
+   "ExternalDescriptionStr": "<div><p>Analyse payment data for the bank.</p><p>Python and SQL.</p></div>",
+   "ExternalResponsibilitiesStr": "",
+   "ExternalQualificationsStr": ""
+  }
+ ],
+ "count": 1,
+ "hasMore": false
+}

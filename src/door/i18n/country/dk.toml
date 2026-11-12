@@ -1,0 +1,53 @@
+# Denmark. See src/door/i18n/__init__.py.
+
+code = "dk"
+name = "Denmark"
+names = ["danmark"]  # the country's other names an ad or a profile may use
+languages = ["da"]
+
+currency = ["kr.", "dkk"]
+legal_suffixes = ["a/s", "aps", "i/s"]
+# Words a subsidiary's or branch's name ends with that are no part of the employer's own name; the country's names count too.
+subsidiary_words = ["dansk", "i danmark", "filial"]
+
+# Domain ending, host labels its employers' career sites use, and whole domains of its job boards.
+tlds = ["dk"]
+career_hosts = ["karriere", "job"]
+job_boards = ["jobnet.dk", "it-jobbank.dk", "studiejobs.dk", "frivilligjob.dk", "temp-team.dk", "jobbank.dk", "job.jobmaskinen.dk", "job.dsr.dk"]
+
+# How a CV is written there (#605; sources in the pull request): photo "no" | "optional" | "expected"; whether a
+# date of birth belongs on it (it is only kept when cv.md has one, never added); the page limit; the country's
+# all-numeric full date.
+[cv]
+photo = "optional"
+date_of_birth = false
+max_pages = 2
+date_format = "DD.MM.YYYY"
+
+# Canonical city -> other names it goes by in ads (including the municipalities
+# and districts around it a commuter would accept). The pre-filter keeps a
+# posting whose location names any of them when the profile's `location` names
+# the city.
+[cities]
+copenhagen = [
+    "københavn*", "kobenhavn*", "storkøbenhavn", "kbh", "hovedstaden",
+    "frederiksberg", "kastrup", "tårnby", "dragør", "valby", "vanløse",
+    "brønshøj", "nordhavn", "ørestad", "amager", "hellerup", "gentofte",
+    "søborg", "gladsaxe", "herlev", "rødovre", "hvidovre", "brøndby",
+    "glostrup", "albertslund", "ballerup", "lyngby", "kongens lyngby", "hørsholm", "rungsted",
+]
+aarhus = ["århus"]
+odense = []
+aalborg = ["ålborg"]
+
+# City -> towns within about an hour's commute by train, which an on-site
+# candidate (a nurse, an electrician) accepts. Same word syntax as [cities];
+# every key is a city above. The pre-filter keeps these for `remote: "no"`.
+[commute]
+copenhagen = [
+    "hillerød", "roskilde", "køge", "helsingør", "holbæk", "ringsted", "frederikssund",
+    "birkerød", "allerød", "farum", "værløse", "furesø", "ishøj", "greve", "solrød",
+    "vallensbæk", "taastrup", "høje-taastrup", "hedehusene", "fredensborg", "humlebæk",
+    "snekkersten", "lejre", "stenløse", "ølstykke", "jyllinge", "karlslunde", "lillerød",
+    "region hovedstaden", "region sjælland", "sjælland", "nordsjælland",
+]

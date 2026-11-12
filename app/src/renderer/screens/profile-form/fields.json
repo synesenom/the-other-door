@@ -1,0 +1,231 @@
+{
+  "sections": [
+    {
+      "id": "about",
+      "label": "About you"
+    },
+    {
+      "id": "search",
+      "label": "What to look for"
+    },
+    {
+      "id": "skip",
+      "label": "What to skip"
+    },
+    {
+      "id": "risky",
+      "label": "Risky sources",
+      "screen": "settings"
+    },
+    {
+      "id": "config",
+      "label": "In profile/config.json only"
+    }
+  ],
+  "fields": [
+    {
+      "key": "name",
+      "section": "about",
+      "label": "Name"
+    },
+    {
+      "key": "email",
+      "section": "about",
+      "label": "Email"
+    },
+    {
+      "key": "location",
+      "section": "about",
+      "label": "City",
+      "help": "Every job board of the city's country is searched."
+    },
+    {
+      "key": "needs_work_permit",
+      "section": "about",
+      "label": "I need a visa or work permit"
+    },
+    {
+      "key": "cv_template",
+      "section": "config",
+      "label": "CV template"
+    },
+    {
+      "key": "cv_content",
+      "section": "config",
+      "label": "Your CV (Markdown)"
+    },
+    {
+      "key": "cover_letter_template",
+      "section": "config",
+      "label": "Cover letter template"
+    },
+    {
+      "key": "photo",
+      "section": "about",
+      "label": "Photo"
+    },
+    {
+      "key": "role_targets",
+      "section": "search",
+      "label": "Role targets",
+      "help": "The job titles you are after."
+    },
+    {
+      "key": "search_keywords",
+      "section": "config",
+      "label": "Search keywords"
+    },
+    {
+      "key": "topic_terms",
+      "section": "config",
+      "label": "Words a job title must contain"
+    },
+    {
+      "key": "remote",
+      "section": "about",
+      "label": "Where you would work"
+    },
+    {
+      "key": "linkedin_discovery",
+      "section": "risky",
+      "label": "LinkedIn"
+    },
+    {
+      "key": "profession_discovery",
+      "section": "risky",
+      "label": "profession.hu"
+    },
+    {
+      "key": "hellowork_discovery",
+      "section": "risky",
+      "label": "HelloWork"
+    },
+    {
+      "key": "jobbsafari_discovery",
+      "section": "risky",
+      "label": "Jobbsafari"
+    },
+    {
+      "key": "exclude",
+      "section": "skip",
+      "label": "Companies and words to skip"
+    },
+    {
+      "key": "min_score",
+      "section": "search",
+      "label": "How close a match to show",
+      "help": "Broad shows more jobs, some only a loose fit. Balanced is the usual choice. Strong shows only the jobs that fit you closely."
+    },
+    {
+      "key": "languages",
+      "section": "about",
+      "label": "Languages of the job ads"
+    },
+    {
+      "key": "enrich_sources",
+      "section": "config",
+      "label": "Your public pages"
+    },
+    {
+      "key": "claude_config_dir",
+      "section": "config",
+      "label": "Claude config folder"
+    },
+    {
+      "key": "recheck_after_days",
+      "section": "config",
+      "label": "Check again after (days)",
+      "help": "Read a known posting again after this many days. Empty means never."
+    },
+    {
+      "key": "scrape_workers",
+      "section": "config",
+      "label": "Sites read at once",
+      "help": "Empty means 8; 1 reads one site at a time. Each site stays paced."
+    },
+    {
+      "key": "verify_liveness",
+      "section": "config",
+      "label": "Check that ads are still up"
+    },
+    {
+      "key": "liveness_expiry_phrases",
+      "section": "config",
+      "label": "Words that mean an ad is closed"
+    },
+    {
+      "key": "dedup_source_priority",
+      "section": "config",
+      "label": "Which site wins a duplicate",
+      "help": "Site ids, most preferred first."
+    },
+    {
+      "key": "dedup_similarity_threshold",
+      "section": "config",
+      "label": "How alike two ads must be to count as one",
+      "help": "From 0 to 1; 1 means only identical ones."
+    },
+    {
+      "key": "max_postings_per_site",
+      "section": "config",
+      "label": "Most postings per site",
+      "help": "Empty means no limit."
+    },
+    {
+      "key": "max_pages_per_keyword",
+      "section": "config",
+      "label": "Most result pages per keyword",
+      "help": "Empty means no limit."
+    },
+    {
+      "key": "condense_max_chars",
+      "section": "config",
+      "label": "Longest ad text scored (characters)",
+      "help": "Empty means The other door's default."
+    },
+    {
+      "key": "prescreen_top_n",
+      "section": "config",
+      "label": "Ads scored per run",
+      "help": "The best this many after the offline pass. Empty means The other door's default."
+    },
+    {
+      "key": "prescreen_min",
+      "section": "config",
+      "label": "Lowest offline score that is scored",
+      "help": "From 0 to 1. Empty means The other door's default."
+    },
+    {
+      "key": "translate_titles",
+      "section": "config",
+      "label": "Translate job titles into English"
+    },
+    {
+      "key": "translate_model",
+      "section": "config",
+      "label": "Model for the translations",
+      "help": "Empty means Haiku."
+    },
+    {
+      "key": "max_age_days",
+      "section": "config",
+      "label": "Oldest ad shown (days)"
+    },
+    {
+      "key": "follow_ai_fallback",
+      "section": "config",
+      "label": "Ask Claude where a careers page is"
+    },
+    {
+      "key": "retire_after_days",
+      "section": "config",
+      "label": "Stop following a quiet employer after (days)"
+    },
+    {
+      "key": "revise_model",
+      "section": "config",
+      "label": "Model for revisions",
+      "help": "Empty means The other door's default."
+    }
+  ]
+}

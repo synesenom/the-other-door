@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Speciallärare mot språk-, skriv- och läsutveckling - Ärentunaskolan",
+  "County": "Uppsala län",
+  "Municipality": "Uppsala",
+  "ApplicationEndDateFormatted": "2026-11-22"
+ },
+ "Assignment": {
+  "Guid": "ebac40a8-1d10-42ae-9ad6-4a2758547d54",
+  "Title": "Speciallärare mot språk-, skriv- och läsutveckling - Ärentunaskolan",
+  "ReferenceNumber": "UBN-2026-05522",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Speciallärare mot språk-, skriv- och läsutveckling - Ärentunaskolan\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "",
+  "Qualifications": "",
+  "AdditionalInfo": ""
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Speciallärare mot språk-, skriv- och läsutveckling - Ärentunaskolan\",\"description\":\"I rollen ansvarar du för uppgifterna som hör till speciallärare mot språk-, skriv- och läsutveckling - ärentunaskolan och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Uppsala kommun\"},\"datePosted\":\"2026-10-30T00:00:00\",\"validThrough\":\"2026-11-22T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Uppsala\"},\"employmentType\":[\"FULL_TIME\"],\"directApply\":true}"
+}

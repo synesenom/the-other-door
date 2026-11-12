@@ -1,0 +1,128 @@
+{
+ "total": {
+  "value": 7
+ },
+ "positions": 3,
+ "hits": [
+  {
+   "id": "31629624",
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31629624",
+   "headline": "HR Project Manager, First Camp Group",
+   "description": {
+    "text": "We SeeQ is recruiting an HR Project Manager for First Camp Group.\nYou will run projects that improve how people join, develop and leave the company, and work closely with the HR director.\nWe want you to have run cross-functional projects and to be fluent in English."
+   },
+   "employer": {
+    "name": "We SeeQ AB",
+    "organization_number": "5560000000"
+   },
+   "application_details": {
+    "url": "https://example.com/apply/seeq"
+   },
+   "occupation": {
+    "label": "Personalchef/HR-chef"
+   },
+   "workplace_model": {
+    "concept_id": null,
+    "label": null
+   },
+   "workplace_address": {
+    "municipality": "Stockholm",
+    "municipality_concept_id": "AvNB_uwa_6n6",
+    "region": "Stockholms län",
+    "city": "Stockholm"
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Stockholm",
+     "municipality_concept_id": "AvNB_uwa_6n6",
+     "region": "Stockholms län",
+     "city": "Stockholm"
+    }
+   ],
+   "publication_date": "2026-10-22T07:21:13",
+   "last_publication_date": "2026-11-15T23:59:59",
+   "application_deadline": "2026-11-15T23:59:59",
+   "removed": false
+  },
+  {
+   "id": "31615801",
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31615801",
+   "headline": "Project Manager – Energy Delivery Projects",
+   "description": {
+    "text": "Cleeven is looking for a Project Manager to deliver energy projects for utility customers.\nYou will own scope, time and cost, lead a small team of engineers and report to the programme manager.\nExperience of grid or renewable projects is an advantage. The working language is English."
+   },
+   "employer": {
+    "name": "CLEEVEN SC AB",
+    "organization_number": "5560000000"
+   },
+   "application_details": {
+    "url": null
+   },
+   "occupation": {
+    "label": "Projektledare, industri"
+   },
+   "workplace_model": {
+    "concept_id": "ZxwM_gtz_n61",
+    "label": "Arbete på plats"
+   },
+   "workplace_address": {
+    "municipality": "Stockholm",
+    "municipality_concept_id": "AvNB_uwa_6n6",
+    "region": "Stockholms län",
+    "city": "STOCKHOLM"
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Stockholm",
+     "municipality_concept_id": "AvNB_uwa_6n6",
+     "region": "Stockholms län",
+     "city": "STOCKHOLM"
+    }
+   ],
+   "publication_date": "2026-10-19T16:34:25",
+   "last_publication_date": "2026-11-18T23:59:59",
+   "application_deadline": "2026-11-18T23:59:59",
+   "removed": false
+  },
+  {
+   "id": "31597903",
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31597903",
+   "headline": " SAP AMS Project Manager ",
+   "description": {
+    "text": "Infosys Sweden is hiring an SAP AMS Project Manager to lead a support team for a large client.\nYou coordinate incidents, service levels and monthly reporting, and act as the contact for the client's IT department.\nYou have managed application support deliveries before."
+   },
+   "employer": {
+    "name": "Infosys Technologies (Sweden) AB",
+    "organization_number": "5560000000"
+   },
+   "application_details": {
+    "url": "https://example.com/apply/infosys"
+   },
+   "occupation": {
+    "label": "IT-strateg"
+   },
+   "workplace_model": {
+    "concept_id": "ZxwM_gtz_n61",
+    "label": "Arbete på plats"
+   },
+   "workplace_address": {
+    "municipality": "Stockholm",
+    "municipality_concept_id": "AvNB_uwa_6n6",
+    "region": "Stockholms län",
+    "city": "Stockholm"
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Stockholm",
+     "municipality_concept_id": "AvNB_uwa_6n6",
+     "region": "Stockholms län",
+     "city": "Stockholm"
+    }
+   ],
+   "publication_date": "2026-10-14T18:08:00",
+   "last_publication_date": "2026-11-13T23:59:59",
+   "application_deadline": "2026-11-13T23:59:59",
+   "removed": false
+  }
+ ]
+}

@@ -1,0 +1,4 @@
+﻿User-agent: *
+Allow: /ApplicationInit.aspx?
+Disallow: /ApplicationInit.aspx?*SkipAdvertisement=True*
+Disallow: /

@@ -1,0 +1,52 @@
+{
+  "enabledMcpjsonServers": [
+    "door"
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.netrc)",
+      "Read(~/.docker/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.config/door/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.config/gcloud/**)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "excludedCommands": [
+      "git",
+      "gh"
+    ],
+    "filesystem": {
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.gnupg",
+        "~/.netrc",
+        "~/.docker",
+        "~/.kube",
+        "~/.config/door",
+        "~/.config/gh",
+        "~/.config/gcloud"
+      ]
+    }
+  }
+}

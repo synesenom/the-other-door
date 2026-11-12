@@ -1,0 +1,45 @@
+name: Offline tests
+
+# The Python suite. A pull request that changes only the desktop app (app/) skips
+# it, except app/src/generated/tools.json, which test_tools_snapshot_matches_server
+# reads. The app has its own workflow (app.yml).
+on:
+  pull_request:
+    paths:
+      - "**"
+      - "!app/**"
+      - "app/src/generated/tools.json"
+
+# A newer push to the same pull request cancels the run it makes pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Cache Poetry virtualenv
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-
+
+      - name: Install dependencies
+        run: poetry install
+
+      # In parallel, one worker per core (pytest-xdist; the runner has 4).
+      - name: Run offline tests
+        run: poetry run pytest -n auto

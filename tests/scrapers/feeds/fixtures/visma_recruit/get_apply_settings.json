@@ -1,0 +1,25 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Enhetschef inom funktionsstöd - Barnboende",
+  "County": "Västra Götalands län",
+  "Municipality": "Alingsås",
+  "ApplicationEndDateFormatted": "2026-11-11"
+ },
+ "Assignment": {
+  "Guid": "2b368797-8e2c-4527-bc80-7cc9ac2d9c39",
+  "Title": "Enhetschef inom funktionsstöd - Barnboende",
+  "AboutWorkplace": "Kommunen är en stor arbetsgivare med många verksamheter.",
+  "WorkDescr": "Du leder enheten och har ansvar för verksamhetens kvalitet.",
+  "ReferenceNumber": "C350968",
+  "ReadMoreLink": {
+   "Url": "https://www.alingsas.se/naringsliv-och-arbete/jobb/",
+   "Text": "Hur det är att arbeta hos oss"
+  }
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Enhetschef inom funktionsstöd - Barnboende\",\"description\":\"Du leder en enhet med barnboende och ansvarar för kvalitet och personal.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Alingsås kommun\",\"logo\":\"https://recruit.visma.com/Upload/Department/0c1df7ad-877b-4fac-b9b1-65a5479e63c9.jpg\"},\"datePosted\":\"2026-10-28T00:00:00\",\"validThrough\":\"2026-11-11T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Sidenvägen 7F, Alingsås\"},\"employmentType\":[\"FULL_TIME\"],\"directApply\":true}",
+ "ApplicationSettings": {
+  "AssignmentGuid": "2b368797-8e2c-4527-bc80-7cc9ac2d9c39",
+  "AccountName": "Alingsås kommun"
+ }
+}

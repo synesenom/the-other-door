@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The other door — Matches</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#F1E6CF}
+a{color:#2F55C8}a:hover{color:#1E3F9E}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height: 800px; display: flex; flex-wrap: wrap; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5">
+
+  <nav aria-label="Main" style="flex: 0 0 220px; box-sizing: border-box; padding: 28px 20px; display: flex; flex-direction: column; gap: 28px; border-right: 1px solid #E2D5BA">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px">
+      <svg width="24" height="32" viewBox="100 48 312 416" aria-hidden="true"><path transform="translate(97.5 452.5) scale(.5 -.5)" d="M533 185Q533 149 544.0 120.5Q555 92 592 87Q604 86 604 74V41Q604 27 589 27Q540 27 507.5 21.5Q475 16 451.5 7.5Q428 -1 405 -11Q401 -13 398 -13H396Q393 -13 393 -10Q395 13 397.5 35.0Q400 57 404 79Q399 66 382.5 44.0Q366 22 334.5 4.5Q303 -13 252 -13Q218 -13 179.5 1.0Q141 15 107.0 46.0Q73 77 51.5 127.5Q30 178 30 251Q30 344 63.5 401.5Q97 459 150.5 486.0Q204 513 264 513Q340 513 393 466V530Q393 557 389.5 582.0Q386 607 374.0 624.5Q362 642 334 645Q322 646 322 658V692Q322 698 326.0 700.5Q330 703 337 705Q416 731 460.5 757.0Q505 783 525 798Q528 800 530 800H531Q533 800 533 798ZM393 324Q393 371 362.5 404.0Q332 437 282 437Q234 437 207.0 416.0Q180 395 169.5 360.0Q159 325 159 283Q159 187 197.5 131.0Q236 75 297 75Q324 75 344.0 88.5Q364 102 376.5 122.0Q389 142 393 160Z" fill="#1E1A16"/></svg>
+      <span style="font-family: 'Young Serif', Georgia, serif; font-size: 26px; font-weight: 400; letter-spacing: -0.01em">The other door</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <sc-for list="{{nav}}" as="item" hint-placeholder-count="5">
+        <a href="#" style="{{item.style}}"><span>{{item.label}}</span><span style="color: #5C5249; font-size: 13px">{{item.count}}</span></a>
+      </sc-for>
+    </div>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 8px">
+      <button type="button" style="height: 44px; border: 1px solid #1E1A16; border-radius: 8px; background: transparent; color: #1E1A16; font-weight: 600">Find new jobs</button>
+      <span style="color: #5C5249; font-size: 12px">Last run today, 08:14</span>
+    </div>
+  </nav>
+
+  <section aria-label="Matches" style="flex: 1 1 340px; min-width: 0; box-sizing: border-box; padding: 32px 0 24px; border-right: 1px solid #E2D5BA; display: flex; flex-direction: column">
+    <div style="padding: 0 28px 20px">
+      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 40px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Matches</h1>
+      <p style="margin: 6px 0 0; color: #5C5249">12 new since your last review</p>
+      <div style="display: flex; gap: 6px; margin-top: 18px; flex-wrap: wrap">
+        <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid #1E1A16; background: #1E1A16; color: #F8F1E2; font-size: 13px">New</button>
+        <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid #D6C7A8; background: transparent; color: #1E1A16; font-size: 13px">All</button>
+        <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid #D6C7A8; background: transparent; color: #1E1A16; font-size: 13px">Best first</button>
+      </div>
+    </div>
+    <ul style="list-style: none; margin: 0; padding: 0 12px; display: flex; flex-direction: column; gap: 2px">
+      <sc-for list="{{jobs}}" as="job" hint-placeholder-count="6">
+        <li>
+          <button type="button" onClick="{{job.pick}}" style="{{job.style}}">
+            <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left">
+              <sc-if value="{{job.selected}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; width: 22px; height: 4px; border-radius: 2px; background: {{accent}}; margin-bottom: 6px"></span></sc-if>
+              <span style="font-weight: 600; font-size: 15px">{{job.title}}</span>
+              <span style="color: #5C5249; font-size: 13px">{{job.company}} · {{job.place}}</span>
+            </span>
+            <span style="font-family: 'Young Serif', Georgia, serif; font-size: 20px; font-weight: 400; font-variant-numeric: tabular-nums">{{job.score}}</span>
+          </button>
+        </li>
+      </sc-for>
+    </ul>
+  </section>
+
+  <article style="flex: 999 1 480px; min-width: 0; box-sizing: border-box; padding: 40px 48px; display: flex; flex-direction: column; gap: 24px; max-width: 760px">
+    <div>
+      <span aria-hidden="true" style="display: block; width: 40px; height: 5px; border-radius: 2px; background: {{accent}}; margin-bottom: 18px"></span>
+      <h2 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.15">{{sel.title}}</h2>
+      <p style="margin: 8px 0 0; color: #5C5249; font-size: 15px">{{sel.company}} · {{sel.place}} · posted 3 days ago · via Jobindex</p>
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <span style="font-family: 'Young Serif', Georgia, serif; font-size: 56px; font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums">{{sel.score}}</span>
+      <span style="font-weight: 600">Strong match</span>
+    </div>
+    <p style="margin: 0; font-size: 15px; max-width: 60ch">Your forecasting work and Python depth line up with the core of the role. The team wants dbt, which your CV doesn't mention yet.</p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap">
+      <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 8px; background: #1E1A16; color: #F8F1E2; font-weight: 600">Prepare application</button>
+      <button type="button" style="height: 44px; padding: 0 18px; border: 1px solid #D6C7A8; border-radius: 8px; background: transparent; color: #1E1A16">Mark applied</button>
+      <button type="button" style="height: 44px; padding: 0 18px; border: 0; background: transparent; color: #5C5249">Not for me</button>
+    </div>
+    <hr style="border: 0; border-top: 1px solid #E2D5BA; margin: 4px 0">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px">
+      <div>
+        <h3 style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #5C5249">Why it fits</h3>
+        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
+          <li>Five years of demand forecasting</li>
+          <li>Python, SQL, experiment design</li>
+          <li>Danish and English, both asked</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #5C5249">Gaps</h3>
+        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
+          <li>dbt</li>
+          <li>Stakeholder reporting in Looker</li>
+        </ul>
+      </div>
+    </div>
+    <a href="#" style="font-weight: 500">Read the full ad</a>
+  </article>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#4169E1","options":["#4169E1","#1E1A16","#C2562B"]},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { picked: 0 }; }
+  renderVals() {
+    const accent = this.props.accent ?? '#4169E1';
+    const raw = [
+      { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '0.86' },
+      { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '0.81' },
+      { title: 'Analytics Lead', company: 'Initech Insurance', place: 'Aarhus', score: '0.77' },
+      { title: 'Forecasting Specialist', company: 'Globex Energy', place: 'Fredericia', score: '0.74' },
+      { title: 'Data Engineer', company: 'Vandelay Industries', place: 'Copenhagen', score: '0.71' },
+      { title: 'Quantitative Analyst', company: 'Acme Capital', place: 'Hellerup', score: '0.70' }
+    ];
+    const base = 'width: 100%; min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border: 0; border-radius: 10px; color: #1E1A16; ';
+    const jobs = raw.map((j, i) => ({ ...j, selected: i === this.state.picked, style: base + (i === this.state.picked ? 'background: #F8F1E2;' : 'background: transparent;'), pick: () => this.setState({ picked: i }) }));
+    const navBase = 'display: flex; justify-content: space-between; align-items: center; min-height: 40px; padding: 0 8px; border-radius: 8px; color: #1E1A16; text-decoration: none; ';
+    const nav = [['Matches', '12'], ['Applications', '5'], ['Companies', '48'], ['CV', ''], ['Market', '']].map(([label, count], i) => ({ label, count, style: navBase + (i === 0 ? 'background: #F8F1E2; font-weight: 600;' : '') }));
+    return { accent, jobs, nav, sel: raw[this.state.picked] };
+  }
+}
+</script>
+</body>
+</html>

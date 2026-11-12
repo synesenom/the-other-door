@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The other door phone — Applications</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; overflow: hidden">
+  <main style="flex: 1; min-height: 0; overflow: hidden; padding: 28px 20px 0; display: flex; flex-direction: column; gap: 18px">
+    <div>
+      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Applications</h1>
+      <p style="margin: 4px 0 0; color: #5C5249">11 sent this month · 3 in interviews</p>
+    </div>
+    <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+      <section>
+        <h2 style="margin: 0 0 4px; display: flex; justify-content: space-between; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #5C5249; font-weight: 600"><span>{{g.name}}</span><span>{{g.n}}</span></h2>
+        <ul style="list-style: none; margin: 0; padding: 0">
+          <sc-for list="{{g.items}}" as="c" hint-placeholder-count="2">
+            <li style="border-bottom: 1px solid #E2D5BA">
+              <button type="button" style="width: 100%; min-height: 60px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border: 0; background: transparent; color: #1E1A16; text-align: left">
+                <span style="display: flex; flex-direction: column">
+                  <span style="font-weight: 600; font-size: 15px">{{c.title}}</span>
+                  <span style="color: #5C5249; font-size: 13px">{{c.company}}</span>
+                </span>
+                <span style="display: flex; align-items: center; gap: 5px; color: #5C5249; font-size: 12px; white-space: nowrap">
+                  <sc-for list="{{c.rounds}}" as="r" hint-placeholder-count="0"><span aria-hidden="true" style="{{r}}"></span></sc-for>
+                  <span>{{c.note}}</span>
+                </span>
+              </button>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+    </sc-for>
+    <button type="button" style="align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: transparent; color: #5C5249">Closed (2)</button>
+  </main>
+  <nav aria-label="Main" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 22px; border-top: 1px solid #E2D5BA; background: #F1E6CF">
+    <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">
+      <a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; text-decoration: none; font-size: 11px; color: {{tab.color}}; font-weight: {{tab.weight}}">
+        <span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: {{tab.dash}}"></span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tab.icon}}"></path></svg>
+        <span>{{tab.label}}</span>
+      </a>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const passed = 'width: 7px; height: 7px; border-radius: 4px; background: #1E1A16;';
+    const pending = 'width: 7px; height: 7px; box-sizing: border-box; border-radius: 4px; border: 2px solid #4169E1;';
+    const c = (title, company, note, rounds) => ({ title, company, note, rounds: rounds || [] });
+    const groups = [
+      { name: 'Offer', items: [c('Quant Analyst', 'Acme Capital', 'answer by Fri', [passed, passed, passed])] },
+      { name: 'Interviewing', items: [c('Data Scientist', 'Example Health', 'technical', [passed, passed, pending]), c('Product Analyst', 'Example Media', 'screening', [pending])] },
+      { name: 'Applied', items: [c('ML Engineer', 'Contoso Pay', '4 days ago'), c('Data Engineer', 'Vandelay Industries', '1 week ago')] },
+      { name: 'Prepared', items: [c('Senior Data Scientist', 'Hooli Labs', 'today')] }
+    ].map(g => ({ ...g, n: String(g.items.length) }));
+    const icons = {
+      Home: 'M4 11l8-7 8 7v9h-5v-6h-6v6H4z',
+      Matches: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+      Applications: 'M4 4h6v16H4zM14 4h6v10h-6z',
+      Profile: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c1.5-4 4.5-6 8-6s6.5 2 8 6',
+      Settings: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4'
+    };
+    const on = 'Applications';
+    const tabs = Object.keys(icons).map(label => ({ label, icon: icons[label], color: label === on ? '#1E1A16' : '#5C5249', weight: label === on ? '600' : '400', dash: label === on ? '#4169E1' : 'transparent' }));
+    return { groups, tabs };
+  }
+}
+</script>
+</body>
+</html>

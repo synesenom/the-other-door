@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:a10="http://www.w3.org/2005/Atom" version="2.0">
+  <channel>
+    <title>Export RSS des offres - Seulement les offres à la une : Non</title>
+    <link>https://agrica-career.talent-soft.com/handlers/offerRss.ashx</link>
+    <description />
+    <language>fr-FR</language>
+    <item>
+      <link>https://agrica-career.talent-soft.com/Pages/Offre/detailoffre.aspx?idOffre=2287&amp;idOrigine=502&amp;LCID=1036&amp;offerReference=2026-218-2287</link>
+      <category>CDI</category>
+      <category>  Paris </category>
+      <title>2026-218-2287 - COMPTABLE TECHNIQUE ASSURANCE H/F</title>
+      <description>&lt;b&gt;Description du poste : &lt;/b&gt;&lt;br /&gt;
+Au sein du département comptable, vous suivez la comptabilisation des opérations techniques de prévoyance et vous préparez les états réglementaires.
+
+Vos missions :
+Enregistrer et contrôler les écritures de cotisations et de prestations.
+Réaliser les rapprochements bancaires et justifier les comptes.
+Participer aux clôtures mensuelles et aux arrêtés.
+
+&lt;b&gt;Profil recherché : &lt;/b&gt;&lt;br /&gt;
+Bac +3 en comptabilité, première expérience en assurance appréciée.
+&lt;br /&gt;
+&lt;b&gt;Lieu : &lt;/b&gt;  Paris &lt;br /&gt;
+</description>
+      <pubDate>Fri, 30 Oct 2026 23:30:14 Z</pubDate>
+    </item>
+    <item>
+      <link>https://agrica-career.talent-soft.com/Pages/Offre/detailoffre.aspx?idOffre=2286&amp;idOrigine=502&amp;LCID=1036&amp;offerReference=2026-000-2286</link>
+      <category>CDD</category>
+      <category>  Paris </category>
+      <title>2026-000-2286 - ANALYSTE DATA H/F</title>
+      <description>&lt;b&gt;Description du poste : &lt;/b&gt;&lt;br /&gt;
+Vous analysez les données du portefeuille et construisez des tableaux de bord pour les équipes actuarielles.
+
+Vos missions :
+Extraire et fiabiliser les données issues des systèmes de gestion.
+Produire des analyses en SQL et en Python.
+Présenter les résultats aux équipes métier.
+
+&lt;b&gt;Profil recherché : &lt;/b&gt;&lt;br /&gt;
+Bac +5 en statistiques ou data science.
+&lt;br /&gt;
+&lt;b&gt;Lieu : &lt;/b&gt;  Paris &lt;br /&gt;
+</description>
+      <pubDate>Wed, 28 Oct 2026 23:30:15 Z</pubDate>
+    </item>
+    <item>
+      <link>https://agrica-career.talent-soft.com/Pages/Offre/detailoffre.aspx?idOffre=2281&amp;idOrigine=502&amp;LCID=1036&amp;offerReference=2026-056-2281</link>
+      <category>CDI</category>
+      <category>  PARIS 8e</category>
+      <title>2026-056-2281 - CONSEILLER GESTION RETRAITE COMPLEMENTAIRE F/H H/F</title>
+      <description>&lt;b&gt;Description du poste : &lt;/b&gt;&lt;br /&gt;
+Vous renseignez les assurés sur leurs droits à la retraite complémentaire et traitez leurs dossiers de bout en bout.
+
+Vos missions :
+Répondre aux demandes par téléphone et par courrier.
+Instruire les dossiers de liquidation.
+
+&lt;b&gt;Profil recherché : &lt;/b&gt;&lt;br /&gt;
+Bac +2 avec le sens du service client.
+&lt;br /&gt;
+&lt;b&gt;Lieu : &lt;/b&gt;  Paris &lt;br /&gt;
+</description>
+      <pubDate>Fri, 23 Oct 2026 09:34:00 Z</pubDate>
+    </item>
+    <item>
+      <link>https://agrica-career.talent-soft.com/Pages/Offre/detailoffre.aspx?idOffre=2270&amp;idOrigine=502&amp;LCID=1036&amp;offerReference=2026-206</link>
+      <category>CDI</category>
+      <category>75008</category>
+      <title>2026-206 - RESPONSABLE PROJETS PARCOURS ET EXPERIENCE CLIENTS H/F</title>
+      <description>&lt;b&gt;Description du poste : &lt;/b&gt;&lt;br /&gt;
+Vous pilotez des projets d'amélioration du parcours client et de l'expérience digitale.
+
+Vos missions :
+Cadrer les projets et suivre leur budget.
+Animer les ateliers avec les équipes commerciales.
+
+&lt;b&gt;Profil recherché : &lt;/b&gt;&lt;br /&gt;
+Bac +5, première expérience en gestion de projet.
+&lt;br /&gt;
+&lt;b&gt;Lieu : &lt;/b&gt;  Paris &lt;br /&gt;
+</description>
+      <pubDate>Mon, 12 Oct 2026 13:16:28 Z</pubDate>
+    </item>
+  </channel>
+</rss>

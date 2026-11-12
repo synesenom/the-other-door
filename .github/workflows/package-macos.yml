@@ -1,0 +1,83 @@
+name: Package (macOS)
+
+# The packaged app on macOS (#354, #223), on Apple silicon (macos-14): build the bundle and the .dmg, install it
+# the way a user does (mount, copy into Applications) and smoke-test it. It is not marked as downloaded: an
+# unsigned app with the quarantine flag waits for a person at Gatekeeper's prompt (#224's notarization ends that). This is where the
+# ad-hoc signing (scripts/after-pack.cjs) is proven: Apple silicon refuses an unsigned binary. Intel Macs are
+# checked by hand (the developer's own Mac is one). macOS minutes count 10x: about 15–20 minutes of runtime,
+# so 150–200 of the 2,000 monthly minutes per run. Pull requests that change the packaging only: no push to
+# main (the merged tree is the one the PR ran), no schedule, no manual trigger.
+on:
+  pull_request:
+    paths:
+      - "app/electron-builder.config.cjs"
+      - "app/build/**"
+      - "app/scripts/bundle-python.sh"
+      - "app/scripts/bundle.lock.json"
+      - "app/scripts/lock_requirements.py"
+      - "app/scripts/check-bundle.sh"
+      - "app/scripts/after-pack.cjs"
+      - "app/e2e-package/**"
+      - "app/playwright.package.config.ts"
+      - ".github/workflows/package-macos.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    runs-on: macos-14
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Restore the bundle's downloads
+        uses: actions/cache@v6
+        with:
+          path: app/.bundle-cache
+          key: bundle-macos-arm64-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+
+      - name: Install the app's packages
+        run: npm ci
+
+      - name: Build the bundle
+        run: scripts/bundle-python.sh
+
+      - name: Check the bundle on its own
+        run: scripts/check-bundle.sh
+
+      - name: Package the .dmg
+        run: npm run package
+
+      - name: Install it like a user
+        run: |
+          mnt="$(hdiutil attach -nobrowse -readonly dist/the-other-door-*-mac-arm64.dmg | tail -1 | awk -F'\t' '{print $NF}')"
+          mkdir -p ~/Applications
+          cp -R "$mnt/The other door.app" ~/Applications/
+          hdiutil detach -quiet "$mnt"
+          codesign --verify --deep --strict "$HOME/Applications/The other door.app"
+          echo "DOOR_PACKAGED_APP=$HOME/Applications/The other door.app/Contents/MacOS/The other door" >> "$GITHUB_ENV"
+
+      - name: Smoke-test the installed app
+        run: npm run test:package
+
+      # a passing run already installed and started them; only a failure's are worth downloading
+      - name: Keep a failed run's .dmg for 3 days
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: door-macos-arm64
+          path: app/dist/*.dmg
+          retention-days: 3
+          if-no-files-found: ignore

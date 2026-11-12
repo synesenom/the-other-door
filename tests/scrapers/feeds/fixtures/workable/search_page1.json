@@ -1,0 +1,56 @@
+{
+  "jobs": [
+    {
+      "id": "7c2eaad3-0c5e-4cf8-a1af-ac2709a7c907",
+      "title": "Senior Data Scientist - (Privacy & Security Controls)",
+      "description": "<p><strong>Would you like to build the safeguards that let researchers work with sensitive health records responsibly?</strong> </p><p>Here you’ll design statistical and technical controls that keep volunteers’ data private while giving research teams quicker, safer access to what they need. </p><p></p><p></p>",
+      "requirementsSection": "<p>You don't need to tick every box below; if most of it sounds like you, we'd be glad to hear from you:</p><ul><li>Solid experience using data science, machine learning, statistical modelling or analytics on large, messy real-world data. </li>",
+      "benefitsSection": "<ul><li>Competitive base salary from £80,000 </li><li>Pension – employer contributions of up to 12% </li><li>30 Days Holiday pro rata + Bank Holidays – taken when it suits you </li><li>Enhanced Parental Leave – time for the moments that matter </li>",
+      "url": "https://jobs.workable.com/view/gkpsuARm1ECvxT67LqrAka/hybrid-senior-data-scientist---(privacy-%26-security-controls)-in-london-at-our-future-health",
+      "location": {
+        "city": "London",
+        "countryName": "United Kingdom"
+      },
+      "created": "2026-09-21T21:38:50.090Z",
+      "company": {
+        "title": "Our Future Health"
+      },
+      "workplace": "hybrid"
+    },
+    {
+      "id": "8a32edcd-0e4f-4b39-b2b7-576137a6575f",
+      "title": "Hybrid Data Analyst (Data Science Support)",
+      "description": "",
+      "requirementsSection": "<p></p><ul><li>A sharp analytical mind and hands-on experience pulling and shaping data (SQL essential).</li><li>At ease building reports and trackers in Excel.</li><li>Some Python, or the appetite to learn it fast.</li><li>Happy to switch between routine reporting and open-ended modelling questions.",
+      "benefitsSection": "<p>Our well-being offer covers private medical cover, generous parental leave, a work-from-abroad policy, mental health support and regular team socials. A pension and other benefit schemes are included, your birthday is a day off, and you get 25 days of holiday a year.</p><p></p><p></p>",
+      "url": "https://jobs.workable.com/view/i4MZeD24ZfmeB9tCnycr3g/hybrid-hybrid-data-analyst-(data-science-support)-in-london-at-spotlight-sports-group",
+      "location": {
+        "city": "London",
+        "countryName": "United Kingdom"
+      },
+      "created": "2026-10-07T10:35:26.191Z",
+      "company": {
+        "title": "Spotlight Sports Group"
+      },
+      "workplace": "hybrid"
+    },
+    {
+      "id": "62fc6f92-5f2e-4b6e-b9a3-8b14d7e9d84a",
+      "title": "Senior Data Scientist",
+      "description": "<p><strong>About Us: </strong></p><p><a href=\"https://www.solirius.com/\" rel=\"nofollow noreferrer noopener\">Solirius Reply</a>, a member of the<a href=\"https://www.reply.com/en/\" rel=\"nofollow noreferrer noopener\"> Reply Group",
+      "requirementsSection": "<p><strong>The Role:  </strong></p>",
+      "benefitsSection": "<p><strong>What We Offer:</strong></p><ul><li>Competitive Salary</li><li>Annual Bonus</li><li>Private Medical Cover</li><li>25 Days Annual Leave + Bank Holidays</li><li>Up to 10 learning days a year</li><li>Enhanced Parental Leave</li><li>Fertility Leave (5 Days)</li><li>Matched Pension</li><li>Employee Assistance Programme</li><li>Discounted Gym Membership</li>",
+      "url": "https://jobs.workable.com/view/ddWVsqjxCzJMmCTzKopeYN/hybrid-senior-data-scientist-in-london-at-solirius-reply",
+      "location": {
+        "city": "London",
+        "countryName": "United Kingdom"
+      },
+      "created": "2026-09-14T11:00:13.069Z",
+      "company": {
+        "title": "Solirius Reply"
+      },
+      "workplace": "hybrid"
+    }
+  ],
+  "nextPageToken": "eyJzZWFyY2hBdCI6IjIwMjYtMTAtMDhUMTY6NTk6NTkuOTk5WiIsIm9mZnNldCI6WzE0LjQzNTMzNywwLDE3ODQ3ODk1MTkyNjEsIjBiN2Q0ODg0LWZmYjAtNDE5Ni1iMDE5LWY4MWYwYWI4NDU5MyJdfQ=="
+}

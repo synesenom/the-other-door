@@ -1,0 +1,19 @@
+{
+  "posting": {
+    "id": "golden-danish-required",
+    "title": "Senior Data Scientist",
+    "company": "Helsingoer Kommune Digital",
+    "location": "Helsingoer, Denmark",
+    "url": "https://example.com/jobs/golden-danish-required",
+    "description": "About the role:\nHelsingoer Kommune Digital is the municipality's in-house analytics unit, building forecasting models for social services, transport, and budget planning. We are hiring a Senior Data Scientist to lead statistical modeling work and present findings to city leadership.\n\nResponsibilities:\nYou will design and maintain forecasting and resource-allocation models using Python and SQL. You will present your findings and recommendations directly to the city council and department heads on a weekly basis.\n\nRequirements:\n5+ years of experience with Python, SQL, and statistical modeling is required. Danish is a requirement for this role: you must speak and write fluent Danish, as you will present findings directly to Danish-speaking city council stakeholders every week and no translation support is provided. Experience with AWS or similar cloud platforms is a plus.\n\nLocation and work mode:\nHybrid, with two days a week in our Helsingoer office.\n\nWhat we offer:\nA stable public-sector role with strong work-life balance and a pension scheme.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.2,
+    "score_max": 0.6,
+    "language_requirement": "required"
+  }
+}

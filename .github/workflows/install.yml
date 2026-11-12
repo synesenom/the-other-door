@@ -1,0 +1,93 @@
+name: Install check
+
+# Only when the dependencies or the setup scripts change: can a fresh machine still install door?
+# Setup on Linux and Windows: Python 3.12, Poetry, `poetry install`, Tectonic
+# (through The other door's own installer, as `doctor --fix` runs it), then a smoke run of
+# the CLI and the MCP server import. The claude CLI is left out. macOS is checked
+# by hand.
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - poetry.lock
+      - scripts/setup.sh
+      - scripts/setup.ps1
+  push:
+    branches: [main]
+    paths:
+      - pyproject.toml
+      - poetry.lock
+      - scripts/setup.sh
+      - scripts/setup.ps1
+  workflow_dispatch:
+
+# A newer push to the same pull request cancels the run it makes pointless
+# (Windows minutes count double).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Poetry's official installer, as scripts/setup.sh and setup.ps1 use it.
+      - name: Install Poetry (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -sSL https://install.python-poetry.org | python -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install Poetry (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+          "$env:APPDATA\Python\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Install the Python packages
+        run: |
+          poetry env use 3.12
+          poetry install
+
+      - name: Install Tectonic
+        shell: bash
+        run: |
+          PYTHONPATH=src poetry run python -c "
+          import sys
+          from door.commands import setup
+          from door.core import installers
+          result = setup._setup_core(install=['latex'], yes=True)
+          for entry in result['results']:
+              print(entry['tool'], 'ok' if entry['ok'] else entry.get('error'))
+          # Tectonic itself, not any TeX the runner may already have (xelatex passes doctor too).
+          tectonic = installers.find_tectonic()
+          print('tectonic:', tectonic)
+          sys.exit(0 if tectonic else 1)
+          "
+
+      - name: Smoke run (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          ./door --help
+          PYTHONPATH=src poetry run python -c "import door.mcp_server"
+
+      - name: Smoke run (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call door.cmd --help || exit /b 1
+          set PYTHONPATH=src
+          poetry run python -c "import door.mcp_server"

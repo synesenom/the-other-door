@@ -1,0 +1,194 @@
+{
+ "CustomerAlias": "regionh",
+ "CustomerName": "Region Hovedstaden",
+ "TransactionStatus": {
+  "Description": "The operation completed successfully.",
+  "StatusCode": 0
+ },
+ "Items": [
+  {
+   "Id": 270919,
+   "Name": " Vi søger ikke bare en sygeplejerske. Vi søger vores næste yndlingskollega.",
+   "Published": "/Date(1790841863000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=342&ProjectId=270919&DepartmentId=25700&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p>Trimmed.</p>"
+    }
+   ],
+   "Department": {
+    "Name": "Afdeling for Urinvejssygdomme - Sygepl.ledelse",
+    "City": ""
+   },
+   "DepartmentTree": {
+    "Name": "Region Hovedstaden",
+    "City": "Hillerød",
+    "SubItems": [
+     {
+      "Name": "Direktørområde 1",
+      "City": "",
+      "SubItems": [
+       {
+        "Name": "Herlev og Gentofte Hospital",
+        "City": "Herlev",
+        "SubItems": [
+         {
+          "Name": "Vicedirektør 3",
+          "City": "",
+          "SubItems": [
+           {
+            "Name": "Afdeling for Urinvejssygdomme - Sygepl.ledelse",
+            "City": ""
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "Id": 270915,
+   "Name": "100-metermester i service og som flyver, søges til at forstærke holdet",
+   "Published": "/Date(1790842840000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=342&ProjectId=270915&DepartmentId=27189&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p>Trimmed.</p>"
+    }
+   ],
+   "Department": {
+    "Name": "FM - Logistik",
+    "City": ""
+   },
+   "DepartmentTree": {
+    "Name": "Region Hovedstaden",
+    "City": "Hillerød",
+    "SubItems": [
+     {
+      "Name": "Direktørområde 1",
+      "City": "",
+      "SubItems": [
+       {
+        "Name": "Bispebjerg og Frederiksberg Hospital",
+        "City": "København",
+        "SubItems": [
+         {
+          "Name": "Hospitalsdirektør",
+          "City": "",
+          "SubItems": [
+           {
+            "Name": "FM - Enheden",
+            "City": "",
+            "SubItems": [
+             {
+              "Name": "FM - Logistik",
+              "City": ""
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "Id": 270961,
+   "Name": "Arbejdsmiljøkoordinator med erfaring i udførelsesfasen (AMK-B) – Nyt Hospital Bispebjerg",
+   "Published": "/Date(1790940002000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=342&ProjectId=270961&DepartmentId=27826&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p>Trimmed.</p>"
+    }
+   ],
+   "Department": {
+    "Name": "Projekt NHB",
+    "City": ""
+   },
+   "DepartmentTree": {
+    "Name": "Region Hovedstaden",
+    "City": "Hillerød",
+    "SubItems": [
+     {
+      "Name": "Direktørområde 2",
+      "City": "",
+      "SubItems": [
+       {
+        "Name": "Center for Ejendomme",
+        "City": "Herlev",
+        "SubItems": [
+         {
+          "Name": "Vicedirektør, Større Byggerier",
+          "City": "",
+          "SubItems": [
+           {
+            "Name": "Større Byggerier",
+            "City": "",
+            "SubItems": [
+             {
+              "Name": "Projekt NHB",
+              "City": ""
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "Id": 270817,
+   "Name": "Bliv en del af Akuttelefonen 1813 – vi søger erfarne sygeplejerskerBliv en del af Akuttelefonen 1813 – vi søger erfarne sygeplejersker",
+   "Published": "/Date(1790940647000+0200)/",
+   "AdvertisementUrl": "https://candidate.hr-manager.net/ApplicationInit.aspx?cid=342&ProjectId=270817&DepartmentId=21543&MediaId=5",
+   "Advertisements": [
+    {
+     "Content": "<p>Trimmed.</p>"
+    }
+   ],
+   "Department": {
+    "Name": "1813",
+    "City": ""
+   },
+   "DepartmentTree": {
+    "Name": "Region Hovedstaden",
+    "City": "Hillerød",
+    "SubItems": [
+     {
+      "Name": "Direktørområde 3",
+      "City": "",
+      "SubItems": [
+       {
+        "Name": "Region Hovedstadens Akutberedskab",
+        "City": "Ballerup",
+        "SubItems": [
+         {
+          "Name": "Direktørområde 1",
+          "City": "",
+          "SubItems": [
+           {
+            "Name": "1813",
+            "City": ""
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

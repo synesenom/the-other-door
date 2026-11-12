@@ -1,0 +1,46 @@
+# Hungary. See src/door/i18n/__init__.py.
+
+code = "hu"
+name = "Hungary"
+names = ["magyarország", "magyarorszag"]  # the country's other names an ad or a profile may use
+languages = ["hu"]
+
+# "bruttó" / "nettó" qualify a salary but are not currency words: they are salary markers in lang/hu.toml.
+currency = ["ft", "huf", "forint*"]
+legal_suffixes = ["kft", "zrt", "nyrt", "kkt"]
+# Words a subsidiary's or branch's name ends with that are no part of the employer's own name; the country's names count too.
+subsidiary_words = ["magyar", "magyarországi", "magyarorszagi", "fióktelepe", "fioktelepe"]
+
+# Domain ending, host labels its employers' career sites use, and whole domains of its job boards.
+tlds = ["hu"]
+career_hosts = ["karrier", "allas"]
+job_boards = ["profession.hu"]
+
+# How a CV is written there (#605; sources in the pull request): photo "no" | "optional" | "expected"; whether a
+# date of birth belongs on it (it is only kept when cv.md has one, never added); the page limit; the country's
+# all-numeric full date.
+[cv]
+photo = "optional"
+date_of_birth = false
+max_pages = 2
+date_format = "YYYY.MM.DD."
+
+# Canonical city -> other names it goes by in ads (including the districts and the
+# commuter towns around it). The pre-filter keeps a posting whose location names any
+# of them when the profile's `location` names the city.
+[cities]
+budapest = [
+    "buda", "pest", "pest megye", "pest_megye", "pest county",
+    "budaörs", "budaors", "törökbálint", "torokbalint", "biatorbágy", "biatorbagy",
+    "szentendre", "gödöllő", "godollo", "dunakeszi", "érd", "erd", "vecsés", "vecses",
+    "szigetszentmiklós", "szigetszentmiklos", "üllő", "ullo",
+]
+debrecen = []
+szeged = []
+miskolc = []
+pecs = ["pécs"]
+gyor = ["győr"]
+szekesfehervar = ["székesfehérvár"]
+kecskemet = ["kecskemét"]
+nyiregyhaza = ["nyíregyháza"]
+szombathely = []

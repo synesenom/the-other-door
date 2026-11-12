@@ -1,0 +1,10 @@
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /search/*
+Disallow: /search*?*
+Disallow: /search
+Disallow: */search/$
+Disallow: /profile*
+Disallow: /company-login-unauthorized
+
+Sitemap: https://jobs.workable.com/sitemap.xml

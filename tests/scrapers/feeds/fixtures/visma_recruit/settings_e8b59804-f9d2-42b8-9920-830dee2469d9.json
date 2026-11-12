@@ -1,0 +1,19 @@
+{
+ "Status": 1,
+ "Header": {
+  "Title": "Lärare (vikarie) till Uppsala kulturskola",
+  "County": "Uppsala län",
+  "Municipality": "Uppsala",
+  "ApplicationEndDateFormatted": "2026-11-29"
+ },
+ "Assignment": {
+  "Guid": "e8b59804-f9d2-42b8-9920-830dee2469d9",
+  "Title": "Lärare (vikarie) till Uppsala kulturskola",
+  "ReferenceNumber": "KTN-2026-00333",
+  "AboutWorkplace": "Verksamheten bakom tjänsten \"Lärare (vikarie) till Uppsala kulturskola\" arbetar nära invånarna och vill växa med nya kollegor som delar vårt uppdrag.",
+  "WorkDescr": "",
+  "Qualifications": "",
+  "AdditionalInfo": ""
+ },
+ "SchemaOrgJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Lärare (vikarie) till Uppsala kulturskola\",\"description\":\"I rollen ansvarar du för uppgifterna som hör till lärare (vikarie) till uppsala kulturskola och samarbetar med kollegor i det dagliga arbetet.\",\"hiringOrganization\":{\"@type\":\"Organization\",\"name\":\"Uppsala kommun\"},\"datePosted\":\"2026-10-27T00:00:00\",\"validThrough\":\"2026-11-29T23:59:59\",\"jobLocation\":{\"@type\":\"Place\",\"address\":\"Uppsala\"},\"employmentType\":[\"TEMPORARY\",\"OTHER\"],\"directApply\":true}"
+}

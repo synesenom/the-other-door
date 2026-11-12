@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The other door — Prepared application</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#F1E6CF}
+a{color:#2F55C8}a:hover{color:#1E3F9E}
+button,textarea{font:inherit}
+</style>
+</helmet>
+<div style="min-height: 800px; box-sizing: border-box; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; padding: 32px 48px 48px; display: flex; flex-direction: column; gap: 32px">
+
+  <header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap">
+    <div>
+      <a href="#" style="font-size: 13px; text-decoration: none">← Matches</a>
+      <h1 style="margin: 10px 0 0; font-family: 'Young Serif', Georgia, serif; font-size: 40px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Ready to send</h1>
+      <p style="margin: 6px 0 0; color: #5C5249; font-size: 15px">Senior Data Scientist · Hooli Labs</p>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap">
+      <button type="button" style="height: 44px; padding: 0 18px; border: 1px solid #D6C7A8; border-radius: 8px; background: transparent; color: #1E1A16">Open folder</button>
+      <button type="button" style="height: 44px; padding: 0 20px; border: 0; border-radius: 8px; background: #1E1A16; color: #F8F1E2; font-weight: 600">I've applied</button>
+    </div>
+  </header>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start">
+
+    <div style="flex: 999 1 560px; min-width: 0; display: flex; gap: 32px; flex-wrap: wrap">
+      <sc-for list="{{docs}}" as="doc" hint-placeholder-count="2">
+        <figure style="margin: 0; display: flex; flex-direction: column; gap: 12px">
+          <div style="width: 300px; height: 424px; box-sizing: border-box; background: #FFFCF5; border-radius: 4px; box-shadow: 0 1px 2px rgba(30,26,22,0.08), 0 12px 32px rgba(30,26,22,0.08); padding: 36px 32px; display: flex; flex-direction: column; gap: 9px" aria-hidden="true">
+            <span style="display: block; width: 120px; height: 10px; border-radius: 2px; background: #1E1A16"></span>
+            <span style="display: block; width: 36px; height: 4px; border-radius: 2px; background: #4169E1; margin: 6px 0 10px"></span>
+            <sc-for list="{{doc.lines}}" as="w" hint-placeholder-count="12">
+              <span style="display: block; height: 5px; border-radius: 2px; background: #D6C7A8; width: {{w}}"></span>
+            </sc-for>
+          </div>
+          <figcaption style="display: flex; justify-content: space-between; align-items: baseline">
+            <span style="font-weight: 600">{{doc.name}}</span>
+            <span style="color: #5C5249; font-size: 13px">{{doc.meta}}</span>
+          </figcaption>
+        </figure>
+      </sc-for>
+    </div>
+
+    <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 28px">
+      <section>
+        <h2 style="margin: 0 0 12px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #5C5249">Keywords woven in</h2>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <sc-for list="{{keywords}}" as="k" hint-placeholder-count="6">
+            <span style="padding: 4px 12px; border-radius: 14px; background: #F8F1E2; border: 1px solid #E2D5BA; font-size: 13px">{{k}}</span>
+          </sc-for>
+        </div>
+      </section>
+      <section>
+        <h2 style="margin: 0 0 12px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #5C5249">What changed</h2>
+        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
+          <li>Summary leads with forecasting at scale</li>
+          <li>Retail project moved up, review analytics added</li>
+          <li>Letter opens on their trust-score work</li>
+        </ul>
+      </section>
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <label for="revise" style="font-family: 'Young Serif', Georgia, serif; font-size: 20px; font-weight: 400">Anything to change?</label>
+        <textarea id="revise" rows="3" placeholder="Make the letter shorter and warmer…" style="box-sizing: border-box; width: 100%; padding: 12px 14px; border: 1px solid #D6C7A8; border-radius: 8px; background: #FFFCF5; color: #1E1A16; resize: vertical"></textarea>
+        <div style="display: flex; gap: 10px; align-items: center">
+          <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: #4169E1; color: #FFFFFF; font-weight: 600">Revise</button>
+          <button type="button" style="height: 44px; padding: 0 14px; border: 0; background: transparent; color: #5C5249">Undo last change</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cv = ['92%','100%','84%','96%','70%','100%','88%','60%','94%','100%','78%','90%','66%','100%','82%','58%'];
+    const letter = ['100%','96%','100%','88%','100%','72%','0%','100%','94%','100%','90%','64%','0%','98%','100%','40%'];
+    return {
+      docs: [
+        { name: 'CV', meta: '2 pages', lines: cv },
+        { name: 'Cover letter', meta: '1 page · 310 words', lines: letter }
+      ],
+      keywords: ['Python', 'forecasting', 'A/B testing', 'SQL', 'stakeholders', 'review data']
+    };
+  }
+}
+</script>
+</body>
+</html>

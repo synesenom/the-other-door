@@ -1,0 +1,204 @@
+{
+ "search": [
+  {
+   "id": "Q1361530",
+   "label": "Hilti",
+   "description": "Liechtenstein multinational company in the manufacturing industry",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Hilti"
+   }
+  },
+  {
+   "id": "Q123581685",
+   "label": "Hilti",
+   "description": "family name",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Hilti"
+   }
+  },
+  {
+   "id": "Q35464379",
+   "label": "Hilti",
+   "description": "spring in Balochistan, Pakistan",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Hilti"
+   }
+  },
+  {
+   "id": "Q1618923",
+   "label": "Hiltigund Schreiber",
+   "description": "Austrian art historian (1939–2023)",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Hiltigund Schreiber"
+   }
+  },
+  {
+   "id": "Q37475037",
+   "label": "Hiltibidal",
+   "description": "family name",
+   "match": {
+    "type": "label",
+    "language": "sv",
+    "text": "Hiltibidal"
+   }
+  },
+  {
+   "id": "Q130985202",
+   "label": "HILTI",
+   "description": "scientific article published on 11 November 2014",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "HILTI"
+   }
+  },
+  {
+   "id": "Q4444141",
+   "label": "powder-actuated tool",
+   "description": "gunpowder-powered nail gun used in construction and manufacturing",
+   "match": {
+    "type": "alias",
+    "language": "en",
+    "text": "Hilti gun"
+   }
+  },
+  {
+   "id": "Q11862647",
+   "label": "Hiltinus",
+   "description": "Finnish priest",
+   "match": {
+    "type": "label",
+    "language": "mul",
+    "text": "Hiltinus"
+   }
+  },
+  {
+   "id": "Q141787946",
+   "label": "Hiltikon",
+   "description": "hamlet in Menznau, canton of Lucerne, Switzerland",
+   "match": {
+    "type": "label",
+    "language": "mul",
+    "text": "Hiltikon"
+   }
+  },
+  {
+   "id": "Q141828997",
+   "label": "Hiltislehn",
+   "description": "hamlet in Eschenbach, canton of Lucerne, Switzerland",
+   "match": {
+    "type": "label",
+    "language": "mul",
+    "text": "Hiltislehn"
+   }
+  },
+  {
+   "id": "Q141781189",
+   "label": "Hiltisberg",
+   "description": "hamlet in Wald, canton of Zurich, Switzerland",
+   "match": {
+    "type": "label",
+    "language": "mul",
+    "text": "Hiltisberg"
+   }
+  },
+  {
+   "id": "Q113024929",
+   "label": "Hiltibrand",
+   "description": "Abbot of the Benedictine Abbey St. Ulrich and Afra, Augsburg",
+   "match": {
+    "type": "label",
+    "language": "mul",
+    "text": "Hiltibrand"
+   }
+  },
+  {
+   "id": "Q141698399",
+   "label": "Hiltiberg",
+   "description": "hill in Fislisbach, canton of Aargau, Switzerland",
+   "match": {
+    "type": "label",
+    "language": "mul",
+    "text": "Hiltiberg"
+   }
+  },
+  {
+   "id": "Q27926230",
+   "label": "Hilti Art Foundation",
+   "description": "Liechtenstein foundation",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Hilti Art Foundation"
+   }
+  },
+  {
+   "id": "Q1437879",
+   "label": "Hiltin",
+   "description": null,
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Hiltin"
+   }
+  },
+  {
+   "id": "Q63213328",
+   "label": "Hilton Conceição de Sousa",
+   "description": "Brazilian footballer",
+   "match": {
+    "type": "alias",
+    "language": "en",
+    "text": "Hiltinho"
+   }
+  },
+  {
+   "id": "Q122171995",
+   "label": "Hiltigarius",
+   "description": "bishop of Trent",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Hiltigarius"
+   }
+  },
+  {
+   "id": "Q15224109",
+   "label": "Hiltingbury",
+   "description": "suburb in Chandler's Ford, Hampshire, England, UK",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Hiltingbury"
+   }
+  },
+  {
+   "id": "Q108174064",
+   "label": "Hiltiän Jalopuumetsikkö",
+   "description": "protected area in Finland (LTA040119)",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Hiltiän Jalopuumetsikkö"
+   }
+  },
+  {
+   "id": "Q95688337",
+   "label": "Hilti von Almen",
+   "description": "actress",
+   "match": {
+    "type": "label",
+    "language": "en",
+    "text": "Hilti von Almen"
+   }
+  }
+ ]
+}

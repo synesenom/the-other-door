@@ -1,0 +1,37 @@
+{
+ "items": [
+  {
+   "SearchId": 1,
+   "Offset": 2,
+   "Limit": 2,
+   "TotalJobsCount": 3,
+   "SortBy": "POSTING_DATES_DESC",
+   "SiteNumber": "CX_1001",
+   "requisitionList": [
+    {
+     "Id": "24001",
+     "Title": "Remote Analyst",
+     "PostedDate": "2026-10-20",
+     "PostingEndDate": null,
+     "Language": "US",
+     "PrimaryLocationCountry": "DK",
+     "WorkplaceTypeCode": "ORA_REMOTE",
+     "JobFamily": null,
+     "ShortDescriptionStr": "\n\nAnalyse payment data.\n",
+     "PrimaryLocation": "Copenhagen",
+     "WorkplaceType": null,
+     "secondaryLocations": [
+      {
+       "Name": "Aarhus, Denmark",
+       "CountryCode": "DK"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "count": 1,
+ "hasMore": false,
+ "limit": 2,
+ "offset": 0
+}

@@ -1,0 +1,168 @@
+{
+ "total": {
+  "value": 7
+ },
+ "positions": 4,
+ "hits": [
+  {
+   "id": "31668014",
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31668014",
+   "headline": "Senior Insurance Product Specialist & Project Manager - 20474",
+   "description": {
+    "text": "Veritaz is an IT staffing company that places consultants with large employers in Sweden.\nAssignment\nA product department is looking for two senior consultants with deep knowledge of insurance products. You will help steer and develop the product range and coordinate projects in an agile team.\nRequirements\nSeveral years of project management experience and good knowledge of insurance rules.\nMeritorious\nExperience from migrating insurance portfolios."
+   },
+   "employer": {
+    "name": "Veritaz AB",
+    "organization_number": "5560000000"
+   },
+   "application_details": {
+    "url": null
+   },
+   "occupation": {
+    "label": "Projektledare, IT"
+   },
+   "workplace_model": {
+    "concept_id": "ZxwM_gtz_n61",
+    "label": "Arbete på plats"
+   },
+   "workplace_address": {
+    "municipality": "Stockholm",
+    "municipality_concept_id": "AvNB_uwa_6n6",
+    "region": "Stockholms län",
+    "city": null
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Stockholm",
+     "municipality_concept_id": "AvNB_uwa_6n6",
+     "region": "Stockholms län",
+     "city": null
+    }
+   ],
+   "publication_date": "2026-10-30T17:02:05",
+   "last_publication_date": "2026-11-29T23:59:59",
+   "application_deadline": "2026-11-29T23:59:59",
+   "removed": false
+  },
+  {
+   "id": "31666374",
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31666374",
+   "headline": "Project Manager",
+   "description": {
+    "text": "Project Manager, Sweden\n\nJoin a team that builds energy and automation solutions for customers across the Nordics. You will plan and run electrification projects from the first estimate to handover, keep the budget and schedule, and report to the regional delivery lead.\nYou have led technical projects before, work comfortably with suppliers and site managers, and write clearly in English.\nWe offer flexible hours and a team that shares what it learns."
+   },
+   "employer": {
+    "name": "Schneider Electric Sverige AB",
+    "organization_number": "5560000000"
+   },
+   "application_details": {
+    "url": "https://example.com/apply/schneider"
+   },
+   "occupation": {
+    "label": "Projektledare, el"
+   },
+   "workplace_model": {
+    "concept_id": null,
+    "label": null
+   },
+   "workplace_address": {
+    "municipality": "Stockholm",
+    "municipality_concept_id": "AvNB_uwa_6n6",
+    "region": "Stockholms län",
+    "city": "Stockholm"
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Stockholm",
+     "municipality_concept_id": "AvNB_uwa_6n6",
+     "region": "Stockholms län",
+     "city": "Stockholm"
+    }
+   ],
+   "publication_date": "2026-10-30T12:50:04",
+   "last_publication_date": "2026-11-29T23:59:59",
+   "application_deadline": "2026-11-29T23:59:59",
+   "removed": false
+  },
+  {
+   "id": "31632735",
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31632735",
+   "headline": "ASSA ABLOY söker Senior Project Manager",
+   "description": {
+    "text": "Vill du leda några av de mest spännande installationsprojekten i landet?\nNu söker vi en Senior Project Manager som tar ansvar för större installationer av dörr- och passagelösningar, från offert till överlämning.\nDu har några års erfarenhet av projektledning inom byggnation eller industri, är van att tala med kunder och har B-körkort.\nTjänsten är en tillsvidareanställning med hybridarbete."
+   },
+   "employer": {
+    "name": "ASSA ABLOY Entrance Systems Pedestrian AB",
+    "organization_number": "5560000000"
+   },
+   "application_details": {
+    "url": "https://example.com/apply/assa"
+   },
+   "occupation": {
+    "label": "Projektledare, industri"
+   },
+   "workplace_model": {
+    "concept_id": "Vbpe_rGe_vCW",
+    "label": "Hybridarbete"
+   },
+   "workplace_address": {
+    "municipality": "Stockholm",
+    "municipality_concept_id": "AvNB_uwa_6n6",
+    "region": "Stockholms län",
+    "city": null
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Stockholm",
+     "municipality_concept_id": "AvNB_uwa_6n6",
+     "region": "Stockholms län",
+     "city": null
+    }
+   ],
+   "publication_date": "2026-10-22T14:41:55",
+   "last_publication_date": "2026-12-18T23:59:59",
+   "application_deadline": "2026-12-18T23:59:59",
+   "removed": false
+  },
+  {
+   "id": "31632254",
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31632254",
+   "headline": "Junior Project Manager inom Change Management",
+   "description": {
+    "text": "Vi söker en junior projektledare till ett uppdrag inom förändringsledning hos en av våra kunder i Stockholm.\nDu stödjer projektets planering, håller ihop dokumentationen och bokar möten med intressenterna.\nVi tror att du nyligen har tagit examen och vill växa in i rollen som projektledare.\nUppdraget börjar efter överenskommelse."
+   },
+   "employer": {
+    "name": "Quattro Bemanning & Rekrytering AB",
+    "organization_number": "5560000000"
+   },
+   "application_details": {
+    "url": null
+   },
+   "occupation": {
+    "label": "Systemutvecklare/Programmerare"
+   },
+   "workplace_model": {
+    "concept_id": null,
+    "label": null
+   },
+   "workplace_address": {
+    "municipality": "Stockholm",
+    "municipality_concept_id": "AvNB_uwa_6n6",
+    "region": "Stockholms län",
+    "city": "Stockholm"
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Stockholm",
+     "municipality_concept_id": "AvNB_uwa_6n6",
+     "region": "Stockholms län",
+     "city": "Stockholm"
+    }
+   ],
+   "publication_date": "2026-10-22T13:46:31",
+   "last_publication_date": "2026-11-06T23:59:59",
+   "application_deadline": "2026-11-06T23:59:59",
+   "removed": false
+  }
+ ]
+}

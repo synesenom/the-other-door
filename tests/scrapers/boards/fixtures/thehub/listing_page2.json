@@ -1,0 +1,22 @@
+{
+  "total": 4,
+  "limit": 15,
+  "page": 2,
+  "pages": 2,
+  "docs": [
+    {
+      "id": "6aa1f3cc961a30471ccb36b8",
+      "title": "Data Scientist",
+      "company": {"name": "Flatpay"},
+      "location": {"address": "Copenhagen, Denmark"},
+      "isRemote": false
+    },
+    {
+      "id": "6a8e2cfa6f40d9d0b631fedd",
+      "title": "(Senior) Data Scientist",
+      "company": {"name": "Lunar"},
+      "location": {"address": "Aarhus, Denmark"},
+      "isRemote": false
+    }
+  ]
+}
