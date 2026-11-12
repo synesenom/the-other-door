@@ -30,7 +30,7 @@ rich = ">=13,<16"
 dnspython = ">=2.9.2,<3.0"
 # Comes in through mcp (pyjwt[crypto]). Kept below 49, the first release with no Intel macOS wheel, so the
 # packaged app's locked packages install on every system it ships for (#223).
-cryptography = ">=46,<49"
+cryptography = ">=50.0.2,<51"
 quickjs = "^1.19.4"
 segno = "^1.6"
 pillow = ">=13.0.0,<14"
