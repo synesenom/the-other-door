@@ -1,0 +1,49 @@
+name: Dependabot merge
+
+# Merges a Dependabot pull request once every other check on it has passed, unless it carries a major
+# version: those wait for a person. The workflows here run only for the paths a change touches, so no
+# check can be required by the main ruleset; this job waits for whichever ones did start instead.
+# A merge made with the workflow's token starts no push workflows on main: the pull request's own runs
+# are what checked it.
+on:
+  pull_request:
+
+# A newer push to the pull request (Dependabot rebasing it) starts over on the new commit.
+concurrency:
+  group: dependabot-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@v3
+
+      - name: Wait for the other checks, then merge
+        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.html_url }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          SELF: ${{ github.job }}
+        run: |
+          sleep 60   # let every workflow the push started create its checks
+          while :; do
+            runs="$(gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs" \
+              --jq ".check_runs[] | select(.name != \"$SELF\") | \"\(.status) \(.conclusion) \(.name)\"")"
+            echo "$runs"
+            if echo "$runs" | grep -Eq '^completed (failure|cancelled|timed_out|action_required|startup_failure|stale) '; then
+              echo "A check failed: leaving the pull request for a person."; exit 1
+            fi
+            echo "$runs" | grep -vq '^completed ' || break
+            sleep 60
+          done
+          gh pr merge "$PR" --squash
