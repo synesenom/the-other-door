@@ -1,6 +1,6 @@
 name: Package (macOS)
 
-# The packaged app on macOS, on Apple silicon (macos-14) and Intel (macos-15-intel): build the bundle and the
+# The packaged app on macOS, on Apple silicon (macos-15) and Intel (macos-15-intel): build the bundle and the
 # .dmg, install it the way a user does (mount, copy into Applications) and smoke-test it. It is not marked as
 # downloaded: an unsigned app with the quarantine flag waits for a person at Gatekeeper's prompt. This is where
 # the ad-hoc signing (scripts/after-pack.cjs) is proven: Apple silicon refuses an unsigned binary. Runs on pull
@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-14, arch: arm64 }
+          - { os: macos-15, arch: arm64 }
           - { os: macos-15-intel, arch: x64 }
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
