@@ -1,5 +1,7 @@
 # Weekly dependency updates, grouped so each ecosystem opens at most one pull request for minor
 # and patch versions; a major version opens its own. Security updates come as they are found.
+# A new version is offered only once it has been out for a while (cooldown), so a broken or
+# compromised release has time to be noticed and pulled first; security updates skip the wait.
 version: 2
 updates:
   - package-ecosystem: pip          # Poetry: pyproject.toml and poetry.lock
@@ -7,6 +9,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     groups:
       python:
         update-types: [minor, patch]
@@ -24,6 +29,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     groups:
       app:
         update-types: [minor, patch]
@@ -43,6 +51,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     groups:
       actions:
         patterns: ["*"]
