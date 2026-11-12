@@ -20,14 +20,14 @@ package-mode = false
 python = ">=3.12,<3.13"
 requests = ">=2.0,<3.0"
 beautifulsoup4 = ">=4.12,<5.0"
-pydantic = ">=2.0,<3.0"
-click = ">=8.0,<9.0"
+pydantic = ">=2.14.3,<3.0"
+click = ">=8.5.1,<9.0"
 pypdfium2 = ">=4.30,<6"
 mcp = ">=1.0,<2.0"
 py3langid = "^0.4.0"
 inquirer = "^3.4"
 rich = ">=13,<16"
-dnspython = ">=2.6,<3.0"
+dnspython = ">=2.9.2,<3.0"
 # Comes in through mcp (pyjwt[crypto]). Kept below 49, the first release with no Intel macOS wheel, so the
 # packaged app's locked packages install on every system it ships for (#223).
 cryptography = ">=46,<49"
