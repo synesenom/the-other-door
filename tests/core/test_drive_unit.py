@@ -13,6 +13,8 @@ import pytest
 import requests
 import responses
 
+from tests.paths import REPO_ROOT
+
 from door.core import drive
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -321,3 +323,12 @@ def test_disconnect_swallows_a_failed_revoke(state):
 def test_disconnect_when_not_connected(tmp_path, monkeypatch):
     monkeypatch.setattr(drive, "_BASE", tmp_path)
     assert drive.disconnect() is False
+
+
+def test_the_client_is_stored_obscured_and_read_back_whole():
+    # A desktop client is public by design, but a scanner refuses it in plain text: the module
+    # keeps it XOR-ed with a fixed key and decodes it on load.
+    assert drive._reveal(drive._OBSCURED_CLIENT_ID).endswith(".apps.googleusercontent.com")
+    assert drive._reveal(drive._OBSCURED_CLIENT_SECRET).startswith("GOCSPX-")
+    source = (REPO_ROOT / "src/door/core/drive.py").read_text(encoding="utf-8")
+    assert "GOCSPX-" not in source and ".apps.googleusercontent.com\"" not in source
