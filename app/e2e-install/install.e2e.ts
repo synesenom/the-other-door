@@ -85,6 +85,8 @@ test('the installed app: set-up, the first run and Prepare on what the installer
     const progress = existsSync(join(world.home, 'jobs', '.progress.json')) ? readFileSync(join(world.home, 'jobs', '.progress.json'), 'utf8') : 'none'
     const screen = await page.getByRole('main').innerText().catch(() => '')
     const starts = existsSync(join(world.dir, 'claude-starts.jsonl')) ? readFileSync(join(world.dir, 'claude-starts.jsonl'), 'utf8').trim().split('\n').slice(-6).join(' | ') : 'none'
+    const stacksFile = join(world.dir, 'server-stacks.txt')
+    const stacks = existsSync(stacksFile) ? readFileSync(stacksFile, 'utf8').split('Thread 0x').slice(-12).join('Thread 0x').slice(-6000) : 'none'
     let procs = ''
     if (process.platform === 'win32') {
       try {
@@ -94,7 +96,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
       } catch (p) { procs = `could not list: ${(p as Error).message}` }
     }
     throw new Error(`${(e as Error).message}\nprogress: ${progress.slice(0, 3000)}\nlog errors: ${JSON.stringify(errors(world.home))}` +
-      `\nlast calls: ${JSON.stringify(world.calls().slice(-15))}\nscreen: ${screen.slice(0, 1500)}\nclaude starts: ${starts}\nprocesses:\n${procs}`)
+      `\nlast calls: ${JSON.stringify(world.calls().slice(-15))}\nscreen: ${screen.slice(0, 1500)}\nclaude starts: ${starts}\nprocesses:\n${procs}\nserver stacks:\n${stacks}`)
   }
   await expect(page.getByRole('button', { name: /^Something keeps going wrong/ })).toHaveCount(0)
   expect(world.exists('profile/config.json')).toBe(true)

@@ -36,6 +36,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 WORLD = Path(sys.argv[1]).resolve()
+
+# Every thread's stack, written again every 20 s: a test that finds the server stuck names where (#18).
+import faulthandler  # noqa: E402
+
+_STACKS = open(WORLD / "server-stacks.txt", "w", encoding="utf-8")  # noqa: SIM115 — open for the server's life
+faulthandler.dump_traceback_later(20, repeat=True, file=_STACKS)
 REPO = Path(__file__).resolve().parents[3]
 # The door it runs is the one the app put on PYTHONPATH: the checkout's src/, or an installed app's own
 # bundled door (the install test, app/e2e-install/); the checkout's only when nothing is named.
