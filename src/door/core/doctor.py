@@ -124,15 +124,18 @@ def check_claude_login(claude_path: str | None, run=subprocess.run, env: dict[st
     """
     if not claude_path:
         return None
+    why = ""
     try:
         proc = run([claude_path, "auth", "status", "--json"], capture_output=True, text=True, timeout=15, env=env)
         # Signed out, `claude` exits 1 and still prints the status, so the exit code says nothing here.
+        why = (proc.stderr or proc.stdout or f"exit {proc.returncode}, no output").strip()
         status = json.loads(proc.stdout)
-    except (OSError, subprocess.SubprocessError, ValueError):
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        why = why or str(exc)
         status = None
     if not isinstance(status, dict) or "loggedIn" not in status:
         return _check(
-            "claude login", False, "could not read `claude auth status` — check by running `claude`",
+            "claude login", False, f"could not read `claude auth status` ({why[:300]}) — check by running `claude`",
             "claude update (the CLI may be too old for auth status)", required=False,
         )
     details = {key: status[key] for key in _LOGIN_DETAIL_KEYS if key in status}
