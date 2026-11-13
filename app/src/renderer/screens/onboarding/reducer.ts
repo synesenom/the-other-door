@@ -6,7 +6,7 @@ import { todoOffsets } from '../todos'
 
 export type StepId = 'sources' | 'reading' | 'review'
 /** The parts of the review; a failed Save puts each error line under the part that owns its field. */
-export type ReviewSection = 'you' | 'photo' | 'titles' | 'terms' | 'cv' | 'story' | 'employers' | 'review'
+export type ReviewSection = 'you' | 'photo' | 'titles' | 'sectors' | 'terms' | 'cv' | 'story' | 'employers' | 'review'
 /** A story of the story bank: a title and the four CARL parts. */
 export interface StoryValues {
   title: string
@@ -81,6 +81,7 @@ export interface ShowProfile {
     role_targets?: string[]
     search_keywords?: string[]
     topic_terms?: string[]
+    sectors?: string
     remote?: Remote
     min_score?: number
     exclude?: { companies?: string[]; keywords?: string[] }
@@ -164,7 +165,7 @@ export function isLinkedIn(url: string): boolean {
 export type ReadingWarning = 'basics' | 'titles' | 'terms'
 
 export type ListField = 'languages' | 'keywords' | 'topicTerms'
-export type ScalarField = 'name' | 'email' | 'location' | 'remote' | 'cvText'
+export type ScalarField = 'name' | 'email' | 'location' | 'remote' | 'cvText' | 'sectors'
 
 /** What the review does with the CV photo on Save: keep what there is, save a picked picture (by its token), or remove the one kept. */
 export type PhotoChoice = { kind: 'keep' } | { kind: 'new'; token: string; name: string } | { kind: 'none' }
@@ -184,6 +185,8 @@ export interface WizardState {
   /** The titles picked, saved as `role_targets`. */
   roleTargets: string[]
   remote: Remote
+  /** The sectors wanted and to avoid, in the user's own words (optional; `sectors` in the config). */
+  sectors: string
   /** What is left to ask; only the reading step adds to it. */
   missing: MissingKey[]
   /** A place the CV names outside the covered countries, shown when asking for the city. */
@@ -227,6 +230,7 @@ export function initialState(profile: ShowProfile): WizardState {
     titles: (c?.role_targets ?? []).map((title) => ({ title, reason: 'In your profile', recommended: true })),
     roleTargets: [...(c?.role_targets ?? [])],
     remote: c?.remote ?? 'hybrid',
+    sectors: c?.sectors ?? '',
     missing: [],
     unsupportedLocation: null,
     discovery: Object.fromEntries(
@@ -288,12 +292,12 @@ export function reviewProblem(state: WizardState, profile: ShowProfile): string 
 /** Which review section asks for which answer. */
 const OWNER: Record<ListField | ScalarField, ReviewSection> = {
   name: 'you', email: 'you', location: 'you', languages: 'you', remote: 'you',
-  keywords: 'terms', topicTerms: 'terms', cvText: 'cv',
+  keywords: 'terms', topicTerms: 'terms', cvText: 'cv', sectors: 'sectors',
 }
 
 const CONFIG_OWNER: Record<string, ReviewSection> = {
   name: 'you', email: 'you', location: 'you', languages: 'you', remote: 'you',
-  role_targets: 'titles', search_keywords: 'terms', topic_terms: 'terms',
+  role_targets: 'titles', search_keywords: 'terms', topic_terms: 'terms', sectors: 'sectors',
   linkedin_discovery: 'employers', profession_discovery: 'employers',
   jobbsafari_discovery: 'employers', hellowork_discovery: 'employers',
 }
@@ -488,6 +492,8 @@ export function toInitArgs(state: WizardState): Record<string, unknown> {
   }
   const other: Record<string, unknown> = Object.fromEntries(discoveryFor(state).map((d) => [d.key, d.on]))
   if (state.enrichSources.length > 0) other['enrich_sources'] = state.enrichSources
+  // a redo sends it even empty, so clearing the text clears the key; a first set-up has none to clear
+  if (state.sectors.trim() || state.mode === 'redo') other['sectors'] = state.sectors.trim()
   args['other'] = other
   return args
 }

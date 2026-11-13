@@ -151,7 +151,7 @@ def test_init_with_a_good_cv_asks_nothing_before_the_review(init_env, prompts, m
     _stop_at_first_run(monkeypatch)
     prompts.answers.update(_JANE)
     CliRunner().invoke(cli, ["init"])
-    assert prompts.order == ["cv_sources", "titles_pick", "titles_add", "discovery_pick", "photo", "review"]
+    assert prompts.order == ["cv_sources", "sectors", "titles_pick", "titles_add", "discovery_pick", "photo", "review"]
 
 
 def test_init_fresh_saves_every_key_of_the_review(init_env, prompts, monkeypatch):
@@ -1221,3 +1221,74 @@ def test_init_checks_the_photo_where_it_is_asked(tmp_path):
     assert "JPEG or PNG" in profile_cmd._photo_problem(str(tmp_path / "doc.pdf"))
     assert profile_cmd._photo_problem("") is None
     assert "not found" in profile_cmd._photo_problem(str(tmp_path / "nope.jpg"))
+
+
+# --------------------------------------------------------------------------- #
+# sectors (#50)
+# --------------------------------------------------------------------------- #
+
+_SECTORS = "medical or green energy; avoid banking and gambling"
+
+
+def test_the_sectors_field_is_a_plain_optional_string(init_env):
+    fields = profile_cmd._show_profile_core(init_env.profile_dir, init_env.example_dir)["options"]["fields"]
+    assert {f["key"]: f for f in fields}["sectors"] == {
+        "key": "sectors", "type": "string", "required": False, "nullable": False, "default": "",
+    }
+
+
+def test_init_set_writes_the_sectors_text_as_written(init_env):
+    _write_existing_profile_config(init_env, name="Existing User", role_targets=["Old Role"])
+    (init_env.profile_dir / "cv.md").write_text("MY REAL CV")
+    _invoke("--set", f"sectors={_SECTORS}")
+    assert _config(init_env)["sectors"] == _SECTORS
+
+
+def test_init_profile_sets_and_clears_the_sectors(init_env):
+    _write_existing_profile_config(init_env, name="Existing User", role_targets=["Old Role"])
+    (init_env.profile_dir / "cv.md").write_text("MY REAL CV")
+    profile_cmd._init_core(profile_cmd._profile_fields(other={"sectors": _SECTORS}), init_env.profile_dir, init_env.example_dir)
+    assert _config(init_env)["sectors"] == _SECTORS
+    profile_cmd._init_core(profile_cmd._profile_fields(other={"sectors": ""}), init_env.profile_dir, init_env.example_dir)
+    assert _config(init_env)["sectors"] == ""
+
+
+def test_the_wizard_asks_for_sectors_once_after_the_search_terms_and_saves_them(init_env, prompts, monkeypatch):
+    _stop_at_first_run(monkeypatch)
+    prompts.answers.update(_JANE, sectors=_SECTORS)
+    text = result_text(CliRunner().invoke(cli, ["init"]))
+    assert prompts.order.count("sectors") == 1
+    assert prompts.order.index("sectors") < prompts.order.index("review")
+    assert "avoid" in prompts.asked["sectors"]["message"] and "optional" in prompts.asked["sectors"]["message"]
+    assert _config(init_env)["sectors"] == _SECTORS
+    assert f"Sectors" in text and _SECTORS in text
+
+
+def test_skipping_the_sectors_question_saves_none(init_env, prompts, monkeypatch):
+    _stop_at_first_run(monkeypatch)
+    prompts.answers.update(_JANE)
+    text = result_text(CliRunner().invoke(cli, ["init"]))
+    assert _config(init_env).get("sectors", "") == ""
+    assert "Sectors" in text and "none" in text.split("Sectors", 1)[1].splitlines()[0]
+
+
+def test_the_review_can_change_the_sectors(init_env, prompts, monkeypatch):
+    _stop_at_first_run(monkeypatch)
+    prompts.answers.update(_JANE, review=iter(["sectors", "save"]), sectors=iter(["", "robotics"]))
+    CliRunner().invoke(cli, ["init"])
+    assert _config(init_env)["sectors"] == "robotics"
+
+
+def test_the_first_look_scores_with_the_sectors(init_env, prompts, wizard_calls, monkeypatch):
+    _stop_at_first_run(monkeypatch)
+    seen = {}
+    from door.commands import preview as preview_cmd
+
+    def look(config, cv, **k):
+        seen.update(config)
+        return {"board": "jobindex", "matches": []}
+
+    monkeypatch.setattr(preview_cmd, "_preview_core", look)
+    prompts.answers.update(_JANE, sectors=_SECTORS)
+    CliRunner().invoke(cli, ["init"])
+    assert seen["sectors"] == _SECTORS

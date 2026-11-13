@@ -401,7 +401,7 @@ def _answers_from(config: dict | None) -> dict:
     """What the wizard holds until Save: a saved profile's values, or nothing on a fresh home, where
     `fresh` also makes Save clear the example's exclusions."""
     config = config or {}
-    keys = ("name", "email", "location", "languages", "role_targets", "search_keywords", "topic_terms", "enrich_sources")
+    keys = ("name", "email", "location", "languages", "role_targets", "search_keywords", "topic_terms", "sectors", "enrich_sources")
     return {
         **{key: config[key] for key in keys if config.get(key)},
         "remote": config.get("remote") or "hybrid",
@@ -517,6 +517,17 @@ def _propose_terms(answers: dict) -> None:
     answers.update(search_keywords=proposal["keywords"], topic_terms=proposal.get("topic_terms") or [])
 
 
+def _ask_sectors(answers: dict, *, edit: bool = False) -> None:
+    """The sectors to work in and to avoid, in the user's own words; Enter skips (the text is kept as written)."""
+    hint = (
+        "Sectors you want, and any to avoid, in your own words (optional, Enter to skip). "
+        "E.g. medical and green energy; not banking or gambling"
+    )
+    if edit:
+        hint += ". A change applies from the next run"
+    answers["sectors"] = _prompts.text("sectors", hint, default=answers.get("sectors", "")).strip()
+
+
 def _read_sources_step(answers: dict) -> None:
     """Everything the sources can tell, then one question per thing they could not."""
     from door.commands import cv as cv_cmd
@@ -548,6 +559,7 @@ def _read_sources_step(answers: dict) -> None:
 
     click.echo("[4/4] Choosing search terms...")
     _propose_terms(answers)
+    _ask_sectors(answers)
     _first_look(answers)
 
 
@@ -557,7 +569,7 @@ def _first_look(answers: dict) -> None:
     from door.commands import preview as preview_cmd
 
     click.echo("A first look while we finish setting up...")
-    config = {key: answers.get(key) for key in ("location", "languages", "role_targets", "search_keywords", "topic_terms", "remote")}
+    config = {key: answers.get(key) for key in ("location", "languages", "role_targets", "search_keywords", "topic_terms", "sectors", "remote")}
     look = preview_cmd._preview_core(config, cv_cmd._onboarding_cv_text(workspace.PROFILE_DIR, {}))
     for match in look["matches"]:
         click.echo(f"  {match['title']} at {match['company']}: {match['score_reason']}")
@@ -649,6 +661,8 @@ def _edit(choice: str, answers: dict) -> None:
         _pick_terms(answers, "search_keywords", "Search terms to use")
     elif choice == "topic_terms":
         _pick_terms(answers, "topic_terms", "Words that make a job title relevant to you")
+    elif choice == "sectors":
+        _ask_sectors(answers, edit=True)
     elif choice == "discovery":
         _pick_discovery(answers)
     elif choice == "photo":
@@ -674,6 +688,7 @@ def _print_review(answers: dict) -> None:
         ("Titles", ", ".join(answers.get("role_targets") or [])),
         ("Search terms", ", ".join(answers.get("search_keywords") or [])),
         ("Title terms", ", ".join(answers.get("topic_terms") or [])),
+        ("Sectors", answers.get("sectors") or "none"),
         *([("Photo", Path(answers["photo"]).name)] if answers.get("photo") else []),
     ):
         click.echo(f"  {label:<14}{value or ''}")
@@ -709,6 +724,7 @@ def _save_answers(answers: dict) -> bool:
         "role_targets": answers.get("role_targets", []),
         "search_keywords": answers.get("search_keywords") or answers.get("role_targets", []),
         "topic_terms": answers.get("topic_terms", []),
+        "sectors": answers.get("sectors", ""),
         "remote": answers["remote"],
         **{s["key"]: s["key"] in answers["discovery"] for s in sources},
     }
@@ -758,6 +774,7 @@ def _review_step(answers: dict) -> None:
             ("Change the titles", "titles"),
             ("Change the search terms", "search_keywords"),
             ("Change the title terms", "topic_terms"),
+            ("Change the sectors", "sectors"),
             ("Change where to find employers", "discovery"),
             *([("Change the photo", "photo")] if i18n.cv_conventions_for_location(answers.get("location") or "").photo != "no" else []),
             *([("Open the CV draft in my editor", "cv")] if answers.get("draft_path") else []),

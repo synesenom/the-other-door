@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { named } from './AppName'
 import { call, errorText } from '../api'
-import { ChipInput, CityField, TextField } from './onboarding/parts'
+import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
 import { photoPolicy, type ShowProfile } from './onboarding/reducer'
 import layout from './profile-form/fields.json'
 import { changedKeys, fieldErrors, formValues, toInitArgs, type Exclude, type FieldSpec, type FormValues } from './profile-form/form'
@@ -16,7 +16,7 @@ export interface Layout {
   /** `screen: "settings"`: a section of Settings (how the app works), not of Profile (who you are, what you want) */
   sections: { id: string; label: string; screen?: string }[]
   /** `group`: neighbouring fields shown together under that name (two checkboxes) */
-  fields: { key: string; section: string; label: string; help?: string; group?: string }[]
+  fields: { key: string; section: string; label: string; help?: string; group?: string; multiline?: boolean }[]
 }
 export const LAYOUT = layout as Layout
 /** The keys left to profile/config.json: tuning and file paths, not shown (fields.json's "config" section). */
@@ -359,6 +359,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
         )
       }
       default:
+        if (f.multiline) return <TextAreaField key={f.key} label={f.label} help={f.help} errors={err} value={String(value)} onChange={(v) => set(f.key, v)} />
         return <TextField key={f.key} label={f.label} help={f.help} errors={err} value={String(value)} numeric={spec.type === 'integer' || spec.type === 'number'} onChange={(v) => set(f.key, v)} />
     }
   }

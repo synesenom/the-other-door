@@ -23,7 +23,7 @@ import pytest
 
 from door.matching import scorer
 
-from golden_utils import load_golden_cases
+from golden_utils import case_config, load_golden_cases
 from paths import GOLDEN_PROFILE_DIR
 
 
@@ -56,18 +56,30 @@ pytestmark = [
 
 @pytest.fixture(scope="module")
 def scored() -> tuple[dict, list]:
-    """Every golden posting scored once, in parallel, by the real scorer: ``(results, failed)``."""
+    """Every golden posting scored once, in parallel, by the real scorer: ``(results, failed)``.
+
+    One system prompt per distinct config: a case's own ``config`` overrides the golden profile's."""
     profile_dir = GOLDEN_PROFILE_DIR
-    config = json.loads((profile_dir / "config.json").read_text())
+    base = json.loads((profile_dir / "config.json").read_text())
     cv_md = (profile_dir / "cv.md").read_text()
-    system_prompt = scorer.build_system_prompt(config, cv_md, scorer.load_rubric_md())
-    return scorer.score_postings(
-        [c["posting"] for c in _CASES],
-        system_prompt=system_prompt,
-        model=scorer.DEFAULT_MODEL,
-        workers=4,
-        chunk=1,
-    )
+    rubric = scorer.load_rubric_md()
+    groups: dict[str, tuple[dict, list]] = {}
+    for case in _CASES:
+        config = case_config(base, case)
+        groups.setdefault(json.dumps(config, sort_keys=True), (config, []))[1].append(case["posting"])
+    results: dict = {}
+    failed: list = []
+    for config, postings in groups.values():
+        got, bad = scorer.score_postings(
+            postings,
+            system_prompt=scorer.build_system_prompt(config, cv_md, rubric),
+            model=scorer.DEFAULT_MODEL,
+            workers=4,
+            chunk=1,
+        )
+        results.update(got)
+        failed.extend(bad)
+    return results, failed
 
 
 @pytest.mark.parametrize("case", _CASES, ids=_case_id)

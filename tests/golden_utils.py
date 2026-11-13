@@ -22,9 +22,18 @@ def golden_case_paths() -> list[Path]:
 
 
 def load_golden_cases() -> list[dict]:
-    """Load every golden case file as `{"path", "posting", "expect"}`."""
+    """Load every golden case file as `{"path", "posting", "expect", "config"}`.
+
+    `config` is an optional per-case override of the golden profile's config (`{}` when absent)."""
     cases = []
     for path in golden_case_paths():
         data = json.loads(path.read_text(encoding="utf-8"))
-        cases.append({"path": path, "posting": data["posting"], "expect": data["expect"]})
+        cases.append(
+            {"path": path, "posting": data["posting"], "expect": data["expect"], "config": data.get("config") or {}}
+        )
     return cases
+
+
+def case_config(base: dict, case: dict) -> dict:
+    """The golden profile's config with the case's own overrides on top."""
+    return {**base, **(case.get("config") or {})}
