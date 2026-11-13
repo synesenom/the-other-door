@@ -13,7 +13,7 @@ from door.commands import _common as common
 from door.commands import _progress
 from door.commands import matches as matches_cmd
 from door.commands import salary as salary_cmd
-from door.core import claude_cli, usage, workspace
+from door.core import claude_cli, templates, usage, workspace
 from door.core import photo as photo_mod
 from door.core import progress as progress_mod
 from door.commands import check_facts as check_facts_cmd
@@ -71,17 +71,22 @@ def _rule_path(path) -> str:
     return "/" + posix
 
 
-def _tailor_read_files(profile_dir: Path) -> list[Path]:
-    """The CV and templates the profile names, when they live outside the profile folder."""
+def _tailor_templates(profile_dir: Path) -> dict[str, Path]:
+    """The two LaTeX templates the tailor reads, as absolute paths (`door.core.templates`: the user's own, else the code's)."""
     try:
         config = common._load_config_or_defaults(profile_dir)
     except Exception:  # noqa: BLE001 - an invalid config fails the run on its own; the rules stay narrow
         config = {}
-    files = [common._cv_path(config, profile_dir)]
-    for key in ("cv_template", "cover_letter_template"):
-        if config.get(key):
-            path = Path(config[key])
-            files.append(path if path.is_absolute() else workspace.HOME / path)
+    return {key: templates.resolve(key, config, profile_dir) for key in templates.FILES}
+
+
+def _tailor_read_files(profile_dir: Path) -> list[Path]:
+    """The CV and the two templates, when they live outside the profile folder (the code's templates do)."""
+    try:
+        config = common._load_config_or_defaults(profile_dir)
+    except Exception:  # noqa: BLE001 - an invalid config fails the run on its own; the rules stay narrow
+        config = {}
+    files = [common._cv_path(config, profile_dir), *_tailor_templates(profile_dir).values()]
     profile = profile_dir.absolute()
     return [f.absolute() for f in files if not f.absolute().is_relative_to(profile)]
 
@@ -164,10 +169,12 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
     problems the PDFs read back with: the files exist, keep them and fix only these.
     """
     output_dir = workspace.JOBS_DIR / "output" / job_id
+    tpl = _tailor_templates(workspace.PROFILE_DIR)
     prompt = (
         f"Tailor job_id {job_id!r}: `job` is the posting at {posting_path}, `profile` is "
         f"{workspace.PROFILE_DIR / 'config.json'} (the profile folder is {workspace.PROFILE_DIR}; "
-        f"the story bank is {workspace.PROFILE_DIR / 'story_bank.md'}). Produce "
+        f"the story bank is {workspace.PROFILE_DIR / 'story_bank.md'}). The CV template is {tpl['cv_template']} and "
+        f"the cover letter template is {tpl['cover_letter_template']}. Produce "
         f"{output_dir}/posting.json, cv.tex and "
         f"cover_letter.tex and compile them to PDFs, following your steps in order; "
         f"new stories go to {output_dir / _STORIES_FILE}. "

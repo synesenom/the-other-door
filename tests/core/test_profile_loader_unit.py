@@ -319,3 +319,13 @@ def test_a_photo_that_is_missing_or_not_a_picture_is_refused_under_its_key(tmp_p
 def test_a_missing_photo_does_not_stop_a_batch_command(tmp_path):
     cfg = _valid_config(tmp_path / "tpl", photo=str(tmp_path / "nope.jpg"))
     assert Profile.model_validate(cfg, context={"check_paths": False}).photo == tmp_path / "nope.jpg"
+
+
+def test_the_templates_are_optional_and_a_profile_without_them_is_valid(tmp_path):
+    """The templates come from the code (#56): no key, no file, no error, even with the paths checked."""
+    cfg = _valid_config(tmp_path / "tpl")
+    del cfg["cv_template"], cfg["cover_letter_template"]
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps(cfg))
+    config = profile_loader.load_config(path, check_paths=True)
+    assert "cv_template" not in config and "cover_letter_template" not in config

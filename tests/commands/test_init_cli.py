@@ -55,9 +55,7 @@ def init_env(tmp_path, monkeypatch):
     config_path = example_dir / "config.json"
     config = json.loads(config_path.read_text())
     for field, filename in (
-        ("cv_template", "cv.template.tex"),
         ("cv_content", "cv.md"),
-        ("cover_letter_template", "cover-letter.template.tex"),
     ):
         config[field] = str(example_dir / filename)
     config_path.write_text(json.dumps(config))
@@ -555,7 +553,9 @@ def test_init_partial_profile_dir_copies_missing_files_only(init_env, prompts):
     assert config_path.exists()
     profile_loader.Profile.model_validate(json.loads(config_path.read_text()))
 
-    assert (init_env.profile_dir / "cv.template.tex").exists()
+    for name in ("cv.template.tex", "cover-letter.template.tex", "fonts"):
+        assert not (init_env.profile_dir / name).exists()  # the templates and fonts come from the code (#56)
+    assert (init_env.profile_dir / ".data_version").read_text() == "1\n"  # made by this build: nothing to upgrade
     assert not (init_env.profile_dir / "cv.md").exists()  # no CV yet, not the example's
     assert (state_dir / "mine.json").read_text() == '{"notes": []}'
 
@@ -845,8 +845,7 @@ def _example_profile(init_env):
     (init_env.profile_dir / "story_bank.md").unlink(missing_ok=True)
     config_path = init_env.profile_dir / "config.json"
     config = json.loads(config_path.read_text())
-    for field, filename in (("cv_template", "cv.template.tex"), ("cv_content", "cv.md"),
-                            ("cover_letter_template", "cover-letter.template.tex")):
+    for field, filename in (("cv_content", "cv.md"),):
         config[field] = str(init_env.profile_dir / filename)
     config_path.write_text(json.dumps(config))
     return init_env.profile_dir

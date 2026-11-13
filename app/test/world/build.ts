@@ -454,7 +454,6 @@ export function buildWorld(options: WorldOptions = {}): World {
 function writeHome(home: string, persona: Persona, ads: Ad[], options: WorldOptions) {
   const profile = join(home, 'profile')
   mkdirSync(profile, { recursive: true })
-  for (const f of ['cv.template.tex', 'cover-letter.template.tex']) copyFileSync(join(repoRoot, 'profile.example', f), join(profile, f))
   writeFileSync(
     join(profile, 'config.json'),
     JSON.stringify(
@@ -462,9 +461,7 @@ function writeHome(home: string, persona: Persona, ads: Ad[], options: WorldOpti
         name: persona.name,
         email: persona.email,
         location: persona.city,
-        cv_template: 'profile/cv.template.tex',
         cv_content: 'profile/cv.md',
-        cover_letter_template: 'profile/cover-letter.template.tex',
         role_targets: persona.roleTargets,
         search_keywords: persona.searchKeywords,
         topic_terms: persona.topicTerms,

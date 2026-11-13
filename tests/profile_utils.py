@@ -4,7 +4,7 @@ Not a test module itself (no `test_` prefix). Since issue #137 every command
 validates `config.json` against `door.core.profile_loader.Profile` before
 doing anything, so fixtures can no longer seed a three-key config: they call
 `write_config(profile_dir, {...})`, which fills in the required keys (and
-creates the template files the schema checks exist) underneath the
+creates the CV file the schema names) underneath the
 test-specific overrides.
 """
 
@@ -19,16 +19,10 @@ def base_config(profile_dir: Path) -> dict:
     profile_dir = Path(profile_dir)
     tpl_dir = profile_dir / "_templates"
     tpl_dir.mkdir(parents=True, exist_ok=True)
-    paths = {}
-    for key, name in (
-        ("cv_template", "cv.template.tex"),
-        ("cv_content", "cv.md"),
-        ("cover_letter_template", "cover-letter.template.tex"),
-    ):
-        p = tpl_dir / name
-        if not p.exists():
-            p.write_text("x")
-        paths[key] = str(p)
+    cv = tpl_dir / "cv.md"
+    if not cv.exists():
+        cv.write_text("x")
+    paths = {"cv_content": str(cv)}  # the LaTeX templates come from the code (door.core.templates)
     return {
         "name": "Jane Doe",
         "email": "jane@example.com",

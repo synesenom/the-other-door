@@ -54,9 +54,10 @@ class Profile(BaseModel):
     # You need the employer to sponsor a visa or work permit: ads that say they will not, or that
     # require an existing permit, score 0 (matching/scorer.apply_result).
     needs_work_permit: bool = False
-    cv_template: Path
+    # The LaTeX templates: None = the code's own (`door.core.templates`); a path names the user's own.
+    cv_template: Path | None = None
     cv_content: Path
-    cover_letter_template: Path
+    cover_letter_template: Path | None = None
     # The candidate's CV photo (a JPEG or PNG, kept by `save_photo` as profile/photo.jpg); `compile` puts it in the CV
     # where the country's conventions allow one. None = no photo.
     photo: Path | None = None
@@ -170,8 +171,8 @@ class Profile(BaseModel):
         if info.context and info.context.get("check_paths") is False:
             return self
         for field in ("cv_template", "cover_letter_template"):
-            p: Path = getattr(self, field)
-            if not p.exists():
+            p: Path | None = getattr(self, field)
+            if p is not None and not p.exists():
                 raise ValueError(f"{field} not found: {p}")
         if self.photo is not None:
             why = photo_mod.problem(self.photo)
