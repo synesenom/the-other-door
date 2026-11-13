@@ -124,7 +124,7 @@ describe('Review', () => {
     const h = setup()
     const sectors = within(part('Sectors'))
     expect(sectors.getByText(/medical and green energy; not banking or gambling/)).toBeInTheDocument()
-    const box = sectors.getByLabelText('Sectors you want or avoid')
+    const box = sectors.getByRole('textbox', { name: 'Sectors' })
     expect(box.tagName).toBe('TEXTAREA')
     expect(box).toHaveValue('')
     await userEvent.type(box, 'robotics, no banking')
