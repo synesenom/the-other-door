@@ -16,8 +16,8 @@ const DOCS: Doc[] = [LEGAL_DISCLAIMER]
 
 /** A document in a dialog: what the user was doing stays behind it, as it was. */
 export function DocDialog({ doc, onClose }: { doc: Doc; onClose: () => void }) {
-  // The dialog's title stands for the file's first heading.
-  const body = doc.text.replace(/^# .*\n+/, '')
+  // The dialog's title stands for the file's first heading (Windows line endings or not).
+  const body = doc.text.replace(/^# [^\r\n]*(?:\r?\n)+/, '')
   return (
     <Dialog title={doc.title} onClose={onClose}>
       <Markdown text={body} className="doc-text" />

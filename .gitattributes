@@ -1,3 +1,8 @@
+# Text is checked out with LF on every platform, so a Windows build and its tests read the same bytes as
+# macOS and Linux (#18: the bundled documents and the generated theme).
+* text=auto eol=lf
 # ./door runs under bash and door.cmd under cmd.exe, whatever the checkout's platform.
 /door text eol=lf
 /door.cmd text eol=crlf
+# saved real payloads keep their bytes, line endings included
+tests/**/fixtures/** -text

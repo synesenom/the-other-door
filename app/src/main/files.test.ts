@@ -6,7 +6,7 @@ import { doorHome, isJobId, isMaterialName, isPngName, materialPath } from './fi
 
 describe('doorHome', () => {
   it('prefers a non-empty DOOR_HOME, resolved', () => {
-    expect(doorHome({ DOOR_HOME: '/data/h/../store' }, '/repo')).toBe('/data/store')
+    expect(doorHome({ DOOR_HOME: '/data/h/../store' }, '/repo')).toBe(resolve('/data/store'))
   })
   it('expands a leading ~', () => {
     expect(doorHome({ DOOR_HOME: '~/door-data' }, '/repo')).toBe(join(homedir(), 'door-data'))
