@@ -14,10 +14,10 @@ so each has its own list:
 Each row is ✅ (its smoke tests passed), ❌ (one failed or errored), ❓ (not run in CI, or skipped)
 or ➖ (it has no live test; ``tests/live_matrix.NO_LIVE_TEST`` says why).
 
-A list that nothing in this run tested (every row ❓) keeps its rows from the page already at <out.md>,
-with the date it was last checked: CI has no Claude plan and skips the golden set, so the weekly run
-keeps the matcher's last local result, and a local run of the golden set alone keeps the sites' last
-CI result.
+A row this run did not check (❓) keeps its last result from the page already at <out.md>, with the date
+of the run that checked it: some sites refuse GitHub's runners, so the weekly run keeps the last local
+result for them; CI has no Claude plan and skips the golden set, so it keeps the matcher's last local
+result; and a local run of the golden set alone keeps the sites' last CI result.
 
 With ``--badges DIR`` it also writes one badge per list into DIR (``live-boards.svg``,
 ``live-feeds.svg``, ``live-countries.svg``, ``live-languages.svg``, ``live-matcher.svg``): "boards | 3/3", how
@@ -41,8 +41,10 @@ _SITE_TEST = re.compile(r"(?:^|\.)test_(\w+)_live$")
 _PARAM_TEST = re.compile(r"\[([\w-]+)\]$")
 _SYMBOLS = {"pass": "✅", "fail": "❌", "unknown": "❓", "none": "➖"}
 _STATUS_OF = {symbol: status for status, symbol in _SYMBOLS.items()}
-_ROW = re.compile(r"^\| (.+) \| (\S+) \|$")
+_ROW = re.compile(r"^\| (.+?) \| (\S+) \|(?: ([\d-]*) \|)?$")
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_LAST_RUN = re.compile(r"^Last \[workflow run\]\(\S+\): \d{4}-\d{2}-\d{2}\.", re.M)
+_NO_RUN = re.compile(r"^No workflow run yet \(\d{4}-\d{2}-\d{2}\)\.", re.M)
 _LAST_CHECKED = re.compile(r"^Last checked: (\d{4}-\d{2}-\d{2})\.$")
 # Each list's badge: (its file, its label), by the list's title on the page.
 _DIMENSION_BADGES = {
@@ -136,7 +138,7 @@ def dimension_badges(lists: list[tuple[str, list[tuple[str, str]]]]) -> list[tup
     out = []
     for title, rows in lists:
         file, label = _DIMENSION_BADGES[title]
-        passed = sum(1 for _, status in rows if status == "pass")
+        passed = sum(1 for _, status, *_ in rows if status == "pass")
         out.append((file, label, f"{passed}/{len(rows)}", "green" if rows and passed == len(rows) else "red"))
     return out
 
@@ -147,13 +149,13 @@ def _svg(left: str, right: str, color: str) -> str:
     return Badge(left_txt=left, right_txt=right, color=color).as_svg(use_shields=False)
 
 
-def previous_lists(page: str) -> dict[str, tuple[list[tuple[str, str]], str]]:
-    """The lists of a page this script wrote before: ``{title: (rows, last checked)}``.
+def previous_lists(page: str) -> dict[str, tuple[list[tuple[str, str, str]], str]]:
+    """The lists of a page this script wrote before: ``{title: ([(label, status, checked), ...], last checked)}``.
 
     A list without its own "Last checked" line (a page from before there was one) takes the date in the
-    page's header line."""
+    page's header line, and a row without its own date (a page from before there was one) its list's."""
     header = _DATE.search(page.split("\n## ", 1)[0])
-    lists: dict[str, tuple[list[tuple[str, str]], str]] = {}
+    lists: dict[str, tuple[list[tuple[str, str, str]], str]] = {}
     title = None
     for line in page.splitlines():
         if line.startswith("## "):
@@ -162,23 +164,27 @@ def previous_lists(page: str) -> dict[str, tuple[list[tuple[str, str]], str]]:
         elif title and (checked := _LAST_CHECKED.match(line)):
             lists[title] = (lists[title][0], checked.group(1))
         elif title and (row := _ROW.match(line)) and row.group(2) in _STATUS_OF:
-            lists[title][0].append((row.group(1), _STATUS_OF[row.group(2)]))
-    return lists
+            lists[title][0].append((row.group(1), _STATUS_OF[row.group(2)], row.group(3)))
+    return {t: ([(label, status, checked if checked is not None else date) for label, status, checked in rows], date)
+            for t, (rows, date) in lists.items()}
 
 
 def carry_over(lists: list[tuple[str, list[tuple[str, str]]]], previous: str, date: str
-               ) -> list[tuple[str, list[tuple[str, str]], str]]:
-    """Each list with the date it was checked: this run's, or, when nothing in it ran this time
-    (every row unknown), its rows and date from the *previous* page, when that page has them."""
+               ) -> list[tuple[str, list[tuple[str, str, str]], str]]:
+    """Each list with its rows dated and the date it was last checked.
+
+    A row this run checked (passed or failed) takes *date*; one it did not (unknown) keeps its result and
+    date from the *previous* page when that page checked it, else stays unknown and undated. A list takes
+    *date* when this run checked any of its rows, else its date on the previous page."""
     before = previous_lists(previous)
     out = []
     for title, rows in lists:
-        kept = before.get(title)
-        untested = all(status == "unknown" for _, status in rows)
-        if untested and kept and kept[0]:
-            out.append((title, kept[0], kept[1]))
-        else:
-            out.append((title, rows, "" if untested else date))
+        kept_rows, kept_date = before.get(title, ([], ""))
+        kept = {label: (status, checked) for label, status, checked in kept_rows if status in ("pass", "fail")}
+        dated = [(label, status, date) if status != "unknown" else (label, *kept.get(label, ("unknown", "")))
+                 for label, status in rows]
+        tested = any(status != "unknown" for _, status in rows)
+        out.append((title, dated, date if tested else kept_date))
     return out
 
 
@@ -190,20 +196,22 @@ def render(lists: list[tuple[str, list[tuple[str, str]]]] | list[tuple[str, list
         "",
         f"{run} Generated by `scripts/smoke_report.py`; do not edit by hand.",
         "",
-        "✅ passed · ❌ failed · ❓ not run in CI (or skipped) · ➖ no live test",
+        "✅ passed · ❌ failed · ❓ not checked yet · ➖ no live test",
         "",
         "Each list is checked on its own: a site's test reads that site, a country's checks its country "
         "file against real ads' places, a language's checks its language file against real ads written in it, "
         "the matcher's scores the golden postings with the real model and checks each score falls in its "
-        "hand-labelled band. CI has no Claude plan and skips the matcher, so a list that a run did not test "
-        "keeps its last result and date.",
+        "hand-labelled band. A row a run could not check keeps its last result, with the date it was checked: "
+        "some sites refuse GitHub's runners, so their result comes from a local run, and CI has no Claude "
+        "plan, so the matcher's does too.",
     ]
     for title, rows, *checked in lists:
         lines += ["", f"## {title}", ""]
         if checked and checked[0]:
             lines += [f"Last checked: {checked[0]}.", ""]
-        lines += ["| Name | Status |", "|------|--------|",
-                  *(f"| {label} | {_SYMBOLS[status]} |" for label, status in rows)]
+        lines += ["| Name | Status | Checked |", "|------|--------|---------|",
+                  *(f"| {label} | {_SYMBOLS[status]} | {checked} |" for label, status, checked in
+                    ((row[0], row[1], row[2] if len(row) > 2 else "") for row in rows))]
     return "\n".join([*lines, ""])
 
 
@@ -222,7 +230,12 @@ def main(argv: list[str] | None = None) -> None:
     out = pathlib.Path(args.out)
     previous = out.read_text(encoding="utf-8") if out.exists() else ""
     lists = carry_over(sections(xml), previous, args.date)
-    out.write_text(render(lists, args.run_url, args.date), encoding="utf-8")
+    page = render(lists, args.run_url, args.date)
+    # A local run (no --run-url) keeps the page's link to the last workflow run.
+    last_run = _LAST_RUN.search(previous)
+    if not args.run_url and last_run:
+        page = _NO_RUN.sub(last_run.group(0), page, count=1)
+    out.write_text(page, encoding="utf-8")
     if args.badges:
         for file, label, value, color in dimension_badges([(title, rows) for title, rows, _ in lists]):
             (pathlib.Path(args.badges) / file).write_text(_svg(label, value, color), encoding="utf-8")
