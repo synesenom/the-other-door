@@ -65,6 +65,9 @@ class Profile(BaseModel):
     # The words and phrases that make a job title relevant, in every ad language (proposed with the
     # keywords); [] = any content word of the keywords (`door.matching.title_fit.topic_terms`).
     topic_terms: list[str] = []
+    # Free text, in the user's own words and any language: the sectors or kinds of employer wanted and
+    # the ones to avoid. Kept as written; the scorer's prompt carries it (`matching.scorer`). "" = none.
+    sectors: str = ""
     remote: Literal["yes", "no", "hybrid"]
     # `discover` asks LinkedIn which employers hire for the keywords, `follow` then finds
     # their own job feeds (door.pipeline). Off until the user turns it on: its terms forbid

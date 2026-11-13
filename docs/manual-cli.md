@@ -36,7 +36,8 @@ Set up as in [Getting started](../README.md#getting-started) (`./scripts/setup.s
 2. **Reading them**: `claude -p` calls draft the CV (nothing invented, gaps marked `TODO`), read your
    details and propose job titles and search terms. It asks only for what it could not find.
 3. **One review**: everything found, with your titles (each with why it fits, the best ones ticked),
-   and, for each of LinkedIn, profession.hu, Jobbsafari and HelloWork that serves your city, whether to find
+   one optional question about sectors (which kinds of employer you want and which to avoid, in your own words;
+   Enter skips; scoring uses it from the next run), and, for each of LinkedIn, profession.hu, Jobbsafari and HelloWork that serves your city, whether to find
    employers there (off unless you say yes; their terms forbid automated access, so it is your call:
    see the [legal disclaimer](../LEGAL_DISCLAIMER.md)). Edit any of it, then save: the profile is
    validated before `profile/config.json` is written, the old CV is kept as `cv.md.bak`, and the first
@@ -105,7 +106,7 @@ several open a list of just those to pick from; where the job is optional (`jobs
 | Command | What it does |
 |---------|--------------|
 | `doctor [--probe] [--fix [--yes] [--no-tex] [--no-claude]]` | Check prerequisites (and print the data folder in use, `DOOR_HOME` or the checkout), the profile, that `claude` is logged in to a Pro/Max plan (a dim `Connected as <email> (<plan>, <organisation>)` line under the check), and that Claude Code can start the MCP server; print the fix for anything missing (for an invalid `profile/config.json`, every error). `--probe` also checks each site live for [changes](job-sites.md#when-a-site-changes) (slow). `--fix` installs whatever is missing of Tectonic and the `claude` CLI (lists them, asks once), then checks that the MCP server answers; with `--probe` too it offers to fix a scraper that no longer fits its site. `./scripts/setup.sh` ends with `doctor --fix`. |
-| `init [--name …] [--role-targets a,b] [--search-keywords a,b] [--topic-terms a,b] [--set KEY=VALUE …]` | Without flags, the setup wizard above (your sources, reading them, one review, a first run; on an existing profile, the same with your answers filled in). With flags it asks nothing and changes only the keys you name (`--set` takes any other config key, as JSON or a plain string). `init --show` writes nothing: it prints the configured details (or the `config.json` errors), the CV outline, and whether the CV, the two templates and the story bank are still `profile.example/`'s; it cannot be combined with field options. |
+| `init [--name …] [--role-targets a,b] [--search-keywords a,b] [--topic-terms a,b] [--set KEY=VALUE …]` | Without flags, the setup wizard above (your sources, reading them, one review, a first run; on an existing profile, the same with your answers filled in). With flags it asks nothing and changes only the keys you name (`--set` takes any other config key, as JSON or a plain string: `--set sectors="medical, avoid banking"` writes your sector preferences). `init --show` writes nothing: it prints the configured details (or the `config.json` errors), the CV outline, and whether the CV, the two templates and the story bank are still `profile.example/`'s; it cannot be combined with field options. |
 
 ### Your CV over time: `cv`
 

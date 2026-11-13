@@ -107,6 +107,12 @@ def test_topic_terms_are_optional(tmp_path):
     assert Profile.model_validate(_valid_config(tmp_path / "b", topic_terms=["data", "adat*"])).topic_terms == ["data", "adat*"]
 
 
+def test_sectors_is_optional_free_text(tmp_path):
+    assert Profile.model_validate(_valid_config(tmp_path / "a")).sectors == ""
+    text = "medical or green energy; avoid banking"
+    assert Profile.model_validate(_valid_config(tmp_path / "b", sectors=text)).sectors == text
+
+
 def test_absolute_paths_kept_as_is(tmp_path):
     cfg = _valid_config(tmp_path / "tpl")
     profile = Profile.model_validate(cfg)

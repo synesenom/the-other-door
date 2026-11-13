@@ -1,0 +1,22 @@
+{
+  "posting": {
+    "id": "golden-sector-wanted-medical",
+    "title": "Lead Data Scientist",
+    "company": "Medivox Diagnostics",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-sector-wanted-medical",
+    "description": "About the role:\nMedivox Diagnostics is a Copenhagen medical-device company building diagnostic tools for hospitals. We are hiring a Lead Data Scientist to build machine learning models on clinical and sensor data that help detect disease earlier.\n\nResponsibilities:\nYou will lead a team of data scientists, set the technical direction, own forecasting and machine learning models end to end in Python and SQL, and report to the CTO.\n\nRequirements:\n8+ years of experience in data science with at least 3 years leading a team. Strong Python, SQL, MLOps and stakeholder-management skills.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, two days a week at home.\n\nWhat we offer:\nCompetitive salary and a collaborative team.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.7,
+    "score_max": 1.0,
+    "language_requirement": "none"
+  },
+  "config": {
+    "sectors": "I want a medical or green energy company, or maybe robotics. Avoid sectors like banking and gambling."
+  }
+}

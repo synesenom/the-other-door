@@ -24,6 +24,7 @@ const FIELDS: FieldSpec[] = [
   { key: 'min_score', type: 'number', required: false, nullable: false, default: 0.65 },
   { key: 'languages', type: 'list', required: false, nullable: false, default: [] },
   { key: 'claude_config_dir', type: 'string', required: false, nullable: true, default: null },
+  { key: 'sectors', type: 'string', required: false, nullable: false, default: '' },
 ]
 
 const show = (config: Record<string, unknown> = {}) => ({
@@ -150,6 +151,17 @@ describe('Profile', () => {
     expect(await screen.findByText('Saved.')).toBeInTheDocument()
     expect(call.mock.calls.filter((c) => c[0] === 'show_profile')).toHaveLength(2)
     expect(onSaved).toHaveBeenCalled()
+  })
+
+  it('the sectors are a text area saved as written, with a line that it applies from the next run', async () => {
+    const { call } = await open({ init_profile: {} })
+    const box = screen.getByLabelText('Sectors')
+    expect(box.tagName).toBe('TEXTAREA')
+    expect(box).toHaveValue('')
+    await userEvent.type(box, 'medical; not banking')
+    await userEvent.click(saveButton())
+    expect(call).toHaveBeenCalledWith('init_profile', { other: { sectors: 'medical; not banking' } })
+    expect(screen.getByRole('button', { name: 'About Sectors' })).toBeInTheDocument()
   })
 
   it('the minimum score is one of three words, a hand-set value a fourth', async () => {

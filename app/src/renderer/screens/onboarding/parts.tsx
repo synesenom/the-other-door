@@ -130,6 +130,16 @@ export function TextField({ label, help, errors, value, onChange, type = 'text',
   )
 }
 
+/** Free text over several lines, in the user's own words (the sectors). */
+export function TextAreaField({ label, help, errors, value, onChange, rows = 3, placeholder }: { label: string; help?: string; errors?: string[]; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
+  const id = useId()
+  return (
+    <Field id={id} label={label} help={help} errors={errors}>
+      <textarea id={id} className="onb-input" rows={rows} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+    </Field>
+  )
+}
+
 const OTHER = 'Other…'
 
 /** The city: a known one from the list, or any other typed in, which only the worldwide boards serve. */

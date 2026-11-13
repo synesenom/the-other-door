@@ -12,6 +12,7 @@ const specs: FieldSpec[] = [
   { key: 'scrape_workers', type: 'integer', required: false, nullable: true, default: null, min: 1 },
   { key: 'translate_titles', type: 'boolean', required: false, nullable: false, default: true },
   { key: 'claude_config_dir', type: 'string', required: false, nullable: true, default: null },
+  { key: 'sectors', type: 'string', required: false, nullable: false, default: '' },
 ]
 
 const config = { name: 'Ada', cv_template: '/p/cv.template.tex', role_targets: ['Analyst'], remote: 'hybrid', min_score: 0.7, exclude: { companies: ['Acme'] } }
@@ -29,6 +30,7 @@ describe('formValues', () => {
       scrape_workers: '',
       translate_titles: null,
       claude_config_dir: '',
+      sectors: '',
     })
   })
 
@@ -109,5 +111,21 @@ describe('fieldErrors', () => {
       },
       general: ['profile/config.json: bogus — Extra inputs are not permitted', 'something went wrong'],
     })
+  })
+})
+
+describe('sectors, a free-text string that is never null', () => {
+  const before = formValues({ ...config, sectors: 'robotics' }, specs)
+
+  it('sends a changed text in other', () => {
+    expect(toInitArgs(before, { ...before, sectors: 'medical; not banking' }, specs)).toEqual({ other: { sectors: 'medical; not banking' } })
+  })
+
+  it('sends "" when cleared, not null', () => {
+    expect(toInitArgs(before, { ...before, sectors: '' }, specs)).toEqual({ other: { sectors: '' } })
+  })
+
+  it('sends nothing when unchanged', () => {
+    expect(toInitArgs(before, { ...before }, specs)).toEqual({})
   })
 })

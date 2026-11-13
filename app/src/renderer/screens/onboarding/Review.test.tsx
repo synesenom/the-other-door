@@ -120,6 +120,20 @@ describe('Review', () => {
     expect(titles.queryByText('Actuary')).toBeNull()
   })
 
+  it('has an optional Sectors part: a text area with the example, held until Save', async () => {
+    const h = setup()
+    const sectors = within(part('Sectors'))
+    expect(sectors.getByText(/medical and green energy; not banking or gambling/)).toBeInTheDocument()
+    const box = sectors.getByLabelText('Sectors you want or avoid')
+    expect(box.tagName).toBe('TEXTAREA')
+    expect(box).toHaveValue('')
+    await userEvent.type(box, 'robotics, no banking')
+    expect(seen.sectors).toBe('robotics, no banking')
+    expect(h.call).not.toHaveBeenCalledWith('init_profile', expect.anything())
+    await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('init_profile', expect.objectContaining({ other: expect.objectContaining({ sectors: 'robotics, no banking' }) })))
+  })
+
   it('changing the titles proposes the terms again, debounced, and holds Save until then', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const h = setup()

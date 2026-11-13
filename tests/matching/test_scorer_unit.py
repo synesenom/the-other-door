@@ -77,6 +77,25 @@ def test_build_system_prompt_is_byte_stable_across_calls():
     assert a == b
 
 
+def test_build_system_prompt_carries_the_sectors_text():
+    cfg = {**_profile_cfg(), "sectors": "  want medical; avoid banking  "}
+    prompt = scorer.build_system_prompt(cfg, "cv", _SAMPLE_RUBRIC_MD)
+    assert "- sectors: want medical; avoid banking\n" in prompt
+    assert prompt == scorer.build_system_prompt(cfg, "cv", _SAMPLE_RUBRIC_MD)
+
+
+@pytest.mark.parametrize("value", ["", "   ", None])
+def test_build_system_prompt_without_sectors_is_unchanged(value):
+    base = scorer.build_system_prompt(_profile_cfg(), "cv", _SAMPLE_RUBRIC_MD)
+    assert "sectors" not in base
+    assert scorer.build_system_prompt({**_profile_cfg(), "sectors": value}, "cv", _SAMPLE_RUBRIC_MD) == base
+
+
+def test_the_real_rubric_tells_the_model_how_to_use_sectors():
+    prompt = scorer.build_system_prompt(_profile_cfg(), "cv", scorer.load_rubric_md())
+    assert "sectors" in prompt.lower()
+
+
 def test_build_system_prompt_includes_only_rubric_sections():
     prompt = scorer.build_system_prompt({}, "", _SAMPLE_RUBRIC_MD)
     assert "Scoring rubric" in prompt

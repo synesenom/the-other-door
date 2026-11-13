@@ -67,7 +67,7 @@ function stored(spec: FieldSpec, value: FormValue): unknown {
     const n = Number(text)
     return Number.isFinite(n) ? n : text
   }
-  if (spec.type === 'string' && !spec.required && value === '') return null
+  if (spec.type === 'string' && spec.nullable && value === '') return null
   return value
 }
 

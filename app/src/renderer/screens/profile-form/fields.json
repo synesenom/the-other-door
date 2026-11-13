@@ -81,6 +81,13 @@
       "label": "Words a job title must contain"
     },
     {
+      "key": "sectors",
+      "section": "search",
+      "label": "Sectors",
+      "help": "The kinds of employer you want, and any to avoid, in your own words. E.g. medical and green energy; not banking or gambling. Applies from the next run.",
+      "multiline": true
+    },
+    {
       "key": "remote",
       "section": "about",
       "label": "Where you would work"
