@@ -93,3 +93,21 @@ ZERO_HIT_FIXTURES: dict[str, str] = {
 NO_ZERO_HIT: dict[str, str] = {
     "euraxess": "no keyword search: it reads the country's whole list, so no keyword can come back empty",
 }
+
+
+# What each site's live postings may lack against the field contract (`live_utils.assert_field_contract`, #19). A site
+# not listed meets the defaults. Keys (all optional):
+#   company_share            share of postings that must name an employer other than the site (default 0.9)
+#   description_share        share with a description of at least `description_min` characters (default 0.9; 0 = not
+#                            required, only the boilerplate rule still reads those that have one)
+#   description_min          shortest description counted (default 80)
+#   location                 False: skip the "not another country's" rule of a country board
+#   location_share           the share of local postings needed (default 0.9)
+#   posted_at_future_days    how far ahead a date may be (default 1)
+# "unverified: tune after a live run" marks a waiver no live run has confirmed; tighten it once one has.
+FIELD_EXCEPTIONS: dict[str, dict] = {
+    "jobbank": {"location_share": 0.5},                                # a Danish search also lists "Udlandet (øvrige)" (abroad) ads
+    "euraxess": {"location": False},                                   # the location is "<city>, <country>"; its live test checks the country
+    "kozigallas": {"posted_at_future_days": 14},
+    "hr_manager": {"description_share": 0.8},                         # the newest ads may have no text yet (RegionH, 2026-11-13: 3 of 100, 2 of the first 10)                       # the date can be a planned publication date
+}

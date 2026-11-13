@@ -14,6 +14,7 @@ A site that came back empty with no recorded errors, or with any error that is n
 
 import contextlib
 import re
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -70,6 +71,204 @@ def assert_zero_hits(site: str, postings: list) -> None:
     assert not errors, fail(site, "zero_hits", f"errors on a zero-hit search: {errors[:3]}")
     assert postings == [], fail(site, "zero_hits", f"a nonsense keyword found {len(postings)} postings")
     assert answered, fail(site, "zero_hits", "the zero-hit page was not recognised as an answer (the page may have changed)")
+
+
+# --- The field contract (#19): what a live scrape's postings must carry, per site, beyond "at least one" ---
+
+# A line of an ad's text that says the page was a wall, not the ad (a JS, cookie, consent or bot-check page).
+_WALL = re.compile(
+    r"enable javascript|javascript (?:is )?(?:required|disabled)|cookies? (?:are|must)|accept (?:all )?cookies"
+    r"|cookie consent|access denied|verify (?:that )?you are (?:a )?human|are you a robot|captcha|just a moment"
+    r"|activez javascript|aktivér javascript|aktivera javascript",
+    re.IGNORECASE,
+)
+_WALL_MAX = 600          # a wall is short; a real ad that mentions cookies is longer
+_MAX_PAST_DAYS = {"search": 365, "collect": 3 * 365}   # a live test passes no `since`, so a board lists older ads too; a feed keeps long-open jobs
+_GRACE_DAYS = 1          # a posting dated tomorrow is a time zone, not a fault
+
+# Defaults of the rules (a site's `FIELD_EXCEPTIONS` row overrides `company_share`, `description_share`).
+_COMPANY_SHARE = 0.9
+_DESCRIPTION_SHARE = 0.9
+_DESCRIPTION_MIN = 80
+_LOCATION_SHARE = 0.9
+_POSTED_AT_SHARE = 0.9
+
+
+def _text(value) -> str:
+    return str(value or "").strip()
+
+
+def _squash(text: str) -> str:
+    return re.sub(r"\W+", " ", text.casefold()).strip()
+
+
+def _when(value) -> datetime | None:
+    """A posting's `posted_at` as an aware datetime (a naive one is taken as UTC); None when missing or unreadable."""
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(value, datetime):
+        return None
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+def _own_names(site: str) -> set[str]:
+    from door.core import sites
+
+    names = {site.casefold()}
+    if site in sites.SITES:
+        names.add(sites.SITES[site].label.casefold())
+    return names
+
+
+def failing_title(postings: list[dict]) -> list[dict]:
+    return [p for p in postings if not _text(p.get("title"))]
+
+
+def failing_url(postings: list[dict]) -> list[dict]:
+    return [p for p in postings if not _text(p.get("url")).lower().startswith(("http://", "https://"))]
+
+
+def failing_company(postings: list[dict], site: str, *, own_name: bool = True) -> list[dict]:
+    """Postings with no company, or (a board's search) the site's own name where the employer should stand."""
+    own = _own_names(site) if own_name else set()
+    return [p for p in postings if not _text(p.get("company")) or _text(p.get("company")).casefold() in own]
+
+
+def failing_location(postings: list[dict], config: dict) -> list[dict]:
+    """Postings whose location names another country than the profile's (empty and remote are fine)."""
+    from door.matching import locality
+
+    return [p for p in postings if locality.location_is_non_local(p.get("location"), config)]
+
+
+def failing_posted_at(postings: list[dict], mode: str, *, future_days: float = _GRACE_DAYS,
+                      now: datetime | None = None) -> list[dict]:
+    """Postings dated in the future or older than the mode allows. A missing date is no fault here."""
+    now = now or datetime.now(timezone.utc)
+    latest = now + timedelta(days=future_days)
+    earliest = now - timedelta(days=_MAX_PAST_DAYS[mode])
+    out = []
+    for p in postings:
+        if p.get("posted_at") in (None, ""):
+            continue
+        when = _when(p["posted_at"])
+        if when is None or when > latest or when < earliest:
+            out.append(p)
+    return out
+
+
+def failing_description(postings: list[dict], minimum: int = _DESCRIPTION_MIN) -> list[dict]:
+    """Postings whose description is shorter than *minimum* characters."""
+    return [p for p in postings if len(_text(p.get("description"))) < minimum]
+
+
+def failing_boilerplate(postings: list[dict]) -> list[dict]:
+    """Postings whose description is not the ad: a wall page, a copy of the title or company (or a fallback built
+    from them), or the same whole text under several different titles. An employer's ads may all open with the same
+    "about us", and one job posted in several places may repeat its text under the same title: neither is boilerplate."""
+    bad = []
+    texts: dict[str, list[dict]] = {}
+    for p in postings:
+        text = _text(p.get("description"))
+        if not text:
+            continue
+        flat = _squash(text)
+        title, company = _squash(_text(p.get("title"))), _squash(_text(p.get("company")))
+        fallbacks = {title, company, f"{title} {company}".strip(), f"{company} {title}".strip()}
+        if (len(text) < _WALL_MAX and _WALL.search(text)) or flat in fallbacks or (
+                title and company and flat.startswith(title) and flat.endswith(company) and len(flat) < len(title) + len(company) + 40):
+            bad.append(p)
+            continue
+        texts.setdefault(flat, []).append(p)
+    for group in texts.values():
+        if len({_squash(_text(p.get("title"))) for p in group}) >= 3:
+            bad.extend(group)
+    return bad
+
+
+def _example(p: dict, field: str) -> str:
+    value = _text(p.get(field))[:40]
+    return f"{_text(p.get('title'))[:30]!r} ({field}={value!r})"
+
+
+def _held(failures: list[dict], total: int, share: float) -> bool:
+    """Whether a rule held: with fewer than three postings a share means all, else at least *share* passed."""
+    if total < 3:
+        return not failures
+    return (total - len(failures)) / total >= share
+
+
+_PRESENT_SHARE = 0.6     # a place or a date most postings lack is a change; a few without one are not
+
+
+def assert_field_contract(site: str, postings: list[dict], config: dict | None = None, *, mode: str = "search",
+                          check: str | None = None, sample: int = 10, descriptions: bool = True, dates: bool = False,
+                          locations: bool = False, companies: bool = True) -> None:
+    """The first *sample* of a live scrape's postings carry the fields a run relies on (#19).
+
+    Rules: every posting validates as a `JobPosting` and has a title and an http(s) url; the company is not empty
+    and (a board's search) not the site's own name; a country board's locations are not another country's (when
+    *config* has a location; not in `collect` mode); `posted_at`, when present, is not in the future nor older
+    than the mode allows; the description is long enough and no wall page, no copy of the title or company, and
+    not the same opening text on several ads. A rule holds when 90% of the sample passes (all of it for fewer than
+    three postings); `live_matrix.FIELD_EXCEPTIONS[site]` loosens it.
+
+    The live mode tests switch rules: without *descriptions* (a listing page carries no ad text, its teaser is often
+    built from the title) neither the description's length nor the boilerplate rule is read; with *dates* and *locations* a
+    `posted_at` and a `location` must be there on `_PRESENT_SHARE` of the sample; without *companies* (a list that
+    names no employer, its ad pages do) the company is not read. The message names the site, *check* (the live
+    mode, ``listing``) or else *mode*, and the rule: ``reed [listing]: rule 'location' held for 2/10 ...``.
+    """
+    from pydantic import ValidationError
+
+    from door.core.models import JobPosting
+    from live_matrix import FIELD_EXCEPTIONS
+
+    assert mode in _MAX_PAST_DAYS, f"unknown mode {mode!r}"
+    label = check or mode
+    assert postings, fail(site, label, "rule 'no postings': the scrape returned nothing")
+    config = config or {}
+    exc = FIELD_EXCEPTIONS.get(site, {})
+    rows = list(postings[:sample])
+    n = len(rows)
+    for p in rows:
+        try:
+            JobPosting.model_validate(p)
+        except ValidationError as err:
+            raise AssertionError(fail(site, label, f"rule 'model': not a JobPosting: {err.errors()[:2]}")) from err
+
+    def rule(name: str, failures: list[dict], share: float, field: str) -> None:
+        if _held(failures, n, share):
+            return
+        seen = [_example(p, field) for p in failures[:3]]
+        raise AssertionError(fail(site, label, f"rule '{name}' held for {n - len(failures)}/{n} postings "
+                                               f"(needs {round(share * 100)}%); e.g. {'; '.join(seen)}"))
+
+    rule("title", failing_title(rows), 1.0, "title")
+    rule("url", failing_url(rows), 1.0, "url")
+    if companies:
+        rule("company", failing_company(rows, site, own_name=mode == "search"), exc.get("company_share", _COMPANY_SHARE),
+             "company")
+    if locations:
+        rule("location", [p for p in rows if not _text(p.get("location"))], _PRESENT_SHARE, "location")
+    if mode == "search" and exc.get("location", True) and config.get("location"):
+        from door.core import sites
+
+        if site in sites.SITES and sites.SITES[site].countries:
+            rule("location", failing_location(rows, config), exc.get("location_share", _LOCATION_SHARE), "location")
+    if dates:
+        rule("posted_at", [p for p in rows if p.get("posted_at") in (None, "")], _PRESENT_SHARE, "posted_at")
+    rule("posted_at", failing_posted_at(rows, mode, future_days=exc.get("posted_at_future_days", _GRACE_DAYS)),
+         _POSTED_AT_SHARE, "posted_at")
+    described = exc.get("description_share", _DESCRIPTION_SHARE)
+    if descriptions and described:
+        rule("description", failing_description(rows, exc.get("description_min", _DESCRIPTION_MIN)), described,
+             "description")
+    if descriptions:
+        rule("boilerplate", failing_boilerplate(rows), 1.0 if n < 3 else 0.9, "description")
 
 
 def fail(site: str, mode: str, message: str) -> str:
@@ -132,117 +331,28 @@ def assert_detects(platform: str, careers=None) -> None:
     raise AssertionError(fail(platform, "detection", f"{row.page} {got}, expected {row.platform} {row.entry!r}. {notes}".strip()))
 
 
-# --- the field contract (#19) ---------------------------------------------------------------------------------------
-
-SAMPLE = 10              # postings a contract reads, the first ones
-DESCRIPTION_FLOOR = 200  # characters a detail page's description has at least
-MAX_AGE_DAYS = 730       # a posting older than this is not a plausible date
-# The share of the sample that must keep each rule: one odd posting in ten is tolerated, a place or a date that most
-# postings lack is not.
-SHARES = {"title": 0.9, "url": 0.9, "company": 0.8, "location": 0.6, "local": 0.8, "posted_at": 0.6,
-          "description": 0.8}
-BOILERPLATE_SHARE = 0.5  # more than this share of one description is boilerplate, not ads
-
-
-def _site_names(site: str) -> set[str]:
-    from door.core import sites
-
-    entry = sites.SITES.get(site)
-    return {site.lower(), *((entry.label.lower(),) if entry is not None and entry.label else ())}
-
-
-def _country_board(site: str) -> bool:
-    from door.core import sites
-
-    entry = sites.SITES.get(site)
-    return entry is not None and entry.board and bool(entry.countries)
-
-
-def _plausible(posted_at, now) -> bool:
-    from datetime import timedelta
-
-    from door.scrapers import parse_iso_date
-
-    when = posted_at if hasattr(posted_at, "tzinfo") else parse_iso_date(posted_at)
-    if when is None:
-        return False
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=now.tzinfo)
-    return now - timedelta(days=MAX_AGE_DAYS) <= when <= now + timedelta(days=2)
-
+# --- the field contract of a live mode (#19) ------------------------------------------------------------------------
 
 def assert_contract(site: str, postings: list, mode: str, *, config: dict, descriptions: bool | None = None,
                     dates: bool | None = None, locations: bool | None = None, companies: bool = True) -> None:
-    """The fields of *site*'s postings still parse, over the first `SAMPLE` (mode *mode*: ``listing``, ``page2``,
-    ``details``). Each rule must hold for its `SHARES` of the sample; the first that does not fails, naming the site,
-    the mode and the rule (``reed [listing]: location: 2/10 ...``):
+    """`assert_field_contract` for a live mode test (*mode*: ``listing``, ``page2``, ``details``): a board's postings
+    are a search's, a feed's a collect's, and the failure names the site and the mode.
 
-    - every posting is a `JobPosting`; ``title``, ``url`` and (with *companies*) ``company`` are not empty, the
-      company is not the site's own name (a listing that names no employer, only its ad page does: *companies* off);
-    - with *locations*: ``location`` is not empty, and for a country board with a ``location`` in *config* whose
-      country The other door knows, local (`locality.location_is_non_local`; a feed lists an employer's jobs
-      everywhere, and the engine drops the foreign ones);
-    - with *dates*: ``posted_at`` is plausible: within `MAX_AGE_DAYS` and not more than two days ahead;
-    - with *descriptions* (a detail page was read): ``description`` has `DESCRIPTION_FLOOR` characters, and no one
-      text is most of them (boilerplate).
-
-    Left as None, *descriptions* is on for ``details`` only, and *locations* and *dates* off for it (two ads are no
-    sample for a share; the listing checked them).
+    Left as None, a listing or page 2 needs a date and a place on most postings and no description (a listing page
+    carries no ad text); ``details`` needs the description and leaves the date and the place to the listing (two
+    ads are no sample for a share). *companies* off: the list names no employer (its ad pages do).
     """
+    from door.core import sites
+
     details = mode == "details"
-    descriptions = details if descriptions is None else descriptions
-    locations = not details if locations is None else locations
-    dates = not details if dates is None else dates
-    from datetime import datetime, timezone
-
-    from pydantic import ValidationError
-
-    from door.core.models import JobPosting
-    from door.matching import locality
-
-    sample = list(postings)[:SAMPLE]
-    assert sample, fail(site, mode, "no postings")
-    for p in sample:
-        try:
-            JobPosting.model_validate(p)
-        except ValidationError as exc:
-            raise AssertionError(fail(site, mode, f"not a JobPosting: {exc.errors()[:2]} in {p.get('url') or p.get('id')}"))
-
-    own = _site_names(site)
-    now = datetime.now(timezone.utc)
-    rules = [
-        ("title", lambda p: bool((p.get("title") or "").strip()), sample),
-        ("url", lambda p: (p.get("url") or "").startswith("http"), sample),
-    ]
-    if companies:
-        rules.append(("company", lambda p: bool((p.get("company") or "").strip()) and p["company"].strip().lower() not in own,
-                      sample))
-    if locations:
-        rules.append(("location", lambda p: bool((p.get("location") or "").strip()), sample))
-        if _country_board(site) and config.get("location") and locality.enabled(config):
-            placed = [p for p in sample if (p.get("location") or "").strip()]
-            rules.append(("local", lambda p: not locality.location_is_non_local(p["location"], config), placed))
-    if dates:
-        rules.append(("posted_at", lambda p: _plausible(p.get("posted_at"), now), sample))
-    if descriptions:
-        rules.append(("description", lambda p: len((p.get("description") or "").strip()) >= DESCRIPTION_FLOOR, sample))
-
-    for rule, keeps, among in rules:
-        if not among:
-            continue
-        broken = [p for p in among if not keeps(p)]
-        if len(among) - len(broken) < SHARES[rule] * len(among):
-            shown = [{k: p.get(k) for k in ("title", "company", "location", "posted_at", "url")} for p in broken[:2]]
-            if rule == "description":
-                shown = [{"url": p.get("url"), "description": (p.get("description") or "")[:80]} for p in broken[:2]]
-            raise AssertionError(fail(site, mode, f"{rule}: {len(broken)}/{len(among)} break it, e.g. {shown}"))
-
-    if descriptions:
-        texts = [(p.get("description") or "").strip() for p in sample]
-        if len(texts) >= 3:
-            top = max(texts.count(t) for t in set(texts))
-            assert top <= BOILERPLATE_SHARE * len(texts), \
-                fail(site, mode, f"description: {top}/{len(texts)} postings share one text (boilerplate): {texts[0][:80]!r}")
+    entry = sites.SITES.get(site)
+    assert_field_contract(
+        site, postings, config, mode="search" if entry is not None and entry.board else "collect", check=mode,
+        descriptions=details if descriptions is None else descriptions,
+        dates=not details if dates is None else dates,
+        locations=not details if locations is None else locations,
+        companies=companies,
+    )
 
 
 # --- probe-sized (#19) --------------------------------------------------------------------------------------------
