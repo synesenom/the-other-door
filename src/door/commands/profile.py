@@ -416,7 +416,8 @@ def _sign_in(claude_path: str) -> None:
     """`claude auth login`, on this terminal (a browser opens)."""
     from door.core import claude_cli
 
-    subprocess.run([claude_path, "auth", "login"], env=claude_cli.env(profile_dir=workspace.PROFILE_DIR), check=False)
+    # the shell wizard's sign-in: claude reads the code from the keyboard, so the terminal's stdin
+    subprocess.run([claude_path, "auth", "login"], env=claude_cli.env(profile_dir=workspace.PROFILE_DIR), check=False, stdin=None)
 
 
 def _prereq_step() -> None:

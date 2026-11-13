@@ -78,7 +78,7 @@ def _run_scraper_fixer(site: str, raw_path: Path, timeout_s: float | None = _DEF
         result = subprocess.run(
             [installers.find_claude() or "claude", "-p", prompt, "--allowedTools", ",".join(_fixer_tools(repo_root, raw_path)),
              "--settings", json.dumps(_FIXER_SETTINGS), *claude_cli.STREAM_ARGS],
-            capture_output=True, text=True, cwd=repo_root, timeout=timeout_s, env=claude_cli.env(),
+            capture_output=True, text=True, cwd=repo_root, timeout=timeout_s, env=claude_cli.env(), stdin=subprocess.DEVNULL,
         )
     except subprocess.TimeoutExpired:
         raise ScraperFixerError(f"timed out after {timeout_s:.0f}s") from None

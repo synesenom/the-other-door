@@ -1,6 +1,8 @@
 """Unit tests for src/door/i18n: the language and country data files and the
 helpers the matching passes build their word lists from."""
 
+import os
+
 import pytest
 from pydantic import ValidationError
 
@@ -836,3 +838,19 @@ def test_cv_conventions_follow_the_location_s_country_and_default_to_neutral():
     neutral = i18n.cv_conventions_for_location("Atlantis")
     assert (neutral.photo, neutral.date_of_birth, neutral.max_pages) == ("no", False, 2)
     assert i18n.cv_conventions_for_location(None).photo == "no"
+
+
+def test_preload_loads_the_language_libraries_with_one_blas_thread(monkeypatch):
+    # #18: numpy's OpenBLAS hung as it loaded on a worker thread of the Windows server; it is loaded once, up front
+    import sys
+
+    monkeypatch.delenv("OPENBLAS_NUM_THREADS", raising=False)
+    i18n.preload_language_detection()
+    assert os.environ["OPENBLAS_NUM_THREADS"] == "1"
+    assert "numpy" in sys.modules and "py3langid.langid" in sys.modules
+
+
+def test_preload_keeps_a_blas_thread_count_the_user_set(monkeypatch):
+    monkeypatch.setenv("OPENBLAS_NUM_THREADS", "4")
+    i18n.preload_language_detection()
+    assert os.environ["OPENBLAS_NUM_THREADS"] == "4"

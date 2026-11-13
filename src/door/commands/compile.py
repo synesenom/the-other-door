@@ -116,7 +116,7 @@ def _run_compilers(tex_path: Path, output_dir: Path, entry: dict) -> None:
         else:
             argv = [compiler, "-no-shell-escape", "-interaction=nonstopmode", "-output-directory", str(output_dir), str(tex_path)]
         try:
-            result = subprocess.run(argv, capture_output=True, text=True)
+            result = subprocess.run(argv, capture_output=True, text=True, stdin=subprocess.DEVNULL)
         except FileNotFoundError:
             continue
         ran_any = True

@@ -119,6 +119,13 @@ export function resolvePackagedSpawn(opts: { resourcesPath: string; home: string
     const value = env[key]
     if (value) child[key] = value
   }
+  // What Windows needs to run a program the server starts, an npm-installed claude.cmd above all (#18): the
+  // command interpreter, the extensions a bare name may have, the system folder and a temp folder. Windows
+  // names are any case, so each is kept under the name it has.
+  if (platform === 'win32') {
+    const wanted = new Set(['COMSPEC', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP'])
+    for (const [key, value] of Object.entries(env)) if (value && wanted.has(key.toUpperCase())) child[key] = value
+  }
   return { command: python, args: ['-s', '-m', 'door.mcp_server'], cwd: path.join(resourcesPath, 'door'), env: child }
 }
 
