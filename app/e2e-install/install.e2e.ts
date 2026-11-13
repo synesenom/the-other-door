@@ -4,6 +4,7 @@
 // edges that would leave the computer answered from the test world (redirect.ts); Tectonic is the real, bundled
 // one, so the first Prepare downloads its LaTeX packages. No real claude, no plan, no API key: the world's
 // stand-in claude is first on PATH.
+import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 import type { Page } from '@playwright/test'
@@ -83,8 +84,17 @@ test('the installed app: set-up, the first run and Prepare on what the installer
     // name where the first run stood (#18): its progress record, the log's errors, the world's last calls, the screen
     const progress = existsSync(join(world.home, 'jobs', '.progress.json')) ? readFileSync(join(world.home, 'jobs', '.progress.json'), 'utf8') : 'none'
     const screen = await page.getByRole('main').innerText().catch(() => '')
+    const starts = existsSync(join(world.dir, 'claude-starts.jsonl')) ? readFileSync(join(world.dir, 'claude-starts.jsonl'), 'utf8').trim().split('\n').slice(-6).join(' | ') : 'none'
+    let procs = ''
+    if (process.platform === 'win32') {
+      try {
+        procs = execFileSync('powershell', ['-NoProfile', '-Command',
+          "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'python|claude|door|tectonic' } | ForEach-Object { \"$($_.ProcessId) <$($_.ParentProcessId) $($_.Name): $($_.CommandLine.Substring(0, [Math]::Min(300, $_.CommandLine.Length)))\" }"],
+          { encoding: 'utf8', timeout: 30_000 })
+      } catch (p) { procs = `could not list: ${(p as Error).message}` }
+    }
     throw new Error(`${(e as Error).message}\nprogress: ${progress.slice(0, 3000)}\nlog errors: ${JSON.stringify(errors(world.home))}` +
-      `\nlast calls: ${JSON.stringify(world.calls().slice(-15))}\nscreen: ${screen.slice(0, 1500)}`)
+      `\nlast calls: ${JSON.stringify(world.calls().slice(-15))}\nscreen: ${screen.slice(0, 1500)}\nclaude starts: ${starts}\nprocesses:\n${procs}`)
   }
   await expect(page.getByRole('button', { name: /^Something keeps going wrong/ })).toHaveCount(0)
   expect(world.exists('profile/config.json')).toBe(true)

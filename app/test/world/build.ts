@@ -188,6 +188,9 @@ function launcherSource(exe: string, file: string, worldDir: string): string {
   return `using System; using System.Diagnostics;
 class Launcher {
   static int Main() {
+    try { return Run(); } catch (Exception e) { Console.Error.WriteLine("launcher: " + e.Message); return 1; }
+  }
+  static int Run() {
     string raw = Environment.CommandLine;
     int at = raw.StartsWith("\\"") ? raw.IndexOf('"', 1) + 1 : raw.IndexOf(' ');
     string rest = at < 0 || at >= raw.Length ? "" : raw.Substring(at);
