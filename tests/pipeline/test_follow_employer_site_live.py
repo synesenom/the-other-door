@@ -5,7 +5,7 @@ import pytest
 
 from door.commands import companies as companies_cmd
 from door.core import ats_detect, wikidata
-from live_utils import skip_if_refused_in_ci
+from live_utils import not_reached
 
 pytestmark = pytest.mark.live
 
@@ -34,7 +34,7 @@ def _context():
 def test_wikidata_names_the_employers_website(name, website):
     found, note = wikidata.Lookup(_LOCATION).employer(companies_cmd._session(), name)
     if found is None and note and "Wikidata" in note and ("did not answer" in note or "stopped answering" in note):
-        skip_if_refused_in_ci("wikidata", [note])
+        not_reached("wikidata", note)
     assert found is not None, note
     assert any(website in site for site in found.sites())
 

@@ -51,6 +51,23 @@ def test_a_site_not_run_or_only_skipped_is_unknown():
     assert smoke_report.site_outcomes(xml, ["hellowork", "teamtailor"]) == {"hellowork": "unknown", "teamtailor": "unknown"}
 
 
+def test_a_site_its_test_could_not_reach_is_not_reached():
+    """A refusal (a 403, a 429, a wall) is not a change of the site: its own verdict, never a silent ❓."""
+    xml = _junit(_case("test_reed_live", body='<skipped message="not reached: reed: 403 Forbidden"/>'),
+                 _case("test_euraxess_live", body='<skipped message="no network"/>'))
+    assert smoke_report.site_outcomes(xml, ["reed", "euraxess"]) == {"reed": "unreached", "euraxess": "unknown"}
+
+
+def test_a_failure_beats_not_reached_and_a_pass_beats_it_too():
+    xml = _junit(
+        _case("test_greenhouse_live", "test_a", '<skipped message="not reached: greenhouse: 429"/>'),
+        _case("test_greenhouse_live", "test_b", '<failure message="x">x</failure>'),
+        _case("test_lever_live", "test_a", '<skipped message="not reached: lever: 429"/>'),
+        _case("test_lever_live", "test_b"),
+    )
+    assert smoke_report.site_outcomes(xml, ["greenhouse", "lever"]) == {"greenhouse": "fail", "lever": "pass"}
+
+
 def test_tests_that_are_not_site_smoke_tests_are_ignored():
     xml = _junit(_case("test_sync_live"), _case("test_matcher_golden", body='<failure message="x">x</failure>'))
     assert smoke_report.site_outcomes(xml, ["greenhouse"]) == {"greenhouse": "unknown"}
@@ -80,6 +97,7 @@ def test_render_lists_every_dimension_with_its_symbols_and_the_run():
     assert "| greenhouse | ➖ |" in md
     assert "| workable | ❓ |" in md
     assert "2026-10-12" in md
+    assert "⛔ not reached" in md and "❌ changed" in md
     assert "https://github.com/o/r/actions/runs/1" in md
 
 
@@ -216,12 +234,11 @@ def test_a_list_this_run_did_not_test_keeps_its_last_result_and_date(tmp_path):
 
 def test_a_carried_list_from_an_older_page_takes_that_pages_date():
     old = "# Live smoke tests\n\nNo workflow run yet (2026-10-30). x\n\n## Boards\n\n| Name | Status |\n|------|--------|\n| jobindex | ✅ |\n"
-    assert smoke_report.previous_lists(old) == {"Boards": ([("jobindex", "pass", "2026-10-30")], "2026-10-30")}
+    assert smoke_report.previous_lists(old) == {"Boards": ([("jobindex", "pass", "2026-10-30", "")], "2026-10-30")}
 
 
-def test_a_site_this_run_could_not_check_keeps_its_last_result_and_its_date(tmp_path):
-    """Some sites refuse GitHub's runners: the weekly run skips them, and the result of the last run that
-    reached them (a local one) stays, dated, instead of turning into ❓."""
+def test_a_site_this_run_did_not_run_keeps_its_last_result_and_its_date(tmp_path):
+    """A row skipped for another reason (a test not run here) keeps the last run's result, dated."""
     out = tmp_path / "live-smoke.md"
     local = tmp_path / "local.xml"
     local.write_text(_junit(_case("test_jobindex_live"), _case("test_euraxess_live")), encoding="utf-8")
@@ -230,7 +247,7 @@ def test_a_site_this_run_could_not_check_keeps_its_last_result_and_its_date(tmp_
     ci = tmp_path / "ci.xml"
     ci.write_text(_junit(
         _case("test_jobindex_live"),
-        _case("test_euraxess_live", body='<skipped message="euraxess refused the CI runner"/>'),
+        _case("test_euraxess_live", body='<skipped message="not run here"/>'),
     ), encoding="utf-8")
     smoke_report.main([str(ci), str(out), "--badges", str(tmp_path), "--date", "2026-11-16"])
     boards = out.read_text(encoding="utf-8").split("## Boards", 1)[1].split("## ", 1)[0]
@@ -246,6 +263,58 @@ def test_a_site_never_checked_stays_unknown(tmp_path):
     smoke_report.main([str(ci), str(out), "--date", "2026-11-16"])
     boards = out.read_text(encoding="utf-8").split("## Boards", 1)[1].split("## ", 1)[0]
     assert "| euraxess | ❓ |  |" in boards
+
+
+def _not_reached(site: str) -> str:
+    return _case(f"test_{site}_live", body=f'<skipped message="not reached: {site}: 403 Forbidden"/>')
+
+
+def _boards(text: str) -> str:
+    return text.split("## Boards", 1)[1].split("## ", 1)[0]
+
+
+def test_a_site_not_reached_says_so_with_its_last_result_and_how_many_runs_in_a_row(tmp_path):
+    out = tmp_path / "live-smoke.md"
+    runs = [("2026-11-02", _case("test_reed_live")), ("2026-11-09", _not_reached("reed")),
+            ("2026-11-16", _not_reached("reed"))]
+    for date, case in runs:
+        (tmp_path / "x.xml").write_text(_junit(case), encoding="utf-8")
+        smoke_report.main([str(tmp_path / "x.xml"), str(out), "--date", date])
+    assert "| reed | ⛔ | 2026-11-16 | not reached 2 runs in a row; last ✅ 2026-11-02 |" in _boards(out.read_text())
+
+
+def test_reaching_the_site_again_ends_the_streak(tmp_path):
+    out = tmp_path / "live-smoke.md"
+    for date, case in [("2026-11-09", _not_reached("reed")), ("2026-11-16", _case("test_reed_live"))]:
+        (tmp_path / "x.xml").write_text(_junit(case), encoding="utf-8")
+        smoke_report.main([str(tmp_path / "x.xml"), str(out), "--date", date])
+    assert "| reed | ✅ | 2026-11-16 |  |" in _boards(out.read_text())
+
+
+def test_a_run_that_did_not_test_a_not_reached_site_keeps_its_streak(tmp_path):
+    out = tmp_path / "live-smoke.md"
+    for date, xml in [("2026-11-09", _junit(_not_reached("reed"))), ("2026-11-12", _junit(_case("test_jobindex_live")))]:
+        (tmp_path / "x.xml").write_text(xml, encoding="utf-8")
+        smoke_report.main([str(tmp_path / "x.xml"), str(out), "--date", date])
+    assert "| reed | ⛔ | 2026-11-09 | not reached 1 run in a row |" in _boards(out.read_text())
+
+
+def test_sites_not_reached_for_three_runs_are_written_out_for_their_own_issue(tmp_path):
+    """Only a change opens the failure issue; a site not reached for weeks gets flagged on its own."""
+    out, flagged = tmp_path / "live-smoke.md", tmp_path / "unreached.md"
+    for date in ("2026-11-02", "2026-11-09", "2026-11-16"):
+        (tmp_path / "x.xml").write_text(_junit(_not_reached("reed"), _not_reached("lever")
+                                               if date != "2026-11-02" else _case("test_lever_live")), encoding="utf-8")
+        smoke_report.main([str(tmp_path / "x.xml"), str(out), "--date", date, "--unreached", str(flagged)])
+    text = flagged.read_text()
+    assert "reed" in text and "3 runs in a row" in text and "lever" not in text
+
+
+def test_nothing_long_unreached_writes_an_empty_file(tmp_path):
+    flagged = tmp_path / "unreached.md"
+    (tmp_path / "x.xml").write_text(_junit(_not_reached("reed")), encoding="utf-8")
+    smoke_report.main([str(tmp_path / "x.xml"), str(tmp_path / "out.md"), "--date", "2026-11-16", "--unreached", str(flagged)])
+    assert flagged.read_text() == ""
 
 
 def test_the_script_finds_the_package_without_src_on_the_path(tmp_path):
@@ -273,13 +342,15 @@ _LISTS = [
 
 
 def test_each_dimension_has_a_badge_with_how_many_passed():
-    """Green only when every one in the list passed; one failed, unknown or untested makes it red."""
-    assert smoke_report.dimension_badges(_LISTS) == [
+    """Green when every one in the list passed, red when one changed, orange when one was not reached,
+    not checked or has no live test."""
+    assert smoke_report.dimension_badges([*_LISTS, ("Boards", [("reed", "unreached"), ("jobindex", "pass")])]) == [
         ("live-boards.svg", "boards", "2/2", "green"),
         ("live-feeds.svg", "employer feeds", "1/2", "red"),
         ("live-countries.svg", "countries", "1/1", "green"),
-        ("live-languages.svg", "languages", "1/2", "red"),
+        ("live-languages.svg", "languages", "1/2", "orange"),
         ("live-matcher.svg", "matcher", "1/2", "red"),
+        ("live-boards.svg", "boards", "1/2", "orange"),
     ]
 
 
