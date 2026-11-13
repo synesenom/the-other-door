@@ -118,9 +118,19 @@ validation_feedback: <full content of thoughts/validate/<issue_number>.md>
 
 Then validate once more and write the new report to `thoughts/validate/<issue_number>.md`. Proceed to Step 4 regardless of the second result.
 
+If the validator names a small gap it would still accept (a doc line, a comment), fix it yourself, commit it, and do not re-validate.
+
 ---
 
-## Step 4: Final report
+## Step 4: Open the pull request
+
+On **PASS**, open the PR without asking: run `/dev-pr` and follow it to the end (branch name check, merge `main`, push, a body in its format built from the research, plan and validation reports, so the release notes can use it). A suite failure the validator showed also fails on a clean `main` goes in the body's test plan, said plainly.
+
+On **FAIL** after two attempts, do not open a PR: the branch stays local, and Step 5 says why.
+
+---
+
+## Step 5: Final report
 
 Summarise to the user:
 
@@ -130,6 +140,7 @@ Path:        Simple | Complex
 Attempts:    1 | 2
 Commit:      <short hash>
 Validation:  PASS | FAIL
+PR:          #<number> <url> | not opened (FAIL)
 ```
 
 Then add a **What was implemented** section in plain prose (3–6 sentences). Cover:
