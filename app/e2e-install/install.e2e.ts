@@ -77,7 +77,15 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   }
   await saveAndSearch(page).click()
   await expect(page.getByRole('heading', { name: 'Finding jobs', level: 1 })).toBeVisible(LAUNCH)
-  await expect(summary(page)).toBeVisible({ timeout: 5 * 60_000 })
+  try {
+    await expect(summary(page)).toBeVisible({ timeout: 5 * 60_000 })
+  } catch (e) {
+    // name where the first run stood (#18): its progress record, the log's errors, the world's last calls, the screen
+    const progress = existsSync(join(world.home, 'jobs', '.progress.json')) ? readFileSync(join(world.home, 'jobs', '.progress.json'), 'utf8') : 'none'
+    const screen = await page.getByRole('main').innerText().catch(() => '')
+    throw new Error(`${(e as Error).message}\nprogress: ${progress.slice(0, 3000)}\nlog errors: ${JSON.stringify(errors(world.home))}` +
+      `\nlast calls: ${JSON.stringify(world.calls().slice(-15))}\nscreen: ${screen.slice(0, 1500)}`)
+  }
   await expect(page.getByRole('button', { name: /^Something keeps going wrong/ })).toHaveCount(0)
   expect(world.exists('profile/config.json')).toBe(true)
   expect(world.exists('profile/cv.md')).toBe(true)
