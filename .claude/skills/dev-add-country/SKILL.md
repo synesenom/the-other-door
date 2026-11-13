@@ -76,13 +76,15 @@ Check every new site has its rows in `docs/job-sites.md` and `docs/architecture.
 
 ## Step 6: Live smoke
 
-The weekly live-smoke workflow already runs every `tests/**/test_*_live.py`, and `scripts/smoke_report.py` lists each dimension on its own (boards, employer feeds, countries, languages), so the new sites, the country and its languages join `docs/badges/live-smoke.md` and the README's per-dimension badges on its next run: don't edit those generated files. Run them now, with the country's and its new languages' runs:
+The weekly live-smoke workflow already runs every `tests/**/test_*_live.py`, and `scripts/smoke_report.py` lists each dimension on its own (boards, employer feeds), so the new sites join `docs/badges/live-smoke.md` and the README's per-dimension badges on its next run: don't edit those generated files. Run them now, and save the country's and its new languages' real ads for the offline checks (`tests/i18n/corpus/`), then run those:
 
 ```bash
 ./scripts/run-test.sh --live tests/scrapers/<pkg>test_<site>_live.py …   # every new and extended site; <pkg>: boards/, discovery/ or feeds/
-./scripts/run-test.sh --live tests/i18n/test_countries_live.py -k <cc>
-./scripts/run-test.sh --live tests/i18n/test_languages_live.py -k "<code> or …"   # each new language
+poetry run python scripts/refresh_corpus.py <cc> <code> …                # the country and each new language
+poetry run pytest tests/i18n/test_country_corpus.py tests/i18n/test_language_corpus.py
 ```
+
+Commit what `refresh_corpus.py` wrote.
 
 A site's failure goes back to that site's builder once, as in step 4; a country's or a language's to `country-data-writer` once, with the failure as `validation_feedback`.
 

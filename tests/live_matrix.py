@@ -1,8 +1,9 @@
-"""The live smoke matrix past the per-site tests: one run per country and one per ad language.
+"""The rows past the per-site tests: one per country and one per ad language, and the sites without a live test.
 
 Not a test module itself (no `test_` prefix). A site's own live test (`test_<site>_live.py`) proves
-the site still answers; these prove each country's data and each language's data still fit real
-ads, each on its own:
+the site still answers; `scripts/refresh_corpus.py` saves each row's real ads in `tests/i18n/corpus/`, and
+the offline checks (`tests/i18n/test_country_corpus.py`, `test_language_corpus.py`) prove each country's
+data and each language's data still fit them, each on its own:
 
 - a **country** run reads page 1 of ads (`probe`, one request) from a board or a discovery source
   serving the country, from its largest city, and checks the country file: the ads' locations name
@@ -48,11 +49,10 @@ def serves(run: Run) -> bool:
     return not countries or (country is not None and country.code.lower() in countries)
 
 
-# Country code -> a source of the country's ads and a keyword with plenty of them (Hungary has no board of its
-# own: EURAXESS's Hungarian list).
+# Country code -> a source of the country's ads and a keyword with plenty of them.
 COUNTRIES: dict[str, Run] = {
     "dk": Run("Copenhagen", "jobindex", "projektleder"),
-    "hu": Run("Budapest", "euraxess", "research"),
+    "hu": Run("Budapest", "kozigallas", "ápoló"),
     "fr": Run("Paris", "francetravail", "chef de projet"),
     "se": Run("Stockholm", "arbetsformedlingen", "project manager"),
     "gb": Run("London", "reed", "project manager"),
