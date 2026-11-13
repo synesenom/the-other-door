@@ -67,7 +67,14 @@ test('the installed app: set-up, the first run and Prepare on what the installer
 
   // set-up: the CV in, read, reviewed and saved; the first run starts (a first screen other than Sources is named)
   await expect(page.getByRole('heading', { level: 1 }).first()).toHaveText('Tell me about yourself', LAUNCH)
-  await toReview(page, world, os)
+  try {
+    await toReview(page, world, os)
+  } catch (e) {
+    // name what Windows (#18) stopped on: the screen's error, the log's errors, the stand-in claude's calls with their times
+    const alerts = await page.getByRole('alert').allInnerTexts().catch(() => [])
+    const calls = world.calls().filter((c) => c.kind === 'claude').slice(-10)
+    throw new Error(`${(e as Error).message}\nalerts: ${JSON.stringify(alerts)}\nlog errors: ${JSON.stringify(errors(world.home))}\nclaude calls: ${JSON.stringify(calls)}`)
+  }
   await saveAndSearch(page).click()
   await expect(page.getByRole('heading', { name: 'Finding jobs', level: 1 })).toBeVisible(LAUNCH)
   await expect(summary(page)).toBeVisible({ timeout: 5 * 60_000 })
