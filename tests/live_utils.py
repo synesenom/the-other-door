@@ -22,7 +22,7 @@ NOT_REACHED = "not reached:"
 # How a scraper's recorded error says the site refused or was unreachable (requests' and the scrapers' wording).
 _REFUSAL = re.compile(
     r"\b(?:401|403|429|503)\b|Too Many Requests|Forbidden|Unauthorized|Service Unavailable|pushback"
-    r"|timed out|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
+    r"|timed out|Timeout\b|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
     re.IGNORECASE,
 )
 
@@ -288,8 +288,10 @@ def assert_listing(site: str, module, config: dict, **contract) -> list[dict]:
     with probe_sized(site, "listing"):
         result = module.probe(config)
     assert result is not None, fail(site, "listing", f"no probe for {config}")
-    if result.get("wall") or result.get("unreachable"):
+    # A probe calls any failed fetch unreachable; a 404 or another answer that is no refusal is a change.
+    if result.get("wall") or (result.get("unreachable") and refused([result.get("reason") or "unreachable"])):
         not_reached(site, result.get("reason") or "refused")
+    assert not result.get("unreachable"), fail(site, "listing", f"the page is gone: {result.get('reason')}")
     assert result.get("robots") != "disallowed", fail(site, "listing", f"robots.txt disallows it: {result.get('reason')}")
     assert result.get("structure_ok"), fail(site, "listing", f"the page no longer parses: {result.get('reason')}")
     assert_contract(site, result["postings"], "listing", config=config, **contract)

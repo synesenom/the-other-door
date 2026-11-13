@@ -285,6 +285,8 @@ def test_a_listing_probe_that_was_refused_is_not_reached(result):
     ({"postings": [], "structure_ok": False, "robots": "disallowed", "reason": "RobotsBlocked"}, "robots"),
     ({"postings": [], "structure_ok": True}, "no postings"),
     (None, "no probe"),
+    ({"postings": [], "structure_ok": False, "unreachable": True,
+      "reason": "HTTPError: 404 Client Error: Not Found for url: https://x/sitemal.xml"}, "404"),
 ])
 def test_a_listing_probe_that_no_longer_parses_is_a_change(result, message):
     with pytest.raises(AssertionError, match=rf"^jobindex \[listing\]: .*{message}"):
@@ -326,3 +328,8 @@ def test_a_nonsense_keyword_with_postings_fails_naming_the_mode():
     record_answered("reed")
     with pytest.raises(AssertionError, match=r"^reed \[zero_hits\]: a nonsense keyword found 1 postings"):
         assert_zero_hits("reed", [{"id": "reed.1"}])
+
+
+def test_a_probes_timeout_is_not_reached():
+    assert refused(["ReadTimeout: HTTPSConnectionPool(host='x', port=443): Read timed out."])
+    assert refused(["ConnectTimeout: x"])
