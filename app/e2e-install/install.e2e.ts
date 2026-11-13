@@ -49,6 +49,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
 
   // doctor finds the bundled Tectonic and no checkout
   const doctor = (await page.evaluate(() => window.door.call('doctor'))) as { data: { checks: { name: string; status: string; detail: string }[] } }
+  expect(doctor.data?.checks, `doctor answered: ${JSON.stringify(doctor).slice(0, 2000)}`).toBeDefined()
   const checks = Object.fromEntries(doctor.data.checks.map((c) => [c.name, c]))
   expect(checks['latex']!.status).toBe('ok')
   expect(checks['latex']!.detail).toContain(join(resources, 'bin'))
