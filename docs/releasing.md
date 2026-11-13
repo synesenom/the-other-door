@@ -73,14 +73,15 @@ vX.Y.Z  macOS 15 arm64: 1–7 ok · macOS 13 x64: 1–7 ok · Windows 11 x64: 1�
 
 ## 3. Release notes
 
-Written for users, not developers: what they can now do, what works better, what was fixed. Start from the
-pull requests merged since the last tag:
+Written for users, not developers: a changelog of what was **Added**, **Changed**, **Fixed** and **Removed**
+since the last tag, built from the pull requests merged since then. `/dev-release` writes it and suggests the
+version from it (anything added, changed or removed: the next minor; only fixes: the next patch). It sorts each
+PR by its body's **Type** line, else its branch prefix (`feat/`, `fix/`, `change/`, `docs/`; `refactor/`,
+`test/`, `ci/`, `chore/` are internal), and takes the bullets from its "For users" section, which `/dev-pr`
+writes; "Removed or renamed" always reaches the notes. So the notes are only as good as the PRs: name the
+branch for its kind and say in the PR what a user will notice.
 
-```sh
-git log --merges --format='%s%n%b' vPREVIOUS..vX.Y.Z    # the merge titles and their PR bodies
-```
-
-Leave out tests, refactors, CI and developer tools. Put the notes on the draft (`gh release edit vX.Y.Z
+Tests, refactors, CI, dependency bumps and developer tools are counted, not described. Put the notes on the draft (`gh release edit vX.Y.Z
 --notes-file notes.md`, or the release page), with one line on installing: download the installer for your
 system, and on macOS allow it once (link to `docs/manual-app.md#opening-it-on-macos-the-first-time`).
 

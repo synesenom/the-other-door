@@ -16,6 +16,20 @@ Run these in parallel:
 - `git status --porcelain` — if there are uncommitted changes, tell the user to commit or stash them first and **stop**.
 - `git branch --show-current` — record the current branch name as `BRANCH`. If it is `main`, tell the user PRs must come from a feature branch and **stop**.
 
+### Branch name
+
+A branch is named `<type>/<slug>` (with an issue: `<type>/<issue>-<slug>`), `<slug>` two to five lowercase words joined by `-`. `<type>` is the kind of change, which `/dev-release` reads to sort it into the release notes:
+
+| Type | For |
+|------|-----|
+| `feat` | something a user can do that they could not before |
+| `fix` | a bug a user could hit |
+| `change` | existing behaviour a user notices working differently, or something removed |
+| `docs` | documentation only |
+| `refactor`, `test`, `ci`, `chore` | internal: no user would notice |
+
+Dependabot's `dependabot/...` branches and the skills' own (`feat/country-<cc>`, `feat/profession-...`, `release/vX.Y.Z`, `fix/scraper-...`) already follow it. If `BRANCH` has no such prefix, or its prefix does not match what the commits do (`git log origin/main..HEAD --oneline`), propose a name with AskUserQuestion (the proposal first, "Keep <BRANCH>" second). On a new name, and only if the branch was never pushed (`git ls-remote --heads origin <BRANCH>` is empty), `git branch -m <new>` and use it as `BRANCH`; a pushed branch keeps its name and the body's **Type** line says the kind.
+
 ---
 
 ## Step 2: Merge latest main
@@ -43,23 +57,34 @@ Retry up to 4 times with exponential backoff (2 s, 4 s, 8 s, 16 s) on network fa
 
 Run these in parallel to gather context:
 
-- `git log origin/main..HEAD --oneline` — list commits being proposed.
-- `git diff origin/main...HEAD --stat` — list changed files.
+- `git log origin/main..HEAD --format='%h %s%n%b'` — the commits being proposed, with their bodies (`closes #N` names the issues).
+- `git diff origin/main...HEAD --stat` — the changed files.
+- `git diff origin/main...HEAD` — read it: the body says what the change does, not what the commit subjects guess.
+- For each issue named: `gh issue view <N> --json title,body` — why the change was wanted.
 
-From the commits and diff, draft:
+From these, draft:
 
-- **Title**: one concise sentence (≤ 70 chars) summarising what the branch does. Prefer "add", "fix", "update" over passive voice.
-- **Body** (markdown):
+- **Title**: one concise sentence (≤ 70 chars) saying what the branch does, in a user's words when they would notice it ("Phone: pair again from Settings", not "refactor serve_policy"). Active voice: "add", "fix", "show".
+- **Body** (markdown). This body is the source of the release notes: `/dev-release` reads it months later, with no other context, so it must stand on its own.
   ```
-  ## Summary
-  <2–4 bullet points covering what changed and why>
+  **Type**: feat | fix | change | docs | internal
+  Closes #<N>   (one line per issue; leave out if none)
+
+  ## For users
+  <What someone using The other door will notice, in their words and with no code names: what they can now do, what works differently, what stopped going wrong, what was removed. One to four bullets, each one sentence a release note can take as is. For internal work: "Nothing a user would notice.">
+
+  ## Changes
+  <What changed and why, for a reviewer: the parts touched (modules, commands, tools, screens, config keys, docs), the decisions taken and the alternatives left out. As many bullets as the change needs.>
+
+  ## Removed or renamed
+  <Every command, option, tool, config key, screen or behaviour removed or renamed, with what replaces it, if anything. Leave out the section when there is none.>
 
   ## Test plan
-  - [ ] `./scripts/run-test.sh` passes (offline suite)
-  - [ ] Relevant new tests added (list them if applicable)
-  - [ ] Manual smoke test if behaviour is user-visible
+  - [x] `./scripts/run-test.sh` passes (offline suite)   (tick only what was run)
+  - [ ] <the new or changed tests, by file>
+  - [ ] <a manual check, when the behaviour is user-visible>
 
-  <session URL: https://claude.ai/code/session_01Szd7ojDtFzViocQeVTe2zi>
+  <the PR attribution lines this session's system reminder gives>
   ```
 
 ---
