@@ -76,7 +76,7 @@ Check every new site has its rows in `docs/job-sites.md` and `docs/architecture.
 
 ## Step 6: Live smoke
 
-The weekly live-smoke workflow already runs every `tests/**/test_*_live.py`, and `scripts/smoke_report.py` lists each dimension on its own (boards, employer feeds), so the new sites join `docs/badges/live-smoke.md` and the README's per-dimension badges on its next run: don't edit those generated files. Run them now, and save the country's and its new languages' real ads for the offline checks (`tests/i18n/corpus/`), then run those:
+Each new site's live file has one probe-sized test per mode that applies to it (`listing`, `page2`, `details`, `zero_hits` for a board, `detection` for a feed platform, `employers` for a discovery source; `NO_PAGE2`/`NO_DETAILS` say why one does not apply), which `tests/scrapers/test_live_modes_unit.py` checks offline; a failure names the site and the mode (`<site> [details]: ...`). The weekly live-smoke workflow already runs every `tests/**/test_*_live.py`, and `scripts/smoke_report.py` lists each dimension on its own (boards, employer feeds, employer discovery), so the new sites join `docs/badges/live-smoke.md` and the README's per-dimension badges on its next run: don't edit those generated files. Run them now, and save the country's and its new languages' real ads for the offline checks (`tests/i18n/corpus/`), then run those:
 
 ```bash
 ./scripts/run-test.sh --live tests/scrapers/<pkg>test_<site>_live.py …   # every new and extended site; <pkg>: boards/, discovery/ or feeds/

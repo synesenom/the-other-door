@@ -405,3 +405,35 @@ def test_the_discovery_sources_and_wikidata_have_a_list_of_their_own_and_detect_
 def test_the_discovery_list_has_its_badge():
     assert smoke_report.dimension_badges([("Employer discovery", [("linkedin", "pass")])]) == [
         ("live-discovery.svg", "employer discovery", "1/1", "green")]
+
+
+_FAILED = '<failure message="AssertionError: reed [details]: description: 2/2 break it">x</failure>'
+
+
+def test_a_changed_row_names_the_modes_that_changed(tmp_path):
+    """A broken mode fails the run with a message naming the site and the mode (#19): the row says which."""
+    out = tmp_path / "live-smoke.md"
+    (tmp_path / "x.xml").write_text(_junit(
+        _case("test_reed_live", "test_reed_listing_live"),
+        _case("test_reed_live", "test_reed_details_live", _FAILED),
+        _case("test_reed_live", "test_reed_page2_live", _FAILED),
+    ), encoding="utf-8")
+    smoke_report.main([str(tmp_path / "x.xml"), str(out), "--date", "2026-11-16"])
+    assert "| reed | ❌ | 2026-11-16 | changed: details, page2 |" in _boards(out.read_text())
+
+
+def test_the_changed_rows_are_written_out_for_the_failure_issue(tmp_path):
+    (tmp_path / "x.xml").write_text(_junit(
+        _case("test_reed_live", "test_reed_details_live", _FAILED),
+        _case("test_greenhouse_live", "test_greenhouse_detection_live", _FAILED),
+        _case("test_jobindex_live", "test_jobindex_listing_live"),
+    ), encoding="utf-8")
+    changed = tmp_path / "changed.md"
+    smoke_report.main([str(tmp_path / "x.xml"), str(tmp_path / "live-smoke.md"), "--date", "2026-11-16",
+                       "--changed", str(changed)])
+    assert changed.read_text() == "- **Boards**: reed (changed: details)\n- **Employer feeds**: greenhouse (changed: detection)\n"
+
+
+def test_the_failure_issue_lists_the_changed_rows():
+    workflow = (REPO_ROOT / ".github" / "workflows" / "live-smoke.yml").read_text(encoding="utf-8")
+    assert "--changed smoke-changed.md" in workflow and "smoke-changed.md" in workflow.split("Open or update failure issue")[1]

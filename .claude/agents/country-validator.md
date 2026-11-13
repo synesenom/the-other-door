@@ -32,7 +32,7 @@ From `git diff <base_branch>...HEAD --stat` and the files themselves, check each
 
 - `src/door/i18n/country/<cc>.toml` with the capital among its `[cities]` and a `[cv]` block (`photo`, `date_of_birth`, `max_pages`, `date_format`) whose values match the research report's `### CV conventions` section, each backed there by a source (a missing block or an unsourced value is a FAIL); a `src/door/i18n/lang/<code>.toml` for each local language, with English-phrased `language_requirement` lines ("<Language> required") as well as local ones, and a `[work_permit]` section.
 - No new scraper sets a language facet, filter or locale from the country, or drops ads by language.
-- Per new site: `src/door/scrapers/<pkg><site>.py` (`<pkg>`: `boards/` for a keyword board, `discovery/` for one read only for its employers, `feeds/` for an employer feed, as `Site.module` says) with `scrape` and `probe` and a docstring naming the endpoint, terms URL and robots.txt; a `Site` entry with `<cc>` in `countries` a `terms_url`, a `verdict` and a `terms_summary` (a discovery module: `VERDICT`, `TERMS_URL`, `TERMS_SUMMARY`), and a "Terms" passage in the docstring; `tests/scrapers/<pkg>test_<site>_unit.py`, `test_<site>_scrape.py` and `test_<site>_live.py`; `tests/scrapers/<pkg>fixtures/<site>/` with saved payloads (not hand-written: look for the site's real markup or field names).
+- Per new site: `src/door/scrapers/<pkg><site>.py` (`<pkg>`: `boards/` for a keyword board, `discovery/` for one read only for its employers, `feeds/` for an employer feed, as `Site.module` says) with `scrape` and `probe` and a docstring naming the endpoint, terms URL and robots.txt; a `Site` entry with `<cc>` in `countries` a `terms_url`, a `verdict` and a `terms_summary` (a discovery module: `VERDICT`, `TERMS_URL`, `TERMS_SUMMARY`), and a "Terms" passage in the docstring; `tests/scrapers/<pkg>test_<site>_unit.py`, `test_<site>_scrape.py` and `test_<site>_live.py` with one probe-sized live test per mode that applies (`tests/scrapers/test_live_modes_unit.py` passes for it); `tests/scrapers/<pkg>fixtures/<site>/` with saved payloads (not hand-written: look for the site's real markup or field names).
 - No change under `src/door/matching/` (`git diff <base_branch>...HEAD -- src/door/matching/` is empty), and none to `docs/badges/live-smoke.md` or the `docs/badges/live-*.svg` badges (the weekly workflow writes them).
 - A test that an English ad requiring the local language ("Hungarian required") is flagged, for each new lang file.
 - New site modules import only from `door.scrapers.sdk`, and `tests/scrapers/test_scraper_imports_unit.py` has no new allow-list entries in the diff.
@@ -80,7 +80,7 @@ Then read the report, the newest run records under each sandbox's `jobs/runs/` a
 
 ### 5 — Verdict
 
-PASS only if the suite is green, the checklist (not the process list) is complete, every live smoke test passes, and every new board came back `ok` with sensible postings in the sandbox. Anything else is FAIL. A live failure caused by the site walling logged-out requests is still FAIL, marked `site-side`.
+PASS only if the suite is green, the checklist (not the process list) is complete, every live smoke test passes, and every new board came back `ok` with sensible postings in the sandbox. Anything else is FAIL. A live test skipped as `not reached` (the site walls logged-out requests) is still FAIL, marked `site-side`.
 
 ## Output
 

@@ -13,7 +13,8 @@ so each has its own list:
   ``tests/matching/test_matcher_golden.py``'s ``[<case>]`` runs (the real scorer on a Claude plan).
 
 Each row is ✅ (its smoke tests passed), ❌ changed (one failed or errored: the site answered, but not as
-the scraper reads it), ⛔ not reached (its test was skipped as ``not reached:``, ``tests/live_utils.py``: the
+the scraper reads it; its note names the modes that changed, ``changed: details``, and ``--changed FILE`` lists
+the changed rows for the failure issue), ⛔ not reached (its test was skipped as ``not reached:``, ``tests/live_utils.py``: the
 site refused the request or could not be reached), ❓ (not run, or skipped for another reason) or ➖ (it has
 no live test; ``tests/live_matrix.NO_LIVE_TEST`` says why).
 
@@ -33,7 +34,7 @@ reached, not checked or has no live test. The badges are committed SVGs rather t
 whole run passed.
 
 Usage:  python scripts/smoke_report.py <junit.xml> <out.md> [--badges DIR] [--run-url URL] [--date YYYY-MM-DD]
-                                     [--unreached FILE]
+                                     [--unreached FILE] [--changed FILE]
 """
 
 import argparse
@@ -91,9 +92,10 @@ def sections(xml: str) -> list[tuple[str, list[tuple[str, str]]]]:
     feeds = [n for n, s in SITES.items() if not s.board] + [p for p in PRECEDENCE if p not in SITES]
     discovery = [*SOURCES, "wikidata"]
 
-    def site_rows(names: list[str]) -> list[tuple[str, str]]:
-        outcomes = site_outcomes(xml, names)
-        return [(n, outcomes[n] if _has_live_test(n) else "none") for n in names]
+    def site_rows(names: list[str]) -> list[tuple[str, str, str]]:
+        outcomes, modes = site_outcomes(xml, names), changed_modes(xml, names)
+        return [(n, outcomes[n] if _has_live_test(n) else "none",
+                 f"changed: {', '.join(modes[n])}" if outcomes[n] == "fail" and modes.get(n) else "") for n in names]
 
     golden = golden_case_ids()
     by_case = param_outcomes(xml, "test_matcher_golden", golden)
@@ -133,6 +135,22 @@ def site_outcomes(junit_xml: str, sites: list[str]) -> dict[str, str]:
         site = match.group(1)
         outcomes[site] = _fold(case, outcomes[site])
     return outcomes
+
+
+def changed_modes(junit_xml: str, sites: list[str]) -> dict[str, list[str]]:
+    """Map each site whose tests failed or errored to the modes that did, sorted: a site's test is named
+    ``test_<site>_<mode>_live`` (tests/live_utils.py), any other failing test by its own name."""
+    out: dict[str, set[str]] = {}
+    for case in ET.fromstring(junit_xml).iter("testcase"):
+        match = _SITE_TEST.search(case.get("classname", ""))
+        if not match or match.group(1) not in sites:
+            continue
+        if case.find("failure") is None and case.find("error") is None:
+            continue
+        site, name = match.group(1), case.get("name", "").split("[", 1)[0]
+        mode = re.fullmatch(rf"test_{re.escape(site)}_(\w+?)_live", name)
+        out.setdefault(site, set()).add(mode.group(1) if mode else name)
+    return {site: sorted(modes) for site, modes in out.items()}
 
 
 def param_outcomes(junit_xml: str, module: str, keys: list[str]) -> dict[str, str]:
@@ -219,14 +237,14 @@ def carry_over(lists: list[tuple[str, list[tuple[str, str]]]], previous: str, da
         kept = {label: (status, checked, note) for label, status, checked, note in kept_rows
                 if status in ("pass", "fail", "unreached")}
         dated = []
-        for label, status in rows:
+        for label, status, *note in rows:
             if status == "unreached":
                 dated.append((label, status, date, _unreached_note(kept.get(label))))
             elif status == "unknown":
                 dated.append((label, *kept.get(label, ("unknown", "", ""))))
             else:
-                dated.append((label, status, date, ""))
-        tested = any(status != "unknown" for _, status in rows)
+                dated.append((label, status, date, note[0] if note else ""))
+        tested = any(status != "unknown" for _, status, *_ in rows)
         out.append((title, dated, date if tested else kept_date))
     return out
 
@@ -273,6 +291,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--run-url")
     parser.add_argument("--date", default=datetime.date.today().isoformat())
     parser.add_argument("--unreached", help=f"write the rows not reached for {UNREACHED_RUNS} runs in a row here (empty: none)")
+    parser.add_argument("--changed", help="write the rows this run found changed here, with their modes (empty: none)")
     args = parser.parse_args(argv)
 
     junit = pathlib.Path(args.junit)
@@ -291,6 +310,11 @@ def main(argv: list[str] | None = None) -> None:
         flagged = long_unreached(lists)
         pathlib.Path(args.unreached).write_text(
             "".join(f"- **{title}**: {label} ({note})\n" for title, label, note in flagged), encoding="utf-8")
+    if args.changed:
+        pathlib.Path(args.changed).write_text(
+            "".join(f"- **{title}**: {label} ({note or 'changed'})\n" for title, rows, _ in lists
+                    for label, status, checked, note in rows if status == "fail" and checked == args.date),
+            encoding="utf-8")
     if args.badges:
         for file, label, value, color in dimension_badges([(title, rows) for title, rows, _ in lists]):
             (pathlib.Path(args.badges) / file).write_text(_svg(label, value, color), encoding="utf-8")

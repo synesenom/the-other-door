@@ -15,8 +15,8 @@ You are adding one job site to The other door. The site name is passed as the ar
    mode: new
    ```
 
-   It researches the site and its terms, saves real payloads as fixtures, writes the unit, fixture, probe and live smoke tests first, then the module, the `SITES` entry and the per-site doc rows, and commits. All the rules (`docs/adding-a-site.md`, `CLAUDE.md`) are in `.claude/agents/scraper-builder.md`.
+   It researches the site and its terms, saves real payloads as fixtures, writes the unit, fixture, probe and live smoke tests first (one probe-sized live test per mode: listing, page 2, details, zero hits for a board, detection for a feed platform), then the module, the `SITES` entry and the per-site doc rows, and commits. All the rules (`docs/adding-a-site.md`, `CLAUDE.md`) are in `.claude/agents/scraper-builder.md`.
 
-3. Run `./scripts/run-test.sh`. If it is red, or the builder's live smoke test failed for a reason other than the site walling logged-out requests, spawn the builder once more with the failure output as `validation_feedback`.
+3. Run `./scripts/run-test.sh`. If it is red, or one of the builder's live smoke tests failed (its message names the site and the mode) for a reason other than the site walling logged-out requests (skipped as `not reached`), spawn the builder once more with the failure output as `validation_feedback`.
 
 4. Report the builder's summary: route, terms verdict, files, tests, offline suite, live smoke, commit. If the builder stopped (the terms forbid it, the listings need a browser, a login or an API key), say why.
