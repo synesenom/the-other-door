@@ -145,11 +145,13 @@ One review, everything in one place, before anything is written:
    then say that The other door reads them logged out, slowly and capped, keeps none of their ads, and that
    each stays off unless ticked. It can be changed later in the profile.
 
-7. **Sectors** (optional): unless the user's sources or words already say it, ask once in plain text which
-   sectors or kinds of employer they want and which to avoid, in their own words, with the example "medical or
-   green energy, avoid banking and gambling". An empty answer is fine: save none. Keep the text as written,
-   in any language (never parse it into lists); it goes to step 4 as `sectors`. Say that a posting from a wanted
-   sector scores higher, one from an avoided sector much lower, and that it applies from the next run.
+7. **What matters to you** (optional): unless the user's sources or words already say it, ask once in plain
+   text what matters to them in an employer or a job and what they rule out, in their own words, with the
+   example "medical or green energy, maybe robotics; a smaller company, little travel; not banking or
+   gambling". An empty answer is fine: save none. Keep the text as written, in any language (never parse it
+   into lists); it goes to step 4 as `preferences`. Say that a posting that meets a wish scores higher, one that
+   plainly hits something they ruled out much lower, that a doubt never costs a posting its place, and that it
+   applies from the next run.
 
 Items 5 and 6 read `mcp__door__show_profile` with the location as `location`: its `options.cities` then holds
 that city alone (the full list is too long to read in one answer), and `worldwide_discovery` serves a city
@@ -167,7 +169,7 @@ continue only on an explicit yes. Never overwrite profile/cv.md without this yes
 ## 4. Save and first run
 
 Call `mcp__door__init_profile` once with every field: `name`, `email`, `location`, `remote`,
-`role_targets` (the picks), `search_keywords`, `topic_terms`, and in `other` `languages`, `sectors` (the text of item 7, only when there is some), every
+`role_targets` (the picks), `search_keywords`, `topic_terms`, and in `other` `languages`, `preferences` (the text of item 7, only when there is some), every
 discovery key of step 3's list (`linkedin_discovery`, `profession_discovery`, `jobbsafari_discovery`, `hellowork_discovery`: `true` if
 ticked, `false` if not, never left out) and `enrich_sources` (the public URLs; not LinkedIn, so /expand can rerun on
 them later). On a fresh profile also pass `exclude_companies` = `[]` and `exclude_keywords` = `[]`. It

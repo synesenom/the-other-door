@@ -1,10 +1,10 @@
 {
   "posting": {
-    "id": "golden-sector-avoided-bank",
+    "id": "golden-preference-ruled-out-bank",
     "title": "Lead Data Scientist",
     "company": "Nordhavn Bank",
     "location": "Copenhagen, Denmark",
-    "url": "https://example.com/jobs/golden-sector-avoided-bank",
+    "url": "https://example.com/jobs/golden-preference-ruled-out-bank",
     "description": "About the role:\nNordhavn Bank is a Danish retail and investment bank with a large online gambling-adjacent payments arm. We are hiring a Lead Data Scientist to build credit-risk and fraud models for the bank.\n\nResponsibilities:\nYou will lead a team of data scientists, set the technical direction, own forecasting and machine learning models end to end in Python and SQL, and report to the CTO.\n\nRequirements:\n8+ years of experience in data science with at least 3 years leading a team. Strong Python, SQL, MLOps and stakeholder-management skills.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, two days a week at home.\n\nWhat we offer:\nCompetitive salary and a collaborative team.",
     "description_condensed": null,
     "source": "golden",
@@ -17,6 +17,6 @@
     "language_requirement": "none"
   },
   "config": {
-    "sectors": "I want a medical or green energy company, or maybe robotics. Avoid sectors like banking and gambling."
+    "preferences": "Medical or green energy, maybe robotics. A smaller company, little travel. Not banking or gambling."
   }
 }

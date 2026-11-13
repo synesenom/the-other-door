@@ -233,27 +233,27 @@ describe('discovery', () => {
   })
 })
 
-describe('sectors', () => {
+describe('preferences', () => {
   it('start empty on a fresh home and from the saved text on a redo', () => {
-    expect(fresh().sectors).toBe('')
-    const profile = { ...existingProfile, config: { ...existingProfile.config!, sectors: 'robotics' } }
-    expect(initialState(profile).sectors).toBe('robotics')
-    expect(redo().sectors).toBe('')
+    expect(fresh().preferences).toBe('')
+    const profile = { ...existingProfile, config: { ...existingProfile.config!, preferences: 'robotics' } }
+    expect(initialState(profile).preferences).toBe('robotics')
+    expect(redo().preferences).toBe('')
   })
 
   it('are kept as typed until Save', () => {
-    const s = wizardReducer(filled(), { type: 'set', field: 'sectors', value: ' medical; not banking ' })
-    expect(s.sectors).toBe(' medical; not banking ')
+    const s = wizardReducer(filled(), { type: 'set', field: 'preferences', value: ' medical; not banking ' })
+    expect(s.preferences).toBe(' medical; not banking ')
   })
 
   it('go to init_profile in other, trimmed, when there is some', () => {
-    const s = wizardReducer(filled(), { type: 'set', field: 'sectors', value: ' medical; not banking ' })
-    expect((toInitArgs(s)['other'] as Record<string, unknown>)['sectors']).toBe('medical; not banking')
+    const s = wizardReducer(filled(), { type: 'set', field: 'preferences', value: ' medical; not banking ' })
+    expect((toInitArgs(s)['other'] as Record<string, unknown>)['preferences']).toBe('medical; not banking')
   })
 
   it('are left out on a first set-up when empty, and sent empty on a redo to clear them', () => {
-    expect(toInitArgs(filled())['other']).not.toHaveProperty('sectors')
-    expect((toInitArgs(redo())['other'] as Record<string, unknown>)['sectors']).toBe('')
+    expect(toInitArgs(filled())['other']).not.toHaveProperty('preferences')
+    expect((toInitArgs(redo())['other'] as Record<string, unknown>)['preferences']).toBe('')
   })
 })
 

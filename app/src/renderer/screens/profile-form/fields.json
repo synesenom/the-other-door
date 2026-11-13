@@ -81,10 +81,10 @@
       "label": "Words a job title must contain"
     },
     {
-      "key": "sectors",
+      "key": "preferences",
       "section": "search",
-      "label": "Sectors",
-      "help": "The kinds of employer you want, and any to avoid, in your own words. E.g. medical and green energy; not banking or gambling. Applies from the next run.",
+      "label": "What matters to you",
+      "help": "In your own words, the kind of employer and job you want, and anything you rule out. E.g. medical or green energy, maybe robotics; a smaller company, little travel; not banking or gambling. Scoring leans to showing a job when in doubt. Applies from the next run.",
       "multiline": true
     },
     {

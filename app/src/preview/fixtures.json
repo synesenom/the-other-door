@@ -814,7 +814,7 @@
      "default": []
     },
     {
-     "key": "sectors",
+     "key": "preferences",
      "type": "string",
      "required": false,
      "nullable": false,
@@ -1083,7 +1083,7 @@
    "verify_liveness": false,
    "prescreen_top_n": 40,
    "prescreen_min": 0.15,
-   "sectors": "Medical devices, green energy or maybe robotics. Not banking or gambling."
+   "preferences": "Medical devices, green energy or maybe robotics. Not banking or gambling."
   },
   "errors": [],
   "cv": {

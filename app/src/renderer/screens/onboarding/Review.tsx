@@ -265,8 +265,8 @@ export function Review({ state, profile, dispatch, onSaved, onBack }: Props) {
         <ChipInput label="Add your own title" hideLabel placeholder="Add your own title and press Enter" values={ownTitles(state)} onAdd={(v) => dispatch({ type: 'addTitle', title: v })} onDrop={(v) => dispatch({ type: 'dropTitle', title: v })} />
       </Part>
 
-      <Part title="Sectors" lead="Optional: the kinds of employer you want, and any to avoid, in your own words. E.g. medical and green energy; not banking or gambling." messages={errors('sectors')}>
-        <textarea className="onb-input onb-field" aria-label="Sectors" rows={3} value={state.sectors} onChange={(e) => dispatch({ type: 'set', field: 'sectors', value: e.target.value })} />
+      <Part title="What matters to you" lead="Optional: in your own words, the kind of employer and job you want, and anything you rule out. E.g. medical or green energy, maybe robotics; a smaller company, little travel; not banking or gambling." messages={errors('preferences')}>
+        <textarea className="onb-input onb-field" aria-label="What matters to you" rows={3} value={state.preferences} onChange={(e) => dispatch({ type: 'set', field: 'preferences', value: e.target.value })} />
       </Part>
 
       <Folded

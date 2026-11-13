@@ -120,18 +120,18 @@ describe('Review', () => {
     expect(titles.queryByText('Actuary')).toBeNull()
   })
 
-  it('has an optional Sectors part: a text area with the example, held until Save', async () => {
+  it('has an optional What matters to you part: a text area with the example, held until Save', async () => {
     const h = setup()
-    const sectors = within(part('Sectors'))
-    expect(sectors.getByText(/medical and green energy; not banking or gambling/)).toBeInTheDocument()
-    const box = sectors.getByRole('textbox', { name: 'Sectors' })
+    const preferences = within(part('What matters to you'))
+    expect(preferences.getByText(/a smaller company, little travel; not banking or gambling/)).toBeInTheDocument()
+    const box = preferences.getByRole('textbox', { name: 'What matters to you' })
     expect(box.tagName).toBe('TEXTAREA')
     expect(box).toHaveValue('')
     await userEvent.type(box, 'robotics, no banking')
-    expect(seen.sectors).toBe('robotics, no banking')
+    expect(seen.preferences).toBe('robotics, no banking')
     expect(h.call).not.toHaveBeenCalledWith('init_profile', expect.anything())
     await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
-    await waitFor(() => expect(h.call).toHaveBeenCalledWith('init_profile', expect.objectContaining({ other: expect.objectContaining({ sectors: 'robotics, no banking' }) })))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('init_profile', expect.objectContaining({ other: expect.objectContaining({ preferences: 'robotics, no banking' }) })))
   })
 
   it('changing the titles proposes the terms again, debounced, and holds Save until then', async () => {

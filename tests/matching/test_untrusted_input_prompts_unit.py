@@ -22,6 +22,6 @@ def test_scorer_system_prompt_calls_the_ad_untrusted():
     assert "untrusted" in prompt.lower()
 
 
-def test_sectors_text_sits_in_the_profile_block_not_the_posting_message():
-    prompt = scorer.build_system_prompt({"sectors": "avoid banking"}, "cv", "## Scoring rubric (0-1)\nx\n")
-    assert prompt.index("## Candidate profile") < prompt.index("- sectors: avoid banking") < prompt.index("## Candidate CV")
+def test_preferences_text_sits_in_the_profile_block_not_the_posting_message():
+    prompt = scorer.build_system_prompt({"preferences": "avoid banking"}, "cv", "## Scoring rubric (0-1)\nx\n")
+    assert prompt.index("## Candidate profile") < prompt.index("- preferences: avoid banking") < prompt.index("## Candidate CV")

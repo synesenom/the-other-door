@@ -59,9 +59,9 @@ def test_golden_fixtures_are_well_formed():
 def test_golden_cases_carry_an_optional_config_override():
     cases = {c["posting"]["id"]: c for c in load_golden_cases()}
     assert cases["golden-obvious-strong-match"]["config"] == {}
-    assert case_config({"a": 1, "sectors": "x"}, {"config": {"sectors": "y"}}) == {"a": 1, "sectors": "y"}
-    for job_id, expect_text in (("golden-sector-avoided-bank", "bank"), ("golden-sector-wanted-medical", "medical")):
-        assert expect_text in cases[job_id]["config"]["sectors"].lower()
+    assert case_config({"a": 1, "preferences": "x"}, {"config": {"preferences": "y"}}) == {"a": 1, "preferences": "y"}
+    for job_id, expect_text in (("golden-preference-ruled-out-bank", "bank"), ("golden-preference-wanted-medical", "medical")):
+        assert expect_text in cases[job_id]["config"]["preferences"].lower()
 
 
 # --------------------------------------------------------------------------- #

@@ -151,7 +151,7 @@ def test_init_with_a_good_cv_asks_nothing_before_the_review(init_env, prompts, m
     _stop_at_first_run(monkeypatch)
     prompts.answers.update(_JANE)
     CliRunner().invoke(cli, ["init"])
-    assert prompts.order == ["cv_sources", "sectors", "titles_pick", "titles_add", "discovery_pick", "photo", "review"]
+    assert prompts.order == ["cv_sources", "preferences", "titles_pick", "titles_add", "discovery_pick", "photo", "review"]
 
 
 def test_init_fresh_saves_every_key_of_the_review(init_env, prompts, monkeypatch):
@@ -1224,62 +1224,62 @@ def test_init_checks_the_photo_where_it_is_asked(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
-# sectors (#50)
+# preferences (#50)
 # --------------------------------------------------------------------------- #
 
-_SECTORS = "medical or green energy; avoid banking and gambling"
+_PREFERENCES = "medical or green energy; avoid banking and gambling"
 
 
-def test_the_sectors_field_is_a_plain_optional_string(init_env):
+def test_the_preferences_field_is_a_plain_optional_string(init_env):
     fields = profile_cmd._show_profile_core(init_env.profile_dir, init_env.example_dir)["options"]["fields"]
-    assert {f["key"]: f for f in fields}["sectors"] == {
-        "key": "sectors", "type": "string", "required": False, "nullable": False, "default": "",
+    assert {f["key"]: f for f in fields}["preferences"] == {
+        "key": "preferences", "type": "string", "required": False, "nullable": False, "default": "",
     }
 
 
-def test_init_set_writes_the_sectors_text_as_written(init_env):
+def test_init_set_writes_the_preferences_text_as_written(init_env):
     _write_existing_profile_config(init_env, name="Existing User", role_targets=["Old Role"])
     (init_env.profile_dir / "cv.md").write_text("MY REAL CV")
-    _invoke("--set", f"sectors={_SECTORS}")
-    assert _config(init_env)["sectors"] == _SECTORS
+    _invoke("--set", f"preferences={_PREFERENCES}")
+    assert _config(init_env)["preferences"] == _PREFERENCES
 
 
-def test_init_profile_sets_and_clears_the_sectors(init_env):
+def test_init_profile_sets_and_clears_the_preferences(init_env):
     _write_existing_profile_config(init_env, name="Existing User", role_targets=["Old Role"])
     (init_env.profile_dir / "cv.md").write_text("MY REAL CV")
-    profile_cmd._init_core(profile_cmd._profile_fields(other={"sectors": _SECTORS}), init_env.profile_dir, init_env.example_dir)
-    assert _config(init_env)["sectors"] == _SECTORS
-    profile_cmd._init_core(profile_cmd._profile_fields(other={"sectors": ""}), init_env.profile_dir, init_env.example_dir)
-    assert _config(init_env)["sectors"] == ""
+    profile_cmd._init_core(profile_cmd._profile_fields(other={"preferences": _PREFERENCES}), init_env.profile_dir, init_env.example_dir)
+    assert _config(init_env)["preferences"] == _PREFERENCES
+    profile_cmd._init_core(profile_cmd._profile_fields(other={"preferences": ""}), init_env.profile_dir, init_env.example_dir)
+    assert _config(init_env)["preferences"] == ""
 
 
-def test_the_wizard_asks_for_sectors_once_after_the_search_terms_and_saves_them(init_env, prompts, monkeypatch):
+def test_the_wizard_asks_for_preferences_once_after_the_search_terms_and_saves_them(init_env, prompts, monkeypatch):
     _stop_at_first_run(monkeypatch)
-    prompts.answers.update(_JANE, sectors=_SECTORS)
+    prompts.answers.update(_JANE, preferences=_PREFERENCES)
     text = result_text(CliRunner().invoke(cli, ["init"]))
-    assert prompts.order.count("sectors") == 1
-    assert prompts.order.index("sectors") < prompts.order.index("review")
-    assert "avoid" in prompts.asked["sectors"]["message"] and "optional" in prompts.asked["sectors"]["message"]
-    assert _config(init_env)["sectors"] == _SECTORS
-    assert f"Sectors" in text and _SECTORS in text
+    assert prompts.order.count("preferences") == 1
+    assert prompts.order.index("preferences") < prompts.order.index("review")
+    assert "rule out" in prompts.asked["preferences"]["message"] and "optional" in prompts.asked["preferences"]["message"]
+    assert _config(init_env)["preferences"] == _PREFERENCES
+    assert "What matters to you" in text and _PREFERENCES in text
 
 
-def test_skipping_the_sectors_question_saves_none(init_env, prompts, monkeypatch):
+def test_skipping_the_preferences_question_saves_none(init_env, prompts, monkeypatch):
     _stop_at_first_run(monkeypatch)
     prompts.answers.update(_JANE)
     text = result_text(CliRunner().invoke(cli, ["init"]))
-    assert _config(init_env).get("sectors", "") == ""
-    assert "Sectors" in text and "none" in text.split("Sectors", 1)[1].splitlines()[0]
+    assert _config(init_env).get("preferences", "") == ""
+    assert "What matters to you" in text and "none" in text.split("What matters to you", 1)[1].splitlines()[0]
 
 
-def test_the_review_can_change_the_sectors(init_env, prompts, monkeypatch):
+def test_the_review_can_change_the_preferences(init_env, prompts, monkeypatch):
     _stop_at_first_run(monkeypatch)
-    prompts.answers.update(_JANE, review=iter(["sectors", "save"]), sectors=iter(["", "robotics"]))
+    prompts.answers.update(_JANE, review=iter(["preferences", "save"]), preferences=iter(["", "robotics"]))
     CliRunner().invoke(cli, ["init"])
-    assert _config(init_env)["sectors"] == "robotics"
+    assert _config(init_env)["preferences"] == "robotics"
 
 
-def test_the_first_look_scores_with_the_sectors(init_env, prompts, wizard_calls, monkeypatch):
+def test_the_first_look_scores_with_the_preferences(init_env, prompts, wizard_calls, monkeypatch):
     _stop_at_first_run(monkeypatch)
     seen = {}
     from door.commands import preview as preview_cmd
@@ -1289,6 +1289,6 @@ def test_the_first_look_scores_with_the_sectors(init_env, prompts, wizard_calls,
         return {"board": "jobindex", "matches": []}
 
     monkeypatch.setattr(preview_cmd, "_preview_core", look)
-    prompts.answers.update(_JANE, sectors=_SECTORS)
+    prompts.answers.update(_JANE, preferences=_PREFERENCES)
     CliRunner().invoke(cli, ["init"])
-    assert seen["sectors"] == _SECTORS
+    assert seen["preferences"] == _PREFERENCES
