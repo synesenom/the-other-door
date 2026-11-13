@@ -7,21 +7,17 @@ populated — so a silent upstream change surfaces as a failure.
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.boards import jobindex
-from live_utils import NONSENSE_KEYWORD as KW, assert_zero_hits, drain_zero_hit_state
+from live_utils import assert_field_contract, assert_zero_hits, drain_zero_hit_state, NONSENSE_KEYWORD as KW
 
 
 @pytest.mark.live
 def test_jobindex_returns_valid_postings():
-    postings = jobindex.scrape({"role_targets": ["data scientist"], "location": "Copenhagen"})
+    config = {"role_targets": ["data scientist"], "location": "Copenhagen"}
+    postings = jobindex.scrape(config)
 
     assert len(postings) >= 1
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"], "title should be non-empty"
-        assert p["company"], "company should be non-empty"
-        assert p["url"], "url should be non-empty"
+    assert_field_contract("jobindex", postings, config)
 
 
 @pytest.mark.live

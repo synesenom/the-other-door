@@ -6,8 +6,8 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.feeds import jobtrain
+from live_utils import assert_field_contract
 
 
 @pytest.mark.live
@@ -15,6 +15,4 @@ from door.scrapers.feeds import jobtrain
 def test_jobtrain_live_returns_valid_postings(entry):
     postings = jobtrain.scrape({"jobtrain_companies": [entry]})
     assert postings
-    for p in postings:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("jobtrain", postings, mode="collect")

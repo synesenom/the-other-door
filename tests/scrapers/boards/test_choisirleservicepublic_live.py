@@ -7,20 +7,16 @@ essential fields filled in, so a silent upstream change surfaces as a failure.
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.boards import choisirleservicepublic
-from live_utils import NONSENSE_KEYWORD as KW, assert_zero_hits, drain_zero_hit_state
+from live_utils import assert_field_contract, assert_zero_hits, drain_zero_hit_state, NONSENSE_KEYWORD as KW
 
 
 @pytest.mark.live
 def test_choisirleservicepublic_live_returns_valid_postings():
-    postings = choisirleservicepublic.scrape(
-        {"search_keywords": ["chef de projet"], "topic_terms": ["chef de projet*", "chargé de projet*", "project manager*"],
-         "location": "Paris", "max_pages_per_keyword": 1})
+    config = {"search_keywords": ["chef de projet"], "topic_terms": ["chef de projet*", "chargé de projet*", "project manager*"], "location": "Paris", "max_pages_per_keyword": 1}
+    postings = choisirleservicepublic.scrape(config)
     assert postings
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("choisirleservicepublic", postings, config)
 
 
 @pytest.mark.live
