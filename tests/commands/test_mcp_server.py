@@ -800,3 +800,14 @@ def test_story_tools_wrap_the_cores_and_turn_expected_errors_into_error(tmp_path
     assert "error" in server.remove_story("nope")
     assert server.remove_story("T")["outcome"] == "removed"
     assert "error" in server.draft_stories()
+
+
+def test_main_loads_the_language_libraries_before_serving(monkeypatch):
+    # #18: before the event loop and its worker threads exist (numpy's OpenBLAS hung loading on a worker on Windows)
+    order = []
+    monkeypatch.setattr(server.problem_log, "setup", lambda: None)
+    monkeypatch.setattr(server, "_startup_pull", lambda: order.append("pull"))
+    monkeypatch.setattr(server.i18n, "preload_language_detection", lambda: order.append("preload"))
+    monkeypatch.setattr(server.mcp, "run", lambda **kw: order.append("serve"))
+    server.main()
+    assert order.index("preload") < order.index("serve")

@@ -1791,8 +1791,9 @@ def _startup_pull() -> None:
 
 
 def main() -> None:
-    """Serve over stdio: the problem log first (#593), then a pull from Drive, then the tools."""
+    """Serve over stdio: the problem log first (#593), the language libraries, a pull from Drive, then the tools."""
     problem_log.setup()
+    i18n.preload_language_detection()  # on this thread, before the event loop's workers (#18)
     _startup_pull()
     mcp.run(transport="stdio")
 
