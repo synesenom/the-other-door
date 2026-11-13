@@ -1,4 +1,4 @@
-// What is wrong and needs the user, for the short lines at the foot of the sidebar: Claude, the CV,
+// What is wrong and needs the user, for the short lines at the foot of the sidebar: the data folders, Claude, the CV,
 // Google Drive, something that keeps going wrong, in that order, each with where it is fixed. A site a run
 // could not read once is not here: the user can do nothing about it but run again (docs/design/README.md,
 // principle 9). The same failure run after run is (status_summary's `recurring_problem`, door.core.recurring):
@@ -25,6 +25,11 @@ export interface ProblemInput {
 
 export function problems(input: ProblemInput): Problem[] {
   const out: Problem[] = []
+  // Data that could not be upgraded, or was written by a newer version: every tool refuses until it is dealt with,
+  // so this line comes first (a busy folder, held by a run for a moment, says nothing: the next call retries it)
+  const data = input.doctor?.data
+  if (data?.state === 'failed') out.push({ key: 'data', text: 'Your data could not be upgraded. Send a report', target: 'settings-report' })
+  else if (data?.state === 'newer') out.push({ key: 'data', text: 'Install the latest version of The other door', target: 'settings' })
   const claude = attention(input.doctor, null)
   if (claude) out.push({ key: 'claude', text: claude, target: 'settings' })
   // the example CV needs no line: a run refuses it and says why

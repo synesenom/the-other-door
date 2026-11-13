@@ -471,8 +471,8 @@ profile/                          # gitignored — created by setup/init from pr
 ├── config.json                   # candidate config (boards, role_targets, exclude, …)
 ├── companies.json                # the employer list: followed employers and their feeds (core/companies.py)
 ├── cv.md                         # CV content (Markdown)
-├── cv.template.tex               # LaTeX preamble + macros for the CV (the tailor writes the body)
-├── cover-letter.template.tex     # LaTeX preamble + macros for the cover letter
+├── .data_version                 # the profile's data version (core/migrations.py)
+│                                 # cv.template.tex, cover-letter.template.tex and fonts/ ship with the code (profile.example/); a copy here is the user's own
 └── story_bank.md                 # reusable achievement stories (tailor); edited by `cv stories`, the story tools and the app's Stories part
 
 jobs/                             # gitignored — created on first scrape

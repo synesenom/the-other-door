@@ -139,6 +139,16 @@ def _no_drive_sync(tmp_path, monkeypatch):
     monkeypatch.setattr(webbrowser, "open", refuse)
 
 
+@pytest.fixture(autouse=True)
+def _no_start_upgrade(monkeypatch):
+    """The upgrade of the data folders at the start of the CLI and the server (#56) never touches a test's folders by
+    itself, and no test sees the state another left; a test of the upgrade calls `migrations` itself."""
+    from door.core import migrations
+
+    monkeypatch.setattr(migrations, "run_at_start", lambda: None)
+    monkeypatch.setattr(migrations, "_state", None)
+
+
 @pytest.fixture
 def enable_sync_hooks(monkeypatch):
     """Put the real Drive sync hooks back on the ledger lock (for tests with a fake Drive)."""

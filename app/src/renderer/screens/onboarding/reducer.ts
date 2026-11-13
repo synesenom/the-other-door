@@ -113,6 +113,8 @@ export interface DoctorReport {
   checks: DoctorCheck[]
   /** Set by the app when doctor itself could not answer: why (its checks are then empty). */
   error?: string
+  /** What the upgrade of the data folders found at start (door.core.migrations). */
+  data?: { state: 'ok' | 'failed' | 'newer' | 'busy'; message: string }
 }
 
 export interface CvDraftInfo {

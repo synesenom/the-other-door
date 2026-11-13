@@ -13,7 +13,7 @@ Two things do leave your computer:
 
 | Folder | What's in it |
 |--------|--------------|
-| `profile/` | your config, the employers you follow (`companies.json`; each entry's other names are its `aliases`, formerly `also`, migrated when read), CV, LaTeX templates and story bank |
+| `profile/` | your config, the employers you follow (`companies.json`; each entry's other names are its `aliases`, formerly `also`, migrated when read), CV and story bank (and the LaTeX templates, only if you keep your own) |
 | `jobs/` | scraped and scored postings (`postings/<date>/<site>/`; day folders an older version left directly under `jobs/` are moved there the next time *The other door* reads or writes them), the history and application ledgers, run records (a block per `find` step), the candidates queue (`candidates.json`: employers `follow` has yet to look at), the discovery state, one file per source (`discovery/linkedin.json`, `discovery/profession.json`; an older `linkedin_discovery.json` is copied there the first time and kept), the `market` reports (`market/report-<date>.md`) the salary estimates (`salary.json`: `{job_id: {low, high, currency, period, position, sources, as_of}}`, from `jobs salary` or `jobs prepare`; delete an entry to ask again) and its skill-name groups (`skill_aliases.json`: `{"variant": "Canonical"}`, `null` for a name that is not a skill; edit it freely, your edits are kept), and the generated CVs and cover letters (`jobs/output/<job_id>/`); every posting carries an `integrity` verdict (see [how it works](how-it-works.md#the-ad-is-untrusted-input)) |
 
 By default both folders sit in the checkout. Set the environment variable `DOOR_HOME` to a
@@ -62,6 +62,32 @@ Or say "export my data" / "import this export" in a conversation.
   as `cv_template`) doesn't exist on the new computer. `claude_config_dir` is the exception: it
   names a Claude plan folder of one computer, so it is left out of the archive and an import keeps
   the one this computer already has.
+
+## Upgrading your data between releases
+
+`profile/` and `jobs/` each carry a data version, a plain number in `profile/.data_version` and
+`jobs/.data_version` (a file of its own, not a key in `config.json`). A folder with no file is
+from the first release, version 0. A release that changes how the data is stored ships one step for
+the folder; the data is upgraded by itself the first time The other door starts after you install it (the
+app, `./door` or the MCP server), before anything reads it, with no hand edit:
+
+- **Backup first.** The folder is copied to `backups/upgrade-<folder>-<from>-<to>-<date>/` before its first
+  step runs. The two most recent upgrade backups are kept; the backups an import makes are never touched.
+- **Safe to repeat.** Every step changes nothing on data already in the new shape, so a second start, or two
+  starts at once (the app and Claude Code), upgrade once.
+- **A step that fails** puts the folder back from the backup and leaves its version as it was. Every tool then
+  answers "Your data could not be upgraded to this version: <step>. Nothing was changed. Send a report from
+  Settings." (the app says so at the sidebar's foot, opening Report a problem), except `report_problem` and
+  `doctor`. One line goes to the problem log.
+- **Newer data** (a folder whose version is above the app's, say after using a newer release on another
+  computer) is refused and never changed: "This data was written by a newer version of The other door.
+  Install the latest version."
+- A run holding the lock at start delays the upgrade; the next command or tool call tries again.
+
+The first step (version 0 to 1): the LaTeX templates and fonts come from the code. A copy in `profile/`
+that is byte for byte a shipped version is removed, and an edited one stays and keeps being used (see
+[configuration](configuration.md)). The steps live in `src/door/core/migrations.py`, and
+`src/door/core/stored.py` names every file The other door stores and the model or format that describes it.
 
 ## Older data
 

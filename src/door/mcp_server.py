@@ -52,6 +52,7 @@ import threading
 from pathlib import Path
 
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.types import TextContent
 
 from door import i18n
 from door import version as version_mod
@@ -81,7 +82,7 @@ from door.commands import find as find_cmd
 from door.commands import setup as setup_cmd
 from door.commands import status as status_cmd
 from door.commands import stories as stories_cmd
-from door.core import claude_cli, drive, problem_log, sync, workspace
+from door.core import claude_cli, drive, migrations, problem_log, sync, workspace
 from door.core.lock import LockHeldError, SyncConflict, ledger_lock, lock_holder
 from door.core import companies as companies_store
 from door.core.profile_loader import ConfigError
@@ -125,10 +126,28 @@ def _log_answer(tool: str, answer: dict | None) -> None:
             problem_log.warning(f"tool {tool}", warning)
 
 
+# The tools that still answer when the data was refused (failed upgrade, newer data): a report can be sent, doctor says why.
+_DATA_OPEN_TOOLS = ("report_problem", "doctor")
+
+
+def _data_refusal(tool: str) -> str | None:
+    """The line every tool answers instead of working while the data folder is refused (#56), or None."""
+    state = migrations.status()
+    if state is None or tool in _DATA_OPEN_TOOLS:
+        return None
+    return state["message"]
+
+
 class _DoorMCP(FastMCP):
     """FastMCP whose every tool call is the one place a failure is logged (#593): over stdio and HTTP alike."""
 
     async def call_tool(self, name, arguments):
+        refusal = _data_refusal(name)
+        if refusal is not None and migrations.status()["state"] == "busy":
+            await asyncio.to_thread(migrations.upgrade_all)  # a run held the lock at start: try again
+            refusal = _data_refusal(name)
+        if refusal is not None:  # logged once, by the upgrade, not at every call
+            return [TextContent(type="text", text=json.dumps({"error": refusal}, indent=2))]
         try:
             result = await super().call_tool(name, arguments)
         except Exception as exc:
@@ -1823,10 +1842,12 @@ def _startup_pull() -> None:
 
 
 def main() -> None:
-    """Serve over stdio: the problem log first (#593), the language libraries, a pull from Drive, then the tools."""
+    """Serve over stdio: the problem log first (#593), the upgrade of the data (#56), the language libraries, a pull from Drive, then the tools."""
     problem_log.setup()
+    migrations.run_at_start()  # before anything reads the data (#56)
     i18n.preload_language_detection()  # on this thread, before the event loop's workers (#18)
-    _startup_pull()
+    if migrations.status() is None:  # refused data is neither pulled over nor pushed
+        _startup_pull()
     mcp.run(transport="stdio")
 
 

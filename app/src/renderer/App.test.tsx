@@ -687,6 +687,18 @@ describe('App, the first-launch gate', () => {
       expect(h.reportProblem).not.toHaveBeenCalled()
     })
 
+    it('data that could not be upgraded is said at the sidebar even though every other tool refuses', async () => {
+      const refusal = 'Your data could not be upgraded to this version: x. Nothing was changed. Send a report from Settings.'
+      const refuse = () => {
+        throw new Error(refusal)
+      }
+      const data = { state: 'failed', message: refusal }
+      mockDoor({ show_profile: refuse, status_summary: refuse, list_matches: refuse, doctor: { ...doctorReport('ok'), data } })
+      render(<App />)
+      await userEvent.click(await (await sidebar()).findByRole('button', { name: 'Your data could not be upgraded. Send a report' }))
+      expect(await screen.findByRole('region', { name: 'Report a problem' })).toBeInTheDocument()
+    })
+
     it('a saved report reads the summary again, and the line goes', async () => {
       let recurring = true
       const h = mockDoor({ show_profile: profile(), status_summary: () => summary({ recurring_problem: recurring }), list_matches: matchesResult([]), doctor: doctorReport('ok') })

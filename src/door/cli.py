@@ -9,7 +9,7 @@ import sys
 import click
 
 from door.commands import _common as common
-from door.core import problem_log
+from door.core import migrations, problem_log
 from door.core.lock import LockHeldError
 from door.core.profile_loader import ConfigError
 from door.commands import archive as archive_cmd
@@ -55,6 +55,17 @@ class _DoorGroup(click.Group):
             with formatter.section("Other"):
                 formatter.write_dl(rest)
 
+    def resolve_command(self, ctx, args):
+        """The command about to run: the data folders are upgraded first (#56), and a refused folder stops every
+        command but the ones that let the user report it."""
+        if args and "--help" not in args:
+            migrations.run_at_start()
+            state = migrations.status()
+            if state is not None and args[0] not in _DATA_OPEN_COMMANDS and args[:2] != ["data", "report"]:
+                click.echo(f"Error: {state['message']}", err=True)
+                sys.exit(1)
+        return super().resolve_command(ctx, args)
+
     def invoke(self, ctx):
         try:
             return super().invoke(ctx)
@@ -70,6 +81,10 @@ class _DoorGroup(click.Group):
             problem_log.crash(f"command {ctx.invoked_subcommand}", exc)
             raise
 
+
+# Commands that still run when the data was refused (a failed upgrade, newer data): doctor says why, and `serve`
+# answers its tools with the same refusal.
+_DATA_OPEN_COMMANDS = ("doctor", "serve")
 
 # The top-level help, in this order: section -> its commands.
 _SECTIONS = (

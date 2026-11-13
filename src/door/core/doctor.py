@@ -26,7 +26,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import claude_cli, companies, discovery_sources, installers, runs, sites
+from door.core import claude_cli, companies, discovery_sources, installers, migrations, runs, sites
 from door.core.sites import FEED_SITES
 from door.scrapers import PROBE_TIMEOUT_S, ProbeResult  # noqa: F401 - re-exported
 from door.scrapers import http_client
@@ -591,9 +591,12 @@ def run_checks(
     if probe_sites:
         checks.extend(check_scrapers(config, profile_dir, jobs_dir, probe=probe, now=now))
 
+    data = migrations.status()
     return {
         "ok": not any(c["status"] == "missing" for c in checks),
         "home": str(workspace.HOME),
+        # What the upgrade of the data folders found (#56): the app puts a line at the sidebar's foot for failed or newer.
+        "data": data or {"state": "ok", "message": ""},
         "checks": checks,
         "last_run": last_run(jobs_dir),
         "last_scrape": last_scrape_per_site(config, jobs_dir, now=now),

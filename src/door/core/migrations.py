@@ -350,6 +350,18 @@ def _upgrade_locked(folders, steps_of, backups_dir: Path) -> dict | None:
     return None
 
 
+def run_at_start() -> dict | None:
+    """What the MCP server and the CLI call before anything reads the data: `upgrade_all` on the data folder.
+
+    Never raises: an unexpected error is a failed upgrade (logged), so the tools answer it and the user can report it.
+    """
+    try:
+        return upgrade_all()
+    except Exception as exc:  # noqa: BLE001 - startup must not die; the tools say what happened
+        problem_log.failure("upgrade", f"{type(exc).__name__}: {exc}")
+        return _set(_failed("start-up check"))
+
+
 _logged: set[str] = set()
 
 
