@@ -239,6 +239,15 @@ def _stop_keys() -> set[str]:
     return {_term_key(w) for w in i18n.skill_stop_words()}
 
 
+def _bare(key: str) -> str:
+    return re.sub(r"[./]", "", key)
+
+
+def _legal_keys() -> set[str]:
+    """The company forms of every country ("ApS", "GmbH", "S.A.S."), dots and slashes dropped: a form is no skill."""
+    return {_bare(_term_key(s)) for s in i18n.legal_suffixes()} - {""}
+
+
 def _filler() -> set[str]:
     return {_singular(w) for w in i18n.stop_words()}
 
@@ -318,6 +327,7 @@ def extract_term_claims(text: str, file: str) -> list[dict]:
     text = re.sub(r"\\\\(\[[^\]]*\])?", "\n", text)  # a LaTeX line break is not part of a term
     text = _SECTION_RE.sub(lambda m: f"\n{_SENTINEL}{m.group(1)}\n", text)
     stop = _stop_keys()
+    legal = _legal_keys()
     claims: list[dict] = []
     section = "other"
     for line in _plain(text).splitlines():
@@ -336,6 +346,8 @@ def extract_term_claims(text: str, file: str) -> list[dict]:
             found = [("skill", v) for v in _technical_tokens(line)]
         for kind, value in found:
             if _term_key(value) in stop or not _term_key(value) or _TODO_RE.search(value):
+                continue
+            if kind == "skill" and _bare(_term_key(value)) in legal:
                 continue
             claims.append({"kind": kind, "value": value, "context": _window(line, value), "file": file})
     return claims
@@ -448,12 +460,46 @@ def _read(path: Path) -> str:
         return ""
 
 
+_REASON_MAX = 200
+
+
+def _clean_reason(value: object) -> str | None:
+    """A reason as one short line of plain text, or None when it is not a non-empty string."""
+    if not isinstance(value, str):
+        return None
+    text = _squash("".join(" " if ch.isspace() or not ch.isprintable() else ch for ch in value))
+    return text[:_REASON_MAX].rstrip() or None
+
+
+def _item_key(item: dict) -> tuple:
+    return (item.get("kind"), item.get("value"), item.get("file"))
+
+
+def _with_reasons(found: list[dict], saved: list | None, keep: list[dict] | None) -> None:
+    """Put on each flagged item (not a placeholder) the reason recorded for it before, then the ``keep`` ones."""
+    reasons: dict[tuple, str] = {}
+    for source in (saved or [], keep or []):
+        for item in source:
+            if isinstance(item, dict) and (reason := _clean_reason(item.get("reason"))):
+                reasons[_item_key(item)] = reason
+    for item in found:
+        if item.get("kind") != "placeholder" and (reason := reasons.get(_item_key(item))):
+            item["reason"] = reason
+
+
 def check(
-    output_dir: Path, profile_dir: Path, *, write: bool = True, current_year: int | None = None
+    output_dir: Path,
+    profile_dir: Path,
+    *,
+    write: bool = True,
+    current_year: int | None = None,
+    keep: list[dict] | None = None,
 ) -> list[dict] | None:
     """Check ``output_dir``'s CV and letter against the profile; None when it cannot be known.
 
     ``[]`` is clean. Writes ``facts.json`` (best effort) unless ``write`` is False. Never raises.
+    An item still flagged keeps the ``reason`` recorded for it (by kind, value and file); ``keep``
+    (``[{kind, value, file, reason}]``) records new ones. A TODO never takes one.
     """
     try:
         cv_md = profile_dir / "cv.md"
@@ -478,6 +524,7 @@ def check(
         if letter.is_file():
             claims += extract_claims(letter.read_text(encoding="utf-8"), "cover_letter")
         found = unsupported(claims, cv_sources, cv_sources + [ad], current_year=current_year, aliases=aliases)
+        _with_reasons(found, load(output_dir), keep if isinstance(keep, list) else None)
     except Exception:  # noqa: BLE001 - a check that cannot run is "not checked", never a failure
         return None
     if write:

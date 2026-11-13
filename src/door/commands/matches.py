@@ -654,7 +654,8 @@ def _render_materials(materials: dict, console=None) -> None:
             from rich.markup import escape
 
             grid.add_row("Not in your CV", "\n".join(
-                f"[yellow]• {escape(c['value'])}  — \"{escape(c['context'])}\"  ({c['file'].replace('_', ' ')})[/]"
+                f"[yellow]• {escape(c['value'])}  — \"{escape(c['context'])}\"  ({c['file'].replace('_', ' ')})"
+                + (f" [dim]— kept: {escape(c['reason'])}[/]" if c.get("reason") else "") + "[/]"
                 for c in unsupported))
     if "readability" in materials:
         found = materials["readability"]

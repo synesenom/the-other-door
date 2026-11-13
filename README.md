@@ -71,14 +71,14 @@ From then on, a session is a conversation:
 |---------|--------------|
 | "Get me today's jobs." | Searches the job boards in your profile, finds the employers' own job feeds and reads them (only what's new since last time), filters out what can't fit, scores the rest against your CV, and shows the ranked matches. A few minutes. |
 | "What's new?" | What happened since you last looked, then the new matches, best first. |
-| "Show me 3." | The posting in full. |
-| "Not 2, it's on-site." | Hides it, with your reason. |
-| "Prepare 3." | A tailored CV and cover letter, compiled to PDF (a few minutes). |
+| "Show me the Acme one." | The posting in full. You name a job by its company or title; when several fit, it asks which. |
+| "Not the data engineer one, it's on-site." | Hides it, with your reason. |
+| "Prepare the Acme one." | A tailored CV and cover letter, compiled to PDF (a few minutes). |
 | "Let me see it." | Both PDFs with page images, keywords, page counts and letter length. |
 | "Tighten the letter's second paragraph." | One targeted edit, recompiled. "Undo that" reverts it. |
 | "Here's an ad I found: …" | Stores a pasted ad (or fetches a link) as a posting so you can prepare it. |
-| "Mark 3 applied." | Records it — you submit the application yourself. |
-| "I passed the screening at 3; technical interview on Friday." | Records each interview round (screening, impression, assessment, technical), so you can see later which kinds you pass. |
+| "I applied to Acme." | Records it — you submit the application yourself. |
+| "I passed the screening at Acme; technical interview on Friday." | Records each interview round (screening, impression, assessment, technical), so you can see later which kinds you pass. |
 | "I'm done." | Closes the review session, so next time "new" means new since now. |
 
 ![A review session in Claude Code: what's new, discard one, show the Head of Finance one, prepare it, done](docs/demo/claude.gif)

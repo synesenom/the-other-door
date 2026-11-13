@@ -167,6 +167,7 @@ Every model call goes through the `claude` CLI in print mode, on the user's Pro/
 | `jobs add <file, - or URL> [--title] [--company] [--url] [--location] [--force]` | `import_posting` | Store an ad found elsewhere (text, Markdown, JSON, pasted text via the tool, or a URL fetched through the scrapers' polite client, its title, company and location read off the page by one Haiku `claude -p` call unless given) as an ordinary posting under `jobs/postings/<today>/manual/` (`source="manual"`; `scrape`'s filters never touch it), scored at once by `_match_core(paths=[…])` |
 | `jobs prepare [job]` | `prepare` | Tailor materials for a job (or, with none, the top match) and advance it to `prepared` once they are on disk |
 | — (conversation only) | `revise` | One `claude -p` edit of a document's body, recompiled; `.bak` for undo |
+| — (the tailor agent's) | `check_facts` | `tailoring/facts.check` on the finished `.tex` files, offline: what `cv.md` and the story bank do not back; `keep` records a reason per kept item in `facts.json`; two calls a prepare run (`.facts_rounds`, cleared by `prepare`) |
 | — (the tailor agent's) | `compile` | Tectonic, or `xelatex`, on the tailored `.tex` files → PDFs; `--render` also renders each compiled PDF's pages to PNGs, with its page count |
 | — (conversation only) | `mark_reviewed` | Stamp `jobs/last_review.json` — the end of a review session |
 | — (the desktop app's) | `mark_seen` | Add one job to `jobs/last_review.json`'s `seen`: opened, no longer new |

@@ -119,7 +119,8 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    figures are read the French way too (`45 000`, with a space, non-breaking or narrow, `\,` or `~`, is `45000`; `2,5` is `2.5`; `45 k€` is `45000`), and the day and month of a written date ("29 octobre", `10/2026`) are not figures; amounts with a suffix count (`40k` is `40,000`, `2.5M` is `2,500,000`, `3x` stays `3x`); single digits and
    the current year are skipped, derived figures may be flagged; plain lowercase words in a bullet are not checked
    (precision over recall), but every item of the Skills section is. A `TODO` left in a document is always flagged:
-   it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing.
+   it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing. Company forms (`ApS`, `GmbH`, `Ltd`, `S.A.S.`) are never read as skills.
+   The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json`, which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
    `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `\section` heading
    on a line of its own and in order, the `% Keywords:` and no garbled or empty text. What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);

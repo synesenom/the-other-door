@@ -277,7 +277,7 @@ column comes under the pages.
 - Under the title, the **Salary** line, when preparing found one (above).
 - Under that, a line marked with the warning triangle names the numbers, employers, skills,
   certifications or degrees of the CV and letter that your `cv.md` and story bank do not back
-  ("Not in your CV: 87%, Nordwind. Check them before you send it."). Revise can take them out.
+  ("Not in your CV: 87%, Nordwind. Check them before you send it."). A claim the tailor kept as true shows its reason in brackets after the name. Revise can take them out.
 - A CV is meant to be at most 2 pages, a letter 1 page and 250 to 350 words. When one is over,
   a note under the page says so in words ("(limit is 2)", "(aim for 250–350)").
 - **Save CV** or **Save letter** under the page saves the document shown, named for you

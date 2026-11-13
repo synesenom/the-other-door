@@ -60,6 +60,7 @@ from door.commands import _common as common
 from door.commands import add as add_cmd
 from door.commands import ask as ask_cmd
 from door.commands import archive as archive_cmd
+from door.commands import check_facts as check_facts_cmd
 from door.commands import compile as compile_cmd
 from door.commands import companies as companies_cmd
 from door.commands import matches as matches_cmd
@@ -182,11 +183,11 @@ CLI_COMMAND_TOOLS = {
 
 # Tools with no command: the conversation (or an agent) is their only caller.
 # `revise` and `mark_reviewed` are what a user says ("tighten the second
-# paragraph", "I'm done"); `mark_seen` is the desktop app opening a posting; `compile` is the tailor agent's, and `revise`
+# paragraph", "I'm done"); `mark_seen` is the desktop app opening a posting; `compile` and `check_facts` are the tailor agent's, and `revise`
 # recompiles itself, so a .tex never changes without its PDF. `save_cv` is the
 # desktop app's wizard putting the reviewed CV in place; `init`'s CV step is its shell twin.
 CONVERSATION_ONLY_TOOLS = (
-    "revise", "mark_reviewed", "mark_seen", "compile", "save_cv", "job_result", "cancel_job",
+    "revise", "mark_reviewed", "mark_seen", "compile", "check_facts", "save_cv", "job_result", "cancel_job",
     "save_photo", "remove_photo",  # the CV photo: the app's picker, `/onboard` and `init`'s photo question
     "preview_matches",  # onboarding's first look; `init` calls the core itself
     # the phone server, for the desktop app's "Set up your phone" and Claude Code (#444, #424)
@@ -205,7 +206,7 @@ READ_ONLY_TOOLS = frozenset({
     "list_stories", "draft_stories",
 })
 WRITING_TOOLS = frozenset({
-    "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "mark_reviewed", "mark_seen", "init_profile",
+    "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
     "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
     "remove_company", "merge_companies", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
@@ -546,6 +547,29 @@ async def cancel_job() -> dict:
         return {"error": "nothing is running"}
     cancel.set()
     return {"cancelling": running["tool"]}
+
+
+@mcp.tool()
+@_tool_errors
+def check_facts(job_id: str, keep: list[dict] | None = None) -> dict:
+    """Check a prepared CV and cover letter against the candidate's own sources (offline, no model).
+
+    The tailor agent's tool: call it on the finished documents, fix or remove what is truly
+    unsupported (then `compile` again), call it once more; two rounds at most per prepare run.
+    A TODO is a gap in `cv.md` and never takes a reason.
+
+    Args:
+        job_id: The job: its id, or words from its company and title.
+        keep: For an item that stays because it is true, ``[{"kind", "value", "file", "reason"}]``
+            copied from the list, ``reason`` one plain sentence (200 characters at most); it is
+            written into `facts.json` and shown next to the item.
+
+    Returns:
+        ``{"job_id", "round", "rounds_left", "unsupported"}``: each item ``{kind, value, context,
+        file, reason?}`` (``[]`` clean, None when the check cannot run), or ``{"error"}`` after the
+        second round.
+    """
+    return check_facts_cmd._check_facts_core(job_id, keep=keep, jobs_dir=workspace.JOBS_DIR)
 
 
 @mcp.tool()

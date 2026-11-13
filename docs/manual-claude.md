@@ -120,6 +120,7 @@ session, where `./scripts/setup.sh` is the install.
 | `jobs summary` | `status_summary` | pipeline counts, ledger breakdown, `interviews` (each kind: passed, rejected, ghosted, withdrawn, pending), `application` (the same for the application itself: did it lead to an interview), `pass_rates` (per stage: `passed`, `decided`, `rate`, `low`, `high`, a one-sigma Wilson interval), `since_last_review` (runs, new matches, failed sites) and `employers` (how many are followed, unfollowable, unresolved) and `drive` (`connected`, `account`, `last_synced`, `last_error` of the Google Drive sync) and `plan` (how full the Claude plan's 5-hour and 7-day windows are, about how many more finds and prepares fit, and what used the plan this week; null until a call has read it) |
 | `jobs status [<job_id>] [<status>] [--notes] [--at]` | `set_status` | the new status and its `notes` (why, or how an interview went: what was covered and said, your impressions; `discarded` is "not this one"; an interview round is `interview:<kind>`), `at` (when it happened), `current` (the status now: a change dated before the latest one leaves it), `sent_dir` (the copy of the materials taken when it was first sent) and a `warning` when the ad is missing or a snippet, or the materials sent hold figures not in your `cv.md` |
 | `jobs prepare [job_id]` | `prepare` | `prepared` / `skipped` / `failed`, the material files, any missing ones; with no job, the top unapplied match (or `no_matches`) |
+| — (the tailor agent's) | `check_facts` | `{round, rounds_left, unsupported}`: the offline fact check of the finished CV and letter (what `show` lists under "Not in your CV"), two rounds a prepare run; `keep` records why an item that stays is true |
 | — (the tailor agent's) | `compile` | per-file compile result; with `render`, PNG paths and `page_count` per PDF |
 | `init [--name …] [--set KEY=VALUE]` | `init_profile` | the written config path and copied example files (`--set` ↔ the tool's `other`) |
 | `init --show` | `show_profile` | no arguments: `config` (the validated profile, or `None` with `errors` lines when it is invalid or missing), `cv` (`path`, `exists`, `is_example`, `text`, `headline`, `sections` with `title`, `roles`, `bullets`), `templates` (`cv`, `cover_letter`) and `story_bank` (`path`, `exists`, `is_example`: still `profile.example/`'s file), `enrich_sources`, and `options` for a profile form (`cities` with `country` and `boards`, the supported `languages`, the `worldwide_boards`); writes nothing |
@@ -157,7 +158,7 @@ session, where `./scripts/setup.sh` is the install.
 | `data report [PATH]` | `report_problem` | the report's path, the names in it and its size ("something is broken, make a report") |
 
 The tools marked — have no command: `revise` and `mark_reviewed` are things you say to
-Claude, `mark_seen` is the desktop app opening a posting, `preview_matches` is what a wizard shows while you check your answers, `compile` is the tailor agent's (`revise` recompiles on its own, so a `.tex`
+Claude, `mark_seen` is the desktop app opening a posting, `preview_matches` is what a wizard shows while you check your answers, `compile` and `check_facts` are the tailor agent's (`revise` recompiles on its own, so a `.tex`
 never changes without its PDF).
 
 Every tool that takes a `job_id` also accepts words from the job's company and title

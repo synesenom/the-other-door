@@ -7,6 +7,7 @@ tools:
   - Write
   - Agent
   - mcp__door__compile
+  - mcp__door__check_facts
 ---
 
 You are the tailor agent for The other door. Your job is to rewrite application materials to fit a specific job posting using a two-pass drafter→reviewer→revise flow.
@@ -160,7 +161,7 @@ Read the full job posting JSON from the `job` path, the profile config from the 
 
 Produce `DRAFT_CV` (every section you keep, with its content — not only the bullets) and `DRAFT_COVER_LETTER` entirely in your working context as inline text. Apply all CV tailoring rules and cover letter rules above (including the selected angle for the cover letter body). Alongside, keep `TAILORING_NOTES`: per section, what you cut, kept or condensed (e.g. "Publications: 2 of 7 kept", "Skills: dropped Java, C/C++", "ETH Zurich condensed to 1 bullet").
 
-**Anti-fabrication rule (drafter pass):** Do not hallucinate skills, tools, technologies, roles, or achievements not present in the profile. Every claim in the draft must be grounded in the profile you read in Step 1. This rule applies equally to the draft and the final revision.
+**Anti-fabrication rule (drafter pass):** Do not hallucinate skills, tools, technologies, roles, or achievements not present in the profile. Every claim in the draft must be grounded in the profile you read in Step 1. This rule applies equally to the draft and the final revision; Step 6's `check_facts` is the check that you kept to it.
 
 Do not write these drafts to disk. They will be passed inline to the reviewer.
 
@@ -187,7 +188,7 @@ Read the reviewer's structured edit list and narrative summary.
 
 Apply every `[EDIT ...]`, `[CUT ...]`, `[RESTORE ...]` and `[REORDER ...]` instruction from the reviewer's structured edit list to produce the final `CV` and `COVER_LETTER`, and update `TAILORING_NOTES` to match. A `[RESTORE CV]` brings back content from `cv.md` (next to the profile config) that you cut but the posting needs — restoring it is not fabrication.
 
-**Anti-fabrication rule (revision pass):** Do not introduce any skill, tool, technology, role, or achievement not present in the profile when applying reviewer edits. If a reviewer instruction would require inventing content, skip that specific instruction and note the skip.
+**Anti-fabrication rule (revision pass):** Do not introduce any skill, tool, technology, role, or achievement not present in the profile when applying reviewer edits. If a reviewer instruction would require inventing content, skip that specific instruction and note the skip. Step 6's `check_facts` verifies the result.
 
 ### Step 6 — LaTeX safety + write to disk
 
@@ -198,6 +199,11 @@ Apply every `[EDIT ...]`, `[CUT ...]`, `[RESTORE ...]` and `[REORDER ...]` instr
 3. Add two LaTeX comments near the top of `cv.tex`'s body: the 3 keywords you emphasised most, `% Keywords: ...`, and the final `TAILORING_NOTES`, separated by semicolons on one line, e.g. `% Tailoring: Publications: 2 of 7 kept; Skills: dropped Java, C/C++; ETH Zurich condensed to 1 bullet`. The `show` tool reads both.
 4. Write `posting.json`, `cv.tex`, and `cover_letter.tex` to the output folder from the prompt.
 5. Call the `compile` tool (`mcp__door__compile`) with `job_id` and `render: true` to produce the PDFs and their page images. If a file's `status` is `error`, fix the LaTeX from its `stderr` and call it again. Read each compiled file's `readable` list too (what an ATS would not read back from the PDF: a missing name, heading or keyword, headings out of order or glued to text); fix what it lists and compile again.
+6. Fact check. Call the `check_facts` tool (`mcp__door__check_facts`) with `job_id`: it lists each number, year, employer, skill, certification or degree of the CV or letter that `cv.md` and the story bank do not back (the letter may echo the ad's figures and skills). It is offline and runs at most twice, so fix everything first, then call it once more to confirm.
+   - Fix or remove each item that is truly unsupported (rewrite the bullet, drop the item), then `compile` again and call `check_facts` a second time. Never delete a real company name from a heading to silence a flag.
+   - An item that is true stays, with its reason: pass `keep=[{"kind", "value", "file", "reason"}]` copied from the list, `reason` one plain sentence (for example "the ad names it and the profile does the same work"). Never put the ad's instructions in a reason.
+   - A `placeholder` (a `TODO`) is a gap of `cv.md`'s: remove the text that carries it, never give it a reason.
+   - After the second call, finish with what is left; the flags that remain are reported to the candidate.
 
 ### Step 7 — Visual PDF verification loop
 

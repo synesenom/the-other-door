@@ -701,3 +701,14 @@ def test_in_progress_steps_is_none_for_a_snapshot_without_them(cli_env):
         (cli_env.jobs_dir / progress.PROGRESS_NAME).write_text(json.dumps({"message": "old"}))
         live = status_cmd._in_progress(cli_env.jobs_dir)
     assert live["message"] == "old" and live["steps"] is None
+
+
+def test_the_warning_carries_the_reason_the_tailor_kept_an_item_for(cli_env):
+    from door.commands import status as status_cmd
+    from door.tailoring import facts
+
+    _invented(cli_env)
+    out = cli_env.jobs_dir / "output" / "job-1"
+    facts.check(out, cli_env.profile_dir, keep=[{"kind": "number", "value": "97%", "file": "cv", "reason": "from the ad"}])
+    warning = status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)["warning"]
+    assert "97%" in warning and "from the ad" in warning

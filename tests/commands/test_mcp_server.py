@@ -146,6 +146,7 @@ def test_show_tool_errors_come_back_as_error_dicts(tmp_path, monkeypatch):
 def test_existing_tools_also_return_error_dicts(tmp_path, monkeypatch):
     monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
     assert server.compile("../evil") == {"error": "invalid job_id: '../evil'"}
+    assert server.check_facts("../evil") == {"error": "invalid job_id: '../evil'"}
     assert "error" in server.set_status("job-a", "bogus")
 
 
