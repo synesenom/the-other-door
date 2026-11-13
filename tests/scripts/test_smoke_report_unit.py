@@ -1,5 +1,5 @@
 """Unit tests for scripts/smoke_report.py: the live smoke run's status page, one list per dimension
-(boards, employer feeds, countries, ad languages).
+(boards, employer feeds, the matcher).
 
 The weekly live-smoke workflow writes pytest's JUnit XML, then this script turns
 it into docs/badges/live-smoke.md, the page the README's live-smoke badge links.
@@ -74,14 +74,14 @@ def test_tests_that_are_not_site_smoke_tests_are_ignored():
 
 
 def test_a_parametrised_dimension_test_marks_each_of_its_keys():
-    """Countries and languages are one parametrised test each: the key is the test's parameter."""
+    """The matcher is one parametrised test: the key is the test's parameter."""
     xml = _junit(
-        _case("test_countries_live", "test_country_live[dk]", package="tests.i18n"),
-        _case("test_countries_live", "test_country_live[hu]", '<failure message="x">x</failure>', package="tests.i18n"),
-        _case("test_languages_live", "test_language_live[dk]", '<failure message="x">x</failure>', package="tests.i18n"),
+        _case("test_matcher_golden", "test_golden_case[a]", package="tests.matching"),
+        _case("test_matcher_golden", "test_golden_case[b]", '<failure message="x">x</failure>', package="tests.matching"),
+        _case("test_other", "test_golden_case[c]", '<failure message="x">x</failure>', package="tests.matching"),
     )
-    assert smoke_report.param_outcomes(xml, "test_countries_live", ["dk", "hu", "de"]) == {
-        "dk": "pass", "hu": "fail", "de": "unknown"}
+    assert smoke_report.param_outcomes(xml, "test_matcher_golden", ["a", "b", "c"]) == {
+        "a": "pass", "b": "fail", "c": "unknown"}
 
 
 def test_render_lists_every_dimension_with_its_symbols_and_the_run():
@@ -110,18 +110,18 @@ def test_main_writes_the_table_and_treats_a_missing_report_as_all_unknown(tmp_pa
 
 
 def test_main_lists_each_dimension_on_its_own(tmp_path):
-    """Boards, employer feeds, countries and ad languages are checked independently,
-    so each has its own list: a broken language shows even when every site passes."""
+    """Boards, employer feeds and the matcher are checked independently, so each has its own list: a broken
+    golden case shows even when every site passes."""
     report = tmp_path / "smoke.xml"
     report.write_text(_junit(
         _case("test_jobindex_live"), _case("test_greenhouse_live"),
-        _case("test_countries_live", "test_country_live[dk]", package="tests.i18n"),
-        _case("test_languages_live", "test_language_live[da]", '<failure message="x">x</failure>', package="tests.i18n"),
+        _case("test_matcher_golden", "test_golden_case[domain-mismatch]", '<failure message="x">x</failure>',
+              package="tests.matching"),
     ), encoding="utf-8")
     out = tmp_path / "live-smoke.md"
     smoke_report.main([str(report), str(out), "--date", "2026-10-12"])
     text = out.read_text(encoding="utf-8")
-    heads = ["## Boards", "## Employer feeds", "## Countries", "## Languages", "## Matcher"]
+    heads = ["## Boards", "## Employer feeds", "## Matcher"]
     assert [text.index(h) for h in heads] == sorted(text.index(h) for h in heads)
 
     def section(head):
@@ -131,8 +131,8 @@ def test_main_lists_each_dimension_on_its_own(tmp_path):
 
     assert "| jobindex | ✅ |" in section("## Boards") and "| workable |" in section("## Boards")
     assert "| greenhouse | ✅ |" in section("## Employer feeds")
-    assert "| Denmark (dk) | ✅ |" in section("## Countries") and "| Hungary (hu) | ❓ |" in section("## Countries")
-    assert "| Danish (da) | ❌ |" in section("## Languages") and "| English (en) | ❓ |" in section("## Languages")
+    assert "| domain-mismatch | ❌ |" in section("## Matcher")
+    assert "## Countries" not in text and "## Languages" not in text
 
 
 def test_main_reads_the_junit_report(tmp_path):
@@ -335,8 +335,6 @@ def test_the_script_finds_the_package_without_src_on_the_path(tmp_path):
 _LISTS = [
     ("Boards", [("jobindex", "pass"), ("thehub", "pass")]),
     ("Employer feeds", [("greenhouse", "pass"), ("lever", "fail")]),
-    ("Countries", [("Denmark (dk)", "pass")]),
-    ("Languages", [("Danish (da)", "unknown"), ("English (en)", "pass")]),
     ("Matcher", [("obvious-strong-match", "pass"), ("borderline-partial-skills", "fail")]),
 ]
 
@@ -347,8 +345,6 @@ def test_each_dimension_has_a_badge_with_how_many_passed():
     assert smoke_report.dimension_badges([*_LISTS, ("Boards", [("reed", "unreached"), ("jobindex", "pass")])]) == [
         ("live-boards.svg", "boards", "2/2", "green"),
         ("live-feeds.svg", "employer feeds", "1/2", "red"),
-        ("live-countries.svg", "countries", "1/1", "green"),
-        ("live-languages.svg", "languages", "1/2", "orange"),
         ("live-matcher.svg", "matcher", "1/2", "red"),
         ("live-boards.svg", "boards", "1/2", "orange"),
     ]
@@ -362,15 +358,14 @@ def test_main_writes_the_dimension_badges_when_asked(tmp_path):
     smoke_report.main([str(report), str(tmp_path / "live-smoke.md"), "--badges", str(tmp_path), "--date", "2026-10-12"])
     boards = (tmp_path / "live-boards.svg").read_text(encoding="utf-8")
     assert boards.lstrip().startswith("<svg") and "boards" in boards and "15/15" in boards
-    for name in ("live-feeds.svg", "live-countries.svg", "live-languages.svg", "live-matcher.svg"):
+    for name in ("live-feeds.svg", "live-matcher.svg"):
         assert (tmp_path / name).read_text(encoding="utf-8").lstrip().startswith("<svg")
 
 
 def test_the_readme_shows_the_dimension_badges_linked_to_their_lists():
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     for svg, anchor in (("live-boards", "boards"),
-                        ("live-feeds", "employer-feeds"), ("live-countries", "countries"),
-                        ("live-languages", "languages"), ("live-matcher", "matcher")):
+                        ("live-feeds", "employer-feeds"), ("live-matcher", "matcher")):
         assert f"(docs/badges/{svg}.svg)](docs/badges/live-smoke.md#{anchor})" in readme
 
 

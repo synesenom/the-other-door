@@ -6,8 +6,6 @@ so each has its own list:
 
 - **Boards:** the boards (``Site.board``);
 - **Employer feeds:** the other sites (``Site.config_key``);
-- **Countries:** every ``i18n/country/`` file, from ``tests/i18n/test_countries_live.py``'s ``[<cc>]`` runs;
-- **Languages:** every ``i18n/lang/`` file, from ``tests/i18n/test_languages_live.py``'s ``[<code>]`` runs;
 - **Matcher:** every golden scoring case (``tests/matching/fixtures/golden/``), from
   ``tests/matching/test_matcher_golden.py``'s ``[<case>]`` runs (the real scorer on a Claude plan).
 
@@ -26,7 +24,7 @@ row are written to FILE (empty when none), which the workflow turns into an issu
 change fails the run and opens the failure issue.
 
 With ``--badges DIR`` it also writes one badge per list into DIR (``live-boards.svg``,
-``live-feeds.svg``, ``live-countries.svg``, ``live-languages.svg``, ``live-matcher.svg``): "boards | 3/3", how
+``live-feeds.svg``, ``live-matcher.svg``): "boards | 3/3", how
 many passed of how many, green when every one passed, red when one changed, and orange when one was not
 reached, not checked or has no live test. The badges are committed SVGs rather than GitHub's workflow badge URL, which can only say whether the
 whole run passed.
@@ -62,8 +60,6 @@ _LAST_CHECKED = re.compile(r"^Last checked: (\d{4}-\d{2}-\d{2})\.$")
 _DIMENSION_BADGES = {
     "Boards": ("live-boards.svg", "boards"),
     "Employer feeds": ("live-feeds.svg", "employer feeds"),
-    "Countries": ("live-countries.svg", "countries"),
-    "Languages": ("live-languages.svg", "languages"),
     "Matcher": ("live-matcher.svg", "matcher"),
 }
 _GOLDEN_PREFIX = "golden-"
@@ -83,7 +79,6 @@ def _has_live_test(name: str) -> bool:
 def sections(xml: str) -> list[tuple[str, list[tuple[str, str]]]]:
     """The page's lists, in order: ``[(title, [(label, status), ...]), ...]``."""
     sys.path.insert(0, str(_REPO / "src"))
-    from door import i18n
     from door.core.sites import SITES
 
     boards = [n for n, s in SITES.items() if s.board]
@@ -93,17 +88,11 @@ def sections(xml: str) -> list[tuple[str, list[tuple[str, str]]]]:
         outcomes = site_outcomes(xml, names)
         return [(n, outcomes[n] if _has_live_test(n) else "none") for n in names]
 
-    countries = i18n.countries()
-    by_country = param_outcomes(xml, "test_countries_live", sorted(countries))
-    languages = i18n.languages()
-    by_language = param_outcomes(xml, "test_languages_live", sorted(languages))
     golden = golden_case_ids()
     by_case = param_outcomes(xml, "test_matcher_golden", golden)
     return [
         ("Boards", site_rows(boards)),
         ("Employer feeds", site_rows(feeds)),
-        ("Countries", [(f"{countries[cc].name} ({cc})", by_country[cc]) for cc in sorted(countries)]),
-        ("Languages", [(i18n.language_label(code), by_language[code]) for code in sorted(languages)]),
         ("Matcher", [(case, by_case[case]) for case in golden]),
     ]
 
@@ -140,7 +129,7 @@ def site_outcomes(junit_xml: str, sites: list[str]) -> dict[str, str]:
 
 def param_outcomes(junit_xml: str, module: str, keys: list[str]) -> dict[str, str]:
     """Map each key to "pass", "fail", "unreached" or "unknown" from the runs of *module*'s parametrised test,
-    whose parameter is the key (``test_country_live[dk]``)."""
+    whose parameter is the key (``test_golden_case[domain-mismatch]``)."""
     outcomes = {key: "unknown" for key in keys}
     for case in ET.fromstring(junit_xml).iter("testcase"):
         classname = case.get("classname", "")
@@ -251,9 +240,7 @@ def render(lists: list[tuple[str, list[tuple[str, str]]]] | list[tuple[str, list
         "",
         "✅ passed · ❌ changed · ⛔ not reached · ❓ not checked yet · ➖ no live test",
         "",
-        "Each list is checked on its own: a site's test reads that site, a country's checks its country "
-        "file against real ads' places, a language's checks its language file against real ads written in it, "
-        "the matcher's scores the golden postings with the real model and checks each score falls in its "
+        "Each list is checked on its own: a site's test reads that site, the matcher's scores the golden postings with the real model and checks each score falls in its "
         "hand-labelled band. Changed means the site answered but no longer as the scraper reads it; not "
         "reached means it refused the request or could not be reached (some sites refuse GitHub's runners: a "
         "local run reaches them), and its note says for how many runs and what it last was. A row a run did "
