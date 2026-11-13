@@ -376,3 +376,25 @@ def test_room_reads_the_run_records_itself(tmp_path):
     (runs / "a.json").write_text(json.dumps(_record(-1, 25)))
     # the one run weighed its 25 scoring lines, 0.25: (1 − 0.196) / 0.4 / 0.25 = 8 finds
     assert usage.room(tmp_path, now=_AT)["room"]["find"] == 8
+
+
+# --------------------------------------------------------------------------- the tailoring retry
+def test_a_tailoring_retry_counts_as_preparing():
+    assert usage.FEATURES["tailoring_retry"] == "prepare"
+
+
+def test_a_retry_is_not_another_application_prepared(tmp_path):
+    _log(tmp_path, ("tailoring", 1.0, 1, 1), ("tailoring_retry", 0.5, 1, 1))
+    prepare = usage.week(tmp_path)["activities"][0]
+    assert prepare["activity"] == "prepare" and prepare["count"] == 1 and prepare["share"] == 1.0
+
+
+def test_a_prepare_weighs_its_retry_too():
+    lines = [_ln(0, "tailoring", weight=1.0), _ln(1, "tailoring", weight=1.0), _ln(2, "tailoring_retry", weight=1.0)]
+    assert usage.run_sizes(lines, [])["prepare"] == pytest.approx(1.5)
+
+
+def test_a_retry_older_than_every_selected_tailoring_is_left_out(monkeypatch):
+    monkeypatch.setattr(usage, "PREPARES", 1)
+    lines = [_ln(0, "tailoring", weight=1.0), _ln(1, "tailoring_retry", weight=5.0), _ln(2, "tailoring", weight=1.0)]
+    assert usage.run_sizes(lines, [])["prepare"] == pytest.approx(1.0)

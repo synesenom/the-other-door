@@ -42,6 +42,7 @@ FEATURES = {
     "title_translation": "find",
     "careers_lookup": "find",
     "tailoring": "prepare",
+    "tailoring_retry": "prepare",  # the one extra tailor run after the ATS read-back; not another application prepared
     "revise": "prepare",
     "draft_cv": "other",
     "draft_stories": "other",
@@ -310,7 +311,7 @@ def run_sizes(lines: list[dict], records: list[dict]) -> dict:
 
     A find is the mean, over the latest `RUNS` run records with any finding call between their
     `started_at` and `finished_at`, of those calls' weight (scoring, title translation, careers
-    lookups); a prepare the mean of the latest `PREPARES` tailoring calls. Before there is
+    lookups); a prepare the mean of the latest `PREPARES` tailoring calls, each with the retry calls after the first of them. Before there is
     such history, each is `DEFAULT_POSTINGS_PER_RUN` / `DEFAULT_PREPARE_WEIGHT` times the
     weight of scoring one posting.
 
@@ -329,10 +330,13 @@ def run_sizes(lines: list[dict], records: list[dict]) -> dict:
         if mine:
             runs.append(sum(_weight(line) for line in mine))
     runs = runs[-RUNS:]
-    tailored = [_weight(line) for line in lines if line["feature"] == "tailoring"][-PREPARES:]
+    tailoring = [i for i, line in enumerate(lines) if line["feature"] == "tailoring"][-PREPARES:]
+    # A retry belongs to the prepare it followed: counted from the first selected tailoring line on.
+    tailored = (sum(_weight(line) for line in lines[tailoring[0]:] if line["feature"] in ("tailoring", "tailoring_retry"))
+                / len(tailoring)) if tailoring else None
     per_posting = _per_posting(lines)
     find = sum(runs) / len(runs) if runs else (DEFAULT_POSTINGS_PER_RUN * per_posting if per_posting else None)
-    prepare = (sum(tailored) / len(tailored) if tailored
+    prepare = (tailored if tailored is not None
                else (DEFAULT_PREPARE_WEIGHT * per_posting if per_posting else None))
     return {"find": find or None, "prepare": prepare or None}
 

@@ -72,6 +72,16 @@ def problems(text: str, *, name: str | None, headings: list[str], keywords: list
     return found
 
 
+# The kinds a second tailor run can fix by rewriting the text (the name, a heading or a keyword absent);
+# the others are layout, reported and not retried.
+FIXABLE = {"missing"}
+
+
+def fixable(found: list[dict]) -> list[dict]:
+    """The problems of `found` (``[{kind, detail, ...}]``) whose kind is in `FIXABLE`."""
+    return [p for p in found if p.get("kind") in FIXABLE]
+
+
 def extract(pdf: Path) -> tuple[str, int]:
     """The text of every page of `pdf` and its page count.
 

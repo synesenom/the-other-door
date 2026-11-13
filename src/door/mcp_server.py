@@ -90,6 +90,9 @@ from door.core.tracker import DuplicateApplicationError
 # Answers not logged: a background run's failure was logged when it ended (`job_result` only repeats it);
 # a sent status's warning names the claims of the CV the materials make.
 _UNLOGGED_ANSWERS = ("job_result", "set_status")
+# Tools whose `warning` is advice for the user, not a malfunction (`prepare`'s ATS read-back, #21): their
+# `error` is still logged.
+_UNLOGGED_WARNINGS = ("prepare",)
 
 
 def _answer_of(result) -> dict | None:
@@ -114,6 +117,8 @@ def _log_answer(tool: str, answer: dict | None) -> None:
         return
     if isinstance(answer.get("error"), str):
         problem_log.failure(f"tool {tool}", answer["error"])
+    if tool in _UNLOGGED_WARNINGS:
+        return
     warnings = [answer.get("warning")] + list(answer.get("warnings") or [])
     for warning in warnings:
         if isinstance(warning, str) and warning:
@@ -839,6 +844,9 @@ async def prepare(
     A prepared job also gets its salary estimate (`salary_estimate`, one Haiku web
     search, reused while under 90 days old; skipped when the plan is close to its limit):
     mention the range as an estimate with its sources; say nothing when it is null.
+    It reads both PDFs back like an ATS and, when the name, a heading or a keyword is missing, runs the
+    tailor once more with those problems; what remains is in `readability` (`[{file, kind, detail}]`, `[]`
+    clean, null not checked) with a `warning`: tell the user and offer `revise`. It never fails a prepare.
 
     Args:
         job_id: The job: its id, or words from its company and title ("trustpilot").
@@ -849,7 +857,7 @@ async def prepare(
     Returns:
         ``{"job_id", "outcome": "prepared" | "skipped" | "failed",
         "output_dir", "files", "regenerated_incomplete", "error"?,
-        "missing"?, "salary"?}`` (``salary``: the estimate or null), or ``{"job_id": None, "outcome": "no_matches"}``
+        "missing"?, "salary"?, "readability"?, "warning"?}`` (``salary``: the estimate or null), or ``{"job_id": None, "outcome": "no_matches"}``
         when `job_id` is omitted and nothing clears min_score.
     """
     return await _run_long(
