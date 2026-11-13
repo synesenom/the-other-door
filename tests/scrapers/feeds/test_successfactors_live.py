@@ -9,21 +9,16 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.feeds import successfactors
-from live_utils import assert_detects
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
 def test_successfactors_live_returns_valid_postings():
     postings = successfactors.scrape({"successfactors_companies": ["careers.novonordisk.com"]})
     assert len(postings) >= 1, "Expected at least one posting from live SuccessFactors feed"
-    for p in postings:
-        JobPosting.model_validate(p)
-        assert p["title"], f"Missing title: {p}"
-        assert p["company"], f"Missing company: {p}"
-        assert p["url"], f"Missing url: {p}"
-        assert p["source"] == "successfactors"
+    assert_field_contract("successfactors", postings, mode="collect")
+    assert all(p["source"] == "successfactors" for p in postings)
 
 
 @pytest.mark.live

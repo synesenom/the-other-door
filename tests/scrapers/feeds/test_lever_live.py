@@ -9,21 +9,16 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.feeds import lever
-from live_utils import assert_detects
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
 def test_lever_live_returns_valid_postings():
     postings = lever.scrape({"lever_companies": ["kavak"]})
     assert len(postings) >= 1, "Expected at least one posting from Kavak's Lever board"
-    for p in postings:
-        JobPosting.model_validate(p)
-        assert p["title"], f"Missing title: {p}"
-        assert p["company"], f"Missing company: {p}"
-        assert p["url"], f"Missing url: {p}"
-        assert p["source"] == "lever"
+    assert_field_contract("lever", postings, mode="collect")
+    assert all(p["source"] == "lever" for p in postings)
 
 
 @pytest.mark.live
@@ -31,9 +26,7 @@ def test_lever_live_reads_a_danish_company():
     """Siteimprove, on the EU host (issue #227)."""
     postings = lever.scrape({"lever_companies": ["siteimprove"]})
     assert postings
-    for p in postings:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"]
+    assert_field_contract("lever", postings, mode="collect")
 
 
 @pytest.mark.live

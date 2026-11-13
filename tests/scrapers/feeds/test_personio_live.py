@@ -5,18 +5,15 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.feeds import personio
-from live_utils import assert_detects
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
 def test_personio_live_returns_valid_postings():
     postings = personio.scrape({"personio_companies": ["pno-group-europe"], "location": "Paris, France"})
     assert postings
-    for p in postings:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("personio", postings, mode="collect")
 
 
 @pytest.mark.live

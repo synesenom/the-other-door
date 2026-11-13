@@ -7,23 +7,20 @@ essential fields filled in, so a silent upstream change surfaces as a failure.
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers import drain_errors
 from door.scrapers.boards import reed
-from live_utils import NONSENSE_KEYWORD as KW, assert_zero_hits, drain_zero_hit_state, not_reached_if_refused
+from live_utils import assert_field_contract, assert_zero_hits, drain_zero_hit_state, NONSENSE_KEYWORD as KW, not_reached_if_refused
 
 
 @pytest.mark.live
 def test_reed_live_returns_valid_postings():
     drain_errors()
-    postings = reed.scrape({"search_keywords": ["project manager"], "topic_terms": ["project*"], "location": "London",
-                            "max_pages_per_keyword": 1})
+    config = {"search_keywords": ["project manager"], "topic_terms": ["project*"], "location": "London", "max_pages_per_keyword": 1}
+    postings = reed.scrape(config)
     if not postings:
         not_reached_if_refused("reed", drain_errors().get("reed", []))
     assert postings
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("reed", postings, config)
 
 
 @pytest.mark.live

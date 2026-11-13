@@ -5,18 +5,15 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.feeds import flatchr
-from live_utils import assert_detects
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
 def test_flatchr_live_returns_valid_postings():
     postings = flatchr.scrape({"flatchr_companies": ["flatchr"]})
     assert postings
-    for p in postings:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("flatchr", postings, mode="collect")
 
 
 @pytest.mark.live
