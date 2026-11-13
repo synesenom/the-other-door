@@ -46,7 +46,7 @@ jobs:
           - { os: macos-15, arch: arm64 }
           - { os: macos-15-intel, arch: x64 }
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: app
@@ -89,6 +89,20 @@ jobs:
 
       - name: Smoke-test the installed app
         run: npm run test:package
+
+      # The install test (#639, #18): the .dmg installed the user's way into a throwaway folder, then set-up,
+      # the first run and Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
+      - name: The install test
+        run: DOOR_INSTALLER="$(ls dist/the-other-door-*-mac-${{ matrix.arch }}.dmg)" npm run test:install
+
+      - name: Keep the install test's report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: install-report-macos-${{ matrix.arch }}
+          path: app/install-report
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Keep the .dmg for 14 days
         if: always()

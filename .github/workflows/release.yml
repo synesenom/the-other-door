@@ -11,7 +11,8 @@ name: Release
 #   APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID   password, and the Apple account that notarizes;
 #                                                 without them the macOS build is unsigned (signed ad hoc)
 #   WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD      an Authenticode certificate; without, unsigned
-# Before publishing, go through docs/releasing.md (a clean-machine install on each system, release notes).
+# The install test runs on every installer and on Windows on ARM; before publishing, the by-hand rest of
+# docs/releasing.md (the first-open warnings, the real sign-in, release notes).
 on:
   push:
     tags: ["v*"]
@@ -45,7 +46,7 @@ jobs:
           - { os: windows-latest, name: windows-x64 }
           - { os: ubuntu-latest, name: linux-x64 }
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: app
@@ -99,3 +100,60 @@ jobs:
       - name: Smoke-test the packaged app
         run: |
           if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a npm run test:package; else npm run test:package; fi
+
+      # The install test (#639, #18) on what this release ships: each installer installed the user's way, then
+      # set-up, the first run and Prepare, quit and reopened. Publish the draft only when every one passed.
+      - name: The install test
+        run: |
+          case "$RUNNER_OS" in
+            macOS)   DOOR_INSTALLER="$(ls dist/the-other-door-*-mac-*.dmg)" npm run test:install ;;
+            Windows) DOOR_INSTALLER="$(ls dist/the-other-door-*.exe | head -1)" npm run test:install ;;
+            Linux)   DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
+                     DOOR_INSTALLER="$(ls dist/the-other-door-*.deb)" DOOR_INSTALLER_KIND=deb xvfb-run -a npm run test:install ;;
+          esac
+
+      - name: Keep the install test's report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: install-report-${{ matrix.name }}
+          path: app/install-report
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Windows on ARM (a Surface Pro 11): the release's x64 installer, emulated, as such a user installs it (#18).
+  install-windows-arm:
+    needs: build
+    runs-on: windows-11-arm
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+        shell: pwsh
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - name: The install test, x64 under emulation
+        run: |
+          gh release download $env:GITHUB_REF_NAME --pattern '*windows-x64.exe' --dir dist
+          $env:DOOR_INSTALLER = (Get-ChildItem dist\*windows-x64.exe | Select-Object -First 1).FullName
+          npm run test:install
+
+      - name: Keep the install test's report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: install-report-windows-arm
+          path: app/install-report
+          retention-days: 14
+          if-no-files-found: ignore
