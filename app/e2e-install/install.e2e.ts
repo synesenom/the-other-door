@@ -87,9 +87,9 @@ test('the installed app: set-up, the first run and Prepare on what the installer
     const starts = existsSync(join(world.dir, 'claude-starts.jsonl')) ? readFileSync(join(world.dir, 'claude-starts.jsonl'), 'utf8').trim().split('\n').slice(-6).join(' | ') : 'none'
     const stacksFile = join(world.dir, 'server-stacks.txt')
     const stacks = existsSync(stacksFile) ? (() => {
-      // the last dump's thread that runs door's code, whole (faulthandler starts each dump with the current thread)
+      // the last dump's thread running the find, whole (faulthandler starts each dump with the current thread)
       const blocks = readFileSync(stacksFile, 'utf8').split(/(?=Thread 0x|Current thread 0x)/)
-      return blocks.filter((b) => b.includes('door')).slice(-1).join('').slice(0, 12000)
+      return blocks.filter((b) => b.includes('_find_core')).slice(-1).join('').slice(0, 12000)
     })() : 'none'
     let procs = ''
     if (process.platform === 'win32') {
