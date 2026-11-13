@@ -284,6 +284,9 @@ poetry install   # runtime + dev deps (pytest, pytest-cov, pytest-xdist, respons
 ./scripts/run-test.sh           # offline suite + coverage + regenerate badge
 ./scripts/run-test.sh --live    # opt-in smoke tests against real sites
 ./scripts/run-test.sh --skills  # the skills (/onboard) run by the real model on your plan, before a release
+./scripts/run-test.sh --app     # the desktop app's tests as CI runs them (typecheck, unit, e2e, core journeys, phone)
+./scripts/run-test.sh --release # before a release: offline suite, app with every journey, skills, and the
+                                # install test when DOOR_INSTALLER names an installer; a PASS/FAIL line each
 ```
 
 The skill tests (`tests/skills/`, marker `skills`, never in CI) run a Claude Code skill with the real

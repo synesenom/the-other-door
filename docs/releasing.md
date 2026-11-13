@@ -7,6 +7,8 @@ only after a person has installed it on a clean machine of each system and gone 
 
 ## Before the tag
 
+- `./scripts/run-test.sh --release` passes: the offline suite, the app's tests with every journey and the skill
+  tests, which only run locally (the real model on your Claude plan runs `/onboard` against the app's test world).
 - `main` is green (the Python suite and the app's unit tests, smoke test and core journeys).
 - The repository variable `DOOR_UPDATE_FEED` names the public repo's `releases/latest`
   (`https://api.github.com/repos/<owner>/<repo>/releases/latest`). Empty, the build never checks for updates
