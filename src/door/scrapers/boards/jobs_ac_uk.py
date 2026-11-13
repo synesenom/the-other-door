@@ -43,7 +43,7 @@ from bs4 import BeautifulSoup
 from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    on_topic, parse_iso_date, record_error, record_pushback, report, run_probe, topic_terms,
+    on_topic, parse_iso_date, record_answered, record_error, record_pushback, report, run_probe, topic_terms,
 )
 
 _SITE = "jobs_ac_uk"
@@ -267,6 +267,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 report(f"no search results block on page (keyword={keyword!r}, page={page})")
                 record_error(_SITE, f"no search results block on page (keyword={keyword!r}, page={page})")
                 break
+            if not cards:
+                record_answered(_SITE)
 
             for card in cards:
                 placed = _card_date(card)

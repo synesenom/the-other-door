@@ -33,7 +33,7 @@ from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
-    parse_iso_date, record_entry_error, record_error, report, run_probe, strip_html, tracked, followed_name,
+    parse_iso_date, record_answered, record_entry_error, record_error, report, run_probe, strip_html, tracked, followed_name,
 )
 from door.scrapers.sdk import keep_local
 from door.scrapers.sdk import Detection, Probe, first, parts
@@ -208,6 +208,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 report(f"search error (keyword={keyword!r}, page={page}): {exc}")
                 record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
                 break
+            if page == 1 and isinstance(data, dict) and data.get("jobs") == []:
+                record_answered(_SITE)
             for job in data.get("jobs") or []:
                 platform_id = str(job.get("id") or "")
                 if not platform_id or platform_id in seen_ids:

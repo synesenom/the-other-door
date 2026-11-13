@@ -28,7 +28,7 @@ from xml.etree import ElementTree
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_error,
+    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
     report, run_probe, strip_html,
 )
 
@@ -156,6 +156,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             report(f"feed error (keyword={keyword!r}): {exc}")
             record_error("reliefweb", f"feed error (keyword={keyword!r}): {exc}")
             continue
+        if not items:
+            record_answered("reliefweb")
         for item in items:
             platform_id = item["platform_id"]
             if platform_id in seen or platform_id in known_ids:

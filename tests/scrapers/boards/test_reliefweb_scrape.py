@@ -8,7 +8,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_non_local
+from door.scrapers import drain_answered, drain_errors, drain_non_local
 from door.scrapers.boards import reliefweb
 
 _FIX = Path(__file__).parent / "fixtures" / "reliefweb"
@@ -24,7 +24,7 @@ def _xml(name: str) -> str:
 @pytest.fixture(autouse=True)
 def _no_sleep(monkeypatch):
     monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
-    drain_errors("reliefweb"), drain_non_local("reliefweb")
+    drain_errors("reliefweb"), drain_non_local("reliefweb"), drain_answered("reliefweb")
 
 
 def _serve(keyword="monitoring evaluation", body=None, **kw):
@@ -79,6 +79,7 @@ def test_a_page_that_is_not_a_feed_is_an_error():
     _serve(body="<html><body>maintenance</body></html>")
     assert reliefweb.scrape(_CFG) == []
     assert drain_errors("reliefweb").get("reliefweb")
+    assert drain_answered("reliefweb") is False
 
 
 @responses.activate
@@ -116,6 +117,7 @@ def test_an_empty_feed_is_quiet():
     _serve(body=_xml("empty.xml"))
     assert reliefweb.scrape(_CFG) == []
     assert not drain_errors("reliefweb").get("reliefweb")
+    assert drain_answered("reliefweb") is True
 
 
 @responses.activate

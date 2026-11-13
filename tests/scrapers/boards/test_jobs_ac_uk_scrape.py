@@ -13,7 +13,7 @@ import requests
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_pushback
 from door.scrapers.boards import jobs_ac_uk
 
 _FIX = Path(__file__).parent / "fixtures" / "jobs_ac_uk"
@@ -166,8 +166,10 @@ def test_a_page_cap_bounds_the_keyword():
 def test_an_empty_page_ends_the_keyword_quietly():
     _serve(_search(), '<html><h2 class="j-search-content__count"><strong class="job-count">0 </strong> Jobs Found</h2></html>')
     drain_errors()
+    drain_answered("jobs_ac_uk")
     assert jobs_ac_uk.scrape(_CFG) == []
     assert drain_errors() == {}
+    assert drain_answered("jobs_ac_uk") is True
     assert _requested() == [_search()]
 
 
@@ -175,8 +177,20 @@ def test_an_empty_page_ends_the_keyword_quietly():
 def test_a_page_without_results_block_is_recorded():
     _serve(_search(), "<html><body>Something else</body></html>")
     drain_errors()
+    drain_answered("jobs_ac_uk")
     assert jobs_ac_uk.scrape(_CFG) == []
     assert "jobs_ac_uk" in drain_errors()
+    assert drain_answered("jobs_ac_uk") is False
+
+
+@responses.activate
+def test_a_real_zero_hit_page_is_an_answer():
+    _serve(_search(), _html("search_empty.html"))
+    drain_errors()
+    drain_answered("jobs_ac_uk")
+    assert jobs_ac_uk.scrape(_CFG) == []
+    assert drain_errors() == {}
+    assert drain_answered("jobs_ac_uk") is True
 
 
 @responses.activate

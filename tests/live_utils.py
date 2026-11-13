@@ -40,3 +40,32 @@ def not_reached_if_refused(site: str, errors: list) -> None:
     """Skip the test as not reached when *site*'s errors are all refusals; otherwise let it fail as changed."""
     if refused(errors):
         not_reached(site, "; ".join(map(str, errors[:3])))
+
+
+# A keyword no ad contains: a board must answer it with a recognised page that has no hits.
+NONSENSE_KEYWORD = "zqxwvplmk"
+
+
+def drain_zero_hit_state(site: str) -> None:
+    """Clear what an earlier scrape left for *site*, before a zero-hit search."""
+    from door.scrapers import drain_answered, drain_errors
+
+    drain_errors(site)
+    drain_answered(site)
+
+
+def assert_zero_hits(site: str, postings: list) -> None:
+    """After a search for `NONSENSE_KEYWORD`: *site* answered with a page it recognises and no hits.
+
+    A refusal is not reached (skipped); any other error, a posting, or an answer the scraper did not record as
+    one (`record_answered`) is a change: the site moved and a quiet day would now warn "the site may have changed".
+    """
+    from door.scrapers import drain_answered, drain_errors
+
+    errors = drain_errors(site).get(site, [])
+    answered = drain_answered(site)
+    if errors:
+        not_reached_if_refused(site, errors)
+    assert not errors, f"{site}: errors on a zero-hit search: {errors[:3]}"
+    assert postings == [], f"{site}: a nonsense keyword found {len(postings)} postings"
+    assert answered, f"{site}: the zero-hit page was not recognised as an answer (the page may have changed)"

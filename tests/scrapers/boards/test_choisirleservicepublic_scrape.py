@@ -13,7 +13,7 @@ import requests
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_pushback
 from door.scrapers.boards import choisirleservicepublic as csp
 
 _FIX = Path(__file__).parent / "fixtures" / "choisirleservicepublic"
@@ -163,8 +163,10 @@ def test_a_page_with_no_on_topic_ad_ends_the_keyword():
 def test_an_empty_answer_ends_the_keyword_quietly():
     _serve(_url("zzzxqv", 1), _html("search_empty.html"))
     drain_errors()
+    drain_answered("choisirleservicepublic")
     assert csp.scrape({**_CFG, "search_keywords": ["zzzxqv"]}) == []
     assert drain_errors() == {}
+    assert drain_answered("choisirleservicepublic") is True
     assert _requested() == [_url("zzzxqv", 1)]
 
 
@@ -236,8 +238,10 @@ def test_a_connection_error_is_recorded_not_raised():
 def test_a_page_that_is_not_a_result_list_is_recorded_as_a_change():
     _serve(_url("data scientist", 1), "<html><body><p>Page introuvable</p></body></html>")
     drain_errors()
+    drain_answered("choisirleservicepublic")
     assert csp.scrape(_CFG) == []
     assert any("result list" in e for e in drain_errors()["choisirleservicepublic"])
+    assert drain_answered("choisirleservicepublic") is False
 
 
 @pytest.mark.parametrize("status", [403, 429])

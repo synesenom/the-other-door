@@ -37,7 +37,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    on_topic, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
+    on_topic, record_answered, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
 )
 
 _SITE = "reed"
@@ -222,6 +222,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 break
             count, jobs = parsed
             cards = [c for c in (_card(j) for j in jobs) if c]
+            if not jobs:
+                record_answered(_SITE)
 
             for card in cards:
                 if card["id"] in seen or (topic and not on_topic(card["title"], topic)):

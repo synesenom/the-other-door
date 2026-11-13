@@ -15,7 +15,7 @@ import responses
 import requests
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
+from door.scrapers import drain_answered, drain_errors
 from door.scrapers.boards import thehub
 
 _FIX = Path(__file__).parent / "fixtures" / "thehub"
@@ -123,8 +123,10 @@ def test_scrape_reads_the_pages_saved_from_the_live_site():
 def test_scrape_empty_search_returns_no_postings():
     _serve(thehub._listing_url("zzzqqq", "DK", 1), _html("listing_empty_real.html"))
     drain_errors()
+    drain_answered("thehub")
     assert thehub.scrape({"role_targets": ["zzzqqq"], "location": "Copenhagen"}) == []
     assert drain_errors() == {}
+    assert drain_answered("thehub") is True
 
 
 @responses.activate
@@ -162,10 +164,12 @@ def test_scrape_listing_whose_script_fails_to_evaluate_records_error(progress_ev
            "<script>window.__NUXT__=(function(a){return a.nope.x}(1));</script>")
 
     drain_errors()
+    drain_answered("thehub")
     assert thehub.scrape(_CFG) == []
 
     assert any("listing error" in e.message for e in progress_events)
     assert drain_errors()["thehub"]
+    assert drain_answered("thehub") is False
 
 
 @responses.activate

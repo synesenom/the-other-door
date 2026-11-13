@@ -37,7 +37,7 @@ from urllib.parse import quote_plus
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_error,
+    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
     report, run_probe, strip_html,
 )
 
@@ -229,6 +229,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 break
 
             docs, has_next = _parse_listing_payload(jobs_obj)
+            if not docs and page_num == 1:
+                record_answered("thehub")
 
             for doc in docs:
                 platform_id = str(doc.get("id") or "")

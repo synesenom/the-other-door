@@ -12,7 +12,7 @@ import requests
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_pushback
 from door.scrapers.boards import arbetsformedlingen as af
 
 _FIX = Path(__file__).parent / "fixtures" / "arbetsformedlingen"
@@ -28,7 +28,7 @@ def _text(name: str) -> str:
 def _small_pages(monkeypatch):
     monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
     monkeypatch.setattr(af, "_PAGE_SIZE", 4)   # the saved first page holds four ads
-    drain_errors(), drain_pushback("arbetsformedlingen")
+    drain_errors(), drain_pushback("arbetsformedlingen"), drain_answered("arbetsformedlingen")
 
 
 def _serve_pages(*, pages=("search_page1.json", "search_page2.json")):
@@ -120,6 +120,7 @@ def test_a_failed_request_is_recorded_and_the_next_keyword_still_runs():
     assert len(postings) == 3
     [error] = drain_errors()["arbetsformedlingen"]
     assert "first" in error
+    assert drain_answered("arbetsformedlingen") is False
     assert drain_pushback("arbetsformedlingen") is False
 
 
@@ -160,6 +161,7 @@ def test_an_empty_answer_is_quiet():
     _serve_pages(pages=("empty.json",))
     assert af.scrape(_CFG) == []
     assert not drain_errors().get("arbetsformedlingen")
+    assert drain_answered("arbetsformedlingen") is True
 
 
 @responses.activate

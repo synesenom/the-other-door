@@ -69,3 +69,27 @@ LANGUAGES: dict[str, Run] = {
 
 # Sites and discovery sources with no live test, and why. The status page lists them as such.
 NO_LIVE_TEST: dict[str, str] = {}
+
+# Each board's saved zero-hit answer (a real one, path relative to `tests/scrapers`): the answer a quiet day
+# gives, which the scraper must read as an answer (`record_answered`), never as a changed site (#19).
+ZERO_HIT_FIXTURES: dict[str, str] = {
+    "jobindex": "boards/fixtures/jobindex/search_empty.html",
+    "thehub": "boards/fixtures/thehub/listing_empty_real.html",
+    "globalnyt": "boards/fixtures/globalnyt/stilling_list_empty.json",
+    "jobbank": "boards/fixtures/jobbank/search_empty.html",
+    "reed": "boards/fixtures/reed/search_empty.html",
+    "jobs_ac_uk": "boards/fixtures/jobs_ac_uk/search_empty.html",
+    "nhs_jobs": "boards/fixtures/nhs_jobs/search_empty.html",
+    "jobmaskinen": "boards/fixtures/jobmaskinen/search_no_results.html",
+    "arbetsformedlingen": "boards/fixtures/arbetsformedlingen/empty.json",
+    "francetravail": "boards/fixtures/francetravail/search_empty.html",
+    "choisirleservicepublic": "boards/fixtures/choisirleservicepublic/search_empty.html",
+    "kozigallas": "boards/fixtures/kozigallas/list_empty.html",
+    "workable": "feeds/fixtures/workable/search_empty.json",
+    "reliefweb": "boards/fixtures/reliefweb/empty.xml",
+}
+
+# Boards with no zero-hit check, and why.
+NO_ZERO_HIT: dict[str, str] = {
+    "euraxess": "no keyword search: it reads the country's whole list, so no keyword can come back empty",
+}
