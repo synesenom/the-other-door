@@ -96,8 +96,11 @@ jobs:
 
       # The install test (#639, #18): each package installed the user's way, then set-up, the first run and
       # Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
+      # An AppImage needs FUSE 2, which Ubuntu 24.04 no longer ships (docs/manual-app.md says so to users).
       - name: The install test (AppImage)
-        run: DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
+        run: |
+          sudo apt-get install -y -qq libfuse2t64
+          DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
 
       - name: The install test (.deb)
         run: DOOR_INSTALLER="$(ls dist/the-other-door-*.deb)" DOOR_INSTALLER_KIND=deb xvfb-run -a npm run test:install

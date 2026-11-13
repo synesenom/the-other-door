@@ -108,7 +108,8 @@ jobs:
           case "$RUNNER_OS" in
             macOS)   DOOR_INSTALLER="$(ls dist/the-other-door-*-mac-*.dmg)" npm run test:install ;;
             Windows) DOOR_INSTALLER="$(ls dist/the-other-door-*.exe | head -1)" npm run test:install ;;
-            Linux)   DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
+            Linux)   sudo apt-get install -y -qq libfuse2t64   # an AppImage needs FUSE 2 (docs/manual-app.md)
+                     DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
                      DOOR_INSTALLER="$(ls dist/the-other-door-*.deb)" DOOR_INSTALLER_KIND=deb xvfb-run -a npm run test:install ;;
           esac
 
