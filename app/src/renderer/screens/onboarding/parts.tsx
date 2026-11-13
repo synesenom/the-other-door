@@ -130,7 +130,7 @@ export function TextField({ label, help, errors, value, onChange, type = 'text',
   )
 }
 
-/** Free text over several lines, in the user's own words (the sectors). */
+/** Free text over several lines, in the user's own words (the preferences). */
 export function TextAreaField({ label, help, errors, value, onChange, rows = 3, placeholder }: { label: string; help?: string; errors?: string[]; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
   const id = useId()
   return (

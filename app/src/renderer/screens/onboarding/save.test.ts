@@ -23,10 +23,10 @@ describe('saveProfile', () => {
     expect(result).toEqual({ ok: true, profile: existingProfile })
   })
 
-  it('sends the sectors text in other', async () => {
+  it('sends the preferences text in other', async () => {
     const h = mockDoor({ init_profile: {}, show_profile: existingProfile })
-    await saveProfile(filled({ sectors: 'medical; not banking' }))
-    expect(h.call).toHaveBeenNthCalledWith(1, 'init_profile', expect.objectContaining({ other: expect.objectContaining({ sectors: 'medical; not banking' }) }))
+    await saveProfile(filled({ preferences: 'medical; not banking' }))
+    expect(h.call).toHaveBeenNthCalledWith(1, 'init_profile', expect.objectContaining({ other: expect.objectContaining({ preferences: 'medical; not banking' }) }))
   })
 
   it('does not touch the CV when the step produced no text', async () => {

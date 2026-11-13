@@ -100,7 +100,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    **You** (name, email, city, hybrid, remote only or on site, a photo for your CV where your city's country may carry one, held until you save, the job-ad languages);
    **Titles** (each with why it fits, the best ones ticked, and your own to add, as pills you can remove; changing them
    proposes the search terms again);
-   **Sectors** (optional, a text box: the kinds of employer you want and any to avoid, in your own words, for example "medical and green energy; not banking or gambling"; it applies from the next run);
+   **What matters to you** (optional, a text box: the kind of employer and job you want and anything you rule out, in your own words, for example "medical or green energy, maybe robotics; a smaller company, little travel; not banking or gambling"; when in doubt, scoring still shows the job);
    **Search** and **CV**, folded (the CV formatted, with a switch to its Markdown text; what the draft could not find is marked "to fill in", and a click on a marker selects that gap in the text; a file with no text, such as a scanned PDF, is named;
    the pages you used become the profile's enrich sources);
    **Your story bank** (on a first set-up: one story drafted from your CV, to show what a story is. Your CV lists
@@ -387,7 +387,7 @@ Stories; a click jumps to a section or opens a part (a window narrower than 900 
 
 The everyday settings of `profile/config.json` ([Configuration](configuration.md)), in sections:
 About you (name, email, city, whether you need a visa or work permit there, where you would work, the languages of the job ads), What to
-look for (role targets, sectors you want or avoid as free text that applies from the next run, how close a match to show: Broad,
+look for (role targets, what matters to you, as free text that applies from the next run, how close a match to show: Broad,
 Balanced or Strong), and What to skip (companies and words).
 The settings for tuning a run (how many sites at once, the limits, how old an ad may be, when to stop following
 a quiet employer, asking Claude where a careers page is, the Claude config folder for people with two plans, the prescreen, the

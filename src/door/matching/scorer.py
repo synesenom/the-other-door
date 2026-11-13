@@ -195,9 +195,9 @@ def build_system_prompt(profile_cfg: dict, cv_md: str, rubric_md: str) -> str:
         f"- exclude.keywords: {', '.join(exclude.get('keywords', []) or [])}",
         f"- needs_work_permit: {bool(profile_cfg.get('needs_work_permit', False))}",
     ]
-    sectors = str(profile_cfg.get("sectors") or "").strip()
-    if sectors:
-        profile_lines.append(f"- sectors: {sectors}")
+    preferences = str(profile_cfg.get("preferences") or "").strip()
+    if preferences:
+        profile_lines.append(f"- preferences: {preferences}")
 
     return (
         "You are The other door's job-matching scorer. Score the job "

@@ -1,0 +1,22 @@
+{
+  "posting": {
+    "id": "golden-preference-doubt-travel",
+    "title": "Lead Data Scientist",
+    "company": "Northbeam Analytics",
+    "location": "Copenhagen, Denmark",
+    "url": "https://example.com/jobs/golden-preference-doubt-travel",
+    "description": "About the role:\nNorthbeam Analytics builds forecasting software for retailers. We are hiring a Lead Data Scientist to lead our modelling team.\n\nResponsibilities:\nYou will lead a team of data scientists, set the technical direction, own forecasting and machine learning models end to end in Python and SQL, and report to the CTO. Occasional travel to client sites in the Nordics.\n\nRequirements:\n8+ years of experience in data science with at least 3 years leading a team. Strong Python, SQL, MLOps and stakeholder-management skills.\n\nLocation and work mode:\nHybrid role based in our Copenhagen office, two days a week at home.\n\nWhat we offer:\nCompetitive salary and a collaborative team.",
+    "description_condensed": null,
+    "source": "golden",
+    "scraped_at": "2026-06-01T00:00:00Z",
+    "posted_at": "2026-06-01T00:00:00Z"
+  },
+  "expect": {
+    "score_min": 0.7,
+    "score_max": 1.0,
+    "language_requirement": "none"
+  },
+  "config": {
+    "preferences": "Medical or green energy, maybe robotics. A smaller company, little travel. Not banking or gambling."
+  }
+}

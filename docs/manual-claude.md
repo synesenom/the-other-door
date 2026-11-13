@@ -11,9 +11,9 @@ conversation in this repo: you say what you want in plain sentences and Claude c
 After `./scripts/setup.sh` and `claude auth login` ([Getting started](../README.md#getting-started)),
 say `/onboard` in a conversation. It takes your sources (a CV in PDF, DOCX or Markdown, a LinkedIn
 PDF export, your website or online portfolio), drafts `profile/cv.md` from them, infers your details,
-job titles and search terms, and asks only for what it could not find, plus one optional question: which
-sectors you want and which to avoid, in your own words. Say "change my sectors" later and `init_profile` saves
-the new text in `other` (`{"sectors": ...}`); it applies from the next run. Everything comes together in
+job titles and search terms, and asks only for what it could not find, plus one optional question: what
+matters to you in an employer or a job and what you rule out, in your own words. Say "change what matters to me"
+later and `init_profile` saves the new text in `other` (`{"preferences": ...}`); it applies from the next run. Everything comes together in
 one review, written only after you confirm; then the first search starts. Each step is a tool
 (`draft_cv`, `infer_basics`, `suggest_titles`, `keywords`, `preview_matches`, `init_profile`, `save_cv`,
 `find_jobs`), so you can also ask for any one of them on its own: "here's my old CV, draft the new
