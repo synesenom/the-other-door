@@ -22,6 +22,8 @@ Run these in parallel:
 - `git fetch origin --tags`, then `git branch --show-current` must be `main` and `git rev-parse HEAD` must equal `git rev-parse origin/main`; else say which and **stop** (offer `git checkout main && git pull`).
 - `gh run list --branch main --limit 20 --json workflowName,conclusion,status,headSha`: the newest run of each workflow on `main`'s head commit must be `success` (a workflow that did not run for that commit is fine: its paths did not change). A run still `in_progress` → tell the user and **stop**; a failure → name it with its URL and **stop**.
 
+Then run everything a release needs locally, in the background, and wait for it: `./scripts/run-test.sh --release` (the offline suite, the app's tests with every journey, and the skill tests, which CI cannot run: the real model runs /onboard against the app's test world on the plan; some plan usage). It ends with a PASS/FAIL/SKIP line per step. A FAIL → show that step's failures (for the skills, the transcript path it prints) and **stop**; a skipped skill test (claude not signed in, the app's packages missing) → say why and ask whether to go on without it.
+
 Then work out the version: the argument, or `node -p "require('./app/package.json').version"`. It must be `X.Y.Z`. `git tag -l vX.Y.Z` and `gh release view vX.Y.Z` must both find nothing; if either does, say so (a draft from an earlier attempt: see Step 4's retry) and **stop**. Find the previous release tag: `git describe --tags --abbrev=0 --match 'v*'` (none = the first release).
 
 ## Step 2: The version
@@ -68,7 +70,7 @@ Show the notes and ask whether to put them on the draft; on yes, `gh release edi
 
 ## Step 6: Publish
 
-Point the user at the draft URL and at `docs/releasing.md`'s checklist: install each installer on a clean machine first (`npm run test:install` in `app/` with `DOOR_INSTALLER=<file>` covers most of it). Then ask with AskUserQuestion: "Publish vX.Y.Z?" Options:
+Point the user at the draft URL and at `docs/releasing.md`'s checklist: install each installer on a clean machine first (`DOOR_INSTALLER=<the downloaded file> ./scripts/run-test.sh --release` adds the install test to the rest; `npm run test:install` in `app/` runs it alone). Then ask with AskUserQuestion: "Publish vX.Y.Z?" Options:
 
 - "Publish as the latest release": the README's download link and the apps' update check (`DOOR_UPDATE_FEED`, GitHub's `releases/latest`) find it. `gh release edit vX.Y.Z --draft=false --latest`
 - "Publish as a pre-release": public on the releases page, but `releases/latest` skips it, so the README link and the update check don't see it; share the release URL instead. `gh release edit vX.Y.Z --draft=false --prerelease`

@@ -1553,10 +1553,23 @@
   },
   {
     "name": "show_profile",
-    "description": "Read the profile in one call: the validated config (or the `errors` lines when it is invalid or missing),\n    the CV text with its headline and sections, which of the CV, the two templates and the story bank are still\n    profile.example/'s (`is_example`), the enrich sources, and `options` for a profile form (the known `cities`\n    with their country and boards, the supported `languages`, the `worldwide_boards`). Read-only; never fails on\n    a fresh folder.",
+    "description": "Read the profile in one call: the validated config (or the `errors` lines when it is invalid or missing),\n    the CV text with its headline and sections, which of the CV, the two templates and the story bank are still\n    profile.example/'s (`is_example`), the enrich sources, and `options` for a profile form (the known `cities`\n    with their country and boards, the supported `languages`, the `worldwide_boards`). Read-only; never fails on\n    a fresh folder.\n\n    Args:\n        location: only this city in `options.cities` (its boards, discovery sources and CV conventions); every\n            known city is tens of kilobytes. A conversation that asks about one city passes it.\n    ",
     "inputSchema": {
       "type": "object",
-      "properties": {},
+      "properties": {
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        }
+      },
       "title": "show_profileArguments"
     }
   },

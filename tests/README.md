@@ -15,6 +15,7 @@ tests/
 ├── i18n/                  # src/door/i18n/: every language and country data file, detection
 ├── matching/              # prefilter, dedup, condense, language, prescreen, scorer; fixtures/golden/
 ├── tailoring/
+├── skills/                # the skills under .claude/: the tools they name exist (offline), and each run by the real model on the test world (`./scripts/run-test.sh --skills`, before a release)
 └── scripts/               # scripts/smoke_report.py (the live-smoke status page), scripts/country_smoke.py (the live country run; its pure parts are tested in tests/scripts/test_country_smoke_unit.py, the live run is not part of the suite)
 ```
 

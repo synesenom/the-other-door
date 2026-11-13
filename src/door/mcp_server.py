@@ -836,15 +836,20 @@ async def prepare(
 
 @mcp.tool()
 @_tool_errors
-def show_profile() -> dict:
+def show_profile(location: str | None = None) -> dict:
     """Read the profile in one call: the validated config (or the `errors` lines when it is invalid or missing),
     the CV text with its headline and sections, which of the CV, the two templates and the story bank are still
     profile.example/'s (`is_example`), the enrich sources, and `options` for a profile form (the known `cities`
     with their country and boards, the supported `languages`, the `worldwide_boards`). Read-only; never fails on
-    a fresh folder."""
+    a fresh folder.
+
+    Args:
+        location: only this city in `options.cities` (its boards, discovery sources and CV conventions); every
+            known city is tens of kilobytes. A conversation that asks about one city passes it.
+    """
     from door.commands import profile as profile_cmd
 
-    return profile_cmd._show_profile_core()
+    return profile_cmd._show_profile_core(location=location)
 
 
 @mcp.tool()

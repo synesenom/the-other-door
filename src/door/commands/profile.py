@@ -918,17 +918,18 @@ def _discovery_choices(sources: list[dict]) -> list[dict]:
     return [{k: s[k] for k in ("key", "label", "verdict", "terms_url", "terms_summary", "disclaimer")} for s in sources]
 
 
-def _profile_options() -> dict:
+def _profile_options(location: str | None = None) -> dict:
     """What the profile form can offer, live from `i18n` and the site registry: the known cities
     (with their country and the boards `search` reads there), the supported job-ad languages and the
     boards that work anywhere, and every offered board's name in words."""
     countries = {c.name: c.code.lower() for c in i18n.countries().values()}
     cities = [
-        {"name": city, "country": country, "boards": sites.boards_for_country(countries.get(country)),
-         "discovery": _discovery_choices(discovery_sources.for_location(city)),
+        {"name": name, "country": country, "boards": sites.boards_for_country(countries.get(country)),
+         "discovery": _discovery_choices(discovery_sources.for_location(name)),
          # How a CV is written in the city's country: the photo question is asked only where it is optional or expected.
-         "cv": i18n.cv_conventions_for_location(city).model_dump()}
-        for city, country in i18n.known_cities()
+         "cv": i18n.cv_conventions_for_location(name).model_dump()}
+        for name, country in i18n.known_cities()
+        if location is None or name.casefold() == location.strip().casefold()
     ]
     codes = sorted(i18n.languages(), key=lambda c: (c != "en", c))
     worldwide = sites.boards_for_country(None)
@@ -954,10 +955,12 @@ def _photo_state(config: dict | None) -> dict:
     return {"exists": False}
 
 
-def _show_profile_core(profile_dir: Path | None = None, example_dir: Path | None = None) -> dict:
+def _show_profile_core(profile_dir: Path | None = None, example_dir: Path | None = None, location: str | None = None) -> dict:
     """What is configured, for a settings screen: the validated config (or the error lines), the CV with its
     outline, the templates and story bank, each marked `is_example` when still profile.example/'s file.
-    Read-only; an invalid or missing config is a result (`config` None, `errors`), never an exception."""
+    Read-only; an invalid or missing config is a result (`config` None, `errors`), never an exception.
+    With *location*, `options.cities` holds only that city (by name, any case; none for a city it does not know):
+    every city is tens of kilobytes, too much for a conversation that asks about one."""
     profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
     example_dir = Path(example_dir or workspace.PROFILE_EXAMPLE_DIR)
     config, errors = None, []
@@ -986,7 +989,7 @@ def _show_profile_core(profile_dir: Path | None = None, example_dir: Path | None
         templates[name] = _file_state(path, example_dir / path.name)
     return {
         "path": str(profile_dir),
-        "options": _profile_options(),
+        "options": _profile_options(location),
         "config": config,
         "errors": errors,
         "cv": cv,

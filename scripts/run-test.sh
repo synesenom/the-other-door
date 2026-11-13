@@ -15,7 +15,25 @@
 #                            Serial (they pace requests per host) and not run
 #                            under coverage; the badge is left as-is.
 #
-# Extra arguments are passed through to pytest.
+#   ./scripts/run-test.sh --skills   The skills (/onboard, ...) run by the real model on
+#                            the plan your `claude` is signed in to (no API key),
+#                            against the app's test world: nothing leaves the
+#                            computer. Run before a release (/dev-release does).
+#                            Serial; several minutes and some plan usage each.
+#
+#   ./scripts/run-test.sh --app      The desktop app's tests, as CI runs them: type
+#                            check, unit tests, the end-to-end smoke test, the
+#                            core journeys and the phone app's test (app/, after
+#                            `npm ci` there).
+#
+#   ./scripts/run-test.sh --release  Everything to pass before a release, one after
+#                            the other, with a line each at the end: the offline
+#                            suite, the app's tests with every journey, the skills,
+#                            and the install test when DOOR_INSTALLER names an
+#                            installer (docs/releasing.md). Not the live smoke
+#                            tests: a site's bad day does not block a release.
+#
+# Extra arguments are passed through to pytest (not with --app or --release).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -32,6 +50,47 @@ if [[ "${1:-}" == "--live" ]]; then
         exit 0
     fi
     exit "$rc"
+fi
+
+# The app's tests run on the Poetry interpreter, as in CI (app.yml).
+app_tests() {   # $1: core | all — which journeys
+    local journeys="test:journeys:core"
+    [[ "${1:-core}" == "all" ]] && journeys="test:journeys"
+    DOOR_PYTHON="$(poetry run which python)"
+    export DOOR_PYTHON
+    (cd app && npm run typecheck && npm test && npm run test:e2e && npm run "$journeys" && npm run test:web)
+}
+
+if [[ "${1:-}" == "--app" ]]; then
+    app_tests core
+    exit $?
+fi
+
+if [[ "${1:-}" == "--release" ]]; then
+    results=()
+    failed=0
+    step() {   # $1: name, then the command
+        local name="$1"; shift
+        echo; echo "== $name"
+        if "$@"; then results+=("PASS  $name"); else results+=("FAIL  $name"); failed=1; fi
+    }
+    set +e
+    step "offline suite" poetry run pytest -n auto -q
+    step "app (every journey)" app_tests all
+    step "skills (real model)" poetry run pytest -m skills -n 0 -q -p no:cacheprovider tests/skills
+    if [[ -n "${DOOR_INSTALLER:-}" ]]; then
+        step "install test ($(basename "$DOOR_INSTALLER"))" bash -c "cd app && npm run test:install"
+    else
+        results+=("SKIP  install test (set DOOR_INSTALLER=<the downloaded installer>)")
+    fi
+    set -e
+    echo; printf '%s\n' "${results[@]}"
+    exit "$failed"
+fi
+
+if [[ "${1:-}" == "--skills" ]]; then
+    shift
+    exec poetry run pytest -m skills -n 0 -p no:cacheprovider tests/skills "$@"
 fi
 
 # Without the dev group, `poetry run pytest` falls through to a system pytest

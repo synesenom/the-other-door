@@ -879,6 +879,21 @@ def test_show_profile_core_example_profile(init_env):
     assert result["enrich_sources"] == []
 
 
+def test_show_profile_core_for_one_city_offers_only_that_city(init_env):
+    """A conversation asks about one city: its options stay small enough to read in one answer."""
+    profile_dir = _example_profile(init_env)
+    every = profile_cmd._show_profile_core(profile_dir, init_env.example_dir)["options"]["cities"]
+    one = profile_cmd._show_profile_core(profile_dir, init_env.example_dir, location="copenhagen")["options"]["cities"]
+    assert len(every) > 1
+    assert [c["name"] for c in one] == ["Copenhagen"] and one[0] == next(c for c in every if c["name"] == "Copenhagen")
+
+
+def test_show_profile_core_for_an_unknown_city_offers_none(init_env):
+    profile_dir = _example_profile(init_env)
+    result = profile_cmd._show_profile_core(profile_dir, init_env.example_dir, location="Atlantis")
+    assert result["options"]["cities"] == [] and result["options"]["worldwide_discovery"] is not None
+
+
 def test_show_profile_core_edited_cv_is_not_example(init_env):
     profile_dir = _example_profile(init_env)
     cv = profile_dir / "cv.md"

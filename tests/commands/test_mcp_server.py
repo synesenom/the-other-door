@@ -731,7 +731,7 @@ def test_merge_companies_proposes_merges_and_reports_errors(tmp_path, monkeypatc
 def test_show_profile_tool_returns_the_core_dict(monkeypatch):
     from door.commands import profile as profile_cmd
 
-    monkeypatch.setattr(profile_cmd, "_show_profile_core", lambda: {"config": None, "errors": ["x"]})
+    monkeypatch.setattr(profile_cmd, "_show_profile_core", lambda location=None: {"config": None, "errors": ["x"]})
     assert server.show_profile() == {"config": None, "errors": ["x"]}
     assert "show_profile" in {tool.name for tool in _list_tools().tools}
 

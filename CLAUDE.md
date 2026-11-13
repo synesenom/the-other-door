@@ -283,7 +283,19 @@ poetry install   # runtime + dev deps (pytest, pytest-cov, pytest-xdist, respons
 
 ./scripts/run-test.sh           # offline suite + coverage + regenerate badge
 ./scripts/run-test.sh --live    # opt-in smoke tests against real sites
+./scripts/run-test.sh --skills  # the skills (/onboard) run by the real model on your plan, before a release
+./scripts/run-test.sh --app     # the desktop app's tests as CI runs them (typecheck, unit, e2e, core journeys, phone)
+./scripts/run-test.sh --release # before a release: offline suite, app with every journey, skills, and the
+                                # install test when DOOR_INSTALLER names an installer; a PASS/FAIL line each
 ```
+
+The skill tests (`tests/skills/`, marker `skills`, never in CI) run a Claude Code skill with the real
+model through the Agent SDK (`claude-agent-sdk`, on the plan `claude` is signed in to, the API key cleared)
+against the app's test world (`app/test/world/make-world.ts`: `boot.py`'s server, the stand-in `claude.py`
+for the tools' own model calls), with a small model playing the persona (`tests/skills/skill_run.py`, which
+also runs one skill by hand and writes its transcript). They check behaviour only: the tools and their order,
+what was written and when. `tests/skills/test_skill_contract_unit.py` (offline) checks that every tool a skill
+or agent names exists, with the parameters it passes.
 
 The offline suite runs in parallel (`pytest -n auto`, pytest-xdist, in `run-test.sh` and CI;
 `-n 0` runs it serially, and live runs stay serial), so a test must not share a fixed path,

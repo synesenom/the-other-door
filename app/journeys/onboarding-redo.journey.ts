@@ -70,7 +70,7 @@ test.describe('narrow window', () => {
     await toReview(page, world, os)
     await narrow(app, page)
     await expect(page.getByLabel('City', { exact: true })).toHaveValue('Copenhagen')
-    await expect(page.getByRole('group', { name: 'Find employers on' }).getByRole('checkbox')).toHaveCount(2)
+    await expect(page.getByRole('group', { name: 'Find employers on' }).getByRole('checkbox')).toHaveCount(1) // LinkedIn, the one source serving Copenhagen
     await expect(reason(page)).toHaveCount(0)
     await page.getByRole('button', { name: 'Save and start searching', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Finding jobs', level: 1 })).toBeVisible(LAUNCH)
