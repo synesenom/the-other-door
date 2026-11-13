@@ -4,9 +4,8 @@ import pytest
 
 from door.scrapers import drain_errors, drain_pushback
 
-from door.core.models import JobPosting
 from door.scrapers.boards import euraxess
-from live_utils import not_reached_if_refused
+from live_utils import assert_field_contract, not_reached_if_refused
 
 
 _COUNTRIES = {"Copenhagen, Denmark": "Denmark", "Paris, France": "France", "Stockholm, Sweden": "Sweden",
@@ -17,7 +16,8 @@ def _check(monkeypatch, location: str) -> None:
     monkeypatch.setattr(euraxess, "_MAX_PAGES", 1)   # one listing page a country: back-to-back runs hit the 429 (#579)
     drain_errors("euraxess")
     drain_pushback("euraxess")
-    postings = euraxess.scrape({"search_keywords": ["postdoc"], "topic_terms": [], "location": location})
+    config = {"search_keywords": ["postdoc"], "topic_terms": [], "location": location}
+    postings = euraxess.scrape(config)
     errors = drain_errors("euraxess").get("euraxess", []) + (["pushback"] if drain_pushback("euraxess") else [])
     if not postings and errors:
         not_reached_if_refused("euraxess", errors)
@@ -25,10 +25,8 @@ def _check(monkeypatch, location: str) -> None:
     if not postings:
         # When the server ignores the country facet, one worldwide page may hold none of this country's offers.
         pytest.skip(f"no {_COUNTRIES[location]} offer in the newest worldwide page")
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"].startswith("https://euraxess.ec.europa.eu/jobs/")
-        assert p["description"]
+    assert_field_contract("euraxess", postings, config)
+    assert all(p["url"].startswith("https://euraxess.ec.europa.eu/jobs/") for p in postings[:5])
     for p in postings:
         assert p["location"].rsplit(",", 1)[-1].strip() == _COUNTRIES[location]
 

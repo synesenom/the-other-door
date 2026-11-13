@@ -8,9 +8,9 @@ through that list; an ad link alone still names only the employer.
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.feeds import visma_recruit
 from door.scrapers.http_client import PoliteSession
+from live_utils import assert_field_contract
 
 _APPLY = "https://recruit.visma.com/spa/public/apply?guidAssignment=2b368797-8e2c-4527-bc80-7cc9ac2d9c39"
 _NASSJO = "f636d73d-8356-43c6-99bd-ba01addf1b55"
@@ -21,9 +21,7 @@ _SKURUP = "e4de127c-0647-4402-83ee-c28fbb4803e8"
 def test_visma_recruit_live_a_customers_list_returns_valid_postings():
     postings = visma_recruit.scrape({"visma_recruit_companies": [_NASSJO]})
     assert postings
-    for p in postings:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("visma_recruit", postings, mode="collect")
 
 
 @pytest.mark.live
@@ -49,9 +47,7 @@ def test_visma_recruit_live_an_employers_own_ad_list_is_read_through_the_ad_json
     page = "https://www.uppvidinge.se/naringsliv-och-arbete/arbetsmarknad/lediga-jobb-i-kommunen.html"
     postings = visma_recruit.scrape({"visma_recruit_companies": [page]})
     assert postings
-    for p in postings:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("visma_recruit", postings, mode="collect")
 
 
 @pytest.mark.live

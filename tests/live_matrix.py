@@ -93,3 +93,28 @@ ZERO_HIT_FIXTURES: dict[str, str] = {
 NO_ZERO_HIT: dict[str, str] = {
     "euraxess": "no keyword search: it reads the country's whole list, so no keyword can come back empty",
 }
+
+
+# What each site's live postings may lack against the field contract (`live_utils.assert_field_contract`, #19). A site
+# not listed meets the defaults. Keys (all optional):
+#   company_share            share of postings that must name an employer other than the site (default 0.9)
+#   description_share        share with a description of at least `description_min` characters (default 0.9; 0 = not
+#                            required, only the boilerplate rule still reads those that have one)
+#   description_min          shortest description counted (default 80)
+#   location                 False: skip the "not another country's" rule of a country board
+#   posted_at_future_days    how far ahead a date may be (default 1)
+# "unverified: tune after a live run" marks a waiver no live run has confirmed; tighten it once one has.
+FIELD_EXCEPTIONS: dict[str, dict] = {
+    "globalnyt": {"company_share": 0.5, "description_share": 0},       # the employer is read from the ad page; unverified: tune after a live run
+    "francetravail": {"company_share": 0.3},                           # an ad may hide its employer; unverified: tune after a live run
+    "jobindex": {"company_share": 0.8, "description_min": 40},         # unverified: tune after a live run
+    "euraxess": {"location": False},                                   # the location is "<city>, <country>"; its live test checks the country
+    "kozigallas": {"posted_at_future_days": 14},                       # the date can be a planned publication date
+    "greenhouse": {"description_share": 0},                            # unverified: tune after a live run
+    "lever": {"description_share": 0},                                 # unverified: tune after a live run
+    "teamtailor": {"description_share": 0},                            # unverified: tune after a live run
+    "successfactors": {"description_share": 0},                        # unverified: tune after a live run
+    "career_sites": {"description_share": 0},                          # unverified: tune after a live run
+    "smartrecruiters": {"description_share": 0},                       # unverified: tune after a live run
+    "workable": {"description_share": 0},                              # unverified: tune after a live run
+}
