@@ -100,9 +100,23 @@ jobs:
           [ -n "$CSC_LINK" ] || unset CSC_LINK CSC_KEY_PASSWORD
           npm run build && npm run build:web
           npx electron-builder --config electron-builder.config.cjs --publish never
-          # the installers only, one per computer (and the .deb)
+          # the installers only, one per computer (and the .deb), under names a person reads: dist/ keeps the
+          # build's names for the tests below
           shopt -s nullglob
-          gh release upload "$GITHUB_REF_NAME" dist/the-other-door-*.{dmg,exe,AppImage,deb} --clobber
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p upload
+          for f in dist/the-other-door-*.{dmg,exe,AppImage,deb}; do
+            case "$(basename "$f")" in
+              *-mac-arm64.dmg) name="Mac-Apple-silicon.dmg" ;;
+              *-mac-x64.dmg)   name="Mac-Intel.dmg" ;;
+              *.exe)           name="Windows.exe" ;;
+              *.AppImage)      name="Linux.AppImage" ;;
+              *.deb)           name="Debian-Ubuntu.deb" ;;
+              *) continue ;;
+            esac
+            cp "$f" "upload/The-other-door-$version-$name"
+          done
+          gh release upload "$GITHUB_REF_NAME" upload/* --clobber
 
       - name: Smoke-test the packaged app
         run: |
@@ -153,8 +167,8 @@ jobs:
 
       - name: The install test, x64 under emulation
         run: |
-          gh release download $env:GITHUB_REF_NAME --pattern '*windows-x64.exe' --dir dist
-          $env:DOOR_INSTALLER = (Get-ChildItem dist\*windows-x64.exe | Select-Object -First 1).FullName
+          gh release download $env:GITHUB_REF_NAME --pattern '*-Windows.exe' --dir dist
+          $env:DOOR_INSTALLER = (Get-ChildItem dist\*-Windows.exe | Select-Object -First 1).FullName
           npm run test:install
 
       - name: Keep the install test's report
