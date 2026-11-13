@@ -298,3 +298,23 @@ def test_page_two_empty_or_page_one_again_is_a_change(page2, message):
 
 def test_a_feeds_foreign_jobs_are_not_a_change():
     assert_contract("greenhouse", [_posting(i, location="Berlin, Germany") for i in range(5)], "listing", config=_CONFIG)
+
+
+# --- zero hits: a failure names the site and the mode ---------------------------------------------------------------
+
+from live_utils import assert_zero_hits, drain_zero_hit_state  # noqa: E402
+
+
+def test_a_zero_hit_answer_not_recognised_fails_naming_the_mode():
+    drain_zero_hit_state("reed")
+    with pytest.raises(AssertionError, match=r"^reed \[zero_hits\]: the zero-hit page was not recognised"):
+        assert_zero_hits("reed", [])
+
+
+def test_a_nonsense_keyword_with_postings_fails_naming_the_mode():
+    from door.scrapers import record_answered
+
+    drain_zero_hit_state("reed")
+    record_answered("reed")
+    with pytest.raises(AssertionError, match=r"^reed \[zero_hits\]: a nonsense keyword found 1 postings"):
+        assert_zero_hits("reed", [{"id": "reed.1"}])

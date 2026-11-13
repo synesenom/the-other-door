@@ -67,9 +67,9 @@ def assert_zero_hits(site: str, postings: list) -> None:
     answered = drain_answered(site)
     if errors:
         not_reached_if_refused(site, errors)
-    assert not errors, f"{site}: errors on a zero-hit search: {errors[:3]}"
-    assert postings == [], f"{site}: a nonsense keyword found {len(postings)} postings"
-    assert answered, f"{site}: the zero-hit page was not recognised as an answer (the page may have changed)"
+    assert not errors, fail(site, "zero_hits", f"errors on a zero-hit search: {errors[:3]}")
+    assert postings == [], fail(site, "zero_hits", f"a nonsense keyword found {len(postings)} postings")
+    assert answered, fail(site, "zero_hits", "the zero-hit page was not recognised as an answer (the page may have changed)")
 
 
 def fail(site: str, mode: str, message: str) -> str:
