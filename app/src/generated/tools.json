@@ -68,6 +68,39 @@
     }
   },
   {
+    "name": "check_facts",
+    "description": "Check a prepared CV and cover letter against the candidate's own sources (offline, no model).\n\n    The tailor agent's tool: call it on the finished documents, fix or remove what is truly\n    unsupported (then `compile` again), call it once more; two rounds at most per prepare run.\n    A TODO is a gap in `cv.md` and never takes a reason.\n\n    Args:\n        job_id: The job: its id, or words from its company and title.\n        keep: For an item that stays because it is true, ``[{\"kind\", \"value\", \"file\", \"reason\"}]``\n            copied from the list, ``reason`` one plain sentence (200 characters at most); it is\n            written into `facts.json` and shown next to the item.\n\n    Returns:\n        ``{\"job_id\", \"round\", \"rounds_left\", \"unsupported\"}``: each item ``{kind, value, context,\n        file, reason?}`` (``[]`` clean, None when the check cannot run), or ``{\"error\"}`` after the\n        second round.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "keep": {
+          "anyOf": [
+            {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Keep"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "check_factsArguments"
+    }
+  },
+  {
     "name": "compile",
     "description": "Compile LaTeX sources for a job application into PDFs.\n\n    The tailor agent's tool (`revise` recompiles on its own); there is no\n    command, since PDFs are never built by hand.\n\n    Args:\n        job_id: The job: its id, or words from its company and title\n            (\"trustpilot\").\n        render: Also render each compiled PDF's pages to PNGs (read them to\n            see the pages), with page counts.\n\n    Returns:\n        The output directory and a per-file compile result (compiled/\n        skipped/error, with the resulting PDF path or compiler stderr); with\n        ``render``, also ``\"render\": [{\"file\", \"status\", \"pages\",\n        \"page_count\"}, ...]``.\n    ",
     "inputSchema": {

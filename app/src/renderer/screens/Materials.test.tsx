@@ -144,6 +144,13 @@ describe('Materials', () => {
       expect(screen.getByText('Not in your CV: 87%, Nordwind. Check them before you send it.')).toBeInTheDocument()
     })
 
+    it('shows the reason the tailor kept an item for beside it', async () => {
+      mockDoor({ show: posting({ materials: materials({ unsupported: [{ ...claim, reason: 'the ad names it' }, { kind: 'employer', value: 'Nordwind', context: 'Nordwind, 2019', file: 'cv' }] }) }) })
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      await screen.findByRole('heading', { name: 'Ready to send' })
+      expect(screen.getByText('Not in your CV: 87% (the ad names it), Nordwind. Check them before you send it.')).toBeInTheDocument()
+    })
+
     it.each([[[]], [null]])('says nothing when the list is %j', async (unsupported) => {
       mockDoor({ show: posting({ materials: materials({ unsupported }) }) })
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)

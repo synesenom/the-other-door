@@ -132,7 +132,8 @@ def _unsupported_warning(out_dir: Path, job_id: str) -> str | None:
     found = facts_mod.check(out_dir, workspace.PROFILE_DIR, write=False)
     if not found:
         return None
-    values = ", ".join(dict.fromkeys(c["value"] for c in found))
+    values = ", ".join(dict.fromkeys(
+        f"{c['value']} ({c['reason']})" if c.get("reason") else c["value"] for c in found))
     return (f"{len(found)} claim(s) in the sent materials are not in your cv.md: {values} "
             f"- check them before you rely on {job_id}")
 

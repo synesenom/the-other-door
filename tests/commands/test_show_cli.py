@@ -614,3 +614,20 @@ def test_materials_without_readability_still_render(cli_env, one_page):
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     del materials["readability"]
     assert "Materials" in _rendered(materials)
+
+
+def test_show_carries_and_prints_the_reason_of_a_kept_item(cli_env, one_page):
+    from io import StringIO
+    from rich.console import Console
+    from door.commands import matches as matches_cmd
+    from door.tailoring import facts
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
+    _with_cv(cli_env, r"\item Cut churn by 97\% at scale")
+    out = cli_env.jobs_dir / "output" / "job-abc"
+    facts.check(out, cli_env.profile_dir, keep=[{"kind": "number", "value": "97%", "file": "cv", "reason": "the ad says so"}])
+    materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
+    assert materials["unsupported"][0]["reason"] == "the ad says so"
+    buf = StringIO()
+    matches_cmd._render_materials(materials, Console(file=buf, width=120))
+    assert "the ad says so" in buf.getvalue()

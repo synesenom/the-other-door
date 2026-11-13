@@ -532,3 +532,77 @@ def test_same_date_in_another_form_is_backed_for_a_uk_cv():
 def test_day_month_ordering_does_not_change_the_claims():
     # 03/11/2026 and 11/03/2026 both reduce to the year, so the ordering cannot make a claim unbacked
     assert _values("03/11/2026", cv_md="", current_year=2025) == _values("11/03/2026", cv_md="", current_year=2025)
+
+
+# --- company forms are not skills ---------------------------------------------
+
+@pytest.mark.parametrize("form", ["ApS", "GmbH", "SARL", "AB", "Ltd", "S.A.S.", "Kft."])
+def test_company_form_is_not_a_skill(form):
+    tex = rf"\section{{Skills}}" "\n" rf"Python, {form}" "\n" rf"\section{{Experience}}" "\n" rf"\item Analyst at Example {form}."
+    assert "ApS" not in _values(tex, cv_md="Python")
+    values = _values(tex, cv_md="Python")
+    assert all(v.strip(".").casefold() != form.strip(".").casefold() for v in values)
+
+
+def test_real_skill_and_suffix_word_phrase_still_flag():
+    tex = "\\section{Skills}\nPostgreSQL, AB testing\n"
+    assert _values(tex, cv_md="Python") == ["AB testing", "PostgreSQL"]
+
+
+# --- reasons recorded by the tailor ---------------------------------------------
+
+def _setup(tmp_path, tex=r"\item Cut churn by 40\% in 2021 and TODO"):
+    out, prof = tmp_path / "out", tmp_path / "prof"
+    out.mkdir(parents=True)
+    prof.mkdir()
+    (prof / "cv.md").write_text(CV_MD, encoding="utf-8")
+    (out / "cv.tex").write_text("\\begin{document}\n" + tex + "\n", encoding="utf-8")
+    return out, prof
+
+
+def _keep(**kw):
+    return {"value": "40%", "kind": "number", "file": "cv", "reason": "from the ad", **kw}
+
+
+def test_keep_writes_reason_and_load_returns_it(tmp_path):
+    out, prof = _setup(tmp_path)
+    facts.check(out, prof, keep=[_keep()])
+    item = next(i for i in facts.load(out) if i["value"] == "40%")
+    assert item["reason"] == "from the ad"
+    todo = next(i for i in facts.load(out) if i["kind"] == "placeholder")
+    assert "reason" not in todo
+
+
+def test_reason_is_kept_on_rerun_while_flagged_and_dropped_when_not(tmp_path):
+    out, prof = _setup(tmp_path)
+    facts.check(out, prof, keep=[_keep()])
+    facts.check(out, prof)
+    assert next(i for i in facts.load(out) if i["value"] == "40%")["reason"] == "from the ad"
+    (out / "cv.tex").write_text("\\begin{document}\n\\item Team of 12\n", encoding="utf-8")
+    facts.check(out, prof)
+    assert facts.load(out) == []
+
+
+def test_keep_for_unflagged_item_and_placeholder_is_ignored(tmp_path):
+    out, prof = _setup(tmp_path)
+    facts.check(out, prof, keep=[_keep(value="99%"), _keep(value="TODO", kind="placeholder")])
+    assert all("reason" not in i for i in facts.load(out))
+
+
+def test_reason_is_cleaned(tmp_path):
+    out, prof = _setup(tmp_path)
+    facts.check(out, prof, keep=[_keep(reason="a\n\tb\x07" + "x" * 300)])
+    reason = next(i for i in facts.load(out) if i["value"] == "40%")["reason"]
+    assert len(reason) == 200 and reason.startswith("a b") and "\n" not in reason and "\x07" not in reason
+    out2, prof2 = _setup(tmp_path / "b")
+    facts.check(out2, prof2, keep=[_keep(reason=5)])
+    assert "reason" not in next(i for i in facts.load(out2) if i["value"] == "40%")
+
+
+def test_write_false_merges_saved_reasons_without_writing(tmp_path):
+    out, prof = _setup(tmp_path)
+    facts.check(out, prof, keep=[_keep()])
+    before = (out / "facts.json").read_text(encoding="utf-8")
+    found = facts.check(out, prof, write=False)
+    assert next(i for i in found if i["value"] == "40%")["reason"] == "from the ad"
+    assert (out / "facts.json").read_text(encoding="utf-8") == before
