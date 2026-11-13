@@ -40,7 +40,7 @@ concurrency:
 jobs:
   linux:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: app
@@ -93,6 +93,26 @@ jobs:
           sudo apt-get remove -y -qq "$(dpkg-deb -f dist/the-other-door-*.deb Package)"
           test ! -e "/opt/The other door/the-other-door"
           test "$(cat ~/".config/The other door/profile/marker")" = kept
+
+      # The install test (#639, #18): each package installed the user's way, then set-up, the first run and
+      # Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
+      # An AppImage needs FUSE 2, which Ubuntu 24.04 no longer ships (docs/manual-app.md says so to users).
+      - name: The install test (AppImage)
+        run: |
+          sudo apt-get install -y -qq libfuse2t64
+          DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
+
+      - name: The install test (.deb)
+        run: DOOR_INSTALLER="$(ls dist/the-other-door-*.deb)" DOOR_INSTALLER_KIND=deb xvfb-run -a npm run test:install
+
+      - name: Keep the install test's report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: install-report-linux
+          path: app/install-report
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Keep the packages for 14 days
         if: always()

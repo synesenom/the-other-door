@@ -346,7 +346,10 @@ export function buildWorld(options: WorldOptions = {}): World {
   const ads = ADS.filter((a) => a.persona === persona.key)
   const scratch = mkdtempSync(join(tmpdir(), 'door-world-'))
   const { home, world: worldDir, bin, userHome } = dirsOf(scratch)
-  for (const d of [home, worldDir, bin, userHome]) mkdirSync(d, { recursive: true })
+  // a user folder as Windows lays it out: its known folders (Downloads, AppData) resolve only when they exist
+  const roaming = join(userHome, 'AppData', 'Roaming')
+  const local = join(userHome, 'AppData', 'Local')
+  for (const d of [home, worldDir, bin, userHome, roaming, local, join(userHome, 'Downloads')]) mkdirSync(d, { recursive: true })
   const py = options.python ?? python()
   if (py === BUNDLED && !options.empty) throw new Error('a world on the bundled Python starts empty: its materials are compiled with the checkout\'s')
 
@@ -367,8 +370,8 @@ export function buildWorld(options: WorldOptions = {}): World {
     HOME: userHome,
     USERPROFILE: userHome,
     XDG_CONFIG_HOME: join(userHome, '.config'),
-    APPDATA: join(userHome, 'appdata'),
-    LOCALAPPDATA: join(userHome, 'localappdata'),
+    APPDATA: roaming,
+    LOCALAPPDATA: local,
     PATH: worldPath(bin),
     LANG: 'en_US.UTF-8',
     TZ: 'Europe/Copenhagen',
