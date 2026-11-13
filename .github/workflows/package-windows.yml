@@ -97,6 +97,7 @@ jobs:
       - name: The install test
         run: |
           $env:DOOR_INSTALLER = (Get-ChildItem dist\the-other-door-*.exe | Select-Object -First 1).FullName
+          $env:DEBUG = "pw:browser"   # the app's own output in the log
           npm run test:install
 
       - name: Keep the install test's report
@@ -147,6 +148,7 @@ jobs:
       - name: The install test, x64 under emulation
         run: |
           $env:DOOR_INSTALLER = (Get-ChildItem dist\the-other-door-*.exe | Select-Object -First 1).FullName
+          $env:DEBUG = "pw:browser"   # the app's own output in the log
           npm run test:install
 
       - name: Keep the install test's report
