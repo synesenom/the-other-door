@@ -92,11 +92,14 @@ def _parse_cards(html: str) -> tuple[list[dict], bool]:
             continue
         date_div = box.find_previous_sibling("div", class_="aka_opslaaetdato")
         body = box.select_one("div.dbj_jobBody")
-        place_div = body.find_next_sibling("div") if body else None
+        company = box.select_one("div.dbj_jobCompanyname")
+        # The place line follows the tag block, or the company where a card has no tag (since 2026-11).
+        anchor = body or company
+        place_div = anchor.find_next_sibling("div") if anchor else None
         cards.append({
             "platform_id": match.group(1),
             "title": _text(link),
-            "company": _text(box.select_one("div.dbj_jobCompanyname")),
+            "company": _text(company),
             "tag": _text(body),
             "place": _text(place_div).split("|")[0].strip(),
             "posted_at": _parse_card_date(_text(date_div)),

@@ -96,3 +96,13 @@ def test_results_page_is_not_an_unrecognised_page():
     # the container alone, with the cards renamed and no marker, is a changed site
     renamed = _fx("search_page1.html").replace("dbj_jobbox", "dbj_x").replace("dbj_jobHeadline", "dbj_y")
     assert jobmaskinen._is_results_page(renamed) is False
+
+
+def test_parse_cards_reads_the_place_of_a_card_without_its_tag_block():
+    """Since November 2026 a card has no ``dbj_jobBody`` (the tag): its place follows the company (#19)."""
+    cards, has_next = jobmaskinen._parse_cards(_fx("search_page1_2026-11.html"))
+    assert [(c["platform_id"], c["company"], c["place"], c["tag"]) for c in cards] == [
+        ("6543913", "PowerMatch ApS", "Farum", ""),
+        ("6543893", "POWER PEOPLE DANMARK ApS", "Herning", ""),
+    ]
+    assert has_next and cards[0]["posted_at"] is not None
