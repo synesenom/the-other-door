@@ -21,6 +21,7 @@ from door.core.lock import LockHeldError, ledger_lock
 from door.core import utils
 from door.matching import integrity
 from door.tailoring import facts as facts_mod
+from door.tailoring import readability
 
 
 _TAILOR_OUTPUTS = ("posting.json", "cv.tex", "cover_letter.tex", "cv.pdf", "cover_letter.pdf")
@@ -152,14 +153,15 @@ def _cv_conventions_text(posting_path: Path) -> str:
     )
 
 
-def _tailor_args(job_id: str, posting_path: Path) -> list[str]:
+def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -> list[str]:
     """The `claude -p` arguments that run the tailor agent for one posting.
 
     The session runs in the job's output folder (`_run_tailor`), not the checkout, in
     `--restricted` mode: no tool that runs commands, file tools confined to the working
     directories (that folder and `_tailor_folders`), no project or user settings. The
     tailor and reviewer agents come from `--agents` (the `.claude/agents/` files), the
-    door server from `--mcp-config` alone.
+    door server from `--mcp-config` alone. `feedback` (the retry after the ATS read-back) adds the
+    problems the PDFs read back with: the files exist, keep them and fix only these.
     """
     output_dir = workspace.JOBS_DIR / "output" / job_id
     prompt = (
@@ -172,6 +174,12 @@ def _tailor_args(job_id: str, posting_path: Path) -> list[str]:
         f"{_cv_conventions_text(posting_path)} "
         f"Use these absolute paths, not paths relative to the working directory."
     )
+    if feedback:
+        prompt += (
+            f"\n\nThe materials already exist in {output_dir}. Reading the compiled PDFs back the way an ATS "
+            f"does found these problems: keep the existing files, change only what fixes them, recompile with "
+            f"`compile`, and do not start over. New stories still go to {output_dir / _STORIES_FILE}.\n{feedback}"
+        )
     argv = [
         prompt,
         "--restricted",
@@ -235,7 +243,7 @@ class TailorError(claude_cli.ClaudeError):
     """The `claude -p` tailor run failed (non-zero exit, timeout, or no `claude`)."""
 
 
-def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None) -> bool:
+def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None, feedback: str | None = None) -> bool:
     """Drive the tailor agent for a single posting via the `claude` CLI.
 
     `claude -p "<prompt>" --agent tailor ...` (`_tailor_args`) in headless/print mode from
@@ -245,6 +253,10 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None)
     agent (issue #135). This is the seam tests monkeypatch instead of mocking
     subprocess directly, since the real tailoring logic is out of scope for
     this command (see issue #72).
+
+    `feedback` marks the one retry after the ATS read-back (`_prepare_core`): the prompt lists the
+    problems, the fact check's state and the stories of the first run are kept, and the call is
+    recorded as `tailoring_retry`.
 
     Returning True only means `claude` exited 0 — callers must still check
     `_tailor_outputs_missing` before recording the job as prepared.
@@ -259,19 +271,36 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None)
         raise TailorError(str(exc)) from None
     output_dir = workspace.JOBS_DIR / "output" / job_id
     output_dir.mkdir(parents=True, exist_ok=True)  # the session's working directory
-    # A fresh run: the fact check's rounds start over, and no reason of an earlier run's carries over.
-    for name in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE):
-        (output_dir / name).unlink(missing_ok=True)
+    if not feedback:  # a fresh run: the fact check's rounds start over, and no reason of an earlier run's carries over
+        for name in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE):
+            (output_dir / name).unlink(missing_ok=True)
     try:
         agents = {name: _agent_definition(name) for name in _TAILOR_AGENTS}
         (Path(posting_path).parent / _AGENTS_FILE).write_text(json.dumps(agents), encoding="utf-8")
     except (OSError, ValueError) as exc:
         raise TailorError(f"cannot set up the tailor agents: {exc}") from None
     try:
-        claude_cli.run(_tailor_args(job_id, posting_path), feature="tailoring", timeout_s=timeout_s, cwd=output_dir)
+        if feedback:
+            claude_cli.run(_tailor_args(job_id, posting_path, feedback), feature="tailoring_retry",
+                           timeout_s=timeout_s, cwd=output_dir)
+        else:
+            claude_cli.run(_tailor_args(job_id, posting_path), feature="tailoring", timeout_s=timeout_s, cwd=output_dir)
     except claude_cli.ClaudeError as exc:
         raise TailorError(str(exc)) from None
     return True
+
+
+def _read_back(output_dir: Path) -> list[dict] | None:
+    """The ATS read-back of the two PDFs (`matches._readability`), or None when it could not be made."""
+    try:
+        return matches_cmd._readability(output_dir)
+    except Exception:  # noqa: BLE001 - the check never fails a prepare
+        return None
+
+
+def _feedback_text(found: list[dict]) -> str:
+    """The fixable problems as one line each, ``file: detail``, for the retry's prompt."""
+    return "\n".join(f"- {p['file']}: {p['detail']}" for p in found)
 
 
 def _step(message: str, outcome: str | None = None) -> None:
@@ -334,7 +363,10 @@ def _prepare_core(
         given and nothing clears min_score; else
         ``{"job_id", "outcome": "prepared" | "skipped" | "failed",
         "output_dir", "files": [name, ...], "regenerated_incomplete",
-        "error"?, "missing"?, "unsupported"?, "stories"?, "salary"?}`` — ``salary`` (a prepared
+        "error"?, "missing"?, "unsupported"?, "stories"?, "salary"?, "readability"?, "warning"?}`` — ``readability`` (a prepared job only) is
+        the ATS read-back of both PDFs, ``[{file, kind, detail}]`` (None when it could not be made), taken after
+        one more tailor run for the ``missing`` kinds (`readability.FIXABLE`) when there were any, and
+        ``warning`` says so when problems remain; neither can fail the prepare; ``salary`` (a prepared
         job only) is `_estimate_salary`'s estimate or None; ``stories`` is
         `_add_stories`'s count of the CARL stories added to the story bank; ``files`` lists the material files present
         afterwards; ``missing`` is set when the tailor run finished without
@@ -405,10 +437,25 @@ def _prepare_core(
     tailor_dir = jobs_dir / ".tailor" / job_id  # the posting copy and agents file; the tailor sees only this of jobs/
     model_copy = tailor_dir / "posting.json"  # no excerpts of removed text: the tailor reads this
     (output_dir / _STORIES_FILE).unlink(missing_ok=True)  # never stories of an earlier run
+    readback: list[dict] | None = None
+    retry_failed = False
     try:
         with progress_mod.heartbeat(f"tailoring {label}", stage="prepare", interval_s=_HEARTBEAT_INTERVAL_S):
             utils.write_json_atomic(model_copy, integrity.for_model(json.loads(posting_path.read_text(encoding="utf-8"))))
             _run_tailor(job_id, model_copy, timeout_s=timeout_s)
+            _step("tailored the CV and cover letter", "ok")
+            if not _tailor_outputs_missing(output_dir):
+                # Read both PDFs back like an ATS; one more run for what the tailor can fix, never a failure.
+                _step("reading the PDFs back like an ATS")
+                readback = _read_back(output_dir)
+                fixable = readability.fixable(readback or [])
+                if fixable:
+                    try:
+                        _run_tailor(job_id, model_copy, timeout_s=timeout_s, feedback=_feedback_text(fixable))
+                    except TailorError:
+                        retry_failed = True
+                    else:
+                        readback = _read_back(output_dir)
     except TailorError as exc:
         _step("tailoring failed", "failed")
         return {
@@ -419,7 +466,8 @@ def _prepare_core(
     finally:
         shutil.rmtree(tailor_dir, ignore_errors=True)
 
-    _step("tailored the CV and cover letter", "ok")
+    if retry_failed:
+        _step("retry failed", "failed")
     _step(f"verifying outputs for {label}")
     missing = _tailor_outputs_missing(output_dir)
     if missing:
@@ -454,8 +502,12 @@ def _prepare_core(
 
     _step("status set to prepared", "ok")
     estimate = _estimate_salary(job_id, jobs_dir, profile_dir or workspace.PROFILE_DIR)
-    return {**result, "outcome": "prepared", "files": _present(), "unsupported": unsupported, "stories": stories,
-            "salary": estimate}
+    done = {**result, "outcome": "prepared", "files": _present(), "unsupported": unsupported, "stories": stories,
+            "salary": estimate, "readability": readback}
+    if readback:
+        done["warning"] = (f"the PDFs may not read back cleanly in an ATS: {len(readback)} problem(s), "
+                           f"see readability")
+    return done
 
 
 def _top_match_id(jobs_dir: Path, profile_dir: Path | None = None) -> str | None:
@@ -491,6 +543,8 @@ def _render_prepared(result: dict, *, interactive: bool) -> None:
             common._mark_line(console, "warn", f"incomplete materials found in [bold]{where}[/] — regenerated")
         if not interactive:  # on a terminal the step lines above already said so
             common._mark_line(console, "ok", "Tailored materials ready; status set to [bold]prepared[/]")
+        if result.get("warning"):
+            common._mark_line(console, "warn", result["warning"])
     console.print()
 
     posting = find_posting(workspace.JOBS_DIR, job_id)

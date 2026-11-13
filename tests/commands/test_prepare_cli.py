@@ -336,6 +336,7 @@ def test_prepare_core_reports_tailoring_verifying_recorded(cli_env, monkeypatch)
     assert [(e.message, e.stage, e.outcome) for e in cap.events] == [
         ("tailoring Data Scientist — Acme", "prepare", None),
         ("tailored the CV and cover letter", "prepare", "ok"),
+        ("reading the PDFs back like an ATS", "prepare", None),
         ("verifying outputs for Data Scientist — Acme", "prepare", None),
         ("CV, cover letter and both PDFs on disk", "prepare", "ok"),
         ("status set to prepared", "prepare", "ok"),
@@ -1001,3 +1002,199 @@ def test_prepare_keeps_a_reason_the_tailor_recorded_for_a_still_flagged_item(cli
     monkeypatch.setattr(prepare_cmd, "_run_tailor", run)
     result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
     assert [(c["value"], c.get("reason")) for c in result["unsupported"]] == [("97%", "from the ad")]
+
+
+# --------------------------------------------------------------------------- #
+# the ATS read-back (issue #21): one retry for what the tailor can fix, never a failure
+# --------------------------------------------------------------------------- #
+_MISSING = {"file": "cv", "kind": "missing", "detail": 'heading "Skills" is not in the text'}
+_GLUED = {"file": "cv", "kind": "glued", "detail": 'heading "Profile" is not on a line of its own'}
+
+
+def _recorder(jobs_dir, calls, *, raises_on=None, after=None):
+    def _run(job_id, posting_path, **kwargs):
+        calls.append(kwargs)
+        if raises_on == len(calls):
+            raise prepare_cmd.TailorError("boom")
+        out = jobs_dir / "output" / job_id
+        write_tailor_outputs(out)
+        if after:
+            after(len(calls), out)
+        return True
+
+    return _run
+
+
+def _script_readability(monkeypatch, *answers):
+    from door.commands import matches as matches_cmd
+
+    seen = list(answers)
+
+    def _read(output_dir):
+        value = seen.pop(0) if len(seen) > 1 else seen[0]
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+    monkeypatch.setattr(matches_cmd, "_readability", _read)
+
+
+@pytest.fixture
+def prep(cli_env):
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    return cli_env
+
+
+def _go(env):
+    return prepare_cmd._prepare_core("job-abc", jobs_dir=env.jobs_dir)
+
+
+def test_run_tailor_with_feedback_keeps_the_fact_state_and_names_the_problems(cli_env, monkeypatch):
+    from door.commands import check_facts as check_facts_cmd
+    from door.tailoring import facts as facts_mod
+
+    seen = []
+    monkeypatch.setattr(prepare_cmd.claude_cli, "run", lambda argv, **kw: seen.append((argv, kw)))
+    out = cli_env.jobs_dir / "output" / "job-1"
+    out.mkdir(parents=True)
+    for name in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE, "stories.json"):
+        (out / name).write_text("{}")
+    posting = cli_env.jobs_dir / ".tailor" / "job-1" / "posting.json"
+    posting.parent.mkdir(parents=True)
+
+    prepare_cmd._run_tailor("job-1", posting, feedback="cv: heading \"Skills\" is not in the text")
+    argv, kw = seen[-1]
+    assert kw["feature"] == "tailoring_retry"
+    assert "heading \"Skills\" is not in the text" in argv[0]
+    assert all((out / n).exists() for n in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE, "stories.json"))
+
+    prepare_cmd._run_tailor("job-1", posting)
+    assert seen[-1][1]["feature"] == "tailoring"
+    assert not any((out / n).exists() for n in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE))
+
+
+def test_a_clean_readback_runs_the_tailor_once(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [])
+    result = _go(prep)
+    assert result["outcome"] == "prepared" and len(calls) == 1
+    assert result["readability"] == [] and "warning" not in result
+
+
+def test_a_missing_problem_gets_one_retry_that_fixes_it(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_MISSING], [])
+    result = _go(prep)
+    assert len(calls) == 2 and "feedback" not in calls[0]
+    assert 'cv: heading "Skills" is not in the text' in calls[1]["feedback"]
+    assert result["outcome"] == "prepared" and result["readability"] == [] and "warning" not in result
+    assert json.loads((prep.jobs_dir / "applications.json").read_text())["job-abc"]["status"] == "prepared"
+
+
+def test_a_problem_that_stays_after_the_retry_is_a_warning_not_a_failure(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_MISSING], [_MISSING])
+    result = _go(prep)
+    assert len(calls) == 2 and result["outcome"] == "prepared"
+    assert result["readability"] == [_MISSING] and "ATS" in result["warning"]
+
+
+def test_layout_problems_are_listed_and_never_retried(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_GLUED])
+    result = _go(prep)
+    assert len(calls) == 1 and result["readability"] == [_GLUED] and result["warning"]
+
+
+def test_the_retry_is_told_only_the_fixable_problems(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_MISSING, _GLUED], [_GLUED])
+    result = _go(prep)
+    assert len(calls) == 2 and "Profile" not in calls[1]["feedback"]
+    assert result["readability"] == [_GLUED]
+
+
+def test_a_failed_check_never_retries(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, None)
+    result = _go(prep)
+    assert len(calls) == 1 and result["outcome"] == "prepared"
+    assert result["readability"] is None and "warning" not in result
+
+
+def test_a_check_that_raises_is_a_failed_check(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, RuntimeError("pdf"))
+    result = _go(prep)
+    assert len(calls) == 1 and result["outcome"] == "prepared" and result["readability"] is None
+
+
+def test_a_failing_retry_still_prepares_and_lists_the_problems(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls, raises_on=2))
+    _script_readability(monkeypatch, [_MISSING])
+    result = _go(prep)
+    assert len(calls) == 2 and result["outcome"] == "prepared"
+    assert result["readability"] == [_MISSING] and result["warning"]
+
+
+def test_a_retry_that_deletes_a_required_file_fails_the_prepare(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(
+        prep.jobs_dir, calls, after=lambda n, out: (out / "cv.pdf").unlink() if n == 2 else None))
+    _script_readability(monkeypatch, [_MISSING])
+    result = _go(prep)
+    assert result["outcome"] == "failed" and result["missing"] == ["cv.pdf"]
+
+
+def test_stories_of_the_retry_are_added_once(prep, monkeypatch):
+    stories = [{"title": "T", "context": "c", "action": "a", "result": "r", "learning": "l"}]
+
+    def after(n, out):
+        if n == 2:
+            (out / "stories.json").write_text(json.dumps(stories))
+
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls, after=after))
+    _script_readability(monkeypatch, [_MISSING], [])
+    result = _go(prep)
+    assert result["stories"]["added"] == 1
+
+
+def test_stories_of_an_earlier_run_are_removed_before_the_first_run_only(prep, monkeypatch):
+    out = prep.jobs_dir / "output" / "job-abc"
+    out.mkdir(parents=True)
+    (out / "stories.json").write_text("[]")
+    seen = []
+
+    def after(n, folder):
+        seen.append((n, (folder / "stories.json").exists()))
+        if n == 1:
+            (folder / "stories.json").write_text("[]")
+
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls, after=after))
+    _script_readability(monkeypatch, [_MISSING], [])
+    _go(prep)
+    assert seen == [(1, False), (2, True)]
+
+
+def test_prepare_cli_prints_the_readback_warning(cli_env, monkeypatch, stub_materials):
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", fake_tailor(cli_env.jobs_dir, []))
+    _script_readability(monkeypatch, [_GLUED])
+    result = CliRunner().invoke(cli, ["jobs", "prepare", "job-abc"])
+    assert result.exit_code == 0, result_text(result)
+    assert "ATS" in result.output
+
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-two", score=0.9)
+    _script_readability(monkeypatch, [])
+    result = CliRunner().invoke(cli, ["jobs", "prepare", "job-two"])
+    assert "ATS" not in result.output

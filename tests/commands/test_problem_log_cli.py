@@ -100,3 +100,12 @@ def test_a_run_record_written_by_find_is_logged(log, tmp_path):
     }
     find_cmd._write_run_record(record, tmp_path / "jobs", 0.65)
     assert "ERROR site thehub failed: HTTP 503" in log.read_text(encoding="utf-8")
+
+
+def test_a_prepare_readback_warning_is_not_logged_but_its_error_is(log):
+    server._log_answer("prepare", {"outcome": "prepared", "warning": "the PDFs may not read back cleanly"})
+    assert not log.exists()
+    server._log_answer("prepare", {"error": "tailor step failed"})
+    assert "ERROR tool prepare: tailor step failed" in log.read_text(encoding="utf-8")
+    server._log_answer("market", {"warning": "grouping failed"})
+    assert "WARNING tool market: grouping failed" in log.read_text(encoding="utf-8")

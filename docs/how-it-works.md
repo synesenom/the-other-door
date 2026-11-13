@@ -125,6 +125,10 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    on a line of its own and in order, the `% Keywords:` and no garbled or empty text. What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);
    reported, never a block.
+   When the tailor is done, `prepare` reads both PDFs back this way itself. If the name, a heading or a keyword
+   is missing it runs the tailor once more, in a fresh session, told which problems and that the files exist; the
+   retry counts in the plan estimate. What still does not read back is `readability` in `prepare`'s answer, with a
+   `warning`; layout kinds (glued, order, empty, garbled) are listed without a retry. The prepare stays `prepared`.
    Once the job is prepared, `prepare` also estimates its salary: one Haiku call with a web search (`jobs salary`'s,
    saved in `jobs/salary.json`), reused while it is under 90 days old and asked again after. It is only shown (the
    tailor never sees it), and it is skipped while the Claude plan is close to its limit. A search that finds no

@@ -5,10 +5,26 @@ import type { Persona } from './data/personas'
 
 const esc = (s: string) => s.replace(/\\/g, '').replace(/([&%$#_{}])/g, '\\$1').replace(/\*\*(.*?)\*\*/g, '\\textbf{$1}')
 
+/** Two skills from cv.md: the first two items of its most comma-separated line (the skills line, in any
+ * language). A real tailor's keywords are in the CV it writes, so the ATS read-back finds them and `prepare`
+ * does not run the tailor again (#21). */
+export function cvKeywords(cv: string): string {
+  const commas = (s: string) => s.split(',').length
+  const line = cv.split('\n').reduce((best, l) => (commas(l) > commas(best) ? l : best), '')
+  return line
+    .replace(/\([^)]*\)/g, '')
+    .replace(/^[^:]*:/, '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(', ')
+}
+
 /** The CV: every section of cv.md, headings as sections and bullets as items. */
 export function cvTex(persona: Persona): string {
   const lines = persona.cv.split('\n')
-  const out: string[] = ['\\documentclass[10pt]{article}', '% Keywords: <<title>>', '\\begin{document}', '']
+  const out: string[] = ['\\documentclass[10pt]{article}', `% Keywords: ${cvKeywords(persona.cv)}`, '\\begin{document}', '']
   let inList = false
   const close = () => {
     if (inList) out.push('\\end{itemize}', '')

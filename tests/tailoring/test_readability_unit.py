@@ -104,3 +104,10 @@ def test_check_pdf_reads_back(tmp_path):
     tex = "% Keywords: Kubernetes\n"
     found = readability.check_pdf(pdf, tex, NAME)
     assert [p["kind"] for p in found] == ["missing"] and "Kubernetes" in found[0]["detail"]
+
+
+def test_fixable_keeps_only_what_the_tailor_can_fix():
+    found = [{"kind": "missing", "detail": "a"}, {"kind": "glued", "detail": "b"}, {"kind": "empty", "detail": "c"}]
+    assert readability.FIXABLE == {"missing"}
+    assert readability.fixable(found) == [{"kind": "missing", "detail": "a"}]
+    assert readability.fixable([]) == []
