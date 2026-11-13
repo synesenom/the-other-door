@@ -299,7 +299,7 @@ def test_run_tailor_writes_the_tailor_and_reviewer_agents(cli_env, monkeypatch):
     prepare_cmd._run_tailor("job-1", posting)
     agents = json.loads((posting.parent / "agents.json").read_text())
     assert set(agents) == {"tailor", "reviewer"}
-    assert agents["tailor"]["tools"] == ["Read", "Write", "Agent", "mcp__door__compile"]
+    assert agents["tailor"]["tools"] == ["Read", "Write", "Agent", "mcp__door__compile", "mcp__door__check_facts"]
     assert agents["reviewer"]["tools"] == ["Read"]
     assert agents["tailor"]["model"] == "sonnet" and agents["tailor"]["description"]
     assert agents["tailor"]["prompt"].startswith("You are the tailor agent")
@@ -442,7 +442,7 @@ def test_run_tailor_allows_the_reviewer_and_the_door_mcp_tools(tmp_path, monkeyp
 
     cmd = calls[0]
     allowed = cmd[cmd.index("--allowedTools") + 1].split(",")
-    for tool in ("Agent", "mcp__door__compile"):
+    for tool in ("Agent", "mcp__door__compile", "mcp__door__check_facts"):
         assert tool in allowed
     assert any(t.startswith("Read(") for t in allowed) and any(t.startswith("Edit(") for t in allowed)
     assert "door" in json.loads(cmd[cmd.index("--mcp-config") + 1])["mcpServers"]
@@ -965,3 +965,39 @@ def test_the_tailor_agent_writes_the_photo_placeholder_by_the_conventions_and_ne
     text = (REPO_ROOT / ".claude" / "agents" / "tailor.md").read_text(encoding="utf-8")
     assert "<<photo>>" in text and "photo: expected" in text and "photo: optional" in text
     assert "Never add" in text and "marital status" in text and "nationality" in text
+
+
+def test_run_tailor_clears_the_fact_check_rounds_and_stale_facts_before_it_starts(cli_env, monkeypatch):
+    seen = {}
+    out = cli_env.jobs_dir / "output" / "job-abc"
+    out.mkdir(parents=True)
+    (out / ".facts_rounds").write_text("2")
+    (out / "facts.json").write_text("{}")
+    posting = cli_env.jobs_dir / ".tailor" / "job-abc" / "posting.json"
+    posting.parent.mkdir(parents=True)
+
+    def fake_run(cmd, **kw):
+        seen["rounds"] = (out / ".facts_rounds").exists()
+        seen["facts"] = (out / "facts.json").exists()
+        return FakeCompleted(0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    prepare_cmd._run_tailor("job-abc", posting)
+    assert seen == {"rounds": False, "facts": False}
+
+
+def test_prepare_keeps_a_reason_the_tailor_recorded_for_a_still_flagged_item(cli_env, monkeypatch):
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    inner = _tailor_writing_cv(cli_env.jobs_dir, r"\item Cut churn by 97\%")
+
+    def run(job_id, posting_path, **kwargs):
+        inner(job_id, posting_path)
+        facts_mod_check = prepare_cmd.facts_mod.check
+        facts_mod_check(cli_env.jobs_dir / "output" / job_id, cli_env.profile_dir,
+                        keep=[{"kind": "number", "value": "97%", "file": "cv", "reason": "from the ad"}])
+        return True
+
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", run)
+    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+    assert [(c["value"], c.get("reason")) for c in result["unsupported"]] == [("97%", "from the ad")]

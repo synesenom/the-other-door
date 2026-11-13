@@ -6,9 +6,9 @@
 //   DOOR_INSTALLER_KIND=deb      on Linux, the .deb instead of the AppImage
 //   DOOR_INSTALLED_APP=<exe>     an app already installed: no install, no uninstall
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { startRun } from '../journeys/teardown'
 import { installPlan, pickInstaller, signingCommands, type Kind } from './installer'
 
@@ -29,7 +29,10 @@ function installer(): string {
 function reportSigning(executable: string): void {
   const out: string[] = []
   for (const argv of signingCommands(process.platform, executable)) {
-    const r = spawnSync(argv[0]!, argv.slice(1), { encoding: 'utf8' })
+    // Windows PowerShell must not inherit pwsh's module path, or it cannot load Get-AuthenticodeSignature
+    const env = { ...process.env }
+    delete env.PSModulePath
+    const r = spawnSync(argv[0]!, argv.slice(1), { encoding: 'utf8', env })
     out.push(`$ ${argv.join(' ')}  (exit ${r.status})`, (r.stdout + r.stderr).trim(), '')
   }
   if (!out.length) out.push('Linux builds are not signed.')
@@ -46,12 +49,14 @@ export default function setup(): void {
     return
   }
   const file = installer()
-  const root = mkdtempSync(join(tmpdir(), 'door-install-'))
+  // the long form of the temp folder: Windows hands out an 8.3 one (C:\Users\RUNNER~1\...)
+  const root = mkdtempSync(join(realpathSync.native(tmpdir()), 'door-install-'))
   const plan = installPlan(file, process.platform, root)
   console.log(`\nInstalling ${file}\n  into ${plan.root ?? 'the system (apt)'}`)
   writeFileSync(STATE, JSON.stringify({ plan, scratch: root }))
   for (const argv of plan.install) execFileSync(argv[0]!, argv.slice(1), { stdio: 'inherit' })
   if (!existsSync(plan.executable)) throw new Error(`installed, but there is no ${plan.executable}`)
+  console.log(`  installed: ${readdirSync(dirname(plan.executable)).join(', ')}`)
   process.env.DOOR_INSTALLED_APP = plan.executable
   reportSigning(plan.executable)
 }

@@ -48,9 +48,9 @@ function limitNote(m: MaterialsData, which: Document): string | null {
 // was sent (a job sent before that copy was kept has only the first).
 const fromSentCopy = (m: MaterialsData) => m.output_dir.split(/[\\/]/).filter(Boolean).pop() === 'sent'
 
-/** The claims the CV does not back, each named once; null when there are none. */
+/** The claims the CV does not back, each named once with the reason the tailor kept it for, if any; null when there are none. */
 function unbackedLine(m: MaterialsData): string | null {
-  const values = [...new Set((m.unsupported ?? []).map((c) => c.value))]
+  const values = [...new Set((m.unsupported ?? []).map((c) => (c.reason ? `${c.value} (${c.reason})` : c.value)))]
   return values.length ? `Not in your CV: ${values.join(', ')}. Check them before you send it.` : null
 }
 

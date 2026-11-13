@@ -128,7 +128,7 @@ def test_last_scrape_per_site(tmp_path, monkeypatch):
     ]
 
 
-def _auth(stdout="", returncode=0, exc=None):
+def _auth(stdout="", returncode=0, exc=None, stderr=""):
     """A fake `subprocess.run` for `claude auth status --json`; records the argv."""
     calls = []
 
@@ -136,7 +136,7 @@ def _auth(stdout="", returncode=0, exc=None):
         calls.append(argv)
         if exc is not None:
             raise exc
-        return subprocess.CompletedProcess(argv, returncode, stdout=stdout, stderr="")
+        return subprocess.CompletedProcess(argv, returncode, stdout=stdout, stderr=stderr)
 
     run.calls = calls
     return run
@@ -171,6 +171,16 @@ def test_check_claude_login_rejects_an_api_key_login():
 def test_check_claude_login_warns_when_it_cannot_tell(run):
     check = doctor.check_claude_login("/usr/bin/claude", run=run)
     assert check["status"] == "warn" and check["required"] is False
+
+
+@pytest.mark.parametrize("run, said", [
+    (_auth("", returncode=1, stderr="'C:\\x\\python.exe' is not recognized as an internal or external command"), "is not recognized"),
+    (_auth(exc=OSError("[WinError 2] The system cannot find the file specified")), "WinError 2"),
+    (_auth(exc=subprocess.TimeoutExpired("claude", 15)), "15"),
+])
+def test_check_claude_login_says_why_it_cannot_tell(run, said):
+    """What claude said (or why it could not be run) is in the detail: on a user's computer it is the only clue."""
+    assert said in doctor.check_claude_login("/usr/bin/claude", run=run)["detail"]
 
 
 def test_check_claude_login_skipped_without_the_cli():

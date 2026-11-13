@@ -30,6 +30,7 @@ Adding a language or a country is a new data file; see docs/adding-a-site.md.
 
 from __future__ import annotations
 
+import os
 import re
 import unicodedata
 import tomllib
@@ -808,6 +809,18 @@ def known_cities() -> list[tuple[str, str]]:
 # --------------------------------------------------------------------------- #
 
 _TOKEN_RE = re.compile(r"[^\W\d_]")
+
+
+def preload_language_detection() -> None:
+    """Load py3langid and numpy now, on the calling thread, with OpenBLAS on one thread.
+
+    The MCP server calls it before it serves (#18): loaded for the first time on one of its worker threads,
+    numpy's OpenBLAS hung on Windows as it started its own threads. Language detection needs none of them;
+    a thread count already set in the environment is kept.
+    """
+    os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+    import numpy  # noqa: F401
+    import py3langid.langid  # noqa: F401
 
 
 @lru_cache(maxsize=1)

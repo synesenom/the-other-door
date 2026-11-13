@@ -269,6 +269,20 @@ describe('resolvePackagedSpawn', () => {
     expect(s.env!['APPDATA']).toBe('C:\\Users\\ada\\AppData\\Roaming')
   })
 
+  it('on Windows: keeps what Windows needs to run a .cmd (an npm-installed claude.cmd), whatever its case', () => {
+    const s = resolvePackagedSpawn({ resourcesPath: 'C:\\r', home: 'C:\\h', platform: 'win32', env: {
+      PATH: 'C:\\Windows', ComSpec: 'C:\\Windows\\system32\\cmd.exe', PATHEXT: '.COM;.EXE;.BAT;.CMD', SystemRoot: 'C:\\Windows',
+      windir: 'C:\\Windows', TEMP: 'C:\\t', TMP: 'C:\\t', SECRET: 'no' } })
+    expect(s.env).toMatchObject({ ComSpec: 'C:\\Windows\\system32\\cmd.exe', PATHEXT: '.COM;.EXE;.BAT;.CMD', SystemRoot: 'C:\\Windows',
+      windir: 'C:\\Windows', TEMP: 'C:\\t', TMP: 'C:\\t' })
+    expect(s.env!['SECRET']).toBeUndefined()
+  })
+
+  it('elsewhere: no Windows variables', () => {
+    const s = resolvePackagedSpawn({ resourcesPath: '/r', home: '/h', platform: 'linux', env: { ComSpec: 'x', PATH: '/usr/bin' } })
+    expect(s.env!['ComSpec']).toBeUndefined()
+  })
+
   it('never puts the data, or anything it writes, inside the app', () => {
     const res = '/Applications/door.app/Contents/Resources'
     const s = resolvePackagedSpawn({ resourcesPath: res, home: '/Users/ada/Library/Application Support/door', platform: 'darwin', env })

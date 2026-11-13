@@ -16,6 +16,7 @@ from door.commands import salary as salary_cmd
 from door.core import claude_cli, usage, workspace
 from door.core import photo as photo_mod
 from door.core import progress as progress_mod
+from door.commands import check_facts as check_facts_cmd
 from door.core.lock import LockHeldError, ledger_lock
 from door.core import utils
 from door.matching import integrity
@@ -49,7 +50,7 @@ def _tailor_outputs_missing(output_dir: Path) -> list[str]:
 # compile/render tool, and Read/Write scoped by path in `_tailor_args`. No Bash: the job
 # ad is untrusted text, and an injected "run curl ..." must meet no shell. Under
 # `claude -p`, a tool missing here is silently denied.
-_TAILOR_ALLOWED_TOOLS = ("Agent", "mcp__door__compile")
+_TAILOR_ALLOWED_TOOLS = ("Agent", "mcp__door__compile", "mcp__door__check_facts")
 
 # The file the tailor writes its new CARL stories to, in its output folder; `prepare`
 # adds them to the story bank afterwards (the agent cannot write under the profile).
@@ -258,6 +259,9 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None)
         raise TailorError(str(exc)) from None
     output_dir = workspace.JOBS_DIR / "output" / job_id
     output_dir.mkdir(parents=True, exist_ok=True)  # the session's working directory
+    # A fresh run: the fact check's rounds start over, and no reason of an earlier run's carries over.
+    for name in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE):
+        (output_dir / name).unlink(missing_ok=True)
     try:
         agents = {name: _agent_definition(name) for name in _TAILOR_AGENTS}
         (Path(posting_path).parent / _AGENTS_FILE).write_text(json.dumps(agents), encoding="utf-8")

@@ -422,6 +422,22 @@ def test_revise_reruns_the_facts_check(revise_env, monkeypatch):
     assert undone["unsupported"] == []
 
 
+def test_revise_keeps_a_reason_while_the_item_is_flagged_and_drops_it_when_gone(revise_env, monkeypatch):
+    (revise_env.profile_dir / "cv.md").write_text("Shipped models. Raised 38%.")
+    invented = "Dear team,\n\nI raised revenue by 60\\% last year.\n"
+    monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(invented), stderr=""))
+    kw = dict(jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
+    revise_cmd._revise_core("jobindex-top", "cover_letter", "x", **kw)
+    from door.tailoring import facts
+    facts.check(revise_env.out, revise_env.profile_dir,
+                keep=[{"kind": "number", "value": "60%", "file": "cover_letter", "reason": "in the ad"}])
+    again = revise_cmd._revise_core("jobindex-top", "cover_letter", "y", **kw)
+    assert again["unsupported"][0]["reason"] == "in the ad"
+    clean = "Dear team,\n\nI shipped models.\n"
+    monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(clean), stderr=""))
+    assert revise_cmd._revise_core("jobindex-top", "cover_letter", "z", **kw)["unsupported"] == []
+
+
 def test_revise_without_cv_md_reports_not_checked(revise_env):
     result = revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
     assert result["unsupported"] is None

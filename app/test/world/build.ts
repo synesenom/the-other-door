@@ -181,11 +181,49 @@ function script(path: string, lines: string[]): void {
   chmodSync(path, 0o755)
 }
 
-/** A program in the world's bin/ that runs one world script with `py`: a shell script, or `<name>.cmd` on Windows. */
+/** A program in the world's bin/ that runs one world script with `py`: a shell script; on Windows a `<name>.exe` launcher (a `.cmd` without arguments, or without a C# compiler). */
+/** A program's own command line, passed on untouched to `<exe> "<file>" "<world>"` (a Windows launcher's C#). */
+function launcherSource(exe: string, file: string, worldDir: string): string {
+  const lit = (v: string) => JSON.stringify(v)   // a JSON string is a valid C# string literal for these paths
+  return `using System; using System.Diagnostics;
+class Launcher {
+  static int Main() {
+    try { return Run(); } catch (Exception e) { Console.Error.WriteLine("launcher: " + e.Message); return 1; }
+  }
+  static int Run() {
+    string raw = Environment.CommandLine;
+    int at = raw.StartsWith("\\"") ? raw.IndexOf('"', 1) + 1 : raw.IndexOf(' ');
+    string rest = at < 0 || at >= raw.Length ? "" : raw.Substring(at);
+    string prefix = "\\"" + ${lit(file)} + "\\" \\"" + ${lit(worldDir)} + "\\"";
+    var info = new ProcessStartInfo(Environment.ExpandEnvironmentVariables(${lit(exe)}), prefix + rest) { UseShellExecute = false };
+    var child = Process.Start(info);
+    child.WaitForExit();
+    return child.ExitCode;
+  }
+}
+`
+}
+
+/** Windows' own C# compiler (.NET Framework, on every Windows 10 and 11), or null. */
+function csc(): string | null {
+  const path = join(process.env.SystemRoot ?? 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe')
+  return existsSync(path) ? path : null
+}
+
 function wrapper(bin: string, name: string, py: string, file: string, worldDir: string, passArgs: boolean): string {
   if (process.platform === 'win32') {
-    const path = join(bin, `${name}.cmd`)
     const exe = py === BUNDLED ? '%DOOR_BIN%\\..\\python\\python.exe' : py
+    // A program that takes arguments is a real .exe, as the real claude and tectonic are: a .cmd's arguments go
+    // through cmd.exe, which mangles quotes (a --json-schema), so the stand-in would not see what door sent.
+    const compiler = passArgs ? csc() : null
+    if (compiler) {
+      const source = join(bin, `${name}.cs`)
+      const path = join(bin, `${name}.exe`)
+      writeFileSync(source, launcherSource(exe, file, worldDir))
+      execFileSync(compiler, ['/nologo', `/out:${path}`, source], { stdio: 'pipe' })
+      return path
+    }
+    const path = join(bin, `${name}.cmd`)
     writeFileSync(path, `@"${exe}" "${file}" "${worldDir}"${passArgs ? ' %*' : ''}\r\n`)
     return path
   }
@@ -346,7 +384,10 @@ export function buildWorld(options: WorldOptions = {}): World {
   const ads = ADS.filter((a) => a.persona === persona.key)
   const scratch = mkdtempSync(join(tmpdir(), 'door-world-'))
   const { home, world: worldDir, bin, userHome } = dirsOf(scratch)
-  for (const d of [home, worldDir, bin, userHome]) mkdirSync(d, { recursive: true })
+  // a user folder as Windows lays it out: its known folders (Downloads, AppData) resolve only when they exist
+  const roaming = join(userHome, 'AppData', 'Roaming')
+  const local = join(userHome, 'AppData', 'Local')
+  for (const d of [home, worldDir, bin, userHome, roaming, local, join(userHome, 'Downloads')]) mkdirSync(d, { recursive: true })
   const py = options.python ?? python()
   if (py === BUNDLED && !options.empty) throw new Error('a world on the bundled Python starts empty: its materials are compiled with the checkout\'s')
 
@@ -367,8 +408,8 @@ export function buildWorld(options: WorldOptions = {}): World {
     HOME: userHome,
     USERPROFILE: userHome,
     XDG_CONFIG_HOME: join(userHome, '.config'),
-    APPDATA: join(userHome, 'appdata'),
-    LOCALAPPDATA: join(userHome, 'localappdata'),
+    APPDATA: roaming,
+    LOCALAPPDATA: local,
     PATH: worldPath(bin),
     LANG: 'en_US.UTF-8',
     TZ: 'Europe/Copenhagen',

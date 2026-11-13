@@ -222,7 +222,9 @@ def _install_step(step: dict, interactive: bool = False) -> dict:
     for argv in step["commands"]:
         entry["ran"].append(argv)
         try:
-            proc = subprocess.run(argv, capture_output=not interactive, text=True)
+            # interactive (a shell): an installer may ask on the keyboard; else nothing to read
+            proc = subprocess.run(argv, capture_output=not interactive, text=True,
+                                  stdin=None if interactive else subprocess.DEVNULL)
         except FileNotFoundError:
             entry.update(ok=False, error=f"`{argv[0]}` not found")
             break
@@ -396,7 +398,7 @@ def _register_mcp_server(platform: str) -> tuple[bool, str | None]:
     if step is not None:
         if not step["commands"]:
             return False, step["hint"]
-        subprocess.run(step["cleanup"], capture_output=True, text=True)  # a stale entry from an earlier setup
+        subprocess.run(step["cleanup"], capture_output=True, text=True, stdin=subprocess.DEVNULL)  # a stale entry from an earlier setup
         entry = _install_step(step)
         if not entry["ok"]:
             return False, entry["error"]
@@ -427,7 +429,7 @@ def _fix(yes: bool, no_tex: bool, no_claude: bool, fix_scrapers: bool) -> None:
     if tools and (yes or _prompts.confirm("install", f"Install {len(tools)} missing tool{'s' * (len(tools) > 1)}?", default=True)):
         plan = _setup_core(install=tools, report=report)["plan"]
         if any(argv[:1] == ["sudo"] for step in plan for argv in step["commands"]) and sys.stdin.isatty():
-            subprocess.run(["sudo", "-v"])  # ask for the password once, before the spinners
+            subprocess.run(["sudo", "-v"], stdin=None)  # ask for the password once, before the spinners: the keyboard
         plan = [{**step, "commands": [["sudo", "-n", *argv[1:]] if argv[:1] == ["sudo"] else argv for argv in step["commands"]]} for step in plan]
         for step in plan:
             _progress.step(_TOOL_LABELS[step["tool"]], lambda step=step: (lambda e: (e["ok"], e.get("error")))(_install_step(step)))

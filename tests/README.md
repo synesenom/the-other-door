@@ -36,7 +36,8 @@ Matching `CLAUDE.md` → *Testing*; the layer is in the file name:
 |-------|----------------|----------|-------|
 | **Unit** | Pure helpers and the data model in isolation (`make_job_id`, `_location_text`, `_parse_date`, `_area_for_profile`, `_country_code`, …). | No | `test_*_unit.py`, `core/test_models.py` |
 | **Fixture** | The full `scrape(config)` path — pagination, dedup, mapping — with the HTTP layer mocked from saved real responses in `scrapers/<kind>/fixtures/<site>/`; commands end to end with the scrapers, `claude -p` and LaTeX faked. | No (mocked) | `test_*_scrape.py`, `test_*_cli.py` |
-| **Smoke** | A thin contract check against the *live* site: returns ≥1 valid `JobPosting`. Each country and each ad language also has a run of its own (`i18n/test_countries_live.py`, `i18n/test_languages_live.py`; the rows are `live_matrix.py`), and so does each profession (`pipeline/test_professions_live.py`, the offline half is `matching/test_professions_unit.py`; both read `professions.py`). Marked `@pytest.mark.live`, opt-in. | Yes | `test_*_live.py` |
+| **Corpus** | Each country file and each language file against saved real ads (`i18n/test_country_corpus.py`, `i18n/test_language_corpus.py` on `i18n/corpus/`; `scripts/refresh_corpus.py` saves them from the rows of `live_matrix.py`, the only part online). Offline, in every run. | No | `i18n/test_*_corpus.py` |
+| **Smoke** | A thin contract check against the *live* site: returns ≥1 valid `JobPosting`. Each profession also has a run of its own (`pipeline/test_professions_live.py`, the offline half is `matching/test_professions_unit.py`; both read `professions.py`). Marked `@pytest.mark.live`, opt-in. | Yes | `test_*_live.py` |
 
 ## Running
 

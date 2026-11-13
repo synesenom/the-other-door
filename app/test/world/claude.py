@@ -76,6 +76,10 @@ if ARGS[:2] == ["auth", "login"]:
 
 # --------------------------------------------------------------------------- model calls
 SYSTEM = arg("--system-prompt") or ""
+# a call that hangs before it answers still leaves a trace: how it was started (#18)
+with (WORLD / "claude-starts.jsonl").open("a", encoding="utf-8") as _f:
+    _f.write(json.dumps({"at": time.time(), "args": len(ARGS), "chars": sum(map(len, ARGS)), "stdin_tty": sys.stdin.isatty(),
+                         "agent": arg("--agent"), "model": arg("--model")}) + "\n")
 # The tailor (`--agent`) has its prompt in the arguments and inherits the server's stdin, the MCP pipe that
 # never closes: reading it would wait forever.
 STDIN = sys.stdin.read() if not sys.stdin.isatty() and arg("--agent") is None else ""

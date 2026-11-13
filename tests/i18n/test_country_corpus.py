@@ -1,25 +1,21 @@
-"""Live smoke test per country: its country file still fits the places real ads name.
-
-Opt-in (marked `live`): one request per country, page 1 of a board or discovery source serving it
-(`probe`), from its largest city. The rows are `tests/live_matrix.COUNTRIES`; `scripts/smoke_report.py` lists each
-country's result on the status page, apart from the sites'.
-"""
+"""Each country file still fits the places real ads name (#19): page 1 of a board serving the country, from its
+largest city, saved by `scripts/refresh_corpus.py` (`tests/i18n/corpus/countries/<cc>.json`). Offline: a site's
+bad day never fails it; the site's own live test checks that it still answers."""
 
 import pytest
 
+from corpus_utils import load
 from door.matching import locality, prefilter, title_fit
-from live_matrix import COUNTRIES, module
+from live_matrix import COUNTRIES
 
 
-@pytest.mark.live
 @pytest.mark.parametrize("cc", sorted(COUNTRIES))
-def test_country_live(cc):
-    run = COUNTRIES[cc]
+def test_the_country_file_fits_its_saved_ads(cc):
+    run, saved = COUNTRIES[cc], load("countries", cc)
+    assert (saved["source"], saved["city"]) == (run.source, run.city), "refresh the corpus: its row changed"
     config = {"location": run.city, "search_keywords": [run.keyword], "role_targets": [run.keyword]}
-    result = module(run).probe(config)
-    assert result and result["structure_ok"], f"{run.source} gave no results page for {run.keyword!r} in {run.city}"
-    places = [p["location"] for p in result["postings"] if p.get("location")]
-    assert len(places) >= 5, f"only {len(places)} located ads from {run.source}: {places}"
+    places = saved["places"]
+    assert len(places) >= 5, f"only {len(places)} located ads saved from {run.source}"
 
     local = title_fit.name_pattern(locality.local_names(config))
     named = [place for place in places if local.search(title_fit.squash(place))]

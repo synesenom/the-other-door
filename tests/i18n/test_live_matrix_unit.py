@@ -1,4 +1,4 @@
-"""The live smoke matrix (`tests/live_matrix.py`) covers every dimension, so each can fail on its own:
+"""The rows (`tests/live_matrix.py`) cover every dimension, so each can fail on its own:
 every country file, every language file, every site and every discovery source."""
 
 from door import i18n
@@ -7,11 +7,11 @@ from live_matrix import COUNTRIES, LANGUAGES, NO_LIVE_TEST, serves
 from paths import TESTS_DIR
 
 
-def test_every_country_file_has_a_live_run():
+def test_every_country_file_has_a_row():
     assert set(COUNTRIES) == set(i18n.countries())
 
 
-def test_every_language_file_has_a_live_run():
+def test_every_language_file_has_a_row():
     assert set(LANGUAGES) == set(i18n.languages())
 
 

@@ -10,7 +10,7 @@ import pytest
 from door.core.models import JobPosting
 from door.scrapers import drain_errors
 from door.scrapers.boards import jobbank
-from live_utils import skip_if_refused_in_ci
+from live_utils import not_reached_if_refused
 
 
 @pytest.mark.live
@@ -18,7 +18,7 @@ def test_jobbank_live_returns_valid_postings():
     drain_errors()
     postings = jobbank.scrape({"search_keywords": ["analyst"], "location": "Copenhagen", "max_pages_per_keyword": 1})
     if not postings:
-        skip_if_refused_in_ci("jobbank", drain_errors().get("jobbank", []))
+        not_reached_if_refused("jobbank", drain_errors().get("jobbank", []))
     assert postings
     for p in postings[:5]:
         JobPosting.model_validate(p)

@@ -163,8 +163,10 @@ def run(
     argv = [installers.find_claude() or "claude", "-p", *args]
     try:
         result = subprocess.run(
-            argv, input=input, capture_output=True, text=True, cwd=cwd or workspace.REPO_ROOT,
+            argv, capture_output=True, text=True, cwd=cwd or workspace.REPO_ROOT,
             timeout=timeout_s, env=env(profile_dir=profile_dir),
+            # never the server's stdin (tests/core/test_subprocess_stdin_guard_unit.py): the input, else nothing
+            input=input, stdin=None if input is not None else subprocess.DEVNULL,
         )
     except subprocess.TimeoutExpired:
         raise ClaudeError(f"claude -p timed out after {timeout_s:.0f}s") from None

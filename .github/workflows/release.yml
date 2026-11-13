@@ -11,7 +11,8 @@ name: Release
 #   APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID   password, and the Apple account that notarizes;
 #                                                 without them the macOS build is unsigned (signed ad hoc)
 #   WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD      an Authenticode certificate; without, unsigned
-# Before publishing, go through docs/releasing.md (a clean-machine install on each system, release notes).
+# The install test runs on every installer and on Windows on ARM; before publishing, the by-hand rest of
+# docs/releasing.md (the first-open warnings, the real sign-in, release notes).
 on:
   push:
     tags: ["v*"]
@@ -33,6 +34,10 @@ jobs:
           version="$(node -p "require('./app/package.json').version")"
           test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, but the version is $version: run scripts/set_version.py first" >&2; exit 1; }
           grep -q "VERSION = \"$version\"" src/door/version.py
+      - name: The draft release the builds upload to
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes ""
 
   build:
     needs: check
@@ -45,7 +50,7 @@ jobs:
           - { os: windows-latest, name: windows-x64 }
           - { os: ubuntu-latest, name: linux-x64 }
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: app
@@ -94,8 +99,83 @@ jobs:
         run: |
           [ -n "$CSC_LINK" ] || unset CSC_LINK CSC_KEY_PASSWORD
           npm run build && npm run build:web
-          npx electron-builder --config electron-builder.config.cjs --publish always
+          npx electron-builder --config electron-builder.config.cjs --publish never
+          # the installers only, one per computer (and the .deb), under names a person reads: dist/ keeps the
+          # build's names for the tests below
+          shopt -s nullglob
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p upload
+          for f in dist/the-other-door-*.{dmg,exe,AppImage,deb}; do
+            case "$(basename "$f")" in
+              *-mac-arm64.dmg) name="Mac-Apple-silicon.dmg" ;;
+              *-mac-x64.dmg)   name="Mac-Intel.dmg" ;;
+              *.exe)           name="Windows.exe" ;;
+              *.AppImage)      name="Linux.AppImage" ;;
+              *.deb)           name="Debian-Ubuntu.deb" ;;
+              *) continue ;;
+            esac
+            cp "$f" "upload/The-other-door-$version-$name"
+          done
+          gh release upload "$GITHUB_REF_NAME" upload/* --clobber
 
       - name: Smoke-test the packaged app
         run: |
           if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a npm run test:package; else npm run test:package; fi
+
+      # The install test (#639, #18) on what this release ships: each installer installed the user's way, then
+      # set-up, the first run and Prepare, quit and reopened. Publish the draft only when every one passed.
+      - name: The install test
+        run: |
+          case "$RUNNER_OS" in
+            macOS)   DOOR_INSTALLER="$(ls dist/the-other-door-*-mac-*.dmg)" npm run test:install ;;
+            Windows) DOOR_INSTALLER="$(ls dist/the-other-door-*.exe | head -1)" npm run test:install ;;
+            Linux)   sudo apt-get install -y -qq libfuse2t64   # an AppImage needs FUSE 2 (docs/manual-app.md)
+                     DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
+                     DOOR_INSTALLER="$(ls dist/the-other-door-*.deb)" DOOR_INSTALLER_KIND=deb xvfb-run -a npm run test:install ;;
+          esac
+
+      - name: Keep the install test's report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: install-report-${{ matrix.name }}
+          path: app/install-report
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Windows on ARM (a Surface Pro 11): the release's x64 installer, emulated, as such a user installs it (#18).
+  install-windows-arm:
+    needs: build
+    runs-on: windows-11-arm
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+        shell: pwsh
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - name: The install test, x64 under emulation
+        run: |
+          gh release download $env:GITHUB_REF_NAME --pattern '*-Windows.exe' --dir dist
+          $env:DOOR_INSTALLER = (Get-ChildItem dist\*-Windows.exe | Select-Object -First 1).FullName
+          npm run test:install
+
+      - name: Keep the install test's report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: install-report-windows-arm
+          path: app/install-report
+          retention-days: 14
+          if-no-files-found: ignore

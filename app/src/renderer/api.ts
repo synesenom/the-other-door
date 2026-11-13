@@ -186,7 +186,7 @@ export interface Materials {
   /** What to save each PDF as: the candidate's name first (`show`'s file_names). */
   file_names: { cv: string; cover_letter: string }
   /** The numbers, employers, skills… of the CV and letter that cv.md and the story bank do not back; null when not checked. */
-  unsupported?: { kind: string; value: string; context: string; file: string }[] | null
+  unsupported?: { kind: string; value: string; context: string; file: string; reason?: string }[] | null
 }
 
 export type Document = 'cv' | 'cover_letter'

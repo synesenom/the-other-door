@@ -432,11 +432,11 @@ def _open_files(paths: list[str]) -> None:
     """Open files in the desktop's default viewer (best effort)."""
     for path in paths:
         if sys.platform == "darwin":
-            subprocess.run(["open", path], check=False)
+            subprocess.run(["open", path], check=False, stdin=subprocess.DEVNULL)
         elif sys.platform == "win32":
             os.startfile(path)  # noqa: S606 — a local PDF the user asked to see
         else:
-            subprocess.run(["xdg-open", path], check=False)
+            subprocess.run(["xdg-open", path], check=False, stdin=subprocess.DEVNULL)
 
 
 _HEADING_MAX_CHARS = 50
@@ -654,7 +654,8 @@ def _render_materials(materials: dict, console=None) -> None:
             from rich.markup import escape
 
             grid.add_row("Not in your CV", "\n".join(
-                f"[yellow]• {escape(c['value'])}  — \"{escape(c['context'])}\"  ({c['file'].replace('_', ' ')})[/]"
+                f"[yellow]• {escape(c['value'])}  — \"{escape(c['context'])}\"  ({c['file'].replace('_', ' ')})"
+                + (f" [dim]— kept: {escape(c['reason'])}[/]" if c.get("reason") else "") + "[/]"
                 for c in unsupported))
     if "readability" in materials:
         found = materials["readability"]
