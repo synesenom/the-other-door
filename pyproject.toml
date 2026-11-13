@@ -42,6 +42,7 @@ pytest-cov = "*"
 responses = "*"
 genbadge = { extras = ["coverage"], version = "*" }
 pytest-xdist = "*"
+claude-agent-sdk = "0.2.175"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -52,10 +53,11 @@ testpaths = ["tests"]
 pythonpath = ["src", "tests"]
 # `live` tests hit real external sites; they are opt-in and excluded by default.
 # Run them explicitly with: pytest -m live
-addopts = "-m 'not live' --import-mode=importlib"
+addopts = "-m 'not live and not skills' --import-mode=importlib"
 markers = [
     "live: hits a real external site over the network (opt-in, network-dependent)",
     "acceptance: a long live run (a full search per profile); left out of the weekly CI smoke run",
+    "skills: a Claude Code skill run by the real model on the local claude's plan, against the test world (./scripts/run-test.sh --skills; before a release, never in CI)",
     "real_robots: fetch robots.txt for real instead of the allow-all stub (tests/conftest.py)",
 ]
 

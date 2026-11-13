@@ -15,6 +15,12 @@
 #                            Serial (they pace requests per host) and not run
 #                            under coverage; the badge is left as-is.
 #
+#   ./scripts/run-test.sh --skills   The skills (/onboard, ...) run by the real model on
+#                            the plan your `claude` is signed in to (no API key),
+#                            against the app's test world: nothing leaves the
+#                            computer. Run before a release (/dev-release does).
+#                            Serial; several minutes and some plan usage each.
+#
 # Extra arguments are passed through to pytest.
 set -euo pipefail
 
@@ -32,6 +38,11 @@ if [[ "${1:-}" == "--live" ]]; then
         exit 0
     fi
     exit "$rc"
+fi
+
+if [[ "${1:-}" == "--skills" ]]; then
+    shift
+    exec poetry run pytest -m skills -n 0 -p no:cacheprovider tests/skills "$@"
 fi
 
 # Without the dev group, `poetry run pytest` falls through to a system pytest

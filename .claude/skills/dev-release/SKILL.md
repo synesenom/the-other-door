@@ -22,6 +22,8 @@ Run these in parallel:
 - `git fetch origin --tags`, then `git branch --show-current` must be `main` and `git rev-parse HEAD` must equal `git rev-parse origin/main`; else say which and **stop** (offer `git checkout main && git pull`).
 - `gh run list --branch main --limit 20 --json workflowName,conclusion,status,headSha`: the newest run of each workflow on `main`'s head commit must be `success` (a workflow that did not run for that commit is fine: its paths did not change). A run still `in_progress` → tell the user and **stop**; a failure → name it with its URL and **stop**.
 
+Then run the skill tests, which CI cannot (they need a Claude plan): `./scripts/run-test.sh --skills` (several minutes, some plan usage; the real model runs /onboard against the app's test world). A failure → show the failed checks and the transcript path it prints, and **stop**; a skip (claude not signed in, the app's packages missing) → say why and ask whether to go on without them.
+
 Then work out the version: the argument, or `node -p "require('./app/package.json').version"`. It must be `X.Y.Z`. `git tag -l vX.Y.Z` and `gh release view vX.Y.Z` must both find nothing; if either does, say so (a draft from an earlier attempt: see Step 4's retry) and **stop**. Find the previous release tag: `git describe --tags --abbrev=0 --match 'v*'` (none = the first release).
 
 ## Step 2: The version

@@ -194,6 +194,10 @@ def _board(site: str) -> types.ModuleType:
             return []
         for keyword in config.get("search_keywords") or config.get("role_targets") or []:
             report(f"'{keyword}': {len(board.get('postings', []))} results", site=site)
+        if not board.get("postings"):
+            from door.scrapers import record_answered
+
+            record_answered(site)   # the board's own "no hits" page: a quiet day, not a changed site
         return [_posting(p) for p in board.get("postings", []) if p.get("platform_id") not in known_ids]
 
     module = types.ModuleType(sites.SITES[site].module)
