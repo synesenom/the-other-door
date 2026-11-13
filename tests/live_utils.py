@@ -82,8 +82,7 @@ _WALL = re.compile(
     re.IGNORECASE,
 )
 _WALL_MAX = 600          # a wall is short; a real ad that mentions cookies is longer
-_SAMPLE_PREFIX = 200     # the leading characters compared for "the same text on every ad"
-_MAX_PAST_DAYS = {"search": 60, "collect": 3 * 365}   # a board's search is capped at 30 days; a feed keeps long-open jobs
+_MAX_PAST_DAYS = {"search": 365, "collect": 3 * 365}   # a live test passes no `since`, so a board lists older ads too; a feed keeps long-open jobs
 _GRACE_DAYS = 1          # a posting dated tomorrow is a time zone, not a fault
 
 # Defaults of the rules (a site's `FIELD_EXCEPTIONS` row overrides `company_share`, `description_share`).
@@ -167,9 +166,10 @@ def failing_description(postings: list[dict], minimum: int = _DESCRIPTION_MIN) -
 
 def failing_boilerplate(postings: list[dict]) -> list[dict]:
     """Postings whose description is not the ad: a wall page, a copy of the title or company (or a fallback built
-    from them), or the same opening text as several others."""
+    from them), or the same whole text under several different titles. An employer's ads may all open with the same
+    "about us", and one job posted in several places may repeat its text under the same title: neither is boilerplate."""
     bad = []
-    prefixes: dict[str, list[dict]] = {}
+    texts: dict[str, list[dict]] = {}
     for p in postings:
         text = _text(p.get("description"))
         if not text:
@@ -181,10 +181,9 @@ def failing_boilerplate(postings: list[dict]) -> list[dict]:
                 title and company and flat.startswith(title) and flat.endswith(company) and len(flat) < len(title) + len(company) + 40):
             bad.append(p)
             continue
-        prefixes.setdefault(flat[:_SAMPLE_PREFIX], []).append(p)
-    described = sum(map(len, prefixes.values()))
-    for group in prefixes.values():
-        if len(group) >= 3 or (len(group) >= 2 and len(group) > described / 2):
+        texts.setdefault(flat, []).append(p)
+    for group in texts.values():
+        if len({_squash(_text(p.get("title"))) for p in group}) >= 3:
             bad.extend(group)
     return bad
 
@@ -241,7 +240,8 @@ def assert_field_contract(site: str, postings: list[dict], config: dict | None =
         from door.core import sites
 
         if site in sites.SITES and sites.SITES[site].countries:
-            _check(site, mode, "location", failing_location(rows, config), n, _LOCATION_SHARE, "location")
+            _check(site, mode, "location", failing_location(rows, config), n,
+                   exc.get("location_share", _LOCATION_SHARE), "location")
     _check(site, mode, "posted_at", failing_posted_at(rows, mode, future_days=exc.get("posted_at_future_days", _GRACE_DAYS)),
            n, _POSTED_AT_SHARE, "posted_at")
     described = exc.get("description_share", _DESCRIPTION_SHARE)

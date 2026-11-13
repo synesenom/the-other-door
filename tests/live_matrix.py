@@ -102,19 +102,12 @@ NO_ZERO_HIT: dict[str, str] = {
 #                            required, only the boilerplate rule still reads those that have one)
 #   description_min          shortest description counted (default 80)
 #   location                 False: skip the "not another country's" rule of a country board
+#   location_share           the share of local postings needed (default 0.9)
 #   posted_at_future_days    how far ahead a date may be (default 1)
 # "unverified: tune after a live run" marks a waiver no live run has confirmed; tighten it once one has.
 FIELD_EXCEPTIONS: dict[str, dict] = {
-    "globalnyt": {"company_share": 0.5, "description_share": 0},       # the employer is read from the ad page; unverified: tune after a live run
-    "francetravail": {"company_share": 0.3},                           # an ad may hide its employer; unverified: tune after a live run
-    "jobindex": {"company_share": 0.8, "description_min": 40},         # unverified: tune after a live run
+    "jobbank": {"location_share": 0.5},                                # a Danish search also lists "Udlandet (øvrige)" (abroad) ads
     "euraxess": {"location": False},                                   # the location is "<city>, <country>"; its live test checks the country
     "kozigallas": {"posted_at_future_days": 14},                       # the date can be a planned publication date
-    "greenhouse": {"description_share": 0},                            # unverified: tune after a live run
-    "lever": {"description_share": 0},                                 # unverified: tune after a live run
-    "teamtailor": {"description_share": 0},                            # unverified: tune after a live run
-    "successfactors": {"description_share": 0},                        # unverified: tune after a live run
-    "career_sites": {"description_share": 0},                          # unverified: tune after a live run
-    "smartrecruiters": {"description_share": 0},                       # unverified: tune after a live run
-    "workable": {"description_share": 0},                              # unverified: tune after a live run
+    "smartrecruiters": {"description_share": 0},                       # its live test reads the listing (`probe`), which has no ad text
 }

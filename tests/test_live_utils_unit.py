@@ -106,11 +106,13 @@ def test_a_bad_field_under_the_threshold_passes_and_over_it_fails():
     assert "8/10" in message and "needs 90%" in message
 
 
-def test_a_site_exception_loosens_a_rule():
+def test_a_site_exception_loosens_a_rule(monkeypatch):
     ads = _ads()
     for ad in ads[:2]:
         ad["company"] = ""
-    assert_field_contract("jobindex", ads, CPH)                    # jobindex needs 80%
+    _fails(ads, "company", config=CPH)
+    monkeypatch.setitem(live_matrix.FIELD_EXCEPTIONS, "jobindex", {"company_share": 0.8})
+    assert_field_contract("jobindex", ads, CPH)
 
 
 def test_the_message_has_up_to_three_examples():
@@ -173,9 +175,10 @@ def test_naive_and_aware_dates_both_work_and_a_missing_one_is_fine():
 
 
 def test_a_feed_keeps_a_long_open_job_a_board_does_not():
-    old = datetime.now(timezone.utc) - timedelta(days=200)
+    old = datetime.now(timezone.utc) - timedelta(days=400)
     _fails(_ads(posted_at=old), "posted_at", config=CPH)
     assert_field_contract("greenhouse", _ads(posted_at=old), mode="collect")
+    assert_field_contract("jobindex", _ads(posted_at=datetime.now(timezone.utc) - timedelta(days=120)), CPH)
 
 
 def test_a_planned_date_is_fine_where_the_site_says_so():
@@ -184,12 +187,14 @@ def test_a_planned_date_is_fine_where_the_site_says_so():
     assert_field_contract("kozigallas", [dict(a, source="kozigallas") for a in _ads(posted_at=ahead)], {"location": "Budapest"})
 
 
-def test_a_short_or_missing_description_fails_unless_the_site_is_excused():
+def test_a_short_or_missing_description_fails_unless_the_site_is_excused(monkeypatch):
     assert "description=" in _fails(_ads(description="Apply now."), "description", config=CPH)
     assert "description=" in _fails(_ads(description=""), "description", config=CPH)
+    monkeypatch.setitem(live_matrix.FIELD_EXCEPTIONS, "greenhouse", {"description_share": 0})
     assert_field_contract("greenhouse", _ads(description=""), mode="collect")
+    monkeypatch.setitem(live_matrix.FIELD_EXCEPTIONS, "jobindex", {"description_min": 40})
     short = [_ad(i, description=f"Short ad number {i} about data work for us") for i in range(10)]
-    assert_field_contract("jobindex", short, CPH)                               # jobindex's lower floor (40)
+    assert_field_contract("jobindex", short, CPH)
 
 
 @pytest.mark.parametrize("text", [
@@ -211,11 +216,17 @@ def test_a_description_that_copies_the_title_or_company_fails():
     _fails(built, "boilerplate", config=CPH)
 
 
-def test_the_same_opening_text_on_many_ads_fails():
+def test_the_same_whole_text_under_many_titles_fails():
     common = "Our company is a leading provider of solutions for the modern workplace and we are growing fast. " * 3
-    ads = [_ad(i, description=common + f"Role {i}.") for i in range(10)]
-    assert "description=" in _fails(ads, "boilerplate", config=CPH)
-    assert_field_contract("jobindex", ads[:2] + _ads(8)[2:], CPH)               # two alike is not boilerplate
+    assert "description=" in _fails([_ad(i, description=common) for i in range(10)], "boilerplate", config=CPH)
+    assert_field_contract("jobindex", [_ad(0, description=common), _ad(1, description=common)] + _ads(8)[2:], CPH)  # two alike is not
+
+
+def test_a_shared_about_us_or_one_job_in_several_places_is_not_boilerplate():
+    common = "Our company is a leading provider of solutions for the modern workplace and we are growing fast. " * 3
+    assert_field_contract("greenhouse", [_ad(i, description=common + f"Role {i}: what you will do.") for i in range(10)], mode="collect")
+    same_job = [dict(_ad(i, description=common), title="Account Director") for i in range(10)]
+    assert_field_contract("pinpoint", same_job, mode="collect")
 
 
 def test_an_invalid_posting_fails_the_model():
