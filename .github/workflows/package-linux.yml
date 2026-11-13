@@ -17,6 +17,9 @@ on:
       - "app/scripts/after-pack.cjs"
       - "app/e2e-package/**"
       - "app/playwright.package.config.ts"
+      - "app/e2e-install/**"
+      - "app/playwright.install.config.ts"
+      - "app/test/world/**"
       - ".github/workflows/package-linux.yml"
       # the cheap one also follows the locked packages, Python's and the app's (an Electron or electron-builder bump)
       - "poetry.lock"

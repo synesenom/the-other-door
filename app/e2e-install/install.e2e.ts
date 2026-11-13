@@ -54,6 +54,10 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(checks['latex']!.status).toBe('ok')
   expect(checks['latex']!.detail).toContain(join(resources, 'bin'))
   expect(checks['dev dependencies']).toBeUndefined()
+  // the world's stand-in claude, found and signed in: else the wizard opens on Connect
+  const claude = JSON.stringify([checks['claude CLI'], checks['claude login']])
+  expect(checks['claude CLI']?.status, claude).toBe('ok')
+  expect(checks['claude login']?.status, claude).toBe('ok')
 
   // with no DOOR_HOME the data would be where the manual says
   // (the test runs it on its own Chromium folder and DOOR_HOME: the default is the app's name in the system's app data)
@@ -61,7 +65,8 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(realpathSync(userData)).toBe(realpathSync(join(world.scratch, 'chromium')))
   expect(join(appData, name)).toBe(documentedDataFolder(process.platform, home, appData))
 
-  // set-up: the CV in, read, reviewed and saved; the first run starts
+  // set-up: the CV in, read, reviewed and saved; the first run starts (a first screen other than Sources is named)
+  await expect(page.getByRole('heading', { level: 1 }).first()).toHaveText('Tell me about yourself', LAUNCH)
   await toReview(page, world, os)
   await saveAndSearch(page).click()
   await expect(page.getByRole('heading', { name: 'Finding jobs', level: 1 })).toBeVisible(LAUNCH)
