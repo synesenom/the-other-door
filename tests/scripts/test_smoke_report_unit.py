@@ -216,7 +216,36 @@ def test_a_list_this_run_did_not_test_keeps_its_last_result_and_date(tmp_path):
 
 def test_a_carried_list_from_an_older_page_takes_that_pages_date():
     old = "# Live smoke tests\n\nNo workflow run yet (2026-10-30). x\n\n## Boards\n\n| Name | Status |\n|------|--------|\n| jobindex | ✅ |\n"
-    assert smoke_report.previous_lists(old) == {"Boards": ([("jobindex", "pass")], "2026-10-30")}
+    assert smoke_report.previous_lists(old) == {"Boards": ([("jobindex", "pass", "2026-10-30")], "2026-10-30")}
+
+
+def test_a_site_this_run_could_not_check_keeps_its_last_result_and_its_date(tmp_path):
+    """Some sites refuse GitHub's runners: the weekly run skips them, and the result of the last run that
+    reached them (a local one) stays, dated, instead of turning into ❓."""
+    out = tmp_path / "live-smoke.md"
+    local = tmp_path / "local.xml"
+    local.write_text(_junit(_case("test_jobindex_live"), _case("test_euraxess_live")), encoding="utf-8")
+    smoke_report.main([str(local), str(out), "--badges", str(tmp_path), "--date", "2026-11-12"])
+
+    ci = tmp_path / "ci.xml"
+    ci.write_text(_junit(
+        _case("test_jobindex_live"),
+        _case("test_euraxess_live", body='<skipped message="euraxess refused the CI runner"/>'),
+    ), encoding="utf-8")
+    smoke_report.main([str(ci), str(out), "--badges", str(tmp_path), "--date", "2026-11-16"])
+    boards = out.read_text(encoding="utf-8").split("## Boards", 1)[1].split("## ", 1)[0]
+    assert "| jobindex | ✅ | 2026-11-16 |" in boards
+    assert "| euraxess | ✅ | 2026-11-12 |" in boards
+    assert "Last checked: 2026-11-16." in boards
+
+
+def test_a_site_never_checked_stays_unknown(tmp_path):
+    out = tmp_path / "live-smoke.md"
+    ci = tmp_path / "ci.xml"
+    ci.write_text(_junit(_case("test_jobindex_live")), encoding="utf-8")
+    smoke_report.main([str(ci), str(out), "--date", "2026-11-16"])
+    boards = out.read_text(encoding="utf-8").split("## Boards", 1)[1].split("## ", 1)[0]
+    assert "| euraxess | ❓ |  |" in boards
 
 
 def test_the_script_finds_the_package_without_src_on_the_path(tmp_path):
@@ -277,3 +306,12 @@ def test_the_readme_shows_the_dimension_badges_linked_to_their_lists():
 def test_the_live_smoke_workflow_writes_and_commits_the_dimension_badges():
     workflow = (REPO_ROOT / ".github" / "workflows" / "live-smoke.yml").read_text(encoding="utf-8")
     assert "--badges docs/badges" in workflow and "docs/badges/live-*.svg" in workflow
+
+
+def test_a_local_run_keeps_the_link_to_the_last_workflow_run(tmp_path):
+    out = tmp_path / "live-smoke.md"
+    report = tmp_path / "x.xml"
+    report.write_text(_junit(_case("test_jobindex_live")), encoding="utf-8")
+    smoke_report.main([str(report), str(out), "--run-url", "https://example.test/runs/1", "--date", "2026-11-09"])
+    smoke_report.main([str(report), str(out), "--date", "2026-11-12"])
+    assert "Last [workflow run](https://example.test/runs/1): 2026-11-09." in out.read_text(encoding="utf-8")
