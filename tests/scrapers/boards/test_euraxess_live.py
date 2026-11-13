@@ -1,53 +1,58 @@
-"""Live smoke test for EURAXESS (issue #431): opt-in (`live`), the Danish offers over plain HTTP."""
+"""Live smoke tests for EURAXESS (issue #431), one per mode (#19): Denmark's list of offers, over plain HTTP.
+
+Opt-in (marked `live`). EURAXESS has no keyword search (the country's whole list is read, `NO_ZERO_HIT`), so the
+one country read is Denmark: page 1, page 2 and two job pages' ``Offer Description``.
+"""
+
+from datetime import datetime, timezone
 
 import pytest
 
-from door.scrapers import drain_errors, drain_pushback
-
-from door.core.models import JobPosting
 from door.scrapers.boards import euraxess
-from live_utils import not_reached_if_refused
+from door.scrapers.http_client import PoliteSession
+from live_utils import assert_contract, assert_listing, assert_page2, fail, probe_sized
+
+CONFIG = {"search_keywords": ["postdoc"], "topic_terms": [], "location": "Copenhagen, Denmark"}
 
 
-_COUNTRIES = {"Copenhagen, Denmark": "Denmark", "Paris, France": "France", "Stockholm, Sweden": "Sweden",
-              "London, United Kingdom": "United Kingdom"}
+def _session() -> PoliteSession:
+    return PoliteSession(min_delay=1.0, max_delay=2.0, timeout=30, max_retries=0)
 
 
-def _check(monkeypatch, location: str) -> None:
-    monkeypatch.setattr(euraxess, "_MAX_PAGES", 1)   # one listing page a country: back-to-back runs hit the 429 (#579)
-    drain_errors("euraxess")
-    drain_pushback("euraxess")
-    postings = euraxess.scrape({"search_keywords": ["postdoc"], "topic_terms": [], "location": location})
-    errors = drain_errors("euraxess").get("euraxess", []) + (["pushback"] if drain_pushback("euraxess") else [])
-    if not postings and errors:
-        not_reached_if_refused("euraxess", errors)
-        pytest.fail("the EURAXESS listing did not load")
-    if not postings:
-        # When the server ignores the country facet, one worldwide page may hold none of this country's offers.
-        pytest.skip(f"no {_COUNTRIES[location]} offer in the newest worldwide page")
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"].startswith("https://euraxess.ec.europa.eu/jobs/")
-        assert p["description"]
-    for p in postings:
-        assert p["location"].rsplit(",", 1)[-1].strip() == _COUNTRIES[location]
+def _cards(session: PoliteSession, page: int) -> list[dict]:
+    cards, _ = euraxess.parse_listing(euraxess._get(session, euraxess._SEARCH, params=euraxess._params("dk", page)).text)
+    return cards
+
+
+def _postings(cards: list[dict]) -> list[dict]:
+    now = datetime.now(timezone.utc)
+    return [euraxess._to_posting(c, "", now) for c in cards]
 
 
 @pytest.mark.live
-def test_euraxess_returns_valid_danish_postings(monkeypatch):
-    _check(monkeypatch, "Copenhagen, Denmark")
+def test_euraxess_listing_live():
+    assert_listing("euraxess", euraxess, CONFIG)
 
 
 @pytest.mark.live
-def test_euraxess_returns_valid_french_postings(monkeypatch):
-    _check(monkeypatch, "Paris, France")
+def test_euraxess_page2_live():
+    with probe_sized("euraxess", "page2"):
+        session = _session()
+        pages = [_cards(session, n) for n in (0, 1)]
+    assert_page2("euraxess", _postings(pages[0]), _postings(pages[1]), CONFIG)
 
 
 @pytest.mark.live
-def test_euraxess_returns_valid_swedish_postings(monkeypatch):
-    _check(monkeypatch, "Stockholm, Sweden")
-
-
-@pytest.mark.live
-def test_euraxess_returns_valid_uk_postings(monkeypatch):
-    _check(monkeypatch, "London, United Kingdom")
+def test_euraxess_details_live():
+    """Two job pages: the ``Offer Description`` after the ``Job Information`` block."""
+    with probe_sized("euraxess", "details"):
+        session = _session()
+        cards = _cards(session, 0)
+        assert cards, fail("euraxess", "details", "no offers to open")
+        now = datetime.now(timezone.utc)
+        postings = []
+        for card in cards[:2]:
+            description = euraxess.parse_detail(euraxess._get(session, card["url"]).text)
+            assert description, fail("euraxess", "details", f"no Offer Description on {card['url']}")
+            postings.append(euraxess._to_posting(card, description, now))
+    assert_contract("euraxess", postings, "details", config=CONFIG)

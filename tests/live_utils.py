@@ -172,13 +172,13 @@ def _plausible(posted_at, now) -> bool:
 
 
 def assert_contract(site: str, postings: list, mode: str, *, config: dict, descriptions: bool | None = None,
-                    dates: bool | None = None, locations: bool | None = None) -> None:
+                    dates: bool | None = None, locations: bool | None = None, companies: bool = True) -> None:
     """The fields of *site*'s postings still parse, over the first `SAMPLE` (mode *mode*: ``listing``, ``page2``,
     ``details``). Each rule must hold for its `SHARES` of the sample; the first that does not fails, naming the site,
     the mode and the rule (``reed [listing]: location: 2/10 ...``):
 
-    - every posting is a `JobPosting`; ``title``, ``url`` and ``company`` are not empty, the company is not the
-      site's own name;
+    - every posting is a `JobPosting`; ``title``, ``url`` and (with *companies*) ``company`` are not empty, the
+      company is not the site's own name (a listing that names no employer, only its ad page does: *companies* off);
     - with *locations*: ``location`` is not empty, and for a country board with a ``location`` in *config* whose
       country The other door knows, local (`locality.location_is_non_local`; a feed lists an employer's jobs
       everywhere, and the engine drops the foreign ones);
@@ -213,8 +213,10 @@ def assert_contract(site: str, postings: list, mode: str, *, config: dict, descr
     rules = [
         ("title", lambda p: bool((p.get("title") or "").strip()), sample),
         ("url", lambda p: (p.get("url") or "").startswith("http"), sample),
-        ("company", lambda p: bool((p.get("company") or "").strip()) and p["company"].strip().lower() not in own, sample),
     ]
+    if companies:
+        rules.append(("company", lambda p: bool((p.get("company") or "").strip()) and p["company"].strip().lower() not in own,
+                      sample))
     if locations:
         rules.append(("location", lambda p: bool((p.get("location") or "").strip()), sample))
         if _country_board(site) and config.get("location") and locality.enabled(config):

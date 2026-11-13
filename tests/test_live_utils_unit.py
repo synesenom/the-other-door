@@ -194,6 +194,14 @@ def test_rules_a_site_does_not_keep_are_left_out():
     assert_contract("greenhouse", sample, "listing", config=_CONFIG, dates=False, locations=False)
 
 
+def test_a_listing_that_names_no_employer_leaves_the_company_rule_out():
+    """A board whose list names only itself as the employer; its ad pages name the employer."""
+    sample = [_posting(i, company="Globalnyt") for i in range(5)]
+    with pytest.raises(AssertionError, match=r"^globalnyt \[listing\]: company"):
+        assert_contract("globalnyt", sample, "listing", config=_CONFIG)
+    assert_contract("globalnyt", sample, "listing", config=_CONFIG, companies=False)
+
+
 def test_a_feed_without_a_country_skips_the_local_rule():
     sample = [_posting(i, location="Berlin, Germany") for i in range(5)]
     assert_contract("greenhouse", sample, "listing", config={})
