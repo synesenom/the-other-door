@@ -6,7 +6,7 @@ from door.scrapers import drain_errors, drain_pushback
 
 from door.core.models import JobPosting
 from door.scrapers.boards import euraxess
-from live_utils import skip_if_refused_in_ci
+from live_utils import not_reached_if_refused
 
 
 _COUNTRIES = {"Copenhagen, Denmark": "Denmark", "Paris, France": "France", "Stockholm, Sweden": "Sweden",
@@ -20,7 +20,7 @@ def _check(monkeypatch, location: str) -> None:
     postings = euraxess.scrape({"search_keywords": ["postdoc"], "topic_terms": [], "location": location})
     errors = drain_errors("euraxess").get("euraxess", []) + (["pushback"] if drain_pushback("euraxess") else [])
     if not postings and errors:
-        skip_if_refused_in_ci("euraxess", errors)
+        not_reached_if_refused("euraxess", errors)
         pytest.fail("the EURAXESS listing did not load")
     if not postings:
         # When the server ignores the country facet, one worldwide page may hold none of this country's offers.

@@ -51,6 +51,7 @@ jobs:
         run: >-
           poetry run python scripts/smoke_report.py smoke-junit.xml docs/badges/live-smoke.md
           --badges docs/badges
+          --unreached smoke-unreached.md
           --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Commit the status page and badges
@@ -101,6 +102,38 @@ jobs:
                 title,
                 body: `The scheduled live smoke test run failed: ${runUrl}\n\nThis issue is auto-managed — it will be closed automatically once a run succeeds.`,
               });
+            }
+
+      # A site that refuses the runner is "not reached", not a failure (tests/live_utils.py): only a change
+      # fails the run above. One not reached for 3 runs in a row gets an issue of its own, closed once
+      # every site was reached again (by this run or a local one merged into the page).
+      - name: Open, update or close the not-reached issue
+        if: always()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("fs");
+            const title = "Live smoke: sites not reached for weeks";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const flagged = fs.existsSync("smoke-unreached.md") ? fs.readFileSync("smoke-unreached.md", "utf8").trim() : "";
+
+            const { data: results } = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:title "${title}"`,
+            });
+            const existing = results.items.find((issue) => issue.title === title);
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+
+            if (flagged && existing) {
+              await github.rest.issues.createComment({ ...repo, issue_number: existing.number, body: `Still not reached (${runUrl}):\n\n${flagged}` });
+            } else if (flagged) {
+              await github.rest.issues.create({
+                ...repo,
+                title,
+                body: `These sites refused the weekly run, or could not be reached, for 3 runs in a row (${runUrl}):\n\n${flagged}\n\nA local run reaches most of them: run their live tests, then \`poetry run python scripts/smoke_report.py\` on the report (docs/architecture.md, "live-smoke"). This issue is auto-managed: it closes once every site was reached again.`,
+              });
+            } else if (existing) {
+              await github.rest.issues.createComment({ ...repo, issue_number: existing.number, body: `Every site was reached again: ${runUrl}` });
+              await github.rest.issues.update({ ...repo, issue_number: existing.number, state: "closed" });
             }
 
       # Close the pinned issue (if any) once the workflow is green again.
