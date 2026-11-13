@@ -7,7 +7,7 @@ You are cutting a release of The other door. `docs/releasing.md` is the referenc
 
 **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
 
-**Arguments**: an optional version `X.Y.Z` (default: the version in `app/package.json`) and an optional `pre-release`.
+**Arguments**: an optional version `X.Y.Z` (default: the one Step 1 suggests from the PRs merged since the last release) and an optional `pre-release`.
 
 Every step that changes something outside this checkout (pushing a tag, editing or publishing the release, deleting a tag) is confirmed with the user first, with AskUserQuestion, naming exactly what will happen. A go-ahead covers that one step only.
 
@@ -24,7 +24,39 @@ Run these in parallel:
 
 Then run everything a release needs locally, in the background, and wait for it: `./scripts/run-test.sh --release` (the offline suite, the app's tests with every journey, and the skill tests, which CI cannot run: the real model runs /onboard against the app's test world on the plan; some plan usage). It ends with a PASS/FAIL/SKIP line per step. A FAIL → show that step's failures (for the skills, the transcript path it prints) and **stop**; a skipped skill test (claude not signed in, the app's packages missing) → say why and ask whether to go on without it.
 
-Then work out the version: the argument, or `node -p "require('./app/package.json').version"`. It must be `X.Y.Z`. `git tag -l vX.Y.Z` and `gh release view vX.Y.Z` must both find nothing; if either does, say so (a draft from an earlier attempt: see Step 4's retry) and **stop**. Find the previous release tag: `git describe --tags --abbrev=0 --match 'v*'` (none = the first release).
+Find the previous release tag: `git describe --tags --abbrev=0 --match 'v*'` (none = the first release).
+
+### What is in it
+
+Gather every PR merged since that tag:
+
+```bash
+gh pr list --state merged --base main --limit 200 \
+  --search "merged:>=$(git log -1 --format=%cI <previous tag>)" \
+  --json number,title,body,headRefName,mergedAt,mergeCommit,closingIssuesReferences
+```
+
+Keep only the PRs whose `mergeCommit.oid` is in this release: `git merge-base --is-ancestor <oid> HEAD` succeeds and `git merge-base --is-ancestor <oid> <previous tag>` fails (a PR merged the same day before the tag is not counted twice; this works for merge and squash commits alike). Also list the commits that came without a PR: `git log <previous tag>..HEAD --no-merges --format='%h %s'` minus the PRs' own.
+
+Sort each PR into one kind. Use its body's **Type** line, else its branch prefix (`feat/`, `fix/`, `change/`, `docs/`; `refactor/`, `test/`, `ci/`, `chore/`, `dependabot/`, `release/` are internal), else read its title and body and judge:
+
+- **Added**: something a user can do now that they could not before (`feat`).
+- **Changed**: something that works differently in a way a user notices (`change`, or a `feat` that reworks an existing thing).
+- **Fixed**: a bug a user could have hit (`fix`).
+- **Removed**: anything the PR's "Removed or renamed" section names, whatever its type: a removed command, option, config key, screen or behaviour is always listed, with what replaces it.
+- **Internal**: refactors, tests, CI, tooling, dependency bumps: counted, not described.
+
+When a PR's body has no "For users" section (an older PR), read its diff (`gh pr diff <N>`) before you judge it; a PR you still cannot place goes under the kind its title suggests, marked `(?)` in the notes for the maintainer.
+
+### The version
+
+Suggest the version from what is in it, against the previous tag's `X.Y.Z` (while the version is `0.y.z`, nothing is promised between releases):
+
+- anything **Added**, **Changed** or **Removed** → the next minor, `X.(Y+1).0`;
+- only **Fixed** and **Internal** → the next patch, `X.Y.(Z+1)`;
+- nothing but **Internal** → say there is nothing for users to release and ask whether to go on.
+
+If the argument named a version, use it, but say so when it disagrees with the suggestion. Otherwise ask with AskUserQuestion, the suggestion first with a one-line reason ("3 added, 2 fixed"), the other bump second. The version must be `X.Y.Z`. `git tag -l vX.Y.Z` and `gh release view vX.Y.Z` must both find nothing; if either does, say so (a draft from an earlier attempt: see Step 4's retry) and **stop**.
 
 ## Step 2: The version
 
@@ -60,10 +92,33 @@ Find the run (it can take a few seconds to appear): `gh run list --workflow rele
 
 `gh release view vX.Y.Z --json url,isDraft,assets --jq '{url, isDraft, assets: [.assets[].name]}'`: it must be a draft holding `the-other-door-X.Y.Z-mac-arm64.dmg`, `-mac-x64.dmg`, `-windows-x64.exe`, `-linux-x64.AppImage` and a `.deb`. Name anything missing.
 
-Write the release notes into `thoughts/release/vX.Y.Z.md` (gitignored), for the people who will install it, not for developers:
+Write the release notes into `thoughts/release/vX.Y.Z.md` (gitignored), for the people who will install it, not for developers. They are a changelog, built from Step 1's sorted PRs:
 
-- one line on what The other door is, on the first release only;
-- what changed for a user since the previous tag, a few bullets, from `gh pr list --state merged --search "merged:>=<previous tag's date>" --limit 100 --json number,title` and `git log <previous>..vX.Y.Z --no-merges --oneline` (leave out Dependabot, tests, CI and internal refactors);
+```markdown
+<one line on what The other door is: the first release only>
+
+<one or two sentences on the release as a whole: its main thing, if it has one>
+
+## Added
+- <one bullet per user-facing change, taken from the PR's "For users" lines, in a user's words: no module, tool or file names> (#<PR>)
+
+## Changed
+- ...
+
+## Fixed
+- <what went wrong for a user, now right> (#<PR>)
+
+## Removed
+- <what is gone and what to use instead> (#<PR>)
+
+<n> internal changes (tests, CI, dependencies, refactoring) are not listed. Full list: <compare URL, https://github.com/synesenom/the-other-door/compare/<previous tag>...vX.Y.Z>
+
+## Install
+...
+```
+
+- Leave out a section with nothing in it. Several PRs that make one change for a user (a feature and its follow-up fixes in the same release) are one bullet citing all of them; a fix to something new in this same release is not a **Fixed** bullet.
+- Order each section by how much a user will notice, most first.
 - **Install**: which file is for which computer (the table in `docs/releasing.md`), that you need a Claude Pro or Max plan, and, while the builds are unsigned (no signing secrets in `release.yml`'s run), that macOS and Windows ask once the first time, linking `docs/manual-app.md#opening-it-on-macos-the-first-time`.
 
 Show the notes and ask whether to put them on the draft; on yes, `gh release edit vX.Y.Z --notes-file thoughts/release/vX.Y.Z.md`.
