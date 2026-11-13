@@ -1,4 +1,5 @@
-"""Live smoke test for Jobaffinity (#563): detect-only, so it checks the fact the look-through rests on.
+"""Live smoke tests for Jobaffinity (#563), one per mode (#19): detect-only, so the look-through test checks the fact
+it rests on.
 
 Opt-in — run with:  ./scripts/run-test.sh --live
 
@@ -16,7 +17,8 @@ _URL = "https://jobaffinity.fr/apply/wqrlmvgzpyc67d0izf"
 
 
 @pytest.mark.live
-def test_jobaffinity_live_an_apply_form_still_names_an_employer():
+def test_jobaffinity_lookthrough_live():
+    """An apply form still names an employer."""
     session = PoliteSession(min_delay=1, max_delay=2, timeout=30, max_retries=1)
     det = jobaffinity.detect_url(_URL)
     assert det.platform == "jobaffinity" and det.entry is None and det.refusal == "cant_yet"
