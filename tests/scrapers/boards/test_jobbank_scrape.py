@@ -12,7 +12,7 @@ import requests
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_pushback
 from door.scrapers.boards import jobbank
 
 _FIX = Path(__file__).parent / "fixtures" / "jobbank"
@@ -135,8 +135,10 @@ def test_a_short_page_ends_the_keyword_and_a_page_cap_bounds_it():
 def test_an_empty_page_ends_the_keyword_quietly():
     _serve(jobbank._search_url("reward", 1), _html("search_empty.html"))
     drain_errors()
+    drain_answered("jobbank")
     assert jobbank.scrape(_CFG) == []
     assert drain_errors() == {}
+    assert drain_answered("jobbank") is True
     assert _requested() == [jobbank._search_url("reward", 1)]
 
 
@@ -148,6 +150,14 @@ def test_two_keywords_dedup_across_them():
     out = jobbank.scrape({**_CFG, "search_keywords": ["reward", "compliance"], "max_pages_per_keyword": 1})
     ids = [p["platform_id"] for p in out]
     assert len(ids) == len(set(ids)) == len(_PAGE1) + 3
+
+
+@responses.activate
+def test_a_page_without_cards_or_the_no_hits_title_is_not_an_answer():
+    _serve(jobbank._search_url("reward", 1), "<html><body><p>something else</p></body></html>")
+    drain_answered("jobbank")
+    assert jobbank.scrape(_CFG) == []
+    assert drain_answered("jobbank") is False
 
 
 @responses.activate

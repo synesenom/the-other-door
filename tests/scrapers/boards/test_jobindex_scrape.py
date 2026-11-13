@@ -21,7 +21,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
+from door.scrapers import drain_answered, drain_errors
 from door.scrapers.boards import jobindex
 
 _FIX = Path(__file__).parent / "fixtures" / "jobindex"
@@ -185,8 +185,10 @@ def test_scrape_no_stash_returns_empty_and_records_error():
                   content_type="text/html; charset=utf-8")
 
     drain_errors()
+    drain_answered("jobindex")
     postings = jobindex.scrape({"role_targets": ["nothing"], "location": "remote"})
     assert postings == []
+    assert drain_answered("jobindex") is False
 
     errors = drain_errors()
     assert "jobindex" in errors
@@ -200,8 +202,10 @@ def test_scrape_empty_results_records_no_error():
                   content_type="text/html; charset=utf-8")
 
     drain_errors()
+    drain_answered("jobindex")
     assert jobindex.scrape({"role_targets": ["nothing"], "location": "remote"}) == []
     assert drain_errors() == {}
+    assert drain_answered("jobindex") is True
 
 
 @responses.activate

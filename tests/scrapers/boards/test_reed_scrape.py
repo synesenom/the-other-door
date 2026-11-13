@@ -13,7 +13,7 @@ import requests
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_pushback
 from door.scrapers.boards import reed
 
 _FIX = Path(__file__).parent / "fixtures" / "reed"
@@ -138,9 +138,31 @@ def test_an_empty_page_ends_the_keyword_quietly():
     empty = '<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"searchResults":{"count":0,"jobs":[]}}}}</script>'
     _serve(_search(page=1), empty)
     drain_errors()
+    drain_answered("reed")
     assert reed.scrape(_CFG) == []
     assert drain_errors() == {}
+    assert drain_answered("reed") is True
     assert _requested() == [_search(page=1)]
+
+
+@responses.activate
+def test_a_real_zero_hit_page_is_an_answer():
+    _serve(_search(page=1), _html("search_empty.html"))
+    drain_errors()
+    drain_answered("reed")
+    assert reed.scrape(_CFG) == []
+    assert drain_errors() == {}
+    assert drain_answered("reed") is True
+
+
+@responses.activate
+def test_a_page_without_results_block_is_recorded_not_answered():
+    _serve(_search(page=1), "<html><body>Something else</body></html>")
+    drain_errors()
+    drain_answered("reed")
+    assert reed.scrape(_CFG) == []
+    assert "reed" in drain_errors()
+    assert drain_answered("reed") is False
 
 
 @responses.activate

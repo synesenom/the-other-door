@@ -35,7 +35,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    on_topic, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
+    on_topic, record_answered, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
 )
 
 _SITE = "jobbank"
@@ -99,6 +99,11 @@ def _parse_card_date(text: str) -> datetime | None:
         return datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)))
     except ValueError:
         return None
+
+
+def _says_no_hits(html: str) -> bool:
+    """Whether the page is Akademikernes Jobbank's own results page (its title counts the relevant jobs, none included)."""
+    return "relevante job" in html
 
 
 def _parse_cards(html: str) -> list[dict]:
@@ -223,7 +228,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         for page in range(1, max_pages + 1):
             url = _search_url(keyword, page)
             try:
-                cards = _parse_cards(_get(session, url))
+                html = _get(session, url)
+                cards = _parse_cards(html)
             except _Pushback as exc:
                 _pushback(str(exc))
                 return out
@@ -232,6 +238,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
                 break
 
+            if not cards and _says_no_hits(html):
+                record_answered(_SITE)
             for card in cards:
                 if card["id"] in seen or (topic and not on_topic(card["title"], topic)):
                     continue
@@ -281,7 +289,7 @@ def probe(config: dict) -> ProbeResult | None:
             return [], False, "bot-wall: a Cloudflare challenge page"
         cards = _parse_cards(html)
         # The results block is the job list; a page with a title saying there are none is an empty answer.
-        if not cards and "relevante job" not in html:
+        if not cards and not _says_no_hits(html):
             return [], False, "no job cards and no result count on the page"
         scraped_at = datetime.now(timezone.utc)
         return [_card_posting(c, scraped_at) for c in cards], True, ""

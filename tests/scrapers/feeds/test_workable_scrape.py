@@ -12,7 +12,7 @@ import pytest
 import responses as responses_lib
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
+from door.scrapers import drain_answered, drain_errors
 from door.scrapers.feeds import workable
 
 _FIX = Path(__file__).parent / "fixtures" / "workable"
@@ -98,8 +98,10 @@ def test_scrape_drops_postings_older_than_since(_robots_allows_api):
 def test_scrape_falls_back_to_role_targets_and_omits_empty_location(_robots_allows_api):
     rsps = _robots_allows_api
     rsps.add(responses_lib.GET, _URL, body=_fx("search_empty.json"))
+    drain_answered("workable")
 
     assert workable.scrape({"role_targets": ["ML Lead"], "location": ""}) == []
+    assert drain_answered("workable") is True
     calls = [c for c in rsps.calls if "robots" not in c.request.url]
     assert _query(calls[0]) == {"query": "ML Lead"}
 
@@ -115,6 +117,15 @@ def test_scrape_http_error_is_recorded_not_raised(_robots_allows_api, progress_e
     assert capsys.readouterr().out == ""
     errors = drain_errors()
     assert any("data scientist" in m for m in errors["workable"])
+
+
+def test_scrape_an_answer_without_a_job_list_is_not_a_quiet_day(_robots_allows_api):
+    _robots_allows_api.add(responses_lib.GET, _URL, body=json.dumps({"unexpected": []}))
+    drain_answered("workable")
+
+    assert workable.scrape(_CFG) == []
+
+    assert drain_answered("workable") is False
 
 
 def test_scrape_without_keywords_makes_no_request():

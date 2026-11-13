@@ -47,7 +47,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, RobotsBlocked, city_names,
-    compile_words, log_keyword_results, make_job_id, on_topic, record_error, report, run_probe,
+    compile_words, log_keyword_results, make_job_id, on_topic, record_answered, record_error, report, run_probe,
     seniority_words, stop_words, topic_terms, transliteration,
 )
 
@@ -270,6 +270,8 @@ def _search_page(session: PoliteSession, query: str, area: str, page: int, categ
         record_error("jobindex", f"no search results block on page (role={query!r}, page={page})")
         return None
     results = response.get("results") or []
+    if not results:
+        record_answered("jobindex")
     return _Page(int(response.get("hitcount") or len(results)), int(response.get("page_size") or _PAGE_SIZE), results)
 
 

@@ -14,7 +14,7 @@ import requests
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_pushback
 from door.scrapers.boards import kozigallas
 
 _FIX = Path(__file__).parent / "fixtures" / "kozigallas"
@@ -141,8 +141,10 @@ def test_the_page_count_ends_the_keyword_and_a_page_cap_bounds_it():
 def test_an_empty_answer_is_a_quiet_day():
     _serve_list({"zzzxqv": {}})
     drain_errors()
+    drain_answered("kozigallas")
     assert kozigallas.scrape({**_CFG, "search_keywords": ["zzzxqv"]}) == []
     assert drain_errors() == {}
+    assert drain_answered("kozigallas") is True
     assert _requested() == [_LIST]
 
 
@@ -200,8 +202,10 @@ def test_a_connection_error_is_recorded_not_raised():
 def test_an_answer_that_is_not_a_result_list_is_recorded_as_a_change():
     responses.add(responses.POST, _LIST, body="<html><body>Hiba történt</body></html>")
     drain_errors()
+    drain_answered("kozigallas")
     assert kozigallas.scrape(_CFG) == []
     assert any("result list" in e for e in drain_errors()["kozigallas"])
+    assert drain_answered("kozigallas") is False
 
 
 @pytest.mark.parametrize("status", [403, 429])

@@ -8,7 +8,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
+from door.scrapers import drain_answered, drain_errors
 from door.scrapers.boards import globalnyt
 
 _FIX = Path(__file__).parent / "fixtures" / "globalnyt"
@@ -19,7 +19,7 @@ _BASE = "https://globalnyt.dk/stilling/"
 @pytest.fixture(autouse=True)
 def _no_sleep(monkeypatch):
     monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
-    drain_errors("globalnyt")
+    drain_errors("globalnyt"), drain_answered("globalnyt")
 
 
 def _text(name):
@@ -83,6 +83,15 @@ def test_a_failing_list_is_an_error():
     responses.add(responses.GET, globalnyt._LIST_URL, status=500)
     assert globalnyt.scrape(_CFG) == []
     assert drain_errors("globalnyt").get("globalnyt")
+    assert drain_answered("globalnyt") is False
+
+
+@responses.activate
+def test_an_empty_list_is_a_quiet_day():
+    responses.add(responses.GET, globalnyt._LIST_URL, body=_text("stilling_list_empty.json"), content_type="application/json")
+    assert globalnyt.scrape(_CFG) == []
+    assert not drain_errors("globalnyt").get("globalnyt")
+    assert drain_answered("globalnyt") is True
 
 
 @responses.activate

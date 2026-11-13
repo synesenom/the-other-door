@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_error,
+    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
     report, run_probe, strip_html,
 )
 
@@ -94,6 +94,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         report(f"list error: {exc}")
         record_error("globalnyt", f"list error: {exc}")
         return []
+    if not ads:
+        record_answered("globalnyt")
 
     postings: list[dict] = []
     for ad in ads:
