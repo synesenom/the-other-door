@@ -345,3 +345,13 @@ def test_stamp_new_writes_the_current_version_only_for_a_new_folder(tmp_path):
     (profile / ".data_version").write_text("0\n")
     migrations.stamp_new(profile)
     assert (profile / ".data_version").read_text() == "0\n"
+
+
+def test_the_app_test_world_stamps_the_current_profile_version():
+    """The journeys' world is a profile set up by this build: stamped like `init` stamps one, or every journey
+    would run the upgrade at start (and find an extra backup)."""
+    import re
+    from paths import REPO_ROOT
+
+    build = (REPO_ROOT / "app" / "test" / "world" / "build.ts").read_text(encoding="utf-8")
+    assert int(re.search(r"PROFILE_DATA_VERSION = (\d+)", build).group(1)) == migrations.current("profile")

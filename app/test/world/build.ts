@@ -16,6 +16,8 @@ const HERE = __dirname
 
 /** The world's "now": the server's clock starts here (boot.py) and the window's too (fixtures.ts). */
 export const NOW = '2026-10-26T09:00:00.000Z'
+/** The data version a profile set up by this build carries (`migrations.current("profile")`; a Python test keeps them equal). */
+export const PROFILE_DATA_VERSION = 1
 const NOW_MS = Date.parse(NOW)
 const DAY = 86_400_000
 const iso = (ms: number) => new Date(ms).toISOString()
@@ -481,6 +483,7 @@ function writeHome(home: string, persona: Persona, ads: Ad[], options: WorldOpti
   if (!options.noCv) writeFileSync(join(profile, 'cv.md'), persona.cv)
   writeFileSync(join(profile, 'story_bank.md'), persona.storyBank)
   writeFileSync(join(profile, 'companies.json'), JSON.stringify(companiesJson(ads), null, 2))
+  writeFileSync(join(profile, '.data_version'), `${PROFILE_DATA_VERSION}\n`) // set up by this build, as init stamps it
 
   const jobs = join(home, 'jobs')
   mkdirSync(jobs, { recursive: true })
