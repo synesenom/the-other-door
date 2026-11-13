@@ -10,6 +10,7 @@ import pytest
 
 from door.scrapers.feeds import jobaffinity
 from door.scrapers.http_client import PoliteSession
+from live_utils import assert_detects
 
 _URL = "https://jobaffinity.fr/apply/wqrlmvgzpyc67d0izf"
 
@@ -21,3 +22,9 @@ def test_jobaffinity_live_an_apply_form_still_names_an_employer():
     assert det.platform == "jobaffinity" and det.entry is None and det.refusal == "cant_yet"
     out = jobaffinity.resolve(session, det, _URL)
     assert out.employer, "the apply form no longer names its data controller (or the ad was withdrawn): look again"
+
+
+@pytest.mark.live
+def test_jobaffinity_detection_live():
+    """A real employer's careers page still shows jobaffinity and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("jobaffinity")

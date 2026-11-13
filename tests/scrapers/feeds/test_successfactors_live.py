@@ -11,6 +11,7 @@ import pytest
 
 from door.core.models import JobPosting
 from door.scrapers.feeds import successfactors
+from live_utils import assert_detects
 
 
 @pytest.mark.live
@@ -23,3 +24,9 @@ def test_successfactors_live_returns_valid_postings():
         assert p["company"], f"Missing company: {p}"
         assert p["url"], f"Missing url: {p}"
         assert p["source"] == "successfactors"
+
+
+@pytest.mark.live
+def test_successfactors_detection_live():
+    """A real employer's careers page still shows successfactors and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("successfactors")

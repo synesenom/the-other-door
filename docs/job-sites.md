@@ -437,7 +437,9 @@ discarded and your branch left as it was. Check the fixture in the PR before you
 
 Each is off until you turn it on, and turning one on shows a notice with its terms link.
 
-The discovery sources are handled differently from the other sites; none needs a login.
+The discovery sources are handled differently from the other sites; none needs a login. A source that
+refuses (a 403 or 429, a redirect to a login page, or a captcha, block or consent page where the results
+should be) stops for the run and rests a day: a refusal is never read as "no employers".
 They are **employer discovery** only: *The other door* keeps none of their
 ads, only the employers behind them, whose own feeds `follow` finds and `collect` reads. They are
 run by the `discover` step (`door.core.discovery_sources`), each with its own key (`linkedin_discovery`,

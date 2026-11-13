@@ -25,43 +25,61 @@ Last checked: 2026-11-13.
 | francetravail | ✅ | 2026-11-13 |  |
 | choisirleservicepublic | ✅ | 2026-11-13 |  |
 | kozigallas | ✅ | 2026-11-13 |  |
-| workable | ✅ | 2026-11-09 |  |
+| workable | ✅ | 2026-11-13 |  |
 | reliefweb | ✅ | 2026-11-13 |  |
 
 ## Employer feeds
 
-Last checked: 2026-11-09.
+Last checked: 2026-11-13.
 
 | Name | Status | Checked | Note |
 |------|--------|---------|------|
-| hr_manager | ✅ | 2026-11-09 |  |
-| greenhouse | ✅ | 2026-11-09 |  |
-| lever | ✅ | 2026-11-09 |  |
-| ashby | ✅ | 2026-11-09 |  |
-| recruitee | ✅ | 2026-11-09 |  |
-| emply | ✅ | 2026-11-09 |  |
-| varbi | ✅ | 2026-11-09 |  |
-| visma_recruit | ✅ | 2026-11-09 |  |
-| talentsoft | ✅ | 2026-11-09 |  |
-| digitalrecruiters | ✅ | 2026-11-09 |  |
-| eploy | ✅ | 2026-11-09 |  |
-| pinpoint | ✅ | 2026-11-09 |  |
-| oracle_hcm | ✅ | 2026-11-09 |  |
-| dayforce | ✅ | 2026-11-09 |  |
-| reachmee | ✅ | 2026-11-09 |  |
-| signatur | ✅ | 2026-11-09 |  |
-| recman | ✅ | 2026-11-09 |  |
-| beetween | ✅ | 2026-11-09 |  |
-| smartrecruiters | ✅ | 2026-11-09 |  |
-| career_sites | ✅ | 2026-11-09 |  |
-| teamtailor | ✅ | 2026-11-09 |  |
-| jobylon | ✅ | 2026-11-09 |  |
-| personio | ✅ | 2026-11-09 |  |
-| taleez | ✅ | 2026-11-09 |  |
-| flatchr | ✅ | 2026-11-09 |  |
-| jobtrain | ✅ | 2026-11-09 |  |
-| networx | ✅ | 2026-11-09 |  |
-| successfactors | ✅ | 2026-11-09 |  |
+| hr_manager | ✅ | 2026-11-13 |  |
+| greenhouse | ✅ | 2026-11-13 |  |
+| lever | ✅ | 2026-11-13 |  |
+| ashby | ✅ | 2026-11-13 |  |
+| recruitee | ✅ | 2026-11-13 |  |
+| emply | ✅ | 2026-11-13 |  |
+| varbi | ✅ | 2026-11-13 |  |
+| visma_recruit | ✅ | 2026-11-13 |  |
+| talentsoft | ✅ | 2026-11-13 |  |
+| digitalrecruiters | ✅ | 2026-11-13 |  |
+| eploy | ✅ | 2026-11-13 |  |
+| pinpoint | ✅ | 2026-11-13 |  |
+| oracle_hcm | ✅ | 2026-11-13 |  |
+| dayforce | ✅ | 2026-11-13 |  |
+| reachmee | ✅ | 2026-11-13 |  |
+| signatur | ✅ | 2026-11-13 |  |
+| recman | ✅ | 2026-11-13 |  |
+| beetween | ✅ | 2026-11-13 |  |
+| smartrecruiters | ✅ | 2026-11-13 |  |
+| career_sites | ✅ | 2026-11-13 |  |
+| teamtailor | ✅ | 2026-11-13 |  |
+| jobylon | ✅ | 2026-11-13 |  |
+| personio | ✅ | 2026-11-13 |  |
+| taleez | ✅ | 2026-11-13 |  |
+| flatchr | ✅ | 2026-11-13 |  |
+| jobtrain | ✅ | 2026-11-13 |  |
+| networx | ✅ | 2026-11-13 |  |
+| successfactors | ✅ | 2026-11-13 |  |
+| hr_on | ✅ | 2026-11-13 |  |
+| icims | ✅ | 2026-11-13 |  |
+| phenom | ✅ | 2026-11-13 |  |
+| ponty | ❓ |  |  |
+| welcometothejungle | ✅ | 2026-11-13 |  |
+| jobaffinity | ✅ | 2026-11-13 |  |
+
+## Employer discovery
+
+Last checked: 2026-11-13.
+
+| Name | Status | Checked | Note |
+|------|--------|---------|------|
+| linkedin | ✅ | 2026-11-13 |  |
+| profession | ⛔ | 2026-11-13 | not reached 1 run in a row |
+| hellowork | ✅ | 2026-11-13 |  |
+| jobbsafari | ✅ | 2026-11-13 |  |
+| wikidata | ✅ | 2026-11-13 |  |
 
 ## Matcher
 
@@ -81,3 +99,6 @@ Last checked: 2026-11-01.
 | hybrid-aarhus | ✅ | 2026-11-01 |  |
 | exclude-unpaid-fellowship | ✅ | 2026-11-01 |  |
 | obvious-strong-match-leadership | ✅ | 2026-11-01 |  |
+| preference-doubt-travel | ❓ |  |  |
+| preference-ruled-out-bank | ❓ |  |  |
+| preference-wanted-medical | ❓ |  |  |

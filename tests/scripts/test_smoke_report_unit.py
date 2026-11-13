@@ -1,5 +1,5 @@
 """Unit tests for scripts/smoke_report.py: the live smoke run's status page, one list per dimension
-(boards, employer feeds, the matcher).
+(boards, employer feeds, employer discovery, the matcher).
 
 The weekly live-smoke workflow writes pytest's JUnit XML, then this script turns
 it into docs/badges/live-smoke.md, the page the README's live-smoke badge links.
@@ -121,7 +121,7 @@ def test_main_lists_each_dimension_on_its_own(tmp_path):
     out = tmp_path / "live-smoke.md"
     smoke_report.main([str(report), str(out), "--date", "2026-10-12"])
     text = out.read_text(encoding="utf-8")
-    heads = ["## Boards", "## Employer feeds", "## Matcher"]
+    heads = ["## Boards", "## Employer feeds", "## Employer discovery", "## Matcher"]
     assert [text.index(h) for h in heads] == sorted(text.index(h) for h in heads)
 
     def section(head):
@@ -358,14 +358,14 @@ def test_main_writes_the_dimension_badges_when_asked(tmp_path):
     smoke_report.main([str(report), str(tmp_path / "live-smoke.md"), "--badges", str(tmp_path), "--date", "2026-10-12"])
     boards = (tmp_path / "live-boards.svg").read_text(encoding="utf-8")
     assert boards.lstrip().startswith("<svg") and "boards" in boards and "15/15" in boards
-    for name in ("live-feeds.svg", "live-matcher.svg"):
+    for name in ("live-feeds.svg", "live-discovery.svg", "live-matcher.svg"):
         assert (tmp_path / name).read_text(encoding="utf-8").lstrip().startswith("<svg")
 
 
 def test_the_readme_shows_the_dimension_badges_linked_to_their_lists():
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    for svg, anchor in (("live-boards", "boards"),
-                        ("live-feeds", "employer-feeds"), ("live-matcher", "matcher")):
+    for svg, anchor in (("live-boards", "boards"), ("live-feeds", "employer-feeds"),
+                        ("live-discovery", "employer-discovery"), ("live-matcher", "matcher")):
         assert f"(docs/badges/{svg}.svg)](docs/badges/live-smoke.md#{anchor})" in readme
 
 
@@ -381,3 +381,27 @@ def test_a_local_run_keeps_the_link_to_the_last_workflow_run(tmp_path):
     smoke_report.main([str(report), str(out), "--run-url", "https://example.test/runs/1", "--date", "2026-11-09"])
     smoke_report.main([str(report), str(out), "--date", "2026-11-12"])
     assert "Last [workflow run](https://example.test/runs/1): 2026-11-09." in out.read_text(encoding="utf-8")
+
+
+def test_the_discovery_sources_and_wikidata_have_a_list_of_their_own_and_detect_only_platforms_are_feeds(tmp_path):
+    """Discovery runs locally (#19): its sources and the Wikidata lookup are one list, kept between CI runs; a
+    platform The other door only detects (HR-ON, iCIMS, ...) is a row of the employer feeds, by its detection test."""
+    report = tmp_path / "smoke.xml"
+    report.write_text(_junit(
+        _case("test_linkedin_live", package="tests.scrapers.discovery"),
+        _case("test_wikidata_live", "test_wikidata_lookup_live[x]", package="tests.core"),
+        _case("test_hr_on_live", "test_hr_on_detection_live", package="tests.scrapers.feeds"),
+    ), encoding="utf-8")
+    out = tmp_path / "live-smoke.md"
+    smoke_report.main([str(report), str(out), "--date", "2026-10-12"])
+    text = out.read_text(encoding="utf-8")
+    feeds, discovery = text.index("## Employer feeds"), text.index("## Employer discovery")
+    assert feeds < discovery < text.index("## Matcher")
+    assert "| hr_on | ✅ |" in text[feeds:discovery]
+    assert "| linkedin | ✅ |" in text[discovery:] and "| wikidata | ✅ |" in text[discovery:]
+    assert "| profession |" in text[discovery:]
+
+
+def test_the_discovery_list_has_its_badge():
+    assert smoke_report.dimension_badges([("Employer discovery", [("linkedin", "pass")])]) == [
+        ("live-discovery.svg", "employer discovery", "1/1", "green")]

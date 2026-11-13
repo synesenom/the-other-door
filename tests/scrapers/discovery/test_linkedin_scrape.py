@@ -565,3 +565,28 @@ def test_a_short_page_is_the_last_one_and_no_empty_page_is_requested(session, mo
     _search_pages(session, _cards((1, "Data Scientist", "A", "2026-10-10")))
     result = _run({**_CONFIG, "search_keywords": _ROT}, mode="rotate", rotation=["data scientist"], keyword_since={})
     assert len(_searches(session)) == 1 and result["search_complete"] is True
+
+
+@pytest.mark.parametrize("wall", [
+    "<html><head><title>Just a moment...</title></head><body></body></html>",
+    "<html><body><form action='/uas/login-submit'><input type='password' name='session_password'></form></body></html>",
+])
+def test_a_wall_page_instead_of_the_results_stops_as_a_refusal_not_as_no_employers(session, wall):
+    """A wall served without a redirect is a refusal too (#19), never "no employers"."""
+    _search_pages(session, wall)
+    result = _run()
+    assert result["outcome"] == "refused" and result["pushback"] and "instead of the results" in result["stopped"]
+    assert drain_pushback("linkedin") is True
+
+
+def test_linkedins_empty_answer_is_no_wall(session):
+    _search_pages(session, _EMPTY)
+    result = _run()
+    assert result["outcome"] == "ok" and not result["pushback"]
+
+
+def test_a_block_page_sent_with_a_server_error_is_a_refusal_not_a_failing_server(session):
+    session.page.add(_SEARCH, "<html><head><title>The URL you requested has been blocked</title></head></html>", status=500)
+    result = _run()
+    assert result["outcome"] == "refused" and result["pushback"] and len(session.page.calls) == 1
+    assert drain_pushback("linkedin") is True

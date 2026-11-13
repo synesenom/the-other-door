@@ -5,7 +5,10 @@ and then this script, which writes docs/badges/live-smoke.md. Each dimension is 
 so each has its own list:
 
 - **Boards:** the boards (``Site.board``);
-- **Employer feeds:** the other sites (``Site.config_key``);
+- **Employer feeds:** the other sites (``Site.config_key``), then the platforms The other door only detects
+  (``ats_detect.PRECEDENCE``, by their detection test);
+- **Employer discovery:** the discovery sources (``discovery_sources.SOURCES``), run locally, not in CI, so
+  their rows keep the last local result, and the Wikidata lookup (``tests/core/test_wikidata_live.py``);
 - **Matcher:** every golden scoring case (``tests/matching/fixtures/golden/``), from
   ``tests/matching/test_matcher_golden.py``'s ``[<case>]`` runs (the real scorer on a Claude plan).
 
@@ -24,7 +27,7 @@ row are written to FILE (empty when none), which the workflow turns into an issu
 change fails the run and opens the failure issue.
 
 With ``--badges DIR`` it also writes one badge per list into DIR (``live-boards.svg``,
-``live-feeds.svg``, ``live-matcher.svg``): "boards | 3/3", how
+``live-feeds.svg``, ``live-discovery.svg``, ``live-matcher.svg``): "boards | 3/3", how
 many passed of how many, green when every one passed, red when one changed, and orange when one was not
 reached, not checked or has no live test. The badges are committed SVGs rather than GitHub's workflow badge URL, which can only say whether the
 whole run passed.
@@ -60,6 +63,7 @@ _LAST_CHECKED = re.compile(r"^Last checked: (\d{4}-\d{2}-\d{2})\.$")
 _DIMENSION_BADGES = {
     "Boards": ("live-boards.svg", "boards"),
     "Employer feeds": ("live-feeds.svg", "employer feeds"),
+    "Employer discovery": ("live-discovery.svg", "employer discovery"),
     "Matcher": ("live-matcher.svg", "matcher"),
 }
 _GOLDEN_PREFIX = "golden-"
@@ -79,10 +83,13 @@ def _has_live_test(name: str) -> bool:
 def sections(xml: str) -> list[tuple[str, list[tuple[str, str]]]]:
     """The page's lists, in order: ``[(title, [(label, status), ...]), ...]``."""
     sys.path.insert(0, str(_REPO / "src"))
+    from door.core.ats_detect import PRECEDENCE
+    from door.core.discovery_sources import SOURCES
     from door.core.sites import SITES
 
     boards = [n for n, s in SITES.items() if s.board]
-    feeds = [n for n, s in SITES.items() if not s.board]
+    feeds = [n for n, s in SITES.items() if not s.board] + [p for p in PRECEDENCE if p not in SITES]
+    discovery = [*SOURCES, "wikidata"]
 
     def site_rows(names: list[str]) -> list[tuple[str, str]]:
         outcomes = site_outcomes(xml, names)
@@ -93,6 +100,7 @@ def sections(xml: str) -> list[tuple[str, list[tuple[str, str]]]]:
     return [
         ("Boards", site_rows(boards)),
         ("Employer feeds", site_rows(feeds)),
+        ("Employer discovery", site_rows(discovery)),
         ("Matcher", [(case, by_case[case]) for case in golden]),
     ]
 
