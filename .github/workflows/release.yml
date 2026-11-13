@@ -34,6 +34,10 @@ jobs:
           version="$(node -p "require('./app/package.json').version")"
           test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, but the version is $version: run scripts/set_version.py first" >&2; exit 1; }
           grep -q "VERSION = \"$version\"" src/door/version.py
+      - name: The draft release the builds upload to
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes ""
 
   build:
     needs: check
@@ -95,7 +99,24 @@ jobs:
         run: |
           [ -n "$CSC_LINK" ] || unset CSC_LINK CSC_KEY_PASSWORD
           npm run build && npm run build:web
-          npx electron-builder --config electron-builder.config.cjs --publish always
+          npx electron-builder --config electron-builder.config.cjs --publish never
+          # the installers only, one per computer (and the .deb), under names a person reads: dist/ keeps the
+          # build's names for the tests below
+          shopt -s nullglob
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p upload
+          for f in dist/the-other-door-*.{dmg,exe,AppImage,deb}; do
+            case "$(basename "$f")" in
+              *-mac-arm64.dmg) name="Mac-Apple-silicon.dmg" ;;
+              *-mac-x64.dmg)   name="Mac-Intel.dmg" ;;
+              *.exe)           name="Windows.exe" ;;
+              *.AppImage)      name="Linux.AppImage" ;;
+              *.deb)           name="Debian-Ubuntu.deb" ;;
+              *) continue ;;
+            esac
+            cp "$f" "upload/The-other-door-$version-$name"
+          done
+          gh release upload "$GITHUB_REF_NAME" upload/* --clobber
 
       - name: Smoke-test the packaged app
         run: |
@@ -146,8 +167,8 @@ jobs:
 
       - name: The install test, x64 under emulation
         run: |
-          gh release download $env:GITHUB_REF_NAME --pattern '*windows-x64.exe' --dir dist
-          $env:DOOR_INSTALLER = (Get-ChildItem dist\*windows-x64.exe | Select-Object -First 1).FullName
+          gh release download $env:GITHUB_REF_NAME --pattern '*-Windows.exe' --dir dist
+          $env:DOOR_INSTALLER = (Get-ChildItem dist\*-Windows.exe | Select-Object -First 1).FullName
           npm run test:install
 
       - name: Keep the install test's report

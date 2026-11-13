@@ -26,10 +26,9 @@ module.exports = {
   icon: '../docs/logo/door-512.png',
   afterPack: 'scripts/after-pack.cjs',
   // The packed package.json says whether this build is signed: an unsigned macOS app cannot update itself.
-  publish: { provider: 'github', owner: 'synesenom', repo: 'the-other-door', releaseType: 'draft' },
   mac: {
-    // the .zip is what an installed app downloads to update itself; the .dmg is what a person downloads
-    target: ['dmg', 'zip'],
+    // only what a person downloads: installed apps do not update themselves (#501), so no .zip, blockmap or latest-*.yml
+    target: ['dmg'],
     category: 'public.app-category.productivity',
     artifactName: 'the-other-door-${version}-mac-${arch}.${ext}',
     ...(signed
