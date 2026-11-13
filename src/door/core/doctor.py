@@ -126,7 +126,8 @@ def check_claude_login(claude_path: str | None, run=subprocess.run, env: dict[st
         return None
     why = ""
     try:
-        proc = run([claude_path, "auth", "status", "--json"], capture_output=True, text=True, timeout=15, env=env)
+        proc = run([claude_path, "auth", "status", "--json"], capture_output=True, text=True, timeout=15, env=env,
+                   stdin=subprocess.DEVNULL)
         # Signed out, `claude` exits 1 and still prints the status, so the exit code says nothing here.
         why = (proc.stderr or proc.stdout or f"exit {proc.returncode}, no output").strip()
         status = json.loads(proc.stdout)
@@ -500,7 +501,7 @@ def _sleep_minutes(run=subprocess.run) -> int | None:
     if sys.platform != "darwin":
         return None
     try:
-        out = run(["pmset", "-g"], capture_output=True, text=True, timeout=5).stdout
+        out = run(["pmset", "-g"], capture_output=True, text=True, timeout=5, stdin=subprocess.DEVNULL).stdout
     except (OSError, subprocess.SubprocessError):
         return None
     for line in out.splitlines():
