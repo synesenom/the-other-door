@@ -4,22 +4,18 @@ description."""
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.boards import arbetsformedlingen
-from live_utils import NONSENSE_KEYWORD as KW, assert_zero_hits, drain_zero_hit_state
+from live_utils import assert_field_contract, assert_zero_hits, drain_zero_hit_state, NONSENSE_KEYWORD as KW
 
 
 @pytest.mark.live
 def test_arbetsformedlingen_returns_valid_postings():
-    postings = arbetsformedlingen.scrape({"search_keywords": ["project manager"], "location": "Stockholm"})
+    config = {"search_keywords": ["project manager"], "location": "Stockholm"}
+    postings = arbetsformedlingen.scrape(config)
 
     assert len(postings) >= 1
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"], "title should be non-empty"
-        assert p["company"], "company should be non-empty"
-        assert p["url"].startswith("https://arbetsformedlingen.se/platsbanken/"), "url should be the ad's page"
-        assert p["description"], "description comes with the search answer"
+    assert_field_contract("arbetsformedlingen", postings, config)
+    assert all(p["url"].startswith("https://arbetsformedlingen.se/platsbanken/") for p in postings)
 
 
 @pytest.mark.live

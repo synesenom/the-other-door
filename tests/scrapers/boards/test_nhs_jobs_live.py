@@ -7,10 +7,9 @@ essential fields filled in, so a silent upstream change surfaces as a failure.
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers import drain_errors
 from door.scrapers.boards import nhs_jobs
-from live_utils import NONSENSE_KEYWORD as KW, assert_zero_hits, drain_zero_hit_state, not_reached_if_refused
+from live_utils import assert_field_contract, assert_zero_hits, drain_zero_hit_state, NONSENSE_KEYWORD as KW, not_reached_if_refused
 
 
 @pytest.mark.live
@@ -18,14 +17,12 @@ def test_nhs_jobs_live_returns_valid_postings():
     drain_errors()
     # NHS search is loose (a "project manager" page can be all nurses and doctors), so search for what
     # NHS Jobs always lists in London: one page of nurses is never empty, on-topic or not.
-    postings = nhs_jobs.scrape({"search_keywords": ["nurse"], "topic_terms": ["nurse*"],
-                                "location": "London", "max_pages_per_keyword": 1})
+    config = {"search_keywords": ["nurse"], "topic_terms": ["nurse*"], "location": "London", "max_pages_per_keyword": 1}
+    postings = nhs_jobs.scrape(config)
     if not postings:
         not_reached_if_refused("nhs_jobs", drain_errors().get("nhs_jobs", []))
     assert postings
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("nhs_jobs", postings, config)
 
 
 @pytest.mark.live

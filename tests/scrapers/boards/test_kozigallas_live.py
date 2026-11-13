@@ -7,20 +7,16 @@ essential fields filled in, so a silent upstream change surfaces as a failure.
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.boards import kozigallas
-from live_utils import NONSENSE_KEYWORD as KW, assert_zero_hits, drain_zero_hit_state
+from live_utils import assert_field_contract, assert_zero_hits, drain_zero_hit_state, NONSENSE_KEYWORD as KW
 
 
 @pytest.mark.live
 def test_kozigallas_live_returns_valid_postings():
-    postings = kozigallas.scrape(
-        {"search_keywords": ["ápoló"], "topic_terms": ["*ápoló*", "*ápolói*"],
-         "location": "Budapest", "max_pages_per_keyword": 1})
+    config = {"search_keywords": ["ápoló"], "topic_terms": ["*ápoló*", "*ápolói*"], "location": "Budapest", "max_pages_per_keyword": 1}
+    postings = kozigallas.scrape(config)
     assert postings
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"] and p["company"] and p["url"] and p["description"]
+    assert_field_contract("kozigallas", postings, config)
 
 
 @pytest.mark.live

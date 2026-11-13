@@ -2,18 +2,16 @@
 
 import pytest
 
-from door.core.models import JobPosting
 from door.scrapers.boards import globalnyt
+from live_utils import assert_field_contract
 
 
 @pytest.mark.live
 def test_globalnyt_returns_valid_postings():
-    postings = globalnyt.scrape({"search_keywords": ["rådgiver"], "location": "Copenhagen"})
+    config = {"search_keywords": ["rådgiver"], "location": "Copenhagen"}
+    postings = globalnyt.scrape(config)
 
     assert len(postings) >= 1
-    for p in postings[:5]:
-        JobPosting.model_validate(p)
-        assert p["title"], "title should be non-empty"
-        assert p["company"], "company should be non-empty"
-        assert p["url"].startswith("https://globalnyt.dk/stilling/"), "url should be the ad's page"
+    assert_field_contract("globalnyt", postings, config)
+    assert all(p["url"].startswith("https://globalnyt.dk/stilling/") for p in postings)
     assert any(p["company"] != "Globalnyt" for p in postings), "the employer should come from the ad page"
