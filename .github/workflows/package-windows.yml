@@ -37,7 +37,7 @@ concurrency:
 jobs:
   windows:
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: app
@@ -92,70 +92,11 @@ jobs:
           if (Test-Path $env:DOOR_PACKAGED_APP) { throw 'the app is still installed' }
           if ((Get-Content (Join-Path $data 'marker')) -ne 'kept') { throw 'the data folder was removed' }
 
-      # The install test (#639, #18): the installer run the user's way into a throwaway folder, then set-up, the
-      # first run and Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
-      - name: The install test
-        run: |
-          $env:DOOR_INSTALLER = (Get-ChildItem dist\the-other-door-*.exe | Select-Object -First 1).FullName
-          $env:DEBUG = "pw:browser"   # the app's own output in the log
-          npm run test:install
-
-      - name: Keep the install test's report
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: install-report-windows-x64
-          path: app/install-report
-          retention-days: 14
-          if-no-files-found: ignore
-
       - name: Keep the installer for 14 days
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: the-other-door-windows
           path: app/dist/*.exe
-          retention-days: 14
-          if-no-files-found: ignore
-
-  # Windows on ARM (a Surface Pro 11): the x64 installer, emulated, as such a user installs it (#18).
-  windows-arm:
-    needs: windows
-    runs-on: windows-11-arm
-    timeout-minutes: 60
-    defaults:
-      run:
-        working-directory: app
-        shell: pwsh
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-
-      - name: Install the app's packages
-        run: npm ci
-
-      - uses: actions/download-artifact@v7
-        with:
-          name: the-other-door-windows
-          path: app/dist
-
-      - name: The install test, x64 under emulation
-        run: |
-          $env:DOOR_INSTALLER = (Get-ChildItem dist\the-other-door-*.exe | Select-Object -First 1).FullName
-          $env:DEBUG = "pw:browser"   # the app's own output in the log
-          npm run test:install
-
-      - name: Keep the install test's report
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: install-report-windows-arm
-          path: app/install-report
           retention-days: 14
           if-no-files-found: ignore

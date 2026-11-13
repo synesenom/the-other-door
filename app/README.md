@@ -81,9 +81,8 @@ overrides it, which is how the smoke test runs it on a temp folder with the stan
 
 ## The install test (#639)
 
-`test:package` checks an unpacked app; the install test takes the file a user downloads. CI runs it on every
-installer (#18): the package workflows on each build (macOS arm64 and x64, Windows x64, Linux AppImage and
-`.deb`, and the Windows installer on `windows-11-arm`, emulated), and `release.yml` on what a tag ships. Locally:
+`test:package` checks an unpacked app; the install test takes the file a user downloads. Run it on each system
+before a release is published, **locally** for now (on CI once the repo is public):
 
 ```sh
 npm run package         # or DOOR_INSTALLER=<file> for an installer from a draft release
@@ -144,7 +143,7 @@ before opening it, Windows SmartScreen warns once.
 | `npm test` | vitest unit tests: no Python, no network (what CI runs) |
 | `npm run test:integration` | the real Python server on a generated `DOOR_HOME` (`test/home-fixture.ts`; `buildHome({ prepared: 'jobindex.123' })` adds a finished prepare from `test/fixtures/prepared/`: a 2-page CV, a 1-page letter, their page images and `.tex`) with isolated `HOME` and a stand-in `claude` first on `PATH` (it fails and leaves `claude-was-called` in the scratch folder, so a test never reaches your real one); skips with a message when there is no `.venv` or `DOOR_PYTHON` |
 | `npm run test:e2e` | builds, then Playwright tests drive the built app against the real server on a temp `DOOR_HOME` (Python as above; skips with a message without it). CI runs it under `xvfb-run` |
-| `npm run test:install` | install this system's installer from `dist/` (or `DOOR_INSTALLER`) the user's way, then set-up, the first run and Prepare in the installed app, then uninstall; CI runs it on every installer ("The install test" above) |
+| `npm run test:install` | install this system's installer from `dist/` (or `DOOR_INSTALLER`) the user's way, then set-up, the first run and Prepare in the installed app, then uninstall; local only ("The install test" above) |
 | `npm run gen-tools` | rewrite `src/generated/tools.json` from the running server |
 | `npm run gen-theme` | rewrite `src/renderer/theme.css` from `../docs/design/tokens.json` |
 

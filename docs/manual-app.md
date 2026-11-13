@@ -24,8 +24,8 @@ and signs you in to your Claude plan.
   needs macOS 13 or later; on 12, install Claude Code another way first.
 - **Windows** (10 or 11, x64): run the installer; it installs for you only, without an admin prompt.
   SmartScreen may warn the first time: More info → Run anyway.
-- **Linux** (x64): the AppImage (make it executable and run it; on Ubuntu 24.04 and later it needs FUSE 2
-  first: `sudo apt install libfuse2t64`) or the `.deb` (`sudo apt install ./the-other-door-….deb`).
+- **Linux** (x64): the AppImage (make it executable and run it) or the `.deb` (`sudo apt install
+  ./door_….deb`).
 
 **Updating**: the app does not install updates itself. An installed app checks for a newer version
 when it starts, and Settings → Version shows the version you have, says when a newer one is out, and has a

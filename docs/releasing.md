@@ -39,11 +39,10 @@ previous install (`docs/manual-app.md`, "Your data"). Go through every system th
 | Windows | `-windows-x64.exe` | Windows 10 or 11, x64 (on an ARM machine it runs emulated: note it) |
 | Linux | `-linux-x64.AppImage` and `.deb` | a recent Ubuntu, x64 |
 
-Steps 1 and 3–6 below are also the install test, which `release.yml` runs on every installer of the draft
-and on Windows on ARM (the x64 installer, emulated): a green release run means they passed on each system, on a
-test world with a stand-in Claude ([app/README.md](../app/README.md#the-install-test-639)). Locally it is
-`DOOR_INSTALLER=<the downloaded file> ./scripts/run-test.sh --release`. The first-open warnings of step 1, the
-real sign-in, real scoring and the update stay by hand, on one machine.
+Steps 1 and 3–6 below are also `npm run test:install` in `app/` (a checkout and `npm ci` on the machine,
+`DOOR_INSTALLER=<the downloaded file>`): run it first on each system; it does them on a test world, with a
+stand-in Claude ([app/README.md](../app/README.md#the-install-test-639)). The first-open warnings of step 1,
+the real sign-in, real scoring and the update stay by hand.
 
 On each, download the installer from the draft release and check, in order:
 

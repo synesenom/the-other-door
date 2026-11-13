@@ -162,7 +162,7 @@ app.whenReady().then(() => {
         const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
         return win ? dialog.showSaveDialog(win, options as Electron.SaveDialogOptions) : dialog.showSaveDialog(options as Electron.SaveDialogOptions)
       },
-      downloads: downloadsFolder(),
+      downloads: app.getPath('downloads'),
     },
     showItemInFolder: (path) => shell.showItemInFolder(path),
     currentBoard: () => lastBoard,
@@ -224,13 +224,3 @@ app.on('before-quit', () => {
   claudeLogin.cancel()
   void server.close()
 })
-
-/** Where a saved PDF is offered first: Downloads, or home when Windows cannot say where Downloads is (a redirected
- * or missing known folder), which would otherwise stop the app before its window opens. */
-function downloadsFolder(): string {
-  try {
-    return app.getPath('downloads')
-  } catch {
-    return app.getPath('home')
-  }
-}

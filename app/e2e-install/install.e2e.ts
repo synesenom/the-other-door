@@ -7,10 +7,10 @@
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 import type { Page } from '@playwright/test'
-import { expect, INSTALLED, launch, osStub, test } from '../journeys/fixtures'
+import { expect, launch, osStub, test } from '../journeys/fixtures'
 import { LAUNCH, saveAndSearch, toReview } from '../journeys/helpers/onboarding'
 import { pagesLoaded } from '../journeys/helpers/applications'
-import { bundledPython, documentedDataFolder, errorLines, kindOf } from './installer'
+import { bundledPython, documentedDataFolder, errorLines } from './installer'
 import type { Spawned } from './redirect'
 
 test.use({ worldOptions: { empty: true, persona: 'mette' } })
@@ -35,9 +35,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   const { app, page } = first
   const os = osStub(app)
   const resources = await app.evaluate(() => process.resourcesPath)
-  // an AppImage's resources are a read-only mount that goes away when the app quits: nothing to compare
-  const mounted = kindOf(INSTALLED ?? '') === 'appimage'
-  const before = mounted ? [] : snapshot(resources)
+  const before = snapshot(resources)
 
   // the server: the bundled Python on the bundled door, the bundled Tectonic first on its PATH
   const spawned = JSON.parse(readFileSync(join(world.dir, 'spawned.json'), 'utf8')) as Spawned
@@ -49,7 +47,6 @@ test('the installed app: set-up, the first run and Prepare on what the installer
 
   // doctor finds the bundled Tectonic and no checkout
   const doctor = (await page.evaluate(() => window.door.call('doctor'))) as { data: { checks: { name: string; status: string; detail: string }[] } }
-  expect(doctor.data?.checks, `doctor answered: ${JSON.stringify(doctor).slice(0, 2000)}`).toBeDefined()
   const checks = Object.fromEntries(doctor.data.checks.map((c) => [c.name, c]))
   expect(checks['latex']!.status).toBe('ok')
   expect(checks['latex']!.detail).toContain(join(resources, 'bin'))
@@ -93,7 +90,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   // nothing went wrong that the log saw, and the app wrote nothing inside itself
   expect(errors(world.home)).toEqual([])
   await app.close()
-  if (!mounted) expect(snapshot(resources)).toEqual(before)
+  expect(snapshot(resources)).toEqual(before)
 
   // quit and open again: the profile, the match and the application are still there
   const again = await launch(world)
@@ -107,5 +104,5 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   } finally {
     await again.app.close()
   }
-  if (!mounted) expect(snapshot(resources)).toEqual(before)
+  expect(snapshot(resources)).toEqual(before)
 })
