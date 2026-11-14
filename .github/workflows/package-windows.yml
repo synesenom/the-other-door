@@ -75,7 +75,7 @@ jobs:
 
       - name: Install it silently, for this user
         run: |
-          $installer = Get-ChildItem dist\the-other-door-*.exe | Select-Object -First 1
+          $installer = Get-ChildItem dist\The-other-door-*-Windows.exe | Select-Object -First 1
           Start-Process -Wait -FilePath $installer.FullName -ArgumentList '/S'
           # a per-user install goes under %LOCALAPPDATA%\Programs; find it rather than guess the folder's name
           $exe = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Depth 2 -Filter 'the-other-door.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -102,7 +102,7 @@ jobs:
       # first run and Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
       - name: The install test
         run: |
-          $env:DOOR_INSTALLER = (Get-ChildItem dist\the-other-door-*.exe | Select-Object -First 1).FullName
+          $env:DOOR_INSTALLER = (Get-ChildItem dist\The-other-door-*-Windows.exe | Select-Object -First 1).FullName
           $env:DEBUG = "pw:browser"   # the app's own output in the log
           npm run test:install
 
@@ -153,7 +153,7 @@ jobs:
 
       - name: The install test, x64 under emulation
         run: |
-          $env:DOOR_INSTALLER = (Get-ChildItem dist\the-other-door-*.exe | Select-Object -First 1).FullName
+          $env:DOOR_INSTALLER = (Get-ChildItem dist\The-other-door-*-Windows.exe | Select-Object -First 1).FullName
           $env:DEBUG = "pw:browser"   # the app's own output in the log
           npm run test:install
 
