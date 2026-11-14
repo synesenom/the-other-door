@@ -141,18 +141,23 @@ export function Guide() {
               <span style={{ width: '62%' }} />
             </div>
           </Row>
+          <Row label="usage-stack">
+            <div className="usage-stack" aria-hidden="true">
+              <span className="usage-tone-0" style={{ flexGrow: 0.62 }} />
+              <span className="usage-tone-1" style={{ flexGrow: 0.35 }} />
+              <span className="usage-tone-2" style={{ flexGrow: 0.03 }} />
+            </div>
+          </Row>
           <Row label="usage-activity">
             <ul className="usage-list">
               <li className="usage-activity">
                 <div className="usage-row">
-                  <h3 className="body">Finding jobs</h3>
-                  <span className="usage-figures">
-                    <span className="small muted">184 postings scored</span>
-                    <span className="body">$1.22</span>
-                  </span>
-                </div>
-                <div className="bar" aria-hidden="true">
-                  <span style={{ width: '35%' }} />
+                  <h3 className="body">
+                    <span className="usage-dot usage-tone-1" aria-hidden="true" />
+                    Finding jobs
+                    <span className="muted"> · 184 postings scored</span>
+                  </h3>
+                  <span className="body">$1.22</span>
                 </div>
                 <ul className="usage-features">
                   <li className="usage-row small muted">

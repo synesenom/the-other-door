@@ -14,6 +14,15 @@ const SINGULAR: Record<string, string> = {
   'other requests': 'other request',
 }
 
+function share(part: number, total: number): number {
+  return total > 0 ? part / total : 0
+}
+
+/** The tone of the i-th activity (largest first) in the stacked bar and its dot: blue, grey, beige. */
+function tone(i: number): string {
+  return `usage-tone-${Math.min(i, 2)}`
+}
+
 function Usage({ cost }: { cost: CostBlock | null }) {
   if (!cost) return <p className="small muted">What Claude's work costs shows here after your first search.</p>
   const per = [
@@ -31,18 +40,24 @@ function Usage({ cost }: { cost: CostBlock | null }) {
         {per.length > 0 && <p className="small muted">{`About ${per.join(', ')}`}</p>}
       </div>
       {cost.activities.length > 0 && (
+        // one bar for the whole total, always full: where it went, never a quota filling up
+        <div className="usage-stack" role="img" aria-label={cost.activities.map((a) => `${a.label} ${Math.round(share(a.usd, cost.usd) * 100)}%`).join(', ')}>
+          {cost.activities.map((a, i) => (
+            <span key={a.activity} className={tone(i)} style={{ flexGrow: Math.round(share(a.usd, cost.usd) * 1000) / 1000 }} />
+          ))}
+        </div>
+      )}
+      {cost.activities.length > 0 && (
         <ul className="usage-list">
-          {cost.activities.map((a) => (
+          {cost.activities.map((a, i) => (
             <li key={a.activity} className="usage-activity">
               <div className="usage-row">
-                <h3 className="body">{a.label}</h3>
-                <span className="usage-figures">
-                  <span className="small muted">{`${a.count} ${a.count === 1 ? (SINGULAR[a.of] ?? a.of) : a.of}`}</span>
-                  <span className="body">{usd(a.usd)}</span>
-                </span>
-              </div>
-              <div className="bar" aria-hidden="true">
-                <span style={{ width: `${cost.usd ? Math.round((a.usd / cost.usd) * 100) : 0}%` }} />
+                <h3 className="body">
+                  <span className={`usage-dot ${tone(i)}`} aria-hidden="true" />
+                  {a.label}
+                  <span className="muted">{` · ${a.count} ${a.count === 1 ? (SINGULAR[a.of] ?? a.of) : a.of}`}</span>
+                </h3>
+                <span className="body">{usd(a.usd)}</span>
               </div>
               {a.features.length > 1 && (
                 <ul className="usage-features">

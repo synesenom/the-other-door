@@ -43,10 +43,15 @@ describe('Analytics', () => {
     expect(notice.tagName).toBe('STRONG')
     expect(notice.parentElement).toHaveTextContent("You don't pay this. Your Claude plan covers it. The last 7 days, estimated at API prices.")
     expect(within(part).getByText('About $0.31 a search, $1.42 an application')).toBeInTheDocument()
+    // one bar for the whole total, a part per activity sized by its share, its tone matching the activity's dot
+    const stack = within(part).getByRole('img', { name: 'Preparing applications 71%, Finding jobs 24%, Everything else 5%' })
+    const parts = [...stack.children] as HTMLElement[]
+    expect(parts.map((p) => p.style.flexGrow)).toEqual(['0.714', '0.238', '0.048'])
     const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('usage-activity'))
-    expect(rows.map((r) => within(r).getByRole('heading').textContent)).toEqual(['Preparing applications', 'Finding jobs', 'Everything else'])
-    expect(within(rows[0]).getByText('1 application prepared')).toBeInTheDocument()
-    expect(within(rows[1]).getByText('110 postings scored')).toBeInTheDocument()
+    // what each did after its name, as Finding jobs puts a site's jobs after it
+    expect(rows.map((r) => within(r).getByRole('heading').textContent)).toEqual([
+      'Preparing applications · 1 application prepared', 'Finding jobs · 110 postings scored', 'Everything else · 2 other requests'])
+    rows.forEach((r, i) => expect(r.querySelector('.usage-dot')!.className).toContain(parts[i].className))
     // the features within an activity, only when there are several
     expect(within(rows[0]).getByText('Tailoring the CV and letter')).toBeInTheDocument()
     expect(within(rows[1]).queryByText('Scoring postings')).toBeNull()
@@ -72,7 +77,7 @@ describe('Analytics', () => {
       { activity: 'other', label: 'Everything else', usd: 0.003, count: 1, of: 'other requests', features: [{ feature: 'ask', label: 'Questions about your jobs', usd: 0.003, calls: 1 }] }] }
     mockDoor({ status_summary: summary({ cost: one, plan: null }) })
     render(<Analytics />)
-    expect(await screen.findByText('1 other request')).toBeInTheDocument()
+    expect(await screen.findByText('· 1 other request')).toBeInTheDocument()
     expect(screen.getByText('≈ <$0.01')).toBeInTheDocument()
     expect(screen.getByText('<$0.01')).toBeInTheDocument()
   })
