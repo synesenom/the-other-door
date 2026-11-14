@@ -129,6 +129,8 @@ describe('Analytics', () => {
       expect((within(part).getByRole('img', { name: 'Applied: 0 of 2' }).firstElementChild as HTMLElement).style.width).toBe('0%')
       expect((within(part).getByRole('img', { name: 'Offer: 0 of 0' }).firstElementChild as HTMLElement).style.width).toBe('0%')
       expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['60%', '67%', '0%'])
+      const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('funnel-row'))
+      expect(rows.map((r) => r.textContent).slice(-3)).toEqual(['Applied0 of 20%', 'Interview0 of 0', 'Offer0 of 0'])
       expect(within(part).queryByText(/Worth a look/)).toBeNull()
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
     })

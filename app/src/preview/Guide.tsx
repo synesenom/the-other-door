@@ -159,7 +159,7 @@ export function Guide() {
                 <span className="funnel-bar" role="img" aria-label="Interview: 6 of 12">
                   <span style={{ width: '50%' }} />
                 </span>
-                <span className="body">6</span>
+                <span className="body">6 of 12</span>
                 <span className="body muted">50%</span>
               </li>
             </ul>

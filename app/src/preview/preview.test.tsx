@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../renderer/App'
 import { stubNarrow } from '../renderer/testing'
@@ -165,6 +165,8 @@ describe('scenes', () => {
     const part = await screen.findByRole('region', { name: 'Applications' })
     expect(part).toHaveTextContent('Scraped212')
     expect(screen.getByRole('img', { name: 'Applied: 7 of 9' })).toBeInTheDocument()
+    expect(part).toHaveTextContent('Applied7 of 978%')
+    expect(within(part).getByText('Each stage against the one before it.')).toBeInTheDocument()
     cleanup()
     mount('analytics', 'empty')
     expect(await screen.findByRole('img', { name: 'Matches: 0 of 212' })).toBeInTheDocument()
