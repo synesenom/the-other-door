@@ -117,8 +117,8 @@ real Claude sign-in and real scoring (a plan login), and live job boards (`scrip
 One version for *The other door* and the app: `python3 scripts/set_version.py 0.2.0` (from the repo root) sets it in
 `pyproject.toml`, `src/door/version.py` and `app/package.json`; commit, then push the tag `v0.2.0`.
 `.github/workflows/release.yml` builds macOS (Apple silicon and Intel), Windows and Linux, runs the unit tests
-and the packaged smoke test on each, and uploads the installers to a **draft** release of this repo (the
-workflow's own token writes it); publish it only after the checklist in [docs/releasing.md](../docs/releasing.md)
+(off Linux, where `app.yml` runs them) and the packaged smoke test on each, and uploads the installers to a **draft** release of this repo (the
+workflow's own token writes it; run by hand, Actions → Release → Run workflow, it is a dry run that uploads to no release, the installers kept as run artifacts: do it before tagging); publish it only after the checklist in [docs/releasing.md](../docs/releasing.md)
 passed: a clean-machine install on each system, the release notes, the download link. Installed apps update from the published release (#17, `src/main/updates.ts`): a signed macOS build (the packed `package.json`'s `doorSigned`, set by `electron-builder.config.cjs` when the certificate and notarization are there), the Windows installer and the AppImage download the next version in the background through `electron-updater` (`latest*.yml`, the mac `.zip`, blockmaps; the release workflow uploads them, `scripts/merge-mac-manifest.ts` merges the two mac manifests) and install it on restart; an unsigned macOS build and the `.deb` read GitHub's `releases/latest` and link to its page; a checkout and the demo do nothing. `DOOR_UPDATES=off` keeps a packaged app from checking; `test:package` and `test:install` set it, nothing else should.
 
 For signed builds add

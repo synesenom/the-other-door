@@ -3,8 +3,12 @@ name: Release
 # A release (#224): pushing the tag vX.Y.Z (after scripts/set_version.py X.Y.Z) builds the app on every system,
 # smoke-tests each, and uploads the installers to a DRAFT release of this repo. Check the draft, then publish it
 # by hand: installed apps update from a published release (#17; electron-updater ignores a draft), through the
-# latest*.yml manifests, .zip and .blockmap files uploaded beside the installers. Only on tags: no pull requests,
-# no schedule.
+# latest*.yml manifests, .zip and .blockmap files uploaded beside the installers. No pull requests, no schedule.
+#
+# A DRY RUN (Actions -> Release -> Run workflow, or `gh workflow run release.yml --ref main`) builds exactly as
+# a tag does (the same electron-builder call, the same renames, the same smoke and install tests, Windows on ARM
+# included) but makes no tag, no draft and no release: the renamed installers and manifests are kept as the run's
+# artifacts for 14 days. Run it before tagging (docs/releasing.md).
 #
 # Secrets (Settings → Secrets and variables → Actions):
 # The workflow's own GITHUB_TOKEN writes the release (permissions below); no other token is needed.
@@ -17,6 +21,7 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -31,11 +36,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: The tag is the version
+        if: github.event_name == 'push'
         run: |
           version="$(node -p "require('./app/package.json').version")"
           test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, but the version is $version: run scripts/set_version.py first" >&2; exit 1; }
+      - name: The version is in src/door/version.py
+        run: |
+          version="$(node -p "require('./app/package.json').version")"
           grep -q "VERSION = \"$version\"" src/door/version.py
       - name: The draft release the builds upload to
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes ""
@@ -75,7 +85,9 @@ jobs:
 
       - run: npm ci
 
+      # The app's unit tests run once, on Linux, in app.yml
       - name: Unit tests
+        if: runner.os != 'Linux'
         run: npx vitest run
 
       - name: Build the bundle
@@ -104,7 +116,7 @@ jobs:
           # manifests name the uploaded files themselves; the update files (manifests, mac .zip, blockmaps) as built.
           # latest-mac.yml is not uploaded here: the two mac builds each make one, the mac-manifest job merges them.
           shopt -s nullglob
-          version="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
           mkdir -p upload
           for f in dist/the-other-door-*.{dmg,deb}; do
             case "$(basename "$f")" in
@@ -131,8 +143,17 @@ jobs:
           for f in "${expected[@]}"; do
             [ -f "upload/$f" ] || { echo "missing from the release upload: $f" >&2; exit 1; }
           done
-          gh release upload "$GITHUB_REF_NAME" upload/* --clobber
+          if [ "$GITHUB_EVENT_NAME" = push ]; then gh release upload "$GITHUB_REF_NAME" upload/* --clobber; fi
           mkdir -p mac-manifest && cp dist/latest-mac.yml mac-manifest/ 2>/dev/null || true
+
+      - name: Keep the installers of the dry run
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dry-run-${{ matrix.name }}
+          path: app/upload/*
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Keep the mac manifest for the merge
         if: runner.os == 'macOS'
@@ -192,10 +213,21 @@ jobs:
           pattern: mac-manifest-*
           path: app/mac-manifests
 
-      - name: Merge and upload
-        run: |
-          npx tsx scripts/merge-mac-manifest.ts mac-manifests/mac-manifest-macos-arm64/latest-mac.yml mac-manifests/mac-manifest-macos-x64/latest-mac.yml latest-mac.yml
-          gh release upload "$GITHUB_REF_NAME" latest-mac.yml --clobber
+      - name: Merge
+        run: npx tsx scripts/merge-mac-manifest.ts mac-manifests/mac-manifest-macos-arm64/latest-mac.yml mac-manifests/mac-manifest-macos-x64/latest-mac.yml latest-mac.yml
+
+      - name: Upload to the draft release
+        if: github.event_name == 'push'
+        run: gh release upload "$GITHUB_REF_NAME" latest-mac.yml --clobber
+
+      - name: Keep the merged manifest of the dry run
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dry-run-mac-manifest
+          path: app/latest-mac.yml
+          retention-days: 14
+          if-no-files-found: error
 
   # Windows on ARM (a Surface Pro 11): the release's x64 installer, emulated, as such a user installs it (#18).
   install-windows-arm:
@@ -219,9 +251,19 @@ jobs:
 
       - run: npm ci
 
+      - name: The installer of the dry run
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/download-artifact@v7
+        with:
+          name: dry-run-windows-x64
+          path: app/dist
+
+      - name: The installer of the draft release
+        if: github.event_name == 'push'
+        run: gh release download $env:GITHUB_REF_NAME --pattern '*-Windows.exe' --dir dist
+
       - name: The install test, x64 under emulation
         run: |
-          gh release download $env:GITHUB_REF_NAME --pattern '*-Windows.exe' --dir dist
           $env:DOOR_INSTALLER = (Get-ChildItem dist\*-Windows.exe | Select-Object -First 1).FullName
           npm run test:install
 

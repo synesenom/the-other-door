@@ -1,7 +1,8 @@
 # Releasing
 
 A release is a tag `vX.Y.Z`. `.github/workflows/release.yml` builds the installers on every system, runs the
-unit tests and the packaged smoke test on each, and uploads them to a **draft** release. A draft is published
+unit tests and the packaged smoke test on each, and uploads them to a **draft** release. The same workflow run by hand is a dry run that builds and tests everything and
+uploads to no release (see Before the tag). A draft is published
 only after a person has installed it on a clean machine of each system and gone through the checklist below
 (#502). `/dev-release` in Claude Code walks through it (the maintainer only). How the build, the bundle and the signing work is in [app/README.md](../app/README.md#releasing-224).
 
@@ -17,6 +18,10 @@ only after a person has installed it on a clean machine of each system and gone 
   `changes`. A key the old release returned that is gone or different, and a stored shape that changed without a step,
   fail it: write the step (the `data-migrator` agent) and list what it changes on purpose. It stays out of the
   offline suite and CI, because between releases `main` may not read the last release's data until that step exists.
+- The dry run is green (#45): on the commit that carries the version bump, `gh workflow run release.yml --ref main`
+  and watch it. It builds exactly as the tag will (the same packaging, the same renames, the same smoke and install
+  tests, Windows on ARM included) but makes no tag, no draft and no release; the renamed installers and manifests stay
+  on the run's page for 14 days. A red dry run is fixed through a pull request, with nothing to clean up.
 - `main` is green (the Python suite and the app's unit tests, smoke test and core journeys).
 - Installed apps update from the public repo's published release (#17): nothing to configure. The draft holds
   the update files the apps read, `latest.yml`, `latest-linux.yml` and the merged `latest-mac.yml` (the
@@ -34,7 +39,7 @@ git commit -am "release: vX.Y.Z"
 git tag vX.Y.Z && git push origin main vX.Y.Z
 ```
 
-The workflow refuses a tag that is not the version. It takes about 20 minutes; the draft then holds
+The workflow refuses a tag that is not the version. The tag run repeats what the dry run did, then uploads to the draft. It takes about 20 minutes; the draft then holds
 `The-other-door-X.Y.Z-Mac-Apple-silicon.dmg`, `-Mac-Intel.dmg`, `-Windows.exe`, `-Linux.AppImage` and `-Debian-Ubuntu.deb`.
 
 After the tag exists (it is pushed, so the tag's code is what was released), save that release's data for the next

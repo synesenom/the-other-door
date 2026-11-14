@@ -4,29 +4,10 @@ name: Package (macOS)
 # .dmg, install it the way a user does (mount, copy into Applications) and smoke-test it. It is not marked as
 # downloaded: an unsigned app with the quarantine flag waits for a person at Gatekeeper's prompt. This is where
 # the ad-hoc signing (scripts/after-pack.cjs) is proven: Apple silicon refuses an unsigned binary. Runs on pull
-# requests that change the packaging, on every change to main that goes into the app, and by hand
+# requests that change what goes into the app, and by hand
 # (Actions → Package (macOS) → Run workflow); the .dmg is kept on the run's page for 14 days.
 on:
   pull_request:
-    paths:
-      - "app/electron-builder.config.cjs"
-      - "app/build/**"
-      - "app/scripts/bundle-python.sh"
-      - "app/scripts/bundle.lock.json"
-      - "app/scripts/lock_requirements.py"
-      - "app/scripts/check-bundle.sh"
-      - "app/scripts/after-pack.cjs"
-      - "app/e2e-package/**"
-      - "app/playwright.package.config.ts"
-      - "app/e2e-install/**"
-      - "app/playwright.install.config.ts"
-      - "app/test/world/**"
-      - ".github/workflows/package-macos.yml"
-      - "poetry.lock"
-      - "app/package-lock.json"
-  # every change to what goes into the app builds installers to try, kept 14 days on the run's page
-  push:
-    branches: [main]
     paths:
       - "src/**"
       - "app/**"
