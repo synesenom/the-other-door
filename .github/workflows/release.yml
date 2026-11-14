@@ -116,7 +116,21 @@ jobs:
             cp "$f" "upload/The-other-door-$version-$name"
           done
           cp dist/The-other-door-*.{exe,exe.blockmap,AppImage} dist/the-other-door-*.zip dist/the-other-door-*.zip.blockmap dist/latest.yml dist/latest-linux.yml upload/ 2>/dev/null || true
-          [ -z "$(ls upload)" ] && { echo "nothing to upload" >&2; exit 1; }
+          # every file the updater and the downloads need must be there: a missing one fails the job
+          case "$RUNNER_OS" in
+            Windows) expected=("The-other-door-$version-Windows.exe" "The-other-door-$version-Windows.exe.blockmap" latest.yml) ;;
+            Linux)   expected=("The-other-door-$version-Linux.AppImage" latest-linux.yml "The-other-door-$version-Debian-Ubuntu.deb") ;;
+            macOS)   expected=() ;;
+          esac
+          if [ "$RUNNER_OS" = macOS ]; then
+            arch="$(uname -m | sed 's/x86_64/x64/')"
+            dmg=Mac-Apple-silicon; [ "$arch" = x64 ] && dmg=Mac-Intel
+            expected=("The-other-door-$version-$dmg.dmg" "the-other-door-$version-mac-$arch.zip" "the-other-door-$version-mac-$arch.zip.blockmap")
+            [ -f dist/latest-mac.yml ] || { echo "missing dist/latest-mac.yml" >&2; exit 1; }
+          fi
+          for f in "${expected[@]}"; do
+            [ -f "upload/$f" ] || { echo "missing from the release upload: $f" >&2; exit 1; }
+          done
           gh release upload "$GITHUB_REF_NAME" upload/* --clobber
           mkdir -p mac-manifest && cp dist/latest-mac.yml mac-manifest/ 2>/dev/null || true
 
