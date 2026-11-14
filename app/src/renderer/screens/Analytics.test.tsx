@@ -93,16 +93,7 @@ describe('Analytics', () => {
       { stage: 'postings', count: 200 }, { stage: 'applicable', count: 120 }, { stage: 'matches', count: 40 },
       { stage: 'prepared', count: 10 }, { stage: 'applied', count: 4 }, { stage: 'interview', count: 2 }, { stage: 'offer', count: 1 },
     ]
-    const OUT = { passed: 1, rejected: 0, ghosted: 0, withdrawn: 0, pending: 1 }
-    const APPLIED = {
-      funnel: FUNNEL,
-      application: OUT,
-      interviews: { screening: { passed: 0, rejected: 1, ghosted: 0, withdrawn: 0, pending: 0 } },
-      pass_rates: {
-        application: { passed: 1, decided: 2, rate: 0.5, low: 0.21, high: 0.79 },
-        screening: { passed: 0, decided: 1, rate: null, low: null, high: null },
-      },
-    }
+    const APPLIED = { funnel: FUNNEL }
 
     it('shows one bar row per funnel stage with its label and count', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
@@ -111,35 +102,36 @@ describe('Analytics', () => {
       const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('funnel-row'))
       expect(rows.map((r) => r.textContent)).toEqual([
         'Scraped200', 'Worth a look120', 'Matches40', 'Prepared10', 'Applied4', 'Interview2', 'Offer1'])
-      expect(within(rows[2]).getByRole('img', { name: 'Matches: 40 of 200' })).toBeInTheDocument()
+      expect(within(rows[2]).getByRole('img', { name: 'Matches: 40 of 120' })).toBeInTheDocument()
     })
 
-    it('says how the application and each round went with the pass rate and its interval', async () => {
+    it('sizes each bar against the stage before it, the first one full', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
-      const application = within(part).getByRole('row', { name: /Application/ })
-      expect(application).toHaveTextContent('1/2 passed')
-      expect(application).toHaveTextContent('50% (21–79%)')
-      // passed, rejected, ghosted, withdrawn, pending, then the rate
-      expect(within(application).getAllByRole('cell').map((c) => c.textContent)).toEqual(['1', '0', '0', '0', '1', '1/2 passed  50% (21–79%)'])
-      expect(within(part).getByRole('row', { name: /Screening/ }).textContent).not.toContain('%')
+      const width = (name: string) => (within(part).getByRole('img', { name }).firstElementChild as HTMLElement).style.width
+      expect(width('Scraped: 200')).toBe('100%')
+      expect(width('Prepared: 10 of 40')).toBe('25%')
+      expect(width('Applied: 4 of 10')).toBe('40%')
+      expect(width('Offer: 1 of 2')).toBe('50%')
+      expect(within(part).queryByRole('table')).toBeNull()
+      expect(part.textContent).not.toContain('%')
     })
 
-    it('with something found but nothing applied: the bars, and one quiet line where the table goes', async () => {
+    it('with something found but nothing applied: the bars, the later ones empty', async () => {
       const funnel = FUNNEL.map((f) => ({ ...f, count: { postings: 5, applicable: 4, matches: 3, prepared: 2 }[f.stage] ?? 0 }))
-      mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel, application: { ...OUT, passed: 0, pending: 0 }, interviews: {}, pass_rates: {} }) })
+      mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
-      expect(within(part).getByRole('img', { name: 'Prepared: 2 of 5' })).toBeInTheDocument()
-      expect(within(part).getByText('How each stage went shows here once you have applied')).toBeInTheDocument()
-      expect(within(part).queryByRole('table')).toBeNull()
+      expect(within(part).getByRole('img', { name: 'Prepared: 2 of 3' })).toBeInTheDocument()
+      expect((within(part).getByRole('img', { name: 'Applied: 0 of 2' }).firstElementChild as HTMLElement).style.width).toBe('0%')
+      expect((within(part).getByRole('img', { name: 'Offer: 0 of 0' }).firstElementChild as HTMLElement).style.width).toBe('0%')
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
     })
 
     it('with nothing scraped: a single quiet line for the section', async () => {
       const funnel = FUNNEL.map((f) => ({ ...f, count: 0 }))
-      mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel, application: OUT, interviews: {}, pass_rates: {} }) })
+      mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       expect(within(part).getByText('Your funnel shows here once jobs are found')).toBeInTheDocument()

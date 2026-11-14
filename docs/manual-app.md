@@ -544,12 +544,9 @@ How it is going, as figures: nothing here changes anything. Not on the phone.
 everything scraped, through the postings worth a look and the matches at your minimum score, to the
 jobs you prepared, applied for, got an interview in and got an offer for; a job counts in every
 stage it reached (an offer also counts as an interview, since the application passed), and a job
-you sent from outside the matches, one you imported by hand, raises the earlier bars too. Until
-you have applied it says in one muted line that how each stage went shows here once you have. After
-that a table gives, for the application itself (did it lead to an interview) and for each kind of
-interview round you had, how many passed, were rejected, ghosted, withdrawn or are still pending,
-and the pass rate of the decided ones with its one-sigma interval, for example `50% (21–79%)`.
-Before anything is scraped it says only that the funnel shows here once jobs are found.
+you sent from outside the matches, one you imported by hand, raises the earlier bars too. Each bar
+shows its stage as a share of the stage before it, so you can see where jobs drop out: how many of
+the jobs you prepared you applied for, how many of those led to an interview. Before anything is scraped it says only that the funnel shows here once jobs are found.
 
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
 You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,

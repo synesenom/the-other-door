@@ -163,24 +163,6 @@ export function Guide() {
               </li>
             </ul>
           </Row>
-          <Row label="stage-table">
-            <table className="stage-table small">
-              <thead>
-                <tr>
-                  <th scope="col">Stage</th>
-                  <th scope="col">Passed</th>
-                  <th scope="col">Pass rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th scope="row">Application</th>
-                  <td>3</td>
-                  <td>3/5 passed  60% (40–77%)</td>
-                </tr>
-              </tbody>
-            </table>
-          </Row>
           <Row label="usage-activity">
             <ul className="usage-list">
               <li className="usage-activity">
