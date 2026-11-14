@@ -40,7 +40,8 @@ function planLine(plan: PlanBlock): string | null {
 
 function Usage({ cost, plan }: { cost: CostBlock | null; plan: PlanBlock | null }) {
   const line = plan ? planLine(plan) : null
-  if (!cost) return <p className="small muted">What Claude's work costs shows here after your first search.</p>
+  const planNote = line && <p className={plan?.warning ? 'small' : 'small muted'}>{plan?.warning ? `${plan.warning}. ${line}` : line}</p>
+  if (!cost) return planNote || <p className="small muted">What Claude's work costs shows here after your first search.</p>
   const per = [
     cost.per_run.find ? `One search for new jobs about ${usd(cost.per_run.find)}` : null,
     cost.per_run.prepare ? `${cost.per_run.find ? 'one' : 'One'} prepared application about ${usd(cost.per_run.prepare)}` : null,
@@ -48,7 +49,7 @@ function Usage({ cost, plan }: { cost: CostBlock | null; plan: PlanBlock | null 
   return (
     <>
       <div className="part-head">
-        <p className="display-s">{usd(cost.usd)}</p>
+        <p className="display-s">{cost.activities.length > 0 ? usd(cost.usd) : `Nothing in the last ${cost.days} days`}</p>
         <p className="small muted">
           In the last {cost.days} days, at Claude's API prices: what these calls would cost on the API. Your plan is not charged per call.
         </p>
@@ -80,7 +81,7 @@ function Usage({ cost, plan }: { cost: CostBlock | null; plan: PlanBlock | null 
           ))}
         </ul>
       )}
-      {line && <p className={plan?.warning ? 'small' : 'small muted'}>{plan?.warning ? `${plan.warning}. ${line}` : line}</p>}
+      {planNote}
     </>
   )
 }

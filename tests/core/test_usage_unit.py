@@ -154,8 +154,22 @@ def test_cost_gives_each_activity_its_dollars_and_each_feature_within_it(tmp_pat
 
 
 def test_cost_gives_one_find_and_one_prepare_in_dollars(tmp_path):
-    _log(tmp_path, ("tailoring", 1.20, 1, 1), ("tailoring", 0.80, 1, 2))
-    assert usage.cost(tmp_path, records=[])["per_run"]["prepare"] == pytest.approx(1.0)
+    _log(tmp_path, ("tailoring", 1.20, 1, 1), ("tailoring", 0.80, 1, 2), ("match_scoring", 0.04, 10, 1))
+    per = usage.cost(tmp_path, records=[])["per_run"]
+    assert per["prepare"] == pytest.approx(1.0)
+    assert per["find"] == pytest.approx(usage.DEFAULT_POSTINGS_PER_RUN * 0.004)  # no run yet: sized from one posting
+
+
+def test_cost_sizes_a_find_from_the_run_records_on_disk(tmp_path):
+    now = datetime.now(timezone.utc)
+    (tmp_path / "runs").mkdir()
+    (tmp_path / "runs" / "r.json").write_text(json.dumps(
+        {"started_at": (now - timedelta(hours=1)).isoformat(), "finished_at": now.isoformat()}))
+    with (tmp_path / usage.LOG_NAME).open("a") as fh:
+        for w in (0.10, 0.15):
+            fh.write(json.dumps({"at": (now - timedelta(minutes=30)).isoformat(), "feature": "match_scoring",
+                                 "units": 5, "weight": w}) + "\n")
+    assert usage.cost(tmp_path)["per_run"]["find"] == pytest.approx(0.25)
 
 
 def test_cost_takes_another_window(tmp_path):

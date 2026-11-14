@@ -287,5 +287,18 @@ export function seedDemo(demo: string, repoRoot: string, mode: DemoMode, now: Da
   writeFileSync(join(jobs, 'applications.json'), JSON.stringify(ledger, null, 2))
   // Reviewed yesterday: today's jobs are new, the older ones are not.
   writeFileSync(join(jobs, 'last_review.json'), JSON.stringify({ reviewed_at: at(1) }))
+  // A week of made-up Claude calls (core/usage.py's lines), so Analytics has figures: three finds, two prepares.
+  const calls: [number, number, string, number, number][] = [
+    // [days ago, hours ago, feature, postings scored, dollars at API prices]
+    [5, 2, 'match_scoring', 40, 0.21], [5, 2, 'match_scoring', 22, 0.12], [5, 2, 'title_translation', 1, 0.02],
+    [3, 4, 'match_scoring', 40, 0.2], [3, 4, 'match_scoring', 31, 0.16], [3, 3, 'tailoring', 1, 0.91],
+    [3, 3, 'revise', 1, 0.06], [3, 3, 'salary', 1, 0.04],
+    [0, 3, 'match_scoring', 40, 0.22], [0, 3, 'match_scoring', 11, 0.06], [0, 3, 'title_translation', 1, 0.02],
+    [0, 2, 'tailoring', 1, 0.95], [0, 2, 'salary', 1, 0.03],
+  ]
+  writeFileSync(
+    join(jobs, 'usage.jsonl'),
+    calls.map(([days, hours, feature, units, weight]) => JSON.stringify({ at: at(days, hours), feature, units, weight })).join('\n') + '\n',
+  )
   return { created: true }
 }

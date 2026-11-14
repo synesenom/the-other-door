@@ -135,6 +135,38 @@ export function Guide() {
           </Row>
         </Part>
 
+        <Part title="Figures">
+          <Row label="bar">
+            <div className="bar" aria-hidden="true">
+              <span style={{ width: '62%' }} />
+            </div>
+          </Row>
+          <Row label="usage-activity">
+            <ul className="usage-list">
+              <li className="usage-activity">
+                <div className="usage-row">
+                  <h3 className="body">Finding jobs</h3>
+                  <span className="body">$1.22</span>
+                </div>
+                <div className="bar" aria-hidden="true">
+                  <span style={{ width: '35%' }} />
+                </div>
+                <p className="small muted">184 postings scored</p>
+                <ul className="usage-features">
+                  <li className="usage-row small muted">
+                    <span>Scoring postings</span>
+                    <span>$1.14</span>
+                  </li>
+                  <li className="usage-row small muted">
+                    <span>Translating job titles</span>
+                    <span>$0.08</span>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </Row>
+        </Part>
+
         <Part title="Type">
           {TYPE.map((t) => (
             <Row key={t} label={t}>

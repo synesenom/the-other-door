@@ -57,6 +57,29 @@ describe('Analytics', () => {
     expect(screen.getByText(/room for about 6 searches or 2 prepared applications/)).toBeInTheDocument()
   })
 
+  it('a plan reading with no weighed call yet still says how full the window is', async () => {
+    mockDoor({ status_summary: summary({ cost: null, plan: { ...PLAN, status: 'allowed_warning', warning: "Claude's usage limit is close" } }) })
+    render(<Analytics />)
+    expect(await screen.findByText(/Claude's usage limit is close\. 42% of this 5-hour window used/)).toBeInTheDocument()
+    expect(screen.queryByText(/shows here after your first search/)).toBeNull()
+  })
+
+  it('nothing in the window: says so, and still what one run costs', async () => {
+    mockDoor({ status_summary: summary({ cost: { days: 7, usd: 0, per_run: { find: 0.3, prepare: null }, activities: [] }, plan: null }) })
+    render(<Analytics />)
+    expect(await screen.findByText('Nothing in the last 7 days')).toBeInTheDocument()
+    expect(screen.getByText(/One search for new jobs about \$0\.30/)).toBeInTheDocument()
+  })
+
+  it('one of a kind in the singular, a sliver as under a cent', async () => {
+    const one = { days: 7, usd: 0.003, per_run: { find: null, prepare: null }, activities: [
+      { activity: 'other', label: 'Everything else', usd: 0.003, count: 1, of: 'other requests', features: [{ feature: 'ask', label: 'Questions about your jobs', usd: 0.003, calls: 1 }] }] }
+    mockDoor({ status_summary: summary({ cost: one, plan: null }) })
+    render(<Analytics />)
+    expect(await screen.findByText('1 other request')).toBeInTheDocument()
+    expect(screen.getAllByText('<$0.01')).toHaveLength(2)
+  })
+
   it('before any call: one quiet line', async () => {
     mockDoor({ status_summary: summary({ cost: null, plan: null }) })
     render(<Analytics />)

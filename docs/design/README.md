@@ -217,6 +217,14 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 
 ![Review one at a time, dark](screens/review-dark.png)
 
+**Analytics** (no mockup yet): the reading-width column of Settings with its list of parts on the
+right, nothing in it changes anything. Claude usage first: the total of the last 7 days in
+`display-s` with a small muted line under it (at API prices, not a bill), one line for one search
+and one prepared application, then each activity (largest first) as a row, its name left and its
+dollars right in tabular figures, a 4 px `.bar` for its share of the total, what it did in
+`small` muted, and its features as quieter `small` rows when there are several; how full the
+5-hour window is closes the part. Before any call, one muted line. Not on the phone.
+
 **Onboarding** (no mockup yet): the first-launch wizard has no sidebar. One 620 px column,
 centred (there is no sidebar to line up with), under a strip of thin segments (ink for the steps done, the blue for
 the current one, `border` for the rest). Each step has the Young Serif title (no blue dash: the current segment already marks where you are),

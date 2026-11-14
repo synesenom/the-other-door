@@ -844,6 +844,12 @@ def status_summary() -> dict:
         what used the plan this week. It is an estimate as of ``as_of``: the user's own
         Claude chats since then are not in it. Mention it when ``warning`` is set or room is
         short; answer "can I prepare three more?" or "why did I hit my limit?" from it.
+        ``cost`` is null until a call was weighed, then ``{"days", "usd", "activities":
+        [{"activity", "label", "usd", "count", "of", "features": [{"feature", "label", "usd",
+        "calls"}]}], "per_run": {"find", "prepare"}}``: what the last 7 days' calls would cost
+        at Claude's API prices, per activity (largest first) and what it was spent on, and one
+        find and one prepare. An estimate from `claude`'s price table, not a bill (the plan is
+        not charged per call); answer "what did that cost?" from it.
     """
     return status_cmd._status_summary_core(jobs_dir=workspace.JOBS_DIR, profile_dir=workspace.PROFILE_DIR)
 

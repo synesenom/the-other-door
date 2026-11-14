@@ -108,6 +108,10 @@ describe('seedDemo', () => {
     const reviewed = JSON.parse(readFileSync(join(demo, 'jobs', 'last_review.json'), 'utf8')).reviewed_at
     expect(all.filter((p) => p.scraped_at > reviewed).length).toBeGreaterThan(0)
     expect(all.filter((p) => p.scraped_at <= reviewed).length).toBeGreaterThan(0)
+    // Analytics has figures: a week of made-up Claude calls, each weighed, all within the last 7 days.
+    const usage = readFileSync(join(demo, 'jobs', 'usage.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l))
+    expect(new Set(usage.map((l) => l.feature))).toEqual(new Set(['match_scoring', 'title_translation', 'tailoring', 'revise', 'salary']))
+    expect(usage.every((l) => l.weight > 0 && now.getTime() - Date.parse(l.at) < 7 * 86_400_000)).toBe(true)
   })
 
   it('keeps your changes on the next start, and fresh builds it again', () => {
