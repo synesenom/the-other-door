@@ -158,7 +158,7 @@ plan's usage quota rather than per-token API billing. Matching in particular is
 deliberately many small Haiku requests (one per few postings) rather than one large request reading a whole batch, which
 keeps each call cheap and its result independent of whatever else was scored
 in the same run. Scraping itself makes one Haiku call per 50 Danish titles, only when `languages`
-includes Danish (usually one or two per scrape), to translate them (`translate_titles: false` turns them off).
+includes Danish (usually one or two per scrape), to translate them (`translate_titles: false` turns them off). An ad you add yourself (`jobs add`) gets the same: its language detected and a non-English title translated (one Haiku call), and it is kept even when its language is not in `languages`.
 
 ### How much of the plan is left
 

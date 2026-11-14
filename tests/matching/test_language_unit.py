@@ -400,3 +400,34 @@ def test_an_english_ad_from_the_united_kingdom_is_kept_for_an_english_only_profi
     kept, _ = _run([en], {"languages": ["English"], "location": "London, United Kingdom"}, FakeClaude())
 
     assert kept == [en]
+
+
+# --------------------------------------------------------------------------- #
+# tag_posting: an ad the user added on purpose (#73)
+# --------------------------------------------------------------------------- #
+
+def test_tag_posting_unreadable_file_returns_empty(tmp_path):
+    bad = tmp_path / "x.json"
+    bad.write_text("{not json")
+    assert language.tag_posting(bad, {}, run_fn=lambda *a: pytest.fail("no call")) == {}
+
+
+def test_tag_posting_translate_titles_false_makes_no_call(tmp_path):
+    path = _write(tmp_path, "a", "Dataforsker", _DANISH_DESC)
+    data = language.tag_posting(path, {"translate_titles": False}, run_fn=lambda *a: pytest.fail("no call"))
+    assert data["language"] == "da" and "title_en" not in data
+
+
+def test_tag_posting_too_short_to_detect_is_none(tmp_path):
+    path = _write(tmp_path, "a", "Dataforsker", "ok")
+    data = language.tag_posting(path, {}, run_fn=lambda *a: pytest.fail("no call"))
+    assert data["language"] is None
+    assert _read(path)["language"] is None
+
+
+def test_tag_posting_records_usage_under_the_given_feature(tmp_path, monkeypatch):
+    path = _write(tmp_path, "a", "Dataforsker", _DANISH_DESC)
+    seen = []
+    monkeypatch.setattr(language.usage, "record", lambda feature, *a, **k: seen.append(feature))
+    language.tag_posting(path, {}, run_fn=lambda *a: _envelope({"a": "Data scientist"}), feature="import_posting")
+    assert seen == ["import_posting"]

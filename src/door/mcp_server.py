@@ -1594,7 +1594,7 @@ def import_posting(
     company and location off it; a login-walled or JavaScript-only page comes
     back as an error — paste the text then). It becomes an
     ordinary posting (``source="manual"``) under jobs/postings/<today>/manual/,
-    scored right away (Haiku, like `find_jobs`): tell the user its score and
+    its language detected (a non-English title is translated, one Haiku call; an ad outside the profile's ``languages`` is kept) and scored right away (Haiku, like `find_jobs`): tell the user its score and
     reason; `show`, `prepare` and `set_status` work on its ``job_id``.
     Identical to `./door jobs add`.
 

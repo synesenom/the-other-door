@@ -15,7 +15,7 @@ from door.core import progress as progress_mod
 from door.core import workspace
 from door.core.profile_loader import ConfigError
 from door.core.utils import _validate_job_id
-from door.matching import integrity
+from door.matching import integrity, language
 from door.core import utils
 
 _ONE_SOURCE = "give the ad as a file, text or a URL (exactly one of them)"
@@ -234,6 +234,15 @@ def _add_core(
 
     result = {"job_id": job_id, "path": str(target), "replaced": existing is not None}
     _step(f"saved {posting['title']} at {posting['company']}", "ok")
+    # The ad's language (and an English title for another one), as the language pass of
+    # `find` does; kept whatever the profile's `languages`, the user chose this ad.
+    try:
+        config = common._load_config(profile_dir or workspace.PROFILE_DIR)
+    except (FileNotFoundError, ConfigError):
+        config = {}
+    _step("reading the language")
+    tagged = language.tag_posting(target, config, feature="import_posting")
+    _step(f"language: {tagged.get('language') or 'unclear'}", "ok")
     _step("scoring (Haiku)")
     try:
         failed = match_cmd._match_core(jobs_dir=jobs_dir, profile_dir=profile_dir, paths=[target])["failed"]
