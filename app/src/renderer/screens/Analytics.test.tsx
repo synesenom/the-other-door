@@ -95,24 +95,24 @@ describe('Analytics', () => {
     ]
     const APPLIED = { funnel: FUNNEL }
 
-    it('shows one bar row per funnel stage, each after the first with what it is measured against and its share', async () => {
+    it('shows the matches in a line, then one bar row per later stage with what it is measured against and its share', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('funnel-row'))
       expect(rows.map((r) => r.textContent)).toEqual([
-        'Matches40', 'Prepared10 of 4025%', 'Applied4 of 1040%', 'Interview2 of 450%', 'Offer1 of 250%'])
-      expect(within(part).getByText('Each stage against the one before it.')).toBeInTheDocument()
-      expect(within(rows[1]).getByRole('img', { name: 'Prepared: 10 of 40' })).toBeInTheDocument()
+        'Prepared10 of 4025%', 'Applied4 of 1040%', 'Interview2 of 450%', 'Offer1 of 250%'])
+      expect(within(part).getByText('40 matches. Each stage against the one before it.')).toBeInTheDocument()
+      expect(within(rows[0]).getByRole('img', { name: 'Prepared: 10 of 40' })).toBeInTheDocument()
       expect(part).not.toHaveTextContent('Scraped')
     })
 
-    it('sizes each bar against the stage before it, the first one full', async () => {
+    it('sizes each bar against the stage before it, the first against the matches', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       const width = (name: string) => (within(part).getByRole('img', { name }).firstElementChild as HTMLElement).style.width
-      expect(width('Matches: 40')).toBe('100%')
+      expect(within(part).queryByRole('img', { name: /^Matches/ })).toBeNull()
       expect(width('Prepared: 10 of 40')).toBe('25%')
       expect(width('Applied: 4 of 10')).toBe('40%')
       expect(width('Offer: 1 of 2')).toBe('50%')
@@ -174,7 +174,7 @@ describe('Analytics', () => {
       mockDoor({ status_summary: summary({ ...APPLIED, funnel: [...FUNNEL, { stage: 'mystery', count: 1 }], cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
-      expect(within(part).getAllByRole('img')).toHaveLength(5)
+      expect(within(part).getAllByRole('img')).toHaveLength(4)
       expect(within(part).queryByText(/mystery/)).toBeNull()
     })
   })

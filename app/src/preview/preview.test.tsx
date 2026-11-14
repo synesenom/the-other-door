@@ -163,10 +163,10 @@ describe('scenes', () => {
   it('analytics shows the funnel, each stage against the one before, from the matches on, and in the empty state no bars', async () => {
     mount('analytics')
     const part = await screen.findByRole('region', { name: 'Applications' })
-    expect(part).toHaveTextContent('Matches34Prepared9 of 3426%')
+    expect(part).toHaveTextContent('Prepared9 of 3426%')
     expect(screen.getByRole('img', { name: 'Applied: 7 of 9' })).toBeInTheDocument()
     expect(part).toHaveTextContent('Applied7 of 978%')
-    expect(within(part).getByText('Each stage against the one before it.')).toBeInTheDocument()
+    expect(within(part).getByText('34 matches. Each stage against the one before it.')).toBeInTheDocument()
     cleanup()
     mount('analytics', 'empty')
     expect(await screen.findByText('Your funnel shows here once you have matches')).toBeInTheDocument()

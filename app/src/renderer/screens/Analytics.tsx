@@ -24,7 +24,6 @@ function tone(i: number): string {
 }
 
 const FUNNEL_LABELS: Record<string, string> = {
-  matches: 'Matches',
   prepared: 'Prepared',
   applied: 'Applied',
   interview: 'Interview',
@@ -32,28 +31,29 @@ const FUNNEL_LABELS: Record<string, string> = {
 }
 
 /**
- * The funnel's bars once there are matches, from the matches on (what was scraped includes unrelated jobs, #87). Each bar is its stage's share of the stage before it (how many
- * of the prepared were sent, how many of those led to an interview); the first is always full. A line above says
- * so, and every row after the first says it in figures: "7 of 9" and the share as a percentage (#87).
+ * The funnel once there are matches (#87): a line with the number of matches (not what was scraped, which includes
+ * unrelated jobs), then a bar per stage after them, each its share of the stage before it (how many of the matches
+ * were prepared, how many of the prepared were sent), said in figures too: "7 of 9" and the share as a percentage.
  */
 function Applications({ funnel }: { funnel: FunnelStage[] }) {
+  const matches = funnel.find((f) => f.stage === 'matches')?.count ?? 0
+  if (matches === 0) return <p className="small muted">Your funnel shows here once you have matches</p>
   const rows = funnel.filter((f) => f.stage in FUNNEL_LABELS)
-  if ((rows[0]?.count ?? 0) === 0) return <p className="small muted">Your funnel shows here once you have matches</p>
   return (
     <>
-      <p className="small muted">Each stage against the one before it.</p>
+      <p className="small muted">{`${matches} ${matches === 1 ? 'match' : 'matches'}. Each stage against the one before it.`}</p>
       <ul className="funnel-list">
         {rows.map((f, i) => {
           const label = FUNNEL_LABELS[f.stage]
-          const before = i === 0 ? f.count : rows[i - 1].count
+          const before = i === 0 ? matches : rows[i - 1].count
           return (
             <li key={f.stage} className="funnel-row">
               <span className="body">{label}</span>
-              <span className="funnel-bar" role="img" aria-label={i === 0 ? `${label}: ${f.count}` : `${label}: ${f.count} of ${before}`}>
+              <span className="funnel-bar" role="img" aria-label={`${label}: ${f.count} of ${before}`}>
                 <span style={{ width: `${Math.round(share(f.count, before) * 1000) / 10}%` }} />
               </span>
-              <span className="body">{i === 0 ? f.count : `${f.count} of ${before}`}</span>
-              <span className="body muted">{i > 0 && before > 0 ? `${Math.round(share(f.count, before) * 100)}%` : ''}</span>
+              <span className="body">{`${f.count} of ${before}`}</span>
+              <span className="body muted">{before > 0 ? `${Math.round(share(f.count, before) * 100)}%` : ''}</span>
             </li>
           )
         })}

@@ -218,11 +218,11 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 ![Review one at a time, dark](screens/review-dark.png)
 
 **Analytics** (no mockup yet): the reading-width column of Settings with its list of parts on the
-right, nothing in it changes anything. Applications first (#66): one `small` `ink-muted` line "Each stage
-against the one before it.", then the funnel as one row per stage from Matches on (Scraped is left out: it counts unrelated jobs too), its name, an 8 px bar sized by its
-share of the stage before it (the first full; `accent` on a `border` track, at least 2 px) and its count
-right in tabular figures, after the first row as "7 of 9" with that share as a percentage in
-`ink-muted` after it (#87: a bar alone does not say what it is measured against); no other figures. Claude usage next: the total of the last 7 days in
+right, nothing in it changes anything. Applications first (#66): one `small` `ink-muted` line "34 matches.
+Each stage against the one before it." (the matches, not what was scraped, which counts unrelated
+jobs), then one row per stage after the matches (Prepared, Applied, Interview, Offer), its name, an
+8 px bar sized by its share of the stage before it (`accent` on a `border` track, at least 2 px) and
+its count right in tabular figures as "7 of 9", with that share as a percentage in `ink-muted` after it (#87: a bar alone does not say what it is measured against); no other figures. Claude usage next: the total of the last 7 days in
 `display-s` marked "≈", then one `small` line in ink that starts in bold "You don't pay this." (the
 plan covers it; an estimate at API prices: no one may read it as a price), then about what one
 search and one application cost in `small` muted, then one 8 px stacked bar for the whole total
