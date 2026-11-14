@@ -112,6 +112,8 @@ _URLS = [
     ('https://career2.successfactors.eu/career?company=x', None),
     ('https://www.jobindex.dk/jobannonce/h1673146/', None),
     ('https://acme.dk/careers', None),
+    ('https://www.linkedin.com/jobs/view/1', None),
+    ('', None),
     ('not a url', None),
 ]
 

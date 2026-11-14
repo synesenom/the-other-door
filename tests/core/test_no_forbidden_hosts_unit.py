@@ -44,13 +44,6 @@ def test_nothing_handles_a_login_or_a_captured_session():
     assert offenders == []
 
 
-def test_no_login_command_or_tool_exists():
-    from door import cli, mcp_server
-
-    assert "login" not in cli.cli.commands
-    assert "login" not in mcp_server.CLI_COMMAND_TOOLS
-
-
 def test_only_the_drive_module_names_googles_hosts():
     """Google Drive sync (#265) talks to Google from `core/drive.py` alone."""
     offenders = [

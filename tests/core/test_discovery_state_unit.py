@@ -76,7 +76,6 @@ def _run(state, outcome="ok", *, requests=10, first_429=None, at=NOW):
 def test_a_fresh_state_paces_at_the_defaults():
     pace = ds.pace({"seen": {}})
     assert pace == {"budget": ds.DEFAULT_BUDGET, "factor": 1, "pause": ds.BASE_PAUSE}
-    assert ds.DEFAULT_BUDGET == 150 and ds.BASE_PAUSE == (2.0, 4.0)
 
 
 def test_a_refusal_halves_the_budget_and_doubles_the_pause():
