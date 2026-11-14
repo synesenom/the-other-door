@@ -18,8 +18,9 @@ from door.core import photo as photo_mod
 from door.core import progress as progress_mod
 from door.commands import check_facts as check_facts_cmd
 from door.core.lock import LockHeldError, ledger_lock
+from door.core.profile_loader import ConfigError
 from door.core import utils
-from door.matching import integrity
+from door.matching import integrity, language
 from door.tailoring import facts as facts_mod
 from door.tailoring import readability
 
@@ -407,7 +408,11 @@ def _prepare_core(
         stored = json.loads(posting_path.read_text(encoding="utf-8"))
         if integrity.ensure(stored):
             utils.write_json_atomic(posting_path, stored)
-    except (OSError, ValueError):
+        if "language" not in stored:  # an ad stored before imports were tagged: the tailor needs its language
+            language.tag_posting(
+                posting_path, common._load_config_or_defaults(home), feature="import_posting"
+            )
+    except (OSError, ValueError, ConfigError):
         pass
 
     output_dir = jobs_dir / "output" / job_id

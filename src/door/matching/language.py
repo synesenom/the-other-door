@@ -134,6 +134,67 @@ def _accepted_codes(config: dict) -> set[str]:
     return {c for c in codes if c} or {"en"}
 
 
+def _translate_titles(
+    pending: list[tuple[Path, dict]],
+    config: dict,
+    run: Callable[[list[str], str], str | None],
+    feature: str = "title_translation",
+) -> tuple[int, int]:
+    """Write ``title_en`` into each pending ``(path, data)`` posting (unless
+    ``translate_titles`` is false); ``(translated, failed_batches)``."""
+    translated = 0
+    failed_batches = 0
+    if pending and config.get("translate_titles", True):
+        argv = build_argv(config.get("translate_model") or DEFAULT_MODEL)
+        for start in range(0, len(pending), BATCH_SIZE):
+            batch = pending[start : start + BATCH_SIZE]
+            items = [
+                {"id": data.get("id") or path.stem, "title": data.get("title", ""), "language": data["language"]}
+                for path, data in batch
+            ]
+            stdout = run(argv, json.dumps(items, ensure_ascii=False))
+            envelope, limits = claude_cli.read_stream(stdout)
+            stdout = envelope or stdout
+            try:
+                titles = parse_output(stdout) if stdout is not None else None
+            except ValueError:
+                titles = None
+            usage.record(feature, stdout, limits=limits)
+            if titles is None:
+                failed_batches += 1
+                continue
+            for (path, data), item in zip(batch, items):
+                title_en = titles.get(item["id"])
+                if title_en:
+                    data["title_en"] = title_en
+                    _save(path, data)
+                    translated += 1
+    return translated, failed_batches
+
+
+def tag_posting(
+    path: Path,
+    config: dict,
+    *,
+    run_fn: Callable[[list[str], str], str | None] | None = None,
+    feature: str = "title_translation",
+) -> dict:
+    """Tag one stored posting with its ``language`` and, when that is not English,
+    its ``title_en`` (an ad the user added on purpose). Unlike `filter_languages`
+    it never drops or zeroes the posting, whatever the profile's ``languages``.
+    ``feature`` is the usage key the translation call is recorded under.
+    Returns the posting as saved."""
+    data = _load(Path(path))
+    if data is None:
+        return {}
+    if "language" not in data:
+        data["language"] = i18n.detect_language(data.get("description") or "")
+        _save(Path(path), data)
+    if data["language"] not in (None, "en") and not data.get("title_en"):
+        _translate_titles([(Path(path), data)], config, run_fn or _run_claude, feature)
+    return data
+
+
 def filter_languages(
     paths: list[Path],
     config: dict,
@@ -182,33 +243,7 @@ def filter_languages(
         if code not in (None, "en") and not data.get("title_en"):
             pending.append((Path(path), data))
 
-    translated = 0
-    failed_batches = 0
-    if pending and config.get("translate_titles", True):
-        argv = build_argv(config.get("translate_model") or DEFAULT_MODEL)
-        for start in range(0, len(pending), BATCH_SIZE):
-            batch = pending[start : start + BATCH_SIZE]
-            items = [
-                {"id": data.get("id") or path.stem, "title": data.get("title", ""), "language": data["language"]}
-                for path, data in batch
-            ]
-            stdout = run(argv, json.dumps(items, ensure_ascii=False))
-            envelope, limits = claude_cli.read_stream(stdout)
-            stdout = envelope or stdout
-            try:
-                titles = parse_output(stdout) if stdout is not None else None
-            except ValueError:
-                titles = None
-            usage.record("title_translation", stdout, limits=limits)
-            if titles is None:
-                failed_batches += 1
-                continue
-            for (path, data), item in zip(batch, items):
-                title_en = titles.get(item["id"])
-                if title_en:
-                    data["title_en"] = title_en
-                    _save(path, data)
-                    translated += 1
+    translated, failed_batches = _translate_titles(pending, config, run)
 
     stats = {"languages": counts, "dropped": dropped, "translated": translated, "failed_batches": failed_batches}
     return kept, stats
