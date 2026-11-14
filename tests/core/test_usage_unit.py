@@ -487,6 +487,11 @@ def test_models_drops_a_model_with_no_tokens_and_bad_values():
     assert out == {"b": {"cw": 9}}
 
 
+def test_models_skip_a_count_that_is_not_finite():
+    out = usage._models(_with_usage({"c": {"inputTokens": float("inf"), "outputTokens": 3, "cacheReadInputTokens": float("nan")}}))
+    assert out == {"c": {"o": 3}}
+
+
 @pytest.mark.parametrize("stdout", [None, "", "not json", "[]", "{}", '{"modelUsage": []}',
                                     '{"modelUsage": {"a": 5}}'])
 def test_models_is_empty_for_anything_else(stdout):

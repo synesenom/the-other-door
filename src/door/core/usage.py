@@ -23,6 +23,7 @@ outside the ledger lock (an `ask` holds none), and left out of `data export` and
 """
 
 import json
+import math
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -140,7 +141,7 @@ _TOKEN_KEYS = {"inputTokens": "i", "outputTokens": "o", "cacheReadInputTokens": 
 
 def _models(stdout: str | None) -> dict:
     """`{model: {"i", "o", "cr", "cw"}}` from a result envelope's `modelUsage`: only the counts
-    present and non-negative, a model with none left out; `{}` for anything unreadable. Never raises."""
+    present, finite and non-negative, a model with none left out; `{}` for anything unreadable. Never raises."""
     try:
         env = json.loads(stdout or "")
     except (json.JSONDecodeError, TypeError):
@@ -153,7 +154,7 @@ def _models(stdout: str | None) -> dict:
         if not isinstance(figures, dict):
             continue
         tokens = {short: int(figures[key]) for key, short in _TOKEN_KEYS.items()
-                  if _number(figures.get(key)) and figures[key] >= 0}
+                  if _number(figures.get(key)) and math.isfinite(figures[key]) and figures[key] >= 0}
         if tokens:
             models[str(model)] = tokens
     return models

@@ -59,6 +59,7 @@ def test_scoring_records_one_line_per_chunk_with_its_postings_as_units():
     scorer.score_postings(postings, system_prompt="s", chunk=3, workers=1, run_fn=run, sleep_fn=lambda s: None)
     [line] = usage.read()
     assert (line["feature"], line["units"]) == ("match_scoring", 3)
+    assert line["m"] == {"claude-haiku": {"i": 50, "o": 100}}
 
 
 def test_title_translation_records_each_batch(tmp_path):
@@ -68,9 +69,22 @@ def test_title_translation_records_each_batch(tmp_path):
     language.filter_languages([path], {"languages": ["English", "Danish"]}, run_fn=lambda argv, stdin: _envelope(answer))
     [line] = usage.read()
     assert line["feature"] == "title_translation"
+    assert line["m"] == {"claude-haiku": {"i": 50, "o": 100}}
 
 
 def test_the_tailor_run_asks_for_the_envelope(tmp_path):
     from door.commands import prepare
     argv = prepare._tailor_args("s.1", tmp_path / "posting.json")
     assert argv[argv.index("--output-format") + 1] == "stream-json"
+
+
+def test_the_scraper_fixer_records_its_models(monkeypatch, tmp_path):
+    import subprocess
+
+    from door.core import installers, scraper_fix
+    monkeypatch.setattr(installers, "find_claude", lambda *a, **k: "/x/claude")
+    monkeypatch.setattr(scraper_fix.subprocess, "run",
+                        lambda argv, **kw: subprocess.CompletedProcess(argv, 0, stdout=_envelope("fixed"), stderr=""))
+    scraper_fix._run_scraper_fixer("jobindex", tmp_path / "raw.json", repo_root=tmp_path)
+    [line] = usage.read()
+    assert (line["feature"], line["m"]) == ("scraper_fix", {"claude-haiku": {"i": 50, "o": 100}})

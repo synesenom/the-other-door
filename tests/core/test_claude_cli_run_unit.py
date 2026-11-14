@@ -106,6 +106,7 @@ def test_run_records_the_calls_usage_under_its_feature(monkeypatch):
     claude_cli.run(["--model", "haiku"], feature="revise")
     [line] = usage.read()
     assert (line["feature"], line["weight"]) == ("revise", 0.002)
+    assert line["m"] == {"m": {"i": 10, "o": 40}}
 
 
 def test_run_records_a_failed_call_that_reported_usage(monkeypatch):
