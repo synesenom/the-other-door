@@ -181,7 +181,11 @@ company hosts).
    contract on its postings), `page2` and `details` (one more page, two detail pages; a `NO_PAGE2` or `NO_DETAILS`
    constant says why the site has none), `zero_hits` for a board (with a saved real zero-hit page in
    `tests/live_matrix.py`) and `detection` for a feed platform (a real employer's careers page in
-   `tests/live_employers.py`). `tests/scrapers/test_live_modes_unit.py` fails until each mode that applies has its test. A fixture keeps a real response's structure but not its content: trim
+   `tests/live_employers.py`). `tests/scrapers/test_live_modes_unit.py` fails until each mode that applies has its test.
+   How a site fails (a connection error recorded, not raised; `probe` saying `unreachable` or `wall`) is one shared
+   contract, `tests/scrapers/test_scraper_failure_contract.py`, not a per-site test: a feed platform adds its entry to
+   that file's `_ENTRY` and its rows to `_CASES` and `_UNREACHABLE` in `tests/scrapers/feeds/test_feed_names_contract.py`;
+   a page-reading discovery source adds its row to `_SOURCES` in `tests/scrapers/discovery/test_page_sources_scrape.py`. A fixture keeps a real response's structure but not its content: trim
    it to what the parser reads, rewrite the remaining text (descriptions, blurbs, contact lines) as new text in the
    same language, keep titles, companies, dates, ids, URLs and anything a test asserts on, and make every person up
    (`kontakt@example.com`, `00 00 00 00`); `tests/core/test_fixture_privacy_unit.py` fails on a real address, number

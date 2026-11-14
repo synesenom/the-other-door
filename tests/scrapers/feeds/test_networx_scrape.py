@@ -4,7 +4,6 @@ one (1491), real logged-out answers, trimmed and their text rewritten. The site 
 from urllib.parse import parse_qs
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -84,15 +83,6 @@ def test_known_ids_skip_the_advert_requests():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    _mock_all()
-
-    postings = networx.scrape({**_CFG, "_names": {"networx_companies": {"3509": "HSDC"}}})
-
-    assert {p["company"] for p in postings} == {"HSDC"}
-
-
-@responses.activate
 def test_a_link_as_the_entry_is_read_from_its_client():
     _mock_all()
 
@@ -118,16 +108,6 @@ def test_a_client_without_adverts_is_quiet_and_its_sponsored_neighbours_are_not_
     assert networx.scrape({"networx_companies": ["1491"]}) == []
     assert drain_errors() == {}
     assert len(responses.calls) == 1
-
-
-@responses.activate
-def test_a_failing_search_is_a_recorded_error_and_the_other_client_is_kept():
-    responses.add(responses.GET, f"{_BASE}/Website/Search?SelectedEmployers=99", status=500)
-    _mock_all()
-
-    drain_errors()
-    assert len(networx.scrape({"networx_companies": ["99", "3509"]})) == 5
-    assert "99" in drain_errors()["networx"][0]
 
 
 @responses.activate
@@ -258,15 +238,6 @@ def test_probe_of_a_page_without_its_results_block_has_no_structure():
     result = networx.probe(_CFG)
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    responses.add(responses.GET, _SEARCH, body=requests.ConnectionError("down"))
-
-    result = networx.probe(_CFG)
-
-    assert result.get("unreachable") and result["structure_ok"] is False
 
 
 @responses.activate

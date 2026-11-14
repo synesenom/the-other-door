@@ -247,13 +247,21 @@ describe('Finding, the summary card', () => {
     expect(h.onViewMatches).toHaveBeenCalledTimes(1)
   })
 
-  it('says one new match, or none, in words', () => {
+  it.each([
+    [['a.1'], '1 new match'],
+    [[], 'No new matches'],
+  ])('says %j new in words: %s', (ids, words) => {
     mockDoor({})
-    show({ kind: 'summary', record: record({ new_above_threshold: ['a.1'], top: [] }) }, { active: false })
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('1 new match')
-    cleanup()
-    show({ kind: 'summary', record: record({ new_above_threshold: [], top: [] }) }, { active: false })
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('No new matches')
+    show({ kind: 'summary', record: record({ new_above_threshold: ids, top: [] }) }, { active: false })
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(words)
+  })
+
+  // Issue 478: the user cannot act on them, and the next run reads the board and scores the ads again.
+  it('says nothing of a site it could not read or ads it could not score', () => {
+    mockDoor({})
+    show({ kind: 'summary', record: record() }, { active: false })
+    expect(screen.queryByText(/teamtailor|could not be read|not (be )?scored/i)).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('shows how long it took, opens the run record', async () => {

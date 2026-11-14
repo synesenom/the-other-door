@@ -245,15 +245,6 @@ def test_probe_reads_the_first_account_when_there_are_no_keywords(_robots_allows
     assert result["structure_ok"] is True and len(result["postings"]) == 2
 
 
-def test_the_followed_name_wins_for_an_account(_robots_allows_api):
-    _robots_allows_api.add(responses_lib.GET, _WIDGET, body=_widget())
-
-    postings = workable.scrape({"workable_companies": ["https://apply.workable.com/Dreamdata/"],
-                                "_names": {"workable_companies": {"apply.workable.com/dreamdata": "Dreamdata ApS"}}})
-
-    assert len(postings) == 2 and {p["company"] for p in postings} == {"Dreamdata ApS"}
-
-
 def test_the_keyword_search_keeps_the_job_s_own_company_even_with_followed_names(_robots_allows_api):
     _robots_allows_api.add(responses_lib.GET, workable._SEARCH_URL, body=_fx("search_page1.json"))
 

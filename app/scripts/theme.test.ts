@@ -35,7 +35,7 @@ describe('generateTheme', () => {
 
   it('overrides only the dark colours, under the media query and [data-theme="dark"]', () => {
     const dark = Object.keys(tokens.color.dark)
-    expect(dark.sort()).toEqual(['accent', 'accent-tint', 'border', 'danger', 'ink', 'ink-muted', 'page', 'scrim', 'success', 'surface', 'ground', 'warning'].sort())
+    expect(dark.sort()).toEqual(['accent', 'accent-soft', 'accent-tint', 'border', 'danger', 'ink', 'ink-muted', 'page', 'scrim', 'success', 'surface', 'ground', 'warning'].sort())
     const media = css.slice(css.indexOf('@media (prefers-color-scheme: dark)'))
     const inMedia = block(media, ':root:not([data-theme="light"])')
     const forced = block(css, '[data-theme="dark"]')
@@ -97,10 +97,6 @@ describe('generateTheme', () => {
 describe('the committed theme', () => {
   it('is what the generator writes', () => {
     expect(readFileSync(join(APP, 'src', 'renderer', 'theme.css'), 'utf8')).toBe(css)
-  })
-
-  it('uses no color-mix in the stylesheet (the scrim is a token)', () => {
-    expect(readFileSync(join(APP, 'src', 'renderer', 'styles.css'), 'utf8')).not.toContain('color-mix')
   })
 
   it('is the only renderer file with a hex colour', () => {

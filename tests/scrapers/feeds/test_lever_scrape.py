@@ -189,23 +189,6 @@ def test_probe_finds_an_eu_company_too():
 
 
 @responses_lib.activate
-def test_the_followed_name_wins():
-    responses_lib.add(responses_lib.GET, _POSTINGS_URL, body=_fx("postings.json"), content_type="application/json")
-
-    postings = lever.scrape({"lever_companies": ["Acme"], "_names": {"lever_companies": {"acme": "Acme A/S"}}})
-
-    assert postings and {p["company"] for p in postings} == {"Acme A/S"}
-    assert all(p["id"].startswith("lever.") for p in postings)
-
-
-@responses_lib.activate
-def test_without_a_name_map_the_slug_is_the_fallback():
-    responses_lib.add(responses_lib.GET, _POSTINGS_URL, body=_fx("postings.json"), content_type="application/json")
-
-    assert {p["company"] for p in lever.scrape({"lever_companies": ["acme"]})} == {"acme"}
-
-
-@responses_lib.activate
 def test_scrape_drops_postings_in_another_country_and_counts_them():
     import json
     from door.scrapers import drain_non_local

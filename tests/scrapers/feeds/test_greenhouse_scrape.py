@@ -152,28 +152,6 @@ def test_probe_drift_when_structure_is_broken():
 
 
 
-@responses_lib.activate
-def test_the_followed_name_wins():
-    responses_lib.add(responses_lib.GET, _JOBS_URL, body=_fx("jobs_page.json"), content_type="application/json")
-    entry = "https://boards.greenhouse.io/acme"
-    config = {"greenhouse_boards": [entry],
-              "_names": {"greenhouse_boards": {"boards.greenhouse.io/acme": "Acme A/S"}}}
-
-    postings = greenhouse.scrape(config)
-
-    assert postings and {p["company"] for p in postings} == {"Acme A/S"}
-    assert all(p["id"].startswith("greenhouse.") for p in postings)
-
-
-@responses_lib.activate
-def test_without_a_name_map_the_feed_name_is_the_fallback():
-    responses_lib.add(responses_lib.GET, _JOBS_URL, body=_fx("jobs_page.json"), content_type="application/json")
-
-    postings = greenhouse.scrape({"greenhouse_boards": ["https://boards.greenhouse.io/acme"]})
-
-    assert {p["company"] for p in postings} == {"Greenhouse"}
-
-
 _HU = {"location": "Budapest, Hungary"}
 
 

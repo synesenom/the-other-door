@@ -243,16 +243,15 @@ def test_scrape_feeds_dedups_by_the_given_key():
     assert len(postings) == 2
 
 
-def test_scrape_feeds_hands_every_entry_one_session_and_one_scrape_time():
-    calls = []
+def test_scrape_feeds_stamps_every_entry_with_one_scrape_time():
+    times = []
 
     def fetch(session, entry, scraped_at):
-        calls.append((session, scraped_at))
+        times.append(scraped_at)
         return []
 
-    scrape_feeds("acmeats", ["a", "b"], fetch, headers={"Accept": "application/json"})
-    assert calls[0] == calls[1]
-    assert calls[0][1].tzinfo is not None
+    scrape_feeds("acmeats", ["a", "b"], fetch)
+    assert times[0] == times[1] and times[0].tzinfo is not None
 
 
 def test_scrape_feeds_skips_a_posting_without_a_key():

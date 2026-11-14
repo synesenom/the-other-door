@@ -165,26 +165,6 @@ test.describe('stepping through the matches', () => {
     await expect(row(page, world, 'egeskov-kommune-prognoser')).toHaveAttribute('aria-current', 'true')
   })
 
-  test('j pressed on a dialog’s button leaves the posting behind it alone', async ({ page, world }) => {
-    await matchesLoaded(page)
-    await openRow(page, world, 'nordisk-elnet-prognose')
-    await page.getByRole('button', { name: 'Status', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: `Status: ${shownTitle(world, 'nordisk-elnet-prognose')}` })
-    await dialog.getByRole('button', { name: 'Cancel' }).focus()
-    await page.keyboard.press('j')
-    await expect(dialog).toBeVisible()
-    await expect(postingHeading(page, world, 'nordisk-elnet-prognose')).toBeVisible()
-  })
-
-  test('Esc on the score’s hint closes the hint and stays on the posting', async ({ page, world }) => {
-    await matchesLoaded(page)
-    await openRow(page, world, 'nordisk-elnet-prognose')
-    await page.getByRole('button', { name: 'Why this score' }).focus()
-    await expect(page.getByRole('tooltip')).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect(page.getByRole('tooltip')).toHaveCount(0)
-    await expect(postingHeading(page, world, 'nordisk-elnet-prognose')).toBeVisible()
-  })
 })
 
 test.describe('the shell', () => {

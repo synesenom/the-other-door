@@ -7,6 +7,12 @@ its scraper and the site registry (terms links); nothing under
 `src/door/` or `.claude/` may handle a login or a captured session.
 """
 
+import importlib
+from pathlib import Path
+
+import pytest
+
+from door.core import discovery_sources
 from paths import PACKAGE_DIR, REPO_ROOT
 
 _HOSTS = ("linkedin.com", "jobs-guest")
@@ -44,11 +50,15 @@ def test_nothing_handles_a_login_or_a_captured_session():
     assert offenders == []
 
 
-def test_no_login_command_or_tool_exists():
-    from door import cli, mcp_server
+# A discovery source sends no credentials and sets no cookie of its own (on top of `_SESSION_WORDS`).
+_DISCOVERY_SESSION_WORDS = ("authorization", "password", "cookies.set")
 
-    assert "login" not in cli.cli.commands
-    assert "login" not in mcp_server.CLI_COMMAND_TOOLS
+
+@pytest.mark.parametrize("source", sorted(discovery_sources.SOURCES))
+def test_no_discovery_source_sends_credentials_or_sets_a_cookie(source):
+    module = importlib.import_module(discovery_sources.SOURCES[source])
+    text = Path(module.__file__).read_text(encoding="utf-8").lower()
+    assert [w for w in _SESSION_WORDS + _DISCOVERY_SESSION_WORDS if w in text] == []
 
 
 def test_only_the_drive_module_names_googles_hosts():

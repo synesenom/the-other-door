@@ -2,7 +2,6 @@
 
 from datetime import datetime, timezone
 
-import pytest
 
 from door.core.models import JobPosting
 from door.scrapers.feeds import workable

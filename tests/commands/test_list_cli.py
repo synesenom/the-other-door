@@ -6,6 +6,7 @@ Split out of the former tests/test_door_cli.py (issue #15 onward); the shared
 
 import json
 
+import pytest
 from click.testing import CliRunner
 
 from door.cli import cli
@@ -154,10 +155,15 @@ def test_list_before_any_review_marks_nothing(cli_env):
     assert "✦" not in result_text(CliRunner().invoke(cli, ["jobs"]))
 
 
-def test_list_into_a_pipe_has_no_colour_codes(cli_env):
+@pytest.mark.parametrize("args", [["jobs"], ["jobs", "show", "job-abc"], ["jobs", "summary"]])
+@pytest.mark.parametrize("tty", [False, True])
+def test_output_is_coloured_on_a_terminal_and_plain_into_a_pipe(cli_env, monkeypatch, args, tty):
+    from door.commands import _common as common
+
+    monkeypatch.setattr(common, "_stdout_is_tty", lambda: tty)
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
 
-    assert "\x1b[" not in CliRunner().invoke(cli, ["jobs"]).output
+    assert ("\x1b[" in CliRunner().invoke(cli, args).output) is tty
 
 
 def test_list_rows_do_not_show_the_job_id(cli_env):

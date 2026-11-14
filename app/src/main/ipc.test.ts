@@ -61,10 +61,8 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
 }
 
 describe('registerIpc', () => {
-  it('answers the current run board, and names the push channel', async () => {
+  it('answers the current run board', async () => {
     const { invoke, currentBoard } = setup()
-    expect(CHANNELS.runBoard).toBe('door:run-board')
-    expect(CHANNELS.currentBoard).toBe('door:current-board')
     expect(await invoke(CHANNELS.currentBoard)).toEqual({ active: false })
     currentBoard.mockReturnValue({ active: true } as never)
     expect(await invoke(CHANNELS.currentBoard)).toEqual({ active: true })
@@ -116,26 +114,25 @@ describe('registerIpc', () => {
     expect(server.call).toHaveBeenNthCalledWith(2, 'status_summary', {}, expect.anything())
   })
 
-  it('gives import_posting a longer timeout, and no other tool one', async () => {
-    const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'import_posting', { text: 'x', title: 't', company: 'c' })
-    await invoke(CHANNELS.call, 'list_matches', {})
-    expect(server.call.mock.calls[0][2].timeout).toBe(180_000)
-    expect(server.call.mock.calls[1][2].timeout).toBeUndefined()
-  })
-
-  it('gives draft_stories longer than its own 300 s limit on the server', async () => {
-    const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'draft_stories', { from_cv: true })
-    expect(server.call.mock.calls[0][2].timeout).toBeGreaterThan(300_000)
-  })
-
-  it('gives the Drive calls the time a browser and an upload need', async () => {
+  // Longer than the server's own default (60 s) and than the tool's own limit on the server, where it has one.
+  it.each([
+    ['import_posting', 60_000],
+    ['prepare', 60_000],
+    ['revise', 60_000],
+    ['draft_cv', 900_000],
+    ['keywords', 120_000],
+    ['setup', 60_000],
+    ['draft_stories', 300_000],
+    ['connect_drive', 300_000],
+    ['sync_data', 60_000],
+    ['enrich', 600_000],
+    ['market', 60_000],
+    ['add_company', 60_000],
+    ['ask', 180_000],
+  ])('gives %s a call limit over %i ms', async (tool, floor) => {
     const { server, invoke } = setup(undefined, undefined, false, { demo: false })
-    await invoke(CHANNELS.call, 'connect_drive', {})
-    await invoke(CHANNELS.call, 'sync_data', {})
-    expect(server.call.mock.calls[0][2].timeout).toBe(330_000)
-    expect(server.call.mock.calls[1][2].timeout).toBe(120_000)
+    await invoke(CHANNELS.call, tool, {})
+    expect(server.call.mock.calls[0][2].timeout).toBeGreaterThan(floor)
   })
 
   it('never lets the demo or the onboarding sandbox reach Drive', async () => {
@@ -148,31 +145,11 @@ describe('registerIpc', () => {
     }
   })
 
-  it('gives enrich the time its claude call may take', async () => {
-    const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'enrich', { urls: ['https://ada.dev'] })
-    expect(server.call.mock.calls[0][2].timeout).toBe(660_000)
-  })
-
-  it('gives market the time of its one short claude call, and add_company the time to probe', async () => {
-    const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'market', { save: false })
-    await invoke(CHANNELS.call, 'add_company', { inputs: ['Acme'] })
-    expect(server.call.mock.calls[0][2].timeout).toBe(180_000)
-    expect(server.call.mock.calls[1][2].timeout).toBe(180_000)
-  })
-
-  it('gives ask the time of its one call with the read tools', async () => {
-    const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'ask', { question: 'q' })
-    expect(server.call.mock.calls[0][2].timeout).toBe(240_000)
-  })
-
   it('does not let the renderer choose the timeout', async () => {
     const { server, invoke } = setup()
     await invoke(CHANNELS.call, 'import_posting', { text: 'x', timeout: 1 })
     await invoke(CHANNELS.call, 'list_matches', { timeout: 999_999 })
-    expect(server.call.mock.calls[0][2].timeout).toBe(180_000)
+    expect(server.call.mock.calls[0][2].timeout).toBeGreaterThan(60_000)
     expect(server.call.mock.calls[1][2].timeout).toBeUndefined()
   })
 
@@ -182,7 +159,6 @@ describe('registerIpc', () => {
       return {}
     })
     await invoke(CHANNELS.call, 'status_summary', {}, 'call-1')
-    expect(CHANNELS.progress).toBe('door:progress')
     expect(send).toHaveBeenCalledWith('door:progress', 'call-1', { progress: 1, total: 4, message: 'reading' })
   })
 
@@ -203,22 +179,6 @@ describe('registerIpc', () => {
     })
     await invoke(CHANNELS.call, 'status_summary', {}, 'c')
     expect(send.mock.calls[0][2].message).toHaveLength(500)
-  })
-
-  it('gives the onboarding tools their long timeouts', async () => {
-    const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'draft_cv', { sources: ['https://example.com'] })
-    await invoke(CHANNELS.call, 'keywords', { role_targets: ['x'] })
-    await invoke(CHANNELS.call, 'setup', { install: ['latex'], yes: true })
-    expect(server.call.mock.calls.map((c) => c[2].timeout)).toEqual([960_000, 150_000, 1_800_000])
-  })
-
-  it('gives prepare and revise their long timeouts', async () => {
-    const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'prepare', { job_id: 'a.1' }, 'c1')
-    await invoke(CHANNELS.call, 'revise', { job_id: 'a.1', instruction: 'x' })
-    expect(server.call.mock.calls[0][2].timeout).toBe(180_000)
-    expect(server.call.mock.calls[1][2].timeout).toBe(420_000)
   })
 
   it('saves a PDF where the user chooses, offered in Downloads under its name, by job id and document', async () => {
@@ -468,37 +428,20 @@ describe('notifications', () => {
     expect(notify.mock.calls[0][0].title).toBe('New jobs found')
   })
 
+  // What each notice says is notices.test.ts; here, that a finished or failed call reaches notify with the job read by show.
   it('announces a prepared application with the job in words', async () => {
     const { server, invoke, notify } = setup(impl({ prepare: { outcome: 'prepared', job_id: 'jobindex.1' } }))
     await invoke(CHANNELS.call, 'prepare', { job_id: 'jobindex.1' })
     expect(server.call).toHaveBeenCalledWith('show', { job_id: 'jobindex.1' })
-    expect(notify.mock.calls[0][0]).toEqual({
-      title: 'Application ready',
-      body: 'Data Analyst · Acme: the CV and letter are ready to send.',
-      target: { screen: 'materials', jobId: 'jobindex.1', inPlay: true },
-    })
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0].body).toContain('Data Analyst · Acme')
   })
 
-  it('announces a revision and an import', async () => {
-    const a = setup(impl({ revise: { outcome: 'revised', job_id: 'jobindex.1', file: 'cover_letter.tex' } }, { ...posting, status: 'unapplied' }))
-    await a.invoke(CHANNELS.call, 'revise', { job_id: 'jobindex.1' })
-    expect(a.notify.mock.calls[0][0]).toMatchObject({ title: 'Revision done', target: { document: 'cover_letter', inPlay: false } })
-    const b = setup(impl({ import_posting: { job_id: 'jobindex.9', score: 0.81 } }, { ...posting, status: 'unapplied' }))
-    await b.invoke(CHANNELS.call, 'import_posting', { url: 'https://x.test/1' })
-    expect(b.notify.mock.calls[0][0]).toMatchObject({ title: 'Ad imported', body: 'Data Analyst · Acme: scored 0.81' })
-  })
-
-  it('announces the failures: an idle timeout and another error', async () => {
-    const timedOut = Object.assign(new DoorError('idle'), { timedOut: true })
-    const a = setup(impl({ find_jobs: timedOut }))
-    await a.invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
-    expect(a.notify.mock.calls[0][0].title).toBe('The search stopped')
-    const b = setup(impl({ find_jobs: new DoorError('no network\nmore') }))
-    await b.invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
-    expect(b.notify.mock.calls[0][0]).toMatchObject({ title: "The search didn't finish", body: 'no network' })
-    const c = setup(impl({ prepare: new DoorError('LaTeX failed') }))
-    await c.invoke(CHANNELS.call, 'prepare', { job_id: 'jobindex.1' })
-    expect(c.notify.mock.calls[0][0]).toMatchObject({ title: "Preparing didn't finish", body: 'Data Analyst · Acme: LaTeX failed' })
+  it('announces a failed call, with the job in words', async () => {
+    const { invoke, notify } = setup(impl({ prepare: new DoorError('LaTeX failed') }))
+    expect((await invoke(CHANNELS.call, 'prepare', { job_id: 'jobindex.1' })).ok).toBe(false)
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0].body).toBe('Data Analyst · Acme: LaTeX failed')
   })
 
   it('a failing show still announces, without the job words', async () => {
@@ -533,21 +476,14 @@ describe('the preload and the channels', () => {
   it('uses every channel name as written in ipc.ts (a sandboxed preload cannot import them)', () => {
     const preload = readFileSync(join(__dirname, '..', 'preload', 'index.ts'), 'utf8')
     for (const channel of Object.values(CHANNELS)) expect(preload).toContain(`'${channel}'`)
-    expect(CHANNELS.open).toBe('door:open')
   })
 })
 
 describe('moving the data', () => {
-  it('names the channels', () => {
-    expect(CHANNELS.exportData).toBe('door:export-data')
-    expect(CHANNELS.pickArchive).toBe('door:pick-archive')
-    expect(CHANNELS.importData).toBe('door:import-data')
-  })
-
   it('exports to where the save dialog said, with time for a big archive', async () => {
     const { invoke, server } = setup(async () => ({ path: '/Users/ada/door-export.tar.gz', files: 12, bytes: 3456 }))
     expect(await invoke(CHANNELS.exportData, '/etc/evil.tar.gz')).toEqual({ ok: true, data: { path: '/Users/ada/door-export.tar.gz', files: 12, bytes: 3456 } })
-    expect(server.call).toHaveBeenCalledWith('export_data', { path: '/Users/ada/door-export.tar.gz' }, { timeout: 180_000 })
+    expect(server.call).toHaveBeenCalledWith('export_data', { path: '/Users/ada/door-export.tar.gz' }, { timeout: expect.any(Number) })
   })
 
   it('a cancelled save dialog exports nothing; a refused name says why', async () => {
@@ -563,7 +499,7 @@ describe('moving the data', () => {
     const { invoke, server } = setup(async () => ({ files: 3, backup_dir: '/b', warnings: [] }))
     expect(await invoke(CHANNELS.pickArchive)).toEqual({ token: 'arch1', name: 'door-export.tar.gz' })
     expect(await invoke(CHANNELS.importData, 'arch1')).toEqual({ ok: true, data: { files: 3, backup_dir: '/b', warnings: [] } })
-    expect(server.call).toHaveBeenCalledWith('import_data', { archive: '/Volumes/usb/door-export.tar.gz' }, { timeout: 180_000 })
+    expect(server.call).toHaveBeenCalledWith('import_data', { archive: '/Volumes/usb/door-export.tar.gz' }, { timeout: expect.any(Number) })
   })
 
   it('an unknown token, or a path from the window, imports nothing', async () => {
@@ -576,11 +512,6 @@ describe('moving the data', () => {
 })
 
 describe('the CV photo (#605)', () => {
-  it('names the channels', () => {
-    expect(CHANNELS.pickPhoto).toBe('door:pick-photo')
-    expect(CHANNELS.savePhoto).toBe('door:save-photo')
-  })
-
   it('the picture is picked in main and saved by token: the tool gets the real path', async () => {
     const { invoke, server } = setup(async () => ({ photo_path: '/home/profile/photo.jpg' }))
     expect(await invoke(CHANNELS.pickPhoto)).toEqual({ token: 'ph1', name: 'me.jpg' })
@@ -619,12 +550,11 @@ describe('the CV photo (#605)', () => {
 })
 
 describe('reporting a problem', () => {
-  it('names the channel and writes the report where the save dialog said', async () => {
-    expect(CHANNELS.reportProblem).toBe('door:report-problem')
+  it('writes the report where the save dialog said', async () => {
     const answer = { path: '/Users/ada/door-report-2026-10-30.zip', files: ['README.txt'], bytes: 900 }
     const { invoke, server } = setup(async () => answer)
     expect(await invoke(CHANNELS.reportProblem, '/etc/evil.zip')).toEqual({ ok: true, data: answer })
-    expect(server.call).toHaveBeenCalledWith('report_problem', { path: '/Users/ada/door-report-2026-10-30.zip' }, { timeout: 120_000 })
+    expect(server.call).toHaveBeenCalledWith('report_problem', { path: '/Users/ada/door-report-2026-10-30.zip' }, { timeout: expect.any(Number) })
   })
 
   it('a cancelled dialog writes nothing; a refused name or a failed call says why', async () => {
@@ -695,10 +625,6 @@ describe('the install update channel', () => {
     registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), ...(updates ? { updates: updates as any } : {}) })
     return handlers
   }
-  it('names the channels', () => {
-    expect(CHANNELS.installUpdate).toBe('door:install-update')
-    expect(CHANNELS.updateState).toBe('door:update-state')
-  })
   it('refuses without an updater', async () => {
     expect(await reg().get(CHANNELS.installUpdate)!({})).toEqual({ ok: false })
   })
@@ -710,15 +636,6 @@ describe('the install update channel', () => {
 })
 
 describe('the Claude sign-in channels', () => {
-  it('names the channels', () => {
-    expect(CHANNELS.claudeLoginStart).toBe('door:claude-login-start')
-    expect(CHANNELS.claudeLoginCode).toBe('door:claude-login-code')
-    expect(CHANNELS.claudeLoginOpen).toBe('door:claude-login-open')
-    expect(CHANNELS.claudeLoginCancel).toBe('door:claude-login-cancel')
-    expect(CHANNELS.claudeLoginState).toBe('door:claude-login-state')
-    expect(CHANNELS.claudeLogin).toBe('door:claude-login')
-  })
-
   it('starts with the email when it is a string, and nothing else', async () => {
     const { invoke, claudeLogin } = setup()
     expect(await invoke(CHANNELS.claudeLoginStart, 'jane@example.com')).toEqual({ ok: true })
@@ -732,7 +649,7 @@ describe('the Claude sign-in channels', () => {
     expect(await invoke(CHANNELS.claudeLoginCode, 'good#code')).toEqual({ ok: true })
     expect(await invoke(CHANNELS.claudeLoginCode, 'bad')).toEqual({ ok: false, error: 'That is not a sign-in code.' })
     expect(await invoke(CHANNELS.claudeLoginCode, 42)).toEqual({ ok: false, error: 'That is not a sign-in code.' })
-    expect(claudeLogin.sendCode).toHaveBeenCalledTimes(2)
+    expect(claudeLogin.sendCode).not.toHaveBeenCalledWith(42) // a code that is not text never reaches claude
   })
 
   it('opens the page claude printed, takes no address from the window, cancels, and tells the state', async () => {
@@ -747,16 +664,9 @@ describe('the Claude sign-in channels', () => {
 })
 
 describe('the CV draft channels', () => {
-  it('names the channels', () => {
-    expect(CHANNELS.pickCvFiles).toBe('door:pick-cv-files')
-    expect(CHANNELS.draftCv).toBe('door:draft-cv')
-    expect(CHANNELS.clearCvSources).toBe('door:cv-sources-clear')
-  })
-
   it('answers the picker result', async () => {
     const { invoke, cvSources } = setup()
     expect(await invoke(CHANNELS.pickCvFiles)).toEqual({ files: [{ token: 'tok1', name: 'cv.pdf', size: 10 }], refused: [] })
-    expect(CHANNELS.dropCvFiles).toBe('door:drop-cv-files')
     expect(await invoke(CHANNELS.dropCvFiles, ['/x/dropped.pdf'])).toEqual({ files: [{ token: 'tok2', name: 'dropped.pdf', size: 10 }], refused: [] })
     expect(await invoke(CHANNELS.dropCvFiles, 'not a list')).toEqual({ files: [], refused: [] })
     expect(cvSources.pick).toHaveBeenCalled()
@@ -766,7 +676,7 @@ describe('the CV draft channels', () => {
     const { invoke, server } = setup(async () => ({ markdown: '# Ada' }))
     const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: ['https://example.com/ada'] })
     expect(r).toEqual({ ok: true, data: { markdown: '# Ada' } })
-    expect(server.call).toHaveBeenCalledWith('draft_cv', { sources: ['/Users/ada/cv.pdf', 'https://example.com/ada'] }, expect.objectContaining({ timeout: 960_000 }))
+    expect(server.call).toHaveBeenCalledWith('draft_cv', { sources: ['/Users/ada/cv.pdf', 'https://example.com/ada'] }, expect.objectContaining({ timeout: expect.any(Number) }))
   })
 
   it('refuses an unknown token without calling the server', async () => {

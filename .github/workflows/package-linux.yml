@@ -38,6 +38,7 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       # The Python runtime, Tectonic and the wheels, keyed by what pins them.
+      # The same key as seed-caches.yml, which keeps it on main (#80)
       - name: Restore the bundle's downloads
         uses: actions/cache@v6
         with:

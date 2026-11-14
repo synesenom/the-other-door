@@ -139,14 +139,14 @@ def test_save_creates_parent_directory(tmp_path):
 def test_load_missing_file_starts_empty(tmp_path):
     path = tmp_path / "nonexistent_applications.json"
     tracker = ApplicationTracker(path)
-    assert tracker._data == {}
+    assert tracker.job_ids() == []
 
 
 def test_load_corrupt_file_starts_empty(tmp_path):
     path = tmp_path / "applications.json"
     path.write_text("BAD JSON")
     tracker = ApplicationTracker(path)
-    assert tracker._data == {}
+    assert tracker.job_ids() == [] and tracker.get_status("job-abc") is None
 
 
 # --------------------------------------------------------------------------- #
@@ -156,7 +156,7 @@ def test_load_corrupt_file_starts_empty(tmp_path):
 def test_set_status_records_updated_at(tmp_path):
     tracker = _tracker(tmp_path)
     tracker.set_status("job-abc", "unapplied", now=_NOW)
-    assert tracker._data["job-abc"]["updated_at"] == _NOW.isoformat()
+    assert tracker.updated_at("job-abc") == _NOW.isoformat()
 
 
 def test_set_status_defaults_now_when_not_given(tmp_path):
@@ -173,7 +173,7 @@ def test_advance_sets_status_and_updated_at(tmp_path):
     tracker = _tracker(tmp_path)
     tracker.advance("job-abc", "prepared", now=_NOW)
     assert tracker.get_status("job-abc") == "prepared"
-    assert tracker._data["job-abc"]["updated_at"] == _NOW.isoformat()
+    assert tracker.updated_at("job-abc") == _NOW.isoformat()
 
 
 # --------------------------------------------------------------------------- #
@@ -319,7 +319,7 @@ def test_the_application_stage_counts_every_sent_application_by_how_it_went():
         ["prepared", "discarded"],
     )
 
-    assert application_outcomes(tracker) == {"passed": 2, "rejected": 1, "ghosted": 1, "withdrawn": 1, "pending": 1}
+    assert application_outcomes(tracker, now=_at(10)) == {"passed": 2, "rejected": 1, "ghosted": 1, "withdrawn": 1, "pending": 1}
 
 
 def test_an_application_ghosted_then_invited_passed_the_application_stage():
@@ -327,7 +327,24 @@ def test_an_application_ghosted_then_invited_passed_the_application_stage():
 
     tracker = _ledger(["applied", "ghosted", "interview:screening"])
 
-    assert application_outcomes(tracker)["passed"] == 1
+    assert application_outcomes(tracker, now=_at(10))["passed"] == 1
+
+
+def test_an_application_with_no_change_for_30_days_counts_as_ghosted():
+    from datetime import timedelta
+
+    from door.core.tracker import application_outcomes, standings
+
+    tracker = _ledger(["applied"], ["applied", "interview:screening"], ["prepared"])
+    applied_at = _at(1)
+
+    assert application_outcomes(tracker, now=applied_at + timedelta(days=30))["pending"] == 1
+    assert standings(tracker, now=applied_at + timedelta(days=30))["waiting"] == 1
+    later = applied_at + timedelta(days=31)
+    assert application_outcomes(tracker, now=later) == {"passed": 1, "rejected": 0, "ghosted": 1, "withdrawn": 0, "pending": 0}
+    # only the silent application: an interview round stays an interview, an unsent job is not counted
+    assert standings(tracker, now=later) == {
+        "offer": 0, "interviewing": 1, "waiting": 0, "rejected": 0, "ghosted": 1, "withdrawn": 0}
 
 
 def test_the_pass_rate_counts_only_decided_rounds_with_a_one_sigma_binomial_interval():

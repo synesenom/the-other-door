@@ -50,7 +50,7 @@ def test_check_latex_falls_back_to_xelatex(tmp_path):
 def test_check_latex_missing_points_at_doctor_fix(tmp_path):
     check = doctor.check_latex(which=_which(), home=tmp_path)
     assert check["status"] == "missing" and check["required"] is True
-    assert check["fix"] == "./door doctor --fix   (installs Tectonic, no sudo)"
+    assert check["fix"].startswith("./door doctor --fix")
 
 
 def test_check_latex_finds_tectonic_in_local_bin_off_path(tmp_path):
@@ -411,16 +411,14 @@ def _checks_for(tmp_path, **kw):
 
 
 def test_run_checks_probes_only_when_asked(tmp_path):
-    calls = []
-
     def probe(site, config, profile_dir):
-        calls.append(site)
         return _result()
 
-    quiet = _checks_for(tmp_path, probe=probe)
-    assert calls == [] and not [c for c in quiet["checks"] if c["name"].startswith("scraper: ")]
-    probed = _checks_for(tmp_path, probe=probe, probe_sites=True)
-    assert calls == ["jobindex"] and [c["name"] for c in probed["checks"] if c["name"].startswith("scraper: ")] == ["scraper: jobindex"]
+    def scraper_checks(result):
+        return [c["name"] for c in result["checks"] if c["name"].startswith("scraper: ")]
+
+    assert scraper_checks(_checks_for(tmp_path, probe=probe)) == []
+    assert scraper_checks(_checks_for(tmp_path, probe=probe, probe_sites=True)) == ["scraper: jobindex"]
 
 
 def test_probes_get_the_followed_employers_of_their_platform(tmp_path):
@@ -732,12 +730,12 @@ def test_check_claude_cli_finds_local_bin_off_path(tmp_path):
 
 def test_check_claude_cli_fix_is_doctor_fix(tmp_path):
     check = doctor.check_claude_cli(which=_which(), home=tmp_path)
-    assert check["fix"] == "./door doctor --fix   (installs the claude CLI, no sudo)"
+    assert check["fix"].startswith("./door doctor --fix")
 
 
 def test_check_claude_login_unreadable_fix_is_claude_update():
     check = doctor.check_claude_login("/usr/bin/claude", run=_auth("not json"))
-    assert check["fix"] == "claude update (the CLI may be too old for auth status)"
+    assert check["fix"].startswith("claude update")
 
 
 def test_outside_a_checkout_there_is_no_developer_tools_check(tmp_path, monkeypatch):

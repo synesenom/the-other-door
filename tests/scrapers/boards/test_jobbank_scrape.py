@@ -8,7 +8,6 @@ of 20 cards, a short last page, an empty page. No network.
 from pathlib import Path
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -193,16 +192,6 @@ def test_an_ad_without_json_ld_is_recorded_not_raised():
     assert any("3119510" in e for e in drain_errors()["jobbank"])
 
 
-@responses.activate
-def test_a_connection_error_is_recorded_not_raised():
-    _serve(jobbank._search_url("reward", 1), body=requests.exceptions.ConnectionError("down"))
-    drain_errors()
-    assert jobbank.scrape(_CFG) == []
-    [error] = drain_errors()["jobbank"]
-    assert "reward" in error
-    assert drain_pushback("jobbank") is False
-
-
 @pytest.mark.parametrize("status", [403, 429])
 @responses.activate
 def test_a_refusal_on_a_search_page_is_pushback_and_stops_the_run(status):
@@ -288,25 +277,8 @@ def test_probe_drift_when_the_results_block_is_gone():
     assert not result.get("wall") and not result.get("unreachable")
 
 
-@pytest.mark.parametrize("status", [401, 403, 429])
-@responses.activate
-def test_probe_refusal_is_a_wall(status):
-    _serve(_probe_url(), "Just a moment...", status=status)
-    assert jobbank.probe(_CFG)["wall"] is True
-
-
 @responses.activate
 def test_probe_challenge_page_is_a_wall():
     _serve(_probe_url(), "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/h/b'></script></html>")
     result = jobbank.probe(_CFG)
     assert result["wall"] is True and result["structure_ok"] is False
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    _serve(_probe_url(), body=requests.exceptions.ConnectionError("down"))
-    assert jobbank.probe(_CFG)["unreachable"] is True
-
-
-def test_probe_without_keywords_is_none():
-    assert jobbank.probe({"location": "Copenhagen"}) is None

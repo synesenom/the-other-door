@@ -9,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -73,8 +72,12 @@ def test_scrape_paginates_and_reads_the_ads():
         assert p["title"] and p["company"] and p["url"] and p["location"]
         assert p["description"].startswith("Project Manager, Payments") and "<" not in p["description"]
         assert p["url"] == "https://www.reed.co.uk" + _URLS[p["platform_id"]]
+    pmo = postings[2]
+    assert (pmo["title"], pmo["company"], pmo["location"]) == ("PMO Manager", "Deutsche Bank", "London")
+    assert pmo["posted_at"].startswith("2026-10-29T14:17:36")
     assert [u for u in _requested() if "-jobs-in-" in u] == [_search(page=1), _search(page=2)]
     assert len(_requested()) == 2 + 6  # two search pages, six ads; page 2 was the last (30 hits)
+    assert not [u for u in _requested() if "sortby" in u.lower()]  # robots.txt disallows sortBy
 
 
 @responses.activate
@@ -205,16 +208,6 @@ def test_an_ad_without_json_ld_is_recorded_and_the_snippet_kept():
     assert any("57505209" in e for e in drain_errors()["reed"])
 
 
-@responses.activate
-def test_a_connection_error_is_recorded_not_raised():
-    _serve(_search(), body=requests.exceptions.ConnectionError("down"))
-    drain_errors()
-    assert reed.scrape(_CFG) == []
-    [error] = drain_errors()["reed"]
-    assert "project manager" in error
-    assert drain_pushback("reed") is False
-
-
 @pytest.mark.parametrize("status", [403, 429])
 @responses.activate
 def test_a_refusal_on_a_search_page_is_pushback_and_stops_the_run(status):
@@ -272,25 +265,8 @@ def test_probe_drift_when_the_results_block_is_removed():
     assert not result.get("wall") and not result.get("unreachable")
 
 
-@pytest.mark.parametrize("status", [401, 403, 429])
-@responses.activate
-def test_probe_refusal_is_a_wall(status):
-    _serve(_search(), "Just a moment...", status=status)
-    assert reed.probe(_CFG)["wall"] is True
-
-
 @responses.activate
 def test_probe_challenge_page_is_a_wall():
     _serve(_search(), "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/h/b'></script></html>")
     result = reed.probe(_CFG)
     assert result["wall"] is True and result["structure_ok"] is False
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    _serve(_search(), body=requests.exceptions.ConnectionError("down"))
-    assert reed.probe(_CFG)["unreachable"] is True
-
-
-def test_probe_without_keywords_is_none():
-    assert reed.probe({"location": "London"}) is None

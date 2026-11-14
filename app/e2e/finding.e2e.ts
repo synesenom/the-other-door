@@ -37,6 +37,15 @@ test('Find new jobs plays the five steps, ends in a summary and View matches sho
   try {
     const page = await app.firstWindow()
     await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible({ timeout: 60_000 })
+    // the bundled display font loads in the built app (the journeys never look at fonts)
+    const fonts = await page.evaluate(async () => {
+      await document.fonts.ready
+      return {
+        check: document.fonts.check('400 20px "Young Serif"'),
+        loaded: [...document.fonts].some((f) => f.family.includes('Young Serif') && f.status === 'loaded'),
+      }
+    })
+    expect(fonts).toEqual({ check: true, loaded: true })
     await page.getByRole('complementary').getByRole('button', { name: 'Find new jobs' }).click()
     await expect(page.getByRole('heading', { name: 'Finding jobs', level: 1 })).toBeVisible()
     await expect(page.getByRole('list', { name: 'Steps' }).getByRole('listitem')).toHaveCount(5)

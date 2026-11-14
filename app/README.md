@@ -4,7 +4,7 @@ An Electron shell over *The other door*'s MCP server, run from the checkout. Its
 **Matches** (the ranked list; a posting opened full width with
 "← Matches" and the previous and next match, "Prepare application", "Open in browser", "Status",
 "Not for me", "Add a job"; opening a match makes it seen), **Applications** (the board of jobs in play), **Profile** (the settings and
-the CV: the pages read for it, then the editor), **Settings** (connections, appearance, data moves, checks) and **Analytics** (Applications first: the funnel from scraped to offer, each bar a share of the step before, with a pass rate from applying on; then what Claude's work cost at API prices, per activity; not on the phone); **Finding jobs** ("Find new
+the CV: the pages read for it, then the editor), **Settings** (connections, appearance, data moves, checks) and **Analytics** (Applications first: the interview rate of the answered applications, then your matches and your applications as two stacked bars; then what Claude's work cost at API prices, per activity; not on the phone); **Finding jobs** ("Find new
 jobs": the five steps live, Stop, a summary card) takes the place of the page during a run, and a
 prepared job opens "Ready to send" (the pages, Revise and Undo). What each does is in
 [`../docs/manual-app.md`](../docs/manual-app.md). Below 900 px the sidebar becomes a tab bar, which steps aside while a posting is open. The visual design is in [`../docs/design/`](../docs/design/).
@@ -140,7 +140,7 @@ before opening it, Windows SmartScreen warns once.
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | vitest unit tests: no Python, no network (what CI runs) |
 | `npm run test:integration` | the real Python server on a generated `DOOR_HOME` (`test/home-fixture.ts`; `buildHome({ prepared: 'jobindex.123' })` adds a finished prepare from `test/fixtures/prepared/`: a 2-page CV, a 1-page letter, their page images and `.tex`) with isolated `HOME` and a stand-in `claude` first on `PATH` (it fails and leaves `claude-was-called` in the scratch folder, so a test never reaches your real one); skips with a message when there is no `.venv` or `DOOR_PYTHON` |
-| `npm run test:e2e` | builds, then Playwright tests drive the built app against the real server on a temp `DOOR_HOME` (Python as above; skips with a message without it). CI runs it under `xvfb-run` |
+| `npm run test:e2e` | builds, then the Playwright smoke tests (`e2e/`) drive the built app in the two modes the journeys never start, the demo's simulated run and the onboarding sandbox, against the real server on a temp `DOOR_HOME` (Python as above; skips with a message without it). CI runs it under `xvfb-run` |
 | `npm run test:install` | install this system's installer from `dist/` (or `DOOR_INSTALLER`) the user's way, then set-up, the first run and Prepare in the installed app, then uninstall; CI runs it on every installer ("The install test" above) |
 | `npm run gen-tools` | rewrite `src/generated/tools.json` from the running server |
 | `npm run gen-theme` | rewrite `src/renderer/theme.css` from `../docs/design/tokens.json` |

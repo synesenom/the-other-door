@@ -3,7 +3,6 @@
 import json
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -75,15 +74,6 @@ def test_known_ids_skip_the_ad_requests_but_not_the_postings_of_the_list():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    _mock_all()
-
-    postings = taleez.scrape({"taleez_companies": ["donecle"], "_names": {"taleez_companies": {"donecle": "Donecle SAS"}}})
-
-    assert {p["company"] for p in postings} == {"Donecle SAS"}
-
-
-@responses.activate
 def test_a_link_as_the_entry_is_read_from_its_tenant():
     _mock_all()
 
@@ -99,16 +89,6 @@ def test_the_same_job_listed_by_two_entries_comes_once():
     postings = taleez.scrape({"taleez_companies": ["donecle", "donecle.taleez.com"]})
 
     assert [p["platform_id"] for p in postings] == _IDS
-
-
-@responses.activate
-def test_a_failing_list_is_a_recorded_error_and_the_other_board_is_kept():
-    responses.add(responses.GET, "https://bad.taleez.com/api/careez", status=500)
-    _mock_all()
-
-    drain_errors()
-    assert len(taleez.scrape({"taleez_companies": ["bad", "donecle"]})) == 3
-    assert "bad" in drain_errors()["taleez"][0]
 
 
 @responses.activate
@@ -209,15 +189,6 @@ def test_probe_of_a_list_without_its_jobs_block_has_no_structure():
     result = taleez.probe({"taleez_companies": ["donecle"]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    responses.add(responses.GET, _LIST, body=requests.ConnectionError("down"))
-
-    result = taleez.probe({"taleez_companies": ["donecle"]})
-
-    assert result.get("unreachable") and result["structure_ok"] is False
 
 
 @responses.activate

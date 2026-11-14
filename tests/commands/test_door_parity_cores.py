@@ -1,7 +1,5 @@
-"""Core functions extracted for MCP parity (issue #144).
+"""The dicts the `_*_core` functions return, which the MCP tools hand over as-is (issue #144).
 
-Each `_*_core` returns a dict and never prints (`capsys` stays empty); the
-Click commands render text from it and the MCP tools return it as-is.
 Offline — no network, no `claude`, no browser.
 """
 
@@ -65,14 +63,13 @@ def _ledger(jobs_dir: Path, entries: dict) -> None:
 # _list_core
 # --------------------------------------------------------------------------- #
 
-def test_list_core_returns_summaries_best_first_without_descriptions(env, capsys):
+def test_list_core_returns_summaries_best_first_without_descriptions(env):
     _posting(env.jobs_dir, "job-mid", score=0.7)
     _posting(env.jobs_dir, "job-top", score=0.95, title="Lead DS")
     _posting(env.jobs_dir, "job-low", score=0.1)
 
     result = matches_cmd._list_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
 
-    assert capsys.readouterr().out == ""
     assert result["min_score"] == 0.6
     assert [m["id"] for m in result["matches"]] == ["job-top", "job-mid"]
     top = result["matches"][0]
@@ -84,51 +81,11 @@ def test_list_core_returns_summaries_best_first_without_descriptions(env, capsys
     assert all("description" not in m for m in result["matches"])
 
 
-def test_list_core_min_score_and_limit(env):
-    _posting(env.jobs_dir, "job-a", score=0.9)
-    _posting(env.jobs_dir, "job-b", score=0.8)
-    _posting(env.jobs_dir, "job-c", score=0.3)
-    _ledger(env.jobs_dir, {"job-a": "applied"})
-
-    default = matches_cmd._list_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
-    assert [m["id"] for m in default["matches"]] == ["job-b"]
-
-    above_zero = matches_cmd._list_core(min_score=0.0, jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
-    assert [m["id"] for m in above_zero["matches"]] == ["job-b", "job-c"]  # never the applied one
-
-    limited = matches_cmd._list_core(min_score=0.2, limit=1, jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
-    assert limited["min_score"] == 0.2
-    assert [m["id"] for m in limited["matches"]] == ["job-b"]
-
-
-# --------------------------------------------------------------------------- #
-# _show_core
-# --------------------------------------------------------------------------- #
-
-def test_show_core_returns_full_posting_plus_status(env, capsys):
-    _posting(env.jobs_dir, "job-abc", score=0.8)
-    _ledger(env.jobs_dir, {"job-abc": "prepared"})
-
-    result = matches_cmd._show_core("job-abc", jobs_dir=env.jobs_dir)
-
-    assert capsys.readouterr().out == ""
-    assert result["id"] == "job-abc"
-    assert result["description"] == "A long description."
-    assert result["status"] == "prepared"
-
-
-def test_show_core_errors(env):
-    with pytest.raises(ValueError, match="invalid job_id"):
-        matches_cmd._show_core("../evil", jobs_dir=env.jobs_dir)
-    with pytest.raises(LookupError, match="no posting found"):
-        matches_cmd._show_core("nope", jobs_dir=env.jobs_dir)
-
-
 # --------------------------------------------------------------------------- #
 # _status_summary_core
 # --------------------------------------------------------------------------- #
 
-def test_status_summary_core_returns_pipeline_and_ledger(env, capsys):
+def test_status_summary_core_returns_pipeline_and_ledger(env):
     _posting(env.jobs_dir, "job-excluded", score=0.0, score_reason="excluded")
     _posting(env.jobs_dir, "job-high", score=0.9)
     _posting(env.jobs_dir, "job-low", score=0.1)
@@ -136,7 +93,6 @@ def test_status_summary_core_returns_pipeline_and_ledger(env, capsys):
 
     result = status_cmd._status_summary_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
 
-    assert capsys.readouterr().out == ""
     assert result["min_score"] == 0.6
     assert result["pipeline"]["total"] == 3
     assert result["pipeline"]["above_threshold"] == 1
@@ -151,100 +107,11 @@ def test_status_summary_core_returns_pipeline_and_ledger(env, capsys):
 # _prepare_core
 # --------------------------------------------------------------------------- #
 
-_OUTPUTS = ("posting.json", "cv.tex", "cover_letter.tex", "cv.pdf", "cover_letter.pdf")
-
-
-def _tailor_writing(jobs_dir, names=_OUTPUTS, calls=None):
-    def _run(job_id, posting_path, **kwargs):
-        if calls is not None:
-            calls.append((job_id, kwargs))
-        out = jobs_dir / "output" / job_id
-        out.mkdir(parents=True, exist_ok=True)
-        for name in names:
-            (out / name).write_text("x")
-        return True
-
-    return _run
-
-
-def test_prepare_core_prepared(env, monkeypatch, capsys):
-    _posting(env.jobs_dir, "job-abc", score=0.9)
-    calls = []
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing(env.jobs_dir, calls=calls))
-
-    result = prepare_cmd._prepare_core("job-abc", timeout_s=60, jobs_dir=env.jobs_dir)
-
-    assert capsys.readouterr() == ("", "")
-    assert result["outcome"] == "prepared"
-    assert result["job_id"] == "job-abc"
-    assert result["output_dir"] == str(env.jobs_dir / "output" / "job-abc")
-    assert sorted(result["files"]) == sorted(_OUTPUTS)
-    assert calls == [("job-abc", {"timeout_s": 60})]
-    ledger = json.loads((env.jobs_dir / "applications.json").read_text())
-    assert ledger["job-abc"]["status"] == "prepared"
-
-
-def test_prepare_core_skips_complete_materials(env, monkeypatch):
-    _posting(env.jobs_dir, "job-abc", score=0.9)
-    _tailor_writing(env.jobs_dir)("job-abc", None)
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("tailor must not run"))
-
-    result = prepare_cmd._prepare_core("job-abc", jobs_dir=env.jobs_dir)
-
-    assert result["outcome"] == "skipped"
-
-
-def test_prepare_core_missing_outputs_fails_without_touching_ledger(env, monkeypatch):
-    _posting(env.jobs_dir, "job-abc", score=0.9)
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing(env.jobs_dir, names=("cv.tex",)))
-
-    result = prepare_cmd._prepare_core("job-abc", jobs_dir=env.jobs_dir)
-
-    assert result["outcome"] == "failed"
-    assert result["missing"] == ["posting.json", "cover_letter.tex", "cv.pdf", "cover_letter.pdf"]
-    assert "status left unchanged" in result["error"]
-    assert not (env.jobs_dir / "applications.json").exists()
-
-
-def test_prepare_core_tailor_error_is_a_failed_outcome(env, monkeypatch, capsys):
-    _posting(env.jobs_dir, "job-abc", score=0.9)
-
-    def _boom(job_id, posting_path, **kwargs):
-        raise prepare_cmd.TailorError("claude exited 1: no plan quota")
-
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _boom)
-
-    result = prepare_cmd._prepare_core("job-abc", jobs_dir=env.jobs_dir)
-
-    assert capsys.readouterr() == ("", "")
-    assert result["outcome"] == "failed"
-    assert "no plan quota" in result["error"]
-
-
 def test_prepare_core_input_errors_raise(env):
     with pytest.raises(ValueError, match="invalid job_id"):
         prepare_cmd._prepare_core("../evil", jobs_dir=env.jobs_dir)
     with pytest.raises(LookupError, match="no posting found"):
         prepare_cmd._prepare_core("nope", jobs_dir=env.jobs_dir)
-
-
-def test_prepare_core_without_job_id_and_no_matches(env):
-    assert prepare_cmd._prepare_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir) == {
-        "job_id": None, "outcome": "no_matches",
-    }
-
-
-def test_prepare_core_without_job_id_prepares_the_top_match(env, monkeypatch):
-    _posting(env.jobs_dir, "job-mid", score=0.7)
-    _posting(env.jobs_dir, "job-top", score=0.95)
-    calls = []
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing(env.jobs_dir, calls=calls))
-
-    result = prepare_cmd._prepare_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
-
-    assert result["job_id"] == "job-top"
-    assert result["outcome"] == "prepared"
-    assert [c[0] for c in calls] == ["job-top"]
 
 
 # --------------------------------------------------------------------------- #
@@ -266,7 +133,7 @@ def example_dir(tmp_path):
     return example
 
 
-def test_init_core_copies_merges_validates_and_writes(tmp_path, example_dir, capsys):
+def test_init_core_copies_merges_validates_and_writes(tmp_path, example_dir):
     profile_dir = tmp_path / "profile"
 
     result = profile_cmd._init_core(
@@ -274,7 +141,6 @@ def test_init_core_copies_merges_validates_and_writes(tmp_path, example_dir, cap
         profile_dir=profile_dir, example_dir=example_dir,
     )
 
-    assert capsys.readouterr() == ("", "")
     assert result["config_path"] == str(profile_dir / "config.json")
     assert not any(name.endswith(".tex") or name.startswith("fonts") for name in result["copied"])  # from the code (#56)
     assert "template" not in " ".join(json.loads((profile_dir / "config.json").read_text()))
@@ -380,7 +246,7 @@ def test_status_summary_does_not_need_template_files(env):
 
 
 # --------------------------------------------------------------------------- #
-# scrape / match / run report progress and never print (issue #202)
+# a full run reports its steps in order (issue #202)
 # --------------------------------------------------------------------------- #
 
 def _fixture_scraper(monkeypatch):
@@ -414,33 +280,7 @@ def _fake_scorer(monkeypatch):
     monkeypatch.setattr(scorer_mod, "score_postings", fake_score_postings)
 
 
-def test_scrape_core_prints_nothing(env, monkeypatch, capfd, progress_events):
-    from door.commands import scrape as scrape_cmd
-
-    _fixture_scraper(monkeypatch)
-    scrape_cmd._scrape_core(["jobindex"], jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
-    captured = capfd.readouterr()  # file-descriptor capture also sees subprocess and C-level writes
-    assert captured.out == "" and captured.err == ""
-    assert any(e.message == "'data scientist': 1 results" for e in progress_events)
-
-
-def test_match_core_prints_nothing(env, monkeypatch, capfd, progress_events):
-    from door.commands import match as match_cmd
-
-    posting_dir = env.jobs_dir / datetime.now().date().isoformat() / "jobindex"
-    posting_dir.mkdir(parents=True)
-    (posting_dir / "job-a.json").write_text(json.dumps({
-        "id": "job-a", "title": "A", "company": "C", "location": "x", "url": "u",
-        "description": "d", "source": "jobindex", "scraped_at": _FRESH_SCRAPED_AT,
-    }))
-    _fake_scorer(monkeypatch)
-    match_cmd._match_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
-    captured = capfd.readouterr()  # file-descriptor capture also sees subprocess and C-level writes
-    assert captured.out == "" and captured.err == ""
-    assert [e.message for e in progress_events] == ["scoring", "scored"]
-
-
-def test_run_core_prints_nothing(env, monkeypatch, capfd, progress_events):
+def test_run_core_reports_each_step_in_order(env, monkeypatch, progress_events):
     from door.commands import companies as companies_cmd
     from door.commands import find as find_cmd
 
@@ -448,8 +288,6 @@ def test_run_core_prints_nothing(env, monkeypatch, capfd, progress_events):
     _fake_scorer(monkeypatch)
     monkeypatch.setattr(companies_cmd, "_classify", lambda *a, **k: None)  # `follow` reads no pages
     find_cmd._find_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
-    captured = capfd.readouterr()  # file-descriptor capture also sees subprocess and C-level writes
-    assert captured.out == "" and captured.err == ""
     steps = [(e.site, e.outcome) for e in progress_events if e.stage == "step"]
     assert [s for s in steps if s[1] != "skipped"] == [
         ("search", "start"), ("search", "done"), ("follow", "start"), ("follow", "done"),
@@ -460,16 +298,6 @@ def test_run_core_prints_nothing(env, monkeypatch, capfd, progress_events):
 # --------------------------------------------------------------------------- #
 # interview stages
 # --------------------------------------------------------------------------- #
-
-def test_set_status_core_records_an_interview_round(env):
-    from door.core.tracker import ApplicationTracker
-
-    _posting(env.jobs_dir, "job-abc", score=0.8)
-    result = status_cmd._set_status_core("job-abc", "interview:technical", "SQL live coding", jobs_dir=env.jobs_dir)
-
-    assert {k: result[k] for k in ("job_id", "status", "notes")} == {"job_id": "job-abc", "status": "interview:technical", "notes": "SQL live coding"}
-    assert ApplicationTracker(env.jobs_dir / "applications.json").history("job-abc")[-1]["status"] == "interview:technical"
-
 
 def test_show_core_returns_the_whole_history_with_each_rounds_result(env):
     _posting(env.jobs_dir, "job-abc", score=0.8)

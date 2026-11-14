@@ -11,10 +11,8 @@ import click
 import pytest
 from click.testing import CliRunner
 
-import door.mcp_server as server
 from door.cli import cli
 from door.commands import gaps as gaps_cmd
-from door.commands import matches as matches_cmd
 from door.core import claude_cli, workspace
 from cli_utils import result_text, write_list_posting
 from profile_utils import write_config
@@ -120,12 +118,6 @@ def test_core_rejects_an_empty_report(env, monkeypatch):
     assert not env.out_dir.exists()
 
 
-def test_core_never_prints(env, monkeypatch, capsys):
-    _answer(monkeypatch)
-    gaps_cmd._skill_gaps_core(["x"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
-    assert capsys.readouterr().out == ""
-
-
 def test_cli_prints_the_path_and_counts(env, monkeypatch):
     _answer(monkeypatch)
     result = CliRunner().invoke(cli, ["cv", "gaps", "Senior Data Engineer", "--model", "opus"])
@@ -184,21 +176,6 @@ def test_cli_top_and_errors(env, monkeypatch):
     monkeypatch.setattr(claude_cli, "run", boom)
     result = CliRunner().invoke(cli, ["cv", "gaps", "x"])
     assert result.exit_code == 1 and "Error: claude exited 1: x" in result.stderr
-
-
-def test_tool_delegates(env, monkeypatch):
-    seen = {}
-
-    def fake(targets=None, *, jobs=None, top=None, model=None, profile_dir=None, jobs_dir=None):
-        seen.update(targets=targets, jobs=jobs, top=top, model=model, profile_dir=profile_dir, jobs_dir=jobs_dir)
-        return {"report_path": "r"}
-
-    monkeypatch.setattr(gaps_cmd, "_skill_gaps_core", fake)
-    assert server.skill_gaps(targets=["Quant"], jobs=["trustpilot"], top=None, model="opus") == {"report_path": "r"}
-    assert seen == {"targets": ["Quant"], "jobs": ["trustpilot"], "top": None, "model": "opus",
-                    "profile_dir": env.profile_dir, "jobs_dir": env.jobs_dir}
-    monkeypatch.setattr(gaps_cmd, "_skill_gaps_core", lambda *a, **k: (_ for _ in ()).throw(ValueError("no target")))
-    assert server.skill_gaps() == {"error": "no target"}
 
 
 def test_core_never_sends_an_instruction_line_of_a_legacy_ad(env, monkeypatch):

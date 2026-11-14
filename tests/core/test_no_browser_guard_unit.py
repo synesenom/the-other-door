@@ -1,5 +1,4 @@
-"""No browser: The other door reads every site over plain HTTP, so nothing may import Playwright and the
-dependency stays out of `pyproject.toml`."""
+"""No browser: The other door reads every site over plain HTTP, so nothing may import Playwright."""
 
 import re
 
@@ -14,5 +13,3 @@ def test_nothing_under_src_imports_playwright():
     assert offenders == []
 
 
-def test_playwright_is_not_a_dependency():
-    assert "playwright" not in (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8").lower()

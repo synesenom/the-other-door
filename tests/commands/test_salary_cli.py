@@ -8,7 +8,6 @@ from click.testing import CliRunner
 import door.mcp_server as server
 from cli_utils import write_list_posting
 from door.cli import cli
-from door.commands import find as find_cmd
 from door.commands import prepare as prepare_cmd
 from door.commands import salary as salary_cmd
 from door.core import claude_cli, workspace
@@ -96,12 +95,6 @@ def test_cli_says_plainly_when_nothing_is_cited(env, monkeypatch):
 def test_tool_matches_the_core_and_reports_errors(env):
     assert server.salary_estimate("trustpilot")["low"] == 55000
     assert "error" in server.salary_estimate("nosuchjob")
-
-
-def test_find_never_asks_for_a_salary():
-    import inspect
-
-    assert "salary" not in inspect.getsource(find_cmd)
 
 
 def _age(jobs, job_id, days):

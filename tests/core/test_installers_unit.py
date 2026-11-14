@@ -181,11 +181,12 @@ def test_no_plan_uses_sudo(tool, platform):
     assert all("sudo" not in argv for argv in plan["commands"])
 
 
-def test_doctor_check_names_map_to_tools():
-    assert installers.TOOL_FOR_CHECK == {
-        "latex": "latex",
-        "claude CLI": "claude",
-    }
+def test_each_tool_names_a_check_doctor_runs(tmp_path):
+    from door.core import doctor
+
+    names = {c["name"] for c in doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", which=_which())["checks"]}
+    assert set(installers.TOOL_FOR_CHECK) <= names
+    assert set(installers.TOOL_FOR_CHECK.values()) == {"latex", "claude"}
 
 
 def _mcp_repo(tmp_path, command):

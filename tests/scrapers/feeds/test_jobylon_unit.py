@@ -79,11 +79,6 @@ def test_to_posting_maps_the_list_item_and_the_ad():
     assert "butikschef" in p["description"]
 
 
-def test_the_followed_name_wins_over_the_widgets():
-    item = jobylon.parse_widget(_fx("widget_2420.html"))[0]
-    assert jobylon._to_posting(item, None, "Lyko Group AB", _NOW)["company"] == "Lyko Group AB"
-
-
 def test_a_posting_without_its_ad_has_no_description_or_date():
     item = jobylon.parse_widget(_fx("widget_2420.html"))[0]
     p = jobylon._to_posting(item, None, "", _NOW)
@@ -114,10 +109,6 @@ def test_company_id_rejects_anything_else():
 
 def test_widget_url_asks_for_the_whole_list():
     assert jobylon._widget_url("2420") == "https://cdn.jobylon.com/jobs/companies/2420/embed/v2/"
-
-
-def test_scrape_missing_key_returns_empty():
-    assert jobylon.scrape({}) == []
 
 
 # --- feed detection (issue #282) ---

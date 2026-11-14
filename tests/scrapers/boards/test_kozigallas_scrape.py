@@ -10,7 +10,6 @@ import json
 from pathlib import Path
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -157,10 +156,10 @@ def test_two_keywords_dedup_across_them():
 
 
 @responses.activate
-def test_role_targets_are_the_fallback_keywords_and_location_and_since_are_not_sent():
+def test_role_targets_are_the_fallback_keywords():
     _serve_list({"ápoló": {}})
-    kozigallas.scrape({"role_targets": ["ápoló"], "location": "Budapest"}, since=None)
-    assert _searches() == [{"page": 1, "pagesize": 3, "sort": "Created DESC", "keyword": "ápoló"}]
+    kozigallas.scrape({"role_targets": ["ápoló"], "location": "Budapest"})
+    assert [s["keyword"] for s in _searches()] == ["ápoló"]
 
 
 @responses.activate
@@ -186,16 +185,6 @@ def test_an_ad_page_without_text_is_recorded_not_raised():
     out = kozigallas.scrape({**_CFG, "max_pages_per_keyword": 1})
     assert [p["platform_id"] for p in out] == ["175074", "175065"]
     assert any("175084" in e for e in drain_errors()["kozigallas"])
-
-
-@responses.activate
-def test_a_connection_error_is_recorded_not_raised():
-    responses.add(responses.POST, _LIST, body=requests.exceptions.ConnectionError("down"))
-    drain_errors()
-    assert kozigallas.scrape(_CFG) == []
-    [error] = drain_errors()["kozigallas"]
-    assert "ápoló" in error
-    assert drain_pushback("kozigallas") is False
 
 
 @responses.activate
@@ -236,21 +225,6 @@ def test_a_refusal_on_an_ad_keeps_what_was_read_and_stops():
     assert drain_pushback("kozigallas") is True
 
 
-@responses.activate
-def test_the_session_verifies_against_the_system_trust_store(monkeypatch):
-    seen = {}
-    real = kozigallas.PoliteSession
-
-    def spy(*args, **kwargs):
-        seen.update(kwargs)
-        return real(*args, **kwargs)
-
-    monkeypatch.setattr(kozigallas, "PoliteSession", spy)
-    _serve_list({"ápoló": {}})
-    kozigallas.scrape(_CFG)
-    assert seen["system_trust"] is True
-
-
 # --- probe ---------------------------------------------------------------------------------------
 
 @responses.activate
@@ -285,21 +259,20 @@ def test_probe_drift_when_the_results_block_is_gone():
 
 
 @responses.activate
-def test_probe_unreachable_on_a_connection_error():
-    responses.add(responses.POST, _LIST, body=requests.exceptions.ConnectionError("down"))
-    result = kozigallas.probe(_CFG)
-    assert result["unreachable"] is True and result["structure_ok"] is False
-    assert len(responses.calls) == 1
+def test_the_portal_is_verified_against_the_system_trust_store(monkeypatch):
+    # The portal's root certificate is not in certifi's bundle: its HTTPS goes through the OS trust store.
+    from door.scrapers import http_client
 
+    mounted = []
+    real_init = http_client.SystemTrustAdapter.__init__
 
-@pytest.mark.parametrize("status", [401, 403])
-@responses.activate
-def test_probe_wall_on_a_refusal(status):
-    responses.add(responses.POST, _LIST, body="denied", status=status)
-    result = kozigallas.probe(_CFG)
-    assert result["wall"] is True and result["structure_ok"] is False
-    assert len(responses.calls) == 1
+    def spy(self, *a, **k):
+        mounted.append(self)
+        real_init(self, *a, **k)
 
+    monkeypatch.setattr(http_client.SystemTrustAdapter, "__init__", spy)
+    _serve_list()
+    _serve_details(_ALL)
 
-def test_probe_without_keywords_is_none():
-    assert kozigallas.probe({"location": "Budapest"}) is None
+    assert kozigallas.scrape(_CFG)
+    assert mounted
