@@ -49,18 +49,12 @@ describe('Analytics', () => {
     expect(within(rows[1]).queryByText('Scoring postings')).toBeNull()
   })
 
-  it('says how full the plan window is and the room left', async () => {
+  it('says nothing of the plan window: a live reading, not what the week cost', async () => {
     mockDoor({ status_summary: summary({ cost: COST, plan: PLAN }) })
     render(<Analytics />)
-    expect(await screen.findByText(/42% of this 5-hour window used/)).toBeInTheDocument()
-    expect(screen.getByText(/room for about 6 searches or 2 prepared applications/)).toBeInTheDocument()
-  })
-
-  it('a plan reading with no weighed call yet still says how full the window is', async () => {
-    mockDoor({ status_summary: summary({ cost: null, plan: { ...PLAN, status: 'allowed_warning', warning: "Claude's usage limit is close" } }) })
-    render(<Analytics />)
-    expect(await screen.findByText(/Claude's usage limit is close\. 42% of this 5-hour window used/)).toBeInTheDocument()
-    expect(screen.queryByText(/shows here after your first search/)).toBeNull()
+    await screen.findByText('$2.10')
+    expect(screen.queryByText(/window used/)).toBeNull()
+    expect(screen.queryByText(/room for about/)).toBeNull()
   })
 
   it('nothing in the window: says so, and still what one run costs', async () => {

@@ -524,8 +524,7 @@ jobs, preparing applications, everything else) with a bar for its share, what it
 scored, applications prepared, other requests) and, when there are several, what it was spent on
 (scoring postings, translating job titles, tailoring the CV and letter, …). Your plan is not
 charged per call: this is what the same calls would cost on the API, a figure that is the same
-whatever your plan. Under it, how full this 5-hour window is and about how many more searches or
-prepared applications fit. Before the first search it says only that the figures show here after it.
+whatever your plan. Before the first search it says only that the figures show here after it.
 
 ## On your phone
 
