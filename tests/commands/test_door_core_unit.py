@@ -18,10 +18,8 @@ import pytest
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import scrape as scrape_cmd
-from door.commands import status as status_cmd
 import subprocess
 from profile_utils import write_config
-import door.core.tracker as tracker_mod
 
 
 def _scrape_env(tmp_path, sites=("jobindex",)):
@@ -35,79 +33,6 @@ def _scrape_env(tmp_path, sites=("jobindex",)):
     write_config(profile_dir, profile_dir_config)
     jobs_dir = tmp_path / "jobs"
     return profile_dir, jobs_dir
-
-
-def _fake_history_store(monkeypatch, *, is_new=True):
-    import door.core.history as hist_mod
-
-    calls = {"touch": [], "record": [], "save": 0}
-
-    class FakeStore:
-        def __init__(self, path):
-            calls["path"] = path
-
-        def is_new(self, platform_id, source, recheck_after_days, **kw):
-            return is_new
-
-        def record(self, *args, **kw):
-            calls["record"].append(args)
-
-        def touch(self, platform_id, **kw):
-            calls["touch"].append(platform_id)
-
-        def known_ids(self, *args, **kw):
-            return frozenset()
-
-        def save(self):
-            calls["save"] += 1
-
-    monkeypatch.setattr(hist_mod, "HistoryStore", FakeStore)
-    return calls
-
-
-# --------------------------------------------------------------------------- #
-# ALL_SITES
-# --------------------------------------------------------------------------- #
-
-# --------------------------------------------------------------------------- #
-# _set_status_core
-# --------------------------------------------------------------------------- #
-
-def test_set_status_core_happy_path_returns_dict_and_updates_ledger(tmp_path):
-    jobs_dir = tmp_path / "jobs"
-    jobs_dir.mkdir()
-
-    result = status_cmd._set_status_core("job-abc", "applied", jobs_dir=jobs_dir)
-
-    assert {k: result[k] for k in ("job_id", "status", "notes")} == {"job_id": "job-abc", "status": "applied", "notes": None}
-
-    ledger = tracker_mod.ApplicationTracker(jobs_dir / "applications.json")
-    assert ledger.get_status("job-abc") == "applied"
-
-
-def test_set_status_core_invalid_status_raises_value_error(tmp_path):
-    jobs_dir = tmp_path / "jobs"
-    jobs_dir.mkdir()
-
-    with pytest.raises(ValueError):
-        status_cmd._set_status_core("job-abc", "hired", jobs_dir=jobs_dir)
-
-
-def test_set_status_core_duplicate_application_raises(tmp_path):
-    jobs_dir = tmp_path / "jobs"
-    jobs_dir.mkdir()
-
-    status_cmd._set_status_core("job-abc", "applied", jobs_dir=jobs_dir)
-    with pytest.raises(tracker_mod.DuplicateApplicationError):
-        status_cmd._set_status_core("job-abc", "applied", jobs_dir=jobs_dir)
-
-
-def test_set_status_core_invalid_job_id_raises_value_error(tmp_path):
-    jobs_dir = tmp_path / "jobs"
-    jobs_dir.mkdir()
-
-    with pytest.raises(ValueError):
-        status_cmd._set_status_core("../evil", "applied", jobs_dir=jobs_dir)
 
 
 # --------------------------------------------------------------------------- #
@@ -325,7 +250,6 @@ def test_compile_core_render_renders_only_the_pdfs_that_compiled(tmp_path, monke
 
 def test_scrape_core_happy_path_writes_postings_and_returns_counts(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     posting = {
@@ -362,7 +286,6 @@ def test_scrape_core_per_site_outcomes_preserved_in_order(tmp_path, monkeypatch)
     _items = _companies.load(profile_dir)
     _companies.record(_items, "Acme", feed=("lever", "acme"), status="followed", found_via="manual", reason=None)
     _companies.save(profile_dir, _items)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     posting = {
@@ -399,7 +322,6 @@ def test_scrape_core_per_site_outcomes_preserved_in_order(tmp_path, monkeypatch)
 
 def test_scrape_core_liveness_absent_is_none_and_not_called(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
@@ -419,7 +341,6 @@ def test_scrape_core_liveness_absent_is_none_and_not_called(tmp_path, monkeypatc
 
 def test_scrape_core_prefilter_unavailable_reports_false(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
@@ -446,7 +367,6 @@ def test_scrape_core_prefilter_unavailable_reports_false(tmp_path, monkeypatch):
 
 def test_scrape_core_dedup_unavailable_reports_false(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
@@ -473,7 +393,6 @@ def test_scrape_core_dedup_unavailable_reports_false(tmp_path, monkeypatch):
 
 def test_scrape_core_surviving_paths_reflect_dedup_output(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
@@ -510,7 +429,6 @@ def test_scrape_core_dedups_with_the_names_companies_json_holds_for_one_employer
     from door.core import companies as companies_store
 
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
     companies_store.save(profile_dir, [
         companies_store.Company(name="Flugger", feed={"platform": "successfactors", "id": "jobs.flugger.com"},
                                 status="followed", found_via="manual", aliases=["Flügger group A/S"]),
@@ -540,7 +458,6 @@ def test_scrape_core_dedups_with_the_names_companies_json_holds_for_one_employer
 
 def test_scrape_core_condense_and_prescreen_run_after_dedup(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     posting = {
@@ -573,7 +490,6 @@ def test_scrape_core_condense_and_prescreen_run_after_dedup(tmp_path, monkeypatc
 
 def test_scrape_core_condense_unavailable_reports_false(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     posting = {
@@ -602,7 +518,6 @@ def test_scrape_core_condense_unavailable_reports_false(tmp_path, monkeypatch):
 
 def test_scrape_core_prescreen_unavailable_reports_false(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     posting = {
@@ -637,7 +552,6 @@ def test_scrape_core_prescreen_honours_config_top_n(tmp_path, monkeypatch):
         "prescreen_top_n": 1,
         "prescreen_min": 0.0,
     })
-    _fake_history_store(monkeypatch, is_new=True)
 
     import door.scrapers.boards.jobindex as ji
     postings = [

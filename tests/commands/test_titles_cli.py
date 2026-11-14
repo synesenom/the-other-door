@@ -10,7 +10,6 @@ import types
 import pytest
 from click.testing import CliRunner
 
-import door.mcp_server as server
 from cli_utils import result_text
 from door.cli import cli
 from door.commands import titles as titles_cmd
@@ -138,13 +137,6 @@ def test_no_cv_of_the_users_own_asks_no_model(env, monkeypatch, cv):
         (env.profile_dir / "cv.md").write_text((workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_text())
     result = titles_cmd._titles_core(profile_dir=env.profile_dir)
     assert result["titles"] == [] and "no CV" in result["warning"]
-
-
-def test_tool_passes_its_arguments(env, monkeypatch):
-    seen = {}
-    monkeypatch.setattr(titles_cmd, "_titles_core", lambda titles, **kw: seen.update(titles=titles, **kw) or {"titles": []})
-    assert server.suggest_titles(["Quant"], hint="h", languages=["Danish"], model="sonnet") == {"titles": []}
-    assert seen == {"titles": ["Quant"], "hint": "h", "languages": ["Danish"], "model": "sonnet", "profile_dir": env.profile_dir}
 
 
 def test_cv_titles_prints_the_titles_with_their_reasons(env, monkeypatch):

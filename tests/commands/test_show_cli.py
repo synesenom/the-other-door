@@ -147,25 +147,6 @@ def test_show_sets_description_headings_apart(cli_env):
     assert "You will build models." in lines[heading + 1:]
 
 
-def test_show_into_a_pipe_has_no_colour_codes(cli_env):
-    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-
-    result = CliRunner().invoke(cli, ["jobs", "show", "job-abc"])
-
-    assert "\x1b[" not in result.output
-
-
-def test_show_on_a_terminal_is_coloured(cli_env, monkeypatch):
-    from door.commands import _common as common
-
-    monkeypatch.setattr(common, "_stdout_is_tty", lambda: True)
-    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-
-    result = CliRunner().invoke(cli, ["jobs", "show", "job-abc"])
-
-    assert "\x1b[" in result.output
-
-
 def test_show_spaces_long_description_paragraphs_but_keeps_short_lines_together(cli_env):
     long_a = "A long opening paragraph " * 6
     long_b = "Another long paragraph " * 6

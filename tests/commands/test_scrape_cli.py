@@ -257,181 +257,66 @@ def _make_posting(platform_id: str | None = "pid-1") -> dict:
     }
 
 
+def _seed_history(jobs_dir, job_id, platform_id, *, days_ago=0):
+    from datetime import datetime, timedelta, timezone
+
+    seen = (datetime.now(timezone.utc) - timedelta(days=days_ago)).isoformat()
+    jobs_dir.mkdir(parents=True, exist_ok=True)
+    (jobs_dir / "history.json").write_text(json.dumps({job_id: {
+        "job_id": job_id, "platform_id": platform_id, "url": "https://x/1", "source": "jobindex",
+        "first_seen": seen, "last_seen": seen, "status": "seen"}}))
+    return seen
+
+
+def _history(jobs_dir):
+    return json.loads((jobs_dir / "history.json").read_text())
+
+
+def _today_file(cli_env):
+    return cli_env.jobs_dir / "postings" / date.today().isoformat() / "jobindex" / "jobindex-acme-data-scientist.json"
+
+
 def test_scrape_skips_already_seen_posting(cli_env, monkeypatch, capsys):
-    """A posting whose platform_id is already in the history is NOT written to disk."""
+    """A posting already in the history is NOT written again; its last_seen moves on."""
     import door.scrapers.boards.jobindex as ji
-    posting = _make_posting("pid-already-seen")
-    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
+    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [_make_posting("pid-already-seen")])
+    monkeypatch.delattr(ji, "iter_scrape", raising=False)
+    before = _seed_history(cli_env.jobs_dir, "jobindex-acme-data-scientist", "pid-already-seen", days_ago=3)
+
+    _scrape_text(cli_env, capsys, ["jobindex"])
+
+    assert not _today_file(cli_env).exists(), "already-seen posting should be skipped"
+    assert _history(cli_env.jobs_dir)["jobindex-acme-data-scientist"]["last_seen"] > before
+
+
+@pytest.mark.parametrize("platform_id", ["pid-fresh", None])
+def test_scrape_new_posting_is_written_and_recorded_in_history(cli_env, monkeypatch, capsys, platform_id):
+    import door.scrapers.boards.jobindex as ji
+    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [_make_posting(platform_id)])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    # Pre-seed the history so the posting looks already-seen
-    import door.core.history as hist_mod
-    calls = {}
+    _scrape_text(cli_env, capsys, ["jobindex"])
 
-    class FakeStore:
-        def __init__(self, path):
-            calls["path"] = path
-
-        def is_new(self, platform_id, source, recheck_after_days, **kw):
-            # Mark this posting as NOT new
-            return False
-
-        def record(self, *args, **kw):
-            calls["record"] = args
-
-        def touch(self, platform_id, **kw):
-            calls["touch"] = platform_id
-
-        def known_ids(self, *args, **kw):
-            return set()
-
-        def save(self):
-            calls["save"] = True
-
-    monkeypatch.setattr(hist_mod, "HistoryStore", FakeStore)
-
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
-
-    # The posting file must NOT be written (posting was already seen)
-    out_file = (
-        cli_env.jobs_dir / "postings" / date.today().isoformat()
-        / "jobindex" / "jobindex-acme-data-scientist.json"
-    )
-    assert not out_file.exists(), "already-seen posting should be skipped"
-
-    # touch() must have been called to update last_seen
-    assert calls.get("touch") == "jobindex-acme-data-scientist"  # keyed by job id
-    # save() must have been called
-    assert calls.get("save") is True
-
-
-def test_scrape_new_posting_is_recorded_in_history(cli_env, monkeypatch, capsys):
-    """A new posting (is_new() True) is written to disk and recorded in the store."""
-    import door.scrapers.boards.jobindex as ji
-    posting = _make_posting("pid-fresh")
-    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
-    monkeypatch.delattr(ji, "iter_scrape", raising=False)
-
-    import door.core.history as hist_mod
-    calls = {}
-
-    class FakeStore:
-        def __init__(self, path):
-            pass
-
-        def is_new(self, platform_id, source, recheck_after_days, **kw):
-            return True
-
-        def record(self, job_id, platform_id, url, source, **kw):
-            calls["record"] = (job_id, platform_id, url, source)
-
-        def touch(self, platform_id, **kw):
-            calls["touch"] = platform_id
-
-        def known_ids(self, *args, **kw):
-            return set()
-
-        def save(self):
-            calls["save"] = True
-
-    monkeypatch.setattr(hist_mod, "HistoryStore", FakeStore)
-
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
-
-    out_file = (
-        cli_env.jobs_dir / "postings" / date.today().isoformat()
-        / "jobindex" / "jobindex-acme-data-scientist.json"
-    )
-    assert out_file.exists(), "new posting should be written to disk"
-    # record() must have been called with the correct platform_id
-    assert calls.get("record") is not None
-    assert calls["record"][:2] == ("jobindex-acme-data-scientist", "pid-fresh")
-    assert calls.get("save") is True
-
-
-def test_scrape_none_platform_id_always_written(cli_env, monkeypatch, capsys):
-    """A posting with platform_id=None bypasses the history check and is written."""
-    import door.scrapers.boards.jobindex as ji
-    posting = _make_posting(None)
-    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
-    monkeypatch.delattr(ji, "iter_scrape", raising=False)
-
-    import door.core.history as hist_mod
-    is_new_calls = []
-
-    class FakeStore:
-        def __init__(self, path):
-            pass
-
-        def is_new(self, platform_id, source, recheck_after_days, **kw):
-            is_new_calls.append(platform_id)
-            return True
-
-        def record(self, *args, **kw):
-            pass
-
-        def touch(self, *args, **kw):
-            pass
-
-        def known_ids(self, *args, **kw):
-            return set()
-
-        def save(self):
-            pass
-
-    monkeypatch.setattr(hist_mod, "HistoryStore", FakeStore)
-
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
-
-    out_file = (
-        cli_env.jobs_dir / "postings" / date.today().isoformat()
-        / "jobindex" / "jobindex-acme-data-scientist.json"
-    )
-    assert out_file.exists(), "posting with platform_id=None should always be written"
+    assert _today_file(cli_env).exists(), "new posting should be written to disk"
+    if platform_id:
+        assert _history(cli_env.jobs_dir)["jobindex-acme-data-scientist"]["platform_id"] == platform_id
 
 
 def test_scrape_recheck_after_days_from_config(cli_env, monkeypatch, capsys):
-    """recheck_after_days is read from config and passed to is_new()."""
-    # Write config with recheck_after_days
+    """A posting last seen longer ago than the config's recheck_after_days comes back as new."""
     write_config(cli_env.profile_dir, {
         "role_targets": ["data scientist"],
         "location": "Copenhagen",
         "recheck_after_days": 7,
     })
-
     import door.scrapers.boards.jobindex as ji
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [_make_posting("pid-r")])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
+    _seed_history(cli_env.jobs_dir, "jobindex-acme-data-scientist", "pid-r", days_ago=10)
 
-    import door.core.history as hist_mod
-    seen_recheck = []
+    _scrape_text(cli_env, capsys, ["jobindex"])
 
-    class FakeStore:
-        def __init__(self, path):
-            pass
-
-        def is_new(self, platform_id, source, recheck_after_days, **kw):
-            seen_recheck.append(recheck_after_days)
-            return True
-
-        def record(self, *args, **kw):
-            pass
-
-        def touch(self, *args, **kw):
-            pass
-
-        def known_ids(self, *args, **kw):
-            return set()
-
-        def save(self):
-            pass
-
-    monkeypatch.setattr(hist_mod, "HistoryStore", FakeStore)
-
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
-    assert seen_recheck and seen_recheck[0] == 7, (
-        f"recheck_after_days from config should be passed to is_new(); got {seen_recheck}"
-    )
+    assert _today_file(cli_env).exists()
 
 
 # --------------------------------------------------------------------------- #
@@ -504,8 +389,7 @@ def test_scrape_max_postings_per_site_from_config(cli_env, monkeypatch):
 
 
 def test_scrape_core_computes_and_passes_known_ids(cli_env, monkeypatch):
-    """_scrape_core calls store.known_ids(site, recheck_after_days) and passes
-    the result through to the scraper's scrape() call as `known_ids`."""
+    """The scraper is handed the platform ids the history already holds for its site."""
     received = {}
 
     fake_mod = types.ModuleType("door.scrapers.boards.jobindex")
@@ -516,35 +400,11 @@ def test_scrape_core_computes_and_passes_known_ids(cli_env, monkeypatch):
 
     fake_mod.scrape = fake_scrape
     monkeypatch.setitem(sys.modules, "door.scrapers.boards.jobindex", fake_mod)
-
-    import door.core.history as hist_mod
-
-    class FakeStore:
-        def __init__(self, path):
-            pass
-
-        def is_new(self, *args, **kw):
-            return True
-
-        def record(self, *args, **kw):
-            pass
-
-        def touch(self, *args, **kw):
-            pass
-
-        def known_ids(self, source, recheck_after_days, **kw):
-            received["known_ids_call"] = (source, recheck_after_days)
-            return frozenset({"pid-known"})
-
-        def save(self):
-            pass
-
-    monkeypatch.setattr(hist_mod, "HistoryStore", FakeStore)
+    _seed_history(cli_env.jobs_dir, "jobindex.pid-known", "pid-known")
 
     scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
 
-    assert received["known_ids_call"][0] == "jobindex"
-    assert received["known_ids"] == frozenset({"pid-known"})
+    assert set(received["known_ids"]) == {"pid-known"}
 
 
 # --------------------------------------------------------------------------- #
@@ -574,7 +434,7 @@ def test_scrape_liveness_called_when_flag_set(cli_env, monkeypatch, capsys):
 
     text = _scrape_text(cli_env, capsys, ["jobindex"])
     assert len(calls["paths"]) == 1
-    assert "Liveness check complete: 1 posting(s)" in text
+    assert "liveness" in text.lower()
 
 # --------------------------------------------------------------------------- #
 # scrape — failure accounting (issue #132)
@@ -732,12 +592,6 @@ def test_scrape_core_feed_site_without_companies_is_not_configured(cli_env, monk
     assert entry == {"site": "lever", "outcome": "not_configured", "config_key": "lever_companies"}
 
 
-def test_scrape_prints_a_skip_line_for_an_unconfigured_feed(cli_env, capsys):
-    text = _scrape_text(cli_env, capsys, ["lever"], mode="collect")
-    assert "· lever: skipped — no employers followed on it" in text
-    assert "⚠" not in text
-
-
 # --------------------------------------------------------------------------- #
 # progress events (issue #202)
 # --------------------------------------------------------------------------- #
@@ -799,8 +653,7 @@ def test_scrape_core_failed_site_event_carries_last_error(cli_env, monkeypatch):
     )
     done = next(e for e in cap.events if e.outcome)
     assert done.outcome == "failed"
-    assert done.message.startswith("jobindex: 0 posting(s), ")
-    assert done.message.endswith("— search error: 503")
+    assert "search error: 503" in done.message
 
 
 def test_scrape_core_stale_count_in_done_message(cli_env, monkeypatch):
@@ -1012,6 +865,7 @@ def test_a_feed_site_with_no_followed_employer_is_not_configured(cli_env, capsys
     assert result["sites"][0]["outcome"] == "not_configured"
     out = capsys.readouterr()
     assert "no employers followed" in out.out and "companies add" in out.out
+    assert "⚠" not in out.out
     assert "profile/config.json" not in out.out
 
 

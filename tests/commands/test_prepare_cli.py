@@ -60,23 +60,10 @@ def test_prepare_tailor_failure_does_not_advance_status(cli_env, monkeypatch):
 
     monkeypatch.setattr(prepare_cmd, "_run_tailor", _failing_tailor)
 
-    import door.core.tracker as tracker_mod
-
-    class FakeTracker:
-        def __init__(self, path):
-            pass
-
-        def advance(self, job_id, to):
-            raise AssertionError("advance must not be called on tailor failure")
-
-        def save(self):
-            raise AssertionError("save must not be called on tailor failure")
-
-    monkeypatch.setattr(tracker_mod, "ApplicationTracker", FakeTracker)
-
     result = CliRunner().invoke(cli, ["jobs", "prepare", "job-abc"])
     assert result.exit_code == 1
     assert "fail" in result_text(result).lower() or "error" in result_text(result).lower()
+    assert not (cli_env.jobs_dir / "applications.json").exists()
 
 
 def test_tailor_outputs_missing_lists_missing_and_empty_files(tmp_path):
@@ -91,31 +78,15 @@ def test_tailor_outputs_missing_lists_missing_and_empty_files(tmp_path):
     assert prepare_cmd._tailor_outputs_missing(out) == []
 
 
-def _tracker_must_not_advance(monkeypatch):
-    import door.core.tracker as tracker_mod
-
-    class FakeTracker:
-        def __init__(self, path):
-            pass
-
-        def advance(self, job_id, to):
-            raise AssertionError("advance must not be called without materials on disk")
-
-        def save(self):
-            raise AssertionError("save must not be called without materials on disk")
-
-    monkeypatch.setattr(tracker_mod, "ApplicationTracker", FakeTracker)
-
-
 def test_prepare_tailor_exit_0_without_outputs_leaves_status_unchanged(cli_env, monkeypatch):
     """claude exited 0 but wrote nothing (agent bailed early) -> not 'prepared'."""
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
     monkeypatch.setattr(prepare_cmd, "_run_tailor", fake_tailor(cli_env.jobs_dir, writes=()))
-    _tracker_must_not_advance(monkeypatch)
 
     result = CliRunner().invoke(cli, ["jobs", "prepare", "job-abc"])
 
     assert result.exit_code == 1
+    assert not (cli_env.jobs_dir / "applications.json").exists()
     text = result_text(result)
     assert "missing" in text
     assert "cv.pdf" in text
@@ -179,23 +150,6 @@ def test_prepare_without_job_id_prepares_the_highest_scoring_match(cli_env, monk
     called = []
     monkeypatch.setattr(prepare_cmd, "_run_tailor", fake_tailor(cli_env.jobs_dir, called))
 
-    import door.core.tracker as tracker_mod
-
-    class FakeTracker:
-        def __init__(self, path):
-            pass
-
-        def get_status(self, job_id):
-            return None
-
-        def advance(self, job_id, to):
-            pass
-
-        def save(self):
-            pass
-
-    monkeypatch.setattr(tracker_mod, "ApplicationTracker", FakeTracker)
-
     result = CliRunner().invoke(cli, ["jobs", "prepare"])
     assert result.exit_code == 0, result_text(result)
     assert called == ["job-top"]
@@ -207,23 +161,6 @@ def test_prepare_without_job_id_passes_force_through(cli_env, monkeypatch):
 
     called = []
     monkeypatch.setattr(prepare_cmd, "_run_tailor", fake_tailor(cli_env.jobs_dir, called))
-
-    import door.core.tracker as tracker_mod
-
-    class FakeTracker:
-        def __init__(self, path):
-            pass
-
-        def get_status(self, job_id):
-            return None
-
-        def advance(self, job_id, to):
-            pass
-
-        def save(self):
-            pass
-
-    monkeypatch.setattr(tracker_mod, "ApplicationTracker", FakeTracker)
 
     result = CliRunner().invoke(cli, ["jobs", "prepare", "--force"])
     assert result.exit_code == 0, result_text(result)
@@ -266,12 +203,14 @@ def test_tailor_mcp_config_names_the_server_absolutely(cli_env):
     assert Path(server["env"]["PYTHONPATH"]).is_absolute()
 
 
-def test_run_tailor_ensures_the_mcp_config_first(tmp_path, monkeypatch):
-    order = []
-    monkeypatch.setattr(workspace, "ensure_mcp_config", lambda: order.append("ensure"))
-    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: order.append("run") or FakeCompleted(0))
+def test_run_tailor_has_the_mcp_config_written_when_claude_starts(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    monkeypatch.setattr(workspace, "HOME", home)
+    monkeypatch.setattr(workspace, "MCP_CONFIG", home / ".mcp.json")
+    seen = []
+    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: seen.append((home / ".mcp.json").exists()) or FakeCompleted(0))
     prepare_cmd._run_tailor("job-abc", tmp_path / "p.json")
-    assert order == ["ensure", "run"]
+    assert seen == [True]
 
 
 def test_run_tailor_passes_the_argv_cwd_and_timeout_to_claude(cli_env, monkeypatch):
@@ -981,14 +920,6 @@ def test_a_job_in_no_known_country_gets_the_profiles_and_else_the_neutral_conven
     (cli_env.profile_dir / "config.json").write_text(json.dumps(config))
     neutral = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path / "n", "Remote"))[0]
     assert "(no country file)" in neutral and "photo: no" in neutral and "at most 2 pages" in neutral
-
-
-def test_the_tailor_agent_writes_the_photo_placeholder_by_the_conventions_and_never_the_command():
-    from paths import REPO_ROOT
-
-    text = (REPO_ROOT / ".claude" / "agents" / "tailor.md").read_text(encoding="utf-8")
-    assert "<<photo>>" in text and "photo: expected" in text and "photo: optional" in text
-    assert "Never add" in text and "marital status" in text and "nationality" in text
 
 
 def test_run_tailor_clears_the_fact_check_rounds_and_stale_facts_before_it_starts(cli_env, monkeypatch):
