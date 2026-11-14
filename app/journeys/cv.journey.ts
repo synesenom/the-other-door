@@ -17,7 +17,6 @@ test.describe('the editor', () => {
     await expect(saveButton(page)).toBeDisabled()
     await expect(page.getByRole('button', { name: 'Undo changes' })).toBeDisabled()
     await expect(page.getByRole('button', { name: 'Add a page' })).toBeEnabled()
-    // the extras are off for now (CvEditor's `extras`)
     await expect(page.getByRole('button', { name: 'What should I learn?' })).toHaveCount(0)
     expect(world.toolCalls('market')).toEqual([])
   })

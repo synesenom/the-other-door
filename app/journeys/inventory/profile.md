@@ -232,7 +232,7 @@ Other data-driven variants:
 - Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and shows them in the editor
 - Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — ✓ a CV saved since the page was read is not overwritten; unit: `app/src/renderer/screens/CvEditor.test.tsx`
 
-### 4.5 Gaps panel: `region "What should I learn?"`
+### 4.5 Gaps panel (removed from the app in #65; what follows is history)
 
 Off in the app for now (`CvEditor`'s `extras`, false: it crowded the page); what follows is the code as it stands.
 
@@ -266,7 +266,7 @@ Off in the app for now (`CvEditor`'s `extras`, false: it crowded the page); what
 
 ---
 
-## 5. Market (Market.tsx, at the foot of the CV view): `region` named by its fold button
+## 5. Market (moved to Analytics in #65; see journeys/analytics.journey.ts)
 
 Off in the app for now, with §4.5 (`extras`).
 
