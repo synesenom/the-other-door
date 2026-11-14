@@ -55,14 +55,14 @@ function Split({ title, total, parts, children }: { title: string; total: number
   )
 }
 
-/** The interview rate: how many answered applications led to an interview, the measure of how well the matches fit. */
+/** The interview rate: how many applications with an outcome (an interview, a rejection or no reply) led to an interview, the measure of how well the matches fit. */
 function Rate({ rate }: { rate: PassRate | undefined }) {
-  if (!rate || !rate.decided || rate.rate === null) return <p className="small muted">Your interview rate shows here once employers answer.</p>
+  if (!rate || !rate.decided || rate.rate === null) return <p className="small muted">Your interview rate shows here once an application has an outcome.</p>
   const range = rate.low !== null && rate.high !== null ? `, likely between ${pct(rate.low)} and ${pct(rate.high)}` : ''
   return (
     <div className="part-head">
       <p className="display-s">{pct(rate.rate)}</p>
-      <p className="small">{`of your answered applications led to an interview (${rate.passed} of ${rate.decided})${range}.`}</p>
+      <p className="small">{`of your applications with an outcome (an interview, a rejection or no reply) led to an interview: ${rate.passed} of ${rate.decided}${range}.`}</p>
     </div>
   )
 }
@@ -167,8 +167,8 @@ function Usage({ cost }: { cost: CostBlock | null }) {
 }
 
 /**
- * Analytics: how it is going, read-only (#64, #66). Applications first (`status_summary.funnel`, each stage as a
- * share of the one before), then Claude usage: what the last week's calls cost at API
+ * Analytics: how it is going, read-only (#64, #66, #87). Applications first (the interview rate, your matches and
+ * your applications, #87), then Claude usage: what the last week's calls cost at API
  * prices per activity, and one search and one prepared application. Not the plan's window: that is live, and
  * this screen is about the days gone by. Reads
  * `status_summary` once on opening; a failed read is said nowhere (the next opening reads again).

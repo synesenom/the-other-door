@@ -678,11 +678,25 @@ def test_status_summary_standing_counts_each_sent_application_once_by_where_it_s
         "job-f": ["applied", "discarded"],
         "job-g": ["prepared"],
         "job-h": ["discarded"],
+        "job-i": ["applied", "prepared"],  # sent, then moved back: still waiting for an answer
+        "job-j": ["offer"],  # an offer with no applied event was sent all the same
     })
 
     assert _standing(cli_env) == {
-        "offer": 1, "interviewing": 1, "waiting": 1, "rejected": 1, "ghosted": 1, "withdrawn": 1}
+        "offer": 2, "interviewing": 1, "waiting": 2, "rejected": 1, "ghosted": 1, "withdrawn": 1}
 
 
 def test_status_summary_standing_is_all_zero_with_an_empty_ledger(cli_env):
     assert _standing(cli_env) == dict.fromkeys(("offer", "interviewing", "waiting", "rejected", "ghosted", "withdrawn"), 0)
+
+
+def test_status_summary_counts_a_match_sent_then_discarded_as_applied_not_set_aside(cli_env):
+    # one job in one part: it is "withdrawn" among the applications, so "applied" among the matches
+    for job in ("job-a", "job-b"):
+        _write_status_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", job, score=0.9)
+    _histories(cli_env, {"job-a": ["applied", "discarded"], "job-b": ["discarded"]})
+    from door.commands import status as status_cmd
+
+    by_status = status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)["pipeline"]["above_threshold_by_status"]
+
+    assert (by_status["applied"], by_status["discarded"]) == (1, 1)

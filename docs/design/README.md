@@ -61,6 +61,7 @@ change a colour or a size there, not in a component.
 | `on-warning` | `#1E1A16` | `#1E1A16` | the ! on that triangle |
 | `scrim` | `rgba(30,26,22,0.4)` | `rgba(0,0,0,0.55)` | the veil behind a dialog |
 | `accent-tint` | `rgba(47,85,200,0.14)` | `rgba(134,160,242,0.35)` | the accent, faint, behind text: the lines just added to the CV (stronger in dark, where the ground swallows it) |
+| `accent-soft` | `#9AA5CC` | `#4D5679` | the accent, softened and opaque: the second part of Analytics' split bars (prepared, interviewing) |
 
 Contrast (WCAG): ink on ground 14:1; ink-muted on ground 6.1:1 (6.8:1 on surface);
 accent on ground 5.2:1 (6.3:1 on page), page on accent 6.3:1; in dark mode ink-muted 7.4:1,
@@ -219,9 +220,9 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 
 **Analytics** (no mockup yet): the reading-width column of Settings with its list of parts on the
 right, nothing in it changes anything. Applications first (#66, #87): what the user did apart from how employers answered. It leads
-like Claude usage, with the interview rate in `display-s` (answered applications that led to an
-interview) and one `small` line "of your answered applications led to an interview (3 of 5), likely
-between 40% and 77%" (the Wilson range); before an answer, one muted line instead. Then two
+like Claude usage, with the interview rate in `display-s` (the applications with an outcome, an interview, a
+rejection or no reply, that led to an interview) and one `small` line saying so with "3 of 5,
+likely between 40% and 77%" (the Wilson range); before any outcome, one muted line instead. Then two
 stacked 8 px bars drawn like the cost bar, each with a `body` heading and its total in
 `ink-muted`, and a legend row per part (dot, name, count): Your matches (Applied `accent`,
 Prepared, not sent `accent-soft`, Not yet `border`; the ones set aside a muted line under it) and

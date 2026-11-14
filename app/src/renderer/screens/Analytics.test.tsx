@@ -101,7 +101,7 @@ describe('Analytics', () => {
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       expect(within(part).getByText('60%')).toBeInTheDocument()
-      expect(part).toHaveTextContent('of your answered applications led to an interview (3 of 5), likely between 40% and 77%.')
+      expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5, likely between 40% and 77%.')
     })
 
     it('splits your matches into applied, prepared and not yet, with the ones set aside said apart', async () => {
@@ -131,7 +131,7 @@ describe('Analytics', () => {
       mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, interviewing: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
-      expect(within(part).getByText('Your interview rate shows here once employers answer.')).toBeInTheDocument()
+      expect(within(part).getByText('Your interview rate shows here once an application has an outcome.')).toBeInTheDocument()
       expect(within(part).queryByText(/%$/)).toBeNull()
     })
 
@@ -140,6 +140,15 @@ describe('Analytics', () => {
       render(<Analytics />)
       expect(await screen.findByRole('group', { name: 'Your matches' })).toBeInTheDocument()
       expect(screen.queryByRole('group', { name: 'Your applications' })).toBeNull()
+    })
+
+    it('with applications sent but no matches (imported, below the minimum score): the rate and the applications only', async () => {
+      const none = { ...PIPELINE, above_threshold: 0, above_threshold_by_status: { unapplied: 0, prepared: 0, applied: 0, discarded: 0 } }
+      mockDoor({ status_summary: summary({ ...APPLIED, pipeline: none, cost: null }) })
+      render(<Analytics />)
+      expect(await screen.findByRole('group', { name: 'Your applications' })).toBeInTheDocument()
+      expect(screen.getByText('60%')).toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: 'Your matches' })).toBeNull()
     })
 
     it('with no matches and nothing sent: a single quiet line for the section', async () => {

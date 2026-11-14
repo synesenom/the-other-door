@@ -204,7 +204,7 @@ def pipeline_summary(
         zero is one the prescreen, language pass or exclude list dropped);
         ``above_threshold_by_status`` splits ``above_threshold`` by ledger
         status, ``applied`` counting everything past applying (interview,
-        ghosted, offer, rejected).
+        ghosted, offer, rejected) and a job discarded after it was sent.
     """
     total = 0
     excluded = 0
@@ -228,7 +228,7 @@ def pipeline_summary(
             status = tracker.get_status(data.get("id"))
             if status in _ELIGIBLE_STATUSES:
                 by_status["unapplied"] += 1
-            elif status in ("prepared", "discarded"):
+            elif status == "prepared" or (status == "discarded" and not _was_sent(tracker, data.get("id"))):
                 by_status[status] += 1
             else:
                 by_status["applied"] += 1
@@ -243,6 +243,11 @@ def pipeline_summary(
         "unapplied": unapplied,
         "above_threshold_by_status": by_status,
     }
+
+
+def _was_sent(tracker, job_id) -> bool:
+    """Whether the job's history has a sent status (applied or later)."""
+    return any(tracker_mod.is_sent(event.get("status")) for event in tracker.history(job_id))
 
 
 def ledger_breakdown(applications: dict) -> dict[str, int]:
