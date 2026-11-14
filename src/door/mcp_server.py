@@ -822,7 +822,10 @@ def status_summary() -> dict:
         ``{"min_score", "pipeline": {"total", "excluded", "applicable",
         "above_threshold", "unapplied", "above_threshold_by_status":
         {"unapplied", "prepared", "applied", "discarded"}}, "ledger": {<each status>: count}, "interviews":
-        {<stage>: {"passed", "rejected", "ghosted", "withdrawn", "pending"}}, "since_last_review":
+        {<stage>: {"passed", "rejected", "ghosted", "withdrawn", "pending"}}, "funnel":
+        [{"stage", "count"}] (postings, applicable, matches, prepared, applied, interview, offer),
+        "application": {"passed", "rejected", "ghosted", "withdrawn", "pending"}, "pass_rates":
+        {<stage>: {"passed", "decided", "rate", "low", "high"}}, "since_last_review":
         {"last_reviewed_at", "runs", "last_run", "new_matches",
         "site_failures"}, "in_progress": None | {"purpose", "pid",
         "started_at", "message", "done", "total", "site", "stage",

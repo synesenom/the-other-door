@@ -756,7 +756,7 @@ def test_status_summary_funnel_counts_each_job_once_per_stage_reached(cli_env):
     pipeline = result["pipeline"]
     assert (funnel["postings"], funnel["applicable"], funnel["matches"]) == (
         pipeline["total"], pipeline["applicable"], pipeline["above_threshold"])
-    assert (funnel["prepared"], funnel["applied"], funnel["interview"], funnel["offer"]) == (3, 2, 1, 1)
+    assert (funnel["prepared"], funnel["applied"], funnel["interview"], funnel["offer"]) == (3, 2, 2, 1)
     counts = list(funnel.values())
     assert counts == sorted(counts, reverse=True)
 
@@ -768,7 +768,7 @@ def test_status_summary_funnel_counts_a_skipped_stage_only_where_it_happened(cli
 
     funnel = _funnel(cli_env)
 
-    assert (funnel["prepared"], funnel["applied"], funnel["offer"]) == (1, 1, 1)
+    assert (funnel["prepared"], funnel["applied"], funnel["interview"], funnel["offer"]) == (1, 1, 1, 1)
 
 
 def test_status_summary_funnel_stays_monotone_for_an_applied_job_below_min_score(cli_env):
@@ -777,10 +777,7 @@ def test_status_summary_funnel_stays_monotone_for_an_applied_job_below_min_score
 
     funnel = _funnel(cli_env)
 
-    assert funnel["applied"] == 2
-    counts = list(funnel.values())
-    assert counts == sorted(counts, reverse=True)
-    assert funnel["matches"] >= funnel["prepared"] >= 2
+    assert list(funnel.values()) == [2, 2, 2, 2, 2, 0, 0]
 
 
 def test_status_summary_funnel_is_zero_after_postings_with_an_empty_ledger(cli_env):

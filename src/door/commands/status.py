@@ -335,13 +335,13 @@ _FUNNEL_STAGES = ("postings", "applicable", "matches", "prepared", "applied", "i
 
 
 def _funnel(summary: dict, app_tracker) -> list[dict]:
-    """The job hunt as stages reached, each job counted once from its ledger history (#66).
+    """The job hunt as stages reached, each job counted in every stage it reached (#66).
 
     ``[{"stage", "count"}]`` for postings, applicable, matches (the pipeline's total,
     applicable and above_threshold), then the jobs that ever were prepared, applied,
-    in an interview round and at an offer. A stage skipped in the history is not
-    counted; counts never rise down the list (a sent job that is not among the
-    matches lifts the earlier stages).
+    in an interview round (or at an offer, which implies the application passed)
+    and at an offer. A sent job implies it was prepared. Counts never rise down the
+    list: a sent job below min_score or with no posting lifts the earlier stages.
     """
     prepared = applied = interview = offer = 0
     for job_id in app_tracker.job_ids():
@@ -349,7 +349,7 @@ def _funnel(summary: dict, app_tracker) -> list[dict]:
         sent = any(_tracker_mod.is_sent(s) for s in statuses)
         prepared += sent or "prepared" in statuses
         applied += sent
-        interview += any(_tracker_mod.interview_stage(s) for s in statuses)
+        interview += any(_tracker_mod.interview_stage(s) for s in statuses) or "offer" in statuses
         offer += "offer" in statuses
     raw = [summary["total"], summary["applicable"], summary["above_threshold"], prepared, applied, interview, offer]
     counts = [max(raw[i:]) for i in range(len(raw))]

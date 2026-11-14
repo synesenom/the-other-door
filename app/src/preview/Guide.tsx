@@ -152,6 +152,35 @@ export function Guide() {
               <span className="usage-tone-2" style={{ flexGrow: 0.03 }} />
             </div>
           </Row>
+          <Row label="funnel-row">
+            <ul className="funnel-list">
+              <li className="funnel-row">
+                <span className="body">Prepared</span>
+                <span className="funnel-bar" role="img" aria-label="Prepared: 6 of 12">
+                  <span style={{ width: '50%' }} />
+                </span>
+                <span className="body">6</span>
+              </li>
+            </ul>
+          </Row>
+          <Row label="stage-table">
+            <table className="stage-table small">
+              <thead>
+                <tr>
+                  <th scope="col">Stage</th>
+                  <th scope="col">Passed</th>
+                  <th scope="col">Pass rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Application</th>
+                  <td>3</td>
+                  <td>3/5 passed  60% (40–77%)</td>
+                </tr>
+              </tbody>
+            </table>
+          </Row>
           <Row label="usage-activity">
             <ul className="usage-list">
               <li className="usage-activity">

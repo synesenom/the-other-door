@@ -218,7 +218,12 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 ![Review one at a time, dark](screens/review-dark.png)
 
 **Analytics** (no mockup yet): the reading-width column of Settings with its list of parts on the
-right, nothing in it changes anything. Claude usage first: the total of the last 7 days in
+right, nothing in it changes anything. Applications first (#66): the funnel as one row per stage, its
+name, an 8 px bar sized by its share of what was scraped (`accent` on a `border` track, at least 2 px)
+and its count right in tabular figures; under it, once something is applied, a table of the
+application and each interview round (Passed, Rejected, Ghosted, Withdrawn, Pending, Pass rate) in
+`small`, headers `ink-muted`, and one `small` muted line on the interval; until then one muted line
+in its place. Claude usage next: the total of the last 7 days in
 `display-s` marked "≈", then one `small` line in ink that starts in bold "You don't pay this." (the
 plan covers it; an estimate at API prices: no one may read it as a price), then about what one
 search and one application cost in `small` muted, then one 8 px stacked bar for the whole total

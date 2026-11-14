@@ -166,7 +166,7 @@ describe('scenes', () => {
     expect(screen.getByRole('row', { name: /Application/ })).toHaveTextContent('3/5 passed 60% (40–77%)')
     cleanup()
     mount('analytics', 'empty')
-    expect(await screen.findByText('Your funnel shows here once you have applied')).toBeInTheDocument()
+    expect(await screen.findByText('How each stage went shows here once you have applied')).toBeInTheDocument()
   })
 
   it('posting opens the posting', async () => {

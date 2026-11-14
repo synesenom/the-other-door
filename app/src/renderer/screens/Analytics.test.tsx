@@ -126,18 +126,54 @@ describe('Analytics', () => {
       expect(within(part).getByRole('row', { name: /Screening/ }).textContent).not.toContain('%')
     })
 
-    it('with nothing applied: one quiet line, and Claude usage still shows', async () => {
-      mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel: FUNNEL.map((f) => ({ ...f, count: f.stage === 'postings' ? 5 : 0 })), application: { ...OUT, passed: 0, pending: 0 }, interviews: {}, pass_rates: {} }) })
+    it('with something found but nothing applied: the bars, and one quiet line where the table goes', async () => {
+      const funnel = FUNNEL.map((f) => ({ ...f, count: { postings: 5, applicable: 4, matches: 3, prepared: 2 }[f.stage] ?? 0 }))
+      mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel, application: { ...OUT, passed: 0, pending: 0 }, interviews: {}, pass_rates: {} }) })
       render(<Analytics />)
-      expect(await screen.findByText('Your funnel shows here once you have applied')).toBeInTheDocument()
+      const part = await screen.findByRole('region', { name: 'Applications' })
+      expect(within(part).getByRole('img', { name: 'Prepared: 2 of 5' })).toBeInTheDocument()
+      expect(within(part).getByText('How each stage went shows here once you have applied')).toBeInTheDocument()
+      expect(within(part).queryByRole('table')).toBeNull()
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
     })
 
-    it('a failed read shows no error', async () => {
-      mockDoor({})
+    it('with nothing scraped: a single quiet line for the section', async () => {
+      const funnel = FUNNEL.map((f) => ({ ...f, count: 0 }))
+      mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel, application: OUT, interviews: {}, pass_rates: {} }) })
       render(<Analytics />)
+      const part = await screen.findByRole('region', { name: 'Applications' })
+      expect(within(part).getByText('Your funnel shows here once jobs are found')).toBeInTheDocument()
+      expect(within(part).queryAllByRole('img')).toEqual([])
+      expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
+    })
+
+    it('a failed read shows no error and no section; a read that works shows the section', async () => {
+      mockDoor({})
+      const { unmount } = render(<Analytics />)
       expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
+      await new Promise((r) => setTimeout(r, 20))
       expect(screen.queryByRole('alert')).toBeNull()
+      expect(screen.queryByRole('region', { name: 'Applications' })).toBeNull()
+      unmount()
+      mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
+      render(<Analytics />)
+      expect(await screen.findByRole('region', { name: 'Applications' })).toBeInTheDocument()
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('a summary without a funnel: no section, no crash, usage still shows', async () => {
+      mockDoor({ status_summary: summary({ cost: COST, plan: null }) })
+      render(<Analytics />)
+      expect(await screen.findByText('≈ $2.10')).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'Applications' })).toBeNull()
+    })
+
+    it('a stage it has no label for is skipped', async () => {
+      mockDoor({ status_summary: summary({ ...APPLIED, funnel: [...FUNNEL, { stage: 'mystery', count: 1 }], cost: null }) })
+      render(<Analytics />)
+      const part = await screen.findByRole('region', { name: 'Applications' })
+      expect(within(part).getAllByRole('img')).toHaveLength(7)
+      expect(within(part).queryByText(/mystery/)).toBeNull()
     })
   })
 })

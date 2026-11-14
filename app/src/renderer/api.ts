@@ -83,13 +83,18 @@ export interface StatusSummary {
   /** The Claude plan's window and the room left (`usage.room`); null before any reading. */
   plan?: PlanBlock | null
   /** The job hunt as stages reached (`status_summary.funnel`), each count no larger than the one before. */
-  funnel?: { stage: string; count: number }[]
+  funnel?: FunnelStage[]
   /** How the sent applications went: did each lead to an interview. */
   application?: StageCounts
   /** How each kind of interview round went (only the kinds that occur). */
   interviews?: Record<string, StageCounts>
   /** Pass rate per stage, `application` first (one-sigma Wilson interval; `rate` null until one is decided). */
   pass_rates?: Record<string, PassRate>
+}
+
+export interface FunnelStage {
+  stage: string
+  count: number
 }
 
 export interface StageCounts {

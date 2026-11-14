@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { statusSummary, type CostBlock, type PassRate, type StageCounts, type StatusSummary } from '../api'
+import { statusSummary, type CostBlock, type FunnelStage, type PassRate, type StageCounts, type StatusSummary } from '../api'
 import { PageSections } from './PageSections'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
@@ -41,11 +41,11 @@ export function pct(rate: PassRate | undefined): string {
   return `${rate.passed}/${rate.decided} passed  ${Math.round(rate.rate * 100)}% (${Math.round(rate.low * 100)}–${Math.round(rate.high * 100)}%)`
 }
 
-function Applications({ summary }: { summary: StatusSummary }) {
-  const funnel = summary.funnel ?? []
+/** The funnel's bars once anything is scraped; the stage table once something is applied. */
+function Applications({ funnel, summary }: { funnel: FunnelStage[]; summary: StatusSummary }) {
   const first = funnel[0]?.count ?? 0
+  if (first === 0) return <p className="small muted">Your funnel shows here once jobs are found</p>
   const applied = funnel.find((f) => f.stage === 'applied')?.count ?? 0
-  if (applied === 0) return <p className="small muted">Your funnel shows here once you have applied</p>
   const stages: [string, StageCounts][] = [
     ...(summary.application ? ([['application', summary.application]] as [string, StageCounts][]) : []),
     ...Object.entries(summary.interviews ?? {}),
@@ -53,20 +53,23 @@ function Applications({ summary }: { summary: StatusSummary }) {
   return (
     <>
       <ul className="funnel-list">
-        {funnel.map((f) => {
-          const label = FUNNEL_LABELS[f.stage] ?? f.stage
-          return (
-            <li key={f.stage} className="funnel-row">
-              <span className="body">{label}</span>
-              <span className="funnel-bar" role="img" aria-label={`${label}: ${f.count} of ${first}`}>
-                <span style={{ width: `${Math.round(share(f.count, first) * 1000) / 10}%` }} />
-              </span>
-              <span className="body">{f.count}</span>
-            </li>
-          )
-        })}
+        {funnel
+          .filter((f) => f.stage in FUNNEL_LABELS)
+          .map((f) => {
+            const label = FUNNEL_LABELS[f.stage]
+            return (
+              <li key={f.stage} className="funnel-row">
+                <span className="body">{label}</span>
+                <span className="funnel-bar" role="img" aria-label={`${label}: ${f.count} of ${first}`}>
+                  <span style={{ width: `${Math.round(share(f.count, first) * 1000) / 10}%` }} />
+                </span>
+                <span className="body">{f.count}</span>
+              </li>
+            )
+          })}
       </ul>
-      {stages.length > 0 && (
+      {applied === 0 && <p className="small muted">How each stage went shows here once you have applied</p>}
+      {applied > 0 && stages.length > 0 && (
         <>
           <table className="stage-table small">
             <thead>
@@ -174,12 +177,14 @@ export function Analytics() {
     <div className="page-with-aside">
       <div className="settings">
         <h1 className="display-l">Analytics</h1>
-        <section className="part" aria-labelledby="analytics-applications">
-          <h2 className="display-s" id="analytics-applications">
-            Applications
-          </h2>
-          {summary && <Applications summary={summary} />}
-        </section>
+        {summary?.funnel && (
+          <section className="part" aria-labelledby="analytics-applications">
+            <h2 className="display-s" id="analytics-applications">
+              Applications
+            </h2>
+            <Applications funnel={summary.funnel} summary={summary} />
+          </section>
+        )}
         <section className="part" aria-labelledby="analytics-usage">
           <h2 className="display-s" id="analytics-usage">
             Claude usage
@@ -187,9 +192,10 @@ export function Analytics() {
           {summary && <Usage cost={summary.cost ?? null} />}
         </section>
       </div>
-      <PageSections sections={PARTS} />
+      <PageSections sections={summary?.funnel ? [APPLICATIONS, USAGE] : [USAGE]} />
     </div>
   )
 }
 
-const PARTS = [{ id: 'analytics-applications', label: 'Applications' }, { id: 'analytics-usage', label: 'Claude usage' }]
+const APPLICATIONS = { id: 'analytics-applications', label: 'Applications' }
+const USAGE = { id: 'analytics-usage', label: 'Claude usage' }
