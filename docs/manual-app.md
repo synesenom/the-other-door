@@ -514,6 +514,19 @@ report"**. It opens Settings at Report a problem. Once you save a report the
 line goes (only what goes wrong after it counts again), and it also goes by itself when the problem
 stops. The phone does not show it.
 
+## Analytics
+
+How it is going, as figures: nothing here changes anything. Not on the phone.
+
+**Claude usage** says what Claude's work cost in the last 7 days at Claude's API prices: the total,
+about what one search for new jobs and one prepared application cost, then each activity (finding
+jobs, preparing applications, everything else) with a bar for its share, what it did (postings
+scored, applications prepared, other requests) and, when there are several, what it was spent on
+(scoring postings, translating job titles, tailoring the CV and letter, …). Your plan is not
+charged per call: this is what the same calls would cost on the API, a figure that is the same
+whatever your plan. Under it, how full this 5-hour window is and about how many more searches or
+prepared applications fit. Before the first search it says only that the figures show here after it.
+
 ## On your phone
 
 The phone app is this app's screens in your phone's browser, installed like an app (no app store).

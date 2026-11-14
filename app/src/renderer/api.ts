@@ -60,6 +60,39 @@ export interface StatusSummary {
   drive?: { connected: boolean; account: string | null; last_synced: string | null; last_error: string | null; configured?: boolean }
   /** Something keeps going wrong since the last problem report (a site, scoring, the server, a tool): no details. */
   recurring_problem?: boolean
+  /** How full the Claude plan's windows are and how many more finds and prepares fit (`usage.room`); null before any call read it. */
+  plan?: PlanBlock | null
+  /** What the last days' Claude calls cost at API prices (`usage.cost`); null before any call was weighed. */
+  cost?: CostBlock | null
+}
+
+export interface PlanWindow {
+  used?: number
+  resets_at?: string
+}
+
+export interface PlanBlock {
+  as_of: string
+  status?: string
+  five_hour?: PlanWindow
+  seven_day?: PlanWindow
+  room: { find: number | null; prepare: number | null } | null
+  binding: 'five_hour' | 'seven_day' | null
+  warning?: string
+}
+
+export interface CostBlock {
+  days: number
+  usd: number
+  per_run: { find: number | null; prepare: number | null }
+  activities: {
+    activity: string
+    label: string
+    usd: number
+    count: number
+    of: string
+    features: { feature: string; label: string; usd: number; calls: number }[]
+  }[]
 }
 
 /** One site's outcome in a run record (`core/runs.site_entries`). */

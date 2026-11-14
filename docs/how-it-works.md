@@ -176,6 +176,18 @@ It is an estimate as of the last call: chats since then are not in it, and chats
 run make a run look bigger, so the room it gives is on the low side. Until this computer has
 done about twenty calls in one window there is no room figure, only how full the window is.
 
+### What Claude's work costs
+
+Each line of `jobs/usage.jsonl` also keeps what the call would have cost on Claude's API, as
+`claude` itself works it out from its price table (cached input included). Your plan is not
+charged per call, so this is no bill: it is a yardstick that is the same for everyone, whatever
+their plan. `jobs summary`, `status_summary` (its `cost`) and the desktop app's Analytics add it
+up for the last 7 days: the total, about what one find and one prepare cost, and each activity
+(finding jobs, preparing applications, everything else) with what it did and what it was spent
+on, for example scoring postings, translating job titles, tailoring the CV and letter. Searching
+the job boards and reading the employers' feeds calls no model, so finding jobs is almost all
+scoring.
+
 ## Getting only what's new
 
 *The other door* is run whenever you sit down to look for jobs: "get me today's jobs" in a

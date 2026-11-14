@@ -422,6 +422,15 @@ legend.field-label { padding-bottom: var(--space-2); }
    what it heads; the wider gap is between its fields. */
 .part > :is(.part-head, h2) + * { margin-top: calc(var(--space-4) - 28px); }
 details.part { display: block; }
+/* Analytics' Claude usage: an activity per row, its dollars at the right, its share of the total as a bar,
+   what it did under it, then its features as quieter rows. */
+.usage-list, .usage-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.usage-list { gap: var(--space-5); }
+.usage-features { gap: var(--space-1); margin-top: var(--space-2); }
+.usage-activity > p { margin: var(--space-1) 0 0; }
+.usage-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); }
+.usage-row > h3 { margin: 0; font-weight: inherit; }
+.usage-row > span:last-child { font-variant-numeric: tabular-nums; }
 details.part > * + * { margin-top: 28px; }
 details.part > summary + * { margin-top: var(--space-4); }
 .onb-drop-area, .onb-url { position: relative; }

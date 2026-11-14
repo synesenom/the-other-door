@@ -150,3 +150,40 @@ def test_a_find_that_scored_nothing_says_nothing_of_the_plan(cli_env, monkeypatc
     stub_steps(monkeypatch, cli_env.jobs_dir)
     monkeypatch.setattr(usage, "room", lambda *a, **k: _plan())
     assert "Claude plan" not in CliRunner().invoke(cli, ["find", "--skip", "match"]).output
+
+
+# --------------------------------------------------------------------------- what it cost (#64)
+def _weighed(jobs_dir, *rows):
+    """(feature, weight, units) lines of today."""
+    jobs_dir.mkdir(parents=True, exist_ok=True)
+    with (jobs_dir / usage.LOG_NAME).open("a") as fh:
+        for feature, weight, units in rows:
+            fh.write(json.dumps({"at": _NOW.isoformat(), "feature": feature, "units": units, "weight": weight}) + "\n")
+
+
+def test_usd_reads_as_dollars_and_cents():
+    assert [common._usd(x) for x in (0, 0.004, 0.012, 1.5, 12.345)] == ["$0.00", "<$0.01", "$0.01", "$1.50", "$12.35"]
+
+
+def test_status_summary_has_no_cost_before_a_call_was_weighed(cli_env):
+    assert status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)["cost"] is None
+
+
+def test_status_summary_carries_what_the_last_week_cost(cli_env):
+    _weighed(cli_env.jobs_dir, ("match_scoring", 0.40, 100), ("tailoring", 1.20, 1))
+    cost = status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)["cost"]
+    assert cost["usd"] == pytest.approx(1.60) and cost["activities"][0]["activity"] == "prepare"
+
+
+def test_jobs_summary_prints_what_each_activity_cost(cli_env):
+    _weighed(cli_env.jobs_dir, ("match_scoring", 0.40, 100), ("title_translation", 0.05, 1), ("tailoring", 1.20, 1))
+    text = result_text(CliRunner().invoke(cli, ["jobs", "summary"]))
+    assert "Claude usage, last 7 days, at API prices" in text
+    assert "$1.65 in all" in text and "one prepare about $1.20" in text
+    assert "Preparing applications" in text and "1 application prepared" in text
+    assert "Finding jobs" in text and "$0.45" in text and "100 postings scored" in text
+    assert "Scoring postings" in text and "$0.40" in text and "Translating job titles" in text
+
+
+def test_jobs_summary_says_nothing_of_cost_before_a_call_was_weighed(cli_env):
+    assert "Claude usage" not in result_text(CliRunner().invoke(cli, ["jobs", "summary"]))

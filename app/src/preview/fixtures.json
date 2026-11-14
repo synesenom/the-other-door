@@ -1240,6 +1240,113 @@
    "last_synced": null,
    "last_error": null,
    "configured": true
+  },
+  "plan": {
+   "as_of": "2026-11-14T10:10:00+00:00",
+   "status": "allowed",
+   "five_hour": {
+    "used": 0.42,
+    "resets_at": "2026-11-14T14:30:00+00:00"
+   },
+   "seven_day": {
+    "used": 0.31,
+    "resets_at": "2026-11-18T09:00:00+00:00"
+   },
+   "room": {
+    "find": 6,
+    "prepare": 2
+   },
+   "binding": "five_hour",
+   "week": {
+    "days": 7,
+    "activities": [],
+    "heaviest": null
+   }
+  },
+  "cost": {
+   "days": 7,
+   "usd": 3.4721,
+   "per_run": {
+    "find": 0.3105,
+    "prepare": 1.4183
+   },
+   "activities": [
+    {
+     "activity": "prepare",
+     "label": "Preparing applications",
+     "usd": 2.1544,
+     "count": 2,
+     "of": "applications prepared",
+     "features": [
+      {
+       "feature": "tailoring",
+       "label": "Tailoring the CV and letter",
+       "usd": 1.8366,
+       "calls": 2
+      },
+      {
+       "feature": "tailoring_retry",
+       "label": "Tailoring again after the ATS check",
+       "usd": 0.2104,
+       "calls": 1
+      },
+      {
+       "feature": "revise",
+       "label": "Revising materials",
+       "usd": 0.1074,
+       "calls": 2
+      }
+     ]
+    },
+    {
+     "activity": "find",
+     "label": "Finding jobs",
+     "usd": 1.2187,
+     "count": 184,
+     "of": "postings scored",
+     "features": [
+      {
+       "feature": "match_scoring",
+       "label": "Scoring postings",
+       "usd": 1.1402,
+       "calls": 23
+      },
+      {
+       "feature": "title_translation",
+       "label": "Translating job titles",
+       "usd": 0.0611,
+       "calls": 4
+      },
+      {
+       "feature": "careers_lookup",
+       "label": "Finding careers pages",
+       "usd": 0.0174,
+       "calls": 3
+      }
+     ]
+    },
+    {
+     "activity": "other",
+     "label": "Everything else",
+     "usd": 0.099,
+     "count": 3,
+     "of": "other requests",
+     "features": [
+      {
+       "feature": "salary",
+       "label": "Salary estimates",
+       "usd": 0.0712,
+       "calls": 2
+      },
+      {
+       "feature": "ask",
+       "label": "Questions about your jobs",
+       "usd": 0.0278,
+       "calls": 1
+      }
+     ]
+    }
+   ]
   }
  },
  "list_matches": {

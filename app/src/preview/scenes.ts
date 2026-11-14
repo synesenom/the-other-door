@@ -164,6 +164,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-cv', group: 'Profile', title: 'CV', start: { destination: 'Profile', cv: true } },
   { id: 'profile-stories', group: 'Profile', title: 'Stories', start: { destination: 'Profile', stories: true } },
   { id: 'settings', group: 'Settings', title: 'Settings', start: { destination: 'Settings' } },
+  { id: 'analytics', group: 'Analytics', title: 'Analytics: Claude usage', start: { destination: 'Analytics' } },
   { id: 'settings-signed-out', group: 'Settings', title: 'Settings, Claude signed out', start: { destination: 'Settings' }, claudeSignedOut: true },
   { id: 'settings-drive', group: 'Settings', title: 'Google Drive: Connect (it syncs at once), Disconnect', start: { destination: 'Settings' }, drive: 'off', slow: { connect_drive: 2_500, sync_data: 1_500 } },
   { id: 'settings-drive-failed', group: 'Settings', title: 'Google Drive: the last sync failed', start: { destination: 'Settings' }, drive: 'failed' },

@@ -7,6 +7,7 @@ import { TabIcon } from './TabIcon'
 import { Splash } from './Splash'
 import { RemoteContext } from './remote'
 import { useNarrow } from './useNarrow'
+import { Analytics } from './screens/Analytics'
 import { Applications } from './screens/Applications'
 import { Finding, type FindingState } from './screens/Finding'
 import { Matches } from './screens/Matches'
@@ -20,10 +21,10 @@ import { Wizard } from './screens/onboarding/Wizard'
 import { PREPARING_TIP } from './screens/Matches'
 import { usePreparing } from './screens/prepare-store'
 
-const DESTINATIONS = ['Matches', 'Applications', 'Profile', 'Settings'] as const
+const DESTINATIONS = ['Matches', 'Applications', 'Profile', 'Settings', 'Analytics'] as const
 type Destination = (typeof DESTINATIONS)[number]
 /** The phone finds new jobs, prepares them and keeps the applications: the profile, the CV and the
- * employers are changed on the computer running The other door. */
+ * employers are changed, and Analytics read, on the computer running The other door. */
 const PHONE_DESTINATIONS: readonly Destination[] = ['Matches', 'Applications', 'Settings']
 
 /** "Oct 28, 09:30", or null when the run has no readable end. */
@@ -457,6 +458,8 @@ export function App({ start }: { start?: AppStart } = {}) {
             onDriveChanged={() => setRefreshKey((k) => k + 1)}
             onDataChanged={dataChanged}
           />
+        ) : current === 'Analytics' && !remote ? (
+          <Analytics />
         ) : null}
       </main>
     </div>

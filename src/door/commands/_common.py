@@ -398,6 +398,33 @@ def _plan_line(plan: dict) -> str:
     return " · ".join(parts)
 
 
+def _usd(amount: float) -> str:
+    """Dollars and cents, "<$0.01" for a sliver above nothing."""
+    if 0 < amount < 0.005:
+        return "<$0.01"
+    return f"${amount:,.2f}"
+
+
+_SINGULAR = {"postings scored": "posting scored", "applications prepared": "application prepared",
+             "other requests": "other request"}
+
+
+def _cost_lines(cost: dict) -> tuple[str, list[tuple[str, str, str]]]:
+    """`jobs summary`'s Claude usage block (`usage.cost`): the total line, then a row per activity
+    (label, dollars, what it did), each followed by its features' rows (indented label, dollars,
+    "") when it has more than one."""
+    per = cost.get("per_run") or {}
+    head = [f"{_usd(cost['usd'])} in all"]
+    head += [f"one {kind} about {_usd(per[kind])}" for kind in ("find", "prepare") if per.get(kind)]
+    rows = []
+    for a in cost["activities"]:
+        rows.append((a["label"], _usd(a["usd"]),
+                     f"{a['count']} {_SINGULAR.get(a['of'], a['of']) if a['count'] == 1 else a['of']}"))
+        if len(a["features"]) > 1:
+            rows += [(f"  {f['label']}", _usd(f["usd"]), "") for f in a["features"]]
+    return " · ".join(head), rows
+
+
 _PREPARE_ROOM_SHORT = 3  # at or below this many prepares left, `jobs prepare` says so first
 
 

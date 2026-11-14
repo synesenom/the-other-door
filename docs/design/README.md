@@ -31,9 +31,12 @@ change a colour or a size there, not in a component.
    what it may spend on your plan (Connections, Risky sources, your data). Where a
    key is stored (`profile/config.json` or not) does not decide it. A key nobody needs to touch is left to
    `config.json` (its default) and shown nowhere.
-8. **No new destinations.** The sidebar is Matches, Applications, Profile, Settings, and
-   stays that. A new feature is an action on something already shown (a job, the CV), a section of
+8. **No new destinations.** The sidebar is Matches, Applications, Profile, Settings and Analytics,
+   and stays that. A new feature is an action on something already shown (a job, the CV), a section of
    an existing screen, or left to the command line, Claude Code and "Ask about your jobs" (#339).
+   Analytics (#64) holds what is read, not changed: how it is going, as figures (what Claude's work
+   cost, the market, how the applications go); an action there takes the user to where the change is
+   made (Profile, a job).
 9. **An error only when it helps.** Show an error only if it keeps the user from doing something
    wrong (a CV claim nothing backs, a value that will not save) or they can act on it and fix it
    themselves (sign in again, retry, choose a file). A failure the app retries by itself, or one the
@@ -225,9 +228,9 @@ a textarea in the page colour). Save leads to Finding jobs.
 The phone app (#303) is the same renderer, so it uses the same tokens, type and
 components; only the layout changes below the sidebar breakpoint (`size.sidebar-breakpoint`, 900 px; the `phone` sizes reach the renderer as `--phone-*` variables):
 
-- **Tab bar** instead of the sidebar: Matches, Applications, Profile, Settings (the paired
+- **Tab bar** instead of the sidebar: Matches, Applications, Profile, Settings, Analytics (the paired
   phone has only Matches, Applications and Settings: the profile, the CV and the employers
-  are changed on the computer running *The other door*), each a
+  are changed, and Analytics read, on the computer running *The other door*), each a
   22 px stroke icon over an 11 px label; the active tab is ink and 600 weight with the
   small blue dash above its icon. 22 px of bottom padding clears the home indicator.
 - **Pushed screens**: list → posting → materials, each with a back link naming the screen

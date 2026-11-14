@@ -152,7 +152,12 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       case 'show_profile':
         return profile()
       case 'status_summary':
-        return { ...fixtures.status_summary, drive, since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() } }
+        return {
+          ...fixtures.status_summary,
+          drive,
+          since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
+          ...(state === 'empty' ? { plan: null, cost: null } : {}),
+        }
       case 'doctor':
         if (!installed) return { ok: false, checks: [{ name: 'claude CLI', status: 'missing', required: true, detail: 'no claude found' }] }
         return doctorReport(signedIn ? 'ok' : 'out')
