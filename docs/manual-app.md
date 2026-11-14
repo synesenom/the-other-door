@@ -518,7 +518,8 @@ stops. The phone does not show it.
 
 How it is going, as figures: nothing here changes anything. Not on the phone.
 
-**Claude usage** says what Claude's work cost in the last 7 days at Claude's API prices: the total,
+**Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
+You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,
 with about what one search and one prepared application cost under it, then each activity (finding
 jobs, preparing applications, everything else) with a bar for its share, what it did (postings
 scored, applications prepared, other requests) and, when there are several, what it was spent on

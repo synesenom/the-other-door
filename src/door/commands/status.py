@@ -556,7 +556,9 @@ def _print_cost(console, cost: dict) -> None:
     from rich.table import Table
     from rich.text import Text
 
-    common._section(console, f"Claude usage, last {cost['days']} days, at API prices")
+    common._section(console, f"Claude usage, last {cost['days']} days (an estimate)")
+    console.print(Padding(Text.assemble(("You don't pay this: your Claude plan covers it.", "bold"),
+                                        " It is what the same calls would cost on Claude's API."), (0, 2)))
     head, rows = common._cost_lines(cost)
     console.print(Padding(Text(head), (0, 2)))
     if rows:
@@ -568,8 +570,6 @@ def _print_cost(console, cost: dict) -> None:
             style = "dim" if label.startswith(" ") else ""
             grid.add_row(Text(label, style=style), Text(usd, style=style), did)
         console.print(Padding(grid, (0, 2)))
-    console.print(Padding(Text("what the calls would cost on the API; your plan is not charged per call",
-                               style="dim"), (0, 2)))
 
 
 def _print_since_last_review(console, since: dict) -> None:

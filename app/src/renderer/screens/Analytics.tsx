@@ -20,15 +20,15 @@ function Usage({ cost }: { cost: CostBlock | null }) {
     cost.per_run.find ? `${usd(cost.per_run.find)} a search` : null,
     cost.per_run.prepare ? `${usd(cost.per_run.prepare)} an application` : null,
   ].filter(Boolean)
-  const note = `Last ${cost.days} days at API prices, not a bill${per.length ? ` · about ${per.join(', ')}` : ''}`
   return (
     <>
       <div className="part-head">
-        <p className="display-s">{cost.activities.length > 0 ? usd(cost.usd) : `Nothing in the last ${cost.days} days`}</p>
-        {/* the long form on hover: the plan is not charged per call */}
-        <p className="small muted" title="What these calls would cost on Claude's API. Your plan is not charged per call.">
-          {note}
+        {/* "≈": an estimate, never a price to pay */}
+        <p className="display-s">{cost.activities.length > 0 ? `≈ ${usd(cost.usd)}` : `Nothing in the last ${cost.days} days`}</p>
+        <p className="small">
+          <strong>You don't pay this.</strong> Your Claude plan covers it. The last {cost.days} days, estimated at API prices.
         </p>
+        {per.length > 0 && <p className="small muted">{`About ${per.join(', ')}`}</p>}
       </div>
       {cost.activities.length > 0 && (
         <ul className="usage-list">

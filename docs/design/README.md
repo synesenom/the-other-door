@@ -219,8 +219,9 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 
 **Analytics** (no mockup yet): the reading-width column of Settings with its list of parts on the
 right, nothing in it changes anything. Claude usage first: the total of the last 7 days in
-`display-s` with one small muted line under it (at API prices, not a bill, and about what one search
-and one application cost), then each activity (largest first) as a row, its name left and its
+`display-s` marked "≈", then one `small` line in ink that starts in bold "You don't pay this." (the
+plan covers it; an estimate at API prices: no one may read it as a price), then about what one
+search and one application cost in `small` muted, then each activity (largest first) as a row, its name left and its
 dollars right in tabular figures with what it did just before them in `small` muted, a 4 px
 `.bar` for its share of the total under them, and its features as quieter `small` rows when there are several.
 Not the plan's 5-hour window: that is live, and this screen is about the days gone by. Before any call, one muted line. Not on the phone.

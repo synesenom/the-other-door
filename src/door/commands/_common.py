@@ -414,7 +414,7 @@ def _cost_lines(cost: dict) -> tuple[str, list[tuple[str, str, str]]]:
     (label, dollars, what it did), each followed by its features' rows (indented label, dollars,
     "") when it has more than one."""
     per = cost.get("per_run") or {}
-    head = [f"{_usd(cost['usd'])} in all" if cost["activities"] else f"nothing in the last {cost['days']} days"]
+    head = [f"about {_usd(cost['usd'])} in all" if cost["activities"] else f"nothing in the last {cost['days']} days"]
     head += [f"one {kind} about {_usd(per[kind])}" for kind in ("find", "prepare") if per.get(kind)]
     rows = []
     for a in cost["activities"]:

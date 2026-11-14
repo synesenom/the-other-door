@@ -178,8 +178,9 @@ def test_status_summary_carries_what_the_last_week_cost(cli_env):
 def test_jobs_summary_prints_what_each_activity_cost(cli_env):
     _weighed(cli_env.jobs_dir, ("match_scoring", 0.40, 100), ("title_translation", 0.05, 1), ("tailoring", 1.20, 1))
     text = result_text(CliRunner().invoke(cli, ["jobs", "summary"]))
-    assert "Claude usage, last 7 days, at API prices" in text
-    assert "$1.65 in all" in text and "one prepare about $1.20" in text
+    assert "Claude usage, last 7 days (an estimate)" in text
+    assert "You don't pay this: your Claude plan covers it." in text
+    assert "about $1.65 in all" in text and "one prepare about $1.20" in text
     assert "Preparing applications" in text and "1 application prepared" in text
     assert "Finding jobs" in text and "$0.45" in text and "100 postings scored" in text
     assert "Scoring postings" in text and "$0.40" in text and "Translating job titles" in text
@@ -189,7 +190,7 @@ def test_cost_lines_say_one_of_each_in_the_singular_and_a_sliver_as_under_a_cent
     head, rows = common._cost_lines({"days": 7, "usd": 0.003, "per_run": {"find": 0.25, "prepare": None}, "activities": [
         {"activity": "other", "label": "Everything else", "usd": 0.003, "count": 1, "of": "other requests",
          "features": [{"feature": "ask", "label": "Questions about your jobs", "usd": 0.003, "calls": 1}]}]})
-    assert head == "<$0.01 in all · one find about $0.25"
+    assert head == "about <$0.01 in all · one find about $0.25"
     assert rows == [("Everything else", "<$0.01", "1 other request")]
 
 
