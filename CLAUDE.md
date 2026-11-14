@@ -76,7 +76,7 @@ When summarising what you just did, use at most 10 short bullet points: what hap
   `data-migrator` agent writes at release time (`src/door/core/migrations.py`: a data version per folder in
   `profile/.data_version` and `jobs/.data_version`, a backup first, a failed step restored, newer data and data of an older major refused; folders are stamped when created, Drive keeps the versions on the file's `appProperties`),
   and every stored file is named in `src/door/core/stored.py` (a test fails for a file a writer stores that it
-  does not name). The LaTeX templates and fonts are code-owned (`core/templates.py`: a file in `profile/` is the
+  does not name); the release gate opens each release's saved data, `tests/data_versions/<X.Y.Z>/`, with `./scripts/run-test.sh --release`; `docs/architecture.md` "Data versions and upgrades"). The LaTeX templates and fonts are code-owned (`core/templates.py`: a file in `profile/` is the
   user's own override), never copied into `profile/`.
 
 ## Code layout rules

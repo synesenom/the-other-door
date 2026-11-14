@@ -99,7 +99,7 @@ app, `./door` or the MCP server), before anything reads it, with no hand edit:
   open"); it neither pulls nor pushes over it, so an older version never overwrites the newer data on Drive.
 - A run holding the lock at start delays the upgrade; the next command or tool call tries again.
 
-The first step (version 0 to 1): the LaTeX templates and fonts come from the code. A copy in `profile/`
+The first step (`0.0` to `0.1`): the LaTeX templates and fonts come from the code. A copy in `profile/`
 that is byte for byte a shipped version is removed, and an edited one stays and keeps being used (see
 [configuration](configuration.md)). The steps live in `src/door/core/migrations.py`, and
 `src/door/core/stored.py` names every file The other door stores and the model or format that describes it.
