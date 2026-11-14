@@ -747,9 +747,32 @@ def test_tailor_args_read_templates_kept_outside_the_profile(cli_env, tmp_path):
     from profile_utils import write_config
 
     tpl = tmp_path / "elsewhere" / "cv.template.tex"
+    tpl.parent.mkdir()
+    tpl.write_text("my styling")
     write_config(cli_env.profile_dir, {"role_targets": ["x"], "location": "Copenhagen", "cv_template": str(tpl)})
     reads = [t for t in _allowed(prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))) if t.startswith("Read(")]
     assert _rule("Read", tpl, glob=False) in reads
+
+
+def test_tailor_args_read_the_codes_templates_when_the_profile_has_none(cli_env):
+    example = workspace.PROFILE_EXAMPLE_DIR
+    argv = prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))
+    reads = [t for t in _allowed(argv) if t.startswith("Read(")]
+    for name in ("cv.template.tex", "cover-letter.template.tex"):
+        assert _rule("Read", example / name, glob=False) in reads
+        assert str(example / name) in argv[0]  # the prompt names the file to read
+    added = [argv[i + 1] for i, a in enumerate(argv) if a == "--add-dir"]
+    assert str(example) in added
+
+
+def test_tailor_args_prefer_a_template_the_user_kept_in_the_profile(cli_env):
+    (cli_env.profile_dir / "cv.template.tex").write_text("my styling")
+    argv = prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))
+    assert str(cli_env.profile_dir / "cv.template.tex") in argv[0]
+    assert str(workspace.PROFILE_EXAMPLE_DIR / "cv.template.tex") not in argv[0]
+    reads = [t for t in _allowed(argv) if t.startswith("Read(")]
+    assert _rule("Read", workspace.PROFILE_EXAMPLE_DIR / "cv.template.tex", glob=False) not in reads
+    assert _rule("Read", workspace.PROFILE_EXAMPLE_DIR / "cover-letter.template.tex", glob=False) in reads
 
 
 def test_tailor_rule_paths_are_absolute_in_claude_codes_form():
@@ -759,12 +782,12 @@ def test_tailor_rule_paths_are_absolute_in_claude_codes_form():
     assert prepare_cmd._rule_path(PureWindowsPath("C:/Users/me/jobs")) == "//c/Users/me/jobs"
 
 
-def test_tailor_args_add_only_the_profile_and_the_posting_folder(cli_env, tmp_path, monkeypatch):
+def test_tailor_args_add_only_the_profile_the_posting_folder_and_the_codes_templates(cli_env, tmp_path, monkeypatch):
     monkeypatch.setattr(workspace, "HOME", tmp_path / "home")
     posting = cli_env.jobs_dir / ".tailor" / "job-1" / "posting.json"
     argv = prepare_cmd._tailor_args("job-1", posting)
     added = [argv[i + 1] for i, a in enumerate(argv) if a == "--add-dir"]
-    assert added == [str(cli_env.profile_dir), str(posting.parent)]
+    assert added == [str(cli_env.profile_dir), str(posting.parent), str(workspace.PROFILE_EXAMPLE_DIR)]
 
 
 def test_an_injected_ad_gets_no_command_and_no_file_outside_its_scope(cli_env, monkeypatch):

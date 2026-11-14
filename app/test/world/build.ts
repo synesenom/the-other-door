@@ -16,6 +16,8 @@ const HERE = __dirname
 
 /** The world's "now": the server's clock starts here (boot.py) and the window's too (fixtures.ts). */
 export const NOW = '2026-10-26T09:00:00.000Z'
+/** The data version a profile set up by this build carries (`migrations.current("profile")`; a Python test keeps them equal). */
+export const PROFILE_DATA_VERSION = 1
 const NOW_MS = Date.parse(NOW)
 const DAY = 86_400_000
 const iso = (ms: number) => new Date(ms).toISOString()
@@ -454,7 +456,6 @@ export function buildWorld(options: WorldOptions = {}): World {
 function writeHome(home: string, persona: Persona, ads: Ad[], options: WorldOptions) {
   const profile = join(home, 'profile')
   mkdirSync(profile, { recursive: true })
-  for (const f of ['cv.template.tex', 'cover-letter.template.tex']) copyFileSync(join(repoRoot, 'profile.example', f), join(profile, f))
   writeFileSync(
     join(profile, 'config.json'),
     JSON.stringify(
@@ -462,9 +463,7 @@ function writeHome(home: string, persona: Persona, ads: Ad[], options: WorldOpti
         name: persona.name,
         email: persona.email,
         location: persona.city,
-        cv_template: 'profile/cv.template.tex',
         cv_content: 'profile/cv.md',
-        cover_letter_template: 'profile/cover-letter.template.tex',
         role_targets: persona.roleTargets,
         search_keywords: persona.searchKeywords,
         topic_terms: persona.topicTerms,
@@ -484,6 +483,7 @@ function writeHome(home: string, persona: Persona, ads: Ad[], options: WorldOpti
   if (!options.noCv) writeFileSync(join(profile, 'cv.md'), persona.cv)
   writeFileSync(join(profile, 'story_bank.md'), persona.storyBank)
   writeFileSync(join(profile, 'companies.json'), JSON.stringify(companiesJson(ads), null, 2))
+  writeFileSync(join(profile, '.data_version'), `${PROFILE_DATA_VERSION}\n`) // set up by this build, as init stamps it
 
   const jobs = join(home, 'jobs')
   mkdirSync(jobs, { recursive: true })

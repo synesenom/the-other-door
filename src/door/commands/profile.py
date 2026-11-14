@@ -12,7 +12,8 @@ import click
 from door import i18n
 from door.commands import _prompts
 from door.core import companies as companies_mod, discovery_sources, workspace
-from door.core import profile_loader
+from door.core import migrations, profile_loader
+from door.core import templates as templates_mod
 from door.core.profile_loader import ConfigError, load_config, read_config_data
 from door.core import sites
 
@@ -21,7 +22,12 @@ from door.core import sites
 # the caller; story_bank.md holds made-up stories the tailor would read as the
 # candidate's own (it starts absent, and the tailor fills it from real CVs);
 # cv.md is the example person's CV, never the candidate's (none is "no CV yet").
-_NOT_COPIED = {Path("config.json"), Path("story_bank.md"), Path("companies.json"), Path("cv.md")}
+# The LaTeX templates and fonts come from the code (`door.core.templates`), never copied (#56).
+_NOT_COPIED = {
+    Path("config.json"), Path("story_bank.md"), Path("companies.json"), Path("cv.md"),
+    Path("cv.template.tex"), Path("cover-letter.template.tex"),
+}
+_NOT_COPIED_DIRS = {Path("fonts")}
 
 
 def _copy_missing_example_files(example_dir: Path, profile_dir: Path) -> list[str]:
@@ -41,7 +47,7 @@ def _copy_missing_example_files(example_dir: Path, profile_dir: Path) -> list[st
         if src.is_dir():
             continue
         rel = src.relative_to(example_dir)
-        if rel in _NOT_COPIED:
+        if rel in _NOT_COPIED or any(d in rel.parents for d in _NOT_COPIED_DIRS):
             continue
         dest = profile_dir / rel
         if dest.exists():
@@ -833,6 +839,7 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
     if example_dir is None:
         example_dir = workspace.PROFILE_EXAMPLE_DIR
 
+    fresh = not (profile_dir / "config.json").exists()
     copied = _copy_missing_example_files(example_dir, profile_dir)
     base = _load_base_config(profile_dir, example_dir)
     dropped = sorted(_invalid_keys(base) - fields.keys())
@@ -851,6 +858,8 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
     config_path = profile_dir / "config.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(json.dumps(merged, indent=2))
+    if fresh:
+        migrations.stamp_new(profile_dir)  # made by this build: nothing to upgrade
     disclaimers = [
         {"key": s["key"], "text": s["disclaimer"]}
         for s in map(discovery_sources.info, discovery_sources.SOURCES)
@@ -872,7 +881,7 @@ def _invalid_keys(config: dict) -> set[str]:
     return set()
 
 
-_DEFAULT_FILES = {"cv_content": "cv.md", "cv_template": "cv.template.tex", "cover_letter_template": "cover-letter.template.tex"}
+_DEFAULT_FILES = {"cv_content": "cv.md"}
 
 
 def _parse_cv(text: str) -> dict:
@@ -1005,7 +1014,7 @@ def _show_profile_core(profile_dir: Path | None = None, example_dir: Path | None
     cv.update(text=text, **_parse_cv(text or ""))
     templates = {}
     for name, key in (("cv", "cv_template"), ("cover_letter", "cover_letter_template")):
-        path = locate(key)
+        path = templates_mod.resolve(key, config, profile_dir, example_dir)
         templates[name] = _file_state(path, example_dir / path.name)
     return {
         "path": str(profile_dir),

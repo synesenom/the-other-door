@@ -1,20 +1,16 @@
 # Configuration
 
-Your profile lives in `profile/` (gitignored, never committed): `config.json`, `cv.md`,
-and the LaTeX templates. Only two files carry your data: `config.json` and
-`cv.md`. The templates (`cv.template.tex`, `cover-letter.template.tex`) hold the styling —
+Your profile lives in `profile/` (gitignored, never committed): `config.json` and `cv.md`
+carry your data. The LaTeX templates (`cv.template.tex`, `cover-letter.template.tex`) hold the styling —
 fonts, colours, margins and the macros the tailor uses — and nothing personal; the tailor
 writes the whole document body from `cv.md` and `config.json` for every application, so
-there is nothing to keep in sync by hand. Edit a template only to restyle the PDFs; keep its
-`babel` line (English first, French available), which a French application relies on, and the
-fonts it loads from `<<fonts>>/` (`compile` puts the profile's `fonts/` folder there: Figtree and Young Serif,
-under the SIL Open Font License). A template copied before French was supported still works: the tailor
-then sets the French spacing by hand.
-
-Setting up never overwrites a template already in `profile/`, so a newer default reaches an existing
-profile only when you take it: delete `profile/cv.template.tex` and `profile/cover-letter.template.tex`
-(or copy yours aside), then run `./door init` (or Settings → Set up again in the app), which copies the
-missing files, the `fonts/` folder included, from `profile.example/`. The next prepare uses them.
+there is nothing to keep in sync by hand. They ship with the code (`profile.example/`, with the `fonts/` they load:
+Figtree and Young Serif, under the SIL Open Font License) and are not copied into `profile/`, so a release that
+changes them never breaks your profile. To restyle the PDFs, put your own `cv.template.tex` and/or
+`cover-letter.template.tex` in `profile/` (copy the shipped one and edit it; a `profile/fonts/` folder replaces the
+shipped fonts) or name a file in `cv_template` / `cover_letter_template`: yours wins. Keep the `babel` line (English
+first, French available), which a French application relies on, and the fonts line that loads from `<<fonts>>/`
+(`compile` puts the fonts folder there).
 
 ## Where your data lives
 
@@ -169,7 +165,7 @@ Error: profile/config.json: min_score — min_score must be between 0.0 and 1.0
 ```
 
 `./door doctor` lists every such error without running anything else, and also
-checks that the `cv_template` and `cover_letter_template` files exist (no `cv_content` file is "no CV yet", not an error).
+checks that the `cv_template` and `cover_letter_template` files exist when they are set (no `cv_content` file is "no CV yet", not an error).
 
 ## How a CV is written in each country
 
@@ -192,7 +188,7 @@ The keys you set up — `init` and `/onboard` ask for the ones without a default
 |-----|------|----------------------|---------|
 | `name`, `email` | string | required | tailoring |
 | `location` | string | required | scrapers (search location), pre-filter, prescreen |
-| `cv_template`, `cover_letter_template` | path | required, must exist | tailoring |
+| `cv_template`, `cover_letter_template` | path or `null` | the built-in template (`profile/<name>` if you put one there); a path set must exist | tailoring |
 | `cv_content` | path | required (the file may not exist yet) | `match`, prescreen, tailoring |
 | `photo` | path or `null` | none | your CV photo, a JPEG or PNG; `compile` puts it in the CV where the job country's conventions allow one (below). Set it by giving the picture to `init`, the desktop app's Profile screen or `/onboard`, not by hand: they check it, drop its EXIF and GPS data, scale it to CV size and keep it as `profile/photo.jpg`. A file `config.json` names that is missing, over 10 MB or not a JPEG or PNG is refused with the reason under the key |
 | `role_targets` | list of strings, ≥1 | required | scrapers, prescreen, `match` |

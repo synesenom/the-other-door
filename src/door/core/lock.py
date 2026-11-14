@@ -59,7 +59,7 @@ class SyncConflict(RuntimeError):
 # pushes just before it is released, for every purpose but the sync ones themselves (which
 # would recurse). Both run outside `_held_guard`; the defaults import `sync` lazily
 # (`sync` imports the archive commands, which import this module). Tests swap them.
-_NO_SYNC_PURPOSES = frozenset({"export", "import", "sync"})
+_NO_SYNC_PURPOSES = frozenset({"export", "import", "sync", "upgrade"})
 
 
 def _default_pre(purpose: str, jobs_dir: Path) -> None:

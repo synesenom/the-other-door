@@ -259,9 +259,7 @@ def example_dir(tmp_path):
     shutil.copytree(workspace.PROFILE_EXAMPLE_DIR, example)
     config = json.loads((example / "config.json").read_text())
     for field, filename in (
-        ("cv_template", "cv.template.tex"),
         ("cv_content", "cv.md"),
-        ("cover_letter_template", "cover-letter.template.tex"),
     ):
         config[field] = str(example / filename)
     (example / "config.json").write_text(json.dumps(config))
@@ -278,7 +276,8 @@ def test_init_core_copies_merges_validates_and_writes(tmp_path, example_dir, cap
 
     assert capsys.readouterr() == ("", "")
     assert result["config_path"] == str(profile_dir / "config.json")
-    assert "cv.template.tex" in result["copied"]
+    assert not any(name.endswith(".tex") or name.startswith("fonts") for name in result["copied"])  # from the code (#56)
+    assert "template" not in " ".join(json.loads((profile_dir / "config.json").read_text()))
     assert "cv.md" not in result["copied"]  # the example CV is never made the candidate's
     assert not (profile_dir / "cv.md").exists()
     written = json.loads((profile_dir / "config.json").read_text())

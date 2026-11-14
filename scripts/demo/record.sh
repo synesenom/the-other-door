@@ -47,7 +47,7 @@ from pathlib import Path
 
 profile = Path(sys.argv[1])
 config = json.loads((profile / "config.json").read_text())
-for key in ("cv_template", "cv_content", "cover_letter_template"):
+for key in ("cv_content",):
     config[key] = str(profile / Path(config[key]).name)
 for key in ("hr_manager_aliases", "ashby_companies", "recruitee_companies", "career_sites"):
     config.pop(key, None)

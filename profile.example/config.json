@@ -2,9 +2,7 @@
   "name": "Jane Doe",
   "email": "jane.doe@example.com",
   "location": "Copenhagen",
-  "cv_template": "profile/cv.template.tex",
   "cv_content": "profile/cv.md",
-  "cover_letter_template": "profile/cover-letter.template.tex",
   "role_targets": [
     "Financial Controller",
     "Senior Financial Controller",

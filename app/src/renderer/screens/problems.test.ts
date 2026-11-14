@@ -51,4 +51,23 @@ describe('problems', () => {
     expect(problems({ ...calm, recurring: true })).toEqual([{ key: 'report', text: 'Something keeps going wrong. Send a report', target: 'settings-report' }])
     expect(problems({ ...calm, recurring: false })).toEqual([])
   })
+
+  it('data that could not be upgraded comes first, to Report a problem', () => {
+    const failed: DoctorReport = { ...signedOut, data: { state: 'failed', message: 'Your data could not be upgraded to this version: x. Nothing was changed. Send a report from Settings.' } }
+    expect(problems({ ...calm, doctor: failed, cv: { exists: false } })).toEqual([
+      { key: 'data', text: 'Your data could not be upgraded. Send a report', target: 'settings-report' },
+      { key: 'claude', text: 'Claude is not signed in', target: 'settings' },
+      { key: 'cv', text: 'You have no CV yet', target: 'profile-cv' },
+    ])
+  })
+
+  it('data written by a newer version says to install it', () => {
+    const newer: DoctorReport = { ...signedIn, data: { state: 'newer', message: 'This data was written by a newer version of The other door. Install the latest version.' } }
+    expect(problems({ ...calm, doctor: newer })).toEqual([{ key: 'data', text: 'Install the latest version of The other door', target: 'settings' }])
+  })
+
+  it('data that is fine, or busy for a moment, says nothing', () => {
+    expect(problems({ ...calm, doctor: { ...signedIn, data: { state: 'ok', message: '' } } })).toEqual([])
+    expect(problems({ ...calm, doctor: { ...signedIn, data: { state: 'busy', message: 'a run is in progress' } } })).toEqual([])
+  })
 })
