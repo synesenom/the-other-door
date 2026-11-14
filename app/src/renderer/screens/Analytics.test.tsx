@@ -130,14 +130,12 @@ describe('Analytics', () => {
       expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5, likely between 40% and 77%.')
     })
 
-    it('splits your matches into applied, prepared and not yet, with the ones set aside said apart', async () => {
+    it('shows no split of your matches: the Matches list has them', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
       render(<Analytics />)
-      const block = await screen.findByRole('group', { name: 'Your matches' })
-      expect(within(block).getByRole('heading')).toHaveTextContent('Your matches · 30')
-      expect(within(block).getByRole('img', { name: 'Applied 7, Prepared, not sent 3, Not yet 20' })).toBeInTheDocument()
-      expect(legend(block)).toEqual(['Applied7', 'Prepared, not sent3', 'Not yet20'])
-      expect(block).toHaveTextContent('And 10 you set aside as not for me.')
+      await screen.findByRole('group', { name: 'Your applications' })
+      expect(screen.queryByRole('group', { name: 'Your matches' })).toBeNull()
+      expect(screen.queryByText(/set aside/)).toBeNull()
     })
 
     it('splits your applications by where each stands now; a stand no application is in is left out', async () => {
@@ -161,29 +159,13 @@ describe('Analytics', () => {
       expect(within(part).queryByText(/%$/)).toBeNull()
     })
 
-    it('with matches but nothing sent: the matches, and no applications block', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, interviewing: 0, waiting: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: null }) })
-      render(<Analytics />)
-      expect(await screen.findByRole('group', { name: 'Your matches' })).toBeInTheDocument()
-      expect(screen.queryByRole('group', { name: 'Your applications' })).toBeNull()
-    })
-
-    it('with applications sent but no matches (imported, below the minimum score): the rate and the applications only', async () => {
-      const none = { ...PIPELINE, above_threshold: 0, above_threshold_by_status: { unapplied: 0, prepared: 0, applied: 0, discarded: 0 } }
-      mockDoor({ status_summary: summary({ ...APPLIED, pipeline: none, cost: null }) })
-      render(<Analytics />)
-      expect(await screen.findByRole('group', { name: 'Your applications' })).toBeInTheDocument()
-      expect(screen.getByText('60%')).toBeInTheDocument()
-      expect(screen.queryByRole('group', { name: 'Your matches' })).toBeNull()
-    })
-
-    it('with no matches and nothing sent: a single quiet line for the section', async () => {
-      const none = { ...PIPELINE, above_threshold: 0, above_threshold_by_status: { unapplied: 0, prepared: 0, applied: 0, discarded: 0 } }
-      mockDoor({ status_summary: summary({ pipeline: none, standing: { ...STANDING, offer: 0, interviewing: 0, waiting: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: COST, plan: null }) })
+    it('with nothing sent: a single quiet line for the section, whatever the matches', async () => {
+      mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, interviewing: 0, waiting: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: COST, plan: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
-      expect(within(part).getByText('Your applications show here once you have matches.')).toBeInTheDocument()
+      expect(within(part).getByText('Your applications show here once you send one.')).toBeInTheDocument()
       expect(within(part).queryAllByRole('img')).toEqual([])
+      expect(within(part).queryByText(/interview rate/)).toBeNull()
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
     })
 

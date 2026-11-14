@@ -152,7 +152,7 @@ export function Guide() {
               <span className="usage-tone-2" style={{ flexGrow: 0.03 }} />
             </div>
           </Row>
-          <Row label="usage-tone-3 (the split bars' second segment)">
+          <Row label="usage-tone-3 (the applications bar's second segment)">
             <div className="usage-stack" role="img" aria-label="Offer 1, Interviewing 2, Waiting for an answer 2, Rejected or no answer 2">
               <span className="usage-tone-0" style={{ flexGrow: 1 }} />
               <span className="usage-tone-3" style={{ flexGrow: 2 }} />

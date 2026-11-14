@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { statusSummary, type CostBlock, type PassRate, type StatusSummary } from '../api'
 import { Market } from './Market'
 import { PageSections } from './PageSections'
@@ -27,7 +27,7 @@ function tone(i: number): string {
 const pct = (x: number) => `${Math.round(x * 100)}%`
 
 /** One stacked bar and its legend, as the cost breakdown draws them: each segment a share of `total`. */
-function Split({ title, total, parts, children }: { title: string; total: number; parts: { label: string; count: number; tone: string }[]; children?: ReactNode }) {
+function Split({ title, total, parts }: { title: string; total: number; parts: { label: string; count: number; tone: string }[] }) {
   const shown = parts.filter((p) => p.count > 0)
   return (
     <div className="split" role="group" aria-label={title}>
@@ -51,7 +51,6 @@ function Split({ title, total, parts, children }: { title: string; total: number
           </li>
         ))}
       </ul>
-      {children}
     </div>
   )
 }
@@ -69,46 +68,27 @@ function Rate({ rate }: { rate: PassRate | undefined }) {
 }
 
 /**
- * Applications (#66, #87): what you did with your matches, apart from how the employers answered. First the
- * interview rate of the answered applications (how well the matches fit), then two stacked bars like the cost
- * breakdown, each job in one segment: your matches (applied, prepared, not yet; the ones set aside said apart) and
- * your applications by where each stands now (`status_summary.standing`).
+ * Applications (#66, #87): how the employers answered. The interview rate of the applications with an outcome (how
+ * well the matches fit), then a stacked bar like the cost breakdown, each sent application in one segment by where it
+ * stands now (`status_summary.standing`). No split of the matches: the Matches list has them.
  */
 function Applications({ summary }: { summary: StatusSummary }) {
-  const by = summary.pipeline?.above_threshold_by_status ?? { unapplied: 0, prepared: 0, applied: 0, discarded: 0 }
   const s = summary.standing!
-  const matches = by.unapplied + by.prepared + by.applied
   const sent = s.offer + s.interviewing + s.waiting + s.rejected + s.ghosted + s.withdrawn
-  if (matches === 0 && sent === 0) return <p className="small muted">Your applications show here once you have matches.</p>
-  const closed = s.rejected + s.ghosted + s.withdrawn
+  if (sent === 0) return <p className="small muted">Your applications show here once you send one.</p>
   return (
     <>
       <Rate rate={summary.pass_rates?.application} />
-      {matches > 0 && (
-        <Split
-          title="Your matches"
-          total={matches}
-          parts={[
-            { label: 'Applied', count: by.applied, tone: 'usage-tone-0' },
-            { label: 'Prepared, not sent', count: by.prepared, tone: 'usage-tone-3' },
-            { label: 'Not yet', count: by.unapplied, tone: 'usage-tone-2' },
-          ]}
-        >
-          {by.discarded > 0 && <p className="small muted">{`And ${by.discarded} you set aside as not for me.`}</p>}
-        </Split>
-      )}
-      {sent > 0 && (
-        <Split
-          title="Your applications"
-          total={sent}
-          parts={[
-            { label: 'Offer', count: s.offer, tone: 'usage-tone-0' },
-            { label: 'Interviewing', count: s.interviewing, tone: 'usage-tone-3' },
-            { label: 'Waiting for an answer', count: s.waiting, tone: 'usage-tone-1' },
-            { label: s.withdrawn > 0 ? 'Rejected, no answer or withdrawn' : 'Rejected or no answer', count: closed, tone: 'usage-tone-2' },
-          ]}
-        />
-      )}
+      <Split
+        title="Your applications"
+        total={sent}
+        parts={[
+          { label: 'Offer', count: s.offer, tone: 'usage-tone-0' },
+          { label: 'Interviewing', count: s.interviewing, tone: 'usage-tone-3' },
+          { label: 'Waiting for an answer', count: s.waiting, tone: 'usage-tone-1' },
+          { label: s.withdrawn > 0 ? 'Rejected, no answer or withdrawn' : 'Rejected or no answer', count: s.rejected + s.ghosted + s.withdrawn, tone: 'usage-tone-2' },
+        ]}
+      />
     </>
   )
 }
@@ -168,8 +148,8 @@ function Usage({ cost }: { cost: CostBlock | null }) {
 }
 
 /**
- * Analytics: how it is going, read-only (#64, #66, #87, #65). Applications first (the interview rate, your matches
- * and your applications, #87), then Claude usage: what the last week's calls cost at API prices per activity, and
+ * Analytics: how it is going, read-only (#64, #66, #87, #65). Applications first (the interview rate and your
+ * applications, #87), then Claude usage: what the last week's calls cost at API prices per activity, and
  * one search and one prepared application (not the plan's window: that is live, and this screen is about the days
  * gone by), then Market (the skills the ads ask for most, #65). Reads `status_summary` once on opening; a failed
  * read is said nowhere (the next opening reads again).
