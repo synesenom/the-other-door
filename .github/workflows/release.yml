@@ -100,7 +100,7 @@ jobs:
         run: ./scripts/bundle-python.ps1
 
       # Signing only when the certificates are there; electron-builder.config.cjs follows CSC_LINK.
-      - name: Package, signed when the certificates are there, and upload to the draft release
+      - name: Package, signed when the certificates are there, and upload to the draft release (a tag)
         env:
           CSC_LINK: ${{ runner.os == 'macOS' && secrets.MAC_CERTIFICATE || runner.os == 'Windows' && secrets.WINDOWS_CERTIFICATE || '' }}
           CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.MAC_CERTIFICATE_PASSWORD || runner.os == 'Windows' && secrets.WINDOWS_CERTIFICATE_PASSWORD || '' }}
