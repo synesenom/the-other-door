@@ -82,8 +82,6 @@ export interface StatusSummary {
   cost?: CostBlock | null
   /** The Claude plan's window and the room left (`usage.room`); null before any reading. */
   plan?: PlanBlock | null
-  /** The postings on disk; `above_threshold` are the matches, split by what was done with them. */
-  pipeline?: { above_threshold: number; above_threshold_by_status: { unapplied: number; prepared: number; applied: number; discarded: number } }
   /** Where each sent application stands now, each counted once (`tracker.standings`). */
   standing?: Standing
   /** Each stage's pass rate of the decided ones; `application`: answered applications that led to an interview. */

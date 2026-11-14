@@ -1,6 +1,6 @@
 # Analytics: inventory of interactions and branches (desktop app, real Python server)
 
-Sources read: `app/src/renderer/screens/Analytics.tsx`, `Market.tsx`, `PageSections.tsx`, `api.ts` (`StatusSummary`), and Python `commands/status.py` (`standing`, `pass_rates`, `pipeline`), `core/tracker.py` (`standings`).
+Sources read: `app/src/renderer/screens/Analytics.tsx`, `Market.tsx`, `PageSections.tsx`, `api.ts` (`StatusSummary`), and Python `commands/status.py` (`standing`, `pass_rates`), `core/tracker.py` (`standings`).
 
 One `status_summary` {} call on opening, and one `market({save:false})` call from Market. Nothing changes except the two actions in Market (add titles, follow an employer). Not on the phone.
 

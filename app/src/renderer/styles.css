@@ -440,9 +440,9 @@ details.part { display: block; }
 .usage-row > h3 { margin: 0; font-weight: inherit; }
 .usage-row > span:last-child { font-variant-numeric: tabular-nums; }
 
-/* Analytics, Applications (#66, #87): two stacked bars like the cost breakdown's, each with its legend. */
+/* Analytics, Applications (#66, #87): a stacked bar like the cost breakdown's, with its legend. */
 .split { display: flex; flex-direction: column; gap: var(--space-3); }
-.split > h3, .split > p { margin: 0; font-weight: inherit; }
+.split > h3 { margin: 0; font-weight: inherit; }
 .split-legend { gap: var(--space-1); }
 details.part > * + * { margin-top: 28px; }
 details.part > summary + * { margin-top: var(--space-4); }

@@ -115,11 +115,9 @@ describe('Analytics', () => {
   })
 
   describe('Applications', () => {
-    const PIPELINE = { total: 200, excluded: 0, applicable: 120, above_threshold: 40, unapplied: 20,
-      above_threshold_by_status: { unapplied: 20, prepared: 3, applied: 7, discarded: 10 } }
     const STANDING = { offer: 1, interviewing: 2, waiting: 2, rejected: 1, ghosted: 1, withdrawn: 0 }
     const RATE = { application: { passed: 3, decided: 5, rate: 0.6, low: 0.4, high: 0.77 } }
-    const APPLIED = { pipeline: PIPELINE, standing: STANDING, pass_rates: RATE }
+    const APPLIED = { standing: STANDING, pass_rates: RATE }
     const legend = (block: HTMLElement) => within(block).getAllByRole('listitem').map((li) => li.textContent)
 
     it('leads with the interview rate of the answered applications, with its likely range', async () => {
