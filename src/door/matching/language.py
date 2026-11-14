@@ -135,7 +135,10 @@ def _accepted_codes(config: dict) -> set[str]:
 
 
 def _translate_titles(
-    pending: list[tuple[Path, dict]], config: dict, run: Callable[[list[str], str], str | None]
+    pending: list[tuple[Path, dict]],
+    config: dict,
+    run: Callable[[list[str], str], str | None],
+    feature: str = "title_translation",
 ) -> tuple[int, int]:
     """Write ``title_en`` into each pending ``(path, data)`` posting (unless
     ``translate_titles`` is false); ``(translated, failed_batches)``."""
@@ -156,7 +159,7 @@ def _translate_titles(
                 titles = parse_output(stdout) if stdout is not None else None
             except ValueError:
                 titles = None
-            usage.record("title_translation", stdout, limits=limits)
+            usage.record(feature, stdout, limits=limits)
             if titles is None:
                 failed_batches += 1
                 continue
@@ -169,10 +172,17 @@ def _translate_titles(
     return translated, failed_batches
 
 
-def tag_posting(path: Path, config: dict, *, run_fn: Callable[[list[str], str], str | None] | None = None) -> dict:
+def tag_posting(
+    path: Path,
+    config: dict,
+    *,
+    run_fn: Callable[[list[str], str], str | None] | None = None,
+    feature: str = "title_translation",
+) -> dict:
     """Tag one stored posting with its ``language`` and, when that is not English,
     its ``title_en`` (an ad the user added on purpose). Unlike `filter_languages`
     it never drops or zeroes the posting, whatever the profile's ``languages``.
+    ``feature`` is the usage key the translation call is recorded under.
     Returns the posting as saved."""
     data = _load(Path(path))
     if data is None:
@@ -181,7 +191,7 @@ def tag_posting(path: Path, config: dict, *, run_fn: Callable[[list[str], str], 
         data["language"] = i18n.detect_language(data.get("description") or "")
         _save(Path(path), data)
     if data["language"] not in (None, "en") and not data.get("title_en"):
-        _translate_titles([(Path(path), data)], config, run_fn or _run_claude)
+        _translate_titles([(Path(path), data)], config, run_fn or _run_claude, feature)
     return data
 
 

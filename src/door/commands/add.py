@@ -233,14 +233,16 @@ def _add_core(
     utils.write_json_atomic(target, posting)
 
     result = {"job_id": job_id, "path": str(target), "replaced": existing is not None}
+    _step(f"saved {posting['title']} at {posting['company']}", "ok")
     # The ad's language (and an English title for another one), as the language pass of
     # `find` does; kept whatever the profile's `languages`, the user chose this ad.
     try:
         config = common._load_config(profile_dir or workspace.PROFILE_DIR)
     except (FileNotFoundError, ConfigError):
         config = {}
-    language.tag_posting(target, config)
-    _step(f"saved {posting['title']} at {posting['company']}", "ok")
+    _step("reading the language")
+    tagged = language.tag_posting(target, config, feature="import_posting")
+    _step(f"language: {tagged.get('language') or 'unclear'}", "ok")
     _step("scoring (Haiku)")
     try:
         failed = match_cmd._match_core(jobs_dir=jobs_dir, profile_dir=profile_dir, paths=[target])["failed"]

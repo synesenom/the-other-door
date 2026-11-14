@@ -312,7 +312,7 @@ def test_add_cli_on_a_terminal_marks_a_failed_scoring(env, monkeypatch):
 def test_add_core_reports_its_steps(env, progress_events):
     add_cmd._add_core(env.ad, title="Lead Data Scientist", company="Acme", jobs_dir=env.jobs_dir)
     closed = [(e.message, e.outcome) for e in progress_events if e.stage == "add" and e.outcome]
-    assert closed == [("saved Lead Data Scientist at Acme", "ok"), ("scored 0.80", "ok")]
+    assert closed == [("saved Lead Data Scientist at Acme", "ok"), ("language: en", "ok"), ("scored 0.80", "ok")]
 
 
 def test_add_cli_reads_stdin(env):
@@ -590,3 +590,46 @@ def test_add_english_ad_gets_en_and_no_translation(env, monkeypatch):
     data = json.loads(open(result["path"]).read())
     assert data["language"] == "en"
     assert "title_en" not in data
+
+
+def test_add_saves_the_language_before_scoring(env, monkeypatch):
+    import door.matching.scorer as scorer_mod
+
+    on_disk = []
+
+    def fake(postings, *, on_result=None, **kw):
+        for p in postings:
+            on_disk.append(json.loads(open(env.jobs_dir.glob(f"postings/*/manual/{p['id']}.json").__next__()).read()).get("language"))
+            on_result(p["id"], {"score": 0.5, "score_reason": "x", "scored_by": "m", "scored_at": "2026-10-13T00:00:00+00:00"})
+        return {}, []
+
+    monkeypatch.setattr(scorer_mod, "score_postings", fake)
+    add_cmd._add_core(env.ad, title="Lead", company="Acme", jobs_dir=env.jobs_dir)
+    assert on_disk == ["en"]
+
+
+@pytest.mark.parametrize("config", [None, "{bad json"])
+def test_add_without_a_usable_profile_still_tags_the_language(env, config):
+    cfg = env.profile_dir / "config.json"
+    if config is None:
+        cfg.unlink()
+    else:
+        cfg.write_text(config)
+    result = add_cmd._add_core(env.ad, title="Lead", company="Acme", jobs_dir=env.jobs_dir)
+    assert json.loads(open(result["path"]).read())["language"] == "en"
+
+
+def test_add_reports_a_language_step(env, progress_events):
+    add_cmd._add_core(env.ad, title="Lead", company="Acme", jobs_dir=env.jobs_dir)
+    closed = [e.message for e in progress_events if e.stage == "add" and e.outcome]
+    assert closed == ["saved Lead at Acme", "language: en", "scored 0.80"]
+
+
+def test_add_records_title_translation_under_the_import_feature(env, monkeypatch):
+    from door.matching import language
+
+    seen = []
+    monkeypatch.setattr(language, "_run_claude", lambda *a, **k: None)
+    monkeypatch.setattr(language.usage, "record", lambda feature, *a, **k: seen.append(feature))
+    add_cmd._add_core(None, text=DANISH_AD, title="Dataanalytiker", company="Acme", jobs_dir=env.jobs_dir)
+    assert seen == ["import_posting"]

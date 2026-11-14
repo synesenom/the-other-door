@@ -35,7 +35,7 @@ Then compile to PDF by calling the door MCP tool `compile` (`mcp__door__compile`
 ## Language
 
 Write both documents in the language the posting is written in: its `language` field
-(an ISO 639-1 code `scrape` detected; `null` or missing means English). The candidate lists
+(an ISO 639-1 code `scrape` or an import (`jobs add`, `import_posting`) detected; `null` or missing means English). The candidate lists
 only languages they work in, so a posting in another language reached you because they
 do. `cv.md` (next to the profile config) may be in another language: translate what you keep, faithfully,
 without adding to it. Everything you write follows the posting's language, section

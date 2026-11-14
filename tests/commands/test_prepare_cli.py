@@ -669,7 +669,7 @@ def test_prepare_gates_a_legacy_posting_before_the_tailor_reads_it(cli_env, monk
 
 def test_prepare_does_not_rewrite_a_gated_posting(cli_env, monkeypatch):
     integrity_block = {"verdict": "clean", "findings": []}
-    path = write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-ok", score=0.9, integrity=integrity_block)
+    path = write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-ok", score=0.9, integrity=integrity_block, language="en")
     before = path.stat().st_mtime_ns
     monkeypatch.setattr(prepare_cmd, "_run_tailor", fake_tailor(cli_env.jobs_dir))
     prepare_cmd._prepare_core("job-ok", jobs_dir=cli_env.jobs_dir)
@@ -1221,3 +1221,27 @@ def test_prepare_cli_prints_the_readback_warning(cli_env, monkeypatch, stub_mate
     _script_readability(monkeypatch, [])
     result = CliRunner().invoke(cli, ["jobs", "prepare", "job-two"])
     assert "ATS" not in result.output
+
+
+def test_prepare_tags_the_language_of_an_ad_stored_without_one(cli_env, monkeypatch):
+    path = write_list_posting(cli_env.jobs_dir, "2026-07-01", "manual", "manual.abc", score=0.9)
+    data = json.loads(path.read_text())
+    data.pop("language", None)
+    data["description"] = (
+        "Vi søger en erfaren dataanalytiker til vores team i København. Du kommer til at arbejde med "
+        "rapportering, modeller og dataprodukter sammen med dygtige kolleger, og du har gode erfaringer "
+        "med SQL og Python. Vi tilbyder fleksible arbejdstider og et godt arbejdsmiljø."
+    )
+    path.write_text(json.dumps(data))
+    from door.matching import language
+
+    monkeypatch.setattr(language, "_run_claude", lambda *a, **k: None)
+    seen = []
+
+    def tailor(job_id, posting_path, **kw):
+        seen.append(json.loads(Path(posting_path).read_text()).get("language"))
+        return fake_tailor(cli_env.jobs_dir, [])(job_id, posting_path, **kw)
+
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", tailor)
+    CliRunner().invoke(cli, ["jobs", "prepare", "manual.abc"])
+    assert seen == ["da"]
