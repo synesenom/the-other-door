@@ -191,6 +191,40 @@ describe('createUpdateManager', () => {
     expect(log).toHaveBeenCalledTimes(1)
   })
 
+  it('install: a failed download goes back to unchecked and the next check asks again', async () => {
+    const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
+    const { m, log } = manager('install', updater)
+    await m.check()
+    expect(m.last()).toMatchObject({ state: 'downloading' })
+    updater.emit('error', new Error('download broke'))
+    expect(m.last()).toEqual({ enabled: true, mode: 'install', checked: false, current: '0.1.0' })
+    expect(log).toHaveBeenCalledTimes(1)
+    await m.check()
+    expect(updater.checkForUpdates).toHaveBeenCalledTimes(2)
+    expect(m.last()).toMatchObject({ available: true, state: 'downloading' })
+  })
+
+  it('install: an error after the download finished keeps it downloaded', async () => {
+    const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
+    const { m } = manager('install', updater)
+    await m.check()
+    updater.emit('update-downloaded', { version: '0.1.1' })
+    updater.emit('error', new Error('later'))
+    expect(m.last()).toMatchObject({ state: 'downloaded' })
+  })
+
+  it('install: a check that both emits error and rejects is logged once', async () => {
+    const updater = fakeUpdater()
+    updater.checkForUpdates.mockImplementation(async () => {
+      const e = new Error('offline')
+      updater.emit('error', e)
+      throw e
+    })
+    const { m, log } = manager('install', updater)
+    expect(await m.check()).toMatchObject({ checked: false })
+    expect(log).toHaveBeenCalledTimes(1)
+  })
+
   it('install(): restarts only when downloaded', async () => {
     const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
     const { m } = manager('install', updater)

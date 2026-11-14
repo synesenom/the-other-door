@@ -126,6 +126,7 @@ export function createUpdateManager(opts: {
   }
   const unchecked = (): UpdateResult => ({ enabled: true, mode: 'install', checked: false, current })
   const updater = mode === 'install' ? opts.updater : null
+  let errored = false // electron-updater emits `error` and also rejects: one log line
   if (updater) {
     updater.autoDownload = true
     updater.autoInstallOnAppQuit = true
@@ -138,7 +139,9 @@ export function createUpdateManager(opts: {
     updater.on('update-not-available', () => set({ enabled: true, mode: 'install', checked: true, current, available: false }))
     updater.on('error', (e: unknown) => {
       opts.log(`update check failed: ${e instanceof Error ? e.message : String(e)}`)
-      if (!(cached && cached.enabled && cached.checked && cached.available)) set(unchecked())
+      errored = true
+      // a failed download is announced here too: go back to a state that can be checked again
+      if (!(cached && cached.enabled && cached.checked && cached.available && cached.state === 'downloaded')) set(unchecked())
     })
   }
   const checker = mode === 'link' ? createUpdateChecker({ feed: RELEASES_LATEST, current, fetch: opts.fetch, log: opts.log, timeoutMs: opts.timeoutMs }) : null
@@ -152,10 +155,11 @@ export function createUpdateManager(opts: {
       return out
     }
     if (cached && cached.enabled && cached.checked && cached.available) return cached // downloading or downloaded: leave it be
+    errored = false
     try {
       await updater?.checkForUpdates()
     } catch (e) {
-      opts.log(`update check failed: ${e instanceof Error ? e.message : String(e)}`)
+      if (!errored) opts.log(`update check failed: ${e instanceof Error ? e.message : String(e)}`)
       set(unchecked())
     }
     return cached ?? unchecked()
