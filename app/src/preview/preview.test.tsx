@@ -160,6 +160,16 @@ describe('scenes', () => {
     expect(container.querySelector('main')).not.toBeInTheDocument()
   })
 
+  it('analytics shows the funnel, each stage against the one before, and in the empty state only what was scraped', async () => {
+    mount('analytics')
+    const part = await screen.findByRole('region', { name: 'Applications' })
+    expect(part).toHaveTextContent('Scraped212')
+    expect(screen.getByRole('img', { name: 'Applied: 7 of 9' })).toBeInTheDocument()
+    cleanup()
+    mount('analytics', 'empty')
+    expect(await screen.findByRole('img', { name: 'Matches: 0 of 212' })).toBeInTheDocument()
+  })
+
   it('posting opens the posting', async () => {
     mount('posting')
     expect(await screen.findByRole('heading', { name: 'Senior Financial Controller' })).toBeInTheDocument()

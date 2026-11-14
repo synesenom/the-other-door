@@ -82,6 +82,13 @@ export interface StatusSummary {
   cost?: CostBlock | null
   /** The Claude plan's window and the room left (`usage.room`); null before any reading. */
   plan?: PlanBlock | null
+  /** The job hunt as stages reached (`status_summary.funnel`), each count no larger than the one before. */
+  funnel?: FunnelStage[]
+}
+
+export interface FunnelStage {
+  stage: string
+  count: number
 }
 
 export interface CostBlock {

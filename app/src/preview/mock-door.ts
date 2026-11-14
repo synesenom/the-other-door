@@ -156,7 +156,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           ...fixtures.status_summary,
           drive,
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
-          ...(state === 'empty' ? { plan: null, cost: null } : {}),
+          ...(state === 'empty' ? { plan: null, cost: null, funnel: fixtures.status_summary.funnel.map((f) => ({ ...f, count: f.stage === 'postings' ? f.count : 0 })) } : {}),
           // the plan's window nearly full: the sidebar's foot says so
           ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, five_hour: { used: 0.9, resets_at: new Date(Date.now() + 90 * 60_000).toISOString() }, room: { find: 1, prepare: 2 } } } : {}),
         }

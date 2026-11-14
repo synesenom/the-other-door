@@ -1197,7 +1197,14 @@
   },
   "interviews": {
    "screening": {
-    "passed": 0,
+    "passed": 2,
+    "rejected": 1,
+    "ghosted": 0,
+    "withdrawn": 0,
+    "pending": 0
+   },
+   "technical": {
+    "passed": 1,
     "rejected": 0,
     "ghosted": 0,
     "withdrawn": 0,
@@ -1205,26 +1212,33 @@
    }
   },
   "application": {
-   "passed": 1,
-   "rejected": 0,
-   "ghosted": 0,
+   "passed": 3,
+   "rejected": 1,
+   "ghosted": 1,
    "withdrawn": 0,
-   "pending": 1
+   "pending": 2
   },
   "pass_rates": {
    "application": {
+    "passed": 3,
+    "decided": 5,
+    "rate": 0.6,
+    "low": 0.4,
+    "high": 0.77
+   },
+   "screening": {
+    "passed": 2,
+    "decided": 3,
+    "rate": 0.6667,
+    "low": 0.46,
+    "high": 0.82
+   },
+   "technical": {
     "passed": 1,
     "decided": 1,
     "rate": 1.0,
     "low": 0.5,
     "high": 1.0
-   },
-   "screening": {
-    "passed": 0,
-    "decided": 0,
-    "rate": null,
-    "low": null,
-    "high": null
    }
   },
   "in_progress": null,
@@ -1347,7 +1361,37 @@
      ]
     }
    ]
-  }
+  },
+  "funnel": [
+   {
+    "stage": "postings",
+    "count": 212
+   },
+   {
+    "stage": "applicable",
+    "count": 131
+   },
+   {
+    "stage": "matches",
+    "count": 34
+   },
+   {
+    "stage": "prepared",
+    "count": 9
+   },
+   {
+    "stage": "applied",
+    "count": 7
+   },
+   {
+    "stage": "interview",
+    "count": 3
+   },
+   {
+    "stage": "offer",
+    "count": 1
+   }
+  ]
  },
  "list_matches": {
   "min_score": 0.65,
