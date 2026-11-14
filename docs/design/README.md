@@ -34,9 +34,9 @@ change a colour or a size there, not in a component.
 8. **No new destinations.** The sidebar is Matches, Applications, Profile, Settings and Analytics,
    and stays that. A new feature is an action on something already shown (a job, the CV), a section of
    an existing screen, or left to the command line, Claude Code and "Ask about your jobs" (#339).
-   Analytics (#64) holds what is read: how it is going, as figures (what Claude's work cost, the
-   market, how the applications go). It changes nothing except two actions in Market (#65): adding the
-   titles the search does not cover to the search keywords, and following a repeat employer.
+   Analytics (#64) holds what is read, not changed: how it is going, as figures (what Claude's work
+   cost, the market, how the applications go); an action there takes the user to where the change is
+   made (Profile, a job).
 9. **An error only when it helps.** Show an error only if it keeps the user from doing something
    wrong (a CV claim nothing backs, a value that will not save) or they can act on it and fix it
    themselves (sign in again, retry, choose a file). A failure the app retries by itself, or one the
@@ -218,7 +218,7 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 ![Review one at a time, dark](screens/review-dark.png)
 
 **Analytics** (no mockup yet): the reading-width column of Settings with its list of parts on the
-right, nothing in it changes anything except two actions in Market. Applications first (#66): the funnel as one row per stage, its
+right, nothing in it changes anything. Applications first (#66): the funnel as one row per stage, its
 name, an 8 px bar sized by its share of the stage before it (the first full; `accent` on a `border`
 track, at least 2 px) and its count right in tabular figures; Applied, Interview and Offer add that
 share as a percentage in `ink-muted` after the count (the pass rate of the step); no other figures. Claude usage next: the total of the last 7 days in

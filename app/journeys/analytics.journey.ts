@@ -2,7 +2,7 @@
 // through `status_summary` (read only; the Claude usage section is covered by its own tests).
 import { expect, test } from './fixtures'
 import { ready } from './helpers/applications'
-import { argsOf, config, exists } from './helpers/profile'
+import { argsOf, exists } from './helpers/profile'
 
 test('the funnel follows the ledger', { tag: '@core' }, async ({ page }) => {
   await ready(page)
@@ -18,7 +18,6 @@ test('the funnel follows the ledger', { tag: '@core' }, async ({ page }) => {
   await expect(part.getByRole('table')).toHaveCount(0)
 })
 
-const TITLE = 'Datafaglig konsulent med fokus på prognoser og befolkningsdata'
 const openAnalytics = async (page: Parameters<typeof ready>[0]) => {
   await ready(page)
   await page.getByRole('navigation').getByRole('button', { name: 'Analytics', exact: true }).click()
@@ -28,26 +27,10 @@ const openAnalytics = async (page: Parameters<typeof ready>[0]) => {
 test.describe('Market (#65)', () => {
   test('counts the ads when Analytics opens, once, and writes no report', async ({ page, world }) => {
     const market = await openAnalytics(page)
-    await expect(market.getByText('23 ads read, 22 scored, 16 at your minimum score.')).toBeVisible({ timeout: 60_000 })
-    await expect(market.getByRole('heading', { name: 'Most asked for', level: 3 })).toBeVisible()
-    await expect(market.getByRole('listitem', { name: 'Python', exact: true })).toHaveText('Python · 86% of the ads · in your CV')
+    await expect(market.getByRole('listitem', { name: 'Python, in your CV', exact: true })).toHaveText('Python · 86% of the ads', { timeout: 60_000 })
     expect(argsOf(world, 'market')).toEqual([expect.objectContaining({ save: false })])
     expect(world.toolCalls('market')).toHaveLength(1)
     expect(exists(world, 'jobs/market')).toBe(false)
-  })
-
-  test('Add these titles to my search asks first, then adds them to the search keywords', async ({ page, world }) => {
-    const before = config(world)
-    const market = await openAnalytics(page)
-    await market.getByRole('button', { name: 'Add these titles to my search' }).click({ timeout: 60_000 })
-    const dialog = page.getByRole('dialog', { name: 'Add these titles to your search?' })
-    await expect(dialog).toHaveText(new RegExp(`The job boards will also be searched for ${TITLE}\\.`))
-    await dialog.getByRole('button', { name: 'Cancel' }).click()
-    expect(world.toolCalls('init_profile')).toEqual([])
-    await market.getByRole('button', { name: 'Add these titles to my search' }).click()
-    await dialog.getByRole('button', { name: 'Add', exact: true }).click()
-    await expect(market.getByText('Added to your search keywords.')).toBeVisible()
-    expect(config(world)).toEqual({ ...before, search_keywords: [...world.persona.searchKeywords, TITLE] })
   })
 
   test('a report that failed says why', async ({ page, world }) => {

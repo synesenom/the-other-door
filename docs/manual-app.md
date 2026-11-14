@@ -398,9 +398,8 @@ The settings for tuning a run (how many sites at once, the limits, how old an ad
 a quiet employer, asking Claude where a careers page is, the Claude config folder for people with two plans, the prescreen, the
 models) and the template paths are
 left to `profile/config.json`; the form keeps any you set there and never sends them. The employers
-*The other door* follows are mostly its own business: it finds and follows them, you can follow one more from
-Analytics → Market, and an employer you never want to hear from goes under Companies to skip. To unfollow one,
-use `companies remove` in a shell or ask Claude Code (the app has no list of them yet).
+*The other door* follows are its own business: it finds and follows them, and an employer you never want to
+hear from goes under Companies to skip.
 
 What the job boards are searched for follows your role targets, and is not on screen: when a Save changes
 your role targets or the languages of the ads, Claude proposes the search keywords and the words a job title
@@ -543,7 +542,7 @@ stops. The phone does not show it.
 
 ## Analytics
 
-How it is going, as figures. Nothing here changes anything except two actions in Market. Not on the phone.
+How it is going, as figures: nothing here changes anything. Not on the phone.
 
 **Applications** shows how the job hunt is going. Once jobs are scraped, a funnel of bars runs from
 everything scraped, through the matches at your minimum score, to the
@@ -563,12 +562,9 @@ scored, applications prepared, other requests) and, when there are several, what
 charged per call: this is what the same calls would cost on the API, a figure that is the same
 whatever your plan. Before the first search it says only that the figures show here after it.
 
-**Market** counts the ads of the last 30 days once, when you open Analytics (new skill names may take one
-short Claude call on your plan), and writes no report. It shows how many ads were read, scored and at your
-minimum score, the eight skills asked for most with their share of the ads and whether your CV has them,
-and the job titles your search does not cover. "Add these titles to my search" asks first, then adds them
-to your search keywords. Under Repeat employers, each employer that posts often and that you do not follow
-has a Follow button: it looks for the employer's job feed and says at once whether it follows it, or why not.
+**Market** lists the eight skills the ads of the last 30 days ask for most, each with its share of the ads:
+a check when your CV has it, a cross when it does not, as on a job. It counts the ads once, when you open
+Analytics (new skill names may take one short Claude call on your plan), and writes no report.
 
 ## On your phone
 

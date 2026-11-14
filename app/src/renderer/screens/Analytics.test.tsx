@@ -102,7 +102,7 @@ describe('Analytics', () => {
     await screen.findByRole('region', { name: 'Applications' })
     const headings = (await screen.findAllByRole('heading', { level: 2 })).map((h) => h.textContent)
     expect(headings).toEqual(['Applications', 'Claude usage', 'Market'])
-    expect(await screen.findByRole('listitem', { name: 'SQL' })).toBeInTheDocument()
+    expect(await screen.findByRole('listitem', { name: 'SQL, in your CV' })).toBeInTheDocument()
     expect(call.mock.calls.filter((c) => c[0] === 'market')).toEqual([['market', { save: false }]])
     expect(screen.getAllByText('Market')).toHaveLength(2) // the heading and its entry beside the sections
   })
