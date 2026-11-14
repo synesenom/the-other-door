@@ -5,7 +5,7 @@ installer (below) or runs from a checkout ([`app/README.md`](../app/README.md)).
 each screen does. The look is in [`design/`](design/README.md).
 
 The first time you open it on a computer with no profile, a short wizard sets *The other door* up
-([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your CV, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and opens where it is fixed.
+([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and opens where it is fixed.
 Preparing an application needs the `claude` command line and a LaTeX compiler. The installed app
 brings LaTeX (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all.
@@ -479,6 +479,11 @@ are listed, each with what its terms say. Off until you tick one; a tick is save
 When Claude is not signed in or not installed, or a Drive sync failed or needs a choice, a short line at the foot of
 the sidebar says so and opens Settings (your CV's line opens Profile). Nothing is said when all is
 well or when Drive is simply off. A site a run could not read is not said: the next run reads it again (its error is in the run record).
+
+When your Claude plan's window is nearly full, a line says so too, with when it resets: **"Claude's usage limit is
+reached, resets 15:30"**, or **"Room for about 2 more applications this window, resets 15:30"** once there is room
+for three or fewer (an estimate). It opens nothing, and goes by itself when the window has room again. It is read
+when the app opens, after a run and after a Prepare, never in between. The phone shows it too, as plain text.
 
 Three more lines are about your data folder, when this version cannot open it. Every screen then refuses to work with it
 (nothing is changed), and only Settings and Report a problem still answer:

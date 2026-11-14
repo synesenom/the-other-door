@@ -8,7 +8,7 @@ import type { RunBoard, StepRow } from '../main/run-board'
 import fixtures from './fixtures.json'
 
 /** What the data tools answer: `ok` the fixtures, then the states every screen has to hold up in. */
-export const DATA_STATES = ['ok', 'empty', 'loading', 'error', 'long'] as const
+export const DATA_STATES = ['ok', 'empty', 'loading', 'error', 'long', 'plan-low'] as const
 export type DataState = (typeof DATA_STATES)[number]
 
 export interface Scene {
