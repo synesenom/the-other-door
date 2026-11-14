@@ -51,6 +51,15 @@ function show(opts: { doctor?: DoctorReport | null; drive?: DriveStatus | null; 
 }
 
 describe('Connections: Claude', () => {
+  it.each([
+    ['signed out', signedOut, /Not signed in\. .*needs your Claude plan/, 'Sign in with Claude'],
+    ['doctor failing', { ok: false, checks: [], error: 'doctor could not run: the profile is locked' } as DoctorReport, /could not read the Claude sign-in/, 'Check again'],
+  ])('%s: says so and offers the way out', (_, doctor, text, button) => {
+    const { row } = show({ doctor })
+    expect(row('Claude').getByText(text)).toBeInTheDocument()
+    expect(row('Claude').getByRole('button', { name: button })).toBeInTheDocument()
+  })
+
   it('not installed: Install asks first, then runs setup for claude only', async () => {
     const { row, call, onRecheck } = show({ doctor: { ok: false, checks: [cli(false)] }, handlers: { setup: { outcome: 'ok' } } })
     expect(row('Claude').getByText('Not installed')).toBeInTheDocument()
@@ -102,6 +111,22 @@ describe('Connections: Google Drive', () => {
     const { call, claudeLogin } = show({ drive: on })
     expect(call.mock.calls.map((c) => c[0])).toEqual([])
     expect(claudeLogin.start).not.toHaveBeenCalled()
+  })
+
+  it('off: Connect connects, then syncs at once and says what it did', async () => {
+    const { row, call, onDriveChanged } = show({ handlers: { connect_drive: { account: 'ada@gmail.com' }, sync_data: { action: 'push', version: 'v1' } } })
+    await userEvent.click(row('Google Drive').getByRole('button', { name: 'Connect' }))
+    expect(calls(call)).toEqual([
+      ['connect_drive', {}],
+      ['sync_data', {}],
+    ])
+    expect(row('Google Drive').getByText("Sent this computer's data to Drive.")).toBeInTheDocument()
+    expect(onDriveChanged).toHaveBeenCalled()
+  })
+
+  it('connected with a failed sync: says why', () => {
+    const { row } = show({ drive: { ...on, last_error: 'Google Drive is unreachable' } })
+    expect(row('Google Drive').getByText('The last sync failed: Google Drive is unreachable')).toBeInTheDocument()
   })
 
   it("connecting to a Drive that already has data brings it here and reloads", async () => {

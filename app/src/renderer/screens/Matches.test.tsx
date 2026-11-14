@@ -317,6 +317,17 @@ describe('Matches', () => {
       expect(within(rows[1]).getByRole('button')).toHaveAttribute('aria-current', 'true')
     })
 
+    it('Not for me opens the next match in its place', async () => {
+      stubNarrow(false)
+      changing({})
+      render(<Matches />)
+      await userEvent.click(await screen.findByRole('button', { name: /Second job/ }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Not for me' }))
+      await userEvent.type(screen.getByLabelText('Why not?'), 'too far')
+      await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
+      expect(await screen.findByRole('heading', { name: 'Third job', level: 2 })).toBeInTheDocument()
+    })
+
     it('Not for me on the only match left goes back to the list', async () => {
       stubNarrow(false)
       let rows = [three[0]]

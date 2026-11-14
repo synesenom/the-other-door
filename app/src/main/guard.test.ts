@@ -106,6 +106,8 @@ describe('app guard', () => {
     expect(text).toContain("'auth', 'login'")
     expect(text).toMatch(/shell:\s*false/)
     expect(text).not.toMatch(/shell:\s*true|(?<![.\w])exec(Sync|File)?\(|'--console'|'-p'|setup-token/)
+    // The real login's tests run a fake spawn, never claude.
+    expect(readFileSync(join(APP, 'src', 'main', 'claude-login.test.ts'), 'utf8')).toMatch(/spawn: \w+ as never/)
   })
 
   it('the phone test fixture runs `serve` and nothing else of the CLI', () => {
