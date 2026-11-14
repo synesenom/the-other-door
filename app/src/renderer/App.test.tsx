@@ -26,12 +26,12 @@ describe('App', () => {
     expect(screen.queryByRole('status', { name: 'Starting The other door' })).toBeNull()
   })
 
-  it('has the four destinations in the sidebar', async () => {
+  it('has the five destinations in the sidebar', async () => {
     setup()
     render(<App />)
     const nav = await screen.findByRole('navigation')
     const names = within(nav).getAllByRole('button').map((b) => b.textContent)
-    expect(names).toEqual(['Matches', 'Applications', 'Profile', 'Settings'])
+    expect(names).toEqual(['Matches', 'Applications', 'Profile', 'Settings', 'Analytics'])
   })
 
   it('each destination opens its screen, and the app opens on Matches', async () => {
@@ -45,6 +45,8 @@ describe('App', () => {
     expect(await screen.findByRole('region', { name: 'Connections' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Profile' }))
     expect(await screen.findByRole('heading', { name: 'Profile', level: 1 })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Analytics' }))
+    expect(await screen.findByRole('region', { name: 'Claude usage' })).toBeInTheDocument()
   })
 
   it('opens every screen at its top, wherever the last one was scrolled to', async () => {
@@ -96,12 +98,12 @@ describe('App', () => {
       delete (window as { matchMedia?: unknown }).matchMedia
     })
 
-    it('shows the same four destinations as a tab bar, the current one marked with a dash', async () => {
+    it('shows the same five destinations as a tab bar, the current one marked with a dash', async () => {
       stubNarrow(true)
       setup()
       const { container } = render(<App />)
       const nav = await screen.findByRole('navigation')
-      expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Matches', 'Applications', 'Profile', 'Settings'])
+      expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Matches', 'Applications', 'Profile', 'Settings', 'Analytics'])
       const current = within(nav).getByRole('button', { name: 'Matches' })
       await waitFor(() => expect(current).toHaveAttribute('aria-current', 'page'))
       expect(current.querySelector('.tab-dash')).not.toBeNull()

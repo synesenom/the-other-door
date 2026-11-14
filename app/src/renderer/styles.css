@@ -422,6 +422,21 @@ legend.field-label { padding-bottom: var(--space-2); }
    what it heads; the wider gap is between its fields. */
 .part > :is(.part-head, h2) + * { margin-top: calc(var(--space-4) - 28px); }
 details.part { display: block; }
+/* Analytics' Claude usage: one stacked bar for the whole total (always full: where it went, never a quota
+   filling up), then an activity per row, its dot in its part's tone, what it did after its name, its dollars
+   at the right, and its features as quieter rows under the name. */
+.usage-stack { display: flex; gap: 3px; height: 8px; }
+.usage-stack > span { min-width: 4px; border-radius: var(--radius-pill); }
+.usage-tone-0 { background: var(--color-accent); }
+.usage-tone-1 { background: var(--color-ink-muted); }
+.usage-tone-2 { background: var(--color-border); }
+.usage-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: var(--space-2); }
+.usage-list, .usage-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.usage-list { gap: var(--space-5); }
+.usage-features { gap: var(--space-1); margin-top: var(--space-2); padding-left: calc(10px + var(--space-2)); }
+.usage-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); }
+.usage-row > h3 { margin: 0; font-weight: inherit; }
+.usage-row > span:last-child { font-variant-numeric: tabular-nums; }
 details.part > * + * { margin-top: 28px; }
 details.part > summary + * { margin-top: var(--space-4); }
 .onb-drop-area, .onb-url { position: relative; }

@@ -127,6 +127,66 @@ def test_week_takes_another_window(tmp_path):
     assert usage.week(tmp_path, days=30)["heaviest"] == "other"
 
 
+# --------------------------------------------------------------------------- what it cost (#64)
+def test_every_feature_has_a_label():
+    assert set(usage.FEATURE_LABELS) == set(usage.FEATURES)
+    assert all(usage.FEATURE_LABELS.values())
+
+
+def test_cost_gives_each_activity_its_dollars_and_each_feature_within_it(tmp_path):
+    _log(tmp_path,
+         ("tailoring", 1.40, 1, 1), ("revise", 0.10, 1, 1),
+         ("match_scoring", 0.40, 100, 2), ("title_translation", 0.05, 1, 2), ("match_scoring", 0.05, 10, 2),
+         ("ask", 0.03, 1, 0), ("draft_cv", 0.07, 1, 3),
+         ("tailoring", 9.0, 1, 30))                                   # last month: outside the window
+    got = usage.cost(tmp_path, records=[])
+    assert got["days"] == 7 and got["usd"] == pytest.approx(2.10)
+    assert [(a["activity"], a["usd"], a["count"], a["of"]) for a in got["activities"]] == [
+        ("prepare", pytest.approx(1.50), 1, "applications prepared"),
+        ("find", pytest.approx(0.50), 110, "postings scored"),
+        ("other", pytest.approx(0.10), 2, "other requests"),
+    ]
+    find = got["activities"][1]
+    assert find["label"] == "Finding jobs"
+    assert [(f["feature"], f["usd"], f["calls"]) for f in find["features"]] == [
+        ("match_scoring", pytest.approx(0.45), 2), ("title_translation", pytest.approx(0.05), 1)]
+    assert find["features"][0]["label"] == usage.FEATURE_LABELS["match_scoring"]
+
+
+def test_cost_gives_one_find_and_one_prepare_in_dollars(tmp_path):
+    _log(tmp_path, ("tailoring", 1.20, 1, 1), ("tailoring", 0.80, 1, 2), ("match_scoring", 0.04, 10, 1))
+    per = usage.cost(tmp_path, records=[])["per_run"]
+    assert per["prepare"] == pytest.approx(1.0)
+    assert per["find"] == pytest.approx(usage.DEFAULT_POSTINGS_PER_RUN * 0.004)  # no run yet: sized from one posting
+
+
+def test_cost_sizes_a_find_from_the_run_records_on_disk(tmp_path):
+    now = datetime.now(timezone.utc)
+    (tmp_path / "runs").mkdir()
+    (tmp_path / "runs" / "r.json").write_text(json.dumps(
+        {"started_at": (now - timedelta(hours=1)).isoformat(), "finished_at": now.isoformat()}))
+    with (tmp_path / usage.LOG_NAME).open("a") as fh:
+        for w in (0.10, 0.15):
+            fh.write(json.dumps({"at": (now - timedelta(minutes=30)).isoformat(), "feature": "match_scoring",
+                                 "units": 5, "weight": w}) + "\n")
+    assert usage.cost(tmp_path)["per_run"]["find"] == pytest.approx(0.25)
+
+
+def test_cost_takes_another_window(tmp_path):
+    _log(tmp_path, ("ask", 0.02, 1, 20))
+    assert usage.cost(tmp_path, records=[])["activities"] == []
+    assert usage.cost(tmp_path, records=[])["usd"] == 0
+    assert usage.cost(tmp_path, days=30, records=[])["usd"] == pytest.approx(0.02)
+
+
+def test_cost_is_none_before_any_call_was_weighed(tmp_path):
+    assert usage.cost(tmp_path) is None
+    with (tmp_path / usage.LOG_NAME).open("a") as fh:   # a refused call: a reading, no weight
+        fh.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(), "feature": "ask", "units": 1,
+                             "status": "rejected"}) + "\n")
+    assert usage.cost(tmp_path) is None
+
+
 # --------------------------------------------------------------------------- the plan's limits (plan §5)
 _LIMITS = {"status": "allowed",
            "five_hour": {"used": 0.42, "resets_at": 1762182000, "status": "allowed"},

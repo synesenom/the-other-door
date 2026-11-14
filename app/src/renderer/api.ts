@@ -60,6 +60,22 @@ export interface StatusSummary {
   drive?: { connected: boolean; account: string | null; last_synced: string | null; last_error: string | null; configured?: boolean }
   /** Something keeps going wrong since the last problem report (a site, scoring, the server, a tool): no details. */
   recurring_problem?: boolean
+  /** What the last days' Claude calls cost at API prices (`usage.cost`); null before any call was weighed. */
+  cost?: CostBlock | null
+}
+
+export interface CostBlock {
+  days: number
+  usd: number
+  per_run: { find: number | null; prepare: number | null }
+  activities: {
+    activity: string
+    label: string
+    usd: number
+    count: number
+    of: string
+    features: { feature: string; label: string; usd: number; calls: number }[]
+  }[]
 }
 
 /** One site's outcome in a run record (`core/runs.site_entries`). */

@@ -266,7 +266,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "withdrawn", "pending"}, "pass_rates": {stage: {"passed", "decided",
         "rate", "low", "high"}}, "in_progress": {...} | None, "employers": {"followed", "unfollowable",
         "unresolved"}, "drive": {"connected", "account", "last_synced",
-        "last_error", "configured"}, "recurring_problem": bool, "plan": {...} | None}`` — every ledger status is present,
+        "last_error", "configured"}, "recurring_problem": bool, "plan": {...} | None, "cost": {...} | None}`` — every ledger status is present,
         0 when unused; ``interviews`` is `tracker.interview_outcomes` (only the
         stages that occur); ``application`` is `tracker.application_outcomes`
         (did each sent application lead to an interview); ``pass_rates`` is
@@ -281,7 +281,9 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         since the last problem report (a site, scoring, the server or a tool), no details;
         ``plan`` is `_plan_block`: how full the Claude plan's windows are, how many more finds
         and prepares fit (`usage.room`) and this week's shares (`usage.week`), or None before
-        any call read the plan.
+        any call read the plan; ``cost`` is `usage.cost`: what the last 7 days' calls cost at API
+        prices, per activity and feature, and one find and one prepare, or None before any call
+        was weighed.
     """
     from door.core import selection
 
@@ -324,6 +326,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         # the data folder holds jobs/: its logs/ (#593)
         "recurring_problem": recurring.check(jobs_dir.parent, records),
         "plan": _plan_block(jobs_dir, records),
+        "cost": usage.cost(jobs_dir, records=records),
     }
 
 
@@ -542,7 +545,31 @@ def _print_pipeline_status() -> None:
         console.print(Padding(Text(common._plan_line(result["plan"]),
                                    style="yellow" if result["plan"].get("warning") else ""), (0, 2)))
 
+    if result["cost"]:
+        _print_cost(console, result["cost"])
+
     _print_since_last_review(console, result["since_last_review"])
+
+
+def _print_cost(console, cost: dict) -> None:
+    from rich.padding import Padding
+    from rich.table import Table
+    from rich.text import Text
+
+    common._section(console, f"Claude usage, last {cost['days']} days (an estimate)")
+    console.print(Padding(Text.assemble(("You don't pay this: your Claude plan covers it.", "bold"),
+                                        " It is what the same calls would cost on Claude's API."), (0, 2)))
+    head, rows = common._cost_lines(cost)
+    console.print(Padding(Text(head), (0, 2)))
+    if rows:
+        grid = Table.grid(padding=(0, 2))
+        grid.add_column(no_wrap=True)
+        grid.add_column(justify="right", no_wrap=True)
+        grid.add_column(style="dim")
+        for label, usd, did in rows:
+            style = "dim" if label.startswith(" ") else ""
+            grid.add_row(Text(label, style=style), Text(usd, style=style), did)
+        console.print(Padding(grid, (0, 2)))
 
 
 def _print_since_last_review(console, since: dict) -> None:

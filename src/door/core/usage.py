@@ -8,8 +8,10 @@ of a window a unit of weight uses (`calibration()`) and how heavy a run is (`run
 
 Every `claude -p` call asks for a stream (`claude_cli.STREAM_ARGS`), whose result envelope
 (`claude_cli.read_stream`) carries `total_cost_usd`, what the call would cost at API prices.
-That figure is never shown (the plan is not billed per call); it is only the weight that
-makes a cached, a Haiku and a Sonnet call comparable. `record()` appends one line per call
+It is the weight that makes a cached, a Haiku and a Sonnet call comparable, and it is shown
+as what each activity cost at API prices (`cost()`, #64): the same yardstick for everyone,
+whatever their plan, an estimate from `claude`'s own price table and not a bill (the plan is
+not charged per call). `record()` appends one line per call
 to `jobs/usage.jsonl` (`LOG_NAME`): when, what for (a key of `FEATURES`), how many postings
 it scored, that weight, and the windows' readings (`u5`/`r5`/`u7`/`r7`/`status`). It is
 called by `claude_cli.run()` (so by `claude_cli.ask()`) and by `matching/scorer.py`,
@@ -56,6 +58,28 @@ FEATURES = {
     "import_posting": "other",
     "ask": "other",
     "scraper_fix": "other",
+}
+
+# What each feature is called where a user reads the cost (`cost`); a test checks every feature has one.
+FEATURE_LABELS = {
+    "match_scoring": "Scoring postings",
+    "title_translation": "Translating job titles",
+    "careers_lookup": "Finding careers pages",
+    "tailoring": "Tailoring the CV and letter",
+    "tailoring_retry": "Tailoring again after the ATS check",
+    "revise": "Revising materials",
+    "draft_cv": "Drafting the CV",
+    "draft_stories": "Drafting stories",
+    "infer_basics": "Reading your details",
+    "keywords": "Proposing search terms",
+    "suggest_titles": "Suggesting job titles",
+    "enrich": "Expanding the CV",
+    "skill_gaps": "Skill-gap reports",
+    "market_aliases": "Market report",
+    "salary": "Salary estimates",
+    "import_posting": "Adding a job",
+    "ask": "Questions about your jobs",
+    "scraper_fix": "Fixing a scraper",
 }
 
 # Before this computer has history, a find is sized as scoring this many postings and a
@@ -184,6 +208,20 @@ def _units(line: dict) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
+def _in_window(jobs_dir: Path | None, days: int, now: datetime | None) -> list[dict]:
+    since = ((now or datetime.now(timezone.utc)) - timedelta(days=days)).isoformat()
+    return [line for line in read(jobs_dir) if str(line.get("at", "")) >= since]
+
+
+def _what_it_did(bucket: str, mine: list[dict]) -> tuple[int, str]:
+    """What an activity's calls did: postings scored, applications prepared, or the calls."""
+    if bucket == "find":
+        return sum(_units(line) for line in mine if line["feature"] == "match_scoring"), "postings scored"
+    if bucket == "prepare":
+        return sum(1 for line in mine if line["feature"] == "tailoring"), "applications prepared"
+    return len(mine), "other requests"
+
+
 def week(jobs_dir: Path | None = None, *, days: int = 7, now: datetime | None = None) -> dict:
     """What used the plan in the last `days` days: each activity's share (0-1, largest first)
     with what it did (postings scored, applications prepared, other calls), and the heaviest.
@@ -192,24 +230,55 @@ def week(jobs_dir: Path | None = None, *, days: int = 7, now: datetime | None = 
         ``{"days", "activities": [{"activity", "label", "share", "count", "of"}], "heaviest"}``;
         no activities and `heaviest` None when nothing was recorded.
     """
-    since = ((now or datetime.now(timezone.utc)) - timedelta(days=days)).isoformat()
-    lines = [line for line in read(jobs_dir) if str(line.get("at", "")) >= since]
+    lines = _in_window(jobs_dir, days, now)
     total = sum(_weight(line) for line in lines)
     activities = []
     for bucket, label in BUCKETS.items():
         mine = [line for line in lines if FEATURES[line["feature"]] == bucket]
         if not mine:
             continue
-        if bucket == "find":
-            count, of = sum(_units(line) for line in mine if line["feature"] == "match_scoring"), "postings scored"
-        elif bucket == "prepare":
-            count, of = sum(1 for line in mine if line["feature"] == "tailoring"), "applications prepared"
-        else:
-            count, of = len(mine), "other requests"
+        count, of = _what_it_did(bucket, mine)
         share = sum(_weight(line) for line in mine) / total if total else 0.0
         activities.append({"activity": bucket, "label": label, "share": round(share, 3), "count": count, "of": of})
     activities.sort(key=lambda a: -a["share"])
     return {"days": days, "activities": activities, "heaviest": activities[0]["activity"] if activities else None}
+
+
+def cost(jobs_dir: Path | None = None, *, days: int = 7, records: list[dict] | None = None,
+         now: datetime | None = None) -> dict | None:
+    """What the calls of the last `days` days cost at API prices (`total_cost_usd`), per activity
+    (largest first) and per feature within it (largest first), and what one find and one prepare
+    cost (`run_sizes`); None before any call was weighed. `records` are the run records (read
+    from `jobs/runs/` when not given).
+
+    Returns:
+        ``{"days", "usd", "activities": [{"activity", "label", "usd", "count", "of",
+        "features": [{"feature", "label", "usd", "calls"}]}], "per_run": {"find", "prepare"}}``,
+        dollars rounded to 4 places, `per_run` values None when there is nothing to size by.
+    """
+    jobs_dir = Path(jobs_dir or workspace.JOBS_DIR)
+    every = read(jobs_dir)
+    if not any(_weight(line) > 0 for line in every):
+        return None
+    lines = _in_window(jobs_dir, days, now)
+    activities = []
+    for bucket, label in BUCKETS.items():
+        mine = [line for line in lines if FEATURES[line["feature"]] == bucket]
+        if not mine:
+            continue
+        count, of = _what_it_did(bucket, mine)
+        features = []
+        for feature in dict.fromkeys(line["feature"] for line in mine):
+            calls = [line for line in mine if line["feature"] == feature]
+            features.append({"feature": feature, "label": FEATURE_LABELS[feature],
+                             "usd": round(sum(_weight(line) for line in calls), 4), "calls": len(calls)})
+        features.sort(key=lambda f: -f["usd"])
+        activities.append({"activity": bucket, "label": label, "usd": round(sum(_weight(line) for line in mine), 4),
+                           "count": count, "of": of, "features": features})
+    activities.sort(key=lambda a: -a["usd"])
+    sizes = run_sizes(every, _records(jobs_dir) if records is None else records)
+    return {"days": days, "usd": round(sum(_weight(line) for line in lines), 4), "activities": activities,
+            "per_run": {kind: round(value, 4) if value else None for kind, value in sizes.items()}}
 
 
 def latest(jobs_dir: Path | None = None, *, now: datetime | None = None) -> dict | None:
