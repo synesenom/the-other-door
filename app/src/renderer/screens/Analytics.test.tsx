@@ -87,4 +87,57 @@ describe('Analytics', () => {
     render(<Analytics />)
     expect(await screen.findByText(/shows here after your first search/)).toBeInTheDocument()
   })
+
+  describe('Applications', () => {
+    const FUNNEL = [
+      { stage: 'postings', count: 200 }, { stage: 'applicable', count: 120 }, { stage: 'matches', count: 40 },
+      { stage: 'prepared', count: 10 }, { stage: 'applied', count: 4 }, { stage: 'interview', count: 2 }, { stage: 'offer', count: 1 },
+    ]
+    const OUT = { passed: 1, rejected: 0, ghosted: 0, withdrawn: 0, pending: 1 }
+    const APPLIED = {
+      funnel: FUNNEL,
+      application: OUT,
+      interviews: { screening: { passed: 0, rejected: 1, ghosted: 0, withdrawn: 0, pending: 0 } },
+      pass_rates: {
+        application: { passed: 1, decided: 2, rate: 0.5, low: 0.21, high: 0.79 },
+        screening: { passed: 0, decided: 1, rate: null, low: null, high: null },
+      },
+    }
+
+    it('shows one bar row per funnel stage with its label and count', async () => {
+      mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
+      render(<Analytics />)
+      const part = await screen.findByRole('region', { name: 'Applications' })
+      const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('funnel-row'))
+      expect(rows.map((r) => r.textContent)).toEqual([
+        'Scraped200', 'Worth a look120', 'Matches40', 'Prepared10', 'Applied4', 'Interview2', 'Offer1'])
+      expect(within(rows[2]).getByRole('img', { name: 'Matches: 40 of 200' })).toBeInTheDocument()
+    })
+
+    it('says how the application and each round went with the pass rate and its interval', async () => {
+      mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
+      render(<Analytics />)
+      const part = await screen.findByRole('region', { name: 'Applications' })
+      const application = within(part).getByRole('row', { name: /Application/ })
+      expect(application).toHaveTextContent('1/2 passed')
+      expect(application).toHaveTextContent('50% (21–79%)')
+      // passed, rejected, ghosted, withdrawn, pending, then the rate
+      expect(within(application).getAllByRole('cell').map((c) => c.textContent)).toEqual(['1', '0', '0', '0', '1', '1/2 passed  50% (21–79%)'])
+      expect(within(part).getByRole('row', { name: /Screening/ }).textContent).not.toContain('%')
+    })
+
+    it('with nothing applied: one quiet line, and Claude usage still shows', async () => {
+      mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel: FUNNEL.map((f) => ({ ...f, count: f.stage === 'postings' ? 5 : 0 })), application: { ...OUT, passed: 0, pending: 0 }, interviews: {}, pass_rates: {} }) })
+      render(<Analytics />)
+      expect(await screen.findByText('Your funnel shows here once you have applied')).toBeInTheDocument()
+      expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
+    })
+
+    it('a failed read shows no error', async () => {
+      mockDoor({})
+      render(<Analytics />)
+      expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+  })
 })

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { statusSummary, type CostBlock, type StatusSummary } from '../api'
+import { statusSummary, type CostBlock, type PassRate, type StageCounts, type StatusSummary } from '../api'
 import { PageSections } from './PageSections'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
@@ -21,6 +21,80 @@ function share(part: number, total: number): number {
 /** The tone of the i-th activity (largest first) in the stacked bar and its dot: blue, grey, beige. */
 function tone(i: number): string {
   return `usage-tone-${Math.min(i, 2)}`
+}
+
+const FUNNEL_LABELS: Record<string, string> = {
+  postings: 'Scraped',
+  applicable: 'Worth a look',
+  matches: 'Matches',
+  prepared: 'Prepared',
+  applied: 'Applied',
+  interview: 'Interview',
+  offer: 'Offer',
+}
+
+const OUTCOMES: (keyof StageCounts)[] = ['passed', 'rejected', 'ghosted', 'withdrawn', 'pending']
+
+/** "1/2 passed  50% (21–79%)", as `jobs summary` writes it; a dash until a round is decided. */
+export function pct(rate: PassRate | undefined): string {
+  if (!rate || rate.rate === null || rate.low === null || rate.high === null) return '–'
+  return `${rate.passed}/${rate.decided} passed  ${Math.round(rate.rate * 100)}% (${Math.round(rate.low * 100)}–${Math.round(rate.high * 100)}%)`
+}
+
+function Applications({ summary }: { summary: StatusSummary }) {
+  const funnel = summary.funnel ?? []
+  const first = funnel[0]?.count ?? 0
+  const applied = funnel.find((f) => f.stage === 'applied')?.count ?? 0
+  if (applied === 0) return <p className="small muted">Your funnel shows here once you have applied</p>
+  const stages: [string, StageCounts][] = [
+    ...(summary.application ? ([['application', summary.application]] as [string, StageCounts][]) : []),
+    ...Object.entries(summary.interviews ?? {}),
+  ]
+  return (
+    <>
+      <ul className="funnel-list">
+        {funnel.map((f) => {
+          const label = FUNNEL_LABELS[f.stage] ?? f.stage
+          return (
+            <li key={f.stage} className="funnel-row">
+              <span className="body">{label}</span>
+              <span className="funnel-bar" role="img" aria-label={`${label}: ${f.count} of ${first}`}>
+                <span style={{ width: `${Math.round(share(f.count, first) * 1000) / 10}%` }} />
+              </span>
+              <span className="body">{f.count}</span>
+            </li>
+          )
+        })}
+      </ul>
+      {stages.length > 0 && (
+        <>
+          <table className="stage-table small">
+            <thead>
+              <tr>
+                <th scope="col">Stage</th>
+                {OUTCOMES.map((o) => (
+                  <th key={o} scope="col">{o[0].toUpperCase() + o.slice(1)}</th>
+                ))}
+                <th scope="col">Pass rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stages.map(([name, counts]) => (
+                <tr key={name}>
+                  <th scope="row">{name[0].toUpperCase() + name.slice(1)}</th>
+                  {OUTCOMES.map((o) => (
+                    <td key={o}>{counts[o]}</td>
+                  ))}
+                  <td>{pct(summary.pass_rates?.[name])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="small muted">pass rate of the decided rounds (± one sigma, Wilson interval)</p>
+        </>
+      )}
+    </>
+  )
 }
 
 function Usage({ cost }: { cost: CostBlock | null }) {
@@ -78,7 +152,8 @@ function Usage({ cost }: { cost: CostBlock | null }) {
 }
 
 /**
- * Analytics: how it is going, read-only (#64). Claude usage first: what the last week's calls cost at API
+ * Analytics: how it is going, read-only (#64, #66). Applications first (`status_summary.funnel`, how each
+ * stage went and its pass rate, as `jobs summary` shows them), then Claude usage: what the last week's calls cost at API
  * prices per activity, and one search and one prepared application. Not the plan's window: that is live, and
  * this screen is about the days gone by. Reads
  * `status_summary` once on opening; a failed read is said nowhere (the next opening reads again).
@@ -99,6 +174,12 @@ export function Analytics() {
     <div className="page-with-aside">
       <div className="settings">
         <h1 className="display-l">Analytics</h1>
+        <section className="part" aria-labelledby="analytics-applications">
+          <h2 className="display-s" id="analytics-applications">
+            Applications
+          </h2>
+          {summary && <Applications summary={summary} />}
+        </section>
         <section className="part" aria-labelledby="analytics-usage">
           <h2 className="display-s" id="analytics-usage">
             Claude usage
@@ -111,4 +192,4 @@ export function Analytics() {
   )
 }
 
-const PARTS = [{ id: 'analytics-usage', label: 'Claude usage' }]
+const PARTS = [{ id: 'analytics-applications', label: 'Applications' }, { id: 'analytics-usage', label: 'Claude usage' }]

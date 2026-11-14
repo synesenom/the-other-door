@@ -538,6 +538,15 @@ stops. The phone does not show it.
 
 How it is going, as figures: nothing here changes anything. Not on the phone.
 
+**Applications** shows how the job hunt is going. A funnel of bars runs from everything scraped,
+through the postings worth a look and the matches at your minimum score, to the jobs you prepared,
+applied for, got an interview in and got an offer for; each job counts once, at the furthest
+stage it reached. Under it a table gives, for the application itself (did it lead to an interview)
+and for each kind of interview round you had, how many passed, were rejected, ghosted, withdrawn
+or are still pending, and the pass rate of the decided ones with its one-sigma interval, for
+example `50% (21–79%)`. Until you have applied it says only that the funnel shows here once you
+have.
+
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
 You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,
 with about what one search and one prepared application cost under it, then each activity (finding

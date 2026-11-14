@@ -160,6 +160,15 @@ describe('scenes', () => {
     expect(container.querySelector('main')).not.toBeInTheDocument()
   })
 
+  it('analytics shows the funnel and how each stage went, and in the empty state the quiet line', async () => {
+    mount('analytics')
+    expect(await screen.findByRole('region', { name: 'Applications' })).toHaveTextContent('Scraped212')
+    expect(screen.getByRole('row', { name: /Application/ })).toHaveTextContent('3/5 passed 60% (40–77%)')
+    cleanup()
+    mount('analytics', 'empty')
+    expect(await screen.findByText('Your funnel shows here once you have applied')).toBeInTheDocument()
+  })
+
   it('posting opens the posting', async () => {
     mount('posting')
     expect(await screen.findByRole('heading', { name: 'Senior Financial Controller' })).toBeInTheDocument()
