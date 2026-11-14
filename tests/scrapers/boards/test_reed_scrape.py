@@ -77,6 +77,7 @@ def test_scrape_paginates_and_reads_the_ads():
     assert pmo["posted_at"].startswith("2026-10-29T14:17:36")
     assert [u for u in _requested() if "-jobs-in-" in u] == [_search(page=1), _search(page=2)]
     assert len(_requested()) == 2 + 6  # two search pages, six ads; page 2 was the last (30 hits)
+    assert not [u for u in _requested() if "sortby" in u.lower()]  # robots.txt disallows sortBy
 
 
 @responses.activate

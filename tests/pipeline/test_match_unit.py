@@ -46,7 +46,7 @@ def fakes(env, monkeypatch):
 
 def test_the_block_carries_the_passes_of_today(env, fakes):
     block = run(env)
-    assert ("passes", date.today().isoformat()) in fakes.order
+    assert fakes.order.index(("passes", date.today().isoformat())) < fakes.order.index("match")
     assert block["passes"]["prescreen"] == {"available": True, "scored": 2, "kept": 1}
     assert "surviving_paths" not in block["passes"]
 

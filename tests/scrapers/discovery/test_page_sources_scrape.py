@@ -163,6 +163,13 @@ class _Session:
         self.closed = True
 
 
+def test_every_page_discovery_source_has_an_entry_here():
+    # LinkedIn reads its search cards its own way and has its own tests.
+    from door.core.discovery_sources import SOURCES
+
+    assert set(_SOURCES) == set(SOURCES) - {"linkedin"}
+
+
 @pytest.fixture(params=sorted(_SOURCES))
 def src(request):
     return _SOURCES[request.param]

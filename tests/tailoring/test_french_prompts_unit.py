@@ -16,7 +16,9 @@ def _french_section() -> str:
 
 
 def test_the_latex_the_french_rules_tell_the_tailor_to_write_passes_the_tex_guard():
-    for snippet in re.findall(r"`([^`]*\\[^`]*)`", _french_section()):
+    snippets = re.findall(r"`([^`]*\\[^`]*)`", _french_section())
+    assert snippets, "tailor.md's French rules name no LaTeX to check"
+    for snippet in snippets:
         assert tex_guard.unsafe(snippet) == [], snippet
 
 

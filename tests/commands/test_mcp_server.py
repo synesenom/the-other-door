@@ -11,6 +11,7 @@ import asyncio
 
 import pytest
 import json
+from pathlib import Path
 
 import mcp.shared.memory as mcp_client
 
@@ -709,3 +710,110 @@ def test_main_loads_the_language_libraries_before_serving(monkeypatch):
     monkeypatch.setattr(server.mcp, "run", lambda **kw: order.append("serve"))
     server.main()
     assert order.index("preload") < order.index("serve")
+
+
+# --------------------------------------------------------------------------- each tool's argument reaches its core
+
+
+def _posting_on_disk(jobs_dir, job_id="jobindex-top"):
+    site_dir = jobs_dir / "postings" / "2026-07-01" / "jobindex"
+    site_dir.mkdir(parents=True, exist_ok=True)
+    (site_dir / f"{job_id}.json").write_text(json.dumps({
+        "id": job_id, "title": "Data scientist", "company": "Acme", "location": "Copenhagen",
+        "url": f"https://example.com/{job_id}", "description": "We need a data scientist who ships. " * 20,
+        "source": "jobindex", "score": 0.9,
+    }))
+
+
+def test_set_status_records_the_event_on_the_date_given(cli_env):
+    _posting_on_disk(cli_env.jobs_dir)
+
+    result = server.set_status("jobindex-top", "applied", at="2026-06-20")
+
+    assert result["at"] == "2026-06-20T00:00:00+00:00"
+    ledger = json.loads((cli_env.jobs_dir / "applications.json").read_text())
+    assert [e["at"] for e in ledger["jobindex-top"]["history"]] == ["2026-06-20T00:00:00+00:00"]
+
+
+def test_show_with_open_opens_both_prepared_pdfs(cli_env, monkeypatch):
+    from door.commands import matches as matches_cmd
+    import door.tailoring.pdf_render as pdf_render
+
+    _posting_on_disk(cli_env.jobs_dir)
+    out = cli_env.jobs_dir / "output" / "jobindex-top"
+    out.mkdir(parents=True)
+    for name in ("cv.pdf", "cover_letter.pdf"):
+        (out / name).write_bytes(b"%PDF")
+    for name in ("cv_page_1.png", "cover_letter_page_1.png"):
+        (out / name).write_bytes(b"png")
+    monkeypatch.setattr(pdf_render, "get_page_count", lambda path: 1)
+    opened = []
+    monkeypatch.setattr(matches_cmd, "_open_files", lambda paths: opened.extend(paths))
+
+    server.show("jobindex-top")
+    assert opened == []
+    server.show("jobindex-top", open=True)
+    assert opened == [str(out / "cv.pdf"), str(out / "cover_letter.pdf")]
+
+
+def test_setup_runs_the_scraper_fix_it_is_given(cli_env, monkeypatch):
+    import door.core.doctor as doctor
+    from door.core import scraper_fix
+
+    checks = [
+        {"name": "claude CLI", "status": "ok", "required": True, "detail": "", "fix": None},
+        {"name": "scraper: jobindex", "status": "drift", "required": False, "detail": "no results block",
+         "fix": "choose `fix scraper` in `setup`", "fixable": True},
+    ]
+    monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: {"ok": True, "checks": checks, "last_run": None, "last_scrape": []})
+    fixed = []
+    monkeypatch.setattr(scraper_fix, "fix_scraper", lambda site, **kw: fixed.append(site) or {"site": site, "outcome": "pr", "url": "u"})
+
+    server.setup(install=[], yes=True)
+    assert fixed == []
+    result = server.setup(install=[], yes=True, fix_scrapers=["jobindex"])
+    assert fixed == ["jobindex"]
+    assert result["fixes"] == [{"site": "jobindex", "outcome": "pr", "url": "u"}]
+
+
+class _Drive:
+    """Google Drive's one archive: a blob and its version (as `tests/core/test_sync_unit.py`'s FakeDrive)."""
+
+    def __init__(self, monkeypatch, tmp_path):
+        from door.core import drive
+
+        monkeypatch.setattr(drive, "_BASE", tmp_path / "cfg")
+        drive.write_state({"refresh_token": "rt", "account": "me@x.org"})
+        self.blob, self.version, self.properties, self.uploads = None, 0, {}, 0
+        monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {
+            "id": "A", "version": str(self.version), "properties": dict(self.properties)})
+        monkeypatch.setattr(drive, "download", lambda dest: Path(dest).write_bytes(self.blob))
+        monkeypatch.setattr(drive, "upload", self.upload)
+
+    def upload(self, src, properties=None):
+        self.properties = dict(properties or {})
+        self.blob = Path(src).read_bytes()
+        self.version += 1
+        self.uploads += 1
+        return str(self.version)
+
+
+@pytest.mark.parametrize("keep, action, mine_kept", [("keep_local", "push", True), ("keep_drive", "pull", False)])
+def test_sync_data_settles_a_both_sides_change_the_way_asked(tmp_path, monkeypatch, keep, action, mine_kept):
+    profile, jobs = tmp_path / "profile", tmp_path / "jobs"
+    monkeypatch.setattr(workspace, "PROFILE_DIR", profile)
+    monkeypatch.setattr(workspace, "JOBS_DIR", jobs)
+    monkeypatch.setattr(workspace, "BACKUPS_DIR", tmp_path / "backups")
+    fake = _Drive(monkeypatch, tmp_path)
+    profile.mkdir()
+    (profile / "config.json").write_text("{}")
+    (profile / ".data_version").write_text("0.1")
+    jobs.mkdir()
+    (jobs / "history.json").write_text("{}")
+    assert server.sync_data()["action"] == "push"
+    fake.version += 1  # another computer pushed
+    (jobs / "mine.json").write_text("mine")
+    assert server.sync_data()["conflict"] is True
+
+    assert server.sync_data(**{keep: True})["action"] == action
+    assert (jobs / "mine.json").exists() is mine_kept

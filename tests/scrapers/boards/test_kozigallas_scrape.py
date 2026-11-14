@@ -256,3 +256,23 @@ def test_probe_drift_when_the_results_block_is_gone():
     assert result["structure_ok"] is False and result["reason"]
     assert not result.get("wall") and not result.get("unreachable")
     assert drain_errors() == {}
+
+
+@responses.activate
+def test_the_portal_is_verified_against_the_system_trust_store(monkeypatch):
+    # The portal's root certificate is not in certifi's bundle: its HTTPS goes through the OS trust store.
+    from door.scrapers import http_client
+
+    mounted = []
+    real_init = http_client.SystemTrustAdapter.__init__
+
+    def spy(self, *a, **k):
+        mounted.append(self)
+        real_init(self, *a, **k)
+
+    monkeypatch.setattr(http_client.SystemTrustAdapter, "__init__", spy)
+    _serve_list()
+    _serve_details(_ALL)
+
+    assert kozigallas.scrape(_CFG)
+    assert mounted
