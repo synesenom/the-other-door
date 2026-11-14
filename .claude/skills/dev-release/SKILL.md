@@ -60,7 +60,7 @@ If the argument named a version, use it, but say so when it disagrees with the s
 
 ### The data upgrade
 
-A tester's `profile/` and `jobs/` written by the previous release must open in this one (#56). Spawn the `data-migrator` agent with the previous tag and the PRs kept above (number, title, their "Removed or renamed" sections), and wait for its report:
+A tester's `profile/` and `jobs/` written by the previous release must open in this one (#56). Data is upgraded only within a major version: on a major bump (`X` of `X.Y.Z` goes up) the agent writes no step but empties the step lists, and the notes say the previous major's data is not opened. Spawn the `data-migrator` agent with the previous tag, the new version and the PRs kept above (number, title, their "Removed or renamed" sections), and wait for its report:
 
 - **"no step needed"**: keep its item-by-item list for the notes' maintainer summary and go on.
 - **a PR**: tell the user to merge it once CI is green and **stop**. When it is merged, start again at Step 1 (the step's PR is now one of the release's). Keep its "Release note line" for Step 5.
