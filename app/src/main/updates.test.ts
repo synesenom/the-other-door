@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { compareVersions, createUpdateChecker, createUpdateManager, doorSignedOf, parseLatest, updateMode, updatesAllowed, RELEASES_LATEST } from './updates'
+import { checkEvery, compareVersions, createUpdateChecker, createUpdateManager, doorSignedOf, parseLatest, updateMode, updatesAllowed, RELEASES_LATEST } from './updates'
 
 describe('compareVersions', () => {
   it('orders numerically, ignoring a v prefix', () => {
@@ -154,6 +154,12 @@ function manager(mode: 'install' | 'link' | 'none', updater = fakeUpdater(), fet
 }
 
 describe('createUpdateManager', () => {
+  it('is enabled and not yet checked from the start, except where updates are off', () => {
+    expect(manager('install').m.last()).toEqual({ enabled: true, mode: 'install', checked: false, current: '0.1.0' })
+    expect(manager('link').m.last()).toEqual({ enabled: true, mode: 'link', checked: false, current: '0.1.0' })
+    expect(manager('none').m.last()).toBeNull()
+  })
+
   it('install: downloads in the background and installs when the app quits', () => {
     const { updater } = manager('install')
     expect(updater.autoDownload).toBe(true)
@@ -261,5 +267,23 @@ describe('createUpdateManager', () => {
     expect(await m.check()).toEqual({ enabled: false, current: '0.1.0' })
     expect(fetch).not.toHaveBeenCalled()
     expect(updater.checkForUpdates).not.toHaveBeenCalled()
+  })
+})
+
+describe('checkEvery', () => {
+  it('checks at once and again every period, and stops', () => {
+    vi.useFakeTimers()
+    try {
+      const check = vi.fn(async () => undefined)
+      const stop = checkEvery({ check }, 1000)
+      expect(check).toHaveBeenCalledTimes(1)
+      vi.advanceTimersByTime(2500)
+      expect(check).toHaveBeenCalledTimes(3)
+      stop()
+      vi.advanceTimersByTime(5000)
+      expect(check).toHaveBeenCalledTimes(3)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -18,7 +18,7 @@ import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest } from './
 import { createPhotoFile } from './photo-file'
 import { watchRunBoard, type RunBoard } from './run-board'
 import { cspHeader, isAllowedNavigation } from './security'
-import { createUpdateManager, doorSignedOf, updateMode, updatesAllowed, type UpdaterLike } from './updates'
+import { CHECK_EVERY_MS, checkEvery, createUpdateManager, doorSignedOf, updateMode, updatesAllowed, type UpdaterLike } from './updates'
 import { windowBackground } from './window-look'
 
 // From a checkout the repo is one level above app/; a packaged app carries Python, The other door's src/ and
@@ -46,7 +46,8 @@ const server = new DoorServer(
   { ...(packaged ? { expectedVersion: app.getVersion() } : {}), onProblem: (where, message) => problemLog.write(where, message) },
 )
 // Is a newer version out (#501, #17): an installed app that can replace itself downloads it and installs on
-// restart; one that cannot links to the release; a checkout and the demo say nothing (updates.ts).
+// restart; one that cannot links to the release; a checkout and the demo say nothing (updates.ts). It checks at
+// start and every few hours, so an app left open learns of a release too; Settings has nothing to press for it.
 let doorSigned = false
 try {
   doorSigned = doorSignedOf(JSON.parse(readFileSync(join(app.getAppPath(), 'package.json'), 'utf8')))
@@ -220,7 +221,7 @@ app.whenReady().then(() => {
       : {}),
   })
   createWindow()
-  void updates.check() // never waits, never throws
+  if (mode !== 'none') checkEvery(updates, CHECK_EVERY_MS) // at start and every few hours; never waits, never throws
   // Start the server now so the first screen does not wait for Python.
   void server.listTools().catch(() => undefined)
   app.on('activate', () => {

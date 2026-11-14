@@ -117,14 +117,15 @@ export function createUpdateManager(opts: {
   timeoutMs?: number
 }) {
   const { mode, current } = opts
-  let cached: UpdateResult | null = null
+  const unchecked = (): UpdateResult => ({ enabled: true, mode: mode === 'link' ? 'link' : 'install', checked: false, current })
+  // Enabled from the start: Settings shows the version before the first check answers; only `none` says nothing.
+  let cached: UpdateResult | null = mode === 'none' ? null : unchecked()
   const listeners = new Set<(result: UpdateResult) => void>()
   const set = (r: UpdateResult) => {
     cached = r
     opts.onState?.(r)
     listeners.forEach((l) => l(r))
   }
-  const unchecked = (): UpdateResult => ({ enabled: true, mode: 'install', checked: false, current })
   const updater = mode === 'install' ? opts.updater : null
   let errored = false // electron-updater emits `error` and also rejects: one log line
   if (updater) {
@@ -178,4 +179,14 @@ export function createUpdateManager(opts: {
   }
 
   return { check, last: () => cached, install, subscribe }
+}
+
+/** How often a running app looks again: one left open for days still learns of a release. */
+export const CHECK_EVERY_MS = 6 * 60 * 60 * 1000
+
+/** Check now and every `everyMs` after; returns the way to stop. A check never throws. */
+export function checkEvery(updates: { check(): Promise<unknown> }, everyMs: number): () => void {
+  void updates.check()
+  const timer = setInterval(() => void updates.check(), everyMs)
+  return () => clearInterval(timer)
 }

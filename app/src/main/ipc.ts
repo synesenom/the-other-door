@@ -49,7 +49,7 @@ export const CHANNELS = {
   reportProblem: 'door:report-problem',
   /** Shows the data folder (DOOR_HOME) in the file manager; the window names no path. */
   showHome: 'door:show-home',
-  /** Is a newer version out (updates.ts): the cached answer, or a fresh check when asked. */
+  /** Is a newer version out (updates.ts): what the app's own checks found; the window never starts one. */
   checkUpdate: 'door:check-update',
   /** Restart now to install the downloaded update (updates.ts refuses unless one is downloaded). */
   installUpdate: 'door:install-update',
@@ -435,11 +435,7 @@ export function registerIpc(
     return { ok: true }
   })
 
-  ipcMain.handle(CHANNELS.checkUpdate, async (_event, fresh?: unknown): Promise<UpdateResult | { enabled: false }> => {
-    if (!deps.updates) return { enabled: false }
-    if (fresh === true) return deps.updates.check()
-    return deps.updates.last() ?? { enabled: false }
-  })
+  ipcMain.handle(CHANNELS.checkUpdate, async (): Promise<UpdateResult | { enabled: false }> => deps.updates?.last() ?? { enabled: false })
 
   ipcMain.handle(CHANNELS.installUpdate, async (): Promise<{ ok: boolean }> => deps.updates?.install() ?? { ok: false })
 

@@ -44,7 +44,7 @@ contextBridge.exposeInMainWorld('door', {
   },
   info: () => ipcRenderer.invoke('door:info'),
   showHome: () => ipcRenderer.invoke('door:show-home'),
-  checkUpdate: (fresh?: boolean) => ipcRenderer.invoke('door:check-update', fresh === true),
+  checkUpdate: () => ipcRenderer.invoke('door:check-update'),
   installUpdate: () => ipcRenderer.invoke('door:install-update'),
   // The update's state as it changes (a download finishing).
   onUpdateState: (cb: (state: unknown) => void) => {

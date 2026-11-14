@@ -27,8 +27,8 @@ and signs you in to your Claude plan.
 - **Linux** (x64): the AppImage (make it executable and run it; on Ubuntu 24.04 and later it needs FUSE 2
   first: `sudo apt install libfuse2t64`) or the `.deb` (`sudo apt install ./the-other-door-….deb`).
 
-**Updating**: an installed app looks for a newer published version when it starts and from Settings → Version
-("Version X · Check for updates", the check gone once a newer version is found). The Windows installer, the AppImage and a signed macOS build download it in the
+**Updating**: an installed app looks for a newer published version when it starts and every six hours while
+it is open; there is nothing to press. Settings → Version shows the version you have. The Windows installer, the AppImage and a signed macOS build download it in the
 background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
 that installs it at once. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
 replace themselves: Settings says "Version X is available" with a Download button that opens the release page, and
@@ -518,7 +518,8 @@ export still refuses it and writes nothing.
 **Appearance** picks the theme: the same as the system (the default), light or dark. The choice
 is this computer's.
 
-**Version** shows the version you have and whether a newer one is out (see Updating above).
+**Version** shows the version you have and, once the app has found a newer one, what comes next: "Downloading X",
+"Restart to update to X" or a Download button (see Updating above).
 
 **Report a problem** is for when something does not work and the screens do not say why (they show
 an error only when it stops a mistake or you can fix it). "Save logs…" asks where to save one

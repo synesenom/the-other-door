@@ -84,7 +84,7 @@ export function mockDoor(given: Record<string, Handler>) {
   const saveMaterial = vi.fn(async (_jobId: string, _which: string, _sent: boolean, name: string): Promise<{ ok: boolean; path?: string; canceled?: true; error?: string }> => ({ ok: true, path: `/Users/ada/Downloads/${name}` }))
   const info = vi.fn(async (): Promise<{ demo: boolean; sandbox?: 'onboard'; home?: string; remote?: boolean }> => ({ demo: false }))
   const showHome = vi.fn(async () => ({ ok: true }))
-  const checkUpdate = vi.fn(async (_fresh?: boolean): Promise<UpdateResult | { enabled: false }> => ({ enabled: false }))
+  const checkUpdate = vi.fn(async (): Promise<UpdateResult | { enabled: false }> => ({ enabled: false }))
   const installUpdate = vi.fn(async (): Promise<{ ok: boolean }> => ({ ok: true }))
   const updateListeners: Array<(state: UpdateResult | { enabled: false }) => void> = []
   const onUpdateState = vi.fn((cb: (state: UpdateResult | { enabled: false }) => void) => {
