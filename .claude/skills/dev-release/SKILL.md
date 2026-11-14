@@ -1,6 +1,6 @@
 ---
 name: dev-release
-description: Cut a release of The other door — check main is green, set the version, push the vX.Y.Z tag, watch release.yml build the installers into a draft release, write the release notes, and publish it only when the maintainer says so. Maintainer only. Invoked with /dev-release [X.Y.Z] [pre-release].
+description: Cut a release of The other door — check main is green, set the version, dry-run release.yml on main, push the vX.Y.Z tag, watch release.yml build the installers into a draft release, write the release notes, and publish it only when the maintainer says so. Maintainer only. Invoked with /dev-release [X.Y.Z] [pre-release].
 ---
 
 You are cutting a release of The other door. `docs/releasing.md` is the reference (the checklist before a draft is published); `.github/workflows/release.yml` is what a tag starts. Follow the steps in order and stop where a step says so.
@@ -83,9 +83,12 @@ git commit -am "release: vX.Y.Z"
 
 Then open the PR with `/dev-pr` and tell the user to merge it once CI is green. **Stop here**; when the user says it is merged, run `git checkout main && git pull` and start again at Step 1.
 
-## Step 3: Tag
+## Step 3: Dry run, then tag
 
-Ask with AskUserQuestion: "Push the tag vX.Y.Z on <short sha> (<subject>)? It starts release.yml, which builds the installers for macOS (Apple silicon, Intel), Windows and Linux into a draft release only you can see (about 20 minutes)." Options: "Push the tag", "Not now". On "Not now", **stop**.
+First the dry run on `main`, which is at the version bump: `gh workflow run release.yml --ref main`. It builds and tests exactly as a tag does and uploads to no release. Find the run (it can take a few seconds to appear): `gh run list --workflow release.yml --branch main --event workflow_dispatch --limit 1 --json databaseId,url`, then watch it in the background, `gh run watch <id> --exit-status`, and wait for its notification; do not poll.
+
+- **Red**: `gh run view <id> --log-failed | tail -80`, say which job failed and why in a few lines. The fix goes to `main` through a PR, then start again at Step 1; there is nothing to clean up (no tag, no draft). A job that failed for a runner reason (a timeout, a download) can be re-run instead: ask, then `gh run rerun <id> --failed`.
+- **Green**: ask with AskUserQuestion: "The dry run passed (<run url>). Push the tag vX.Y.Z on <short sha> (<subject>)? It starts release.yml, which builds the installers for macOS (Apple silicon, Intel), Windows and Linux into a draft release only you can see (about 20 minutes)." Options: "Push the tag", "Not now". On "Not now", **stop**.
 
 ```bash
 git tag vX.Y.Z
