@@ -132,8 +132,10 @@ _DATA_OPEN_TOOLS = ("report_problem", "doctor")
 
 def _data_refusal(tool: str) -> str | None:
     """The line every tool answers instead of working while the data folder is refused (#56), or None."""
-    state = migrations.status()
-    if state is None or tool in _DATA_OPEN_TOOLS:
+    if tool in _DATA_OPEN_TOOLS:
+        return None
+    state = migrations.recheck()  # the data may have been written by a newer version since this server started
+    if state is None:
         return None
     return state["message"]
 

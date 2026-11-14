@@ -101,6 +101,8 @@ app, `./door` or the MCP server), before anything reads it, with no hand edit:
   computer too" (for an older major: "Google Drive has data from The other door 0.x, which this version cannot
   open"); it neither pulls nor pushes over it, so an older version never overwrites the newer data on Drive.
 - A run holding the lock at start delays the upgrade; the next command or tool call tries again.
+- A session started before you updated (Claude Code left open while the app updated) notices the newer data at
+  its next tool call and refuses it with the same "Install the latest version" line; restart it to use the new version.
 
 The first step (`0.0` to `0.1`): the LaTeX templates and fonts come from the code. A copy in `profile/`
 that is byte for byte a shipped version is removed, and an edited one stays and keeps being used (see

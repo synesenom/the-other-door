@@ -390,6 +390,20 @@ def _classify(folders, steps_of) -> dict | None:
     return None
 
 
+def recheck() -> dict | None:
+    """Read both versions again (two small files): a process started on current data refuses it once another
+    version has written it since, e.g. a Claude Code session still running the old server after the app updated.
+    Only a refusal is recorded; the upgrade itself runs only at start. Returns `status()`."""
+    if _state is not None:
+        return status()
+    folders = (("profile", Path(workspace.PROFILE_DIR)), ("jobs", Path(workspace.JOBS_DIR)))
+    refusal = _classify(folders, {"profile": PROFILE_STEPS, "jobs": JOBS_STEPS})
+    if refusal:
+        _log_once(refusal)
+        return _set(refusal)
+    return None
+
+
 def _behind(folders, steps_of) -> bool:
     return any(
         folder.is_dir()

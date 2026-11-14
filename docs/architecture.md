@@ -477,6 +477,7 @@ A release that bumps the major empties `PROFILE_STEPS` and `JOBS_STEPS`; the `da
    - A folder that does not exist is left alone.
 4. **The outcome is `status()`.** It is `None`, or `{"state": "failed" | "newer" | "old_major" | "busy", "message"}`, with one line in the problem log. While it is not `None`:
    - every tool answers its `message` as `{"error"}`, except `report_problem` and `doctor` (`mcp_server._DATA_OPEN_TOOLS`), so the user can still send a report;
+   - a server started on current data reads both versions again before each tool call (`migrations.recheck`, two small reads), so one still running the old code after another version upgraded the data (a Claude Code session open while the app updated) refuses it from its next call instead of writing old shapes into it;
    - every CLI command except `doctor`, `serve` and `data report` refuses;
    - the app shows the message as a line at the sidebar's foot that opens Report a problem.
 
