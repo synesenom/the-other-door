@@ -1,8 +1,5 @@
-"""Live smoke test for the TeamTailor scraper.
-
-Calls the real TeamTailor public jobs feed for a confirmed-good company board
-("storytel") and verifies the contract: at least one valid JobPosting with
-non-empty title, company, and url.
+"""Live smoke tests for Teamtailor's public jobs feed, one per mode (#19): Storytel's board, and a real employer's
+careers page (Templafy, a Danish company) still detected as Teamtailor.
 
 Opt-in — run with:  ./scripts/run-test.sh --live
 """
@@ -10,23 +7,17 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import teamtailor
-from live_utils import assert_detects, assert_field_contract
+from live_utils import assert_detects, assert_listing
+
+CONFIG = {"teamtailor_companies": ["storytel"], "location": "Stockholm"}
+NO_PAGE2 = "`jobs.json` answers every job of a board on its first page (a further page adds none)"
+NO_DETAILS = "each feed item carries the ad's whole text (`content_html`)"
 
 
 @pytest.mark.live
-def test_teamtailor_live_returns_valid_postings():
-    postings = teamtailor.scrape({"teamtailor_companies": ["storytel"]})
-    assert len(postings) >= 1, "Expected at least one posting from live TeamTailor board"
-    assert_field_contract("teamtailor", postings, mode="collect")
-    assert all(p["source"] == "teamtailor" for p in postings)
-
-
-@pytest.mark.live
-def test_teamtailor_live_reads_a_danish_company():
-    """Templafy, a Danish company."""
-    postings = teamtailor.scrape({"teamtailor_companies": ["templafy"]})
-    assert postings
-    assert_field_contract("teamtailor", postings, mode="collect")
+def test_teamtailor_listing_live():
+    """Storytel's board: every field, the description too, comes with the list."""
+    assert_listing("teamtailor", teamtailor, CONFIG, descriptions=True)
 
 
 @pytest.mark.live

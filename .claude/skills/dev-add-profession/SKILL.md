@@ -89,7 +89,7 @@ Save each report to `thoughts/profession/<cc>-<slug>/scraper-<module>.md` (a sec
 
 ## Step 4: Live smoke
 
-The weekly live-smoke workflow runs every `tests/**/test_*_live.py`, so the new tests join it. Run them now, each built for the profession's keyword:
+Each new source's live file has one probe-sized test per mode that applies (`listing`, `page2`, `details`, `zero_hits`, `detection` or `employers`; `tests/scrapers/test_live_modes_unit.py` checks offline that none is missing), each searching for the profession's keyword. The weekly live-smoke workflow runs every `tests/**/test_*_live.py`, so the new tests join it. Run them now:
 
 ```bash
 ./scripts/run-test.sh --live tests/scrapers/<pkg>test_<module>_live.py …   # every new and extended source; <pkg>: boards/, discovery/ or feeds/

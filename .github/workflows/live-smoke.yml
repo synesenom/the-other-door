@@ -52,6 +52,7 @@ jobs:
           poetry run python scripts/smoke_report.py smoke-junit.xml docs/badges/live-smoke.md
           --badges docs/badges
           --unreached smoke-unreached.md
+          --changed smoke-changed.md
           --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Commit the status page and badges
@@ -80,8 +81,12 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
+            const fs = require("fs");
             const title = "Live smoke tests failing";
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            // The sites that changed and their modes (scripts/smoke_report.py --changed), when the report was written.
+            const changed = fs.existsSync("smoke-changed.md") ? fs.readFileSync("smoke-changed.md", "utf8").trim() : "";
+            const what = changed ? `\n\nChanged:\n\n${changed}` : "";
 
             const { data: results } = await github.rest.search.issuesAndPullRequests({
               q: `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:title "${title}"`,
@@ -93,14 +98,14 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: existing.number,
-                body: `Still failing: ${runUrl}`,
+                body: `Still failing: ${runUrl}${what}`,
               });
             } else {
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title,
-                body: `The scheduled live smoke test run failed: ${runUrl}\n\nThis issue is auto-managed — it will be closed automatically once a run succeeds.`,
+                body: `The scheduled live smoke test run failed: ${runUrl}${what}\n\nThis issue is auto-managed — it will be closed automatically once a run succeeds.`,
               });
             }
 
@@ -142,8 +147,12 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
+            const fs = require("fs");
             const title = "Live smoke tests failing";
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            // The sites that changed and their modes (scripts/smoke_report.py --changed), when the report was written.
+            const changed = fs.existsSync("smoke-changed.md") ? fs.readFileSync("smoke-changed.md", "utf8").trim() : "";
+            const what = changed ? `\n\nChanged:\n\n${changed}` : "";
 
             const { data: results } = await github.rest.search.issuesAndPullRequests({
               q: `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:title "${title}"`,

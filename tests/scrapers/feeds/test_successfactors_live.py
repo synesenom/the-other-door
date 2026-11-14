@@ -1,8 +1,5 @@
-"""Live smoke test for the SuccessFactors scraper.
-
-Calls the real Novo Nordisk SuccessFactors RMK career site
-(careers.novonordisk.com) and verifies the contract: at least one valid
-JobPosting with non-empty title, company, and url.
+"""Live smoke tests for SuccessFactors RMK career sites, one per mode (#19): Novo Nordisk's ``sitemal.xml`` feed, and
+a real employer's careers page still detected as SuccessFactors.
 
 Opt-in — run with:  ./scripts/run-test.sh --live
 """
@@ -10,15 +7,17 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import successfactors
-from live_utils import assert_detects, assert_field_contract
+from live_utils import assert_detects, assert_listing
+
+CONFIG = {"successfactors_companies": ["careers.novonordisk.com"], "location": "Copenhagen"}
+NO_PAGE2 = "one answer of `sitemal.xml` lists every job of the career site"
+NO_DETAILS = "each feed item carries the ad's text (`description`)"
 
 
 @pytest.mark.live
-def test_successfactors_live_returns_valid_postings():
-    postings = successfactors.scrape({"successfactors_companies": ["careers.novonordisk.com"]})
-    assert len(postings) >= 1, "Expected at least one posting from live SuccessFactors feed"
-    assert_field_contract("successfactors", postings, mode="collect")
-    assert all(p["source"] == "successfactors" for p in postings)
+def test_successfactors_listing_live():
+    """Novo Nordisk's feed: the description comes with the list; `dates=False`: its items carry no ``pubDate``."""
+    assert_listing("successfactors", successfactors, CONFIG, descriptions=True, dates=False)
 
 
 @pytest.mark.live

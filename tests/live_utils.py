@@ -12,6 +12,7 @@ A live test ends one of three ways, which `scripts/smoke_report.py` reads from t
 A site that came back empty with no recorded errors, or with any error that is not a refusal, has changed.
 """
 
+import contextlib
 import re
 from datetime import datetime, timedelta, timezone
 
@@ -22,7 +23,7 @@ NOT_REACHED = "not reached:"
 # How a scraper's recorded error says the site refused or was unreachable (requests' and the scrapers' wording).
 _REFUSAL = re.compile(
     r"\b(?:401|403|429|503)\b|Too Many Requests|Forbidden|Unauthorized|Service Unavailable|pushback"
-    r"|timed out|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
+    r"|timed out|Timeout\b|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
     re.IGNORECASE,
 )
 
@@ -67,9 +68,9 @@ def assert_zero_hits(site: str, postings: list) -> None:
     answered = drain_answered(site)
     if errors:
         not_reached_if_refused(site, errors)
-    assert not errors, f"{site}: errors on a zero-hit search: {errors[:3]}"
-    assert postings == [], f"{site}: a nonsense keyword found {len(postings)} postings"
-    assert answered, f"{site}: the zero-hit page was not recognised as an answer (the page may have changed)"
+    assert not errors, fail(site, "zero_hits", f"errors on a zero-hit search: {errors[:3]}")
+    assert postings == [], fail(site, "zero_hits", f"a nonsense keyword found {len(postings)} postings")
+    assert answered, fail(site, "zero_hits", "the zero-hit page was not recognised as an answer (the page may have changed)")
 
 
 # --- The field contract (#19): what a live scrape's postings must carry, per site, beyond "at least one" ---
@@ -200,17 +201,12 @@ def _held(failures: list[dict], total: int, share: float) -> bool:
     return (total - len(failures)) / total >= share
 
 
-def _check(site: str, mode: str, rule: str, failures: list[dict], total: int, share: float, field: str) -> None:
-    if _held(failures, total, share):
-        return
-    seen = [_example(p, field) for p in failures[:3]]
-    raise AssertionError(
-        f"{site} ({mode}): rule '{rule}' held for {total - len(failures)}/{total} postings "
-        f"(needs {round(share * 100)}%); e.g. {'; '.join(seen)}")
+_PRESENT_SHARE = 0.6     # a place or a date most postings lack is a change; a few without one are not
 
 
 def assert_field_contract(site: str, postings: list[dict], config: dict | None = None, *, mode: str = "search",
-                          sample: int = 10) -> None:
+                          check: str | None = None, sample: int = 10, descriptions: bool = True, dates: bool = False,
+                          locations: bool = False, companies: bool = True) -> None:
     """The first *sample* of a live scrape's postings carry the fields a run relies on (#19).
 
     Rules: every posting validates as a `JobPosting` and has a title and an http(s) url; the company is not empty
@@ -218,37 +214,61 @@ def assert_field_contract(site: str, postings: list[dict], config: dict | None =
     *config* has a location; not in `collect` mode); `posted_at`, when present, is not in the future nor older
     than the mode allows; the description is long enough and no wall page, no copy of the title or company, and
     not the same opening text on several ads. A rule holds when 90% of the sample passes (all of it for fewer than
-    three postings); `live_matrix.FIELD_EXCEPTIONS[site]` loosens it. The message names the site, mode and rule.
+    three postings); `live_matrix.FIELD_EXCEPTIONS[site]` loosens it.
+
+    The live mode tests switch rules: without *descriptions* (a listing page carries no ad text, its teaser is often
+    built from the title) neither the description's length nor the boilerplate rule is read; with *dates* and *locations* a
+    `posted_at` and a `location` must be there on `_PRESENT_SHARE` of the sample; without *companies* (a list that
+    names no employer, its ad pages do) the company is not read. The message names the site, *check* (the live
+    mode, ``listing``) or else *mode*, and the rule: ``reed [listing]: rule 'location' held for 2/10 ...``.
     """
+    from pydantic import ValidationError
+
     from door.core.models import JobPosting
     from live_matrix import FIELD_EXCEPTIONS
 
     assert mode in _MAX_PAST_DAYS, f"unknown mode {mode!r}"
-    assert postings, f"{site} ({mode}): rule 'no postings': the scrape returned nothing"
+    label = check or mode
+    assert postings, fail(site, label, "rule 'no postings': the scrape returned nothing")
     config = config or {}
     exc = FIELD_EXCEPTIONS.get(site, {})
     rows = list(postings[:sample])
     n = len(rows)
     for p in rows:
-        JobPosting.model_validate(p)
+        try:
+            JobPosting.model_validate(p)
+        except ValidationError as err:
+            raise AssertionError(fail(site, label, f"rule 'model': not a JobPosting: {err.errors()[:2]}")) from err
 
-    _check(site, mode, "title", failing_title(rows), n, 1.0, "title")
-    _check(site, mode, "url", failing_url(rows), n, 1.0, "url")
-    _check(site, mode, "company", failing_company(rows, site, own_name=mode == "search"), n,
-           exc.get("company_share", _COMPANY_SHARE), "company")
+    def rule(name: str, failures: list[dict], share: float, field: str) -> None:
+        if _held(failures, n, share):
+            return
+        seen = [_example(p, field) for p in failures[:3]]
+        raise AssertionError(fail(site, label, f"rule '{name}' held for {n - len(failures)}/{n} postings "
+                                               f"(needs {round(share * 100)}%); e.g. {'; '.join(seen)}"))
+
+    rule("title", failing_title(rows), 1.0, "title")
+    rule("url", failing_url(rows), 1.0, "url")
+    if companies:
+        rule("company", failing_company(rows, site, own_name=mode == "search"), exc.get("company_share", _COMPANY_SHARE),
+             "company")
+    if locations:
+        rule("location", [p for p in rows if not _text(p.get("location"))], _PRESENT_SHARE, "location")
     if mode == "search" and exc.get("location", True) and config.get("location"):
         from door.core import sites
 
         if site in sites.SITES and sites.SITES[site].countries:
-            _check(site, mode, "location", failing_location(rows, config), n,
-                   exc.get("location_share", _LOCATION_SHARE), "location")
-    _check(site, mode, "posted_at", failing_posted_at(rows, mode, future_days=exc.get("posted_at_future_days", _GRACE_DAYS)),
-           n, _POSTED_AT_SHARE, "posted_at")
+            rule("location", failing_location(rows, config), exc.get("location_share", _LOCATION_SHARE), "location")
+    if dates:
+        rule("posted_at", [p for p in rows if p.get("posted_at") in (None, "")], _PRESENT_SHARE, "posted_at")
+    rule("posted_at", failing_posted_at(rows, mode, future_days=exc.get("posted_at_future_days", _GRACE_DAYS)),
+         _POSTED_AT_SHARE, "posted_at")
     described = exc.get("description_share", _DESCRIPTION_SHARE)
-    if described:
-        _check(site, mode, "description", failing_description(rows, exc.get("description_min", _DESCRIPTION_MIN)), n,
-               described, "description")
-    _check(site, mode, "boilerplate", failing_boilerplate(rows), n, 1.0 if n < 3 else 0.9, "description")
+    if descriptions and described:
+        rule("description", failing_description(rows, exc.get("description_min", _DESCRIPTION_MIN)), described,
+             "description")
+    if descriptions:
+        rule("boilerplate", failing_boilerplate(rows), 1.0 if n < 3 else 0.9, "description")
 
 
 def fail(site: str, mode: str, message: str) -> str:
@@ -309,3 +329,94 @@ def assert_detects(platform: str, careers=None) -> None:
     got = f"{found['platform']} {found.get('entry')!r}" if found.get("platform") else "found no feed"
     notes = "; ".join(found.get("notes") or []) or found.get("evidence") or ""
     raise AssertionError(fail(platform, "detection", f"{row.page} {got}, expected {row.platform} {row.entry!r}. {notes}".strip()))
+
+
+# --- the field contract of a live mode (#19) ------------------------------------------------------------------------
+
+def assert_contract(site: str, postings: list, mode: str, *, config: dict, descriptions: bool | None = None,
+                    dates: bool | None = None, locations: bool | None = None, companies: bool = True) -> None:
+    """`assert_field_contract` for a live mode test (*mode*: ``listing``, ``page2``, ``details``): a board's postings
+    are a search's, a feed's a collect's, and the failure names the site and the mode.
+
+    Left as None, a listing or page 2 needs a date and a place on most postings and no description (a listing page
+    carries no ad text); ``details`` needs the description and leaves the date and the place to the listing (two
+    ads are no sample for a share). *companies* off: the list names no employer (its ad pages do).
+    """
+    from door.core import sites
+
+    details = mode == "details"
+    entry = sites.SITES.get(site)
+    assert_field_contract(
+        site, postings, config, mode="search" if entry is not None and entry.board else "collect", check=mode,
+        descriptions=details if descriptions is None else descriptions,
+        dates=not details if dates is None else dates,
+        locations=not details if locations is None else locations,
+        companies=companies,
+    )
+
+
+# --- probe-sized (#19) --------------------------------------------------------------------------------------------
+
+# The requests a mode makes at most, robots.txt aside: the listing is one page (and a token or session page some
+# sites need first); page 2 one more listing page; details the listing and two detail pages.
+REQUESTS = {"listing": 2, "page2": 3, "details": 5}
+
+
+@contextlib.contextmanager
+def probe_sized(site: str, mode: str, most: int | None = None):
+    """Count the requests made inside (robots.txt aside; yields their URLs) and fail when they are more than *mode*'s
+    ceiling (`REQUESTS`) or *most*: a live test reads one page and a few ads, never a site's whole list. A request
+    that raises inside is not reached when it was refused, else a change."""
+    from unittest import mock
+
+    import requests
+
+    made: list[str] = []
+    real = requests.Session.request
+
+    def request(self, method, url, *args, **kwargs):
+        if not str(url).split("?", 1)[0].endswith("/robots.txt"):
+            made.append(str(url))
+        return real(self, method, url, *args, **kwargs)
+
+    with mock.patch.object(requests.Session, "request", request):
+        try:
+            yield made
+        except requests.RequestException as exc:
+            not_reached_if_refused(site, [str(exc)])
+            raise AssertionError(fail(site, mode, f"request failed: {exc}")) from exc
+    ceiling = REQUESTS[mode] if most is None else most
+    assert len(made) <= ceiling, fail(site, mode, f"{len(made)} requests, more than {ceiling}: {made[:6]}")
+
+
+def assert_listing(site: str, module, config: dict, **contract) -> list[dict]:
+    """Page 1 of *site* through its scraper's ``probe(config)`` (one request): the page still parses and its postings
+    keep the field contract (*contract*: `assert_contract`'s switches). Returns the postings.
+
+    A wall or an unreachable host is not reached; a page that no longer parses, robots.txt now disallowing it, or
+    no postings is a change (mode ``listing``)."""
+    with probe_sized(site, "listing"):
+        result = module.probe(config)
+    assert result is not None, fail(site, "listing", f"no probe for {config}")
+    # A probe calls any failed fetch unreachable; a 404 or another answer that is no refusal is a change.
+    if result.get("wall") or (result.get("unreachable") and refused([result.get("reason") or "unreachable"])):
+        not_reached(site, result.get("reason") or "refused")
+    assert not result.get("unreachable"), fail(site, "listing", f"the page is gone: {result.get('reason')}")
+    assert result.get("robots") != "disallowed", fail(site, "listing", f"robots.txt disallows it: {result.get('reason')}")
+    assert result.get("structure_ok"), fail(site, "listing", f"the page no longer parses: {result.get('reason')}")
+    assert_contract(site, result["postings"], "listing", config=config, **contract)
+    return result["postings"]
+
+
+PAGE2_NEW_SHARE = 0.5  # page 2 lists mostly postings page 1 did not
+
+
+def assert_page2(site: str, page1: list[dict], page2: list[dict], config: dict, **contract) -> None:
+    """Page 2 of a listing still parses: it has postings, mostly ones page 1 did not list (a page parameter the site
+    ignores serves page 1 again), and they keep the field contract (mode ``page2``)."""
+    assert page2, fail(site, "page2", "no postings on page 2")
+    first = {p.get("id") or p.get("url") for p in page1}
+    new = [p for p in page2 if (p.get("id") or p.get("url")) not in first]
+    assert len(new) >= PAGE2_NEW_SHARE * len(page2), \
+        fail(site, "page2", f"page 1 again: {len(page2) - len(new)}/{len(page2)} postings were on page 1")
+    assert_contract(site, page2, "page2", config=config, **contract)

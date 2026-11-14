@@ -35,7 +35,7 @@ Against `git diff <base_branch>...HEAD` and the files, for each new source. `<pk
   - its module at `src/door/scrapers/<pkg><module>.py` imports `door` only through `door.scrapers.sdk`;
   - its docstring names the terms URL and quotes the clause the research quoted;
   - unit and fixture tests from saved real payloads under `tests/scrapers/<pkg>fixtures/<module>/`, not hand-made;
-  - a `tests/scrapers/<pkg>test_<module>_live.py` whose keyword is the profession's, not a generic one;
+  - a `tests/scrapers/<pkg>test_<module>_live.py` whose keyword is the profession's, not a generic one, with one probe-sized live test per mode that applies (`tests/scrapers/test_live_modes_unit.py` passes for it);
   - a row in `docs/job-sites.md` and in `docs/architecture.md`'s Scrapers table.
 - **board / feed:**
   - its `Site` in `sites.py` with `terms_url`, and the right `countries` (empty for a worldwide one);

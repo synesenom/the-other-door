@@ -1,4 +1,5 @@
-"""Live smoke test for Ponty (#530): detect-only, so it checks the fact the look-through rests on.
+"""Live smoke test for Ponty (#530), one per mode (#19): detect-only, so the look-through test checks the fact it
+rests on (no detection test: `live_employers.NO_DETECTION` says why).
 
 Opt-in — run with:  ./scripts/run-test.sh --live
 
@@ -23,16 +24,16 @@ def _current_apply_links() -> list[str]:
 
 
 @pytest.mark.live
-def test_ponty_live_a_current_apply_form_still_names_an_employer():
+def test_ponty_lookthrough_live():
+    """A current apply form still names an employer or links its site (the first that does ends the test)."""
     links = _current_apply_links()
     assert links, "Platsbanken no longer carries a Ponty apply link: find another source of current forms"
     session = PoliteSession(min_delay=1, max_delay=2, timeout=30, max_retries=1)
 
-    named = []
     for link in links[:5]:
         det = ponty.detect_url(link)
         assert det.platform == "ponty" and det.entry is None and det.refusal == "cant_yet"
         out = ponty.resolve(session, det, link)
         if out.employer or out.site:
-            named.append(out)
-    assert named, "no Ponty apply form names an employer or links its site any more: the look-through needs a new route"
+            return
+    raise AssertionError("no Ponty apply form names an employer or links its site any more: the look-through needs a new route")

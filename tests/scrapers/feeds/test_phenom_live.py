@@ -1,9 +1,10 @@
-"""Live smoke test for the Phenom look-through (#438): Genmab's career host, a Phenom front end for Workday.
+"""Live smoke tests for the Phenom look-through (#438), one per mode (#19): Genmab's career host, a Phenom front end
+for Workday.
 
 Opt-in — run with:  ./scripts/run-test.sh --live
 
 Whether Genmab's Workday site lists jobs publicly is up to Genmab (it listed none when this was written), so the
-test asks only that the look-through finds the Workday site behind the front end and gives a verdict.
+look-through test asks only that it finds the Workday site behind the front end and gives a verdict.
 """
 
 import pytest
@@ -14,7 +15,8 @@ from live_utils import assert_detects
 
 
 @pytest.mark.live
-def test_phenom_live_finds_the_workday_site_behind_the_front_end():
+def test_phenom_lookthrough_live():
+    """The look-through still finds the Workday site behind Genmab's Phenom front end."""
     session = PoliteSession(min_delay=1, max_delay=2, timeout=30, max_retries=1)
     det = phenom.detect_cname("careers.genmab.com", "genmab.phenompeople.net", "careers.genmab.com is a CNAME for genmab.phenompeople.net")
 

@@ -49,7 +49,13 @@ The module is `src/door/scrapers/<pkg><site>.py`; its tests are `tests/scrapers/
    - **Fixture** (`tests/scrapers/<pkg>test_<site>_scrape.py`): the full `scrape(config)` path with HTTP mocked by `responses` from the saved payloads — pagination, dedup, `known_ids` skipping detail fetches, raw → `JobPosting` mapping, a failed request recorded with `record_error()` and not raised, pushback (429/403) recorded with `record_pushback()`.
    - **Probe** (in the fixture test): `probe(config)` returns `structure_ok` True for the saved payload and False (with a `reason`) for a copy with the results block removed; a connection error gives `unreachable`, a 401/403 or bot-wall page gives `wall`; it makes exactly one request and leaves `drain_errors()` empty.
    Keep the red run's command and its failures (test id and first error line each) for your report: it is the evidence the tests came first, since the site lands in one commit.
-   - **Live smoke** (`tests/scrapers/<pkg>test_<site>_live.py`, `@pytest.mark.live`): `scrape(...)` with `keyword` (else a broad one: `"software"` or the local word for it) and the capital as `location` returns ≥1 posting that validates as `JobPosting` with non-empty `title`, `company`, `url` and `description`. Copy `tests/scrapers/feeds/test_pinpoint_live.py`'s shape; `scripts/smoke_report.py` reads the site from the file name, so the name must be exactly `test_<site>_live.py`.
+   - **Live smoke** (`tests/scrapers/<pkg>test_<site>_live.py`): one probe-sized test per mode, each `@pytest.mark.live` and named `test_<site>_<mode>_live`, with `keyword` (else a broad one: `"software"` or the local word for it) and the capital as `location`, built on `tests/live_utils.py`. Copy `tests/scrapers/boards/test_jobindex_live.py` (a board) or `tests/scrapers/feeds/test_greenhouse_live.py` (a feed whose one answer lists every job):
+     - `listing`: page 1 through `probe`, `assert_listing` (the field contract on its postings);
+     - `page2`: one more listing page through the module's own helpers inside `probe_sized(site, "page2")`, then `assert_page2`; or `NO_PAGE2 = "<why>"` when one answer lists every job;
+     - `details`: the listing and at most two detail pages inside `probe_sized(site, "details")`, then `assert_contract(site, postings, "details", config=...)`; or `NO_DETAILS = "<why>"` when the listing carries the whole ad;
+     - `zero_hits` (a board): `NONSENSE_KEYWORD` answered with a recognised zero-hit page (`assert_zero_hits`), and a saved real zero-hit page in `tests/live_matrix.ZERO_HIT_FIXTURES`;
+     - `detection` (a feed platform): `assert_detects("<site>")`, with a real, stable employer's careers page in `tests/live_employers.DETECTION`.
+     No other test goes in the file, and none reads the site's whole list. `tests/scrapers/test_live_modes_unit.py` fails until each mode that applies has its test; `scripts/smoke_report.py` reads the site from the file name, so the name must be exactly `test_<site>_live.py`.
 
 4. **Green.** Write `src/door/scrapers/<pkg><site>.py`, importing only from `door.scrapers.sdk` (`tests/scrapers/test_scraper_imports_unit.py` fails on any other `door` import; add a wrapper to the SDK if you need a helper it lacks):
    ```python
@@ -91,7 +97,7 @@ A source whose terms ban scraping (the research's verdict `discovery`), or one o
      - a 429/403 or a redirect to a login page stops the run and reports pushback;
      - a failed load is retried once;
      - nothing but employer, title and link comes back.
-   - **Live smoke** (`test_<source>_live.py`, copy `test_profession_live.py`): one request with `keyword`, at least one employer, no pushback.
+   - **Live smoke** (`test_<source>_live.py`, copy `test_profession_live.py`): `test_<source>_employers_live`, one request with `keyword`, checked by `live_utils.assert_discovery` (employers with a name, a title and a link where it gives one; a refusal, including a captcha or consent page where the results should be, is not reached). The source stops on a wall page (`sdk.wall_page`) as on a 403.
 4. **Green:** `src/door/scrapers/discovery/<source>.py` with `NAME`, `COUNTRIES` (lower-case ISO codes, `()` for anywhere), `CONFIG_KEY = "<source>_discovery"`, `run(config, **kwargs)` and only the optional hooks it needs (`enabled`, `extras`, `skip_employer`). It imports only from `door.scrapers.sdk`. Its docstring follows `profession.py`'s: what it is and why it is not a job source, the request limits, the terms clause, the markup, the date it was checked.
 5. **Register it:**
    - one line in `SOURCES` (`src/door/core/discovery_sources.py`);
@@ -109,7 +115,7 @@ A source whose terms ban scraping (the research's verdict `discovery`), or one o
 For a site or discovery source that already exists and now serves `country_code` too:
 
 1. Read the module and its tests, and its docstring's terms clause: report that clause as the site's verdict (an existing ban stays a ban, never "ok (unchanged)"). Find what is per-country (a site: the `countries` tuple of its `Site`; a discovery source: its `COUNTRIES`, and any per-country table such as a locale header or a link host).
-2. **Red:** a fixture or unit test that a profile located in the new country gets that country's parameters (header, locale, link host), and a live test case for the country in `test_<site>_live.py`.
+2. **Red:** a fixture or unit test that a profile located in the new country gets that country's parameters (header, locale, link host), and the country's case in `test_<site>_live.py`'s mode tests (a `listing` for it, parametrised, when the site reads each country apart).
 3. **Green:** add the country code to the `Site` entry (a discovery source: its `COUNTRIES`) and the per-country tables. No new module. A per-country locale header sets the site's interface language: check with the live test that an English keyword in that country still returns English ads, and say in your report if it doesn't.
 4. Update the site's `Countries` cell in `docs/job-sites.md` and `docs/architecture.md`, run the suite and the live test, and commit (`"Serve <country> on <site>"`).
 
@@ -124,7 +130,7 @@ Tests added: <test functions>
 Red run: <command> → <n> failed: <test id — first error line>, …
 Fixtures: <files>; English ads: <n>, local-language ads: <n> (or: the site has only one)
 Offline suite: <passed> passed, <failed> failed
-Live smoke: passed (<n> postings) | failed: <error>
+Live smoke: <mode>: passed | not reached: <why> | failed: <message>, one per mode
 English keyword under the country's locale (extend only): <n> English ads of <m>
 Commit: <short hash> | none (stopped: <why>)
 Notes: <anything the validator should look at: fields the site doesn't give, a date it gives only relatively, a pushback seen>
