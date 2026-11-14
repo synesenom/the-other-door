@@ -24,7 +24,6 @@ function tone(i: number): string {
 }
 
 const FUNNEL_LABELS: Record<string, string> = {
-  postings: 'Scraped',
   matches: 'Matches',
   prepared: 'Prepared',
   applied: 'Applied',
@@ -33,13 +32,13 @@ const FUNNEL_LABELS: Record<string, string> = {
 }
 
 /**
- * The funnel's bars once anything is scraped. Each bar is its stage's share of the stage before it (how many
+ * The funnel's bars once there are matches, from the matches on (what was scraped includes unrelated jobs, #87). Each bar is its stage's share of the stage before it (how many
  * of the prepared were sent, how many of those led to an interview); the first is always full. A line above says
  * so, and every row after the first says it in figures: "7 of 9" and the share as a percentage (#87).
  */
 function Applications({ funnel }: { funnel: FunnelStage[] }) {
-  if ((funnel[0]?.count ?? 0) === 0) return <p className="small muted">Your funnel shows here once jobs are found</p>
   const rows = funnel.filter((f) => f.stage in FUNNEL_LABELS)
+  if ((rows[0]?.count ?? 0) === 0) return <p className="small muted">Your funnel shows here once you have matches</p>
   return (
     <>
       <p className="small muted">Each stage against the one before it.</p>

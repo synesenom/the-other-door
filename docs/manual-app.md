@@ -544,14 +544,14 @@ stops. The phone does not show it.
 
 How it is going, as figures: nothing here changes anything. Not on the phone.
 
-**Applications** shows how the job hunt is going. Once jobs are scraped, a funnel of bars runs from
-everything scraped, through the matches at your minimum score, to the
+**Applications** shows how the job hunt is going. Once you have matches, a funnel of bars runs from
+the matches at your minimum score (not everything scraped, which includes unrelated jobs) to the
 jobs you prepared, applied for, got an interview in and got an offer for; a job counts in every
 stage it reached (an offer also counts as an interview, since the application passed), and a job
 you sent from outside the matches, one you imported by hand, raises the earlier bars too. Each bar
 shows its stage as a share of the stage before it, so you can see where jobs drop out: how many of
 the jobs you prepared you applied for, how many of those led to an interview. A line above the bars
-says so, and every row after the first says it in figures too: "7 of 9" and the share as a percentage. Before anything is scraped it says only that the funnel shows here once jobs are found.
+says so, and every row after the first says it in figures too: "7 of 9" and the share as a percentage. Before there are matches it says only that the funnel shows here once you have matches.
 
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
 You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,

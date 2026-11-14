@@ -101,9 +101,10 @@ describe('Analytics', () => {
       const part = await screen.findByRole('region', { name: 'Applications' })
       const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('funnel-row'))
       expect(rows.map((r) => r.textContent)).toEqual([
-        'Scraped200', 'Matches40 of 20020%', 'Prepared10 of 4025%', 'Applied4 of 1040%', 'Interview2 of 450%', 'Offer1 of 250%'])
+        'Matches40', 'Prepared10 of 4025%', 'Applied4 of 1040%', 'Interview2 of 450%', 'Offer1 of 250%'])
       expect(within(part).getByText('Each stage against the one before it.')).toBeInTheDocument()
-      expect(within(rows[1]).getByRole('img', { name: 'Matches: 40 of 200' })).toBeInTheDocument()
+      expect(within(rows[1]).getByRole('img', { name: 'Prepared: 10 of 40' })).toBeInTheDocument()
+      expect(part).not.toHaveTextContent('Scraped')
     })
 
     it('sizes each bar against the stage before it, the first one full', async () => {
@@ -111,12 +112,12 @@ describe('Analytics', () => {
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       const width = (name: string) => (within(part).getByRole('img', { name }).firstElementChild as HTMLElement).style.width
-      expect(width('Scraped: 200')).toBe('100%')
+      expect(width('Matches: 40')).toBe('100%')
       expect(width('Prepared: 10 of 40')).toBe('25%')
       expect(width('Applied: 4 of 10')).toBe('40%')
       expect(width('Offer: 1 of 2')).toBe('50%')
       expect(within(part).queryByRole('table')).toBeNull()
-      expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['20%', '25%', '40%', '50%', '50%'])
+      expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['25%', '40%', '50%', '50%'])
     })
 
     it('with something found but nothing applied: the bars, the later ones empty', async () => {
@@ -128,19 +129,22 @@ describe('Analytics', () => {
       expect(within(part).getByRole('img', { name: 'Prepared: 2 of 3' })).toBeInTheDocument()
       expect((within(part).getByRole('img', { name: 'Applied: 0 of 2' }).firstElementChild as HTMLElement).style.width).toBe('0%')
       expect((within(part).getByRole('img', { name: 'Offer: 0 of 0' }).firstElementChild as HTMLElement).style.width).toBe('0%')
-      expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['60%', '67%', '0%'])
+      expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['67%', '0%'])
       const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('funnel-row'))
       expect(rows.map((r) => r.textContent).slice(-3)).toEqual(['Applied0 of 20%', 'Interview0 of 0', 'Offer0 of 0'])
       expect(within(part).queryByText(/Worth a look/)).toBeNull()
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
     })
 
-    it('with nothing scraped: a single quiet line for the section', async () => {
-      const funnel = FUNNEL.map((f) => ({ ...f, count: 0 }))
+    it.each([
+      ['nothing scraped', {}],
+      ['jobs scraped but none a match', { postings: 5, applicable: 2 }],
+    ])('with %s: a single quiet line for the section', async (_, counts: Record<string, number>) => {
+      const funnel = FUNNEL.map((f) => ({ ...f, count: counts[f.stage] ?? 0 }))
       mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
-      expect(within(part).getByText('Your funnel shows here once jobs are found')).toBeInTheDocument()
+      expect(within(part).getByText('Your funnel shows here once you have matches')).toBeInTheDocument()
       expect(within(part).queryAllByRole('img')).toEqual([])
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
     })
@@ -170,7 +174,7 @@ describe('Analytics', () => {
       mockDoor({ status_summary: summary({ ...APPLIED, funnel: [...FUNNEL, { stage: 'mystery', count: 1 }], cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
-      expect(within(part).getAllByRole('img')).toHaveLength(6)
+      expect(within(part).getAllByRole('img')).toHaveLength(5)
       expect(within(part).queryByText(/mystery/)).toBeNull()
     })
   })
