@@ -648,13 +648,11 @@ def test_the_warning_carries_the_reason_the_tailor_kept_an_item_for(cli_env):
 
 
 # --------------------------------------------------------------------------- #
-# status_summary's funnel (#66)
+# status_summary's standing: where each sent application stands now (#87)
 # --------------------------------------------------------------------------- #
 
-_FUNNEL_STAGES = ["postings", "applicable", "matches", "prepared", "applied", "interview", "offer"]
 
-
-def _funnel_ledger(cli_env, histories: dict) -> None:
+def _histories(cli_env, histories: dict) -> None:
     from door.core import tracker
 
     t = tracker.ApplicationTracker(cli_env.jobs_dir / "applications.json")
@@ -664,65 +662,41 @@ def _funnel_ledger(cli_env, histories: dict) -> None:
     t.save()
 
 
-def _funnel(cli_env) -> dict:
+def _standing(cli_env) -> dict:
     from door.commands import status as status_cmd
 
-    result = status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)
-    assert [f["stage"] for f in result["funnel"]] == _FUNNEL_STAGES
-    return {f["stage"]: f["count"] for f in result["funnel"]}
+    return status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)["standing"]
 
 
-def test_status_summary_funnel_counts_each_job_once_per_stage_reached(cli_env):
-    for job, score in (("job-a", 0.9), ("job-b", 0.9), ("job-c", 0.8), ("job-d", 0.7), ("job-e", 0.0)):
-        _write_status_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", job, score=score)
-    _funnel_ledger(cli_env, {
+def test_status_summary_standing_counts_each_sent_application_once_by_where_it_stands_now(cli_env):
+    _histories(cli_env, {
         "job-a": ["prepared", "applied", "interview:screening", "rejected"],
         "job-b": ["prepared", "applied", "offer"],
-        "job-c": ["prepared"],
-        "job-d": ["discarded"],
+        "job-c": ["applied", "interview:technical"],
+        "job-d": ["applied"],
+        "job-e": ["applied", "ghosted"],
+        "job-f": ["applied", "discarded"],
+        "job-g": ["prepared"],
+        "job-h": ["discarded"],
+        "job-i": ["applied", "prepared"],  # sent, then moved back: still waiting for an answer
+        "job-j": ["offer"],  # an offer with no applied event was sent all the same
     })
-    from door.commands import status as status_cmd
 
-    result = status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)
-    funnel = _funnel(cli_env)
-
-    pipeline = result["pipeline"]
-    assert (funnel["postings"], funnel["applicable"], funnel["matches"]) == (
-        pipeline["total"], pipeline["applicable"], pipeline["above_threshold"])
-    assert (funnel["prepared"], funnel["applied"], funnel["interview"], funnel["offer"]) == (3, 2, 2, 1)
-    counts = list(funnel.values())
-    assert counts == sorted(counts, reverse=True)
+    assert _standing(cli_env) == {
+        "offer": 2, "interviewing": 1, "waiting": 2, "rejected": 1, "ghosted": 1, "withdrawn": 1}
 
 
-def test_status_summary_funnel_counts_a_skipped_stage_only_where_it_happened(cli_env):
+def test_status_summary_standing_is_all_zero_with_an_empty_ledger(cli_env):
+    assert _standing(cli_env) == dict.fromkeys(("offer", "interviewing", "waiting", "rejected", "ghosted", "withdrawn"), 0)
+
+
+def test_status_summary_counts_a_match_sent_then_discarded_as_applied_not_set_aside(cli_env):
+    # one job in one part: it is "withdrawn" among the applications, so "applied" among the matches
     for job in ("job-a", "job-b"):
         _write_status_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", job, score=0.9)
-    _funnel_ledger(cli_env, {"job-a": ["applied", "offer"]})
+    _histories(cli_env, {"job-a": ["applied", "discarded"], "job-b": ["discarded"]})
+    from door.commands import status as status_cmd
 
-    funnel = _funnel(cli_env)
+    by_status = status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)["pipeline"]["above_threshold_by_status"]
 
-    assert (funnel["prepared"], funnel["applied"], funnel["interview"], funnel["offer"]) == (1, 1, 1, 1)
-
-
-def test_status_summary_funnel_stays_monotone_for_an_applied_job_below_min_score(cli_env):
-    _write_status_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-low", score=0.1)
-    _funnel_ledger(cli_env, {"job-low": ["applied"], "job-nopost": ["applied"]})
-
-    funnel = _funnel(cli_env)
-
-    assert list(funnel.values()) == [2, 2, 2, 2, 2, 0, 0]
-
-
-def test_status_summary_funnel_is_zero_after_postings_with_an_empty_ledger(cli_env):
-    _write_status_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-a", score=0.9)
-
-    funnel = _funnel(cli_env)
-
-    assert funnel["postings"] == 1
-    assert (funnel["prepared"], funnel["applied"], funnel["interview"], funnel["offer"]) == (0, 0, 0, 0)
-
-
-def test_status_summary_funnel_counts_several_interview_rounds_once(cli_env):
-    _funnel_ledger(cli_env, {"job-a": ["applied", "interview:screening", "interview:technical"]})
-
-    assert _funnel(cli_env)["interview"] == 1
+    assert (by_status["applied"], by_status["discarded"]) == (1, 1)

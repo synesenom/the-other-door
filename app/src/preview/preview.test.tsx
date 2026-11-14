@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../renderer/App'
 import { stubNarrow } from '../renderer/testing'
@@ -160,14 +160,15 @@ describe('scenes', () => {
     expect(container.querySelector('main')).not.toBeInTheDocument()
   })
 
-  it('analytics shows the funnel, each stage against the one before, and in the empty state only what was scraped', async () => {
+  it('analytics shows the interview rate, your matches and your applications, and in the empty state one line', async () => {
     mount('analytics')
     const part = await screen.findByRole('region', { name: 'Applications' })
-    expect(part).toHaveTextContent('Scraped212')
-    expect(screen.getByRole('img', { name: 'Applied: 7 of 9' })).toBeInTheDocument()
+    expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5, likely between 40% and 77%.')
+    expect(within(part).getByRole('img', { name: 'Applied 7, Prepared, not sent 2, Not yet 15' })).toBeInTheDocument()
+    expect(within(part).getByRole('img', { name: 'Offer 1, Interviewing 2, Waiting for an answer 2, Rejected or no answer 2' })).toBeInTheDocument()
     cleanup()
     mount('analytics', 'empty')
-    expect(await screen.findByRole('img', { name: 'Matches: 0 of 212' })).toBeInTheDocument()
+    expect(await screen.findByText('Your applications show here once you have matches.')).toBeInTheDocument()
   })
 
   it('posting opens the posting', async () => {

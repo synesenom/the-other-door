@@ -54,7 +54,7 @@ all).
 
 import json
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from door.core import utils
 
@@ -377,33 +377,73 @@ def interview_outcomes(tracker: ApplicationTracker) -> dict[str, dict[str, int]]
     return {stage: counts[stage] for stage in INTERVIEW_STAGES if stage in counts}
 
 
-def _application_result(tracker: ApplicationTracker, job_id: str) -> str | None:
+NO_ANSWER_DAYS = 30
+"""An application with no change for this many days counts as ghosted when the outcomes are read (#87):
+most employers answer within two or three weeks, and few users mark a silence by hand. Nothing is written."""
+
+
+def _silent(tracker: ApplicationTracker, job_id: str, now: datetime) -> bool:
+    """Whether the job's last event is more than :data:`NO_ANSWER_DAYS` days before ``now``."""
+    history = tracker.history(job_id)
+    last = _parsed(history[-1].get("at")) if history else None
+    return last is not None and now - last > timedelta(days=NO_ANSWER_DAYS)
+
+
+def _application_result(tracker: ApplicationTracker, job_id: str, now: datetime) -> str | None:
     """How one application went (a :data:`ROUND_RESULTS` key), or None if it was never sent."""
     statuses = [event.get("status") for event in tracker.history(job_id)]
     if not any(is_sent(s) for s in statuses):
         return None
     if any(s == "offer" or interview_stage(s) for s in statuses):
         return "passed"
-    return _LAST_ROUND_RESULT.get(tracker.get_status(job_id), "pending")
+    result = _LAST_ROUND_RESULT.get(tracker.get_status(job_id), "pending")
+    return "ghosted" if result == "pending" and _silent(tracker, job_id, now) else result
 
 
-def application_outcomes(tracker: ApplicationTracker) -> dict[str, int]:
+def application_outcomes(tracker: ApplicationTracker, *, now: datetime | None = None) -> dict[str, int]:
     """How the sent applications have gone: whether each led to an interview.
 
     An application is sent once its history has ``applied``, an interview
     round, ``rejected``, ``ghosted`` or ``offer``. It passed when an interview
     round or an offer followed (even after a ghosting); otherwise its current
     status says how it ended (as for an interview's last round), or it is
-    ``pending``.
+    ``pending``, or ``ghosted`` once nothing changed for :data:`NO_ANSWER_DAYS` days.
 
     Returns:
         ``{"passed", "rejected", "ghosted", "withdrawn", "pending"}``.
     """
+    now = now if now is not None else _utcnow()
     counts = dict.fromkeys(ROUND_RESULTS, 0)
     for job_id in tracker.job_ids():
-        result = _application_result(tracker, job_id)
+        result = _application_result(tracker, job_id, now)
         if result is not None:
             counts[result] += 1
+    return counts
+
+
+STANDINGS: tuple = ("offer", "interviewing", "waiting", "rejected", "ghosted", "withdrawn")
+_STANDING_OF = {"offer": "offer", "rejected": "rejected", "ghosted": "ghosted", "discarded": "withdrawn"}
+
+
+def standings(tracker: ApplicationTracker, *, now: datetime | None = None) -> dict[str, int]:
+    """Where each sent application stands now, each counted once (#87).
+
+    By its current status: ``offer``, ``interviewing`` (an interview round),
+    ``rejected``, ``ghosted``, ``withdrawn`` (discarded after it was sent), or
+    ``waiting`` (sent, no answer yet), which counts as ``ghosted`` once nothing
+    changed for :data:`NO_ANSWER_DAYS` days. A job never sent is not counted.
+
+    Returns:
+        ``{standing: count}`` for every :data:`STANDINGS` key.
+    """
+    now = now if now is not None else _utcnow()
+    counts = dict.fromkeys(STANDINGS, 0)
+    for job_id in tracker.job_ids():
+        if not any(is_sent(event.get("status")) for event in tracker.history(job_id)):
+            continue
+        status = tracker.get_status(job_id)
+        standing = "interviewing" if interview_stage(status) else _STANDING_OF.get(status, "waiting")
+        counts["ghosted" if standing == "waiting" and _silent(tracker, job_id, now) else standing] += 1
     return counts
 
 

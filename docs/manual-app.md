@@ -544,14 +544,20 @@ stops. The phone does not show it.
 
 How it is going, as figures: nothing here changes anything. Not on the phone.
 
-**Applications** shows how the job hunt is going. Once jobs are scraped, a funnel of bars runs from
-everything scraped, through the matches at your minimum score, to the
-jobs you prepared, applied for, got an interview in and got an offer for; a job counts in every
-stage it reached (an offer also counts as an interview, since the application passed), and a job
-you sent from outside the matches, one you imported by hand, raises the earlier bars too. Each bar
-shows its stage as a share of the stage before it, so you can see where jobs drop out: how many of
-the jobs you prepared you applied for, how many of those led to an interview. For applying, the
-interview and the offer it also gives that share as a percentage, the pass rate of that step. Before anything is scraped it says only that the funnel shows here once jobs are found.
+**Applications** shows how the job hunt is going, keeping what you did apart from how employers
+answered. It leads with your interview rate: how many of your applications with an outcome (an
+interview, a rejection or no reply) led to an interview (offers count, since they passed one), with
+the range it likely lies in while there are few. It says how well the matches *The other door* finds fit you. Below it are two bars, each job in
+one part of one bar. **Your matches**, the jobs at your minimum score (not everything scraped, which
+includes unrelated jobs): applied, prepared but not sent, and not yet, with the ones you set aside
+as not for me said under it. **Your applications**, everything you sent: an offer, interviewing,
+waiting for an answer, and rejected or no answer (or withdrawn). An application with no change for
+30 days counts as no answer, in the bar and in the rate, whether or not you marked it ghosted; once
+you record what happened next, it counts as that. A job you applied for and later set
+aside counts as applied among your matches and as withdrawn among your applications. An application
+sent outside your matches (one imported by hand, or below your minimum score) shows only under Your
+applications. With no matches and nothing sent it says only that your applications show here once
+you have matches.
 
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
 You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,

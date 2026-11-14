@@ -51,6 +51,10 @@ class _FakeTracker:
     def get_status(self, job_id):
         return self._statuses.get(job_id)
 
+    def history(self, job_id):
+        # one event: the current status (a stand-in has no earlier ones)
+        return [{"status": self._statuses[job_id]}] if job_id in self._statuses else []
+
 
 # --------------------------------------------------------------------------- #
 # Empty state
