@@ -51,6 +51,7 @@ Only if Step 1 found something a step must do.
    - the previous release's saved data goes in: `tests/data_versions/<X.Y.Z>/` (#57) when it exists, else a folder written in the tag's shape inside the test;
    - this release's shape comes out, and `Profile` (or the format's own reader on `main`) accepts it.
    Run the tests and keep the red run's failures.
+   The release gate (`poetry run pytest tests/release -m release -n 0`) upgrades every saved release under `tests/data_versions/` and compares what the current tools read back with its `expected.json`: any difference fails unless a step that ran lists it in `Step(..., changes=(...))`, globs over the dotted paths of `expected.json` (e.g. `show_profile.config.sectors`), each covering everything under it. List exactly what the step changes on purpose, nothing broader.
 2. **Green.** Append at most one `Step` to `PROFILE_STEPS` and at most one to `JOBS_STEPS`; one step can make several changes to its folder. Keep each change small.
 3. If `stored.py` gained or lost a file, `tests/core/test_stored_unit.py` must still pass.
 4. Run `./scripts/run-test.sh` (the whole offline suite) and, when `tests/data_versions/` exists, #57's release test.

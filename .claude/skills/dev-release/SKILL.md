@@ -65,7 +65,7 @@ A tester's `profile/` and `jobs/` written by the previous release must open in t
 - **"no step needed"**: keep its item-by-item list for the notes' maintainer summary and go on.
 - **a PR**: tell the user to merge it once CI is green and **stop**. When it is merged, start again at Step 1 (the step's PR is now one of the release's). Keep its "Release note line" for Step 5.
 
-Then the release test of #57 must pass (the saved data of every earlier release opens in this one); it runs in `./scripts/run-test.sh --release` once `tests/data_versions/` exists.
+Then the release gate must pass: the "release gate (earlier releases' data)" line of `./scripts/run-test.sh --release` (Step 1 runs it; the saved data of every earlier release, `tests/data_versions/`, upgrades and reads back equal to its snapshot). A FAIL lists the differences: send the `data-migrator` agent back with them, to write or fix the step and list what it changes on purpose in `Step(..., changes=(...))`, then start again at Step 1.
 
 ## Step 2: The version
 
@@ -143,6 +143,19 @@ Point the user at the draft URL and at `docs/releasing.md`'s checklist: install 
 - "Keep it a draft": nothing changes; the user publishes later from the release page or with this skill's Step 6.
 
 Recommend the pre-release when the argument said `pre-release`, else the latest release. Never publish without this answer.
+
+## Step 6b: Save this release's data
+
+Once the tag is pushed (whatever Step 6's answer), save the data this release writes, so the next release's gate opens it:
+
+```bash
+git checkout -b test/release-data-vX.Y.Z origin/main
+poetry run python scripts/save_release_data.py X.Y.Z    # the tag's own code writes it, in a throwaway worktree
+```
+
+If the generator stops on an API the tag changed, or a new `Profile` field it does not set, fix `scripts/release_data_generate.py` and run it again. Empty `NEW_SINCE_RELEASE` in `tests/release/test_release_sample_unit.py`, run `poetry run pytest tests/release -m "release or not release" -n 0`, commit `tests/data_versions/X.Y.Z/` and that edit ("test: save vX.Y.Z's data for the release gate") and open the PR with `/dev-pr`.
+
+On a major bump, also delete the folders of `tests/data_versions/` from older majors: their data is no longer opened.
 
 ## Step 7: Report
 
