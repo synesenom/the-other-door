@@ -250,6 +250,8 @@ what it asks of you, the salary to expect once the job is prepared (below), and 
 leave this open; it takes a few minutes." Its other buttons wait. You may look at other
 jobs meanwhile; coming back shows it is still preparing.
 
+The CV and letter are written in the language the ad is written in (English when it cannot be told), whatever language your CV is in: what is kept from it is translated, headings, the letter's date and sign-off included.
+
 - Only one run goes at a time. If a search or another prepare is on, it says "Another run is
   in progress. Try again when it finishes." and the pane looks for the result by itself.
 - A job that is already prepared is not redone: the app just opens it.
