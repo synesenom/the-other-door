@@ -550,8 +550,8 @@ jobs you prepared, applied for, got an interview in and got an offer for; a job 
 stage it reached (an offer also counts as an interview, since the application passed), and a job
 you sent from outside the matches, one you imported by hand, raises the earlier bars too. Each bar
 shows its stage as a share of the stage before it, so you can see where jobs drop out: how many of
-the jobs you prepared you applied for, how many of those led to an interview. For applying, the
-interview and the offer it also gives that share as a percentage, the pass rate of that step. Before anything is scraped it says only that the funnel shows here once jobs are found.
+the jobs you prepared you applied for, how many of those led to an interview. A line above the bars
+says so, and every row after the first says it in figures too: "7 of 9" and the share as a percentage. Before anything is scraped it says only that the funnel shows here once jobs are found.
 
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
 You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,

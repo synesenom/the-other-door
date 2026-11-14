@@ -95,13 +95,14 @@ describe('Analytics', () => {
     ]
     const APPLIED = { funnel: FUNNEL }
 
-    it('shows one bar row per funnel stage with its label and count', async () => {
+    it('shows one bar row per funnel stage, each after the first with what it is measured against and its share', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('funnel-row'))
       expect(rows.map((r) => r.textContent)).toEqual([
-        'Scraped200', 'Matches40', 'Prepared10', 'Applied440%', 'Interview250%', 'Offer150%'])
+        'Scraped200', 'Matches40 of 20020%', 'Prepared10 of 4025%', 'Applied4 of 1040%', 'Interview2 of 450%', 'Offer1 of 250%'])
+      expect(within(part).getByText('Each stage against the one before it.')).toBeInTheDocument()
       expect(within(rows[1]).getByRole('img', { name: 'Matches: 40 of 200' })).toBeInTheDocument()
     })
 
@@ -115,20 +116,19 @@ describe('Analytics', () => {
       expect(width('Applied: 4 of 10')).toBe('40%')
       expect(width('Offer: 1 of 2')).toBe('50%')
       expect(within(part).queryByRole('table')).toBeNull()
-      // a percentage only on the second half: applied, interview, offer
-      expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['40%', '50%', '50%'])
+      expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['20%', '25%', '40%', '50%', '50%'])
     })
 
     it('with something found but nothing applied: the bars, the later ones empty', async () => {
       const funnel = FUNNEL.map((f) => ({ ...f, count: { postings: 5, applicable: 4, matches: 3, prepared: 2 }[f.stage] ?? 0 }))
-      // applied 0 of 2 says 0%; interview and offer, with nothing before them, say nothing
+      // applied 0 of 2 says 0%; interview and offer, with nothing before them, say no share
       mockDoor({ status_summary: summary({ cost: COST, plan: null, funnel }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       expect(within(part).getByRole('img', { name: 'Prepared: 2 of 3' })).toBeInTheDocument()
       expect((within(part).getByRole('img', { name: 'Applied: 0 of 2' }).firstElementChild as HTMLElement).style.width).toBe('0%')
       expect((within(part).getByRole('img', { name: 'Offer: 0 of 0' }).firstElementChild as HTMLElement).style.width).toBe('0%')
-      expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['0%'])
+      expect(within(part).getAllByText(/%$/).map((e) => e.textContent)).toEqual(['60%', '67%', '0%'])
       expect(within(part).queryByText(/Worth a look/)).toBeNull()
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
     })
