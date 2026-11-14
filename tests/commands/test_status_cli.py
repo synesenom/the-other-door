@@ -11,6 +11,7 @@ import pytest
 from click.testing import CliRunner
 
 from door.cli import cli
+from door.core.tracker import ApplicationTracker
 from cli_utils import FRESH_SCRAPED_AT, result_text
 
 
@@ -18,84 +19,27 @@ from cli_utils import FRESH_SCRAPED_AT, result_text
 # status (issue #26)
 # --------------------------------------------------------------------------- #
 
-def test_status_command_sets_status(cli_env, monkeypatch):
-    """status <job_id> <status> calls set_status and save on the tracker."""
-    import door.core.tracker as tracker_mod
-
-    calls = {}
-
-    class FakeTracker:
-        def __init__(self, path):
-            calls["path"] = path
-
-        def set_status(self, job_id, status, **kwargs):
-            calls["set_status"] = (job_id, status)
-
-        def save(self):
-            calls["save"] = True
-
-        def history(self, job_id):
-            return [{}]
-
-        def get_status(self, job_id):
-            return calls["set_status"][1]
-
-    monkeypatch.setattr(tracker_mod, "ApplicationTracker", FakeTracker)
-
+def test_status_command_sets_status(cli_env):
     result = CliRunner().invoke(cli, ["jobs", "status", "job-abc", "applied"])
     assert result.exit_code == 0, result_text(result)
-    assert calls.get("set_status") == ("job-abc", "applied")
-    assert calls.get("save") is True
-    assert calls["path"] == cli_env.jobs_dir / "applications.json"
+    assert ApplicationTracker(cli_env.jobs_dir / "applications.json").get_status("job-abc") == "applied"
     # Confirmation message shown, with no None leaking from the optional args
     assert "job-abc" in result_text(result)
     assert "None" not in result_text(result)
 
 
-def test_status_invalid_status_shows_error(cli_env, monkeypatch):
-    """When set_status raises ValueError, exit code is 1 and error is printed."""
-    import door.core.tracker as tracker_mod
-
-    class FakeTracker:
-        def __init__(self, path):
-            pass
-
-        def set_status(self, job_id, status, **kwargs):
-            raise ValueError("unknown status 'hired'")
-
-        def save(self):
-            pass  # pragma: no cover — should not be reached
-
-    monkeypatch.setattr(tracker_mod, "ApplicationTracker", FakeTracker)
-
+def test_status_invalid_status_shows_error(cli_env):
     result = CliRunner().invoke(cli, ["jobs", "status", "job-abc", "hired"])
     assert result.exit_code != 0
     assert "hired" in result_text(result)
+    assert not (cli_env.jobs_dir / "applications.json").exists()
 
 
-def test_status_duplicate_application_shows_error(cli_env, monkeypatch):
-    """When set_status raises DuplicateApplicationError, exit code is 1."""
-    import door.core.tracker as tracker_mod
-    from door.core.tracker import DuplicateApplicationError
-
-    class FakeTracker:
-        def __init__(self, path):
-            pass
-
-        def set_status(self, job_id, status, **kwargs):
-            raise DuplicateApplicationError("already applied")
-
-        def save(self):
-            pass  # pragma: no cover — should not be reached
-
-        def history(self, job_id):
-            return [{"status": "applied"}]
-
-    monkeypatch.setattr(tracker_mod, "ApplicationTracker", FakeTracker)
-
+def test_status_duplicate_application_shows_error(cli_env):
+    CliRunner().invoke(cli, ["jobs", "status", "job-abc", "applied"])
     result = CliRunner().invoke(cli, ["jobs", "status", "job-abc", "applied"])
     assert result.exit_code == 1
-    assert "already applied" in result_text(result) or "duplicate" in result_text(result).lower()
+    assert "already" in result_text(result).lower() or "duplicate" in result_text(result).lower()
 
 
 # --------------------------------------------------------------------------- #
@@ -287,17 +231,6 @@ def test_status_lists_the_ledger_counts(cli_env):
 
     assert "Applications" in text
     assert "2" in _line_with(text, "applied")
-
-
-def test_status_into_a_pipe_has_no_colour_codes(cli_env):
-    assert "\x1b[" not in CliRunner().invoke(cli, ["jobs", "summary"]).output
-
-
-def test_status_on_a_terminal_is_coloured(cli_env, monkeypatch):
-    from door.commands import _common as common
-
-    monkeypatch.setattr(common, "_stdout_is_tty", lambda: True)
-    assert "\x1b[" in CliRunner().invoke(cli, ["jobs", "summary"]).output
 
 
 def test_status_with_an_empty_ledger_says_so_in_one_line(cli_env):

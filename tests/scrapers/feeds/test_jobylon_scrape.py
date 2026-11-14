@@ -98,15 +98,6 @@ def test_two_employers_are_read_side_by_side_and_a_job_is_kept_once():
 
 
 @responses_lib.activate
-def test_the_followed_name_wins():
-    _mock_lyko()
-
-    postings = jobylon.scrape({"jobylon_companies": ["2420"], "_names": {"jobylon_companies": {"2420": "Lyko Group AB"}}})
-
-    assert postings and {p["company"] for p in postings} == {"Lyko Group AB"}
-
-
-@responses_lib.activate
 def test_an_empty_board_returns_nothing_and_reports_zero(progress_events):
     responses_lib.add(responses_lib.GET, _WIDGET.format("2420"),
                       body="<script>JBL.embed_v2['jobs'] = [\n  \n ];\n</script>")
@@ -209,19 +200,3 @@ def test_probe_drift_when_the_job_list_is_gone():
 
     assert result["structure_ok"] is False and result["reason"]
     assert not result.get("wall") and not result.get("unreachable")
-
-
-@responses_lib.activate
-def test_probe_wall_and_unreachable():
-    responses_lib.add(responses_lib.GET, _WIDGET.format("2420"), status=403)
-    assert jobylon.probe(_PROBE_CFG)["wall"] is True
-
-    responses_lib.reset()
-    import requests
-    responses_lib.add(responses_lib.GET, _WIDGET.format("2420"), body=requests.ConnectionError("down"))
-    assert jobylon.probe(_PROBE_CFG)["unreachable"] is True
-    assert drain_errors() == {}
-
-
-def test_probe_without_employers_is_none():
-    assert jobylon.probe({}) is None

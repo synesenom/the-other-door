@@ -9,7 +9,6 @@ import types
 
 import pytest
 
-import door.mcp_server as server
 from door.commands import cv as cv_cmd
 from door.core import claude_cli, workspace
 from paths import REPO_ROOT
@@ -136,8 +135,3 @@ def test_no_cv_of_the_users_own_leaves_everything_to_ask(env, monkeypatch, cv):
     assert result["languages"] == ["English"] and result["remote"] == "hybrid"
 
 
-def test_tool_passes_its_arguments(env, monkeypatch):
-    seen = {}
-    monkeypatch.setattr(cv_cmd, "_infer_basics_core", lambda markdown, **kw: seen.update(markdown=markdown, **kw) or {"missing": []})
-    assert server.infer_basics("# CV", model="sonnet") == {"missing": []}
-    assert seen == {"markdown": "# CV", "model": "sonnet", "profile_dir": env.profile_dir}

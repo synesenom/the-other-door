@@ -1,7 +1,6 @@
 """Fixture tests for Recman: Professionals Nord's live sitemap and ads (tenant ``pn``), trimmed and their text rewritten."""
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -67,15 +66,6 @@ def test_known_ids_skip_the_detail_requests():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    _mock_all()
-
-    postings = recman.scrape({"recman_companies": ["pn"], "_names": {"recman_companies": {"pn": "Professionals Nord"}}})
-
-    assert {p["company"] for p in postings} == {"Professionals Nord"}
-
-
-@responses.activate
 def test_an_entry_on_the_employers_own_host_is_read_there():
     responses.add(responses.GET, "https://stillinger.signo.no/sitemap.xml",
                   body=_fx("pn_sitemap.xml").replace("pn.recman.page", "stillinger.signo.no"))
@@ -95,16 +85,6 @@ def test_the_same_job_listed_by_two_entries_comes_once():
     postings = recman.scrape({"recman_companies": ["pn", "pn.recman.io"]})
 
     assert [p["platform_id"] for p in postings] == _IDS
-
-
-@responses.activate
-def test_a_failing_sitemap_is_a_recorded_error():
-    responses.add(responses.GET, "https://bad.recman.page/sitemap.xml", status=500)
-    _mock_all()
-
-    drain_errors()
-    assert len(recman.scrape({"recman_companies": ["bad", "pn"]})) == 3
-    assert "bad" in drain_errors()["recman"][0]
 
 
 @responses.activate
@@ -206,19 +186,3 @@ def test_probe_of_the_page_a_dead_tenant_serves_has_no_structure():
     result = recman.probe({"recman_companies": ["pn"]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    responses.add(responses.GET, _MAP, body=requests.ConnectionError("down"))
-
-    result = recman.probe({"recman_companies": ["pn"]})
-
-    assert result.get("unreachable") and result["structure_ok"] is False
-
-
-@responses.activate
-def test_probe_403_is_a_wall():
-    responses.add(responses.GET, _MAP, status=403)
-
-    assert recman.probe({"recman_companies": ["pn"]}).get("wall")

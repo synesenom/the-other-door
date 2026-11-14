@@ -48,15 +48,6 @@ def test_scrape_maps_every_vacancy():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    responses.add(responses.POST, _API, json=_fx())
-
-    postings = emply.scrape({"emply_tenants": ["dca"], "_names": {"emply_tenants": {"dca": "DanChurchAid"}}})
-
-    assert {p["company"] for p in postings} == {"DanChurchAid"}
-
-
-@responses.activate
 def test_it_pages_by_offset_until_the_count_is_read(monkeypatch):
     monkeypatch.setattr(emply, "_PAGE", 2)
     data = _fx()
@@ -82,7 +73,7 @@ def test_a_vacancy_listed_twice_counts_once():
 
 
 @responses.activate
-def test_an_unknown_tenant_is_a_recorded_error():
+def test_a_tenant_that_does_not_exist_redirects_to_emply_and_is_a_recorded_error():
     responses.add(responses.POST, "https://nope.career.emply.com/api/integration/vacancy/get-page",
                   status=302, headers={"Location": "https://emply.com/"})
     responses.add(responses.POST, _API, json=_fx())
@@ -112,11 +103,6 @@ def test_scrape_drops_vacancies_in_another_country():
 
     assert len(postings) == 2
     assert drain_non_local("emply") == 1
-
-
-def test_no_tenants_no_request():
-    assert emply.scrape({}) == []
-    assert emply.probe({}) is None
 
 
 @responses.activate

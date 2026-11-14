@@ -174,13 +174,14 @@ def test_load_corrupt_file_falls_back_to_empty(tmp_path):
     path.write_text("NOT VALID JSON {{{{")
     store = HistoryStore(path)
     # Should start with empty data, not crash
-    assert store._data == {}
+    assert store.known_ids("jobindex", None) == set()
+    assert store.is_new("site.pid-1", "jobindex", None)
 
 
 def test_load_missing_file_starts_empty(tmp_path):
     path = tmp_path / "nonexistent_history.json"
     store = HistoryStore(path)
-    assert store._data == {}
+    assert store.known_ids("jobindex", None) == set()
 
 
 # --------------------------------------------------------------------------- #

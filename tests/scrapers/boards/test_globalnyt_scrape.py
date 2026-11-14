@@ -1,6 +1,5 @@
 """Fixture tests for the full Globalnyt scrape() path: the WordPress list, then one detail page per new ad."""
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 

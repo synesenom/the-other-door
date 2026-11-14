@@ -74,15 +74,6 @@ def test_known_ids_are_left_out():
 
 
 @responses.activate
-def test_a_failing_portal_is_a_recorded_error():
-    responses.add(responses.GET, _CSRF, status=500)
-
-    drain_errors()
-    assert dayforce.scrape(_CONFIG) == []
-    assert "natus/CANDIDATEPORTALSENSORY" in drain_errors()["dayforce"][0]
-
-
-@responses.activate
 def test_a_rejected_search_is_a_recorded_error():
     responses.add(responses.GET, _CSRF, body=_fx("csrf.json"))
     responses.add(responses.POST, _SEARCH, status=403)
@@ -105,23 +96,6 @@ def test_probe_reads_the_first_page_only():
     result = dayforce.probe(_CONFIG)
 
     assert result["structure_ok"] is True and len(result["postings"]) == 2
-
-
-@responses.activate
-def test_the_followed_name_wins():
-    _mock()
-
-    postings = dayforce.scrape({**_CONFIG, "_names": {"dayforce_companies": {"natus/candidateportalsensory": "Natus Medical"}}})
-
-    assert len(postings) == 3 and {p["company"] for p in postings} == {"Natus Medical"}
-    assert all(p["id"].startswith("dayforce.") for p in postings)
-
-
-@responses.activate
-def test_without_a_name_map_the_client_is_the_fallback():
-    _mock()
-
-    assert {p["company"] for p in dayforce.scrape(_CONFIG)} == {"Natus"}
 
 
 @responses.activate

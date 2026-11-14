@@ -19,15 +19,15 @@ const failed = (tool: string, message: string, extra: Record<string, unknown> = 
 })
 
 describe('search finished', () => {
-  it('counts the new matches and opens Matches with New only', () => {
-    expect(noticeFor(done('find_jobs', record()))).toEqual({
+  it.each([
+    [['jobindex.1', 'jobindex.2', 'jobindex.3'], '3 new matches'],
+    [['a.1'], '1 new match'],
+  ])('counts the new matches (%j: %s) and opens Matches with New only', (ids, body) => {
+    expect(noticeFor(done('find_jobs', record({ new_above_threshold: ids })))).toEqual({
       title: 'New jobs found',
-      body: '3 new matches',
+      body,
       target: { screen: 'matches', newOnly: true },
     })
-  })
-  it('says one match in the singular', () => {
-    expect(noticeFor(done('find_jobs', record({ new_above_threshold: ['a.1'] })))?.body).toBe('1 new match')
   })
   it('says so when nothing new cleared the bar, and opens the Finding summary', () => {
     expect(noticeFor(done('find_jobs', record({ new_above_threshold: [] })))).toEqual({
@@ -137,6 +137,10 @@ describe('import_posting', () => {
   })
   it('not scored', () => {
     expect(noticeFor({ ...done('import_posting', { job_id: 'jobindex.9', score: null }, { url: 'https://example.com/ad' }), job } as NoticeEvent)?.body).toBe('Data Analyst · Acme: not scored yet')
+  })
+  it('without the job read, opens it as not in play', () => {
+    expect(noticeFor(done('import_posting', { job_id: 'jobindex.9', score: 0.81 }, { url: 'https://example.com/ad' }))?.target).toEqual({ screen: 'posting', jobId: 'jobindex.9', inPlay: false })
+    expect(noticeFor(done('revise', { outcome: 'revised', job_id: 'jobindex.1', file: 'cv.tex' }))?.target).toMatchObject({ inPlay: false })
   })
   it('a pasted ad is quick and stays silent; only an import by link is announced', () => {
     expect(noticeFor({ ...done('import_posting', { job_id: 'manual.1', score: 0.7 }, { text: 'ad', title: 'T', company: 'C' }), job } as NoticeEvent)).toBeNull()

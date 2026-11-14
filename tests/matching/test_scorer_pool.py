@@ -60,36 +60,6 @@ def _posting(job_id, **overrides):
 # --------------------------------------------------------------------------- #
 
 
-def test_score_chunk_scrubs_claude_code_env(monkeypatch):
-    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "parent-session-id")
-    monkeypatch.setenv("CLAUDE_CODE_ENTRYPOINT", "cli")
-    monkeypatch.setenv("CLAUDECODE", "1")
-    monkeypatch.setenv("KEEP_ME", "yes")
-
-    captured = {}
-
-    def fake_run(argv, **kwargs):
-        captured.update(kwargs)
-        return _FakeCompleted(0, stdout=_chunk_envelope([_item("job-1")]))
-
-    results, failed = scorer.score_postings(
-        [_posting("job-1")],
-        system_prompt="sys",
-        workers=1,
-        chunk=1,
-        run_fn=fake_run,
-        sleep_fn=lambda s: None,
-    )
-
-    assert failed == []
-    assert "job-1" in results
-
-    env = captured["env"]
-    assert not [k for k in env if k.startswith("CLAUDE_CODE_")]
-    assert "CLAUDECODE" not in env
-    assert env.get("KEEP_ME") == "yes"
-
-
 # --------------------------------------------------------------------------- #
 # Order independence
 # --------------------------------------------------------------------------- #

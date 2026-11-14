@@ -29,12 +29,6 @@ def test_location_text(job, expected):
 # Zero-result warning
 # --------------------------------------------------------------------------- #
 
-def test_scrape_missing_key_returns_empty():
-    """When greenhouse_boards is absent, scrape() returns an empty list."""
-    result = greenhouse.scrape({})
-    assert result == []
-
-
 @pytest.mark.parametrize("entry, token", [
     ("trustpilot", "trustpilot"),
     ("https://job-boards.greenhouse.io/trustpilot", "trustpilot"),

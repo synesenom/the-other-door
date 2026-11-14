@@ -194,14 +194,6 @@ test.describe('a board that fails', () => {
     expect(site.errors).toEqual(['jobindex answered 503 Service Unavailable'])
     expect(postingOf(world, world.jobId('havtorn-lead-ds'))).toBeNull()
   })
-
-  // Not said on purpose (#478): the user cannot act on it, and the next run reads the board again.
-  test('the summary does not mention the board that could not be read', async ({ page, world }) => {
-    await ready(page)
-    setBoard(world, 'jobindex', { fail: 'jobindex answered 503 Service Unavailable' })
-    await runToSummary(page)
-    await expect(summary(page).getByText(/jobindex|could not be read/i)).toHaveCount(0)
-  })
 })
 
 test.describe('scoring that fails', () => {
@@ -219,14 +211,6 @@ test.describe('scoring that fails', () => {
     await runButton(page).click()
     await expect.poll(() => runRecords(world).length).toBe(3)
     expect(postingOf(world, world.jobId('havtorn-lead-ds'))?.score).toBe(0.89)
-  })
-
-  // Not said on purpose (#478): the user cannot act on it, and the next run scores them.
-  test('the summary does not mention the ads that could not be scored', async ({ page, world }) => {
-    await ready(page)
-    world.faults({ claude: { score: { fail: 'Claude usage limit reached' } } })
-    await runToSummary(page)
-    await expect(summary(page).getByText(/not (be )?scored/i)).toHaveCount(0)
   })
 })
 

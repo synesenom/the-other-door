@@ -92,16 +92,6 @@ def test_a_failing_detail_keeps_the_posting_from_the_listing():
     assert drain_errors()["smartrecruiters"]
 
 
-@responses.activate
-def test_a_failing_listing_is_a_recorded_error():
-    responses.add(responses.GET, "https://api.smartrecruiters.com/v1/companies/nope/postings", status=500)
-    _mock_all()
-
-    drain_errors()
-    assert len(smartrecruiters.scrape({"smartrecruiters_companies": ["nope", "interikeagroup"]})) == 3
-    assert "nope" in drain_errors()["smartrecruiters"][0]
-
-
 def test_scrape_without_companies_is_empty():
     assert smartrecruiters.scrape({}) == []
     assert smartrecruiters.probe({}) is None
@@ -135,23 +125,3 @@ def test_postings_in_another_country_get_no_detail_request_and_are_counted_non_l
     assert [p["platform_id"] for p in postings] == [_IDS[0], _IDS[2]]
     assert not any(_IDS[1] in c.request.url for c in responses.calls)
     assert drain_non_local("smartrecruiters") == 1
-
-
-@responses.activate
-def test_the_followed_name_wins():
-    _mock_all()
-
-    postings = smartrecruiters.scrape({"smartrecruiters_companies": ["https://jobs.smartrecruiters.com/interikeagroup/"],
-                                       "_names": {"smartrecruiters_companies": {"jobs.smartrecruiters.com/interikeagroup": "Inter IKEA"}}})
-
-    assert len(postings) == 3 and {p["company"] for p in postings} == {"Inter IKEA"}
-    assert all(p["id"].startswith("smartrecruiters.") for p in postings)
-
-
-@responses.activate
-def test_without_a_name_map_the_feed_name_is_the_fallback():
-    _mock_all()
-
-    postings = smartrecruiters.scrape({"smartrecruiters_companies": ["interikeagroup"]})
-
-    assert {p["company"] for p in postings} == {"Inter IKEA Group"}

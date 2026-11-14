@@ -8,7 +8,10 @@ client against the `FastMCP` instance; no subprocess, no network.
 """
 
 import asyncio
+
+import pytest
 import json
+from pathlib import Path
 
 import mcp.shared.memory as mcp_client
 
@@ -16,11 +19,9 @@ from door.cli import cli
 import door.mcp_server as server
 from door.mcp_server import mcp as door_mcp, find_jobs as mcp_find_jobs
 from door.commands import match as match_cmd
-from door.commands import matches as matches_cmd
 from door.commands import prepare as prepare_cmd
 from door.commands import profile as profile_cmd
 from door.commands import find as find_cmd
-from door.commands import setup as setup_cmd
 from door.commands import status as status_cmd
 from door import i18n
 from door.core import workspace
@@ -100,24 +101,6 @@ def test_mcp_server_run_tool_takes_skip_and_no_step_for_a_full_run(monkeypatch):
 # --------------------------------------------------------------------------- #
 
 
-def test_list_matches_tool_delegates_with_module_dirs(monkeypatch):
-    captured = {}
-
-    def fake(*, min_score, jobs_dir, profile_dir, new_only, status, ongoing, closed):
-        captured.update(min_score=min_score, jobs_dir=jobs_dir, profile_dir=profile_dir, new_only=new_only,
-                        status=status, ongoing=ongoing, closed=closed)
-        return {"min_score": 0.6, "matches": [{"rank": 1, "id": "a", "score": 0.9, "title": "t",
-                                               "company": "c", "location": "l", "status": "new"}]}
-
-    monkeypatch.setattr(matches_cmd, "_list_core", fake)
-    result = server.list_matches(score=0.5, new_only=True, status="applied", ongoing=True)
-
-    assert captured == {"min_score": 0.5, "jobs_dir": workspace.JOBS_DIR,
-                        "profile_dir": workspace.PROFILE_DIR, "new_only": True, "status": "applied",
-                        "ongoing": True, "closed": False}
-    assert "description" not in result["matches"][0]
-
-
 def test_list_matches_tool_never_returns_descriptions(tmp_path, monkeypatch):
     jobs_dir = tmp_path / "jobs"
     site_dir = jobs_dir / "postings" / "2026-07-01" / "jobindex"
@@ -174,18 +157,6 @@ def test_prepare_tool_delegates_with_minutes_converted(monkeypatch):
     }
 
 
-def test_prepare_tool_without_job_id_prepares_the_top_match(monkeypatch):
-    captured = {}
-
-    def fake(job_id, force=False, timeout_s=None, *, jobs_dir, profile_dir):
-        captured.update(job_id=job_id, force=force, timeout_s=timeout_s)
-        return {"job_id": None, "outcome": "no_matches"}
-
-    monkeypatch.setattr(prepare_cmd, "_prepare_core", fake)
-    assert asyncio.run(server.prepare())["outcome"] == "no_matches"
-    assert captured == {"job_id": None, "force": False, "timeout_s": 1200}
-
-
 def test_init_profile_tool_passes_only_given_fields(monkeypatch):
     captured = {}
 
@@ -214,38 +185,6 @@ def test_init_profile_tool_description_lists_the_supported_languages():
     tool = next(t for t in _list_tools().tools if t.name == "init_profile")
     assert i18n.supported_language_names() in tool.description
     assert "{supported_languages}" not in tool.description
-
-
-def test_supported_languages_placeholder_is_filled_from_the_language_files(monkeypatch):
-    monkeypatch.setattr(i18n, "supported_language_names", lambda: "English, Danish, Klingon")
-
-    @server._with_supported_languages
-    def tool():
-        """Languages: {supported_languages}. Literal {braces} stay."""
-
-    assert tool.__doc__ == "Languages: English, Danish, Klingon. Literal {braces} stay."
-
-
-def test_setup_tool_passes_fix_scrapers_through(monkeypatch):
-    captured = {}
-
-    def fake(install, **kw):
-        captured.update(install=install, **kw)
-        return {"outcome": "needs_confirmation", "fixes": []}
-
-    monkeypatch.setattr(setup_cmd, "_setup_core", fake)
-    server.setup(fix_scrapers=["jobindex"], yes=True)
-    assert captured["fix_scrapers"] == ["jobindex"] and captured["yes"] is True
-    server.setup()
-    assert captured["fix_scrapers"] is None
-
-
-def test_status_summary_tool_delegates(monkeypatch):
-    monkeypatch.setattr(
-        status_cmd, "_status_summary_core",
-        lambda *, jobs_dir, profile_dir: {"min_score": 0.6, "pipeline": {}, "ledger": {"jobs_dir": str(jobs_dir)}},
-    )
-    assert server.status_summary()["ledger"]["jobs_dir"] == str(workspace.JOBS_DIR)
 
 
 # --------------------------------------------------------------------------- #
@@ -520,7 +459,6 @@ _ASKED = {"init": {"sources", "write", "save", "model", "markdown"}}
 
 
 def _cli_params(command_name: str) -> set[str]:
-    import click
 
     if command_name.startswith("find "):
         # `find_jobs` is one tool for `find`'s five subcommands: a step takes the group's options (--skip, --days, ...) and
@@ -552,7 +490,6 @@ def test_the_find_jobs_tool_takes_every_option_of_every_step_and_the_group():
     assert len(steps) == 5
     cli_params = set().union(*(_cli_params(name) for name in steps)) - _SURFACE_ONLY
     assert cli_params == tool - {"step"} - _SURFACE_ONLY
-    assert _cli_params("find follow") == {"boards", "skip", "dry_run"}
 
 
 def test_every_tool_takes_the_parameters_its_command_takes():
@@ -572,54 +509,7 @@ def test_every_tool_takes_the_parameters_its_command_takes():
         )
 
 
-def test_show_tool_can_open_the_pdfs(monkeypatch):
-    seen = []
-    monkeypatch.setattr(matches_cmd, "_show_core", lambda job_id, *, open, jobs_dir: seen.append(open) or {"materials": None})
-    assert server.show("1") == {"materials": None}
-    server.show("1", open=True)
-    assert seen == [False, True]
-
-
-def test_set_status_tool_passes_the_notes(monkeypatch):
-    seen = {}
-    monkeypatch.setattr(
-        status_cmd, "_set_status_core",
-        lambda job_id, status, notes=None, *, jobs_dir, at=None:
-            seen.update(job_id=job_id, status=status, notes=notes, at=at) or seen,
-    )
-    server.set_status("2", "interview:technical", notes="SQL")
-    assert seen == {"job_id": "2", "status": "interview:technical", "notes": "SQL", "at": None}
-
-    seen.clear()
-    server.set_status("2", "applied", at="2026-08-23")
-    assert seen["notes"] is None
-    assert seen["at"] == "2026-08-23"
-
-
-def test_init_profile_tool_takes_languages(monkeypatch):
-    captured = {}
-    monkeypatch.setattr(
-        profile_cmd, "_init_core",
-        lambda fields, *, profile_dir, example_dir: captured.update(fields) or {"config_path": "p", "copied": []},
-    )
-    server.init_profile(languages=["English", "Danish"])
-    assert captured == {"languages": ["English", "Danish"]}
-
-
 # --------------------------------------------------------------------------- Google Drive (#265)
-def test_drive_tools_are_mapped_to_the_data_commands():
-    assert server.CLI_COMMAND_TOOLS["data connect"] == ("connect_drive",)
-    assert server.CLI_COMMAND_TOOLS["data sync"] == ("sync_data",)
-    assert server.CLI_COMMAND_TOOLS["data disconnect"] == ("disconnect_drive",)
-
-
-def test_sync_data_takes_the_keep_flags(monkeypatch):
-    from door.commands import archive as archive_cmd
-
-    seen = []
-    monkeypatch.setattr(archive_cmd, "_sync_core", lambda keep_local=False, keep_drive=False: seen.append((keep_local, keep_drive)) or {"action": "nothing"})
-    assert server.sync_data(keep_local=True) == {"action": "nothing"}
-    assert seen == [(True, False)]
 
 
 def test_drive_tools_turn_failures_into_errors(monkeypatch):
@@ -729,12 +619,20 @@ def test_merge_companies_proposes_merges_and_reports_errors(tmp_path, monkeypatc
     assert "error" in server.merge_companies(["Tryg Forsikring A/S"])
 
 
-def test_show_profile_tool_returns_the_core_dict(monkeypatch):
-    from door.commands import profile as profile_cmd
+@pytest.mark.parametrize("call, key", [
+    (lambda: server.show_profile(), "options"),
+    (lambda: server.suggest_titles(["Quant"]), "warning"),     # no CV yet
+    (lambda: server.infer_basics("# CV"), "warning"),          # the model call failed
+    (lambda: server.enrich(), "error"),                        # no profile
+    (lambda: server.skill_gaps(), "error"),
+])
+def test_the_profile_tools_answer_with_their_cores_result_or_an_error(tmp_path, monkeypatch, call, key):
+    from door.core import claude_cli
 
-    monkeypatch.setattr(profile_cmd, "_show_profile_core", lambda location=None: {"config": None, "errors": ["x"]})
-    assert server.show_profile() == {"config": None, "errors": ["x"]}
-    assert "show_profile" in {tool.name for tool in _list_tools().tools}
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(claude_cli, "run", lambda *a, **k: (_ for _ in ()).throw(claude_cli.ClaudeError("no claude")))
+    assert key in call()
 
 
 def test_save_cv_is_a_conversation_only_tool_wrapping_the_core(tmp_path, monkeypatch):
@@ -812,3 +710,110 @@ def test_main_loads_the_language_libraries_before_serving(monkeypatch):
     monkeypatch.setattr(server.mcp, "run", lambda **kw: order.append("serve"))
     server.main()
     assert order.index("preload") < order.index("serve")
+
+
+# --------------------------------------------------------------------------- each tool's argument reaches its core
+
+
+def _posting_on_disk(jobs_dir, job_id="jobindex-top"):
+    site_dir = jobs_dir / "postings" / "2026-07-01" / "jobindex"
+    site_dir.mkdir(parents=True, exist_ok=True)
+    (site_dir / f"{job_id}.json").write_text(json.dumps({
+        "id": job_id, "title": "Data scientist", "company": "Acme", "location": "Copenhagen",
+        "url": f"https://example.com/{job_id}", "description": "We need a data scientist who ships. " * 20,
+        "source": "jobindex", "score": 0.9,
+    }))
+
+
+def test_set_status_records_the_event_on_the_date_given(cli_env):
+    _posting_on_disk(cli_env.jobs_dir)
+
+    result = server.set_status("jobindex-top", "applied", at="2026-06-20")
+
+    assert result["at"] == "2026-06-20T00:00:00+00:00"
+    ledger = json.loads((cli_env.jobs_dir / "applications.json").read_text())
+    assert [e["at"] for e in ledger["jobindex-top"]["history"]] == ["2026-06-20T00:00:00+00:00"]
+
+
+def test_show_with_open_opens_both_prepared_pdfs(cli_env, monkeypatch):
+    from door.commands import matches as matches_cmd
+    import door.tailoring.pdf_render as pdf_render
+
+    _posting_on_disk(cli_env.jobs_dir)
+    out = cli_env.jobs_dir / "output" / "jobindex-top"
+    out.mkdir(parents=True)
+    for name in ("cv.pdf", "cover_letter.pdf"):
+        (out / name).write_bytes(b"%PDF")
+    for name in ("cv_page_1.png", "cover_letter_page_1.png"):
+        (out / name).write_bytes(b"png")
+    monkeypatch.setattr(pdf_render, "get_page_count", lambda path: 1)
+    opened = []
+    monkeypatch.setattr(matches_cmd, "_open_files", lambda paths: opened.extend(paths))
+
+    server.show("jobindex-top")
+    assert opened == []
+    server.show("jobindex-top", open=True)
+    assert opened == [str(out / "cv.pdf"), str(out / "cover_letter.pdf")]
+
+
+def test_setup_runs_the_scraper_fix_it_is_given(cli_env, monkeypatch):
+    import door.core.doctor as doctor
+    from door.core import scraper_fix
+
+    checks = [
+        {"name": "claude CLI", "status": "ok", "required": True, "detail": "", "fix": None},
+        {"name": "scraper: jobindex", "status": "drift", "required": False, "detail": "no results block",
+         "fix": "choose `fix scraper` in `setup`", "fixable": True},
+    ]
+    monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: {"ok": True, "checks": checks, "last_run": None, "last_scrape": []})
+    fixed = []
+    monkeypatch.setattr(scraper_fix, "fix_scraper", lambda site, **kw: fixed.append(site) or {"site": site, "outcome": "pr", "url": "u"})
+
+    server.setup(install=[], yes=True)
+    assert fixed == []
+    result = server.setup(install=[], yes=True, fix_scrapers=["jobindex"])
+    assert fixed == ["jobindex"]
+    assert result["fixes"] == [{"site": "jobindex", "outcome": "pr", "url": "u"}]
+
+
+class _Drive:
+    """Google Drive's one archive: a blob and its version (as `tests/core/test_sync_unit.py`'s FakeDrive)."""
+
+    def __init__(self, monkeypatch, tmp_path):
+        from door.core import drive
+
+        monkeypatch.setattr(drive, "_BASE", tmp_path / "cfg")
+        drive.write_state({"refresh_token": "rt", "account": "me@x.org"})
+        self.blob, self.version, self.properties, self.uploads = None, 0, {}, 0
+        monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {
+            "id": "A", "version": str(self.version), "properties": dict(self.properties)})
+        monkeypatch.setattr(drive, "download", lambda dest: Path(dest).write_bytes(self.blob))
+        monkeypatch.setattr(drive, "upload", self.upload)
+
+    def upload(self, src, properties=None):
+        self.properties = dict(properties or {})
+        self.blob = Path(src).read_bytes()
+        self.version += 1
+        self.uploads += 1
+        return str(self.version)
+
+
+@pytest.mark.parametrize("keep, action, mine_kept", [("keep_local", "push", True), ("keep_drive", "pull", False)])
+def test_sync_data_settles_a_both_sides_change_the_way_asked(tmp_path, monkeypatch, keep, action, mine_kept):
+    profile, jobs = tmp_path / "profile", tmp_path / "jobs"
+    monkeypatch.setattr(workspace, "PROFILE_DIR", profile)
+    monkeypatch.setattr(workspace, "JOBS_DIR", jobs)
+    monkeypatch.setattr(workspace, "BACKUPS_DIR", tmp_path / "backups")
+    fake = _Drive(monkeypatch, tmp_path)
+    profile.mkdir()
+    (profile / "config.json").write_text("{}")
+    (profile / ".data_version").write_text("0.1")
+    jobs.mkdir()
+    (jobs / "history.json").write_text("{}")
+    assert server.sync_data()["action"] == "push"
+    fake.version += 1  # another computer pushed
+    (jobs / "mine.json").write_text("mine")
+    assert server.sync_data()["conflict"] is True
+
+    assert server.sync_data(**{keep: True})["action"] == action
+    assert (jobs / "mine.json").exists() is mine_kept

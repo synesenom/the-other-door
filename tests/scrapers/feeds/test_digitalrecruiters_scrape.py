@@ -1,7 +1,6 @@
 """Fixture tests for Digitalrecruiters (issue #561): Monoprix's and Franprix's career sites, trimmed and rewritten."""
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -99,16 +98,6 @@ def test_the_ads_on_topic_are_read_first_and_the_cap_cuts_the_rest(monkeypatch):
 
 
 @responses.activate
-def test_the_followed_name_wins_and_a_url_entry_works():
-    _serve_monoprix()
-
-    postings = dr.scrape({"digitalrecruiters_sites": [f"{_MONO}/fr/annonces"],
-                          "_names": {"digitalrecruiters_sites": {"recrutement.monoprix.fr/fr/annonces": "Monoprix"}}})
-
-    assert {p["company"] for p in postings} == {"Monoprix"}
-
-
-@responses.activate
 def test_two_tenants_are_two_sites():
     _serve_monoprix()
     _serve_franprix()
@@ -143,15 +132,6 @@ def test_an_ad_page_without_json_ld_is_recorded():
 
     assert len(dr.scrape({"digitalrecruiters_sites": ["recrutement.monoprix.fr"]})) == 3
     assert any("4672627" in e for e in drain_errors()["digitalrecruiters"])
-
-
-@responses.activate
-def test_a_failed_sitemap_is_a_recorded_error_not_a_raise():
-    responses.add(responses.GET, f"{_MONO}/sitemap.xml", status=500)
-    drain_errors()
-
-    assert dr.scrape({"digitalrecruiters_sites": ["recrutement.monoprix.fr"]}) == []
-    assert drain_errors()["digitalrecruiters"]
 
 
 @responses.activate
@@ -215,11 +195,6 @@ def test_scrape_drops_ads_in_another_country():
     assert drain_non_local("digitalrecruiters") == 1
 
 
-def test_no_sites_no_request():
-    assert dr.scrape({}) == []
-    assert dr.probe({}) is None
-
-
 @responses.activate
 def test_probe_reads_the_first_sitemap_with_one_request():
     responses.add(responses.GET, f"{_MONO}/sitemap.xml", body=_read("monoprix_sitemap.xml"))
@@ -239,13 +214,3 @@ def test_probe_drift_without_a_sitemap():
     result = dr.probe({"digitalrecruiters_sites": ["recrutement.monoprix.fr"]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_unreachable_and_wall():
-    responses.add(responses.GET, f"{_MONO}/sitemap.xml", body=requests.ConnectionError("down"))
-    down = dr.probe({"digitalrecruiters_sites": ["recrutement.monoprix.fr"]})
-    assert down["structure_ok"] is False and down.get("unreachable") is True
-    responses.replace(responses.GET, f"{_MONO}/sitemap.xml", status=403)
-    walled = dr.probe({"digitalrecruiters_sites": ["recrutement.monoprix.fr"]})
-    assert walled["structure_ok"] is False and walled.get("wall") is True

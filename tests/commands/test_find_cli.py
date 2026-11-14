@@ -54,14 +54,6 @@ def test_skip_leaves_steps_out_and_says_why(cli_env, monkeypatch, progress_event
     assert skipped == [("discover", "--skip"), ("collect", "--skip")]
 
 
-def test_a_step_that_skips_itself_is_recorded_as_skipped(cli_env, monkeypatch):
-    skipping = {**stub_blocks(cli_env.jobs_dir)["discover"], "skipped": "LinkedIn resting until 14:20"}
-    stub_steps(monkeypatch, cli_env.jobs_dir, discover=skipping)
-    record = run_core(cli_env)
-    assert record["skipped"] == {"discover": "LinkedIn resting until 14:20"} and "discover" not in record["steps"]
-    assert record["discover"] == skipping
-
-
 def test_the_options_go_to_the_steps_they_belong_to(cli_env, monkeypatch):
     steps = stub_steps(monkeypatch, cli_env.jobs_dir)
     run_core(cli_env, boards=["thehub"], companies=["BEC"], dry_run=True)
@@ -136,28 +128,33 @@ def test_the_late_passes_are_folded_into_the_blocks_so_failures_and_counts_inclu
     assert len(record["collect"]["sites"]) == 2
 
 
-def test_no_late_pass_when_discover_found_no_employers(cli_env, monkeypatch):
+_D, _S, _F, _C, _M = "discover", "search", "follow", "collect", "match"
+
+
+@pytest.mark.parametrize("step, kwargs, employers, ready, order", [
+    (None, {}, False, None, [_D, _S, _F, _C, _M]),                       # nothing found: no late pass
+    (None, {}, True, "start", [_D, _S, _F, _C, _M]),                     # discover done before follow
+    (None, {}, True, "follow", [_D, _S, _F, _F, _C, _M]),                # done during follow: collect still to come
+    (None, {"skip": ["follow"]}, True, None, [_D, _S, _C, _M]),          # no late follow either
+    (None, {"dry_run": True}, True, None, [_D, _S, _F, _C, _F, _M]),     # late follow, no late collect
+    (None, {"companies": ["BEC"]}, True, None, [_D, _S, _F, _C, _F, _M]),
+    (None, {"skip": ["collect"]}, True, None, [_D, _S, _F, _F, _M]),     # match waits for discover
+    ("discover", {}, False, None, [_D]),                                 # alone: in the foreground
+])
+def test_the_late_passes_run_only_when_there_is_something_left_for_them(cli_env, monkeypatch, step, kwargs, employers, ready, order):
     steps = stub_steps(monkeypatch, cli_env.jobs_dir)
-    run_core(cli_env)
-    assert steps.order() == ["discover", "search", "follow", "collect", "match"]
-
-
-def test_discover_done_before_follow_needs_no_late_pass(cli_env, monkeypatch):
-    steps = stub_steps(monkeypatch, cli_env.jobs_dir)
-    found(cli_env, steps)
-    steps.discover_ready = True
-    run_core(cli_env)
-    assert steps.order() == ["discover", "search", "follow", "collect", "match"]
-    assert steps.handles[0].finished
-
-
-def test_discover_done_after_follow_gets_a_late_follow_but_collect_still_to_come(cli_env, monkeypatch):
-    steps = stub_steps(monkeypatch, cli_env.jobs_dir)
-    found(cli_env, steps)
-    steps.on_call = lambda name: setattr(steps, "discover_ready", name == "follow")  # LinkedIn ends while follow runs
-    run_core(cli_env)
-    assert steps.order() == ["discover", "search", "follow", "follow", "collect", "match"]
-    assert steps.handles[0].finished
+    if employers:
+        found(cli_env, steps)
+    if ready == "start":
+        steps.discover_ready = True
+    elif ready == "follow":
+        steps.on_call = lambda name: setattr(steps, "discover_ready", name == "follow")  # LinkedIn ends while follow runs
+    run_core(cli_env, step, **kwargs)
+    assert steps.order() == order
+    if step:
+        assert steps.handles == []
+    else:
+        assert steps.handles[0].finished
 
 
 def test_a_resting_discover_never_starts_a_background_run(cli_env, monkeypatch):
@@ -165,41 +162,8 @@ def test_a_resting_discover_never_starts_a_background_run(cli_env, monkeypatch):
     steps = stub_steps(monkeypatch, cli_env.jobs_dir, discover=skipping)
     record = run_core(cli_env)
     assert steps.order() == ["discover", "search", "follow", "collect", "match"]
-    assert record["skipped"] == {"discover": "LinkedIn resting until 14:20"} and record["discover"] == skipping
-
-
-def test_skipping_follow_skips_the_late_follow_too(cli_env, monkeypatch):
-    steps = stub_steps(monkeypatch, cli_env.jobs_dir)
-    found(cli_env, steps)
-    run_core(cli_env, skip=["follow"])
-    assert steps.order() == ["discover", "search", "collect", "match"]
-
-
-def test_a_dry_run_has_a_late_follow_but_no_late_collect(cli_env, monkeypatch):
-    steps = stub_steps(monkeypatch, cli_env.jobs_dir)
-    found(cli_env, steps)
-    run_core(cli_env, dry_run=True)
-    assert steps.order() == ["discover", "search", "follow", "collect", "follow", "match"]
-
-
-def test_a_collect_limited_to_some_employers_has_no_late_collect(cli_env, monkeypatch):
-    steps = stub_steps(monkeypatch, cli_env.jobs_dir)
-    found(cli_env, steps)
-    run_core(cli_env, companies=["BEC"])
-    assert steps.order() == ["discover", "search", "follow", "collect", "follow", "match"]
-
-
-def test_match_waits_for_discover_when_collect_is_skipped(cli_env, monkeypatch):
-    steps = stub_steps(monkeypatch, cli_env.jobs_dir)
-    found(cli_env, steps)
-    run_core(cli_env, skip=["collect"])
-    assert steps.order() == ["discover", "search", "follow", "follow", "match"] and steps.handles[0].finished
-
-
-def test_a_single_discover_runs_in_the_foreground(cli_env, monkeypatch):
-    steps = stub_steps(monkeypatch, cli_env.jobs_dir)
-    run_core(cli_env, "discover")
-    assert steps.order() == ["discover"] and steps.handles == []
+    assert record["skipped"] == {"discover": "LinkedIn resting until 14:20"} and "discover" not in record["steps"]
+    assert record["discover"] == skipping
 
 
 # --------------------------------------------------------------------------- #

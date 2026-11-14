@@ -26,8 +26,10 @@ describe('bundled fonts', () => {
     }
   })
 
-  it('the licence list covers the two packages and each LICENSE is the OFL', () => {
-    expect(FONT_PACKAGES.map((f) => f.package).sort()).toEqual(['@fontsource/figtree', '@fontsource/young-serif'])
+  it('the licence list covers every font package imported, and each LICENSE is the OFL', () => {
+    const imported = new Set([...main.matchAll(/'(@fontsource\/[^/']+)\//g)].map((m) => m[1]))
+    expect(imported.size).toBeGreaterThan(0)
+    for (const pkg of imported) expect(FONT_PACKAGES.map((f) => f.package), pkg).toContain(pkg)
     for (const f of FONT_PACKAGES) {
       expect(readFileSync(join(APP, 'node_modules', f.package, 'LICENSE'), 'utf8')).toContain('SIL Open Font License')
     }

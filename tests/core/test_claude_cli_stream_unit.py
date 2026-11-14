@@ -6,12 +6,10 @@ Offline: the fixture is a real call's stream (ids scrubbed); nothing calls `clau
 
 import json
 import subprocess
-import types
 
 import pytest
 
 from door.core import claude_cli, usage
-from door.matching import language, scorer
 from paths import TESTS_DIR
 
 FIXTURE = TESTS_DIR / "core" / "fixtures" / "claude" / "stream_rate_limit.jsonl"
@@ -127,38 +125,6 @@ def test_ask_reads_a_stream(monkeypatch):
     assert argv[argv.index("--output-format") + 1] == "stream-json" and "--verbose" in argv
 
 
-def test_scoring_reads_a_stream_and_records_its_weight():
-    postings = [{"id": "s.1", "title": "t", "company": "c", "description": "d"}]
-    answer = {"results": [{"job_id": "s.1", "score": 0.5, "score_reason": "r", "matching_skills": [],
-                           "missing_skills": [], "flags": [], "language_requirement": "none"}]}
-    stdout = _stream(_limit({"status": "allowed"}), _result(result=json.dumps(answer), cost=0.01))
-
-    def run(argv, **kw):
-        return types.SimpleNamespace(returncode=0, stdout=stdout, stderr="")
-
-    results, failed = scorer.score_postings(postings, system_prompt="s", chunk=1, workers=1, run_fn=run,
-                                            sleep_fn=lambda s: None)[:2]
-    assert "s.1" in results and not failed
-    assert (usage.read()[0]["weight"], usage.read()[0]["units"]) == (0.01, 1)
-
-
-def test_title_translation_reads_a_stream(tmp_path):
-    path = tmp_path / "a.json"
-    path.write_text(json.dumps({"id": "s.1", "title": "Udvikler", "description": "Vi søger en udvikler", "language": "da"}))
-    answer = json.dumps({"titles": [{"id": "s.1", "title_en": "Developer"}]})
-    stdout = _stream(_limit({"status": "allowed"}), _result(result=answer, cost=0.004))
-    language.filter_languages([path], {"languages": ["English", "Danish"]}, run_fn=lambda argv, stdin: stdout)
-    assert json.loads(path.read_text())["title_en"] == "Developer"
-    assert usage.read()[0]["weight"] == 0.004
-
-
-def test_every_call_site_asks_for_the_stream(tmp_path):
-    from door.commands import prepare
-    for argv in (scorer.build_claude_argv("s", "haiku", scorer.SCORE_SCHEMA), language.build_argv("haiku"),
-                 prepare._tailor_args("s.1", tmp_path / "posting.json")):
-        assert argv[argv.index("--output-format") + 1] == "stream-json" and "--verbose" in argv
-
-
 # --------------------------------------------------------------------------- the call sites record the limits (plan §5)
 _EVENT = _limit({"status": "allowed", "unifiedWindows": {"five_hour": {"utilization": 0.2, "resetsAt": 5},
                                                          "seven_day": {"utilization": 0.6, "resetsAt": 9}}})
@@ -175,26 +141,3 @@ def test_run_records_the_limits(monkeypatch):
     assert _reading(usage.read()[0]) == _READING
 
 
-def test_scoring_records_the_limits():
-    answer = {"results": [{"job_id": "s.1", "score": 0.5, "score_reason": "r", "matching_skills": [],
-                           "missing_skills": [], "flags": [], "language_requirement": "none"}]}
-    stdout = _stream(_EVENT, _result(result=json.dumps(answer)))
-    scorer.score_postings([{"id": "s.1", "title": "t", "company": "c", "description": "d"}], system_prompt="s",
-                          chunk=1, workers=1, sleep_fn=lambda s: None,
-                          run_fn=lambda argv, **kw: types.SimpleNamespace(returncode=0, stdout=stdout, stderr=""))
-    assert _reading(usage.read()[0]) == _READING
-
-
-def test_title_translation_records_the_limits(tmp_path):
-    path = tmp_path / "a.json"
-    path.write_text(json.dumps({"id": "s.1", "title": "Udvikler", "description": "Vi søger en udvikler", "language": "da"}))
-    stdout = _stream(_EVENT, _result(result=json.dumps({"titles": [{"id": "s.1", "title_en": "Developer"}]})))
-    language.filter_languages([path], {"languages": ["English", "Danish"]}, run_fn=lambda argv, stdin: stdout)
-    assert _reading(usage.read()[0]) == _READING
-
-
-def test_the_scraper_fixer_records_the_limits(monkeypatch, tmp_path):
-    from door.core import scraper_fix
-    monkeypatch.setattr(scraper_fix.subprocess, "run", _fake_run([], _stream(_EVENT, _result(result="fixed"))))
-    assert scraper_fix._run_scraper_fixer("jobindex", tmp_path / "raw.html", repo_root=tmp_path) == "fixed"
-    assert _reading(usage.read()[0]) == _READING

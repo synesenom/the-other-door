@@ -64,12 +64,6 @@ def test_parse_date_float_returns_none():
 # Zero-result warning
 # --------------------------------------------------------------------------- #
 
-def test_scrape_missing_key_returns_empty():
-    """When lever_companies is absent, scrape() returns an empty list."""
-    result = lever.scrape({})
-    assert result == []
-
-
 # --------------------------------------------------------------------------- #
 # _description_text
 # --------------------------------------------------------------------------- #

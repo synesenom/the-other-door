@@ -1,10 +1,8 @@
 """The rows (`tests/live_matrix.py`) cover every dimension, so each can fail on its own:
-every country file, every language file, every site and every discovery source."""
+every country file and every language file (every site and discovery source: `tests/scrapers/test_live_modes_unit.py`)."""
 
 from door import i18n
-from door.core import discovery_sources, sites
-from live_matrix import COUNTRIES, LANGUAGES, NO_LIVE_TEST, serves
-from paths import TESTS_DIR
+from live_matrix import COUNTRIES, LANGUAGES, serves
 
 
 def test_every_country_file_has_a_row():
@@ -27,8 +25,3 @@ def test_a_language_run_reads_a_source_serving_its_city(country_boards):
         assert serves(run), f"{code}: {run.source} does not serve {run.city}"
 
 
-def test_every_site_and_discovery_source_has_a_live_test_or_a_reason():
-    names = {*sites.SITES, *discovery_sources.SOURCES}
-    with_test = {p.stem[len("test_"):-len("_live")] for p in (TESTS_DIR / "scrapers").rglob("test_*_live.py")}
-    assert names - with_test - set(NO_LIVE_TEST) == set()
-    assert set(NO_LIVE_TEST) <= names and not set(NO_LIVE_TEST) & with_test

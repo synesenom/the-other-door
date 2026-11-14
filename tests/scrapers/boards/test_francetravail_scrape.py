@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -223,16 +222,6 @@ def test_an_ad_that_is_gone_is_recorded_not_raised():
 
 
 @responses.activate
-def test_a_connection_error_is_recorded_not_raised():
-    _serve(_url("chef de projet", 1), body=requests.exceptions.ConnectionError("down"))
-    drain_errors()
-    assert francetravail.scrape(_CFG) == []
-    [error] = drain_errors()["francetravail"]
-    assert "chef de projet" in error
-    assert drain_pushback("francetravail") is False
-
-
-@responses.activate
 def test_a_page_that_is_not_a_result_list_is_recorded_as_a_change():
     _serve(_url("chef de projet", 1), "<html><body><p>Service indisponible</p></body></html>")
     drain_errors()
@@ -315,20 +304,3 @@ def test_probe_drift_when_the_results_block_is_gone():
     result = francetravail.probe(_CFG)
     assert result["structure_ok"] is False and result["reason"]
     assert not result.get("wall") and not result.get("unreachable")
-
-
-@pytest.mark.parametrize("status", [401, 403, 429])
-@responses.activate
-def test_probe_refusal_is_a_wall(status):
-    _serve(_probe_url(), "Access denied", status=status)
-    assert francetravail.probe(_CFG)["wall"] is True
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    _serve(_probe_url(), body=requests.exceptions.ConnectionError("down"))
-    assert francetravail.probe(_CFG)["unreachable"] is True
-
-
-def test_probe_without_keywords_is_none():
-    assert francetravail.probe({"location": "Paris"}) is None

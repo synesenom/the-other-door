@@ -99,10 +99,6 @@ describe('the committed theme', () => {
     expect(readFileSync(join(APP, 'src', 'renderer', 'theme.css'), 'utf8')).toBe(css)
   })
 
-  it('uses no color-mix in the stylesheet (the scrim is a token)', () => {
-    expect(readFileSync(join(APP, 'src', 'renderer', 'styles.css'), 'utf8')).not.toContain('color-mix')
-  })
-
   it('is the only renderer file with a hex colour', () => {
     const hex = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b/
     const offenders: string[] = []

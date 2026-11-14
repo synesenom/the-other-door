@@ -256,42 +256,24 @@ def test_scrape_nationwide_searches_with_the_query_alone():
 # search_keywords preference over role_targets
 # --------------------------------------------------------------------------- #
 
-def test_scrape_uses_search_keywords_over_role_targets(monkeypatch):
-    """When search_keywords present, scrape() uses them instead of role_targets."""
-    called_with = []
-
-    def fake_search_page(session, query, area, page, category=""):
-        called_with.append(query)
-        return jobindex._Page(0, 20, [])
-
-    monkeypatch.setattr(jobindex, "_search_page", fake_search_page)
-
-    jobindex.scrape({
-        "role_targets": ["lead data scientist"],
-        "search_keywords": ["data science lead", "head of data science"],
-        "location": "Copenhagen",
-    })
-
-    assert called_with == ["data science"]  # both reduce to the same phrase
+def _searched_urls(config) -> list[str]:
+    """The search URLs one scrape of *config* requests, every search answered with no hits."""
+    responses.add(responses.GET, _SEARCH, body=_fx("search_empty.html"), content_type="text/html; charset=utf-8")
+    jobindex.scrape({"location": "Denmark", **config})
+    return [c.request.url for c in responses.calls if "/jobsoegning" in c.request.url]
 
 
-def test_scrape_falls_back_to_role_targets_when_search_keywords_empty(monkeypatch):
-    """When search_keywords is an empty list, scrape() falls back to role_targets."""
-    called_with = []
+@responses.activate
+def test_scrape_uses_search_keywords_over_role_targets():
+    searches = _searched_urls({"role_targets": ["lead data scientist"],
+                          "search_keywords": ["data science lead", "head of data science"]})
+    assert searches == [jobindex._SEARCH_URL + "?q=%22data+science%22"]  # both reduce to the same phrase
 
-    def fake_search_page(session, query, area, page, category=""):
-        called_with.append(query)
-        return jobindex._Page(0, 20, [])
 
-    monkeypatch.setattr(jobindex, "_search_page", fake_search_page)
-
-    jobindex.scrape({
-        "role_targets": ["lead data scientist"],
-        "search_keywords": [],
-        "location": "Copenhagen",
-    })
-
-    assert called_with == ["data scientist"]
+@responses.activate
+def test_scrape_falls_back_to_role_targets_when_search_keywords_empty():
+    searches = _searched_urls({"role_targets": ["lead data scientist"], "search_keywords": []})
+    assert searches == [jobindex._SEARCH_URL + "?q=%22data+scientist%22"]
 
 
 # --------------------------------------------------------------------------- #
@@ -355,23 +337,16 @@ def test_iter_scrape_yields_incrementally():
     assert len([u for u in urls if "/jobsoegning" in u]) == 1
 
 
-def test_scrape_respects_max_pages_per_keyword_config(monkeypatch):
-    """max_pages_per_keyword in config overrides the default _MAX_PAGES."""
-    calls = []
+@responses.activate
+def test_scrape_respects_max_pages_per_keyword_config():
+    """max_pages_per_keyword in config overrides the default _MAX_PAGES: a search with more hits than
+    a page stops after page 1 (and is split instead)."""
+    responses.add(responses.GET, _SEARCH, body=_with_hits(_fx("search_page1.html"), 30))
+    responses.add(responses.GET, re.compile(r"https://www\.jobindex\.dk/jobannonce/"), body=_fx("detail_h1673146.html"))
 
-    def fake_search_page(session, query, area, page, category=""):
-        calls.append(page)
-        return jobindex._Page(0, 20, [])
+    jobindex.scrape({"role_targets": ["data scientist"], "location": "Copenhagen", "max_pages_per_keyword": 1})
 
-    monkeypatch.setattr(jobindex, "_search_page", fake_search_page)
-
-    jobindex.scrape({
-        "role_targets": ["data scientist"],
-        "location": "Copenhagen",
-        "max_pages_per_keyword": 1,
-    })
-
-    assert calls == [1]
+    assert not any("page=" in c.request.url for c in responses.calls)
 
 
 # --------------------------------------------------------------------------- #
@@ -755,9 +730,3 @@ def test_only_on_topic_titles_get_a_detail_request_the_rest_keep_their_teaser():
     by_id = {p["platform_id"]: p for p in postings}
     off = by_id["h1673246"]  # "Domain Architect - Datacenter Connectivity"
     assert off["title"].startswith("Domain Architect") and off["description"]  # the teaser
-
-
-def test_jobindex_pauses_like_the_employer_feeds():
-    from door.scrapers import http_client
-
-    assert (jobindex._MIN_DELAY, jobindex._MAX_DELAY) == http_client.FEED_DELAY

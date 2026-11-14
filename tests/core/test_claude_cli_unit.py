@@ -6,16 +6,12 @@ profile/config.json — the same plan from a conversation, a terminal or cron.
 """
 
 import json
-import subprocess
 import types
 from pathlib import Path
 
 import pytest
 
-from door.commands import prepare as prepare_cmd
-from door.core import claude_cli, doctor, profile_loader, scraper_fix, workspace
-from door.matching import scorer
-from door.matching.language import _run_claude as real_language_run_claude  # conftest stubs the attribute
+from door.core import claude_cli, doctor, profile_loader, workspace
 
 
 @pytest.fixture
@@ -76,45 +72,7 @@ def test_profile_accepts_the_key():
     assert "claude_config_dir" in profile_loader.Profile.model_fields
 
 
-# --------------------------------------------------------------------------- #
-# every call site
-# --------------------------------------------------------------------------- #
-
-def _capture(calls, stdout=""):
-    def run(argv, **kwargs):
-        calls.append(kwargs.get("env"))
-        return types.SimpleNamespace(returncode=0, stdout=stdout, stderr="")
-    return run
-
-
-def test_scoring_uses_the_configured_plan(profile):
-    profile("/plans/personal")
-    calls = []
-    scorer._score_chunk(
-        [{"id": "a"}], system_prompt="s", model="haiku", fallback_model=None, max_retries=0,
-        base_backoff=0, max_backoff=0, sleep_fn=lambda s: None, run_fn=_capture(calls),
-    )
-    assert calls and calls[0]["CLAUDE_CONFIG_DIR"] == "/plans/personal"
-
-
-def test_title_translation_uses_the_configured_plan(profile):
-    profile("/plans/personal")
-    calls = []
-    real_language_run_claude(["claude", "-p"], "x", which=lambda name: "/bin/claude", run=_capture(calls))
-    assert calls[0]["CLAUDE_CONFIG_DIR"] == "/plans/personal"
-
-
-@pytest.mark.parametrize("call", ["tailor", "scraper_fixer"])
-def test_agent_runs_use_the_configured_plan(profile, monkeypatch, tmp_path, call):
-    profile("/plans/personal")
-    calls = []
-    monkeypatch.setattr(subprocess, "run", _capture(calls))
-    if call == "tailor":
-        prepare_cmd._run_tailor("job", tmp_path / "posting.json")
-    else:
-        scraper_fix._run_scraper_fixer("jobindex", tmp_path / "raw.html")
-    assert calls[0]["CLAUDE_CONFIG_DIR"] == "/plans/personal"
-
+# the call sites themselves: test_claude_call_sites_unit.py
 
 def test_login_check_asks_the_configured_plan(profile):
     profile("/plans/personal")

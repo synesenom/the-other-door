@@ -6,9 +6,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from click.testing import CliRunner
 
-import door.mcp_server as server
 from door.cli import cli
-from door.commands import market as market_cmd
 from door.core import claude_cli, workspace
 from cli_utils import write_list_posting
 from profile_utils import write_config
@@ -77,13 +75,3 @@ def test_market_cli_prints_warning_on_failed_call(env, monkeypatch):
     assert result.exit_code == 0 and "Warning:" in result.output
 
 
-def test_market_tool_delegates_to_core(env, monkeypatch):
-    seen = {}
-
-    def fake(days, save, scored_companies=False, *, jobs_dir, profile_dir):
-        seen.update(scored_companies=scored_companies, days=days, save=save, jobs_dir=jobs_dir, profile_dir=profile_dir)
-        return {"ok": True}
-
-    monkeypatch.setattr(market_cmd, "_market_core", fake)
-    assert server.market(days=7, save=False, scored_companies=True) == {"ok": True}
-    assert seen == {"scored_companies": True, "days": 7, "save": False, "jobs_dir": workspace.JOBS_DIR, "profile_dir": workspace.PROFILE_DIR}

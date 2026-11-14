@@ -256,7 +256,7 @@ Off in the app for now (`CvEditor`'s `extras`, false: it crowded the page); what
 - No CV → "<abs> not found (profile/cv.md): set up the profile first" — unit: `app/src/renderer/screens/CvEditor.test.tsx`
 - Config missing or invalid — not tested: the CV view with a broken config is reached only through the no-CV line
 - Roles removed + box ticked + **no matches** → "nothing to analyse: give a role name, a job (`--job trustpilot`), or top N" — not tested: needs a world with no matches; mette's has many
-- Claude errors (stand-in → "claude exited 97: tests never call the real claude"; this is what `cv.e2e.ts` covers), "claude returned an empty report", "claude -p timed out after 900s" — unit: `app/src/renderer/screens/CvEditor.test.tsx` (the exit-code wording)
+- Claude errors (stand-in → "claude exited 97: tests never call the real claude"; a failing CV tool's alert is what `journeys/cv-tools.journey.ts` "a report that failed is asked again when reopened" covers), "claude returned an empty report", "claude -p timed out after 900s" — unit: `app/src/renderer/screens/CvEditor.test.tsx` (the exit-code wording)
 - Transport timeout — not tested: a 960 s wait
 - Not refused for the example CV (only scoring and tailoring refuse it). — not tested: not pinned
 

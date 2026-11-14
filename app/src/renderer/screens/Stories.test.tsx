@@ -25,10 +25,10 @@ const fill = async (user: ReturnType<typeof userEvent.setup>, values: Record<str
 }
 
 describe('Stories', () => {
-  it('reads only the bank on mount and lists the stories', async () => {
+  it('lists the stories on opening, drafting or saving nothing', async () => {
     const { call } = show()
     await row('Cut build time')
-    expect(call.mock.calls.map((c) => c[0])).toEqual(['list_stories'])
+    for (const tool of ['draft_stories', 'save_story', 'remove_story']) expect(call).not.toHaveBeenCalledWith(tool, expect.anything())
     expect((await row('Cut build time')).getByText('Cut build time R')).toBeInTheDocument()
     expect(screen.getByText('Ran the migration')).toBeInTheDocument()
   })

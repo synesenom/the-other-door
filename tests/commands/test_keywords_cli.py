@@ -132,29 +132,6 @@ def test_core_rejects_an_answer_that_is_not_a_list_of_terms(env, monkeypatch):
         keywords_cmd._keywords_core(profile_dir=env.profile_dir)
 
 
-def test_core_never_prints(env, monkeypatch, capsys):
-    _answer(monkeypatch, ["a"])
-    keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
-    assert capsys.readouterr().out == ""
-
-
-def test_tool_delegates_and_returns_errors_as_dicts(env, monkeypatch):
-    seen = {}
-
-    def fake_core(role_targets=None, *, languages=None, save=False, model=None, profile_dir=None):
-        seen.update(role_targets=role_targets, save=save, model=model, profile_dir=profile_dir)
-        return {"keywords": ["a"]}
-
-    monkeypatch.setattr(keywords_cmd, "_keywords_core", fake_core)
-    assert server.keywords(role_targets=["Quant"], save=True, model="sonnet") == {"keywords": ["a"]}
-    assert seen == {"role_targets": ["Quant"], "save": True, "model": "sonnet", "profile_dir": env.profile_dir}
-
-    def boom(*a, **k):
-        raise claude_cli.ClaudeError("claude exited 1: x")
-    monkeypatch.setattr(keywords_cmd, "_keywords_core", boom)
-    assert server.keywords() == {"error": "claude exited 1: x"}
-
-
 def test_core_works_before_the_profile_exists(tmp_path, monkeypatch):
     calls = []
     _answer(monkeypatch, ["quant"], calls)

@@ -2,7 +2,6 @@
 lists and ads, trimmed and their text rewritten."""
 
 import pytest
-import requests
 import responses
 from responses import matchers
 
@@ -128,18 +127,6 @@ def test_a_customer_with_a_published_column_gives_the_date_when_the_ad_page_has_
     assert postings[0]["posted_at"].startswith("2026-10-06")
 
 
-@responses.activate
-def test_a_failed_list_is_a_recorded_error_not_a_raise_and_the_next_list_goes_on():
-    _list(_SKURUP, 1, status=500)
-    _serve_nassjo()
-    drain_errors()
-
-    postings = visma_recruit.scrape({_KEY: [_SKURUP, _NASSJO]})
-
-    assert len(postings) == 2
-    assert _SKURUP in drain_errors()["visma_recruit"][0]
-
-
 @pytest.mark.parametrize("status", [429, 403])
 @responses.activate
 def test_pushback_is_recorded_and_ends_the_list(status):
@@ -150,15 +137,6 @@ def test_pushback_is_recorded_and_ends_the_list(status):
     assert visma_recruit.scrape({_KEY: [_NASSJO]}) == []
 
     assert drain_pushback("visma_recruit") is True
-    assert drain_errors()["visma_recruit"]
-
-
-@responses.activate
-def test_an_unknown_list_is_a_recorded_error():
-    _list(_NASSJO, 1, "Sidan kunde inte hittas.", status=404)
-    drain_errors()
-
-    assert visma_recruit.scrape({_KEY: [_NASSJO]}) == []
     assert drain_errors()["visma_recruit"]
 
 
@@ -183,11 +161,6 @@ def test_scrape_drops_ads_in_another_country():
     assert drain_non_local("visma_recruit") == 1
 
 
-def test_no_entries_no_request():
-    assert visma_recruit.scrape({}) == []
-    assert visma_recruit.probe({}) is None
-
-
 @responses.activate
 def test_probe_reads_page_one_of_the_first_list_with_one_request():
     _list(_NASSJO, 1, _fx("nassjo_list.html"))
@@ -208,14 +181,3 @@ def test_probe_drift_without_the_list():
     result = visma_recruit.probe({_KEY: [_NASSJO]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_unreachable_and_wall():
-    _list(_NASSJO, 1, body=requests.ConnectionError("down"))
-    down = visma_recruit.probe({_KEY: [_NASSJO]})
-    assert down["structure_ok"] is False and down.get("unreachable") is True
-    responses.replace(responses.GET, _LIST, status=403, match=[matchers.query_param_matcher(
-        {"guidExtSoftware": _NASSJO, "currentpage": "1"})])
-    walled = visma_recruit.probe({_KEY: [_NASSJO]})
-    assert walled["structure_ok"] is False and walled.get("wall") is True

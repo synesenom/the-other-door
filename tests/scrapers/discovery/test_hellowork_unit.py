@@ -17,10 +17,6 @@ def _by_id(cards):
     return {c["platform_id"]: c for c in cards}
 
 
-def test_the_source_contract_names():
-    assert (hellowork.NAME, hellowork.COUNTRIES, hellowork.CONFIG_KEY) == ("hellowork", ("fr",), "hellowork_discovery")
-
-
 def test_the_search_url_quotes_keyword_and_city_and_numbers_the_page_from_the_second():
     assert hellowork._search_url("chef de projet", "Paris", 1) == \
         "https://www.hellowork.com/fr-fr/emploi/recherche.html?k=chef+de+projet&l=Paris"

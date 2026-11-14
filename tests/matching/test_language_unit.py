@@ -8,6 +8,7 @@ import subprocess
 
 import pytest
 
+from door.core import usage
 from door.matching import language
 
 # The real runner, captured before the autouse fixture in tests/conftest.py
@@ -85,14 +86,12 @@ def test_every_posting_is_tagged_with_its_language(tmp_path):
     assert result["languages"] == {"da": 1, "en": 1, "unknown": 1}
 
 
-def test_the_language_is_detected_from_the_description_only(tmp_path, monkeypatch):
-    seen = []
-    monkeypatch.setattr(language.i18n, "detect_language", lambda text: seen.append(text) or "en")
-    _write(tmp_path, "en-1", "Dataforsker", _ENGLISH_DESC)
+def test_the_language_is_detected_from_the_description_only(tmp_path):
+    path = _write(tmp_path, "en-1", _DANISH_DESC + " " + _DANISH_DESC, _ENGLISH_DESC)
 
-    _run([tmp_path / "en-1.json"], {}, FakeClaude())
+    _run([path], {}, FakeClaude())
 
-    assert seen == [_ENGLISH_DESC]
+    assert _read(path)["language"] == "en"
 
 
 def test_an_ad_in_a_language_outside_the_profile_is_dropped(tmp_path):
@@ -425,9 +424,8 @@ def test_tag_posting_too_short_to_detect_is_none(tmp_path):
     assert _read(path)["language"] is None
 
 
-def test_tag_posting_records_usage_under_the_given_feature(tmp_path, monkeypatch):
+def test_tag_posting_records_usage_under_the_given_feature(tmp_path):
     path = _write(tmp_path, "a", "Dataforsker", _DANISH_DESC)
-    seen = []
-    monkeypatch.setattr(language.usage, "record", lambda feature, *a, **k: seen.append(feature))
-    language.tag_posting(path, {}, run_fn=lambda *a: _envelope({"a": "Data scientist"}), feature="import_posting")
-    assert seen == ["import_posting"]
+    stdout = json.dumps({**json.loads(_envelope({"a": "Data scientist"})), "total_cost_usd": 0.001})
+    language.tag_posting(path, {}, run_fn=lambda *a: stdout, feature="import_posting")
+    assert [line["feature"] for line in usage.read()] == ["import_posting"]

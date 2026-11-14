@@ -139,14 +139,14 @@ def test_save_creates_parent_directory(tmp_path):
 def test_load_missing_file_starts_empty(tmp_path):
     path = tmp_path / "nonexistent_applications.json"
     tracker = ApplicationTracker(path)
-    assert tracker._data == {}
+    assert tracker.job_ids() == []
 
 
 def test_load_corrupt_file_starts_empty(tmp_path):
     path = tmp_path / "applications.json"
     path.write_text("BAD JSON")
     tracker = ApplicationTracker(path)
-    assert tracker._data == {}
+    assert tracker.job_ids() == [] and tracker.get_status("job-abc") is None
 
 
 # --------------------------------------------------------------------------- #
@@ -156,7 +156,7 @@ def test_load_corrupt_file_starts_empty(tmp_path):
 def test_set_status_records_updated_at(tmp_path):
     tracker = _tracker(tmp_path)
     tracker.set_status("job-abc", "unapplied", now=_NOW)
-    assert tracker._data["job-abc"]["updated_at"] == _NOW.isoformat()
+    assert tracker.updated_at("job-abc") == _NOW.isoformat()
 
 
 def test_set_status_defaults_now_when_not_given(tmp_path):
@@ -173,7 +173,7 @@ def test_advance_sets_status_and_updated_at(tmp_path):
     tracker = _tracker(tmp_path)
     tracker.advance("job-abc", "prepared", now=_NOW)
     assert tracker.get_status("job-abc") == "prepared"
-    assert tracker._data["job-abc"]["updated_at"] == _NOW.isoformat()
+    assert tracker.updated_at("job-abc") == _NOW.isoformat()
 
 
 # --------------------------------------------------------------------------- #
