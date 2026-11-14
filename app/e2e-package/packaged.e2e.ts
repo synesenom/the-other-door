@@ -59,6 +59,8 @@ test('the packaged app serves Matches from its bundle and writes nothing inside 
     // DOOR_UPDATES=off: the app did not go looking for an update (#17)
     const log = join(fixture.home, 'logs', 'door.log')
     expect(existsSync(log) ? readFileSync(log, 'utf8') : '').not.toContain('update-check')
+    // and mode `none`: the app reports updates disabled, which is why Settings shows no Version part
+    expect((await page.evaluate(() => window.door.checkUpdate(true))).enabled).toBe(false)
   } finally {
     await app.close()
   }
