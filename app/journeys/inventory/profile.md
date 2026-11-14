@@ -1,6 +1,6 @@
 # Inventory: Profile and CV (desktop app renderer)
 
-Sources read in full: `app/src/renderer/screens/{Profile,PageSections,SettingsFields,CvEditor,Market,Markdown,Hint,Dialog,todos}.tsx|ts`, `profile-form/{form.ts,fields.json}`, `onboarding/parts.tsx` (ChipInput, CityField, TextField, FieldLabel), `Switch.tsx`, `Spinner.tsx`, `AppName.tsx`, `api.ts`, the Profile wiring in `App.tsx`, `app/src/main/{ipc.ts,door-server.ts}` (error envelopes, timeouts, path refusals), and the Python side: `commands/profile.py` (`_init_core`, `_save_cv_core`, `_show_profile_core`, `_profile_field_specs`, `_profile_options`), `core/profile_loader.py` (the `Profile` model and its error lines), `commands/{keywords,enrich,gaps,market,companies}.py`, `core/{companies,claude_cli,lock,skill_aliases,discovery_sources}.py`, `mcp_server.py` (`_tool_errors`, `_EXPECTED_ERRORS`).
+Sources read in full: `app/src/renderer/screens/{Profile,PageSections,SettingsFields,CvEditor,Markdown,Hint,Dialog,todos}.tsx|ts`, `profile-form/{form.ts,fields.json}`, `onboarding/parts.tsx` (ChipInput, CityField, TextField, FieldLabel), `Switch.tsx`, `Spinner.tsx`, `AppName.tsx`, `api.ts`, the Profile wiring in `App.tsx`, `app/src/main/{ipc.ts,door-server.ts}` (error envelopes, timeouts, path refusals), and the Python side: `commands/profile.py` (`_init_core`, `_save_cv_core`, `_show_profile_core`, `_profile_field_specs`, `_profile_options`), `core/profile_loader.py` (the `Profile` model and its error lines), `commands/{keywords,enrich,gaps,market,companies}.py`, `core/{companies,claude_cli,lock,skill_aliases,discovery_sources}.py`, `mcp_server.py` (`_tool_errors`, `_EXPECTED_ERRORS`).
 
 Conventions used below:
 - **alert** means `role="alert"`. **status** means `role="status"`, which is always the `Spinner`: `<p role=status>` holding the message.
@@ -9,7 +9,7 @@ Conventions used below:
   1. **Expected core error.** `{"error": str(exc)}` comes back from `_tool_errors` (ValueError, LookupError, FileNotFoundError, ConfigError, CompaniesError, LockHeldError, ClaudeError, DriveError, SyncConflict…). The message is the exception text.
   2. **FastMCP argument validation or an unexpected exception** (e.g. OSError). The result is `isError`, and the text is `Error executing tool <tool>: <pydantic or exception text>`, which can run to several lines.
   3. **Transport errors** (door-server.ts):
-     - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 660 s, skill_gaps 960 s, market 180 s, add_company 180 s.
+     - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 660 s, market 180 s, add_company 180 s.
      - `The other door's server stopped; try again`: the child process died.
      - `<tool> returned something that is not JSON`.
      - Main-process refusals: `unknown tool`, and `enrich takes web addresses only; files are chosen with the file picker.`
@@ -40,7 +40,7 @@ Always present: `heading level 1 "Profile"`.
 ### 1.1 Details / CV switcher
 - `group "Part of the profile"` containing `button "Details"` and `button "CV"` (use exact). Each has `aria-pressed` true or false.
 - Click **CV**: `view='cv'`, which renders `CvEditor`. Profile's own state (form values, errors) is kept. — unit: `app/src/renderer/screens/Profile.test.tsx`
-- Click **Details**: `CvEditor` **unmounts**. Its unsaved text, open panels, the Market report and any proposals are lost, and reopening re-runs `show_profile`. — ✓ unsaved CV text survives a look at the details (BUG)
+- Click **Details**: `CvEditor` **unmounts**. Its unsaved text, open panels and any proposals are lost, and reopening re-runs `show_profile`. — ✓ unsaved CV text survives a look at the details (BUG)
 - The switcher is **only rendered** in the CV view and in the loaded Details view. It is **absent** in the Details load-error view, the spinner view and the invalid-config view, so from those views you cannot reach the CV except by leaving and re-entering through the sidebar CV line. — ✓ the CV can still be reached when the details cannot be read (BUG)
 
 ### 1.2 Details load states
@@ -232,84 +232,9 @@ Other data-driven variants:
 - Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and shows them in the editor
 - Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — ✓ a CV saved since the page was read is not overwritten; unit: `app/src/renderer/screens/CvEditor.test.tsx`
 
-### 4.5 Gaps panel: `region "What should I learn?"`
-
-Off in the app for now (`CvEditor`'s `extras`, false: it crowded the page); what follows is the code as it stands.
-
-**Idle and error views**
-- ChipInput `textbox "Roles or skills"` (placeholder "Add one and press Enter"), Hint "About Roles or skills" → "What you want to be ready for.", `list "Roles or skills, chosen"`. — ✓ makes a plan for the role targets, shows it and saves it in upskill/
-  - Prefilled from `config.role_targets`, **or** from the market's missing skills when opened through "Make a plan for …".
-- `checkbox "Also my three best matches"`. — ✓ makes a plan for the role targets, shows it and saves it in upskill/
-- `button "Make my plan"` is disabled when there are no roles **and** the box is unticked. Next to it: "One Claude call on your plan, with web search for courses." — unit: `app/src/renderer/screens/CvEditor.test.tsx`
-
-**Run**
-- `skill_gaps({targets, top:3 if ticked})`. — unit: `app/src/renderer/screens/CvEditor.test.tsx` (top: 3); ✓ makes a plan for the role targets
-- Status "Comparing your CV with the roles and looking for courses (several minutes)…". Timeout 960 s; the server's own is 900 s. — not tested: a passing state
-
-**Done view**
-- The report as Markdown (`.markdown.cv-report`, §7). Markdown **tables** in the report (Pass 1 and Pass 2) render as plain paragraphs of `| … |` text, because tables are not supported. — ✓ makes a plan for the role targets, shows it and saves it in upskill/ (tables: not tested, the world report has none)
-- "Saved as report-YYYY-MM-DD.md in upskill/." — ✓ makes a plan for the role targets, shows it and saves it in upskill/
-- `button "Make another plan"` → idle, with the roles kept. — ✓ makes a plan for the role targets, shows it and saves it in upskill/
-- On disk: `<DOOR_HOME>/upskill/report-<today>.md`, overwritten on the same day. — ✓ makes a plan for the role targets, shows it and saves it in upskill/
-
-**Errors** (alert):
-- No CV → "<abs> not found (profile/cv.md): set up the profile first" — unit: `app/src/renderer/screens/CvEditor.test.tsx`
-- Config missing or invalid — not tested: the CV view with a broken config is reached only through the no-CV line
-- Roles removed + box ticked + **no matches** → "nothing to analyse: give a role name, a job (`--job trustpilot`), or top N" — not tested: needs a world with no matches; mette's has many
-- Claude errors (stand-in → "claude exited 97: tests never call the real claude"; a failing CV tool's alert is what `journeys/cv-tools.journey.ts` "a report that failed is asked again when reopened" covers), "claude returned an empty report", "claude -p timed out after 900s" — unit: `app/src/renderer/screens/CvEditor.test.tsx` (the exit-code wording)
-- Transport timeout — not tested: a 960 s wait
-- Not refused for the example CV (only scoring and tailoring refuse it). — not tested: not pinned
-
-**Interactions**
-- "Make a plan for …" from Market while the Gaps panel is open or running → Gaps **remounts** (key = planFor.n). The in-flight result is dropped by the window; the server still writes the report. — unit: `app/src/renderer/screens/Market.test.tsx` (an in-flight result dropped: not tested)
-- Clicking "What should I learn?" while it is open closes it. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
-
 ---
 
-## 5. Market (Market.tsx, at the foot of the CV view): `region` named by its fold button
-
-Off in the app for now, with §4.5 (`extras`).
-
-- Fold control: `button` with `id="cv-market"`, `aria-expanded`, text "What the ads asked for this month". — ✓ counts the ads when opened, once
-  - **CSS `::before` adds "▸ " or "▾ "**, which Chromium includes in the accessible name. Match the name by substring, not exact.
-  - Closed: "Counts the ads of the last 30 days. New skill names may need one short Claude call on your plan." — ✓ counts the ads when opened, once
-- The first open calls `market({save:false})` and shows status "Counting the ads (new skill names may take one short Claude call)…". Timeout 180 s. — ✓ counts the ads when opened, once
-- **Closing and reopening never re-asks.** The result or the error is sticky until the CV view remounts. There is no retry for an error. — ✓ counts the ads when opened, once; ✓ a report that failed is asked again when reopened (BUG)
-- **Error** (alert p.field-error): — unit: `app/src/renderer/screens/Market.test.tsx` (through a tool fault)
-  - ConfigError for an invalid config. A missing config gives defaults, not an error.
-  - CompaniesError for a malformed companies.json.
-  - Timeout.
-  - `market` rarely errors otherwise.
-
-**Done view** (`.market-body`)
-- "<scraped> ads read, <scored> scored, <above_min_score> at your minimum score." — ✓ counts the ads when opened, once
-- `warning` (p.small.muted) when non-null. Real texts:
-  - Claude failed grouping names: "skill names not grouped for some ads (claude exited 97: tests never call the real claude); they are counted as written". **This is what the e2e stand-in produces whenever scored ads have skill names not yet in `jobs/skill_aliases.json`.** — unit: `tests/commands/test_market_cli.py`
-  - Corrupt aliases file: "skill_aliases.json could not be read (<exc>); skill names are counted as written, nothing grouped or saved". — not tested: a corrupt skill_aliases.json: not pinned
-  - Lock held while new names need saving (e.g. during a run): "another run of The other door holds the lock (a run is in progress (…); try again when it has finished); skill groups and report not saved". It may be appended to the first warning with "; ". — not tested: needs a run in progress (Finding area)
-- `heading level 3 "Most asked for"` is **always** shown. The skills list (`.market-skills`) is empty when there are no scored ads; no empty-state text. — ✓ counts the ads when opened, once
-  - Each `listitem "<skill>"` reads "<skill> · NN% of the ads · in your CV|not in your CV". — ✓ counts the ads when opened, once
-  - `share` = count / scored. `have` = the skill appears in matching_skills more often than in missing_skills. Only the first 8 are shown.
-- **Make a plan:** missing = the first 3 of the top 8 with `have:false`. Shown only if any exist. — unit: `app/src/renderer/screens/Market.test.tsx`
-  - `button "Make a plan for A"` / "Make a plan for A and B" / "Make a plan for A, B and C". — unit: `app/src/renderer/screens/Market.test.tsx`
-  - Click → the Gaps panel opens (remounted) with these skills as targets. Role targets are replaced, not merged. — unit: `app/src/renderer/screens/Market.test.tsx`
-- `near_misses.rows` non-empty → "What kept <n> ads just under your minimum: s1, s2." Band = [min_score−0.15, min_score). — ✓ counts the ads when opened, once
-- `uncovered_titles` non-empty (match titles at or above min_score containing no search keyword, case-insensitive substring): — ✓ counts the ads when opened, once
-  - `heading level 3 "Titles your search does not cover"`
-  - "T1 (3), T2 (1)"
-  - `button "Add these titles to my search"` → Dialog `dialog "Add these titles to your search?"`, body "The job boards will also be searched for T1, T2.", `button "Cancel"`, `button "Add"` (exact). Escape or Cancel closes it. — ✓ Add these titles to my search asks first, then adds them to the search keywords
-  - **Add:** the dialog closes, then `show_profile`, then `init_profile({search_keywords: current + titles not already present})`. — ✓ Add these titles to my search asks first, then adds them to the search keywords
-    - `current` = `config.search_keywords` if non-empty, otherwise `config.role_targets`. So an empty search_keywords gets **seeded with the role targets** plus the titles. — unit: `tests/commands/test_market_cli.py`
-    - Success: `p.small` "Added to your search keywords." On disk, config.json `search_keywords` is updated. — ✓ Add these titles to my search asks first, then adds them to the search keywords
-    - Error: the raw error text in the same `p.small` (no alert, no `named`). For example, with an invalid config (null), it sends only the titles and init then fails with the file's validation lines joined in one paragraph. — unit: `app/src/renderer/screens/Market.test.tsx`
-    - The button stays, and adding again is a no-op apart from the message. — not tested: a second Add: not pinned
-    - **Stale:** the Details form (if already loaded in this Profile mount) still shows the old search keywords. A later details Save that touches search_keywords would overwrite them. `onSaved` is not called, so Matches are not refreshed. — ✓ titles added from the report show in the details (BUG)
-- Side effect even with `save:false`: when new skill names were grouped successfully, `jobs/skill_aliases.json` is **written** (under the ledger lock). No `jobs/market/report-*.md` is written. — ✓ counts the ads when opened, once (skill_aliases.json written)
-- `companies` and `trend` in the result are ignored by the window. — not tested: the window ignores `companies`: following a repeat employer from the market report is not in the app
-
----
-
-## 6. Dialog (Dialog.tsx), used by Market
+## 6. Dialog (Dialog.tsx), used by Market (now in Analytics) and the CV pages
 
 - `role=dialog`, `aria-modal=true`, named by its `h2` title, inside `.scrim`. — ✓ asks first; Cancel and Escape keep the employer
 - Initial focus goes to the `initialFocus` selector if given, otherwise the first focusable element. Neither use here passes one, so focus goes to Cancel. — ✓ asks first; Cancel and Escape keep the employer
@@ -352,7 +277,7 @@ Off in the app for now, with §4.5 (`extras`).
 
 ## 10. Result shapes the renderer reads (to build a test world)
 
-### show_profile (Profile Details, CvEditor, Market add-titles, App)
+### show_profile (Profile Details, CvEditor, App; Market's add-titles is in analytics.md)
 ```
 {
   path: str,
@@ -381,7 +306,7 @@ Variants to drive:
 - `enrich_sources` (the pages above the CV, §4.3)
 - `role_targets` (Gaps prefill and the search terms proposed on Save)
 
-### init_profile (Details Save, Market add titles)
+### init_profile (Details Save; Market's add titles is in analytics.md)
 - Reads only success or throw. `{config_path, copied:[rel paths]}`.
 - Error: `{"error": "profile/config.json: <key> — <msg>\n..."}`, or an isError text for bad named-argument types.
 
@@ -432,7 +357,7 @@ How the test world produces each part:
 ## 11. Counts and surprises
 
 **Counts**
-- User actions: about **58** distinct actions (controls times action) across the shell, Details fields, Suggest keywords, the save bar, PageSections, the CV editor (Preview, Save, Undo, three tools, two draft buttons), Expand (chips, Read, tick, Add), Gaps (chips, tick, Make my plan, Make another plan), Market (fold, Make a plan, Add titles + dialog), Markdown link, Hint.
+- User actions: about **58** distinct actions (controls times action) across the shell, Details fields, Suggest keywords, the save bar, PageSections, the CV editor (Preview, Save, Undo, three tools, two draft buttons), Expand (chips, Read, tick, Add), Markdown link, Hint.
 - Failure and edge branches: about **75**, as enumerated above.
 
 **Surprises and bugs**

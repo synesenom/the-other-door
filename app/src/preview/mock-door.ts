@@ -156,7 +156,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           ...fixtures.status_summary,
           drive,
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
-          ...(state === 'empty' ? { plan: null, cost: null, pipeline: { ...fixtures.status_summary.pipeline, above_threshold: 0, above_threshold_by_status: { unapplied: 0, prepared: 0, applied: 0, discarded: 0 } }, standing: { offer: 0, interviewing: 0, waiting: 0, rejected: 0, ghosted: 0, withdrawn: 0 }, pass_rates: {} } : {}),
+          ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {} } : {}),
           // the plan's window nearly full: the sidebar's foot says so
           ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, five_hour: { used: 0.9, resets_at: new Date(Date.now() + 90 * 60_000).toISOString() }, room: { find: 1, prepare: 2 } } } : {}),
         }
@@ -212,9 +212,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       case 'keywords':
         return { keywords: ['financial controller', 'controller', 'økonomimedarbejder'], topic_terms: ['controller', 'økonomi*'] }
       case 'market':
-        return { counts: { scraped: 412, scored: 96, above_min_score: 23 }, skills: [{ name: 'IFRS', count: 44, share: 0.46, have: true }, { name: 'SAP', count: 31, share: 0.32, have: false }, { name: 'Power BI', count: 22, share: 0.23, have: false }], near_misses: { n: 7, rows: [{ skill: 'SAP', count: 5 }] }, uncovered_titles: [{ title: 'Finance Manager', count: 6 }], warning: null }
-      case 'skill_gaps':
-        return { report: '# Skill gaps\n\n## SAP\n\nAsked for by a third of the ads you nearly match.', report_path: '/demo/upskill/report.md' }
+        if (state === 'empty') return { counts: { scraped: 0, scored: 0, above_min_score: 0 }, skills: [] }
+        return { counts: { scraped: 412, scored: 96, above_min_score: 23 }, skills: [{ name: 'IFRS', count: 44, share: 0.46, have: true }, { name: 'SAP', count: 31, share: 0.32, have: false }, { name: 'Power BI', count: 22, share: 0.23, have: false }] }
       case 'enrich':
         // what a page shows and the CV lacks; adding answers what was added
         if (args['apply']) {

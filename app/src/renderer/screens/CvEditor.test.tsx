@@ -18,11 +18,11 @@ const profile = (cv: Partial<{ text: string | null; is_example: boolean; exists:
   enrich_sources: sources,
 })
 
-async function open(handlers: Record<string, unknown> = {}, cv = {}, sources: string[] = [], extras = false) {
+async function open(handlers: Record<string, unknown> = {}, cv = {}, sources: string[] = []) {
   const h = mockDoor({ show_profile: profile(cv, sources), ...handlers })
   const onDraft = vi.fn()
   const onSaved = vi.fn()
-  render(<CvEditor onDraft={onDraft} onSaved={onSaved} extras={extras} />)
+  render(<CvEditor onDraft={onDraft} onSaved={onSaved} />)
   await screen.findByLabelText('Your CV (Markdown)')
   return { ...h, onDraft, onSaved }
 }
@@ -246,60 +246,6 @@ describe('the pages read before', () => {
     await open({ enrich: { outcome: 'nothing_new', urls: ['https://ada.dev'], proposals: [], unreachable: [] } }, {}, ['https://ada.dev'])
     await userEvent.click(screen.getByRole('button', { name: 'Check again' }))
     expect(await screen.findByText('Nothing new on your pages.')).toBeInTheDocument()
-  })
-})
-
-describe('What the ads asked for this month', () => {
-  it('is in the CV, folded; its plan opens What should I learn? with the missing skills', async () => {
-    const market = { counts: { scraped: 1, scored: 1, above_min_score: 1 }, skills: [{ name: 'dbt', count: 3, share: 0.3, have: false }], near_misses: { n: 0, rows: [] }, uncovered_titles: [], warning: null }
-    const { call } = await open({ market }, {}, [], true)
-    expect(call.mock.calls.map((c) => c[0])).not.toContain('market')
-    await userEvent.click(screen.getByRole('button', { name: 'What the ads asked for this month' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Make a plan for dbt' }))
-    const panel = screen.getByRole('region', { name: 'What should I learn?' })
-    expect(within(panel).getByRole('list', { name: 'Roles or skills, chosen' })).toHaveTextContent('dbt')
-    expect(within(panel).getByRole('list', { name: 'Roles or skills, chosen' })).not.toHaveTextContent('Data Analyst')
-  })
-})
-
-describe('What should I learn?', () => {
-  it('compares the CV with your roles (and your best matches if you say so) and shows the report', async () => {
-    const report = '# Skill gaps\n\n## Plan\n\n1. Learn dbt: [course](https://example.com/dbt)\n'
-    const { call } = await open({ skill_gaps: { report_path: '/home/upskill/report-2026-10-29.md', report, targets: [], plan_items: 1 } }, {}, [], true)
-    await userEvent.click(screen.getByRole('button', { name: 'What should I learn?' }))
-    const panel = screen.getByRole('region', { name: 'What should I learn?' })
-    expect(within(panel).getByRole('list', { name: 'Roles or skills, chosen' })).toHaveTextContent('Data Analyst')
-    await userEvent.click(within(panel).getByRole('checkbox', { name: 'Also my three best matches' }))
-    await userEvent.click(within(panel).getByRole('button', { name: 'Make my plan' }))
-    expect(call).toHaveBeenCalledWith('skill_gaps', { targets: ['Data Analyst'], top: 3 })
-    expect(await within(panel).findByRole('heading', { name: 'Plan' })).toBeInTheDocument()
-    expect(within(panel).getByRole('button', { name: 'course' })).toBeInTheDocument()
-    expect(within(panel).getByText('Saved as report-2026-10-29.md in upskill/.')).toBeInTheDocument()
-  })
-
-  it('a failure says why', async () => {
-    await open(
-      {
-        skill_gaps: () => {
-          throw { message: 'claude timed out' }
-        },
-      },
-      {},
-      [],
-      true,
-    )
-    await userEvent.click(screen.getByRole('button', { name: 'What should I learn?' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Make my plan' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('claude timed out')
-  })
-})
-
-describe('CvEditor, the extras off (the default for now)', () => {
-  it('has neither "What should I learn?" nor the market report, and reads no market', async () => {
-    const { call } = await open()
-    expect(screen.queryByRole('button', { name: 'What should I learn?' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /What the ads asked for this month/ })).toBeNull()
-    expect(call.mock.calls.map((c) => c[0])).not.toContain('market')
   })
 })
 

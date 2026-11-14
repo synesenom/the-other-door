@@ -118,7 +118,6 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   add_company: 180_000,
   // ask: one Haiku call with the read tools (180 s on the server).
   ask: 240_000,
-  skill_gaps: 960_000,
   // draft_stories: one sonnet call (300 s on the server), no progress.
   draft_stories: 360_000,
 }

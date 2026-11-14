@@ -160,15 +160,18 @@ describe('scenes', () => {
     expect(container.querySelector('main')).not.toBeInTheDocument()
   })
 
-  it('analytics shows the interview rate, your matches and your applications, and in the empty state one line', async () => {
+  it('analytics shows the interview rate, and in the empty state one line', async () => {
     mount('analytics')
     const part = await screen.findByRole('region', { name: 'Applications' })
     expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5, likely between 40% and 77%.')
-    expect(within(part).getByRole('img', { name: 'Applied 7, Prepared, not sent 2, Not yet 15' })).toBeInTheDocument()
-    expect(within(part).getByRole('img', { name: 'Offer 1, Interviewing 2, Waiting for an answer 2, Rejected or no answer 2' })).toBeInTheDocument()
+    expect(within(part).queryAllByRole('img')).toEqual([])
+    const market = await screen.findByRole('region', { name: 'Market' })
+    expect(await within(market).findByRole('listitem', { name: 'IFRS, in your CV' })).toHaveTextContent('46% of the ads')
+    expect(within(market).getByRole('listitem', { name: 'SAP, not in your CV' })).toBeInTheDocument()
     cleanup()
     mount('analytics', 'empty')
-    expect(await screen.findByText('Your applications show here once you have matches.')).toBeInTheDocument()
+    expect(await screen.findByText('Your interview rate shows here once an application has an outcome.')).toBeInTheDocument()
+    expect(await screen.findByText('The market shows here once ads are read.')).toBeInTheDocument()
   })
 
   it('posting opens the posting', async () => {

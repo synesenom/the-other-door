@@ -1,9 +1,10 @@
-// Analytics, Applications (#66, #87): the interview rate and the two split bars, read from the world's FULL_LEDGER
+// Analytics, Applications (#66, #87): the interview rate, read from the world's FULL_LEDGER
 // through `status_summary` (read only; the Claude usage section is covered by its own tests).
 import { expect, test } from './fixtures'
 import { ready } from './helpers/applications'
+import { argsOf, exists } from './helpers/profile'
 
-test('the applications follow the ledger', { tag: '@core' }, async ({ page }) => {
+test('the interview rate follows the ledger', { tag: '@core' }, async ({ page }) => {
   await ready(page)
   await page.getByRole('navigation').getByRole('button', { name: 'Analytics', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Analytics', level: 1 })).toBeVisible()
@@ -11,7 +12,29 @@ test('the applications follow the ledger', { tag: '@core' }, async ({ page }) =>
   await expect(part.getByRole('heading', { name: 'Applications', level: 2 })).toBeVisible()
   // FULL_LEDGER: five sent (an offer, one interviewing, one waiting, two rejected or ghosted); three of the four with an outcome led to an interview
   await expect(part).toContainText('75%of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 4, likely between 50% and 90%.')
-  const bar = (group: string, name: string) => expect(part.getByRole('group', { name: group }).getByRole('img', { name })).toBeVisible()
-  await bar('Your matches', 'Applied 5, Prepared, not sent 1, Not yet 9')
-  await bar('Your applications', 'Offer 1, Interviewing 1, Waiting for an answer 1, Rejected or no answer 2')
+  await expect(part.getByRole('img')).toHaveCount(0) // where each stands is the Applications board's columns
+})
+
+const openAnalytics = async (page: Parameters<typeof ready>[0]) => {
+  await ready(page)
+  await page.getByRole('navigation').getByRole('button', { name: 'Analytics', exact: true }).click()
+  return page.getByRole('region', { name: 'Market' })
+}
+
+test.describe('Market (#65)', () => {
+  test('counts the ads when Analytics opens, once, and writes no report', async ({ page, world }) => {
+    const market = await openAnalytics(page)
+    await expect(market.getByRole('listitem', { name: 'Python, in your CV', exact: true })).toHaveText('Python · 86% of the ads', { timeout: 60_000 })
+    expect(argsOf(world, 'market')).toEqual([expect.objectContaining({ save: false })])
+    expect(world.toolCalls('market')).toHaveLength(1)
+    expect(exists(world, 'jobs/market')).toBe(false)
+  })
+
+  test('a report that failed says why', async ({ page, world }) => {
+    await ready(page)
+    world.faults({ tools: { market: { error: 'profile/companies.json: invalid JSON — Expecting value', once: true } } })
+    await page.getByRole('navigation').getByRole('button', { name: 'Analytics', exact: true }).click()
+    const market = page.getByRole('region', { name: 'Market' })
+    await expect(market.getByRole('alert')).toBeVisible({ timeout: 60_000 })
+  })
 })

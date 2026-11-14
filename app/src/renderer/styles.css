@@ -431,7 +431,6 @@ details.part { display: block; }
 .usage-tone-0 { background: var(--color-accent); }
 .usage-tone-1 { background: var(--color-ink-muted); }
 .usage-tone-2 { background: var(--color-border); }
-.usage-tone-3 { background: var(--color-accent-soft); }
 .usage-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: var(--space-2); }
 .usage-list, .usage-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .usage-list { gap: var(--space-5); }
@@ -440,10 +439,6 @@ details.part { display: block; }
 .usage-row > h3 { margin: 0; font-weight: inherit; }
 .usage-row > span:last-child { font-variant-numeric: tabular-nums; }
 
-/* Analytics, Applications (#66, #87): two stacked bars like the cost breakdown's, each with its legend. */
-.split { display: flex; flex-direction: column; gap: var(--space-3); }
-.split > h3, .split > p { margin: 0; font-weight: inherit; }
-.split-legend { gap: var(--space-1); }
 details.part > * + * { margin-top: 28px; }
 details.part > summary + * { margin-top: var(--space-4); }
 .onb-drop-area, .onb-url { position: relative; }
@@ -522,8 +517,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 .cv-head + * { margin-top: calc(-1 * var(--space-2)); }
 .cv-editor .cv-text { min-height: 480px; font-size: var(--text-small-size); line-height: 1.55; }
 .cv-example { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-m); }
-.cv-preview, .cv-report { padding: var(--space-6); background: var(--color-page); border: 1px solid var(--color-border); border-radius: var(--radius-l); }
-.cv-tools { flex-wrap: wrap; }
+.cv-preview { padding: var(--space-6); background: var(--color-page); border: 1px solid var(--color-border); border-radius: var(--radius-l); }
 .cv-panel { display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-4); }
 .cv-panel > * { margin: 0; }
 .cv-proposal > span { display: flex; flex-direction: column; }
@@ -575,12 +569,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 .sidebar-problem { min-height: 0; padding: 0; text-align: left; font-size: var(--text-small-size); color: var(--color-ink); text-underline-offset: 3px; }
 button.sidebar-problem:hover > .mark + * { text-decoration: underline; }
 p.sidebar-problem { margin: 0; color: var(--color-ink-muted, var(--color-ink)); }
-.market-fold { align-self: flex-start; padding: 0; color: var(--color-ink); font-weight: 600; }
-.market-fold[aria-expanded='false']::before { content: '▸ '; color: var(--color-ink-muted); }
-.market-fold[aria-expanded='true']::before { content: '▾ '; color: var(--color-ink-muted); }
-.market-body { display: flex; flex-direction: column; gap: var(--space-3); }
-.market-body > * { margin: 0; }
-.market-skills { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.market-skills { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 /* Profile's Employers. */
 /* Profile's Stories: the intro, the ways to add one, then the stories, each with room around it */
 .stories { display: flex; flex-direction: column; gap: var(--space-4); } /* starts under the pills where the CV part does */

@@ -544,20 +544,13 @@ stops. The phone does not show it.
 
 How it is going, as figures: nothing here changes anything. Not on the phone.
 
-**Applications** shows how the job hunt is going, keeping what you did apart from how employers
-answered. It leads with your interview rate: how many of your applications with an outcome (an
+**Applications** is your interview rate: how many of your applications with an outcome (an
 interview, a rejection or no reply) led to an interview (offers count, since they passed one), with
-the range it likely lies in while there are few. It says how well the matches *The other door* finds fit you. Below it are two bars, each job in
-one part of one bar. **Your matches**, the jobs at your minimum score (not everything scraped, which
-includes unrelated jobs): applied, prepared but not sent, and not yet, with the ones you set aside
-as not for me said under it. **Your applications**, everything you sent: an offer, interviewing,
-waiting for an answer, and rejected or no answer (or withdrawn). An application with no change for
-30 days counts as no answer, in the bar and in the rate, whether or not you marked it ghosted; once
-you record what happened next, it counts as that. A job you applied for and later set
-aside counts as applied among your matches and as withdrawn among your applications. An application
-sent outside your matches (one imported by hand, or below your minimum score) shows only under Your
-applications. With no matches and nothing sent it says only that your applications show here once
-you have matches.
+the range it likely lies in while there are few. It says how well the matches *The other door*
+finds fit you. An application with no change for 30 days counts as no reply, whether or not you
+marked it ghosted; once you record what happened next, it counts as that. Until an application has
+an outcome it says only that the rate shows here then. Where each application stands is on the
+Applications board, and your matches are on Matches.
 
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
 You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,
@@ -567,6 +560,10 @@ scored, applications prepared, other requests) and, when there are several, what
 (scoring postings, translating job titles, tailoring the CV and letter, …). Your plan is not
 charged per call: this is what the same calls would cost on the API, a figure that is the same
 whatever your plan. Before the first search it says only that the figures show here after it.
+
+**Market** lists the eight skills the ads of the last 30 days ask for most, each with its share of the ads:
+a check when your CV has it, a cross when it does not, as on a job. It counts the ads once, when you open
+Analytics (new skill names may take one short Claude call on your plan), and writes no report.
 
 ## On your phone
 

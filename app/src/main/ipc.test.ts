@@ -126,7 +126,6 @@ describe('registerIpc', () => {
     ['connect_drive', 300_000],
     ['sync_data', 60_000],
     ['enrich', 600_000],
-    ['skill_gaps', 900_000],
     ['market', 60_000],
     ['add_company', 60_000],
     ['ask', 180_000],

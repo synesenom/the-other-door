@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { statusSummary, type CostBlock, type PassRate, type StatusSummary } from '../api'
+import { Market } from './Market'
 import { PageSections } from './PageSections'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
@@ -25,37 +26,11 @@ function tone(i: number): string {
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
 
-/** One stacked bar and its legend, as the cost breakdown draws them: each segment a share of `total`. */
-function Split({ title, total, parts, children }: { title: string; total: number; parts: { label: string; count: number; tone: string }[]; children?: ReactNode }) {
-  const shown = parts.filter((p) => p.count > 0)
-  return (
-    <div className="split" role="group" aria-label={title}>
-      <h3 className="body">
-        {title}
-        <span className="muted">{` · ${total}`}</span>
-      </h3>
-      <div className="usage-stack" role="img" aria-label={shown.map((p) => `${p.label} ${p.count}`).join(', ')}>
-        {shown.map((p) => (
-          <span key={p.label} className={p.tone} style={{ flexGrow: Math.round(share(p.count, total) * 1000) / 1000 }} />
-        ))}
-      </div>
-      <ul className="usage-list split-legend">
-        {shown.map((p) => (
-          <li key={p.label} className="usage-row small">
-            <span>
-              <span className={`usage-dot ${p.tone}`} aria-hidden="true" />
-              {p.label}
-            </span>
-            <span>{p.count}</span>
-          </li>
-        ))}
-      </ul>
-      {children}
-    </div>
-  )
-}
-
-/** The interview rate: how many applications with an outcome (an interview, a rejection or no reply) led to an interview, the measure of how well the matches fit. */
+/**
+ * Applications (#66, #87): the interview rate, how many applications with an outcome (an interview, a rejection or
+ * no reply) led to an interview: how well the matches fit. Where each application stands is the Applications
+ * board's columns, not repeated here.
+ */
 function Rate({ rate }: { rate: PassRate | undefined }) {
   if (!rate || !rate.decided || rate.rate === null) return <p className="small muted">Your interview rate shows here once an application has an outcome.</p>
   const range = rate.low !== null && rate.high !== null ? `, likely between ${pct(rate.low)} and ${pct(rate.high)}` : ''
@@ -64,51 +39,6 @@ function Rate({ rate }: { rate: PassRate | undefined }) {
       <p className="display-s">{pct(rate.rate)}</p>
       <p className="small">{`of your applications with an outcome (an interview, a rejection or no reply) led to an interview: ${rate.passed} of ${rate.decided}${range}.`}</p>
     </div>
-  )
-}
-
-/**
- * Applications (#66, #87): what you did with your matches, apart from how the employers answered. First the
- * interview rate of the answered applications (how well the matches fit), then two stacked bars like the cost
- * breakdown, each job in one segment: your matches (applied, prepared, not yet; the ones set aside said apart) and
- * your applications by where each stands now (`status_summary.standing`).
- */
-function Applications({ summary }: { summary: StatusSummary }) {
-  const by = summary.pipeline?.above_threshold_by_status ?? { unapplied: 0, prepared: 0, applied: 0, discarded: 0 }
-  const s = summary.standing!
-  const matches = by.unapplied + by.prepared + by.applied
-  const sent = s.offer + s.interviewing + s.waiting + s.rejected + s.ghosted + s.withdrawn
-  if (matches === 0 && sent === 0) return <p className="small muted">Your applications show here once you have matches.</p>
-  const closed = s.rejected + s.ghosted + s.withdrawn
-  return (
-    <>
-      <Rate rate={summary.pass_rates?.application} />
-      {matches > 0 && (
-        <Split
-          title="Your matches"
-          total={matches}
-          parts={[
-            { label: 'Applied', count: by.applied, tone: 'usage-tone-0' },
-            { label: 'Prepared, not sent', count: by.prepared, tone: 'usage-tone-3' },
-            { label: 'Not yet', count: by.unapplied, tone: 'usage-tone-2' },
-          ]}
-        >
-          {by.discarded > 0 && <p className="small muted">{`And ${by.discarded} you set aside as not for me.`}</p>}
-        </Split>
-      )}
-      {sent > 0 && (
-        <Split
-          title="Your applications"
-          total={sent}
-          parts={[
-            { label: 'Offer', count: s.offer, tone: 'usage-tone-0' },
-            { label: 'Interviewing', count: s.interviewing, tone: 'usage-tone-3' },
-            { label: 'Waiting for an answer', count: s.waiting, tone: 'usage-tone-1' },
-            { label: s.withdrawn > 0 ? 'Rejected, no answer or withdrawn' : 'Rejected or no answer', count: closed, tone: 'usage-tone-2' },
-          ]}
-        />
-      )}
-    </>
   )
 }
 
@@ -167,11 +97,10 @@ function Usage({ cost }: { cost: CostBlock | null }) {
 }
 
 /**
- * Analytics: how it is going, read-only (#64, #66, #87). Applications first (the interview rate, your matches and
- * your applications, #87), then Claude usage: what the last week's calls cost at API
- * prices per activity, and one search and one prepared application. Not the plan's window: that is live, and
- * this screen is about the days gone by. Reads
- * `status_summary` once on opening; a failed read is said nowhere (the next opening reads again).
+ * Analytics: how it is going, read-only (#64, #66, #87, #65). Applications first (the interview rate, #87), then Claude usage: what the last week's calls cost at API prices per activity, and
+ * one search and one prepared application (not the plan's window: that is live, and this screen is about the days
+ * gone by), then Market (the skills the ads ask for most, #65). Reads `status_summary` once on opening; a failed
+ * read is said nowhere (the next opening reads again).
  */
 export function Analytics() {
   const [summary, setSummary] = useState<StatusSummary | null>(null)
@@ -189,12 +118,12 @@ export function Analytics() {
     <div className="page-with-aside">
       <div className="settings">
         <h1 className="display-l">Analytics</h1>
-        {summary?.standing && (
+        {summary?.pass_rates && (
           <section className="part" aria-labelledby="analytics-applications">
             <h2 className="display-s" id="analytics-applications">
               Applications
             </h2>
-            <Applications summary={summary} />
+            <Rate rate={summary.pass_rates.application} />
           </section>
         )}
         <section className="part" aria-labelledby="analytics-usage">
@@ -203,11 +132,13 @@ export function Analytics() {
           </h2>
           {summary && <Usage cost={summary.cost ?? null} />}
         </section>
+        <Market />
       </div>
-      <PageSections sections={summary?.standing ? [APPLICATIONS, USAGE] : [USAGE]} />
+      <PageSections sections={summary?.pass_rates ? [APPLICATIONS, USAGE, MARKET] : [USAGE, MARKET]} />
     </div>
   )
 }
 
 const APPLICATIONS = { id: 'analytics-applications', label: 'Applications' }
 const USAGE = { id: 'analytics-usage', label: 'Claude usage' }
+const MARKET = { id: 'analytics-market', label: 'Market' }

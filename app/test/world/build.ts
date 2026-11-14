@@ -371,8 +371,6 @@ export function answersFor(persona: Persona) {
       ],
       unreachable: [],
     },
-    gaps:
-      '# Skill-gap report\n\n## Where you stand\n\nYour forecasting and causal-inference work covers most of what these roles ask for.\n\n## Gaps\n\n1. **Kubernetes** — asked for by three of the five ads.\n2. **dbt** — the analytics-engineering roles expect it.\n\n## Plan\n\n- Week 1–2: the official Kubernetes basics course, then deploy one of your models.\n- Week 3: build a small dbt project on a public dataset.\n',
     ask: { answer: 'Three of your matches are with energy companies, and the strongest is the forecasting role.', sources: [] },
   }
 }

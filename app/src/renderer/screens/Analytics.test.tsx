@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { mockDoor } from '../testing'
+import { mockDoor as baseDoor } from '../testing'
 import { Analytics, usd } from './Analytics'
 
 afterEach(cleanup)
@@ -19,6 +19,14 @@ const COST = {
       features: [{ feature: 'ask', label: 'Questions about your jobs', usd: 0.1, calls: 2 }] },
   ],
 }
+const MARKET = {
+  counts: { scraped: 10, scored: 5, above_min_score: 2 },
+  skills: [{ name: 'SQL', count: 6, share: 0.6, have: true }],
+  uncovered_titles: [],
+  companies: { population: 'scraped', rows: [] },
+}
+/** Every Analytics opening also reads the market once. */
+const mockDoor = (given: Record<string, unknown>) => baseDoor({ market: MARKET, ...given })
 const RESETS = new Date(Date.now() + 2 * 3600e3).toISOString()
 const PLAN = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.42, resets_at: RESETS }, room: { find: 6, prepare: 2 }, binding: 'five_hour' }
 
@@ -88,77 +96,52 @@ describe('Analytics', () => {
     expect(await screen.findByText(/shows here after your first search/)).toBeInTheDocument()
   })
 
-  describe('Applications', () => {
-    const PIPELINE = { total: 200, excluded: 0, applicable: 120, above_threshold: 40, unapplied: 20,
-      above_threshold_by_status: { unapplied: 20, prepared: 3, applied: 7, discarded: 10 } }
-    const STANDING = { offer: 1, interviewing: 2, waiting: 2, rejected: 1, ghosted: 1, withdrawn: 0 }
-    const RATE = { application: { passed: 3, decided: 5, rate: 0.6, low: 0.4, high: 0.77 } }
-    const APPLIED = { pipeline: PIPELINE, standing: STANDING, pass_rates: RATE }
-    const legend = (block: HTMLElement) => within(block).getAllByRole('listitem').map((li) => li.textContent)
+  it('shows the Market third, read once on opening, listed beside the sections', async () => {
+    const { call } = mockDoor({ status_summary: summary({ cost: COST, pass_rates: {} }) })
+    render(<Analytics />)
+    await screen.findByRole('region', { name: 'Applications' })
+    const headings = (await screen.findAllByRole('heading', { level: 2 })).map((h) => h.textContent)
+    expect(headings).toEqual(['Applications', 'Claude usage', 'Market'])
+    expect(await screen.findByRole('listitem', { name: 'SQL, in your CV' })).toBeInTheDocument()
+    expect(call.mock.calls.filter((c) => c[0] === 'market')).toEqual([['market', { save: false }]])
+    expect(screen.getAllByText('Market')).toHaveLength(2) // the heading and its entry beside the sections
+  })
 
-    it('leads with the interview rate of the answered applications, with its likely range', async () => {
+  it('without the interview rate the Market is still the last section', async () => {
+    mockDoor({ status_summary: summary({ cost: COST }) })
+    render(<Analytics />)
+    await screen.findByText('≈ $2.10')
+    expect((await screen.findAllByRole('heading', { level: 2 })).map((h) => h.textContent)).toEqual(['Claude usage', 'Market'])
+  })
+
+  describe('Applications', () => {
+    const RATE = { application: { passed: 3, decided: 5, rate: 0.6, low: 0.4, high: 0.77 } }
+    const APPLIED = { pass_rates: RATE }
+
+    it('is the interview rate of the applications with an outcome, with its likely range, and nothing else', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       expect(within(part).getByText('60%')).toBeInTheDocument()
       expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5, likely between 40% and 77%.')
+      // where each application stands is the Applications board's columns, not repeated here
+      expect(within(part).queryAllByRole('group')).toEqual([])
+      expect(within(part).queryAllByRole('img')).toEqual([])
     })
 
-    it('splits your matches into applied, prepared and not yet, with the ones set aside said apart', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
-      render(<Analytics />)
-      const block = await screen.findByRole('group', { name: 'Your matches' })
-      expect(within(block).getByRole('heading')).toHaveTextContent('Your matches · 30')
-      expect(within(block).getByRole('img', { name: 'Applied 7, Prepared, not sent 3, Not yet 20' })).toBeInTheDocument()
-      expect(legend(block)).toEqual(['Applied7', 'Prepared, not sent3', 'Not yet20'])
-      expect(block).toHaveTextContent('And 10 you set aside as not for me.')
-    })
-
-    it('splits your applications by where each stands now; a stand no application is in is left out', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
-      render(<Analytics />)
-      const block = await screen.findByRole('group', { name: 'Your applications' })
-      expect(within(block).getByRole('heading')).toHaveTextContent('Your applications · 7')
-      expect(legend(block)).toEqual(['Offer1', 'Interviewing2', 'Waiting for an answer2', 'Rejected or no answer2'])
-      cleanup()
-      mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, withdrawn: 1 }, cost: null }) })
-      render(<Analytics />)
-      expect(legend(await screen.findByRole('group', { name: 'Your applications' }))).toEqual(
-        ['Interviewing2', 'Waiting for an answer2', 'Rejected, no answer or withdrawn3'])
-    })
-
-    it('before any answer: no rate, a line saying when it shows', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, interviewing: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: null }) })
+    it('before any outcome: no rate, a line saying when it shows', async () => {
+      mockDoor({ status_summary: summary({ pass_rates: {}, cost: COST, plan: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       expect(within(part).getByText('Your interview rate shows here once an application has an outcome.')).toBeInTheDocument()
       expect(within(part).queryByText(/%$/)).toBeNull()
-    })
-
-    it('with matches but nothing sent: the matches, and no applications block', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, interviewing: 0, waiting: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: null }) })
-      render(<Analytics />)
-      expect(await screen.findByRole('group', { name: 'Your matches' })).toBeInTheDocument()
-      expect(screen.queryByRole('group', { name: 'Your applications' })).toBeNull()
-    })
-
-    it('with applications sent but no matches (imported, below the minimum score): the rate and the applications only', async () => {
-      const none = { ...PIPELINE, above_threshold: 0, above_threshold_by_status: { unapplied: 0, prepared: 0, applied: 0, discarded: 0 } }
-      mockDoor({ status_summary: summary({ ...APPLIED, pipeline: none, cost: null }) })
-      render(<Analytics />)
-      expect(await screen.findByRole('group', { name: 'Your applications' })).toBeInTheDocument()
-      expect(screen.getByText('60%')).toBeInTheDocument()
-      expect(screen.queryByRole('group', { name: 'Your matches' })).toBeNull()
-    })
-
-    it('with no matches and nothing sent: a single quiet line for the section', async () => {
-      const none = { ...PIPELINE, above_threshold: 0, above_threshold_by_status: { unapplied: 0, prepared: 0, applied: 0, discarded: 0 } }
-      mockDoor({ status_summary: summary({ pipeline: none, standing: { ...STANDING, offer: 0, interviewing: 0, waiting: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: COST, plan: null }) })
-      render(<Analytics />)
-      const part = await screen.findByRole('region', { name: 'Applications' })
-      expect(within(part).getByText('Your applications show here once you have matches.')).toBeInTheDocument()
-      expect(within(part).queryAllByRole('img')).toEqual([])
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
+      cleanup()
+      // what the server sends once one is sent and none has an outcome yet
+      mockDoor({ status_summary: summary({ pass_rates: { application: { passed: 0, decided: 0, rate: null, low: null, high: null } }, cost: null }) })
+      render(<Analytics />)
+      expect(await screen.findByText('Your interview rate shows here once an application has an outcome.')).toBeInTheDocument()
+      expect(screen.queryByText(/%$/)).toBeNull()
     })
 
     it('a failed read shows no error and no section; a read that works shows the section', async () => {
@@ -175,7 +158,7 @@ describe('Analytics', () => {
       expect(screen.queryByRole('alert')).toBeNull()
     })
 
-    it('a summary without standing: no section, no crash, usage still shows', async () => {
+    it('a summary without pass rates: no section, no crash, usage still shows', async () => {
       mockDoor({ status_summary: summary({ cost: COST, plan: null }) })
       render(<Analytics />)
       expect(await screen.findByText('≈ $2.10')).toBeInTheDocument()
