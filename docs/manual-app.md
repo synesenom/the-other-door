@@ -544,15 +544,13 @@ stops. The phone does not show it.
 
 How it is going, as figures: nothing here changes anything. Not on the phone.
 
-**Applications** shows how your applications are going. It leads with your interview rate: how
-many of your applications with an outcome (an interview, a rejection or no reply) led to an
-interview (offers count, since they passed one), with the range it likely lies in while there are
-few. It says how well the matches *The other door* finds fit you. Below it, **Your applications**,
-everything you sent, one part of the bar each: an offer, interviewing, waiting for an answer, and
-rejected or no answer (or withdrawn). An application with no change for 30 days counts as no
-answer, in the bar and in the rate, whether or not you marked it ghosted; once you record what
-happened next, it counts as that. Until you send one it says only that your applications show here
-once you do; your matches themselves are on Matches.
+**Applications** is your interview rate: how many of your applications with an outcome (an
+interview, a rejection or no reply) led to an interview (offers count, since they passed one), with
+the range it likely lies in while there are few. It says how well the matches *The other door*
+finds fit you. An application with no change for 30 days counts as no reply, whether or not you
+marked it ghosted; once you record what happened next, it counts as that. Until an application has
+an outcome it says only that the rate shows here then. Where each application stands is on the
+Applications board, and your matches are on Matches.
 
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
 You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,

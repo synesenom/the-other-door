@@ -61,7 +61,6 @@ change a colour or a size there, not in a component.
 | `on-warning` | `#1E1A16` | `#1E1A16` | the ! on that triangle |
 | `scrim` | `rgba(30,26,22,0.4)` | `rgba(0,0,0,0.55)` | the veil behind a dialog |
 | `accent-tint` | `rgba(47,85,200,0.14)` | `rgba(134,160,242,0.35)` | the accent, faint, behind text: the lines just added to the CV (stronger in dark, where the ground swallows it) |
-| `accent-soft` | `#9AA5CC` | `#4D5679` | the accent, softened and opaque: the second part of Analytics' applications bar (interviewing) |
 
 Contrast (WCAG): ink on ground 14:1; ink-muted on ground 6.1:1 (6.8:1 on surface);
 accent on ground 5.2:1 (6.3:1 on page), page on accent 6.3:1; in dark mode ink-muted 7.4:1,
@@ -219,13 +218,12 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 ![Review one at a time, dark](screens/review-dark.png)
 
 **Analytics** (no mockup yet): the reading-width column of Settings with its list of parts on the
-right, nothing in it changes anything. Applications first (#66, #87): how employers answered. It leads
+right, nothing in it changes anything. Applications first (#66, #87): the interview rate. It leads
 like Claude usage, with the interview rate in `display-s` (the applications with an outcome, an interview, a
 rejection or no reply, that led to an interview) and one `small` line saying so with "3 of 5,
-likely between 40% and 77%" (the Wilson range); before any outcome, one muted line instead. Then one
-stacked 8 px bar drawn like the cost bar, with a `body` heading and its total in
-`ink-muted`, and a legend row per part (dot, name, count): Your applications (Offer `accent`, Interviewing `accent-soft`, Waiting for an answer `ink-muted`,
-Rejected or no answer `border`; no answer: marked ghosted, or no change for 30 days). A part with nothing in it is left out; no split of the matches (Matches has them). Claude usage next: the total of the last 7 days in
+likely between 40% and 77%" (the Wilson range); before any outcome, one muted line instead (no reply: marked ghosted, or no change for 30 days).
+Nothing else: where each application stands is the Applications board's columns and the matches
+are the Matches list, so neither is drawn again here. Claude usage next: the total of the last 7 days in
 `display-s` marked "≈", then one `small` line in ink that starts in bold "You don't pay this." (the
 plan covers it; an estimate at API prices: no one may read it as a price), then about what one
 search and one application cost in `small` muted, then one 8 px stacked bar for the whole total

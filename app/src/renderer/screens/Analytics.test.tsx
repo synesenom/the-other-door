@@ -97,7 +97,7 @@ describe('Analytics', () => {
   })
 
   it('shows the Market third, read once on opening, listed beside the sections', async () => {
-    const { call } = mockDoor({ status_summary: summary({ cost: COST, standing: { offer: 0, interviewing: 0, waiting: 1, rejected: 0, ghosted: 0, withdrawn: 0 } }) })
+    const { call } = mockDoor({ status_summary: summary({ cost: COST, pass_rates: {} }) })
     render(<Analytics />)
     await screen.findByRole('region', { name: 'Applications' })
     const headings = (await screen.findAllByRole('heading', { level: 2 })).map((h) => h.textContent)
@@ -107,7 +107,7 @@ describe('Analytics', () => {
     expect(screen.getAllByText('Market')).toHaveLength(2) // the heading and its entry beside the sections
   })
 
-  it('without the applications the Market is still the last section', async () => {
+  it('without the interview rate the Market is still the last section', async () => {
     mockDoor({ status_summary: summary({ cost: COST }) })
     render(<Analytics />)
     await screen.findByText('≈ $2.10')
@@ -115,55 +115,26 @@ describe('Analytics', () => {
   })
 
   describe('Applications', () => {
-    const STANDING = { offer: 1, interviewing: 2, waiting: 2, rejected: 1, ghosted: 1, withdrawn: 0 }
     const RATE = { application: { passed: 3, decided: 5, rate: 0.6, low: 0.4, high: 0.77 } }
-    const APPLIED = { standing: STANDING, pass_rates: RATE }
-    const legend = (block: HTMLElement) => within(block).getAllByRole('listitem').map((li) => li.textContent)
+    const APPLIED = { pass_rates: RATE }
 
-    it('leads with the interview rate of the answered applications, with its likely range', async () => {
+    it('is the interview rate of the applications with an outcome, with its likely range, and nothing else', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       expect(within(part).getByText('60%')).toBeInTheDocument()
       expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5, likely between 40% and 77%.')
+      // where each application stands is the Applications board's columns, not repeated here
+      expect(within(part).queryAllByRole('group')).toEqual([])
+      expect(within(part).queryAllByRole('img')).toEqual([])
     })
 
-    it('shows no split of your matches: the Matches list has them', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
-      render(<Analytics />)
-      await screen.findByRole('group', { name: 'Your applications' })
-      expect(screen.queryByRole('group', { name: 'Your matches' })).toBeNull()
-      expect(screen.queryByText(/set aside/)).toBeNull()
-    })
-
-    it('splits your applications by where each stands now; a stand no application is in is left out', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
-      render(<Analytics />)
-      const block = await screen.findByRole('group', { name: 'Your applications' })
-      expect(within(block).getByRole('heading')).toHaveTextContent('Your applications · 7')
-      expect(legend(block)).toEqual(['Offer1', 'Interviewing2', 'Waiting for an answer2', 'Rejected or no answer2'])
-      cleanup()
-      mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, withdrawn: 1 }, cost: null }) })
-      render(<Analytics />)
-      expect(legend(await screen.findByRole('group', { name: 'Your applications' }))).toEqual(
-        ['Interviewing2', 'Waiting for an answer2', 'Rejected, no answer or withdrawn3'])
-    })
-
-    it('before any answer: no rate, a line saying when it shows', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, interviewing: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: null }) })
+    it('before any outcome: no rate, a line saying when it shows', async () => {
+      mockDoor({ status_summary: summary({ pass_rates: {}, cost: COST, plan: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       expect(within(part).getByText('Your interview rate shows here once an application has an outcome.')).toBeInTheDocument()
       expect(within(part).queryByText(/%$/)).toBeNull()
-    })
-
-    it('with nothing sent: a single quiet line for the section, whatever the matches', async () => {
-      mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, interviewing: 0, waiting: 0, rejected: 0, ghosted: 0 }, pass_rates: {}, cost: COST, plan: null }) })
-      render(<Analytics />)
-      const part = await screen.findByRole('region', { name: 'Applications' })
-      expect(within(part).getByText('Your applications show here once you send one.')).toBeInTheDocument()
-      expect(within(part).queryAllByRole('img')).toEqual([])
-      expect(within(part).queryByText(/interview rate/)).toBeNull()
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
     })
 
@@ -181,7 +152,7 @@ describe('Analytics', () => {
       expect(screen.queryByRole('alert')).toBeNull()
     })
 
-    it('a summary without standing: no section, no crash, usage still shows', async () => {
+    it('a summary without pass rates: no section, no crash, usage still shows', async () => {
       mockDoor({ status_summary: summary({ cost: COST, plan: null }) })
       render(<Analytics />)
       expect(await screen.findByText('≈ $2.10')).toBeInTheDocument()

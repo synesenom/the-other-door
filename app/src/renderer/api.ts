@@ -82,19 +82,8 @@ export interface StatusSummary {
   cost?: CostBlock | null
   /** The Claude plan's window and the room left (`usage.room`); null before any reading. */
   plan?: PlanBlock | null
-  /** Where each sent application stands now, each counted once (`tracker.standings`). */
-  standing?: Standing
-  /** Each stage's pass rate of the decided ones; `application`: answered applications that led to an interview. */
+  /** Each stage's pass rate of the decided ones; `application`: the applications with an outcome that led to an interview. */
   pass_rates?: Record<string, PassRate>
-}
-
-export interface Standing {
-  offer: number
-  interviewing: number
-  waiting: number
-  rejected: number
-  ghosted: number
-  withdrawn: number
 }
 
 export interface PassRate {
