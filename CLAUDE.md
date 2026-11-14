@@ -8,6 +8,16 @@ Automated job hunting pipeline: scrape job boards → score against a candidate 
 
 When summarising what you just did, use at most 10 short bullet points: what happened, no details. Go into details only when asked.
 
+## Decisions
+
+When a question comes up that is the user's to decide (a design choice, a policy, a trade-off, which option of several), do not ask it first. Spawn the `decider` agent (`.claude/agents/decider.md`, on Fable) with the question, the options you see and the context; it researches the codebase, the docs, the issues and PRs and the web, and returns one definite decision with its reasons, or CANNOT DECIDE. Act on a decision and name it, with its main reason, in your report. Ask the user (AskUserQuestion) only on CANNOT DECIDE, with the question as the agent put it and what it found.
+
+This is for decisions, not permissions: a skill's or the harness's confirmation before an action that is hard to undo or outward-facing (pushing a tag, publishing a release, deleting data) is still asked of the user.
+
+## Gaps
+
+Before summarising a change you implemented (a PR, or a branch about to become one), spawn the `gap-reviewer` agent (`.claude/agents/gap-reviewer.md`) with the base branch and the issue or goal; it reports what the change leaves missing, each gap with its evidence. Every gap it reports, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) whose number you give. The summary names each gap and which way it went; none is only mentioned. A gap the reviewer reports that you judge not real: say why in one line.
+
 ## Key directories
 
 | Path | Purpose |
