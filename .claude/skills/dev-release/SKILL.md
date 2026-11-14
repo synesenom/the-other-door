@@ -56,6 +56,8 @@ Suggest the version from what is in it, against the previous tag's `X.Y.Z` (whil
 - only **Fixed** and **Internal** → the next patch, `X.Y.(Z+1)`;
 - nothing but **Internal** → say there is nothing for users to release and ask whether to go on.
 
+Data policy: minor versions migrate data, major versions may break it, patch versions never change it. So a patch suggestion becomes the next minor when "The data upgrade" below finds a step is needed; and a major bump (including `0.x` → `1.0`) means the previous major's data is not opened: the notes' first lines say so ("This version does not open data from <X>.x: keep using <X>.x, or start a new profile.").
+
 If the argument named a version, use it, but say so when it disagrees with the suggestion. Otherwise ask with AskUserQuestion, the suggestion first with a one-line reason ("3 added, 2 fixed"), the other bump second. The version must be `X.Y.Z`. `git tag -l vX.Y.Z` and `gh release view vX.Y.Z` must both find nothing; if either does, say so (a draft from an earlier attempt: see Step 4's retry) and **stop**.
 
 ### The data upgrade

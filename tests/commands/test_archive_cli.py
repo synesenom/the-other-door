@@ -15,7 +15,7 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import archive as archive_cmd
-from door.core import workspace
+from door.core import migrations, workspace
 import door.mcp_server as server
 from profile_utils import write_config
 from cli_utils import result_text
@@ -193,6 +193,17 @@ def test_round_trip_into_an_empty_workspace(env):
     assert (env.dst_jobs / "output" / "jobindex-acme-ds" / "cv.pdf").read_bytes() == b"%PDF-1.5"
     assert result["backup_dir"] is None  # nothing was there to back up
     assert result["files"] == _export(env, env.tmp_path / "again.tar.gz")["files"]
+
+
+def test_import_into_folders_that_hold_only_their_version_makes_no_backup(env):
+    archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
+    migrations.ensure_folder(env.dst_profile, "profile")  # what a first start leaves
+    migrations.ensure_folder(env.dst_jobs, "jobs")
+
+    result = _import(env, archive)
+
+    assert result["backup_dir"] is None
+    assert (env.dst_profile / "cv.md").read_text() == "# My CV"
 
 
 def test_import_replaces_existing_data_and_backs_it_up(env):

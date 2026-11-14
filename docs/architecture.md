@@ -438,7 +438,13 @@ All state is local: `jobs/` in the checkout (gitignored) holds every ledger, pos
 
 ### Data versions and upgrades (#56)
 
-On `main` the rule is no backward compatibility: a renamed or removed key is changed everywhere, and the maintainer's own data is fixed by hand. A release is different. A tester's `profile/` and `jobs/` written by the previous release must open in the new one with no hand edit, and data written by a newer release must never be changed. `src/door/core/migrations.py` does both; [Your data](data.md#upgrading-your-data-between-releases) is what a user reads.
+On `main` the rule is no backward compatibility: a renamed or removed key is changed everywhere, and the maintainer's own data is fixed by hand. A release is different. A tester's `profile/` and `jobs/` written by the previous release must open in the new one with no hand edit, and data written by a newer release must never be changed.
+
+**The policy, in one line: minor versions migrate data, major versions may break it, patch versions never change it.**
+- A **minor** release (`X.Y` → `X.(Y+1)`) opens every earlier release's data of the same major, upgraded on first start.
+- A **major** release (`X` → `X+1`, `0.x` → `1.0` included) may change stored data freely: it empties the step lists and refuses the previous major's data with a message saying so (the user keeps using the old major, or starts a new profile). Its release notes say it.
+- A **patch** release ships no step: a release that needs one is at least a minor (`/dev-release` bumps it).
+- Newer data is always refused, and nothing is downgraded: going back to an older version means restoring a backup. `src/door/core/migrations.py` does both; [Your data](data.md#upgrading-your-data-between-releases) is what a user reads.
 
 **Two versions, one per folder.** `profile/.data_version` and `jobs/.data_version` each hold `<major>.<n>`, e.g. `0.1`: the app's major version (`door.version.VERSION`, read at call time) and the number of steps applied within that major. Anything else in the file is garbled. It is a file of its own, not a key in `config.json`, which `Profile` validates strictly (`extra="forbid"`). There are two versions because the folders travel apart:
 - `jobs/` is created on the first run and can be deleted to start over;
@@ -446,7 +452,7 @@ On `main` the rule is no backward compatibility: a renamed or removed key is cha
 
 One shared number would describe a pair that can split up: a fresh `jobs/` would inherit an old version, or a deleted one would take the profile's version with it.
 
-**The file is authoritative.** A folder this build creates is stamped with the current version by `migrations.ensure_folder`, called where a folder is made rather than at every `mkdir`: `ledger_lock` for `jobs/` (every `jobs/` writer takes it), and for `profile/` `init`, `save_cv`, `draft_cv`, `save_photo`, the story bank's `save`, `companies.save` and the import. It stamps only a folder that is missing or holds no data. So a folder with data and no file can only be v0.1.0's (which wrote none) and reads as `0.0`.
+**The file is authoritative.** A folder this build creates is stamped with the current version by `migrations.ensure_folder`, called where a folder is made rather than at every `mkdir`: `ledger_lock` for `jobs/` (every `jobs/` writer takes it), and for `profile/` `init`, `save_cv`, `draft_cv`, `save_photo`, the story bank's `save`, `companies.save` and the import. It stamps only a folder that is missing or holds no data. And `run_at_start`, after the upgrade, makes and stamps both folders when they are missing, so even a writer that forgets `ensure_folder` writes into a versioned folder; an import into such a stamp-only folder makes no backup. So a folder with data and no file can only be v0.1.0's (which wrote none) and reads as `0.0`.
 
 **Across a major version nothing is upgraded.** Compared with `current(folder)` (the app's major and the number of steps):
 - same major, fewer steps: **upgrade**, below;

@@ -65,6 +65,9 @@ Or say "export my data" / "import this export" in a conversation.
 
 ## Upgrading your data between releases
 
+In short: a minor update (say 0.2 to 0.3) upgrades your data by itself, a patch update (0.2.1 to 0.2.2) never
+changes it, and a major update (0.x to 1.0, 1.x to 2.0) may not open the data of the version before it.
+
 `profile/` and `jobs/` each carry a data version, written `<major>.<n>` (for example `0.1`) in
 `profile/.data_version` and `jobs/.data_version` (a file of its own, not a key in `config.json`): the
 app's major version, and how many upgrade steps the folder has had within it. A folder The other door

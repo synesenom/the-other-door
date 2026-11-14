@@ -249,7 +249,10 @@ def _swap_in(staging: Path, profile_dir: Path, jobs_dir: Path, backup: Path | No
     it.
     """
     if profile_dir.exists():
-        shutil.move(profile_dir, backup / "profile")
+        if backup is None:  # only the version stamp of a first start: nothing to keep
+            shutil.rmtree(profile_dir)
+        else:
+            shutil.move(profile_dir, backup / "profile")
     shutil.move(staging / "profile", profile_dir)
 
     old_jobs = [c for c in jobs_dir.iterdir() if c.name not in _LOCK_FILES]
@@ -334,7 +337,10 @@ def _import_core(
             if all(c.name in _LOCK_FILES or c.name == migrations.VERSION_FILE for c in jobs_dir.iterdir()):
                 (jobs_dir / migrations.VERSION_FILE).unlink(missing_ok=True)  # only the stamp of an empty folder
             has_old_jobs = any(c.name not in _LOCK_FILES for c in jobs_dir.iterdir())
-            backup = _new_backup_dir(backups_dir) if profile_dir.exists() or has_old_jobs else None
+            has_old_profile = profile_dir.exists() and any(
+                c.name != migrations.VERSION_FILE for c in profile_dir.iterdir()
+            )
+            backup = _new_backup_dir(backups_dir) if has_old_profile or has_old_jobs else None
             _swap_in(staging, profile_dir, jobs_dir, backup)
         finally:
             shutil.rmtree(staging, ignore_errors=True)

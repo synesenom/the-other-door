@@ -16,6 +16,9 @@ from door.core.migrations import Step
 EXAMPLE = workspace.PROFILE_EXAMPLE_DIR
 
 
+_REAL_RUN_AT_START = migrations.run_at_start  # conftest stubs it per test; these tests run the real one
+
+
 @pytest.fixture(autouse=True)
 def _fresh_state(monkeypatch):
     monkeypatch.setattr(migrations, "_state", None)
@@ -432,3 +435,33 @@ def test_the_version_orders_by_major_then_steps():
     assert V(0, 5) < V(1, 0) < V(1, 1)
     assert str(V(1, 2)) == "1.2"
     assert V.parse("1.2") == V(1, 2)
+
+
+def test_start_creates_both_folders_stamped_so_no_later_writer_leaves_one_unversioned(tmp_path, monkeypatch):
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(workspace, "BACKUPS_DIR", tmp_path / "backups")
+
+    assert _REAL_RUN_AT_START() is None
+
+    for name in ("profile", "jobs"):
+        assert migrations.read_version(tmp_path / name) == migrations.current(name)
+    (tmp_path / "profile" / "cv.md").write_text("# CV")  # a writer that never calls ensure_folder
+    assert migrations.read_version(tmp_path / "profile") == migrations.current("profile")
+
+
+def test_start_leaves_an_unversioned_folder_with_data_to_the_upgrade(tmp_path, monkeypatch):
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(workspace, "BACKUPS_DIR", tmp_path / "backups")
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [_tag("a")])
+    (tmp_path / "profile").mkdir()
+    (tmp_path / "profile" / "config.json").write_text("{}")
+
+    assert _REAL_RUN_AT_START() is None
+
+    assert (tmp_path / "profile" / "a.done").exists()  # read as 0.0 and upgraded, not stamped over

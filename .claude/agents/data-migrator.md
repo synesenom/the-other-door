@@ -24,6 +24,7 @@ You write the data upgrade a release needs (#56). A tester who installs this rel
 - Each of `profile/` and `jobs/` has its own data version, `<folder>/.data_version`, written `<major>.<n>`: the app's major version and the number of steps applied within it. A folder's current version is the app's major and the length of its list, `PROFILE_STEPS` or `JOBS_STEPS`. Every folder is stamped when it is created, so the file is the truth.
 - A step is `Step(name, run)`, where `run(folder: Path)` moves that folder from N to N+1 and changes nothing outside it. A change touching both folders is two steps, one per list.
 - **Never across a major version.** Data from an older major is refused, not upgraded. When the release bumps the major (`X` of `X.Y.Z`), write no step: empty both lists, delete `tests/data_versions/` folders of older majors, and report "major bump: lists emptied, <previous major>.x data is not opened". The release notes say so.
+- **Never in a patch.** A patch release (`X.Y.Z` → `X.Y.(Z+1)`) changes no stored data. If `new_version` is a patch and you find a step is needed, write it anyway and say at the top of your report: "a step is needed: release X.(Y+1).0, not a patch".
 - **Only between releases.** A step goes from the shape the previous tag wrote to the shape `main` writes. A shape that lived only on `main` between the two never gets a step.
 - Steps are never edited or deleted once released. You only append.
 - `name` is in a user's words, since the release notes and the error line show it ("templates come from the code").
