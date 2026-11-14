@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { statusSummary, type CostBlock, type StatusSummary } from '../api'
+import { statusSummary, type CostBlock, type FunnelStage, type StatusSummary } from '../api'
 import { PageSections } from './PageSections'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
@@ -21,6 +21,46 @@ function share(part: number, total: number): number {
 /** The tone of the i-th activity (largest first) in the stacked bar and its dot: blue, grey, beige. */
 function tone(i: number): string {
   return `usage-tone-${Math.min(i, 2)}`
+}
+
+const FUNNEL_LABELS: Record<string, string> = {
+  postings: 'Scraped',
+  matches: 'Matches',
+  prepared: 'Prepared',
+  applied: 'Applied',
+  interview: 'Interview',
+  offer: 'Offer',
+}
+
+/** The stages whose share of the one before is a pass rate worth reading as a figure. */
+const RATED = new Set(['applied', 'interview', 'offer'])
+
+/**
+ * The funnel's bars once anything is scraped. Each bar is its stage's share of the stage before it (how many
+ * of the prepared were sent, how many of those led to an interview); the first is always full. The second
+ * half (applied, interview, offer) also says that share as a percentage.
+ */
+function Applications({ funnel }: { funnel: FunnelStage[] }) {
+  if ((funnel[0]?.count ?? 0) === 0) return <p className="small muted">Your funnel shows here once jobs are found</p>
+  const rows = funnel.filter((f) => f.stage in FUNNEL_LABELS)
+  return (
+    <ul className="funnel-list">
+      {rows.map((f, i) => {
+        const label = FUNNEL_LABELS[f.stage]
+        const before = i === 0 ? f.count : rows[i - 1].count
+        return (
+          <li key={f.stage} className="funnel-row">
+            <span className="body">{label}</span>
+            <span className="funnel-bar" role="img" aria-label={i === 0 ? `${label}: ${f.count}` : `${label}: ${f.count} of ${before}`}>
+              <span style={{ width: `${Math.round(share(f.count, before) * 1000) / 10}%` }} />
+            </span>
+            <span className="body">{f.count}</span>
+            <span className="body muted">{RATED.has(f.stage) && before > 0 ? `${Math.round(share(f.count, before) * 100)}%` : ''}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
 }
 
 function Usage({ cost }: { cost: CostBlock | null }) {
@@ -78,7 +118,8 @@ function Usage({ cost }: { cost: CostBlock | null }) {
 }
 
 /**
- * Analytics: how it is going, read-only (#64). Claude usage first: what the last week's calls cost at API
+ * Analytics: how it is going, read-only (#64, #66). Applications first (`status_summary.funnel`, each stage as a
+ * share of the one before), then Claude usage: what the last week's calls cost at API
  * prices per activity, and one search and one prepared application. Not the plan's window: that is live, and
  * this screen is about the days gone by. Reads
  * `status_summary` once on opening; a failed read is said nowhere (the next opening reads again).
@@ -99,6 +140,14 @@ export function Analytics() {
     <div className="page-with-aside">
       <div className="settings">
         <h1 className="display-l">Analytics</h1>
+        {summary?.funnel && (
+          <section className="part" aria-labelledby="analytics-applications">
+            <h2 className="display-s" id="analytics-applications">
+              Applications
+            </h2>
+            <Applications funnel={summary.funnel} />
+          </section>
+        )}
         <section className="part" aria-labelledby="analytics-usage">
           <h2 className="display-s" id="analytics-usage">
             Claude usage
@@ -106,9 +155,10 @@ export function Analytics() {
           {summary && <Usage cost={summary.cost ?? null} />}
         </section>
       </div>
-      <PageSections sections={PARTS} />
+      <PageSections sections={summary?.funnel ? [APPLICATIONS, USAGE] : [USAGE]} />
     </div>
   )
 }
 
-const PARTS = [{ id: 'analytics-usage', label: 'Claude usage' }]
+const APPLICATIONS = { id: 'analytics-applications', label: 'Applications' }
+const USAGE = { id: 'analytics-usage', label: 'Claude usage' }

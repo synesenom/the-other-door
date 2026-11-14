@@ -264,7 +264,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         {...}, "interviews": {stage: {"passed", "rejected", "ghosted", "withdrawn",
         "pending"}}, "application": {"passed", "rejected", "ghosted",
         "withdrawn", "pending"}, "pass_rates": {stage: {"passed", "decided",
-        "rate", "low", "high"}}, "in_progress": {...} | None, "employers": {"followed", "unfollowable",
+        "rate", "low", "high"}}, "funnel": [{"stage", "count"}], "in_progress": {...} | None, "employers": {"followed", "unfollowable",
         "unresolved"}, "drive": {"connected", "account", "last_synced",
         "last_error", "configured"}, "recurring_problem": bool, "plan": {...} | None, "cost": {...} | None}`` — every ledger status is present,
         0 when unused; ``interviews`` is `tracker.interview_outcomes` (only the
@@ -272,7 +272,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         (did each sent application lead to an interview); ``pass_rates`` is
         `tracker.pass_rate` for ``application`` and then each interview stage
         (rate of the decided rounds with its one-sigma Wilson interval, None
-        until one is decided); ``since_last_review`` is `_since_last_review`'s dict;
+        until one is decided); ``funnel`` is `_funnel`; ``since_last_review`` is `_since_last_review`'s dict;
         ``in_progress`` is None unless a run holds the ledger lock right now
         and has reported progress: ``{"purpose", "pid", "started_at",
         "message", "done", "total", "site", "stage", "updated_at"}`` (the
@@ -320,6 +320,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "interviews": interviews,
         "application": application,
         "pass_rates": {stage: _tracker_mod.pass_rate(counts) for stage, counts in stages.items()},
+        "funnel": _funnel(summary, app_tracker),
         "in_progress": _in_progress(jobs_dir),
         "employers": _employer_counts(profile_dir),
         "drive": _drive_block(),
@@ -328,6 +329,31 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "plan": _plan_block(jobs_dir, records),
         "cost": usage.cost(jobs_dir, records=records),
     }
+
+
+_FUNNEL_STAGES = ("postings", "applicable", "matches", "prepared", "applied", "interview", "offer")
+
+
+def _funnel(summary: dict, app_tracker) -> list[dict]:
+    """The job hunt as stages reached, each job counted in every stage it reached (#66).
+
+    ``[{"stage", "count"}]`` for postings, applicable, matches (the pipeline's total,
+    applicable and above_threshold), then the jobs that ever were prepared, applied,
+    in an interview round (or at an offer, which implies the application passed)
+    and at an offer. A sent job implies it was prepared. Counts never rise down the
+    list: a sent job below min_score or with no posting lifts the earlier stages.
+    """
+    prepared = applied = interview = offer = 0
+    for job_id in app_tracker.job_ids():
+        statuses = [event.get("status") for event in app_tracker.history(job_id)]
+        sent = any(_tracker_mod.is_sent(s) for s in statuses)
+        prepared += sent or "prepared" in statuses
+        applied += sent
+        interview += any(_tracker_mod.interview_stage(s) for s in statuses) or "offer" in statuses
+        offer += "offer" in statuses
+    raw = [summary["total"], summary["applicable"], summary["above_threshold"], prepared, applied, interview, offer]
+    counts = [max(raw[i:]) for i in range(len(raw))]
+    return [{"stage": stage, "count": int(n)} for stage, n in zip(_FUNNEL_STAGES, counts)]
 
 
 def _plan_block(jobs_dir: Path, records: list[dict]) -> dict | None:
