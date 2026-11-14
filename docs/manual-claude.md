@@ -43,7 +43,7 @@ Things you can say:
 - "Here's an ad I found: …" → `import_posting` with the pasted text (or just its `url`:
   the page is fetched and Haiku reads its title and company); it is scored right away, so
   you hear its score and can say "prepare it" or "not this one".
-- "Prepare the Trustpilot one." → `prepare` (minutes — the tailor agent runs); "prepare the best one" → `prepare` with no job.
+- "Prepare the Trustpilot one." → `prepare` (minutes — the tailor agent runs); "prepare the best one" → `prepare` with no job. The CV and letter are written in the language the ad is written in (English when it cannot be told), whatever language your `cv.md` is in: what is kept from it is translated, headings, the letter's date and sign-off included.
 - "Let me see it." → `show`: once prepared, it adds both PDFs, page images, keywords, what was tailored, page counts, letter length.
 - "Tighten the letter's second paragraph." → `revise`; "undo that" → `revise` with `undo`.
 - "Mark Trustpilot applied." → `set_status` (Claude asks how you sent it — easy apply, the company's site, a referral, or they came to you — unless you said); "I applied to Trustpilot on the 3rd" → the same with `at`, so the history keeps when it happened; "Pleo never answered after the interview" → `set_status` `ghosted`. The first time an application is marked sent, the materials are copied to `jobs/output/<id>/sent/`; if its ad is not on disk or is only a snippet, Claude says so.
