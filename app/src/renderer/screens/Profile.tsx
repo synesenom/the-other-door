@@ -212,7 +212,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
     return (
       <Wrap aside={aside}>
         {switcher}
-        <CvEditor onDraft={onDraft} onSaved={onSaved} onSearchChanged={() => void load(true)} unsaved={cvUnsaved} onUnsaved={setCvUnsaved} />
+        <CvEditor onDraft={onDraft} onSaved={onSaved} unsaved={cvUnsaved} onUnsaved={setCvUnsaved} />
       </Wrap>
     )
   }

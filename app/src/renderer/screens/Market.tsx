@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { named } from './AppName'
 import { call, errorText } from '../api'
 import { Dialog } from './Dialog'
@@ -7,37 +7,41 @@ import { Spinner } from './Spinner'
 interface MarketReport {
   counts: { scraped: number; scored: number; above_min_score: number }
   skills: { name: string; count: number; share: number; have: boolean }[]
-  near_misses: { n: number; rows: { skill: string; count: number }[] }
   uncovered_titles: { title: string; count: number }[]
-  warning: string | null
+  companies: { population: string; rows: { name: string; count: number; followed: boolean }[] }
+}
+
+interface AddCompanyResult {
+  results: { name: string; status: string; reason: string | null }[]
 }
 
 const SKILLS_SHOWN = 8
 const pct = (share: number) => `${Math.round(share * 100)}%`
 
 /**
- * "What the ads asked for this month", in Profile → CV: the market tool, run only when opened and never
- * saved. "Make a plan" hands the skills the CV lacks to "What should I learn?" beside it; titles added to the
- * search are said through `onSearchChanged`, so the details form reads them.
+ * "Market", in Analytics (#65): what the ads of the last 30 days asked for. The market tool runs once when the
+ * screen opens and saves nothing. Two things can be done from it: add the titles the search does not cover to
+ * the search keywords, and follow a repeat employer. Both ask or say their result here; the report is not read
+ * again.
  */
-export function Market({ onPlan, onSearchChanged }: { onPlan: (skills: string[]) => void; onSearchChanged?: () => void }) {
-  const [open, setOpen] = useState(false)
-  const [state, setState] = useState<{ kind: 'idle' } | { kind: 'counting' } | { kind: 'done'; m: MarketReport } | { kind: 'error'; message: string }>({ kind: 'idle' })
+export function Market() {
+  const [state, setState] = useState<{ kind: 'counting' } | { kind: 'done'; m: MarketReport } | { kind: 'error'; message: string }>({ kind: 'counting' })
   const [asking, setAsking] = useState(false)
   const [added, setAdded] = useState<string | null>(null)
+  // per employer: asking, followed, or a line to show
+  const [follows, setFollows] = useState<Record<string, { kind: 'pending' } | { kind: 'followed' } | { kind: 'note'; text: string }>>({})
 
-  const toggle = async () => {
-    const next = !open
-    setOpen(next)
-    // a report that failed is asked again when reopened
-    if (!next || (state.kind !== 'idle' && state.kind !== 'error')) return
-    setState({ kind: 'counting' })
-    try {
-      setState({ kind: 'done', m: await call<MarketReport>('market', { save: false }) })
-    } catch (e) {
-      setState({ kind: 'error', message: errorText(e) })
+  useEffect(() => {
+    let live = true
+    call<MarketReport>('market', { save: false }).then(
+      (m) => live && setState({ kind: 'done', m }),
+      (e) => live && setState({ kind: 'error', message: errorText(e) }),
+    )
+    return () => {
+      live = false
     }
-  }
+  }, [])
+
   const addTitles = async (titles: string[]) => {
     setAsking(false)
     try {
@@ -45,31 +49,41 @@ export function Market({ onPlan, onSearchChanged }: { onPlan: (skills: string[])
       const current = p.config?.search_keywords?.length ? p.config.search_keywords : (p.config?.role_targets ?? [])
       await call('init_profile', { search_keywords: [...current, ...titles.filter((t) => !current.includes(t))] })
       setAdded('Added to your search keywords.')
-      onSearchChanged?.()
     } catch (e) {
       setAdded(errorText(e))
     }
   }
+  const follow = async (name: string) => {
+    setFollows((f) => ({ ...f, [name]: { kind: 'pending' } }))
+    try {
+      const r = await call<AddCompanyResult>('add_company', { inputs: [name] })
+      const one = r.results?.[0]
+      setFollows((f) => ({
+        ...f,
+        [name]: one?.status === 'followed' ? { kind: 'followed' } : { kind: 'note', text: one?.reason ?? `${name} could not be followed.` },
+      }))
+    } catch (e) {
+      setFollows((f) => ({ ...f, [name]: { kind: 'note', text: errorText(e) } }))
+    }
+  }
 
   const m = state.kind === 'done' ? state.m : null
-  const missing = m ? m.skills.slice(0, SKILLS_SHOWN).filter((s) => !s.have).map((s) => s.name).slice(0, 3) : []
   const titles = m ? m.uncovered_titles.map((t) => t.title) : []
+  const employers = m ? m.companies.rows : []
   return (
-    <section className="cv-panel market" aria-labelledby="cv-market">
-      <button type="button" className="quiet market-fold" id="cv-market" aria-expanded={open} onClick={() => void toggle()}>
-        What the ads asked for this month
-      </button>
-      {!open && <p className="small muted">Counts the ads of the last 30 days. New skill names may need one short Claude call on your plan.</p>}
-      {open && state.kind === 'counting' && <Spinner message="Counting the ads (new skill names may take one short Claude call)…" />}
-      {open && state.kind === 'error' && (
+    <section className="part" aria-labelledby="analytics-market">
+      <h2 className="display-s" id="analytics-market">
+        Market
+      </h2>
+      {state.kind === 'counting' && <Spinner message="Counting the ads (new skill names may take one short Claude call)…" />}
+      {state.kind === 'error' && (
         <p role="alert" className="field-error">
           {named(state.message)}
         </p>
       )}
-      {open && m && (
+      {m && (
         <div className="market-body">
           <p className="small muted">{`${m.counts.scraped} ads read, ${m.counts.scored} scored, ${m.counts.above_min_score} at your minimum score.`}</p>
-          {m.warning && <p className="small muted">{m.warning}</p>}
           <h3 className="label">Most asked for</h3>
           <ul className="market-skills">
             {m.skills.slice(0, SKILLS_SHOWN).map((s) => (
@@ -79,16 +93,6 @@ export function Market({ onPlan, onSearchChanged }: { onPlan: (skills: string[])
               </li>
             ))}
           </ul>
-          {missing.length > 0 && (
-            <div className="actions">
-              <button type="button" className="secondary" onClick={() => onPlan(missing)}>
-                {`Make a plan for ${missing.length === 1 ? missing[0] : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`}`}
-              </button>
-            </div>
-          )}
-          {m.near_misses.rows.length > 0 && (
-            <p className="small">{`What kept ${m.near_misses.n} ads just under your minimum: ${m.near_misses.rows.map((r) => r.skill).join(', ')}.`}</p>
-          )}
           {titles.length > 0 && (
             <>
               <h3 className="label">Titles your search does not cover</h3>
@@ -99,6 +103,30 @@ export function Market({ onPlan, onSearchChanged }: { onPlan: (skills: string[])
                 </button>
               </div>
               {added && <p className="small">{added}</p>}
+            </>
+          )}
+          {employers.length > 0 && (
+            <>
+              <h3 className="label">Repeat employers</h3>
+              <ul className="market-skills">
+                {employers.map((c) => {
+                  const f = follows[c.name]
+                  const followed = c.followed || f?.kind === 'followed'
+                  return (
+                    <li key={c.name} aria-label={c.name}>
+                      <span>{c.name}</span>
+                      <span className="small muted">{` · ${c.count} ads`}</span>
+                      {followed && <span className="small">{' · followed'}</span>}
+                      {!followed && (
+                        <button type="button" className="quiet" disabled={f?.kind === 'pending'} aria-label={`Follow ${c.name}`} onClick={() => void follow(c.name)}>
+                          Follow
+                        </button>
+                      )}
+                      {f?.kind === 'note' && <span className="small">{` ${f.text}`}</span>}
+                    </li>
+                  )
+                })}
+              </ul>
             </>
           )}
         </div>

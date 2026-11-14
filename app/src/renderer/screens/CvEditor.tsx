@@ -2,10 +2,8 @@ import { Fragment, useEffect, useId, useRef, useState } from 'react'
 import { named } from './AppName'
 import { call, errorText } from '../api'
 import { Dialog } from './Dialog'
-import { Market } from './Market'
 import { Markdown } from './Markdown'
 import { MarkdownLink } from './MarkdownHelp'
-import { ChipInput } from './onboarding/parts'
 import type { ShowProfile } from './onboarding/reducer'
 import { Spinner } from './Spinner'
 import { Switch } from './Switch'
@@ -21,7 +19,6 @@ interface Proposal {
 }
 type Enriched = { outcome: 'proposed' | 'nothing_new'; proposals: Proposal[]; unreachable: string[] }
 
-const basename = (p: string) => p.split(/[\\/]/).pop() ?? p
 
 /**
  * The proposals of one read, ticked by default, grouped by the CV section each would go into. Plain blocks with
@@ -183,96 +180,33 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
   )
 }
 
-/** "What should I learn?": `skill_gaps` compares the CV with roles (and the best matches) and writes a plan. */
-function Gaps({ roles }: { roles: string[] }) {
-  const [targets, setTargets] = useState(roles)
-  const [withMatches, setWithMatches] = useState(false)
-  const [state, setState] = useState<{ kind: 'idle' } | { kind: 'working' } | { kind: 'done'; report: string; path: string } | { kind: 'error'; message: string }>({ kind: 'idle' })
-  const id = useId()
-  const run = async () => {
-    setState({ kind: 'working' })
-    try {
-      const r = await call<{ report?: string; report_path: string }>('skill_gaps', { targets, ...(withMatches ? { top: 3 } : {}) })
-      setState({ kind: 'done', report: r.report ?? '', path: r.report_path })
-    } catch (e) {
-      setState({ kind: 'error', message: errorText(e) })
-    }
-  }
-  return (
-    <section className="cv-panel" aria-labelledby="cv-gaps">
-      <h2 className="label" id="cv-gaps">
-        What should I learn?
-      </h2>
-      {state.kind === 'working' ? (
-        <Spinner message="Comparing your CV with the roles and looking for courses (several minutes)…" />
-      ) : state.kind === 'done' ? (
-        <>
-          <Markdown text={state.report} className="cv-report" />
-          <p className="small muted">{`Saved as ${basename(state.path)} in upskill/.`}</p>
-          <div className="actions">
-            <button type="button" className="quiet" onClick={() => setState({ kind: 'idle' })}>
-              Make another plan
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <ChipInput label="Roles or skills" placeholder="Add one and press Enter" values={targets} hint="What you want to be ready for." onAdd={(v) => !targets.includes(v.trim()) && setTargets([...targets, v.trim()])} onDrop={(v) => setTargets(targets.filter((t) => t !== v))} />
-          <label className="choice" htmlFor={id}>
-            <input id={id} type="checkbox" checked={withMatches} onChange={(e) => setWithMatches(e.target.checked)} />
-            <span>Also my three best matches</span>
-          </label>
-          <div className="actions">
-            <button type="button" className="secondary" disabled={targets.length === 0 && !withMatches} onClick={() => void run()}>
-              Make my plan
-            </button>
-            <p className="small muted">One Claude call on your plan, with web search for courses.</p>
-          </div>
-          {state.kind === 'error' && (
-            <p role="alert" className="field-error">
-              {named(state.message)}
-            </p>
-          )}
-        </>
-      )}
-    </section>
-  )
-}
-
 /**
  * Your CV (profile/cv.md): edited as Markdown, with a preview. Save goes through save_cv, which keeps the
  * previous version as cv.md.bak. "Add a page" is /expand as a button; drafting from a CV file is
- * the first launch's CV step (`onDraft`). `extras`: "What should I learn?" (/upskill) and the market report,
- * off for now (issue 480: they crowd the page; features to turn on later).
+ * the first launch's CV step (`onDraft`).
  */
 export function CvEditor({
   onDraft,
   onSaved,
-  onSearchChanged,
   unsaved = null,
   onUnsaved,
-  extras = false,
 }: {
   onDraft: () => void
   /** cv.md was written: what reads the profile (the sidebar's "no CV yet") reads it again. */
   onSaved?: () => void
-  onSearchChanged?: () => void
   /** Text typed and not saved when the editor was last shown (Profile keeps it while Details is shown). */
   unsaved?: string | null
   onUnsaved?: (text: string | null) => void
-  extras?: boolean
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saved, setSaved] = useState('')
   const [text, setText] = useState('')
   const [view, setView] = useState<'edit' | 'preview'>('edit')
-  const [panel, setPanel] = useState<null | 'page' | 'again' | 'gaps'>(null)
+  const [panel, setPanel] = useState<null | 'page' | 'again'>(null)
   // The pages read before (enrich_sources): remembered when one is read, forgotten by its ×, each saved at once.
   const [pages, setPages] = useState<string[] | null>(null)
   const [pagesError, setPagesError] = useState<string | null>(null)
-  // What "What should I learn?" starts from: the role targets, or the skills the market report found missing.
-  const [planFor, setPlanFor] = useState<{ n: number; skills: string[] } | null>(null)
   // What the last "Add … to my CV" put in: tinted in the preview until the next edit or save.
   const [added, setAdded] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
@@ -480,26 +414,6 @@ export function CvEditor({
           </p>
         )}
       </div>
-      {extras && (
-        <div className="actions cv-tools">
-          <button type="button" className="secondary" aria-expanded={panel === 'gaps'} onClick={() => {
-              setPlanFor(null) // from here it starts from your role targets
-              setPanel(panel === 'gaps' ? null : 'gaps')
-            }}>
-            What should I learn?
-          </button>
-        </div>
-      )}
-      {panel === 'gaps' && <Gaps key={planFor?.n ?? -1} roles={planFor ? planFor.skills : (profile.config?.role_targets ?? [])} />}
-      {extras && (
-        <Market
-          onSearchChanged={onSearchChanged}
-          onPlan={(skills) => {
-            setPlanFor((p) => ({ n: (p?.n ?? 0) + 1, skills }))
-            setPanel('gaps')
-          }}
-        />
-      )}
     </div>
   )
 }

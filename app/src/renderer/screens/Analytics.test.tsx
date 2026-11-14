@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { mockDoor } from '../testing'
+import { mockDoor as baseDoor } from '../testing'
 import { Analytics, usd } from './Analytics'
 
 afterEach(cleanup)
@@ -19,6 +19,14 @@ const COST = {
       features: [{ feature: 'ask', label: 'Questions about your jobs', usd: 0.1, calls: 2 }] },
   ],
 }
+const MARKET = {
+  counts: { scraped: 10, scored: 5, above_min_score: 2 },
+  skills: [{ name: 'SQL', count: 6, share: 0.6, have: true }],
+  uncovered_titles: [],
+  companies: { population: 'scraped', rows: [] },
+}
+/** Every Analytics opening also reads the market once. */
+const mockDoor = (given: Record<string, unknown>) => baseDoor({ market: MARKET, ...given })
 const RESETS = new Date(Date.now() + 2 * 3600e3).toISOString()
 const PLAN = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.42, resets_at: RESETS }, room: { find: 6, prepare: 2 }, binding: 'five_hour' }
 
@@ -86,6 +94,24 @@ describe('Analytics', () => {
     mockDoor({ status_summary: summary({ cost: null, plan: null }) })
     render(<Analytics />)
     expect(await screen.findByText(/shows here after your first search/)).toBeInTheDocument()
+  })
+
+  it('shows the Market third, read once on opening, listed beside the sections', async () => {
+    const { call } = mockDoor({ status_summary: summary({ cost: COST, funnel: [{ stage: 'postings', count: 3 }] }) })
+    render(<Analytics />)
+    await screen.findByRole('region', { name: 'Applications' })
+    const headings = (await screen.findAllByRole('heading', { level: 2 })).map((h) => h.textContent)
+    expect(headings).toEqual(['Applications', 'Claude usage', 'Market'])
+    expect(await screen.findByRole('listitem', { name: 'SQL' })).toBeInTheDocument()
+    expect(call.mock.calls.filter((c) => c[0] === 'market')).toEqual([['market', { save: false }]])
+    expect(screen.getAllByText('Market')).toHaveLength(2) // the heading and its entry beside the sections
+  })
+
+  it('without a funnel the Market is still the last section', async () => {
+    mockDoor({ status_summary: summary({ cost: COST }) })
+    render(<Analytics />)
+    await screen.findByText('≈ $2.10')
+    expect((await screen.findAllByRole('heading', { level: 2 })).map((h) => h.textContent)).toEqual(['Claude usage', 'Market'])
   })
 
   describe('Applications', () => {

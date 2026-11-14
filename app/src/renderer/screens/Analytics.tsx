@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { statusSummary, type CostBlock, type FunnelStage, type StatusSummary } from '../api'
+import { Market } from './Market'
 import { PageSections } from './PageSections'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
@@ -118,7 +119,7 @@ function Usage({ cost }: { cost: CostBlock | null }) {
 }
 
 /**
- * Analytics: how it is going, read-only (#64, #66). Applications first (`status_summary.funnel`, each stage as a
+ * Analytics: how it is going (#64, #66, #65). It only reads, apart from two actions in Market (add titles to the search, follow an employer). Applications first (`status_summary.funnel`, each stage as a
  * share of the one before), then Claude usage: what the last week's calls cost at API
  * prices per activity, and one search and one prepared application. Not the plan's window: that is live, and
  * this screen is about the days gone by. Reads
@@ -154,11 +155,13 @@ export function Analytics() {
           </h2>
           {summary && <Usage cost={summary.cost ?? null} />}
         </section>
+        <Market />
       </div>
-      <PageSections sections={summary?.funnel ? [APPLICATIONS, USAGE] : [USAGE]} />
+      <PageSections sections={summary?.funnel ? [APPLICATIONS, USAGE, MARKET] : [USAGE, MARKET]} />
     </div>
   )
 }
 
 const APPLICATIONS = { id: 'analytics-applications', label: 'Applications' }
 const USAGE = { id: 'analytics-usage', label: 'Claude usage' }
+const MARKET = { id: 'analytics-market', label: 'Market' }
