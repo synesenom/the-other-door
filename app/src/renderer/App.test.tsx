@@ -745,6 +745,15 @@ describe('App, the first-launch gate', () => {
       expect(line.closest('button')).toBeNull()
     })
 
+    it('what needs you stands above Find new jobs, read before a search starts', async () => {
+      const low = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.9 }, room: { find: 1, prepare: 2 }, binding: 'five_hour' }
+      mockDoor({ show_profile: profile(), status_summary: summary({ plan: low }), list_matches: matchesResult([]), doctor: doctorReport('ok') })
+      render(<App />)
+      const group = await (await sidebar()).findByRole('group', { name: 'Needs you' })
+      const find = sidebarButton()
+      expect(group.compareDocumentPosition(find) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
     it('the plan line goes by itself once the window resets, by one read at that time', async () => {
       const resets = new Date(Date.now() + 3_600_000)
       let after = false

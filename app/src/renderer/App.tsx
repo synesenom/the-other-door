@@ -407,11 +407,11 @@ export function App({ start }: { start?: AppStart } = {}) {
           ))}
         </nav>
         <div className="sidebar-foot">
+          {lines.length > 0 && problemLines}
           <button type="button" className="secondary" disabled={foreign || (own && finding) || (!own && preparingNow)} title={!own && preparingNow ? PREPARING_TIP : undefined} onClick={() => (own ? setFinding(true) : void startRun())}>
             {own || foreign ? 'Finding jobs…' : 'Find new jobs'}
           </button>
           {lastRun && <p className="small muted">Last run {lastRun}</p>}
-          {lines.length > 0 && problemLines}
         </div>
       </aside>
       )}
