@@ -178,6 +178,17 @@ describe('Settings: Version', () => {
     expect(installUpdate).toHaveBeenCalledTimes(1)
   })
 
+  it.each([
+    ['a newer version to download', link],
+    ['a download under way', downloading],
+    ['a downloaded update', downloaded],
+  ])('offers no check once there is %s', async (_, state) => {
+    show('real', false, state)
+    const section = await screen.findByRole('region', { name: 'Version' })
+    expect(within(section).getByText(/Version 0\.1\.0/, { selector: 'p' })).toBeInTheDocument()
+    expect(within(section).queryByRole('button', { name: 'Check for updates' })).toBeNull()
+  })
+
   it('follows the state the app pushes', async () => {
     const h = show('real', false, downloading)
     const section = await screen.findByRole('region', { name: 'Version' })

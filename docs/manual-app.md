@@ -28,7 +28,7 @@ and signs you in to your Claude plan.
   first: `sudo apt install libfuse2t64`) or the `.deb` (`sudo apt install ./the-other-door-….deb`).
 
 **Updating**: an installed app looks for a newer published version when it starts and from Settings → Version
-("Version X · Check for updates"). The Windows installer, the AppImage and a signed macOS build download it in the
+("Version X · Check for updates", the check gone once a newer version is found). The Windows installer, the AppImage and a signed macOS build download it in the
 background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
 that installs it at once. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
 replace themselves: Settings says "Version X is available" with a Download button that opens the release page, and

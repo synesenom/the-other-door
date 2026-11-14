@@ -147,10 +147,14 @@ export function Settings({
           </h2>
           <p className="body">
             Version {update.current}
-            {' · '}
-            <button type="button" className="link-inline" disabled={manual === 'checking'} onClick={() => void checkNow()}>
-              Check for updates
-            </button>
+            {!(update.checked && update.available) && (
+              <>
+                {' · '}
+                <button type="button" className="link-inline" disabled={manual === 'checking'} onClick={() => void checkNow()}>
+                  Check for updates
+                </button>
+              </>
+            )}
           </p>
           {update.checked && update.available && update.mode === 'link' && (
             <p className="body">
