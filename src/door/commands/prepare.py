@@ -20,7 +20,7 @@ from door.commands import check_facts as check_facts_cmd
 from door.core.lock import LockHeldError, ledger_lock
 from door.core.profile_loader import ConfigError
 from door.core import utils
-from door.matching import integrity
+from door.matching import integrity, language
 from door.tailoring import facts as facts_mod
 from door.tailoring import readability
 
@@ -409,8 +409,6 @@ def _prepare_core(
         if integrity.ensure(stored):
             utils.write_json_atomic(posting_path, stored)
         if "language" not in stored:  # an ad stored before imports were tagged: the tailor needs its language
-            from door.matching import language
-
             language.tag_posting(
                 posting_path, common._load_config_or_defaults(home), feature="import_posting"
             )
