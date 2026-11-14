@@ -38,6 +38,7 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
+      # The same key as seed-caches.yml, which keeps it on main (#80)
       - name: Restore the bundle's downloads
         uses: actions/cache@v6
         with:
