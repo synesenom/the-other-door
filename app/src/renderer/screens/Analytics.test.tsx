@@ -136,6 +136,12 @@ describe('Analytics', () => {
       expect(within(part).getByText('Your interview rate shows here once an application has an outcome.')).toBeInTheDocument()
       expect(within(part).queryByText(/%$/)).toBeNull()
       expect(screen.getByText('≈ $2.10')).toBeInTheDocument()
+      cleanup()
+      // what the server sends once one is sent and none has an outcome yet
+      mockDoor({ status_summary: summary({ pass_rates: { application: { passed: 0, decided: 0, rate: null, low: null, high: null } }, cost: null }) })
+      render(<Analytics />)
+      expect(await screen.findByText('Your interview rate shows here once an application has an outcome.')).toBeInTheDocument()
+      expect(screen.queryByText(/%$/)).toBeNull()
     })
 
     it('a failed read shows no error and no section; a read that works shows the section', async () => {
