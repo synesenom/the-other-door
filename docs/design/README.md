@@ -227,7 +227,7 @@ stacked 8 px bars drawn like the cost bar, each with a `body` heading and its to
 `ink-muted`, and a legend row per part (dot, name, count): Your matches (Applied `accent`,
 Prepared, not sent `accent-soft`, Not yet `border`; the ones set aside a muted line under it) and
 Your applications (Offer `accent`, Interviewing `accent-soft`, Waiting for an answer `ink-muted`,
-Rejected or ghosted `border`). A part with nothing in it is left out. Claude usage next: the total of the last 7 days in
+Rejected or no answer `border`; no answer: marked ghosted, or no change for 30 days). A part with nothing in it is left out. Claude usage next: the total of the last 7 days in
 `display-s` marked "≈", then one `small` line in ink that starts in bold "You don't pay this." (the
 plan covers it; an estimate at API prices: no one may read it as a price), then about what one
 search and one application cost in `small` muted, then one 8 px stacked bar for the whole total

@@ -165,7 +165,7 @@ describe('scenes', () => {
     const part = await screen.findByRole('region', { name: 'Applications' })
     expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5, likely between 40% and 77%.')
     expect(within(part).getByRole('img', { name: 'Applied 7, Prepared, not sent 2, Not yet 15' })).toBeInTheDocument()
-    expect(within(part).getByRole('img', { name: 'Offer 1, Interviewing 2, Waiting for an answer 2, Rejected or ghosted 2' })).toBeInTheDocument()
+    expect(within(part).getByRole('img', { name: 'Offer 1, Interviewing 2, Waiting for an answer 2, Rejected or no answer 2' })).toBeInTheDocument()
     cleanup()
     mount('analytics', 'empty')
     expect(await screen.findByText('Your applications show here once you have matches.')).toBeInTheDocument()

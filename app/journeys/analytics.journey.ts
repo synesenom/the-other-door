@@ -13,5 +13,5 @@ test('the applications follow the ledger', { tag: '@core' }, async ({ page }) =>
   await expect(part).toContainText('75%of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 4, likely between 50% and 90%.')
   const bar = (group: string, name: string) => expect(part.getByRole('group', { name: group }).getByRole('img', { name })).toBeVisible()
   await bar('Your matches', 'Applied 5, Prepared, not sent 1, Not yet 9')
-  await bar('Your applications', 'Offer 1, Interviewing 1, Waiting for an answer 1, Rejected or ghosted 2')
+  await bar('Your applications', 'Offer 1, Interviewing 1, Waiting for an answer 1, Rejected or no answer 2')
 })

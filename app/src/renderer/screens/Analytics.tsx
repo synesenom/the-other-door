@@ -104,7 +104,7 @@ function Applications({ summary }: { summary: StatusSummary }) {
             { label: 'Offer', count: s.offer, tone: 'usage-tone-0' },
             { label: 'Interviewing', count: s.interviewing, tone: 'usage-tone-3' },
             { label: 'Waiting for an answer', count: s.waiting, tone: 'usage-tone-1' },
-            { label: s.withdrawn > 0 ? 'Rejected, ghosted or withdrawn' : 'Rejected or ghosted', count: closed, tone: 'usage-tone-2' },
+            { label: s.withdrawn > 0 ? 'Rejected, no answer or withdrawn' : 'Rejected or no answer', count: closed, tone: 'usage-tone-2' },
           ]}
         />
       )}

@@ -119,12 +119,12 @@ describe('Analytics', () => {
       render(<Analytics />)
       const block = await screen.findByRole('group', { name: 'Your applications' })
       expect(within(block).getByRole('heading')).toHaveTextContent('Your applications · 7')
-      expect(legend(block)).toEqual(['Offer1', 'Interviewing2', 'Waiting for an answer2', 'Rejected or ghosted2'])
+      expect(legend(block)).toEqual(['Offer1', 'Interviewing2', 'Waiting for an answer2', 'Rejected or no answer2'])
       cleanup()
       mockDoor({ status_summary: summary({ ...APPLIED, standing: { ...STANDING, offer: 0, withdrawn: 1 }, cost: null }) })
       render(<Analytics />)
       expect(legend(await screen.findByRole('group', { name: 'Your applications' }))).toEqual(
-        ['Interviewing2', 'Waiting for an answer2', 'Rejected, ghosted or withdrawn3'])
+        ['Interviewing2', 'Waiting for an answer2', 'Rejected, no answer or withdrawn3'])
     })
 
     it('before any answer: no rate, a line saying when it shows', async () => {

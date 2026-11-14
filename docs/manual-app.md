@@ -551,7 +551,9 @@ the range it likely lies in while there are few. It says how well the matches *T
 one part of one bar. **Your matches**, the jobs at your minimum score (not everything scraped, which
 includes unrelated jobs): applied, prepared but not sent, and not yet, with the ones you set aside
 as not for me said under it. **Your applications**, everything you sent: an offer, interviewing,
-waiting for an answer, and rejected or ghosted (or withdrawn). A job you applied for and later set
+waiting for an answer, and rejected or no answer (or withdrawn). An application with no change for
+30 days counts as no answer, in the bar and in the rate, whether or not you marked it ghosted; once
+you record what happened next, it counts as that. A job you applied for and later set
 aside counts as applied among your matches and as withdrawn among your applications. An application
 sent outside your matches (one imported by hand, or below your minimum score) shows only under Your
 applications. With no matches and nothing sent it says only that your applications show here once
