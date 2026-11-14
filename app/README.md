@@ -70,7 +70,7 @@ After the bundle (above), on the system you are packaging for:
 npm run package:dir     # an unpacked app in dist/ (dist/mac/The other door.app, dist/linux-unpacked, dist/win-unpacked)
 npm run test:package    # its smoke test: the bundled server serves Matches, doctor finds the bundled Tectonic,
                         # nothing is written inside the app (DOOR_PACKAGED_APP=<executable> for an installed one)
-npm run package         # the installer: dist/the-other-door-<version>-mac-<arch>.dmg, -windows-x64.exe, -linux-x64.AppImage/.deb
+npm run package         # the installer: dist/the-other-door-<version>-mac-<arch>.dmg/.zip, The-other-door-<version>-Windows.exe, The-other-door-<version>-Linux.AppImage, the-other-door-<version>-linux-<arch>.deb
 ```
 
 `electron-builder.config.cjs` is the one config (appId `dev.door.app`, productName `The other door`, the bundle as
