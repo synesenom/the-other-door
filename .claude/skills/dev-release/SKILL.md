@@ -101,7 +101,7 @@ Find the run (it can take a few seconds to appear): `gh run list --workflow rele
 
 ## Step 5: The draft
 
-`gh release view vX.Y.Z --json url,isDraft,assets --jq '{url, isDraft, assets: [.assets[].name]}'`: it must be a draft holding `the-other-door-X.Y.Z-mac-arm64.dmg`, `-mac-x64.dmg`, `-windows-x64.exe`, `-linux-x64.AppImage` and a `.deb`. Name anything missing.
+`gh release view vX.Y.Z --json url,isDraft,assets --jq '{url, isDraft, assets: [.assets[].name]}'`: it must be a draft holding the installers `The-other-door-X.Y.Z-Mac-Apple-silicon.dmg`, `-Mac-Intel.dmg`, `-Windows.exe`, `-Linux.AppImage`, `-Debian-Ubuntu.deb`, and the update files `latest.yml`, `latest-linux.yml`, `latest-mac.yml` (from the `mac-manifest` job), `the-other-door-X.Y.Z-mac-arm64.zip`, `the-other-door-X.Y.Z-mac-x64.zip` and their `.blockmap` files (and the `.exe`'s). Name anything missing.
 
 Write the release notes into `thoughts/release/vX.Y.Z.md` (gitignored), for the people who will install it, not for developers. They are a changelog, built from Step 1's sorted PRs:
 
@@ -140,8 +140,8 @@ Show the notes and ask whether to put them on the draft; on yes, `gh release edi
 
 Point the user at the draft URL and at `docs/releasing.md`'s checklist: install each installer on a clean machine first (`DOOR_INSTALLER=<the downloaded file> ./scripts/run-test.sh --release` adds the install test to the rest; `npm run test:install` in `app/` runs it alone). Then ask with AskUserQuestion: "Publish vX.Y.Z?" Options:
 
-- "Publish as the latest release": the README's download link and the apps' update check (`DOOR_UPDATE_FEED`, GitHub's `releases/latest`) find it. `gh release edit vX.Y.Z --draft=false --latest`
-- "Publish as a pre-release": public on the releases page, but `releases/latest` skips it, so the README link and the update check don't see it; share the release URL instead. `gh release edit vX.Y.Z --draft=false --prerelease`
+- "Publish as the latest release": the README's download link and the apps' updater find it; publishing is what rolls the update out. `gh release edit vX.Y.Z --draft=false --latest`
+- "Publish as a pre-release": public on the releases page, but `releases/latest` skips it, so the README link and the updater don't see it; share the release URL instead. `gh release edit vX.Y.Z --draft=false --prerelease`
 - "Keep it a draft": nothing changes; the user publishes later from the release page or with this skill's Step 6.
 
 Recommend the pre-release when the argument said `pre-release`, else the latest release. Never publish without this answer.

@@ -78,9 +78,9 @@ jobs:
 
       - name: Smoke-test the AppImage
         run: |
-          chmod +x dist/the-other-door-*.AppImage
+          chmod +x dist/The-other-door-*-Linux.AppImage
           mkdir -p "$RUNNER_TEMP/appimage" && cd "$RUNNER_TEMP/appimage"
-          "$GITHUB_WORKSPACE"/app/dist/the-other-door-*.AppImage --appimage-extract >/dev/null
+          "$GITHUB_WORKSPACE"/app/dist/The-other-door-*-Linux.AppImage --appimage-extract >/dev/null
           cd "$GITHUB_WORKSPACE/app"
           DOOR_PACKAGED_APP="$RUNNER_TEMP/appimage/squashfs-root/the-other-door" xvfb-run -a npm run test:package
 
@@ -103,7 +103,7 @@ jobs:
       - name: The install test (AppImage)
         run: |
           sudo apt-get install -y -qq libfuse2t64
-          DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
+          DOOR_INSTALLER="$(ls dist/The-other-door-*-Linux.AppImage)" xvfb-run -a npm run test:install
 
       - name: The install test (.deb)
         run: DOOR_INSTALLER="$(ls dist/the-other-door-*.deb)" DOOR_INSTALLER_KIND=deb xvfb-run -a npm run test:install

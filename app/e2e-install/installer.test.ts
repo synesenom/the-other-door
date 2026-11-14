@@ -7,10 +7,13 @@ const DIST = [
   'the-other-door-0.1.1-mac-arm64.dmg',
   'the-other-door-0.1.1-mac-arm64.dmg.blockmap',
   'the-other-door-0.1.1-mac-x64.dmg',
-  'the-other-door-0.1.1-windows-x64.exe',
-  'the-other-door-0.1.1-linux-x64.AppImage',
+  'The-other-door-0.1.1-Windows.exe',
+  'The-other-door-0.1.1-Windows.exe.blockmap',
+  'The-other-door-0.1.1-Linux.AppImage',
   'the-other-door-0.1.1-linux-amd64.deb',
   'latest-mac.yml',
+  'latest.yml',
+  'latest-linux.yml',
 ]
 
 describe('pickInstaller', () => {
@@ -20,11 +23,11 @@ describe('pickInstaller', () => {
   })
 
   it('takes the x64 build on Windows on ARM, which runs it emulated', () => {
-    expect(pickInstaller(DIST, 'win32', 'arm64')).toBe('the-other-door-0.1.1-windows-x64.exe')
+    expect(pickInstaller(DIST, 'win32', 'arm64')).toBe('The-other-door-0.1.1-Windows.exe')
   })
 
   it('takes the AppImage on Linux unless the .deb is asked for', () => {
-    expect(pickInstaller(DIST, 'linux', 'x64')).toBe('the-other-door-0.1.1-linux-x64.AppImage')
+    expect(pickInstaller(DIST, 'linux', 'x64')).toBe('The-other-door-0.1.1-Linux.AppImage')
     expect(pickInstaller(DIST, 'linux', 'x64', 'deb')).toBe('the-other-door-0.1.1-linux-amd64.deb')
   })
 
@@ -47,19 +50,19 @@ describe('installPlan', () => {
   })
 
   it('Windows: the NSIS installer silently into the throwaway folder, and its uninstaller', () => {
-    const plan = installPlan('C:\\d\\the-other-door-0.1.1-windows-x64.exe', 'win32', 'C:\\t')
-    expect(plan.install).toEqual([['C:\\d\\the-other-door-0.1.1-windows-x64.exe', '/S', '/D=C:\\t\\app']])
+    const plan = installPlan('C:\\d\\The-other-door-0.1.1-Windows.exe', 'win32', 'C:\\t')
+    expect(plan.install).toEqual([['C:\\d\\The-other-door-0.1.1-Windows.exe', '/S', '/D=C:\\t\\app']])
     expect(plan.executable).toBe('C:\\t\\app\\the-other-door.exe')
     expect(plan.uninstall).toEqual([['C:\\t\\app\\Uninstall The other door.exe', '/S']])
   })
 
   it('Linux: the AppImage copied and made executable; the .deb through apt, into /opt, removed by its package name', () => {
-    const image = installPlan('/d/the-other-door-0.1.1-linux-x64.AppImage', 'linux', '/t')
+    const image = installPlan('/d/The-other-door-0.1.1-Linux.AppImage', 'linux', '/t')
     expect(image.install).toEqual([
-      ['cp', '/d/the-other-door-0.1.1-linux-x64.AppImage', '/t/the-other-door-0.1.1-linux-x64.AppImage'],
-      ['chmod', '+x', '/t/the-other-door-0.1.1-linux-x64.AppImage'],
+      ['cp', '/d/The-other-door-0.1.1-Linux.AppImage', '/t/The-other-door-0.1.1-Linux.AppImage'],
+      ['chmod', '+x', '/t/The-other-door-0.1.1-Linux.AppImage'],
     ])
-    expect(image.executable).toBe('/t/the-other-door-0.1.1-linux-x64.AppImage')
+    expect(image.executable).toBe('/t/The-other-door-0.1.1-Linux.AppImage')
     const deb = installPlan('dist/the-other-door-0.1.1-linux-amd64.deb', 'linux', '/t')
     expect(deb.install).toEqual([['sudo', 'apt-get', 'install', '-y', './dist/the-other-door-0.1.1-linux-amd64.deb']])
     expect(deb.executable).toBe('/opt/The other door/the-other-door')
@@ -77,7 +80,7 @@ describe('where the installed app keeps things', () => {
     expect(resourcesOf('/t/The other door.app/Contents/MacOS/The other door', 'darwin')).toBe('/t/The other door.app/Contents/Resources')
     expect(resourcesOf('C:\\t\\app\\the-other-door.exe', 'win32')).toBe('C:\\t\\app\\resources')
     expect(resourcesOf('/opt/The other door/the-other-door', 'linux')).toBe('/opt/The other door/resources')
-    expect(resourcesOf('/t/the-other-door-0.1.1-linux-x64.AppImage', 'linux')).toBeNull()
+    expect(resourcesOf('/t/The-other-door-0.1.1-Linux.AppImage', 'linux')).toBeNull()
   })
 
   it('the bundled Python is the one the packaged app starts', () => {

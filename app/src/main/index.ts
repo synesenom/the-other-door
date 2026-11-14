@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { realpath, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -18,7 +18,7 @@ import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest } from './
 import { createPhotoFile } from './photo-file'
 import { watchRunBoard, type RunBoard } from './run-board'
 import { cspHeader, isAllowedNavigation } from './security'
-import { createUpdateChecker } from './updates'
+import { CHECK_EVERY_MS, checkEvery, createUpdateManager, doorSignedOf, updateMode, updatesAllowed, type UpdaterLike } from './updates'
 import { windowBackground } from './window-look'
 
 // From a checkout the repo is one level above app/; a packaged app carries Python, The other door's src/ and
@@ -45,12 +45,26 @@ const server = new DoorServer(
   // A packaged app and the door inside it are one version (#224); from a checkout a test keeps them so.
   { ...(packaged ? { expectedVersion: app.getVersion() } : {}), onProblem: (where, message) => problemLog.write(where, message) },
 )
-// Is a newer version out (#501): only an installed app, never the demo, and only when the build names a feed.
-const updates = createUpdateChecker({
-  feed: packaged && !simulated && typeof __UPDATE_FEED__ === 'string' ? __UPDATE_FEED__ : '',
+// Is a newer version out (#501, #17): an installed app that can replace itself downloads it and installs on
+// restart; one that cannot links to the release; a checkout and the demo say nothing (updates.ts). It checks at
+// start and once a day, so an app left open learns of a release too; Settings has nothing to press for it.
+let doorSigned = false
+try {
+  doorSigned = doorSignedOf(JSON.parse(readFileSync(join(app.getAppPath(), 'package.json'), 'utf8')))
+} catch {
+  // no package.json to read: not signed
+}
+const mode = updatesAllowed(process.env) ? updateMode({ platform: process.platform, packaged, simulated, doorSigned, appImage: Boolean(process.env['APPIMAGE']) }) : 'none'
+const updates = createUpdateManager({
+  mode: mode,
   current: app.getVersion(),
+  // Only a self-installing build loads electron-updater.
+  updater: mode === 'install' ? (require('electron-updater').autoUpdater as UpdaterLike) : null,
   fetch: (url, init) => net.fetch(url, init),
   log: (message) => problemLog.write('update-check', message),
+})
+updates.subscribe((state) => {
+  for (const win of BrowserWindow.getAllWindows()) win.webContents.send(CHANNELS.updateState, state)
 })
 const devUrl = process.env['ELECTRON_RENDERER_URL']
 
@@ -207,7 +221,7 @@ app.whenReady().then(() => {
       : {}),
   })
   createWindow()
-  void updates.check() // never waits, never throws
+  if (mode !== 'none') checkEvery(updates, CHECK_EVERY_MS) // at start and once a day; never waits, never throws
   // Start the server now so the first screen does not wait for Python.
   void server.listTools().catch(() => undefined)
   app.on('activate', () => {

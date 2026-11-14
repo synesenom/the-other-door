@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../testing'
@@ -137,46 +137,52 @@ describe('Settings', () => {
 })
 
 describe('Settings: Version', () => {
-  const none = { enabled: true, checked: true, current: '0.1.0', available: false } as const
-  const newer = { enabled: true, checked: true, current: '0.1.0', available: true, version: '0.1.1', url: 'https://example.com/releases/v0.1.1' } as const
+  const none = { enabled: true, mode: 'install', checked: true, current: '0.1.0', available: false } as const
+  const link = { enabled: true, mode: 'link', checked: true, current: '0.1.0', available: true, version: '0.1.1', url: 'https://example.com/releases/v0.1.1', state: 'idle' } as const
+  const downloading = { enabled: true, mode: 'install', checked: true, current: '0.1.0', available: true, version: '0.1.1', url: 'https://example.com/r', state: 'downloading' } as const
+  const downloaded = { ...downloading, state: 'downloaded' } as const
 
-  it('has no Version section when there is no feed', async () => {
+  it('has no Version section when updates are off', async () => {
     const { checkUpdate } = show()
     await vi.waitFor(() => expect(checkUpdate).toHaveBeenCalledWith())
     expect(screen.queryByRole('region', { name: 'Version' })).toBeNull()
   })
 
-  it('says a newer version is available and opens its page', async () => {
-    const { openExternal } = show('real', false, newer)
+  it('a build that cannot install says a newer version is available and opens its page', async () => {
+    const { openExternal } = show('real', false, link)
     const section = await screen.findByRole('region', { name: 'Version' })
-    expect(within(section).getByText('Version 0.1.0')).toBeInTheDocument()
     expect(within(section).getByText('Version 0.1.1 is available')).toBeInTheDocument()
     await userEvent.click(within(section).getByRole('button', { name: 'Download' }))
     expect(openExternal).toHaveBeenCalledWith('https://example.com/releases/v0.1.1')
   })
 
-  it('shows no notice for the latest; Check for updates asks afresh', async () => {
-    const { checkUpdate } = show('real', false, none)
+  it('with nothing newer: only the version, nothing to press (the app checks by itself)', async () => {
+    show('real', false, none)
     const section = await screen.findByRole('region', { name: 'Version' })
-    expect(within(section).queryByText(/is available/)).toBeNull()
-    await userEvent.click(within(section).getByRole('button', { name: 'Check for updates' }))
-    expect(checkUpdate).toHaveBeenLastCalledWith(true)
-    expect(await within(section).findByText('You have the latest version')).toBeInTheDocument()
+    expect(within(section).getByText('Version 0.1.0')).toBeInTheDocument()
+    expect(within(section).queryByRole('button')).toBeNull()
   })
 
-  it('a manual check that fails says so; an automatic one says nothing', async () => {
-    const failed = { enabled: true, checked: false, current: '0.1.0' }
-    const { checkUpdate } = show('real', false, failed)
+  it('says it is downloading, with no Download link', async () => {
+    show('real', false, downloading)
     const section = await screen.findByRole('region', { name: 'Version' })
-    expect(within(section).queryByText(/Couldn't check/)).toBeNull()
-    await userEvent.click(within(section).getByRole('button', { name: 'Check for updates' }))
-    expect(checkUpdate).toHaveBeenLastCalledWith(true)
-    expect(await within(section).findByText("Couldn't check just now")).toBeInTheDocument()
+    expect(within(section).getByText('Downloading 0.1.1')).toBeInTheDocument()
+    expect(within(section).queryByRole('button', { name: 'Download' })).toBeNull()
   })
 
-  it('the phone never asks', () => {
-    const { checkUpdate } = show('real', true, newer)
-    expect(checkUpdate).not.toHaveBeenCalled()
-    expect(screen.queryByRole('region', { name: 'Version' })).toBeNull()
+  it('offers a restart once downloaded', async () => {
+    const { installUpdate } = show('real', false, downloaded)
+    const section = await screen.findByRole('region', { name: 'Version' })
+    await userEvent.click(within(section).getByRole('button', { name: 'Restart to update to 0.1.1' }))
+    expect(installUpdate).toHaveBeenCalledTimes(1)
   })
+
+  it('follows the state the app pushes', async () => {
+    const h = show('real', false, downloading)
+    const section = await screen.findByRole('region', { name: 'Version' })
+    expect(within(section).getByText('Downloading 0.1.1')).toBeInTheDocument()
+    act(() => h.pushUpdate(downloaded))
+    expect(await within(section).findByRole('button', { name: 'Restart to update to 0.1.1' })).toBeInTheDocument()
+  })
+
 })

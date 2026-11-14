@@ -2,8 +2,9 @@ name: Release
 
 # A release (#224): pushing the tag vX.Y.Z (after scripts/set_version.py X.Y.Z) builds the app on every system,
 # smoke-tests each, and uploads the installers to a DRAFT release of this repo. Check the draft, then publish it
-# by hand: installed apps find a published release through DOOR_UPDATE_FEED (a repository variable, Settings →
-# Secrets and variables → Actions → Variables). Only on tags: no pull requests, no schedule.
+# by hand: installed apps update from a published release (#17; electron-updater ignores a draft), through the
+# latest*.yml manifests, .zip and .blockmap files uploaded beside the installers. Only on tags: no pull requests,
+# no schedule.
 #
 # Secrets (Settings → Secrets and variables → Actions):
 # The workflow's own GITHUB_TOKEN writes the release (permissions below); no other token is needed.
@@ -94,29 +95,52 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # The update check's feed (#501), e.g. https://api.github.com/repos/<owner>/<repo>/releases/latest; empty = no check.
-          DOOR_UPDATE_FEED: ${{ vars.DOOR_UPDATE_FEED }}
         run: |
           [ -n "$CSC_LINK" ] || unset CSC_LINK CSC_KEY_PASSWORD
           npm run build && npm run build:web
           npx electron-builder --config electron-builder.config.cjs --publish never
-          # the installers only, one per computer (and the .deb), under names a person reads: dist/ keeps the
-          # build's names for the tests below
+          # What the release gets: the .dmg and .deb under names a person reads (dist/ keeps the build's names for
+          # the tests below); the Windows installer and the AppImage already carry their human names, so the
+          # manifests name the uploaded files themselves; the update files (manifests, mac .zip, blockmaps) as built.
+          # latest-mac.yml is not uploaded here: the two mac builds each make one, the mac-manifest job merges them.
           shopt -s nullglob
           version="${GITHUB_REF_NAME#v}"
           mkdir -p upload
-          for f in dist/the-other-door-*.{dmg,exe,AppImage,deb}; do
+          for f in dist/the-other-door-*.{dmg,deb}; do
             case "$(basename "$f")" in
               *-mac-arm64.dmg) name="Mac-Apple-silicon.dmg" ;;
               *-mac-x64.dmg)   name="Mac-Intel.dmg" ;;
-              *.exe)           name="Windows.exe" ;;
-              *.AppImage)      name="Linux.AppImage" ;;
               *.deb)           name="Debian-Ubuntu.deb" ;;
               *) continue ;;
             esac
             cp "$f" "upload/The-other-door-$version-$name"
           done
+          cp dist/The-other-door-*.{exe,exe.blockmap,AppImage} dist/the-other-door-*.zip dist/the-other-door-*.zip.blockmap dist/latest.yml dist/latest-linux.yml upload/ 2>/dev/null || true
+          # every file the updater and the downloads need must be there: a missing one fails the job
+          case "$RUNNER_OS" in
+            Windows) expected=("The-other-door-$version-Windows.exe" "The-other-door-$version-Windows.exe.blockmap" latest.yml) ;;
+            Linux)   expected=("The-other-door-$version-Linux.AppImage" latest-linux.yml "The-other-door-$version-Debian-Ubuntu.deb") ;;
+            macOS)   expected=() ;;
+          esac
+          if [ "$RUNNER_OS" = macOS ]; then
+            arch="$(uname -m | sed 's/x86_64/x64/')"
+            dmg=Mac-Apple-silicon; [ "$arch" = x64 ] && dmg=Mac-Intel
+            expected=("The-other-door-$version-$dmg.dmg" "the-other-door-$version-mac-$arch.zip" "the-other-door-$version-mac-$arch.zip.blockmap")
+            [ -f dist/latest-mac.yml ] || { echo "missing dist/latest-mac.yml" >&2; exit 1; }
+          fi
+          for f in "${expected[@]}"; do
+            [ -f "upload/$f" ] || { echo "missing from the release upload: $f" >&2; exit 1; }
+          done
           gh release upload "$GITHUB_REF_NAME" upload/* --clobber
+          mkdir -p mac-manifest && cp dist/latest-mac.yml mac-manifest/ 2>/dev/null || true
+
+      - name: Keep the mac manifest for the merge
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v7
+        with:
+          name: mac-manifest-${{ matrix.name }}
+          path: app/mac-manifest/latest-mac.yml
+          if-no-files-found: error
 
       - name: Smoke-test the packaged app
         run: |
@@ -128,9 +152,9 @@ jobs:
         run: |
           case "$RUNNER_OS" in
             macOS)   DOOR_INSTALLER="$(ls dist/the-other-door-*-mac-*.dmg)" npm run test:install ;;
-            Windows) DOOR_INSTALLER="$(ls dist/the-other-door-*.exe | head -1)" npm run test:install ;;
+            Windows) DOOR_INSTALLER="$(ls dist/The-other-door-*-Windows.exe)" npm run test:install ;;
             Linux)   sudo apt-get install -y -qq libfuse2t64   # an AppImage needs FUSE 2 (docs/manual-app.md)
-                     DOOR_INSTALLER="$(ls dist/the-other-door-*.AppImage)" xvfb-run -a npm run test:install
+                     DOOR_INSTALLER="$(ls dist/The-other-door-*-Linux.AppImage)" xvfb-run -a npm run test:install
                      DOOR_INSTALLER="$(ls dist/the-other-door-*.deb)" DOOR_INSTALLER_KIND=deb xvfb-run -a npm run test:install ;;
           esac
 
@@ -142,6 +166,36 @@ jobs:
           path: app/install-report
           retention-days: 14
           if-no-files-found: ignore
+
+  # One latest-mac.yml for both mac builds (#17): the updater reads only that name, and each runner made its own.
+  mac-manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: mac-manifest-*
+          path: app/mac-manifests
+
+      - name: Merge and upload
+        run: |
+          npx tsx scripts/merge-mac-manifest.ts mac-manifests/mac-manifest-macos-arm64/latest-mac.yml mac-manifests/mac-manifest-macos-x64/latest-mac.yml latest-mac.yml
+          gh release upload "$GITHUB_REF_NAME" latest-mac.yml --clobber
 
   # Windows on ARM (a Surface Pro 11): the release's x64 installer, emulated, as such a user installs it (#18).
   install-windows-arm:

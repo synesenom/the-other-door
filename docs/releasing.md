@@ -18,9 +18,11 @@ only after a person has installed it on a clean machine of each system and gone 
   fail it: write the step (the `data-migrator` agent) and list what it changes on purpose. It stays out of the
   offline suite and CI, because between releases `main` may not read the last release's data until that step exists.
 - `main` is green (the Python suite and the app's unit tests, smoke test and core journeys).
-- The repository variable `DOOR_UPDATE_FEED` names the public repo's `releases/latest`
-  (`https://api.github.com/repos/<owner>/<repo>/releases/latest`). Empty, the build never checks for updates
-  and Settings has no Version part.
+- Installed apps update from the public repo's published release (#17): nothing to configure. The draft holds
+  the update files the apps read, `latest.yml`, `latest-linux.yml` and the merged `latest-mac.yml` (the
+  `mac-manifest` job), the mac `.zip` files and the `.blockmap` files; every `url:` in a manifest is an asset of the
+  release (the merged `latest-mac.yml` lists only the `.zip` files, the `.dmg` files being renamed on the release). Publishing the draft is what rolls the update out: the updater ignores drafts and pre-releases. Until the
+  Developer ID certificate and notarization secrets exist, the mac builds are unsigned and only link to the release page.
 - The signing secrets are set if this release is to be signed (`app/README.md`); without them macOS and
   Windows warn once, as `docs/manual-app.md` describes.
 
@@ -33,7 +35,7 @@ git tag vX.Y.Z && git push origin main vX.Y.Z
 ```
 
 The workflow refuses a tag that is not the version. It takes about 20 minutes; the draft then holds
-`the-other-door-X.Y.Z-mac-arm64.dmg`, `-mac-x64.dmg`, `-windows-x64.exe`, `-linux-x64.AppImage` and the `.deb`.
+`The-other-door-X.Y.Z-Mac-Apple-silicon.dmg`, `-Mac-Intel.dmg`, `-Windows.exe`, `-Linux.AppImage` and `-Debian-Ubuntu.deb`.
 
 After the tag exists (it is pushed, so the tag's code is what was released), save that release's data for the next
 gate: `poetry run python scripts/save_release_data.py X.Y.Z` checks the tag out in a throwaway git worktree, has the
@@ -50,10 +52,10 @@ previous install (`docs/manual-app.md`, "Your data"). Go through every system th
 
 | System | Installer | Machine |
 |--------|-----------|---------|
-| macOS, Apple silicon | `-mac-arm64.dmg` | macOS 13 or later |
-| macOS, Intel | `-mac-x64.dmg` | macOS 13 or later |
-| Windows | `-windows-x64.exe` | Windows 10 or 11, x64 (on an ARM machine it runs emulated: note it) |
-| Linux | `-linux-x64.AppImage` and `.deb` | a recent Ubuntu, x64 |
+| macOS, Apple silicon | `-Mac-Apple-silicon.dmg` | macOS 13 or later |
+| macOS, Intel | `-Mac-Intel.dmg` | macOS 13 or later |
+| Windows | `-Windows.exe` | Windows 10 or 11, x64 (on an ARM machine it runs emulated: note it) |
+| Linux | `-Linux.AppImage` and `-Debian-Ubuntu.deb` | a recent Ubuntu, x64 |
 
 Steps 1 and 3–6 below are also the install test, which `release.yml` runs on every installer of the draft
 and on Windows on ARM (the x64 installer, emulated): a green release run means they passed on each system, on a
@@ -76,7 +78,8 @@ On each, download the installer from the draft release and check, in order:
    still there, and the data is in the user's data folder, not inside the app (Settings → Your data).
 7. **Update** (from the second release on). Install the previous version, set it up, then install this one
    over it: the data stays, the app opens on Matches, and before that Settings → Version of the old one says
-   this version is out.
+   this version is out. With the draft published, a Windows or AppImage install (and a signed mac one) of the old
+   version downloads it by itself and offers "Restart to update to X"; an unsigned mac one shows the Download link.
 
 Anything that fails is fixed on `main` and released as a new version (the next patch number); a draft is
 never rebuilt under the same tag. Delete the failed draft and its tag.
@@ -104,7 +107,7 @@ system, and on macOS allow it once (link to `docs/manual-app.md#opening-it-on-ma
 ## 4. Download link
 
 README's Desktop app section links to the installers on `releases/latest`. Check that the link points to the
-public repo, the one `DOOR_UPDATE_FEED` names, and that it opens there once the release is published.
+public repo and that it opens there once the release is published.
 
 ## 5. Publish
 

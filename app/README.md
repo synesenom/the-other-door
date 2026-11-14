@@ -70,12 +70,12 @@ After the bundle (above), on the system you are packaging for:
 npm run package:dir     # an unpacked app in dist/ (dist/mac/The other door.app, dist/linux-unpacked, dist/win-unpacked)
 npm run test:package    # its smoke test: the bundled server serves Matches, doctor finds the bundled Tectonic,
                         # nothing is written inside the app (DOOR_PACKAGED_APP=<executable> for an installed one)
-npm run package         # the installer: dist/the-other-door-<version>-mac-<arch>.dmg, -windows-x64.exe, -linux-x64.AppImage/.deb
+npm run package         # the installer: dist/the-other-door-<version>-mac-<arch>.dmg/.zip, The-other-door-<version>-Windows.exe, The-other-door-<version>-Linux.AppImage, the-other-door-<version>-linux-<arch>.deb
 ```
 
 `electron-builder.config.cjs` is the one config (appId `dev.door.app`, productName `The other door`, the bundle as
 `extraResources` outside the asar). macOS builds are signed ad hoc by `scripts/after-pack.cjs` (Apple silicon
-refuses unsigned binaries); a Developer ID signature, notarization and auto-update are #224's. A packaged app
+refuses unsigned binaries); a Developer ID signature and notarization are #224's. A packaged app
 keeps its data in the user's data folder (`docs/manual-app.md`, "Installing the app"); `DOOR_HOME` still
 overrides it, which is how the smoke test runs it on a temp folder with the stand-in `claude`.
 
@@ -119,10 +119,7 @@ One version for *The other door* and the app: `python3 scripts/set_version.py 0.
 `.github/workflows/release.yml` builds macOS (Apple silicon and Intel), Windows and Linux, runs the unit tests
 and the packaged smoke test on each, and uploads the installers to a **draft** release of this repo (the
 workflow's own token writes it); publish it only after the checklist in [docs/releasing.md](../docs/releasing.md)
-passed: a clean-machine install on each system, the release notes, the download link. Installed apps do not update themselves: they check a feed
-(`DOOR_UPDATE_FEED`, a repository variable of the workflow, read at build time: GitHub's `releases/latest` of the public
-repo; empty, the app never checks) at start and from Settings, and say when a newer version is out. The next version is
-downloaded from the release page and installed over the old one.
+passed: a clean-machine install on each system, the release notes, the download link. Installed apps update from the published release (#17, `src/main/updates.ts`): a signed macOS build (the packed `package.json`'s `doorSigned`, set by `electron-builder.config.cjs` when the certificate and notarization are there), the Windows installer and the AppImage download the next version in the background through `electron-updater` (`latest*.yml`, the mac `.zip`, blockmaps; the release workflow uploads them, `scripts/merge-mac-manifest.ts` merges the two mac manifests) and install it on restart; an unsigned macOS build and the `.deb` read GitHub's `releases/latest` and link to its page; a checkout and the demo do nothing. `DOOR_UPDATES=off` keeps a packaged app from checking; `test:package` and `test:install` set it, nothing else should.
 
 For signed builds add
 `MAC_CERTIFICATE`/`MAC_CERTIFICATE_PASSWORD` (Developer ID Application, `.p12` in base64), `APPLE_ID`,
