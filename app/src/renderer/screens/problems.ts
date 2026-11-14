@@ -60,7 +60,7 @@ export function planLine(plan: PlanBlock | null | undefined, now: Date = new Dat
   if (plan.status === 'rejected') return `${plan.warning || "Claude's usage limit is reached"}${resets}`
   const room = plan.room?.prepare
   if (room != null && (room <= PREPARE_ROOM_SHORT || plan.warning)) {
-    return `About ${room} application${room === 1 ? '' : 's'} left${resets}`
+    return `Claude can prepare ${room} more${resets}`
   }
   return plan.warning ? `${plan.warning}${resets}` : null
 }

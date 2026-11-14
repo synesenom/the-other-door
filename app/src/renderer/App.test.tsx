@@ -245,10 +245,10 @@ describe('App, Find new jobs', () => {
     mockDoor({ status_summary: () => summary(ran ? { plan: low } : {}), list_matches: matchesResult([match()]), find_jobs: () => ((ran = true), RECORD) })
     render(<App />)
     await screen.findByRole('heading', { name: 'Matches' })
-    expect(screen.queryByText(/applications left/)).toBeNull()
+    expect(screen.queryByText(/Claude can prepare/)).toBeNull()
     await userEvent.click(sidebarButton())
     await userEvent.click(await screen.findByRole('button', { name: 'View matches' }))
-    expect(await screen.findByText('About 2 applications left')).toBeInTheDocument()
+    expect(await screen.findByText('Claude can prepare 2 more')).toBeInTheDocument()
   })
 
   it('the run goes on while you look at another screen, and the button returns to it', async () => {
@@ -741,7 +741,7 @@ describe('App, the first-launch gate', () => {
       const { info } = gated(profile(), { status_summary: summary({ plan: low }) })
       info.mockResolvedValue({ demo: false, remote: true })
       render(<App />)
-      const line = await screen.findByText('About 2 applications left')
+      const line = await screen.findByText('Claude can prepare 2 more')
       expect(line.closest('button')).toBeNull()
     })
 
@@ -771,12 +771,12 @@ describe('App, the first-launch gate', () => {
       }) as typeof setTimeout)
       try {
         render(<App />)
-        await screen.findByText(/About 2 applications left, resets/)
+        await screen.findByText(/Claude can prepare 2 more, resets/)
         await waitFor(() => expect(timers).toHaveLength(1))
         const before = call.mock.calls.filter((c) => c[0] === 'status_summary').length
         after = true
         await act(async () => timers[0]!())
-        await waitFor(() => expect(screen.queryByText(/applications left/)).toBeNull())
+        await waitFor(() => expect(screen.queryByText(/Claude can prepare/)).toBeNull())
         expect(call.mock.calls.filter((c) => c[0] === 'status_summary').length).toBe(before + 1)
       } finally {
         vi.restoreAllMocks()
