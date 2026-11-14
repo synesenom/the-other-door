@@ -51,6 +51,7 @@ button:disabled { cursor: default; }
 .nav-item[aria-current='page'] { background: var(--color-surface); font-weight: 600; }
 .sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-2); }
 .sidebar-foot .secondary { width: 100%; }
+.sidebar-foot .sidebar-problems { margin-bottom: var(--space-2); }
 
 .main { min-width: 0; overflow: hidden; }
 
