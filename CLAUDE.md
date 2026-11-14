@@ -14,6 +14,10 @@ When a question comes up that is the user's to decide (a design choice, a policy
 
 This is for decisions, not permissions: a skill's or the harness's confirmation before an action that is hard to undo or outward-facing (pushing a tag, publishing a release, deleting data) is still asked of the user.
 
+## Gaps
+
+Before summarising a change you implemented (a PR, or a branch about to become one), spawn the `gap-reviewer` agent (`.claude/agents/gap-reviewer.md`) with the base branch and the issue or goal; it reports what the change leaves missing, each gap with its evidence. Every gap it reports, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) whose number you give. The summary names each gap and which way it went; none is only mentioned. A gap the reviewer reports that you judge not real: say why in one line.
+
 ## Key directories
 
 | Path | Purpose |

@@ -59,6 +59,7 @@ Agents are not invoked directly; tools and skills run them.
 | `reviewer` | the tailor agent | Critiques the draft for relevance, evidence, fabrication and tone. |
 | `scraper-fixer` | `doctor --probe --fix` / the `setup` tool (`fix scraper: <site>`) | Repairs a scraper whose site changed, test-first, on its own branch (see [job-sites.md](job-sites.md#when-a-site-changes)). |
 | `issue-researcher`, `issue-planner`, `issue-implementer`, `issue-validator` | the `dev-` skills | The developer issue workflow. |
+| `gap-reviewer` | Claude, before it summarises a change it made (CLAUDE.md "Gaps") | Reviews the finished change for what it leaves missing: the issue's requirements not met, inconsistent siblings, untested cases, running processes and old data, false docs, follow-ups; each gap is then fixed in the change or filed as an issue. |
 | `scraper-builder` | `/dev-add-scraper`, `/dev-add-country`, `/dev-add-profession` | Builds one site, feed platform or discovery source (or extends a site to a new country) test-first, from saved real payloads. |
 | `country-researcher`, `country-data-writer`, `country-validator` | `/dev-add-country` | Research a country's boards and terms; write its `i18n` data files; validate the country end to end with a fake profile. |
 | `profession-researcher`, `profession-validator` | `/dev-add-profession` | Research where a profession's jobs are posted in a country and what *The other door* misses; validate the built sources with a fake profile of the profession. |
