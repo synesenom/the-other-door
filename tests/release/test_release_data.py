@@ -8,9 +8,10 @@ import json
 
 import pytest
 
+from door import version
 from door.core import migrations
 from door.core.migrations import Step
-from release_gate_utils import check, open_release, release_data, releases
+from release_gate_utils import check, check_refused, is_older_major, open_release, release_data, releases, sample_major
 
 pytestmark = pytest.mark.release
 
@@ -18,6 +19,7 @@ SAMPLES = releases()
 
 
 def test_there_is_a_saved_release():
+    """Of any major: a release that bumps the major keeps the older samples until after its tag (dev-release 6b)."""
     assert SAMPLES, "tests/data_versions/ holds no release: scripts/save_release_data.py X.Y.Z saves one"
 
 
@@ -28,7 +30,31 @@ def test_a_saved_release_upgrades_and_reads_back_equal(sample, tmp_path, monkeyp
 
 
 def _newest():
-    return SAMPLES[-1]
+    """The newest sample of the current major (the older ones are only refused); the test skips without one."""
+    current = [s for s in SAMPLES if not is_older_major(s)]
+    if not current:
+        pytest.skip("no saved release of this major yet: the older ones are refused, not upgraded")
+    return current[-1]
+
+
+def test_data_of_an_older_major_is_refused_and_untouched(tmp_path, monkeypatch):
+    """Runs whatever majors are saved: the app is taken to be one major ahead of the newest sample, as it is between
+    a major bump and the deletion of the older samples after the tag."""
+    sample = SAMPLES[-1]
+    monkeypatch.setattr(version, "VERSION", f"{sample_major(sample) + 1}.0.0")
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [])
+    monkeypatch.setattr(migrations, "JOBS_STEPS", [])
+    found = check_refused(sample, tmp_path / "home", monkeypatch)
+    assert not found, "\n".join(found)
+
+
+def test_the_gate_expects_the_refusal_for_a_sample_of_an_older_major(tmp_path, monkeypatch):
+    sample = SAMPLES[-1]
+    monkeypatch.setattr(version, "VERSION", f"{sample_major(sample) + 1}.0.0")
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [])
+    monkeypatch.setattr(migrations, "JOBS_STEPS", [])
+    assert is_older_major(sample)
+    assert check(sample, tmp_path / "home", monkeypatch) == []  # old_major, data untouched: nothing to report
 
 
 def test_a_change_no_step_lists_fails_the_gate(tmp_path, monkeypatch):

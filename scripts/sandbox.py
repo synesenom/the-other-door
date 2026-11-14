@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from door.core import lock, workspace  # noqa: E402
+from door.core import lock, migrations, workspace  # noqa: E402
 
 
 def install(sandbox: Path) -> None:
@@ -33,7 +33,9 @@ def install(sandbox: Path) -> None:
         # A sandbox scores on purpose; the example CV itself is refused, so this is a changed copy.
         with (workspace.PROFILE_DIR / "cv.md").open("a", encoding="utf-8") as cv:
             cv.write("\n<!-- a sandbox's copy -->\n")
+        migrations.write_version(workspace.PROFILE_DIR, migrations.current("profile"))  # not v0.1.0's data
     workspace.JOBS_DIR.mkdir(parents=True, exist_ok=True)
+    migrations.ensure_folder(workspace.JOBS_DIR, "jobs")
     # Never your Google Drive: the sync would treat the sandbox as the workspace and push it.
     lock.pre_acquire_hook = lambda purpose, jobs_dir: None
     lock.post_release_hook = lambda purpose, jobs_dir: None

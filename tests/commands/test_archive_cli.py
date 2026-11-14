@@ -721,3 +721,14 @@ def test_a_failing_step_after_import_is_one_warning(env, monkeypatch):
     assert (env.dst_profile / "cv.md").read_text() == "# imported"
     assert migrations.status()["state"] == "failed"
     monkeypatch.setattr(migrations, "_state", None)
+
+
+def test_sync_prints_the_warnings_of_a_pull(env, monkeypatch):
+    from door.commands import archive
+
+    monkeypatch.setattr(
+        archive, "_sync_core", lambda *a, **k: {"action": "pull", "warnings": ["Your data could not be upgraded: step x"]},
+    )
+    result = CliRunner().invoke(cli, ["data", "sync"])
+    assert result.exit_code == 0, result_text(result)
+    assert "could not be upgraded" in result_text(result)

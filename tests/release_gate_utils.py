@@ -37,7 +37,21 @@ def listed_changes(folder: Path, steps: list[migrations.Step]) -> list[str]:
     return [change for step in steps[have.n:] for change in step.changes]
 
 
-def open_release(sample: Path, home: Path, monkeypatch, *, profile_steps=None, jobs_steps=None):
+def sample_major(sample: Path) -> int:
+    """The major version of the release a sample was saved from (its folder is named `X.Y.Z`)."""
+    return int(sample.name.split(".")[0])
+
+
+def is_older_major(sample: Path) -> bool:
+    """A sample of an earlier major: this build refuses it (`old_major`) until `/dev-release` deletes it after the tag."""
+    return sample_major(sample) < migrations.app_major()
+
+
+def _tree(root: Path) -> dict[str, bytes]:
+    return {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*")) if p.is_file()}
+
+
+def open_release(sample: Path, home: Path, monkeypatch, *, profile_steps=None, jobs_steps=None, read_back=True):
     """Copy *sample*'s folders to *home*, upgrade them and read them back.
 
     Returns ``(status, snapshot, changes)``: `migrations.upgrade_all`'s answer (None: upgraded), what the current
@@ -55,11 +69,31 @@ def open_release(sample: Path, home: Path, monkeypatch, *, profile_steps=None, j
     status = migrations.upgrade_all(
         home / "profile", home / "jobs", home / "backups", profile_steps=profile_steps, jobs_steps=jobs_steps,
     )
-    return status, release_data.snapshot(home), changes
+    return status, release_data.snapshot(home) if read_back else None, changes
+
+
+def check_refused(sample: Path, home: Path, monkeypatch, *, profile_steps=None, jobs_steps=None) -> list[str]:
+    """A sample of an older major must be refused as `old_major` and left exactly as it was: lines for what is not."""
+    status, _, _ = open_release(
+        sample, home, monkeypatch, profile_steps=profile_steps, jobs_steps=jobs_steps, read_back=False,
+    )
+    found = []
+    if status is None or status["state"] != "old_major":
+        found.append(f"expected the data to be refused as old_major, got {status}")
+    for name in ("profile", "jobs"):
+        before, after = _tree(sample / name), _tree(home / name)
+        if before != after:
+            changed = sorted(k for k in before.keys() | after.keys() if before.get(k) != after.get(k))
+            found.append(f"{name}/ was changed although it was refused: {', '.join(changed)}")
+    return found
 
 
 def check(sample: Path, home: Path, monkeypatch, *, profile_steps=None, jobs_steps=None) -> list[str]:
-    """Every way the upgraded sample reads back differently from `expected.json` that no step lists, as lines."""
+    """Every way the upgraded sample reads back differently from `expected.json` that no step lists, as lines.
+
+    A sample of an older major is not upgraded: it must be refused and untouched (`check_refused`)."""
+    if is_older_major(sample):
+        return check_refused(sample, home, monkeypatch, profile_steps=profile_steps, jobs_steps=jobs_steps)
     status, now, changes = open_release(sample, home, monkeypatch, profile_steps=profile_steps, jobs_steps=jobs_steps)
     if status is not None:
         return [f"the data was not upgraded: {status['state']}: {status['message']}"]

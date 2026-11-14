@@ -30,7 +30,7 @@ FORMAT = 1
 _MANIFEST = "manifest.json"
 # Never exported, kept in place on import: the lock files, and this computer's Claude usage log (#575).
 _LOCK_FILES = (".lock", ".lock.json", ".progress.json", usage.LOG_NAME)
-_EXCLUDED = {"profile": (), "jobs": _LOCK_FILES}
+_EXCLUDED = {"profile": (migrations.MARKER,), "jobs": (*_LOCK_FILES, migrations.MARKER)}
 
 # Config keys holding a path that may only exist on the computer that exported.
 _PATH_KEYS = ("cv_template", "cv_content", "cover_letter_template", "photo")
@@ -544,6 +544,8 @@ def sync_command(keep_local, keep_drive):
         "skipped": "Nothing to push yet: there is no profile/config.json",
     }
     common._mark_line(common._console(), "ok", messages[result["action"]])
+    for warning in result.get("warnings", []):
+        common._mark_line(_err_console(), "warn", _markup_escape(warning))
 
 
 @click.command("disconnect")

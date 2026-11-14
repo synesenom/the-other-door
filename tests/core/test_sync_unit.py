@@ -516,3 +516,26 @@ def test_once_upgraded_a_pull_works_and_a_push_follows(world, tmp_path, monkeypa
     sync.on_release("run", world.jobs)
     assert world.uploads == uploads + 1
     assert world.properties["door_profile_version"] == "0.2"
+
+
+def test_a_pull_whose_upgrade_fails_is_noted_and_pushes_nothing(world, tmp_path, monkeypatch, hooks):
+    from door.core import migrations
+
+    _connected_with_local(world)
+    sync.drain_notes()
+    _blob(world, tmp_path, profile="0.0", jobs="0.0")
+
+    def bad(folder):
+        raise RuntimeError("boom")
+    monkeypatch.setattr(migrations, "_state", None)
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [migrations.Step("the step", bad)])
+
+    sync.on_acquire("run", world.jobs)
+
+    state = migrations.status()
+    assert state and state["state"] == "failed"
+    assert ("warning", state["message"]) in sync.drain_notes()
+    (world.jobs / "y.json").write_text("new")
+    uploads = world.uploads
+    sync.on_release("run", world.jobs)
+    assert world.uploads == uploads

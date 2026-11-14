@@ -10,14 +10,14 @@ import { join, resolve } from 'node:path'
 import { ADS, type Ad } from './data/ads'
 import { PERSONAS, type Persona } from './data/personas'
 import { coverLetterTex, cvTex } from './tailor'
+import { JOBS_DATA_VERSION, PROFILE_DATA_VERSION } from '../../src/main/data-versions'
 
 export const repoRoot = resolve(__dirname, '..', '..', '..')
 const HERE = __dirname
 
 /** The world's "now": the server's clock starts here (boot.py) and the window's too (fixtures.ts). */
 export const NOW = '2026-10-26T09:00:00.000Z'
-/** The data version a profile set up by this build carries (`migrations.current("profile")`; a Python test keeps them equal). */
-export const PROFILE_DATA_VERSION = '0.1'
+export { PROFILE_DATA_VERSION, JOBS_DATA_VERSION }
 const NOW_MS = Date.parse(NOW)
 const DAY = 86_400_000
 const iso = (ms: number) => new Date(ms).toISOString()
@@ -487,6 +487,7 @@ function writeHome(home: string, persona: Persona, ads: Ad[], options: WorldOpti
 
   const jobs = join(home, 'jobs')
   mkdirSync(jobs, { recursive: true })
+  writeFileSync(join(jobs, '.data_version'), `${JOBS_DATA_VERSION}\n`)
   for (const ad of ads.filter((a) => !a.fresh && a.site !== 'manual')) {
     const p = postingJson(ad, persona)
     const dir = join(jobs, 'postings', p.scraped_at.slice(0, 10), ad.site)

@@ -1743,13 +1743,19 @@ def import_data(archive: str) -> dict:
     replaced (moved to backups/<timestamp>/ first, so nothing is lost).
     Confirm with the user before calling. Identical to `./door data import`.
 
+    An archive written by a newer version of The other door, or by an older major version,
+    is refused before anything changes (an error, nothing replaced). One from an older
+    release of this major is upgraded right after the import.
+
     Args:
         archive: Path to the .tar.gz.
 
     Returns:
         ``{"archive", "files", "profile_dir", "jobs_dir", "backup_dir",
-        "warnings"}`` — tell the user about each warning (a
-        config path this computer doesn't have) and where the backup is.
+        "warnings", "data_versions"}`` — tell the user about each warning (a
+        config path this computer doesn't have, or an upgrade that failed: the
+        data then stays as imported and the tools refuse it until a report is
+        sent), where the backup is; ``data_versions`` is the versions the archive carried.
     """
     path_scope.check(archive)
     return archive_cmd._import_core(archive, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR)

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFil
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { JOBS_DATA_VERSION, PROFILE_DATA_VERSION } from './data-versions'
 import { DEMO_JOBS, demoDir, demoEnv, demoMode, demoModeFor, demoRunMs, onboardDir, onboardEnv, onboardMode, onboardModeFor, resetOnboard, seedDemo } from './demo'
 
 describe('demoMode', () => {
@@ -75,6 +76,13 @@ describe('seedDemo', () => {
     seedDemo(demo, repo, 'keep', now, { discoveryOff: true })
     const config = JSON.parse(readFileSync(join(demo, 'profile', 'config.json'), 'utf8'))
     for (const key of ['linkedin_discovery', 'profession_discovery', 'hellowork_discovery', 'jobbsafari_discovery']) expect(config[key]).toBe(false)
+  })
+
+  it('stamps both folders with the data versions this build writes, so the first start upgrades nothing', () => {
+    const demo = fresh()
+    seedDemo(demo, repo, 'keep', now)
+    expect(readFileSync(join(demo, 'profile', '.data_version'), 'utf8')).toBe(`${PROFILE_DATA_VERSION}\n`)
+    expect(readFileSync(join(demo, 'jobs', '.data_version'), 'utf8')).toBe(`${JOBS_DATA_VERSION}\n`)
   })
 
   it('builds the example profile and made-up jobs in every state, dated from today', () => {

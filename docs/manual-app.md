@@ -480,6 +480,19 @@ When Claude is not signed in or not installed, or a Drive sync failed or needs a
 the sidebar says so and opens Settings (your CV's line opens Profile). Nothing is said when all is
 well or when Drive is simply off. A site a run could not read is not said: the next run reads it again (its error is in the run record).
 
+Three more lines are about your data folder, when this version cannot open it. Every screen then refuses to work with it
+(nothing is changed), and only Settings and Report a problem still answer:
+
+- **"Your data could not be upgraded. Send a report"** (opens Report a problem): an upgrade step failed and put your
+  data back as it was. Save the logs and send them; the next start tries again.
+- **"Install the latest version of The other door"** (opens Settings): the data was written by a newer version, for
+  instance after you used a newer version on this computer or on Google Drive. Install the latest version.
+- **"Your data is from an older version of The other door"** (opens Settings): the data was written by an earlier
+  major version, which this one does not upgrade. Either keep using that version, or start a new profile: quit the app,
+  rename the data folder (Settings → Your data shows where it is, for instance `The other door` to `The other door old`;
+  never delete it), and open the app again for the first-launch set-up. Rename the folder back to return to the old data
+  with the old version.
+
 **Your data** says where your profile and jobs are stored; click the folder's path to open it. It also moves them to another computer without a terminal. "Export…" asks
 where to save one archive (`door-export-<date>.tar.gz`; it never replaces a file that is there,
 so choose a new name) and says how many files went in. On the other computer, "Import…" asks for

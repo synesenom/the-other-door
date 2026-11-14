@@ -30,9 +30,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import time
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -40,13 +42,16 @@ from typing import Callable
 
 from door import version as app_version
 from door.core import lock as lock_mod
-from door.core import problem_log, workspace
+from door.core import problem_log, usage, workspace
 
 VERSION_FILE = ".data_version"
 BACKUP_PREFIX = "upgrade-"
 KEEP_BACKUPS = 2
 _LOCK_WAIT_S = 3.0  # how long a start waits for a run (or another start) holding the lock
-_LOCK_FILES = (".lock", ".lock.json", ".progress.json")
+MARKER = ".upgrading"  # in a folder while its steps run: holds the backup's path, so an interrupted upgrade is undone
+# Files at the top of a folder that are not the user's data: they neither stamp nor un-stamp it, a backup leaves them
+# out and a restore leaves them be (the lock files of this very process, this computer's usage log, the marker).
+_NOT_DATA = (".lock", ".lock.json", ".progress.json", usage.LOG_NAME, MARKER)
 
 FAILED = "Your data could not be upgraded to this version: {step}. Nothing was changed. Send a report from Settings."
 NEWER = "This data was written by a newer version of The other door. Install the latest version."
@@ -245,12 +250,23 @@ def refuse(versions: dict) -> None:
             raise RefusedData(state, versions, refusal_message(state, have, want, archive=True))
 
 
-def write_version(folder: Path, version: Version) -> None:
+def write_version(folder: Path, version: Version, *, replace: bool = True) -> None:
+    """Write the folder's version atomically, through a temporary file no other process shares. With
+    ``replace=False`` an existing file is left as it is (whoever wrote it first wins)."""
     Path(folder).mkdir(parents=True, exist_ok=True)
     path = Path(folder) / VERSION_FILE
-    tmp = path.with_name(path.name + ".tmp")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
     tmp.write_text(f"{version}\n", encoding="utf-8")
-    tmp.replace(path)
+    try:
+        if replace:
+            tmp.replace(path)
+        else:
+            try:
+                os.link(tmp, path)
+            except FileExistsError:
+                pass
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def ensure_folder(folder: Path, name: str) -> None:
@@ -261,8 +277,8 @@ def ensure_folder(folder: Path, name: str) -> None:
     if (folder / VERSION_FILE).exists():
         return
     folder.mkdir(parents=True, exist_ok=True)
-    if all(child.name in _LOCK_FILES for child in folder.iterdir()):
-        write_version(folder, current(name))
+    if all(child.name in _NOT_DATA for child in folder.iterdir()):
+        write_version(folder, current(name), replace=False)  # a second process may stamp it meanwhile
 
 
 # --------------------------------------------------------------------------- #
@@ -270,7 +286,7 @@ def ensure_folder(folder: Path, name: str) -> None:
 # --------------------------------------------------------------------------- #
 def _skip_locks(root: Path):
     """`copytree`'s ignore: the lock files at the top of *root* (held by this very process) are not data."""
-    return lambda directory, names: [n for n in names if Path(directory) == root and n in _LOCK_FILES]
+    return lambda directory, names: [n for n in names if Path(directory) == root and n in _NOT_DATA]
 
 
 def _backup(folder: Path, backups_dir: Path, label: str, source: Version, target: Version) -> Path:
@@ -287,7 +303,7 @@ def _backup(folder: Path, backups_dir: Path, label: str, source: Version, target
 
 def _restore(folder: Path, backup: Path) -> None:
     for child in list(Path(folder).iterdir()):
-        if child.name in _LOCK_FILES:
+        if child.name in _NOT_DATA:
             continue
         if child.is_dir() and not child.is_symlink():
             shutil.rmtree(child)
@@ -299,6 +315,31 @@ def _restore(folder: Path, backup: Path) -> None:
             shutil.copytree(child, dest, symlinks=True)
         else:
             shutil.copy2(child, dest)
+
+
+def _undo_interrupted(folder: Path, have: Version, want: Version) -> None:
+    """A `MARKER` in *folder* means an upgrade died before it finished. Beside a current version the data is done
+    (killed between the version and the marker): only the marker goes. Otherwise the folder may hold a half-moved
+    shape under the old version: put the backup back first.
+
+    Raises:
+        _StepFailed: the backup the marker names is gone, so the folder cannot be put back.
+    """
+    marker = folder / MARKER
+    if not marker.exists():
+        return
+    if compare(have, want) == "current":
+        marker.unlink(missing_ok=True)
+        return
+    backup = Path(marker.read_text(encoding="utf-8").strip() or ".")
+    if not backup.is_dir():
+        raise _StepFailed("restoring an interrupted upgrade", FileNotFoundError(str(backup)))
+    try:
+        _restore(folder, backup)
+    except Exception as exc:  # noqa: BLE001
+        raise _StepFailed("restoring an interrupted upgrade", exc) from exc
+    problem_log.failure("upgrade", f"an interrupted upgrade of {folder.name} was undone from {backup}")
+    marker.unlink(missing_ok=True)
 
 
 def _prune(backups_dir: Path) -> None:
@@ -334,9 +375,11 @@ def upgrade_folder(folder: Path, steps: list[Step], *, backups_dir: Path, label:
     folder = Path(folder)
     have = read_version(folder) or UNVERSIONED
     want = Version(app_major(), len(steps))
+    _undo_interrupted(folder, have, want)
     if compare(have, want) != "upgrade":
         return False
     backup = _backup(folder, Path(backups_dir), label, have, want)
+    (folder / MARKER).write_text(str(backup), encoding="utf-8")  # a kill from here on is undone at the next start
     ran = ""
     try:
         for step in steps[have.n:]:
@@ -347,9 +390,12 @@ def upgrade_folder(folder: Path, steps: list[Step], *, backups_dir: Path, label:
     except BaseException as exc:
         try:
             _restore(folder, backup)
-        except Exception as restore_exc:  # noqa: BLE001 - say both
+            (folder / MARKER).unlink(missing_ok=True)
+        except Exception as restore_exc:  # noqa: BLE001 - say both; the marker stays so the next start tries again
             problem_log.failure("upgrade", f"restore of {label} failed: {restore_exc}")
+        _prune(Path(backups_dir))
         raise _StepFailed(ran, exc) from exc
+    (folder / MARKER).unlink(missing_ok=True)
     _prune(Path(backups_dir))
     return True
 

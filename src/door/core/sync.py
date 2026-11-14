@@ -307,7 +307,13 @@ def on_acquire(purpose: str, jobs_dir: Path) -> None:
         if action == "pull":
             report("Pulling newer data from Google Drive")
             pull(profile_dir=profile_dir, jobs_dir=jobs_dir, backups_dir=backups_dir)
-            _note("pulled", "Pulled newer data from Google Drive (this computer's previous data is in backups/)")
+            upgrade = migrations.status()
+            if upgrade:  # the import left data the upgrade could not move: the tools refuse it, nothing is pushed
+                _failed.add(key)
+                report(upgrade["message"])
+                _note("warning", upgrade["message"])
+            else:
+                _note("pulled", "Pulled newer data from Google Drive (this computer's previous data is in backups/)")
     except SyncConflict:
         raise
     except migrations.RefusedData as exc:
