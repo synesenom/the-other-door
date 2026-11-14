@@ -47,7 +47,7 @@ const server = new DoorServer(
 )
 // Is a newer version out (#501, #17): an installed app that can replace itself downloads it and installs on
 // restart; one that cannot links to the release; a checkout and the demo say nothing (updates.ts). It checks at
-// start and every few hours, so an app left open learns of a release too; Settings has nothing to press for it.
+// start and once a day, so an app left open learns of a release too; Settings has nothing to press for it.
 let doorSigned = false
 try {
   doorSigned = doorSignedOf(JSON.parse(readFileSync(join(app.getAppPath(), 'package.json'), 'utf8')))
@@ -221,7 +221,7 @@ app.whenReady().then(() => {
       : {}),
   })
   createWindow()
-  if (mode !== 'none') checkEvery(updates, CHECK_EVERY_MS) // at start and every few hours; never waits, never throws
+  if (mode !== 'none') checkEvery(updates, CHECK_EVERY_MS) // at start and once a day; never waits, never throws
   // Start the server now so the first screen does not wait for Python.
   void server.listTools().catch(() => undefined)
   app.on('activate', () => {

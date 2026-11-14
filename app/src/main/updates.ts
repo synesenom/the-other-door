@@ -182,7 +182,7 @@ export function createUpdateManager(opts: {
 }
 
 /** How often a running app looks again: one left open for days still learns of a release. */
-export const CHECK_EVERY_MS = 6 * 60 * 60 * 1000
+export const CHECK_EVERY_MS = 24 * 60 * 60 * 1000
 
 /** Check now and every `everyMs` after; returns the way to stop. A check never throws. */
 export function checkEvery(updates: { check(): Promise<unknown> }, everyMs: number): () => void {

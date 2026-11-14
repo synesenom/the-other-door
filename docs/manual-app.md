@@ -27,7 +27,7 @@ and signs you in to your Claude plan.
 - **Linux** (x64): the AppImage (make it executable and run it; on Ubuntu 24.04 and later it needs FUSE 2
   first: `sudo apt install libfuse2t64`) or the `.deb` (`sudo apt install ./the-other-door-….deb`).
 
-**Updating**: an installed app looks for a newer published version when it starts and every six hours while
+**Updating**: an installed app looks for a newer published version when it starts and once a day while
 it is open; there is nothing to press. Settings → Version shows the version you have. The Windows installer, the AppImage and a signed macOS build download it in the
 background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
 that installs it at once. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot

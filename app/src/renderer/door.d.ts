@@ -49,7 +49,7 @@ declare global {
       reportProblem(): Promise<Envelope | { ok: false; canceled: true }>
       /** Shows the data folder in the file manager. */
       showHome(): Promise<{ ok: boolean }>
-      /** Is a newer version out: what the app's own checks found, at start and every few hours (updates.ts). */
+      /** Is a newer version out: what the app's own checks found, at start and once a day (updates.ts). */
       checkUpdate(): Promise<UpdateResult | { enabled: false }>
       /** Restart now to install a downloaded update; `{ ok: false }` when none is downloaded. */
       installUpdate(): Promise<{ ok: boolean }>
