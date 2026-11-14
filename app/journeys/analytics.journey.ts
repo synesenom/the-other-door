@@ -31,7 +31,6 @@ test.describe('Market (#65)', () => {
     await expect(market.getByText('23 ads read, 22 scored, 16 at your minimum score.')).toBeVisible({ timeout: 60_000 })
     await expect(market.getByRole('heading', { name: 'Most asked for', level: 3 })).toBeVisible()
     await expect(market.getByRole('listitem', { name: 'Python', exact: true })).toHaveText('Python · 86% of the ads · in your CV')
-    await expect(market.getByRole('button', { name: /^Make a plan/ })).toHaveCount(0)
     expect(argsOf(world, 'market')).toEqual([expect.objectContaining({ save: false })])
     expect(world.toolCalls('market')).toHaveLength(1)
     expect(exists(world, 'jobs/market')).toBe(false)

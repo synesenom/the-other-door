@@ -20,14 +20,14 @@ const pct = (share: number) => `${Math.round(share * 100)}%`
 
 /**
  * "Market", in Analytics (#65): what the ads of the last 30 days asked for. The market tool runs once when the
- * screen opens and saves nothing. Two things can be done from it: add the titles the search does not cover to
+ * screen opens and writes no report. Two things can be done from it: add the titles the search does not cover to
  * the search keywords, and follow a repeat employer. Both ask or say their result here; the report is not read
  * again.
  */
 export function Market() {
   const [state, setState] = useState<{ kind: 'counting' } | { kind: 'done'; m: MarketReport } | { kind: 'error'; message: string }>({ kind: 'counting' })
   const [asking, setAsking] = useState(false)
-  const [added, setAdded] = useState<string | null>(null)
+  const [added, setAdded] = useState<{ ok: boolean; text: string } | null>(null)
   // per employer: asking, followed, or a line to show
   const [follows, setFollows] = useState<Record<string, { kind: 'pending' } | { kind: 'followed' } | { kind: 'note'; text: string }>>({})
 
@@ -48,9 +48,9 @@ export function Market() {
       const p = await call<{ config: { search_keywords?: string[]; role_targets?: string[] } | null }>('show_profile')
       const current = p.config?.search_keywords?.length ? p.config.search_keywords : (p.config?.role_targets ?? [])
       await call('init_profile', { search_keywords: [...current, ...titles.filter((t) => !current.includes(t))] })
-      setAdded('Added to your search keywords.')
+      setAdded({ ok: true, text: 'Added to your search keywords.' })
     } catch (e) {
-      setAdded(errorText(e))
+      setAdded({ ok: false, text: errorText(e) })
     }
   }
   const follow = async (name: string) => {
@@ -81,7 +81,8 @@ export function Market() {
           {named(state.message)}
         </p>
       )}
-      {m && (
+      {m && m.skills.length === 0 && <p className="small muted">The market shows here once ads are read.</p>}
+      {m && m.skills.length > 0 && (
         <div className="market-body">
           <p className="small muted">{`${m.counts.scraped} ads read, ${m.counts.scored} scored, ${m.counts.above_min_score} at your minimum score.`}</p>
           <h3 className="label">Most asked for</h3>
@@ -97,12 +98,19 @@ export function Market() {
             <>
               <h3 className="label">Titles your search does not cover</h3>
               <p className="small">{m.uncovered_titles.map((t) => `${t.title} (${t.count})`).join(', ')}</p>
-              <div className="actions">
-                <button type="button" className="quiet" onClick={() => setAsking(true)}>
-                  Add these titles to my search
-                </button>
-              </div>
-              {added && <p className="small">{added}</p>}
+              {!added?.ok && (
+                <div className="actions">
+                  <button type="button" className="quiet" onClick={() => setAsking(true)}>
+                    Add these titles to my search
+                  </button>
+                </div>
+              )}
+              {added?.ok && <p className="small">{added.text}</p>}
+              {added && !added.ok && (
+                <p role="alert" className="field-error">
+                  {named(added.text)}
+                </p>
+              )}
             </>
           )}
           {employers.length > 0 && (
@@ -122,7 +130,11 @@ export function Market() {
                           Follow
                         </button>
                       )}
-                      {f?.kind === 'note' && <span className="small">{` ${f.text}`}</span>}
+                      {f?.kind === 'note' && (
+                        <span role="alert" className="small field-error">
+                          {named(f.text)}
+                        </span>
+                      )}
                     </li>
                   )
                 })}

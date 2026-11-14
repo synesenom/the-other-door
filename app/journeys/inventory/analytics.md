@@ -1,8 +1,8 @@
 # Analytics: inventory of interactions and branches (desktop app, real Python server)
 
-Sources read: `app/src/renderer/screens/Analytics.tsx`, `PageSections.tsx`, `api.ts` (`StatusSummary`), and Python `commands/status.py` (`_funnel`).
+Sources read: `app/src/renderer/screens/Analytics.tsx`, `Market.tsx`, `Dialog.tsx`, `PageSections.tsx`, `api.ts` (`StatusSummary`), and Python `commands/status.py` (`_funnel`).
 
-The screen is read only: one `status_summary` {} call on opening, no action changes anything. Not on the phone.
+One `status_summary` {} call on opening, and one `market({save:false})` call from Market. Nothing changes except the two actions in Market (add titles, follow an employer). Not on the phone.
 
 ## Frame
 - Sidebar button "Analytics" opens `heading level 1 "Analytics"`, a list of parts on the right. — ✓ the funnel follows the ledger
@@ -17,3 +17,14 @@ The screen is read only: one `status_summary` {} call on opening, no action chan
 
 ## Claude usage (`region "Claude usage"`)
 - Branches (activities, singular, nothing in the window, before any call): — unit: `Analytics.test.tsx`; not covered by a journey, the world's Claude stand-in gives no usage to read
+
+## Market (`region "Market"`, `Market.tsx`, always the last section)
+- Opening Analytics calls `market({save:false})` once, with the status "Counting the ads (new skill names may take one short Claude call)…" (timeout 180 s). Never asked again while the screen stays open. — ✓ counts the ads when Analytics opens, once, and writes no report
+- Error: `p.field-error` role alert, `named()` text (a malformed `companies.json`, an invalid config, a timeout). — ✓ a report that failed says why; unit: `Market.test.tsx`
+- No ads read (`skills` empty): one muted line "The market shows here once ads are read." — unit: `Market.test.tsx`; preview: `preview.test.tsx` (empty state)
+- Done view: "<scraped> ads read, <scored> scored, <above_min_score> at your minimum score.", `heading level 3 "Most asked for"` and the first 8 skills, each `listitem "<skill>"` "<skill> · NN% of the ads · in your CV|not in your CV". — ✓ counts the ads when Analytics opens, once
+- `near_misses` and `warning` are not shown.
+- Side effect even with `save:false`: when new skill names were grouped, `jobs/skill_aliases.json` is written (under the ledger lock); no `jobs/market/report-*.md`. — ✓ counts the ads when Analytics opens, once
+- Titles no keyword covers (`heading level 3 "Titles your search does not cover"`, "T1 (3), T2 (1)"): `button "Add these titles to my search"` opens `dialog "Add these titles to your search?"` (Cancel, Add). — ✓ Add these titles to my search asks first, then adds them to the search keywords
+  - Add: `show_profile`, then `init_profile({search_keywords: current + new})`, `current` being `search_keywords` or else `role_targets`. Success: "Added to your search keywords." and the button goes. Error: a `field-error` alert, the button stays. — ✓ the same journey; unit: `Market.test.tsx`
+- Repeat employers (`heading level 3`, only with rows): each `listitem "<name>"` with its ad count; "followed" when it is; otherwise `button "Follow <name>"` → `add_company({inputs:[name]})`. `status: "followed"` marks the row; any other status shows its `reason`, a failed call its error, both as an alert on the row. `market` is not read again. — unit: `Market.test.tsx`; preview: `preview.test.tsx`; not covered by a journey: whether the world has an unfollowed repeat employer is not pinned

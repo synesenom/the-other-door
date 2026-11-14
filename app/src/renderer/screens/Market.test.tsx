@@ -42,7 +42,6 @@ describe('Market', () => {
     expect(await within(section).findByText('412 ads read, 120 scored, 18 at your minimum score.')).toBeInTheDocument()
     expect(within(section).getByRole('listitem', { name: 'SQL' })).toHaveTextContent('in your CV')
     expect(within(section).getByRole('listitem', { name: 'dbt' })).toHaveTextContent('not in your CV')
-    expect(screen.queryByRole('button', { name: /Make a plan/ })).toBeNull()
     expect(screen.queryByText(/Python/)).toBeNull()
     expect(screen.queryByText(/left as written/)).toBeNull()
     expect(call.mock.calls.filter((c) => c[0] === 'market')).toHaveLength(1)
@@ -69,6 +68,7 @@ describe('Market', () => {
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add' }))
     expect(call).toHaveBeenCalledWith('init_profile', { search_keywords: ['Data Analyst', 'Analytics Engineer'] })
     expect(await screen.findByText('Added to your search keywords.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add these titles to my search' })).toBeNull()
   })
 
   it('with no search keywords the titles go after the role targets; a failed save says why', async () => {
@@ -80,7 +80,8 @@ describe('Market', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Add these titles to my search' }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add' }))
     expect(call).toHaveBeenCalledWith('init_profile', { search_keywords: ['Data Analyst', 'Analytics Engineer'] })
-    expect(await screen.findByText('the ledgers are busy')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('the ledgers are busy')
+    expect(screen.getByRole('button', { name: 'Add these titles to my search' })).toBeInTheDocument()
   })
 
   it('an employer not followed gets a Follow button; a followed one none', async () => {
@@ -103,10 +104,17 @@ describe('Market', () => {
       add_company: { results: [{ input: 'Trustpilot', name: 'Trustpilot', status: 'unresolved', reason: 'no feed found' }] },
     })
     await userEvent.click(await screen.findByRole('button', { name: 'Follow Trustpilot' }))
-    expect(await screen.findByText('no feed found')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('no feed found')
     cleanup()
     show({ market: MARKET, add_company: () => { throw { message: 'busy now' } } })
     await userEvent.click(await screen.findByRole('button', { name: 'Follow Trustpilot' }))
-    expect(await screen.findByText('busy now')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('busy now')
+  })
+
+  it('with no ads read it says when the market shows, not zero counts', async () => {
+    show({ market: { ...MARKET, counts: { scraped: 0, scored: 0, above_min_score: 0 }, skills: [], uncovered_titles: [], companies: { population: 'scraped', rows: [] } } })
+    expect(await screen.findByText('The market shows here once ads are read.')).toBeInTheDocument()
+    expect(screen.queryByText(/ads read, /)).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Most asked for' })).toBeNull()
   })
 })

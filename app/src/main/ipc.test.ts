@@ -148,12 +148,10 @@ describe('registerIpc', () => {
     }
   })
 
-  it('gives enrich and skill_gaps the time their claude call may take', async () => {
+  it('gives enrich the time its claude call may take', async () => {
     const { server, invoke } = setup()
     await invoke(CHANNELS.call, 'enrich', { urls: ['https://ada.dev'] })
-    await invoke(CHANNELS.call, 'skill_gaps', { targets: ['Analyst'] })
     expect(server.call.mock.calls[0][2].timeout).toBe(660_000)
-    expect(server.call.mock.calls[1][2].timeout).toBe(960_000)
   })
 
   it('gives market the time of its one short claude call, and add_company the time to probe', async () => {

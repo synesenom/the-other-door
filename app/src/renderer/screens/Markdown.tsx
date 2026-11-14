@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { named } from './AppName'
 import { TODO_WORD, todoOffsets } from './todos'
 
-// A small Markdown reader for the CV preview and the skill-gap report: headings, paragraphs, lists,
+// A small Markdown reader for the CV preview: headings, paragraphs, lists,
 // **bold**, *italic*, `code` and [links](https://…). It builds React elements, never HTML, so markup in
 // the text stays text; a link opens in the browser through the main process, and only http(s) ones.
 

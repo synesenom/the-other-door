@@ -212,6 +212,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       case 'keywords':
         return { keywords: ['financial controller', 'controller', 'økonomimedarbejder'], topic_terms: ['controller', 'økonomi*'] }
       case 'market':
+        if (state === 'empty') return { counts: { scraped: 0, scored: 0, above_min_score: 0 }, skills: [], uncovered_titles: [], companies: { population: 'scraped', rows: [] } }
         return { counts: { scraped: 412, scored: 96, above_min_score: 23 }, skills: [{ name: 'IFRS', count: 44, share: 0.46, have: true }, { name: 'SAP', count: 31, share: 0.32, have: false }, { name: 'Power BI', count: 22, share: 0.23, have: false }], uncovered_titles: [{ title: 'Finance Manager', count: 6 }], companies: { population: 'scraped', rows: [{ name: 'Oceanic Shipping', count: 9, followed: true }, { name: 'Nordic Freight', count: 6, followed: false }] } }
       case 'add_company':
         return { dry_run: false, results: [{ input: (args['inputs'] as string[])[0], name: (args['inputs'] as string[])[0], status: 'followed', reason: null }] }

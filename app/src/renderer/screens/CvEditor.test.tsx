@@ -249,15 +249,6 @@ describe('the pages read before', () => {
   })
 })
 
-describe('CvEditor, no learning or market panels', () => {
-  it('has neither "What should I learn?" nor the market report, and reads no market', async () => {
-    const { call } = await open()
-    expect(screen.queryByRole('button', { name: 'What should I learn?' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /What the ads asked for this month/ })).toBeNull()
-    expect(call.mock.calls.map((c) => c[0])).not.toContain('market')
-  })
-})
-
 describe('CvEditor, the profile unreadable', () => {
   it('says why instead of an empty editor', async () => {
     mockDoor({ show_profile: () => { throw { message: 'profile/ is not readable' } } })
