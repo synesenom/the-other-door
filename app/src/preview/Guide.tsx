@@ -155,11 +155,12 @@ export function Guide() {
           <Row label="funnel-row">
             <ul className="funnel-list">
               <li className="funnel-row">
-                <span className="body">Prepared</span>
-                <span className="funnel-bar" role="img" aria-label="Prepared: 6 of 12">
+                <span className="body">Interview</span>
+                <span className="funnel-bar" role="img" aria-label="Interview: 6 of 12">
                   <span style={{ width: '50%' }} />
                 </span>
                 <span className="body">6</span>
+                <span className="body muted">50%</span>
               </li>
             </ul>
           </Row>

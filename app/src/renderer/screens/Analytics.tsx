@@ -25,7 +25,6 @@ function tone(i: number): string {
 
 const FUNNEL_LABELS: Record<string, string> = {
   postings: 'Scraped',
-  applicable: 'Worth a look',
   matches: 'Matches',
   prepared: 'Prepared',
   applied: 'Applied',
@@ -33,9 +32,13 @@ const FUNNEL_LABELS: Record<string, string> = {
   offer: 'Offer',
 }
 
+/** The stages whose share of the one before is a pass rate worth reading as a figure. */
+const RATED = new Set(['applied', 'interview', 'offer'])
+
 /**
  * The funnel's bars once anything is scraped. Each bar is its stage's share of the stage before it (how many
- * of the prepared were sent, how many of those led to an interview); the first is always full.
+ * of the prepared were sent, how many of those led to an interview); the first is always full. The second
+ * half (applied, interview, offer) also says that share as a percentage.
  */
 function Applications({ funnel }: { funnel: FunnelStage[] }) {
   if ((funnel[0]?.count ?? 0) === 0) return <p className="small muted">Your funnel shows here once jobs are found</p>
@@ -52,6 +55,7 @@ function Applications({ funnel }: { funnel: FunnelStage[] }) {
               <span style={{ width: `${Math.round(share(f.count, before) * 1000) / 10}%` }} />
             </span>
             <span className="body">{f.count}</span>
+            <span className="body muted">{RATED.has(f.stage) && before > 0 ? `${Math.round(share(f.count, before) * 100)}%` : ''}</span>
           </li>
         )
       })}

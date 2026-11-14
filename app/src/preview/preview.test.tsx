@@ -167,7 +167,7 @@ describe('scenes', () => {
     expect(screen.getByRole('img', { name: 'Applied: 7 of 9' })).toBeInTheDocument()
     cleanup()
     mount('analytics', 'empty')
-    expect(await screen.findByRole('img', { name: 'Worth a look: 0 of 212' })).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: 'Matches: 0 of 212' })).toBeInTheDocument()
   })
 
   it('posting opens the posting', async () => {
