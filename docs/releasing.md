@@ -1,7 +1,7 @@
 # Releasing
 
 A release is a tag `vX.Y.Z`. `.github/workflows/release.yml` builds the installers on every system, runs the
-unit tests and the packaged smoke test on each, and uploads them to a **draft** release. The same workflow run by hand is a dry run that builds and tests everything and
+unit tests (on macOS and Windows; Linux's run in `app.yml`) and the packaged smoke test on each, and uploads them to a **draft** release. The same workflow run by hand is a dry run that builds and tests everything and
 uploads to no release (see Before the tag). A draft is published
 only after a person has installed it on a clean machine of each system and gone through the checklist below
 (#502). `/dev-release` in Claude Code walks through it (the maintainer only). How the build, the bundle and the signing work is in [app/README.md](../app/README.md#releasing-224).
