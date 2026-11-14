@@ -1,7 +1,7 @@
 // The packaged app on its own (#223): it starts its bundled Python on its bundled door, keeps the data where it
 // is told (a temp DOOR_HOME here) and writes nothing inside itself. The stand-in claude is first on PATH and
 // HOME is a temp folder, so the real claude and your data are never reached.
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
 import { buildHome } from '../test/home-fixture'
@@ -44,7 +44,7 @@ test('the packaged app serves Matches from its bundle and writes nothing inside 
   const app = await electron.launch({
     executablePath: exe!,
     args: process.env.CI ? ['--no-sandbox'] : [],
-    env: { ...(process.env as Record<string, string>), ...fixture.env, DOOR_PYTHON: '' },
+    env: { ...(process.env as Record<string, string>), ...fixture.env, DOOR_PYTHON: '', DOOR_UPDATES: 'off' },
   })
   try {
     const page = await app.firstWindow()
@@ -56,6 +56,9 @@ test('the packaged app serves Matches from its bundle and writes nothing inside 
     expect(checks['latex']!.status).toBe('ok')
     expect(checks['latex']!.detail).toContain(join(resources, 'bin'))
     expect(checks['dev dependencies']).toBeUndefined()
+    // DOOR_UPDATES=off: the app did not go looking for an update (#17)
+    const log = join(fixture.home, 'logs', 'door.log')
+    expect(existsSync(log) ? readFileSync(log, 'utf8') : '').not.toContain('update-check')
   } finally {
     await app.close()
   }

@@ -7,10 +7,13 @@ const DIST = [
   'the-other-door-0.1.1-mac-arm64.dmg',
   'the-other-door-0.1.1-mac-arm64.dmg.blockmap',
   'the-other-door-0.1.1-mac-x64.dmg',
-  'the-other-door-0.1.1-windows-x64.exe',
-  'the-other-door-0.1.1-linux-x64.AppImage',
+  'The-other-door-0.1.1-Windows.exe',
+  'The-other-door-0.1.1-Windows.exe.blockmap',
+  'The-other-door-0.1.1-Linux.AppImage',
   'the-other-door-0.1.1-linux-amd64.deb',
   'latest-mac.yml',
+  'latest.yml',
+  'latest-linux.yml',
 ]
 
 describe('pickInstaller', () => {
@@ -20,11 +23,11 @@ describe('pickInstaller', () => {
   })
 
   it('takes the x64 build on Windows on ARM, which runs it emulated', () => {
-    expect(pickInstaller(DIST, 'win32', 'arm64')).toBe('the-other-door-0.1.1-windows-x64.exe')
+    expect(pickInstaller(DIST, 'win32', 'arm64')).toBe('The-other-door-0.1.1-Windows.exe')
   })
 
   it('takes the AppImage on Linux unless the .deb is asked for', () => {
-    expect(pickInstaller(DIST, 'linux', 'x64')).toBe('the-other-door-0.1.1-linux-x64.AppImage')
+    expect(pickInstaller(DIST, 'linux', 'x64')).toBe('The-other-door-0.1.1-Linux.AppImage')
     expect(pickInstaller(DIST, 'linux', 'x64', 'deb')).toBe('the-other-door-0.1.1-linux-amd64.deb')
   })
 

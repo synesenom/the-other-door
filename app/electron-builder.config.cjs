@@ -4,12 +4,16 @@
 // Signing happens only when the release workflow has the certificates (CSC_LINK, and APPLE_TEAM_ID with the
 // Apple ID for notarization): a Developer ID signature with the hardened runtime, then notarization, on macOS;
 // Authenticode on Windows. Without them the build is unsigned and macOS is signed ad hoc (scripts/after-pack.cjs).
-// The release workflow drafts the installers as a release of this repo; installed apps do not update
-// themselves: they check the feed DOOR_UPDATE_FEED names (src/main/updates.ts) and point to the release page.
+// The release workflow drafts the installers as a release of this repo. Installed apps update from it once it is
+// published (#17, src/main/updates.ts): a signed macOS app, the Windows installer and the AppImage download the
+// next version in the background (electron-updater reads latest*.yml and the .zip/.blockmap files); an unsigned
+// macOS app and the .deb only link to the release page. `doorSigned` in the packed package.json tells which.
 const signed = Boolean(process.env.CSC_LINK)
 const notarized = signed && Boolean(process.env.APPLE_TEAM_ID)
 
 module.exports = {
+  // read by the app at run time: only a signed and notarized macOS build can install an update itself
+  extraMetadata: { doorSigned: signed && notarized },
   appId: 'dev.door.app',
   productName: 'The other door',
   copyright: 'Copyright © 2026 Enys Mones',
@@ -30,16 +34,18 @@ module.exports = {
   publish: { provider: 'github', owner: 'synesenom', repo: 'the-other-door', releaseType: 'draft' },
   // The packed package.json says whether this build is signed: an unsigned macOS app cannot update itself.
   mac: {
-    // only what a person downloads: installed apps do not update themselves (#501), so no .zip, blockmap or latest-*.yml
-    target: ['dmg'],
+    // the .dmg a person downloads, and the .zip (with its blockmap) that macOS's updater installs from
+    target: ['dmg', 'zip'],
     category: 'public.app-category.productivity',
     artifactName: 'the-other-door-${version}-mac-${arch}.${ext}',
     ...(signed
       ? { hardenedRuntime: true, entitlements: 'build/entitlements.mac.plist', entitlementsInherit: 'build/entitlements.mac.plist', notarize: notarized }
       : { identity: null }),
   },
-  win: { executableName: 'the-other-door', target: 'nsis', artifactName: 'the-other-door-${version}-windows-${arch}.${ext}' },
-  nsis: { oneClick: true, perMachine: false, deleteAppDataOnUninstall: false },
+  win: { executableName: 'the-other-door', target: 'nsis' },
+  // The names a person downloads are the files themselves: latest.yml / latest-linux.yml name these assets.
+  nsis: { oneClick: true, perMachine: false, deleteAppDataOnUninstall: false, artifactName: 'The-other-door-${version}-Windows.${ext}' },
+  appImage: { artifactName: 'The-other-door-${version}-Linux.${ext}' },
   linux: {
     executableName: 'the-other-door',
     target: ['AppImage', 'deb'],

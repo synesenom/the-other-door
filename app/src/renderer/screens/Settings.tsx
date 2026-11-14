@@ -148,7 +148,7 @@ export function Settings({
           <p className="body">
             Version {update.current}
             {' · '}
-            <button type="button" className="link" disabled={manual === 'checking'} onClick={() => void checkNow()}>
+            <button type="button" className="link-inline" disabled={manual === 'checking'} onClick={() => void checkNow()}>
               Check for updates
             </button>
           </p>
