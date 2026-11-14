@@ -38,9 +38,8 @@ describe('Analytics', () => {
     render(<Analytics />)
     const part = await screen.findByRole('region', { name: 'Claude usage' })
     expect(within(part).getByText('$2.10')).toBeInTheDocument()
-    expect(within(part).getByText(/not charged per call/)).toBeInTheDocument()
-    expect(within(part).getByText(/One search for new jobs about \$0\.31/)).toBeInTheDocument()
-    expect(within(part).getByText(/one prepared application about \$1\.42/)).toBeInTheDocument()
+    // one short line under the total: the window, that it is not a bill, and one search and one application
+    expect(within(part).getByText('Last 7 days at API prices, not a bill · about $0.31 a search, $1.42 an application')).toBeInTheDocument()
     const rows = within(part).getAllByRole('listitem').filter((li) => li.classList.contains('usage-activity'))
     expect(rows.map((r) => within(r).getByRole('heading').textContent)).toEqual(['Preparing applications', 'Finding jobs', 'Everything else'])
     expect(within(rows[0]).getByText('1 application prepared')).toBeInTheDocument()
@@ -68,7 +67,7 @@ describe('Analytics', () => {
     mockDoor({ status_summary: summary({ cost: { days: 7, usd: 0, per_run: { find: 0.3, prepare: null }, activities: [] }, plan: null }) })
     render(<Analytics />)
     expect(await screen.findByText('Nothing in the last 7 days')).toBeInTheDocument()
-    expect(screen.getByText(/One search for new jobs about \$0\.30/)).toBeInTheDocument()
+    expect(screen.getByText('Last 7 days at API prices, not a bill · about $0.30 a search')).toBeInTheDocument()
   })
 
   it('one of a kind in the singular, a sliver as under a cent', async () => {

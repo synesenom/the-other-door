@@ -43,18 +43,19 @@ function Usage({ cost, plan }: { cost: CostBlock | null; plan: PlanBlock | null 
   const planNote = line && <p className={plan?.warning ? 'small' : 'small muted'}>{plan?.warning ? `${plan.warning}. ${line}` : line}</p>
   if (!cost) return planNote || <p className="small muted">What Claude's work costs shows here after your first search.</p>
   const per = [
-    cost.per_run.find ? `One search for new jobs about ${usd(cost.per_run.find)}` : null,
-    cost.per_run.prepare ? `${cost.per_run.find ? 'one' : 'One'} prepared application about ${usd(cost.per_run.prepare)}` : null,
+    cost.per_run.find ? `${usd(cost.per_run.find)} a search` : null,
+    cost.per_run.prepare ? `${usd(cost.per_run.prepare)} an application` : null,
   ].filter(Boolean)
+  const note = `Last ${cost.days} days at API prices, not a bill${per.length ? ` · about ${per.join(', ')}` : ''}`
   return (
     <>
       <div className="part-head">
         <p className="display-s">{cost.activities.length > 0 ? usd(cost.usd) : `Nothing in the last ${cost.days} days`}</p>
-        <p className="small muted">
-          In the last {cost.days} days, at Claude's API prices: what these calls would cost on the API. Your plan is not charged per call.
+        {/* the long form on hover: the plan is not charged per call */}
+        <p className="small muted" title="What these calls would cost on Claude's API. Your plan is not charged per call.">
+          {note}
         </p>
       </div>
-      {per.length > 0 && <p className="body">{per.join(' · ')}</p>}
       {cost.activities.length > 0 && (
         <ul className="usage-list">
           {cost.activities.map((a) => (
