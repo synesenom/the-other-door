@@ -1,5 +1,6 @@
 // What is wrong and needs the user, for the short lines at the foot of the sidebar: the data folders, Claude, the CV,
-// Google Drive, something that keeps going wrong, in that order, each with where it is fixed. A site a run
+// the Claude plan's window when it is nearly full (waited out: it opens nothing), Google Drive, something that keeps going wrong,
+// in that order, each with where it is fixed. A site a run
 // could not read once is not here: the user can do nothing about it but run again (docs/design/README.md,
 // principle 9). The same failure run after run is (status_summary's `recurring_problem`, door.core.recurring):
 // the user can send a report, and the line goes once one is saved or the failure stops. Pure.
@@ -40,13 +41,22 @@ function clock(date: Date, now: Date): string {
   return `${date.toLocaleDateString('en-US', { weekday: 'short' })} ${hm}`
 }
 
-/** The line for a plan that needs the user, or null: limit reached, a warning, or room for few prepares. Pure. */
-export function planLine(plan: PlanBlock | null | undefined, now: Date = new Date()): string | null {
+/** When the plan's window resets (the binding one, else the first with figures), or null when unknown. */
+export function planReset(plan: PlanBlock | null | undefined): Date | null {
   if (!plan) return null
   const window = (plan.binding && plan[plan.binding] ? plan[plan.binding] : undefined) ?? plan.five_hour ?? plan.seven_day
   const reset = (window as { resets_at?: string } | undefined)?.resets_at
   const date = reset ? new Date(reset) : null
-  const resets = date && !Number.isNaN(date.getTime()) ? `, resets ${clock(date, now)}` : ''
+  return date && !Number.isNaN(date.getTime()) ? date : null
+}
+
+/** The line for a plan that needs the user, or null: limit reached, a warning, or room for few prepares. A window
+ * whose reset has passed says nothing (as `usage.latest` drops it). Pure. */
+export function planLine(plan: PlanBlock | null | undefined, now: Date = new Date()): string | null {
+  if (!plan) return null
+  const date = planReset(plan)
+  if (date && date.getTime() <= now.getTime()) return null
+  const resets = date ? `, resets ${clock(date, now)}` : ''
   if (plan.status === 'rejected') return `${plan.warning || "Claude's usage limit is reached"}${resets}`
   const room = plan.room?.prepare
   if (room != null && (room <= PREPARE_ROOM_SHORT || plan.warning)) {

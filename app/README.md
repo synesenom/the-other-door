@@ -32,7 +32,7 @@ which comes back after a reload:
 
 ```
 ?scene=onboarding-review            a screen; a new one is a line in SCENES
-?scene=matches&state=empty          state: ok, empty, loading, error, long
+?scene=matches&state=empty          state: ok, empty, loading, error, long, plan-low
 ?scene=applications&theme=dark      theme: light or dark, for this tab only
 ```
 

@@ -46,7 +46,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 
 ### Getting there
 - Sidebar `nav "Main"` → `getByRole('button', {name:'Settings', exact:true})`. — ✓ Settings shows who is signed in and the plan, with Use another account
-- Or a problem line at the sidebar foot: `getByRole('group', {name:'Needs you'})` → button `Claude is not signed in`, `Claude is not installed` or `Google Drive sync failed` (all target Settings). `You have no CV yet` targets Profile instead. — ✓ the sidebar line opens Settings, where the row says Claude is not signed in; ✓ the sidebar says Google Drive sync failed and opens Settings, where the row says why; unit: `app/src/renderer/screens/Connections.test.tsx`; You have no CV yet is the Profile area's
+- Or a problem line at the sidebar foot: `getByRole('group', {name:'Needs you'})` → button `Claude is not signed in`, `Claude is not installed` or `Google Drive sync failed` (all target Settings). The plan's window line (`Claude's usage limit is reached…`, `Room for about N more applications…`) is a `<p>` there and opens nothing. `You have no CV yet` targets Profile instead. — ✓ the sidebar line opens Settings, where the row says Claude is not signed in; ✓ the sidebar says Google Drive sync failed and opens Settings, where the row says why; unit: `app/src/renderer/screens/Connections.test.tsx`; You have no CV yet is the Profile area's
 
 ### On mount
 - `onRecheck()` runs once, unless on the phone, and calls `doctor` with `{}`. While it is in flight the previous doctor answer stays on screen; the very first time it is `null`. — unit: `app/src/renderer/screens/Connections.test.tsx`

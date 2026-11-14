@@ -2,7 +2,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import { stubNarrow } from './testing'
 import { match, mockDoor, matchesResult, summary } from './testing'
@@ -237,6 +237,18 @@ describe('App, Find new jobs', () => {
     expect(sidebarButton()).toBeDisabled() // already on the run's screen: nothing to click
     finish()
     expect(await screen.findByRole('heading', { level: 2, name: /2 new matches/ })).toBeInTheDocument()
+  })
+
+  it('a plan that is nearly full after the run is said once the summary is read again', async () => {
+    let ran = false
+    const low = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.9 }, room: { find: 1, prepare: 2 }, binding: 'five_hour' }
+    mockDoor({ status_summary: () => summary(ran ? { plan: low } : {}), list_matches: matchesResult([match()]), find_jobs: () => ((ran = true), RECORD) })
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Matches' })
+    expect(screen.queryByText(/more applications this window/)).toBeNull()
+    await userEvent.click(sidebarButton())
+    await userEvent.click(await screen.findByRole('button', { name: 'View matches' }))
+    expect(await screen.findByText('Room for about 2 more applications this window')).toBeInTheDocument()
   })
 
   it('the run goes on while you look at another screen, and the button returns to it', async () => {
@@ -722,6 +734,44 @@ describe('App, the first-launch gate', () => {
       await waitFor(() => expect(call.mock.calls.map((c) => c[0])).toContain('status_summary'))
       await act(() => new Promise((r) => setTimeout(r, 50)))
       expect(screen.queryByText('Something keeps going wrong. Send a report')).toBeNull()
+    })
+
+    it('on the phone, the plan line is said, as plain text', async () => {
+      const low = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.9 }, room: { find: 1, prepare: 2 }, binding: 'five_hour' }
+      const { info } = gated(profile(), { status_summary: summary({ plan: low }) })
+      info.mockResolvedValue({ demo: false, remote: true })
+      render(<App />)
+      const line = await screen.findByText('Room for about 2 more applications this window')
+      expect(line.closest('button')).toBeNull()
+    })
+
+    it('the plan line goes by itself once the window resets, by one read at that time', async () => {
+      const resets = new Date(Date.now() + 3_600_000)
+      let after = false
+      const low = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.9, resets_at: resets.toISOString() }, room: { find: 1, prepare: 2 }, binding: 'five_hour' }
+      const { call } = gated(profile(), { status_summary: () => summary(after ? {} : { plan: low }) })
+      const real = globalThis.setTimeout
+      const timers: (() => void)[] = []
+      // hold the long timer the app sets for the reset; every other one runs as usual
+      vi.spyOn(globalThis, 'setTimeout').mockImplementation(((fn: () => void, ms?: number, ...rest: unknown[]) => {
+        if (typeof ms === 'number' && ms > 3_000_000) {
+          timers.push(fn)
+          return 0 as unknown as ReturnType<typeof setTimeout>
+        }
+        return real(fn, ms, ...rest)
+      }) as typeof setTimeout)
+      try {
+        render(<App />)
+        await screen.findByText(/Room for about 2 more applications this window, resets/)
+        await waitFor(() => expect(timers).toHaveLength(1))
+        const before = call.mock.calls.filter((c) => c[0] === 'status_summary').length
+        after = true
+        await act(async () => timers[0]!())
+        await waitFor(() => expect(screen.queryByText(/more applications this window/)).toBeNull())
+        expect(call.mock.calls.filter((c) => c[0] === 'status_summary').length).toBe(before + 1)
+      } finally {
+        vi.restoreAllMocks()
+      }
     })
 
     it('nothing is said when all is well', async () => {

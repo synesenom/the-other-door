@@ -5,7 +5,7 @@ installer (below) or runs from a checkout ([`app/README.md`](../app/README.md)).
 each screen does. The look is in [`design/`](design/README.md).
 
 The first time you open it on a computer with no profile, a short wizard sets *The other door* up
-([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and opens where it is fixed.
+([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
 Preparing an application needs the `claude` command line and a LaTeX compiler. The installed app
 brings LaTeX (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all.

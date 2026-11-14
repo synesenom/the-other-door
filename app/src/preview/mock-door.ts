@@ -158,7 +158,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
           ...(state === 'empty' ? { plan: null, cost: null } : {}),
           // the plan's window nearly full: the sidebar's foot says so
-          ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, room: { find: 1, prepare: 2 } } } : {}),
+          ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, five_hour: { used: 0.9, resets_at: new Date(Date.now() + 90 * 60_000).toISOString() }, room: { find: 1, prepare: 2 } } } : {}),
         }
       case 'doctor':
         if (!installed) return { ok: false, checks: [{ name: 'claude CLI', status: 'missing', required: true, detail: 'no claude found' }] }

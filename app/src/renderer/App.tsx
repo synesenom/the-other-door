@@ -16,7 +16,7 @@ import { discoveryOff } from './screens/onboarding/reducer'
 import type { DoctorReport, ShowProfile, WizardState } from './screens/onboarding/reducer'
 import { Profile, type ProfileStart } from './screens/Profile'
 import { Settings } from './screens/Settings'
-import { problems, type Problem } from './screens/problems'
+import { planReset, problems, type Problem } from './screens/problems'
 import { Wizard } from './screens/onboarding/Wizard'
 import { PREPARING_TIP } from './screens/Matches'
 import { usePreparing } from './screens/prepare-store'
@@ -261,6 +261,16 @@ export function App({ start }: { start?: AppStart } = {}) {
     }
   }, [refreshKey, summaryKey, inShell])
 
+  // The window resets at a known time: read the summary once then, so a line that has run out goes by itself (no polling)
+  useEffect(() => {
+    const at = planReset(plan)?.getTime()
+    if (at === undefined) return
+    const wait = at - Date.now()
+    if (wait <= 0) return
+    const timer = setTimeout(() => setSummaryKey((k) => k + 1), Math.min(wait + 1000, 2 ** 31 - 1))
+    return () => clearTimeout(timer)
+  }, [plan])
+
   /** A pull or an import replaced profile/ and jobs/: read them again. */
   const dataChanged = () => {
     void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
@@ -322,8 +332,8 @@ export function App({ start }: { start?: AppStart } = {}) {
     )
   }
   const where = sandbox ? 'sandbox' : demo ? 'demo' : 'real'
-  // What is wrong and needs you (Claude, the CV, Drive, something that keeps going wrong): a short line each
-  // at the sidebar's foot. On the phone they are said, not buttons: what fixes them is on the computer running
+  // What is wrong and needs you (Claude, the Claude plan's window, the CV, Drive, something that keeps going wrong):
+  // a short line each at the sidebar's foot (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
   // The other door; a problem report is made there too, so the phone does not say that one.
   const lines = problems({ doctor, drive, driveConflict, cv: demo ? null : profile?.config ? profile.cv : null, recurring: remote ? null : recurring, plan })
   const destinations = remote ? PHONE_DESTINATIONS : DESTINATIONS

@@ -118,6 +118,17 @@ describe('the plan line', () => {
     expect(planLine(plan({ room: null, warning: "Claude's usage limit is close" }), now)).toBe("Claude's usage limit is close, resets 15:30")
   })
 
+  it('a window whose reset has passed says nothing, as usage.latest drops it', () => {
+    const past = at(new Date(2026, 10, 14, 9, 0, 0))
+    expect(planLine(plan({ five_hour: { used: 0.9, resets_at: past } }), now)).toBeNull()
+    expect(planLine(plan({ five_hour: { used: 0.9, resets_at: at(now) } }), now)).toBeNull()
+    expect(planLine(plan({ status: 'rejected', five_hour: { resets_at: past } }), now)).toBeNull()
+  })
+
+  it('no room at all, still allowed: says 0', () => {
+    expect(planLine(plan({ room: { find: 0, prepare: 0 } }), now)).toBe('Room for about 0 more applications this window, resets 15:30')
+  })
+
   it('no reset known: no resets part', () => {
     expect(planLine(plan({ five_hour: { used: 0.4 } }), now)).toBe('Room for about 2 more applications this window')
   })
