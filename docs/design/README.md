@@ -221,8 +221,8 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 right, nothing in it changes anything. Claude usage first: the total of the last 7 days in
 `display-s` with a small muted line under it (at API prices, not a bill), one line for one search
 and one prepared application, then each activity (largest first) as a row, its name left and its
-dollars right in tabular figures, a 4 px `.bar` for its share of the total, what it did in
-`small` muted, and its features as quieter `small` rows when there are several; how full the
+dollars right in tabular figures with what it did just before them in `small` muted, a 4 px
+`.bar` for its share of the total under them, and its features as quieter `small` rows when there are several; how full the
 5-hour window is closes the part. Before any call, one muted line. Not on the phone.
 
 **Onboarding** (no mockup yet): the first-launch wizard has no sidebar. One 620 px column,

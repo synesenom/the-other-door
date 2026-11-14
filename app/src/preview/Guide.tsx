@@ -146,12 +146,14 @@ export function Guide() {
               <li className="usage-activity">
                 <div className="usage-row">
                   <h3 className="body">Finding jobs</h3>
-                  <span className="body">$1.22</span>
+                  <span className="usage-figures">
+                    <span className="small muted">184 postings scored</span>
+                    <span className="body">$1.22</span>
+                  </span>
                 </div>
                 <div className="bar" aria-hidden="true">
                   <span style={{ width: '35%' }} />
                 </div>
-                <p className="small muted">184 postings scored</p>
                 <ul className="usage-features">
                   <li className="usage-row small muted">
                     <span>Scoring postings</span>

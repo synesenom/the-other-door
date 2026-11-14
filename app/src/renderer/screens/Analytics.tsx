@@ -61,12 +61,14 @@ function Usage({ cost, plan }: { cost: CostBlock | null; plan: PlanBlock | null 
             <li key={a.activity} className="usage-activity">
               <div className="usage-row">
                 <h3 className="body">{a.label}</h3>
-                <span className="body">{usd(a.usd)}</span>
+                <span className="usage-figures">
+                  <span className="small muted">{`${a.count} ${a.count === 1 ? (SINGULAR[a.of] ?? a.of) : a.of}`}</span>
+                  <span className="body">{usd(a.usd)}</span>
+                </span>
               </div>
               <div className="bar" aria-hidden="true">
                 <span style={{ width: `${cost.usd ? Math.round((a.usd / cost.usd) * 100) : 0}%` }} />
               </div>
-              <p className="small muted">{`${a.count} ${a.count === 1 ? (SINGULAR[a.of] ?? a.of) : a.of}`}</p>
               {a.features.length > 1 && (
                 <ul className="usage-features">
                   {a.features.map((f) => (
