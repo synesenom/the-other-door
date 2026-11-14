@@ -220,6 +220,12 @@ export function createWebDoor(deps: WebDeps) {
     async checkUpdate() {
       return { enabled: false as const }
     },
+    async installUpdate() {
+      return { ok: false }
+    },
+    onUpdateState() {
+      return () => undefined
+    },
     async stopRun() {
       const r = await rpc('cancel_job', {})
       return r.ok ? { ok: true } : { ok: false, error: r.error }

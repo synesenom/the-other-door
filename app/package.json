@@ -48,6 +48,7 @@
     "electron": "43.8.7",
     "electron-builder": "26.18.0",
     "electron-vite": "6.0.0",
+    "js-yaml": "^5.5.0",
     "jsdom": "31.0.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
@@ -58,6 +59,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
+    "electron-updater": "^6.8.11",
     "zod": "4.6.7"
   },
   "productName": "The other door",

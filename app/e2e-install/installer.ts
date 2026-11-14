@@ -29,17 +29,25 @@ function newer(a: number[], b: number[]): number {
 }
 
 /**
- * The installer to test among the files of `dist/` (the release's names, `the-other-door-<v>-<os>-<arch>.<ext>`):
- * this system's, this architecture's (Windows takes the x64 build anywhere: on ARM it runs emulated), the
- * newest version. `kind` picks between a system's kinds (Linux: AppImage, else `.deb`).
+ * The installer to test among the files of `dist/` (the release's names: `the-other-door-<v>-mac-<arch>.dmg`,
+ * `the-other-door-<v>-linux-amd64.deb`, and for Windows and the AppImage, which carry no architecture,
+ * `The-other-door-<v>-Windows.exe`, `The-other-door-<v>-Linux.AppImage`; #17): this system's, this
+ * architecture's (Windows takes the x64 build anywhere: on ARM it runs emulated; the AppImage is x64 only),
+ * the newest version. `kind` picks between a system's kinds (Linux: AppImage, else `.deb`).
  */
 export function pickInstaller(files: string[], platform: string, arch: string, kind?: Kind): string | null {
   const kinds = kind ? [kind] : kindsFor(platform)
   const os = platform === 'darwin' ? 'mac' : platform === 'win32' ? 'windows' : 'linux'
-  const builds = platform === 'win32' ? ['x64'] : platform === 'linux' && arch === 'x64' ? ['x64', 'amd64'] : [arch]
+  const builds = platform === 'linux' && arch === 'x64' ? ['x64', 'amd64'] : [arch]
   for (const k of kinds) {
     const found = files
-      .filter((f) => kindOf(f) === k && f.includes(`-${os}-`) && builds.some((b) => f.includes(`-${b}.`) || f.includes(`_${b}.`)))
+      .filter((f) => {
+        const lower = f.toLowerCase()
+        if (kindOf(f) !== k || !lower.includes(`-${os}`)) return false
+        if (k === 'exe') return lower.includes(`-${os}.`) || lower.includes(`-${os}-x64.`)
+        if (k === 'appimage') return arch === 'x64' && (lower.includes(`-${os}.`) || builds.some((b) => lower.includes(`-${os}-${b}.`)))
+        return builds.some((b) => f.includes(`-${os}-${b}.`))
+      })
       .sort((a, b) => newer(versionOf(a), versionOf(b)))
     if (found[0]) return found[0]
   }

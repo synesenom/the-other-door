@@ -40,7 +40,8 @@ export async function launch(world: World, extraEnv: Record<string, string> = {}
   rmSync(spawned, { force: true })
   const toolCallsBefore = world.calls().filter((c) => c.kind === 'tool').length
   const flags = ['--lang=en-US', ...(process.env.CI ? ['--no-sandbox'] : [])]
-  const env = layEnv(process.env, { ...world.env, ...extraEnv })
+  // An installed app checks for updates at start (#17): DOOR_UPDATES=off keeps it offline and on the version under test.
+  const env = layEnv(process.env, { ...world.env, ...(INSTALLED ? { DOOR_UPDATES: 'off' } : {}), ...extraEnv })
   const app = INSTALLED
     ? // its own Chromium folder: an installed app's default is the user's real one, whatever HOME says
       await electron.launch({ executablePath: INSTALLED, args: [...flags, `--user-data-dir=${join(world.scratch, 'chromium')}`], env })

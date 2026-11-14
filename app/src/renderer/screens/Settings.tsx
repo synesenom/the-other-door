@@ -64,22 +64,18 @@ export function Settings({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [update, setUpdate] = useState<UpdateResult | { enabled: false } | null>(null)
-  const [manual, setManual] = useState<'idle' | 'checking' | 'done'>('idle')
   useEffect(() => {
     if (remote) return
     let live = true
     void window.door.checkUpdate().then((r) => live && setUpdate(r))
+    const stop = window.door.onUpdateState((r) => live && setUpdate(r))
     return () => {
       live = false
+      stop()
     }
     // once, on opening
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  async function checkNow() {
-    setManual('checking')
-    setUpdate(await window.door.checkUpdate(true))
-    setManual('done')
-  }
   const page = (
     <div className="settings">
       <h1 className="display-l">Settings</h1>
@@ -144,21 +140,22 @@ export function Settings({
             Version
           </h2>
           <p className="body">Version {update.current}</p>
-          {update.checked && update.available && (
+          {update.checked && update.available && update.mode === 'link' && (
             <p className="body">
               Version {update.version} is available{' '}
-              <button type="button" className="btn" onClick={() => void window.door.openExternal(update.url)}>
+              <button type="button" className="secondary" onClick={() => void window.door.openExternal(update.url)}>
                 Download
               </button>
             </p>
           )}
-          <p>
-            <button type="button" className="btn" disabled={manual === 'checking'} onClick={() => void checkNow()}>
-              Check for updates
-            </button>
-          </p>
-          {manual === 'done' && update.checked && !update.available && <p className="small muted">You have the latest version</p>}
-          {manual === 'done' && !update.checked && <p className="small muted">Couldn't check just now</p>}
+          {update.checked && update.available && update.mode === 'install' && update.state === 'downloading' && <p className="body">Downloading {update.version}</p>}
+          {update.checked && update.available && update.mode === 'install' && update.state === 'downloaded' && (
+            <p>
+              <button type="button" className="primary" onClick={() => void window.door.installUpdate()}>
+                Restart to update to {update.version}
+              </button>
+            </p>
+          )}
         </section>
       )}
       {remote ? (

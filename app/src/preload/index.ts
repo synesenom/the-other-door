@@ -44,7 +44,16 @@ contextBridge.exposeInMainWorld('door', {
   },
   info: () => ipcRenderer.invoke('door:info'),
   showHome: () => ipcRenderer.invoke('door:show-home'),
-  checkUpdate: (fresh?: boolean) => ipcRenderer.invoke('door:check-update', fresh === true),
+  checkUpdate: () => ipcRenderer.invoke('door:check-update'),
+  installUpdate: () => ipcRenderer.invoke('door:install-update'),
+  // The update's state as it changes (a download finishing).
+  onUpdateState: (cb: (state: unknown) => void) => {
+    const listener = (_event: unknown, state: unknown) => cb(state)
+    ipcRenderer.on('door:update-state', listener)
+    return () => {
+      ipcRenderer.removeListener('door:update-state', listener)
+    }
+  },
   // Moving the data: the files are chosen in dialogs the main process runs.
   exportData: () => ipcRenderer.invoke('door:export-data'),
   pickArchive: () => ipcRenderer.invoke('door:pick-archive'),

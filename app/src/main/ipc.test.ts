@@ -671,16 +671,14 @@ describe('the data folder', () => {
 
 describe('the update check channel', () => {
   const found = { enabled: true, checked: true, current: '0.1.0', available: true, version: '0.1.1', url: 'https://example.com/r' } as const
-  it('answers the cached result, without fetching', async () => {
+  it('answers what the app already knows, never a check of its own', async () => {
     const updates = { last: vi.fn(() => found), check: vi.fn(async () => found) }
     const handlers = new Map<string, (...a: any[]) => unknown>()
-    registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), updates })
+    registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), updates: updates as any })
     const h = handlers.get(CHANNELS.checkUpdate)!
     expect(await h({})).toEqual(found)
-    expect(await h({}, 'yes')).toEqual(found)
-    expect(updates.check).not.toHaveBeenCalled()
     expect(await h({}, true)).toEqual(found)
-    expect(updates.check).toHaveBeenCalledTimes(1)
+    expect(updates.check).not.toHaveBeenCalled()
   })
   it('is disabled without a checker or a cached result', async () => {
     const handlers = new Map<string, (...a: any[]) => unknown>()
@@ -690,6 +688,26 @@ describe('the update check channel', () => {
     handlers.clear()
     registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), updates: updates as any })
     expect(await handlers.get(CHANNELS.checkUpdate)!({})).toEqual({ enabled: false })
+  })
+})
+
+describe('the install update channel', () => {
+  const reg = (updates?: unknown) => {
+    const handlers = new Map<string, (...a: any[]) => unknown>()
+    registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), ...(updates ? { updates: updates as any } : {}) })
+    return handlers
+  }
+  it('names the channels', () => {
+    expect(CHANNELS.installUpdate).toBe('door:install-update')
+    expect(CHANNELS.updateState).toBe('door:update-state')
+  })
+  it('refuses without an updater', async () => {
+    expect(await reg().get(CHANNELS.installUpdate)!({})).toEqual({ ok: false })
+  })
+  it('asks the updater to install, whatever the window sends', async () => {
+    const updates = { last: vi.fn(), check: vi.fn(), install: vi.fn(() => ({ ok: true })) }
+    expect(await reg(updates).get(CHANNELS.installUpdate)!({}, 'x')).toEqual({ ok: true })
+    expect(updates.install).toHaveBeenCalledTimes(1)
   })
 })
 
