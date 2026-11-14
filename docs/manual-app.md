@@ -481,7 +481,7 @@ the sidebar says so and opens Settings (your CV's line opens Profile). Nothing i
 well or when Drive is simply off. A site a run could not read is not said: the next run reads it again (its error is in the run record).
 
 When your Claude plan's window is nearly full, a line says so too, with when it resets: **"Claude's usage limit is
-reached, resets 15:30"**, or **"Room for about 2 more applications this window, resets 15:30"** once there is room
+reached, resets 15:30"**, or **"About 2 applications left, resets 15:30"** once there is room
 for three or fewer (an estimate). It opens nothing, and goes by itself when the window has room again. It is read
 when the app opens, after a run and after a Prepare, never in between. The phone shows it too, as plain text.
 

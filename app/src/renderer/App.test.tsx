@@ -245,10 +245,10 @@ describe('App, Find new jobs', () => {
     mockDoor({ status_summary: () => summary(ran ? { plan: low } : {}), list_matches: matchesResult([match()]), find_jobs: () => ((ran = true), RECORD) })
     render(<App />)
     await screen.findByRole('heading', { name: 'Matches' })
-    expect(screen.queryByText(/more applications this window/)).toBeNull()
+    expect(screen.queryByText(/applications left/)).toBeNull()
     await userEvent.click(sidebarButton())
     await userEvent.click(await screen.findByRole('button', { name: 'View matches' }))
-    expect(await screen.findByText('Room for about 2 more applications this window')).toBeInTheDocument()
+    expect(await screen.findByText('About 2 applications left')).toBeInTheDocument()
   })
 
   it('the run goes on while you look at another screen, and the button returns to it', async () => {
@@ -741,7 +741,7 @@ describe('App, the first-launch gate', () => {
       const { info } = gated(profile(), { status_summary: summary({ plan: low }) })
       info.mockResolvedValue({ demo: false, remote: true })
       render(<App />)
-      const line = await screen.findByText('Room for about 2 more applications this window')
+      const line = await screen.findByText('About 2 applications left')
       expect(line.closest('button')).toBeNull()
     })
 
@@ -771,12 +771,12 @@ describe('App, the first-launch gate', () => {
       }) as typeof setTimeout)
       try {
         render(<App />)
-        await screen.findByText(/Room for about 2 more applications this window, resets/)
+        await screen.findByText(/About 2 applications left, resets/)
         await waitFor(() => expect(timers).toHaveLength(1))
         const before = call.mock.calls.filter((c) => c[0] === 'status_summary').length
         after = true
         await act(async () => timers[0]!())
-        await waitFor(() => expect(screen.queryByText(/more applications this window/)).toBeNull())
+        await waitFor(() => expect(screen.queryByText(/applications left/)).toBeNull())
         expect(call.mock.calls.filter((c) => c[0] === 'status_summary').length).toBe(before + 1)
       } finally {
         vi.restoreAllMocks()

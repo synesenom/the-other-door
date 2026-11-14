@@ -90,7 +90,7 @@ describe('the visual guide', () => {
 describe('the plan line', () => {
   it('says the window is nearly full, as plain text that opens nothing', async () => {
     mount('matches', 'plan-low')
-    const line = await screen.findByText(/Room for about 2 more applications this window, resets/)
+    const line = await screen.findByText(/About 2 applications left, resets/)
     expect(line.closest('button')).toBeNull()
     expect(line.closest('p')).not.toBeNull()
   })
@@ -99,7 +99,7 @@ describe('the plan line', () => {
     const { container } = mount('matches')
     await waitFor(() => expect(container.querySelector('main')).toBeInTheDocument())
     await new Promise((r) => setTimeout(r, 20))
-    expect(screen.queryByText(/more applications this window/)).toBeNull()
+    expect(screen.queryByText(/applications left/)).toBeNull()
   })
 
   it('reads the summary again when a Prepare ends', async () => {
