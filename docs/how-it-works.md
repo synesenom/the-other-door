@@ -164,8 +164,9 @@ includes Danish (usually one or two per scrape), to translate them (`translate_t
 
 A plan has a 5-hour window and a weekly limit, shared with your own Claude chats. Every
 `claude -p` call reports how full both are, and *The other door* writes one line per call to
-`jobs/usage.jsonl`: when, what for, how many postings it scored, and how full each window was
-afterwards. The file stays on this computer: `data export` and Google Drive sync leave it out.
+`jobs/usage.jsonl`: when, what for, how many postings it scored, how full each window was
+afterwards, and which models it used with their input, output, cache-read and cache-write
+tokens (older lines lack these; nothing shows them yet). The file stays on this computer: `data export` and Google Drive sync leave it out.
 
 From those lines it learns how much of a window a find and a prepare take (a window's rise
 over the calls that caused it), and `jobs summary` (or `status_summary` in a conversation)

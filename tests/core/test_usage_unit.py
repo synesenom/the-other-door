@@ -9,7 +9,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.core import usage, workspace
+from door.core import claude_cli, usage, workspace
+from tests.paths import TESTS_DIR
 
 
 def _envelope(cost=0.01, is_error=False, result="ok"):
@@ -58,7 +59,7 @@ def test_record_appends_one_line_to_the_jobs_folder(tmp_path):
     [line] = _lines(tmp_path)
     assert (line["feature"], line["units"], line["weight"]) == ("match_scoring", 5, 0.02)
     assert line["at"].endswith("+00:00")
-    assert set(line) == {"at", "feature", "units", "weight"}
+    assert set(line) == {"at", "feature", "units", "weight", "m"}
 
 
 def test_record_defaults_to_the_workspace_jobs_folder():
@@ -203,7 +204,7 @@ def test_record_writes_each_windows_reading(tmp_path):
 def test_record_writes_only_the_readings_there_are(tmp_path):
     usage.record("ask", _envelope(), limits={"five_hour": {"resets_at": 7}}, jobs_dir=tmp_path)
     [line] = _lines(tmp_path)
-    assert set(line) == {"at", "feature", "units", "weight", "r5"}
+    assert set(line) == {"at", "feature", "units", "weight", "r5", "m"}
 
 
 def test_record_keeps_a_reading_with_no_weight(tmp_path):
@@ -458,3 +459,68 @@ def test_a_retry_older_than_every_selected_tailoring_is_left_out(monkeypatch):
     monkeypatch.setattr(usage, "PREPARES", 1)
     lines = [_ln(0, "tailoring", weight=1.0), _ln(1, "tailoring_retry", weight=5.0), _ln(2, "tailoring", weight=1.0)]
     assert usage.run_sizes(lines, [])["prepare"] == pytest.approx(1.0)
+
+
+# --------------------------------------------------------------------------- models and tokens (#68)
+_STREAM = TESTS_DIR / "core" / "fixtures" / "claude" / "stream_rate_limit.jsonl"
+
+
+def _with_usage(model_usage, cost=0.01):
+    return json.dumps({"type": "result", "total_cost_usd": cost, "modelUsage": model_usage})
+
+
+def test_models_read_the_tokens_of_a_saved_envelope():
+    envelope, _ = claude_cli.read_stream(_STREAM.read_text(encoding="utf-8"))
+    assert usage._models(envelope) == {
+        "claude-haiku-5-5": {"i": 6, "o": 151, "cr": 14536, "cw": 28826}}
+
+
+def test_models_keeps_every_model_of_a_call():
+    out = usage._models(_with_usage({"a": {"inputTokens": 1, "outputTokens": 2},
+                                     "b": {"inputTokens": 3, "cacheReadInputTokens": 4}}))
+    assert out == {"a": {"i": 1, "o": 2}, "b": {"i": 3, "cr": 4}}
+
+
+def test_models_drops_a_model_with_no_tokens_and_bad_values():
+    out = usage._models(_with_usage({"a": {"costUSD": 1.0}, "b": {"inputTokens": True, "outputTokens": "5",
+                                                                   "cacheReadInputTokens": -1, "cacheCreationInputTokens": 9}}))
+    assert out == {"b": {"cw": 9}}
+
+
+@pytest.mark.parametrize("stdout", [None, "", "not json", "[]", "{}", '{"modelUsage": []}',
+                                    '{"modelUsage": {"a": 5}}'])
+def test_models_is_empty_for_anything_else(stdout):
+    assert usage._models(stdout) == {}
+
+
+def test_record_writes_the_models(tmp_path):
+    usage.record("ask", _with_usage({"m1": {"inputTokens": 7, "outputTokens": 8}}), jobs_dir=tmp_path)
+    [line] = _lines(tmp_path)
+    assert line["m"] == {"m1": {"i": 7, "o": 8}}
+
+
+def test_record_without_model_usage_writes_no_m(tmp_path):
+    usage.record("ask", json.dumps({"total_cost_usd": 0.01}), jobs_dir=tmp_path)
+    [line] = _lines(tmp_path)
+    assert "m" not in line
+
+
+def test_record_keeps_models_with_only_a_reading(tmp_path):
+    out = json.dumps({"modelUsage": {"m1": {"inputTokens": 1}}})
+    usage.record("ask", out, limits={"status": "allowed"}, jobs_dir=tmp_path)
+    [line] = _lines(tmp_path)
+    assert line["m"] == {"m1": {"i": 1}} and "weight" not in line
+
+
+def test_record_with_models_but_no_weight_or_reading_writes_nothing(tmp_path):
+    out = json.dumps({"modelUsage": {"m1": {"inputTokens": 1}}})
+    assert usage.record("ask", out, jobs_dir=tmp_path) is None
+
+
+def test_readers_give_the_same_figures_with_and_without_models(tmp_path):
+    _log(tmp_path, ("match_scoring", 0.5, 4, 1))
+    usage.record("tailoring", _with_usage({"m1": {"inputTokens": 1}}, cost=0.5), jobs_dir=tmp_path)
+    assert len(usage.read(tmp_path)) == 2
+    assert usage.week(tmp_path)["activities"][0]["share"] == 0.5
+    assert usage.cost(tmp_path, records=[])["usd"] == 1.0
+    assert usage.latest(tmp_path) is None

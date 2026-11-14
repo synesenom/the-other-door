@@ -13,7 +13,8 @@ as what each activity cost at API prices (`cost()`, #64): the same yardstick for
 whatever their plan, an estimate from `claude`'s own price table and not a bill (the plan is
 not charged per call). `record()` appends one line per call
 to `jobs/usage.jsonl` (`LOG_NAME`): when, what for (a key of `FEATURES`), how many postings
-it scored, that weight, and the windows' readings (`u5`/`r5`/`u7`/`r7`/`status`). It is
+it scored, that weight, the windows' readings (`u5`/`r5`/`u7`/`r7`/`status`) and, per model, its input, output,
+cache-read and cache-write tokens (`m`; older lines lack it, and nothing shows it yet). It is
 called by `claude_cli.run()` (so by `claude_cli.ask()`) and by `matching/scorer.py`,
 `matching/language.py` and `core/scraper_fix.py`, which run `claude` themselves.
 
@@ -131,6 +132,33 @@ def _number(value) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
+# A model's token counts on a log line: `i` input, `o` output, `cr` cache read, `cw` cache write
+# (`modelUsage`'s `inputTokens`, `outputTokens`, `cacheReadInputTokens`, `cacheCreationInputTokens`).
+_TOKEN_KEYS = {"inputTokens": "i", "outputTokens": "o", "cacheReadInputTokens": "cr",
+               "cacheCreationInputTokens": "cw"}
+
+
+def _models(stdout: str | None) -> dict:
+    """`{model: {"i", "o", "cr", "cw"}}` from a result envelope's `modelUsage`: only the counts
+    present and non-negative, a model with none left out; `{}` for anything unreadable. Never raises."""
+    try:
+        env = json.loads(stdout or "")
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    usage = env.get("modelUsage") if isinstance(env, dict) else None
+    if not isinstance(usage, dict):
+        return {}
+    models = {}
+    for model, figures in usage.items():
+        if not isinstance(figures, dict):
+            continue
+        tokens = {short: int(figures[key]) for key, short in _TOKEN_KEYS.items()
+                  if _number(figures.get(key)) and figures[key] >= 0}
+        if tokens:
+            models[str(model)] = tokens
+    return models
+
+
 def _readings(limits: dict | None) -> dict:
     """The `u5`/`r5`/`u7`/`r7`/`status` fields of a log line, from a call's `limits`."""
     fields = {}
@@ -155,7 +183,8 @@ def record(feature: str, stdout: str | None, *, units: int = 1, limits: dict | N
     weight nor a reading of the plan, or the log cannot be written (never raises for that: an
     answer matters more than its bookkeeping). `units` is the postings a scoring call scored;
     `limits` is the call's reading of the plan (`claude_cli.read_stream`), written as
-    `u5`/`r5`/`u7`/`r7`/`status`. A refused call with no weight is still written: its
+    `u5`/`r5`/`u7`/`r7`/`status`; the models it used and their tokens go under `m`
+    (`{model: {i, o, cr, cw}}`, from the envelope's `modelUsage`). A refused call with no weight is still written: its
     `rejected` is what the user needs to see.
 
     Raises:
@@ -170,6 +199,9 @@ def record(feature: str, stdout: str | None, *, units: int = 1, limits: dict | N
     if cost is not None:
         line["weight"] = cost
     line.update(readings)
+    models = _models(stdout)
+    if models:
+        line["m"] = models
     path = Path(jobs_dir or workspace.JOBS_DIR) / LOG_NAME
     try:
         with _write_lock:
