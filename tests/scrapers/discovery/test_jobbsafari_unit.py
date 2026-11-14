@@ -17,10 +17,6 @@ def _by_id(cards):
     return {c["platform_id"]: c for c in cards}
 
 
-def test_the_source_contract_names():
-    assert (jobbsafari.NAME, jobbsafari.COUNTRIES, jobbsafari.CONFIG_KEY) == ("jobbsafari", ("se",), "jobbsafari_discovery")
-
-
 def test_the_search_url_quotes_the_keyword_and_pages_from_the_second_page():
     assert jobbsafari._search_url("project manager", 1) == "https://jobbsafari.se/lediga-jobb?sok=project%20manager"
     assert jobbsafari._search_url("project manager", 2) == "https://jobbsafari.se/lediga-jobb?sok=project%20manager&page=2"

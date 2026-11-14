@@ -244,20 +244,24 @@ def _run(tmp_path, argv):
     return cs.main([*argv, "--dir", str(tmp_path)])
 
 
+def _report_rows(tmp_path, cc):
+    """The (step, name, detail) rows of the day's report, every run's table in order."""
+    text = next(tmp_path.glob(f"{cc}/smoke-*.md")).read_text()
+    rows = [[c.strip() for c in line.strip("|").split("|")] for line in text.splitlines() if line.startswith("| ")]
+    return [(r[0], r[1], r[3]) for r in rows if r[0] != "step"]
+
+
 def test_run_row_order_and_collect_cap(tmp_path, fake_core):
     assert _run(tmp_path, ["dk", "--langs", "en", "--collect", "2"]) == 0
-    steps = [(s, kw.get("dry_run", False)) for s, kw in fake_core.calls]
-    assert steps == [("search", False), ("discover", False), ("follow", True), ("follow", False),
-                     ("collect", False), ("match", False)]
-    collect = [kw for s, kw in fake_core.calls if s == "collect"][0]
-    assert collect["companies"] == ["Acme", "Globex"]
-    assert list((tmp_path / "dk").glob("smoke-*.md"))
+    rows = _report_rows(tmp_path, "dk")
+    assert [step for step, _, _ in rows] == ["search", "discover", "follow", "collect", "collect", "match"]
+    assert ("collect", "feeds", "3 postings from 2 employers") in rows
     assert (tmp_path / "dk" / "smoke-sandbox-dk-en").is_dir()
 
 
 def test_profession_runs_only_its_row(tmp_path, fake_core):
     assert _run(tmp_path, ["dk", "--profession", "nurse"]) == 0
-    assert [s for s, _ in fake_core.calls].count("search") == 1
+    assert [step for step, _, _ in _report_rows(tmp_path, "dk")].count("search") == 1
     assert (tmp_path / "dk" / "smoke-sandbox-dk-nurse").is_dir()
     assert not (tmp_path / "dk" / "smoke-sandbox-dk-en").exists()
     assert not (tmp_path / "dk" / "smoke-sandbox-dk-electrician").exists()
@@ -273,13 +277,12 @@ def test_unknown_profession(tmp_path, capsys):
 def test_nothing_followed_skips_collect(tmp_path, fake_core):
     fake_core.followed.clear()
     assert _run(tmp_path, ["dk", "--langs", "en"]) == 0
-    assert "collect" not in [s for s, _ in fake_core.calls]
-    assert "nothing followed" in next(tmp_path.glob("dk/smoke-*.md")).read_text()
+    assert [row for row in _report_rows(tmp_path, "dk") if row[0] == "collect"] == [("collect", "feeds", "nothing followed")]
 
 
 def test_both_languages_search_once_and_copy_jobs(tmp_path, fake_core):
     assert _run(tmp_path, ["hu", "--langs", "both"]) == 0
-    steps = [s for s, _ in fake_core.calls]
+    steps = [step for step, _, _ in _report_rows(tmp_path, "hu")]
     assert steps.count("search") == 1 and steps.count("discover") == 1 and steps.count("match") == 2
     assert (tmp_path / "hu" / "smoke-sandbox-hu-en").is_dir() and (tmp_path / "hu" / "smoke-sandbox-hu-en-hu").is_dir()
     cfg = json.loads((tmp_path / "hu" / "smoke-sandbox-hu-en-hu" / "profile" / "config.json").read_text())
@@ -307,7 +310,7 @@ def test_step_exception_is_a_fail_line(tmp_path, monkeypatch, fake_core):
 def test_local_language_unsupported_is_skipped(tmp_path, fake_core):
     assert _run(tmp_path, ["dk", "--langs", "local"]) == 0
     assert "no supported local language" in next(tmp_path.glob("dk/smoke-*.md")).read_text()
-    assert fake_core.calls == []
+    assert not [step for step, _, _ in _report_rows(tmp_path, "dk") if step in ("search", "match")]
 
 
 def test_unknown_country(tmp_path, capsys):
@@ -439,3 +442,4 @@ def test_a_dry_run_that_never_returns_is_site_side_too(tmp_path, stuck, fake_cor
     text = next(tmp_path.glob("dk/smoke-*.md")).read_text()
     assert "dry run stopped after 0 s" in text
     assert "FAIL" not in text
+

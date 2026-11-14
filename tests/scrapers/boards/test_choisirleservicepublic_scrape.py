@@ -9,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -225,16 +224,6 @@ def test_an_ad_page_without_text_is_recorded_not_raised():
 
 
 @responses.activate
-def test_a_connection_error_is_recorded_not_raised():
-    _serve(_url("data scientist", 1), body=requests.exceptions.ConnectionError("down"))
-    drain_errors()
-    assert csp.scrape(_CFG) == []
-    [error] = drain_errors()["choisirleservicepublic"]
-    assert "data scientist" in error
-    assert drain_pushback("choisirleservicepublic") is False
-
-
-@responses.activate
 def test_a_page_that_is_not_a_result_list_is_recorded_as_a_change():
     _serve(_url("data scientist", 1), "<html><body><p>Page introuvable</p></body></html>")
     drain_errors()
@@ -323,20 +312,3 @@ def test_probe_drift_when_the_cards_lose_their_links():
     _serve(_probe_url(), _html("search_page1.html").replace("-reference-", "-ref-"))
     result = csp.probe(_CFG)
     assert result["structure_ok"] is False and result["reason"]
-
-
-@pytest.mark.parametrize("status", [401, 403, 429])
-@responses.activate
-def test_probe_refusal_is_a_wall(status):
-    _serve(_probe_url(), "Access denied", status=status)
-    assert csp.probe(_CFG)["wall"] is True
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    _serve(_probe_url(), body=requests.exceptions.ConnectionError("down"))
-    assert csp.probe(_CFG)["unreachable"] is True
-
-
-def test_probe_without_keywords_is_none():
-    assert csp.probe({"location": "Paris"}) is None

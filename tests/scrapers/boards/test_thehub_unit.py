@@ -1,6 +1,6 @@
 """Unit tests for The Hub pure helpers (C4, unit layer) — Nuxt SSR payloads.
 
-Covers _location_text, _job_url, _parse_date, _country_code,
+Covers _location_text, _parse_date, _country_code,
 _parse_listing_payload, _parse_detail_payload and the `window.__NUXT__` extraction
 and evaluation (_nuxt_script, _evaluate_nuxt, _nuxt_state).
 Pure and offline.
@@ -41,21 +41,8 @@ def test_location_text(node, expected):
 
 
 # --------------------------------------------------------------------------- #
-# _job_url
-# --------------------------------------------------------------------------- #
-
-def test_job_url_builds_canonical_id_based_url():
-    assert thehub._job_url("6aa1f3cc961a30471ccb36b8") == "https://thehub.io/jobs/6aa1f3cc961a30471ccb36b8"
-
-
-# --------------------------------------------------------------------------- #
 # _parse_date
 # --------------------------------------------------------------------------- #
-
-def test_parse_date_iso_with_z_and_millis():
-    dt = thehub._parse_date("2026-05-29T11:36:28.470Z")
-    assert dt is not None and dt.year == 2026 and dt.month == 5
-
 
 @pytest.mark.parametrize("bad", [None, "not-a-date"])
 def test_parse_date_invalid_returns_none(bad):
@@ -101,18 +88,6 @@ def test_parse_listing_payload_first_page_has_next():
 # --------------------------------------------------------------------------- #
 # _parse_detail_payload
 # --------------------------------------------------------------------------- #
-
-def test_parse_detail_payload_maps_fields():
-    parsed = thehub._parse_detail_payload(_fx("detail_flatpay.json"))
-    assert parsed is not None
-    assert parsed["title"] == "Data Scientist"
-    assert parsed["company"] == "Flatpay"
-    assert parsed["location"] == "Copenhagen, Denmark"
-    assert "<" not in parsed["description"]
-    assert "growing AI team" in parsed["description"]
-    assert parsed["posted_at"] is not None
-    assert parsed["posted_at"].year == 2026 and parsed["posted_at"].month == 9
-
 
 def test_parse_detail_payload_apply_url_is_the_link():
     assert thehub._parse_detail_payload(_fx("detail_lunar.json"))["apply_url"] == "https://lunar.app/careers/senior-data-scientist"

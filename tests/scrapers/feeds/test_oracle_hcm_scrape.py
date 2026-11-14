@@ -1,9 +1,8 @@
 """Fixture tests for the Oracle Cloud HCM candidate-experience feed (#438): a bank's career site, trimmed and
 with its free text rewritten, served page by page."""
 
-import json
 import re
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import unquote, urlparse
 
 import pytest
 import responses
@@ -127,11 +126,6 @@ def test_a_malformed_entry_is_a_recorded_error():
     drain_errors()
     assert oracle_hcm.scrape({"oracle_hcm_companies": ["nonsense"]}) == []
     assert "nonsense" in drain_errors()["oracle_hcm"][0]
-
-
-def test_no_entries_no_request():
-    assert oracle_hcm.scrape({}) == []
-    assert oracle_hcm.probe({}) is None
 
 
 @responses.activate

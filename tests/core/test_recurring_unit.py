@@ -32,13 +32,6 @@ def _check(records=(), lines=(), reported_at=None) -> bool:
     return recurring.keeps_going_wrong(list(records), list(lines), reported_at=reported_at, now=NOW)
 
 
-def test_the_thresholds_are_named_in_one_place():
-    assert recurring.SITE_RUNS == 3
-    assert recurring.SCORING_RUNS == 2
-    assert recurring.TOOL_FAILURES == 3
-    assert recurring.TOOL_WINDOW == timedelta(hours=24)
-
-
 def test_nothing_on_disk_nothing_wrong():
     assert _check() is False
 

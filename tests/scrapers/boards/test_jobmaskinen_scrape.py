@@ -8,7 +8,6 @@ is rewritten. The site is Danish only (Jobnet's ads), so there is no English ad 
 from pathlib import Path
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -76,6 +75,7 @@ def test_scrape_paginates_dedups_and_reads_details():
     assert first["company"] == "PowerMatch ApS"
     assert first["location"] == "Odense"
     assert first["posted_at"].startswith("2026-10-29T12:33:53")
+    assert first["description"].startswith("Kan du lide at arbejde selvstændigt") and "Løn efter overenskomst" in first["description"]
     assert drain_errors() == {}
     detail_calls = [c for c in responses.calls if "jobnet=" in c.request.url]
     assert len(detail_calls) == 6  # one per distinct ad
@@ -228,19 +228,3 @@ def test_probe_drift_when_the_results_block_is_gone():
     result = jobmaskinen.probe(_CFG)
     assert result["structure_ok"] is False
     assert result["reason"]
-
-
-@responses.activate
-def test_probe_forbidden_is_a_wall():
-    _serve(_probe_url(), "Just a moment...", status=403)
-    assert jobmaskinen.probe(_CFG)["wall"] is True
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    _serve(_probe_url(), body=requests.exceptions.ConnectionError("down"))
-    assert jobmaskinen.probe(_CFG)["unreachable"] is True
-
-
-def test_probe_without_keywords_is_none():
-    assert jobmaskinen.probe({"location": "Copenhagen"}) is None

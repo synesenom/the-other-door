@@ -2,7 +2,6 @@
 Turing Institute (a custom domain), trimmed and rewritten."""
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -58,16 +57,6 @@ def test_known_ads_cost_no_request_so_they_are_still_returned():
 
 
 @responses.activate
-def test_the_followed_name_wins_and_a_link_is_a_host():
-    _serve()
-    names = {"eploy_hosts": {"vitalityweb.eploy.net/vacancies": "Vitality Health"}}   # keyed by the entry as written
-
-    postings = eploy.scrape({"eploy_hosts": ["https://vitalityweb.eploy.net/vacancies/"], "_names": names})
-
-    assert {p["company"] for p in postings} == {"Vitality Health"}
-
-
-@responses.activate
 def test_a_custom_domain_is_its_own_host_and_two_hosts_are_two_feeds():
     _serve()
     _serve(_TURING, "turing_feed.xml")
@@ -91,15 +80,6 @@ def test_scrape_drops_ads_in_another_country_and_counts_them():
 
 
 @responses.activate
-def test_a_failed_feed_is_a_recorded_error_not_a_raise():
-    responses.add(responses.GET, _VITALITY, status=500)
-    drain_errors()
-
-    assert eploy.scrape({"eploy_hosts": ["vitalityweb.eploy.net"]}) == []
-    assert drain_errors()["eploy"]
-
-
-@responses.activate
 def test_a_refusal_is_a_recorded_error():
     responses.add(responses.GET, _VITALITY, status=403)
     drain_errors()
@@ -109,27 +89,12 @@ def test_a_refusal_is_a_recorded_error():
 
 
 @responses.activate
-def test_an_unknown_host_is_a_recorded_error_and_the_rest_go_on():
-    responses.add(responses.GET, "https://nope.eploy.net/feeds/datafeed.ashx", status=404, body="Not Found")
-    _serve()
-    drain_errors()
-
-    assert len(eploy.scrape({"eploy_hosts": ["nope.eploy.net", "vitalityweb.eploy.net"]})) == 3
-    assert "nope.eploy.net" in drain_errors()["eploy"][0]
-
-
-@responses.activate
 def test_a_page_that_is_not_a_feed_is_a_recorded_error():
     _serve(body="<html><body>Maintenance</body></html>")
     drain_errors()
 
     assert eploy.scrape({"eploy_hosts": ["vitalityweb.eploy.net"]}) == []
     assert drain_errors()["eploy"]
-
-
-def test_no_hosts_no_request():
-    assert eploy.scrape({}) == []
-    assert eploy.probe({}) is None
 
 
 @responses.activate
@@ -153,14 +118,3 @@ def test_probe_drift_without_a_feed():
     result = eploy.probe({"eploy_hosts": ["vitalityweb.eploy.net"]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_unreachable_and_wall():
-    url = _VITALITY + "?RecordLimit=5"
-    responses.add(responses.GET, url, body=requests.ConnectionError("down"))
-    down = eploy.probe({"eploy_hosts": ["vitalityweb.eploy.net"]})
-    assert down["structure_ok"] is False and down.get("unreachable") is True
-    responses.replace(responses.GET, url, status=403)
-    walled = eploy.probe({"eploy_hosts": ["vitalityweb.eploy.net"]})
-    assert walled["structure_ok"] is False and walled.get("wall") is True

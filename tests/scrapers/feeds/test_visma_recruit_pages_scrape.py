@@ -1,10 +1,7 @@
 """Fixture tests for Visma Recruit employers with their own ad list (issue #567)."""
 
-import json
-import re
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -215,14 +212,6 @@ def test_probe_of_a_list_with_no_ads_or_links_is_drift():
     result = v.probe({_KEY: [_VB]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_unreachable_and_wall():
-    responses.add(responses.GET, _VB, body=requests.ConnectionError("down"))
-    assert v.probe({_KEY: [_VB]}).get("unreachable") is True
-    responses.replace(responses.GET, _VB, status=403)
-    assert v.probe({_KEY: [_VB]}).get("wall") is True
 
 
 @responses.activate

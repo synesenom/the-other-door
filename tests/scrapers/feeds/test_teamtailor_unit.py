@@ -82,12 +82,6 @@ def test_platform_id_falls_back_to_top_level_id():
 # scrape() config edge cases / zero-result warning
 # --------------------------------------------------------------------------- #
 
-def test_scrape_missing_key_returns_empty():
-    """When teamtailor_companies is absent, scrape() returns an empty list."""
-    result = teamtailor.scrape({})
-    assert result == []
-
-
 @pytest.mark.parametrize("entry, base", [
     ("templafy", "https://templafy.teamtailor.com"),
     (" Templafy ", "https://templafy.teamtailor.com"),

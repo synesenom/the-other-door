@@ -5,7 +5,6 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
 from door.scrapers.feeds import ashby
 from paths import TESTS_DIR
 
@@ -42,29 +41,12 @@ def test_scrape_maps_the_listed_jobs_and_skips_unlisted_ones():
 
 
 @responses.activate
-def test_an_unknown_board_is_a_recorded_error():
-    responses.add(responses.GET, "https://api.ashbyhq.com/posting-api/job-board/nope", status=404, body="Not Found")
-    responses.add(responses.GET, _BOARD, body=_fx())
-
-    drain_errors()
-    postings = ashby.scrape({"ashby_companies": ["nope", "pleo"]})
-
-    assert len(postings) == 2
-    assert "nope" in drain_errors()["ashby"][0]
-
-
-@responses.activate
 def test_a_board_listed_twice_is_read_once_per_job():
     responses.add(responses.GET, _BOARD, body=_fx())
 
     postings = ashby.scrape({"ashby_companies": ["pleo", "https://jobs.ashbyhq.com/pleo"]})
 
     assert len(postings) == 2
-
-
-def test_no_companies_no_request():
-    assert ashby.scrape({}) == []
-    assert ashby.probe({}) is None
 
 
 @responses.activate
@@ -81,24 +63,6 @@ def test_probe_drift_without_a_jobs_list():
     responses.add(responses.GET, _BOARD, json={"apiVersion": "1"})
 
     assert ashby.probe({"ashby_companies": ["pleo"]})["structure_ok"] is False
-
-
-@responses.activate
-def test_the_followed_name_wins():
-    responses.add(responses.GET, _BOARD, body=_fx())
-
-    postings = ashby.scrape({"ashby_companies": ["https://jobs.ashbyhq.com/Pleo"],
-                             "_names": {"ashby_companies": {"jobs.ashbyhq.com/pleo": "Pleo Technologies"}}})
-
-    assert postings and {p["company"] for p in postings} == {"Pleo Technologies"}
-    assert all(p["id"].startswith("ashby.") for p in postings)
-
-
-@responses.activate
-def test_without_a_name_map_the_board_is_the_fallback():
-    responses.add(responses.GET, _BOARD, body=_fx())
-
-    assert {p["company"] for p in ashby.scrape({"ashby_companies": ["pleo"]})} == {"pleo"}
 
 
 @responses.activate

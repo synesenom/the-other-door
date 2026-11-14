@@ -17,6 +17,3 @@ def test_the_text_makes_it_the_users_decision_at_their_own_risk_and_holds_no_mar
     assert "<" not in text and "**" not in text
 
 
-def test_the_text_is_the_same_for_the_same_input():
-    args = ("A", "b", "https://c.example")
-    assert disclaimer.text(*args) == disclaimer.text(*args)

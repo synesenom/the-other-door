@@ -13,8 +13,8 @@ data and each language's data still fit them, each on its own:
   language file: the ads are detected as that language, and its headings and markers occur in them.
 
 `tests/i18n/test_live_matrix_unit.py` fails until every country file and every language file has a
-row here, every row's source serves its city, and every site and discovery source has a live test
-or is listed in `NO_LIVE_TEST` with the reason.
+row here and every row's source serves its city; `tests/scrapers/test_live_modes_unit.py` fails until
+every site and discovery source has a live test or is listed in `NO_LIVE_TEST` with the reason.
 """
 
 import importlib

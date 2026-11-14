@@ -33,28 +33,14 @@ def test_a_sites_module_is_named_after_it_in_the_folder_of_its_kind():
         assert importlib.util.find_spec(site.module) is not None, f"{site.name}: no module {site.module}"
 
 
-_FEED_KEYS = {
-    "greenhouse": "greenhouse_boards", "lever": "lever_companies", "workable": "workable_companies",
-    "ashby": "ashby_companies", "recruitee": "recruitee_companies", "pinpoint": "pinpoint_companies",
-    "smartrecruiters": "smartrecruiters_companies", "signatur": "signatur_companies",
-    "dayforce": "dayforce_companies", "reachmee": "reachmee_companies", "emply": "emply_tenants", "oracle_hcm": "oracle_hcm_companies", "teamtailor": "teamtailor_companies", "jobylon": "jobylon_companies",
-    "successfactors": "successfactors_companies", "hr_manager": "hr_manager_aliases", "career_sites": "career_sites", "recman": "recman_companies", "varbi": "varbi_tenants",
-    "personio": "personio_companies", "talentsoft": "talentsoft_hosts", "taleez": "taleez_companies",
-    "flatchr": "flatchr_companies",
-    "jobtrain": "jobtrain_companies",
-    "networx": "networx_companies",
-    "beetween": "beetween_companies",
-    "digitalrecruiters": "digitalrecruiters_sites",
-    "visma_recruit": "visma_recruit_companies",
-    "eploy": "eploy_hosts",
-}
+def test_each_feed_scraper_reads_the_config_key_its_registry_entry_names():
+    """`companies.feed_config` hands a feed scraper its employers under `Site.config_key`."""
+    import inspect
 
-
-def test_the_feed_sites_are_the_platforms_with_the_keys_the_scrapers_read():
-    from door.core import sites
-
-    assert sites.FEED_SITES == _FEED_KEYS
-    assert {name: site.config_key for name, site in SITES.items() if site.config_key} == _FEED_KEYS
+    feeds = {name: site for name, site in SITES.items() if site.config_key}
+    assert sites.FEED_SITES == {name: site.config_key for name, site in feeds.items()} and "greenhouse" in feeds
+    for name, site in feeds.items():
+        assert site.config_key in inspect.getsource(importlib.import_module(site.module)), name
 
 
 def test_a_detection_takes_its_config_key_from_the_registry():

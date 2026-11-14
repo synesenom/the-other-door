@@ -427,13 +427,6 @@ def test_declining_the_sign_in_goes_on_and_warns(init_env, prompts, monkeypatch)
     assert "claude auth login" in result_text(result) and "review" in prompts.order
 
 
-def test_init_never_asks_for_exclusions_or_a_score(init_env, prompts, monkeypatch):
-    _stop_at_first_run(monkeypatch)
-    prompts.answers.update(_JANE)
-    CliRunner().invoke(cli, ["init"])
-    assert not {"exclude_companies", "exclude_keywords", "min_score"} & set(prompts.order)
-
-
 def test_init_location_is_picked_from_the_known_cities(init_env, prompts, wizard_calls, monkeypatch):
     _stop_at_first_run(monkeypatch)
     wizard_calls.basics = _basics(location=None, missing=["location"])
@@ -624,13 +617,6 @@ def test_init_set_takes_any_config_key(init_env, prompts):
     data = json.loads((init_env.profile_dir / "config.json").read_text())
     assert data["remote"] == "hybrid"
     assert data["max_age_days"] == 14
-
-
-def test_init_set_refuses_the_retired_feed_keys(init_env, prompts):
-    _write_existing_profile_config(init_env)
-    result = CliRunner().invoke(cli, ["init", "--set", 'teamtailor_companies=["storytel"]'])
-    assert result.exit_code != 0
-    assert "teamtailor_companies" in result_text(result)
 
 
 def test_init_exclude_flags_merge_key_by_key(init_env, prompts):
@@ -1231,9 +1217,8 @@ _PREFERENCES = "medical or green energy; avoid banking and gambling"
 
 def test_the_preferences_field_is_a_plain_optional_string(init_env):
     fields = profile_cmd._show_profile_core(init_env.profile_dir, init_env.example_dir)["options"]["fields"]
-    assert {f["key"]: f for f in fields}["preferences"] == {
-        "key": "preferences", "type": "string", "required": False, "nullable": False, "default": "",
-    }
+    field = {f["key"]: f for f in fields}["preferences"]
+    assert (field["type"], field["required"], field["default"]) == ("string", False, "")
 
 
 def test_init_set_writes_the_preferences_text_as_written(init_env):

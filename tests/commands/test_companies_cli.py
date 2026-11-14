@@ -372,17 +372,6 @@ def test_add_records_why_a_platform_is_not_followed(cli_env):
     assert companies_cmd._company_line({**row, "refusal": "cant_yet"}).count("can't yet") == 1
 
 
-def test_add_dry_run_writes_nothing(cli_env):
-    before = (cli_env.profile_dir / "config.json").read_text()
-
-    result = companies_cmd._add_core(["https://job-boards.greenhouse.io/trustpilot"], dry_run=True, probe=False,
-                                     profile_dir=cli_env.profile_dir)
-
-    assert result["dry_run"] and result["results"][0]["status"] == "followed"
-    assert not (cli_env.profile_dir / "companies.json").exists()
-    assert (cli_env.profile_dir / "config.json").read_text() == before
-
-
 def test_a_miss_never_unfollows_an_employer(cli_env):
     companies_cmd._add_core(["https://job-boards.greenhouse.io/trustpilot"], probe=False, profile_dir=cli_env.profile_dir)
     companies_cmd._add_core(["Trustpilot"], probe=False, profile_dir=cli_env.profile_dir)
@@ -679,9 +668,11 @@ def test_add_cli_prints_each_result_with_its_evidence_and_records_it(cli_env):
 
 
 def test_add_cli_dry_run_says_so_and_writes_nothing(cli_env):
+    before = (cli_env.profile_dir / "config.json").read_text()
     result = CliRunner().invoke(cli, ["companies", "add", "--dry-run", "https://jobs.ashbyhq.com/pleo"])
     assert result.exit_code == 0, result_text(result)
     assert "--dry-run" in result_text(result) and not (cli_env.profile_dir / "companies.json").exists()
+    assert (cli_env.profile_dir / "config.json").read_text() == before
 
 
 def test_bare_companies_lists_the_employers_with_a_status_symbol(cli_env):

@@ -10,42 +10,6 @@ def _d(det):
     return None if det is None else (det.platform, det.entry)
 
 
-@pytest.mark.parametrize("url", [
-    "https://www.jobindex.dk/jobannonce/h1673146/", "https://www.linkedin.com/jobs/view/1", "https://acme.dk/careers",
-    "https://apply.workable.com/j/497E870DCF", "https://www.teamtailor.com/en/", "", "not a url",
-])
-def test_from_url_ignores_everything_else(url):
-    assert ats_detect.from_url(url) is None
-
-
-def test_from_cname_asks_every_platform_and_ignores_the_rest():
-    assert ats_detect.from_cname("jobs.lego.com", "lego.phenompeople.net").entry is None
-    assert _d(ats_detect.from_cname("jobs.velux.com", "velux.wd3.myworkdayjobs.com")) == (
-        "career_sites", "https://velux.wd3.myworkdayjobs.com")
-    assert ats_detect.from_cname("careers.acme.dk", "acme.github.io") is None
-
-
-def test_from_html_finds_an_embedded_board():
-    html = '<script src="https://boards.greenhouse.io/embed/job_board/js?for=trustpilot"></script>'
-    assert _d(ats_detect.from_html(html, "https://careers.trustpilot.com/")) == ("greenhouse", "trustpilot")
-
-
-def test_from_html_ignores_a_mere_link_to_a_platforms_home_page():
-    html = '<a href="https://www.teamtailor.com/">Powered by Teamtailor</a> <a href="https://recruitee.com/">x</a>'
-    assert ats_detect.from_html(html, "https://careers.acme.dk/") is None
-
-
-@pytest.mark.parametrize("name, candidates", [
-    ("Novo Nordisk A/S", ["novonordisk", "novo-nordisk"]),  # never just "novo": another company's board
-    ("Trustpilot", ["trustpilot"]),
-    ("Københavns Lufthavne", ["koebenhavnslufthavne", "koebenhavns-lufthavne", "kobenhavnslufthavne", "kobenhavns-lufthavne"]),
-    ("Netcompany Danmark A/S", ["netcompany"]),
-    ("  ", []),
-])
-def test_slug_candidates(name, candidates):
-    assert ats_detect.slug_candidates(name) == candidates
-
-
 def test_slug_candidates_drop_any_countrys_legal_forms_and_names(monkeypatch):
     """The suffixes come from the country files, so a new country's company forms ("Zrt.") and
     names ("Magyarország") leave the slug the way "A/S" and "Danmark" do."""
@@ -159,8 +123,8 @@ def test_a_talentech_short_link_is_recognised_and_its_redirect_unwrapped():
 
 
 def test_an_older_successfactors_career_link_names_its_company_but_has_no_job_list():
-    # career2.successfactors.eu lists nothing without a script; the employer's own page must be found
-    assert ats_detect.from_url("https://career2.successfactors.eu/career?career_ns=job_listing&company=pfapensionP&career_job_req_id=15636") is None
+    # career2.successfactors.eu lists nothing without a script (`from_url` is None: the golden table);
+    # the employer's own page must be found
     assert ats_detect.is_shared_ats_host("https://career2.successfactors.eu/career?company=x")
     assert not ats_detect.is_shared_ats_host("https://careers.acme.dk/")
 
@@ -326,7 +290,11 @@ def test_name_key_is_the_first_slug_and_never_moves(name, key):
 
 
 @pytest.mark.parametrize("name, slugs", [
-    ("Novo Nordisk A/S", ["novonordisk", "novo-nordisk"]),
+    ("Novo Nordisk A/S", ["novonordisk", "novo-nordisk"]),  # never just "novo": another company's board
+    ("Trustpilot", ["trustpilot"]),
+    ("Københavns Lufthavne", ["koebenhavnslufthavne", "koebenhavns-lufthavne", "kobenhavnslufthavne", "kobenhavns-lufthavne"]),
+    ("Netcompany Danmark A/S", ["netcompany"]),
+    ("  ", []),
     ("Ørsted", ["oersted", "orsted"]),
     ("Hørsholm Holding ApS", ["hoersholm", "horsholm"]),
     ("Ötvös", ["oetvoes", "otvos"]),

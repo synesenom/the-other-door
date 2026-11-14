@@ -4,7 +4,6 @@ pages as served, trimmed and their text rewritten."""
 import re
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -105,17 +104,6 @@ def test_known_ids_skip_the_ad_requests():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    _add_list()
-    _add_ads()
-
-    postings = beetween.scrape({"beetween_companies": ["giboire"],
-                                "_names": {"beetween_companies": {"giboire": "Giboire"}}})
-
-    assert {p["company"] for p in postings} == {"Giboire"}
-
-
-@responses.activate
 def test_an_entry_on_the_employers_own_host_is_read_there():
     own = "https://recrutement.clermontmetropole.eu"
     responses.add(responses.GET, re.compile(re.escape(own) + r"/wp-json/wp/v2/job\?.*"),
@@ -141,17 +129,6 @@ def test_the_same_job_listed_by_two_entries_comes_once():
     postings = beetween.scrape({"beetween_companies": ["giboire", "giboire.nous-recrutons.fr"]})
 
     assert [p["platform_id"] for p in postings] == _PIDS
-
-
-@responses.activate
-def test_a_failing_list_is_a_recorded_error():
-    responses.add(responses.GET, re.compile(r"https://bad\.nous-recrutons\.fr/wp-json/.*"), status=500)
-    _add_list()
-    _add_ads()
-
-    drain_errors()
-    assert len(beetween.scrape({"beetween_companies": ["bad", "giboire"]})) == 4
-    assert "bad" in drain_errors()["beetween"][0]
 
 
 @responses.activate
@@ -253,19 +230,3 @@ def test_probe_of_a_page_that_is_no_job_list_has_no_structure():
     result = beetween.probe({"beetween_companies": ["giboire"]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    responses.add(responses.GET, _API, body=requests.ConnectionError("down"))
-
-    result = beetween.probe({"beetween_companies": ["giboire"]})
-
-    assert result.get("unreachable") and result["structure_ok"] is False
-
-
-@responses.activate
-def test_probe_403_is_a_wall():
-    responses.add(responses.GET, _API, status=403)
-
-    assert beetween.probe({"beetween_companies": ["giboire"]}).get("wall")

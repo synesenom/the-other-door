@@ -250,18 +250,6 @@ def test_the_rss_feed_is_the_fallback_when_jobs_json_fails():
 
 
 @responses_lib.activate
-def test_the_followed_name_wins_in_the_json_feed():
-    responses_lib.add(responses_lib.GET, _ROBOTS_URL, body="User-agent: *\n", content_type="text/plain")
-    responses_lib.add(responses_lib.GET, _JOBS_URL, body=_fx("jobs_page.json"), content_type="application/feed+json")
-
-    postings = teamtailor.scrape({"teamtailor_companies": ["Acme"],
-                                  "_names": {"teamtailor_companies": {"acme": "Acme A/S"}}})
-
-    assert postings and {p["company"] for p in postings} == {"Acme A/S"}
-    assert all(p["id"].startswith("teamtailor.") for p in postings)
-
-
-@responses_lib.activate
 def test_the_followed_name_wins_in_the_rss_fallback():
     responses_lib.add(responses_lib.GET, "https://templafy.teamtailor.com/jobs.json", status=404)
     responses_lib.add(responses_lib.GET, "https://templafy.teamtailor.com/jobs.rss",

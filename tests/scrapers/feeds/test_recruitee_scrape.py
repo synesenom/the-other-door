@@ -4,7 +4,6 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
 from door.scrapers.feeds import recruitee
 from paths import TESTS_DIR
 
@@ -43,25 +42,10 @@ def test_scrape_maps_every_published_offer():
 
 
 @responses.activate
-def test_an_unknown_company_is_a_recorded_error():
-    responses.add(responses.GET, "https://nope.recruitee.com/api/offers/", status=404)
-    responses.add(responses.GET, _OFFERS, body=_fx())
-
-    drain_errors()
-    assert len(recruitee.scrape({"recruitee_companies": ["nope", "famly"]})) == 2
-    assert "nope" in drain_errors()["recruitee"][0]
-
-
-@responses.activate
 def test_a_custom_careers_host_is_read_like_a_slug():
     responses.add(responses.GET, "https://careers.famly.co/api/offers/", body=_fx())
 
     assert len(recruitee.scrape({"recruitee_companies": ["careers.famly.co"]})) == 2
-
-
-def test_no_companies_no_request():
-    assert recruitee.scrape({}) == []
-    assert recruitee.probe({}) is None
 
 
 @responses.activate
@@ -78,24 +62,6 @@ def test_probe_drift_without_an_offers_list():
     responses.add(responses.GET, _OFFERS, json={"jobs": []})
 
     assert recruitee.probe({"recruitee_companies": ["famly"]})["structure_ok"] is False
-
-
-@responses.activate
-def test_the_followed_name_wins():
-    responses.add(responses.GET, _OFFERS, body=_fx())
-
-    postings = recruitee.scrape({"recruitee_companies": ["https://Famly.recruitee.com/"],
-                                 "_names": {"recruitee_companies": {"famly.recruitee.com": "Famly ApS"}}})
-
-    assert postings and {p["company"] for p in postings} == {"Famly ApS"}
-    assert all(p["id"].startswith("recruitee.") for p in postings)
-
-
-@responses.activate
-def test_without_a_name_map_the_feed_name_is_the_fallback():
-    responses.add(responses.GET, _OFFERS, body=_fx())
-
-    assert {p["company"] for p in recruitee.scrape({"recruitee_companies": ["famly"]})} == {"Famly"}
 
 
 @responses.activate

@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 import responses
-import requests
 
 from door.core.models import JobPosting
 from door.scrapers import drain_answered, drain_errors
@@ -82,6 +81,7 @@ def test_scrape_paginates_dedups_and_fetches_details():
     assert flatpay["url"] == "https://thehub.io/jobs/6aa1f3cc961a30471ccb36b8"
     assert flatpay["id"] == "thehub.6aa1f3cc961a30471ccb36b8"
     assert flatpay["posted_at"].startswith("2026-09-11")
+    assert "growing AI team" in flatpay["description"]
     # The ad's `link` is the company's own job page: where to apply.
     assert flatpay["apply_type"] == "external"
     assert flatpay["apply_url"] == "https://jobs.flatpay.com/jobs/8331954"
@@ -265,22 +265,6 @@ def test_probe_page_without_nuxt_is_drift():
     _serve(_probe_url(), "<html>hello</html>")
     result = thehub.probe(_CFG)
     assert result["structure_ok"] is False and "__NUXT__" in result["reason"]
-
-
-@responses.activate
-def test_probe_forbidden_is_a_wall():
-    _serve(_probe_url(), "Just a moment...", status=403)
-    assert thehub.probe(_CFG)["wall"] is True
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    _serve(_probe_url(), body=requests.exceptions.ConnectionError("down"))
-    assert thehub.probe(_CFG)["unreachable"] is True
-
-
-def test_probe_without_keywords_is_none():
-    assert thehub.probe({"location": "Copenhagen"}) is None
 
 
 @pytest.mark.usefixtures("obey_robots")

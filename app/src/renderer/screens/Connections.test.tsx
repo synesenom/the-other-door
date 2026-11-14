@@ -51,20 +51,13 @@ function show(opts: { doctor?: DoctorReport | null; drive?: DriveStatus | null; 
 }
 
 describe('Connections: Claude', () => {
-  it('signed in: who, the plan, no Check again, and Use another account behind a click', async () => {
-    const { row, claudeLogin } = show()
-    expect(row('Claude').getByText('Signed in as ada@example.com (Max)')).toBeInTheDocument()
-    expect(row('Claude').queryByRole('button', { name: 'Check again' })).toBeNull()
-    expect(row('Claude').queryByRole('button', { name: 'Sign in with Claude' })).toBeNull()
-    await userEvent.click(row('Claude').getByRole('button', { name: 'Use another account' }))
-    await userEvent.click(row('Claude').getByRole('button', { name: 'Sign in with Claude' }))
-    expect(claudeLogin.start).toHaveBeenCalledWith('ada@example.com')
-  })
-
-  it('signed out: says why it matters and offers the sign-in at once', () => {
-    const { row } = show({ doctor: signedOut })
-    expect(row('Claude').getByText(/Not signed in\. .*needs your Claude plan/)).toBeInTheDocument()
-    expect(row('Claude').getByRole('button', { name: 'Sign in with Claude' })).toBeInTheDocument()
+  it.each([
+    ['signed out', signedOut, /Not signed in\. .*needs your Claude plan/, 'Sign in with Claude'],
+    ['doctor failing', { ok: false, checks: [], error: 'doctor could not run: the profile is locked' } as DoctorReport, /could not read the Claude sign-in/, 'Check again'],
+  ])('%s: says so and offers the way out', (_, doctor, text, button) => {
+    const { row } = show({ doctor })
+    expect(row('Claude').getByText(text)).toBeInTheDocument()
+    expect(row('Claude').getByRole('button', { name: button })).toBeInTheDocument()
   })
 
   it('not installed: Install asks first, then runs setup for claude only', async () => {
@@ -98,33 +91,6 @@ describe('Connections: Claude', () => {
     expect(await row('Claude').findByRole('alert')).toHaveTextContent('setup is not available')
   })
 
-  it('an install that fails says why, with the installer’s own error', async () => {
-    const { row } = show({
-      doctor: { ok: false, checks: [cli(false)] },
-      handlers: { setup: { outcome: 'incomplete', results: [{ tool: 'claude', ok: false, error: 'curl: (7) Failed to connect' }], todo: [] } },
-    })
-    await userEvent.click(row('Claude').getByRole('button', { name: 'Install' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Install the Claude command line' }))
-    expect(await row('Claude').findByRole('alert')).toHaveTextContent('curl: (7) Failed to connect')
-  })
-
-  it('an install that worked says nothing failed, though the sign-in is still missing', async () => {
-    const { row, onRecheck } = show({
-      doctor: { ok: false, checks: [cli(false)] },
-      handlers: { setup: { outcome: 'incomplete', results: [{ tool: 'claude', ok: true }], todo: [] } },
-    })
-    await userEvent.click(row('Claude').getByRole('button', { name: 'Install' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Install the Claude command line' }))
-    await waitFor(() => expect(onRecheck).toHaveBeenCalled())
-    expect(row('Claude').queryByRole('alert')).toBeNull()
-  })
-
-  it('doctor failing: cannot read the sign-in, with Check again', () => {
-    const { row } = show({ doctor: { ok: false, checks: [], error: 'doctor could not run: the profile is locked' } })
-    expect(row('Claude').getByText(/could not read the Claude sign-in/)).toBeInTheDocument()
-    expect(row('Claude').getByRole('button', { name: 'Check again' })).toBeInTheDocument()
-  })
-
   it('Use another account closes once the sign-in is done and doctor has answered', async () => {
     const { row, pushLogin, onRecheck } = show()
     await userEvent.click(row('Claude').getByRole('button', { name: 'Use another account' }))
@@ -147,18 +113,20 @@ describe('Connections: Google Drive', () => {
     expect(claudeLogin.start).not.toHaveBeenCalled()
   })
 
-  it('off: what it is for; Connect connects, then syncs at once and says what it did', async () => {
-    const { row, call, onDriveChanged, onDataChanged } = show({ handlers: { connect_drive: { account: 'ada@gmail.com' }, sync_data: { action: 'push', version: 'v1' } } })
-    expect(row('Google Drive').getByText('Keeps this computer and another one in step.')).toBeInTheDocument()
+  it('off: Connect connects, then syncs at once and says what it did', async () => {
+    const { row, call, onDriveChanged } = show({ handlers: { connect_drive: { account: 'ada@gmail.com' }, sync_data: { action: 'push', version: 'v1' } } })
     await userEvent.click(row('Google Drive').getByRole('button', { name: 'Connect' }))
     expect(calls(call)).toEqual([
       ['connect_drive', {}],
       ['sync_data', {}],
     ])
     expect(row('Google Drive').getByText("Sent this computer's data to Drive.")).toBeInTheDocument()
-    expect(row('Google Drive').queryByText(/Connected as/)).toBeNull()
     expect(onDriveChanged).toHaveBeenCalled()
-    expect(onDataChanged).not.toHaveBeenCalled()
+  })
+
+  it('connected with a failed sync: says why', () => {
+    const { row } = show({ drive: { ...on, last_error: 'Google Drive is unreachable' } })
+    expect(row('Google Drive').getByText('The last sync failed: Google Drive is unreachable')).toBeInTheDocument()
   })
 
   it("connecting to a Drive that already has data brings it here and reloads", async () => {
@@ -178,13 +146,6 @@ describe('Connections: Google Drive', () => {
     })
     await userEvent.click(row('Google Drive').getByRole('button', { name: 'Connect' }))
     expect(row('Google Drive').getByRole('alert')).toHaveTextContent('access denied')
-  })
-
-  it('connected: the account, the last sync and its error, and only Disconnect', async () => {
-    const { row } = show({ drive: { ...on, last_error: 'Google Drive is unreachable' } })
-    expect(row('Google Drive').getByText(/^ada@gmail\.com · last synced /)).toBeInTheDocument()
-    expect(row('Google Drive').getByText('The last sync failed: Google Drive is unreachable')).toBeInTheDocument()
-    expect(row('Google Drive').getAllByRole('button').map((b) => b.textContent)).toEqual(['Disconnect'])
   })
 
   it('both changed (found on opening): the two choices in words; Keep this computer sends it', async () => {

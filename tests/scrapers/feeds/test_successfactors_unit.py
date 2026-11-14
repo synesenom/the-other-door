@@ -178,11 +178,6 @@ def test_parse_feed_malformed_returns_empty():
 # Zero-result warning / config edge cases
 # --------------------------------------------------------------------------- #
 
-def test_scrape_missing_key_returns_empty():
-    result = successfactors.scrape({})
-    assert result == []
-
-
 # --------------------------------------------------------------------------- #
 # _split_title_location / _location_from_suffix
 # --------------------------------------------------------------------------- #

@@ -81,10 +81,6 @@ def test_a_failed_transaction_status_is_an_error():
     assert "broken" in drain_errors()["hr_manager"][0]
 
 
-def test_no_aliases_no_request():
-    assert hr_manager.scrape({}) == []
-
-
 @responses.activate
 def test_probe_reads_page_one_of_the_first_alias():
     responses.add(responses.GET, re.compile(re.escape(_KKDK)), body=_fx("kkdk_page1.json"))

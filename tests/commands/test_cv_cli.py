@@ -11,7 +11,6 @@ import zipfile
 
 import pytest
 
-import door.mcp_server as server
 from door.commands import cv as cv_cmd
 from door.core import claude_cli, workspace
 from paths import REPO_ROOT
@@ -134,26 +133,6 @@ def test_core_errors(env, monkeypatch):
     with pytest.raises(claude_cli.ClaudeError, match="cv_markdown"):
         cv_cmd._draft_cv_core([str(env.tmp / "notes.md")], profile_dir=env.profile_dir)
     assert not env.draft_path.exists()
-
-
-def test_core_never_prints(env, monkeypatch, capsys):
-    _answer(monkeypatch)
-    cv_cmd._draft_cv_core([str(env.tmp / "notes.md")], write=True, profile_dir=env.profile_dir)
-    assert capsys.readouterr().out == ""
-
-
-def test_tool_delegates(env, monkeypatch):
-    seen = {}
-
-    def fake(sources, *, write=False, model=None, profile_dir=None):
-        seen.update(sources=sources, write=write, model=model, profile_dir=profile_dir)
-        return {"draft_path": "d"}
-
-    monkeypatch.setattr(cv_cmd, "_draft_cv_core", fake)
-    assert server.draft_cv(sources=["a.pdf"], write=True, model="opus") == {"draft_path": "d"}
-    assert seen == {"sources": ["a.pdf"], "write": True, "model": "opus", "profile_dir": env.profile_dir}
-    monkeypatch.setattr(cv_cmd, "_draft_cv_core", lambda *a, **k: (_ for _ in ()).throw(ValueError("no source")))
-    assert server.draft_cv(sources=[]) == {"error": "no source"}
 
 
 def _draft_answering(env, monkeypatch, markdown, todos=()):

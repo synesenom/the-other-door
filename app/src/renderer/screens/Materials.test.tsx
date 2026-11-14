@@ -272,28 +272,25 @@ describe('Materials', () => {
       await pick('CV')
       await userEvent.type(screen.getByLabelText('Anything to change?'), 'cut the retail job')
       await userEvent.click(screen.getByRole('button', { name: 'Revise' }))
-      await waitFor(() => expect(call.mock.calls.filter((c) => c[0] === 'show')).toHaveLength(2))
-      expect(call).toHaveBeenCalledWith('revise', { job_id: 'jobindex.1', file: 'cv', instruction: 'cut the retail job' })
       await waitFor(() => expect(screen.getAllByRole('img')[0]).toHaveAttribute('src', expect.stringContaining('?v=1')))
+      expect(call).toHaveBeenCalledWith('revise', { job_id: 'jobindex.1', file: 'cv', instruction: 'cut the retail job' })
       expect(screen.queryByRole('status')).toBeNull()
-      expect(screen.getAllByRole('img')[0]).toHaveAttribute('src', expect.stringContaining('?v=1'))
       expect(screen.getByLabelText('Anything to change?')).toHaveValue('')
     })
 
     it('keeps the old pages and shows the error when revise fails', async () => {
-      const { call } = mockDoor({ show: posting(), revise: () => { throw new Error('claude did not answer') } })
+      mockDoor({ show: posting(), revise: () => { throw new Error('claude did not answer') } })
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'Ready to send' })
       await userEvent.type(screen.getByLabelText('Anything to change?'), 'warmer')
       await userEvent.click(screen.getByRole('button', { name: 'Revise' }))
       expect(await screen.findByRole('alert')).toHaveTextContent('claude did not answer')
-      expect(call.mock.calls.filter((c) => c[0] === 'show')).toHaveLength(1)
       expect(screen.getAllByRole('img')[0]).toHaveAttribute('src', expect.stringContaining('?v=0'))
       expect(screen.getByLabelText('Anything to change?')).toHaveValue('warmer')
     })
 
     it('says the PDF was not rebuilt when LaTeX failed, and keeps the old pages', async () => {
-      const { call } = mockDoor({
+      mockDoor({
         show: posting(),
         revise: { outcome: 'revised', job_id: 'jobindex.1', file: 'x', compile: [{ file: 'cover_letter.tex', status: 'error', stderr: 'boom' }] },
       })
@@ -306,7 +303,6 @@ describe('Materials', () => {
           'The change was made but the PDF could not be rebuilt, so the pages still show the previous version. Undo last change puts it back.',
         ),
       ).toBeInTheDocument()
-      expect(call.mock.calls.filter((c) => c[0] === 'show')).toHaveLength(1)
       expect(screen.getAllByRole('img')[0]).toHaveAttribute('src', expect.stringContaining('?v=0'))
     })
 
@@ -315,7 +311,7 @@ describe('Materials', () => {
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'Ready to send' })
       await userEvent.click(screen.getByRole('button', { name: 'Undo last change' }))
-      await waitFor(() => expect(call.mock.calls.filter((c) => c[0] === 'show')).toHaveLength(2))
+      await waitFor(() => expect(screen.getAllByRole('img')[0]).toHaveAttribute('src', expect.stringContaining('?v=1')))
       expect(call).toHaveBeenCalledWith('revise', { job_id: 'jobindex.1', file: 'cover_letter', undo: true })
       expect(screen.queryByRole('status')).toBeNull()
     })

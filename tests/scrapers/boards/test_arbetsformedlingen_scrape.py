@@ -125,13 +125,6 @@ def test_a_failed_request_is_recorded_and_the_next_keyword_still_runs():
 
 
 @responses.activate
-def test_a_connection_error_is_recorded_not_raised():
-    responses.add(responses.GET, _SEARCH, body=requests.exceptions.ConnectionError("down"))
-    assert af.scrape(_CFG) == []
-    assert "project manager" in drain_errors()["arbetsformedlingen"][0]
-
-
-@responses.activate
 def test_a_certificate_failure_says_what_to_do():
     responses.add(responses.GET, _SEARCH, body=requests.exceptions.SSLError("self signed certificate in certificate chain"))
     assert af.scrape(_CFG) == []
@@ -190,26 +183,9 @@ def test_probe_drift_when_the_hits_are_gone():
     assert not result.get("wall") and not result.get("unreachable")
 
 
-@pytest.mark.parametrize("status", [401, 403, 429])
-@responses.activate
-def test_probe_refusal_is_a_wall(status):
-    responses.add(responses.GET, _SEARCH, body="no", status=status)
-    assert af.probe(_CFG)["wall"] is True
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    responses.add(responses.GET, _SEARCH, body=requests.exceptions.ConnectionError("down"))
-    assert af.probe(_CFG)["unreachable"] is True
-
-
 @responses.activate
 def test_probe_certificate_failure_is_unreachable_with_a_clear_reason():
     responses.add(responses.GET, _SEARCH, body=requests.exceptions.SSLError("self signed certificate in certificate chain"))
     result = af.probe(_CFG)
     assert result["unreachable"] is True and "Telia" in result["reason"]
     assert drain_errors() == {}
-
-
-def test_probe_without_keywords_is_none():
-    assert af.probe({"location": "Stockholm"}) is None

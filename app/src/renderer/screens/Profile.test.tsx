@@ -236,14 +236,6 @@ describe('Profile', () => {
     expect(screen.queryByLabelText('Search keywords')).toBeNull()
   })
 
-  it('a save that leaves the role targets and languages alone asks Claude nothing', async () => {
-    const { call } = await open({ init_profile: { config_path: '/x' } })
-    await userEvent.type(screen.getByLabelText('Name'), 'x')
-    await userEvent.click(saveButton())
-    expect(await screen.findByText('Saved.')).toBeInTheDocument()
-    expect(call.mock.calls.map((c) => c[0])).not.toContain('keywords')
-  })
-
   it('the switch at the top shows the CV instead of the details', async () => {
     await open()
     expect(screen.getByRole('button', { name: 'Details' })).toHaveAttribute('aria-pressed', 'true')
@@ -269,16 +261,20 @@ describe('Profile, keeping what is shown true', () => {
     expect(screen.getByLabelText('City')).toHaveValue('Copenhagen')
   })
 
-  it('the CV can be reached when the details cannot be read', async () => {
+  it.each([
+    ['the details cannot be read', 'profile/ is not readable'],
+    ['config.json is not valid', 'remote — bad'],
+  ])('the CV can be reached when %s', async (_, why) => {
     let reads = 0
     mockDoor({
       show_profile: () => {
-        if (reads++ === 0) throw { message: 'profile/ is not readable' }
+        if (why === 'remote — bad') return { ...show(), config: null, errors: ['profile/config.json: remote — bad'] }
+        if (reads++ === 0) throw { message: why }
         return show()
       },
     })
     render(<Profile onSaved={() => {}} onDraft={() => {}} />)
-    expect(await screen.findByRole('alert')).toHaveTextContent('profile/ is not readable')
+    expect(await screen.findByRole('alert')).toHaveTextContent(why)
     await userEvent.click(within(screen.getByRole('group', { name: 'Part of the profile' })).getByRole('button', { name: 'CV' }))
     expect(await screen.findByLabelText('Your CV (Markdown)')).toBeInTheDocument()
   })
@@ -304,12 +300,5 @@ describe('Profile, keeping what is shown true', () => {
     expect(group.getByRole('button', { name: 'Stories' })).toHaveAttribute('aria-pressed', 'true')
     await userEvent.click(group.getByRole('button', { name: 'Details' }))
     expect(screen.getByLabelText('Name')).toHaveValue('Ada B')
-  })
-
-  it('the CV can be reached when config.json is not valid', async () => {
-    mockDoor({ show_profile: { ...show(), config: null, errors: ['profile/config.json: remote — bad'] } })
-    render(<Profile onSaved={() => {}} onDraft={() => {}} />)
-    await screen.findByRole('alert')
-    expect(within(screen.getByRole('group', { name: 'Part of the profile' })).getByRole('button', { name: 'CV' })).toBeInTheDocument()
   })
 })

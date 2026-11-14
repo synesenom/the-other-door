@@ -1,0 +1,103 @@
+name: Seed caches
+
+# Keeps the package workflows' caches warm on main (#80). Those workflows run only on pull requests (#45), and a
+# cache a pull request saves is scoped to that pull request: only caches saved on main are shared. This saves the
+# npm cache (setup-node) on every runner the package and release workflows use, and the bundle's downloads
+# (app/.bundle-cache: the Python runtime, Tectonic, the pip wheels) on the four that build a bundle, and Poetry's
+# cache that tests.yml and app.yml restore. It builds no installer and runs no test. Runs when a lock file changes
+# on main, twice a week so a cache unused for 7 days is not evicted (a run that finds the cache only restores it),
+# and by hand from main (run from another branch, it saves into that branch's scope, which pull requests cannot
+# read).
+#
+# The keys here must stay those of package-{linux,macos,windows}.yml, release.yml, tests.yml and app.yml
+# (tests/test_workflow_caches_unit.py checks it).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/package-lock.json"
+      - "poetry.lock"
+      - "app/scripts/bundle.lock.json"
+      - "app/scripts/bundle-python.*"
+      - ".github/workflows/seed-caches.yml"
+  schedule:
+    - cron: "17 5 * * 1,4"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  seed:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, name: linux-x64, bundle: true }
+          - { os: macos-15, name: macos-arm64, bundle: true }
+          - { os: macos-15-intel, name: macos-x64, bundle: true }
+          - { os: windows-latest, name: windows-x64, bundle: true }
+          # Windows on ARM installs the x64 installer: npm only, no bundle.
+          - { os: windows-11-arm, name: windows-arm64, bundle: false }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Restore the bundle's downloads
+        id: bundle-cache
+        if: matrix.bundle
+        uses: actions/cache@v6
+        with:
+          path: app/.bundle-cache
+          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+
+      - name: Install the app's packages
+        run: npm ci
+
+      - name: Fill the bundle's downloads
+        if: matrix.bundle && steps.bundle-cache.outputs.cache-hit != 'true' && runner.os != 'Windows'
+        run: scripts/bundle-python.sh
+
+      - name: Fill the bundle's downloads (Windows)
+        if: matrix.bundle && steps.bundle-cache.outputs.cache-hit != 'true' && runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/bundle-python.ps1
+
+  poetry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Cache Poetry virtualenv
+        id: poetry-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.poetry-cache.outputs.cache-hit != 'true'
+        run: poetry install

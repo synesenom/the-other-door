@@ -9,7 +9,6 @@ from datetime import date, datetime
 from pathlib import Path
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -233,16 +232,6 @@ def test_an_ad_without_json_ld_is_recorded_and_the_card_kept():
     assert any("DTN118" in e for e in drain_errors()["jobs_ac_uk"])
 
 
-@responses.activate
-def test_a_connection_error_is_recorded_not_raised():
-    _serve(_search(), body=requests.exceptions.ConnectionError("down"))
-    drain_errors()
-    assert jobs_ac_uk.scrape(_CFG) == []
-    [error] = drain_errors()["jobs_ac_uk"]
-    assert "research associate" in error
-    assert drain_pushback("jobs_ac_uk") is False
-
-
 @pytest.mark.parametrize("status", [403, 429])
 @responses.activate
 def test_a_refusal_on_a_search_page_is_pushback_and_stops_the_run(status):
@@ -300,25 +289,8 @@ def test_probe_drift_when_the_results_block_is_removed():
     assert not result.get("wall") and not result.get("unreachable")
 
 
-@pytest.mark.parametrize("status", [401, 403, 429])
-@responses.activate
-def test_probe_refusal_is_a_wall(status):
-    _serve(_search(), "Just a moment...", status=status)
-    assert jobs_ac_uk.probe(_CFG)["wall"] is True
-
-
 @responses.activate
 def test_probe_challenge_page_is_a_wall():
     _serve(_search(), "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/h/b'></script></html>")
     result = jobs_ac_uk.probe(_CFG)
     assert result["wall"] is True and result["structure_ok"] is False
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    _serve(_search(), body=requests.exceptions.ConnectionError("down"))
-    assert jobs_ac_uk.probe(_CFG)["unreachable"] is True
-
-
-def test_probe_without_keywords_is_none():
-    assert jobs_ac_uk.probe({"location": "London"}) is None

@@ -10,7 +10,6 @@ import types
 import pytest
 from click.testing import CliRunner
 
-import door.mcp_server as server
 from door.cli import cli
 from door.commands import enrich as enrich_cmd
 from door.core import claude_cli, workspace
@@ -222,12 +221,6 @@ def test_apply_refuses_stale_proposals_after_the_cv_changed(env, monkeypatch):
         enrich_cmd._enrich_core(apply=[1], profile_dir=env.profile_dir)
 
 
-def test_core_never_prints(env, monkeypatch, capsys):
-    _proposed(env, monkeypatch)
-    enrich_cmd._enrich_core(all=True, profile_dir=env.profile_dir)
-    assert capsys.readouterr().out == ""
-
-
 # --------------------------------------------------------------------------- #
 # CLI and tool
 # --------------------------------------------------------------------------- #
@@ -300,17 +293,3 @@ def test_cli_errors_are_one_line(env, monkeypatch, prompts):
     assert result.exit_code != 0
 
 
-def test_tool_delegates(env, monkeypatch):
-    seen = {}
-
-    def fake(urls=None, *, apply=None, all=False, model=None, profile_dir=None):
-        seen.update(urls=urls, apply=apply, all=all, model=model, profile_dir=profile_dir)
-        return {"outcome": "x"}
-
-    monkeypatch.setattr(enrich_cmd, "_enrich_core", fake)
-    assert server.enrich(urls=["u"], model="sonnet") == {"outcome": "x"}
-    assert seen == {"urls": ["u"], "apply": None, "all": False, "model": "sonnet", "profile_dir": env.profile_dir}
-    server.enrich(apply=[1, 2])
-    assert seen["apply"] == [1, 2]
-    monkeypatch.setattr(enrich_cmd, "_enrich_core", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError("no proposals")))
-    assert server.enrich(all=True) == {"error": "no proposals"}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { attention, claudeRow, driveRow, type DriveStatus } from './connection-rows'
+import { attention, claudeRow, driveRow, installFailure, type DriveStatus } from './connection-rows'
 import type { DoctorReport } from './onboarding/reducer'
 
 const cli = (ok: boolean) => ({ name: 'claude CLI', status: ok ? 'ok' : 'missing', required: true, detail: '' })
@@ -75,5 +75,14 @@ describe('attention', () => {
   it('says nothing while it does not know, or for a Drive that is simply off', () => {
     expect(attention(null, null)).toBeNull()
     expect(attention({ ok: false, checks: [] }, { ...off, configured: false })).toBeNull()
+  })
+})
+
+describe('installFailure', () => {
+  it('is null when every install worked, else the installers’ own errors', () => {
+    expect(installFailure({})).toBeNull()
+    expect(installFailure({ results: [{ tool: 'claude', ok: true }] })).toBeNull()
+    expect(installFailure({ results: [{ tool: 'claude', ok: false, error: 'curl: (7) Failed to connect' }] })).toBe('curl: (7) Failed to connect')
+    expect(installFailure({ results: [{ tool: 'claude', ok: false }] })).toBe('The install did not finish.')
   })
 })

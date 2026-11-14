@@ -30,6 +30,7 @@ jobs:
       - name: Install Poetry
         run: pip install poetry
 
+      # The same key as seed-caches.yml, which keeps it on main (#80)
       - name: Cache Poetry virtualenv
         uses: actions/cache@v6
         with:
