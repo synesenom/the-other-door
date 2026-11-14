@@ -149,7 +149,7 @@ several open a list of just those to pick from; where the job is optional (`jobs
 | Command | What it does |
 |---------|--------------|
 | `data export [PATH]` | Pack `profile/` and `jobs/` into `door-export-<date>.tar.gz` to take to another computer. |
-| `data import ARCHIVE` | Replace `profile/` and `jobs/` with an export; the old ones move to `backups/<timestamp>/`. |
+| `data import ARCHIVE` | Replace `profile/` and `jobs/` with an export; the old ones move to `backups/<timestamp>/`. An archive from a newer version, or from an older major version, is refused before anything changes; one from an older release of this major is upgraded after the import (a failed upgrade is a warning, and the commands then refuse the data until you send a report). |
 | `data connect` | Connect this computer to your Google Drive (a browser opens once). Afterwards every command that writes pulls before and pushes after, by itself, and ends with one line on stderr saying what moved (`↓ pulled`, `↑ synced`, or `⚠` when the sync was skipped). See [Your data](data.md#keeping-computers-in-step-with-google-drive). |
 | `data sync [--keep-local \| --keep-drive]` | Push or pull now, whichever is needed. When both sides changed it refuses; `--keep-local` replaces Drive with this computer's data, `--keep-drive` the other way round (yours goes to `backups/`). |
 | `data disconnect` | Forget this computer's connection and revoke the access; the archive on Drive stays. |

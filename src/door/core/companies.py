@@ -41,7 +41,7 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 
 from door import i18n
-from door.core import ats_detect, sites, utils
+from door.core import ats_detect, migrations, sites, utils
 
 FILENAME = "companies.json"
 VERSION = 1
@@ -208,7 +208,9 @@ def load(profile_dir: Path | None = None) -> list[Company]:
 def save(profile_dir: Path | None, items: list[Company]) -> None:
     """Write the list atomically."""
     payload = {"version": VERSION, "companies": [c.model_dump(mode="json") for c in items]}
-    utils.write_json_atomic(path(profile_dir), payload)
+    target = path(profile_dir)
+    migrations.ensure_folder(target.parent, "profile")
+    utils.write_json_atomic(target, payload)
 
 
 # --------------------------------------------------------------------------- #

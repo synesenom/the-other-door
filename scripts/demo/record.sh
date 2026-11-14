@@ -39,6 +39,15 @@ make_sandbox() {
     cp -R "$repo"/profile.example/. "$sandbox/profile/"
     # The example CV itself is refused: the demo scores a changed copy.
     printf '\n<!-- a demo copy -->\n' >> "$sandbox/profile/cv.md"
+    # Both folders carry this build's data version, or the first command would upgrade (and back up) them.
+    PYTHONPATH="$repo/src" poetry -C "$repo" run python -c '
+import sys
+from pathlib import Path
+from door.core import migrations
+root = Path(sys.argv[1])
+migrations.write_version(root / "profile", migrations.current("profile"))
+migrations.ensure_folder(root / "jobs", "jobs")
+' "$sandbox"
 
     # The example profile, pointed at the sandbox (shim.py searches the demo's three fake boards only).
     poetry -C "$repo" run python - "$sandbox/profile" <<'EOF'

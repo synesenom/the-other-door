@@ -25,11 +25,12 @@ export interface ProblemInput {
 
 export function problems(input: ProblemInput): Problem[] {
   const out: Problem[] = []
-  // Data that could not be upgraded, or was written by a newer version: every tool refuses until it is dealt with,
+  // Data that could not be upgraded, or was written by a newer version or an older major: every tool refuses until it is dealt with,
   // so this line comes first (a busy folder, held by a run for a moment, says nothing: the next call retries it)
   const data = input.doctor?.data
   if (data?.state === 'failed') out.push({ key: 'data', text: 'Your data could not be upgraded. Send a report', target: 'settings-report' })
   else if (data?.state === 'newer') out.push({ key: 'data', text: 'Install the latest version of The other door', target: 'settings' })
+  else if (data?.state === 'old_major') out.push({ key: 'data', text: 'Your data is from an older version of The other door', target: 'settings' })
   const claude = attention(input.doctor, null)
   if (claude) out.push({ key: 'claude', text: claude, target: 'settings' })
   // the example CV needs no line: a run refuses it and says why

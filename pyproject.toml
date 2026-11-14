@@ -53,11 +53,12 @@ testpaths = ["tests"]
 pythonpath = ["src", "tests"]
 # `live` tests hit real external sites; they are opt-in and excluded by default.
 # Run them explicitly with: pytest -m live
-addopts = "-m 'not live and not skills' --import-mode=importlib"
+addopts = "-m 'not live and not skills and not release' --import-mode=importlib"
 markers = [
     "live: hits a real external site over the network (opt-in, network-dependent)",
     "acceptance: a long live run (a full search per profile); left out of the weekly CI smoke run",
     "skills: a Claude Code skill run by the real model on the local claude's plan, against the test world (./scripts/run-test.sh --skills; before a release, never in CI)",
+    "release: the release gate (#57): every earlier release's saved data (tests/data_versions/) opens in this build and reads back as it did (./scripts/run-test.sh --release; before a release, never in the offline suite or CI)",
     "real_robots: fetch robots.txt for real instead of the allow-all stub (tests/conftest.py)",
 ]
 

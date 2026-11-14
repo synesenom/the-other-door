@@ -47,6 +47,15 @@ def test_install_seeds_the_profile_from_the_example_once(tmp_path):
     assert (tmp_path / "profile" / "config.json").read_text() == "{}"
 
 
+def test_install_stamps_both_folders_with_the_current_data_versions(tmp_path):
+    """A seeded folder with data and no version file reads as v0.1.0's and is upgraded (backed up) at the first start."""
+    from door.core import migrations
+
+    sandbox.install(tmp_path)
+    assert (tmp_path / "profile" / ".data_version").read_text() == f"{migrations.current('profile')}\n"
+    assert (tmp_path / "jobs" / ".data_version").read_text() == f"{migrations.current('jobs')}\n"
+
+
 def test_install_turns_the_drive_sync_off(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(lock, "pre_acquire_hook", lambda *a: calls.append(a))

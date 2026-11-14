@@ -121,3 +121,32 @@ def test_doctor_names_the_state_of_the_data(monkeypatch, tmp_path):
     assert ok["data"] == {"state": "ok", "message": ""}
     monkeypatch.setattr(migrations, "_state", FAILED)
     assert doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", **kwargs)["data"] == FAILED
+
+
+def test_a_server_started_before_another_version_upgraded_the_data_refuses_it(monkeypatch, tmp_path):
+    """An old server still running (a Claude Code session) when a newer app upgrades the data: its next call refuses."""
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(migrations, "_state", None)  # it started on current data
+    newer = migrations.current("profile")
+    migrations.write_version(tmp_path / "profile", migrations.Version(newer.major, newer.n + 1))
+
+    answer = _answer(asyncio.run(mcp_server.mcp.call_tool("list_stories", {})))
+
+    assert answer == {"error": migrations.NEWER}
+    assert mcp_server._data_refusal("doctor") is None  # a report can still be sent
+
+
+def test_a_server_on_current_data_keeps_answering(monkeypatch, tmp_path):
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(migrations, "_state", None)
+    migrations.ensure_folder(tmp_path / "profile", "profile")
+
+    answer = _answer(asyncio.run(mcp_server.mcp.call_tool("list_stories", {})))
+
+    assert "error" not in answer

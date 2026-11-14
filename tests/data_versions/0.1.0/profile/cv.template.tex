@@ -1,0 +1,125 @@
+\documentclass[10pt, a4paper]{article}
+
+% ---------------------------------------------------------------------------
+% CV template: preamble and macros only.
+%
+% The tailor agent writes the whole body between \begin{document} and
+% \end{document} from profile/cv.md and profile/config.json, using the macros
+% below, so your name, contact details, roles and education never have to be
+% kept in sync here by hand. Change the preamble (fonts, colours, margins,
+% macros) to restyle every generated CV; leave the body section as it is.
+% ---------------------------------------------------------------------------
+
+% Packages
+\usepackage{fontspec}
+% English is the default. For a French application the tailor starts the body with
+% \selectlanguage{french}: babel then sets the non-breaking space before : ; ! ?, the French date
+% and the guillemets (\og ... \fg{}, or « » typed with the space after the opening one and before the closing one).
+\usepackage[french,main=english]{babel}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{needspace}
+\usepackage[top=2.2cm, bottom=2cm, left=2.4cm, right=2.4cm]{geometry}
+
+% Preamble
+\hbadness=99999
+\pagenumbering{gobble}
+\setlength{\parindent}{0pt}
+% The app's type: Figtree for the text, Young Serif for the name and the headings (both under the SIL Open
+% Font License, in the profile's fonts/ folder). `compile` puts that folder's path where <<fonts>> stands.
+\setmainfont{Figtree-Regular.otf}[Path=<<fonts>>/, ItalicFont=Figtree-Italic.otf, BoldFont=Figtree-SemiBold.otf, BoldItalicFont=Figtree-SemiBoldItalic.otf]
+\newfontfamily\headingfont{YoungSerif-Bold.otf}[Path=<<fonts>>/]
+% The app's colours: ink for the text, a muted ink for the details, a hairline, and one blue for the links.
+\definecolor{ink}{HTML}{1E1A16}
+\definecolor{inkmuted}{HTML}{6B6157}
+\definecolor{hairline}{HTML}{D6C7A8}
+\definecolor{accent}{HTML}{2F55C8}
+\hypersetup{colorlinks, urlcolor=accent, linkcolor=ink}
+\AtBeginDocument{\color{ink}}
+\newlength{\sectiongap}
+\setlength{\sectiongap}{0.3cm}
+\newlength{\subsectiongap}
+\setlength{\subsectiongap}{0.3cm}
+
+% \section, given the heading: a heading in Young Serif on a line of its own, kept with what follows it.
+\renewcommand{\section}[1]{%
+  \par\needspace{4\baselineskip}\vspace{8pt}%
+  {\headingfont\fontsize{15}{18}\selectfont #1\par}%
+  \vspace{2pt}%
+}
+
+\renewcommand{\subsection}[1]{\textbf{#1}\par}
+
+\newenvironment{simplelist}
+{\begin{itemize}[leftmargin=1.1em, noitemsep, topsep=2pt, label={\color{inkmuted}\textbullet}]}
+{\end{itemize}}
+
+% \workexperience{<Role> | <Company> --- <dates>}{<a simplelist of \item bullets>}
+\newcommand{\workexperience}[2]{%
+  \vspace{\subsectiongap}%
+  \subsection{#1}%
+  #2\par
+}
+
+% \cvheader{<Name>}{<phone>}{<email>}{<web>}{<location>} — the name and the contact line at the top of the
+% page, the details separated by dots, with the photo beside them when there is one. Pass an empty argument for
+% a detail the CV does not have.
+%
+% \cvphotobox{<picture>} -- the candidate's photo. The tailor writes <<photo>> as the first line of the body
+% where the country's CV conventions allow a photo; `compile` swaps it for \cvphotobox{<the picture>} of the
+% profile's photo (or for nothing, when the profile has none), and \cvheader sets it at the right of the name.
+% Keep this macro, and its one argument, when you restyle; a template without it prints no photo.
+\makeatletter
+\newcommand{\cv@sep}{}
+\newcommand{\cv@detail}[2]{\if\relax\detokenize{#1}\relax\else\cv@sep#2\gdef\cv@sep{\enspace·\enspace}\fi}
+\newcommand{\contactline}[4]{%
+  {\small\color{inkmuted}\gdef\cv@sep{}%
+   \cv@detail{#1}{#1}%
+   \cv@detail{#2}{\href{mailto:#2}{#2}}%
+   \cv@detail{#3}{\href{https://#3}{#3}}%
+   \cv@detail{#4}{#4}\par}%
+}
+% beside a photo, the details one per line, so the name and the details are about as tall as the photo
+\newcommand{\cv@line}[2]{\if\relax\detokenize{#1}\relax\else#2\par\fi}
+\newcommand{\contactstack}[4]{%
+  {\small\color{inkmuted}\setlength{\parskip}{1pt}%
+   \cv@line{#1}{#1}%
+   \cv@line{#2}{\href{mailto:#2}{#2}}%
+   \cv@line{#3}{\href{https://#3}{#3}}%
+   \cv@line{#4}{#4}}%
+}
+\newcommand{\cv@photo}{}
+\newsavebox{\cv@photobox}
+\newcommand{\cvphotobox}[1]{\gdef\cv@photo{#1}}
+\newcommand{\cv@namecontact}[5]{%
+  {\headingfont\fontsize{28}{32}\selectfont #1\par}%
+  \vspace{8pt}%
+  \contactline{#2}{#3}{#4}{#5}%
+}
+\newcommand{\cvheader}[5]{%
+  \ifx\cv@photo\@empty
+    \cv@namecontact{#1}{#2}{#3}{#4}{#5}%
+  \else
+    \sbox{\cv@photobox}{\cv@photo}%
+    \begin{minipage}[t]{\dimexpr\linewidth-\wd\cv@photobox-0.6cm\relax}\vspace{0pt}%
+      {\headingfont\fontsize{28}{32}\selectfont #1\par}\vspace{8pt}\contactstack{#2}{#3}{#4}{#5}\end{minipage}%
+    \hfill
+    \begin{minipage}[t]{\wd\cv@photobox}\vspace{0pt}\usebox{\cv@photobox}\end{minipage}\par
+  \fi
+  \vspace{8pt}%
+  {\color{hairline}\hrule height 0.6pt}%
+  \vspace{4pt}%
+}
+\makeatother
+
+
+% Start document
+\begin{document}
+
+% Written by the tailor agent for each application: \cvheader, then one
+% \section per cv.md section (Profile, Work experience with \workexperience
+% blocks, Education, Skills, Languages, ...), separated by \vspace{\sectiongap}.
+
+\end{document}

@@ -7,8 +7,16 @@ only after a person has installed it on a clean machine of each system and gone 
 
 ## Before the tag
 
-- `./scripts/run-test.sh --release` passes: the offline suite, the app's tests with every journey and the skill
-  tests, which only run locally (the real model on your Claude plan runs `/onboard` against the app's test world).
+- `./scripts/run-test.sh --release` passes: the offline suite, the release gate, the app's tests with every journey
+  and the skill tests, which only run locally (the real model on your Claude plan runs `/onboard` against the app's
+  test world).
+- The release gate (#57, `tests/release/`, marker `release`) is part of it: every earlier release's saved data,
+  `tests/data_versions/<X.Y.Z>/`, is copied to a temporary home, upgraded by the build's own steps and read back with
+  the same tools (`show_profile`, `list_companies`, `list_matches`, `show` for each job, `status_summary`,
+  `list_stories`); it must equal the `expected.json` the release itself wrote, apart from what a step lists in its
+  `changes`. A key the old release returned that is gone or different, and a stored shape that changed without a step,
+  fail it: write the step (the `data-migrator` agent) and list what it changes on purpose. It stays out of the
+  offline suite and CI, because between releases `main` may not read the last release's data until that step exists.
 - `main` is green (the Python suite and the app's unit tests, smoke test and core journeys).
 - The repository variable `DOOR_UPDATE_FEED` names the public repo's `releases/latest`
   (`https://api.github.com/repos/<owner>/<repo>/releases/latest`). Empty, the build never checks for updates
@@ -26,6 +34,14 @@ git tag vX.Y.Z && git push origin main vX.Y.Z
 
 The workflow refuses a tag that is not the version. It takes about 20 minutes; the draft then holds
 `the-other-door-X.Y.Z-mac-arm64.dmg`, `-mac-x64.dmg`, `-windows-x64.exe`, `-linux-x64.AppImage` and the `.deb`.
+
+After the tag exists (it is pushed, so the tag's code is what was released), save that release's data for the next
+gate: `poetry run python scripts/save_release_data.py X.Y.Z` checks the tag out in a throwaway git worktree, has the
+tag's own code write a small made-up `profile/` and `jobs/` and read them back, and puts both, with `expected.json`,
+in `tests/data_versions/X.Y.Z/`. Commit that folder, and empty `NEW_SINCE_RELEASE` in
+`tests/release/test_release_sample_unit.py` (the fields new since the last release are in the new sample now).
+`scripts/release_data_generate.py` writes the data with the release's API; when a later release's API moved, that
+script follows it, and the run fails by name rather than saving something that is not the release's.
 
 ## 2. Install on a clean machine, each system
 

@@ -16,6 +16,9 @@ from door.core.migrations import Step
 EXAMPLE = workspace.PROFILE_EXAMPLE_DIR
 
 
+_REAL_RUN_AT_START = migrations.run_at_start  # conftest stubs it per test; these tests run the real one
+
+
 @pytest.fixture(autouse=True)
 def _fresh_state(monkeypatch):
     monkeypatch.setattr(migrations, "_state", None)
@@ -96,29 +99,22 @@ def test_the_real_profile_step_leaves_a_template_the_user_pointed_elsewhere(tmp_
     assert json.loads((profile / "config.json").read_text())["cv_template"] == "/home/ada/mine.tex"
 
 
-def test_the_real_profile_step_is_idempotent_and_a_no_op_on_new_data(tmp_path):
-    profile = tmp_path / "profile"
-    _v010_profile(profile)
-    step = migrations.PROFILE_STEPS[0]
-    step.run(profile)
-    snapshot = {p.name: p.read_bytes() for p in profile.rglob("*") if p.is_file()}
-    step.run(profile)
-    assert {p.name: p.read_bytes() for p in profile.rglob("*") if p.is_file()} == snapshot
-    fresh = tmp_path / "fresh"
-    fresh.mkdir()
-    (fresh / "config.json").write_text('{"name": "B"}')
-    step.run(fresh)
-    assert (fresh / "config.json").read_text() == '{"name": "B"}'
-
-
 def test_the_real_profile_step_on_a_missing_folder(tmp_path):
     migrations.PROFILE_STEPS[0].run(tmp_path / "nothing")
     assert not (tmp_path / "nothing").exists()
 
 
-def test_current_version_is_the_number_of_steps():
-    assert migrations.current("profile") == len(migrations.PROFILE_STEPS) == 1
-    assert migrations.current("jobs") == len(migrations.JOBS_STEPS)
+def test_current_version_is_the_app_major_and_the_number_of_steps():
+    assert migrations.current("profile") == migrations.Version(0, 1)
+    assert len(migrations.PROFILE_STEPS) == 1
+    assert migrations.current("jobs") == migrations.Version(0, len(migrations.JOBS_STEPS))
+
+
+def test_the_major_is_read_from_the_app_version_at_call_time(monkeypatch):
+    from door import version
+
+    monkeypatch.setattr(version, "VERSION", "3.2.1")
+    assert migrations.current("profile") == migrations.Version(3, 1)
 
 
 # ---- the runner ----------------------------------------------------------------------------------------
@@ -129,11 +125,11 @@ def test_runs_only_the_missing_steps_in_order(home):
     _make(profile, jobs)
     order = []
     steps = [Step("a", lambda f: order.append("a")), Step("b", lambda f: order.append("b")), Step("c", lambda f: order.append("c"))]
-    (profile / ".data_version").write_text("1\n")
+    (profile / ".data_version").write_text("0.1\n")
     status = migrations.upgrade_all(profile, jobs, backups, profile_steps=steps, jobs_steps=[])
     assert order == ["b", "c"]
     assert status is None
-    assert (profile / ".data_version").read_text() == "3\n"
+    assert (profile / ".data_version").read_text() == "0.3\n"
 
 
 def test_no_file_on_a_folder_with_data_is_version_zero(home):
@@ -141,15 +137,15 @@ def test_no_file_on_a_folder_with_data_is_version_zero(home):
     _make(profile, jobs)
     migrations.upgrade_all(profile, jobs, backups, profile_steps=[_tag("a")], jobs_steps=[_tag("j")])
     assert (profile / "a.done").exists() and (jobs / "j.done").exists()
-    assert (profile / ".data_version").read_text() == "1\n"
-    assert (jobs / ".data_version").read_text() == "1\n"
+    assert (profile / ".data_version").read_text() == "0.1\n"
+    assert (jobs / ".data_version").read_text() == "0.1\n"
 
 
 def test_a_current_folder_is_left_alone_with_no_backup(home):
     profile, jobs, backups = home
     _make(profile, jobs)
-    (profile / ".data_version").write_text("1\n")
-    (jobs / ".data_version").write_text("0\n")
+    (profile / ".data_version").write_text("0.1\n")
+    (jobs / ".data_version").write_text("0.0\n")
     migrations.upgrade_all(profile, jobs, backups, profile_steps=[_tag("a")], jobs_steps=[])
     assert not (profile / "a.done").exists()
     assert not backups.exists()
@@ -168,7 +164,7 @@ def test_backup_is_taken_before_the_steps_and_holds_the_old_data(home):
     seen = {}
 
     def step(folder):
-        (b,) = backups.glob("upgrade-profile-0-1-*")
+        (b,) = backups.glob("upgrade-profile-0.0-0.1-*")
         seen["config"] = (b / "config.json").read_text()
         seen["has_marker"] = (b / "a.done").exists()
     migrations.upgrade_all(profile, jobs, backups, profile_steps=[Step("a", step)], jobs_steps=[])
@@ -179,7 +175,7 @@ def test_the_jobs_backup_leaves_the_lock_files_out(home):
     profile, jobs, backups = home
     _make(profile, jobs)
     migrations.upgrade_all(profile, jobs, backups, profile_steps=[], jobs_steps=[_tag("j")])
-    (b,) = backups.glob("upgrade-jobs-0-1-*")
+    (b,) = backups.glob("upgrade-jobs-0.0-0.1-*")
     assert (b / "history.json").exists()
     assert not (b / ".lock").exists() and not (b / ".lock.json").exists()
 
@@ -203,7 +199,7 @@ def test_only_the_two_newest_upgrade_backups_are_kept_and_import_backups_stay(ho
 def test_a_failing_step_restores_the_folder_and_keeps_the_version(home):
     profile, jobs, backups = home
     _make(profile, jobs)
-    (profile / ".data_version").write_text("0\n")
+    (profile / ".data_version").write_text("0.0\n")
 
     def bad(folder):
         (folder / "config.json").write_text("broken")
@@ -217,7 +213,7 @@ def test_a_failing_step_restores_the_folder_and_keeps_the_version(home):
     )
     assert (profile / "config.json").read_text() == "{}"
     assert not (profile / "new.txt").exists() and not (profile / "sub").exists() and not (profile / "a.done").exists()
-    assert (profile / ".data_version").read_text() == "0\n"
+    assert (profile / ".data_version").read_text() == "0.0\n"
     assert migrations.status() == status
 
 
@@ -246,15 +242,48 @@ def test_a_failed_profile_stops_before_the_jobs(home):
 def test_newer_data_is_refused_and_nothing_is_written(home):
     profile, jobs, backups = home
     _make(profile, jobs)
-    (profile / ".data_version").write_text("5\n")
+    (profile / ".data_version").write_text("0.5\n")
     status = migrations.upgrade_all(profile, jobs, backups, profile_steps=[_tag("a")], jobs_steps=[_tag("j")])
     assert status == {
         "state": "newer",
         "message": "This data was written by a newer version of The other door. Install the latest version.",
     }
     assert not (jobs / "j.done").exists() and not (jobs / ".data_version").exists()
-    assert (profile / ".data_version").read_text() == "5\n"
+    assert (profile / ".data_version").read_text() == "0.5\n"
     assert not backups.exists()
+
+
+def test_data_of_an_older_major_is_refused_and_nothing_is_written(home, monkeypatch):
+    from door import version
+
+    monkeypatch.setattr(version, "VERSION", "1.0.0")
+    profile, jobs, backups = home
+    _make(profile, jobs)
+    (profile / ".data_version").write_text("0.1\n")
+    status = migrations.upgrade_all(profile, jobs, backups, profile_steps=[], jobs_steps=[_tag("j")])
+    assert status == {
+        "state": "old_major",
+        "message": "This data was written by The other door 0.x. Version 1 cannot open it: keep using 0.x, "
+        "or start a new profile.",
+    }
+    assert not (jobs / "j.done").exists() and not backups.exists()
+    assert (profile / ".data_version").read_text() == "0.1\n"
+
+
+def test_a_folder_with_data_and_no_file_is_0_0_so_too_old_for_a_later_major(home, monkeypatch):
+    from door import version
+
+    monkeypatch.setattr(version, "VERSION", "1.0.0")
+    profile, jobs, backups = home
+    _make(profile, jobs)
+    assert migrations.upgrade_all(profile, jobs, backups, profile_steps=[], jobs_steps=[])["state"] == "old_major"
+
+
+def test_data_of_a_later_major_is_newer(home, monkeypatch):
+    profile, jobs, backups = home
+    _make(profile, jobs)
+    (jobs / ".data_version").write_text("1.0\n")
+    assert migrations.upgrade_all(profile, jobs, backups, profile_steps=[], jobs_steps=[])["state"] == "newer"
 
 
 def test_a_garbled_version_file_is_a_failure_not_zero(home):
@@ -269,9 +298,9 @@ def test_a_garbled_version_file_is_a_failure_not_zero(home):
 
 def test_read_version(tmp_path):
     assert migrations.read_version(tmp_path) is None
-    (tmp_path / ".data_version").write_text("2\n")
-    assert migrations.read_version(tmp_path) == 2
-    for bad in ("", "x", "-1", "1.5"):
+    (tmp_path / ".data_version").write_text("2.5\n")
+    assert migrations.read_version(tmp_path) == migrations.Version(2, 5)
+    for bad in ("", "x", "-1", "1", "1.5.2", "1.-2", "a.b", "1.", ".1", "1. 5", "0.1x"):
         (tmp_path / ".data_version").write_text(bad)
         with pytest.raises(migrations.DataVersionError):
             migrations.read_version(tmp_path)
@@ -280,9 +309,9 @@ def test_read_version(tmp_path):
 def test_a_state_clears_when_the_data_is_current_again(home):
     profile, jobs, backups = home
     _make(profile, jobs)
-    (profile / ".data_version").write_text("5\n")
+    (profile / ".data_version").write_text("0.5\n")
     assert migrations.upgrade_all(profile, jobs, backups, profile_steps=[_tag("a")], jobs_steps=[])["state"] == "newer"
-    (profile / ".data_version").write_text("1\n")
+    (profile / ".data_version").write_text("0.1\n")
     assert migrations.upgrade_all(profile, jobs, backups, profile_steps=[_tag("a")], jobs_steps=[]) is None
     assert migrations.status() is None
 
@@ -335,23 +364,230 @@ def test_two_processes_at_once_the_second_finds_it_done(home, tmp_path):
         p.join(60)
         assert p.exitcode == 0
     assert counter.read_text() == "x"
-    assert (profile / ".data_version").read_text() == "1\n"
+    assert (profile / ".data_version").read_text() == "0.1\n"
 
 
-def test_stamp_new_writes_the_current_version_only_for_a_new_folder(tmp_path):
+def test_ensure_folder_stamps_a_folder_it_creates_or_finds_empty(tmp_path):
     profile = tmp_path / "profile"
-    migrations.stamp_new(profile)
-    assert (profile / ".data_version").read_text() == f"{migrations.current('profile')}\n"
-    (profile / ".data_version").write_text("0\n")
-    migrations.stamp_new(profile)
-    assert (profile / ".data_version").read_text() == "0\n"
+    migrations.ensure_folder(profile, "profile")
+    assert (profile / ".data_version").read_text() == "0.1\n"
+    empty = tmp_path / "jobs"
+    empty.mkdir()
+    (empty / ".lock").write_text("")
+    migrations.ensure_folder(empty, "jobs")
+    assert (empty / ".data_version").read_text() == "0.0\n"
 
 
-def test_the_app_test_world_stamps_the_current_profile_version():
-    """The journeys' world is a profile set up by this build: stamped like `init` stamps one, or every journey
-    would run the upgrade at start (and find an extra backup)."""
+def test_ensure_folder_leaves_a_folder_with_data_or_a_version_alone(tmp_path):
+    old = tmp_path / "old"
+    old.mkdir()
+    (old / "config.json").write_text("{}")
+    migrations.ensure_folder(old, "profile")
+    assert not (old / ".data_version").exists()  # v0.1.0's data: the upgrade at start dates it
+    (old / ".data_version").write_text("0.0\n")
+    migrations.ensure_folder(old, "profile")
+    assert (old / ".data_version").read_text() == "0.0\n"
+
+
+def test_the_app_stamps_the_data_versions_this_build_writes():
+    """The journeys' world and the app's demo are folders set up by this build: stamped like `init` stamps them, or
+    every start would run the upgrade (and find an extra backup). The app has one place for the two versions
+    (`app/src/main/data-versions.ts`) that this test keeps equal to `migrations.current`; a release that adds a step
+    changes that file (dev-release, the data-migrator)."""
     import re
     from paths import REPO_ROOT
 
-    build = (REPO_ROOT / "app" / "test" / "world" / "build.ts").read_text(encoding="utf-8")
-    assert int(re.search(r"PROFILE_DATA_VERSION = (\d+)", build).group(1)) == migrations.current("profile")
+    app = REPO_ROOT / "app"
+    versions = (app / "src" / "main" / "data-versions.ts").read_text(encoding="utf-8")
+    assert re.search(r"PROFILE_DATA_VERSION = '([\d.]+)'", versions).group(1) == str(migrations.current("profile"))
+    assert re.search(r"JOBS_DATA_VERSION = '([\d.]+)'", versions).group(1) == str(migrations.current("jobs"))
+    for path in (app / "test" / "world" / "build.ts", app / "src" / "main" / "demo.ts"):
+        text = path.read_text(encoding="utf-8")
+        assert "data-versions" in text and not re.search(r"DATA_VERSION = '", text), path.name
+
+
+# --------------------------------------------------------------------------- #
+# refuse (import and Drive)
+# --------------------------------------------------------------------------- #
+V = migrations.Version
+
+
+def test_refuse_passes_current_older_and_missing_versions():
+    migrations.refuse({"profile": migrations.current("profile"), "jobs": migrations.current("jobs")})
+    migrations.refuse({"profile": V(0, 0), "jobs": None})
+    migrations.refuse({"profile": None, "jobs": None})
+
+
+@pytest.mark.parametrize("folder", ["profile", "jobs"])
+def test_refuse_raises_newer_for_either_folder(folder):
+    versions = {"profile": None, "jobs": None, folder: V(0, migrations.current(folder).n + 1)}
+    with pytest.raises(migrations.RefusedData) as caught:
+        migrations.refuse(versions)
+    assert caught.value.state == "newer"
+    assert str(caught.value) == migrations.ARCHIVE_NEWER
+    assert caught.value.versions == versions
+
+
+def test_refuse_raises_old_major_and_names_the_majors(monkeypatch):
+    from door import version
+
+    monkeypatch.setattr(version, "VERSION", "2.0.0")
+    with pytest.raises(migrations.RefusedData) as caught:
+        migrations.refuse({"profile": V(1, 4), "jobs": None})
+    assert caught.value.state == "old_major"
+    assert str(caught.value) == migrations.OLD_MAJOR.format(data=1, app=2)
+
+
+def test_the_version_orders_by_major_then_steps():
+    assert V(0, 5) < V(1, 0) < V(1, 1)
+    assert str(V(1, 2)) == "1.2"
+    assert V.parse("1.2") == V(1, 2)
+
+
+def test_start_creates_both_folders_stamped_so_no_later_writer_leaves_one_unversioned(tmp_path, monkeypatch):
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(workspace, "BACKUPS_DIR", tmp_path / "backups")
+
+    assert _REAL_RUN_AT_START() is None
+
+    for name in ("profile", "jobs"):
+        assert migrations.read_version(tmp_path / name) == migrations.current(name)
+    (tmp_path / "profile" / "cv.md").write_text("# CV")  # a writer that never calls ensure_folder
+    assert migrations.read_version(tmp_path / "profile") == migrations.current("profile")
+
+
+def test_start_leaves_an_unversioned_folder_with_data_to_the_upgrade(tmp_path, monkeypatch):
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(workspace, "BACKUPS_DIR", tmp_path / "backups")
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [_tag("a")])
+    (tmp_path / "profile").mkdir()
+    (tmp_path / "profile" / "config.json").write_text("{}")
+
+    assert _REAL_RUN_AT_START() is None
+
+    assert (tmp_path / "profile" / "a.done").exists()  # read as 0.0 and upgraded, not stamped over
+
+
+# ---- review gaps of #56 ----------------------------------------------------------------------------------
+
+
+def test_a_kill_after_a_step_is_restored_and_upgraded_at_the_next_start(home):
+    """A step that ran and a process that died before the version was written: the next start restores the backup
+    (not new-shape data under the old version) and runs the steps again."""
+    profile, jobs, backups = home
+    _make(profile, jobs)
+    (profile / "cv.md").write_text("old shape")
+    seen = []
+
+    def rewrite(folder):
+        seen.append((folder / "cv.md").read_text())
+        (folder / "cv.md").write_text("new shape")
+
+    # what a hard kill after a step leaves: the backup, the marker, new-shape data, the old version
+    backup = migrations._backup(profile, backups, "profile", migrations.UNVERSIONED, migrations.Version(0, 1))
+    (profile / migrations.MARKER).write_text(str(backup))
+    (profile / "cv.md").write_text("new shape")
+    (profile / "extra.json").write_text("{}")
+    migrations._set(None)
+    assert migrations.upgrade_all(profile, jobs, backups, profile_steps=[Step("rewrite", rewrite)], jobs_steps=[]) is None
+    assert seen == ["old shape"]
+    assert not (profile / "extra.json").exists()
+    assert (profile / ".data_version").read_text() == "0.1\n"
+    assert not (profile / migrations.MARKER).exists()
+
+
+def test_the_marker_is_there_while_a_step_runs_and_gone_after(home):
+    profile, jobs, backups = home
+    _make(profile, jobs)
+    during = []
+    migrations.upgrade_all(
+        profile, jobs, backups,
+        profile_steps=[Step("s", lambda folder: during.append((folder / migrations.MARKER).exists()))], jobs_steps=[],
+    )
+    assert during == [True]
+    assert not (profile / migrations.MARKER).exists()
+
+
+def test_a_marker_beside_the_current_version_is_only_removed(home):
+    """Killed between writing the version and removing the marker: the data is upgraded, do not restore."""
+    profile, jobs, backups = home
+    _make(profile, jobs)
+    (profile / "cv.md").write_text("upgraded")
+    (profile / ".data_version").write_text("0.1\n")
+    old = backups / "upgrade-profile-0.0-0.1-20260101-000000"
+    old.mkdir(parents=True)
+    (old / "cv.md").write_text("stale")
+    (profile / migrations.MARKER).write_text(str(old))
+    migrations.upgrade_folder(profile, [_tag("a")], backups_dir=backups, label="profile")
+    assert (profile / "cv.md").read_text() == "upgraded"
+    assert not (profile / migrations.MARKER).exists()
+
+
+def test_a_failure_removes_the_marker_and_repeated_failures_keep_two_backups(home, monkeypatch):
+    profile, jobs, backups = home
+    _make(profile, jobs)
+
+    def bad(folder):
+        raise RuntimeError("boom")
+    stamps = iter(range(10))
+    real_backup = migrations._backup
+
+    def numbered(folder, backups_dir, label, source, target):
+        dest = real_backup(folder, backups_dir, label, source, target)
+        n = next(stamps)
+        os.utime(dest, (1_700_000_000 + n, 1_700_000_000 + n))
+        return dest
+    monkeypatch.setattr(migrations, "_backup", numbered)
+    for _ in range(5):
+        migrations._set(None)
+        assert migrations.upgrade_all(profile, jobs, backups, profile_steps=[Step("s", bad)], jobs_steps=[])["state"] == "failed"
+    assert len(list(backups.glob("upgrade-*"))) == migrations.KEEP_BACKUPS
+    assert not (profile / migrations.MARKER).exists()
+
+
+def test_a_jobs_folder_with_only_the_usage_log_is_still_unstamped_empty(tmp_path):
+    jobs = tmp_path / "jobs"
+    jobs.mkdir()
+    (jobs / "usage.jsonl").write_text("{}\n")
+    migrations.ensure_folder(jobs, "jobs")
+    assert (jobs / ".data_version").read_text() == "0.0\n"
+
+
+def test_two_stamps_at_once_do_not_fail(tmp_path):
+    folder = tmp_path / "jobs"
+    folder.mkdir()
+    errors = []
+    barrier = threading.Barrier(8)
+
+    def stamp():
+        barrier.wait()
+        try:
+            for _ in range(50):
+                migrations.write_version(folder, migrations.Version(0, 1))
+        except Exception as exc:  # noqa: BLE001
+            errors.append(exc)
+    threads = [threading.Thread(target=stamp) for _ in range(8)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert errors == []
+    assert (folder / ".data_version").read_text() == "0.1\n"
+    assert [p.name for p in folder.iterdir()] == [".data_version"]
+
+
+def test_ensure_folder_tolerates_the_stamp_appearing_meanwhile(tmp_path, monkeypatch):
+    folder = tmp_path / "profile"
+    folder.mkdir()
+    real = migrations.write_version
+
+    def racing(path, version, **kwargs):
+        (Path(path) / ".data_version").write_text("0.1\n")  # the other process got there first
+        return real(path, version, **kwargs)
+    monkeypatch.setattr(migrations, "write_version", racing)
+    migrations.ensure_folder(folder, "profile")
+    assert (folder / ".data_version").read_text() == "0.1\n"

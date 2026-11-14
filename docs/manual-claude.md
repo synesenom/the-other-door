@@ -154,7 +154,7 @@ session, where `./scripts/setup.sh` is the install.
 | `companies merge [KEEP FOLD]` | `merge_companies` | no names: the `candidates` (groups of entries sharing a feed or a name, with the `reason`), nothing written; two names: the `merged` entry and the `removed` name. Claude proposes the groups and merges only the pairs you confirm |
 | `companies why NAME` | `why_company` | the list entry and how many postings in `jobs/` came from it (`postings`, `by_source`), or an `error` when it is not on the list |
 | `data export [PATH]` | `export_data` | the archive's path, file count and size |
-| `data import ARCHIVE` | `import_data` | file count, the backup folder, and any config path this computer lacks |
+| `data import ARCHIVE` | `import_data` | file count, the backup folder, any config path this computer lacks or failed upgrade (warnings), and `data_versions` (what the archive carried); an archive from a newer version or an older major is refused with nothing changed |
 | `data connect` | `connect_drive` | the Google account connected (a browser opens for the user; waits up to five minutes) |
 | `data sync [--keep-local \| --keep-drive]` | `sync_data` | `action` (`push`, `pull`, `nothing`); an `error` naming both options when Drive and this computer both changed |
 | `data disconnect` | `disconnect_drive` | whether it was connected |

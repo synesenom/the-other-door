@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "companies": [
+    {
+      "name": "Example Industries A/S",
+      "feed": {
+        "platform": "greenhouse",
+        "id": "exampleindustries"
+      },
+      "status": "followed",
+      "reason": null,
+      "found_via": "manual",
+      "evidence": "Greenhouse board exampleindustries lists open jobs",
+      "aliases": [
+        "Example Industries",
+        "EI Group"
+      ],
+      "first_seen": "2026-03-10T09:00:00+00:00",
+      "last_checked": "2026-03-10T09:00:00+00:00",
+      "refusal": null,
+      "collect_problem": null,
+      "last_relevant": "2026-03-17T09:00:00+00:00"
+    },
+    {
+      "name": "Sample Bank",
+      "feed": {
+        "platform": "lever",
+        "id": "samplebank"
+      },
+      "status": "followed",
+      "reason": null,
+      "found_via": "jobindex",
+      "evidence": null,
+      "aliases": [],
+      "first_seen": "2026-03-10T09:00:00+00:00",
+      "last_checked": "2026-03-10T09:00:00+00:00",
+      "refusal": null,
+      "collect_problem": {
+        "at": "2026-03-18T09:00:00+00:00",
+        "outcome": "blocked",
+        "reason": "the feed answered 403"
+      },
+      "last_relevant": null
+    },
+    {
+      "name": "Failing Feed Ltd",
+      "feed": {
+        "platform": "teamtailor",
+        "id": "failing-feed"
+      },
+      "status": "followed",
+      "reason": null,
+      "found_via": "linkedin",
+      "evidence": null,
+      "aliases": [],
+      "first_seen": "2026-03-10T09:00:00+00:00",
+      "last_checked": "2026-03-10T09:00:00+00:00",
+      "refusal": null,
+      "collect_problem": {
+        "at": "2026-03-19T09:00:00+00:00",
+        "outcome": "failed",
+        "reason": "timeout"
+      },
+      "last_relevant": null
+    },
+    {
+      "name": "Terms Forbid AB",
+      "feed": null,
+      "status": "unfollowable",
+      "reason": "its terms forbid automated access",
+      "found_via": "linkedin",
+      "evidence": "careers page",
+      "aliases": [],
+      "first_seen": "2026-03-10T09:00:00+00:00",
+      "last_checked": "2026-03-10T09:00:00+00:00",
+      "refusal": "must_not",
+      "collect_problem": null,
+      "last_relevant": null
+    },
+    {
+      "name": "No Way In Inc",
+      "feed": null,
+      "status": "unfollowable",
+      "reason": "a platform The other door cannot follow yet",
+      "found_via": "thehub",
+      "evidence": null,
+      "aliases": [],
+      "first_seen": "2026-03-10T09:00:00+00:00",
+      "last_checked": "2026-03-10T09:00:00+00:00",
+      "refusal": "cant_yet",
+      "collect_problem": null,
+      "last_relevant": null
+    },
+    {
+      "name": "Nowhere Found GmbH",
+      "feed": null,
+      "status": "unresolved",
+      "reason": "no careers page found",
+      "found_via": "ai",
+      "evidence": null,
+      "aliases": [],
+      "first_seen": "2026-03-10T09:00:00+00:00",
+      "last_checked": "2026-03-10T09:00:00+00:00",
+      "refusal": null,
+      "collect_problem": null,
+      "last_relevant": null
+    },
+    {
+      "name": "Quiet Dormant Co",
+      "feed": {
+        "platform": "greenhouse",
+        "id": "quietdormant"
+      },
+      "status": "dormant",
+      "reason": "no relevant job for 90 days",
+      "found_via": "jobindex",
+      "evidence": null,
+      "aliases": [],
+      "first_seen": "2026-03-10T09:00:00+00:00",
+      "last_checked": "2026-03-10T09:00:00+00:00",
+      "refusal": null,
+      "collect_problem": null,
+      "last_relevant": "2025-11-20T09:00:00+00:00"
+    }
+  ]
+}

@@ -765,3 +765,15 @@ def test_serve_instances_check_names_each_home_its_reach_phones_and_sleep(tmp_pa
     down = doctor.check_serve_instances(reach=lambda port: False, sleep_minutes=lambda: 10)
     assert down["status"] == "warn"
     assert "not answering" in down["detail"] and "sleeps after 10 minutes" in down["detail"]
+
+
+def test_doctor_rechecks_the_data_versions_instead_of_reading_the_start_up_answer(tmp_path, monkeypatch):
+    from door.core import migrations
+
+    refusal = {"state": "newer", "message": "newer"}
+    monkeypatch.setattr(migrations, "recheck", lambda: refusal)
+    result = doctor.run_checks(
+        tmp_path / "profile", tmp_path / "jobs", which=_which(), find_spec=lambda n: object(), now=NOW,
+        run=_auth(""), probe=_NO_PROBE,
+    )
+    assert result["data"] == refusal

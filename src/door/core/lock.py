@@ -90,6 +90,13 @@ def _run_hook(hook, purpose: str, jobs_dir: Path, *, refuse_on_conflict: bool) -
         progress.report(f"Drive sync skipped: {exc}")
 
 
+def _ensure_jobs_folder(jobs_dir: Path) -> None:
+    """Create `jobs/` stamped with this build's data version (#56); `migrations` imports this module, hence late."""
+    from door.core import migrations
+
+    migrations.ensure_folder(jobs_dir, "jobs")
+
+
 def _key(jobs_dir: Path) -> str:
     return str(Path(jobs_dir).resolve())
 
@@ -206,7 +213,7 @@ def ledger_lock(jobs_dir: Path, purpose: str):
             nested = True
         else:
             nested = False
-            jobs_dir.mkdir(parents=True, exist_ok=True)
+            _ensure_jobs_folder(jobs_dir)
             fh = open(jobs_dir / _LOCK_NAME, "a+")
             if not _try_os_lock(fh):
                 fh.close()

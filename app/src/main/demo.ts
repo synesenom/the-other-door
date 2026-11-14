@@ -3,6 +3,7 @@
 // your real profile/, jobs/ or Drive archive. Pure file work, no processes.
 import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
+import { JOBS_DATA_VERSION, PROFILE_DATA_VERSION } from './data-versions'
 
 export type DemoMode = 'keep' | 'fresh'
 
@@ -255,7 +256,11 @@ export function seedDemo(demo: string, repoRoot: string, mode: DemoMode, now: Da
       '**Result**: One forecast used in the budget round; the gap between sales and finance fell from 12% to 3%.\n' +
       '**Learning**: Agreeing the definitions took longer than building the model, and mattered more.\n',
   )
+  // A folder this build sets up carries its data version, or the first start would run the upgrade on it.
+  writeFileSync(join(to, 'profile', '.data_version'), `${PROFILE_DATA_VERSION}\n`)
   const jobs = join(to, 'jobs')
+  mkdirSync(jobs, { recursive: true })
+  writeFileSync(join(jobs, '.data_version'), `${JOBS_DATA_VERSION}\n`)
   const at = (days: number, hours = 0) => new Date(now.getTime() - days * 86_400_000 - hours * 3_600_000).toISOString()
   const ledger: Record<string, unknown> = {}
   for (const job of DEMO_JOBS) {
