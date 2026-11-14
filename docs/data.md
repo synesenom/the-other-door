@@ -65,16 +65,18 @@ Or say "export my data" / "import this export" in a conversation.
 
 ## Upgrading your data between releases
 
-`profile/` and `jobs/` each carry a data version, a plain number in `profile/.data_version` and
-`jobs/.data_version` (a file of its own, not a key in `config.json`). A folder with no file is
-from the first release, version 0. A release that changes how the data is stored ships one step for
+`profile/` and `jobs/` each carry a data version, written `<major>.<n>` (for example `0.1`) in
+`profile/.data_version` and `jobs/.data_version` (a file of its own, not a key in `config.json`): the
+app's major version, and how many upgrade steps the folder has had within it. A folder The other door
+creates is marked with its version at once; a folder with data and no file is from the first release,
+`0.0`. A release that changes how the data is stored ships one step for
 the folder; the data is upgraded by itself the first time The other door starts after you install it (the
 app, `./door` or the MCP server), before anything reads it, with no hand edit:
 
 - **Backup first.** The folder is copied to `backups/upgrade-<folder>-<from>-<to>-<date>/` before its first
   step runs. The two most recent upgrade backups are kept; the backups an import makes are never touched.
-- **Safe to repeat.** Every step changes nothing on data already in the new shape, so a second start, or two
-  starts at once (the app and Claude Code), upgrade once.
+- **Once only.** The version is written after the last step, so a second start, or two starts at once (the
+  app and Claude Code), upgrade once.
 - **A step that fails** puts the folder back from the backup and leaves its version as it was. Every tool then
   answers "Your data could not be upgraded to this version: <step>. Nothing was changed. Send a report from
   Settings." (the app says so at the sidebar's foot, opening Report a problem), except `report_problem` and
@@ -82,13 +84,19 @@ app, `./door` or the MCP server), before anything reads it, with no hand edit:
 - **Newer data** (a folder whose version is above the app's, say after using a newer release on another
   computer) is refused and never changed: "This data was written by a newer version of The other door.
   Install the latest version."
+- **Data from an older major version** (say `0.x` data opened by version 1) is not opened and never changed:
+  "This data was written by The other door 0.x. Version 1 cannot open it: keep using 0.x, or start a new
+  profile." Going back to an older version is not supported either: a newer version's data is refused by the
+  older one. If you must go back, restore a backup (`backups/`) of the data from before the upgrade.
 - **Import and Google Drive.** An export carries both version files. `data import` refuses an archive whose
   version is above the app's ("This archive was written by a newer version of The other door. Install the
-  latest version.") before it changes anything, and upgrades an older archive right after it is in place (a
-  failed step is a warning, and the data stays as imported). A Drive pull does the same. When Drive holds data
-  from a newer version, a computer that is not upgraded yet changes nothing and says "Google Drive has data from
-  a newer version of The other door; install it on this computer too"; it neither pulls nor pushes until it is
-  upgraded, so an older version never overwrites the newer data on Drive.
+  latest version.") or of an older major version before it changes anything, and upgrades an older archive of
+  the same major right after it is in place (a failed step is a warning, and the data stays as imported). A
+  Drive pull does the same. The two versions are kept on the archive file in Drive itself, so a computer reads
+  them without downloading: when Drive holds data from a newer version, a computer that is not upgraded yet
+  changes nothing and says "Google Drive has data from a newer version of The other door; install it on this
+  computer too" (for an older major: "Google Drive has data from The other door 0.x, which this version cannot
+  open"); it neither pulls nor pushes over it, so an older version never overwrites the newer data on Drive.
 - A run holding the lock at start delays the upgrade; the next command or tool call tries again.
 
 The first step (version 0 to 1): the LaTeX templates and fonts come from the code. A copy in `profile/`

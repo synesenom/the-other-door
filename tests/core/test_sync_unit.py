@@ -83,6 +83,8 @@ class FakeDrive:
         drive.write_state({"refresh_token": "rt", "account": "me@x.org"})
         self.blob = None
         self.version = 0
+        self.properties = {}
+        self.downloads = 0
         self.uploads = 0
         self.fail = None
         monkeypatch.setattr(drive, "remote_meta", self.remote_meta)
@@ -92,14 +94,16 @@ class FakeDrive:
     def remote_meta(self):
         if self.fail:
             raise self.fail
-        return None if self.blob is None else {"id": "A", "version": str(self.version)}
+        return None if self.blob is None else {"id": "A", "version": str(self.version), "properties": dict(self.properties)}
 
     def download(self, dest):
+        self.downloads += 1
         Path(dest).write_bytes(self.blob)
 
-    def upload(self, src):
+    def upload(self, src, properties=None):
         if self.fail:
             raise self.fail
+        self.properties = dict(properties or {})
         self.blob = Path(src).read_bytes()
         self.version += 1
         self.uploads += 1
@@ -122,7 +126,7 @@ def world(tmp_path, monkeypatch):
 def _seed(world, text="{}"):
     world.profile.mkdir(exist_ok=True)
     (world.profile / "config.json").write_text(text)
-    (world.profile / ".data_version").write_text("1")  # the data of this build, as `init` leaves it
+    (world.profile / ".data_version").write_text("0.1")  # the data of this build, as `init` leaves it
     world.jobs.mkdir(exist_ok=True)
     (world.jobs / "history.json").write_text(text)
 
@@ -341,18 +345,22 @@ def test_fingerprint_ignores_the_usage_log(tmp_path):
 # data versions (#56)
 # --------------------------------------------------------------------------- #
 NEWER_SENTENCE = "Google Drive has data from a newer version of The other door; install it on this computer too"
+OLD_MAJOR_SENTENCE = "Google Drive has data from The other door 0.x, which this version cannot open"
 
 
-def _blob(world, tmp_path, profile=None, jobs=None):
-    """An archive of the sync format as another computer would have pushed it, with the given data versions."""
+def _blob(world, tmp_path, profile=None, jobs=None, props=True):
+    """An archive of the sync format as another computer would have pushed it, with the given data versions
+    (in the archive and, when *props*, on the file as `appProperties`: v0.1.0's upload has neither)."""
     import io
     import tarfile
 
     entries = {"manifest.json": json.dumps({"format": 1}).encode(), "profile/config.json": b"{}", "profile/cv.md": b"# drive"}
-    if profile is not None:
-        entries["profile/.data_version"] = str(profile).encode()
-    if jobs is not None:
-        entries["jobs/.data_version"] = str(jobs).encode()
+    world.properties = {}
+    for folder, value in (("profile", profile), ("jobs", jobs)):
+        if value is not None:
+            entries[f"{folder}/.data_version"] = value.encode()
+            if props:
+                world.properties[f"door_{folder}_version"] = value
     path = tmp_path / "blob.tar.gz"
     with tarfile.open(path, "w:gz") as tar:
         for name, data in entries.items():
@@ -377,10 +385,21 @@ def hooks(enable_sync_hooks):
     return enable_sync_hooks
 
 
+@pytest.fixture
+def hooks(enable_sync_hooks):
+    return enable_sync_hooks
+
+
 def _connected_with_local(world):
     _seed(world, '{"v": 1}')
     sync.push()
     return world
+
+
+def test_a_push_puts_the_local_versions_on_the_file(world):
+    _seed(world)
+    sync.push()
+    assert world.properties == {"door_profile_version": "0.1", "door_jobs_version": "0.0"}
 
 
 def test_a_pull_of_an_older_archive_is_upgraded(world, tmp_path):
@@ -389,24 +408,25 @@ def test_a_pull_of_an_older_archive_is_upgraded(world, tmp_path):
     _blob(world, tmp_path)
     sync.pull()
     assert (world.profile / ".data_version").read_text().strip() == str(migrations.current("profile"))
-    assert drive.read_state()["refused_newer"] is False
 
 
-def test_a_newer_archive_on_acquire_changes_nothing_and_says_so_once(world, tmp_path, hooks):
+def test_a_newer_archive_on_acquire_changes_nothing_downloads_nothing_and_says_so_once(world, tmp_path, hooks):
     _connected_with_local(world)
     before, state = _snapshot(world), drive.read_state()
     sync.drain_notes()
-    _blob(world, tmp_path, profile=99)
+    _blob(world, tmp_path, profile="0.99")
+    downloads = world.downloads
 
     sync.on_acquire("run", world.jobs)
 
+    assert world.downloads == downloads  # refused from the file's properties, before the download
     assert _snapshot(world) == before
     assert not world.backups.exists()
     after = drive.read_state()
     assert after["synced_version"] == state["synced_version"] and after["fingerprint"] == state["fingerprint"]
     assert sync.drain_notes() == [("warning", NEWER_SENTENCE)]
-    assert after["refused_newer"] is True and after["last_error"] == NEWER_SENTENCE
-    assert after["data_versions"]["profile"] == 99
+    assert after["last_error"] == NEWER_SENTENCE
+    assert "refused_newer" not in after and "data_versions" not in after
 
     (world.jobs / "x.json").write_text("changed")
     uploads = world.uploads
@@ -414,10 +434,41 @@ def test_a_newer_archive_on_acquire_changes_nothing_and_says_so_once(world, tmp_
     assert world.uploads == uploads
 
 
-def test_while_refused_nothing_is_pushed(world, tmp_path, hooks):
+def test_an_archive_of_an_older_major_is_refused_with_its_own_note(world, tmp_path, monkeypatch, hooks):
+    from door import version
+
     _connected_with_local(world)
-    _blob(world, tmp_path, profile=99)
+    before = _snapshot(world)
+    sync.drain_notes()
+    _blob(world, tmp_path, profile="0.1", jobs="0.0")
+    monkeypatch.setattr(version, "VERSION", "1.0.0")
+    downloads = world.downloads
+
     sync.on_acquire("run", world.jobs)
+
+    assert world.downloads == downloads and _snapshot(world) == before
+    assert sync.drain_notes() == [("warning", OLD_MAJOR_SENTENCE)]
+    assert drive.read_state()["last_error"] == OLD_MAJOR_SENTENCE
+
+
+def test_an_archive_without_properties_is_downloaded_and_the_import_checks_it(world, tmp_path, hooks):
+    _connected_with_local(world)
+    before = _snapshot(world)
+    sync.drain_notes()
+    _blob(world, tmp_path, profile="0.99", props=False)  # as v0.1.0 (or any old build) uploaded it
+    downloads = world.downloads
+
+    sync.on_acquire("run", world.jobs)
+
+    assert world.downloads == downloads + 1
+    assert _snapshot(world) == before
+    assert sync.drain_notes() == [("warning", NEWER_SENTENCE)]
+    assert drive.read_state()["last_error"] == NEWER_SENTENCE
+
+
+def test_while_drive_is_newer_nothing_is_pushed(world, tmp_path, hooks):
+    _connected_with_local(world)
+    _blob(world, tmp_path, profile="0.99")
     uploads = world.uploads
 
     with pytest.raises(drive.DriveError, match="newer version"):
@@ -427,52 +478,41 @@ def test_while_refused_nothing_is_pushed(world, tmp_path, hooks):
     assert world.uploads == uploads
 
 
+def test_a_push_over_an_archive_with_other_properties_of_the_same_versions_works(world):
+    _connected_with_local(world)
+    world.properties = {"door_profile_version": "0.1", "door_jobs_version": "0.0", "other": "x"}
+    sync.push()
+    assert world.uploads == 2
+
+
 def test_keep_drive_of_a_newer_archive_is_refused(world, tmp_path):
     from door.core import migrations
 
     _connected_with_local(world)
     before = _snapshot(world)
-    _blob(world, tmp_path, profile=99)
-    with pytest.raises(migrations.NewerData):
+    _blob(world, tmp_path, profile="0.99")
+    with pytest.raises(migrations.RefusedData):
         sync.sync_now(keep_drive=True)
     assert _snapshot(world) == before
 
 
-def test_local_data_below_the_recorded_versions_blocks_a_push(world):
-    _connected_with_local(world)
-    drive.update_state(data_versions={"profile": 99, "jobs": 0}, refused_newer=False)
-    uploads = world.uploads
-    with pytest.raises(drive.DriveError, match="newer version"):
-        sync.push()
-    assert world.uploads == uploads
-
-
-def test_once_upgraded_a_pull_clears_the_refusal_and_a_push_works(world, tmp_path, monkeypatch, hooks):
+def test_once_upgraded_a_pull_works_and_a_push_follows(world, tmp_path, monkeypatch, hooks):
     from door.core import migrations
 
     _connected_with_local(world)
-    _blob(world, tmp_path, profile=2)
+    _blob(world, tmp_path, profile="0.2")
     sync.on_acquire("run", world.jobs)
-    assert drive.read_state()["refused_newer"] is True
+    assert drive.read_state()["last_error"] == NEWER_SENTENCE
     sync.drain_notes()
 
     monkeypatch.setattr(migrations, "PROFILE_STEPS", [migrations.Step("a", lambda f: None), migrations.Step("b", lambda f: None)])
     sync.on_acquire("run", world.jobs)
 
     state = drive.read_state()
-    assert state["refused_newer"] is False and "last_error" not in state
-    assert (world.profile / ".data_version").read_text().strip() == "2"
+    assert "last_error" not in state
+    assert (world.profile / ".data_version").read_text().strip() == "0.2"
     (world.jobs / "y.json").write_text("new")
     uploads = world.uploads
     sync.on_release("run", world.jobs)
     assert world.uploads == uploads + 1
-
-
-def test_a_good_push_records_the_local_versions(world):
-    from door.core import migrations
-
-    _seed(world)
-    migrations.write_version(world.profile, 1)
-    sync.push()
-    assert drive.read_state()["data_versions"] == {"profile": 1, "jobs": None}
-    assert drive.read_state()["refused_newer"] is False
+    assert world.properties["door_profile_version"] == "0.2"

@@ -1,26 +1,36 @@
 """Upgrading a user's data between releases (#56).
 
-Each of `profile/` and `jobs/` has its own data version, a plain integer in `<folder>/.data_version`
-(a file of its own: `config.json` is edited by hand and validated strictly). A folder's current version is the
-number of steps it has; a release adds a step only when the data it writes differs from the last release's
-(the `data-migrator` agent writes it, at release time). v0.1.0's data has no file: version 0.
+Each of `profile/` and `jobs/` has its own data version in `<folder>/.data_version` (a file of its own: `config.json`
+is edited by hand and validated strictly), written `<major>.<n>`, e.g. `0.1`. `<major>` is the app's major version
+(`door.version.VERSION`, read at call time); `<n>` is the number of steps applied within that major, so a folder's
+current version is `<app major>.<number of steps>`. A release adds a step only when the data it writes differs from
+the last release's (the `data-migrator` agent writes it, at release time). v0.1.0 wrote no file: a folder with data
+and no file is `0.0`. Anything else in the file is garbled (`DataVersionError`), never read as 0.
 
-A step is a function of the folder that moves it from version N to N+1. Every step is idempotent: a missing file
-is no proof of old data (a folder made on the fly, or by a build from `main`, has none), so a step run on data
-already in the new shape changes nothing. Steps are never deleted: a user who skips releases gets every one in turn.
+Across a major version nothing is upgraded: data of an older major is refused ("old_major"), data of a later major
+or of more steps than this build has is refused ("newer"). A release that bumps the major empties `PROFILE_STEPS` and
+`JOBS_STEPS` (the steps of the old major are dropped with it) and writes no step for the bump.
+
+The file is authoritative: a folder this build creates is stamped with the current version at once (`ensure_folder`,
+called where a folder is made: `ledger_lock` for `jobs/`, the writers of `profile/`), so a folder with data and no
+file can only be v0.1.0's. A step is a function of the folder that moves it from version N to N+1 and may assume the
+data is in the shape of version N. Steps are never deleted within a major: a user who skips releases gets every one
+in turn.
 
 `upgrade_all` runs at the start of the MCP server and the CLI, under the `jobs/` ledger lock (read after taking it, so
 a second process finds the work done): the folder is copied to `backups/upgrade-<folder>-<from>-<to>-<time>/`, the
 steps run, the version is written after the last. A failing step restores the folder from the backup and leaves the
-version; newer data (version above ours) is never written to. Either leaves a `status()` the tools answer with.
-An import or a Drive pull refuses a newer archive (`refuse_newer`) before it changes anything and runs `upgrade_all`
-right after the swap.
+version; refused data (newer, older major) is never written to. Either leaves a `status()` the tools answer with.
+An import or a Drive pull refuses such an archive (`refuse`, raising `RefusedData`) before it changes anything and
+runs `upgrade_all` right after the swap. Google Drive keeps the two versions on the archive file itself
+(`appProperties`), so a pull or push can refuse without downloading (`core/sync.py`).
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import time
 from dataclasses import dataclass
@@ -28,6 +38,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
+from door import version as app_version
 from door.core import lock as lock_mod
 from door.core import problem_log, workspace
 
@@ -40,20 +51,63 @@ _LOCK_FILES = (".lock", ".lock.json", ".progress.json")
 FAILED = "Your data could not be upgraded to this version: {step}. Nothing was changed. Send a report from Settings."
 NEWER = "This data was written by a newer version of The other door. Install the latest version."
 ARCHIVE_NEWER = "This archive was written by a newer version of The other door. Install the latest version."
+OLD_MAJOR = "This data was written by The other door {data}.x. Version {app} cannot open it: keep using {data}.x, or start a new profile."
 
 
 class DataVersionError(ValueError):
-    """A `.data_version` that is not a non-negative integer."""
+    """A `.data_version` that is not `<major>.<n>`."""
 
 
-class NewerData(ValueError):
-    """An archive (import or Google Drive) whose data version is above this build's, or unreadable.
+@dataclass(frozen=True, order=True)
+class Version:
+    """A folder's data version: the app's major and the steps applied within it."""
 
-    ``versions`` is ``{"profile": int | None, "jobs": int | None}`` as the archive named them.
+    major: int
+    n: int
+
+    @classmethod
+    def parse(cls, text: str) -> "Version":
+        """Read ``"<major>.<n>"`` strictly; ValueError for anything else."""
+        match = re.fullmatch(r"([0-9]+)\.([0-9]+)", text.strip()) if text.isascii() else None
+        if not match:
+            raise ValueError(f"{text!r} is not a data version")
+        return cls(int(match.group(1)), int(match.group(2)))
+
+    def __str__(self) -> str:
+        return f"{self.major}.{self.n}"
+
+
+UNVERSIONED = Version(0, 0)  # a folder with data and no file: v0.1.0's
+
+
+def app_major() -> int:
+    return int(app_version.VERSION.split(".")[0])
+
+
+def compare(have: Version, want: Version) -> str:
+    """``"current"``, ``"upgrade"`` (have is behind within the major), ``"newer"`` or ``"old_major"``."""
+    if have.major < want.major:
+        return "old_major"
+    if have.major > want.major or have.n > want.n:
+        return "newer"
+    return "upgrade" if have.n < want.n else "current"
+
+
+def refusal_message(state: str, have: Version, want: Version, *, archive: bool = False) -> str:
+    if state == "old_major":
+        return OLD_MAJOR.format(data=have.major, app=want.major)
+    return ARCHIVE_NEWER if archive else NEWER
+
+
+class RefusedData(ValueError):
+    """An archive (import or Google Drive) this build cannot open: ``state`` is "newer" or "old_major".
+
+    ``versions`` is ``{"profile": Version | None, "jobs": Version | None}`` as the archive named them (None: unknown).
     """
 
-    def __init__(self, versions: dict, message: str = ARCHIVE_NEWER):
+    def __init__(self, state: str, versions: dict, message: str):
         super().__init__(message)
+        self.state = state
         self.versions = versions
 
 
@@ -137,19 +191,19 @@ PROFILE_STEPS: list[Step] = [Step("templates come from the code", _templates_fro
 JOBS_STEPS: list[Step] = []
 
 
-def current(folder: str) -> int:
+def current(folder: str) -> Version:
     """The version of ``"profile"`` or ``"jobs"`` this build writes."""
-    return len({"profile": PROFILE_STEPS, "jobs": JOBS_STEPS}[folder])
+    return Version(app_major(), len({"profile": PROFILE_STEPS, "jobs": JOBS_STEPS}[folder]))
 
 
 # --------------------------------------------------------------------------- #
 # Versions
 # --------------------------------------------------------------------------- #
-def read_version(folder: Path) -> int | None:
-    """The folder's data version, None when it has no `.data_version` (v0.1.0's data, or a folder made on the fly).
+def read_version(folder: Path) -> Version | None:
+    """The folder's data version, None when it has no `.data_version` (v0.1.0's data: `UNVERSIONED`).
 
     Raises:
-        DataVersionError: the file is there but is not a non-negative integer (never read as 0).
+        DataVersionError: the file is there but is not `<major>.<n>` (never read as 0.0).
     """
     try:
         text = (Path(folder) / VERSION_FILE).read_text(encoding="utf-8")
@@ -157,21 +211,26 @@ def read_version(folder: Path) -> int | None:
         return None
     except OSError as exc:
         raise DataVersionError(f"cannot read {Path(folder) / VERSION_FILE} ({exc})") from None
-    text = text.strip()
-    if not text.isascii() or not text.isdigit():
-        raise DataVersionError(f"{Path(folder) / VERSION_FILE} holds {text!r}, not a version number")
-    return int(text)
+    try:
+        return Version.parse(text)
+    except ValueError:
+        raise DataVersionError(f"{Path(folder) / VERSION_FILE} holds {text.strip()!r}, not a data version") from None
 
 
-def refuse_newer(versions: dict) -> None:
-    """Raise `NewerData` when the archive's version of either folder is above this build's (None = no file: fine)."""
+def refuse(versions: dict) -> None:
+    """Raise `RefusedData` when the archive's version of either folder is newer than this build's or of an older major
+    (None = unknown: fine)."""
     for folder in ("profile", "jobs"):
-        version = versions.get(folder)
-        if version is not None and version > current(folder):
-            raise NewerData(versions)
+        have = versions.get(folder)
+        if have is None:
+            continue
+        want = current(folder)
+        state = compare(have, want)
+        if state in ("newer", "old_major"):
+            raise RefusedData(state, versions, refusal_message(state, have, want, archive=True))
 
 
-def write_version(folder: Path, version: int) -> None:
+def write_version(folder: Path, version: Version) -> None:
     Path(folder).mkdir(parents=True, exist_ok=True)
     path = Path(folder) / VERSION_FILE
     tmp = path.with_name(path.name + ".tmp")
@@ -179,10 +238,15 @@ def write_version(folder: Path, version: int) -> None:
     tmp.replace(path)
 
 
-def stamp_new(folder: Path, name: str = "profile") -> None:
-    """Mark a folder just created by this build (``name``: "profile" or "jobs") as at its current version."""
+def ensure_folder(folder: Path, name: str) -> None:
+    """Make *folder* (``name``: "profile" or "jobs") if it is missing and stamp it with the current version when it
+    holds no data yet (a missing folder, or one with only lock files): a folder this build creates carries its
+    version from the first file. A folder with data and no file is v0.1.0's and is left for `upgrade_all`."""
     folder = Path(folder)
-    if read_version(folder) is None:
+    if (folder / VERSION_FILE).exists():
+        return
+    folder.mkdir(parents=True, exist_ok=True)
+    if all(child.name in _LOCK_FILES for child in folder.iterdir()):
         write_version(folder, current(name))
 
 
@@ -194,7 +258,7 @@ def _skip_locks(root: Path):
     return lambda directory, names: [n for n in names if Path(directory) == root and n in _LOCK_FILES]
 
 
-def _backup(folder: Path, backups_dir: Path, label: str, source: int, target: int) -> Path:
+def _backup(folder: Path, backups_dir: Path, label: str, source: Version, target: Version) -> Path:
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     dest = backups_dir / f"{BACKUP_PREFIX}{label}-{source}-{target}-{stamp}"
     n = 1
@@ -244,22 +308,23 @@ class _StepFailed(Exception):
 
 
 def upgrade_folder(folder: Path, steps: list[Step], *, backups_dir: Path, label: str) -> bool:
-    """Bring *folder* to ``len(steps)``: back it up, run the missing steps in order, write the version.
+    """Bring *folder* to ``<app major>.<len(steps)>``: back it up, run the missing steps in order, write the version.
 
-    The caller holds the lock and has checked the version is not newer. Returns whether a step ran.
+    The caller holds the lock and has checked the version is neither newer nor of an older major.
+    Returns whether a step ran.
 
     Raises:
         _StepFailed: a step raised; the folder was restored from the backup and the version left as it was.
     """
     folder = Path(folder)
-    have = read_version(folder) or 0
-    want = len(steps)
-    if have >= want:
+    have = read_version(folder) or UNVERSIONED
+    want = Version(app_major(), len(steps))
+    if compare(have, want) != "upgrade":
         return False
     backup = _backup(folder, Path(backups_dir), label, have, want)
     ran = ""
     try:
-        for step in steps[have:]:
+        for step in steps[have.n:]:
             ran = step.name
             step.run(folder)
         ran = f"writing {VERSION_FILE}"
@@ -274,7 +339,7 @@ def upgrade_folder(folder: Path, steps: list[Step], *, backups_dir: Path, label:
     return True
 
 
-# What the last `upgrade_all` found: None, or {"state": "failed"|"newer"|"busy", "message": str}.
+# What the last `upgrade_all` found: None, or {"state": "failed"|"newer"|"old_major"|"busy", "message": str}.
 _state: dict | None = None
 
 
@@ -294,23 +359,27 @@ def _failed(step: str) -> dict:
 
 
 def _classify(folders, steps_of) -> dict | None:
-    """Read each folder's version without the lock: a refusal (newer, garbled) or None."""
+    """Read each folder's version without the lock: a refusal (newer, older major, garbled) or None."""
     for name, folder in folders:
         if not folder.is_dir():
             continue
         try:
-            version = read_version(folder)
+            have = read_version(folder)
         except DataVersionError as exc:
             problem_log.failure("upgrade", str(exc))
             return _failed(f"reading {name}/{VERSION_FILE}")
-        if version is not None and version > len(steps_of[name]):
-            return {"state": "newer", "message": NEWER}
+        want = Version(app_major(), len(steps_of[name]))
+        state = compare(have or UNVERSIONED, want)
+        if state in ("newer", "old_major"):
+            return {"state": state, "message": refusal_message(state, have or UNVERSIONED, want)}
     return None
 
 
 def _behind(folders, steps_of) -> bool:
     return any(
-        folder.is_dir() and (read_version(folder) or 0) < len(steps_of[name]) for name, folder in folders
+        folder.is_dir()
+        and compare(read_version(folder) or UNVERSIONED, Version(app_major(), len(steps_of[name]))) == "upgrade"
+        for name, folder in folders
     )
 
 
@@ -324,7 +393,7 @@ def upgrade_all(
 ) -> dict | None:
     """Upgrade `profile/` then `jobs/` to this build's versions; returns `status()`.
 
-    A folder that does not exist is left alone. Newer or garbled data is refused and nothing is written. Called again
+    A folder that does not exist is left alone. Newer, older-major or garbled data is refused and nothing is written. Called again
     it is cheap when the data is current (two small file reads), and retries a "busy" state.
     """
     profile_dir = Path(profile_dir if profile_dir is not None else workspace.PROFILE_DIR)

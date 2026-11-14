@@ -440,41 +440,51 @@ All state is local: `jobs/` in the checkout (gitignored) holds every ledger, pos
 
 On `main` the rule is no backward compatibility: a renamed or removed key is changed everywhere, and the maintainer's own data is fixed by hand. A release is different. A tester's `profile/` and `jobs/` written by the previous release must open in the new one with no hand edit, and data written by a newer release must never be changed. `src/door/core/migrations.py` does both; [Your data](data.md#upgrading-your-data-between-releases) is what a user reads.
 
-**Two versions, one per folder.** `profile/.data_version` and `jobs/.data_version` each hold a plain integer. It is a file of its own, not a key in `config.json`, which `Profile` validates strictly (`extra="forbid"`). There are two versions because the folders travel apart:
+**Two versions, one per folder.** `profile/.data_version` and `jobs/.data_version` each hold `<major>.<n>`, e.g. `0.1`: the app's major version (`door.version.VERSION`, read at call time) and the number of steps applied within that major. Anything else in the file is garbled. It is a file of its own, not a key in `config.json`, which `Profile` validates strictly (`extra="forbid"`). There are two versions because the folders travel apart:
 - `jobs/` is created on the first run and can be deleted to start over;
 - `profile/` can be copied alone.
 
 One shared number would describe a pair that can split up: a fresh `jobs/` would inherit an old version, or a deleted one would take the profile's version with it.
 
-**Steps.** `PROFILE_STEPS` and `JOBS_STEPS` are ordered lists of `Step(name, run)`. `run(folder)` moves that one folder from version N to N+1 and touches nothing outside it, and a folder's current version is the length of its list (`current(folder)`). A change to both folders is two steps released together. The rules for a step:
-- **Idempotent.** A missing version file is read as 0, but it is no proof of old data: many writers create folders on the fly, and a folder made from `main` has none. So a step run on data already in the new shape must change nothing; check for the old shape before touching anything.
+**The file is authoritative.** A folder this build creates is stamped with the current version by `migrations.ensure_folder`, called where a folder is made rather than at every `mkdir`: `ledger_lock` for `jobs/` (every `jobs/` writer takes it), and for `profile/` `init`, `save_cv`, `draft_cv`, `save_photo`, the story bank's `save`, `companies.save` and the import. It stamps only a folder that is missing or holds no data. So a folder with data and no file can only be v0.1.0's (which wrote none) and reads as `0.0`.
+
+**Across a major version nothing is upgraded.** Compared with `current(folder)` (the app's major and the number of steps):
+- same major, fewer steps: **upgrade**, below;
+- same major and more steps, or a later major: **newer**, refused ("install the latest version");
+- an earlier major: **old_major**, refused: "This data was written by The other door 0.x. Version 1 cannot open it: keep using 0.x, or start a new profile." It is handled everywhere `newer` is (start, import, Drive, the app's sidebar line).
+
+A release that bumps the major empties `PROFILE_STEPS` and `JOBS_STEPS`; the `data-migrator` writes no step for a bump.
+
+**Steps.** `PROFILE_STEPS` and `JOBS_STEPS` are ordered lists of `Step(name, run)`. `run(folder)` moves that one folder from version N to N+1 and touches nothing outside it, and a folder's current version is the app's major and the length of its list (`current(folder)`). A change to both folders is two steps released together. The rules for a step:
+- **No idempotence needed.** Because every folder is stamped on creation, a step runs only on data that is at its version N, never on data already in the new shape.
 - **Only between releases.** A step goes from the shape the last release wrote to the shape this release writes. A shape that lived only on `main` between two tags never gets one.
 - **Append only.** A released step is never edited or deleted: a user who skips releases gets every step in turn.
 - **`name` is in a user's words.** It appears in the error line and the release notes.
 
 **The runner.** `upgrade_all(profile_dir, jobs_dir, backups_dir)` runs at the start of the CLI (`cli._DoorGroup`) and of the MCP server (`mcp_server.main`), before anything reads the data. It works in four stages:
-1. **Classify without the lock.** It reads both versions. A garbled one, or one above `current`, is refused before anything is written. If neither folder is behind, it returns at once (two small reads).
+1. **Classify without the lock.** It reads both versions. A garbled one, one above `current` or one of an older major is refused before anything is written. If neither folder is behind, it returns at once (two small reads).
 2. **Upgrade under `ledger_lock(jobs_dir, "upgrade")`.** It reads the versions again once the lock is held, so a second process starting at the same time (the app and Claude Code) finds the work done. `upgrade` is a no-sync purpose, so taking this lock never pulls from Drive. If a run holds the lock, it waits `_LOCK_WAIT_S` and then answers "busy"; the MCP server retries on the next tool call.
 3. **Per folder, `profile/` then `jobs/`.**
    - `upgrade_folder` copies the folder to `backups/upgrade-<folder>-<from>-<to>-<time>/`, runs the missing steps in order, and writes the new version after the last one.
    - Only the two newest upgrade backups are kept (`KEEP_BACKUPS`); an import's backups are never pruned.
    - A step that raises makes it restore the folder from that backup and leave the version as it was.
-   - A folder that does not exist is left alone. `stamp_new` writes the current version into a folder this build has just created.
-4. **The outcome is `status()`.** It is `None`, or `{"state": "failed" | "newer" | "busy", "message"}`, with one line in the problem log. While it is not `None`:
+   - A folder that does not exist is left alone.
+4. **The outcome is `status()`.** It is `None`, or `{"state": "failed" | "newer" | "old_major" | "busy", "message"}`, with one line in the problem log. While it is not `None`:
    - every tool answers its `message` as `{"error"}`, except `report_problem` and `doctor` (`mcp_server._DATA_OPEN_TOOLS`), so the user can still send a report;
    - every CLI command except `doctor`, `serve` and `data report` refuses;
    - the app shows the message as a line at the sidebar's foot that opens Report a problem.
 
 **Data from outside: import and Drive.**
-- **Import.** `archive._import_core` reads the archive's two version members straight from the tar (`_read_versions`). `migrations.refuse_newer` raises `NewerData` for a version above `current` or a garbled one; this happens before a staging folder exists, so a refused import writes nothing. An archive that is newer in only one folder is refused whole. After the swap, `upgrade_all` runs on the imported folders, nested in the import's lock. A failed step becomes one of the import's `warnings` and leaves the data as imported.
-- **Drive pull.** A pull goes through the same import. `sync.on_acquire` turns `NewerData` into a single note ("Google Drive has data from a newer version of The other door; install it on this computer too"). It records `refused_newer`, the archive's `data_versions` and `last_error` in `drive.json`.
-- **Drive push.** `sync._check_push_allowed` refuses a push while `refused_newer` is set, or while a local version is below the `data_versions` last seen on Drive. Drive's metadata has only its own file counter, so the data versions are remembered at every pull and push instead of being downloaded. A good pull or push clears the flag.
+- **Import.** `archive._import_core` reads the archive's two version members straight from the tar (`_read_versions`). `migrations.refuse` raises `RefusedData` (with `.state`, "newer" or "old_major", and the message) for a version above `current`, of an older major, or garbled; this happens before a staging folder exists, so a refused import writes nothing. An archive refused in only one folder is refused whole. After the swap, `upgrade_all` runs on the imported folders, nested in the import's lock. A failed step becomes one of the import's `warnings` and leaves the data as imported.
+- **Drive keeps the versions on the file.** `drive.upload` sets the archive file's `appProperties` (`door_profile_version`, `door_jobs_version`, the local folders' versions as strings), and `remote_meta` returns them as `properties`; nothing about versions is kept in `drive.json`.
+- **Drive pull.** From the file's properties `sync.pull` refuses before it downloads anything: `sync.on_acquire` turns the `RefusedData` into a single note ("Google Drive has data from a newer version of The other door; install it on this computer too", or "Google Drive has data from The other door 0.x, which this version cannot open") and `last_error` in `drive.json`. An archive uploaded by v0.1.0 has no properties: it is downloaded and the import's own check applies.
+- **Drive push.** `sync.push` reads `remote_meta` first and refuses (`NEWER_ON_DRIVE`, nothing uploaded) when Drive's version of a folder is above the local one.
 - **Export** needs nothing special: the version files are ordinary files in the folders and travel with them.
 
 **Who writes the steps.** The `data-migrator` agent (`.claude/agents/data-migrator.md`) does, at release time. `/dev-release` spawns it before the version PR, with the previous tag and the merged PRs. The agent:
 - diffs everything `src/door/core/stored.py` names (each stored file and the model or format describing it, `Profile`, a company entry, a ledger entry, run records, the code-owned templates, …) between the tag and `main`;
 - reads the PRs to tell a rename (move the value) from a removal (drop it) from a new optional field (no step);
-- writes at most one step per folder, test-first: the last release's data goes in, the new shape comes out, and running the step again changes nothing;
+- writes at most one step per folder, test-first: the last release's data goes in, the new shape comes out; for a release that bumps the major it writes none and empties the step lists;
 - returns a PR, or "no step needed" with what it checked, item by item.
 
 Its user-facing line goes into the release notes. `tests/core/test_stored_unit.py` fails when a writer stores a file the inventory does not name, so the diff never misses one. #57 adds the release gate: each release's saved data, written by that release's own code, must open in the new build.

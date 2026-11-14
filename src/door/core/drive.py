@@ -312,7 +312,7 @@ def _api(method: str, path: str, **kwargs) -> requests.Response:
 
 # --------------------------------------------------------------------------- files
 def _find(query: str) -> dict | None:
-    resp = _check(_api("GET", "/drive/v3/files", params={"q": query, "fields": "files(id,md5Checksum)", "pageSize": 1}), "lookup")
+    resp = _check(_api("GET", "/drive/v3/files", params={"q": query, "fields": "files(id,md5Checksum,appProperties)", "pageSize": 1}), "lookup")
     files = resp.json().get("files") or []
     return files[0] if files else None
 
@@ -323,7 +323,9 @@ def _folder_id() -> str | None:
 
 
 def remote_meta() -> dict | None:
-    """``{"id", "version"}`` of the archive on Drive, or None when it is not there.
+    """``{"id", "version", "properties"}`` of the archive on Drive, or None when it is not there.
+
+    ``properties`` is the file's ``appProperties`` (``{}`` when it has none): the data versions `upload` put there.
 
     The version is the content's ``md5Checksum``: Drive's own ``version`` counter also moves
     on server-side changes right after an upload, which would read as "changed elsewhere".
@@ -331,12 +333,12 @@ def remote_meta() -> dict | None:
     state = read_state() or {}
     file_id = state.get("file_id")
     if file_id:
-        resp = _api("GET", f"/drive/v3/files/{file_id}", params={"fields": "id,md5Checksum,trashed"})
+        resp = _api("GET", f"/drive/v3/files/{file_id}", params={"fields": "id,md5Checksum,trashed,appProperties"})
         if resp.status_code != 404:
             _check(resp, "lookup")
             body = resp.json()
             if not body.get("trashed"):
-                return {"id": body["id"], "version": body["md5Checksum"]}
+                return {"id": body["id"], "version": body["md5Checksum"], "properties": body.get("appProperties") or {}}
         update_state(file_id=None)
     folder = _folder_id()
     if folder is None:
@@ -345,7 +347,7 @@ def remote_meta() -> dict | None:
     if found is None:
         return None
     update_state(file_id=found["id"])
-    return {"id": found["id"], "version": found["md5Checksum"]}
+    return {"id": found["id"], "version": found["md5Checksum"], "properties": found.get("appProperties") or {}}
 
 
 def download(dest: Path) -> None:
@@ -357,17 +359,32 @@ def download(dest: Path) -> None:
     Path(dest).write_bytes(resp.content)
 
 
-def upload(src: Path) -> str:
-    """Put `src` on Drive as the archive (creating the folder and file on first use); return its new version."""
+def _multipart(head: dict, content: bytes) -> tuple[str, bytes]:
+    """A ``multipart/related`` body: the file's metadata, then its content; returns (Content-Type, body)."""
+    boundary = secrets.token_hex(16)
+    body = (
+        f"--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{json.dumps(head)}\r\n"
+        f"--{boundary}\r\nContent-Type: application/gzip\r\n\r\n"
+    ).encode() + content + f"\r\n--{boundary}--".encode()
+    return f"multipart/related; boundary={boundary}", body
+
+
+def upload(src: Path, properties: dict | None = None) -> str:
+    """Put `src` on Drive as the archive (creating the folder and file on first use); return its new version.
+
+    ``properties`` (strings) are set as the file's ``appProperties``: the data versions, readable without a download.
+    """
     content = Path(src).read_bytes()
     meta = remote_meta()
+    head: dict = {"appProperties": dict(properties)} if properties else {}
     if meta is not None:
+        content_type, body = _multipart(head, content)
         resp = _api(
             "PATCH",
             f"/upload/drive/v3/files/{meta['id']}",
-            params={"uploadType": "media", "fields": "id,md5Checksum"},
-            headers={"Content-Type": "application/gzip"},
-            data=content,
+            params={"uploadType": "multipart", "fields": "id,md5Checksum"},
+            headers={"Content-Type": content_type},
+            data=body,
         )
     else:
         folder = _folder_id()
@@ -377,17 +394,12 @@ def upload(src: Path) -> str:
                 "folder creation",
             )
             folder = made.json()["id"]
-        boundary = secrets.token_hex(16)
-        head = json.dumps({"name": FILE_NAME, "parents": [folder]})
-        body = (
-            f"--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{head}\r\n"
-            f"--{boundary}\r\nContent-Type: application/gzip\r\n\r\n"
-        ).encode() + content + f"\r\n--{boundary}--".encode()
+        content_type, body = _multipart({"name": FILE_NAME, "parents": [folder], **head}, content)
         resp = _api(
             "POST",
             "/upload/drive/v3/files",
             params={"uploadType": "multipart", "fields": "id,md5Checksum"},
-            headers={"Content-Type": f"multipart/related; boundary={boundary}"},
+            headers={"Content-Type": content_type},
             data=body,
         )
     done = _check(resp, "upload").json()

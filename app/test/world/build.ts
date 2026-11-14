@@ -17,7 +17,7 @@ const HERE = __dirname
 /** The world's "now": the server's clock starts here (boot.py) and the window's too (fixtures.ts). */
 export const NOW = '2026-10-26T09:00:00.000Z'
 /** The data version a profile set up by this build carries (`migrations.current("profile")`; a Python test keeps them equal). */
-export const PROFILE_DATA_VERSION = 1
+export const PROFILE_DATA_VERSION = '0.1'
 const NOW_MS = Date.parse(NOW)
 const DAY = 86_400_000
 const iso = (ms: number) => new Date(ms).toISOString()

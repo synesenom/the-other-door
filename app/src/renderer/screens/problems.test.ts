@@ -66,6 +66,11 @@ describe('problems', () => {
     expect(problems({ ...calm, doctor: newer })).toEqual([{ key: 'data', text: 'Install the latest version of The other door', target: 'settings' }])
   })
 
+  it('data of an older major version says it cannot be opened', () => {
+    const old: DoctorReport = { ...signedIn, data: { state: 'old_major', message: 'This data was written by The other door 0.x. Version 1 cannot open it: keep using 0.x, or start a new profile.' } }
+    expect(problems({ ...calm, doctor: old })).toEqual([{ key: 'data', text: 'Your data is from an older version of The other door', target: 'settings' }])
+  })
+
   it('data that is fine, or busy for a moment, says nothing', () => {
     expect(problems({ ...calm, doctor: { ...signedIn, data: { state: 'ok', message: '' } } })).toEqual([])
     expect(problems({ ...calm, doctor: { ...signedIn, data: { state: 'busy', message: 'a run is in progress' } } })).toEqual([])

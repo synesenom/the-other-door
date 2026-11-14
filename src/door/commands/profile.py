@@ -350,7 +350,7 @@ def _save_cv_core(markdown: str) -> dict:
     if not isinstance(markdown, str) or not markdown.strip():
         return {"error": "the CV is empty; nothing was written"}
     profile_dir = Path(workspace.PROFILE_DIR)
-    profile_dir.mkdir(parents=True, exist_ok=True)
+    migrations.ensure_folder(profile_dir, "profile")
     cv_path = profile_dir / "cv.md"
     backup = common._write_with_backup(cv_path, markdown)
     (profile_dir / "cv.draft.md").unlink(missing_ok=True)
@@ -840,6 +840,9 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
         example_dir = workspace.PROFILE_EXAMPLE_DIR
 
     fresh = not (profile_dir / "config.json").exists()
+    migrations.ensure_folder(profile_dir, "profile")
+    if fresh and migrations.read_version(profile_dir) is None:
+        migrations.write_version(profile_dir, migrations.current("profile"))  # no config: not v0.1.0's profile
     copied = _copy_missing_example_files(example_dir, profile_dir)
     base = _load_base_config(profile_dir, example_dir)
     dropped = sorted(_invalid_keys(base) - fields.keys())
@@ -858,8 +861,6 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
     config_path = profile_dir / "config.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(json.dumps(merged, indent=2))
-    if fresh:
-        migrations.stamp_new(profile_dir)  # made by this build: nothing to upgrade
     disclaimers = [
         {"key": s["key"], "text": s["disclaimer"]}
         for s in map(discovery_sources.info, discovery_sources.SOURCES)

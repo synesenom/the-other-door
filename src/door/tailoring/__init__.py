@@ -6,6 +6,8 @@ import os
 import re
 from pathlib import Path
 
+from door.core import migrations
+
 __all__ = ["StoryBank"]
 
 _REQUIRED_FIELDS = ("title", "context", "action", "result", "learning")
@@ -111,7 +113,7 @@ class StoryBank:
             raise ValueError(
                 f"{self._path.name} has content but no readable story; not overwriting it"
             )
-        self._path.parent.mkdir(parents=True, exist_ok=True)
+        migrations.ensure_folder(self._path.parent, "profile")
         tmp_path = self._path.with_suffix(".md.tmp")
         try:
             content = self._serialize()

@@ -555,7 +555,7 @@ def test_init_partial_profile_dir_copies_missing_files_only(init_env, prompts):
 
     for name in ("cv.template.tex", "cover-letter.template.tex", "fonts"):
         assert not (init_env.profile_dir / name).exists()  # the templates and fonts come from the code (#56)
-    assert (init_env.profile_dir / ".data_version").read_text() == "1\n"  # made by this build: nothing to upgrade
+    assert (init_env.profile_dir / ".data_version").read_text() == "0.1\n"  # made by this build: nothing to upgrade
     assert not (init_env.profile_dir / "cv.md").exists()  # no CV yet, not the example's
     assert (state_dir / "mine.json").read_text() == '{"notes": []}'
 
@@ -718,7 +718,7 @@ class _Drive:
         monkeypatch.setattr(drive, "CLIENT_ID", "id")
         monkeypatch.setattr(drive, "CLIENT_SECRET", "secret")
         monkeypatch.setattr(drive, "connect", self.connect)
-        monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {"id": "A", "version": str(self.version)})
+        monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {"id": "A", "version": str(self.version), "properties": {}})
         monkeypatch.setattr(drive, "download", lambda dest: Path(dest).write_bytes(self.blob))
         monkeypatch.setattr(drive, "upload", self.upload)
         self.fail_connect = None
@@ -730,7 +730,7 @@ class _Drive:
         drive.write_state({"refresh_token": "rt", "account": "me@x.org"})
         return {"account": "me@x.org"}
 
-    def upload(self, src):
+    def upload(self, src, properties=None):
         self.blob = Path(src).read_bytes()
         self.version += 1
         return str(self.version)
@@ -817,7 +817,7 @@ def test_a_failed_connect_warns_and_the_wizard_continues(init_env, prompts, fake
 
 
 def test_a_failed_push_at_the_end_only_warns(init_env, prompts, fake_drive, monkeypatch):
-    def down(src):
+    def down(src, properties=None):
         raise drive.DriveOffline("down")
 
     monkeypatch.setattr(drive, "upload", down)

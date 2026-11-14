@@ -49,7 +49,7 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("profile/cv.draft.md", SCRATCH, "draft_cv's proposal, Markdown"),
     Stored("profile/cv.md.bak", SCRATCH, "the CV before the last save_cv"),
     Stored("profile/.enrich_proposals.json", SCRATCH, "enrich's pending proposals"),
-    Stored("profile/.data_version", LEDGER, "door.core.migrations: an integer, the profile's data version"),
+    Stored("profile/.data_version", LEDGER, "door.core.migrations: `<major>.<n>`, the profile's data version"),
     # --- jobs/ ledgers ---
     Stored("jobs/history.json", LEDGER, "door.core.history: {job_id: entry}"),
     Stored("jobs/applications.json", LEDGER, "door.core.tracker: {job_id: {status, updated_at, notes?, materials?, history}}"),
@@ -61,7 +61,7 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("jobs/skill_aliases.json", LEDGER, "door.core.skill_aliases: {variant: canonical | null}"),
     Stored("jobs/salary.json", LEDGER, "door.core.salary"),
     Stored("jobs/agents.json", TRANSIENT, "the tailor agent definition prepare hands to claude -p"),
-    Stored("jobs/.data_version", LEDGER, "door.core.migrations: an integer, the jobs folder's data version"),
+    Stored("jobs/.data_version", LEDGER, "door.core.migrations: `<major>.<n>`, the jobs folder's data version"),
     # --- jobs/ records ---
     Stored("jobs/runs/*.json", RECORD, "a find run: one block per step (door.pipeline.*), see core/runs.py"),
     Stored("jobs/runs/latest.log", RECORD, "one summary line per run"),

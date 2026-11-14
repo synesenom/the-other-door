@@ -18,7 +18,7 @@ import click
 
 from door import i18n
 from door.commands import _common as common
-from door.core import claude_cli, workspace
+from door.core import claude_cli, migrations, workspace
 
 _DEFAULT_MODEL = "sonnet"
 _DRAFT_NAME = "cv.draft.md"
@@ -196,7 +196,7 @@ def _draft_cv_core(
     todos = [str(t) for t in answer.get("todos") or []]
     markdown, todos = _without_skills_todos(markdown, todos)
 
-    profile_dir.mkdir(parents=True, exist_ok=True)
+    migrations.ensure_folder(profile_dir, "profile")
     draft_path = profile_dir / _DRAFT_NAME
     result = {"written": write, "sources": described, "provenance": provenance, "todos": todos, "markdown": markdown}
     if write:

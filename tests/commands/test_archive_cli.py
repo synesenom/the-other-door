@@ -160,7 +160,7 @@ def test_export_without_a_profile_is_an_error(env, tmp_path):
 
 def test_export_works_without_jobs(env, tmp_path):
     result = archive_cmd._export_core(tmp_path / "x.tar.gz", profile_dir=env.profile_dir, jobs_dir=tmp_path / "nojobs")
-    assert not any(n.startswith("jobs/") for n in _names(result["path"]))
+    assert {n for n in _names(result["path"]) if n.startswith("jobs/")} <= {"jobs/", "jobs/.data_version"}  # the lock stamps it
 
 
 def test_export_holds_the_ledger_lock(env, monkeypatch):
@@ -483,11 +483,11 @@ def test_export_leaves_the_usage_log_out(env):
 class _FakeDrive:
     def __init__(self, monkeypatch):
         self.blob, self.version, self.uploads = None, 0, 0
-        monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {"id": "A", "version": str(self.version)})
+        monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {"id": "A", "version": str(self.version), "properties": {}})
         monkeypatch.setattr(drive, "download", lambda dest: Path(dest).write_bytes(self.blob))
         monkeypatch.setattr(drive, "upload", self._upload)
 
-    def _upload(self, src):
+    def _upload(self, src, properties=None):
         self.blob = Path(src).read_bytes()
         self.version += 1
         self.uploads += 1
@@ -608,7 +608,7 @@ def test_a_conflict_refuses_a_locked_core(env, connected, enable_sync_hooks):
 # --------------------------------------------------------------------------- #
 # data versions (#56)
 # --------------------------------------------------------------------------- #
-def _versioned(env, profile="1", jobs="0"):
+def _versioned(env, profile="0.1", jobs="0.0"):
     (env.profile_dir / ".data_version").write_text(profile)
     (env.jobs_dir / ".data_version").write_text(jobs)
 
@@ -641,9 +641,9 @@ def test_a_newer_archive_is_refused_before_anything_changes(env, member):
     env.dst_jobs.mkdir()
     (env.dst_jobs / "applications.json").write_text("{}")
     before = (_tree_bytes(env.dst_profile), _tree_bytes(env.dst_jobs))
-    archive = _newer_archive(env, **{member: b"99"})
+    archive = _newer_archive(env, **{member: b"0.99"})
 
-    with pytest.raises(migrations.NewerData, match="newer version of The other door"):
+    with pytest.raises(migrations.RefusedData, match="newer version of The other door"):
         _import(env, archive)
 
     assert (_tree_bytes(env.dst_profile), _tree_bytes(env.dst_jobs)) == before
@@ -651,11 +651,28 @@ def test_a_newer_archive_is_refused_before_anything_changes(env, member):
     assert not list(env.dst_profile.parent.glob(".door-import-*"))
 
 
+def test_an_archive_of_an_older_major_is_refused_before_anything_changes(env, monkeypatch):
+    from door import version
+    from door.core import migrations
+
+    monkeypatch.setattr(version, "VERSION", "1.0.0")
+    env.dst_profile.mkdir()
+    (env.dst_profile / "cv.md").write_text("# Old CV")
+    archive = _newer_archive(env, **{"profile/.data_version": b"0.1"})
+
+    with pytest.raises(migrations.RefusedData, match=r"The other door 0\.x") as caught:
+        _import(env, archive)
+
+    assert caught.value.state == "old_major"
+    assert (env.dst_profile / "cv.md").read_text() == "# Old CV"
+    assert not env.backups_dir.exists()
+
+
 def test_a_garbled_version_member_is_refused(env):
     from door.core import migrations
 
     archive = _newer_archive(env, **{"profile/.data_version": b"banana"})
-    with pytest.raises(migrations.NewerData):
+    with pytest.raises(migrations.RefusedData):
         _import(env, archive)
     assert not env.dst_profile.exists()
 
@@ -670,9 +687,9 @@ def test_an_older_archive_is_upgraded_right_after_the_import(env, monkeypatch):
 
     result = _import(env, archive)
 
-    assert (env.dst_profile / ".data_version").read_text().strip() == "1"
+    assert (env.dst_profile / ".data_version").read_text().strip() == "0.1"
     assert (env.dst_profile / "tag.done").is_file()
-    assert any(p.name.startswith("upgrade-profile-0-1") for p in env.backups_dir.iterdir())
+    assert any(p.name.startswith("upgrade-profile-0.0-0.1") for p in env.backups_dir.iterdir())
     assert not any("FAILED" in w or "could not be upgraded" in w for w in result["warnings"])
 
 

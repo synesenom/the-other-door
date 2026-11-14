@@ -183,7 +183,7 @@ def _read_versions(tar: tarfile.TarFile) -> dict:
     """The data versions the archive carries: ``{"profile", "jobs"}``, None for a folder with no `.data_version`.
 
     Raises:
-        migrations.NewerData: a version member that is not a non-negative integer (never read as 0).
+        migrations.RefusedData: a version member that is not `<major>.<n>` (never read as 0.0).
     """
     versions: dict = {}
     for folder in ("profile", "jobs"):
@@ -194,9 +194,10 @@ def _read_versions(tar: tarfile.TarFile) -> dict:
             continue
         handle = tar.extractfile(member) if member.isfile() else None
         text = handle.read(64).decode("utf-8", "replace").strip() if handle else ""
-        if not text.isascii() or not text.isdigit():
-            raise migrations.NewerData(versions)
-        versions[folder] = int(text)
+        try:
+            versions[folder] = migrations.Version.parse(text)
+        except ValueError:
+            raise migrations.RefusedData("newer", versions, migrations.ARCHIVE_NEWER) from None
     return versions
 
 
@@ -289,7 +290,7 @@ def _import_core(
 ) -> dict:
     """Replace `profile_dir` and `jobs_dir` with an archive from `_export_core`. Never prints.
 
-    The archive is checked in full before anything moves (an archive from a newer version of The other door is
+    The archive is checked in full before anything moves (an archive from a newer version of The other door, or of an older major, is
     refused); the data it replaces goes to ``backups_dir/<timestamp>/``. An older archive is upgraded right after
     (`migrations.upgrade_all`; a failed step is one warning, the data stays as imported).
 
@@ -302,7 +303,7 @@ def _import_core(
     Raises:
         FileNotFoundError: the archive doesn't exist.
         ValueError: it isn't an export from The other door, or holds an entry outside profile/ and jobs/.
-        migrations.NewerData (a ValueError): its data version is above this build's, or unreadable.
+        migrations.RefusedData (a ValueError): its data version is above this build's, of an older major, or unreadable.
     """
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
@@ -323,19 +324,22 @@ def _import_core(
         _read_manifest(tar, archive)
         members = _members_to_extract(tar, archive)
         versions = _read_versions(tar)
-        migrations.refuse_newer(versions)
+        migrations.refuse(versions)
         profile_dir.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=".door-import-", dir=profile_dir.parent))
         try:
             tar.extractall(staging, members=members, filter="data")
             _keep_local_keys(staging / "profile" / "config.json", profile_dir / "config.json")
             jobs_dir.mkdir(parents=True, exist_ok=True)
+            if all(c.name in _LOCK_FILES or c.name == migrations.VERSION_FILE for c in jobs_dir.iterdir()):
+                (jobs_dir / migrations.VERSION_FILE).unlink(missing_ok=True)  # only the stamp of an empty folder
             has_old_jobs = any(c.name not in _LOCK_FILES for c in jobs_dir.iterdir())
             backup = _new_backup_dir(backups_dir) if profile_dir.exists() or has_old_jobs else None
             _swap_in(staging, profile_dir, jobs_dir, backup)
         finally:
             shutil.rmtree(staging, ignore_errors=True)
 
+    migrations.ensure_folder(jobs_dir, "jobs")  # an archive with no jobs: the folder is new, so stamped
     warnings = _path_warnings(profile_dir / "config.json")
     upgrade = migrations.upgrade_all(profile_dir, jobs_dir, backups_dir)
     if upgrade:
@@ -348,7 +352,7 @@ def _import_core(
         "jobs_dir": str(jobs_dir),
         "backup_dir": str(backup) if backup else None,
         "warnings": warnings,
-        "data_versions": versions,
+        "data_versions": {k: str(v) if v else None for k, v in versions.items()},
     }
 
 
