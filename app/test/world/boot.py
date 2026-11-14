@@ -288,7 +288,9 @@ def _remote_meta():
         return None
     import hashlib
 
-    return {"id": "world-archive", "version": hashlib.md5(archive.read_bytes()).hexdigest()}
+    props = _DRIVE / "door-data.properties.json"
+    properties = json.loads(props.read_text()) if props.exists() else {}
+    return {"id": "world-archive", "version": hashlib.md5(archive.read_bytes()).hexdigest(), "properties": properties}
 
 
 def _download(dest: Path) -> None:
@@ -297,9 +299,10 @@ def _download(dest: Path) -> None:
     shutil.copyfile(_DRIVE / "door-data.tar.gz", dest)
 
 
-def _upload(src: Path) -> str:
+def _upload(src: Path, properties: dict | None = None) -> str:
     _drive_fail("upload")
     shutil.copyfile(src, _DRIVE / "door-data.tar.gz")
+    (_DRIVE / "door-data.properties.json").write_text(json.dumps(dict(properties or {})))
     return _remote_meta()["version"]
 
 
