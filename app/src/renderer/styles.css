@@ -431,6 +431,7 @@ details.part { display: block; }
 .usage-tone-0 { background: var(--color-accent); }
 .usage-tone-1 { background: var(--color-ink-muted); }
 .usage-tone-2 { background: var(--color-border); }
+.usage-tone-3 { background: var(--color-accent-soft); }
 .usage-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: var(--space-2); }
 .usage-list, .usage-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .usage-list { gap: var(--space-5); }
@@ -439,12 +440,10 @@ details.part { display: block; }
 .usage-row > h3 { margin: 0; font-weight: inherit; }
 .usage-row > span:last-child { font-variant-numeric: tabular-nums; }
 
-/* Analytics, Applications (#66): the funnel, each bar its stage's share of the stage before. */
-.funnel-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.funnel-row { display: grid; grid-template-columns: 9rem 1fr 6rem 3rem; align-items: center; gap: var(--space-4); }
-.funnel-row > :nth-child(n + 3) { text-align: right; white-space: nowrap; }
-.funnel-bar { display: block; height: 8px; border-radius: var(--radius-pill); background: var(--color-border); overflow: hidden; }
-.funnel-bar > span { display: block; height: 100%; min-width: 2px; background: var(--color-accent); border-radius: var(--radius-pill); }
+/* Analytics, Applications (#66, #87): two stacked bars like the cost breakdown's, each with its legend. */
+.split { display: flex; flex-direction: column; gap: var(--space-3); }
+.split > h3, .split > p { margin: 0; font-weight: inherit; }
+.split-legend { gap: var(--space-1); }
 details.part > * + * { margin-top: 28px; }
 details.part > summary + * { margin-top: var(--space-4); }
 .onb-drop-area, .onb-url { position: relative; }

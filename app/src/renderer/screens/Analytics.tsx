@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { statusSummary, type CostBlock, type FunnelStage, type StatusSummary } from '../api'
+import { useEffect, useState, type ReactNode } from 'react'
+import { statusSummary, type CostBlock, type PassRate, type StatusSummary } from '../api'
 import { PageSections } from './PageSections'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
@@ -23,41 +23,91 @@ function tone(i: number): string {
   return `usage-tone-${Math.min(i, 2)}`
 }
 
-const FUNNEL_LABELS: Record<string, string> = {
-  prepared: 'Prepared',
-  applied: 'Applied',
-  interview: 'Interview',
-  offer: 'Offer',
+const pct = (x: number) => `${Math.round(x * 100)}%`
+
+/** One stacked bar and its legend, as the cost breakdown draws them: each segment a share of `total`. */
+function Split({ title, total, parts, children }: { title: string; total: number; parts: { label: string; count: number; tone: string }[]; children?: ReactNode }) {
+  const shown = parts.filter((p) => p.count > 0)
+  return (
+    <div className="split" role="group" aria-label={title}>
+      <h3 className="body">
+        {title}
+        <span className="muted">{` · ${total}`}</span>
+      </h3>
+      <div className="usage-stack" role="img" aria-label={shown.map((p) => `${p.label} ${p.count}`).join(', ')}>
+        {shown.map((p) => (
+          <span key={p.label} className={p.tone} style={{ flexGrow: Math.round(share(p.count, total) * 1000) / 1000 }} />
+        ))}
+      </div>
+      <ul className="usage-list split-legend">
+        {shown.map((p) => (
+          <li key={p.label} className="usage-row small">
+            <span>
+              <span className={`usage-dot ${p.tone}`} aria-hidden="true" />
+              {p.label}
+            </span>
+            <span>{p.count}</span>
+          </li>
+        ))}
+      </ul>
+      {children}
+    </div>
+  )
+}
+
+/** The interview rate: how many answered applications led to an interview, the measure of how well the matches fit. */
+function Rate({ rate }: { rate: PassRate | undefined }) {
+  if (!rate || !rate.decided || rate.rate === null) return <p className="small muted">Your interview rate shows here once employers answer.</p>
+  const range = rate.low !== null && rate.high !== null ? `, likely between ${pct(rate.low)} and ${pct(rate.high)}` : ''
+  return (
+    <div className="part-head">
+      <p className="display-s">{pct(rate.rate)}</p>
+      <p className="small">{`of your answered applications led to an interview (${rate.passed} of ${rate.decided})${range}.`}</p>
+    </div>
+  )
 }
 
 /**
- * The funnel once there are matches (#87): a line with the number of matches (not what was scraped, which includes
- * unrelated jobs), then a bar per stage after them, each its share of the stage before it (how many of the matches
- * were prepared, how many of the prepared were sent), said in figures too: "7 of 9" and the share as a percentage.
+ * Applications (#66, #87): what you did with your matches, apart from how the employers answered. First the
+ * interview rate of the answered applications (how well the matches fit), then two stacked bars like the cost
+ * breakdown, each job in one segment: your matches (applied, prepared, not yet; the ones set aside said apart) and
+ * your applications by where each stands now (`status_summary.standing`).
  */
-function Applications({ funnel }: { funnel: FunnelStage[] }) {
-  const matches = funnel.find((f) => f.stage === 'matches')?.count ?? 0
-  if (matches === 0) return <p className="small muted">Your funnel shows here once you have matches</p>
-  const rows = funnel.filter((f) => f.stage in FUNNEL_LABELS)
+function Applications({ summary }: { summary: StatusSummary }) {
+  const by = summary.pipeline?.above_threshold_by_status ?? { unapplied: 0, prepared: 0, applied: 0, discarded: 0 }
+  const s = summary.standing!
+  const matches = by.unapplied + by.prepared + by.applied
+  const sent = s.offer + s.interviewing + s.waiting + s.rejected + s.ghosted + s.withdrawn
+  if (matches === 0 && sent === 0) return <p className="small muted">Your applications show here once you have matches.</p>
+  const closed = s.rejected + s.ghosted + s.withdrawn
   return (
     <>
-      <p className="small muted">{`${matches} ${matches === 1 ? 'match' : 'matches'}. Each stage against the one before it.`}</p>
-      <ul className="funnel-list">
-        {rows.map((f, i) => {
-          const label = FUNNEL_LABELS[f.stage]
-          const before = i === 0 ? matches : rows[i - 1].count
-          return (
-            <li key={f.stage} className="funnel-row">
-              <span className="body">{label}</span>
-              <span className="funnel-bar" role="img" aria-label={`${label}: ${f.count} of ${before}`}>
-                <span style={{ width: `${Math.round(share(f.count, before) * 1000) / 10}%` }} />
-              </span>
-              <span className="body">{`${f.count} of ${before}`}</span>
-              <span className="body muted">{before > 0 ? `${Math.round(share(f.count, before) * 100)}%` : ''}</span>
-            </li>
-          )
-        })}
-      </ul>
+      <Rate rate={summary.pass_rates?.application} />
+      {matches > 0 && (
+        <Split
+          title="Your matches"
+          total={matches}
+          parts={[
+            { label: 'Applied', count: by.applied, tone: 'usage-tone-0' },
+            { label: 'Prepared, not sent', count: by.prepared, tone: 'usage-tone-3' },
+            { label: 'Not yet', count: by.unapplied, tone: 'usage-tone-2' },
+          ]}
+        >
+          {by.discarded > 0 && <p className="small muted">{`And ${by.discarded} you set aside as not for me.`}</p>}
+        </Split>
+      )}
+      {sent > 0 && (
+        <Split
+          title="Your applications"
+          total={sent}
+          parts={[
+            { label: 'Offer', count: s.offer, tone: 'usage-tone-0' },
+            { label: 'Interviewing', count: s.interviewing, tone: 'usage-tone-3' },
+            { label: 'Waiting for an answer', count: s.waiting, tone: 'usage-tone-1' },
+            { label: s.withdrawn > 0 ? 'Rejected, ghosted or withdrawn' : 'Rejected or ghosted', count: closed, tone: 'usage-tone-2' },
+          ]}
+        />
+      )}
     </>
   )
 }
@@ -139,12 +189,12 @@ export function Analytics() {
     <div className="page-with-aside">
       <div className="settings">
         <h1 className="display-l">Analytics</h1>
-        {summary?.funnel && (
+        {summary?.standing && (
           <section className="part" aria-labelledby="analytics-applications">
             <h2 className="display-s" id="analytics-applications">
               Applications
             </h2>
-            <Applications funnel={summary.funnel} />
+            <Applications summary={summary} />
           </section>
         )}
         <section className="part" aria-labelledby="analytics-usage">
@@ -154,7 +204,7 @@ export function Analytics() {
           {summary && <Usage cost={summary.cost ?? null} />}
         </section>
       </div>
-      <PageSections sections={summary?.funnel ? [APPLICATIONS, USAGE] : [USAGE]} />
+      <PageSections sections={summary?.standing ? [APPLICATIONS, USAGE] : [USAGE]} />
     </div>
   )
 }

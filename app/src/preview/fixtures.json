@@ -1163,16 +1163,16 @@
  "status_summary": {
   "min_score": 0.65,
   "pipeline": {
-   "total": 9,
+   "total": 212,
    "excluded": 0,
-   "applicable": 9,
-   "above_threshold": 9,
-   "unapplied": 5,
+   "applicable": 131,
+   "above_threshold": 34,
+   "unapplied": 15,
    "above_threshold_by_status": {
-    "unapplied": 5,
-    "prepared": 1,
-    "applied": 2,
-    "discarded": 1
+    "unapplied": 15,
+    "prepared": 2,
+    "applied": 7,
+    "discarded": 10
    }
   },
   "ledger": {
@@ -1362,36 +1362,14 @@
     }
    ]
   },
-  "funnel": [
-   {
-    "stage": "postings",
-    "count": 212
-   },
-   {
-    "stage": "applicable",
-    "count": 131
-   },
-   {
-    "stage": "matches",
-    "count": 34
-   },
-   {
-    "stage": "prepared",
-    "count": 9
-   },
-   {
-    "stage": "applied",
-    "count": 7
-   },
-   {
-    "stage": "interview",
-    "count": 3
-   },
-   {
-    "stage": "offer",
-    "count": 1
-   }
-  ]
+  "standing": {
+   "offer": 1,
+   "interviewing": 2,
+   "waiting": 2,
+   "rejected": 1,
+   "ghosted": 1,
+   "withdrawn": 0
+  }
  },
  "list_matches": {
   "min_score": 0.65,

@@ -13,6 +13,7 @@
   --color-on-warning: #1E1A16;
   --color-scrim: rgba(30,26,22,0.4);
   --color-accent-tint: rgba(47,85,200,0.14);
+  --color-accent-soft: #9AA5CC;
   --font-display: "Young Serif", Georgia, serif;
   --font-text: "Figtree", system-ui, sans-serif;
   --text-display-l-size: 40px;
@@ -98,6 +99,7 @@
     --color-warning: #E6CB78;
     --color-scrim: rgba(0,0,0,0.55);
     --color-accent-tint: rgba(134,160,242,0.35);
+    --color-accent-soft: #4D5679;
   }
 }
 
@@ -114,4 +116,5 @@
   --color-warning: #E6CB78;
   --color-scrim: rgba(0,0,0,0.55);
   --color-accent-tint: rgba(134,160,242,0.35);
+  --color-accent-soft: #4D5679;
 }

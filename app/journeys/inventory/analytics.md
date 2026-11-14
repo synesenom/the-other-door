@@ -8,12 +8,12 @@ The screen is read only: one `status_summary` {} call on opening, no action chan
 - Sidebar button "Analytics" opens `heading level 1 "Analytics"`, a list of parts on the right. — ✓ the funnel follows the ledger
 - A failed `status_summary` is said nowhere: the headings of what loaded only. — unit: `app/src/renderer/screens/Analytics.test.tsx` (a failed read shows no error and no section)
 
-## Applications (`region "Applications"`, only when the summary has a `funnel`)
-- Funnel with matches > 0: the line "<n> matches. Each stage against the one before it." (`postings` and `applicable` not shown: what was scraped includes unrelated jobs, #87), then one `img` per stage after the matches, name "<Label>: <n> of <the stage before>" (Prepared against the matches, then Applied, Interview, Offer), each bar that share; each row shows "<n> of <the stage before>" and the share as a percentage (none when the stage before is 0), no table. — ✓ the funnel follows the ledger (Applied 5 of 6, Interview 3 of 5, Offer 1 of 3); unit: `Analytics.test.tsx` (the matches in a line, one bar row per later stage; sizes each bar against the stage before it); preview: `preview.test.tsx` ("9 of 34" and the line)
-- A stage with no label is skipped. — unit: `Analytics.test.tsx` (a stage it has no label for is skipped)
-- Nothing applied yet: the bars, the later ones empty. — unit: `Analytics.test.tsx` (something found but nothing applied)
-- No matches (nothing scraped, or nothing scraped matched): one muted line "Your funnel shows here once you have matches". — unit: `Analytics.test.tsx` (nothing scraped; jobs scraped but none a match); preview: `preview.test.tsx` (empty state)
-- No `funnel` in the summary: no section, no crash. — unit: `Analytics.test.tsx` (a summary without a funnel)
+## Applications (`region "Applications"`, only when the summary has a `standing`)
+- Interview rate (`pass_rates.application` with `decided` > 0): `display-s` "<rate>%" and "of your answered applications led to an interview (<passed> of <decided>), likely between <low>% and <high>%." Before any answer: the muted line "Your interview rate shows here once employers answer." — ✓ the applications follow the ledger (75%, 3 of 4); unit: `Analytics.test.tsx`; preview: `preview.test.tsx`
+- `group "Your matches"` (when there are matches): heading "Your matches · <applied + prepared + unapplied>", `img` named "Applied <n>, Prepared, not sent <n>, Not yet <n>" (parts with 0 left out), a legend row each; "And <n> you set aside as not for me." when any were discarded. — ✓ the same journey (Applied 5, Prepared, not sent 1, Not yet 9); unit: `Analytics.test.tsx`
+- `group "Your applications"` (when any were sent): heading "Your applications · <sent>", `img` named "Offer <n>, Interviewing <n>, Waiting for an answer <n>, Rejected or ghosted <n>" ("Rejected, ghosted or withdrawn" when one was withdrawn), a legend row each. — ✓ the same journey (Offer 1, Interviewing 1, Waiting 1, Rejected or ghosted 2); unit: `Analytics.test.tsx`
+- No matches and nothing sent: one muted line "Your applications show here once you have matches." — unit: `Analytics.test.tsx`; preview: `preview.test.tsx` (empty state)
+- No `standing` in the summary: no section, no crash. — unit: `Analytics.test.tsx`
 
 ## Claude usage (`region "Claude usage"`)
 - Branches (activities, singular, nothing in the window, before any call): — unit: `Analytics.test.tsx`; not covered by a journey, the world's Claude stand-in gives no usage to read

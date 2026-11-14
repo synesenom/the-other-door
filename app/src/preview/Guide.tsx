@@ -152,17 +152,13 @@ export function Guide() {
               <span className="usage-tone-2" style={{ flexGrow: 0.03 }} />
             </div>
           </Row>
-          <Row label="funnel-row">
-            <ul className="funnel-list">
-              <li className="funnel-row">
-                <span className="body">Interview</span>
-                <span className="funnel-bar" role="img" aria-label="Interview: 6 of 12">
-                  <span style={{ width: '50%' }} />
-                </span>
-                <span className="body">6 of 12</span>
-                <span className="body muted">50%</span>
-              </li>
-            </ul>
+          <Row label="usage-tone-3 (the split bars' second segment)">
+            <div className="usage-stack" role="img" aria-label="Offer 1, Interviewing 2, Waiting for an answer 2, Rejected or ghosted 2">
+              <span className="usage-tone-0" style={{ flexGrow: 1 }} />
+              <span className="usage-tone-3" style={{ flexGrow: 2 }} />
+              <span className="usage-tone-1" style={{ flexGrow: 2 }} />
+              <span className="usage-tone-2" style={{ flexGrow: 2 }} />
+            </div>
           </Row>
           <Row label="usage-activity">
             <ul className="usage-list">

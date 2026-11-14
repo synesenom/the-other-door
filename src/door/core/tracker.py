@@ -407,6 +407,29 @@ def application_outcomes(tracker: ApplicationTracker) -> dict[str, int]:
     return counts
 
 
+STANDINGS: tuple = ("offer", "interviewing", "waiting", "rejected", "ghosted", "withdrawn")
+_STANDING_OF = {"offer": "offer", "rejected": "rejected", "ghosted": "ghosted", "discarded": "withdrawn"}
+
+
+def standings(tracker: ApplicationTracker) -> dict[str, int]:
+    """Where each sent application stands now, each counted once (#87).
+
+    By its current status: ``offer``, ``interviewing`` (an interview round),
+    ``rejected``, ``ghosted``, ``withdrawn`` (discarded after it was sent), or
+    ``waiting`` (sent, no answer yet). A job never sent is not counted.
+
+    Returns:
+        ``{standing: count}`` for every :data:`STANDINGS` key.
+    """
+    counts = dict.fromkeys(STANDINGS, 0)
+    for job_id in tracker.job_ids():
+        if not any(is_sent(event.get("status")) for event in tracker.history(job_id)):
+            continue
+        status = tracker.get_status(job_id)
+        counts["interviewing" if interview_stage(status) else _STANDING_OF.get(status, "waiting")] += 1
+    return counts
+
+
 def pass_rate(counts: dict[str, int], z: float = PASS_RATE_Z) -> dict:
     """The pass rate of one stage from its outcome counts, with its binomial error.
 

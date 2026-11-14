@@ -160,16 +160,15 @@ describe('scenes', () => {
     expect(container.querySelector('main')).not.toBeInTheDocument()
   })
 
-  it('analytics shows the funnel, each stage against the one before, from the matches on, and in the empty state no bars', async () => {
+  it('analytics shows the interview rate, your matches and your applications, and in the empty state one line', async () => {
     mount('analytics')
     const part = await screen.findByRole('region', { name: 'Applications' })
-    expect(part).toHaveTextContent('Prepared9 of 3426%')
-    expect(screen.getByRole('img', { name: 'Applied: 7 of 9' })).toBeInTheDocument()
-    expect(part).toHaveTextContent('Applied7 of 978%')
-    expect(within(part).getByText('34 matches. Each stage against the one before it.')).toBeInTheDocument()
+    expect(part).toHaveTextContent('of your answered applications led to an interview (3 of 5), likely between 40% and 77%.')
+    expect(within(part).getByRole('img', { name: 'Applied 7, Prepared, not sent 2, Not yet 15' })).toBeInTheDocument()
+    expect(within(part).getByRole('img', { name: 'Offer 1, Interviewing 2, Waiting for an answer 2, Rejected or ghosted 2' })).toBeInTheDocument()
     cleanup()
     mount('analytics', 'empty')
-    expect(await screen.findByText('Your funnel shows here once you have matches')).toBeInTheDocument()
+    expect(await screen.findByText('Your applications show here once you have matches.')).toBeInTheDocument()
   })
 
   it('posting opens the posting', async () => {
