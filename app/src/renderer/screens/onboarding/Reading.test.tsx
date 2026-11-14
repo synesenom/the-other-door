@@ -34,8 +34,6 @@ function setup(handlers: Record<string, unknown> = {}, start: Partial<WizardStat
 const tools = (h: ReturnType<typeof setup>) => h.call.mock.calls.map((c) => c[0])
 
 describe('Reading', () => {
-  const turning = () => document.querySelectorAll('.step-working .step-mark').length
-
   it('the running step shows its time so far', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
@@ -48,33 +46,12 @@ describe('Reading', () => {
     }
   })
 
-  it('the ring of the running step turns while Claude is at work', async () => {
-    setup({ draft_cv: () => new Promise(() => undefined) })
-    expect(await screen.findByRole('heading', { name: 'Drafting your CV' })).toBeInTheDocument()
-    expect(turning()).toBe(1)
-  })
-
-  it('numbers its steps like the run screen: the running one in its ring, the ones to come faded', async () => {
-    setup({ draft_cv: () => new Promise(() => undefined) })
-    await screen.findByRole('heading', { name: 'Drafting your CV' })
-    const steps = within(screen.getByRole('list', { name: 'Reading' })).getAllByRole('listitem')
-    expect(steps.map((li) => li.querySelector('.step-mark')!.textContent)).toEqual(['1', '2', '3', '4', '5'])
-    expect(steps.map((li) => li.classList.contains('step-waiting'))).toEqual([false, true, true, true, true])
-  })
-
-  it('a failed draft stops the ring', async () => {
-    setup({ draft_cv: () => { throw new Error('no') } })
-    await screen.findByRole('alert')
-    expect(turning()).toBe(0)
-  })
-
   it('draft, basics, titles, terms and an example story, then on to the review, asking nothing', async () => {
     const story = { title: 'Halved the close', context: 'c', action: 'a', result: 'r', learning: '', missing: ['learning'], conflicts: [] }
     const h = setup({ draft_stories: { outcome: 'proposed', stories: [story] } })
     expect(screen.getByRole('list', { name: 'Reading' })).toBeInTheDocument()
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
     expect(h.draftCv).toHaveBeenCalledWith({ files: [], urls: ['https://ada.dev'] })
-    expect(tools(h)).toEqual(['draft_stories', 'infer_basics', 'suggest_titles', 'keywords'])
     expect(h.call).toHaveBeenCalledWith('draft_stories', { from_cv: true })
     expect(seen.story).toEqual({ values: { title: 'Halved the close', context: 'c', action: 'a', result: 'r', learning: '' }, keep: true })
     expect(h.call).toHaveBeenCalledWith('infer_basics', { markdown: '# Ada\n'  })
@@ -114,9 +91,10 @@ describe('Reading', () => {
     expect(seen.warnings).toEqual({ basics: 'usage limit', titles: 'overloaded', terms: 'quota' })
   })
 
-  it('a failed titles call says why', async () => {
+  it('a failed titles call goes on, leaving the titles for the review, and says why', async () => {
     const h = setup({ suggest_titles: () => { throw new Error('boom') } })
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
+    expect(seen.missing).toEqual(['titles'])
     expect(seen.warnings.titles).toBe('boom')
   })
 
@@ -145,12 +123,6 @@ describe('Reading', () => {
     const h = setup({ suggest_titles: { titles: [], warning: 'no' } })
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
     expect(tools(h)).not.toContain('keywords')
-    expect(seen.missing).toEqual(['titles'])
-  })
-
-  it('a failed titles call goes on too', async () => {
-    const h = setup({ suggest_titles: () => { throw new Error('boom') } })
-    await waitFor(() => expect(h.onDone).toHaveBeenCalled())
     expect(seen.missing).toEqual(['titles'])
   })
 

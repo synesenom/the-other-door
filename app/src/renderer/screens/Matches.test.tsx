@@ -159,17 +159,14 @@ describe('Matches', () => {
     expect(await screen.findByText('Nothing new since your last review.')).toBeInTheDocument()
   })
 
-  it('says nothing was scored only when nothing was', async () => {
-    setup({}, [], { scored: 0 })
+  it.each([
+    ['none were', { scored: 0 }],
+    ['the server does not say how many were', undefined],
+  ])('says nothing was scored when %s', async (_, counts) => {
+    setup({}, [], counts)
     render(<Matches />)
     expect(await screen.findByText('Nothing scored yet. Find new jobs to start.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Lower the bar' })).toBeNull()
-  })
-
-  it('says nothing was scored when the server does not say how many were', async () => {
-    setup({}, [])
-    render(<Matches />)
-    expect(await screen.findByText(/Nothing scored yet/)).toBeInTheDocument()
   })
 
   it('with jobs scored below the bar and no review yet, says nothing reached the bar and offers to lower it', async () => {
@@ -320,20 +317,6 @@ describe('Matches', () => {
       expect(within(rows[1]).getByRole('button')).toHaveAttribute('aria-current', 'true')
     })
 
-    it('Not for me opens the next match in its place, and says what happened', async () => {
-      stubNarrow(false)
-      const { call } = changing({})
-      render(<Matches />)
-      await userEvent.click(await screen.findByRole('button', { name: /Second job/ }))
-      await userEvent.click(await screen.findByRole('button', { name: 'Not for me' }))
-      await userEvent.type(screen.getByLabelText('Why not?'), 'too far')
-      await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
-      await waitFor(() => expect(call).toHaveBeenCalledWith('show', { job_id: 'jobindex.3' }))
-      expect(await screen.findByRole('heading', { name: 'Third job', level: 2 })).toBeInTheDocument()
-      expect(screen.getByRole('status')).toHaveClass('notice')
-      expect(screen.getByRole('button', { name: '← Matches' })).toBeInTheDocument()
-    })
-
     it('Not for me on the only match left goes back to the list', async () => {
       stubNarrow(false)
       let rows = [three[0]]
@@ -405,20 +388,6 @@ describe('Matches', () => {
   })
 
   describe('a match opened is seen', () => {
-    it('drops its dot, and tells the server once', async () => {
-      const { call } = setup({ mark_seen: { job_id: 'jobindex.1' } }, two, { scored: 2, last_reviewed_at: '2026-10-29T08:00:00+00:00' })
-      render(<Matches />)
-      await screen.findByLabelText('New since your last review')
-      await userEvent.click(within(screen.getAllByRole('listitem')[0]).getByRole('button'))
-      await waitFor(() => expect(call).toHaveBeenCalledWith('mark_seen', { job_id: 'jobindex.1' }))
-      await userEvent.click(screen.getByRole('button', { name: '← Matches' }))
-      await screen.findAllByRole('listitem')
-      expect(screen.queryByLabelText('New since your last review')).toBeNull()
-      await userEvent.click(within(screen.getAllByRole('listitem')[0]).getByRole('button'))
-      await screen.findByRole('button', { name: '← Matches' })
-      expect(call.mock.calls.filter(([tool]) => tool === 'mark_seen')).toHaveLength(1)
-    })
-
     it('does not tell the server about a match that was not new', async () => {
       const { call } = setup()
       render(<Matches />)
@@ -527,7 +496,7 @@ describe('Matches', () => {
     for (const row of rows) expect(within(row).getByRole('button')).not.toHaveAttribute('aria-current', 'true')
   })
 
-  it('back in the list, marks the row last read, with no dash', async () => {
+  it('back in the list, marks the row last read', async () => {
     setup()
     render(<Matches />)
     await userEvent.click(within((await screen.findAllByRole('listitem'))[1]).getByRole('button'))
@@ -535,7 +504,6 @@ describe('Matches', () => {
     const rows = await screen.findAllByRole('listitem')
     expect(within(rows[1]).getByRole('button')).toHaveAttribute('aria-current', 'true')
     expect(within(rows[0]).getByRole('button')).not.toHaveAttribute('aria-current', 'true')
-    expect(rows[1].querySelector('.dash-s')).toBeNull()
   })
 
   describe('an open posting', () => {

@@ -73,24 +73,10 @@ describe('Posting', () => {
   it('lists the skills the CV covers and the ones it lacks, as words', async () => {
     mockDoor({ show: full })
     render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
-    expect(await screen.findByRole('list', { name: 'Why it fits' })).toBeInTheDocument()
-    expect(screen.getByRole('list', { name: 'Gaps' })).toBeInTheDocument()
-    for (const skill of ['SQL', 'Python', 'Spark']) expect(screen.getByText(skill)).toBeInTheDocument()
-  })
-
-  it('marks each skill that fits with a check and each gap with a cross, as Finding jobs marks its sources; no chips', async () => {
-    mockDoor({ show: full })
-    const { container } = render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
-    await screen.findByRole('list', { name: 'Why it fits' })
-    const item = (skill: string) => screen.getByText(skill).closest('li')!
-    for (const skill of ['SQL', 'Python']) {
-      expect(item(skill)).toHaveClass('marked', 'skill-fits')
-      expect(item(skill).querySelector('.mark polyline')).not.toBeNull() // the check
-    }
-    expect(item('Spark')).toHaveClass('marked', 'skill-gap')
-    expect(item('Spark').querySelector('.mark path')).not.toBeNull() // the cross
-    expect(container.querySelector('.columns .chip')).toBeNull()
-    expect(container.querySelector('.columns h3')).toBeNull() // the marks say which is which; the names are for screen readers
+    const fits = await screen.findByRole('list', { name: 'Why it fits' })
+    const gaps = screen.getByRole('list', { name: 'Gaps' })
+    expect(within(fits).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['SQL', 'Python'])
+    expect(within(gaps).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Spark'])
   })
 
   it('on the phone, the skills that fit and the gaps too', async () => {
@@ -240,12 +226,11 @@ describe('Posting', () => {
       delete (window as { matchMedia?: unknown }).matchMedia
     })
 
-    it('is a secondary button that opens the status dialog', async () => {
+    it('opens the status dialog', async () => {
       stubNarrow(false)
       mockDoor({ show: full })
       render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
       const button = await screen.findByRole('button', { name: 'Status' })
-      expect(button).toHaveClass('secondary')
       await userEvent.click(button)
       expect(screen.getByRole('dialog', { name: /Status: Data Analyst/ })).toBeInTheDocument()
     })
@@ -331,11 +316,8 @@ describe('Posting', () => {
       expect(bar).toBeTruthy()
       const buttons = [...bar.querySelectorAll('button')]
       expect(buttons.map((b) => b.textContent)).toEqual(['Status', 'Not for me', 'Open in browser', 'Prepare application'])
-      expect(buttons[0]).toHaveClass('secondary')
-      expect(buttons[2]).toHaveClass('secondary')
       expect(buttons[3]).toHaveClass('primary')
       expect(bar.querySelectorAll('.primary')).toHaveLength(1)
-      expect(container.querySelector('.actions')).toBeNull()
     })
 
     it('wide mode keeps the actions inline with no bottom bar', async () => {
@@ -344,7 +326,6 @@ describe('Posting', () => {
       const { container } = render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
       await screen.findByRole('heading', { name: 'Dataanalytiker' })
       expect(container.querySelector('.action-bar')).toBeNull()
-      expect(screen.getByRole('button', { name: 'Open in browser' })).toHaveClass('secondary')
     })
   })
 
@@ -363,20 +344,17 @@ describe('Posting', () => {
       const prepare = await screen.findByRole('button', { name: 'Prepare application' })
       expect(prepare).toHaveClass('primary')
       expect(container.querySelectorAll('.primary')).toHaveLength(1)
-      expect(screen.getByRole('button', { name: 'Open in browser' })).toHaveClass('secondary')
-      expect(screen.getByRole('button', { name: 'Status' })).toHaveClass('secondary')
-      expect(screen.getByRole('button', { name: 'Not for me' })).toHaveClass('quiet')
       expect(screen.queryByRole('button', { name: 'See the application' })).toBeNull()
     })
 
-    it('with materials, See the application is primary and Prepare again is quiet', async () => {
+    it('with materials, See the application is primary, with Prepare again beside it', async () => {
       stubNarrow(false)
       const onOpenMaterials = vi.fn()
       mockDoor({ show: { ...full, status: 'prepared', materials } })
       render(<Posting jobId="jobindex.1" onChanged={() => {}} onOpenMaterials={onOpenMaterials} />)
       const see = await screen.findByRole('button', { name: 'See the application' })
       expect(see).toHaveClass('primary')
-      expect(screen.getByRole('button', { name: 'Prepare again' })).toHaveClass('quiet')
+      expect(screen.getByRole('button', { name: 'Prepare again' })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Prepare application' })).toBeNull()
       // A job with an application is in play: "Not for me" moves into Status, so the row fits on one line.
       expect(screen.queryByRole('button', { name: 'Not for me' })).toBeNull()

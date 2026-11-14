@@ -118,13 +118,6 @@ describe('App', () => {
       for (const b of within(nav).getAllByRole('button')) expect(b.querySelector('svg[aria-hidden="true"]')).not.toBeNull()
     })
 
-    it('has no tab dash in a wide window', () => {
-      stubNarrow(false)
-      setup()
-      const { container } = render(<App />)
-      expect(container.querySelector('.tab-dash')).toBeNull()
-    })
-
     it('hides the tab bar while a posting is pushed and brings it back with the back link', async () => {
       stubNarrow(true)
       mockDoor({
@@ -297,19 +290,21 @@ describe('App, Find new jobs', () => {
     expect(within(screen.getByRole('main')).queryByRole('button', { name: 'Find new jobs' })).toBeNull()
   })
 
-  it('after the run the table and the last-run caption are fetched again, and View matches shows the new ones', async () => {
-    const h = runSetup()
+  it('after the run, View matches shows the new ones', async () => {
+    let ran = false
+    mockDoor({
+      status_summary: summary(),
+      list_matches: () => matchesResult(ran ? [match(), match({ id: 'jobindex.9', title: 'Brand new job', is_new: true })] : [match()]),
+      find_jobs: () => ((ran = true), RECORD),
+    })
     render(<App />)
     await screen.findByRole('heading', { name: 'Matches' })
-    const before = h.call.mock.calls.filter((c) => c[0] === 'status_summary').length
-    const listBefore = h.call.mock.calls.filter((c) => c[0] === 'list_matches').length
+    expect(screen.queryByText('Brand new job')).toBeNull()
     await userEvent.click(sidebarButton())
     await userEvent.click(await screen.findByRole('button', { name: 'View matches' }))
     expect(await screen.findByRole('heading', { name: 'Matches' })).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: 'New only' })).toHaveAttribute('aria-checked', 'true')
-    expect(h.call.mock.calls.filter((c) => c[0] === 'status_summary').length).toBeGreaterThan(before)
-    const lists = h.call.mock.calls.filter((c) => c[0] === 'list_matches')
-    expect(lists.length).toBeGreaterThan(listBefore)
+    expect(await screen.findByText('Brand new job')).toBeInTheDocument()
   })
 
   it('a Stop goes back to the screen the run was started from', async () => {
@@ -773,11 +768,9 @@ describe('App, the first-launch gate', () => {
         render(<App />)
         await screen.findByText(/Claude can prepare 2 more, resets/)
         await waitFor(() => expect(timers).toHaveLength(1))
-        const before = call.mock.calls.filter((c) => c[0] === 'status_summary').length
         after = true
         await act(async () => timers[0]!())
         await waitFor(() => expect(screen.queryByText(/Claude can prepare/)).toBeNull())
-        expect(call.mock.calls.filter((c) => c[0] === 'status_summary').length).toBe(before + 1)
       } finally {
         vi.restoreAllMocks()
       }

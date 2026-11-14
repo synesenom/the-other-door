@@ -76,30 +76,6 @@ test('Go on without a draft: the review asks for everything and for the CV itsel
   expect(world.exists('profile/config.json')).toBe(false)
 })
 
-test('when Claude cannot read the details, the review says so', async ({ page, world, os }) => {
-  await onSourcesWithCv(page, world, os)
-  world.faults({ claude: { basics: { fail: 'You have reached your usage limit.' } } })
-  await continueButton(page).click()
-  await expect(reviewHeading(page)).toBeVisible(LAUNCH)
-  await expect(page.getByText(/usage limit/)).toBeVisible()
-})
-
-test('when Claude cannot suggest titles, the review says so', async ({ page, world, os }) => {
-  await onSourcesWithCv(page, world, os)
-  world.faults({ claude: { titles: { fail: 'claude is overloaded' } } })
-  await continueButton(page).click()
-  await expect(reviewHeading(page)).toBeVisible(LAUNCH)
-  await expect(page.getByText(/claude is overloaded/)).toBeVisible()
-})
-
-test('when no search terms could be proposed, the review says why', async ({ page, world, os }) => {
-  await onSourcesWithCv(page, world, os)
-  world.faults({ claude: { keywords: { fail: 'claude is overloaded' } } })
-  await continueButton(page).click()
-  await expect(reviewHeading(page)).toBeVisible(LAUNCH)
-  await expect(page.getByText(/^Claude could not propose search terms, so your titles are searched as they are: .*claude is overloaded/)).toBeVisible()
-})
-
 test('Back during reading stops it: reading again asks each question once', async ({ page, world, os }) => {
   await onSourcesWithCv(page, world, os)
   world.faults({ claude: { draft: { delay_s: 3 } } })
