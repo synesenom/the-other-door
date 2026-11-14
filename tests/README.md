@@ -15,6 +15,8 @@ tests/
 ├── i18n/                  # src/door/i18n/: every language and country data file, detection
 ├── matching/              # prefilter, dedup, condense, language, prescreen, scorer; fixtures/golden/
 ├── tailoring/
+├── release/               # the release gate (#57): each earlier release's saved data (data_versions/<X.Y.Z>/, written by that release's own code with scripts/save_release_data.py) opens in this build and reads back as it did (marker `release`, `./scripts/run-test.sh --release`), and the offline tests of its comparison and of the sample's coverage
+├── data_versions/         # the saved releases: profile/, jobs/ and expected.json each (fake data, example.com only)
 ├── skills/                # the skills under .claude/: the tools they name exist (offline), and each run by the real model on the test world (`./scripts/run-test.sh --skills`, before a release)
 └── scripts/               # scripts/smoke_report.py (the live-smoke status page), scripts/country_smoke.py (the live country run; its pure parts are tested in tests/scripts/test_country_smoke_unit.py, the live run is not part of the suite)
 ```

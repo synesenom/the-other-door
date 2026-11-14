@@ -113,10 +113,17 @@ class RefusedData(ValueError):
 
 @dataclass(frozen=True)
 class Step:
-    """One move of a folder from version N to N+1; *run* takes the folder and changes nothing outside it."""
+    """One move of a folder from version N to N+1; *run* takes the folder and changes nothing outside it.
+
+    *changes* are the paths into a release's saved `expected.json` (`tests/data_versions/<X.Y.Z>/`, #57) that the step
+    changes on purpose, as globs over the dotted path (``show_profile.config.cv_template``; ``*`` is any text, a list
+    item is ``[index]``; a path covers everything under it). The release gate fails on any other difference between
+    what the old release read back and what this build reads back from the upgraded data, a dropped value included.
+    """
 
     name: str
     run: Callable[[Path], None]
+    changes: tuple[str, ...] = ()
 
 
 # --------------------------------------------------------------------------- #
@@ -187,7 +194,15 @@ def _templates_from_code(profile_dir: Path) -> None:
         config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
 
-PROFILE_STEPS: list[Step] = [Step("templates come from the code", _templates_from_code)]
+PROFILE_STEPS: list[Step] = [
+    Step(
+        "templates come from the code", _templates_from_code,
+        changes=(
+            "show_profile.config.cv_template", "show_profile.config.cover_letter_template",  # the keys named the copies
+            "show_profile.templates.*.path",  # the template read is the code's, not a copy in profile/
+        ),
+    ),
+]
 JOBS_STEPS: list[Step] = []
 
 

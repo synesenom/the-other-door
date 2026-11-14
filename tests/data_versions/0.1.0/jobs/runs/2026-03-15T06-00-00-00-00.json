@@ -1,0 +1,66 @@
+{
+  "started_at": "2026-03-15T06:00:00+00:00",
+  "finished_at": "2026-03-15T06:04:00+00:00",
+  "elapsed_s": 240.0,
+  "steps": [
+    "search",
+    "discover",
+    "follow",
+    "collect",
+    "match"
+  ],
+  "skipped": {},
+  "search": {
+    "sites": [
+      {
+        "site": "jobindex",
+        "outcome": "ok",
+        "count": 12
+      },
+      {
+        "site": "thehub",
+        "outcome": "ok",
+        "count": 3
+      }
+    ],
+    "summary": "15 postings from 2 boards",
+    "elapsed_s": 50.0
+  },
+  "discover": {
+    "summary": "1 employer queued",
+    "elapsed_s": 60.0
+  },
+  "follow": {
+    "summary": "1 followed",
+    "elapsed_s": 20.0
+  },
+  "collect": {
+    "sites": [
+      {
+        "site": "greenhouse",
+        "outcome": "ok",
+        "count": 2
+      }
+    ],
+    "summary": "2 postings",
+    "elapsed_s": 30.0
+  },
+  "match": {
+    "scored": 14,
+    "summary": "14 scored",
+    "elapsed_s": 80.0
+  },
+  "new_above_threshold": [
+    "jobindex.1001",
+    "jobindex.1002"
+  ],
+  "top": [
+    {
+      "id": "jobindex.1001",
+      "score": 0.92,
+      "title": "Financial Controller",
+      "company": "Example Industries A/S"
+    }
+  ],
+  "failures": []
+}

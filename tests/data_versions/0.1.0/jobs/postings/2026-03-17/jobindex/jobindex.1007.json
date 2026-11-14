@@ -1,0 +1,31 @@
+{
+  "id": "jobindex.1007",
+  "title": "Accounting Manager",
+  "company": "Silent Corp",
+  "location": "Copenhagen",
+  "url": "https://example.com/jobs/1007",
+  "description": "Accounting Manager at Silent Corp. You own the month-end close and the forecast. Excel and IFRS required.",
+  "description_condensed": null,
+  "source": "jobindex",
+  "scraped_at": "2026-03-15T09:00:00Z",
+  "platform_id": "1007",
+  "posted_at": "2026-03-14T09:00:00Z",
+  "score": 0.66,
+  "score_reason": "fits",
+  "prescreen_score": null,
+  "scored_by": "haiku",
+  "scored_at": "2026-03-16T09:00:00+00:00",
+  "matching_skills": [
+    "Excel",
+    "IFRS"
+  ],
+  "missing_skills": [
+    "SAP"
+  ],
+  "liveness_status": null,
+  "duplicate_of": null,
+  "apply_type": null,
+  "apply_url": null,
+  "employer": null,
+  "integrity": null
+}

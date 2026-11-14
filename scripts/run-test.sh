@@ -28,7 +28,9 @@
 #
 #   ./scripts/run-test.sh --release  Everything to pass before a release, one after
 #                            the other, with a line each at the end: the offline
-#                            suite, the app's tests with every journey, the skills,
+#                            suite, the release gate (every earlier release's saved
+#                            data, tests/data_versions/, opens and reads back as it
+#                            did), the app's tests with every journey, the skills,
 #                            and the install test when DOOR_INSTALLER names an
 #                            installer (docs/releasing.md). Not the live smoke
 #                            tests: a site's bad day does not block a release.
@@ -76,6 +78,7 @@ if [[ "${1:-}" == "--release" ]]; then
     }
     set +e
     step "offline suite" poetry run pytest -n auto -q
+    step "release gate (earlier releases' data)" poetry run pytest -m release -n 0 -q -p no:cacheprovider tests/release
     step "app (every journey)" app_tests all
     step "skills (real model)" poetry run pytest -m skills -n 0 -q -p no:cacheprovider tests/skills
     if [[ -n "${DOOR_INSTALLER:-}" ]]; then
