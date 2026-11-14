@@ -85,6 +85,16 @@ export function mockDoor(given: Record<string, Handler>) {
   const info = vi.fn(async (): Promise<{ demo: boolean; sandbox?: 'onboard'; home?: string; remote?: boolean }> => ({ demo: false }))
   const showHome = vi.fn(async () => ({ ok: true }))
   const checkUpdate = vi.fn(async (_fresh?: boolean): Promise<UpdateResult | { enabled: false }> => ({ enabled: false }))
+  const installUpdate = vi.fn(async (): Promise<{ ok: boolean }> => ({ ok: true }))
+  const updateListeners: Array<(state: UpdateResult | { enabled: false }) => void> = []
+  const onUpdateState = vi.fn((cb: (state: UpdateResult | { enabled: false }) => void) => {
+    updateListeners.push(cb)
+    return () => {
+      const i = updateListeners.indexOf(cb)
+      if (i >= 0) updateListeners.splice(i, 1)
+    }
+  })
+  const pushUpdate = (state: UpdateResult | { enabled: false }) => updateListeners.forEach((cb) => cb(state))
   // A data move: a test answers the dialogs with mockResolvedValueOnce.
   const exportData = vi.fn(async (): Promise<unknown> => ({ ok: false, canceled: true }))
   const pickArchive = vi.fn(async (): Promise<unknown> => ({ canceled: true }))
@@ -110,8 +120,8 @@ export function mockDoor(given: Record<string, Handler>) {
       }
     }),
   }
-  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, clearCvSources, pickPhoto, savePhoto, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, exportData, pickArchive, importData, reportProblem }
-  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, clearCvSources, pickPhoto, savePhoto, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, exportData, pickArchive, importData, reportProblem }
+  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, clearCvSources, pickPhoto, savePhoto, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, importData, reportProblem }
+  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, clearCvSources, pickPhoto, savePhoto, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, importData, reportProblem }
 }
 
 export const summary = (over: Record<string, unknown> = {}) => ({

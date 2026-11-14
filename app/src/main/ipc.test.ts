@@ -674,7 +674,7 @@ describe('the update check channel', () => {
   it('answers the cached result, without fetching', async () => {
     const updates = { last: vi.fn(() => found), check: vi.fn(async () => found) }
     const handlers = new Map<string, (...a: any[]) => unknown>()
-    registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), updates })
+    registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), updates: updates as any })
     const h = handlers.get(CHANNELS.checkUpdate)!
     expect(await h({})).toEqual(found)
     expect(await h({}, 'yes')).toEqual(found)
@@ -690,6 +690,26 @@ describe('the update check channel', () => {
     handlers.clear()
     registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), updates: updates as any })
     expect(await handlers.get(CHANNELS.checkUpdate)!({})).toEqual({ enabled: false })
+  })
+})
+
+describe('the install update channel', () => {
+  const reg = (updates?: unknown) => {
+    const handlers = new Map<string, (...a: any[]) => unknown>()
+    registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), ...(updates ? { updates: updates as any } : {}) })
+    return handlers
+  }
+  it('names the channels', () => {
+    expect(CHANNELS.installUpdate).toBe('door:install-update')
+    expect(CHANNELS.updateState).toBe('door:update-state')
+  })
+  it('refuses without an updater', async () => {
+    expect(await reg().get(CHANNELS.installUpdate)!({})).toEqual({ ok: false })
+  })
+  it('asks the updater to install, whatever the window sends', async () => {
+    const updates = { last: vi.fn(), check: vi.fn(), install: vi.fn(() => ({ ok: true })) }
+    expect(await reg(updates).get(CHANNELS.installUpdate)!({}, 'x')).toEqual({ ok: true })
+    expect(updates.install).toHaveBeenCalledTimes(1)
   })
 })
 

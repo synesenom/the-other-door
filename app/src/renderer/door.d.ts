@@ -51,6 +51,10 @@ declare global {
       showHome(): Promise<{ ok: boolean }>
       /** Is a newer version out: the answer of the start-up check, or a fresh one when `fresh` (updates.ts). */
       checkUpdate(fresh?: boolean): Promise<UpdateResult | { enabled: false }>
+      /** Restart now to install a downloaded update; `{ ok: false }` when none is downloaded. */
+      installUpdate(): Promise<{ ok: boolean }>
+      /** The update's state as it changes, e.g. a download finishing; returns the way to stop. */
+      onUpdateState(cb: (state: UpdateResult | { enabled: false }) => void): () => void
       stopRun(): Promise<{ ok: boolean; error?: string }>
       showRun(startedAt: string): Promise<{ ok: boolean; error?: string }>
       runBoard(): Promise<RunBoard>

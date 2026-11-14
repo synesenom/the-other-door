@@ -33,7 +33,7 @@ const fontLicenses = {
 
 export default defineConfig({
   // The update feed (#501): set at build time; empty means the app never checks.
-  main: { define: { __UPDATE_FEED__: JSON.stringify(process.env['DOOR_UPDATE_FEED'] ?? '') }, build: { rollupOptions: { input: { index: resolve(__dirname, 'src/main/index.ts') } } } },
+  main: { build: { rollupOptions: { input: { index: resolve(__dirname, 'src/main/index.ts') } } } },
   preload: { build: { rollupOptions: { input: { index: resolve(__dirname, 'src/preload/index.ts') } } } },
   renderer: {
     root: resolve(__dirname, 'src/renderer'),

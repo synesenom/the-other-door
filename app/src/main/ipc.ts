@@ -51,6 +51,10 @@ export const CHANNELS = {
   showHome: 'door:show-home',
   /** Is a newer version out (updates.ts): the cached answer, or a fresh check when asked. */
   checkUpdate: 'door:check-update',
+  /** Restart now to install the downloaded update (updates.ts refuses unless one is downloaded). */
+  installUpdate: 'door:install-update',
+  /** Pushed to the window: the update's state as it changes (index.ts sends it). */
+  updateState: 'door:update-state',
   /** Pushed to the window: the sign-in's state as it changes. */
   claudeLogin: 'door:claude-login',
   /** Pushed to the window when a notification is clicked (notifier.ts sends it). */
@@ -200,7 +204,7 @@ export function registerIpc(
     /** The problem log (problem-log.ts): what the window was refused. */
     problemLog?: ProblemLog
     /** The update check (updates.ts). */
-    updates?: { last(): UpdateResult | null; check(): Promise<UpdateResult> }
+    updates?: { last(): UpdateResult | null; check(): Promise<UpdateResult>; install(): { ok: boolean } }
     /** Signing in to the Claude plan (claude-login.ts). */
     claudeLogin?: Pick<ClaudeLogin, 'start' | 'sendCode' | 'openPage' | 'cancel' | 'state'>
     demoRun?: (args: Record<string, unknown>, onProgress: (p: Progress) => void) => { result: Promise<unknown>; stop: () => void }
@@ -436,6 +440,8 @@ export function registerIpc(
     if (fresh === true) return deps.updates.check()
     return deps.updates.last() ?? { enabled: false }
   })
+
+  ipcMain.handle(CHANNELS.installUpdate, async (): Promise<{ ok: boolean }> => deps.updates?.install() ?? { ok: false })
 
   ipcMain.handle(CHANNELS.info, async () => deps.info ?? { demo: false })
   ipcMain.handle(CHANNELS.currentBoard, async (): Promise<RunBoard> => deps.currentBoard?.() ?? { active: false })

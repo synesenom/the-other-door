@@ -331,6 +331,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     reportProblem: async () => ({ ok: false, canceled: true }),
     showHome: done,
     checkUpdate: async () => ({ enabled: false as const }),
+    installUpdate: async () => ({ ok: false }),
+    onUpdateState: () => () => undefined,
     stopRun: async () => {
       stopPlay?.()
       stopPlay = null

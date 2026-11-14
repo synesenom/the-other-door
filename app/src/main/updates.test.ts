@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { compareVersions, createUpdateChecker, parseLatest } from './updates'
+import { compareVersions, createUpdateChecker, createUpdateManager, doorSignedOf, parseLatest, updateMode, updatesAllowed, RELEASES_LATEST } from './updates'
 
 describe('compareVersions', () => {
   it('orders numerically, ignoring a v prefix', () => {
@@ -96,5 +96,136 @@ describe('createUpdateChecker', () => {
     expect(checker.last()).toBeNull()
     const r = await checker.check()
     expect(checker.last()).toEqual(r)
+  })
+})
+
+describe('updateMode', () => {
+  const base = { platform: 'linux', packaged: true, simulated: false, doorSigned: false, appImage: false }
+  it.each([
+    [{ packaged: false }, 'none'],
+    [{ simulated: true }, 'none'],
+    [{ platform: 'darwin', doorSigned: true }, 'install'],
+    [{ platform: 'darwin', doorSigned: false }, 'link'],
+    [{ platform: 'win32' }, 'install'],
+    [{ platform: 'linux', appImage: true }, 'install'],
+    [{ platform: 'linux', appImage: false }, 'link'],
+  ])('%j is %s', (over, mode) => {
+    expect(updateMode({ ...base, ...over })).toBe(mode)
+  })
+})
+
+describe('updatesAllowed', () => {
+  it('is off only for DOOR_UPDATES=off', () => {
+    expect(updatesAllowed({ DOOR_UPDATES: 'off' })).toBe(false)
+    expect(updatesAllowed({})).toBe(true)
+  })
+})
+
+describe('doorSignedOf', () => {
+  it('is true only for doorSigned: true', () => {
+    expect(doorSignedOf({ doorSigned: true })).toBe(true)
+    expect(doorSignedOf({ doorSigned: 'true' })).toBe(false)
+    expect(doorSignedOf({})).toBe(false)
+    expect(doorSignedOf(null)).toBe(false)
+  })
+})
+
+type Handler = (...args: any[]) => void
+function fakeUpdater(onCheck: (emit: (event: string, ...a: any[]) => void) => Promise<unknown> | void = () => undefined) {
+  const handlers: Record<string, Handler[]> = {}
+  const emit = (event: string, ...a: any[]) => (handlers[event] ?? []).forEach((h) => h(...a))
+  return {
+    autoDownload: false,
+    autoInstallOnAppQuit: false,
+    checkForUpdates: vi.fn(async () => onCheck(emit)),
+    quitAndInstall: vi.fn(),
+    on(event: string, fn: Handler) {
+      ;(handlers[event] ??= []).push(fn)
+    },
+    emit,
+  }
+}
+
+function manager(mode: 'install' | 'link' | 'none', updater = fakeUpdater(), fetch: any = reply({ tag_name: 'v0.1.1', html_url: 'https://github.com/o/r/releases/tag/v0.1.1' })) {
+  const log = vi.fn()
+  const onState = vi.fn()
+  const m = createUpdateManager({ mode, current: '0.1.0', updater, fetch, log, onState })
+  return { m, updater, log, onState, fetch }
+}
+
+describe('createUpdateManager', () => {
+  it('install: downloads in the background and installs when the app quits', () => {
+    const { updater } = manager('install')
+    expect(updater.autoDownload).toBe(true)
+    expect(updater.autoInstallOnAppQuit).toBe(true)
+  })
+
+  it('install: an available update is downloading, then downloaded', async () => {
+    const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
+    const { m, onState } = manager('install', updater)
+    expect(await m.check()).toMatchObject({ enabled: true, mode: 'install', checked: true, available: true, version: '0.1.1', state: 'downloading' })
+    updater.emit('update-downloaded', { version: '0.1.1' })
+    expect(m.last()).toMatchObject({ available: true, version: '0.1.1', state: 'downloaded' })
+    expect(onState).toHaveBeenCalledTimes(2)
+  })
+
+  it('install: nothing new is available:false', async () => {
+    const updater = fakeUpdater((emit) => emit('update-not-available', { version: '0.1.0' }))
+    const { m } = manager('install', updater)
+    expect(await m.check()).toEqual({ enabled: true, mode: 'install', checked: true, current: '0.1.0', available: false })
+  })
+
+  it('install: an error is logged once and unchecked, never thrown', async () => {
+    const updater = fakeUpdater((emit) => emit('error', new Error('boom')))
+    const { m, log } = manager('install', updater)
+    expect(await m.check()).toEqual({ enabled: true, mode: 'install', checked: false, current: '0.1.0' })
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('boom'))
+  })
+
+  it('install: a rejected check is logged and unchecked', async () => {
+    const updater = fakeUpdater(async () => {
+      throw new Error('offline')
+    })
+    const { m, log } = manager('install', updater)
+    expect(await m.check()).toMatchObject({ enabled: true, checked: false })
+    expect(log).toHaveBeenCalledTimes(1)
+  })
+
+  it('install(): restarts only when downloaded', async () => {
+    const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
+    const { m } = manager('install', updater)
+    expect(m.install()).toEqual({ ok: false })
+    await m.check()
+    expect(m.install()).toEqual({ ok: false })
+    updater.emit('update-downloaded', { version: '0.1.1' })
+    expect(m.install()).toEqual({ ok: true })
+    expect(updater.quitAndInstall).toHaveBeenCalledTimes(1)
+  })
+
+  it('a downloaded update is not checked again', async () => {
+    const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
+    const { m } = manager('install', updater)
+    await m.check()
+    updater.emit('update-downloaded', { version: '0.1.1' })
+    await m.check()
+    expect(updater.checkForUpdates).toHaveBeenCalledTimes(1)
+  })
+
+  it('link: the release feed answers and the updater is left alone', async () => {
+    const { m, updater, fetch } = manager('link')
+    expect(await m.check()).toMatchObject({ enabled: true, mode: 'link', checked: true, available: true, version: '0.1.1', state: 'idle', url: 'https://github.com/o/r/releases/tag/v0.1.1' })
+    expect(updater.checkForUpdates).not.toHaveBeenCalled()
+    expect(updater.autoDownload).toBe(false)
+    expect(m.install()).toEqual({ ok: false })
+    expect(RELEASES_LATEST).toMatch(/^https:\/\/api\.github\.com\//)
+    expect(fetch).toBeDefined()
+  })
+
+  it('none: says nothing', async () => {
+    const fetch = vi.fn()
+    const { m, updater } = manager('none', fakeUpdater(), fetch)
+    expect(await m.check()).toEqual({ enabled: false, current: '0.1.0' })
+    expect(fetch).not.toHaveBeenCalled()
+    expect(updater.checkForUpdates).not.toHaveBeenCalled()
   })
 })
