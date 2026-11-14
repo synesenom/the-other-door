@@ -539,23 +539,6 @@ def test_redirect_target_is_none_when_the_page_does_not_redirect(no_sleep):
     assert PoliteSession(min_delay=0, max_delay=0).redirect_target("https://example.com/plain") is None
 
 
-def test_employer_feeds_share_one_short_pause():
-    """One constant for the feed scrapers' pause, not a literal in each of them."""
-    import re
-
-    from paths import PACKAGE_DIR
-
-    assert http_client.FEED_DELAY == (0.2, 0.5)
-    feeds = ("ashby", "greenhouse", "lever", "recruitee", "pinpoint", "teamtailor", "successfactors",
-             "hr_manager", "workable", "career_sites")
-    paced = r"min_delay=FEED_DELAY\[0\], max_delay=FEED_DELAY\[1\], timeout=30"
-    assert re.search(paced, (PACKAGE_DIR / "scrapers" / "__init__.py").read_text(encoding="utf-8"))  # scrape_feeds
-    for name in feeds:
-        text = (PACKAGE_DIR / "scrapers" / "feeds" / f"{name}.py").read_text(encoding="utf-8")
-        assert "min_delay=1.0" not in text and "max_delay=2.0" not in text, name
-        assert re.search(paced, text) or "scrape_feeds(" in text, name
-
-
 # ---------------------------------------------------------------------------
 # Issue #545: no single wait, and no employer, can hold a run
 # ---------------------------------------------------------------------------

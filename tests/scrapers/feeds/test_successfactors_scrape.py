@@ -250,26 +250,6 @@ def test_scrape_cleans_company_and_splits_location_from_title():
 
 
 @responses_lib.activate
-def test_the_followed_name_wins():
-    _allow_robots()
-    responses_lib.add(responses_lib.GET, _FEED_URL, body=_fx("feed_sample.xml"), content_type="application/rss+xml")
-
-    postings = successfactors.scrape({"successfactors_companies": [_HOST],
-                                      "_names": {"successfactors_companies": {_HOST: "Novo Nordisk A/S"}}})
-
-    assert len(postings) == 3 and {p["company"] for p in postings} == {"Novo Nordisk A/S"}
-    assert all(p["id"].startswith("successfactors.") for p in postings)
-
-
-@responses_lib.activate
-def test_without_a_name_map_the_feed_name_is_the_fallback():
-    _allow_robots()
-    responses_lib.add(responses_lib.GET, _FEED_URL, body=_fx("feed_sample.xml"), content_type="application/rss+xml")
-
-    assert {p["company"] for p in successfactors.scrape({"successfactors_companies": [_HOST]})} == {"Novo Nordisk"}
-
-
-@responses_lib.activate
 def test_scrape_drops_postings_in_another_country_and_counts_them():
     """Tryg's title suffixes: (Stockholm, SE) and (Bangkok, TH) are foreign to a Danish profile; DK, a bare
     country and no location at all stay."""

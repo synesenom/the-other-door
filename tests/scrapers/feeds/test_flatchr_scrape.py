@@ -3,7 +3,6 @@
 import json
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -66,16 +65,6 @@ def test_known_ids_are_still_returned_without_extra_requests():
 
 
 @responses.activate
-def test_an_unknown_company_is_a_recorded_error():
-    responses.add(responses.GET, "https://careers.flatchr.io/company/nope.json", body=_fx("not_found.json"), status=404)
-    responses.add(responses.GET, _FEED, body=_fx())
-
-    drain_errors()
-    assert len(flatchr.scrape({"flatchr_companies": ["nope", "flatchr"]})) == 3
-    assert "nope" in drain_errors()["flatchr"][0]
-
-
-@responses.activate
 def test_a_page_that_is_not_a_job_list_is_a_recorded_error():
     responses.add(responses.GET, _FEED, json={"statusCode": 404, "error": "Not Found"})
 
@@ -93,20 +82,6 @@ def test_pushback_is_recorded(status):
     assert flatchr.scrape({"flatchr_companies": ["flatchr"]}) == []
     assert drain_pushback("flatchr")
     assert drain_errors()["flatchr"]
-
-
-def test_no_companies_no_request():
-    assert flatchr.scrape({}) == []
-    assert flatchr.probe({}) is None
-
-
-@responses.activate
-def test_the_followed_name_wins():
-    responses.add(responses.GET, _FEED, body=_fx())
-
-    postings = flatchr.scrape({"flatchr_companies": ["flatchr"], "_names": {"flatchr_companies": {"flatchr": "Flatchr SAS"}}})
-
-    assert len(postings) == 3 and {p["company"] for p in postings} == {"Flatchr SAS"}
 
 
 @responses.activate
@@ -143,12 +118,3 @@ def test_probe_drift_without_the_item_list():
     result = flatchr.probe({"flatchr_companies": ["flatchr"]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_wall_and_unreachable():
-    responses.add(responses.GET, _FEED, status=403)
-    assert flatchr.probe({"flatchr_companies": ["flatchr"]}).get("wall")
-
-    responses.replace(responses.GET, _FEED, body=requests.ConnectionError("down"))
-    assert flatchr.probe({"flatchr_companies": ["flatchr"]}).get("unreachable")

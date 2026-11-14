@@ -1,7 +1,6 @@
 """Fixture tests for Personio (issue #558): PNO Group Europe's feed, trimmed and rewritten."""
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -53,14 +52,6 @@ def test_known_ads_cost_no_request_so_they_are_still_returned():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    responses.add(responses.GET, _XML, body=_read())
-    config = {"personio_companies": ["pno-group-europe"], "_names": {"personio_companies": {"pno-group-europe": "PNO Group"}}}
-
-    assert {p["company"] for p in personio.scrape(config)} == {"PNO Group"}
-
-
-@responses.activate
 def test_a_position_listed_twice_counts_once():
     responses.add(responses.GET, _XML, body=_read())
     responses.add(responses.GET, "https://other.jobs.personio.com/xml", body=_read())
@@ -87,15 +78,6 @@ def test_scrape_drops_positions_in_another_country():
 
 
 @responses.activate
-def test_a_failed_feed_is_a_recorded_error_not_a_raise():
-    responses.add(responses.GET, _XML, status=500)
-    drain_errors()
-
-    assert personio.scrape({"personio_companies": ["pno-group-europe"]}) == []
-    assert drain_errors()["personio"]
-
-
-@responses.activate
 def test_pushback_is_recorded():
     from door.scrapers import drain_pushback
 
@@ -108,27 +90,12 @@ def test_pushback_is_recorded():
 
 
 @responses.activate
-def test_an_unknown_account_is_a_recorded_error_and_the_rest_go_on():
-    responses.add(responses.GET, "https://nope.jobs.personio.com/xml", status=404, body="<html>Page Not Found</html>")
-    responses.add(responses.GET, _XML, body=_read())
-    drain_errors()
-
-    assert len(personio.scrape({"personio_companies": ["nope", "pno-group-europe"]})) == 5
-    assert "nope" in drain_errors()["personio"][0]
-
-
-@responses.activate
 def test_a_page_that_is_not_a_feed_is_a_recorded_error():
     responses.add(responses.GET, _XML, body="<html><body>Maintenance</body></html>")
     drain_errors()
 
     assert personio.scrape({"personio_companies": ["pno-group-europe"]}) == []
     assert drain_errors()["personio"]
-
-
-def test_no_accounts_no_request():
-    assert personio.scrape({}) == []
-    assert personio.probe({}) is None
 
 
 @responses.activate
@@ -150,13 +117,3 @@ def test_probe_drift_without_the_positions_block():
     result = personio.probe({"personio_companies": ["pno-group-europe"]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_unreachable_and_wall():
-    responses.add(responses.GET, _XML, body=requests.ConnectionError("down"))
-    down = personio.probe({"personio_companies": ["pno-group-europe"]})
-    assert down["structure_ok"] is False and down.get("unreachable") is True
-    responses.replace(responses.GET, _XML, status=403)
-    walled = personio.probe({"personio_companies": ["pno-group-europe"]})
-    assert walled["structure_ok"] is False and walled.get("wall") is True

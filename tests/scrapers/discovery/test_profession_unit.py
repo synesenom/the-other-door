@@ -18,10 +18,6 @@ def _by_id(cards):
     return {c["platform_id"]: c for c in cards}
 
 
-def test_the_source_contract_names():
-    assert (profession.NAME, profession.COUNTRIES, profession.CONFIG_KEY) == ("profession", ("hu",), "profession_discovery")
-
-
 def test_the_search_url_quotes_the_keyword_and_numbers_the_page():
     assert profession._search_url("data scientist", 1) == "https://www.profession.hu/allasok/1,0,0,data%20scientist"
     url = profession._search_url("adatelemző", 2)

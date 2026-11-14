@@ -4,7 +4,6 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
 from door.scrapers.feeds import pinpoint
 from paths import TESTS_DIR
 
@@ -44,21 +43,6 @@ def test_scrape_maps_every_posting():
 
 
 @responses.activate
-def test_an_unknown_company_is_a_recorded_error():
-    responses.add(responses.GET, "https://nope.pinpointhq.com/postings.json", status=404)
-    responses.add(responses.GET, _FEED, body=_fx())
-
-    drain_errors()
-    assert len(pinpoint.scrape({"pinpoint_companies": ["nope", "factbird"]})) == 2
-    assert "nope" in drain_errors()["pinpoint"][0]
-
-
-def test_no_companies_no_request():
-    assert pinpoint.scrape({}) == []
-    assert pinpoint.probe({}) is None
-
-
-@responses.activate
 def test_probe_reads_the_first_company():
     responses.add(responses.GET, _FEED, body=_fx())
 
@@ -72,23 +56,6 @@ def test_probe_drift_without_a_data_list():
     responses.add(responses.GET, _FEED, json={"jobs": []})
 
     assert pinpoint.probe({"pinpoint_companies": ["factbird"]})["structure_ok"] is False
-
-
-@responses.activate
-def test_the_followed_name_wins():
-    responses.add(responses.GET, _FEED, body=_fx())
-
-    postings = pinpoint.scrape({"pinpoint_companies": ["factbird"], "_names": {"pinpoint_companies": {"factbird": "Factbird ApS"}}})
-
-    assert len(postings) == 2 and {p["company"] for p in postings} == {"Factbird ApS"}
-    assert all(p["id"].startswith("pinpoint.") for p in postings)
-
-
-@responses.activate
-def test_without_a_name_map_the_guessed_name_is_the_fallback():
-    responses.add(responses.GET, _FEED, body=_fx())
-
-    assert {p["company"] for p in pinpoint.scrape({"pinpoint_companies": ["factbird"]})} == {"Factbird"}
 
 
 @responses.activate

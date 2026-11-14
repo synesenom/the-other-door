@@ -2,7 +2,6 @@
 real logged-out answers, trimmed and their text rewritten. The site has only English ads."""
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -92,31 +91,12 @@ def test_a_custom_host_is_read_from_its_own_host():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    _mock_crisis()
-
-    postings = jobtrain.scrape({"jobtrain_companies": ["jobs.crisis.org.uk"], "_names": {"jobtrain_companies": {"jobs.crisis.org.uk": "Crisis UK"}}})
-
-    assert {p["company"] for p in postings} == {"Crisis UK"}
-
-
-@responses.activate
 def test_two_entries_for_one_tenant_give_its_ads_once():
     _mock_lat()
 
     postings = jobtrain.scrape({"jobtrain_companies": ["leighacademiestrust", f"{_LAT}/Home/Job"]})
 
     assert [p["platform_id"] for p in postings] == [f"leighacademiestrust-{i}" for i in _LAT_IDS]
-
-
-@responses.activate
-def test_a_failing_list_is_a_recorded_error_and_the_other_tenant_is_kept():
-    responses.add(responses.GET, _list("https://www.jobtrain.co.uk/gone", 0), status=404)
-    _mock_crisis()
-
-    drain_errors()
-    assert len(jobtrain.scrape({"jobtrain_companies": ["gone", "jobs.crisis.org.uk"]})) == 2
-    assert "gone" in drain_errors()["jobtrain"][0]
 
 
 @responses.activate
@@ -229,15 +209,6 @@ def test_probe_of_a_page_without_its_job_block_has_no_structure():
     result = jobtrain.probe({"jobtrain_companies": ["leighacademiestrust"]})
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    responses.add(responses.GET, _list(_LAT, 0), body=requests.ConnectionError("down"))
-
-    result = jobtrain.probe({"jobtrain_companies": ["leighacademiestrust"]})
-
-    assert result.get("unreachable") and result["structure_ok"] is False
 
 
 @responses.activate

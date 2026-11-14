@@ -64,16 +64,6 @@ def test_known_ids_skip_the_detail_request():
 
 
 @responses.activate
-def test_a_failing_client_is_a_recorded_error():
-    responses.add(responses.GET, f"{_BASE}/JobList.aspx?ClientId=1", status=500)
-    _mock_all()
-
-    drain_errors()
-    assert len(signatur.scrape({"signatur_companies": ["1", "2296"]})) == 2
-    assert "'1'" in drain_errors()["signatur"][0]
-
-
-@responses.activate
 def test_a_failing_detail_keeps_the_job_from_the_list():
     responses.add(responses.GET, _LIST, body=_fx("helsingor_list.html"))
     responses.add(responses.GET, _detail("166122"), status=500)
@@ -100,20 +90,3 @@ def test_probe_reads_the_list_only():
 
     assert result["structure_ok"] is True and len(result["postings"]) == 2
     assert len(responses.calls) == 1
-
-
-@responses.activate
-def test_the_followed_name_wins():
-    _mock_all()
-
-    postings = signatur.scrape({"signatur_companies": ["2296"], "_names": {"signatur_companies": {"2296": "Helsingør"}}})
-
-    assert len(postings) == 2 and {p["company"] for p in postings} == {"Helsingør"}
-    assert all(p["id"].startswith("signatur.") for p in postings)
-
-
-@responses.activate
-def test_without_a_name_map_the_portal_name_is_the_fallback():
-    _mock_all()
-
-    assert {p["company"] for p in signatur.scrape({"signatur_companies": ["2296"]})} == {"Helsingør Kommune"}

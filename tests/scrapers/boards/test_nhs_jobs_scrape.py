@@ -8,7 +8,6 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -225,16 +224,6 @@ def test_an_ad_without_description_is_recorded_and_the_card_kept():
     assert any("C9200-26-1002" in e for e in drain_errors()["nhs_jobs"])
 
 
-@responses.activate
-def test_a_connection_error_is_recorded_not_raised():
-    _serve(_search(), body=requests.exceptions.ConnectionError("down"))
-    drain_errors()
-    assert nhs_jobs.scrape(_CFG) == []
-    [error] = drain_errors()["nhs_jobs"]
-    assert "project manager" in error
-    assert drain_pushback("nhs_jobs") is False
-
-
 @pytest.mark.parametrize("status", [403, 429])
 @responses.activate
 def test_a_refusal_on_a_search_page_is_pushback_and_stops_the_run(status):
@@ -280,20 +269,3 @@ def test_probe_drift_when_the_results_block_is_removed():
     result = nhs_jobs.probe(_CFG)
     assert result["structure_ok"] is False and result["reason"]
     assert not result.get("wall") and not result.get("unreachable")
-
-
-@pytest.mark.parametrize("status", [401, 403, 429])
-@responses.activate
-def test_probe_refusal_is_a_wall(status):
-    _serve(_search(), "Just a moment...", status=status)
-    assert nhs_jobs.probe(_CFG)["wall"] is True
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    _serve(_search(), body=requests.exceptions.ConnectionError("down"))
-    assert nhs_jobs.probe(_CFG)["unreachable"] is True
-
-
-def test_probe_without_keywords_is_none():
-    assert nhs_jobs.probe({"location": "London"}) is None

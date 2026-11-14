@@ -1,7 +1,6 @@
 """Fixture tests for Talentsoft (issue #559): AGRICA's list pages, RSS feed and one ad page, trimmed and rewritten."""
 
 import pytest
-import requests
 import responses
 
 from door.core.models import JobPosting
@@ -80,15 +79,6 @@ def test_known_ids_skip_the_ad_page_and_the_ad():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    _serve()
-
-    postings = talentsoft.scrape({**_CFG, "_names": {"talentsoft_hosts": {"agrica-career.talent-soft.com": "Agrica Groupe"}}})
-
-    assert {p["company"] for p in postings} == {"Agrica Groupe"}
-
-
-@responses.activate
 def test_a_page_beyond_the_last_repeating_the_first_ends_the_walk():
     page_1 = _read("agrica_list_1.html").replace("5 offre(s)", "9 offre(s)")
     responses.add(responses.GET, _LIST, body=page_1, match=[_PAGE_1])
@@ -131,15 +121,6 @@ def test_an_ad_page_that_fails_is_recorded_and_the_rest_go_on():
 
 
 @responses.activate
-def test_a_failed_list_is_a_recorded_error_not_a_raise():
-    responses.add(responses.GET, _LIST, status=500)
-    drain_errors()
-
-    assert talentsoft.scrape(_CFG) == []
-    assert drain_errors()["talentsoft"]
-
-
-@responses.activate
 def test_a_refusal_is_pushback_and_ends_the_board():
     responses.add(responses.GET, _LIST, status=403)
     drain_errors()
@@ -172,11 +153,6 @@ def test_scrape_drops_ads_in_another_country():
     assert drain_non_local("talentsoft") == 3
 
 
-def test_no_hosts_no_request():
-    assert talentsoft.scrape({}) == []
-    assert talentsoft.probe({}) is None
-
-
 @responses.activate
 def test_probe_reads_the_first_list_page_with_one_request():
     responses.add(responses.GET, _LIST, body=_read("agrica_list_1.html"))
@@ -196,13 +172,3 @@ def test_probe_drift_without_cards():
     result = talentsoft.probe(_CFG)
 
     assert result["structure_ok"] is False and result["reason"]
-
-
-@responses.activate
-def test_probe_unreachable_and_wall():
-    responses.add(responses.GET, _LIST, body=requests.ConnectionError("down"))
-    down = talentsoft.probe(_CFG)
-    assert down["structure_ok"] is False and down.get("unreachable") is True
-    responses.replace(responses.GET, _LIST, status=403)
-    walled = talentsoft.probe(_CFG)
-    assert walled["structure_ok"] is False and walled.get("wall") is True

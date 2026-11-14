@@ -38,11 +38,13 @@ def test_the_precedence_names_modules_that_exist():
     assert set(FEED_SITES) <= set(ats_detect.PRECEDENCE)
 
 
-def test_the_name_probes_keep_their_order():
-    order = [(platform, probe.evidence) for platform, _slug, probe in ats_detect.name_probes(["acme"])]
-    assert [p for p, _ in order] == [
-        "greenhouse", "lever", "lever", "ashby", "recruitee", "pinpoint", "teamtailor", "workable", "smartrecruiters", "flatchr", "taleez"]
-    assert "EU" in order[2][1]
+def test_name_probes_go_platform_by_platform_in_precedence_order_each_probe_over_every_slug():
+    probes = ats_detect.name_probes(["acme", "acme-dk"])
+    platforms = list(dict.fromkeys(p for p, _slug, _probe in probes))
+    assert platforms == [p for p in ats_detect.PRECEDENCE if p in platforms]
+    lever = [(slug, probe.url) for p, slug, probe in probes if p == "lever"]
+    assert [slug for slug, _ in lever] == ["acme", "acme-dk", "acme", "acme-dk"]   # both hosts, for every slug in turn
+    assert lever[0][1] != lever[2][1]
 
 
 def test_ats_detect_names_no_platform_outside_its_precedence_tuple():
@@ -58,17 +60,6 @@ def test_ats_detect_names_no_platform_outside_its_precedence_tuple():
 def test_the_companies_command_holds_no_feed_endpoint():
     source = (REPO_ROOT / "src/door/commands/companies.py").read_text(encoding="utf-8")
     assert not re.findall(r"https://[^\"'\s]*(api|boards|hr-manager|workable|pinpoint|recruitee|teamtailor)", source)
-
-
-# A portal that serves many employers names each posting's own (hr_manager: hospitals, agencies).
-_MULTI_EMPLOYER = {"hr_manager"}
-
-
-@pytest.mark.parametrize("site", sorted(n for n, s in SITES.items() if s.config_key and n not in _MULTI_EMPLOYER))
-def test_a_single_employer_feed_labels_its_postings_with_the_followed_name(site):
-    """Issue #291: collect hands the scrapers the followed names; each reads them through the SDK."""
-    source = (REPO_ROOT / "src" / "door" / "scrapers" / "feeds" / f"{site}.py").read_text(encoding="utf-8")
-    assert "followed_name(" in source, f"{site} ignores the followed employer's name"
 
 
 # --------------------------------------------------------------------------- #

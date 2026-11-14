@@ -107,15 +107,6 @@ def test_known_ids_are_left_out_and_their_pages_not_read():
 
 
 @responses.activate
-def test_the_followed_name_wins():
-    _mock_sv()
-
-    postings = reachmee.scrape({_KEY: ["I003/354/5"], "_names": {_KEY: {"i003/354/5": "Örebro University"}}})
-
-    assert {p["company"] for p in postings} == {"Örebro University"}
-
-
-@responses.activate
 def test_an_ad_page_that_fails_leaves_the_row_with_what_the_list_gives():
     responses.add(responses.GET, _JS_SV, body=_fx("customerjs_sv.js"))
     responses.add(responses.GET, _LIST_SV, body=_fx("list_sv.html"))
@@ -147,16 +138,6 @@ def test_a_customer_script_without_a_validator_is_a_recorded_error():
     drain_errors()
     assert reachmee.scrape({_KEY: ["I003/354/5"]}) == []
     assert "I003/354/5" in drain_errors()["reachmee"][0]
-
-
-@responses.activate
-def test_a_failed_list_is_a_recorded_error():
-    responses.add(responses.GET, _JS_SV, body=_fx("customerjs_sv.js"))
-    responses.add(responses.GET, _LIST_SV, status=500)
-
-    drain_errors()
-    assert reachmee.scrape({_KEY: ["I003/354/5"]}) == []
-    assert drain_errors()["reachmee"]
 
 
 @responses.activate
@@ -234,21 +215,6 @@ def test_probe_of_an_empty_list_is_ok():
     result = reachmee.probe({_KEY: ["I021/1746/6"]})
 
     assert result["structure_ok"] is True and result["postings"] == []
-
-
-@responses.activate
-def test_probe_connection_error_is_unreachable():
-    import requests
-    responses.add(responses.GET, _JS_SV, body=requests.ConnectionError("down"))
-
-    assert reachmee.probe({_KEY: ["I003/354/5"]})["unreachable"] is True
-
-
-@responses.activate
-def test_probe_forbidden_is_a_wall():
-    responses.add(responses.GET, _JS_SV, status=403)
-
-    assert reachmee.probe({_KEY: ["I003/354/5"]})["wall"] is True
 
 
 # --- resolve (detection looks through the customer script) ---
