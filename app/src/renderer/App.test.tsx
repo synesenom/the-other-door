@@ -81,7 +81,7 @@ describe('App', () => {
       list_matches: matchesResult([]),
     })
     const { container } = render(<App />)
-    await waitFor(() => expect(container.querySelector('.sidebar-foot .small.muted')).toHaveTextContent(/^Last run /))
+    await waitFor(() => expect(container.querySelector('.sidebar-foot .small.muted')).toHaveTextContent(/^Last run /), { timeout: 5000 }) // a slow Windows runner missed the 1 s default
   })
 
   it('has no last-run caption when there was no run', async () => {

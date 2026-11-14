@@ -21,7 +21,7 @@ from pathlib import Path, PurePosixPath
 import click
 
 from door.commands import _common as common
-from door.core import drive, sync, usage, workspace
+from door.core import drive, migrations, sync, usage, workspace
 from door.core.lock import SyncConflict
 
 # Bump when the archive layout changes; `import` refuses a newer format.
@@ -30,7 +30,7 @@ FORMAT = 1
 _MANIFEST = "manifest.json"
 # Never exported, kept in place on import: the lock files, and this computer's Claude usage log (#575).
 _LOCK_FILES = (".lock", ".lock.json", ".progress.json", usage.LOG_NAME)
-_EXCLUDED = {"profile": (), "jobs": _LOCK_FILES}
+_EXCLUDED = {"profile": (migrations.MARKER,), "jobs": (*_LOCK_FILES, migrations.MARKER)}
 
 # Config keys holding a path that may only exist on the computer that exported.
 _PATH_KEYS = ("cv_template", "cv_content", "cover_letter_template", "photo")
@@ -179,6 +179,28 @@ def _read_manifest(tar: tarfile.TarFile, archive: Path) -> dict:
     return manifest
 
 
+def _read_versions(tar: tarfile.TarFile) -> dict:
+    """The data versions the archive carries: ``{"profile", "jobs"}``, None for a folder with no `.data_version`.
+
+    Raises:
+        migrations.RefusedData: a version member that is not `<major>.<n>` (never read as 0.0).
+    """
+    versions: dict = {}
+    for folder in ("profile", "jobs"):
+        versions[folder] = None
+        try:
+            member = tar.getmember(f"{folder}/{migrations.VERSION_FILE}")
+        except KeyError:
+            continue
+        handle = tar.extractfile(member) if member.isfile() else None
+        text = handle.read(64).decode("utf-8", "replace").strip() if handle else ""
+        try:
+            versions[folder] = migrations.Version.parse(text)
+        except ValueError:
+            raise migrations.RefusedData("newer", versions, migrations.ARCHIVE_NEWER) from None
+    return versions
+
+
 def _members_to_extract(tar: tarfile.TarFile, archive: Path) -> list[tarfile.TarInfo]:
     """Every file/dir under profile/ or jobs/, minus lock files.
 
@@ -227,7 +249,10 @@ def _swap_in(staging: Path, profile_dir: Path, jobs_dir: Path, backup: Path | No
     it.
     """
     if profile_dir.exists():
-        shutil.move(profile_dir, backup / "profile")
+        if backup is None:  # only the version stamp of a first start: nothing to keep
+            shutil.rmtree(profile_dir)
+        else:
+            shutil.move(profile_dir, backup / "profile")
     shutil.move(staging / "profile", profile_dir)
 
     old_jobs = [c for c in jobs_dir.iterdir() if c.name not in _LOCK_FILES]
@@ -268,19 +293,20 @@ def _import_core(
 ) -> dict:
     """Replace `profile_dir` and `jobs_dir` with an archive from `_export_core`. Never prints.
 
-    The archive is checked in full before anything moves; the data it
-    replaces goes to ``backups_dir/<timestamp>/``.
+    The archive is checked in full before anything moves (an archive from a newer version of The other door, or of an older major, is
+    refused); the data it replaces goes to ``backups_dir/<timestamp>/``. An older archive is upgraded right after
+    (`migrations.upgrade_all`; a failed step is one warning, the data stays as imported).
 
     Returns:
         ``{"archive", "files", "profile_dir", "jobs_dir", "backup_dir",
-        "warnings"}`` — ``backup_dir`` is None when there was
+        "warnings", "data_versions"}`` — ``backup_dir`` is None when there was
         nothing to back up; ``warnings`` lists config paths this computer
-        doesn't have.
+        doesn't have and a failed upgrade; ``data_versions`` is what the archive carried.
 
     Raises:
         FileNotFoundError: the archive doesn't exist.
-        ValueError: it isn't an export from The other door, is from a newer version, or
-            holds an entry outside profile/ and jobs/.
+        ValueError: it isn't an export from The other door, or holds an entry outside profile/ and jobs/.
+        migrations.RefusedData (a ValueError): its data version is above this build's, of an older major, or unreadable.
     """
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
@@ -300,17 +326,30 @@ def _import_core(
     with tar:
         _read_manifest(tar, archive)
         members = _members_to_extract(tar, archive)
+        versions = _read_versions(tar)
+        migrations.refuse(versions)
         profile_dir.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=".door-import-", dir=profile_dir.parent))
         try:
             tar.extractall(staging, members=members, filter="data")
             _keep_local_keys(staging / "profile" / "config.json", profile_dir / "config.json")
             jobs_dir.mkdir(parents=True, exist_ok=True)
+            if all(c.name in _LOCK_FILES or c.name == migrations.VERSION_FILE for c in jobs_dir.iterdir()):
+                (jobs_dir / migrations.VERSION_FILE).unlink(missing_ok=True)  # only the stamp of an empty folder
             has_old_jobs = any(c.name not in _LOCK_FILES for c in jobs_dir.iterdir())
-            backup = _new_backup_dir(backups_dir) if profile_dir.exists() or has_old_jobs else None
+            has_old_profile = profile_dir.exists() and any(
+                c.name != migrations.VERSION_FILE for c in profile_dir.iterdir()
+            )
+            backup = _new_backup_dir(backups_dir) if has_old_profile or has_old_jobs else None
             _swap_in(staging, profile_dir, jobs_dir, backup)
         finally:
             shutil.rmtree(staging, ignore_errors=True)
+
+    migrations.ensure_folder(jobs_dir, "jobs")  # an archive with no jobs: the folder is new, so stamped
+    warnings = _path_warnings(profile_dir / "config.json")
+    upgrade = migrations.upgrade_all(profile_dir, jobs_dir, backups_dir)
+    if upgrade:
+        warnings.append(upgrade["message"])
 
     return {
         "archive": str(archive),
@@ -318,7 +357,8 @@ def _import_core(
         "profile_dir": str(profile_dir),
         "jobs_dir": str(jobs_dir),
         "backup_dir": str(backup) if backup else None,
-        "warnings": _path_warnings(profile_dir / "config.json"),
+        "warnings": warnings,
+        "data_versions": {k: str(v) if v else None for k, v in versions.items()},
     }
 
 
@@ -504,6 +544,8 @@ def sync_command(keep_local, keep_drive):
         "skipped": "Nothing to push yet: there is no profile/config.json",
     }
     common._mark_line(common._console(), "ok", messages[result["action"]])
+    for warning in result.get("warnings", []):
+        common._mark_line(_err_console(), "warn", _markup_escape(warning))
 
 
 @click.command("disconnect")

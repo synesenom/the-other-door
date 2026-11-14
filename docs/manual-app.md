@@ -462,7 +462,9 @@ fine, an empty ring when not) and what you can do about it.
   (it waits up to five minutes); the app never connects by itself. There is nothing to press to
   sync: it syncs as it connects, each time the app opens, around every change to your data, and
   before it disconnects. Connected, it shows the account, the last sync and the last error, with
-  "Disconnect". After a sync that brought Drive's data here, the screens read it again. When this
+  "Disconnect". After you install a newer version on one computer, install it on the others that share
+  Drive too: an older one shows "Google Drive has data from a newer version of The other door; install it on
+  this computer too" and neither pulls nor pushes until it is upgraded. After a sync that brought Drive's data here, the screens read it again. When this
   computer and Drive both changed since the last sync, nothing is replaced until you choose
   ("Google Drive needs a choice" at the sidebar's foot opens it): "Keep this computer" (its data
   replaces the copy on Drive) or "Keep Drive" (Drive's data replaces this computer's, which is
@@ -477,6 +479,19 @@ are listed, each with what its terms say. Off until you tick one; a tick is save
 When Claude is not signed in or not installed, or a Drive sync failed or needs a choice, a short line at the foot of
 the sidebar says so and opens Settings (your CV's line opens Profile). Nothing is said when all is
 well or when Drive is simply off. A site a run could not read is not said: the next run reads it again (its error is in the run record).
+
+Three more lines are about your data folder, when this version cannot open it. Every screen then refuses to work with it
+(nothing is changed), and only Settings and Report a problem still answer:
+
+- **"Your data could not be upgraded. Send a report"** (opens Report a problem): an upgrade step failed and put your
+  data back as it was. Save the logs and send them; the next start tries again.
+- **"Install the latest version of The other door"** (opens Settings): the data was written by a newer version, for
+  instance after you used a newer version on this computer or on Google Drive. Install the latest version.
+- **"Your data is from an older version of The other door"** (opens Settings): the data was written by an earlier
+  major version, which this one does not upgrade. Either keep using that version, or start a new profile: quit the app,
+  rename the data folder (Settings → Your data shows where it is, for instance `The other door` to `The other door old`;
+  never delete it), and open the app again for the first-launch set-up. Rename the folder back to return to the old data
+  with the old version.
 
 **Your data** says where your profile and jobs are stored; click the folder's path to open it. It also moves them to another computer without a terminal. "Export…" asks
 where to save one archive (`door-export-<date>.tar.gz`; it never replaces a file that is there,

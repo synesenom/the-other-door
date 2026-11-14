@@ -1,0 +1,33 @@
+{
+  "id": "jobindex.1001",
+  "title": "Financial Controller",
+  "company": "Example Industries A/S",
+  "location": "Copenhagen",
+  "url": "https://example.com/jobs/1001",
+  "description": "Financial Controller at Example Industries A/S. You own the month-end close and the forecast. Excel and IFRS required.",
+  "description_condensed": "Own the close and the forecast.",
+  "source": "jobindex",
+  "scraped_at": "2026-03-15T09:00:00Z",
+  "platform_id": "1001",
+  "posted_at": "2026-03-14T09:00:00Z",
+  "score": 0.92,
+  "score_reason": "strong fit",
+  "prescreen_score": 0.8,
+  "scored_by": "haiku",
+  "scored_at": "2026-03-16T09:00:00+00:00",
+  "matching_skills": [
+    "Excel",
+    "IFRS"
+  ],
+  "missing_skills": [
+    "SAP"
+  ],
+  "liveness_status": "live",
+  "duplicate_of": null,
+  "apply_type": "external",
+  "apply_url": "https://example.com/apply/1001",
+  "employer": "Example Industries A/S",
+  "integrity": null,
+  "work_permit": "not_mentioned",
+  "language_requirement": "none"
+}

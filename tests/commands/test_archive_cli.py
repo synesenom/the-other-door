@@ -15,7 +15,7 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import archive as archive_cmd
-from door.core import workspace
+from door.core import migrations, workspace
 import door.mcp_server as server
 from profile_utils import write_config
 from cli_utils import result_text
@@ -160,7 +160,7 @@ def test_export_without_a_profile_is_an_error(env, tmp_path):
 
 def test_export_works_without_jobs(env, tmp_path):
     result = archive_cmd._export_core(tmp_path / "x.tar.gz", profile_dir=env.profile_dir, jobs_dir=tmp_path / "nojobs")
-    assert not any(n.startswith("jobs/") for n in _names(result["path"]))
+    assert {n for n in _names(result["path"]) if n.startswith("jobs/")} <= {"jobs/", "jobs/.data_version"}  # the lock stamps it
 
 
 def test_export_holds_the_ledger_lock(env, monkeypatch):
@@ -193,6 +193,17 @@ def test_round_trip_into_an_empty_workspace(env):
     assert (env.dst_jobs / "output" / "jobindex-acme-ds" / "cv.pdf").read_bytes() == b"%PDF-1.5"
     assert result["backup_dir"] is None  # nothing was there to back up
     assert result["files"] == _export(env, env.tmp_path / "again.tar.gz")["files"]
+
+
+def test_import_into_folders_that_hold_only_their_version_makes_no_backup(env):
+    archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
+    migrations.ensure_folder(env.dst_profile, "profile")  # what a first start leaves
+    migrations.ensure_folder(env.dst_jobs, "jobs")
+
+    result = _import(env, archive)
+
+    assert result["backup_dir"] is None
+    assert (env.dst_profile / "cv.md").read_text() == "# My CV"
 
 
 def test_import_replaces_existing_data_and_backs_it_up(env):
@@ -401,6 +412,7 @@ def test_export_cli_errors_cleanly(env):
 
 
 def test_import_cli(env, monkeypatch):
+    _versioned(env)
     archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
     monkeypatch.setattr(workspace, "PROFILE_DIR", env.dst_profile)
     monkeypatch.setattr(workspace, "JOBS_DIR", env.dst_jobs)
@@ -482,11 +494,11 @@ def test_export_leaves_the_usage_log_out(env):
 class _FakeDrive:
     def __init__(self, monkeypatch):
         self.blob, self.version, self.uploads = None, 0, 0
-        monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {"id": "A", "version": str(self.version)})
+        monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {"id": "A", "version": str(self.version), "properties": {}})
         monkeypatch.setattr(drive, "download", lambda dest: Path(dest).write_bytes(self.blob))
         monkeypatch.setattr(drive, "upload", self._upload)
 
-    def _upload(self, src):
+    def _upload(self, src, properties=None):
         self.blob = Path(src).read_bytes()
         self.version += 1
         self.uploads += 1
@@ -602,3 +614,121 @@ def test_a_conflict_refuses_a_locked_core(env, connected, enable_sync_hooks):
     with pytest.raises(SyncConflict):
         with ledger_lock(env.jobs_dir, "set_status"):
             pytest.fail("the block must not run")
+
+
+# --------------------------------------------------------------------------- #
+# data versions (#56)
+# --------------------------------------------------------------------------- #
+def _versioned(env, profile="0.1", jobs="0.0"):
+    (env.profile_dir / ".data_version").write_text(profile)
+    (env.jobs_dir / ".data_version").write_text(jobs)
+
+
+def _tree_bytes(root):
+    return {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in sorted(root.rglob("*"))
+        if p.is_file() and p.name not in (".lock", ".lock.json")
+    }
+
+
+def _newer_archive(env, **members):
+    entries = {"profile/config.json": b"{}", "profile/cv.md": b"# new", **members}
+    return _tar_with(env.tmp_path, entries)
+
+
+def test_export_carries_the_data_versions(env):
+    _versioned(env)
+    result = _export(env, env.tmp_path / "out.tar.gz")
+    assert {"profile/.data_version", "jobs/.data_version"} <= _names(result["path"])
+
+
+@pytest.mark.parametrize("member", ["profile/.data_version", "jobs/.data_version"])
+def test_a_newer_archive_is_refused_before_anything_changes(env, member):
+    from door.core import migrations
+
+    env.dst_profile.mkdir()
+    (env.dst_profile / "cv.md").write_text("# Old CV")
+    env.dst_jobs.mkdir()
+    (env.dst_jobs / "applications.json").write_text("{}")
+    before = (_tree_bytes(env.dst_profile), _tree_bytes(env.dst_jobs))
+    archive = _newer_archive(env, **{member: b"0.99"})
+
+    with pytest.raises(migrations.RefusedData, match="newer version of The other door"):
+        _import(env, archive)
+
+    assert (_tree_bytes(env.dst_profile), _tree_bytes(env.dst_jobs)) == before
+    assert not env.backups_dir.exists()
+    assert not list(env.dst_profile.parent.glob(".door-import-*"))
+
+
+def test_an_archive_of_an_older_major_is_refused_before_anything_changes(env, monkeypatch):
+    from door import version
+    from door.core import migrations
+
+    monkeypatch.setattr(version, "VERSION", "1.0.0")
+    env.dst_profile.mkdir()
+    (env.dst_profile / "cv.md").write_text("# Old CV")
+    archive = _newer_archive(env, **{"profile/.data_version": b"0.1"})
+
+    with pytest.raises(migrations.RefusedData, match=r"The other door 0\.x") as caught:
+        _import(env, archive)
+
+    assert caught.value.state == "old_major"
+    assert (env.dst_profile / "cv.md").read_text() == "# Old CV"
+    assert not env.backups_dir.exists()
+
+
+def test_a_garbled_version_member_is_refused(env):
+    from door.core import migrations
+
+    archive = _newer_archive(env, **{"profile/.data_version": b"banana"})
+    with pytest.raises(migrations.RefusedData):
+        _import(env, archive)
+    assert not env.dst_profile.exists()
+
+
+def test_an_older_archive_is_upgraded_right_after_the_import(env, monkeypatch):
+    from door.core import migrations
+
+    step = migrations.Step("tag", lambda folder: (folder / "tag.done").write_text("x"))
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [step])
+    monkeypatch.setattr(migrations, "_state", None)
+    archive = _tar_with(env.tmp_path, {"profile/config.json": b"{}"})
+
+    result = _import(env, archive)
+
+    assert (env.dst_profile / ".data_version").read_text().strip() == "0.1"
+    assert (env.dst_profile / "tag.done").is_file()
+    assert any(p.name.startswith("upgrade-profile-0.0-0.1") for p in env.backups_dir.iterdir())
+    assert not any("FAILED" in w or "could not be upgraded" in w for w in result["warnings"])
+
+
+def test_a_failing_step_after_import_is_one_warning(env, monkeypatch):
+    from door.core import migrations
+
+    def boom(folder):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [migrations.Step("explode", boom)])
+    monkeypatch.setattr(migrations, "_state", None)
+    archive = _tar_with(env.tmp_path, {"profile/config.json": b"{}", "profile/cv.md": b"# imported"})
+
+    result = _import(env, archive)
+
+    failed = [w for w in result["warnings"] if "could not be upgraded" in w]
+    assert len(failed) == 1 and "explode" in failed[0]
+    assert (env.dst_profile / "cv.md").read_text() == "# imported"
+    assert migrations.status()["state"] == "failed"
+    monkeypatch.setattr(migrations, "_state", None)
+
+
+def test_sync_prints_the_warnings_of_a_pull(env, monkeypatch):
+    from door.commands import archive
+
+    monkeypatch.setattr(
+        archive, "_sync_core", lambda *a, **k: {"action": "pull", "warnings": ["Your data could not be upgraded: step x"]},
+    )
+    result = CliRunner().invoke(cli, ["data", "sync"])
+    assert result.exit_code == 0, result_text(result)
+    assert "could not be upgraded" in result_text(result)

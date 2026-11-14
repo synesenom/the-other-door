@@ -1,0 +1,25 @@
+{
+  "seen": {},
+  "history": [
+    {
+      "at": "2026-03-18T09:00:00+00:00",
+      "mode": "rotate",
+      "requests": 20,
+      "pages": 10,
+      "job_pages": 2,
+      "budget": 150,
+      "pause": [
+        2.0,
+        4.0
+      ],
+      "outcome": "ok",
+      "seconds": 61.5,
+      "first_429": null
+    }
+  ],
+  "pace": {
+    "budget": 150,
+    "factor": 1,
+    "clean_runs": 1
+  }
+}

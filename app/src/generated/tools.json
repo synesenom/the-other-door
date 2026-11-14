@@ -384,7 +384,7 @@
   },
   {
     "name": "import_data",
-    "description": "Replace profile/ and jobs/ with an archive made by `export_data`.\n\n    Destructive: the current profile, postings, ledgers and materials are\n    replaced (moved to backups/<timestamp>/ first, so nothing is lost).\n    Confirm with the user before calling. Identical to `./door data import`.\n\n    Args:\n        archive: Path to the .tar.gz.\n\n    Returns:\n        ``{\"archive\", \"files\", \"profile_dir\", \"jobs_dir\", \"backup_dir\",\n        \"warnings\"}`` — tell the user about each warning (a\n        config path this computer doesn't have) and where the backup is.\n    ",
+    "description": "Replace profile/ and jobs/ with an archive made by `export_data`.\n\n    Destructive: the current profile, postings, ledgers and materials are\n    replaced (moved to backups/<timestamp>/ first, so nothing is lost).\n    Confirm with the user before calling. Identical to `./door data import`.\n\n    An archive written by a newer version of The other door, or by an older major version,\n    is refused before anything changes (an error, nothing replaced). One from an older\n    release of this major is upgraded right after the import.\n\n    Args:\n        archive: Path to the .tar.gz.\n\n    Returns:\n        ``{\"archive\", \"files\", \"profile_dir\", \"jobs_dir\", \"backup_dir\",\n        \"warnings\", \"data_versions\"}`` — tell the user about each warning (a\n        config path this computer doesn't have, or an upgrade that failed: the\n        data then stays as imported and the tools refuse it until a report is\n        sent), where the backup is; ``data_versions`` is the versions the archive carried.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {

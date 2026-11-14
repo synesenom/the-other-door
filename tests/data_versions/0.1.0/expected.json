@@ -1,0 +1,1366 @@
+{
+  "list_companies": {
+    "companies": [
+      {
+        "aliases": [
+          "Example Industries",
+          "EI Group"
+        ],
+        "collect_problem": null,
+        "evidence": "Greenhouse board exampleindustries lists open jobs",
+        "feed": {
+          "id": "exampleindustries",
+          "platform": "greenhouse"
+        },
+        "first_seen": "<time>",
+        "found_via": "manual",
+        "last_checked": "<time>",
+        "last_relevant": "<time>",
+        "name": "Example Industries A/S",
+        "reason": null,
+        "refusal": null,
+        "status": "followed"
+      },
+      {
+        "aliases": [],
+        "collect_problem": {
+          "at": "<time>",
+          "outcome": "blocked",
+          "reason": "the feed answered 403"
+        },
+        "evidence": null,
+        "feed": {
+          "id": "samplebank",
+          "platform": "lever"
+        },
+        "first_seen": "<time>",
+        "found_via": "jobindex",
+        "last_checked": "<time>",
+        "last_relevant": null,
+        "name": "Sample Bank",
+        "reason": null,
+        "refusal": null,
+        "status": "followed"
+      },
+      {
+        "aliases": [],
+        "collect_problem": {
+          "at": "<time>",
+          "outcome": "failed",
+          "reason": "timeout"
+        },
+        "evidence": null,
+        "feed": {
+          "id": "failing-feed",
+          "platform": "teamtailor"
+        },
+        "first_seen": "<time>",
+        "found_via": "linkedin",
+        "last_checked": "<time>",
+        "last_relevant": null,
+        "name": "Failing Feed Ltd",
+        "reason": null,
+        "refusal": null,
+        "status": "followed"
+      },
+      {
+        "aliases": [],
+        "collect_problem": null,
+        "evidence": "careers page",
+        "feed": null,
+        "first_seen": "<time>",
+        "found_via": "linkedin",
+        "last_checked": "<time>",
+        "last_relevant": null,
+        "name": "Terms Forbid AB",
+        "reason": "its terms forbid automated access",
+        "refusal": "must_not",
+        "status": "unfollowable"
+      },
+      {
+        "aliases": [],
+        "collect_problem": null,
+        "evidence": null,
+        "feed": null,
+        "first_seen": "<time>",
+        "found_via": "thehub",
+        "last_checked": "<time>",
+        "last_relevant": null,
+        "name": "No Way In Inc",
+        "reason": "a platform The other door cannot follow yet",
+        "refusal": "cant_yet",
+        "status": "unfollowable"
+      },
+      {
+        "aliases": [],
+        "collect_problem": null,
+        "evidence": null,
+        "feed": null,
+        "first_seen": "<time>",
+        "found_via": "ai",
+        "last_checked": "<time>",
+        "last_relevant": null,
+        "name": "Nowhere Found GmbH",
+        "reason": "no careers page found",
+        "refusal": null,
+        "status": "unresolved"
+      },
+      {
+        "aliases": [],
+        "collect_problem": null,
+        "evidence": null,
+        "feed": {
+          "id": "quietdormant",
+          "platform": "greenhouse"
+        },
+        "first_seen": "<time>",
+        "found_via": "jobindex",
+        "last_checked": "<time>",
+        "last_relevant": "<time>",
+        "name": "Quiet Dormant Co",
+        "reason": "no relevant job for 90 days",
+        "refusal": null,
+        "status": "dormant"
+      }
+    ],
+    "counts": {
+      "dormant": 1,
+      "followed": 3,
+      "unfollowable": 2,
+      "unresolved": 1
+    }
+  },
+  "list_matches": {
+    "last_reviewed_at": "<time>",
+    "matches": [
+      {
+        "company": "Example Industries A/S",
+        "id": "jobindex.1001",
+        "is_new": false,
+        "location": "Copenhagen",
+        "rounds": [],
+        "score": 0.92,
+        "status": "unapplied",
+        "title": "Financial Controller",
+        "title_en": null,
+        "updated_at": null,
+        "work_permit": "not_mentioned"
+      },
+      {
+        "company": "Example Industries A/S",
+        "id": "jobindex.1003",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [],
+        "score": 0.7,
+        "status": "unapplied",
+        "title": "Finance Business Partner",
+        "title_en": null,
+        "updated_at": "<time>",
+        "work_permit": null
+      },
+      {
+        "company": "Gone Ltd",
+        "id": "jobindex.1013",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [],
+        "score": 0.6,
+        "status": "unapplied",
+        "title": "Senior Controller",
+        "title_en": null,
+        "updated_at": null,
+        "work_permit": null
+      }
+    ],
+    "min_score": 0.6,
+    "scored": 14,
+    "weak": null
+  },
+  "list_matches_closed": {
+    "last_reviewed_at": "<time>",
+    "matches": [
+      {
+        "company": "Another Bank A/S",
+        "id": "jobindex.1008",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [
+          {
+            "result": "withdrawn",
+            "stage": "screening"
+          }
+        ],
+        "score": 0.9,
+        "status": "discarded",
+        "title": "Finance Manager",
+        "title_en": null,
+        "updated_at": "<time>",
+        "work_permit": null
+      },
+      {
+        "company": "Failing Feed Ltd",
+        "id": "thehub.2001",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [],
+        "score": 0.78,
+        "status": "ghosted",
+        "title": "Group Controller",
+        "title_en": null,
+        "updated_at": "<time>",
+        "work_permit": null
+      },
+      {
+        "company": "Late Answer ApS",
+        "id": "jobindex.1006",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [
+          {
+            "result": "rejected",
+            "stage": "screening"
+          }
+        ],
+        "score": 0.69,
+        "status": "rejected",
+        "title": "Controller",
+        "title_en": null,
+        "updated_at": "<time>",
+        "work_permit": null
+      },
+      {
+        "company": "Silent Corp",
+        "id": "jobindex.1007",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [
+          {
+            "result": "ghosted",
+            "stage": "assessment"
+          }
+        ],
+        "score": 0.66,
+        "status": "ghosted",
+        "title": "Accounting Manager",
+        "title_en": null,
+        "updated_at": "<time>",
+        "work_permit": null
+      }
+    ],
+    "min_score": 0.0,
+    "scored": 14,
+    "weak": null
+  },
+  "list_matches_ongoing": {
+    "last_reviewed_at": "<time>",
+    "matches": [
+      {
+        "company": "Sample Bank",
+        "id": "jobindex.1002",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [],
+        "score": 0.85,
+        "status": "prepared",
+        "title": "Head of Finance",
+        "title_en": null,
+        "updated_at": "<time>",
+        "work_permit": null
+      },
+      {
+        "company": "Sample Bank",
+        "id": "jobindex.1004",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [],
+        "score": 0.74,
+        "status": "applied",
+        "title": "Business Controller",
+        "title_en": null,
+        "updated_at": "<time>",
+        "work_permit": null
+      },
+      {
+        "company": "Nordic Foods A/S",
+        "id": "jobindex.1005",
+        "is_new": true,
+        "location": "Copenhagen",
+        "rounds": [
+          {
+            "result": "passed",
+            "stage": "screening"
+          },
+          {
+            "result": "passed",
+            "stage": "impression"
+          },
+          {
+            "result": "passed",
+            "stage": "technical"
+          }
+        ],
+        "score": 0.71,
+        "status": "offer",
+        "title": "Økonomichef",
+        "title_en": "Head of Finance (Economy Manager)",
+        "updated_at": "<time>",
+        "work_permit": null
+      }
+    ],
+    "min_score": 0.0,
+    "scored": 14,
+    "weak": null
+  },
+  "list_stories": {
+    "exists": true,
+    "is_example": false,
+    "path": "<home>/profile/story_bank.md",
+    "stories": [
+      {
+        "action": "Mapped every task, standardised reconciliations and agreed cut-offs.",
+        "context": "The close took ten days and management saw numbers late.",
+        "learning": "The gain came from the teams outside finance.",
+        "result": "Close down to six days; audit adjustments fell from 14 to 3.",
+        "title": "Halved the close at Example Industries"
+      },
+      {
+        "action": "Designed a driver-based forecast and ran workshops in each region.",
+        "context": "The annual budget was outdated by spring.",
+        "learning": "Ownership by the managers made it their tool.",
+        "result": "Accuracy improved from 12 to 4 percent.",
+        "title": "Built a rolling forecast at Sample Bank"
+      }
+    ]
+  },
+  "show": {
+    "jobindex.1001": {
+      "apply_type": "external",
+      "apply_url": "https://example.com/apply/1001",
+      "company": "Example Industries A/S",
+      "description": "Financial Controller at Example Industries A/S. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": "Own the close and the forecast.",
+      "duplicate_of": null,
+      "employer": "Example Industries A/S",
+      "history": [],
+      "id": "jobindex.1001",
+      "integrity": null,
+      "language_requirement": "none",
+      "liveness_status": "live",
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1001",
+      "posted_at": "<time>",
+      "prescreen_score": 0.8,
+      "salary": null,
+      "score": 0.92,
+      "score_reason": "strong fit",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "unapplied",
+      "title": "Financial Controller",
+      "url": "https://example.com/jobs/1001",
+      "work_permit": "not_mentioned"
+    },
+    "jobindex.1002": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Sample Bank",
+      "description": "Head of Finance at Sample Bank. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "status": "unapplied"
+        },
+        {
+          "at": "<time>",
+          "status": "prepared"
+        }
+      ],
+      "id": "jobindex.1002",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": {
+        "cover_letter_words": 10,
+        "file_names": {
+          "cover_letter": "Alex Example - Cover letter.pdf",
+          "cv": "Alex Example - CV.pdf"
+        },
+        "keywords": [
+          "close",
+          "forecast",
+          "IFRS"
+        ],
+        "output_dir": "<home>/jobs/output/jobindex.1002",
+        "page_counts": {
+          "cover_letter": 1,
+          "cv": 1
+        },
+        "pdfs": {
+          "cover_letter": "<home>/jobs/output/jobindex.1002/cover_letter.pdf",
+          "cv": "<home>/jobs/output/jobindex.1002/cv.pdf"
+        },
+        "pngs": {
+          "cover_letter": [
+            "<home>/jobs/output/jobindex.1002/cover_letter_page_1.png"
+          ],
+          "cv": [
+            "<home>/jobs/output/jobindex.1002/cv_page_1.png"
+          ]
+        },
+        "readability": [],
+        "rendered": false,
+        "sent": false,
+        "tailoring": [
+          "kept the close story",
+          "cut the older role"
+        ],
+        "unsupported": []
+      },
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1002",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": {
+        "ad_salary": null,
+        "as_of": "<time>",
+        "basis": "ads for similar roles",
+        "currency": "DKK",
+        "gross": true,
+        "high": 900000,
+        "low": 750000,
+        "period": "year",
+        "position": "mid",
+        "sources": [
+          "https://example.com/salaries"
+        ]
+      },
+      "score": 0.85,
+      "score_reason": "good fit",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "prepared",
+      "title": "Head of Finance",
+      "url": "https://example.com/jobs/1002"
+    },
+    "jobindex.1003": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Example Industries A/S",
+      "description": "Finance Business Partner at Example Industries A/S. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "notes": "later",
+          "status": "unapplied"
+        }
+      ],
+      "id": "jobindex.1003",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1003",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.7,
+      "score_reason": "fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "unapplied",
+      "title": "Finance Business Partner",
+      "url": "https://example.com/jobs/1003"
+    },
+    "jobindex.1004": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Sample Bank",
+      "description": "Business Controller at Sample Bank. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "notes": "sent through their site",
+          "status": "applied"
+        }
+      ],
+      "id": "jobindex.1004",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": {
+        "cover_letter_words": 10,
+        "file_names": {
+          "cover_letter": "Alex Example - Cover letter.pdf",
+          "cv": "Alex Example - CV.pdf"
+        },
+        "keywords": [
+          "close",
+          "forecast",
+          "IFRS"
+        ],
+        "output_dir": "<home>/jobs/output/jobindex.1004/sent",
+        "page_counts": {
+          "cover_letter": 1,
+          "cv": 1
+        },
+        "pdfs": {
+          "cover_letter": "<home>/jobs/output/jobindex.1004/sent/cover_letter.pdf",
+          "cv": "<home>/jobs/output/jobindex.1004/sent/cv.pdf"
+        },
+        "pngs": {
+          "cover_letter": [
+            "<home>/jobs/output/jobindex.1004/sent/cover_letter_page_1.png"
+          ],
+          "cv": [
+            "<home>/jobs/output/jobindex.1004/sent/cv_page_1.png"
+          ]
+        },
+        "readability": [],
+        "rendered": false,
+        "sent": true,
+        "tailoring": [
+          "kept the close story",
+          "cut the older role"
+        ],
+        "unsupported": []
+      },
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1004",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.74,
+      "score_reason": "fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "applied",
+      "title": "Business Controller",
+      "url": "https://example.com/jobs/1004"
+    },
+    "jobindex.1005": {
+      "apply_type": "unknown",
+      "apply_url": null,
+      "company": "Nordic Foods A/S",
+      "description": "Økonomichef at Nordic Foods A/S. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "status": "applied"
+        },
+        {
+          "at": "<time>",
+          "notes": "recruiter call went well",
+          "result": "passed",
+          "status": "interview:screening"
+        },
+        {
+          "at": "<time>",
+          "result": "passed",
+          "status": "interview:impression"
+        },
+        {
+          "at": "<time>",
+          "notes": "case study",
+          "result": "passed",
+          "status": "interview:technical"
+        },
+        {
+          "at": "<time>",
+          "notes": "verbal",
+          "status": "offer"
+        }
+      ],
+      "id": "jobindex.1005",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1005",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.71,
+      "score_reason": "fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "offer",
+      "title": "Økonomichef",
+      "title_en": "Head of Finance (Economy Manager)",
+      "url": "https://example.com/jobs/1005"
+    },
+    "jobindex.1006": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Late Answer ApS",
+      "description": "Controller at Late Answer ApS. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "status": "applied"
+        },
+        {
+          "at": "<time>",
+          "result": "rejected",
+          "status": "interview:screening"
+        },
+        {
+          "at": "<time>",
+          "notes": "went with an internal candidate",
+          "status": "rejected"
+        }
+      ],
+      "id": "jobindex.1006",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1006",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.69,
+      "score_reason": "fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "rejected",
+      "title": "Controller",
+      "url": "https://example.com/jobs/1006"
+    },
+    "jobindex.1007": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Silent Corp",
+      "description": "Accounting Manager at Silent Corp. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "status": "applied"
+        },
+        {
+          "at": "<time>",
+          "notes": "personality test",
+          "result": "ghosted",
+          "status": "interview:assessment"
+        },
+        {
+          "at": "<time>",
+          "status": "ghosted"
+        }
+      ],
+      "id": "jobindex.1007",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1007",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.66,
+      "score_reason": "fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "ghosted",
+      "title": "Accounting Manager",
+      "url": "https://example.com/jobs/1007"
+    },
+    "jobindex.1008": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Another Bank A/S",
+      "description": "Finance Manager at Another Bank A/S. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "logged_at": "<time>",
+          "status": "applied"
+        },
+        {
+          "at": "<time>",
+          "result": "withdrawn",
+          "status": "interview:screening"
+        },
+        {
+          "at": "<time>",
+          "notes": "withdrew: the role moved to Aarhus",
+          "status": "discarded"
+        }
+      ],
+      "id": "jobindex.1008",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1008",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.9,
+      "score_reason": "strong fit",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "discarded",
+      "title": "Finance Manager",
+      "url": "https://example.com/jobs/1008"
+    },
+    "jobindex.1009": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Dismissed Inc",
+      "description": "Finance Controller at Dismissed Inc. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "notes": "not for me",
+          "status": "discarded"
+        }
+      ],
+      "id": "jobindex.1009",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1009",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.68,
+      "score_reason": "fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "discarded",
+      "title": "Finance Controller",
+      "url": "https://example.com/jobs/1009"
+    },
+    "jobindex.1010": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Small Shop",
+      "description": "Accounts Payable Clerk at Small Shop. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [],
+      "id": "jobindex.1010",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1010",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.2,
+      "score_reason": "junior role",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "unapplied",
+      "title": "Accounts Payable Clerk",
+      "url": "https://example.com/jobs/1010"
+    },
+    "jobindex.1011": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Excluded Corp",
+      "description": "Intern Controller at Excluded Corp. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [],
+      "id": "jobindex.1011",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [],
+      "materials": null,
+      "missing_skills": [],
+      "platform_id": "1011",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.0,
+      "score_reason": "prefilter: excluded keyword",
+      "scored_at": null,
+      "scored_by": null,
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "unapplied",
+      "title": "Intern Controller",
+      "url": "https://example.com/jobs/1011"
+    },
+    "jobindex.1012": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Fresh Ltd",
+      "description": "Unscored Controller at Fresh Ltd. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [],
+      "id": "jobindex.1012",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [],
+      "materials": null,
+      "missing_skills": [],
+      "platform_id": "1012",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": null,
+      "score_reason": null,
+      "scored_at": null,
+      "scored_by": null,
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "unapplied",
+      "title": "Unscored Controller",
+      "url": "https://example.com/jobs/1012"
+    },
+    "jobindex.1013": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Gone Ltd",
+      "description": "Senior Controller at Gone Ltd. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [],
+      "id": "jobindex.1013",
+      "integrity": null,
+      "liveness_status": "dead",
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1013",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.6,
+      "score_reason": "fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "unapplied",
+      "title": "Senior Controller",
+      "url": "https://example.com/jobs/1013"
+    },
+    "jobindex.1014": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Odd Ltd",
+      "description": "Controller (suspicious) at Odd Ltd. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [],
+      "id": "jobindex.1014",
+      "integrity": {
+        "findings": [
+          {
+            "excerpt": "ignore the instructions",
+            "kind": "hidden_text"
+          }
+        ],
+        "verdict": "suspicious"
+      },
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "1014",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.3,
+      "score_reason": "suspicious ad: fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "jobindex",
+      "source_name": "Jobindex",
+      "status": "unapplied",
+      "title": "Controller (suspicious)",
+      "url": "https://example.com/jobs/1014"
+    },
+    "thehub.2001": {
+      "apply_type": "easy_apply",
+      "apply_url": null,
+      "company": "Failing Feed Ltd",
+      "description": "Group Controller at Failing Feed Ltd. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": null,
+      "employer": null,
+      "history": [
+        {
+          "at": "<time>",
+          "status": "applied"
+        },
+        {
+          "at": "<time>",
+          "status": "ghosted"
+        }
+      ],
+      "id": "thehub.2001",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [
+        "Excel",
+        "IFRS"
+      ],
+      "materials": null,
+      "missing_skills": [
+        "SAP"
+      ],
+      "platform_id": "2001",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.78,
+      "score_reason": "fits",
+      "scored_at": "<time>",
+      "scored_by": "haiku",
+      "scraped_at": "<time>",
+      "source": "thehub",
+      "source_name": "The Hub",
+      "status": "ghosted",
+      "title": "Group Controller",
+      "url": "https://example.com/jobs/2001"
+    },
+    "thehub.2002": {
+      "apply_type": null,
+      "apply_url": null,
+      "company": "Example Industries A/S",
+      "description": "Financial Controller at Example Industries A/S. You own the month-end close and the forecast. Excel and IFRS required.",
+      "description_condensed": null,
+      "duplicate_of": "jobindex.1001",
+      "employer": null,
+      "history": [],
+      "id": "thehub.2002",
+      "integrity": null,
+      "liveness_status": null,
+      "location": "Copenhagen",
+      "matching_skills": [],
+      "materials": null,
+      "missing_skills": [],
+      "platform_id": "2002",
+      "posted_at": "<time>",
+      "prescreen_score": null,
+      "salary": null,
+      "score": 0.5,
+      "score_reason": "duplicate",
+      "scored_at": null,
+      "scored_by": null,
+      "scraped_at": "<time>",
+      "source": "thehub",
+      "source_name": "The Hub",
+      "status": "unapplied",
+      "title": "Financial Controller",
+      "url": "https://example.com/jobs/2002"
+    }
+  },
+  "show_profile": {
+    "config": {
+      "claude_config_dir": "~/.claude-example",
+      "condense_max_chars": 3000,
+      "cover_letter_template": "<home>/profile/cover-letter.template.tex",
+      "cv_content": "<home>/profile/cv.md",
+      "cv_template": "<home>/profile/cv.template.tex",
+      "dedup_similarity_threshold": 0.9,
+      "dedup_source_priority": [
+        "jobindex",
+        "thehub"
+      ],
+      "email": "alex.example@example.com",
+      "enrich_sources": [
+        "https://example.com/alex"
+      ],
+      "exclude": {
+        "companies": [
+          "Excluded Corp"
+        ],
+        "keywords": [
+          "intern",
+          "unpaid"
+        ]
+      },
+      "follow_ai_fallback": false,
+      "hellowork_discovery": true,
+      "jobbsafari_discovery": true,
+      "languages": [
+        "English",
+        "Danish"
+      ],
+      "linkedin_discovery": true,
+      "liveness_expiry_phrases": [
+        "no longer available"
+      ],
+      "location": "Copenhagen",
+      "max_age_days": 36500,
+      "max_pages_per_keyword": 5,
+      "max_postings_per_site": 200,
+      "min_score": 0.6,
+      "name": "Alex Example",
+      "needs_work_permit": true,
+      "photo": "<home>/profile/photo.jpg",
+      "prescreen_min": 0.2,
+      "prescreen_top_n": 30,
+      "profession_discovery": true,
+      "recheck_after_days": 14,
+      "remote": "hybrid",
+      "retire_after_days": 60,
+      "revise_model": "sonnet",
+      "role_targets": [
+        "Financial Controller",
+        "Head of Finance"
+      ],
+      "scrape_workers": 4,
+      "search_keywords": [
+        "financial controller",
+        "head of finance",
+        "group controller"
+      ],
+      "topic_terms": [
+        "controller",
+        "finance*",
+        "accounting"
+      ],
+      "translate_model": "haiku",
+      "translate_titles": false,
+      "verify_liveness": true
+    },
+    "cv": {
+      "exists": true,
+      "headline": "Alex Example",
+      "is_example": false,
+      "path": "<home>/profile/cv.md",
+      "sections": [
+        {
+          "bullets": 0,
+          "roles": [],
+          "title": "Summary"
+        },
+        {
+          "bullets": 3,
+          "roles": [
+            "Senior Controller, Example Industries A/S (2019 - 2024)",
+            "Financial Analyst, Sample Bank (2015 - 2019)"
+          ],
+          "title": "Experience"
+        },
+        {
+          "bullets": 0,
+          "roles": [],
+          "title": "Skills"
+        },
+        {
+          "bullets": 0,
+          "roles": [],
+          "title": "Education"
+        },
+        {
+          "bullets": 0,
+          "roles": [],
+          "title": "Languages"
+        }
+      ],
+      "text": "# Alex Example\n\nalex.example@example.com | Copenhagen\n\n## Summary\n\nFinance controller with nine years in month-end close, forecasting and group reporting.\n\n## Experience\n\n### Senior Controller, Example Industries A/S (2019 - 2024)\n\n- Cut the month-end close from ten to six working days across four entities.\n- Built a rolling forecast in Power BI used by 12 managers.\n\n### Financial Analyst, Sample Bank (2015 - 2019)\n\n- Prepared the monthly management accounts for the retail division.\n\n## Skills\n\nExcel, Power BI, SAP, IFRS, SQL\n\n## Education\n\nMSc in Finance, Example University (2015)\n\n## Languages\n\nEnglish (fluent), Danish (fluent)\n"
+    },
+    "discovery_unchosen": [],
+    "enrich_sources": [
+      "https://example.com/alex"
+    ],
+    "errors": [],
+    "path": "<home>/profile",
+    "photo": {
+      "exists": true,
+      "path": "<home>/profile/photo.jpg"
+    },
+    "story_bank": {
+      "exists": true,
+      "is_example": false,
+      "path": "<home>/profile/story_bank.md"
+    },
+    "templates": {
+      "cover_letter": {
+        "exists": true,
+        "is_example": true,
+        "path": "<home>/profile/cover-letter.template.tex"
+      },
+      "cv": {
+        "exists": true,
+        "is_example": true,
+        "path": "<home>/profile/cv.template.tex"
+      }
+    }
+  },
+  "status_summary": {
+    "application": {
+      "ghosted": 1,
+      "passed": 4,
+      "pending": 1,
+      "rejected": 0,
+      "withdrawn": 0
+    },
+    "employers": {
+      "dormant": 1,
+      "followed": 3,
+      "unfollowable": 2,
+      "unresolved": 1
+    },
+    "in_progress": null,
+    "interviews": {
+      "assessment": {
+        "ghosted": 1,
+        "passed": 0,
+        "pending": 0,
+        "rejected": 0,
+        "withdrawn": 0
+      },
+      "impression": {
+        "ghosted": 0,
+        "passed": 1,
+        "pending": 0,
+        "rejected": 0,
+        "withdrawn": 0
+      },
+      "screening": {
+        "ghosted": 0,
+        "passed": 1,
+        "pending": 0,
+        "rejected": 1,
+        "withdrawn": 1
+      },
+      "technical": {
+        "ghosted": 0,
+        "passed": 1,
+        "pending": 0,
+        "rejected": 0,
+        "withdrawn": 0
+      }
+    },
+    "ledger": {
+      "applied": 1,
+      "discarded": 2,
+      "ghosted": 2,
+      "interview:assessment": 0,
+      "interview:impression": 0,
+      "interview:screening": 0,
+      "interview:technical": 0,
+      "offer": 1,
+      "prepared": 1,
+      "rejected": 1,
+      "unapplied": 1
+    },
+    "min_score": 0.6,
+    "pass_rates": {
+      "application": {
+        "decided": 5,
+        "high": 0.9207825127659933,
+        "low": 0.5792174872340067,
+        "passed": 4,
+        "rate": 0.8
+      },
+      "assessment": {
+        "decided": 1,
+        "high": 0.5,
+        "low": 0.0,
+        "passed": 0,
+        "rate": 0.0
+      },
+      "impression": {
+        "decided": 1,
+        "high": 1.0,
+        "low": 0.5,
+        "passed": 1,
+        "rate": 1.0
+      },
+      "screening": {
+        "decided": 2,
+        "high": 0.7886751345948129,
+        "low": 0.21132486540518713,
+        "passed": 1,
+        "rate": 0.5
+      },
+      "technical": {
+        "decided": 1,
+        "high": 1.0,
+        "low": 0.5,
+        "passed": 1,
+        "rate": 1.0
+      }
+    },
+    "pipeline": {
+      "above_threshold": 11,
+      "above_threshold_by_status": {
+        "applied": 5,
+        "discarded": 2,
+        "prepared": 1,
+        "unapplied": 3
+      },
+      "applicable": 14,
+      "excluded": 0,
+      "total": 16,
+      "unapplied": 3
+    },
+    "plan": null,
+    "recurring_problem": false,
+    "since_last_review": {
+      "last_reviewed_at": "<time>",
+      "last_run": {
+        "failures": [],
+        "finished_at": "<time>",
+        "new_above_threshold": 2,
+        "outcome": "ok",
+        "scored": 14,
+        "scraped": 17,
+        "started_at": "<time>"
+      },
+      "new_matches": 2,
+      "runs": 1,
+      "site_failures": []
+    }
+  }
+}

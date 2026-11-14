@@ -1,0 +1,31 @@
+{
+  "id": "thehub.2001",
+  "title": "Group Controller",
+  "company": "Failing Feed Ltd",
+  "location": "Copenhagen",
+  "url": "https://example.com/jobs/2001",
+  "description": "Group Controller at Failing Feed Ltd. You own the month-end close and the forecast. Excel and IFRS required.",
+  "description_condensed": null,
+  "source": "thehub",
+  "scraped_at": "2026-03-15T09:00:00Z",
+  "platform_id": "2001",
+  "posted_at": "2026-03-14T09:00:00Z",
+  "score": 0.78,
+  "score_reason": "fits",
+  "prescreen_score": null,
+  "scored_by": "haiku",
+  "scored_at": "2026-03-16T09:00:00+00:00",
+  "matching_skills": [
+    "Excel",
+    "IFRS"
+  ],
+  "missing_skills": [
+    "SAP"
+  ],
+  "liveness_status": null,
+  "duplicate_of": null,
+  "apply_type": "easy_apply",
+  "apply_url": null,
+  "employer": null,
+  "integrity": null
+}

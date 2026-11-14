@@ -222,7 +222,7 @@ def test_remote_meta_finds_the_archive_in_the_folder(state):
     responses.get(f"{API}/drive/v3/files", json=_files([{"id": "F1"}]))
     responses.get(f"{API}/drive/v3/files", json=_files([{"id": "A1", "md5Checksum": "7"}]))
     meta = drive.remote_meta()
-    assert meta == {"id": "A1", "version": "7"}
+    assert meta == {"id": "A1", "version": "7", "properties": {}}
     assert "door-data.tar.gz" in urllib.parse.unquote_plus(responses.calls[1].request.url)
     assert drive.read_state()["file_id"] == "A1"
 
@@ -240,7 +240,7 @@ def test_remote_meta_cached_id_404_means_no_remote(state):
 def test_remote_meta_uses_cached_id(state):
     drive.write_state({**drive.read_state(), "file_id": "A1"})
     responses.get(f"{API}/drive/v3/files/A1", json={"id": "A1", "md5Checksum": "9"})
-    assert drive.remote_meta() == {"id": "A1", "version": "9"}
+    assert drive.remote_meta() == {"id": "A1", "version": "9", "properties": {}}
 
 
 @responses.activate
@@ -278,6 +278,54 @@ def test_version_is_the_content_checksum_not_drives_counter(state, tmp_path):
     pushed = drive.upload(src)
     responses.get(f"{API}/drive/v3/files/A1", json={"id": "A1", "version": "3", "md5Checksum": "abc"})
     assert drive.remote_meta()["version"] == pushed == "abc"
+
+
+PROPS = {"door_profile_version": "0.1", "door_jobs_version": "0.0"}
+
+
+@responses.activate
+def test_remote_meta_asks_for_and_returns_the_app_properties(state):
+    drive.write_state({**drive.read_state(), "file_id": "A1"})
+    responses.get(f"{API}/drive/v3/files/A1", json={"id": "A1", "md5Checksum": "9", "appProperties": PROPS})
+    meta = drive.remote_meta()
+    assert meta["properties"] == PROPS
+    assert "appProperties" in urllib.parse.parse_qs(urllib.parse.urlsplit(responses.calls[0].request.url).query)["fields"][0]
+
+
+@responses.activate
+def test_remote_meta_of_a_listed_file_returns_its_app_properties(state):
+    responses.get(f"{API}/drive/v3/files", json=_files([{"id": "F1"}]))
+    responses.get(f"{API}/drive/v3/files", json=_files([{"id": "A1", "md5Checksum": "7", "appProperties": PROPS}]))
+    assert drive.remote_meta()["properties"] == PROPS
+    assert "appProperties" in urllib.parse.parse_qs(urllib.parse.urlsplit(responses.calls[1].request.url).query)["fields"][0]
+
+
+@responses.activate
+def test_upload_of_a_new_file_sends_the_app_properties(state, tmp_path):
+    src = tmp_path / "a.tar.gz"
+    src.write_bytes(b"data")
+    responses.get(f"{API}/drive/v3/files", json=_files([]))
+    responses.post(f"{API}/drive/v3/files", json={"id": "F1"})
+    responses.post(f"{API}/upload/drive/v3/files", json={"id": "A1", "md5Checksum": "3"})
+    drive.upload(src, PROPS)
+    body = [c for c in responses.calls if c.request.method == "POST"][1].request.body
+    head = json.loads(body.split(b"\r\n\r\n")[1].split(b"\r\n")[0])
+    assert head["appProperties"] == PROPS and head["name"] == "door-data.tar.gz"
+    assert b"data" in body
+
+
+@responses.activate
+def test_upload_of_an_existing_file_sends_the_app_properties(state, tmp_path):
+    drive.write_state({**drive.read_state(), "file_id": "A1"})
+    src = tmp_path / "a.tar.gz"
+    src.write_bytes(b"data")
+    responses.get(f"{API}/drive/v3/files/A1", json={"id": "A1", "md5Checksum": "3"})
+    responses.patch(f"{API}/upload/drive/v3/files/A1", json={"id": "A1", "md5Checksum": "4"})
+    assert drive.upload(src, PROPS) == "4"
+    call = [c for c in responses.calls if c.request.method == "PATCH"][0]
+    assert "multipart" in call.request.url
+    assert json.dumps(PROPS).encode()[1:-1].split(b",")[0] in call.request.body
+    assert b"data" in call.request.body
 
 
 @responses.activate

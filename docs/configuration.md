@@ -81,7 +81,7 @@ Interactive `init` also drafts `profile/cv.md` from your existing CV and public 
 proposes `search_keywords` (see [*The other door* from the terminal](manual-cli.md#walkthrough)).
 `enrich` (`/expand`) adds to the CV from public URLs later.
 
-To start by hand instead: `cp -r profile.example/ profile/` and edit `profile/config.json`.
+To start by hand instead: run `./door init` (it makes `profile/` from `profile.example/`, stamped with the data version) and edit `profile/config.json`. Do not copy `profile.example/` yourself: a `profile/` without its version stamp is read as the first release's data and upgraded.
 
 ## Following companies directly
 
