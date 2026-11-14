@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { AppName } from './screens/AppName'
 import { WarningMark } from './screens/CheckMark'
 import { ApiError, call, errorText, findJobs, onOpen, onRunBoard, runBoard, statusSummary, stopRun } from './api'
-import type { Opening, RunBoard } from './api'
+import type { Opening, PlanBlock, RunBoard } from './api'
 import { TabIcon } from './TabIcon'
 import { Splash } from './Splash'
 import { RemoteContext } from './remote'
@@ -16,7 +16,7 @@ import { discoveryOff } from './screens/onboarding/reducer'
 import type { DoctorReport, ShowProfile, WizardState } from './screens/onboarding/reducer'
 import { Profile, type ProfileStart } from './screens/Profile'
 import { Settings } from './screens/Settings'
-import { problems, type Problem } from './screens/problems'
+import { planReset, problems, type Problem } from './screens/problems'
 import { Wizard } from './screens/onboarding/Wizard'
 import { PREPARING_TIP } from './screens/Matches'
 import { usePreparing } from './screens/prepare-store'
@@ -80,6 +80,10 @@ export function App({ start }: { start?: AppStart } = {}) {
   const [driveConflict, setDriveConflict] = useState(false)
   // Something keeps going wrong since the last problem report (status_summary's recurring_problem)
   const [recurring, setRecurring] = useState<boolean | null>(null)
+  // The Claude plan's window (status_summary's plan): a sidebar line only when it is nearly full
+  const [plan, setPlan] = useState<PlanBlock | null>(null)
+  // Bumped when a Prepare ends, to read the summary again (refreshKey would remount Matches)
+  const [summaryKey, setSummaryKey] = useState(0)
   // The run: what this window asked for (`run`) and what the main process says is going (`board`),
   // whoever started it. It lives here so it survives a look at another screen.
   // this window's own run, from the moment it is asked for; null until the first one
@@ -118,6 +122,11 @@ export function App({ start }: { start?: AppStart } = {}) {
 
   const own = run?.kind === 'running' || (board.active && board.own)
   const preparingNow = usePreparing()
+  const wasPreparing = useRef(false)
+  useEffect(() => {
+    if (wasPreparing.current && !preparingNow) setSummaryKey((k) => k + 1) // a prepare used some of the window
+    wasPreparing.current = preparingNow
+  }, [preparingNow])
   const foreign = board.active && !board.own
   const startRun = async (skip?: string[]) => {
     setRun({ kind: 'running', startedAt: new Date().toISOString() })
@@ -243,13 +252,24 @@ export function App({ start }: { start?: AppStart } = {}) {
         setLastRun(lastRunText(s.since_last_review?.last_run?.finished_at))
         setDrive(s.drive && typeof s.drive.connected === 'boolean' ? s.drive : null)
         setRecurring(typeof s.recurring_problem === 'boolean' ? s.recurring_problem : null)
+        setPlan(s.plan ?? null)
       },
       () => undefined, // the caption is optional; Matches shows the failure
     )
     return () => {
       live = false
     }
-  }, [refreshKey, inShell])
+  }, [refreshKey, summaryKey, inShell])
+
+  // The window resets at a known time: read the summary once then, so a line that has run out goes by itself (no polling)
+  useEffect(() => {
+    const at = planReset(plan)?.getTime()
+    if (at === undefined) return
+    const wait = at - Date.now()
+    if (wait <= 0) return
+    const timer = setTimeout(() => setSummaryKey((k) => k + 1), Math.min(wait + 1000, 2 ** 31 - 1))
+    return () => clearTimeout(timer)
+  }, [plan])
 
   /** A pull or an import replaced profile/ and jobs/: read them again. */
   const dataChanged = () => {
@@ -312,10 +332,10 @@ export function App({ start }: { start?: AppStart } = {}) {
     )
   }
   const where = sandbox ? 'sandbox' : demo ? 'demo' : 'real'
-  // What is wrong and needs you (Claude, the CV, Drive, something that keeps going wrong): a short line each
-  // at the sidebar's foot. On the phone they are said, not buttons: what fixes them is on the computer running
+  // What is wrong and needs you (Claude, the Claude plan's window, the CV, Drive, something that keeps going wrong):
+  // a short line each at the sidebar's foot (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
   // The other door; a problem report is made there too, so the phone does not say that one.
-  const lines = problems({ doctor, drive, driveConflict, cv: demo ? null : profile?.config ? profile.cv : null, recurring: remote ? null : recurring })
+  const lines = problems({ doctor, drive, driveConflict, cv: demo ? null : profile?.config ? profile.cv : null, recurring: remote ? null : recurring, plan })
   const destinations = remote ? PHONE_DESTINATIONS : DESTINATIONS
   /** Opens Profile at one of its sections (the same way for every link into it). */
   const openProfile = (section: string) => {
@@ -343,7 +363,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   const problemLines = (
     <div className="sidebar-problems" role="group" aria-label="Needs you">
       {lines.map((p) =>
-        remote ? (
+        remote || p.target === 'none' ? (
           <p key={p.key} className="small sidebar-problem marked">
             <span className="mark"><WarningMark /></span>
             <span>{p.text}</span>
@@ -387,11 +407,11 @@ export function App({ start }: { start?: AppStart } = {}) {
           ))}
         </nav>
         <div className="sidebar-foot">
+          {lines.length > 0 && problemLines}
           <button type="button" className="secondary" disabled={foreign || (own && finding) || (!own && preparingNow)} title={!own && preparingNow ? PREPARING_TIP : undefined} onClick={() => (own ? setFinding(true) : void startRun())}>
             {own || foreign ? 'Finding jobs…' : 'Find new jobs'}
           </button>
           {lastRun && <p className="small muted">Last run {lastRun}</p>}
-          {lines.length > 0 && problemLines}
         </div>
       </aside>
       )}

@@ -46,6 +46,24 @@ export interface InProgress {
   [key: string]: unknown
 }
 
+/** One window of the Claude plan (`usage.room`): how much is used and when it resets (ISO). */
+export interface PlanWindow {
+  used?: number
+  resets_at?: string
+}
+
+/** `status_summary.plan`: the plan's window and the room left in it; null before any reading. */
+export interface PlanBlock {
+  as_of: string
+  status?: string
+  five_hour?: PlanWindow
+  seven_day?: PlanWindow
+  room: { find: number | null; prepare: number | null } | null
+  binding: 'five_hour' | 'seven_day' | null
+  warning?: string
+  [key: string]: unknown
+}
+
 export interface StatusSummary {
   min_score: number
   since_last_review: {
@@ -62,6 +80,8 @@ export interface StatusSummary {
   recurring_problem?: boolean
   /** What the last days' Claude calls cost at API prices (`usage.cost`); null before any call was weighed. */
   cost?: CostBlock | null
+  /** The Claude plan's window and the room left (`usage.room`); null before any reading. */
+  plan?: PlanBlock | null
 }
 
 export interface CostBlock {

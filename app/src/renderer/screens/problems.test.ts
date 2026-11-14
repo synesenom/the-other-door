@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DoctorReport } from './onboarding/reducer'
-import { problems, type ProblemInput } from './problems'
+import type { PlanBlock } from '../api'
+import { planLine, problems, type ProblemInput } from './problems'
 
 const signedIn: DoctorReport = { ok: true, checks: [{ name: 'claude CLI', status: 'ok', required: true, detail: '' }, { name: 'claude login', status: 'ok', required: true, detail: '', details: { loggedIn: true } }] }
 const signedOut: DoctorReport = { ok: false, checks: [{ name: 'claude CLI', status: 'ok', required: true, detail: '' }, { name: 'claude login', status: 'missing', required: true, detail: '', details: { loggedIn: false } }] }
@@ -74,5 +75,75 @@ describe('problems', () => {
   it('data that is fine, or busy for a moment, says nothing', () => {
     expect(problems({ ...calm, doctor: { ...signedIn, data: { state: 'ok', message: '' } } })).toEqual([])
     expect(problems({ ...calm, doctor: { ...signedIn, data: { state: 'busy', message: 'a run is in progress' } } })).toEqual([])
+  })
+})
+
+describe('the plan line', () => {
+  const now = new Date(2026, 10, 14, 10, 0, 0)
+  const at = (d: Date) => d.toISOString()
+  const today = at(new Date(2026, 10, 14, 15, 30, 0))
+  const other = at(new Date(2026, 10, 16, 9, 5, 0)) // a Monday? checked below by the weekday name
+  const day = new Date(2026, 10, 16).toLocaleDateString('en-US', { weekday: 'short' })
+  const plan = (over: Partial<PlanBlock> = {}): PlanBlock => ({
+    as_of: at(now),
+    status: 'allowed',
+    five_hour: { used: 0.4, resets_at: today },
+    room: { find: 6, prepare: 2 },
+    binding: 'five_hour',
+    ...over,
+  })
+
+  it('a limit that is reached says so, with the reset', () => {
+    expect(planLine(plan({ status: 'rejected', room: { find: 0, prepare: 0 }, warning: "Claude's usage limit is reached" }), now)).toBe("Claude's usage limit is reached, resets 15:30")
+    expect(planLine(plan({ status: 'rejected', room: null }), now)).toBe("Claude's usage limit is reached, resets 15:30")
+  })
+
+  it('room for three or fewer says how many, singular for one', () => {
+    expect(planLine(plan(), now)).toBe('Claude can prepare 2 more, resets 15:30')
+    expect(planLine(plan({ room: { find: 1, prepare: 1 } }), now)).toBe('Claude can prepare 1 more, resets 15:30')
+  })
+
+  it('a warning shows the room too, even above three', () => {
+    expect(planLine(plan({ warning: "Claude's usage limit is close", room: { find: 9, prepare: 10 } }), now)).toBe('Claude can prepare 10 more, resets 15:30')
+  })
+
+  it('room above three and no warning: nothing', () => {
+    expect(planLine(plan({ room: { find: 9, prepare: 4 } }), now)).toBeNull()
+  })
+
+  it('no plan, or no room and no warning: nothing; a warning without room is the warning', () => {
+    expect(planLine(null, now)).toBeNull()
+    expect(planLine(undefined, now)).toBeNull()
+    expect(planLine(plan({ room: null }), now)).toBeNull()
+    expect(planLine(plan({ room: null, warning: "Claude's usage limit is close" }), now)).toBe("Claude's usage limit is close, resets 15:30")
+  })
+
+  it('a window whose reset has passed says nothing, as usage.latest drops it', () => {
+    const past = at(new Date(2026, 10, 14, 9, 0, 0))
+    expect(planLine(plan({ five_hour: { used: 0.9, resets_at: past } }), now)).toBeNull()
+    expect(planLine(plan({ five_hour: { used: 0.9, resets_at: at(now) } }), now)).toBeNull()
+    expect(planLine(plan({ status: 'rejected', five_hour: { resets_at: past } }), now)).toBeNull()
+  })
+
+  it('no room at all, still allowed: says 0', () => {
+    expect(planLine(plan({ room: { find: 0, prepare: 0 } }), now)).toBe('Claude can prepare 0 more, resets 15:30')
+  })
+
+  it('no reset known: no resets part', () => {
+    expect(planLine(plan({ five_hour: { used: 0.4 } }), now)).toBe('Claude can prepare 2 more')
+  })
+
+  it('the binding window gives the reset, else the first with figures', () => {
+    const both = { five_hour: { used: 0.1, resets_at: today }, seven_day: { used: 0.9, resets_at: other } }
+    expect(planLine(plan({ ...both, binding: 'seven_day' }), now)).toBe(`Claude can prepare 2 more, resets ${day} 09:05`)
+    expect(planLine(plan({ ...both, binding: null }), now)).toBe('Claude can prepare 2 more, resets 15:30')
+    expect(planLine(plan({ five_hour: undefined, seven_day: { used: 0.9, resets_at: other }, binding: null }), now)).toBe(`Claude can prepare 2 more, resets ${day} 09:05`)
+  })
+
+  it('sits after Claude and before the CV, and opens nothing', () => {
+    const lines = problems({ ...calm, doctor: signedOut, cv: { exists: false }, plan: plan(), now })
+    expect(lines.map((l) => l.key)).toEqual(['claude', 'plan', 'cv'])
+    expect(lines[1]).toEqual({ key: 'plan', text: 'Claude can prepare 2 more, resets 15:30', target: 'none' })
+    expect(problems({ ...calm, plan: plan({ room: { find: 9, prepare: 9 } }), now })).toEqual([])
   })
 })

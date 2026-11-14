@@ -42,7 +42,7 @@ change a colour or a size there, not in a component.
    themselves (sign in again, retry, choose a file). A failure the app retries by itself, or one the
    user can do nothing about, is said nowhere: a site a run could not read, an ad it could not score
    (#478). The run record and the logs keep it. The same failure again and again is something the
-   user can act on (send a report, #593): one line, "Something keeps going wrong. Send a report".
+   user can act on (send a report, #593): one line, "Something keeps going wrong. Send a report". A limit that only time lifts (the Claude plan's window) is said, as a line that opens nothing.
 
 ## Colour
 
@@ -155,9 +155,9 @@ The screenshots below are rendered from the mockups in [`mockups/`](mockups/) (s
 the design canvas (<https://claude.ai/artifact/4UWNSV9JgaPXX4LZxPL1S5>, private until
 shared from its Share menu).
 
-What needs you (Claude not signed in, no CV, a failed Drive sync or one that needs a choice, something that keeps going
+What needs you (Claude not signed in, the Claude plan's window nearly full, no CV, a failed Drive sync or one that needs a choice, something that keeps going
 wrong) is a short underlined line each at the foot of the sidebar, under the last run, opening
-where it is fixed; nothing when all is well. The app opens on Matches.
+where it is fixed; nothing when all is well. The plan's line has nothing to fix, it is waited out: it opens nothing and goes when the window resets. The app opens on Matches.
 
 **Matches** (the home of a review session): the list, and a row opens its posting on the
 whole page, as a card does in Applications. The list stops at 620 px, the column of Settings and Finding jobs, so a row reads as one

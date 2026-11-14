@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../renderer/App'
 import { stubNarrow } from '../renderer/testing'
@@ -84,6 +84,37 @@ describe('the visual guide', () => {
       expect(document.querySelectorAll(`button.${kind}:not(.sidebar-problem)`)).toHaveLength(2)
       expect(document.querySelector(`button.${kind}:disabled`)).not.toBeNull()
     }
+  })
+})
+
+describe('the plan line', () => {
+  it('says the window is nearly full, as plain text that opens nothing', async () => {
+    mount('matches', 'plan-low')
+    const line = await screen.findByText(/Claude can prepare 2 more, resets/)
+    expect(line.closest('button')).toBeNull()
+    expect(line.closest('p')).not.toBeNull()
+  })
+
+  it('says nothing with room to spare', async () => {
+    const { container } = mount('matches')
+    await waitFor(() => expect(container.querySelector('main')).toBeInTheDocument())
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByText(/Claude can prepare/)).toBeNull()
+  })
+
+  it('reads the summary again when a Prepare ends', async () => {
+    const scene = sceneById('matches')!
+    const door = createMockDoor(scene, 'ok', { delayMs: 0 })
+    let reads = 0
+    const call = door.call.bind(door)
+    window.door = { ...door, call: (tool: string, args?: Record<string, unknown>) => { if (tool === 'status_summary') reads++; return call(tool, args) } } as typeof door
+    render(<App start={scene.start} />)
+    await waitFor(() => expect(reads).toBeGreaterThan(0))
+    const before = reads
+    const { preparing, preparingChanged } = await import('../renderer/screens/prepare-store')
+    act(() => { preparing.set('a', { since: 0, message: '' }); preparingChanged() })
+    act(() => { preparing.delete('a'); preparingChanged() })
+    await waitFor(() => expect(reads).toBeGreaterThan(before))
   })
 })
 

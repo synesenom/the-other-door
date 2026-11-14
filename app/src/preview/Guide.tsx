@@ -81,6 +81,10 @@ export function Guide() {
                 <span className="mark"><WarningMark /></span>
                 <span>You have no CV yet</span>
               </button>
+              <p className="small sidebar-problem marked">
+                <span className="mark"><WarningMark /></span>
+                <span>Claude can prepare 2 more, resets 15:30</span>
+              </p>
             </div>
           </Row>
         </Part>

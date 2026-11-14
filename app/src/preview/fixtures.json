@@ -1254,7 +1254,7 @@
    },
    "room": {
     "find": 6,
-    "prepare": 2
+    "prepare": 8
    },
    "binding": "five_hour",
    "week": {
