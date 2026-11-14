@@ -13,7 +13,8 @@ already in the new shape changes nothing. Steps are never deleted: a user who sk
 a second process finds the work done): the folder is copied to `backups/upgrade-<folder>-<from>-<to>-<time>/`, the
 steps run, the version is written after the last. A failing step restores the folder from the backup and leaves the
 version; newer data (version above ours) is never written to. Either leaves a `status()` the tools answer with.
-`upgrade_folder`/`read_version` stand alone for import and Drive (PR 2).
+An import or a Drive pull refuses a newer archive (`refuse_newer`) before it changes anything and runs `upgrade_all`
+right after the swap.
 """
 
 from __future__ import annotations
@@ -38,10 +39,22 @@ _LOCK_FILES = (".lock", ".lock.json", ".progress.json")
 
 FAILED = "Your data could not be upgraded to this version: {step}. Nothing was changed. Send a report from Settings."
 NEWER = "This data was written by a newer version of The other door. Install the latest version."
+ARCHIVE_NEWER = "This archive was written by a newer version of The other door. Install the latest version."
 
 
 class DataVersionError(ValueError):
     """A `.data_version` that is not a non-negative integer."""
+
+
+class NewerData(ValueError):
+    """An archive (import or Google Drive) whose data version is above this build's, or unreadable.
+
+    ``versions`` is ``{"profile": int | None, "jobs": int | None}`` as the archive named them.
+    """
+
+    def __init__(self, versions: dict, message: str = ARCHIVE_NEWER):
+        super().__init__(message)
+        self.versions = versions
 
 
 @dataclass(frozen=True)
@@ -148,6 +161,14 @@ def read_version(folder: Path) -> int | None:
     if not text.isascii() or not text.isdigit():
         raise DataVersionError(f"{Path(folder) / VERSION_FILE} holds {text!r}, not a version number")
     return int(text)
+
+
+def refuse_newer(versions: dict) -> None:
+    """Raise `NewerData` when the archive's version of either folder is above this build's (None = no file: fine)."""
+    for folder in ("profile", "jobs"):
+        version = versions.get(folder)
+        if version is not None and version > current(folder):
+            raise NewerData(versions)
 
 
 def write_version(folder: Path, version: int) -> None:

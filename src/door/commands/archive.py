@@ -21,7 +21,7 @@ from pathlib import Path, PurePosixPath
 import click
 
 from door.commands import _common as common
-from door.core import drive, sync, usage, workspace
+from door.core import drive, migrations, sync, usage, workspace
 from door.core.lock import SyncConflict
 
 # Bump when the archive layout changes; `import` refuses a newer format.
@@ -179,6 +179,27 @@ def _read_manifest(tar: tarfile.TarFile, archive: Path) -> dict:
     return manifest
 
 
+def _read_versions(tar: tarfile.TarFile) -> dict:
+    """The data versions the archive carries: ``{"profile", "jobs"}``, None for a folder with no `.data_version`.
+
+    Raises:
+        migrations.NewerData: a version member that is not a non-negative integer (never read as 0).
+    """
+    versions: dict = {}
+    for folder in ("profile", "jobs"):
+        versions[folder] = None
+        try:
+            member = tar.getmember(f"{folder}/{migrations.VERSION_FILE}")
+        except KeyError:
+            continue
+        handle = tar.extractfile(member) if member.isfile() else None
+        text = handle.read(64).decode("utf-8", "replace").strip() if handle else ""
+        if not text.isascii() or not text.isdigit():
+            raise migrations.NewerData(versions)
+        versions[folder] = int(text)
+    return versions
+
+
 def _members_to_extract(tar: tarfile.TarFile, archive: Path) -> list[tarfile.TarInfo]:
     """Every file/dir under profile/ or jobs/, minus lock files.
 
@@ -268,19 +289,20 @@ def _import_core(
 ) -> dict:
     """Replace `profile_dir` and `jobs_dir` with an archive from `_export_core`. Never prints.
 
-    The archive is checked in full before anything moves; the data it
-    replaces goes to ``backups_dir/<timestamp>/``.
+    The archive is checked in full before anything moves (an archive from a newer version of The other door is
+    refused); the data it replaces goes to ``backups_dir/<timestamp>/``. An older archive is upgraded right after
+    (`migrations.upgrade_all`; a failed step is one warning, the data stays as imported).
 
     Returns:
         ``{"archive", "files", "profile_dir", "jobs_dir", "backup_dir",
-        "warnings"}`` — ``backup_dir`` is None when there was
+        "warnings", "data_versions"}`` — ``backup_dir`` is None when there was
         nothing to back up; ``warnings`` lists config paths this computer
-        doesn't have.
+        doesn't have and a failed upgrade; ``data_versions`` is what the archive carried.
 
     Raises:
         FileNotFoundError: the archive doesn't exist.
-        ValueError: it isn't an export from The other door, is from a newer version, or
-            holds an entry outside profile/ and jobs/.
+        ValueError: it isn't an export from The other door, or holds an entry outside profile/ and jobs/.
+        migrations.NewerData (a ValueError): its data version is above this build's, or unreadable.
     """
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
@@ -300,6 +322,8 @@ def _import_core(
     with tar:
         _read_manifest(tar, archive)
         members = _members_to_extract(tar, archive)
+        versions = _read_versions(tar)
+        migrations.refuse_newer(versions)
         profile_dir.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=".door-import-", dir=profile_dir.parent))
         try:
@@ -312,13 +336,19 @@ def _import_core(
         finally:
             shutil.rmtree(staging, ignore_errors=True)
 
+    warnings = _path_warnings(profile_dir / "config.json")
+    upgrade = migrations.upgrade_all(profile_dir, jobs_dir, backups_dir)
+    if upgrade:
+        warnings.append(upgrade["message"])
+
     return {
         "archive": str(archive),
         "files": sum(1 for m in members if m.isfile()),
         "profile_dir": str(profile_dir),
         "jobs_dir": str(jobs_dir),
         "backup_dir": str(backup) if backup else None,
-        "warnings": _path_warnings(profile_dir / "config.json"),
+        "warnings": warnings,
+        "data_versions": versions,
     }
 
 

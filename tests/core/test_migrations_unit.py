@@ -355,3 +355,21 @@ def test_the_app_test_world_stamps_the_current_profile_version():
 
     build = (REPO_ROOT / "app" / "test" / "world" / "build.ts").read_text(encoding="utf-8")
     assert int(re.search(r"PROFILE_DATA_VERSION = (\d+)", build).group(1)) == migrations.current("profile")
+
+
+# --------------------------------------------------------------------------- #
+# refuse_newer (import and Drive)
+# --------------------------------------------------------------------------- #
+def test_refuse_newer_passes_current_older_and_missing_versions():
+    migrations.refuse_newer({"profile": migrations.current("profile"), "jobs": migrations.current("jobs")})
+    migrations.refuse_newer({"profile": 0, "jobs": None})
+    migrations.refuse_newer({"profile": None, "jobs": None})
+
+
+@pytest.mark.parametrize("folder", ["profile", "jobs"])
+def test_refuse_newer_raises_for_either_folder(folder):
+    versions = {"profile": None, "jobs": None, folder: migrations.current(folder) + 1}
+    with pytest.raises(migrations.NewerData) as caught:
+        migrations.refuse_newer(versions)
+    assert str(caught.value) == migrations.ARCHIVE_NEWER
+    assert caught.value.versions == versions

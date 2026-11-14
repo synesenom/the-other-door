@@ -401,6 +401,7 @@ def test_export_cli_errors_cleanly(env):
 
 
 def test_import_cli(env, monkeypatch):
+    _versioned(env)
     archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
     monkeypatch.setattr(workspace, "PROFILE_DIR", env.dst_profile)
     monkeypatch.setattr(workspace, "JOBS_DIR", env.dst_jobs)
@@ -602,3 +603,93 @@ def test_a_conflict_refuses_a_locked_core(env, connected, enable_sync_hooks):
     with pytest.raises(SyncConflict):
         with ledger_lock(env.jobs_dir, "set_status"):
             pytest.fail("the block must not run")
+
+
+# --------------------------------------------------------------------------- #
+# data versions (#56)
+# --------------------------------------------------------------------------- #
+def _versioned(env, profile="1", jobs="0"):
+    (env.profile_dir / ".data_version").write_text(profile)
+    (env.jobs_dir / ".data_version").write_text(jobs)
+
+
+def _tree_bytes(root):
+    return {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in sorted(root.rglob("*"))
+        if p.is_file() and p.name not in (".lock", ".lock.json")
+    }
+
+
+def _newer_archive(env, **members):
+    entries = {"profile/config.json": b"{}", "profile/cv.md": b"# new", **members}
+    return _tar_with(env.tmp_path, entries)
+
+
+def test_export_carries_the_data_versions(env):
+    _versioned(env)
+    result = _export(env, env.tmp_path / "out.tar.gz")
+    assert {"profile/.data_version", "jobs/.data_version"} <= _names(result["path"])
+
+
+@pytest.mark.parametrize("member", ["profile/.data_version", "jobs/.data_version"])
+def test_a_newer_archive_is_refused_before_anything_changes(env, member):
+    from door.core import migrations
+
+    env.dst_profile.mkdir()
+    (env.dst_profile / "cv.md").write_text("# Old CV")
+    env.dst_jobs.mkdir()
+    (env.dst_jobs / "applications.json").write_text("{}")
+    before = (_tree_bytes(env.dst_profile), _tree_bytes(env.dst_jobs))
+    archive = _newer_archive(env, **{member: b"99"})
+
+    with pytest.raises(migrations.NewerData, match="newer version of The other door"):
+        _import(env, archive)
+
+    assert (_tree_bytes(env.dst_profile), _tree_bytes(env.dst_jobs)) == before
+    assert not env.backups_dir.exists()
+    assert not list(env.dst_profile.parent.glob(".door-import-*"))
+
+
+def test_a_garbled_version_member_is_refused(env):
+    from door.core import migrations
+
+    archive = _newer_archive(env, **{"profile/.data_version": b"banana"})
+    with pytest.raises(migrations.NewerData):
+        _import(env, archive)
+    assert not env.dst_profile.exists()
+
+
+def test_an_older_archive_is_upgraded_right_after_the_import(env, monkeypatch):
+    from door.core import migrations
+
+    step = migrations.Step("tag", lambda folder: (folder / "tag.done").write_text("x"))
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [step])
+    monkeypatch.setattr(migrations, "_state", None)
+    archive = _tar_with(env.tmp_path, {"profile/config.json": b"{}"})
+
+    result = _import(env, archive)
+
+    assert (env.dst_profile / ".data_version").read_text().strip() == "1"
+    assert (env.dst_profile / "tag.done").is_file()
+    assert any(p.name.startswith("upgrade-profile-0-1") for p in env.backups_dir.iterdir())
+    assert not any("FAILED" in w or "could not be upgraded" in w for w in result["warnings"])
+
+
+def test_a_failing_step_after_import_is_one_warning(env, monkeypatch):
+    from door.core import migrations
+
+    def boom(folder):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [migrations.Step("explode", boom)])
+    monkeypatch.setattr(migrations, "_state", None)
+    archive = _tar_with(env.tmp_path, {"profile/config.json": b"{}", "profile/cv.md": b"# imported"})
+
+    result = _import(env, archive)
+
+    failed = [w for w in result["warnings"] if "could not be upgraded" in w]
+    assert len(failed) == 1 and "explode" in failed[0]
+    assert (env.dst_profile / "cv.md").read_text() == "# imported"
+    assert migrations.status()["state"] == "failed"
+    monkeypatch.setattr(migrations, "_state", None)

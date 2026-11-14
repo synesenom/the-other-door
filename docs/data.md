@@ -82,6 +82,13 @@ app, `./door` or the MCP server), before anything reads it, with no hand edit:
 - **Newer data** (a folder whose version is above the app's, say after using a newer release on another
   computer) is refused and never changed: "This data was written by a newer version of The other door.
   Install the latest version."
+- **Import and Google Drive.** An export carries both version files. `data import` refuses an archive whose
+  version is above the app's ("This archive was written by a newer version of The other door. Install the
+  latest version.") before it changes anything, and upgrades an older archive right after it is in place (a
+  failed step is a warning, and the data stays as imported). A Drive pull does the same. When Drive holds data
+  from a newer version, a computer that is not upgraded yet changes nothing and says "Google Drive has data from
+  a newer version of The other door; install it on this computer too"; it neither pulls nor pushes until it is
+  upgraded, so an older version never overwrites the newer data on Drive.
 - A run holding the lock at start delays the upgrade; the next command or tool call tries again.
 
 The first step (version 0 to 1): the LaTeX templates and fonts come from the code. A copy in `profile/`

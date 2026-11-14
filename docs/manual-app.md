@@ -462,7 +462,9 @@ fine, an empty ring when not) and what you can do about it.
   (it waits up to five minutes); the app never connects by itself. There is nothing to press to
   sync: it syncs as it connects, each time the app opens, around every change to your data, and
   before it disconnects. Connected, it shows the account, the last sync and the last error, with
-  "Disconnect". After a sync that brought Drive's data here, the screens read it again. When this
+  "Disconnect". After you install a newer version on one computer, install it on the others that share
+  Drive too: an older one shows "Google Drive has data from a newer version of The other door; install it on
+  this computer too" and neither pulls nor pushes until it is upgraded. After a sync that brought Drive's data here, the screens read it again. When this
   computer and Drive both changed since the last sync, nothing is replaced until you choose
   ("Google Drive needs a choice" at the sidebar's foot opens it): "Keep this computer" (its data
   replaces the copy on Drive) or "Keep Drive" (Drive's data replaces this computer's, which is

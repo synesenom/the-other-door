@@ -1,6 +1,7 @@
 """Google Drive sync of profile/ and jobs/ (issue #265).
 
-`decide` is the pure table; `fingerprint` tells whether local data changed
+A pull refuses an archive from a newer version of The other door (#56) and upgrades an older one; a computer that
+refused does not push until it has been upgraded and pulled. `decide` is the pure table; `fingerprint` tells whether local data changed
 since the last pull; `pull`/`push`/`sync_now` move the archive; `on_acquire`
 and `on_release` are the ledger lock's hooks. Cores never print; they `report()`.
 """
@@ -14,7 +15,7 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import drive, usage, workspace
+from door.core import drive, migrations, usage, workspace
 from door.core.lock import SyncConflict
 from door.core.progress import report
 
@@ -75,6 +76,35 @@ def _has_local_data(profile_dir: Path) -> bool:
     return (profile_dir / "config.json").is_file()
 
 
+NEWER_ON_DRIVE = "Google Drive has data from a newer version of The other door; install it on this computer too"
+
+
+def _local_versions(profile_dir: Path, jobs_dir: Path) -> dict:
+    versions = {}
+    for name, folder in (("profile", profile_dir), ("jobs", jobs_dir)):
+        try:
+            versions[name] = migrations.read_version(folder)
+        except migrations.DataVersionError:
+            versions[name] = None
+    return versions
+
+
+def _check_push_allowed(profile_dir: Path, jobs_dir: Path) -> dict:
+    """Never replace Drive's archive from a computer that has not been upgraded to it: returns the local versions.
+
+    Raises:
+        DriveError: a pull refused a newer archive and none has been taken since, or this computer's versions are
+            below the ones the archive on Drive was last known to carry.
+    """
+    state = drive.read_state() or {}
+    local = _local_versions(profile_dir, jobs_dir)
+    known = state.get("data_versions") or {}
+    behind = any((local.get(f) or 0) < (known.get(f) or 0) for f in ("profile", "jobs"))
+    if state.get("refused_newer") or behind:
+        raise drive.DriveError(NEWER_ON_DRIVE)
+    return local
+
+
 def push(*, profile_dir=None, jobs_dir=None) -> dict:
     """Export profile/ and jobs/ and upload the archive; record the version and fingerprint.
 
@@ -86,6 +116,7 @@ def push(*, profile_dir=None, jobs_dir=None) -> dict:
     profile_dir, jobs_dir, _ = _dirs(profile_dir, jobs_dir)
     if not _has_local_data(profile_dir):
         return {"action": "skipped"}
+    local = _check_push_allowed(profile_dir, jobs_dir)
     with tempfile.TemporaryDirectory(prefix="door-sync-") as tmp:
         target = Path(tmp) / drive.FILE_NAME
         archive_cmd._export_core(target, profile_dir=profile_dir, jobs_dir=jobs_dir)
@@ -95,6 +126,8 @@ def push(*, profile_dir=None, jobs_dir=None) -> dict:
         fingerprint=fingerprint(profile_dir, jobs_dir),
         last_synced=_now(),
         last_error=None,
+        data_versions=local,
+        refused_newer=False,
     )
     return {"action": "push", "version": version}
 
@@ -114,7 +147,11 @@ def pull(*, profile_dir=None, jobs_dir=None, backups_dir=None) -> dict:
     with tempfile.TemporaryDirectory(prefix="door-sync-") as tmp:
         target = Path(tmp) / drive.FILE_NAME
         drive.download(target)
-        result = archive_cmd._import_core(target, profile_dir=profile_dir, jobs_dir=jobs_dir, backups_dir=backups_dir)
+        try:
+            result = archive_cmd._import_core(target, profile_dir=profile_dir, jobs_dir=jobs_dir, backups_dir=backups_dir)
+        except migrations.NewerData as exc:
+            drive.update_state(refused_newer=True, data_versions=exc.versions, last_error=NEWER_ON_DRIVE)
+            raise
     state = drive.read_state() or {}
     for old in state.get("sync_backups", []):
         shutil.rmtree(old, ignore_errors=True)
@@ -123,6 +160,8 @@ def pull(*, profile_dir=None, jobs_dir=None, backups_dir=None) -> dict:
         fingerprint=fingerprint(profile_dir, jobs_dir),
         last_synced=_now(),
         last_error=None,
+        data_versions=result["data_versions"],
+        refused_newer=False,
         sync_backups=[result["backup_dir"]] if result["backup_dir"] else None,
     )
     return {"action": "pull", "version": meta["version"], "files": result["files"], "warnings": result["warnings"]}
@@ -247,6 +286,10 @@ def on_acquire(purpose: str, jobs_dir: Path) -> None:
             _note("pulled", "Pulled newer data from Google Drive (this computer's previous data is in backups/)")
     except SyncConflict:
         raise
+    except migrations.NewerData:
+        _failed.add(key)  # pull recorded the refusal; the release stays quiet and pushes nothing
+        report(NEWER_ON_DRIVE)
+        _note("warning", NEWER_ON_DRIVE)
     except Exception as exc:  # noqa: BLE001 - sync must never fail a command
         _failed.add(key)
         _warn(exc)

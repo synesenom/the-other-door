@@ -58,6 +58,15 @@ Suggest the version from what is in it, against the previous tag's `X.Y.Z` (whil
 
 If the argument named a version, use it, but say so when it disagrees with the suggestion. Otherwise ask with AskUserQuestion, the suggestion first with a one-line reason ("3 added, 2 fixed"), the other bump second. The version must be `X.Y.Z`. `git tag -l vX.Y.Z` and `gh release view vX.Y.Z` must both find nothing; if either does, say so (a draft from an earlier attempt: see Step 4's retry) and **stop**.
 
+### The data upgrade
+
+A tester's `profile/` and `jobs/` written by the previous release must open in this one (#56). Spawn the `data-migrator` agent with the previous tag and the PRs kept above (number, title, their "Removed or renamed" sections), and wait for its report:
+
+- **"no step needed"**: keep its item-by-item list for the notes' maintainer summary and go on.
+- **a PR**: tell the user to merge it once CI is green and **stop**. When it is merged, start again at Step 1 (the step's PR is now one of the release's). Keep its "Release note line" for Step 5.
+
+Then the release test of #57 must pass (the saved data of every earlier release opens in this one); it runs in `./scripts/run-test.sh --release` once `tests/data_versions/` exists.
+
 ## Step 2: The version
 
 If `app/package.json`, `pyproject.toml` and `src/door/version.py` already say `X.Y.Z`, go to Step 3.
@@ -98,6 +107,8 @@ Write the release notes into `thoughts/release/vX.Y.Z.md` (gitignored), for the 
 <one line on what The other door is: the first release only>
 
 <one or two sentences on the release as a whole: its main thing, if it has one>
+
+<the data-migrator's "Release note line", when it wrote a step: "Your data is upgraded on first start: …">
 
 ## Added
 - <one bullet per user-facing change, taken from the PR's "For users" lines, in a user's words: no module, tool or file names> (#<PR>)
