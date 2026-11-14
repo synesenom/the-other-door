@@ -9,7 +9,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import workable
-from live_utils import NONSENSE_KEYWORD as KW, assert_field_contract, assert_zero_hits, drain_zero_hit_state
+from live_utils import NONSENSE_KEYWORD as KW, assert_detects, assert_field_contract, assert_zero_hits, drain_zero_hit_state
 
 
 @pytest.mark.live
@@ -35,3 +35,9 @@ def test_workable_zero_hits_live():
     drain_zero_hit_state("workable")
     postings = workable.scrape({"search_keywords": [KW], "location": "London", "max_pages_per_keyword": 1, "_mode": "search"})
     assert_zero_hits("workable", postings)
+
+
+@pytest.mark.live
+def test_workable_detection_live():
+    """A real employer's careers page still shows workable and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("workable")

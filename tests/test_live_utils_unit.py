@@ -246,3 +246,89 @@ def test_exceptions_name_known_sites():
     from door.core import sites
 
     assert set(live_matrix.FIELD_EXCEPTIONS) <= set(sites.SITES)
+
+
+# --- discovery sources (#19): a refusal is not reached, an answer must yield employers --------------------------
+
+from live_utils import assert_discovery  # noqa: E402
+
+
+def _result(**kw):
+    base = {"employers": [{"company": "Acme A/S", "titles": ["Data Scientist"], "links": ["https://acme.example/jobs/1"]}],
+            "requests": 1, "pushback": False, "stopped": None, "outcome": "ok"}
+    return base | kw
+
+
+def test_a_discovery_refusal_is_not_reached():
+    with pytest.raises(pytest.skip.Exception) as skipped:
+        assert_discovery("hellowork", _result(employers=[], pushback=True, outcome="refused",
+                                              stopped="a consent page instead of the results"), [])
+    assert str(skipped.value).startswith(f"{NOT_REACHED} hellowork: a consent page")
+
+
+def test_a_discovery_answer_with_employers_passes():
+    assert_discovery("hellowork", _result(), [], link_prefix="https://acme.example/")
+
+
+@pytest.mark.parametrize("result, message", [
+    (_result(employers=[]), "no employers"),
+    (_result(outcome="error", stopped="HTTP 500"), "HTTP 500"),
+    (_result(employers=[{"company": "", "titles": ["x"], "links": []}]), "name"),
+    (_result(employers=[{"company": "Acme", "titles": [], "links": []}]), "title"),
+    (_result(employers=[{"company": "Acme", "titles": ["x"], "links": ["javascript:void(0)"]}]), "link"),
+])
+def test_a_discovery_answer_that_no_longer_parses_is_a_change_naming_the_source_and_mode(result, message):
+    with pytest.raises(AssertionError) as failed:
+        assert_discovery("jobbsafari", result, [], link_prefix="http")
+    assert str(failed.value).startswith("jobbsafari [employers]:") and message in str(failed.value)
+
+
+# --- feed detection (#19): a careers page still shows its platform ------------------------------------------------
+
+import live_utils  # noqa: E402
+from live_employers import Careers  # noqa: E402
+from live_utils import assert_detects  # noqa: E402
+
+_ROW = Careers("https://acme.example/careers", "Copenhagen", "teamtailor", "acme")
+
+
+def _resolved(monkeypatch, **found):
+    from door.commands import companies
+
+    result = {"input": _ROW.page, "platform": None, "entry": None, "evidence": "", "notes": []} | found
+    monkeypatch.setattr(companies, "_resolve_core", lambda inputs, location="": {"results": [result]})
+
+
+def test_a_page_that_still_shows_its_platform_passes(monkeypatch):
+    _resolved(monkeypatch, platform="teamtailor", entry="acme", evidence="links to it")
+    assert_detects("teamtailor", _ROW)
+
+
+@pytest.mark.parametrize("found, message", [
+    ({}, "found no feed"),
+    ({"platform": "lever", "entry": "acme"}, "lever"),
+    ({"platform": "teamtailor", "entry": "other"}, "other"),
+])
+def test_a_page_that_no_longer_shows_its_platform_is_a_change_naming_it_and_the_mode(monkeypatch, found, message):
+    _resolved(monkeypatch, **found)
+    monkeypatch.setattr(live_utils, "_page_refusal", lambda url: None)
+    with pytest.raises(AssertionError) as failed:
+        assert_detects("teamtailor", _ROW)
+    assert str(failed.value).startswith("teamtailor [detection]:") and message in str(failed.value)
+
+
+def test_a_page_that_refused_is_not_reached(monkeypatch):
+    _resolved(monkeypatch)
+    monkeypatch.setattr(live_utils, "_page_refusal", lambda url: "403 Client Error: Forbidden")
+    with pytest.raises(pytest.skip.Exception) as skipped:
+        assert_detects("teamtailor", _ROW)
+    assert str(skipped.value).startswith(f"{NOT_REACHED} teamtailor: 403")
+
+
+def test_a_host_the_other_door_must_not_read_is_never_fetched_to_tell_a_refusal(monkeypatch):
+    """iCIMS's and Welcome to the Jungle's terms bar automated reading: their detection is the URL's alone."""
+    _resolved(monkeypatch)
+    monkeypatch.setattr(live_utils, "_page_refusal", lambda url: pytest.fail(f"fetched {url}"))
+    with pytest.raises(AssertionError) as failed:
+        assert_detects("icims", Careers("https://careers-sisk.icims.com/jobs/search?ss=1", "London", "icims", None))
+    assert str(failed.value).startswith("icims [detection]:")

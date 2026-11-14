@@ -6,7 +6,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import digitalrecruiters
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
@@ -15,3 +15,9 @@ def test_digitalrecruiters_live_returns_valid_postings(monkeypatch):
     postings = digitalrecruiters.scrape({"digitalrecruiters_sites": ["recrutement.franprix.fr"], "location": "Paris"})
     assert postings
     assert_field_contract("digitalrecruiters", postings, mode="collect")
+
+
+@pytest.mark.live
+def test_digitalrecruiters_detection_live():
+    """A real employer's careers page still shows digitalrecruiters and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("digitalrecruiters")

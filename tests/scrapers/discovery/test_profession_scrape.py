@@ -243,3 +243,23 @@ def test_the_module_never_logs_in_or_keeps_credentials():
     text = Path(profession.__file__).read_text(encoding="utf-8")
     for word in ("Authorization", "password", "cookies.set", "print("):
         assert word not in text
+
+
+@pytest.mark.parametrize("wall", [
+    "<html><head><title>Just a moment...</title></head><body></body></html>",
+    "<html><head><title>Cookie consent</title></head><body>Accept all</body></html>",
+])
+def test_a_wall_page_instead_of_the_results_stops_as_a_refusal_not_as_no_employers(session, wall):
+    """A captcha, a bot challenge or a consent page is a refusal (#19): rested, never "no employers"."""
+    _pages(session, wall)
+    result = _run()
+    assert result["outcome"] == "refused" and result["pushback"] and "instead of the results" in result["stopped"]
+    assert drain_pushback("profession") is True
+
+
+def test_a_block_page_sent_with_a_server_error_is_a_refusal_not_a_failing_server(session):
+    """profession.hu's firewall answers 500 with "The URL you requested has been blocked" (#19)."""
+    session.page.add(_SEARCH, "<html><head><title>The URL you requested has been blocked</title></head></html>", status=500)
+    result = _run()
+    assert result["outcome"] == "refused" and result["pushback"] and len(session.page.calls) == 1
+    assert drain_pushback("profession") is True

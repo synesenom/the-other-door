@@ -7,6 +7,7 @@
 ![coverage](docs/badges/coverage.svg)
 [![boards](docs/badges/live-boards.svg)](docs/badges/live-smoke.md#boards)
 [![employer feeds](docs/badges/live-feeds.svg)](docs/badges/live-smoke.md#employer-feeds)
+[![employer discovery](docs/badges/live-discovery.svg)](docs/badges/live-smoke.md#employer-discovery)
 [![matcher](docs/badges/live-matcher.svg)](docs/badges/live-smoke.md#matcher)
 
 A job search that runs on your computer: it gathers new job ads from public job boards and

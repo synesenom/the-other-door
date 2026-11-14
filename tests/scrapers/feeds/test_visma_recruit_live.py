@@ -10,7 +10,7 @@ import pytest
 
 from door.scrapers.feeds import visma_recruit
 from door.scrapers.http_client import PoliteSession
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 _APPLY = "https://recruit.visma.com/spa/public/apply?guidAssignment=2b368797-8e2c-4527-bc80-7cc9ac2d9c39"
 _NASSJO = "f636d73d-8356-43c6-99bd-ba01addf1b55"
@@ -54,3 +54,9 @@ def test_visma_recruit_live_an_employers_own_ad_list_is_read_through_the_ad_json
 def test_visma_recruit_live_region_vasterbottens_list_page_still_links_its_ads_by_visma_id():
     result = visma_recruit.probe({"visma_recruit_companies": ["https://www.regionvasterbotten.se/sok-jobb"]})
     assert result["structure_ok"] is True and result["postings"], result.get("reason")
+
+
+@pytest.mark.live
+def test_visma_recruit_detection_live():
+    """A real employer's careers page still shows visma_recruit and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("visma_recruit")

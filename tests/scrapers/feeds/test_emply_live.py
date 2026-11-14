@@ -6,7 +6,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import emply
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
@@ -24,3 +24,9 @@ def test_emply_live_reads_aarhus_universitys_embedded_list():
     assert_field_contract("emply", postings, mode="collect")
     for p in postings[:5]:
         assert p["company"] == "Aarhus University" and p["url"].startswith("https://international.au.dk/")
+
+
+@pytest.mark.live
+def test_emply_detection_live():
+    """A real employer's careers page still shows emply and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("emply")

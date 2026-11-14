@@ -29,7 +29,8 @@ tolerated before: `door.core.discovery_state`) and the ``pause`` between two req
 by default), details only for titles on topic for the keywords (`door.matching.title_fit.on_topic`).
 LinkedIn limits a burst of about a hundred requests with HTTP 429; the first 429 of a run is waited
 out (`_BACKOFF_S`) and the request tried again, a second one in a row stops the run, as does any
-other 4xx/5xx after one retry, or a redirect to a login or authwall page. A refusal is reported
+other 4xx/5xx after one retry, a redirect to a login or authwall page, or a wall page (a captcha,
+a consent page, `sdk.wall_page`) where the results should be. A refusal is reported
 with `record_pushback`; the caller rests discovery for a day. A ``stop`` event ends the run at
 the next request, so it can run in a worker thread beside the other steps.
 
@@ -351,6 +352,8 @@ class _Crawler:
                 if _sleep(_BACKOFF_S, self.stop):
                     raise _Stop("cancelled")
                 continue
+            if resp.status >= 400 and (wall := sdk.wall_page(resp.text())):
+                raise _Stop(f"HTTP {resp.status}: {wall} instead of the results", pushback=True)
             if resp.status >= 400:
                 last, refused, transient = f"HTTP {resp.status}", resp.status == 403, transient + 1
                 if transient > 1:
@@ -425,6 +428,8 @@ def _page_through(
         except _Spent:
             return False, first or 0
         page = _parse_cards(html)
+        if not page and (wall := sdk.wall_page(html)):
+            raise _Stop(f"{wall} instead of the results", pushback=True)
         first = len(page) if first is None else first
         new = [c for c in page if c["platform_id"] not in seen]
         seen.update(c["platform_id"] for c in new)

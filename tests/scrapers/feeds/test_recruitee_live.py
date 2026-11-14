@@ -6,7 +6,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import recruitee
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
@@ -14,3 +14,9 @@ def test_recruitee_live_returns_valid_postings():
     postings = recruitee.scrape({"recruitee_companies": ["famly"]})
     assert postings
     assert_field_contract("recruitee", postings, mode="collect")
+
+
+@pytest.mark.live
+def test_recruitee_detection_live():
+    """A real employer's careers page still shows recruitee and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("recruitee")

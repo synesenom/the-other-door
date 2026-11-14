@@ -16,7 +16,8 @@ LinkedIn gets (`door.scrapers.discovery.linkedin`) and it stays small and slow:
 - one search per keyword of the rotation, ``/allasok/<page>,0,0,<keyword>``, at most `_PAGE_CAP` pages
   of `_FULL_PAGE` ads, a short page being the last; at most `_MAX_BUDGET` requests a run with at least
   `_MIN_PAUSE` seconds between two, whatever the engine hands over;
-- the first 429 or 403, or a redirect to a login page or off the listing, stops the run and rests the
+- the first 429 or 403, a redirect to a login page or off the listing, or a wall page (a captcha, a
+  consent page, `sdk.wall_page`) where the results should be, stops the run and rests the
   source for a day (`record_pushback`); a 5xx or a failed load is tried once more, then stops;
 - no ad text is read or kept, no job page is opened: a card gives the id, title, employer, place and
   link, and only the employer, the title and the link (without its tracking query) are handed on.
@@ -239,6 +240,8 @@ class _Crawler:
                 if resp.status == 429:
                     self.first_429 = {"after_requests": self.requests - 1, "after_s": self.seconds()}
                 raise _Stop(f"HTTP {resp.status}", pushback=True)
+            if resp.status >= 400 and (wall := sdk.wall_page(resp.text())):
+                raise _Stop(f"HTTP {resp.status}: {wall} instead of the results", pushback=True)
             if resp.status >= 400:
                 transient += 1
                 if transient > 1:
@@ -264,6 +267,8 @@ def _page_through(crawler: _Crawler, keyword: str, cards: list[dict], seen: set[
         except _Spent:
             return False
         page = _parse_cards(html)
+        if not page and (wall := sdk.wall_page(html)):
+            raise _Stop(f"{wall} instead of the results", pushback=True)
         new = [c for c in page if c["platform_id"] not in seen]
         seen.update(c["platform_id"] for c in new)
         cards.extend(new)

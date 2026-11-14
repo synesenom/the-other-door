@@ -10,7 +10,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import greenhouse
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
@@ -27,3 +27,9 @@ def test_greenhouse_live_reads_a_danish_company():
     postings = greenhouse.scrape({"greenhouse_boards": ["trustpilot"]})
     assert postings
     assert_field_contract("greenhouse", postings, mode="collect")
+
+
+@pytest.mark.live
+def test_greenhouse_detection_live():
+    """A real employer's careers page still shows greenhouse and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("greenhouse")

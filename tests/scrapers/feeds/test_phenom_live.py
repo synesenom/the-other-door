@@ -10,6 +10,7 @@ import pytest
 
 from door.scrapers.feeds import phenom
 from door.scrapers.http_client import PoliteSession
+from live_utils import assert_detects
 
 
 @pytest.mark.live
@@ -21,3 +22,9 @@ def test_phenom_live_finds_the_workday_site_behind_the_front_end():
 
     assert "genmab.wd3.myworkdayjobs.com" in out.evidence
     assert out.entry is not None or out.refusal == "cant_yet"
+
+
+@pytest.mark.live
+def test_phenom_detection_live():
+    """A real employer's careers page still shows phenom and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("phenom")

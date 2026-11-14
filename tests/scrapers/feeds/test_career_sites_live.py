@@ -7,7 +7,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import career_sites
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
@@ -16,3 +16,9 @@ def test_career_sites_live_returns_valid_postings(monkeypatch):
     postings = career_sites.scrape({"career_sites": ["careers.publicissapient.com"]})
     assert postings
     assert_field_contract("career_sites", postings, mode="collect")
+
+
+@pytest.mark.live
+def test_career_sites_detection_live():
+    """A real employer's careers page still shows career_sites and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("career_sites")

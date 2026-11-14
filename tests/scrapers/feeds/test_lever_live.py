@@ -10,7 +10,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import lever
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
@@ -27,3 +27,9 @@ def test_lever_live_reads_a_danish_company():
     postings = lever.scrape({"lever_companies": ["siteimprove"]})
     assert postings
     assert_field_contract("lever", postings, mode="collect")
+
+
+@pytest.mark.live
+def test_lever_detection_live():
+    """A real employer's careers page still shows lever and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("lever")

@@ -10,7 +10,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import successfactors
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
@@ -19,3 +19,9 @@ def test_successfactors_live_returns_valid_postings():
     assert len(postings) >= 1, "Expected at least one posting from live SuccessFactors feed"
     assert_field_contract("successfactors", postings, mode="collect")
     assert all(p["source"] == "successfactors" for p in postings)
+
+
+@pytest.mark.live
+def test_successfactors_detection_live():
+    """A real employer's careers page still shows successfactors and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("successfactors")

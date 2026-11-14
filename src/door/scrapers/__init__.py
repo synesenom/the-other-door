@@ -145,6 +145,38 @@ def drain_answered(source: str) -> bool:
         return False
 
 
+# What a page sent instead of the listing says (#19). A bot challenge, an access-denied page or a consent page
+# standing in for the content (its title says so; a consent manager's script alone is on ordinary pages too) is
+# one whatever else it holds; a captcha or a password field only on a short page, since ordinary pages carry them
+# on an alert or a sign-in form.
+_WALLS: tuple[tuple[str, re.Pattern], ...] = (
+    ("a bot challenge", re.compile(r"<title>\s*(?:Just a moment|Attention Required!)|cf-chl-|challenge-platform", re.I)),
+    ("an access-denied page", re.compile(r"<title>\s*Access Denied\s*</title>", re.I)),
+    ("a block page", re.compile(r"<title>[^<]*(?:has been blocked|you have been blocked|Request Rejected)", re.I)),
+    ("a consent page", re.compile(r"<title>[^<]*(?:consent|cookies?\b|before you continue|samtykke)", re.I)),
+)
+_SHORT_WALLS: tuple[tuple[str, re.Pattern], ...] = (
+    ("a captcha", re.compile(r"g-recaptcha|h-captcha|captcha-delivery\.com|px-captcha|\bcaptcha\b", re.I)),
+    ("a login page", re.compile(r"<input[^>]+type=['\"]?password", re.I)),
+)
+_SHORT_TEXT = 2000  # characters of text: a wall says little
+
+
+def wall_page(html: str) -> str | None:
+    """What *html* is when it is a page sent instead of the listing: ``"a captcha"``, ``"a login page"``, ...;
+    None for any other page. Ask it only of a page that listed nothing: a refusal, not a quiet day. Pure."""
+    html = html or ""
+    for what, pattern in _WALLS:
+        if pattern.search(html):
+            return what
+    text = re.sub(r"<(script|style)\b.*?</\1>|<[^>]+>", " ", html, flags=re.S | re.I)
+    if len(" ".join(text.split())) < _SHORT_TEXT:
+        for what, pattern in _SHORT_WALLS:
+            if pattern.search(html):
+                return what
+    return None
+
+
 _non_local: dict[str, int] = {}
 
 

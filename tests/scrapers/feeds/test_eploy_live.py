@@ -7,7 +7,7 @@ Opt-in — run with:  ./scripts/run-test.sh --live
 import pytest
 
 from door.scrapers.feeds import eploy
-from live_utils import assert_field_contract
+from live_utils import assert_detects, assert_field_contract
 
 
 @pytest.mark.live
@@ -16,3 +16,9 @@ def test_eploy_live_returns_valid_postings(host):
     postings = eploy.scrape({"eploy_hosts": [host]})
     assert postings
     assert_field_contract("eploy", postings, mode="collect")
+
+
+@pytest.mark.live
+def test_eploy_detection_live():
+    """A real employer's careers page still shows eploy and its feed (`live_employers.DETECTION`, #19)."""
+    assert_detects("eploy")
