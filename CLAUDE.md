@@ -10,7 +10,7 @@ When summarising what you just did, use at most 10 short bullet points: what hap
 
 ## Decisions
 
-When a question comes up that is the user's to decide (a design choice, a policy, a trade-off, which option of several), do not ask it first. Spawn an agent on the Fable model (`model: "fable"`) with the question, the options you see and the context, to research it (the codebase, the docs, the issues and PRs, the web where it helps) and return one definite decision with its reasons. Act on that decision and name it, with its main reason, in your report. Ask the user (AskUserQuestion) only when the agent could not reach a definite decision, and then say what it found and why it could not choose.
+When a question comes up that is the user's to decide (a design choice, a policy, a trade-off, which option of several), do not ask it first. Spawn the `decider` agent (`.claude/agents/decider.md`, on Fable) with the question, the options you see and the context; it researches the codebase, the docs, the issues and PRs and the web, and returns one definite decision with its reasons, or CANNOT DECIDE. Act on a decision and name it, with its main reason, in your report. Ask the user (AskUserQuestion) only on CANNOT DECIDE, with the question as the agent put it and what it found.
 
 This is for decisions, not permissions: a skill's or the harness's confirmation before an action that is hard to undo or outward-facing (pushing a tag, publishing a release, deleting data) is still asked of the user.
 
