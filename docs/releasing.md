@@ -18,9 +18,11 @@ only after a person has installed it on a clean machine of each system and gone 
   fail it: write the step (the `data-migrator` agent) and list what it changes on purpose. It stays out of the
   offline suite and CI, because between releases `main` may not read the last release's data until that step exists.
 - `main` is green (the Python suite and the app's unit tests, smoke test and core journeys).
-- The repository variable `DOOR_UPDATE_FEED` names the public repo's `releases/latest`
-  (`https://api.github.com/repos/<owner>/<repo>/releases/latest`). Empty, the build never checks for updates
-  and Settings has no Version part.
+- Installed apps update from the public repo's published release (#17): nothing to configure. The draft holds
+  the update files the apps read, `latest.yml`, `latest-linux.yml` and the merged `latest-mac.yml` (the
+  `mac-manifest` job), the mac `.zip` files and the `.blockmap` files; every `url:` in a manifest is an asset of the
+  release. Publishing the draft is what rolls the update out: the updater ignores drafts and pre-releases. Until the
+  Developer ID certificate and notarization secrets exist, the mac builds are unsigned and only link to the release page.
 - The signing secrets are set if this release is to be signed (`app/README.md`); without them macOS and
   Windows warn once, as `docs/manual-app.md` describes.
 
@@ -76,7 +78,8 @@ On each, download the installer from the draft release and check, in order:
    still there, and the data is in the user's data folder, not inside the app (Settings → Your data).
 7. **Update** (from the second release on). Install the previous version, set it up, then install this one
    over it: the data stays, the app opens on Matches, and before that Settings → Version of the old one says
-   this version is out.
+   this version is out. With the draft published, a Windows or AppImage install (and a signed mac one) of the old
+   version downloads it by itself and offers "Restart to update to X"; an unsigned mac one shows the Download link.
 
 Anything that fails is fixed on `main` and released as a new version (the next patch number); a draft is
 never rebuilt under the same tag. Delete the failed draft and its tag.
@@ -104,7 +107,7 @@ system, and on macOS allow it once (link to `docs/manual-app.md#opening-it-on-ma
 ## 4. Download link
 
 README's Desktop app section links to the installers on `releases/latest`. Check that the link points to the
-public repo, the one `DOOR_UPDATE_FEED` names, and that it opens there once the release is published.
+public repo and that it opens there once the release is published.
 
 ## 5. Publish
 

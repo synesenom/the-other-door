@@ -27,12 +27,15 @@ and signs you in to your Claude plan.
 - **Linux** (x64): the AppImage (make it executable and run it; on Ubuntu 24.04 and later it needs FUSE 2
   first: `sudo apt install libfuse2t64`) or the `.deb` (`sudo apt install ./the-other-door-….deb`).
 
-**Updating**: the app does not install updates itself. An installed app checks for a newer version
-when it starts, and Settings → Version shows the version you have, says when a newer one is out, and has a
-Download button that opens its release page, and Check for updates. Install the download over this one; your data
-stays where it is. The check sends no information about you; offline, or when the page cannot be reached,
-it shows nothing and writes one line to the problem log. A build with no update feed does not check, and
-then Settings has no Version part. The app and the pipeline inside it are always one version: an app that finds another says so
+**Updating**: an installed app looks for a newer published version when it starts and from Settings → Version
+("Version X · Check for updates"). The Windows installer, the AppImage and a signed macOS build download it in the
+background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
+that installs it at once. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
+replace themselves: Settings says "Version X is available" with a Download button that opens the release page, and
+you install the download over this one. The check sends no information about you; offline, or when the release
+cannot be reached, it shows nothing and writes one line to the problem log. The unsigned Windows installer may
+show SmartScreen's warning again on an update. Only a published release counts, not a draft or a pre-release. A
+checkout and the demo never check, and then Settings has no Version part. The app and the pipeline inside it are always one version: an app that finds another says so
 ("Install the app again").
 
 **Your data** (profile, jobs, applications, backups) lives in your user folder, never inside the
@@ -447,7 +450,7 @@ Stories are not on the phone.
 ## Settings
 
 How *The other door* works for you (who you are and what you want is in [Profile](#profile)). One column of
-sections: **Connections**, **Risky sources**, **Your data**, **Appearance**, **Version** (installed builds with an update feed), **Documentation** (with the
+sections: **Connections**, **Risky sources**, **Your data**, **Appearance**, **Version** (installed builds), **Documentation** (with the
 legal disclaimer) and, last, **Report a problem**. The same list as Profile's sits on the right.
 Opening it checks Claude's sign-in again; nothing else runs until you click.
 
