@@ -541,3 +541,52 @@ def test_a_json_posting_import_gets_an_integrity_verdict(env):
     result = add_cmd._add_core(path, jobs_dir=env.jobs_dir)
     data = json.loads(open(result["path"]).read())
     assert data["integrity"]["verdict"] == "suspicious" and data["description"] == "Fine."
+
+
+# --------------------------------------------------------------------------- #
+# language of an imported ad (#73)
+# --------------------------------------------------------------------------- #
+DANISH_AD = (
+    "Vi søger en erfaren dataanalytiker til vores team i København. Du kommer til at arbejde med "
+    "rapportering, modeller og dataprodukter sammen med dygtige kolleger, og du har gode erfaringer "
+    "med SQL og Python. Vi tilbyder fleksible arbejdstider og et godt arbejdsmiljø."
+)
+
+
+def test_add_tags_the_language_of_the_ad(env, monkeypatch):
+    from door.matching import language
+
+    monkeypatch.setattr(language, "_run_claude", lambda *a, **k: None)  # translation unavailable: not an error
+    result = add_cmd._add_core(None, text=DANISH_AD, title="Dataanalytiker", company="Acme", jobs_dir=env.jobs_dir)
+    data = json.loads(open(result["path"]).read())
+    # Danish is not in the profile's languages (English by default): kept all the same, the user chose it.
+    assert data["language"] == "da"
+    assert "title_en" not in data
+    assert result["score"] == 0.8
+
+
+def test_add_translates_a_non_english_title(env, monkeypatch):
+    from door.matching import language
+
+    seen = {}
+
+    def fake_run(argv, stdin):
+        seen["items"] = json.loads(stdin)
+        return "stdout"
+
+    monkeypatch.setattr(language, "_run_claude", fake_run)
+    monkeypatch.setattr(language, "parse_output", lambda s: {seen["items"][0]["id"]: "Data analyst"})
+    result = add_cmd._add_core(None, text=DANISH_AD, title="Dataanalytiker", company="Acme", jobs_dir=env.jobs_dir)
+    data = json.loads(open(result["path"]).read())
+    assert data["title_en"] == "Data analyst"
+    assert seen["items"][0]["language"] == "da"
+
+
+def test_add_english_ad_gets_en_and_no_translation(env, monkeypatch):
+    from door.matching import language
+
+    monkeypatch.setattr(language, "_run_claude", lambda *a: pytest.fail("no translation for English"))
+    result = add_cmd._add_core(env.ad, title="Lead Data Scientist", company="Acme", jobs_dir=env.jobs_dir)
+    data = json.loads(open(result["path"]).read())
+    assert data["language"] == "en"
+    assert "title_en" not in data
