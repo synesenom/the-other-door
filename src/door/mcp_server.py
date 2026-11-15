@@ -1489,8 +1489,8 @@ def revise(job_id: str, file: str = "cover_letter", instruction: str | None = No
     """One targeted edit to the CV or cover letter, recompiled and re-rendered.
 
     For "tighten the letter's second paragraph" — no full tailor re-run.
-    One `claude -p` call rewrites the document body (never the preamble);
-    the previous version is kept as `<file>.tex.bak`, and ``undo=True``
+    One `claude -p` call rewrites the document body (the model never sees the preamble), and
+    the preamble is brought up to the current template's; the previous version is kept as `<file>.tex.bak`, and ``undo=True``
     restores it. Call `show` afterwards to check the pages. This is the
     only way to change a prepared document: never edit a `.tex` with Write
     or Edit, since `revise` is what recompiles and re-renders the PDF.

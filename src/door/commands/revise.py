@@ -6,7 +6,7 @@ from pathlib import Path
 
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
-from door.core import claude_cli, workspace
+from door.core import claude_cli, templates, workspace
 from door.matching import integrity
 from door.tailoring import facts as facts_mod
 
@@ -104,6 +104,21 @@ def _clean_revised_body(text: str) -> str:
     return body
 
 
+def _write_atomic(path: Path, text: str) -> None:
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def _current_template_head(file: str, config: dict, profile_dir: Path) -> str | None:
+    """The preamble of today's template for `file`, or None when it cannot be read or has no body."""
+    key = "cv_template" if file == "cv" else "cover_letter_template"
+    try:
+        return _split_latex(templates.resolve(key, config, profile_dir).read_text(encoding="utf-8"))[0]
+    except (OSError, ValueError, UnicodeDecodeError):
+        return None
+
+
 def _revise_core(
     job_id: str,
     file: str,
@@ -121,7 +136,7 @@ def _revise_core(
     sonnet; no tools), swaps the answer in as the new body, keeps the
     previous file as ``<file>.tex.bak``, then runs `_compile_core` with
     ``render``. ``undo=True`` restores the ``.bak`` instead (and
-    recompiles). Never prints.
+    recompiles). The preamble is brought up to the current template's. Never prints.
 
     Returns:
         ``{"outcome": "revised" | "undone", "job_id", "file", "backup",
@@ -159,9 +174,10 @@ def _revise_core(
             raise ValueError("an instruction is required, e.g. \"tighten the second paragraph\"")
         original = tex_path.read_text(encoding="utf-8")
         head, body, tail = _split_latex(original)
+        config = common._load_config_or_defaults(profile_dir)
+        current_head = _current_template_head(file, config, profile_dir)
         posting = find_posting(jobs_dir, job_id) or {}
         integrity.ensure(posting)  # a posting stored before the gate: clean in memory
-        config = common._load_config_or_defaults(profile_dir)
         model = config.get("revise_model") or _DEFAULT_REVISE_MODEL
         prompt = _REVISE_PROMPT.format(
             what="CV" if file == "cv" else "cover letter",
@@ -184,12 +200,17 @@ def _revise_core(
         new_body = _clean_revised_body(answer)
 
         backup.write_text(original, encoding="utf-8")
-        tmp = tex_path.with_name(tex_path.name + ".tmp")
-        tmp.write_text(f"{head}\n{new_body}\n{tail}", encoding="utf-8")
-        os.replace(tmp, tex_path)
+        new_head = current_head if current_head is not None else head
+        _write_atomic(tex_path, f"{new_head}\n{new_body}\n{tail}")
         outcome = "revised"
 
     compiled = compile_cmd._compile_core(job_id, render=True, jobs_dir=jobs_dir)
+    if outcome == "revised" and new_head != head and any(
+        r.get("file") == tex_path.name and r.get("status") == "error" for r in compiled["results"]
+    ):
+        # The current template's preamble does not compile for this body: keep the job's own.
+        _write_atomic(tex_path, f"{head}\n{new_body}\n{tail}")
+        compiled = compile_cmd._compile_core(job_id, render=True, jobs_dir=jobs_dir)
     unsupported = facts_mod.check(jobs_dir / "output" / job_id, profile_dir)
     return {
         "outcome": outcome,
