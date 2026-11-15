@@ -63,21 +63,30 @@ describe('watchRunBoard', () => {
   })
   const put = (name: string, value: unknown) => writeFileSync(join(home, 'jobs', name), JSON.stringify(value))
 
+  /** An injected watch: the test sends the file events itself, so no runner latency matters. */
+  const fakeWatch = () => {
+    const made: { dir: string; fire: () => void; watcher: EventEmitter & { close: ReturnType<typeof vi.fn> } }[] = []
+    const watchFn = vi.fn((dir: string, listener: () => void) => {
+      const watcher = Object.assign(new EventEmitter(), { close: vi.fn() })
+      made.push({ dir, fire: listener, watcher })
+      return watcher as unknown as FSWatcher
+    })
+    return { made, watchFn, fire: () => made[made.length - 1]!.fire() }
+  }
+
   it('pushes the board once when the files appear, and inactive when they go, on file events alone', async () => {
     const seen: RunBoard[] = []
-    // an injected watch: the test sends the file events itself, so no runner latency matters
-    let fire: () => void = () => {}
-    const watchFn = (_dir: string, listener: () => void) => {
-      fire = listener
-      return Object.assign(new EventEmitter(), { close: () => {} }) as unknown as FSWatcher
-    }
+    const { made, watchFn, fire } = fakeWatch()
     // a long poll: only the file event can find it
     stop = watchRunBoard(home, (b) => seen.push(b), { alive: () => true, debounceMs: 30, pollMs: 600_000, watchFn }).stop
+    expect(made.map((m) => m.dir)).toEqual([join(home, 'jobs')])
     expect(seen).toEqual([])
     put('.lock.json', lock)
     put('.progress.json', progress)
     fire()
-    fire() // a burst of events is one push
+    await vi.advanceTimersByTimeAsync(20)
+    expect(seen).toEqual([]) // nothing is read before the debounce
+    fire() // a burst of events is one read, debounceMs after its first
     await vi.advanceTimersByTimeAsync(100)
     expect(seen.filter((b) => b.active)).toHaveLength(1)
     expect(seen.filter((b) => b.active)[0]).toMatchObject({ started_at: lock.started_at, message: 'collect: 3/9' })
@@ -86,6 +95,23 @@ describe('watchRunBoard', () => {
     fire()
     await vi.advanceTimersByTimeAsync(100)
     expect(seen[seen.length - 1]).toEqual({ active: false })
+  })
+
+  it('a watch that fails is closed and watched again at the next poll; stop() closes it', async () => {
+    const seen: RunBoard[] = []
+    const { made, watchFn, fire } = fakeWatch()
+    const w = watchRunBoard(home, (b) => seen.push(b), { alive: () => true, debounceMs: 30, pollMs: 1000, watchFn })
+    made[0]!.watcher.emit('error', new Error('gone'))
+    expect(made[0]!.watcher.close).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(watchFn).toHaveBeenCalledTimes(2)
+    put('.lock.json', lock)
+    put('.progress.json', progress)
+    fire()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(seen.filter((b) => b.active)).toHaveLength(1)
+    w.stop()
+    expect(made[1]!.watcher.close).toHaveBeenCalledTimes(1)
   })
 
   it('pushes the board once by the poll alone, and inactive when the files go', async () => {
