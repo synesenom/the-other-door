@@ -7,7 +7,7 @@ network, no `claude`. The data is made up: a config with every `Profile` key set
 status, a story bank, postings in every state, an application ledger with every status and interview rounds, a
 prepared job's output, and a run record. Nothing here may name a real person; addresses are `example.com`.
 
-Written for v0.1.0's API; a later release whose API moved needs this script to follow it, and the next call of
+Written for v0.2.0's API (an older tag cannot run it: it imports `migrations` and sets `preferences`); a later release whose API moved needs this script to follow it, and the next call of
 `save_release_data.py` fails loudly (a missing name) rather than saving something that is not the release's.
 """
 
@@ -33,7 +33,8 @@ from door.commands import find as find_cmd  # noqa: E402
 from door.commands import profile as profile_cmd  # noqa: E402
 from door.commands import stories as stories_cmd  # noqa: E402
 from door.core import candidates, companies, discovery_state, freshness, history, tracker  # noqa: E402
-from door.core import lock  # noqa: E402
+from door.core import discovery_sources, lock  # noqa: E402
+from door.core import migrations  # noqa: E402
 from door.core.models import JobPosting  # noqa: E402
 from door.core.profile_loader import Profile  # noqa: E402
 from door.tailoring import facts as facts_mod  # noqa: E402
@@ -112,6 +113,7 @@ FIELDS = {
     "role_targets": ["Financial Controller", "Head of Finance"],
     "search_keywords": ["financial controller", "head of finance", "group controller"],
     "topic_terms": ["controller", "finance*", "accounting"],
+    "preferences": "A smaller company in green energy, little travel; not banking.",
     "remote": "hybrid",
     "linkedin_discovery": True,
     "profession_discovery": True,
@@ -153,6 +155,10 @@ def make_profile() -> None:
     profile_cmd._save_cv_core(CV)
     profile_cmd._save_photo_core(str(picture))
     picture.unlink()
+    # The templates come from the code since v0.2.0: the keys name the user's own, so the sample keeps a changed copy.
+    for name in ("cv.template.tex", "cover-letter.template.tex"):
+        own = (workspace.PROFILE_EXAMPLE_DIR / name).read_text(encoding="utf-8") + "% the user's own styling\n"
+        (PROFILE / name).write_text(own, encoding="utf-8")
     profile_cmd._init_core(FIELDS, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
     (PROFILE / "story_bank.md").unlink(missing_ok=True)
     for index, story in enumerate(STORIES):
@@ -286,17 +292,21 @@ def make_output() -> None:
         folder = JOBS / "output" / job_id
         folder.mkdir(parents=True, exist_ok=True)
         company = "Sample Bank"
+        # 1002's CV says one thing cv.md and the story bank do not back: the tailor's recorded reason keeps it flagged.
+        claim = "" if sent else ". Led a team of 25 analysts"
         data = next(f for _, f, _ in POSTINGS if f["id"] == job_id)
         (folder / "posting.json").write_text(json.dumps(json.loads(JobPosting(**data).model_dump_json()), indent=2), encoding="utf-8")
         (folder / "cv.tex").write_text(
             "% Keywords: close, forecast, IFRS\n% Tailoring: kept the close story; cut the older role\n"
-            f"\\documentclass{{article}}\\begin{{document}}Alex Example, {company}\\end{{document}}\n", encoding="utf-8")
+            f"\\documentclass{{article}}\\begin{{document}}Alex Example, {company}{claim}\\end{{document}}\n", encoding="utf-8")
         (folder / "cover_letter.tex").write_text(
             f"\\documentclass{{article}}\\begin{{document}}Dear {company}, I would like to own your close.\\end{{document}}\n", encoding="utf-8")
         pdf_utils.make_pdf(folder / "cv.pdf", ["Alex Example\nSummary\nExperience\nSkills\nEducation\nclose forecast IFRS"])
         pdf_utils.make_pdf(folder / "cover_letter.pdf", [f"Alex Example\nDear {company},\nI would like to own your close."])
         (folder / "stories.json").write_text(json.dumps([]), encoding="utf-8")
-        facts_mod.check(folder, PROFILE)
+        flagged = facts_mod.check(folder, PROFILE, write=False) or []
+        keep = [{**item, "reason": "the team size is from the interview notes, not the CV"} for item in flagged]
+        facts_mod.check(folder, PROFILE, keep=keep)
         if sent:
             (folder / "cv.tex.bak").write_bytes((folder / "cv.tex").read_bytes())  # the version before a revise
             (folder / "photo.jpg").write_bytes((PROFILE / "photo.jpg").read_bytes())
@@ -349,6 +359,7 @@ def make_run_record() -> None:
         "new_above_threshold": ["jobindex.1001", "jobindex.1002"],
         "top": [{"id": "jobindex.1001", "score": 0.92, "title": "Financial Controller", "company": "Example Industries A/S"}],
         "failures": [],
+        "unsure_on": [s["label"] for s in discovery_sources.on(FIELDS)],  # as the tag's `_find_core` writes it
     }
     find_cmd._write_run_record(record, JOBS, FIELDS["min_score"])
 
@@ -356,6 +367,9 @@ def make_run_record() -> None:
 def main() -> None:
     make_profile()
     make_companies()
+    # A release's own writes go through `ledger_lock`, which stamps a new jobs/ with its data version first; the sample
+    # writes the stores directly, so it stamps the folder as the lock would.
+    migrations.ensure_folder(JOBS, "jobs")
     make_postings()
     make_ledger()
     make_output()
