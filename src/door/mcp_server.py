@@ -1165,7 +1165,7 @@ def skill_gaps(
     """A skill-gap report with a WebSearch-cited learning plan, written to
     `upskill/report-<today>.md`.
 
-    "What should I learn for the Trustpilot job?" / `/upskill`: one `claude -p` call (minutes)
+    "What should I learn for the Trustpilot job?": one `claude -p` call (minutes)
     compares the CV with the targets — a hard-skill diff, then broader gaps
     (soft skills, domain depth, tooling maturity, credentials, evidence) —
     searches for real resources and writes the prioritised plan. Read the

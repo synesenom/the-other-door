@@ -137,7 +137,7 @@ To add a platform, you write one module (plus its `Site` entry if it can be foll
 | Mode | Who runs it | What happens | Surface |
 |------|-------------|--------------|---------|
 | **Batch** | the user, when they sit down: `./door find` in a shell, or "get me today's jobs" in a conversation | the five steps (below): search the boards → discover employers on LinkedIn → follow their own feeds → collect those feeds → match (prefilter / dedup / condense + prescreen, score the survivors with `claude -p`) → write a run record | CLI `find`, or the `find_jobs` MCP tool |
-| **Review** | the user, in a Claude Code conversation (or the shell) | "what's new?" → ranked matches → prepare one → review and revise the letter → apply by hand → record the status | MCP tools called from plain sentences; `/onboard`, `/expand` and `/upskill` are the only scripted flows |
+| **Review** | the user, in a Claude Code conversation (or the shell) | "what's new?" → ranked matches → prepare one → review and revise the letter → apply by hand → record the status | MCP tools called from plain sentences; `/onboard` and `/expand` are the only scripted flows |
 
 ### Desktop app
 
@@ -151,7 +151,7 @@ The layers underneath:
 |-------|-------|------|
 | **Core** | the `_*_core` functions in `src/door/commands/<name>.py`, `src/door/core/`, `src/door/scrapers/`, `src/door/matching/`, `src/door/tailoring/` | All behaviour. Each command is a `_<name>_core` function that performs the side effects and returns a dict; it never prints. It reports progress instead (see [Progress](#progress)). |
 | **Adapters** | CLI: the Click command next to each core in `src/door/commands/`, registered on the group in `src/door/cli.py` (run via `./door`). MCP: the `FastMCP` tools in `src/door/mcp_server.py` | Thin: parse arguments, call the core, render text (CLI) or return the dict as JSON (MCP). Expected failures come back from a tool as `{"error": ...}` with the CLI's wording. Nothing is duplicated between the two. |
-| **Judgment** | `.claude/agents/`, `.claude/skills/` | The small layer both adapters call: the matcher rubric (read by `match` as a `claude -p` system prompt), the tailor + reviewer agents (run by `prepare` via `claude -p`), and the `/onboard`, `/expand` and `/upskill` skills, which orchestrate tools. Skills and agents call MCP tools, never `./door`. |
+| **Judgment** | `.claude/agents/`, `.claude/skills/` | The small layer both adapters call: the matcher rubric (read by `match` as a `claude -p` system prompt), the tailor + reviewer agents (run by `prepare` via `claude -p`), and the `/onboard` and `/expand` skills, which orchestrate tools. Skills and agents call MCP tools, never `./door`. |
 
 Every model call goes through the `claude` CLI in print mode, on the user's Pro/Max plan. There is no API key anywhere.
 
@@ -180,7 +180,7 @@ Every model call goes through the `claude` CLI in print mode, on the user's Pro/
 | `companies why NAME` | `why_company` | One employer's entry plus how many postings in `jobs/` came from it |
 | `cv enrich [URL ...] [--apply 1,3] [--all] [--model …]` | `enrich` | Propose CV additions from public pages (one `claude -p` call with WebFetch; proposals saved under `profile/`), then insert the chosen ones under their `##` sections; `/expand` makes the same two calls |
 | `market [--days N] [--scored-companies] [--no-save]` | `market` | Counts scraped ads over a window (skills, near misses, uncovered titles, repeat companies), skill names grouped through `jobs/skill_aliases.json` (one Haiku call, only for names not yet in it; `null` = not a skill); written to `jobs/market/report-<date>.md` |
-| `cv gaps [TARGET ...] [--top N] [--model …]` | `skill_gaps` | Skill-gap report with a WebSearch-cited plan, one `claude -p` call, written to `upskill/report-<date>.md`; `/upskill` makes the same call |
+| `cv gaps [TARGET ...] [--top N] [--model …]` | `skill_gaps` | Skill-gap report with a WebSearch-cited plan, one `claude -p` call, written to `upskill/report-<date>.md` |
 | `init` (the wizard's reading step) | `infer_basics` | Read name, email, city, ad languages and remote from a CV with one `claude -p` call; `missing` is the only reason to ask (`src/door/commands/cv.py`) |
 | `cv titles [TITLE ...] [--hint …] [--languages …] [--model …]` | `suggest_titles` | Propose job titles with reasons from the CV and career progression, one `claude -p` call, writes nothing (`src/door/commands/titles.py`) |
 | `init` (the wizard's reading step) | `keywords` | Propose `search_keywords` and `topic_terms` from `role_targets` with one `claude -p` call (`src/door/commands/keywords.py` holds the rules; `/onboard` calls the tool) |
@@ -564,7 +564,7 @@ src/door/                           # all pipeline code — run via `./door`
 ├── core/  scrapers/  matching/  tailoring/   # core/workspace.py: PROFILE_DIR, JOBS_DIR
 tests/                            # mirrors the package: scrapers/, commands/, core/, matching/, … (tests/README.md)
 .claude/agents/                   # matcher, tailor, reviewer, scraper-fixer; issue-* for the dev workflow
-.claude/skills/                   # onboard, expand, upskill; dev-* for the dev workflow
+.claude/skills/                   # onboard, expand; dev-* for the dev workflow
 scripts/setup.sh, setup.ps1       # Python 3.12 + Poetry + packages, then `door doctor --fix`
 scripts/run-test.sh               # offline suite + coverage badge (docs/badges/coverage.svg)
 ```

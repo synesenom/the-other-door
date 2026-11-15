@@ -11,7 +11,6 @@ scripted, multi-step **skills** you invoke with a slash command. Skills live in
 |-------|--------------|
 | `/onboard` | Onboarding in a conversation, after `./scripts/setup.sh` has installed everything: takes your sources (CV, LinkedIn PDF, public pages), drafts `profile/cv.md`, infers your details, job titles and search terms, asks only for what it could not find, shows it all in one review, and writes `profile/config.json` and `profile/cv.md` only after you confirm. Offers to connect Google Drive first, so the profile follows you across computers. Then starts the first search. Installs nothing itself. Safe to re-run. |
 | `/expand [url ...]` | Fetches public URLs (portfolio sites, publication lists, GitHub repos, course syllabi), proposes additions to `profile/cv.md`, and writes only after you confirm. URLs can be passed as arguments or listed under `enrich_sources` in `profile/config.json`. The work is the `enrich` tool's (two calls: propose, then apply the numbers you picked); `cv enrich` in a shell does the same, and the desktop app's "Add from a page" (Profile, CV). |
-| `/upskill [role, job or top N]` | Optional. Analyses skill gaps between your profile and a target role or some of your matches (`/upskill trustpilot`, `/upskill top 5`), and writes a WebSearch-cited learning plan to `upskill/report-YYYY-MM-DD.md`. The work is the `skill_gaps` tool's; `cv gaps` in a shell does the same, and the desktop app's "What should I learn?" (Profile, CV). |
 
 Setup is split in two: `./scripts/setup.sh` (and the `doctor --fix` [command](manual-cli.md) it ends
 with) installs everything and asks nothing about you; `/onboard` reads your sources, asks what
@@ -49,7 +48,7 @@ GitHub-issue workflow and are prefixed `dev-` to stay out of the way of the user
 | `/dev-add-profession <titles> <country>` | Make *The other door* work for one profession, given as one or more job titles (`"Reward Partner, C&B Specialist" dk`), in one country (the country needs its data file: `/dev-add-country` first): research the titles it is advertised under, what *The other door* finds today, and where its jobs are posted (boards, profession and union job banks, the ATS platforms of its employers, discovery sources) with each source's terms; you pick what to build; the sources are built test-first with live smoke tests that search for the profession, documented in the Sources by profession table, its *The other door* gaps filed as issues, and the result checked with a fake profile of the profession in a sandbox against the research baseline. State and reports in `thoughts/profession/<cc>-<slug>/`. |
 
 The skills are tested end to end, locally and before a release (`./scripts/run-test.sh --skills`, never
-in CI): the real model runs `/onboard`, `/expand`, `/upskill` and a review session against a test world,
+in CI): the real model runs `/onboard`, `/expand` and a review session against a test world,
 a second small model plays the user, and the checks are on behaviour only (which tools, in which order,
 what was written and when), never on wording. They need a signed-in `claude`, `claude-agent-sdk` and
 `npm ci` in `app/`; they use the plan's quota. Run them before a release and when a skill (or CLAUDE.md's

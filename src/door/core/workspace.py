@@ -20,7 +20,7 @@ PROFILE_DIR = HOME / "profile"
 PROFILE_EXAMPLE_DIR = REPO_ROOT / "profile.example"   # ships with the code
 JOBS_DIR = HOME / "jobs"
 BACKUPS_DIR = HOME / "backups"   # what `import` replaced, one folder per import
-UPSKILL_DIR = HOME / "upskill"   # `skill-gaps` / `/upskill` reports
+UPSKILL_DIR = HOME / "upskill"   # `cv gaps` / `skill_gaps` reports
 MCP_CONFIG = HOME / ".mcp.json"   # the checkout's committed file, or the one `ensure_mcp_config` writes
 
 def mcp_config_entry() -> dict:
