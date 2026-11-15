@@ -1,5 +1,8 @@
+import { existsSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, resourcesOf, removeInstall, signingCommands, uninstallFailures } from './installer'
+import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, present, resourcesOf, removeInstall, signingCommands, uninstallFailures } from './installer'
 import type { Plan } from './installer'
 
 const DIST = [
@@ -177,7 +180,31 @@ describe('uninstallFailures', () => {
     expect(f).toEqual([])
   })
 
-  it('does not check the folder off Windows', () => {
+  it('the .deb: fails when apt-get remove left the app folder under /opt, without waiting (it is synchronous) (#117)', () => {
+    const deb = installPlan('/d/the-other-door-0.1.1-linux-amd64.deb', 'linux', '/t')
+    let waits = 0
+    const f = uninstallFailures(deb, 'linux', { run: () => undefined, exists: (p) => p === '/opt/The other door', wait: () => { waits++ } })
+    expect([f, waits]).toEqual([['the uninstaller left /opt/The other door behind'], 0])
+  })
+
+  it('the .deb: clean when apt-get remove took the app folder, its /usr/bin link and its launcher', () => {
+    const deb = installPlan('/d/the-other-door-0.1.1-linux-amd64.deb', 'linux', '/t')
+    expect(uninstallFailures(deb, 'linux', { run: () => undefined, exists: () => false, wait: () => undefined })).toEqual([])
+  })
+
+  it('the .deb: fails on the /usr/bin link its postinst made and the postrm left behind', () => {
+    const deb = installPlan('/d/the-other-door-0.1.1-linux-amd64.deb', 'linux', '/t')
+    const f = uninstallFailures(deb, 'linux', { run: () => undefined, exists: (p) => p === '/usr/bin/the-other-door', wait: () => undefined })
+    expect(f).toEqual(['the uninstaller left /usr/bin/the-other-door behind'])
+  })
+
+  it('the .deb: fails on its launcher left in /usr/share/applications', () => {
+    const deb = installPlan('/d/the-other-door-0.1.1-linux-amd64.deb', 'linux', '/t')
+    const f = uninstallFailures(deb, 'linux', { run: () => undefined, exists: (p) => p === '/usr/share/applications/the-other-door.desktop', wait: () => undefined })
+    expect(f).toEqual(['the uninstaller left /usr/share/applications/the-other-door.desktop behind'])
+  })
+
+  it('does not check the folder of an AppImage: teardown removes the throwaway folder it was copied into', () => {
     const f = uninstallFailures(plan({ kind: 'appimage', uninstall: [] }), 'linux', { run: () => undefined, exists: () => true, wait: () => undefined })
     expect(f).toEqual([])
   })
@@ -205,5 +232,19 @@ describe('removeInstall', () => {
   it('keeps the uninstall failure in the message when removing the scratch folder fails too', () => {
     expect(() => removeInstall(plan, '/tmp/s', 'linux', io({ run: () => { throw new Error('exit 100') }, rm: () => { throw new Error('EBUSY') } })))
       .toThrow(/could not uninstall: apt-get remove: exit 100\ncould not remove \/tmp\/s: EBUSY/)
+  })
+})
+
+describe('present', () => {
+  it('counts a dangling link as left behind: the link is there though what it named is gone', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'present-'))
+    try {
+      const link = join(dir, 'the-other-door')
+      symlinkSync(join(dir, 'gone'), link)
+      expect([present(link), existsSync(link)]).toEqual([true, false])
+      expect(present(join(dir, 'nothing'))).toBe(false)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })

@@ -75,7 +75,7 @@ jobs:
         run: |
           mkdir -p ~/".config/The other door/profile" && echo kept > ~/".config/The other door/profile/marker"
           sudo apt-get remove -y -qq "$(dpkg-deb -f dist/the-other-door-*.deb Package)"
-          test ! -e "/opt/The other door/the-other-door"
+          test ! -e "/opt/The other door"
           test "$(cat ~/".config/The other door/profile/marker")" = kept
 
       # The install test (#639, #18): each package installed the user's way, then set-up, the first run and

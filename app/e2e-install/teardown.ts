@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { endRun } from '../journeys/teardown'
 import { sweepCommand } from './close'
-import { removeInstall } from './installer'
+import { present, removeInstall } from './installer'
 import type { Plan } from './installer'
 import { STATE } from './setup'
 
@@ -32,7 +32,7 @@ export default function teardown(): void {
   if (plan.root) sweep(plan.root)
   removeInstall(plan, scratch, process.platform, {
     run: (argv) => void execFileSync(argv[0]!, argv.slice(1), { stdio: 'inherit' }),
-    exists: existsSync,
+    exists: present,
     wait: (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms),
     rm: (path) => rmSync(path, { recursive: true, force: true, maxRetries: 3 }),
   })
