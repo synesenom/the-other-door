@@ -30,16 +30,34 @@ def test_a_saved_release_upgrades_and_reads_back_equal(sample, tmp_path, monkeyp
     assert not found, f"{sample.name}'s data reads back differently:\n" + "\n".join(found)
 
 
-def test_every_read_change_covers_a_difference(tmp_path, monkeypatch):
-    """A `READ_CHANGES` entry no sample it applies to differs on is stale: remove it."""
-    found: set[str] = set()
-    for n, sample in enumerate(s for s in SAMPLES if not is_older_major(s)):
+def test_every_read_change_covers_a_difference_of_its_own_release(tmp_path, monkeypatch):
+    """A `READ_CHANGES` key is a saved release, and that sample itself reads the path back differently; a key of an
+    older major is left alone (its samples are only refused, until `/dev-release` deletes them with the entries)."""
+    by_name = {s.name: s for s in SAMPLES}
+    wrong = []
+    for n, (version, entries) in enumerate(gate.READ_CHANGES.items()):
+        sample = by_name.get(version)
+        if sample is None:
+            wrong.append(f"{version}: no saved release of that version")
+            continue
+        if is_older_major(sample):
+            continue
         status, now, _ = open_release(sample, tmp_path / f"home{n}", monkeypatch)
-        if status is None:
-            expected = json.loads((sample / "expected.json").read_text(encoding="utf-8"))
-            found |= {line.split(": ", 1)[0] for line in release_data.differences(expected, now)}
-    stale = [path for entries in gate.READ_CHANGES.values() for path, _ in entries if path not in found]
-    assert not stale, f"no saved release reads these back differently: remove them from READ_CHANGES: {stale}"
+        expected = json.loads((sample / "expected.json").read_text(encoding="utf-8"))
+        found = {line.split(": ", 1)[0] for line in release_data.differences(expected, now)} if status is None else set()
+        wrong += [f"{version}: {path} reads back the same: remove it" for path, _ in entries if path not in found]
+    assert not wrong, "\n".join(wrong)
+
+
+def test_a_read_change_excuses_its_difference_and_nothing_else(tmp_path, monkeypatch):
+    sample = _newest()
+    monkeypatch.setattr(gate, "READ_CHANGES", {})
+    found = check(sample, tmp_path / "bare", monkeypatch)
+    if not found:
+        pytest.skip("the newest sample reads back equal: no read change to excuse")
+    path = found[0].split(": ", 1)[0]
+    monkeypatch.setattr(gate, "READ_CHANGES", {sample.name: ((path, "#0: test"),)})
+    assert check(sample, tmp_path / "listed", monkeypatch) == found[1:]
 
 
 def _newest():

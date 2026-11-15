@@ -123,7 +123,8 @@ class Step:
     *changes* are the paths into a release's saved `expected.json` (`tests/data_versions/<X.Y.Z>/`, #57) that the step
     changes on purpose, as globs over the dotted path (``show_profile.config.cv_template``; ``*`` is any text, a list
     item is ``[index]``; a path covers everything under it). The release gate fails on any other difference between
-    what the old release read back and what this build reads back from the upgraded data, a dropped value included.
+    what the old release read back and what this build reads back from the upgraded data, a dropped value included,
+    unless it is a change in how the same data is read, listed in `tests/release_gate_utils.READ_CHANGES` (#101).
     """
 
     name: str

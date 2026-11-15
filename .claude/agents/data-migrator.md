@@ -23,7 +23,7 @@ You write the data upgrade a release needs (#56). A tester who installs this rel
 
 - Each of `profile/` and `jobs/` has its own data version, `<folder>/.data_version`, written `<major>.<n>`: the app's major version and the number of steps applied within it. A folder's current version is the app's major and the length of its list, `PROFILE_STEPS` or `JOBS_STEPS`. Every folder is stamped when it is created, so the file is the truth.
 - A step is `Step(name, run)`, where `run(folder: Path)` moves that folder from N to N+1 and changes nothing outside it. A change touching both folders is two steps, one per list.
-- **Never across a major version.** Data from an older major is refused, not upgraded. When the release bumps the major (`X` of `X.Y.Z`), write no step: empty both lists (keep `tests/data_versions/`: the gate checks that the older major's samples are refused untouched, and `/dev-release` deletes them after the tag, Step 6b), and report "major bump: lists emptied, <previous major>.x data is not opened". The release notes say so.
+- **Never across a major version.** Data from an older major is refused, not upgraded. When the release bumps the major (`X` of `X.Y.Z`), write no step: empty both lists and `READ_CHANGES` in `tests/release_gate_utils.py` (keep `tests/data_versions/`: the gate checks that the older major's samples are refused untouched, and `/dev-release` deletes them after the tag, Step 6b), and report "major bump: lists emptied, <previous major>.x data is not opened". The release notes say so.
 - **Never in a patch.** A patch release (`X.Y.Z` → `X.Y.(Z+1)`) changes no stored data. If `new_version` is a patch and you find a step is needed, write it anyway and say at the top of your report: "a step is needed: release X.(Y+1).0, not a patch".
 - **Only between releases.** A step goes from the shape the previous tag wrote to the shape `main` writes. A shape that lived only on `main` between the two never gets a step.
 - Steps are never edited or deleted once released. You only append.
@@ -45,7 +45,7 @@ On a branch `release/data-<version or date>` from `main`:
    - **only on main** (added and changed or removed after the tag): no step.
 3. Run the release gate (`poetry run pytest tests/release -m release -n 0`) and sort each difference it reports by the PR that made it:
    - the stored shape changed: a step (Step 2) lists it in `changes`;
-   - only how the code reads the same data changed, on purpose (a count rule, a new default reading): no step; add the exact path to `READ_CHANGES` in `tests/release_gate_utils.py`, under the newest saved release's version, with the PR and why (#101), and commit it on its own (`test: the release gate lists <PR>'s read changes`);
+   - only how the code reads the same data changed, on purpose (a count rule, a new default reading): no step; add the exact path to `READ_CHANGES` in `tests/release_gate_utils.py`, under the newest saved release's version, with the PR and why (#101), commit it on its own (`test: the release gate lists <PR>'s read changes`) and open its PR with `/dev-pr` (when there is also a step, the same PR);
    - no PR meant it: report it as a bug, write nothing.
 
 ## Step 2 — Prove it, test-first
@@ -56,7 +56,7 @@ Only if Step 1 found something a step must do.
    - the previous release's saved data goes in: `tests/data_versions/<X.Y.Z>/` (#57) when it exists, else a folder written in the tag's shape inside the test;
    - this release's shape comes out, and `Profile` (or the format's own reader on `main`) accepts it.
    Run the tests and keep the red run's failures.
-   The release gate (`poetry run pytest tests/release -m release -n 0`) upgrades every saved release under `tests/data_versions/` and compares what the current tools read back with its `expected.json`: any difference fails unless a step that ran lists it in `Step(..., changes=(...))`, globs over the dotted paths of `expected.json` (e.g. `show_profile.config.sectors`), each covering everything under it. List exactly what the step changes on purpose, nothing broader.
+   The release gate (`poetry run pytest tests/release -m release -n 0`) upgrades every saved release under `tests/data_versions/` and compares what the current tools read back with its `expected.json`: any difference fails unless it is a listed read change (Step 1, item 3) or a step that ran lists it in `Step(..., changes=(...))`, globs over the dotted paths of `expected.json` (e.g. `show_profile.config.sectors`), each covering everything under it. List exactly what the step changes on purpose, nothing broader.
 2. **Green.** Append at most one `Step` to `PROFILE_STEPS` and at most one to `JOBS_STEPS`; one step can make several changes to its folder. Keep each change small.
 3. If `stored.py` gained or lost a file, `tests/core/test_stored_unit.py` must still pass.
 4. Run `./scripts/run-test.sh` (the whole offline suite) and, when `tests/data_versions/` exists, #57's release test.
@@ -75,7 +75,7 @@ Unintended differences: <path: what changed> ... | none
 Steps: profile <n → n+1: "<name>"> | none; jobs <...> | none
 Release note line: Your data is upgraded on first start: <what each step does, in a user's words>   (omit when no step)
 Tests: <test names>; red run: <command → failures>; suite: <passed>/<failed>
-PR: <url> | no step needed
+PR: <url> (a step, read changes or both) | no step needed (no read change either)
 ```
 
 Never change a released step, the version files of real data, or anything under `profile/` or `jobs/` of the checkout.

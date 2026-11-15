@@ -3,7 +3,8 @@
 `tests/data_versions/<X.Y.Z>/` holds a release's own `profile/` and `jobs/` and `expected.json`, what that release's
 tools read back from them (`scripts/save_release_data.py`). `check` copies one to a temporary home, runs the upgrade
 and reads it back with the same tools (`scripts/release_data.py`'s `snapshot`), and names every difference from
-`expected.json` that no step of the upgrade lists as intended (`Step.changes`).
+`expected.json` that no step of the upgrade lists as intended (`Step.changes`) and no `READ_CHANGES` entry lists as a
+change in how the same data is read (#101).
 """
 
 from __future__ import annotations
