@@ -18,6 +18,16 @@ This is for decisions, not permissions: a skill's or the harness's confirmation 
 
 Before summarising a change you implemented (a PR, or a branch about to become one), spawn the `gap-reviewer` agent (`.claude/agents/gap-reviewer.md`) with the base branch and the issue or goal; it reports what the change leaves missing, each gap with its evidence. Every gap it reports, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) whose number you give. The summary names each gap and which way it went; none is only mentioned. A gap the reviewer reports that you judge not real: say why in one line.
 
+## Pull requests
+
+A PR you open (by `/dev-pr` or any other way) is yours until it is green: watch it and fix what breaks, without being asked.
+
+- Watch its checks after every push (subscribe to its activity where the session can, else poll its check runs every few minutes) until every check has finished.
+- A failing check: read its logs, find the cause, fix it test-first on the branch, push, and watch again. A flaky failure (passes on a rerun with no change) is rerun once and named in the report; one that fails again is a failure.
+- A merge conflict with `main` (or `main` moving under it): merge `origin/main` into the branch, resolve the conflicts keeping both sides' intent, run the tests the conflicting files touch, push, and watch again.
+- A git push the sandbox blocks (no keychain, no `~/.config/gh`) is retried with the sandbox off, not handed to the user.
+- Stop only when every check is green and the branch merges cleanly; then report it in one line. A fix that needs a decision goes to the `decider` (see Decisions); escalate to the user only on CANNOT DECIDE, or after three rounds of fixes that did not turn it green, with what was tried.
+
 ## Key directories
 
 | Path | Purpose |
