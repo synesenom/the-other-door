@@ -33,11 +33,36 @@ from pathlib import Path
 WORLD = Path(sys.argv[1]).resolve()
 os.environ["DOOR_WORLD"] = str(WORLD)
 
-# Every thread's stack, written again every 20 s: a test that finds the server stuck names where (#18).
+# Every thread's stack, written again every 20 s: a test that finds the server stuck names where (#18). Read with
+# sys._current_frames on a Python thread, under the GIL: faulthandler.dump_traceback_later's watchdog walks the
+# threads without it and can crash the server when a thread starts or ends mid-walk, with no traceback (#98).
 import faulthandler  # noqa: E402
+import threading  # noqa: E402
+import traceback  # noqa: E402
 
-_STACKS = open(WORLD / "server-stacks.txt", "w", encoding="utf-8")  # noqa: SIM115 — open for the server's life
-faulthandler.dump_traceback_later(20, repeat=True, file=_STACKS)
+faulthandler.enable()  # a native crash says so on stderr, which the app's problem log keeps
+
+
+def _write_stacks() -> None:
+    frames = sys._current_frames()
+    me = threading.get_ident()
+    blocks = []
+    for ident, frame in frames.items():
+        head = f"{'Current thread' if ident == me else 'Thread'} 0x{ident:016x} (most recent call first):\n"
+        blocks.append(head + "".join(reversed(traceback.format_stack(frame))))
+    (WORLD / "server-stacks.txt").write_text("\n".join(blocks), encoding="utf-8")
+
+
+def _stacks_every(seconds: float) -> None:
+    while True:
+        time.sleep(seconds)
+        try:
+            _write_stacks()
+        except OSError:
+            pass  # the world may be gone at the end of a test
+
+
+threading.Thread(target=_stacks_every, args=(20,), daemon=True, name="world-stacks").start()
 REPO = Path(__file__).resolve().parents[3]
 # The door it runs is the one the app put on PYTHONPATH: the checkout's src/, or an installed app's own
 # bundled door (the install test, app/e2e-install/); the checkout's only when nothing is named.

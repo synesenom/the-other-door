@@ -11,7 +11,7 @@ import type { Page } from '@playwright/test'
 import { expect, INSTALLED, launch, osStub, test } from '../journeys/fixtures'
 import { LAUNCH, saveAndSearch, toReview } from '../journeys/helpers/onboarding'
 import { pagesLoaded } from '../journeys/helpers/applications'
-import { bundledPython, documentedDataFolder, errorLines, kindOf, timeFactor } from './installer'
+import { bundledPython, documentedDataFolder, errorLines, kindOf } from './installer'
 import type { Spawned } from './redirect'
 
 test.use({ worldOptions: { empty: true, persona: 'mette' } })
@@ -107,7 +107,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   await saveAndSearch(page).click()
   await expect(page.getByRole('heading', { name: 'Finding jobs', level: 1 })).toBeVisible(LAUNCH)
   try {
-    await expect(summary(page)).toBeVisible({ timeout: 5 * 60_000 * timeFactor(process.env) })
+    await expect(summary(page)).toBeVisible({ timeout: 5 * 60_000 })
   } catch (e) {
     // name where the first run stood (#18): its progress record, the log's errors, the world's last calls, the screen
     const progress = existsSync(join(world.home, 'jobs', '.progress.json')) ? readFileSync(join(world.home, 'jobs', '.progress.json'), 'utf8') : 'none'
@@ -135,7 +135,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   await best.click()
   await page.getByRole('button', { name: 'Prepare application', exact: true }).click()
   // a failed Prepare says so in the log at once: stop there with its message instead of waiting out the timeout
-  const deadline = Date.now() + 10 * 60_000 * timeFactor(process.env)
+  const deadline = Date.now() + 10 * 60_000
   for (;;) {
     const logged = errors(world.home)
     if (logged.length) throw new Error(`Prepare failed: ${JSON.stringify(logged)}`)
