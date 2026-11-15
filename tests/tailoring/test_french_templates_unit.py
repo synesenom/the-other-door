@@ -85,3 +85,49 @@ def test_english_danish_and_hungarian_letters_still_compile(tmp_path):
     for i, (date, sign) in enumerate([("11. oktober 2026", "Med venlig hilsen,"), ("2026. október 11.", "Üdvözlettel,"), ("October 11, 2026", "Kind regards,")]):
         cv = "\\cvheader{A}{1}{a@x.dk}{x.dk}{C}\n\\section{Profile}\nÆøå őű: text"
         _compile(tmp_path / str(i), cv, body.format(date=date, sign=sign))
+
+
+def _lines(path: Path) -> list[str]:
+    text = pdf_render.page_texts(path)[0].replace("\u00a0", " ").replace("\u202f", " ").replace("\u2002", " ")
+    return [" ".join(line.split()) for line in text.splitlines() if line.strip()]
+
+
+_HEADER = "\\cvheader{Jane Doe}{+45 00 00 00 00}{jane.doe@example.com}{janedoe.example.com}{Copenhagen}\n\\section{Profile}\nText."
+_LETTER = "\\letterheader{A}{1}{a@x.dk}{x.dk}{C}\n\\recipient{X}{Y}{Z}\nText.\n\\closing{A}"
+
+
+@needs_tex
+def test_without_a_photo_the_cv_header_puts_the_details_on_one_line(tmp_path):
+    """#142: no photo, so the contact details sit on one line, separated by dots."""
+    _compile(tmp_path, "<<photo>>\n" + _HEADER, _LETTER)  # compile swaps the token for nothing: no photo
+    lines = _lines(tmp_path / "output" / "job-fr" / "cv.pdf")
+    assert "+45 00 00 00 00 · jane.doe@example.com · janedoe.example.com · Copenhagen" in lines, lines
+
+
+@needs_tex
+def test_with_a_photo_the_cv_header_stacks_the_details(tmp_path):
+    _compile(tmp_path, "\\cvphotobox{\\rule{2.5cm}{3.2cm}}\n" + _HEADER, _LETTER)
+    lines = _lines(tmp_path / "output" / "job-fr" / "cv.pdf")
+    for detail in ("+45 00 00 00 00", "jane.doe@example.com", "janedoe.example.com", "Copenhagen"):
+        assert detail in lines, lines
+
+
+@needs_tex
+def test_french_link_text_keeps_its_colon(tmp_path):
+    """#143: babel's French space before ':' stays out of a link's text, and out of nothing else."""
+    body = "\\selectlanguage{french}\\href{https://arxiv.org/abs/2408.10754}{arXiv:2408.10754} et Objet: suite"
+    _compile(tmp_path, body, body)
+    for name in ("cv", "cover_letter"):
+        words = _words(tmp_path / "output" / "job-fr" / f"{name}.pdf")
+        assert "arXiv:2408.10754" in words, (name, words)
+        assert "Objet" in words and ":" in words, (name, words)
+
+
+@needs_tex
+def test_french_header_links_keep_their_colons(tmp_path):
+    body = "\\selectlanguage{french}\n\\cvheader{A}{1}{a@x.fr}{x.fr/a:b}{C}\n\\section{Profil}\nTexte."
+    letter = "\\selectlanguage{french}\n\\letterheader{A}{1}{a@x.fr}{x.fr/a:b}{C}\n\\recipient{X}{Y}{Z}\nTexte.\n\\closing{A}"
+    _compile(tmp_path, body, letter)
+    for name in ("cv", "cover_letter"):
+        text = pdf_render.page_texts(tmp_path / "output" / "job-fr" / f"{name}.pdf")[0]
+        assert "x.fr/a:b" in text and " :b" not in text.replace("\u00a0", " ").replace("\u202f", " "), (name, text)

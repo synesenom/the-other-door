@@ -13,7 +13,9 @@ from door.core import lock as lock_mod
 from door.core import migrations, workspace
 from door.core.migrations import Step
 
-EXAMPLE = workspace.PROFILE_EXAMPLE_DIR
+from tests.paths import TESTS_DIR
+
+V010 = TESTS_DIR / "data_versions" / "0.1.0" / "profile"  # the templates and fonts v0.1.0 copied
 
 
 _REAL_RUN_AT_START = migrations.run_at_start  # conftest stubs it per test; these tests run the real one
@@ -51,8 +53,8 @@ def _v010_profile(profile: Path) -> None:
     """What `init` of v0.1.0 left: the templates and fonts copied, the config naming them."""
     profile.mkdir(parents=True, exist_ok=True)
     for name in ("cv.template.tex", "cover-letter.template.tex"):
-        shutil.copy2(EXAMPLE / name, profile / name)
-    shutil.copytree(EXAMPLE / "fonts", profile / "fonts")
+        shutil.copy2(V010 / name, profile / name)
+    shutil.copytree(V010 / "fonts", profile / "fonts")
     config = {
         "name": "Ada",
         "role_targets": ["x"],

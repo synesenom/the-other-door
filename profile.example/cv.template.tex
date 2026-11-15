@@ -37,6 +37,12 @@
 \definecolor{hairline}{HTML}{D6C7A8}
 \definecolor{accent}{HTML}{2F55C8}
 \hypersetup{colorlinks, urlcolor=accent, linkcolor=ink}
+% A link's text is an identifier or an address (arXiv:2408.10754, doi:...): set it without French typography,
+% so babel puts no space before its colon.
+\makeatletter
+\AtBeginDocument{\let\door@linkurl\hyper@linkurl
+  \def\hyper@linkurl#1{\door@linkurl{\foreignlanguage{english}{#1}}}}
+\makeatother
 \AtBeginDocument{\color{ink}}
 \newlength{\sectiongap}
 \setlength{\sectiongap}{0.3cm}
@@ -90,7 +96,8 @@
    \cv@line{#3}{\href{https://#3}{#3}}%
    \cv@line{#4}{#4}}%
 }
-\newcommand{\cv@photo}{}
+% \newcommand* (not long), so \ifx can find it equal to \@empty when there is no photo
+\newcommand*{\cv@photo}{}
 \newsavebox{\cv@photobox}
 \newcommand{\cvphotobox}[1]{\gdef\cv@photo{#1}}
 \newcommand{\cv@namecontact}[5]{%
