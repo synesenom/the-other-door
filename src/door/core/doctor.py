@@ -534,6 +534,34 @@ def check_serve_instances(reach=_reaches, sleep_minutes=_sleep_minutes) -> dict 
                   required=False)
 
 
+def check_templates(config: dict, profile_dir: Path) -> dict | None:
+    """The user's own LaTeX templates against the fixes of the shipped ones (#156); None when they have none."""
+    from door.core import templates, workspace
+
+    own, lacking = [], []  # lacking: (path, shipped path, fix)
+    for key in templates.FILES:
+        path = templates.resolve(key, config, profile_dir)
+        shipped = Path(workspace.PROFILE_EXAMPLE_DIR) / templates.FILES[key]
+        if path == shipped:
+            continue
+        own.append(path)
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        lacking.extend((path, shipped, f) for f in templates.missing_fixes(key, text))
+    if not own:
+        return None
+    if not lacking:
+        return _check("templates", True, "your own, with every fix of the shipped ones", required=False)
+    paths = list(dict.fromkeys(str(p) for p, _, _ in lacking))
+    n = len(lacking)
+    detail = f"{', '.join(paths)} lacks {n} fix{'' if n == 1 else 'es'} of the shipped template: " + "; ".join(
+        f["what"] for _, _, f in lacking)
+    fix = "; ".join(f"copy the lines around {f['has']} from {shipped} into yours" for _, shipped, f in lacking)
+    return _check("templates", False, detail, fix, required=False)
+
+
 def run_checks(
     profile_dir: Path,
     jobs_dir: Path,
@@ -586,6 +614,7 @@ def run_checks(
         check_dev_deps(find_spec=find_spec) if workspace.is_checkout() else None,
         check_serve_instances(),
         check_unsure_sources(config),
+        check_templates(config, profile_dir),
     ]
     checks = [c for c in checks if c is not None]
     if probe_sites:
