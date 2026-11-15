@@ -47,15 +47,39 @@ Your facts:
 """
 
 
+ONBOARDED_RULES = """You play a person who already set up a job-search app called The other door and uses it in a chat
+with its assistant. Stay in character and answer the assistant's last message the way this person would:
+briefly, plainly, in English, one to three sentences. Never invent facts beyond the ones below. You ask for
+nothing new: you do not want a new search, a prepared application or a changed status unless the assistant
+offers it and it fits your wish below. When the assistant asks whether there is anything else, or whether you
+are finished, say "I'm done". When asked which of several options you mean, pick the first. When asked
+for a role, a job or a number to analyse, use the one in your wish below.
+
+Your facts:
+{facts}
+"""
+
+
+def user_rules(kind: str = "onboarding", facts_note: str = "") -> str:
+    """The stand-in user's system prompt (facts still to be filled in): setting up, or already set up."""
+    rules = ONBOARDED_RULES if kind == "onboarded" else USER_RULES
+    return rules + (f"\nYour wish for this chat: {facts_note}\n" if facts_note else "")
+
+
+def finished(stop_after_tool: str, tools: list[str]) -> bool:
+    """A run is over once the tool that ends its journey has been called."""
+    return stop_after_tool in tools
+
+
 def no_api_key_env() -> dict[str, str]:
     """The real `claude` runs on its sign-in: an API key in the environment would be billed instead."""
     return {"ANTHROPIC_API_KEY": "", "ANTHROPIC_AUTH_TOKEN": ""}
 
 
-def ask_user(facts: str, prompt: str, schema: dict | None = None) -> str:
+def ask_user(facts: str, prompt: str, schema: dict | None = None, rules: str | None = None) -> str:
     """One answer from the stand-in user: a small model, on the same sign-in."""
     cmd = ["claude", "-p", "--model", "haiku", "--output-format", "json", "--tools", "",
-           "--no-session-persistence", "--system-prompt", USER_RULES.format(facts=facts)]
+           "--no-session-persistence", "--system-prompt", (rules or USER_RULES).format(facts=facts)]
     if schema:
         cmd += ["--json-schema", json.dumps(schema)]
     env = {**os.environ, **no_api_key_env()}
@@ -66,7 +90,7 @@ def ask_user(facts: str, prompt: str, schema: dict | None = None) -> str:
     return envelope.get("result", "")
 
 
-def answer_questions(facts: str, questions: list[dict]) -> dict[str, str]:
+def answer_questions(facts: str, questions: list[dict], rules: str | None = None) -> dict[str, str]:
     """AskUserQuestion's answers, {question text: chosen label(s), comma-separated}, picked by the user."""
     shown = json.dumps([{k: q.get(k) for k in ("question", "multiSelect", "options")} for q in questions], indent=1)
     schema = {"type": "object", "properties": {"answers": {"type": "array", "items": {
@@ -75,7 +99,7 @@ def answer_questions(facts: str, questions: list[dict]) -> dict[str, str]:
         "required": ["question", "labels"]}}}, "required": ["answers"]}
     raw = ask_user(facts, "The assistant asks you these questions, each with its options. For each question pick the "
                           "option label(s) that fit you (several only where multiSelect is true); if none fits, give no label "
-                          "and write your own answer in `other`.\n\n" + shown, schema)
+                          "and write your own answer in `other`.\n\n" + shown, schema, rules)
     try:
         picked = json.loads(raw)["answers"]
     except (ValueError, KeyError, TypeError):
@@ -89,9 +113,11 @@ def answer_questions(facts: str, questions: list[dict]) -> dict[str, str]:
     return answers
 
 
-async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path) -> dict:
+async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path, *, stop_after_tool: str = "find_jobs",
+               persona_kind: str = "onboarding", facts_note: str = "") -> dict:
     persona = {k: v for k, v in world["persona"].items() if k != "cv"}
     facts = json.dumps({**persona, "cv_file": world["cvFile"]}, ensure_ascii=False, indent=1)
+    rules = user_rules(persona_kind, facts_note)
     transcript: list[str] = [f"**user:** {prompt}"]
     asked: list[dict] = []
     denied: list[dict] = []
@@ -99,7 +125,7 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path) -
 
     async def can_use_tool(name, data, _context):
         if name == "AskUserQuestion":
-            answers = answer_questions(facts, data.get("questions", []))
+            answers = answer_questions(facts, data.get("questions", []), rules)
             asked.append({"questions": data.get("questions", []), "answers": answers})
             transcript.append("**AskUserQuestion:** " + json.dumps(answers, ensure_ascii=False))
             return PermissionResultAllow(updated_input={**data, "answers": answers})
@@ -142,9 +168,9 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path) -
                             transcript.append(f"`{block.name}` {json.dumps(block.input, ensure_ascii=False)[:400]}")
                 elif isinstance(msg, ResultMessage):
                     cost += msg.total_cost_usd or 0
-            if any(c.get("tool") == "find_jobs" for c in calls(world)):
+            if finished(stop_after_tool, [c.get("tool") for c in calls(world)]):
                 break
-            reply = ask_user(facts, "The assistant said:\n\n" + "\n\n".join(said[-2:]) + "\n\nYour reply:")
+            reply = ask_user(facts, "The assistant said:\n\n" + "\n\n".join(said[-2:]) + "\n\nYour reply:", rules=rules)
             transcript.append(f"**user:** {reply}")
             message = reply
 
@@ -184,9 +210,13 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--model", default="sonnet")
     parser.add_argument("--max-turns", type=int, default=12)
     parser.add_argument("--out", default="skill-run")
+    parser.add_argument("--stop-after", default="find_jobs", help="end the run once this tool was called")
+    parser.add_argument("--persona-kind", choices=("onboarding", "onboarded"), default="onboarding")
+    parser.add_argument("--facts-note", default="", help="what the user wants from this chat")
     args = parser.parse_args(argv)
     world = json.loads(Path(args.world).read_text(encoding="utf-8"))
-    result = asyncio.run(run(world, args.prompt, args.model, args.max_turns, Path(args.out)))
+    result = asyncio.run(run(world, args.prompt, args.model, args.max_turns, Path(args.out),
+                                  stop_after_tool=args.stop_after, persona_kind=args.persona_kind, facts_note=args.facts_note))
     json.dump({k: result[k] for k in ("turns", "cost_usd_equivalent", "tools", "files")}, sys.stdout, indent=1)
 
 
