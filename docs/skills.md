@@ -52,7 +52,8 @@ The skills are tested end to end, locally and before a release (`./scripts/run-t
 in CI): the real model runs `/onboard`, `/expand`, `/upskill` and a review session against a test world,
 a second small model plays the user, and the checks are on behaviour only (which tools, in which order,
 what was written and when), never on wording. They need a signed-in `claude`, `claude-agent-sdk` and
-`npm ci` in `app/`; they use the plan's quota.
+`npm ci` in `app/`; they use the plan's quota. Run them before a release and when a skill (or CLAUDE.md's
+review-session rules) changes.
 
 ## Agents
 

@@ -7,8 +7,10 @@ nothing touches the user's own data. The user is a second, small model playing t
 each plain-text question and each AskUserQuestion from the persona's facts and wishes.
 
     python tests/skills/skill_run.py <world.json> "/onboard" [--model sonnet] [--max-turns 12] [--out DIR]
+        [--stop-after TOOL] [--persona-kind onboarding|onboarded] [--facts-note "what the user wants"]
 
-<world.json> is what `npx tsx app/test/world/make-world.ts <persona> --empty` prints. Writes
+<world.json> is what `npx tsx app/test/world/make-world.ts <persona>` prints (`--empty` for a user with no data
+yet, as /onboard wants; without it mette's profile, ledger and ads exist, as /expand, /upskill and a review want). Writes
 `transcript.md` and `result.json` (tool calls, AskUserQuestion answers, the files in the home) to --out.
 """
 
@@ -19,6 +21,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from claude_agent_sdk import (
@@ -126,7 +129,7 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path, *
     async def can_use_tool(name, data, _context):
         if name == "AskUserQuestion":
             answers = answer_questions(facts, data.get("questions", []), rules)
-            asked.append({"questions": data.get("questions", []), "answers": answers})
+            asked.append({"at": time.time(), "questions": data.get("questions", []), "answers": answers})
             transcript.append("**AskUserQuestion:** " + json.dumps(answers, ensure_ascii=False))
             return PermissionResultAllow(updated_input={**data, "answers": answers})
         if name.startswith("mcp__door__"):

@@ -11,7 +11,8 @@ from conftest import home, run_skill
 
 pytestmark = pytest.mark.skills
 
-NOT_ASKED_FOR = ("find_jobs", "prepare", "init_profile", "set_status", "import_posting", "revise")
+NOT_ASKED_FOR = ("find_jobs", "prepare", "init_profile", "set_status", "import_posting", "revise",
+                "mark_reviewed")
 
 
 @pytest.fixture(scope="module")
@@ -57,4 +58,4 @@ def test_the_report_is_written_with_its_plan(top):
 def test_nothing_else_is_done_and_no_shell_or_write_is_used(top, one_job):
     for _, result in (top, one_job):
         assert not [t for t in result["tools"] if t in NOT_ASKED_FOR], result["tools"]
-        assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write")], result["used"]
+        assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write", "Edit")], result["used"]

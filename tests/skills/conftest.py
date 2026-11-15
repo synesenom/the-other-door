@@ -47,7 +47,10 @@ def run_skill(tmp_path_factory, name: str, prompt: str, *, empty: bool = False, 
 
     world = make_world(*(["--empty"] if empty else []))
     folder = tmp_path_factory.mktemp(name)
+    cv = home(world) / "profile" / "cv.md"
+    before = cv.read_bytes() if cv.exists() else None
     result = asyncio.run(skill_run.run(world, prompt, "sonnet", max_turns, folder, **options))
+    result["cv_before"] = before   # the CV's bytes as the world made it, for a run that must not touch it
     print(f"\n{name} transcript: {folder / 'transcript.md'}")
     return world, result
 

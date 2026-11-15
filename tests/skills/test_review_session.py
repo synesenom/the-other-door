@@ -44,4 +44,4 @@ def test_it_marks_the_review_done_once_and_last(review):
 def test_it_runs_nothing_the_user_did_not_ask_for(review):
     _, result = review
     assert not [t for t in result["tools"] if t in UNASKED], result["tools"]
-    assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write")], result["used"]
+    assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write", "Edit")], result["used"]

@@ -32,6 +32,7 @@ def accepted(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def declined(tmp_path_factory):
+    # the world is made inside run_skill, so the CV's bytes are read by its hook just before the run
     return run_skill(tmp_path_factory, "expand-declined", PROMPT, max_turns=2, persona_kind="onboarded",
                      stop_after_tool="never",
                      facts_note="You want none of the proposals added to your CV: pick None.")
@@ -51,7 +52,8 @@ def test_the_cv_changes_only_after_the_user_chose(accepted):
     enriches = _enrich_calls(result)
     assert len(enriches) == 2, result["tools"]
     assert _applies(enriches[1])
-    assert result["asked"], "no AskUserQuestion between propose and apply"
+    assert any(enriches[0]["at"] < q["at"] < enriches[1]["at"] for q in result["asked"]), \
+        "no AskUserQuestion between propose and apply"
     profile = home(world) / "profile"
     assert (profile / "cv.md.bak").exists()
     assert profile.joinpath("cv.md").read_text(encoding="utf-8") != (profile / "cv.md.bak").read_text(encoding="utf-8")
@@ -64,9 +66,11 @@ def test_a_user_who_wants_none_leaves_the_cv_untouched(declined):
     assert len(enriches) == 1 and not _applies(enriches[0]), result["calls"]
     profile = home(world) / "profile"
     assert not (profile / "cv.md.bak").exists()
+    assert (profile / "cv.md").read_bytes() == result["cv_before"]
     assert result["asked"]
 
 
-def test_it_uses_neither_a_shell_nor_a_file_write(accepted, declined):
+def test_it_uses_neither_a_shell_nor_a_file_write_and_does_not_end_a_review(accepted, declined):
     for _, result in (accepted, declined):
-        assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write")], result["used"]
+        assert "mark_reviewed" not in result["tools"], result["tools"]
+        assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write", "Edit")], result["used"]

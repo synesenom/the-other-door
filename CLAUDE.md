@@ -213,7 +213,7 @@ and helps decide. Unless the user asks for something else:
    to type a status, a kind or a job id from memory — offer the list; "here's a link" → `import_posting` with only the `url` (it fetches the page and Haiku reads title and company; if that errors, ask for the text); "here's an ad I found" → `import_posting` with the pasted
    text (ask for title/company if the ad doesn't make them clear); either way it is scored at once —
    give its score and reason and let the user decide (`prepare`, `discarded`, …).
-5. When the user says they are done, call `mark_reviewed`.
+5. When the user says they are done with the review (after matches were listed), call `mark_reviewed`; not at the end of a skill or any other task.
 
 "Expand my search keywords": call the `keywords` tool (it proposes from the profile's
 `role_targets`; the rules live in `src/door/commands/keywords.py`, the same call as
@@ -307,7 +307,7 @@ poetry install   # runtime + dev deps (pytest, pytest-cov, pytest-xdist, respons
 
 ./scripts/run-test.sh           # offline suite + coverage + regenerate badge
 ./scripts/run-test.sh --live    # opt-in smoke tests against real sites
-./scripts/run-test.sh --skills  # the skills (/onboard) run by the real model on your plan, before a release
+./scripts/run-test.sh --skills  # the skills (/onboard, /expand, /upskill) and a review session run by the real model on your plan, before a release
 ./scripts/run-test.sh --cli-journeys  # the real ./door in the app's test world (init, find, jobs show/prepare/status; needs Node and npm ci in app/; CI: cli-journeys.yml, Linux and Windows)
 ./scripts/run-test.sh --app     # the desktop app's tests as CI runs them (typecheck, unit, e2e, core journeys, phone)
 ./scripts/run-test.sh --release # before a release: offline suite, app with every journey, CLI journeys, skills, and the
