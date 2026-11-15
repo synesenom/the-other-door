@@ -136,7 +136,7 @@ class Step:
 # The steps
 # --------------------------------------------------------------------------- #
 
-# SHA-256 of the files v0.1.0's `init` copied into `profile/` (`profile.example/` has not changed since).
+# SHA-256 of the files v0.1.0's `init` copied into `profile/` (the same as `tests/data_versions/0.1.0/profile/`).
 _SHIPPED_TEMPLATES = {
     "cv.template.tex": "a9abadba23e80da8c1b13558bfaf7a362d466c0d3af2b9b1bb59030a518d5fc8",
     "cover-letter.template.tex": "b88e5a3b4c1442a50a94f477de0eca88021532cd317a8a3746d480517768a129",

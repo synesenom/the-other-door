@@ -32,6 +32,12 @@
 \definecolor{hairline}{HTML}{D6C7A8}
 \definecolor{accent}{HTML}{2F55C8}
 \hypersetup{colorlinks, urlcolor=accent, linkcolor=ink}
+% A link's text is an identifier or an address (arXiv:2408.10754, doi:...): set it without French typography,
+% so babel puts no space before its colon.
+\makeatletter
+\AtBeginDocument{\let\door@linkurl\hyper@linkurl
+  \def\hyper@linkurl#1{\door@linkurl{\foreignlanguage{english}{#1}}}}
+\makeatother
 \AtBeginDocument{\color{ink}}
 
 % \letterheader{<Name>}{<phone>}{<email>}{<web>}{<location>} — the name and the contact line at the top of the
