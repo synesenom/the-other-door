@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { coversTitle, inventoryProblems, journeyRefs, testFileRefs, testTitles } from './inventory'
+import { inventoryProblems, journeyRefs, journeyTests, resolveRef, testFileRefs, type JourneyTest } from './inventory'
 import { realInventory } from './inventory-files'
 
-describe('testTitles', () => {
+const run = (...titles: string[]): JourneyTest[] => titles.map((title) => ({ title, skipped: false }))
+
+describe('journeyTests', () => {
   it('reads the titles of test, test.skip and test.fixme, not of test.describe', () => {
     const src = [
       "test.describe('Area', () => {",
@@ -11,7 +13,25 @@ describe('testTitles', () => {
       "  test('it\\'s escaped', async () => {})",
       '})',
     ].join('\n')
-    expect(testTitles(src)).toEqual(['opens it; then closes it', 'a skipped one', "it's escaped"])
+    expect(journeyTests(src)).toEqual([
+      { title: 'opens it; then closes it', skipped: false },
+      { title: 'a skipped one', skipped: true },
+      { title: "it's escaped", skipped: false },
+    ])
+  })
+
+  it('marks every test inside a test.describe.skip block as skipped, and none after it', () => {
+    const src = [
+      "test.describe.skip('Your phone', () => {",
+      "  test('pairs it', async () => {",
+      '  })',
+      '})',
+      "test('after it', async () => {})",
+    ].join('\n')
+    expect(journeyTests(src)).toEqual([
+      { title: 'pairs it', skipped: true },
+      { title: 'after it', skipped: false },
+    ])
   })
 })
 
@@ -34,49 +54,86 @@ describe('journeyRefs', () => {
   })
 })
 
-describe('coversTitle', () => {
-  const titles = ['Prepare again asks first; Cancel and Escape leave it', 'lists the matches best first, each with its score', 'Interview: screening needs the kind picked first']
+describe('resolveRef', () => {
+  const tests = run(
+    'Prepare again asks first; Cancel and Escape leave it',
+    'Prepared moves the job to Applications',
+    'Prepared moves the job to Applications and keeps the letter',
+    'lists the matches best first, each with its score',
+    'Interview: screening needs the kind picked first',
+    'a wrong code fails the sign-in',
+    'a wrong code fails with claude’s reason',
+  )
 
-  it('accepts a whole title, with notes after it', () => {
-    expect(coversTitle('Prepare again asks first; Cancel and Escape leave it (narrow)', titles)).toBe(true)
+  it('accepts a whole title, alone or followed by a note', () => {
+    for (const ref of ['Prepare again asks first; Cancel and Escape leave it', 'Prepare again asks first; Cancel and Escape leave it (narrow)', 'Prepared moves the job to Applications; unit: `A.test.tsx`', 'Prepared moves the job to Applications — not the phone', 'Prepared moves the job to Applications |', 'Prepared moves the job to Applications: the board', 'Prepared moves the job to Applications)'])
+      expect(resolveRef(ref, tests), ref).toMatchObject({ title: expect.any(String), whole: true })
+  })
+
+  it('refuses a title that runs on past a whole one without a boundary: a shortened rename, a typo after a sibling', () => {
+    expect(resolveRef('Prepared moves the job to Applications and bcak', tests).problem).toMatch(/no journey test/)
+    expect(resolveRef('lists the matches best first, each with', tests).problem).toMatch(/no journey test/)
+  })
+
+  it('takes the longest whole title that fits', () => {
+    expect(resolveRef('Prepared moves the job to Applications and keeps the letter (narrow)', tests).title).toBe('Prepared moves the job to Applications and keeps the letter')
   })
 
   it('accepts a title shortened with …, and checks what follows the …', () => {
-    expect(coversTitle('lists the matches best first… (2 decimals)', titles)).toBe(true)
-    expect(coversTitle('Interview: … needs the kind picked first', titles)).toBe(true)
-    expect(coversTitle('Interview: … needs nothing', titles)).toBe(false)
+    expect(resolveRef('lists the matches best first… (2 decimals)', tests)).toMatchObject({ title: 'lists the matches best first, each with its score', whole: false })
+    expect(resolveRef('Interview: screening … the kind picked first', tests).title).toBe('Interview: screening needs the kind picked first')
+    expect(resolveRef('Interview: screening … needs nothing', tests).problem).toMatch(/no journey test/)
   })
 
-  it('reads a … inside a note as the note’s, not as a shortened title', () => {
-    expect(coversTitle('lists the matches best first, each with its score (Loading…: not tested)', titles)).toBe(true)
-    expect(coversTitle('lists the matches best first… ("Stopping…" is not asserted)', titles)).toBe(true)
-    expect(coversTitle('Applied through …; unit: `A.test.tsx`', titles)).toBe(false)
+  it('reads a … inside a note as the note’s', () => {
+    expect(resolveRef('lists the matches best first, each with its score (Loading…: not tested)', tests).whole).toBe(true)
+    expect(resolveRef('lists the matches best first… ("Stopping…" is not asserted)', tests).title).toBe('lists the matches best first, each with its score')
   })
 
-  it('refuses a title cut short without …, or one no test has', () => {
-    expect(coversTitle('Prepare again asks first', titles)).toBe(false)
-    expect(coversTitle('a journey that was renamed', titles)).toBe(false)
+  it('refuses a … too short to name a test, and one that fits several', () => {
+    expect(resolveRef('…', tests).problem).toMatch(/too short/)
+    expect(resolveRef('lists…', tests).problem).toMatch(/too short/)
+    expect(resolveRef('a wrong code fails…', tests).problem).toMatch(/2 journey tests/)
+    expect(resolveRef('a wrong code fails the…', tests).title).toBe('a wrong code fails the sign-in')
+  })
+
+  it('refuses a skipped journey: it covers nothing', () => {
+    const skipped = [{ title: 'pairs the phone', skipped: true }]
+    expect(resolveRef('pairs the phone', skipped).problem).toMatch(/skipped/)
   })
 })
 
 describe('testFileRefs', () => {
-  it('names the test files a line points at, not the source files it describes', () => {
-    const line = '- `Analytics.tsx` reads it — unit: `app/src/a/Analytics.test.tsx`, `B.test.ts`; preview: `preview.test.tsx`; `tests/core/test_usage_unit.py`; ✓ `cv.journey.ts`'
-    expect(testFileRefs(line)).toEqual(['app/src/a/Analytics.test.tsx', 'B.test.ts', 'preview.test.tsx', 'tests/core/test_usage_unit.py', 'cv.journey.ts'])
+  it('names the test files a line points at, backquoted or not, not the source files it describes', () => {
+    const line = '- `Analytics.tsx` reads it — unit: `app/src/a/Analytics.test.tsx`, `B.test.ts`; preview: preview.test.tsx; tests/core/test_usage_unit.py; ✓ `cv.journey.ts` (report.journey.ts)'
+    expect(testFileRefs(line)).toEqual(['app/src/a/Analytics.test.tsx', 'B.test.ts', 'preview.test.tsx', 'tests/core/test_usage_unit.py', 'cv.journey.ts', 'report.journey.ts'])
+  })
+
+  it('reads a glob as no file', () => {
+    expect(testFileRefs('each `*.journey.ts` and `src/**/*.test.tsx`')).toEqual([])
   })
 })
 
 describe('inventoryProblems', () => {
   it('names the file, the line and what is missing', () => {
     const files = [{ name: 'jobs.md', text: '# Jobs\n- opens — ✓ opens it\n- shuts — ✓ gone away; unit: `Gone.test.tsx`' }]
-    const problems = inventoryProblems(files, ['opens it'], (p) => p !== 'Gone.test.tsx')
-    expect(problems).toEqual(['jobs.md:3: no journey test "gone away"', 'jobs.md:3: no test file Gone.test.tsx'])
+    expect(inventoryProblems(files, run('opens it'), (p) => p !== 'Gone.test.tsx')).toEqual(['jobs.md:3: no journey test "gone away"', 'jobs.md:3: no test file Gone.test.tsx'])
+  })
+
+  it('wants a ✓ before each journey title on a line', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ opens it; closes it again; unit: `A.test.tsx`' }]
+    expect(inventoryProblems(files, run('opens it', 'closes it again'), () => true)).toEqual(['a.md:1: "closes it again" is a journey title without its ✓'])
+  })
+
+  it('wants each journey named whole at least once, not only shortened with …', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ opens the posting full…\n- y — ✓ opens the posting full…' }]
+    expect(inventoryProblems(files, run('opens the posting full width'), () => true)).toEqual(['a.md:1: "opens the posting full width" is only named shortened with …; name it whole once'])
   })
 })
 
 describe('the inventories in app/journeys/inventory', () => {
   it('name only journey tests and test files that exist', () => {
-    const { files, titles, exists } = realInventory()
-    expect(inventoryProblems(files, titles, exists)).toEqual([])
+    const { files, tests, exists } = realInventory()
+    expect(inventoryProblems(files, tests, exists)).toEqual([])
   })
 })

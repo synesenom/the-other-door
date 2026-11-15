@@ -93,7 +93,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
      - a lock held for a non-run purpose: "another process of The other door is writing the ledgers (<purpose>) (started …, pid …); try again in a moment". This does NOT match the busy regex. — ✓ another process writing the ledgers: the alert names it, and the run works once it is done
      - "The run stopped: The other door heard nothing for 15 minutes." — not tested: needs 15 minutes without progress
      - "The other door's server stopped; try again" — ✓ the server dying during the run: the alert says it stopped, and the next run starts a new one
-4. The Matches `finding` prop is 'own' while own, 'elsewhere' while foreign. — ✓ narrow: the pill on Matches starts the run…; unit: `app/src/renderer/screens/Matches.test.tsx`
+4. The Matches `finding` prop is 'own' while own, 'elsewhere' while foreign. — ✓ narrow: the pill on Matches starts the run and, while it goes, leads back to it; unit: `app/src/renderer/screens/Matches.test.tsx`
 
 ### Finding screen: visible when `finding && (findingState !== null || foreign)`
 `findingState` = `{kind:'running'}` when the board is active and own but this window's run is not running (e.g. after a renderer reload); otherwise it is this window's run state.
@@ -127,7 +127,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
   - "Took N s" / "Took N min" from `elapsed_s`. — ✓ Find new jobs runs the five steps…
   - **btn "View matches"** → Matches with **New only on** (remounted), refreshKey++. — ✓ View matches opens Matches on New only, with the ads the run found
   - **btn "Show run record"** → IPC `showRun(started_at)` → shows `jobs/runs/<started_at with [^A-Za-z0-9_-]→->.json` in the OS file manager. Failure ("that run record is not on disk") is silently ignored. Likely untestable beyond "no error". — unit: `app/src/renderer/screens/Finding.test.tsx`
-  - **Not shown**: `failures`, per-site outcomes, `match.failed`, `skipped`. A run with failed sites looks the same as a clean one (#478). — unit: `app/src/renderer/screens/Finding.test.tsx` (says nothing of a site it could not read or ads it could not score) (disk: ✓ a board that fails…; ✓ scoring that fails…)
+  - **Not shown**: `failures`, per-site outcomes, `match.failed`, `skipped`. A run with failed sites looks the same as a clean one (#478). — unit: `app/src/renderer/screens/Finding.test.tsx` (says nothing of a site it could not read or ads it could not score) (disk: ✓ a board that fails: the run still ends in a summary and its record names the board; ✓ scoring that fails: the ads stay on disk unscored and the record lists them as failed)
 - **Error state** (not running, state error): **alert** "The other door could not start the run: <message>" and **btn "Find new jobs"** (primary) → startRun(). — ✓ find_jobs answering an error…; ✓ the server dying during the run…
 - The idle "Find new jobs" button with no error is unreachable: the screen is hidden when the state is null. — not tested: unreachable
 - While a summary is shown and a foreign run starts: the watching view replaces it. — unit: `app/src/renderer/App.test.tsx`
@@ -195,7 +195,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 ## 3. Posting (`Posting.tsx`), inside Matches or Applications
 
 ### Calls
-- `show {job_id}` on mount, after a status change (`version++`), and again when the job id changes. — ✓ a Danish ad: … (show on mount); unit: `app/src/renderer/screens/Posting.test.tsx` (again on a step)
+- `show {job_id}` on mount, after a status change (`version++`), and again when the job id changes. — ✓ a Danish ad: its title in English, where and when, the score, why it fits, the gaps, its language and text (show on mount); unit: `app/src/renderer/screens/Posting.test.tsx` (again on a step)
 - While `watching`: `show {job_id}` every 5 s. 'adopted' is set when a Prepare for this job is already in the module-level `preparing` map at mount; 'busy' is set after an in-progress refusal.
 - Prepare: `prepare {job_id}` or `{job_id, force:true}`, with progress. — ✓ Prepare application on a new match tailors, compiles and opens Ready to send; ✓ Prepare again replaces the application with a new one
 
@@ -282,7 +282,7 @@ Opened by the Posting's "Status" (full form) and the Posting's "Not for me" (`pr
   - "Technical A technical interview, case or take-home"
   - The kind starts empty even when the current status is an interview, so Save stays disabled until a kind is picked. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 - Textbox **"Notes (optional)"**, or **"Why not?"** when "Not for me" is chosen; there the reason is required. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
-- **btn "Cancel"**, **btn "Save"**. Save is disabled while busy, when no status is chosen, for Interview with no kind, and for Not for me with no reason. **Save is enabled at once on the current status**, so saving it unchanged is possible. — unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ Interview: … needs the kind picked first; unit: `app/src/renderer/screens/StatusDialog.test.tsx`
+- **btn "Cancel"**, **btn "Save"**. Save is disabled while busy, when no status is chosen, for Interview with no kind, and for Not for me with no reason. **Save is enabled at once on the current status**, so saving it unchanged is possible. — unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ Interview: screening needs the kind picked first; unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 - Escape closes. Tab is trapped inside. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 
 ### Failure branches (**alert** inside the dialog, Save re-enabled)
@@ -386,7 +386,7 @@ Reached through:
   - the note
   - for dots: hidden text "N round(s) passed, one under way: "
 - Note variants (`cardNote`):
-  - status rejected / ghosted / discarded → "rejected" / "ghosted" / "withdrawn", no dots — unit: `app/src/renderer/screens/board.test.ts` (rejected, ghosted); ✓ Not for me on a prepared job, through Status, closes it as withdrawn. NOTE: a match discarded before it was prepared or sent is not in `list_matches(closed)` at all (FULL_LEDGER's Kystbanken), right: it was never an application
+  - status rejected / ghosted / discarded → "rejected" / "ghosted" / "withdrawn", no dots — unit: `app/src/renderer/screens/board.test.ts` (rejected, ghosted); ✓ Not for me on a prepared job, through Status, closes it as withdrawn (NOTE: a match discarded before it was prepared or sent is not in `list_matches(closed)` at all, FULL_LEDGER's Kystbanken, right: it was never an application)
   - offer → dots plus "offer" — unit: `app/src/renderer/screens/board.test.ts`
   - `interview:*` → dots plus the last round's `stage`, else the status suffix (e.g. "technical") — unit: `app/src/renderer/screens/board.test.ts`; ✓ an interview round moves an applied card to Interviewing
   - prepared / applied → "today", "yesterday", "N days ago" (2–6), "1 week ago", "N weeks ago" (2–3), else "Mon D", from `updated_at`; null or unparsable → no note — unit: `app/src/renderer/screens/board.test.ts` ("yesterday"; the other wordings are board.ts unit tests' job)

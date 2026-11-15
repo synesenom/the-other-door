@@ -230,7 +230,7 @@ Other data-driven variants:
 - `enrich` proposes nothing the CV already says, even in other punctuation, Markdown or near wording (the words compared, a line 90% alike), so a second read adds nothing twice. — unit: `tests/commands/test_enrich_cli.py`
 - Nothing on the page: "Nothing on that page is missing from your CV." and **Close**. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
 - Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor
-- Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — not covered by a journey; unit: `app/src/renderer/screens/CvEditor.test.tsx`
+- Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — not covered by a journey; the refusal: unit: `tests/commands/test_enrich_cli.py`; the dialog showing it: no test
 
 ---
 
