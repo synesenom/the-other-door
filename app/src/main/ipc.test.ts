@@ -628,7 +628,7 @@ describe('the install update channel', () => {
     expect(await reg().get(CHANNELS.installUpdate)!({})).toEqual({ ok: false })
   })
   it('asks the updater to install, whatever the window sends', async () => {
-    const updates = { last: vi.fn(), check: vi.fn(), install: vi.fn(() => ({ ok: true })) }
+    const updates = { last: vi.fn(), check: vi.fn(), install: vi.fn(async () => ({ ok: true })) }
     expect(await reg(updates).get(CHANNELS.installUpdate)!({}, 'x')).toEqual({ ok: true })
     expect(updates.install).toHaveBeenCalledTimes(1)
   })

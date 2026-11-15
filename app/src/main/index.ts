@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { realpath, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -13,6 +13,7 @@ import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
 import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
+import { quitStep, restorePhoneAfterUpdate, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
 import { createProblemLog } from './problem-log'
 import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest } from './protocol'
 import { createPhotoFile } from './photo-file'
@@ -55,7 +56,19 @@ try {
   // no package.json to read: not signed
 }
 const mode = updatesAllowed(process.env) ? updateMode({ platform: process.platform, packaged, simulated, doorSigned, appImage: Boolean(process.env['APPIMAGE']) }) : 'none'
+// The detached phone server is stopped before an update installs (phone-update.ts, #77).
+let phoneStopped = false
+const phoneDeps = (): PhoneUpdateDeps => ({
+  call: (tool, args, timeout) => server.call(tool, args ?? {}, timeout ? { timeout } : {}),
+  markerPath: join(app.getPath('userData'), 'phone-restart.marker'),
+  fs: { write: (p) => writeFileSync(p, ''), exists: existsSync, remove: (p) => rmSync(p, { force: true }) },
+  log: (m) => problemLog.write('phone-update', m),
+})
 const updates = createUpdateManager({
+  beforeInstall: async () => {
+    phoneStopped = true
+    await stopPhoneForUpdate(phoneDeps())
+  },
   mode: mode,
   current: app.getVersion(),
   // Only a self-installing build loads electron-updater.
@@ -221,6 +234,7 @@ app.whenReady().then(() => {
       : {}),
   })
   createWindow()
+  if (!simulated && mode !== 'none') void restorePhoneAfterUpdate(phoneDeps())
   if (mode !== 'none') checkEvery(updates, CHECK_EVERY_MS) // at start and once a day; never waits, never throws
   // Start the server now so the first screen does not wait for Python.
   void server.listTools().catch(() => undefined)
@@ -233,7 +247,14 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
+  // Quitting installs a downloaded update: stop the phone server first, once, then quit again.
+  if (quitStep({ installsOnQuit: updates.willInstallOnQuit(), phoneStopped }) === 'stop-then-quit') {
+    event.preventDefault()
+    phoneStopped = true
+    void stopPhoneForUpdate(phoneDeps()).finally(() => app.quit())
+    return
+  }
   board.stop()
   claudeLogin.cancel()
   void server.close()

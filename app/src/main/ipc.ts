@@ -201,7 +201,7 @@ export function registerIpc(
     /** The problem log (problem-log.ts): what the window was refused. */
     problemLog?: ProblemLog
     /** The update check (updates.ts). */
-    updates?: { last(): UpdateResult | null; check(): Promise<UpdateResult>; install(): { ok: boolean } }
+    updates?: { last(): UpdateResult | null; check(): Promise<UpdateResult>; install(): Promise<{ ok: boolean }> }
     /** Signing in to the Claude plan (claude-login.ts). */
     claudeLogin?: Pick<ClaudeLogin, 'start' | 'sendCode' | 'openPage' | 'cancel' | 'state'>
     demoRun?: (args: Record<string, unknown>, onProgress: (p: Progress) => void) => { result: Promise<unknown>; stop: () => void }
@@ -434,7 +434,7 @@ export function registerIpc(
 
   ipcMain.handle(CHANNELS.checkUpdate, async (): Promise<UpdateResult | { enabled: false }> => deps.updates?.last() ?? { enabled: false })
 
-  ipcMain.handle(CHANNELS.installUpdate, async (): Promise<{ ok: boolean }> => deps.updates?.install() ?? { ok: false })
+  ipcMain.handle(CHANNELS.installUpdate, async (): Promise<{ ok: boolean }> => (await deps.updates?.install()) ?? { ok: false })
 
   ipcMain.handle(CHANNELS.info, async () => deps.info ?? { demo: false })
   ipcMain.handle(CHANNELS.currentBoard, async (): Promise<RunBoard> => deps.currentBoard?.() ?? { active: false })
