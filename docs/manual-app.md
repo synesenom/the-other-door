@@ -30,7 +30,7 @@ and signs you in to your Claude plan.
 **Updating**: an installed app looks for a newer published version when it starts and once a day while
 it is open; there is nothing to press. Settings → Version shows the version you have. The Windows installer, the AppImage and a signed macOS build download it in the
 background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
-that installs it at once. A running phone server is stopped before the update installs; one on Tailscale starts
+that installs it at once. When the app installs an update itself, a running phone server is stopped first; one on Tailscale starts
 again with the new version, a quick tunnel needs setting up again with a new code. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
 replace themselves: Settings says "Version X is available" with a Download button that opens the release page, and
 you install the download over this one. The check sends no information about you; offline, or when the release

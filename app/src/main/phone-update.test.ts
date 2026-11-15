@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { restorePhoneAfterUpdate, stopPhoneForUpdate } from './phone-update'
+import { quitStep, restorePhoneAfterUpdate, stopPhoneForUpdate } from './phone-update'
 
 function setup(calls: Record<string, (args: any) => unknown>, marker = false) {
   const files = new Set<string>(marker ? ['/m'] : [])
-  const call = vi.fn(async (tool: string, args?: Record<string, unknown>) => {
+  const call = vi.fn(async (tool: string, args?: Record<string, unknown>, _timeoutMs?: number) => {
     const f = calls[tool]
     if (!f) throw new Error(`no ${tool}`)
     return f(args)
@@ -20,10 +20,22 @@ function setup(calls: Record<string, (args: any) => unknown>, marker = false) {
 afterEach(() => vi.useRealTimers())
 
 describe('stopPhoneForUpdate', () => {
-  it('does nothing when the phone server is not running', async () => {
-    const s = setup({ phone_status: () => ({ running: false }) })
+  it('stops what is left even when status says not running, and leaves no marker', async () => {
+    // a quick tunnel that died reads as not running while `door serve` is still alive
+    const s = setup({ phone_status: () => ({ running: false }), phone_stop: () => ({ stopped: true }) })
     await stopPhoneForUpdate(s.deps)
-    expect(s.call).not.toHaveBeenCalledWith('phone_stop', expect.anything())
+    expect(s.call).toHaveBeenCalledWith('phone_stop', {})
+    expect(s.files.size).toBe(0)
+  })
+  it('leaves no marker when stopping a lasting connection fails', async () => {
+    const s = setup({
+      phone_status: () => ({ running: true, lasting: true }),
+      phone_stop: () => {
+        throw new Error('stuck')
+      },
+    })
+    await stopPhoneForUpdate(s.deps)
+    expect(s.log).toHaveBeenCalledWith(expect.stringContaining('stuck'))
     expect(s.files.size).toBe(0)
   })
   it('stops a quick tunnel and leaves no marker', async () => {
@@ -54,6 +66,7 @@ describe('stopPhoneForUpdate', () => {
     await vi.advanceTimersByTimeAsync(150)
     await p
     expect(s.log).toHaveBeenCalled()
+    expect(s.files.size).toBe(0)
   })
 })
 
@@ -61,7 +74,7 @@ describe('restorePhoneAfterUpdate', () => {
   it('starts Tailscale again and removes the marker', async () => {
     const s = setup({ phone_start: () => ({ running: true }) }, true)
     await restorePhoneAfterUpdate(s.deps)
-    expect(s.call).toHaveBeenCalledWith('phone_start', { connection: 'tailscale' })
+    expect(s.call).toHaveBeenCalledWith('phone_start', { connection: 'tailscale' }, 300_000)
     expect(s.files.has('/m')).toBe(false)
   })
   it('does nothing without a marker', async () => {
@@ -84,12 +97,31 @@ describe('restorePhoneAfterUpdate', () => {
     expect(s.log).toHaveBeenCalled()
     expect(s.files.has('/m')).toBe(false)
   })
-  it('removes the marker when the start hangs', async () => {
-    vi.useFakeTimers()
+  it('removes the marker before starting, so a start that never ends is not retried', async () => {
     const s = setup({ phone_start: () => new Promise(() => undefined) }, true)
-    const p = restorePhoneAfterUpdate(s.deps)
-    await vi.advanceTimersByTimeAsync(150)
-    await p
+    void restorePhoneAfterUpdate(s.deps)
+    await Promise.resolve()
     expect(s.files.has('/m')).toBe(false)
+  })
+  it('waits for a slow start as long as the window would, and logs nothing on success', async () => {
+    vi.useFakeTimers()
+    const s = setup({ phone_start: () => new Promise((r) => setTimeout(() => r({ running: true }), 60_000)) }, true)
+    const p = restorePhoneAfterUpdate(s.deps)
+    await vi.advanceTimersByTimeAsync(60_000)
+    await p
+    expect(s.call).toHaveBeenCalledWith('phone_start', { connection: 'tailscale' }, 300_000)
+    expect(s.log).not.toHaveBeenCalled()
+  })
+})
+
+describe('quitStep', () => {
+  it('lets a quit with no downloaded update proceed', () => {
+    expect(quitStep({ installsOnQuit: false, phoneStopped: false })).toBe('proceed')
+  })
+  it('stops the phone first when the quit installs an update', () => {
+    expect(quitStep({ installsOnQuit: true, phoneStopped: false })).toBe('stop-then-quit')
+  })
+  it('proceeds once the phone is stopped, so quitting again does not loop', () => {
+    expect(quitStep({ installsOnQuit: true, phoneStopped: true })).toBe('proceed')
   })
 })

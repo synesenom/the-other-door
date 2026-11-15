@@ -13,7 +13,7 @@ import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
 import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
-import { restorePhoneAfterUpdate, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
+import { quitStep, restorePhoneAfterUpdate, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
 import { createProblemLog } from './problem-log'
 import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest } from './protocol'
 import { createPhotoFile } from './photo-file'
@@ -59,7 +59,7 @@ const mode = updatesAllowed(process.env) ? updateMode({ platform: process.platfo
 // The detached phone server is stopped before an update installs (phone-update.ts, #77).
 let phoneStopped = false
 const phoneDeps = (): PhoneUpdateDeps => ({
-  call: (tool, args) => server.call(tool, args ?? {}),
+  call: (tool, args, timeout) => server.call(tool, args ?? {}, timeout ? { timeout } : {}),
   markerPath: join(app.getPath('userData'), 'phone-restart.marker'),
   fs: { write: (p) => writeFileSync(p, ''), exists: existsSync, remove: (p) => rmSync(p, { force: true }) },
   log: (m) => problemLog.write('phone-update', m),
@@ -249,7 +249,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', (event) => {
   // Quitting installs a downloaded update: stop the phone server first, once, then quit again.
-  if (updates.willInstallOnQuit() && !phoneStopped) {
+  if (quitStep({ installsOnQuit: updates.willInstallOnQuit(), phoneStopped }) === 'stop-then-quit') {
     event.preventDefault()
     phoneStopped = true
     void stopPhoneForUpdate(phoneDeps()).finally(() => app.quit())
