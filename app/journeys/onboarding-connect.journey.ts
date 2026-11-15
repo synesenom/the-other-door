@@ -1,7 +1,7 @@
 // The wizard's first step, only when Claude is signed out or missing: Connect Claude.
 // The stand-in claude (test/world/claude.py) signs in with the code `world-code#ok`; a `noClaude` world
 // has no claude at all. The real installer is never run: `setup` answers from a tool fault.
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from './fixtures'
 import { connectHeading, LAUNCH, sourcesHeading } from './helpers/onboarding'
@@ -14,6 +14,9 @@ const codeBox = (page: Page) => page.getByLabel('Sign-in code', { exact: true })
 const sendCode = (page: Page) => page.getByRole('button', { name: 'Send code', exact: true })
 const progress = (page: Page) => page.getByRole('list', { name: 'Progress', exact: true })
 const current = (page: Page) => progress(page).locator('[aria-current="step"]')
+// The server stamps both data folders with their data version at start (#56), so "nothing written" is a profile
+// folder holding that stamp alone.
+const profileFiles = (world: { home: string }) => readdirSync(join(world.home, 'profile'))
 
 async function startSignIn(page: Page) {
   await signInButton(page).click()
@@ -30,7 +33,7 @@ async function typeCode(page: Page, code: string) {
 test.describe('signed out', () => {
   test.use({ worldOptions: { empty: true, signedIn: false } })
 
-  test('a first launch signed out opens on Connect Claude, before the three steps, with nothing written', async ({ page, world }) => {
+  test('a first launch signed out opens on Connect Claude, before the three steps, with nothing written @core', async ({ page, world }) => {
     await expect(connectHeading(page)).toBeVisible(LAUNCH)
     await expect(page.getByText('works through Claude, on your Pro or Max plan. It never uses an API key.')).toBeVisible()
     await expect(page.getByRole('navigation')).toHaveCount(0)
@@ -38,7 +41,7 @@ test.describe('signed out', () => {
     await expect(current(page)).toHaveCount(0)
     await expect(signInButton(page)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0) // a first launch has nowhere to go back to
-    expect(world.exists('profile')).toBe(false)
+    expect(profileFiles(world)).toEqual(['.data_version'])
     expect(world.claudeCalls('draft')).toEqual([])
   })
 
@@ -47,7 +50,7 @@ test.describe('signed out', () => {
     await startSignIn(page)
     await typeCode(page, 'wrong-code')
     await expect(page.getByRole('alert')).toHaveText("The sign-in didn't go through: Request failed with status code 400")
-    expect(world.exists('profile')).toBe(false)
+    expect(profileFiles(world)).toEqual(['.data_version'])
 
     await tryAgain(page).click()
     await expect(page.getByRole('alert')).toHaveCount(0)

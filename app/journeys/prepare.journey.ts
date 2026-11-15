@@ -138,7 +138,7 @@ test('Prepare again asks first; Cancel and Escape leave the application as it is
 })
 
 test('Prepare again replaces the application with a new one', async ({ page, world }) => {
-  world.faults({ claude: { tailor: { cover_letter: letterTex(300) } } })
+  world.faults({ claude: { tailor: { cover_letter: letterTex(300, world.persona.name) } } })
   await toApplications(page)
   await card(page, KRONVEJ).click()
   await page.getByRole('button', { name: 'Prepare again', exact: true }).click()
@@ -148,7 +148,7 @@ test('Prepare again replaces the application with a new one', async ({ page, wor
   await expect(page.getByRole('button', { name: 'Letter · 300 words' })).toBeVisible()
   expect(world.toolCalls('prepare')[0]!.args).toMatchObject({ job_id: world.jobId(KRONVEJ_KEY), force: true })
   expect(world.claudeCalls('tailor')).toHaveLength(1)
-  expect(readFileSync(join(outDir(world, KRONVEJ_KEY), 'cover_letter.tex'), 'utf8')).toBe(letterTex(300))
+  expect(readFileSync(join(outDir(world, KRONVEJ_KEY), 'cover_letter.tex'), 'utf8')).toBe(letterTex(300, world.persona.name))
   expect(ledgerEntry(world, KRONVEJ_KEY)?.status).toBe('prepared')
 })
 
