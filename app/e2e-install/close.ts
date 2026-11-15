@@ -40,3 +40,32 @@ export async function closeApp(app: Closable, { timeoutMs = 30_000, kill = killT
     console.error(`could not kill the app (pid ${pid}): ${e instanceof Error ? e.message : e}`)
   }
 }
+
+/** Every app launched, registered as soon as it started (so a launch that fails later is closed too), all closed at the end. */
+export function createTracker(): { track(app: Closable): void; closeAll(options?: Parameters<typeof closeApp>[1]): Promise<void> } {
+  const apps = new Set<Closable>()
+  return {
+    track: (app) => {
+      apps.add(app)
+    },
+    closeAll: async (options) => {
+      const open = [...apps]
+      apps.clear()
+      for (const app of open) await closeApp(app, options)
+    },
+  }
+}
+
+/**
+ * The command that kills whatever still runs from the install folder before the uninstaller removes it: a server the
+ * app's quit left running (its `before-quit` does not wait for it), Tectonic under it, an app no test closed (a crashed
+ * worker, a timeout). On Windows by executable path; elsewhere by command line (`pkill -f`, a regex).
+ */
+export function sweepCommand(platform: string, folder: string): string[] {
+  if (platform === 'win32') {
+    const prefix = `${folder.replace(/\\+$/, '')}\\`.replace(/'/g, "''")
+    return ['powershell', '-NoProfile', '-Command',
+      `Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith('${prefix}', 'OrdinalIgnoreCase') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`]
+  }
+  return ['pkill', '-KILL', '-f', `^${folder.replace(/\/+$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`]
+}

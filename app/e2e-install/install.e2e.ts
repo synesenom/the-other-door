@@ -11,7 +11,7 @@ import type { Page } from '@playwright/test'
 import { expect, INSTALLED, launch, osStub, test } from '../journeys/fixtures'
 import { LAUNCH, saveAndSearch, toReview } from '../journeys/helpers/onboarding'
 import { pagesLoaded } from '../journeys/helpers/applications'
-import { closeApp } from './close'
+import { createTracker } from './close'
 import { bundledPython, documentedDataFolder, errorLines, kindOf } from './installer'
 import type { Spawned } from './redirect'
 
@@ -29,22 +29,19 @@ function processes(): string {
   } catch (p) { return `could not list: ${(p as Error).message}` }
 }
 
-/** Every app the test launched: each is closed on every path before the global teardown uninstalls (#111). */
-const launched: Awaited<ReturnType<typeof launch>>['app'][] = []
+/** Every app the test launched, tracked as it starts: each is closed on every path before the global teardown uninstalls (#111). */
+const launched = createTracker()
 
-async function open(world: Parameters<typeof launch>[0]): ReturnType<typeof launch> {
-  const opened = await launch(world)
-  launched.push(opened.app)
-  return opened
-}
+const open = (world: Parameters<typeof launch>[0]): ReturnType<typeof launch> => launch(world, {}, launched.track)
 
 // A failed run keeps, in the report CI uploads (#98): the data folder's logs (door.log: the server's stderr and exit
 // status when it stopped), the world's server stacks, the stand-in claude's starts and the spawn, and the processes.
 // Then every app still open is closed, its server with it: left running, they held the install folder on Windows
-// and the uninstaller could not remove it (#111).
+// and the uninstaller could not remove it (#111). What survives that (a server the quit did not wait for) is
+// killed by the global teardown before it uninstalls.
 test.afterEach(async ({ world }, info) => {
   if (info.status !== info.expectedStatus) keepReport(world)
-  for (const app of launched.splice(0)) await closeApp(app)
+  await launched.closeAll()
 })
 
 function keepReport(world: Parameters<typeof launch>[0]): void {
