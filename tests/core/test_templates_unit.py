@@ -123,11 +123,11 @@ def test_doctor_warns_for_an_old_own_copy(dirs):
     (profile / "cv.template.tex").write_text(_read(OLD, "cv_template"))
     check = doctor.check_templates({}, profile)
     assert check["status"] == "warn"
-    assert "lacks 2 fixes" in check["detail"]
-    assert str(profile / "cv.template.tex") in check["detail"]
+    assert "lacks: " in check["detail"]
+    assert "cv.template.tex" in check["detail"]
     assert "contact details on one line" in check["detail"]
     assert "no French space" in check["detail"]
-    assert "\\newcommand*{\\cv@photo}" in check["fix"] and str(example / "cv.template.tex") in check["fix"]
+    assert "\\newcommand*{\\cv@photo}" in check["fix"] and "profile.example/cv.template.tex" in check["fix"]
 
 
 def test_doctor_reads_a_template_the_config_names(dirs, tmp_path):
@@ -135,4 +135,25 @@ def test_doctor_reads_a_template_the_config_names(dirs, tmp_path):
     mine = tmp_path / "mine.tex"
     mine.write_text(_read(OLD, "cover_letter_template"))
     check = doctor.check_templates({"cover_letter_template": str(mine)}, profile)
-    assert check["status"] == "warn" and "lacks 1 fix " in check["detail"]
+    assert check["status"] == "warn" and "lacks: no French space" in check["detail"]
+
+
+def test_doctor_warns_for_an_unreadable_own_copy(dirs):
+    profile, _ = dirs
+    (profile / "cv.template.tex").write_bytes(b"\xff\xfe\x00bad")
+    check = doctor.check_templates({}, profile)
+    assert check["status"] == "warn" and "could not read" in check["detail"]
+    assert "every fix" not in check["detail"]
+
+
+def test_doctor_groups_two_stale_templates_by_file(dirs):
+    profile, _ = dirs
+    (profile / "cv.template.tex").write_text(_read(OLD, "cv_template"))
+    (profile / "cover-letter.template.tex").write_text(_read(OLD, "cover_letter_template"))
+    check = doctor.check_templates({}, profile)
+    cv, letter = str(profile / "cv.template.tex"), str(profile / "cover-letter.template.tex")
+    cv_part, letter_part = check["detail"].split("; " + letter)
+    assert cv_part.startswith(cv + " lacks: ")
+    assert "contact details" in cv_part and "French space" in cv_part
+    assert "French space" in letter_part and "contact details" not in letter_part
+    assert f"into {cv}" in check["fix"] and f"into {letter}" in check["fix"]

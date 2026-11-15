@@ -538,28 +538,31 @@ def check_templates(config: dict, profile_dir: Path) -> dict | None:
     """The user's own LaTeX templates against the fixes of the shipped ones (#156); None when they have none."""
     from door.core import templates, workspace
 
-    own, lacking = [], []  # lacking: (path, shipped path, fix)
-    for key in templates.FILES:
+    profile_dir = Path(profile_dir)
+    parts, fixes, own = [], [], 0
+    for key, name in templates.FILES.items():
         path = templates.resolve(key, config, profile_dir)
-        shipped = Path(workspace.PROFILE_EXAMPLE_DIR) / templates.FILES[key]
+        shipped = Path(workspace.PROFILE_EXAMPLE_DIR) / name
         if path == shipped:
             continue
-        own.append(path)
+        own += 1
+        shown = _data_file(path, f"profile/{name}") if path == profile_dir / name else str(path)
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeError):
+            parts.append(f"could not read {shown}")
+            fixes.append(f"make {shown} a readable UTF-8 file")
             continue
-        lacking.extend((path, shipped, f) for f in templates.missing_fixes(key, text))
+        missing = templates.missing_fixes(key, text)
+        if missing:
+            parts.append(f"{shown} lacks: " + "; ".join(f["what"] for f in missing))
+            where = _data_file(shipped, f"profile.example/{name}")
+            fixes.extend(f"copy the lines around {f['has']} from {where} into {shown}" for f in missing)
     if not own:
         return None
-    if not lacking:
+    if not parts:
         return _check("templates", True, "your own, with every fix of the shipped ones", required=False)
-    paths = list(dict.fromkeys(str(p) for p, _, _ in lacking))
-    n = len(lacking)
-    detail = f"{', '.join(paths)} lacks {n} fix{'' if n == 1 else 'es'} of the shipped template: " + "; ".join(
-        f["what"] for _, _, f in lacking)
-    fix = "; ".join(f"copy the lines around {f['has']} from {shipped} into yours" for _, shipped, f in lacking)
-    return _check("templates", False, detail, fix, required=False)
+    return _check("templates", False, "; ".join(parts), "; ".join(fixes), required=False)
 
 
 def run_checks(
