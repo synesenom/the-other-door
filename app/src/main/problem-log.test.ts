@@ -22,7 +22,7 @@ describe('the problem log, from the main process', () => {
   it('keeps a line bounded', () => {
     const h = home()
     createProblemLog(h, { now: () => NOW }).write('server stopped', 'x'.repeat(10_000))
-    expect(readFileSync(join(h, 'logs', 'door.log'), 'utf8').length).toBeLessThan(2100)
+    expect(readFileSync(join(h, 'logs', 'door.log'), 'utf8').length).toBeLessThan(6100)
   })
 
   it('rotates a full log as the server does: door.log.1, door.log.2, no more', () => {

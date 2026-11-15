@@ -130,10 +130,19 @@ export function resolvePackagedSpawn(opts: { resourcesPath: string; home: string
 }
 
 const STDERR_KEEP = 8192
+/** The MCP server's own log of each request: one line per call, it would push a traceback out of the kept stderr (#98). */
+const REQUEST_LOG = /^.*Processing request of type .*\n/gm
+
+/** How the child ended; the pipe closes a moment before the exit is reported, so wait for it, but not for long. */
+function exitedSoon(conn: Connection): Promise<string> {
+  return Promise.race([conn.exited, new Promise<string>((r) => setTimeout(() => r('exit unknown'), 3000).unref())])
+}
 
 interface Connection {
   client: Client
   transport: StdioClientTransport
+  /** Settles with how the child ended (its exit code or the signal that killed it). */
+  exited: Promise<string>
 }
 
 export class DoorServer {
@@ -177,7 +186,7 @@ export class DoorServer {
           : {}),
       })
     } catch (e) {
-      throw this.translate(e, conn, tool, options.timeout ?? 60_000)
+      throw await this.translate(e, conn, tool, options.timeout ?? 60_000)
     }
     const block = Array.isArray(result.content) ? result.content[0] : undefined
     const text = block && block.type === 'text' ? String(block.text) : ''
@@ -203,7 +212,7 @@ export class DoorServer {
       const { tools } = await conn.client.listTools()
       return tools.map((t) => ({ name: t.name, description: t.description ?? '', inputSchema: t.inputSchema }))
     } catch (e) {
-      throw this.translate(e, conn)
+      throw await this.translate(e, conn)
     }
   }
 
@@ -223,9 +232,12 @@ export class DoorServer {
     await this.close()
   }
 
-  /** The end of the child's stderr, its lines joined, for one line of the problem log. */
-  private stderrLines(n: number): string {
-    return this.stderr.trim().split('\n').slice(-n).join(' | ')
+  /** The end of the child's stderr, its lines joined, for one line of the problem log:
+   *  at most `n` lines and, from the end, `chars` characters (the log keeps a line's head, so this
+   *  stays under its cap and the last line, a traceback's exception, is never the part cut). */
+  private stderrLines(n: number, chars = 5000): string {
+    const joined = this.stderr.trim().split('\n').slice(-n).join(' | ')
+    return joined.length > chars ? `…${joined.slice(-chars)}` : joined
   }
 
   private problem(where: string, message: string): void {
@@ -236,7 +248,7 @@ export class DoorServer {
     }
   }
 
-  private translate(e: unknown, conn: Connection, tool?: string, timeout?: number): DoorError {
+  private async translate(e: unknown, conn: Connection, tool?: string, timeout?: number): Promise<DoorError> {
     if (e instanceof DoorError) return e
     if (this.stoppedConns.has(conn)) {
       const stopped = new DoorError('stopped')
@@ -245,7 +257,8 @@ export class DoorServer {
     }
     if (e instanceof McpError && e.code === ErrorCode.ConnectionClosed) {
       this.drop(conn)
-      this.problem('server stopped', this.stderrLines(20) || 'no output')
+      const how = await exitedSoon(conn)
+      this.problem('server stopped', `${how}; ${this.stderrLines(200) || 'no output'}`)
       return new DoorError("The other door's server stopped; try again")
     }
     if (e instanceof McpError && e.code === ErrorCode.RequestTimeout) {
@@ -280,20 +293,36 @@ export class DoorServer {
       stderr: 'pipe',
     })
     const client = new Client({ name: 'door-app', version: '0.0.0' })
-    const conn = { client, transport }
+    let exited!: Promise<string>
+    const conn: Connection = { client, transport, get exited() { return exited } }
     this.stderr = ''
     transport.stderr?.on('data', (chunk: Buffer) => {
-      this.stderr = (this.stderr + chunk.toString()).slice(-STDERR_KEEP)
+      this.stderr = (this.stderr + chunk.toString()).replace(REQUEST_LOG, '').slice(-STDERR_KEEP)
     })
     client.onclose = () => this.drop(conn)
     client.onerror = () => undefined
+    exited = new Promise<string>((resolve) => {
+      // the SDK keeps the child private and reports no exit status; it is attached to once the child exists
+      const wait = () => {
+        const child = (transport as unknown as { _process?: { once(ev: 'exit', cb: (code: number | null, signal: string | null) => void): void } })._process
+        if (!child) return false
+        child.once('exit', (code, signal) => resolve(`exit code ${code ?? 'none'}, ${signal ? `signal ${signal}` : 'no signal'}`))
+        return true
+      }
+      const origStart = transport.start.bind(transport)
+      transport.start = async () => {
+        await origStart()
+        wait()
+      }
+    })
     try {
       await client.connect(transport, { timeout: this.options.startupTimeoutMs ?? 30_000 })
     } catch (e) {
       await client.close().catch(() => undefined)
       const detail = this.stderr.trim().split('\n').slice(-3).join(' ')
       const why = e instanceof Error ? e.message : String(e)
-      this.problem('server would not start', `${why}${this.stderr.trim() ? ` | ${this.stderrLines(20)}` : ''}`)
+      const how = await exitedSoon(conn)
+      this.problem('server would not start', `${why}; ${how}${this.stderr.trim() ? ` | ${this.stderrLines(200)}` : ''}`)
       throw new DoorError(`could not start the door server: ${why}${detail ? ` (${detail})` : ''}`)
     }
     const theirs = client.getServerVersion()?.version

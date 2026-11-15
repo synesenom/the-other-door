@@ -100,6 +100,10 @@ its summary, the best match prepared with the **bundled** Tectonic (a real LaTeX
 checks the server is the bundled Python on the bundled door with the bundled `bin/` first on PATH, doctor finds
 that Tectonic, the data folder is where `docs/manual-app.md` says, no ERROR line in `logs/door.log`, and nothing
 written inside the app. The plan per system is `e2e-install/installer.ts` (unit-tested in `npm test`).
+A Prepare that logs an ERROR line fails the test at once. A failed run leaves in
+`install-report/` (uploaded by CI) the data folder's `logs/` (`door.log`: when the server stopped, its exit code or
+signal and the end of its stderr) and in `world/` the server's stacks, the stand-in claude's starts, the spawn and,
+on Windows, the processes still running.
 
 The one seam is on the test's side (`e2e-install/redirect.ts`): an installed app starts its server before
 Playwright can reach it and reads no `-r` or `NODE_OPTIONS`, so right after launch the test patches its main
