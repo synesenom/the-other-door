@@ -74,7 +74,6 @@ export async function narrow(app: ElectronApplication, page: Page): Promise<void
   await expect.poll(() => page.evaluate(() => window.matchMedia('(max-width: 899px)').matches)).toBe(true)
 }
 
-/** A letter of `words` words on one page. */
 /** A letter of exactly `words` words, signed by `name`: prepare's read-back of the PDF asks for the candidate's name,
  * and a letter without it is tailored once more (#116). */
 export function letterTex(words: number, name: string): string {

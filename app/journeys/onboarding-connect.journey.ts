@@ -33,7 +33,7 @@ async function typeCode(page: Page, code: string) {
 test.describe('signed out', () => {
   test.use({ worldOptions: { empty: true, signedIn: false } })
 
-  test('a first launch signed out opens on Connect Claude, before the three steps, with nothing written @core', async ({ page, world }) => {
+  test('a first launch signed out opens on Connect Claude, before the three steps, with nothing written', { tag: '@core' }, async ({ page, world }) => {
     await expect(connectHeading(page)).toBeVisible(LAUNCH)
     await expect(page.getByText('works through Claude, on your Pro or Max plan. It never uses an API key.')).toBeVisible()
     await expect(page.getByRole('navigation')).toHaveCount(0)
