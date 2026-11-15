@@ -7,7 +7,8 @@ process boundary. Run as `python claude.py <world dir> <claude's own arguments>`
 - `-p` calls are told apart by the words of their system prompt (or, for `revise`, of stdin) and
   answered from `world.json`: scores and English titles by the ad's title and company, the
   onboarding and CV answers from `answers`, the tailor by writing the .tex files and running door's
-  own `compile` (whose LaTeX is the stand-in tectonic).
+  own `compile` (whose LaTeX is the stand-in tectonic). Every envelope carries a fixed
+  `total_cost_usd` per kind (`COST_USD`), so the usage log has something to weigh; a failed call none.
 - `faults.json`'s `claude` map makes one kind of call fail (`{"fail": "message"}`), wait first
   (`delay_s`), or answer something else (`answer`). Every call is logged to `calls.jsonl`.
 """
@@ -44,8 +45,19 @@ def arg(name: str) -> str | None:
     return ARGS[ARGS.index(name) + 1] if name in ARGS and ARGS.index(name) + 1 < len(ARGS) else None
 
 
+# What each kind of answer costs at API prices (`total_cost_usd`, #67): fixed, round figures, so
+# `status_summary`'s `cost` and Analytics' Claude usage read the same in every run.
+COST_USD = {"score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05}
+OTHER_COST_USD = 0.03
+
+
+def cost_of(kind: str) -> float:
+    return COST_USD.get(kind, OTHER_COST_USD)
+
+
 def envelope(result) -> None:
-    sys.stdout.write(json.dumps({"type": "result", "is_error": False, "result": result if isinstance(result, str) else json.dumps(result)}))
+    sys.stdout.write(json.dumps({"type": "result", "is_error": False, "result": result if isinstance(result, str) else json.dumps(result),
+                                 "total_cost_usd": cost_of(kind)}))
 
 
 # --------------------------------------------------------------------------- not model calls
@@ -181,7 +193,7 @@ elif kind == "tailor":
     if compiled.returncode != 0:
         sys.stderr.write(compiled.stderr)
         sys.exit(1)
-    print("Tailored the CV and the cover letter.")
+    envelope("Tailored the CV and the cover letter.")
 else:
     answer = said.get("answer") or W.get("answers", {}).get(kind)
     if answer is None:
