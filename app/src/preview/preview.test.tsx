@@ -200,7 +200,7 @@ describe('scenes', () => {
   it('finding-summary-none says the run in a line and offers the next steps', async () => {
     mount('finding-summary-none')
     expect(await screen.findByText('46 jobs found, 40 close enough to score, none reached your bar (65%)')).toBeInTheDocument()
-    for (const name of ['Follow employers', 'Lower the bar', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
+    for (const name of ['Lower the bar', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
   })
 
   it('finding-first-run reminds about the discovery sources left off', async () => {

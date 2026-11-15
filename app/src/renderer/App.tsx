@@ -426,7 +426,6 @@ export function App({ start }: { start?: AppStart } = {}) {
             discoveryUnchosen={demo || remote ? [] : (profile?.discovery_unchosen ?? [])}
             discoveryOff={demo || remote || !profile ? [] : discoveryOff(profile)}
             onChooseDiscovery={openRisky}
-            onFollowEmployers={remote ? undefined : () => openProfile('employers')}
             onLowerBar={remote ? undefined : () => openProfile('search')}
             onCheckSearch={remote ? undefined : () => openProfile('search')}
           />

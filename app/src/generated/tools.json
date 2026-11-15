@@ -31,7 +31,7 @@
   },
   {
     "name": "ask",
-    "description": "Answer one question about the jobs data in a sentence or two — the desktop app's question box\n    and `./door ask`. In a conversation, call the read tools directly instead. One short Claude call\n    (Haiku) with the read tools only: it can never change profile/ or jobs/. Identical to `./door ask`.\n\n    Args:\n        question: The question, in the user's words.\n        model: Claude model to answer with (default: haiku).\n\n    Returns:\n        ``{\"answer\", \"go_to\": {\"screen\": \"matches\" | \"posting\" | \"applications\" | \"employers\" | \"cv\",\n        \"job_ids\"?} | None, \"sources\"}``, or ``{\"error\"}``.\n    ",
+    "description": "Answer one question about the jobs data in a sentence or two — the desktop app's question box\n    and `./door ask`. In a conversation, call the read tools directly instead. One short Claude call\n    (Haiku) with the read tools only: it can never change profile/ or jobs/. Identical to `./door ask`.\n\n    Args:\n        question: The question, in the user's words.\n        model: Claude model to answer with (default: haiku).\n\n    Returns:\n        ``{\"answer\", \"go_to\": {\"screen\": \"matches\" | \"posting\" | \"applications\" | \"cv\",\n        \"job_ids\"?} | None, \"sources\"}``, or ``{\"error\"}``.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {

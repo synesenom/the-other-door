@@ -184,7 +184,6 @@ function Summary({
   onViewMatches,
   reminder,
   onChooseDiscovery,
-  onFollowEmployers,
   onLowerBar,
   onCheckSearch,
 }: {
@@ -192,7 +191,6 @@ function Summary({
   onViewMatches: () => void
   reminder: DiscoveryChoice[]
   onChooseDiscovery?: () => void
-  onFollowEmployers?: () => void
   onLowerBar?: () => void
   onCheckSearch?: () => void
 }) {
@@ -227,13 +225,8 @@ function Summary({
           Show run record
         </button>
       </div>
-      {account !== null && (onFollowEmployers || onLowerBar || onCheckSearch) && (
+      {account !== null && (onLowerBar || onCheckSearch) && (
         <div className="actions">
-          {onFollowEmployers && (
-            <button type="button" className="quiet" onClick={onFollowEmployers}>
-              Follow employers
-            </button>
-          )}
           {onLowerBar && (
             <button type="button" className="quiet" onClick={onLowerBar}>
               Lower the bar
@@ -259,7 +252,6 @@ export function Finding({
   discoveryUnchosen = [],
   discoveryOff = [],
   onChooseDiscovery,
-  onFollowEmployers,
   onLowerBar,
   onCheckSearch,
 }: {
@@ -273,7 +265,6 @@ export function Finding({
   /** Opens Profile, where they are chosen. */
   onChooseDiscovery?: () => void
   /** The zero-match card's actions, each opening a Profile section; none given, no button (the phone has no Profile). */
-  onFollowEmployers?: () => void
   onLowerBar?: () => void
   onCheckSearch?: () => void
   onStart: () => void
@@ -340,7 +331,6 @@ export function Finding({
           onViewMatches={onViewMatches}
           reminder={state.firstRun && state.record.new_above_threshold.length < FEW_MATCHES ? discoveryOff : []}
           onChooseDiscovery={onChooseDiscovery}
-          onFollowEmployers={onFollowEmployers}
           onLowerBar={onLowerBar}
           onCheckSearch={onCheckSearch}
         />

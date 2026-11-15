@@ -4,7 +4,7 @@ import { call, errorText } from '../api'
 import { Spinner } from './Spinner'
 
 export interface AskGoTo {
-  screen: 'matches' | 'posting' | 'applications' | 'employers' | 'cv'
+  screen: 'matches' | 'posting' | 'applications' | 'cv'
   job_ids?: string[]
 }
 interface Answer {
@@ -17,7 +17,6 @@ const OPEN: Record<AskGoTo['screen'], string> = {
   matches: 'Open Matches',
   posting: 'Open the posting',
   applications: 'Open Applications',
-  employers: 'Open your employers',
   cv: 'Open your CV',
 }
 const HISTORY = 5
