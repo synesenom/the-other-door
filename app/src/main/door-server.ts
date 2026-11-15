@@ -225,9 +225,12 @@ export class DoorServer {
     await this.close()
   }
 
-  /** The end of the child's stderr, its lines joined, for one line of the problem log. */
-  private stderrLines(n: number): string {
-    return this.stderr.trim().split('\n').slice(-n).join(' | ')
+  /** The end of the child's stderr, its lines joined, for one line of the problem log:
+   *  at most `n` lines and, from the end, `chars` characters (the log keeps a line's head, so this
+   *  stays under its cap and the last line, a traceback's exception, is never the part cut). */
+  private stderrLines(n: number, chars = 5000): string {
+    const joined = this.stderr.trim().split('\n').slice(-n).join(' | ')
+    return joined.length > chars ? `…${joined.slice(-chars)}` : joined
   }
 
   private problem(where: string, message: string): void {
@@ -249,7 +252,7 @@ export class DoorServer {
       this.drop(conn)
       // the pipe closes a moment before the exit is reported: wait for it, but not for long
       const how = await Promise.race([conn.exited, new Promise<string>((r) => setTimeout(() => r('exit unknown'), 3000).unref())])
-      this.problem('server stopped', `${how}; ${this.stderrLines(20) || 'no output'}`)
+      this.problem('server stopped', `${how}; ${this.stderrLines(200) || 'no output'}`)
       return new DoorError("The other door's server stopped; try again")
     }
     if (e instanceof McpError && e.code === ErrorCode.RequestTimeout) {

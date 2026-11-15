@@ -41,7 +41,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req, extra) => {
     case 'iserror':
       return text('Error executing tool: boom', true)
     case 'exit':
-      writeSync(2, 'Traceback (most recent call last):\nRuntimeError: the fake fell over\n')
+      writeSync(2, `Traceback (most recent call last):\n${'  File "x.py", line 1, in f\n'.repeat(args.depth ?? 0)}RuntimeError: the fake fell over\n`)
       process.exit(1)
     case 'slow':
       await new Promise((r) => setTimeout(r, args.ms ?? 5000))

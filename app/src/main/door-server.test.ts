@@ -140,6 +140,15 @@ describe('what goes wrong, for the problem log', () => {
     expect(r.seen).toEqual([['server stopped', expect.stringContaining('RuntimeError: the fake fell over')]])
   })
 
+  it('a child that dies in a call: a deep traceback whole', async () => {
+    const r = recorder()
+    const s = make({}, { onProblem: r.onProblem })
+    await s.call('json')
+    await s.call('exit', { depth: 40 }).catch(() => undefined)
+    expect(r.seen[0]![1]).toContain('Traceback (most recent call last)')
+    expect(r.seen[0]![1]).toContain('RuntimeError: the fake fell over')
+  })
+
   it('a child that dies in a call: its exit code too', async () => {
     const r = recorder()
     const s = make({}, { onProblem: r.onProblem })
