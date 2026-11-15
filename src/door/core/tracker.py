@@ -54,6 +54,7 @@ all).
 
 import json
 import math
+from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from door.core import utils
@@ -397,6 +398,12 @@ def no_answer(tracker: ApplicationTracker, job_id: str, now: datetime | None = N
     if status != "applied" and interview_stage(status) is None:
         return False
     return _silent(tracker, job_id, now if now is not None else _utcnow())
+
+
+def no_answer_count(tracker: ApplicationTracker, now: datetime | None = None, job_ids: Iterable[str] | None = None) -> int:
+    """How many jobs :func:`no_answer` holds for, over ``job_ids`` or else the whole ledger (#92)."""
+    now = now if now is not None else _utcnow()
+    return sum(1 for job_id in (tracker.job_ids() if job_ids is None else job_ids) if no_answer(tracker, job_id, now))
 
 
 def _application_result(tracker: ApplicationTracker, job_id: str, now: datetime) -> str | None:
