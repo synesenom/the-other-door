@@ -93,7 +93,7 @@ class _SiteRun:
             return
         integrity.apply(posting)
         posting_path = self.out_dir / f"{posting['id']}.json"
-        with posting_path.open("w") as f:
+        with posting_path.open("w", encoding="utf-8") as f:
             json.dump(posting, f, indent=2, default=str)
         self.candidates_paths.append(posting_path)
         if pid:
@@ -565,7 +565,7 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
             cv_path = common._cv_path(config, profile_dir)
             if not cv_path.exists():
                 cv_path = profile_dir / "cv.md"
-            cv_md = cv_path.read_text() if cv_path.exists() else ""
+            cv_md = cv_path.read_text(encoding="utf-8") if cv_path.exists() else ""
 
             profile_terms = extract_skill_terms(cv_md, config)
             stats = condense_postings(surviving, profile_terms, config)

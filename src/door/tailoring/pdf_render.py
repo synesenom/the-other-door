@@ -1,7 +1,7 @@
 """PDF reading and rendering helpers for The other door (pypdfium2, Apache-2.0/BSD).
 
 - ``get_page_count(pdf_path)`` — return the number of pages in a PDF.
-- ``page_texts(pdf_path)`` — the text of each page, one ``\\n`` per line break.
+- ``page_texts(pdf_path)`` — the text of each page, one ``\\n`` per line break (``clean_text``).
 - ``render_pdf_pages(pdf_path, output_dir)`` — render each page to a PNG image.
 
 All raise ``FileNotFoundError`` when the PDF does not exist; a file that is not a readable PDF
@@ -12,12 +12,24 @@ Pages are rendered at 150 DPI.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pypdfium2 as pdfium
 
 
 _RENDER_DPI = 150
+# pdfium marks a hyphen it took for a soft one (a word broken over two lines) with U+FFFE
+_SOFT_HYPHEN = re.compile("\ufffe\n?")
+# control characters other than tab and newline: what an icon glyph without text (a calendar, a pin) reads as
+_CONTROL = re.compile("[\x00-\x08\x0b-\x1f\x7f]")
+
+
+def clean_text(text: str) -> str:
+    """*text* as pdfium read it, with ``\\n`` line breaks, the word a soft hyphen broke joined again and
+    the control characters of icon glyphs dropped."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    return _CONTROL.sub("", _SOFT_HYPHEN.sub("", text))
 
 
 def _open(pdf_path: Path) -> pdfium.PdfDocument:
@@ -58,7 +70,7 @@ def page_texts(pdf_path: Path) -> list[str]:
         for page in doc:
             textpage = page.get_textpage()
             text = textpage.get_text_range()
-            texts.append(text.replace("\r\n", "\n").replace("\r", "\n"))
+            texts.append(clean_text(text))
         return texts
     finally:
         doc.close()

@@ -66,10 +66,10 @@ def make_job_id(site: str, platform_id: str) -> str:
 
 
 def load_posting(path: Path) -> JobPosting:
-    return JobPosting.model_validate_json(Path(path).read_text())
+    return JobPosting.model_validate_json(Path(path).read_text(encoding="utf-8"))
 
 
 def save_posting(posting: JobPosting, path: Path) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(posting.model_dump_json(indent=2))
+    path.write_text(posting.model_dump_json(indent=2), encoding="utf-8")

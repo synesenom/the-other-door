@@ -105,6 +105,7 @@ def test_mcp_config_entry_names_this_interpreter(reloaded, tmp_path):
     assert entry["args"] == ["-m", "door.mcp_server"]
     assert str(ws.REPO_ROOT / "src") in entry["env"]["PYTHONPATH"].split(__import__("os").pathsep)
     assert entry["env"]["DOOR_HOME"] == str(ws.HOME)
+    assert entry["env"]["PYTHONUTF8"] == "1"  # #132: never the Windows code page
 
 
 def test_mcp_config_entry_carries_the_bundled_bin(reloaded, tmp_path, monkeypatch):

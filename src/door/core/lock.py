@@ -185,7 +185,7 @@ def lock_holder(jobs_dir: Path) -> dict | None:
     lock_path = jobs_dir / _LOCK_NAME
     if not lock_path.exists():
         return None
-    with open(lock_path, "a+") as fh:
+    with open(lock_path, "a+", encoding="utf-8") as fh:
         if _try_os_lock(fh):
             _os_unlock(fh)
             return None
@@ -214,7 +214,7 @@ def ledger_lock(jobs_dir: Path, purpose: str):
         else:
             nested = False
             _ensure_jobs_folder(jobs_dir)
-            fh = open(jobs_dir / _LOCK_NAME, "a+")
+            fh = open(jobs_dir / _LOCK_NAME, "a+", encoding="utf-8")
             if not _try_os_lock(fh):
                 fh.close()
                 raise LockHeldError(_describe(_read_info(jobs_dir)))

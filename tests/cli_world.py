@@ -50,7 +50,6 @@ class World:
             "DOOR_WORLD": info["dir"],
             "LANG": "en_US.UTF-8",
             "TZ": "Europe/Copenhagen",
-            "PYTHONUTF8": "1",
             "DOOR_WORLD_CLOCK": "continuous",
             "PYTHONPATH": info["hook"],
             "PATH": info["bin"] + os.pathsep + os.environ.get("PATH", ""),

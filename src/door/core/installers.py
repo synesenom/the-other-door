@@ -208,7 +208,7 @@ def plan_mcp_registration(
         return {"tool": "mcp", "commands": [], "cleanup": [], "hint": "install the claude CLI, then re-run setup", "note": None}
     return {
         "tool": "mcp",
-        "commands": [[claude, "mcp", "add", "--scope", "local", "door", "-e", f"PYTHONPATH={Path(repo_root) / 'src'}", *home_env, "--", *argv]],
+        "commands": [[claude, "mcp", "add", "--scope", "local", "door", "-e", f"PYTHONPATH={Path(repo_root) / 'src'}", "-e", "PYTHONUTF8=1", *home_env, "--", *argv]],
         "cleanup": [claude, "mcp", "remove", "--scope", "local", "door"],
         "hint": None,
         "note": None,

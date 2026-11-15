@@ -137,7 +137,7 @@ def _load(paths) -> list[tuple[Path, dict]]:
     loaded = []
     for p in paths:
         try:
-            data = json.loads(Path(p).read_text())
+            data = json.loads(Path(p).read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
         if data.get("id"):
@@ -233,7 +233,7 @@ def dedup(paths: list[Path], config: dict, aliases: list[list[str]] | None = Non
                 data["score_reason"] = "duplicate"
                 data["duplicate_of"] = canonical_id
                 try:
-                    p.write_text(json.dumps(data, indent=2, default=str))
+                    p.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
                 except OSError:
                     pass  # best-effort write
 

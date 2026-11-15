@@ -70,7 +70,7 @@ def _write_run_record(record: dict, jobs_dir: Path, min_score: float) -> None:
     utils.write_json_atomic(record_path, record)
 
     log_line = _format_run_summary(record, min_score)
-    with (runs_dir / "latest.log").open("a") as f:
+    with (runs_dir / "latest.log").open("a", encoding="utf-8") as f:
         f.write(log_line + "\n")
     problem_log.run_record(record)
 

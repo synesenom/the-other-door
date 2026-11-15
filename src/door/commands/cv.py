@@ -80,7 +80,22 @@ def _extract_text(path: Path) -> str:
             root = ElementTree.fromstring(zf.read("word/document.xml"))
         paragraphs = ["".join(t.text or "" for t in p.iter(f"{_W}t")) for p in root.iter(f"{_W}p")]
         return "\n".join(p for p in paragraphs if p.strip()).strip()
-    return path.read_text(encoding="utf-8").strip()
+    return _decode_text_file(path.read_bytes()).strip()
+
+
+_BOMS = ((b"\xef\xbb\xbf", "utf-8-sig"), (b"\xff\xfe", "utf-16"), (b"\xfe\xff", "utf-16"))
+
+
+def _decode_text_file(data: bytes) -> str:
+    """A text file as Windows' Notepad may have saved it: its BOM's encoding (UTF-8 or UTF-16), else UTF-8,
+    else the Western "ANSI" code page (cp1252), which reads any byte."""
+    for bom, encoding in _BOMS:
+        if data.startswith(bom):
+            return data.decode(encoding)
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data.decode("cp1252", errors="replace")
 
 
 def _onboarding_cv_text(profile_dir: Path, config: dict) -> str | None:
