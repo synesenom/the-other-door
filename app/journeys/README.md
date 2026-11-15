@@ -10,7 +10,7 @@ and checks two things after every user action:
 ```bash
 npm run test:journeys                      # build, then every journey
 npm run test:journeys -- matches           # one file
-npm run test:journeys:core                 # the main paths only (tests tagged @core): what CI runs
+npm run test:journeys:core                 # the main paths only (tests tagged @core): the quick local set
 npm run test:journeys:coverage             # the same with renderer coverage: journeys-coverage/report.md
 ```
 
@@ -47,7 +47,7 @@ three ads a job board returns on the next run, and a past run.
 
 ## Writing a journey
 
-A journey covers a main path end to end, or a failure the user can act on (docs/design/README.md, principle 8): one test each. Rare branches, odd answer shapes, timeouts and wording variants go to a unit test (`src/**/*.test.ts(x)`, or the Python suite for what the server decides), and a narrow-window or "stays silent" check is kept once per area. A journey on a main path that should run in CI gets `{ tag: '@core' }`; `npm run test:journeys:core` runs those, as `.github/workflows/app.yml` does on Linux.
+A journey covers a main path end to end, or a failure the user can act on (docs/design/README.md, principle 8): one test each. Rare branches, odd answer shapes, timeouts and wording variants go to a unit test (`src/**/*.test.ts(x)`, or the Python suite for what the server decides), and a narrow-window or "stays silent" check is kept once per area. A journey on a main path gets `{ tag: '@core' }`; `npm run test:journeys:core` runs those, the quick check before a push. CI runs every journey (`.github/workflows/app.yml`, on Linux, split over four runners and retried once: a journey that passes only on its retry is reported flaky, not failed), so a change that breaks any journey fails its PR (#121).
 
 - One test per path or failure, named for what the user does and sees.
 - The checklist is `inventory/<area>.md`: every action and branch the screens have, with the exact

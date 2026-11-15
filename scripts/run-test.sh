@@ -26,8 +26,8 @@
 #                            Node and `npm ci` in app/. CI runs it on Linux and Windows.
 #
 #   ./scripts/run-test.sh --app      The desktop app's tests, as CI runs them: type
-#                            check, unit tests, the end-to-end smoke test, the
-#                            core journeys and the phone app's test (app/, after
+#                            check, unit tests, the end-to-end smoke test, every
+#                            journey and the phone app's test (app/, after
 #                            `npm ci` there).
 #
 #   ./scripts/run-test.sh --release  Everything to pass before a release, one after
@@ -59,12 +59,10 @@ if [[ "${1:-}" == "--live" ]]; then
 fi
 
 # The app's tests run on the Poetry interpreter, as in CI (app.yml).
-app_tests() {   # $1: core | all — which journeys
-    local journeys="test:journeys:core"
-    [[ "${1:-core}" == "all" ]] && journeys="test:journeys"
+app_tests() {
     DOOR_PYTHON="$(poetry run which python)"
     export DOOR_PYTHON
-    (cd app && npm run typecheck && npm test && npm run test:e2e && npm run "$journeys" && npm run test:web)
+    (cd app && npm run typecheck && npm test && npm run test:e2e && npm run test:journeys && npm run test:web)
 }
 
 # The CLI journeys' stand-ins run on the Poetry interpreter.
@@ -80,7 +78,7 @@ if [[ "${1:-}" == "--cli-journeys" ]]; then
 fi
 
 if [[ "${1:-}" == "--app" ]]; then
-    app_tests core
+    app_tests
     exit $?
 fi
 
@@ -95,7 +93,7 @@ if [[ "${1:-}" == "--release" ]]; then
     set +e
     step "offline suite" poetry run pytest -n auto -q
     step "release gate (earlier releases' data)" poetry run pytest -m release -n 0 -q -p no:cacheprovider tests/release
-    step "app (every journey)" app_tests all
+    step "app (every journey)" app_tests
     step "cli journeys" cli_journeys -q
     step "skills (real model)" poetry run pytest -m skills -n 0 -q -p no:cacheprovider tests/skills
     if [[ -n "${DOOR_INSTALLER:-}" ]]; then

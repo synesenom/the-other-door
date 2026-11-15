@@ -52,6 +52,7 @@ app/out/
 app/dist/
 app/test-results/
 app/journeys-report/
+app/blob-report/
 app/install-report/
 app/.demo/
 app/.onboard/

@@ -10,10 +10,16 @@ export default defineConfig({
   // Each test has its own world and its own app: they can run side by side.
   workers: process.env.CI ? 2 : 4,
   fullyParallel: true,
+  // CI runs every journey (#121): one that passes only on its retry is reported flaky (a warning on the PR, a
+  // "flaky" in the report), not failed, so a timing hiccup does not block a PR and still shows.
+  retries: process.env.CI ? 1 : 0,
   timeout: 120_000,
   expect: {
     timeout: 20_000,
   },
-  reporter: [['list'], ['html', { open: 'never', outputFolder: 'journeys-report' }]],
+  // In CI each shard writes a blob report (blob-report/), merged by app.yml into the one journeys-report.
+  reporter: process.env.CI
+    ? [['list'], ['github'], ['blob']]
+    : [['list'], ['html', { open: 'never', outputFolder: 'journeys-report' }]],
   use: { trace: 'retain-on-failure', screenshot: 'only-on-failure' },
 })
