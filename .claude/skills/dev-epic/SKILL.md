@@ -5,7 +5,7 @@ description: Churn through an epic issue in one run — resolve its sub-issues o
 
 You are working through an epic issue of The other door. The epic's number is the argument. **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
 
-**Decision policy**: as `/dev-resolve`: decide alone; a question that is the maintainer's goes to the `decider` agent (CLAUDE.md "Decisions"), and only its CANNOT DECIDE goes to the user.
+**Decision policy**: decide alone; a question that is the maintainer's goes to the `decider` agent (CLAUDE.md "Decisions"), and only its CANNOT DECIDE goes to the user.
 
 **Done** means both:
 
@@ -53,19 +53,13 @@ Pick the first open sub-issue, in GitHub's order, that has no PR yet and is not 
 
 If none is left to pick, go to Step 6.
 
-Resolve it as `/dev-resolve <sub>` does, Steps 1–3 (assess, research and plan when complex, implement test-first, validate), on a fresh branch named by `/dev-pr`'s table:
+A branch the session's own instructions fix (a cloud session's single branch) wins over the one `/dev-resolve` would make: then the epic's PRs go out one at a time, the next only once the last is merged, and Step 7 applies while waiting.
 
-```bash
-git fetch origin main
-git switch -c <type>/<sub>-<slug> origin/main          # independent: from main
-git switch -c <type>/<sub>-<slug> origin/<dep-branch>   # depends on a sibling whose PR is open: stack on it
-```
+Run `/dev-resolve <sub> epic=<N>` (with `base=<dep-branch>` when it depends on a sibling whose PR is open) and follow it to the end: it makes the branch, implements, validates, runs the review (CLAUDE.md "Review") and opens the PR, and returns without watching it; the loop's Step 3 watches it.
 
-A stacked sub-issue is validated and reviewed against its dependency branch (`base_branch: <dep-branch>`), so the dependency's commits are not judged as its own. A branch the session's own instructions fix (a cloud session's single branch) wins over this: then the epic's PRs go out one at a time, the next only once the last is merged, and Step 7 applies while waiting.
+Afterwards, sort the issues its review filed (its report's Review line): one **within the epic's goal** is attached to the epic as a new sub-issue (`mcp__github__sub_issue_write`, `method: add`, its `id`), and so joins the queue; one outside it stays on its own and is named in the final report. Attach only what the epic's own text asks for or makes necessary, so the queue does not grow without end.
 
-**Review** (CLAUDE.md "Review"): before opening the PR, spawn the reviewers it names (`gap-reviewer`, `simplicity-reviewer`, and `design-reviewer` when the app's screens or `docs/design/` changed, then `integration-reviewer` last, once their findings are fixed or filed) with the base branch and the sub-issue. Each finding is fixed in this PR (small, in scope) or filed. A filed finding **within the epic's goal** is attached to the epic as a new sub-issue, and so joins the queue; one outside it is filed on its own, not attached, and named in the final report. Attach only what the epic's own text asks for or makes necessary, so the queue does not grow without end.
-
-On validation PASS, open the PR with `/dev-pr` (branch check, merge `main`, push, its body format with `Closes #<sub>` and a line `Part of #<N>`, subscribe), but do not stay in its Step 7 watch: the loop's Step 3 watches it. A stacked PR's body also says `Depends on #<dep-pr>`. On FAIL after two attempts, open no PR: record the diagnosis, comment it on the sub-issue, mark it `failed`, and go on.
+If `/dev-resolve` ends in FAIL, record its diagnosis, comment it on the sub-issue, mark it `failed`, and go on.
 
 ### Step 5: Tick the boxes
 
