@@ -64,7 +64,7 @@ def _find_unscored(candidates_dir: Path) -> list[Path]:
             continue
         for json_path in sorted(site_dir.glob("*.json")):
             try:
-                data = json.loads(json_path.read_text())
+                data = json.loads(json_path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError):
                 continue
 
@@ -148,13 +148,13 @@ def _match_core(
     cv_path = common._cv_path(config, profile_dir)
     if not cv_path.exists():
         cv_path = profile_dir / "cv.md"
-    cv_md = cv_path.read_text() if cv_path.exists() else ""
+    cv_md = cv_path.read_text(encoding="utf-8") if cv_path.exists() else ""
 
     rubric_md = scorer.load_rubric_md()
     system_prompt = scorer.build_system_prompt(config, cv_md, rubric_md)
 
     if paths is not None:
-        to_score_paths = [Path(p) for p in paths if json.loads(Path(p).read_text()).get("score") is None]
+        to_score_paths = [Path(p) for p in paths if json.loads(Path(p).read_text(encoding="utf-8")).get("score") is None]
     else:
         to_score_paths = [p for d in candidate_dirs for p in _find_unscored(d)]
     unscored_before = len(to_score_paths)
@@ -163,7 +163,7 @@ def _match_core(
     postings: list[dict] = []
     for path in to_score_paths:
         try:
-            data = json.loads(path.read_text())
+            data = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
         job_id = data.get("id")

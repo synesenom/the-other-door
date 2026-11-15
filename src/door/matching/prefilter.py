@@ -118,7 +118,7 @@ def prefilter(candidates_dir: Path, config: dict) -> list[Path]:
 
     for json_path in sorted(candidates_dir.rglob("*.json")):
         try:
-            data = json.loads(json_path.read_text())
+            data = json.loads(json_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             # Unreadable/invalid JSON — skip silently
             continue
@@ -162,7 +162,7 @@ def prefilter(candidates_dir: Path, config: dict) -> list[Path]:
             data["score"] = 0.0
             data["score_reason"] = drop_reason
             try:
-                json_path.write_text(json.dumps(data, indent=2, default=str))
+                json_path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
             except OSError:
                 pass  # best-effort write
         else:

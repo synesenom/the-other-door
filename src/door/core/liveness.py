@@ -149,7 +149,7 @@ def verify_liveness(paths: list[Path], config: dict) -> list[Path]:
 
     for i, path in enumerate(paths, 1):
         try:
-            data = json.loads(path.read_text())
+            data = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             surviving.append(path)
             progress.report("liveness: unreadable", i, len(paths), stage="liveness")
@@ -161,10 +161,10 @@ def verify_liveness(paths: list[Path], config: dict) -> list[Path]:
         if status == "expired":
             data["score"] = 0.0
             data["score_reason"] = "expired"
-            path.write_text(json.dumps(data, indent=2, default=str))
+            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
             progress.report("liveness: expired", i, len(paths), stage="liveness")
         else:
-            path.write_text(json.dumps(data, indent=2, default=str))
+            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
             progress.report(f"liveness: {status}", i, len(paths), stage="liveness")
             surviving.append(path)
 

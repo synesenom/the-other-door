@@ -263,7 +263,7 @@ def start(home: Path, connection: str, **deps) -> dict:
         run["tunnel_pid"] = d["spawn"]([binary, "tunnel", "--no-autoupdate", "--url", local], log=log).pid
 
         def address() -> str | None:
-            text = log.read_text(errors="replace") if log.exists() else ""
+            text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
             m = _TUNNEL_URL.search(text)
             return m.group(0) if m else None
 
@@ -272,7 +272,7 @@ def start(home: Path, connection: str, **deps) -> dict:
             return {"error": f"the tunnel gave no address; see {log}"}
         # Ready when Cloudflare has registered the connection. The new name is not looked up from here:
         # a lookup before it exists is remembered as missing by this computer's resolver for a while.
-        registered = lambda: "Registered tunnel connection" in log.read_text(errors="replace")  # noqa: E731
+        registered = lambda: "Registered tunnel connection" in log.read_text(encoding="utf-8", errors="replace")  # noqa: E731
         if not _wait(registered, tries=120, sleep=d["sleep"]):
             _stop_pids(run, d["kill"])
             return {"error": f"the tunnel could not connect to Cloudflare; see {log}"}

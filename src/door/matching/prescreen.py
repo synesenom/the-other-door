@@ -190,7 +190,7 @@ def prescreen(paths: list[Path], config: dict, profile_terms: set[str]) -> list[
     for p in paths:
         path = Path(p)
         try:
-            data = json.loads(path.read_text())
+            data = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
         if data.get("score") is not None:
@@ -224,7 +224,7 @@ def prescreen(paths: list[Path], config: dict, profile_terms: set[str]) -> list[
             data["score"] = 0.0
             data["score_reason"] = f"prescreen: {score:.2f} below cutoff"
         try:
-            path.write_text(json.dumps(data, indent=2, default=str))
+            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
         except OSError:
             pass
 

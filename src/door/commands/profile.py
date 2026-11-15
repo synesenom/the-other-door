@@ -68,7 +68,7 @@ def _load_base_config(profile_dir: Path, example_dir: Path) -> dict:
     config_path = profile_dir / "config.json"
     if config_path.exists():
         return read_config_data(config_path)
-    return json.loads((example_dir / "config.json").read_text())
+    return json.loads((example_dir / "config.json").read_text(encoding="utf-8"))
 
 
 # The last entry of the location list: type a city that isn't in it.
@@ -801,7 +801,7 @@ def _first_run_step() -> None:
 
     cv_path = workspace.PROFILE_DIR / "cv.md"
     example_cv = workspace.PROFILE_EXAMPLE_DIR / "cv.md"
-    if not cv_path.exists() or (example_cv.exists() and cv_path.read_text() == example_cv.read_text()):
+    if not cv_path.exists() or (example_cv.exists() and cv_path.read_text(encoding="utf-8") == example_cv.read_text(encoding="utf-8")):
         click.echo("No first run: profile/cv.md is still the example. Give your sources (`./door init`), then `./door find`.")
         return
     click.get_current_context().invoke(
@@ -860,7 +860,7 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
 
     config_path = profile_dir / "config.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(json.dumps(merged, indent=2))
+    config_path.write_text(json.dumps(merged, indent=2), encoding="utf-8")
     disclaimers = [
         {"key": s["key"], "text": s["disclaimer"]}
         for s in map(discovery_sources.info, discovery_sources.SOURCES)

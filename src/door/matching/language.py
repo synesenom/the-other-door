@@ -117,14 +117,14 @@ def _run_claude(
 
 def _load(path: Path) -> dict | None:
     try:
-        return json.loads(Path(path).read_text())
+        return json.loads(Path(path).read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return None
 
 
 def _save(path: Path, data: dict) -> None:
     try:
-        Path(path).write_text(json.dumps(data, indent=2, default=str))
+        Path(path).write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
     except OSError:
         pass
 

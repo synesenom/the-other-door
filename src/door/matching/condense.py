@@ -329,7 +329,7 @@ def condense_postings(
     for p in paths:
         path = Path(p)
         try:
-            data = json.loads(path.read_text())
+            data = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
 
@@ -340,7 +340,7 @@ def condense_postings(
         )
         data["description_condensed"] = condensed
         try:
-            path.write_text(json.dumps(data, indent=2, default=str))
+            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
         except OSError:
             continue
 
