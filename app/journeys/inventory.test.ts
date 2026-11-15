@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { inventoryProblems, journeyRefs, journeyTests, resolveRef, testFileRefs, type JourneyTest } from './inventory'
-import { realInventory } from './inventory-files'
+import { inventoryProblems, journeyRefs, journeyTests, resolveRef, testFileRefs, unlistedJourneys, type JourneyTest } from './inventory'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { journeyFiles, realInventory } from './inventory-files'
 
 const run = (...titles: string[]): JourneyTest[] => titles.map((title) => ({ title, skipped: false }))
 
@@ -125,9 +128,74 @@ describe('inventoryProblems', () => {
     expect(inventoryProblems(files, run('opens it', 'closes it again'), () => true)).toEqual(['a.md:1: "closes it again" is a journey title without its ✓'])
   })
 
+  it('finds a whole journey title anywhere on a line without its ✓, a line with no ✓ at all included', () => {
+    const files = [{ name: 'a.md', text: '- x — unit: `A.test.tsx`; with every title unticked, Save says a title is needed' }]
+    expect(inventoryProblems(files, run('with every title unticked, Save says a title is needed'), () => true)).toEqual([
+      'a.md:1: "with every title unticked, Save says a title is needed" is a journey title without its ✓',
+    ])
+  })
+
+  it('leaves a title alone inside a longer ✓ title, and a title under three words', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ Import replaces the data and keeps backups; then the app opens it' }]
+    expect(inventoryProblems(files, run('Import replaces the data and keeps backups', 'the data and keeps', 'opens it'), () => true)).toEqual([])
+  })
+
   it('wants each journey named whole at least once, not only shortened with …', () => {
     const files = [{ name: 'a.md', text: '- x — ✓ opens the posting full…\n- y — ✓ opens the posting full…' }]
     expect(inventoryProblems(files, run('opens the posting full width'), () => true)).toEqual(['a.md:1: "opens the posting full width" is only named shortened with …; name it whole once'])
+  })
+})
+
+describe('journeyTests and test.fail', () => {
+  it('reads a test.fail journey as one that runs: it covers its branch, expecting the bug', () => {
+    expect(journeyTests("test.fail('a known bug shows', async () => {})")).toEqual([{ title: 'a known bug shows', skipped: false }])
+  })
+})
+
+describe('journeyFiles', () => {
+  it('reads journeys in subfolders, as the journeys config does (**/*.journey.ts), and nothing else', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'journeys-'))
+    mkdirSync(join(dir, 'phone'))
+    mkdirSync(join(dir, 'helpers'))
+    writeFileSync(join(dir, 'a.journey.ts'), '')
+    writeFileSync(join(dir, 'phone', 'b.journey.ts'), '')
+    writeFileSync(join(dir, 'helpers', 'c.ts'), '')
+    expect(journeyFiles(dir).sort()).toEqual(['a.journey.ts', 'phone/b.journey.ts'])
+  })
+})
+
+describe('unlistedJourneys', () => {
+  const tests: JourneyTest[] = [
+    { title: 'opens it', skipped: false, file: 'a.journey.ts' },
+    { title: 'opens the posting full width', skipped: false, file: 'a.journey.ts' },
+    { title: 'closes it again', skipped: false, file: 'b.journey.ts' },
+    { title: 'pairs the phone', skipped: true, file: 'c.journey.ts' },
+  ]
+
+  it('names each running journey that no ✓ in any inventory names, with its file', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ opens it' }]
+    expect(unlistedJourneys(files, tests)).toEqual([
+      'a.journey.ts: "opens the posting full width" is named by no inventory line',
+      'b.journey.ts: "closes it again" is named by no inventory line',
+    ])
+  })
+
+  it('counts a journey named shortened, in any inventory, as listed', () => {
+    const files = [
+      { name: 'a.md', text: '- x — ✓ opens it\n- y — ✓ opens the posting full…' },
+      { name: 'b.md', text: '- z — ✓ closes it again (the notice)' },
+    ]
+    expect(unlistedJourneys(files, tests)).toEqual([])
+  })
+
+  it('does not count a title written without its ✓ as listed', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ opens it; closes it again\n- y — ✓ opens the posting full width' }]
+    expect(unlistedJourneys(files, tests)).toEqual(['b.journey.ts: "closes it again" is named by no inventory line'])
+  })
+
+  it('leaves a skipped journey alone: it covers nothing, so there is no branch to list it under', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ opens it; ✓ opens the posting full width; ✓ closes it again' }]
+    expect(unlistedJourneys(files, tests)).toEqual([])
   })
 })
 
@@ -135,5 +203,10 @@ describe('the inventories in app/journeys/inventory', () => {
   it('name only journey tests and test files that exist', () => {
     const { files, tests, exists } = realInventory()
     expect(inventoryProblems(files, tests, exists)).toEqual([])
+  })
+
+  it('name every running journey', () => {
+    const { files, tests } = realInventory()
+    expect(unlistedJourneys(files, tests)).toEqual([])
   })
 })

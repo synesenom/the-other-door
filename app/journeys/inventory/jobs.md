@@ -122,7 +122,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
   - `.step-sites`: "site N" spans for `sites` entries not listed as items, while running. — not tested: same as the sources list (boards answer at once)
   - Time on the right: "N s" / "N min" for running (live, 1 s tick), done and failed; it needs `started_at` (and `finished_at`). — ✓ (shown in finding-running / finding-elsewhere: the world's step times are real wall-clock, so they read "0 s")
 - **Summary** (state summary and not watching), region **"Run summary"**:
-  - h2 "No new matches" / "1 new match" / "N new matches" from `new_above_threshold.length`. — ✓ Find new jobs runs the five steps… (renders); ✗ BUG: the summary counts the new matches of this run and lists only them; ✗ BUG: a second run that found nothing new says No new matches
+  - h2 "No new matches" / "1 new match" / "N new matches" from `new_above_threshold.length`. — ✓ Find new jobs runs the five steps… (renders); ✓ the summary counts the new matches of this run and lists only them ("2 new matches", two items); ✓ a second run that found nothing new says No new matches (no list)
   - A list of `top` with title, company and a score with 2 decimals (omitted when `top` is empty). — ✓ Find new jobs runs the five steps…
   - "Took N s" / "Took N min" from `elapsed_s`. — ✓ Find new jobs runs the five steps…
   - **btn "View matches"** → Matches with **New only on** (remounted), refreshKey++. — ✓ View matches opens Matches on New only, with the ads the run found
@@ -138,9 +138,9 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 ## 2. Matches (`Matches.tsx`, `MatchRow.tsx`)
 
 ### Calls
-- On mount and on every `tick`: `list_matches` with `{}`. The list is cleared first, so "Loading…" shows again on every refresh. New only calls nothing: it filters the list the window has. — ✓ New only lists only the new matches, and off again lists them all, with no call; unit: `app/src/renderer/screens/Matches.test.tsx`
+- On mount and on every `tick`: `list_matches` with `{}`. The list is cleared first, so "Loading…" shows again on every refresh. New only calls nothing: it filters the list the window has. — ✓ opens on Matches with the world’s new matches, best first (the harness's own check: the window's clock is the world's); ✓ New only lists only the new matches, and off again lists them all, with no call; unit: `app/src/renderer/screens/Matches.test.tsx`
 - On mount and every tick: `status_summary` (shared in flight with the App's call). — unit: `app/src/renderer/screens/Matches.test.tsx`
-- `mark_seen {job_id}` for each new match opened. Failures (e.g. the ledger lock is held during a run) stay queued and are re-sent on each later list load. Silent. — ✓ opens it full width, marks it seen, and back keeps the row marked; unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ (expected fail) a match opened while another process runs is recorded as seen once the run ends — BUG: Matches is remounted when the run ends and forgets the refused id, so the match is new again
+- `mark_seen {job_id}` for each new match opened. Failures (e.g. the ledger lock is held during a run) stay queued and are re-sent on each later list load. Silent. — ✓ opens it full width, marks it seen, and back keeps the row marked; unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ a match opened while another process runs is recorded as seen once the run ends
 
 ### List view
 - **h1 "Matches"**, no subtitle: a new match is its blue dot. — ✓ lists the matches best first…
@@ -151,7 +151,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 - `p.notice.small` "Could not read the run summary: <err>" when `status_summary` failed. It has no role. — unit: `app/src/renderer/screens/Matches.test.tsx`
 - **status "Loading…"** while `matches===null` and there is no error. — unit: `app/src/renderer/screens/Matches.test.tsx`
 - **alert** <list_matches error> (named). E.g. an invalid config surfaces here. — ✓ a list that cannot be read says why, and reads again once it can
-- Empty and no error: "Nothing scored yet, run The other door first". This also shows with **New only on and nothing new** (same copy), which is misleading. — unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ (expected fail) New only with every new match seen says there is nothing new, not that nothing was scored — BUG
+- Empty and no error: "Nothing scored yet, run The other door first". This also shows with **New only on and nothing new** (same copy), which is misleading. — unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ New only with every new match seen says there is nothing new, not that nothing was scored
 - `ul.rows` (role list). Each `li` holds **one button** (`.row`, `aria-current="true"|"false"`). Its accessible name is the concatenation of: — ✓ lists the matches best first, each with its title, English title, company, place and score
   - the new-dot `img` "New since your last review", when `is_new` — ✓ lists the matches best first…
   - the title
@@ -162,7 +162,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 - Row click → saves the scroll position, selects the row, view posting, clears the notice, pushes (full-width posting). If the row `is_new`: it is marked seen locally (dot gone, count drops) and `mark_seen` is sent. Writes `jobs/last_review.json` `seen`. — ✓ opens it full width, marks it seen, and back keeps the row marked
 - Back from the pushed posting restores the list's scroll and keeps the row marked (aria-current true). — ✓ the list keeps its scroll position when a posting deep in it closes; ✓ opens it full width… (aria-current)
 - **Notice lines** (after a status change; shown in the list or the pushed view):
-  - `status` with `statusNotice(current ?? status, title_en || title || 'the job')` — ✓ Discard records the reason and opens the next match in its place; ✓ (expected fail) the notice names a job that is not in the list — BUG: "the job"
+  - `status` with `statusNotice(current ?? status, title_en || title || 'the job')` — ✓ Discard records the reason and opens the next match in its place; ✓ the notice names a job that is not in the list
   - `<warning>` as a plain `p.notice` (no role) — unit: `app/src/renderer/screens/Matches.test.tsx`
 
 ### Pushed view (a row selected and pushed, or view === materials)
@@ -271,7 +271,7 @@ Opened by the Posting's "Status" (full form) and the Posting's "Not for me" (`pr
 - Success → `onDone` (§2 or §6). Ledger: `status: discarded`, history notes = the reason. — ✓ Discard records the reason and opens the next match in its place
 
 ### Full form
-- **dialog "Status: <title_en || title>"**. Focus starts on the checked radio, else the first radio. — ✓ opens on the current status… (unapplied: the first is the checked one); ✓ (expected fail) the dialog starts on the checked status — BUG: focus goes to the first radio, not the checked one
+- **dialog "Status: <title_en || title>"**. Focus starts on the checked radio, else the first radio. — ✓ opens on the current status… (unapplied: the first is the checked one); ✓ the dialog starts on the checked status
 - **radiogroup "Status"**, radios **"Not yet applied"**, **"Prepared"**, **"Applied"**, **"Interview"**, **"Ghosted"**, **"Rejected"**, **"Offer"**, **"Not for me"**. — ✓ opens on the current status, with every status to choose from
   - The current status's group is pre-checked: unapplied → "Not yet applied"; `interview:*` → "Interview". — ✓ opens on the current status…; unit: `app/src/renderer/screens/StatusDialog.test.tsx`; unit: `tests/commands/test_status_cli.py`
   - A ledger status outside the list checks nothing. — not tested: unreachable (every tracker status maps to a radio)
@@ -332,14 +332,14 @@ Reached through:
 - Full view:
   - **btn "← Posting"** → the posting view (in Matches still pushed: back to the posting, and the stepper hides when the job left the list). — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded; ✓ a prepared card opens its application and comes back through its posting
   - **h1 "Ready to send"**, or **"What you sent"** when `materials.sent`. Subtitle "<title_en || title> · <company>". — ✓ Prepare application on a new match tailors, compiles and opens Ready to send; ✓ What you sent: the copy kept when it went out, read only, and saved from there
-  - **btn "I've applied"** (primary, header): wide only, not remote, not sent. Disabled while busy or recording. One click records Applied (`set_status`), no dialog; a failure is an **alert** on the page and the job stays. Success → the parent's `changed` (in Matches the title is "the job", since a prepared job is not in the list). — ✓ I've applied records the application in one click and keeps a copy of what was sent; unit: `app/src/renderer/screens/Materials.test.tsx`; ✓ I've applied from Matches names the job in its notice (BUG: "Applied: the job.")
+  - **btn "I've applied"** (primary, header): wide only, not remote, not sent. Disabled while busy or recording. One click records Applied (`set_status`), no dialog; a failure is an **alert** on the page and the job stays. Success → the parent's `changed` (in Matches the title is "the job", since a prepared job is not in the list). — ✓ I've applied records the application in one click and keeps a copy of what was sent; unit: `app/src/renderer/screens/Materials.test.tsx`; ✓ I've applied from Matches names the job in its notice
   - **status** notices (a revise or an undo that worked says nothing: the pages redraw and the box empties — ✓ Revise changes the letter, shows the new pages, and Undo puts it back):
     - "Saved as <file> in <folder>." (or "Saved as <file>." when the path has no folder) — ✓ Save letter writes the PDF where the save dialog says (the folder-less form: not tested, a save dialog always answers a full path)
     - "Nothing to undo." (only for an undo whose error matches `/nothing to undo/i`; server: "nothing to undo: no cover_letter.tex.bak for 'x'"). The e2e already covers this. — unit: `app/src/renderer/screens/Materials.test.tsx`
     - "The change was made but the PDF could not be rebuilt, so the pages still show the previous version. Undo last change puts it back." (`revise.compile[].status === 'error'`; no reload, the instruction is kept) — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **alert** failures:
     - a revise error (stand-in claude: "…; file left unchanged"; "an instruction is required…" is unreachable because the button needs text; "…not found — prepare 'x' first"; timeouts at 420 s) — unit: `app/src/renderer/screens/Materials.test.tsx` ("an instruction is required": not tested, unreachable; "not found — prepare first": not tested, Revise shows only with materials; timeout: not tested, 420 s)
-    - a save error: "that PDF is not on disk", "Could not save it: <err>", "saving is not available here", "unknown document"; when the error is missing, "Could not save the PDF." — unit: `app/src/renderer/screens/Materials.test.tsx` ("Could not save it"); "that PDF is not on disk": ✓ What you sent for a job whose sent copy is missing still shows and saves its pages (BUG); "saving is not available here"/"unknown document": not tested, unreachable in the desktop app
+    - a save error: "that PDF is not on disk", "Could not save it: <err>", "saving is not available here", "unknown document"; when the error is missing, "Could not save the PDF." — unit: `app/src/renderer/screens/Materials.test.tsx` ("Could not save it"); "that PDF is not on disk": ✓ What you sent for a job whose sent copy is missing still shows and saves its pages; "saving is not available here"/"unknown document": not tested, unreachable in the desktop app
     - a cancelled save: nothing — unit: `app/src/renderer/screens/Materials.test.tsx`
   - A reload failure after a successful revise also lands in the failure alert (the show error text). — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **status** spinner "Revising…" while busy. The pages get `aria-busy=true` and the `.dimmed` class. — ✓ Revise changes the letter, shows the new pages, and Undo puts it back
@@ -360,7 +360,7 @@ Reached through:
     - The switch decides which file Revise edits. — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **Sent**: no aside, no I've applied; the images and Save read from `sent/`. — ✓ What you sent: the copy kept when it went out, read only, and saved from there
   - Narrow: no Save under the figure. An `.action-bar` holds **btn "Save CV"/"Save letter"** (for the current doc) and **btn "I've applied"** when not sent. The narrow variant **ignores `remote`**, so the phone also gets "I've applied" there. — ✓ narrow: Ready to send saves the shown document and has I’ve applied in the bar (remote: not tested here, the phone is another area)
-- **Probable bug**: the job id comes from `jobIdOf(m)`, which drops the last path segment of `output_dir` when `sent`. If the job's history has a sent status but `jobs/output/<id>/sent/` has no PDFs (older data, or a sent status recorded before the materials existed), `show` falls back to the working dir and still says `sent:true`. `jobIdOf` then yields `"output"`. Result: broken page images (`door-file://output/output/sent/…`), and Save fails with "that PDF is not on disk". — ✓ What you sent for a job whose sent copy is missing still shows and saves its pages (test.fail BUG)
+- **Probable bug**: the job id comes from `jobIdOf(m)`, which drops the last path segment of `output_dir` when `sent`. If the job's history has a sent status but `jobs/output/<id>/sent/` has no PDFs (older data, or a sent status recorded before the materials existed), `show` falls back to the working dir and still says `sent:true`. `jobIdOf` then yields `"output"`. Result: broken page images (`door-file://output/output/sent/…`), and Save fails with "that PDF is not on disk". — ✓ What you sent for a job whose sent copy is missing still shows and saves its pages
 
 ---
 
@@ -390,7 +390,7 @@ Reached through:
   - offer → dots plus "offer" — unit: `app/src/renderer/screens/board.test.ts`
   - `interview:*` → dots plus the last round's `stage`, else the status suffix (e.g. "technical") — unit: `app/src/renderer/screens/board.test.ts`; ✓ an interview round moves an applied card to Interviewing
   - prepared / applied → "today", "yesterday", "N days ago" (2–6), "1 week ago", "N weeks ago" (2–3), else "Mon D", from `updated_at`; null or unparsable → no note — unit: `app/src/renderer/screens/board.test.ts` ("yesterday"; the other wordings are board.ts unit tests' job)
-  - `no_answer` with `no_answer_days` N (the server's `tracker.NO_ANSWER_DAYS`, #89): applied → "No answer in N days" (instead of the time); `interview:*` → the stage plus " · no answer in N days", dots kept; other statuses ignore it. A silent card has a sibling **btn "Mark ghosted"** (not inside the card button) → `set_status {job_id, status:'ghosted'}`, notice "Ghosted: T.", the card moves to Closed. — unit: `app/src/renderer/screens/board.test.ts`, `Applications.test.tsx`; ✓ journeys/applications-no-answer.journey.ts (an applied card, an interview round, narrow)
+  - `no_answer` with `no_answer_days` N (the server's `tracker.NO_ANSWER_DAYS`, #89): applied → "No answer in N days" (instead of the time); `interview:*` → the stage plus " · no answer in N days", dots kept; other statuses ignore it. A silent card has a sibling **btn "Mark ghosted"** (not inside the card button) → `set_status {job_id, status:'ghosted'}`, notice "Ghosted: T.", the card moves to Closed. — unit: `app/src/renderer/screens/board.test.ts`, `Applications.test.tsx`; `applications-no-answer.journey.ts`: an applied card ✓ says so, and Mark ghosted records it (dated the world's today); an interview round ✓ keeps its rounds, says no answer, and Mark ghosted records it; ✓ narrow: the button is on the card
   - Dots come only from rounds with `result` passed (filled) or pending (outlined). Rejected, ghosted and withdrawn rounds get no dot. — unit: `app/src/renderer/screens/board.test.ts`
   - Hidden text examples: "1 round passed: ", "2 rounds passed, one under way: ", "one under way: ". — unit: `app/src/renderer/screens/board.test.ts` ("1 round passed, one under way: ", "2 rounds passed: "); ✓ an interview round moves … ("one under way: ")
 - Card click → pushed posting. — unit: `app/src/renderer/screens/Applications.test.tsx`
@@ -475,13 +475,13 @@ Reached through:
 2. Finding's idle "Find new jobs" without an error is unreachable: the screen hides when the state is null.
 3. Posting's `/in progress/i` regex never sees the lock text. Prepare returns `{outcome:'failed', error:"a run is in progress…"}` rather than throwing, so a foreign CLI run lands on "There is nothing prepared for this job yet." Only `_BUSY` (same-server serialization) reaches the busy notice. — WRONG: the lock text comes back as `error`, which door-server.ts throws: the posting shows it as an alert (unit: `app/src/renderer/screens/Posting.test.tsx`)
 4. `prepare` outcome `failed` and its `error` are never shown (§3). This is the most user-visible gap. — WRONG: shown as the posting's alert (see §3)
-5. `PrepareResult.unsupported` and `materials.unsupported` are never shown in the renderer. They only reach the user as `set_status`'s warning on a sent status. `keywords`, `tailoring` and `rendered` are not shown either. — ✓ Ready to send names the claims the CV does not back (test.fail BUG); unit: `tests/commands/test_status_cli.py`
+5. `PrepareResult.unsupported` and `materials.unsupported` are never shown in the renderer. They only reach the user as `set_status`'s warning on a sent status. `keywords`, `tailoring` and `rendered` are not shown either. — ✓ Ready to send names the claims the CV does not back; unit: `tests/commands/test_status_cli.py`
 6. The run summary ignores `failures` and the per-site outcomes.
 7. `ApiError.candidates` is never used in this area (an ambiguous job ref shows the message only; the UI always passes exact ids).
 8. findJobs `preparing` / `busy` outcomes come only from races, since the buttons are disabled in those states. Exceptions: after a renderer reload mid-Prepare (preparing), or a lock held by a process whose pid the board considers dead.
-9. `materials.sent` with no `sent/` copy → the job id becomes "output" (§5 bug). — ✓ What you sent for a job whose sent copy is missing still shows and saves its pages (test.fail BUG)
+9. `materials.sent` with no `sent/` copy → the job id becomes "output" (§5 bug). — ✓ What you sent for a job whose sent copy is missing still shows and saves its pages
 10. j/k from a focused dialog button steps the posting behind the dialog; Escape on the score hint also leaves the posting. — fixed; unit: `app/src/renderer/screens/Matches.test.tsx` (j on a dialog’s button…; Esc on the score’s hint…)
-11. Empty-list copy "Nothing scored yet, run The other door first" also shows for "New only" with nothing new. — ✓ (expected fail) New only with every new match seen says there is nothing new…
+11. Empty-list copy "Nothing scored yet, run The other door first" also shows for "New only" with nothing new. — ✓ New only with every new match seen says there is nothing new…
 12. `Stopping…` sticks forever if Stop is pressed when main has no find_jobs in flight.
 
 ---
