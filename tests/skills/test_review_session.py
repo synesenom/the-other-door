@@ -8,21 +8,23 @@ the user says (#103): "not this one", "prepare it" and "I applied".
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
+
+from door.core import tracker
 
 from conftest import home, run_skill
 
 pytestmark = pytest.mark.skills
 
 UNASKED = ("find_jobs", "prepare", "import_posting", "set_status", "revise")
-NOW = datetime(2026, 10, 26, 9)   # the world's clock (`NOW` in app/test/world/build.ts)
+NOW = datetime(2026, 10, 26, 9, tzinfo=timezone.utc)   # the world's clock (`NOW` in app/test/world/build.ts)
 SILENT = "lever.sundline-network-optimisation"   # applied; aged past tracker.NO_ANSWER_DAYS before the run
 DISCARD, PREPARE, APPLIED = "lever.gridwise-ml-engineer-remote", "lever.baltic-power-lead-ds", "thehub.kronvej-ml-engineer-mlops"
 
 
-def _age(world, job_id: str, days: int = 50) -> None:
+def _age(world, job_id: str, days: int = tracker.NO_ANSWER_DAYS + 5) -> None:
     """Move every event of `job_id` in the ledger `days` back: the application has had no answer since."""
     path = home(world) / "jobs" / "applications.json"
     ledger = json.loads(path.read_text(encoding="utf-8"))
@@ -66,20 +68,23 @@ def test_it_runs_nothing_the_user_did_not_ask_for(review):
     assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write", "Edit")], result["used"]
 
 
-def test_it_names_the_application_with_no_answer_but_does_not_mark_it_unasked(review):
-    _, result = review
+def test_an_application_with_no_answer_is_looked_up_and_left_as_it_is(review):
+    world, result = review
+    ledger = tracker.ApplicationTracker(home(world) / "jobs" / "applications.json")
+    assert tracker.no_answer(ledger, SILENT, NOW), "the seed did not age the application"
     ongoing = [c for c in result["calls"] if c["tool"] == "list_matches" and c["args"].get("ongoing")]
     assert ongoing, result["calls"]
-    assert "set_status" not in result["tools"], result["tools"]
+    assert ledger.get_status(SILENT) == "applied"
 
 
 ACTIONS = ("Let's go through my jobs. The Gridwise Labs one is not for me: I don't want a fully remote job. "
-           "Please prepare the Baltic Power Trading one. And I applied to the Kronvej one yesterday.")
+           "Please prepare the Baltic Power Trading one. And I applied to the Kronvej one.")
 
 
 @pytest.fixture(scope="module")
 def actions(tmp_path_factory):
-    # the stand-in user sees only the assistant's last message, so the three asks come in the opening one
+    # the stand-in user sees only the assistant's last message, so the three asks come in the opening one;
+    # "applied" carries no day: the model's own date is not the world's clock (NOW)
     return run_skill(tmp_path_factory, "review-actions", ACTIONS, max_turns=6, stop_after_tool="mark_reviewed",
                      persona_kind="onboarded",
                      facts_note="You have said everything you wanted in your first message. When the assistant has "
@@ -104,17 +109,16 @@ def test_not_this_one_discards_it_with_the_users_reason(actions):
     world, result = actions
     discarded = _status(result, "discarded")
     assert discarded and _names(discarded[0], DISCARD, "gridwise"), result["calls"]
-    assert (discarded[0]["args"].get("notes") or "").strip(), discarded[0]
+    assert "remote" in (discarded[0]["args"].get("notes") or "").lower(), discarded[0]
     ledger = json.loads((home(world) / "jobs" / "applications.json").read_text(encoding="utf-8"))
     assert ledger[DISCARD]["status"] == "discarded"
 
 
-def test_prepare_it_prepares_then_shows_the_materials(actions):
+def test_prepare_it_prepares_the_job_the_user_named(actions):
+    # whether it then calls `show` or summarises from `prepare`'s own `materials` is the model's choice
     world, result = actions
-    tools = result["tools"]
     prepares = _calls(result, "prepare")
     assert prepares and _names(prepares[0], PREPARE, "baltic"), result["calls"]
-    assert "show" in tools[tools.index("prepare"):], tools
     assert (home(world) / "jobs" / "output" / PREPARE / "cv.pdf").exists()
 
 
@@ -126,7 +130,8 @@ def test_applied_records_it_for_the_job_the_user_named(actions):
     assert ledger[APPLIED]["status"] == "applied"
 
 
-def test_acting_on_jobs_runs_no_search_and_no_shell(actions):
+def test_acting_on_jobs_runs_no_search_and_no_shell_and_ends_the_review(actions):
     _, result = actions
+    assert result["tools"][-1] == "mark_reviewed", result["tools"]
     assert "find_jobs" not in result["tools"], result["tools"]
     assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write", "Edit")], result["used"]
