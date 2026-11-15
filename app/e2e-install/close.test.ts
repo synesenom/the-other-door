@@ -30,6 +30,14 @@ describe('closeApp', () => {
     expect([asked, killed]).toEqual([false, []])
   })
 
+  it('leaves an app alone whose process() throws: Playwright disposes a closed app (CI, #111)', async () => {
+    const killed: number[] = []
+    let asked = false
+    const disposed = { close: async () => { asked = true }, process: (): never => { throw new TypeError("Cannot read properties of undefined (reading '_object')") } }
+    await closeApp(disposed, { timeoutMs: 10, kill: (pid) => killed.push(pid) })
+    expect([asked, killed]).toEqual([false, []])
+  })
+
   it('does not throw when the kill fails or there is no pid', async () => {
     await closeApp(fake(async () => { throw new Error('x') }), { timeoutMs: 10, kill: () => { throw new Error('gone') } })
     await closeApp(fake(async () => { throw new Error('x') }, undefined), { timeoutMs: 10, kill: () => { throw new Error('never') } })

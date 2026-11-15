@@ -9,7 +9,16 @@ export interface Closable {
   process(): { pid?: number; exitCode?: number | null; signalCode?: string | null }
 }
 
-const exited = (p: ReturnType<Closable['process']>): boolean => (p.exitCode ?? null) !== null || (p.signalCode ?? null) !== null
+/** The app's process, or null when Playwright already disposed the app (its `process()` throws once it closed). */
+function processOf(app: Closable): ReturnType<Closable['process']> | null {
+  try {
+    return app.process()
+  } catch {
+    return null
+  }
+}
+
+const exited = (p: ReturnType<Closable['process']> | null): boolean => p === null || (p.exitCode ?? null) !== null || (p.signalCode ?? null) !== null
 
 /** The command that kills a process with its children, or null where killing the process itself is enough. */
 export function killTreeCommand(platform: string, pid: number): string[] | null {
@@ -24,7 +33,8 @@ function killTree(pid: number): void {
 
 /** Closes the app; never throws: what is left is killed, and a kill that fails is only logged. */
 export async function closeApp(app: Closable, { timeoutMs = 30_000, kill = killTree }: { timeoutMs?: number; kill?: (pid: number) => void } = {}): Promise<void> {
-  if (exited(app.process())) return
+  const before = processOf(app)
+  if (exited(before)) return
   let timer: NodeJS.Timeout | undefined
   const closed = await Promise.race([
     app.close().then(() => true, () => false),
@@ -32,7 +42,7 @@ export async function closeApp(app: Closable, { timeoutMs = 30_000, kill = killT
   ])
   clearTimeout(timer)
   if (closed) return
-  const pid = app.process().pid
+  const pid = (processOf(app) ?? before)?.pid
   if (pid === undefined) return
   try {
     kill(pid)
