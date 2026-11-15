@@ -224,7 +224,8 @@ def _render_matches_table(result: dict, *, title: str | None = None) -> None:
         if show_status:
             status_text = Text(match.get("status", "unapplied"), style="magenta")
             if match.get("no_answer"):
-                status_text.append(f" · no answer in {match['no_answer_days']} days", style="yellow")
+                # on a line of its own: beside a long interview stage it would leave the posting no room
+                status_text.append(f"\nno answer in {match['no_answer_days']} days", style="yellow")
             cells.append(status_text)
         table.add_row(*cells)
     console.print(table)

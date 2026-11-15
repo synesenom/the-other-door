@@ -400,7 +400,25 @@ def test_list_ongoing_marks_an_application_with_no_answer(cli_env):
     marker = f"no answer in {tracker_mod.NO_ANSWER_DAYS} days"
 
     assert text.count(marker) == 1
-    assert f"applied · {marker}" in text
+    assert f"applied {marker}" in text
+
+
+def test_list_ongoing_keeps_the_posting_readable_beside_a_silent_interview_round(cli_env, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    import door.core.tracker as tracker_mod
+
+    monkeypatch.setenv("COLUMNS", "80")
+    now = datetime.now(tz=timezone.utc)
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-int", score=0.9, title="ML Engineer", company="Acme")
+    app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
+    app_tracker.set_status("job-int", "applied", now=now - timedelta(days=tracker_mod.NO_ANSWER_DAYS + 9))
+    app_tracker.set_status("job-int", "interview:assessment", now=now - timedelta(days=tracker_mod.NO_ANSWER_DAYS + 5))
+    app_tracker.save()
+
+    text = " ".join(result_text(CliRunner().invoke(cli, ["jobs", "list", "--ongoing"])).split())
+    assert "ML Engineer · Acme" in text
+    assert "interview:assessment" in text and f"no answer in {tracker_mod.NO_ANSWER_DAYS} days" in text
 
 
 # --------------------------------------------------------------------------- #

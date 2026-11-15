@@ -12,7 +12,7 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.core.tracker import ApplicationTracker
-from cli_utils import FRESH_SCRAPED_AT, result_text
+from cli_utils import FRESH_SCRAPED_AT, result_text, write_list_posting
 
 
 # --------------------------------------------------------------------------- #
@@ -243,6 +243,7 @@ def _silent_ledger(cli_env, statuses):
     now = datetime.now(tz=timezone.utc)
     app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
     for n, (status, days) in enumerate(statuses):
+        write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", f"job-{n}", score=0.9)
         app_tracker.set_status(f"job-{n}", status, now=now - timedelta(days=days))
     app_tracker.save()
 
@@ -261,6 +262,20 @@ def test_status_summary_counts_the_applications_with_no_answer(cli_env):
     _silent_ledger(cli_env, [])
     result = status_cmd._status_summary_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
     assert result["no_answer"]["count"] == 0
+
+
+def test_status_summary_counts_only_the_silent_applications_jobs_list_ongoing_shows(cli_env):
+    from door.commands import status as status_cmd
+    import door.core.tracker as tracker_mod
+
+    old = tracker_mod.NO_ANSWER_DAYS + 5
+    _silent_ledger(cli_env, [("applied", old), ("applied", old), ("applied", old)])
+    # one scored 0 (dropped by the prescreen), one whose posting is gone: jobs list --ongoing shows neither
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-1", score=0.0)
+    next((cli_env.jobs_dir / "postings").rglob("job-2.json")).unlink()
+
+    result = status_cmd._status_summary_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
+    assert result["no_answer"]["count"] == 1
 
 
 def test_status_prints_the_count_of_applications_with_no_answer(cli_env):

@@ -650,3 +650,14 @@ def test_show_prints_the_no_answer_line_only_for_a_silent_application(cli_env):
 
     assert line in result_text(CliRunner().invoke(cli, ["jobs", "show", "job-old"]))
     assert line not in result_text(CliRunner().invoke(cli, ["jobs", "show", "job-new"]))
+
+
+def test_show_on_a_terminal_says_no_answer_too(cli_env, monkeypatch):
+    import door.core.tracker as tracker_mod
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-old")
+    _track(cli_env, "job-old", "applied", tracker_mod.NO_ANSWER_DAYS + 5)
+    paged = _show_on_a_terminal(cli_env, monkeypatch)
+
+    result = CliRunner().invoke(cli, ["jobs", "show", "job-old"])
+    assert f"No answer in {tracker_mod.NO_ANSWER_DAYS} days" in result_text(result) + "".join(paged)

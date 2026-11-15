@@ -187,7 +187,7 @@ and helps decide. Unless the user asks for something else:
    (`room`, `week`), saying it is an estimate as of `as_of`. Its `cost` block answers "what did
    that cost?": dollars at API prices per activity, an estimate and not a bill.
    Its `no_answer` block counts applications with no answer in `days` days (`tracker.NO_ANSWER_DAYS`):
-   mention the count briefly.
+   when it is above 0, call `list_matches(ongoing=True)` and name those rows (step 4).
 2. Then `list_matches(new_only=True)` (or plain `list_matches` if nothing is new, or the
    user wants everything). Present postings by title and company (with `title_en` next to
    a title in another language), never with numbers. The user names a job in their own

@@ -830,8 +830,9 @@ def status_summary() -> dict:
         {"offer", "interviewing", "waiting", "rejected", "ghosted", "withdrawn"} (where each sent
         application stands now, each counted once; one with no change for 45 days (tracker.NO_ANSWER_DAYS) counts as ghosted, here
         and in ``application``), "no_answer": {"count", "days"} (how many applied or interviewing
-        applications have had no change for more than ``days`` days, not the ``ghosted`` standing: name
-        them and offer ``set_status`` ``ghosted``),
+        applications ``list_matches(ongoing=True)`` lists have had no change for more than ``days`` days,
+        not the ``ghosted`` standing: when above 0, call ``list_matches(ongoing=True)``, name the rows with
+        ``no_answer`` and offer ``set_status`` ``ghosted``),
         "application": {"passed", "rejected", "ghosted", "withdrawn", "pending"}, "pass_rates":
         {<stage>: {"passed", "decided", "rate", "low", "high"}}, "since_last_review":
         {"last_reviewed_at", "runs", "last_run", "new_matches",
