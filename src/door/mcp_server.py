@@ -1213,7 +1213,7 @@ def ask(question: str, model: str | None = None) -> dict:
         model: Claude model to answer with (default: haiku).
 
     Returns:
-        ``{"answer", "go_to": {"screen": "matches" | "posting" | "applications" | "employers" | "cv",
+        ``{"answer", "go_to": {"screen": "matches" | "posting" | "applications" | "cv",
         "job_ids"?} | None, "sources"}``, or ``{"error"}``.
     """
     return ask_cmd._ask_core(question, model=model, jobs_dir=workspace.JOBS_DIR, profile_dir=workspace.PROFILE_DIR)

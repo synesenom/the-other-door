@@ -185,8 +185,7 @@ and error is in the run record. "View matches" opens Matches on
 "New only", "Show run record" shows the run's file in your file manager. Matches and "Last run" are refreshed.
 
 When no match is new, the card says what the run did in one line ("917 jobs found, 40 close enough to
-score, none reached your bar (65%)") and offers what you can do about it: "Follow employers" and
-"Check your search terms" open Profile at those sections, "Lower the bar" at the minimum score. When the
+score, none reached your bar (65%)") and offers what you can do about it: "Check your search terms" opens Profile at your search terms, "Lower the bar" at the minimum score. When the
 run skipped Discover, Follow or Collect, it adds that the next full run also reads employers' own career sites.
 
 After the first run, if it found fewer than three new matches and every employer discovery source
@@ -592,8 +591,8 @@ On the phone: scan the QR code (or open the address and type the code), then in 
 The phone is for what you do on the road: find new jobs (the run goes on while the phone is locked),
 read postings, import an ad, prepare and revise an application, and keep Applications up to date. It
 has three tabs, Matches, Applications and Settings (only the look and where your data is).
-Everything else is done on the computer running *The other door*: first-time setup, your profile, CV
-and employers (Profile is not on the phone), signing in to
+Everything else is done on the computer running *The other door*: first-time setup, your profile and
+CV (Profile is not on the phone), signing in to
 Claude, connecting Google Drive and moving your data. A data
 folder that has no profile yet says to set it up there first.
 

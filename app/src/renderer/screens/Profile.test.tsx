@@ -61,7 +61,7 @@ describe('Profile, the CV photo', () => {
   const profile = (location: string, photo?: { exists: boolean; path?: string }) => ({ ...show({ location }), options, photo: photo ?? { exists: false } })
   const about = () => screen.getByRole('region', { name: 'About you' })
   const openWith = async (shown: unknown, handlers: Record<string, unknown> = {}) => {
-    const h = mockDoor({ show_profile: shown, list_companies: { companies: [] }, ...handlers })
+    const h = mockDoor({ show_profile: shown, ...handlers })
     render(<Profile onSaved={() => {}} onDraft={() => {}} />)
     await screen.findByRole('region', { name: 'About you' })
     return h

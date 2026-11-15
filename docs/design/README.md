@@ -200,7 +200,7 @@ Primary action: "I've applied".
 **Finding jobs** (a run): one column, 620 px, on the screen's left edge. Title, a line that the
 screens can be switched while it runs (quitting stops it), then the five steps (Search, Discover, Follow, Collect, Match) as step
 rows. One secondary button: "Stop" (the run has no graceful cancel, so it ends the run at once and says nothing is lost).
-When it ends, a summary card replaces the button. With no new match it states the run in one line and offers actions that open Profile sections (employers, the bar, the search terms), no new destination.
+When it ends, a summary card replaces the button. With no new match it states the run in one line and offers actions that open Profile sections (the bar, the search terms), no new destination.
 
 ![Finding jobs: the five steps, the fourth running](screens/finding-jobs.png)
 
@@ -246,7 +246,7 @@ The phone app (#303) is the same renderer, so it uses the same tokens, type and
 components; only the layout changes below the sidebar breakpoint (`size.sidebar-breakpoint`, 900 px; the `phone` sizes reach the renderer as `--phone-*` variables):
 
 - **Tab bar** instead of the sidebar: Matches, Applications, Profile, Settings, Analytics (the paired
-  phone has only Matches, Applications and Settings: the profile, the CV and the employers
+  phone has only Matches, Applications and Settings: the profile and the CV
   are changed, and Analytics read, on the computer running *The other door*), each a
   22 px stroke icon over an 11 px label; the active tab is ink and 600 weight with the
   small blue dash above its icon. 22 px of bottom padding clears the home indicator.

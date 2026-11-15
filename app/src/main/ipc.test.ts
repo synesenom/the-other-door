@@ -127,7 +127,6 @@ describe('registerIpc', () => {
     ['sync_data', 60_000],
     ['enrich', 600_000],
     ['market', 60_000],
-    ['add_company', 60_000],
     ['ask', 180_000],
   ])('gives %s a call limit over %i ms', async (tool, floor) => {
     const { server, invoke } = setup(undefined, undefined, false, { demo: false })

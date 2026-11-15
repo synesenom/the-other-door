@@ -172,8 +172,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       case 'mark_seen':
         seen.add(String(args['job_id']))
         return { job_id: args['job_id'] }
-      case 'list_companies':
-        return state === 'empty' ? { companies: [] } : fixtures.list_companies
       case 'show': {
         const id = String(args['job_id']).replace(/~\d+$/, '')
         const job = (fixtures.show as Record<string, Row>)[id]
@@ -192,8 +190,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         const status = String(args['status'])
         return { job_id: String(args['job_id']).replace(/~\d+$/, ''), status, current: status }
       }
-      case 'why_company':
-        return { company: fixtures.list_companies.companies[0], postings: 3 }
       case 'find_jobs':
         return SAMPLE_RUN
       case 'ask':

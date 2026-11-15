@@ -9,11 +9,11 @@ Conventions used below:
   1. **Expected core error.** `{"error": str(exc)}` comes back from `_tool_errors` (ValueError, LookupError, FileNotFoundError, ConfigError, CompaniesError, LockHeldError, ClaudeError, DriveError, SyncConflict…). The message is the exception text.
   2. **FastMCP argument validation or an unexpected exception** (e.g. OSError). The result is `isError`, and the text is `Error executing tool <tool>: <pydantic or exception text>`, which can run to several lines.
   3. **Transport errors** (door-server.ts):
-     - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 660 s, market 180 s, add_company 180 s.
+     - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 660 s, market 180 s.
      - `The other door's server stopped; try again`: the child process died.
      - `<tool> returned something that is not JSON`.
      - Main-process refusals: `unknown tool`, and `enrich takes web addresses only; files are chosen with the file picker.`
-- Playwright name matching is a case-insensitive **substring** match by default. Many names here collide, so use `exact: true` where noted (e.g. `Follow` collides with `Stop following`, `CV` with `Draft … CV …`, `Name` with the hint button `About Name`, `Add` with `Add these titles…`).
+- Playwright name matching is a case-insensitive **substring** match by default. Many names here collide, so use `exact: true` where noted (e.g. `CV` with `Draft … CV …`, `Name` with the hint button `About Name`, `Add` with `Add these titles…`).
 
 ---
 
@@ -338,20 +338,6 @@ How the test world produces each part:
 - Postings scored inside the window (`jobs/postings/<date>/<site>/<id>.json` with `score`, `matching_skills`, `missing_skills`, `scraped_at` or `posted_at`) drive `skills`, `near_misses` and `uncovered_titles`.
 - A pre-filled `jobs/skill_aliases.json` covering every skill name **avoids the Haiku call** (no warning). Leaving names out with the stand-in claude produces the grouping-failed warning.
 
-### list_companies
-- `{ companies: [{ name, feed:{platform,id}|null, status: followed|unfollowable|unresolved|dormant, reason, refusal: must_not|cant_yet|null, found_via, evidence, aliases, first_seen, last_checked, collect_problem:{at, outcome: blocked|failed, reason}|null, last_relevant: iso|null }], counts }`.
-- The window reads `name`, `status`, `last_relevant` and `collect_problem`; the rest come back through why_company.
-- The file is `profile/companies.json`: `{"version":1,"companies":[...]}`, with `extra="forbid"`.
-
-### why_company
-`{ company: <same row>, postings: n, by_source }`. The window reads `postings`, `company.found_via`, `company.feed.platform`, `company.refusal` and `company.reason`. `postings` counts `jobs/postings/*/*/*.json` whose `employer` equals the name or whose `company` name_key matches.
-
-### add_company
-`{ dry_run:false, results:[{ input, name, status, platform, entry, reason, refusal, evidence, candidates, new }] }`. The window reads `results[0].name`, `.status`, `.reason` and `.refusal`.
-
-### remove_company
-`{ removed:[{name, feed}], not_found:[name] }`. Only success or throw is read.
-
 ---
 
 ## 11. Counts and surprises
@@ -372,13 +358,11 @@ How the test world produces each part:
 
 **Unreachable from a real server or the UI**
 - The `path` field branch. — not tested: unreachable
-- "Nothing was recorded." (add_company always returns one result). — not tested: unreachable
 - save_cv "the CV is empty". — not tested: unreachable (Save is disabled)
 - enrich "no URLs to read" and "no proposal X". — not tested: unreachable
 - Language, remote and exclude server errors. — not tested: unreachable
 
 **Network**
-- Follow (`add_company`, probe=true) makes **real network requests**, so it needs stubbing for deterministic e2e. — the world (boot.py) sets `companies._session` to None: no request leaves, a link is told by its shape (Ashby, Teamtailor, HR-ON, Jobaffinity), a name finds no feed. Greenhouse and Lever links are not detected there (boot.py replaces those modules with the world feeds).
 - Markdown links call `openExternal`. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
 
 
@@ -390,4 +374,3 @@ How the test world produces each part:
 - A failed market report is never asked again — ✓ a report that failed is asked again when reopened (BUG)
 - Undo after Other… leaves the select on Other… — ✓ puts the city back after Other… (BUG)
 - The CV preview marks no TODO gap — ✓ the preview marks each gap to fill in (BUG)
-- Visual: the sticky Details save bar is drawn above the dialog scrim (see `profile-employers-stop-following.png`): not asserted.

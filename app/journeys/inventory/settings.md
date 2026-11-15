@@ -82,7 +82,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 - Shown: Appearance, plus a `region "This computer"` with: — not tested: phone build
   - "Your profile and jobs are on the computer running The other door, in" — not tested: phone build
   - `home` — not tested: phone build
-  - "The phone finds, prepares and keeps your applications. Setting up, your profile, CV and employers, connections and moving your data are done on the computer where it is installed." — not tested: phone build
+  - "The phone finds, prepares and keeps your applications. Setting up, your profile and CV, connections and moving your data are done on the computer where it is installed." — not tested: phone build
 
 ### Narrow window (< 900 px; Electron `minWidth` is 720, so 720–899 px is testable)
 - `.page-aside` (the "Sections" nav) is `display:none`, so its links cannot be clicked. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top

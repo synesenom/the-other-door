@@ -20,7 +20,7 @@ from door.core import claude_cli, selection, workspace
 ASK_TOOLS = ("status_summary", "list_matches", "show_profile", "query_jobs", "list_companies", "why_company")
 # Refused even if the model asks: the shell and files, and every writing tool by name.
 _REFUSED = ("Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch", "WebSearch", "Agent", "NotebookEdit")
-SCREENS = ("matches", "posting", "applications", "employers", "cv")
+SCREENS = ("matches", "posting", "applications", "cv")
 _DEFAULT_MODEL = "haiku"
 _TIMEOUT_S = 180
 
@@ -32,7 +32,7 @@ _RULES = """You answer one question about the user's job search in The other doo
 - Answer only from what the tools return. When they cannot answer, say "I don't know" and what is known.
 - One or two short sentences. Name postings by their title and company, never by an id or a path.
 - When a screen shows the answer, set go_to: "matches" (the matches), "applications" (jobs in play),
-  "posting" (one job: its id in job_ids), "employers" (the followed employers) or "cv" (the CV). Put the
+  "posting" (one job: its id in job_ids) or "cv" (the CV). Put the
   ids of the jobs you mean in job_ids, taken from the tools. Leave go_to out otherwise.
 - sources: the tools the answer came from."""
 

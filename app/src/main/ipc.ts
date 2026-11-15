@@ -114,8 +114,6 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   enrich: 660_000,
   // market counts in seconds, but new skill names take one Haiku call.
   market: 180_000,
-  // add_company reads the employer's public pages and probes the feed platforms.
-  add_company: 180_000,
   // ask: one Haiku call with the read tools (180 s on the server).
   ask: 240_000,
   // draft_stories: one sonnet call (300 s on the server), no progress.

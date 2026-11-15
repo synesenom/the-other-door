@@ -286,7 +286,7 @@ describe('Finding, the summary card of a run with no new matches', () => {
     })
   const open = (r: RunRecord, extra: Record<string, unknown> = {}) => {
     mockDoor({})
-    const cb = { onFollowEmployers: vi.fn(), onLowerBar: vi.fn(), onCheckSearch: vi.fn() }
+    const cb = { onLowerBar: vi.fn(), onCheckSearch: vi.fn() }
     render(<Finding state={{ kind: 'summary', record: r }} board={{ active: false }} {...handlers()} {...cb} {...extra} />)
     return cb
   }
@@ -298,10 +298,8 @@ describe('Finding, the summary card of a run with no new matches', () => {
 
   it('offers the next steps as actions', async () => {
     const cb = open(none())
-    await userEvent.click(screen.getByRole('button', { name: 'Follow employers' }))
     await userEvent.click(screen.getByRole('button', { name: 'Lower the bar' }))
     await userEvent.click(screen.getByRole('button', { name: 'Check your search terms' }))
-    expect(cb.onFollowEmployers).toHaveBeenCalledTimes(1)
     expect(cb.onLowerBar).toHaveBeenCalledTimes(1)
     expect(cb.onCheckSearch).toHaveBeenCalledTimes(1)
   })
