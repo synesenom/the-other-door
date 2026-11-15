@@ -187,7 +187,7 @@ else:
     if answer is None:
         sys.stderr.write(f"the test world has no {kind} answer\n")
         sys.exit(97)
-    if arg("--json-schema"):
+    if arg("--json-schema") or arg("--output-format") in ("json", "stream-json"):
         envelope(answer)
     else:
         sys.stdout.write(answer if isinstance(answer, str) else json.dumps(answer))
