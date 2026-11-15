@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { cvTex } from '../test/world/tailor'
-import { expect, test } from './fixtures'
+import { expect, notice, test } from './fixtures'
 import { card, ledgerEntry, letterTex, openMatch, pagesLoaded, postingHeading, toApplications } from './helpers/applications'
 
 const VESTVIND = 'Senior Data Scientist, Production Forecasting'
@@ -184,7 +184,7 @@ test('Save letter writes the PDF where the save dialog says', async ({ page, wor
   const target = join(world.scratch, 'saved', 'Mette letter.pdf')
   await os.nextSave(target)
   await page.getByRole('button', { name: 'Save letter' }).click()
-  await expect(page.getByRole('status')).toHaveText('Saved as Mette letter.pdf in saved.')
+  await expect(notice(page)).toHaveText('Saved as Mette letter.pdf in saved.')
   expect(readFileSync(target).equals(readFileSync(join(outDir(world, KRONVEJ_KEY), 'cover_letter.pdf')))).toBe(true)
 })
 
@@ -231,7 +231,7 @@ test("I've applied from Matches names the job in its notice", async ({ page, wor
   await prepareVestvind(page)
   await page.getByRole('button', { name: "I've applied" }).click()
   await expect.poll(() => ledgerEntry(world, VESTVIND_KEY)?.status).toBe('applied')
-  await expect(page.getByRole('status')).toHaveText(`Applied: ${VESTVIND}. It is in Applications now.`, { timeout: 5_000 })
+  await expect(notice(page)).toHaveText(`Applied: ${VESTVIND}. It is in Applications now.`, { timeout: 5_000 })
 })
 
 test("I've applied records the application in one click and keeps a copy of what was sent", { tag: '@core' }, async ({ page, world }) => {
@@ -239,7 +239,7 @@ test("I've applied records the application in one click and keeps a copy of what
   await page.getByRole('button', { name: "I've applied" }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  await expect(page.getByRole('status')).toHaveText(`Applied: ${KRONVEJ}. It is in Applications now.`)
+  await expect(notice(page)).toHaveText(`Applied: ${KRONVEJ}. It is in Applications now.`)
   await expect(page.getByRole('region', { name: 'Applied' }).getByRole('button', { name: new RegExp(`^${KRONVEJ}`) })).toBeVisible()
   const entry = ledgerEntry(world, KRONVEJ_KEY)!
   expect(entry.status).toBe('applied')
@@ -270,7 +270,7 @@ test('What you sent: the copy kept when it went out, read only, and saved from t
   const target = join(world.scratch, 'saved', 'sent CV.pdf')
   await os.nextSave(target)
   await page.getByRole('button', { name: 'Save CV' }).click()
-  await expect(page.getByRole('status')).toHaveText('Saved as sent CV.pdf in saved.')
+  await expect(notice(page)).toHaveText('Saved as sent CV.pdf in saved.')
   expect(readFileSync(target).equals(readFileSync(join(outDir(world, 'sundline-network-optimisation'), 'sent', 'cv.pdf')))).toBe(true)
 })
 
@@ -284,6 +284,6 @@ test('What you sent for a job whose sent copy is missing still shows and saves i
   const target = join(world.scratch, 'saved', 'letter.pdf')
   await os.nextSave(target)
   await page.getByRole('button', { name: 'Save letter' }).click()
-  await expect(page.getByRole('status')).toHaveText('Saved as letter.pdf in saved.', { timeout: 10_000 })
+  await expect(notice(page)).toHaveText('Saved as letter.pdf in saved.', { timeout: 10_000 })
   await pagesLoaded(page, 'Letter', 1)
 })

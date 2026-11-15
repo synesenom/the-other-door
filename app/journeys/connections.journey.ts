@@ -262,21 +262,15 @@ test.describe('Google Drive, Drive changed since this computer synced', () => {
     }),
   })
 
-  test('opening the app brings Drive’s data here, keeping this computer’s in backups/, and reads it again', async ({ page, world }) => {
+  // The server pulls as it starts (mcp_server._startup_pull), before the window reads anything: the screens read
+  // Drive's data from their first read, and the window's own sync on opening finds nothing left to do (#127).
+  test('opening the app brings Drive’s data here, keeping this computer’s in backups/', async ({ page, world }) => {
     await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible(LAUNCH)
     await expect.poll(() => world.exists('jobs/notes-from-this-computer.txt')).toBe(false)
     const backups = readdirSync(join(world.home, 'backups'))
     expect(backups).toHaveLength(1)
     expect(existsSync(join(world.home, 'backups', backups[0]!, 'jobs', 'notes-from-this-computer.txt'))).toBe(true)
     expect(readDriveState(world)!.synced_version).toBe(md5(driveArchive(world)))
-    // a pull is new data: the screens read it again
-    // flaky in CI (#127): on a failure, the tool calls in order say who pulled (sync_data, or a lock hook first)
-    try {
-      await expect.poll(() => world.toolCalls('show_profile').length).toBeGreaterThan(1)
-    } catch (e) {
-      const order = world.calls().filter((c) => c.kind === 'tool').map((c) => c.tool).join(', ')
-      throw new Error(`show_profile was not called again after the pull; the tool calls in order: ${order}\n${e}`)
-    }
   })
 })
 

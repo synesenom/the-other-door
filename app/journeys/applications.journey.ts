@@ -1,6 +1,6 @@
 // Applications (inventory/jobs.md §6, and §9 for the narrow window): the board from FULL_LEDGER, a job in
 // every column; opening a card, its posting and materials; status changes moving a card.
-import { expect, test } from './fixtures'
+import { expect, notice, test } from './fixtures'
 import { card, column, ledgerEntry, narrow, openCard, pagesLoaded, postingHeading, ready, toApplications } from './helpers/applications'
 
 const KRONVEJ = 'Machine Learning Engineer, MLOps'
@@ -46,7 +46,7 @@ test('an interview round moves an applied card to Interviewing', { tag: '@core' 
   await dialog.getByRole('radio', { name: /^Screening/ }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
 
-  await expect(page.getByRole('status')).toHaveText(`Interview: ${SUNDLINE}. It is in Applications now.`)
+  await expect(notice(page)).toHaveText(`Interview: ${SUNDLINE}. It is in Applications now.`)
   await expect(column(page, 'Applied').getByRole('button')).toHaveCount(0)
   await expect(card(column(page, 'Interviewing'), SUNDLINE)).toHaveAccessibleName(name(SUNDLINE, 'Sundline Shipping', 'one under way: ', 'screening'))
   await expect(page.getByText('4 in play · 2 in interviews', { exact: true })).toBeVisible()
@@ -61,7 +61,7 @@ test('a rejection ends the last round and moves the card to Closed', async ({ pa
   await dialog.getByRole('radio', { name: 'Rejected', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
 
-  await expect(page.getByRole('status')).toHaveText(`Rejected: ${PAKKEPOST}.`)
+  await expect(notice(page)).toHaveText(`Rejected: ${PAKKEPOST}.`)
   await expect(column(page, 'Interviewing').getByRole('button')).toHaveCount(0)
   await expect(card(column(page, 'Closed'), PAKKEPOST)).toHaveAccessibleName(name(PAKKEPOST, 'Pakkepost Norden', 'rejected'))
   await expect(page.getByText('3 in play', { exact: true })).toBeVisible()
@@ -78,7 +78,7 @@ test('Not for me on a prepared job, through Status, closes it as withdrawn', asy
   await dialog.getByLabel('Why not?').fill('They want someone on site five days a week.')
   await dialog.getByRole('button', { name: 'Save' }).click()
 
-  await expect(page.getByRole('status')).toHaveText(`Not for me: ${KRONVEJ}.`)
+  await expect(notice(page)).toHaveText(`Not for me: ${KRONVEJ}.`)
   await expect(column(page, 'Prepared').getByRole('button')).toHaveCount(0)
   await expect(card(column(page, 'Closed'), KRONVEJ)).toHaveAccessibleName(name(KRONVEJ, 'Kronvej', 'withdrawn'))
   // newest first
@@ -98,7 +98,7 @@ test('Not yet applied takes a job off the board and back to Matches', async ({ p
   await dialog.getByRole('radio', { name: 'Not yet applied', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
 
-  await expect(page.getByRole('status')).toHaveText('Back in Matches.')
+  await expect(notice(page)).toHaveText('Back in Matches.')
   await expect(card(page, KRONVEJ)).toHaveCount(0)
   await expect(page.getByText('3 in play · 1 in interviews', { exact: true })).toBeVisible()
   expect(ledgerEntry(world, KRONVEJ_KEY)?.status).toBe('unapplied')
@@ -139,9 +139,9 @@ test('narrow: Ready to send saves the shown document and has I’ve applied in t
   mkdirSync(join(world.scratch, 'saved'), { recursive: true })
   await os.nextSave(join(world.scratch, 'saved', 'cv.pdf'))
   await page.getByRole('button', { name: 'Save CV' }).click()
-  await expect(page.getByRole('status')).toHaveText('Saved as cv.pdf in saved.')
+  await expect(notice(page)).toHaveText('Saved as cv.pdf in saved.')
 
   await page.getByRole('button', { name: "I've applied" }).click()
-  await expect(page.getByRole('status')).toHaveText(`Applied: ${KRONVEJ}. It is in Applications now.`)
+  await expect(notice(page)).toHaveText(`Applied: ${KRONVEJ}. It is in Applications now.`)
   expect(ledgerEntry(world, KRONVEJ_KEY)?.status).toBe('applied')
 })
