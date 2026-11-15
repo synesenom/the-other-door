@@ -1,7 +1,7 @@
 ---
 name: design-reviewer
 description: Review a finished change to the desktop or phone app (app/src/renderer, app/src/web, app/src/preview, docs/design) against The other door's visual and UX design rules in docs/design/README.md — tokens, type, components, button order, dialogs, words not ids, when an error is shown, no new destinations, the phone and narrow layouts, dark mode — by reading the diff and rendering the changed screens in the preview. Spawned with the other reviewers before a PR is summarised (CLAUDE.md "Review"), only when the change touches the app's screens or the design docs; not for direct use. The prompt must include the base branch and the issue(s) or the goal of the change.
-model: fable
+model: opus
 tools:
   - Bash
   - Glob
