@@ -372,6 +372,45 @@ def test_exit_2_on_a_failed_site(cli_env, monkeypatch):
     assert invoke().exit_code == 2
 
 
+def _search_sites(cli_env, monkeypatch, sites):
+    search = {**stub_blocks(cli_env.jobs_dir)["search"], "sites": sites}
+    stub_steps(monkeypatch, cli_env.jobs_dir, search=search)
+
+
+def test_a_failed_site_is_named_on_stderr_on_a_pipe(cli_env, monkeypatch):
+    _search_sites(cli_env, monkeypatch,
+                  [{"site": "jobindex", "outcome": "failed", "count": 0, "dir": "x", "errors": ["boom"]}])
+    result = invoke()
+    assert result.exit_code == 2
+    assert "jobindex" in result.stderr and "boom" in result.stderr
+    assert "jobindex" not in result.stdout
+
+
+def test_an_errored_site_is_named_on_stderr_on_a_pipe(cli_env, monkeypatch):
+    _search_sites(cli_env, monkeypatch, [{"site": "jobindex", "outcome": "error", "error": "kaboom"}])
+    result = invoke()
+    assert result.exit_code == 2
+    assert "jobindex" in result.stderr
+
+
+def test_resting_and_empty_sites_stay_off_a_pipe(cli_env, monkeypatch):
+    _search_sites(cli_env, monkeypatch, [
+        {"site": "thehub", "outcome": "resting", "until": "2026-07-02T00:00:00+00:00"},
+        {"site": "jobindex", "outcome": "empty", "count": 0, "dir": "x", "warning": "no records at all"}])
+    result = invoke()
+    assert result.exit_code == 0
+    assert "thehub" not in result.stderr and "jobindex" not in result.stderr
+
+
+def test_a_single_step_on_a_pipe_names_its_failed_site_on_stderr(cli_env, monkeypatch):
+    _search_sites(cli_env, monkeypatch,
+                  [{"site": "jobindex", "outcome": "failed", "count": 0, "dir": "x", "errors": ["boom"]}])
+    result = invoke("search")
+    assert result.exit_code == 2
+    assert "[1/1] search" in result.stdout
+    assert "jobindex" in result.stderr
+
+
 def test_exit_2_also_for_a_failed_employer_platform(cli_env, monkeypatch):
     collect = {**stub_blocks(cli_env.jobs_dir)["collect"],
                "sites": [{"site": "lever", "outcome": "failed", "count": 0, "dir": "x", "errors": ["404 Not Found"]}]}
