@@ -1,4 +1,5 @@
-import { mkdirSync, mkdtempSync, rmSync, watch, writeFileSync } from 'node:fs'
+import { EventEmitter } from 'node:events'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, type FSWatcher } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,32 +11,6 @@ const STEPS = [
 ]
 const progress = { message: 'collect: 3/9', steps: STEPS, pid: 4242 }
 const lock = { pid: 4242, purpose: 'run', started_at: '2026-10-29T08:00:00+00:00' }
-
-// Whether this environment delivers file events at all (a sandbox may not): probed once.
-async function fileEventsWork(): Promise<boolean> {
-  const dir = mkdtempSync(join(tmpdir(), 'run-board-probe-'))
-  try {
-    return await new Promise<boolean>((resolve) => {
-      let w: ReturnType<typeof watch> | null = null
-      const done = (ok: boolean) => {
-        clearTimeout(timer)
-        w?.close()
-        resolve(ok)
-      }
-      const timer = setTimeout(() => done(false), 500)
-      try {
-        w = watch(dir, () => done(true))
-        w.on('error', () => done(false))
-        writeFileSync(join(dir, 'probe'), 'x')
-      } catch {
-        done(false)
-      }
-    })
-  } finally {
-    rmSync(dir, { recursive: true, force: true })
-  }
-}
-const fileEvents = await fileEventsWork()
 
 describe('foldBoard', () => {
   it('is inactive without a lock, or when its process is gone', () => {
@@ -88,19 +63,55 @@ describe('watchRunBoard', () => {
   })
   const put = (name: string, value: unknown) => writeFileSync(join(home, 'jobs', name), JSON.stringify(value))
 
-  it.skipIf(!fileEvents)('pushes the board once when the files appear, and inactive when they go (needs file events; skipped where fs.watch delivers none)', async () => {
-    vi.useRealTimers() // a real file event needs real time
+  /** An injected watch: the test sends the file events itself, so no runner latency matters. */
+  const fakeWatch = () => {
+    const made: { dir: string; fire: () => void; watcher: EventEmitter & { close: ReturnType<typeof vi.fn> } }[] = []
+    const watchFn = vi.fn((dir: string, listener: () => void) => {
+      const watcher = Object.assign(new EventEmitter(), { close: vi.fn() })
+      made.push({ dir, fire: listener, watcher })
+      return watcher as unknown as FSWatcher
+    })
+    return { made, watchFn, fire: () => made[made.length - 1]!.fire() }
+  }
+
+  it('pushes the board once when the files appear, and inactive when they go, on file events alone', async () => {
     const seen: RunBoard[] = []
-    // a long poll: only the file watch can find it within the wait
-    stop = watchRunBoard(home, (b) => seen.push(b), { alive: () => true, debounceMs: 30, pollMs: 60_000 }).stop
+    const { made, watchFn, fire } = fakeWatch()
+    // a long poll: only the file event can find it
+    stop = watchRunBoard(home, (b) => seen.push(b), { alive: () => true, debounceMs: 30, pollMs: 600_000, watchFn }).stop
+    expect(made.map((m) => m.dir)).toEqual([join(home, 'jobs')])
     expect(seen).toEqual([])
     put('.lock.json', lock)
     put('.progress.json', progress)
-    await vi.waitFor(() => expect(seen.filter((b) => b.active)).toHaveLength(1), { timeout: 3000 })
+    fire()
+    await vi.advanceTimersByTimeAsync(20)
+    expect(seen).toEqual([]) // nothing is read before the debounce
+    fire() // a burst of events is one read, debounceMs after its first
+    await vi.advanceTimersByTimeAsync(100)
+    expect(seen.filter((b) => b.active)).toHaveLength(1)
     expect(seen.filter((b) => b.active)[0]).toMatchObject({ started_at: lock.started_at, message: 'collect: 3/9' })
     rmSync(join(home, 'jobs', '.progress.json'))
     rmSync(join(home, 'jobs', '.lock.json'))
-    await vi.waitFor(() => expect(seen[seen.length - 1]).toEqual({ active: false }), { timeout: 3000 })
+    fire()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(seen[seen.length - 1]).toEqual({ active: false })
+  })
+
+  it('a watch that fails is closed and watched again at the next poll; stop() closes it', async () => {
+    const seen: RunBoard[] = []
+    const { made, watchFn, fire } = fakeWatch()
+    const w = watchRunBoard(home, (b) => seen.push(b), { alive: () => true, debounceMs: 30, pollMs: 1000, watchFn })
+    made[0]!.watcher.emit('error', new Error('gone'))
+    expect(made[0]!.watcher.close).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(watchFn).toHaveBeenCalledTimes(2)
+    put('.lock.json', lock)
+    put('.progress.json', progress)
+    fire()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(seen.filter((b) => b.active)).toHaveLength(1)
+    w.stop()
+    expect(made[1]!.watcher.close).toHaveBeenCalledTimes(1)
   })
 
   it('pushes the board once by the poll alone, and inactive when the files go', async () => {
