@@ -455,7 +455,15 @@
           "kept the close story",
           "cut the older role"
         ],
-        "unsupported": []
+        "unsupported": [
+          {
+            "context": "Alex Example, Sample Bank. Led a team of 25 analysts document",
+            "file": "cv",
+            "kind": "number",
+            "reason": "the team size is from the interview notes, not the CV",
+            "value": "25"
+          }
+        ]
       },
       "missing_skills": [
         "SAP"

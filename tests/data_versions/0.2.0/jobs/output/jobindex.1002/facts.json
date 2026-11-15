@@ -1,4 +1,12 @@
 {
-  "checked_at": "2026-11-15T20:00:14.536127+00:00",
-  "unsupported": []
+  "checked_at": "2026-11-15T20:06:21.606515+00:00",
+  "unsupported": [
+    {
+      "kind": "number",
+      "value": "25",
+      "context": "Alex Example, Sample Bank. Led a team of 25 analysts document",
+      "file": "cv",
+      "reason": "the team size is from the interview notes, not the CV"
+    }
+  ]
 }

@@ -62,5 +62,8 @@
       "company": "Example Industries A/S"
     }
   ],
-  "failures": []
+  "failures": [],
+  "unsure_on": [
+    "LinkedIn"
+  ]
 }
