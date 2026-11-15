@@ -364,8 +364,8 @@ def _execute(ctx: click.Context, step: str | None, **options) -> None:
 
     if record["follow"] and (record["follow"]["dry_run"] or (not plain and step == "follow")):
         _echo_follow_results(record["follow"])
+    _echo_site_problems(record)
     if not plain:
-        _echo_site_problems(record)
         if record["match"]:
             _render_ending(record, min_score)
     if step is None and plain:

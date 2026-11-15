@@ -372,6 +372,15 @@ def test_exit_2_on_a_failed_site(cli_env, monkeypatch):
     assert invoke().exit_code == 2
 
 
+def test_a_failed_site_is_named_on_a_pipe_too(cli_env, monkeypatch):
+    search = {**stub_blocks(cli_env.jobs_dir)["search"],
+              "sites": [{"site": "jobindex", "outcome": "failed", "count": 0, "dir": "x", "errors": ["boom"]}]}
+    stub_steps(monkeypatch, cli_env.jobs_dir, search=search)
+    result = invoke()
+    assert result.exit_code == 2
+    assert "jobindex" in click.unstyle(result_text(result))
+
+
 def test_exit_2_also_for_a_failed_employer_platform(cli_env, monkeypatch):
     collect = {**stub_blocks(cli_env.jobs_dir)["collect"],
                "sites": [{"site": "lever", "outcome": "failed", "count": 0, "dir": "x", "errors": ["404 Not Found"]}]}
