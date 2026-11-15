@@ -57,7 +57,8 @@ A journey covers a main path end to end, or a failure the user can act on (docs/
   least 3 words or 20 characters before the `…`, fitting one test, and the whole title written once
   somewhere); each title on a line has its own `✓`. A skipped journey covers nothing: say why it is
   skipped instead. `journeys/inventory.test.ts` (in `npm test`) fails on any of these, and when a test
-  file a line points at is gone, so a renamed or removed journey shows.
+  file a line points at is gone, so a renamed or removed journey shows. It also fails on a running
+  journey no `✓` in any checklist names: a new journey goes in with its checklist line.
 - Find things as the user does: `getByRole(role, { name, exact: true })`, `getByLabel`. No CSS classes,
   no test ids.
 - After each action: the screen, then the disk (`world.readJson('jobs/applications.json')`), then, where

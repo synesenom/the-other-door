@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { inventoryProblems, journeyRefs, journeyTests, resolveRef, testFileRefs, type JourneyTest } from './inventory'
+import { inventoryProblems, journeyRefs, journeyTests, resolveRef, testFileRefs, unlistedJourneys, type JourneyTest } from './inventory'
 import { realInventory } from './inventory-files'
 
 const run = (...titles: string[]): JourneyTest[] => titles.map((title) => ({ title, skipped: false }))
@@ -131,9 +131,49 @@ describe('inventoryProblems', () => {
   })
 })
 
+describe('unlistedJourneys', () => {
+  const tests: JourneyTest[] = [
+    { title: 'opens it', skipped: false, file: 'a.journey.ts' },
+    { title: 'opens the posting full width', skipped: false, file: 'a.journey.ts' },
+    { title: 'closes it again', skipped: false, file: 'b.journey.ts' },
+    { title: 'pairs the phone', skipped: true, file: 'c.journey.ts' },
+  ]
+
+  it('names each running journey that no ✓ in any inventory names, with its file', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ opens it' }]
+    expect(unlistedJourneys(files, tests)).toEqual([
+      'a.journey.ts: "opens the posting full width" is named by no inventory line',
+      'b.journey.ts: "closes it again" is named by no inventory line',
+    ])
+  })
+
+  it('counts a journey named shortened, in any inventory, as listed', () => {
+    const files = [
+      { name: 'a.md', text: '- x — ✓ opens it\n- y — ✓ opens the posting full…' },
+      { name: 'b.md', text: '- z — ✓ closes it again (the notice)' },
+    ]
+    expect(unlistedJourneys(files, tests)).toEqual([])
+  })
+
+  it('does not count a title written without its ✓ as listed', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ opens it; closes it again\n- y — ✓ opens the posting full width' }]
+    expect(unlistedJourneys(files, tests)).toEqual(['b.journey.ts: "closes it again" is named by no inventory line'])
+  })
+
+  it('leaves a skipped journey alone: it covers nothing, so there is no branch to list it under', () => {
+    const files = [{ name: 'a.md', text: '- x — ✓ opens it; ✓ opens the posting full width; ✓ closes it again' }]
+    expect(unlistedJourneys(files, tests)).toEqual([])
+  })
+})
+
 describe('the inventories in app/journeys/inventory', () => {
   it('name only journey tests and test files that exist', () => {
     const { files, tests, exists } = realInventory()
     expect(inventoryProblems(files, tests, exists)).toEqual([])
+  })
+
+  it('name every running journey', () => {
+    const { files, tests } = realInventory()
+    expect(unlistedJourneys(files, tests)).toEqual([])
   })
 })

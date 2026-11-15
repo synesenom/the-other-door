@@ -103,7 +103,7 @@ The sections are rendered as `<section aria-labelledby="profile-<id>">`, i.e. **
 
 Errors for `exclude.*` appear under the **keywords** chips only. A real server cannot produce them from the UI (lists of strings). — not tested: unreachable (lists of strings)
 
-Discovery switches are not on Profile: they are how the app works, in Settings (`SettingsFields.tsx`, Risky sources; saved at once) — ✓ `settings.journey.ts`; unit: `app/src/renderer/screens/SettingsFields.test.tsx`. "Ask Claude where a careers page is" and the Claude config folder are left to config.json.
+Discovery switches are not on Profile: they are how the app works, in Settings (`SettingsFields.tsx`, Risky sources; saved at once) — ✓ offers the sources serving the city; a tick is saved at once (Copenhagen: LinkedIn only; ticked and unticked, `linkedin_discovery` follows); unit: `app/src/renderer/screens/SettingsFields.test.tsx`. "Ask Claude where a careers page is" and the Claude config folder are left to config.json.
 
 **region "Other"** (`profile-advanced`)
 
@@ -178,7 +178,7 @@ See the search_keywords row above: nothing on screen; Claude proposes the terms 
 
 | Data | Note text | Button |
 |---|---|---|
-| `!cv.exists` | "You have no CV yet. Write it here, or " | inline link `button "Draft it from your CV file or pages"` → onDraft (wizard) | — ✓ the sidebar line opens the CV, which says there is none
+| `!cv.exists` | "You have no CV yet. Write it here, or " | inline link `button "Draft it from your CV file or pages"` → onDraft (wizard) | — ✓ the sidebar line opens the CV, which says there is none; ✓ Draft it from your CV file or pages opens the set-up wizard (h1 "Tell me about yourself")
 | own CV (the example CV too: it is never copied in, so no user has it) | no note | — | — ✓ opens on the CV as saved, with no note
 
 Other data-driven variants:

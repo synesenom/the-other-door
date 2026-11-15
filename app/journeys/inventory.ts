@@ -1,4 +1,4 @@
-// The offline check of the journey checklists (#122): every `✓ <title>` in `inventory/*.md` names a journey test
+// The offline check of the journey checklists (#122, #128): every running journey is named by a ✓, and every `✓ <title>` in `inventory/*.md` names a journey test
 // that exists and runs, each title on a line has its own ✓, each journey is named whole at least once, and every
 // test file a line points at (`unit: …`, `preview: …`, a `*.journey.ts`) is on disk. Pure: the files, the tests and
 // the file lookup come from the caller (`inventory-files.ts` reads the real ones).
@@ -7,6 +7,8 @@ export interface JourneyTest {
   title: string
   /** `test.skip`, `test.fixme`, or inside a `test.describe.skip` / `.fixme` block: it covers nothing. */
   skipped: boolean
+  /** The journey file it is in, for a message. */
+  file?: string
 }
 
 /** The `test(…)` calls of a journey file (not `test.describe`'s titles), each marked skipped or not. */
@@ -154,4 +156,25 @@ export function inventoryProblems(files: { name: string; text: string }[], tests
     if (!namedWhole.has(title)) problems.push(`${at}: "${title}" is only named shortened with …; name it whole once`)
   }
   return problems
+}
+
+/**
+ * The other way (#128): every running journey is named by a ✓ in some inventory, whole or shortened, as
+ * `<journey file>: "<title>" is named by no inventory line`. A title written after a `;` without its ✓ does not count
+ * (`inventoryProblems` reports it). A skipped journey covers nothing, so it has no branch to be listed under; the
+ * inventories say "skipped until …" where it would be.
+ */
+export function unlistedJourneys(files: { name: string; text: string }[], tests: JourneyTest[]): string[] {
+  const named = new Set<string>()
+  for (const { text } of files) {
+    for (const line of text.split('\n')) {
+      for (const ref of journeyRefs(line)) {
+        const r = resolveRef(ref, tests)
+        if (r.title) named.add(r.title)
+      }
+    }
+  }
+  return tests
+    .filter((t) => !t.skipped && !named.has(t.title))
+    .map((t) => `${t.file ?? 'a journey'}: "${t.title}" is named by no inventory line`)
 }

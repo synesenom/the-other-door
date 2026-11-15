@@ -25,7 +25,7 @@ export function realInventory(): { files: { name: string; text: string }[]; test
   const journeys = join(APP, 'journeys')
   const tests = readdirSync(journeys)
     .filter((f) => f.endsWith('.journey.ts'))
-    .flatMap((f) => journeyTests(readFileSync(join(journeys, f), 'utf8')))
+    .flatMap((f) => journeyTests(readFileSync(join(journeys, f), 'utf8')).map((t) => ({ ...t, file: f })))
   // a bare file name is any test file of that name in the app or the Python suite; a path is from the repo or the app
   const names = new Set([...walk(APP), ...walk(join(REPO, 'tests'))].map((p) => basename(p)))
   const exists = (path: string): boolean =>
