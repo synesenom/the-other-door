@@ -100,7 +100,7 @@ export function installPlan(installer: string, platform: string, root: string): 
         kind,
         install: [[installer, '/S', `/D=${dir}`]],
         executable: p.join(dir, `${EXE_NAME}.exe`),
-        uninstall: [[p.join(dir, `Uninstall ${APP_NAME}.exe`), '/S']],
+        uninstall: [[p.join(dir, `Uninstall ${EXE_NAME}.exe`), '/S']],
         root,
       }
     }
