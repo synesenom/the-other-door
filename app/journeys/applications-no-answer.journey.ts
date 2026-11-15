@@ -5,20 +5,20 @@ import { join } from 'node:path'
 import { expect } from './fixtures'
 import { card, column, ledgerEntry, narrow, ready, toApplications } from './helpers/applications'
 import { before, test } from './helpers/settings'
-import type { World } from '../test/world/build'
+import { NOW, type World } from '../test/world/build'
 
 const SUNDLINE = 'Senior Data Scientist – Network Optimisation & Demand Forecasting Team'
 const PAKKEPOST = 'Senior Data Scientist, Experimentation & Causal Inference'
 const DAY = 86_400_000
 
-/** The last event of a ledger entry, and the ones before it each a day apart, moved to `daysAgo` days back. */
+/** The last event of a ledger entry moved to `daysAgo` days before the world's now, the ones before it four days apart. */
 function age(world: World, key: string, daysAgo: number): void {
   const file = join(world.home, 'jobs', 'applications.json')
   const book = world.readJson('jobs/applications.json')
   const entry = book[world.jobId(key)]
   const n = entry.history.length
   entry.history.forEach((h: { at: string }, i: number) => {
-    h.at = new Date(Date.now() - (daysAgo + (n - 1 - i) * 4) * DAY).toISOString()
+    h.at = new Date(Date.parse(NOW) - (daysAgo + (n - 1 - i) * 4) * DAY).toISOString()
   })
   entry.updated_at = entry.history[n - 1].at
   writeFileSync(file, JSON.stringify(book, null, 2))
@@ -41,7 +41,8 @@ test.describe('an applied card silent for 40 days', () => {
     const entry = ledgerEntry(world, 'sundline-network-optimisation')
     expect(entry?.status).toBe('ghosted')
     const last = world.readJson('jobs/applications.json')[world.jobId('sundline-network-optimisation')].history.at(-1)
-    expect(new Date(last.at).toDateString()).toBe(new Date().toDateString())
+    // dated today: the world's today, where the server's clock starts
+    expect(new Date(last.at).toDateString()).toBe(new Date(NOW).toDateString())
   })
 
   test('narrow: the button is on the card', async ({ app, page }) => {
