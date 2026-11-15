@@ -39,7 +39,7 @@ git fetch origin main
 git merge origin/main --no-edit
 ```
 
-If the merge produces conflicts, list the conflicting files, tell the user to resolve them and re-run `/dev-pr`, then **stop**.
+If the merge produces conflicts, resolve them keeping both sides' intent, run the tests the conflicting files touch, and commit the merge. Ask the user only if a conflict needs a decision the `decider` agent cannot make (CLAUDE.md "Decisions").
 
 ---
 
@@ -115,9 +115,10 @@ URL:     <html_url from create_pull_request response>
 Watching: CI failures and review comments will arrive in this session.
 ```
 
-Then end your turn and wait. When `<github-webhook-activity>` events arrive:
+Then keep watching until every check is green and the branch merges cleanly (CLAUDE.md "Pull requests"). If the subscription in Step 6 is not available, poll the PR's check runs every few minutes instead. On each event:
 
-- **CI failure** — read the failing job logs via `mcp__github__get_job_logs`, diagnose the root cause, push a fix if it is clear and small, then re-arm by staying subscribed. If the fix is ambiguous or large, ask the user before touching code.
-- **Review comment** — address it if unambiguous and non-breaking; otherwise ask the user first.
-- **CI green + approved** — report "PR is ready to merge" and stop monitoring.
+- **CI failure**: read the failing job logs, find the root cause, fix it test-first on the branch, push, and keep watching. A flaky failure is rerun once and named in the report. A fix that needs a decision goes to the `decider`; ask the user only on CANNOT DECIDE, or after three rounds of fixes that did not turn it green.
+- **Merge conflict** (main moved): merge `origin/main`, resolve as in Step 2, push, and keep watching.
+- **Review comment**: address it if unambiguous and non-breaking; otherwise ask the user first.
+- **All checks green and no conflict**: report "PR is ready to merge" in one line and stop monitoring.
 - **PR merged or closed** — call `mcp__github__unsubscribe_pr_activity` and report the final status.
