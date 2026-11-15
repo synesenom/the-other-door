@@ -21,6 +21,10 @@
 #                            computer. Run before a release (/dev-release does).
 #                            Serial; several minutes and some plan usage each.
 #
+#   ./scripts/run-test.sh --cli-journeys   The real ./door in the app's test world (init,
+#                            find, jobs show/prepare/status; tests/cli_journeys/). Needs
+#                            Node and `npm ci` in app/. CI runs it on Linux and Windows.
+#
 #   ./scripts/run-test.sh --app      The desktop app's tests, as CI runs them: type
 #                            check, unit tests, the end-to-end smoke test, the
 #                            core journeys and the phone app's test (app/, after
@@ -30,7 +34,7 @@
 #                            the other, with a line each at the end: the offline
 #                            suite, the release gate (every earlier release's saved
 #                            data, tests/data_versions/, opens and reads back as it
-#                            did), the app's tests with every journey, the skills,
+#                            did), the app's tests with every journey, the CLI journeys, the skills,
 #                            and the install test when DOOR_INSTALLER names an
 #                            installer (docs/releasing.md). Not the live smoke
 #                            tests: a site's bad day does not block a release.
@@ -63,6 +67,18 @@ app_tests() {   # $1: core | all — which journeys
     (cd app && npm run typecheck && npm test && npm run test:e2e && npm run "$journeys" && npm run test:web)
 }
 
+# The CLI journeys' stand-ins run on the Poetry interpreter.
+cli_journeys() {
+    DOOR_PYTHON="$(poetry run python -c 'import sys; print(sys.executable)')" \
+        poetry run pytest -m cli_journeys -n 0 -p no:cacheprovider tests/cli_journeys "$@"
+}
+
+if [[ "${1:-}" == "--cli-journeys" ]]; then
+    shift
+    cli_journeys "$@"
+    exit $?
+fi
+
 if [[ "${1:-}" == "--app" ]]; then
     app_tests core
     exit $?
@@ -80,6 +96,7 @@ if [[ "${1:-}" == "--release" ]]; then
     step "offline suite" poetry run pytest -n auto -q
     step "release gate (earlier releases' data)" poetry run pytest -m release -n 0 -q -p no:cacheprovider tests/release
     step "app (every journey)" app_tests all
+    step "cli journeys" cli_journeys -q
     step "skills (real model)" poetry run pytest -m skills -n 0 -q -p no:cacheprovider tests/skills
     if [[ -n "${DOOR_INSTALLER:-}" ]]; then
         step "install test ($(basename "$DOOR_INSTALLER"))" bash -c "cd app && npm run test:install"
