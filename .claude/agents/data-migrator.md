@@ -43,6 +43,10 @@ On a branch `release/data-<version or date>` from `main`:
    - **removal**: drop the key or file, so the strict model (`extra="forbid"`) accepts the old data;
    - **reshape** (a type, a nesting, an id format): convert;
    - **only on main** (added and changed or removed after the tag): no step.
+3. Run the release gate (`poetry run pytest tests/release -m release -n 0`) and sort each difference it reports by the PR that made it:
+   - the stored shape changed: a step (Step 2) lists it in `changes`;
+   - only how the code reads the same data changed, on purpose (a count rule, a new default reading): no step; add the exact path to `READ_CHANGES` in `tests/release_gate_utils.py`, under the newest saved release's version, with the PR and why (#101), and commit it on its own (`test: the release gate lists <PR>'s read changes`);
+   - no PR meant it: report it as a bug, write nothing.
 
 ## Step 2 — Prove it, test-first
 
@@ -66,6 +70,8 @@ Previous release: <tag>
 Checked:
 - <stored file or model>: <unchanged | new optional field X: no step | renamed X → Y: step | removed X: step | only on main: no step> (#<PR>)
 - ...
+Read changes: <path: #PR, why> ... | none
+Unintended differences: <path: what changed> ... | none
 Steps: profile <n → n+1: "<name>"> | none; jobs <...> | none
 Release note line: Your data is upgraded on first start: <what each step does, in a user's words>   (omit when no step)
 Tests: <test names>; red run: <command → failures>; suite: <passed>/<failed>

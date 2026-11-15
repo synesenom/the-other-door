@@ -67,7 +67,7 @@ A tester's `profile/` and `jobs/` written by the previous release must open in t
 - **"no step needed"**: keep its item-by-item list for the notes' maintainer summary and go on.
 - **a PR**: tell the user to merge it once CI is green and **stop**. When it is merged, start again at Step 1 (the step's PR is now one of the release's). Keep its "Release note line" for Step 5.
 
-Then the release gate must pass: the "release gate (earlier releases' data)" line of `./scripts/run-test.sh --release` (Step 1 runs it; the saved data of every earlier release, `tests/data_versions/`, upgrades and reads back equal to its snapshot). A FAIL lists the differences: send the `data-migrator` agent back with them, to write or fix the step and list what it changes on purpose in `Step(..., changes=(...))`, then start again at Step 1.
+Then the release gate must pass: the "release gate (earlier releases' data)" line of `./scripts/run-test.sh --release` (Step 1 runs it; the saved data of every earlier release, `tests/data_versions/`, upgrades and reads back equal to its snapshot). A FAIL lists the differences: send the `data-migrator` agent back with them, to write or fix the step and list what it changes on purpose in `Step(..., changes=(...))`, or, for a change in how the same data is read (no step), to list it in `READ_CHANGES` (`tests/release_gate_utils.py`, #101); a difference no PR meant is a bug to fix first. Then start again at Step 1.
 
 ## Step 2: The version
 

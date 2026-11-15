@@ -98,3 +98,25 @@ def test_the_saved_data_holds_no_address_but_example_com():
         if path.is_file() and path.suffix in {".json", ".md", ".tex", ".log", ".html"}:
             found |= set(re.findall(r"[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", path.read_text(encoding="utf-8", errors="ignore")))
     assert {a for a in found if not a.endswith("@example.com")} == set()
+
+
+def test_a_read_change_applies_to_its_release_and_every_older_one(monkeypatch):
+    import release_gate_utils as gate
+
+    monkeypatch.setattr(gate, "READ_CHANGES", {
+        "0.1.0": (("status_summary.application.ghosted", "#87"),),
+        "0.3.0": (("show_profile.config.min_score", "#200"),),
+    })
+    assert gate.read_changes(Path("0.1.0")) == ["status_summary.application.ghosted", "show_profile.config.min_score"]
+    assert gate.read_changes(Path("0.2.0")) == ["show_profile.config.min_score"]
+    assert gate.read_changes(Path("0.4.0")) == []
+
+
+def test_every_read_change_names_why():
+    import release_gate_utils as gate
+
+    for version, entries in gate.READ_CHANGES.items():
+        assert all(len(v) for v in version.split(".")) and version.count(".") == 2
+        for path, why in entries:
+            assert path and "*" not in path, f"{path}: list the exact path, nothing broader"
+            assert why.startswith("#"), f"{path}: name the PR that changed the read"
