@@ -1212,19 +1212,19 @@
    }
   },
   "application": {
-   "passed": 3,
-   "rejected": 1,
-   "ghosted": 1,
+   "passed": 6,
+   "rejected": 3,
+   "ghosted": 3,
    "withdrawn": 0,
    "pending": 2
   },
   "pass_rates": {
    "application": {
-    "passed": 3,
-    "decided": 5,
-    "rate": 0.6,
-    "low": 0.4,
-    "high": 0.77
+    "passed": 6,
+    "decided": 12,
+    "rate": 0.5,
+    "low": 0.36,
+    "high": 0.64
    },
    "screening": {
     "passed": 2,
@@ -1240,6 +1240,12 @@
     "low": 0.5,
     "high": 1.0
    }
+  },
+  "pass_rates_by_score": {
+   "split": 0.74,
+   "top": {"passed": 5, "decided": 6, "rate": 0.8333, "low": 0.65, "high": 0.94},
+   "near_min": {"passed": 1, "decided": 6, "rate": 0.1667, "low": 0.06, "high": 0.35},
+   "reading": "near_min_lower"
   },
   "in_progress": null,
   "employers": {

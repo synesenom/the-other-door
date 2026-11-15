@@ -550,7 +550,10 @@ interview, a rejection or no reply) led to an interview (offers count, since the
 the range it likely lies in while there are few. It says how well the matches *The other door*
 finds fit you. An application with no change for 45 days counts as no reply, whether or not you
 marked it ghosted (the Applications board offers to); once you record what happened next, it counts as that. Until an application has
-an outcome it says only that the rate shows here then. Where each application stands is on the
+an outcome it says only that the rate shows here then. Under it, once at least 5 applications in each
+half have an outcome, the same rate for the better-scored half of your sent applications and for the
+half near your minimum score (split near the median score), and a line "consider raising it" only when
+the near-minimum half led to an interview clearly less often. Where each application stands is on the
 Applications board, and your matches are on Matches.
 
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.

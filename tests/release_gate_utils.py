@@ -3,7 +3,8 @@
 `tests/data_versions/<X.Y.Z>/` holds a release's own `profile/` and `jobs/` and `expected.json`, what that release's
 tools read back from them (`scripts/save_release_data.py`). `check` copies one to a temporary home, runs the upgrade
 and reads it back with the same tools (`scripts/release_data.py`'s `snapshot`), and names every difference from
-`expected.json` that no step of the upgrade lists as intended (`Step.changes`).
+`expected.json` that no step of the upgrade lists as intended (`Step.changes`) and no `READ_CHANGES` entry lists as a
+change in how the same data is read (#101).
 """
 
 from __future__ import annotations
@@ -19,6 +20,23 @@ from paths import REPO_ROOT
 
 SAMPLES_DIR = REPO_ROOT / "tests" / "data_versions"
 
+# Intended changes in how this code reads old data where the stored shape did not change, so no `Step` exists to list
+# them (#101). Keyed by the newest saved release when the read changed: an entry applies to that sample and every older
+# one. Each is an exact path into `expected.json` and the PR that changed it; kept until a major bump deletes the
+# samples it applies to. `/dev-release`'s `data-migrator` adds them; a `release` test fails for one that covers nothing.
+READ_CHANGES: dict[str, tuple[tuple[str, str], ...]] = {
+    "0.1.0": (
+        ("status_summary.application.ghosted", "#87: no change for 45 days counts as no answer"),
+        ("status_summary.application.pending", "#87: no change for 45 days counts as no answer"),
+        ("status_summary.pass_rates.application.decided", "#87: no change for 45 days counts as no answer"),
+        ("status_summary.pass_rates.application.rate", "#87: no change for 45 days counts as no answer"),
+        ("status_summary.pass_rates.application.low", "#87: no change for 45 days counts as no answer"),
+        ("status_summary.pass_rates.application.high", "#87: no change for 45 days counts as no answer"),
+        ("status_summary.pipeline.above_threshold_by_status.applied", "#87: a match sent then set aside counts as applied"),
+        ("status_summary.pipeline.above_threshold_by_status.discarded", "#87: a match sent then set aside counts as applied"),
+    ),
+}
+
 _spec = importlib.util.spec_from_file_location("release_data", REPO_ROOT / "scripts" / "release_data.py")
 release_data = importlib.util.module_from_spec(_spec)
 sys.modules["release_data"] = release_data
@@ -28,7 +46,17 @@ _spec.loader.exec_module(release_data)
 def releases() -> list[Path]:
     """The saved release folders, oldest first."""
     found = [p for p in SAMPLES_DIR.iterdir() if p.is_dir()] if SAMPLES_DIR.is_dir() else []
-    return sorted(found, key=lambda p: tuple(int(part) for part in p.name.split(".")))
+    return sorted(found, key=lambda p: _version(p.name))
+
+
+def _version(name: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in name.split("."))
+
+
+def read_changes(sample: Path) -> list[str]:
+    """The `READ_CHANGES` paths that apply to *sample*: every entry keyed by its release or a newer one."""
+    have = _version(sample.name)
+    return [path for key, entries in READ_CHANGES.items() if _version(key) >= have for path, _ in entries]
 
 
 def listed_changes(folder: Path, steps: list[migrations.Step]) -> list[str]:
@@ -98,4 +126,4 @@ def check(sample: Path, home: Path, monkeypatch, *, profile_steps=None, jobs_ste
     if status is not None:
         return [f"the data was not upgraded: {status['state']}: {status['message']}"]
     expected = json.loads((sample / "expected.json").read_text(encoding="utf-8"))
-    return release_data.unlisted(release_data.differences(expected, now), changes)
+    return release_data.unlisted(release_data.differences(expected, now), changes + read_changes(sample))

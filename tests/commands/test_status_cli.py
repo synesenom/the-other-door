@@ -763,3 +763,30 @@ def test_status_summary_counts_a_match_sent_then_discarded_as_applied_not_set_as
     by_status = status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)["pipeline"]["above_threshold_by_status"]
 
     assert (by_status["applied"], by_status["discarded"]) == (1, 1)
+
+
+def _sent_with_scores(jobs_dir, rows):
+    for n, (score, steps) in enumerate(rows):
+        _write_status_posting(jobs_dir, "2026-07-01", "jobindex", f"job-{n}", score=score)
+        for step in steps:
+            CliRunner().invoke(cli, ["jobs", "status", f"job-{n}", step])
+
+
+def test_status_summary_shows_the_pass_rate_by_score_and_the_advice_when_it_separates(cli_env):
+    _sent_with_scores(cli_env.jobs_dir, [(0.9, ["applied", "interview:screening"])] * 5 + [(0.5, ["applied", "rejected"])] * 5)
+
+    text = result_text(CliRunner().invoke(cli, ["jobs", "summary"]))
+
+    assert "5/5 passed" in _line_with(text, "score ≥ 90%")
+    assert "0/5 passed" in _line_with(text, "below 90%")
+    assert "Matches near your minimum score led to an interview less often: consider raising it." in " ".join(text.split())
+
+
+def test_status_summary_shows_no_advice_when_the_bands_do_not_separate(cli_env):
+    _sent_with_scores(cli_env.jobs_dir, [(0.9, ["applied", "interview:screening"])] * 3 + [(0.9, ["applied", "rejected"])] * 2
+                      + [(0.5, ["applied", "interview:screening"])] * 3 + [(0.5, ["applied", "rejected"])] * 2)
+
+    text = result_text(CliRunner().invoke(cli, ["jobs", "summary"]))
+
+    assert "below 90%" in text
+    assert "consider raising it" not in " ".join(text.split())

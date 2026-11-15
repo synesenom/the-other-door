@@ -834,7 +834,11 @@ def status_summary() -> dict:
         not the ``ghosted`` standing: when above 0, call ``list_matches(ongoing=True)``, name the rows with
         ``no_answer`` and offer ``set_status`` ``ghosted``),
         "application": {"passed", "rejected", "ghosted", "withdrawn", "pending"}, "pass_rates":
-        {<stage>: {"passed", "decided", "rate", "low", "high"}}, "since_last_review":
+        {<stage>: {"passed", "decided", "rate", "low", "high"}}, "pass_rates_by_score": None |
+        {"split", "near_min", "top", "reading"} (the application pass rate of the sent applications scored at or
+        above a split near their median score, ``top``, and below it, ``near_min``, each like a ``pass_rates`` entry; None until each
+        has 5 decided; ``reading`` is ``"near_min_lower"`` only when the near-minimum range lies wholly below the top's:
+        say that raising ``min_score`` may help), "since_last_review":
         {"last_reviewed_at", "runs", "last_run", "new_matches",
         "site_failures"}, "in_progress": None | {"purpose", "pid",
         "started_at", "message", "done", "total", "site", "stage",

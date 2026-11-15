@@ -492,3 +492,108 @@ def test_is_sent_covers_applied_and_everything_after_it():
 
     assert all(is_sent(s) for s in ("applied", "interview:screening", "ghosted", "rejected", "offer"))
     assert not any(is_sent(s) for s in ("unapplied", "prepared", "discarded", None))
+
+
+def test_application_results_name_how_each_sent_application_went():
+    from datetime import timedelta
+
+    from door.core.tracker import application_outcomes, application_results
+
+    tracker = _ledger(["applied", "interview:screening"], ["applied"], ["prepared"], ["applied", "rejected"])
+    later = _at(1) + timedelta(days=60)
+
+    results = application_results(tracker, now=later)
+
+    assert results == {"job-0": "passed", "job-1": "ghosted", "job-3": "rejected"}
+    counts = application_outcomes(tracker, now=later)
+    assert counts == {"passed": 1, "rejected": 1, "ghosted": 1, "withdrawn": 0, "pending": 0}
+
+
+def _band_inputs(top, near):
+    """results and scores for (score, result) pairs: top ones at 0.9, near ones at 0.6."""
+    results, scores = {}, {}
+    for n, result in enumerate(top):
+        results[f"t{n}"], scores[f"t{n}"] = result, 0.9
+    for n, result in enumerate(near):
+        results[f"n{n}"], scores[f"n{n}"] = result, 0.6
+    return results, scores
+
+
+def test_score_bands_split_at_the_median_and_rate_each_band():
+    from door.core.tracker import pass_rate, score_bands
+
+    results, scores = _band_inputs(["passed"] * 5 + ["rejected"] * 1, ["passed"] * 1 + ["ghosted"] * 5)
+
+    bands = score_bands(results, scores)
+
+    assert bands["split"] == 0.9
+    assert bands["top"] == pass_rate({"passed": 5, "rejected": 1})
+    assert bands["near_min"] == pass_rate({"passed": 1, "ghosted": 5})
+    assert bands["reading"] == "near_min_lower"
+
+
+def test_score_bands_leave_out_jobs_with_no_score():
+    from door.core.tracker import score_bands
+
+    results, scores = _band_inputs(["passed"] * 5, ["rejected"] * 5)
+    for n, bad in enumerate((None, 0, 0.0)):
+        results[f"x{n}"] = "passed"
+        if bad is not None:
+            scores[f"x{n}"] = bad
+    results["x9"] = "passed"  # no posting at all
+
+    bands = score_bands(results, scores)
+
+    assert (bands["top"]["decided"], bands["near_min"]["decided"]) == (5, 5)
+
+
+def test_score_bands_need_five_decided_in_each_band():
+    from door.core.tracker import score_bands
+
+    results, scores = _band_inputs(["passed"] * 5, ["rejected"] * 4)
+    assert score_bands(results, scores) is None
+    results, scores = _band_inputs(["passed"] * 4, ["rejected"] * 5)
+    assert score_bands(results, scores) is None
+
+
+def test_score_bands_split_among_the_distinct_scores_as_evenly_as_possible():
+    from door.core.tracker import score_bands
+
+    results = {f"j{n}": "rejected" for n in range(7)} | {f"k{n}": "passed" for n in range(6)}
+    scores = {f"j{n}": 0.7 for n in range(7)} | {f"k{n}": 0.9 for n in range(6)}
+
+    bands = score_bands(results, scores)
+
+    assert bands["split"] == 0.9
+    assert (bands["top"]["decided"], bands["near_min"]["decided"]) == (6, 7)
+    # 4 at 0.5, 1 at 0.6, 4 at 0.7: splitting at 0.6 or at 0.7 is as even; the higher one wins
+    results = {f"j{n}": "passed" for n in range(9)}
+    scores = {f"j{n}": (0.5, 0.5, 0.5, 0.5, 0.6, 0.7, 0.7, 0.7, 0.7)[n] for n in range(9)}
+    assert score_bands(results, scores, min_decided=1)["split"] == 0.7
+
+
+def test_score_bands_with_one_distinct_score_are_none():
+    from door.core.tracker import score_bands
+
+    results = {f"j{n}": "passed" for n in range(12)}
+    assert score_bands(results, dict.fromkeys(results, 0.8)) is None
+
+
+def test_score_bands_have_no_reading_when_the_ranges_overlap_or_the_top_is_lower():
+    from door.core.tracker import score_bands
+
+    results, scores = _band_inputs(["passed"] * 3 + ["rejected"] * 3, ["passed"] * 2 + ["rejected"] * 4)
+    assert score_bands(results, scores)["reading"] is None
+    results, scores = _band_inputs(["passed"] * 1 + ["ghosted"] * 5, ["passed"] * 5 + ["rejected"] * 1)
+    bands = score_bands(results, scores)
+    assert bands is not None and bands["reading"] is None
+
+
+def test_score_bands_decide_only_passed_rejected_and_ghosted():
+    from door.core.tracker import score_bands
+
+    results, scores = _band_inputs(["passed"] * 5 + ["pending", "withdrawn"], ["rejected"] * 5 + ["pending"] * 2)
+
+    bands = score_bands(results, scores)
+
+    assert (bands["top"]["decided"], bands["near_min"]["decided"]) == (5, 5)

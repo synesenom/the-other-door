@@ -129,6 +129,40 @@ describe('Analytics', () => {
       expect(within(part).queryAllByRole('img')).toEqual([])
     })
 
+    describe('by score', () => {
+      const band = (passed: number, decided: number, low: number, high: number) => ({ passed, decided, rate: passed / decided, low, high })
+      const BANDS = { split: 0.75, top: band(5, 6, 0.6, 0.95), near_min: band(1, 6, 0.05, 0.35), reading: 'near_min_lower' }
+
+      it('shows both bands with their ranges and the reading when the server gives one', async () => {
+        mockDoor({ status_summary: summary({ ...APPLIED, pass_rates_by_score: BANDS, cost: null }) })
+        render(<Analytics />)
+        const part = await screen.findByRole('region', { name: 'Applications' })
+        expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview, likely between 60% and 95%.')
+        expect(part).toHaveTextContent('Matches near your minimum score: 1 of 6 led to an interview, likely between 5% and 35%.')
+        expect(within(part).getByText('Matches near your minimum score led to an interview less often: consider raising it.')).toBeInTheDocument()
+      })
+
+      it('shows the bands without a sentence when the reading is null', async () => {
+        mockDoor({ status_summary: summary({ ...APPLIED, pass_rates_by_score: { ...BANDS, reading: null }, cost: null }) })
+        render(<Analytics />)
+        const part = await screen.findByRole('region', { name: 'Applications' })
+        expect(part).toHaveTextContent('Best-scored matches: 5 of 6')
+        expect(within(part).queryByText(/consider raising it/)).toBeNull()
+      })
+
+      it('shows nothing about scores when the server sends none or there is no overall rate', async () => {
+        mockDoor({ status_summary: summary({ ...APPLIED, pass_rates_by_score: null, cost: null }) })
+        render(<Analytics />)
+        const part = await screen.findByRole('region', { name: 'Applications' })
+        expect(part).not.toHaveTextContent('minimum score')
+        cleanup()
+        mockDoor({ status_summary: summary({ pass_rates: { application: { passed: 0, decided: 0, rate: null, low: null, high: null } }, pass_rates_by_score: BANDS, cost: null }) })
+        render(<Analytics />)
+        const empty = await screen.findByRole('region', { name: 'Applications' })
+        expect(empty).not.toHaveTextContent('minimum score')
+      })
+    })
+
     it('before any outcome: no rate, a line saying when it shows', async () => {
       mockDoor({ status_summary: summary({ pass_rates: {}, cost: COST, plan: null }) })
       render(<Analytics />)

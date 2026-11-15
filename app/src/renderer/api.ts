@@ -84,6 +84,16 @@ export interface StatusSummary {
   plan?: PlanBlock | null
   /** Each stage's pass rate of the decided ones; `application`: the applications with an outcome that led to an interview. */
   pass_rates?: Record<string, PassRate>
+  /** The application pass rate of the better-scored and the near-minimum half (#90); null until each has enough outcomes. */
+  pass_rates_by_score?: ScoreBands | null
+}
+
+export interface ScoreBands {
+  split: number
+  top: PassRate
+  near_min: PassRate
+  /** Set only when the near-minimum range lies wholly below the top's. */
+  reading: 'near_min_lower' | null
 }
 
 export interface PassRate {

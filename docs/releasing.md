@@ -15,7 +15,7 @@ only after a person has installed it on a clean machine of each system and gone 
   `tests/data_versions/<X.Y.Z>/`, is copied to a temporary home, upgraded by the build's own steps and read back with
   the same tools (`show_profile`, `list_companies`, `list_matches`, `show` for each job, `status_summary`,
   `list_stories`); it must equal the `expected.json` the release itself wrote, apart from what a step lists in its
-  `changes`. A key the old release returned that is gone or different, and a stored shape that changed without a step,
+  `changes` and what `READ_CHANGES` (`tests/release_gate_utils.py`, #101) lists as a change in how the same data is read. A key the old release returned that is gone or different, and a stored shape that changed without a step,
   fail it: write the step (the `data-migrator` agent) and list what it changes on purpose. It stays out of the
   offline suite and CI, because between releases `main` may not read the last release's data until that step exists.
 - The dry run is green (#45): on the commit that carries the version bump, `gh workflow run release.yml --ref main`
