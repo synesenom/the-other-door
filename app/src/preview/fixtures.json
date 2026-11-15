@@ -1487,8 +1487,10 @@
     "work_permit": null,
     "status": "applied",
     "is_new": false,
-    "updated_at": "2026-10-25T18:04:12.319Z",
-    "rounds": []
+    "updated_at": "2026-09-22T18:04:12.319Z",
+    "rounds": [],
+    "no_answer": true,
+    "no_answer_days": 30
    }
   ]
  },

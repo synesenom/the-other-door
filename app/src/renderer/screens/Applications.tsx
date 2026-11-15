@@ -4,7 +4,7 @@ import { call, errorText } from '../api'
 import type { Document, Match, Opening, MatchesResult, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
 import { ImportDialog } from './ImportDialog'
-import { boardColumns, cardNote } from './board'
+import { boardColumns, cardNote, silence } from './board'
 import { ReadingPane } from './ReadingPane'
 import type { PaneView } from './ReadingPane'
 import { statusNotice } from './statusNotice'
@@ -24,7 +24,7 @@ function roundsText(dots: ('passed' | 'pending')[]): string {
 }
 
 /** One card: title, company, and when it moved, its interview rounds as dots, or how it ended. */
-function Card({ m, onOpen, onGhost }: { m: Match; onOpen: () => void; onGhost: () => void }) {
+function Card({ m, onOpen, onGhost, ghosting }: { m: Match; onOpen: () => void; onGhost: () => void; ghosting: boolean }) {
   const note = cardNote(m)
   return (
     <li className="board-card-item">
@@ -41,8 +41,8 @@ function Card({ m, onOpen, onGhost }: { m: Match; onOpen: () => void; onGhost: (
           </span>
         )}
       </button>
-      {m.no_answer && (
-        <button type="button" className="quiet board-card-ghost small" onClick={onGhost}>
+      {silence(m) !== null && (
+        <button type="button" className="quiet board-card-ghost small" onClick={onGhost} disabled={ghosting}>
           Mark ghosted
         </button>
       )}
@@ -69,6 +69,9 @@ export function Applications({
   const [view, setView] = useState<PaneView>('posting')
   const [initialDoc, setInitialDoc] = useState<Document | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  // the card being marked ghosted: its button waits for the answer
+  const [ghostingId, setGhostingId] = useState<string | null>(null)
+  const ghosting = useRef<string | null>(null)
   const [tick, setTick] = useState(0)
   const [importing, setImporting] = useState(false)
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null)
@@ -123,12 +126,21 @@ export function Applications({
     told(result, title)
   }
   // No answer for the tracker's 30 days: record it as ghosted, dated today.
+  // One call at a time: a second click before the answer would record ghosted twice.
   const markGhosted = (m: Match) => {
+    if (ghosting.current) return
+    ghosting.current = m.id
+    setGhostingId(m.id)
     setError(null)
-    call<SetStatusResult>('set_status', { job_id: m.id, status: 'ghosted' }).then(
-      (result) => told(result, m.title_en || m.title),
-      (e) => setError(errorText(e)),
-    )
+    call<SetStatusResult>('set_status', { job_id: m.id, status: 'ghosted' })
+      .then(
+        (result) => told(result, m.title_en || m.title),
+        (e) => setError(errorText(e)),
+      )
+      .finally(() => {
+        ghosting.current = null
+        setGhostingId(null)
+      })
   }
 
   // Preparing moves the job out of this list: it stays open while its application is on screen.
@@ -216,7 +228,7 @@ export function Applications({
                 </div>
                 <ul className="board-cards">
                   {c.rows.map((m) => (
-                    <Card key={m.id} m={m} onOpen={() => open(m.id)} onGhost={() => markGhosted(m)} />
+                    <Card key={m.id} m={m} onOpen={() => open(m.id)} onGhost={() => markGhosted(m)} ghosting={ghostingId === m.id} />
                   ))}
                 </ul>
               </section>

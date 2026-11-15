@@ -753,8 +753,10 @@ def list_matches(
     Returns:
         ``{"min_score", "last_reviewed_at", "matches": [{"id",
         "score", "title", "title_en", "company", "location", "status",
-        "is_new", "updated_at", "rounds"}, ...]}``, best first; ``updated_at`` is
-        when the status last changed, ``rounds`` the interview rounds ``[{"stage", "result"}]``. ``title_en`` is the English
+        "is_new", "updated_at", "rounds", "no_answer", "no_answer_days"}, ...]}``, best first; ``updated_at`` is
+        when the status last changed, ``rounds`` the interview rounds ``[{"stage", "result"}]``,
+        ``no_answer`` true for an application (applied or in an interview round) with no change for
+        ``no_answer_days`` days: say so, and offer ``set_status`` ``ghosted``. ``title_en`` is the English
         translation of a title in another language, else ``None``: show it
         next to the title. ``scored`` is how many postings the model has scored. ``weak`` is
         None, or, when no posting has ever reached the bar (default view only), ``{"matches": [the best

@@ -44,18 +44,22 @@ export function whenText(iso: string | null | undefined, now: Date = new Date())
 
 const ENDED: Record<string, string> = { rejected: 'rejected', ghosted: 'ghosted', discarded: 'withdrawn' }
 
+/** The server says when an application has had no answer, and for how many days (the tracker's one rule); else null. */
+export function silence(m: Match): string | null {
+  return m.no_answer && m.no_answer_days ? `no answer in ${m.no_answer_days} days` : null
+}
+
 /** Under a card's title and company: the interview rounds as dots (passed, or the one now) and a few words. */
 export function cardNote(m: Match, now: Date = new Date()): { dots: ('passed' | 'pending')[]; text: string | null } {
   const rounds = m.rounds ?? []
   const dots = rounds.filter((r) => r.result === 'passed' || r.result === 'pending').map((r) => r.result as 'passed' | 'pending')
   if (m.status in ENDED) return { dots: [], text: ENDED[m.status]! }
   if (m.status === 'offer') return { dots, text: 'offer' }
-  // The server says when an application has had no answer, and for how many days (the tracker's one rule).
-  const silence = m.no_answer && m.no_answer_days ? `no answer in ${m.no_answer_days} days` : null
+  const silent = silence(m)
   if (m.status.startsWith('interview:')) {
     const stage = rounds[rounds.length - 1]?.stage ?? m.status.slice('interview:'.length)
-    return { dots, text: silence ? `${stage} · ${silence}` : stage }
+    return { dots, text: silent ? `${stage} · ${silent}` : stage }
   }
-  if (silence && m.status === 'applied') return { dots: [], text: silence[0]!.toUpperCase() + silence.slice(1) }
+  if (silent && m.status === 'applied') return { dots: [], text: silent[0]!.toUpperCase() + silent.slice(1) }
   return { dots: [], text: whenText(m.updated_at, now) }
 }

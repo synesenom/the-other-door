@@ -142,6 +142,12 @@ describe('scenes', () => {
     await waitFor(() => expect(screen.getByRole('button', { name })).toHaveAttribute('aria-current', 'page'))
   })
 
+  it('applications shows a card with no answer and its Mark ghosted', async () => {
+    mount('applications')
+    expect(await screen.findByRole('button', { name: /^Accounting Manager/ })).toHaveTextContent('No answer in 30 days')
+    expect(screen.getByRole('button', { name: 'Mark ghosted' })).toBeInTheDocument()
+  })
+
   it('profile-stories lists the stories', async () => {
     mount('profile-stories')
     expect(await screen.findByRole('listitem', { name: 'Rebuilt the cash forecast at Acme Foods' })).toBeInTheDocument()

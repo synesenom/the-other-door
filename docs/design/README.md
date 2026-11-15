@@ -206,7 +206,9 @@ When it ends, a summary card replaces the button. With no new match it states th
 
 **Applications**: five columns, Prepared, Applied, Interviewing, Offer, Closed (rejected,
 ghosted, discarded), with plain cards (title, company, when). Interview rounds are dots
-on the card: ink = passed, accent ring = next. The board scrolls sideways in its own box
+on the card: ink = passed, accent ring = next. A card with no answer for the tracker's days
+says "No answer in 30 days" in place of when (an interview card after its stage), with a
+quiet "Mark ghosted" button under it, outside the card's own button. The board scrolls sideways in its own box
 on a narrow window.
 
 ![Applications board](screens/applications.png)
@@ -264,7 +266,8 @@ components; only the layout changes below the sidebar breakpoint (`size.sidebar-
 - **Finding jobs**: the same step rows, smaller (19 px step names); it says the run is on
   the computer running *The other door* and the phone can be locked.
 - **Applications**: the board becomes a grouped list (Offer, Interviewing, Applied,
-  Prepared; Closed collapsed at the end), the interview dots right-aligned on each row.
+  Prepared; Closed collapsed at the end), the interview dots right-aligned on each row; a row
+  with no answer keeps its note and its "Mark ghosted" under it.
 - Type steps down one size (titles 36 px, headings 19 px, the posting's score 48 px);
   body text stays 14–15 px.
 

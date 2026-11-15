@@ -103,6 +103,33 @@ describe('Applications', () => {
       await waitFor(() => expect(call.mock.calls.filter((c) => c[0] === 'list_matches').length).toBeGreaterThan(2))
     })
 
+    it('records it once however quickly it is clicked again', async () => {
+      stubNarrow(false)
+      const { call } = setup([silent], { set_status: () => new Promise(() => {}) })
+      render(<Applications />)
+      const ghost = await screen.findByRole('button', { name: 'Mark ghosted' })
+      await userEvent.click(ghost)
+      await userEvent.click(ghost)
+      expect(call.mock.calls.filter((c) => c[0] === 'set_status')).toHaveLength(1)
+    })
+
+    it('narrow: the grouped list says so and Mark ghosted records it', async () => {
+      stubNarrow(true)
+      const { call } = setup([silent, quiet], { set_status: { status: 'ghosted', current: 'ghosted' } })
+      render(<Applications />)
+      expect(await screen.findByRole('button', { name: /Silent job/ })).toHaveTextContent('No answer in 30 days')
+      await userEvent.click(screen.getByRole('button', { name: 'Mark ghosted' }))
+      expect(call).toHaveBeenCalledWith('set_status', { job_id: 'jobindex.2', status: 'ghosted' })
+    })
+
+    it('offers nothing when the server does not say how many days', async () => {
+      stubNarrow(false)
+      setup([match({ id: 'jobindex.7', title: 'Odd job', status: 'applied', no_answer: true })])
+      render(<Applications />)
+      await screen.findByRole('button', { name: /Odd job/ })
+      expect(screen.queryByRole('button', { name: 'Mark ghosted' })).toBeNull()
+    })
+
     it('shows the error when the server refuses', async () => {
       stubNarrow(false)
       setup([silent], {
