@@ -177,7 +177,19 @@ describe('uninstallFailures', () => {
     expect(f).toEqual([])
   })
 
-  it('does not check the folder off Windows', () => {
+  it('the .deb: fails when apt-get remove left the app folder under /opt, without waiting (it is synchronous) (#117)', () => {
+    const deb = installPlan('/d/the-other-door-0.1.1-linux-amd64.deb', 'linux', '/t')
+    let waits = 0
+    const f = uninstallFailures(deb, 'linux', { run: () => undefined, exists: (p) => p === '/opt/The other door', wait: () => { waits++ } })
+    expect([f, waits]).toEqual([['the uninstaller left /opt/The other door behind'], 0])
+  })
+
+  it('the .deb: clean when apt-get remove took the app folder', () => {
+    const deb = installPlan('/d/the-other-door-0.1.1-linux-amd64.deb', 'linux', '/t')
+    expect(uninstallFailures(deb, 'linux', { run: () => undefined, exists: () => false, wait: () => undefined })).toEqual([])
+  })
+
+  it('does not check the folder of an AppImage: teardown removes the throwaway folder it was copied into', () => {
     const f = uninstallFailures(plan({ kind: 'appimage', uninstall: [] }), 'linux', { run: () => undefined, exists: () => true, wait: () => undefined })
     expect(f).toEqual([])
   })

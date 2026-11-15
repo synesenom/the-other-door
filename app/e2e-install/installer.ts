@@ -182,6 +182,7 @@ export interface UninstallIo {
  * hands over to a temporary copy and returns at once, so the install folder (which it must remove) is polled for
  * up to 30 s before it counts as left behind. That folder is `root\app`, the installer's `/D=`, not `root`
  * itself: `root` is the test's own throwaway folder, which the uninstaller never touches and teardown removes.
+ * The .deb's folder under /opt is checked after `apt-get remove`, which returns only when it is done.
  */
 export function uninstallFailures(plan: Plan, platform: string, io: UninstallIo): string[] {
   const failures: string[] = []
@@ -195,6 +196,11 @@ export function uninstallFailures(plan: Plan, platform: string, io: UninstallIo)
   if (platform === 'win32' && plan.root) {
     const dir = win32.dirname(plan.executable)
     for (let i = 0; i < 30 && io.exists(dir); i++) io.wait(1000)
+    if (io.exists(dir)) failures.push(`the uninstaller left ${dir} behind`)
+  }
+  // the .deb: apt-get remove is synchronous, so its folder under /opt is checked once (#117)
+  if (plan.kind === 'deb') {
+    const dir = posix.dirname(plan.executable)
     if (io.exists(dir)) failures.push(`the uninstaller left ${dir} behind`)
   }
   return failures
