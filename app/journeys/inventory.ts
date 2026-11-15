@@ -32,7 +32,7 @@ export function journeyTests(source: string): JourneyTest[] {
     while (offset < lines.length && index > lines.slice(0, offset + 1).join('\n').length) offset++
     return offset
   }
-  for (const m of source.matchAll(/\btest(?:\.(skip|fixme|only))?\(\s*(['"`])((?:\\.|(?!\2).)*)\2/g)) {
+  for (const m of source.matchAll(/\btest(?:\.(skip|fixme|only|fail))?\(\s*(['"`])((?:\\.|(?!\2).)*)\2/g)) {
     const skipped = m[1] === 'skip' || m[1] === 'fixme' || skippedLines.has(lineAt(m.index!))
     tests.push({ title: m[3]!.replace(/\\(.)/g, '$1'), skipped })
   }
@@ -129,11 +129,37 @@ export function testFileRefs(line: string): string[] {
   return [...new Set(refs)].filter((p) => !/(?:^|\/)\./.test(p))
 }
 
+/**
+ * Whole journey titles (three words or more) written anywhere on a line without a ✓ right before them, a line with no
+ * ✓ at all included; a title inside a longer one that has its ✓ is that one's text. A line that means another journey's
+ * branch without claiming it describes it in words, not by its title.
+ */
+function titlesWithoutTick(line: string, tests: JourneyTest[]): string[] {
+  const ticked: [number, number][] = []
+  for (const t of tests) {
+    for (let at = line.indexOf(t.title); at >= 0; at = line.indexOf(t.title, at + 1)) {
+      if (/✓\s*$/.test(line.slice(0, at))) ticked.push([at, at + t.title.length])
+    }
+  }
+  const out: string[] = []
+  for (const t of tests) {
+    if (t.title.split(/\s+/).length < 3) continue
+    for (let at = line.indexOf(t.title); at >= 0; at = line.indexOf(t.title, at + 1)) {
+      const end = at + t.title.length
+      if (ticked.some(([s, e]) => s <= at && end <= e)) continue
+      out.push(t.title)
+      break
+    }
+  }
+  return out
+}
+
 /** Every reference in the inventories that names no running journey test or no file on disk, as `<file>:<line>: <what>`. */
 export function inventoryProblems(files: { name: string; text: string }[], tests: JourneyTest[], exists: (path: string) => boolean): string[] {
   const problems: string[] = []
   const namedWhole = new Set<string>()
   const shortenedAt = new Map<string, string>()
+  const unticked = new Set<string>()
   for (const { name, text } of files) {
     text.split('\n').forEach((line, i) => {
       const at = `${name}:${i + 1}`
@@ -145,8 +171,11 @@ export function inventoryProblems(files: { name: string; text: string }[], tests
         }
         if (r.whole) namedWhole.add(r.title!)
         else if (!shortenedAt.has(r.title!)) shortenedAt.set(r.title!, at)
-        for (const t of untickedTitles(ref, r.title!, tests)) problems.push(`${at}: "${t}" is a journey title without its ✓`)
+        for (const t of untickedTitles(ref, r.title!, tests)) unticked.add(t)
       }
+      for (const t of titlesWithoutTick(line, tests)) unticked.add(t)
+      for (const t of unticked) problems.push(`${at}: "${t}" is a journey title without its ✓`)
+      unticked.clear()
       for (const path of testFileRefs(line)) {
         if (!exists(path)) problems.push(`${at}: no test file ${path}`)
       }

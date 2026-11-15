@@ -25,8 +25,8 @@ Conventions used below:
 | Open Profile from the problem line "You have no CV yet" | `group "Needs you"` → `button "You have no CV yet"` (sidebar foot; wide window only) | Profile opens on the **CV** view (`start={view:'cv'}`) and remounts (key n+1). The line shows only when `show_profile.config` is non-null **and** `cv.exists === false`. It is not shown in demo mode. The example CV gets no line. | — ✓ the sidebar line opens the CV, which says there is none
 | Open Settings → Risky sources from Finding | Finding screen's "choose discovery" action (`discovery_unchosen` non-empty) | Settings opens scrolled to `#settings-risky` | — ✓ the sources never chosen are said under Discover, and Enable opens Settings on Risky sources
 | `onDraft` (CV view buttons) | see §4 | `setUpAgain()`: calls `show_profile`, then the onboarding wizard opens prefilled with Cancel available (config exists). If `show_profile` fails, **nothing happens** (silent). | — unit: `app/src/renderer/screens/CvEditor.test.tsx`; the silent show_profile failure is not tested (nothing on screen to assert)
-| `onSaved` (after a successful details Save) | — | App re-reads `show_profile` (sidebar lines, `discovery_unchosen`) and bumps `refreshKey`, which remounts Matches. **CV Save does not call it**, so the sidebar "You have no CV yet" line stays stale after the first CV is saved (until something else re-reads the profile). | — ✓ the sidebar line goes once the first CV is saved (BUG)
-| Leave Profile (any nav button, Find new jobs) | — | Profile unmounts. **Unsaved details and unsaved CV text are dropped silently.** There is no prompt. | — ✓ unsaved CV text survives a look at the details (BUG)
+| `onSaved` (after a successful details Save) | — | App re-reads `show_profile` (sidebar lines, `discovery_unchosen`) and bumps `refreshKey`, which remounts Matches. **CV Save does not call it**, so the sidebar "You have no CV yet" line stays stale after the first CV is saved (until something else re-reads the profile). | — ✓ the sidebar line goes once the first CV is saved
+| Leave Profile (any nav button, Find new jobs) | — | Profile unmounts. **Unsaved details and unsaved CV text are dropped silently.** There is no prompt. | — ✓ unsaved CV text survives a look at the details
 | Remote (phone) | — | Profile is never rendered (`current === 'Profile' && !remote`). Not reachable in Electron. | — not tested: unreachable in Electron (the phone never renders Profile)
 
 There is no gate into the wizard for an invalid config while the app runs. At launch, `config === null` opens the wizard (or remote-setup), so Profile's "could not be read" view is only reachable if config.json breaks **after** launch, or in the demo, where the wizard is not allowed.
@@ -40,8 +40,8 @@ Always present: `heading level 1 "Profile"`.
 ### 1.1 Details / CV switcher
 - `group "Part of the profile"` containing `button "Details"` and `button "CV"` (use exact). Each has `aria-pressed` true or false.
 - Click **CV**: `view='cv'`, which renders `CvEditor`. Profile's own state (form values, errors) is kept. — unit: `app/src/renderer/screens/Profile.test.tsx`
-- Click **Details**: `CvEditor` **unmounts**. Its unsaved text, open panels and any proposals are lost, and reopening re-runs `show_profile`. — ✓ unsaved CV text survives a look at the details (BUG)
-- The switcher is **only rendered** in the CV view and in the loaded Details view. It is **absent** in the Details load-error view, the spinner view and the invalid-config view, so from those views you cannot reach the CV except by leaving and re-entering through the sidebar CV line. — ✓ the CV can still be reached when the details cannot be read (BUG)
+- Click **Details**: `CvEditor` **unmounts**. Its unsaved text, open panels and any proposals are lost, and reopening re-runs `show_profile`. — ✓ unsaved CV text survives a look at the details
+- The switcher is **only rendered** in the CV view and in the loaded Details view. It is **absent** in the Details load-error view, the spinner view and the invalid-config view, so from those views you cannot reach the CV except by leaving and re-entering through the sidebar CV line. — ✓ the CV can still be reached when the details cannot be read
 
 ### 1.2 Details load states
 | State | Visible |
@@ -140,7 +140,7 @@ Discovery switches are not on Profile: they are how the app works, in Settings (
 - Success:
   - `show_profile` is re-read, the form resets to it, "Saved." shows and `onSaved()` fires. — ✓ Save writes the changed text, flag and number fields and nothing else (Matches' refresh: Matches area)
   - On disk, `profile/config.json` is rewritten as the **merged** config (`json.dumps(indent=2)`; the key order of the base config is kept and new keys are appended). — ✓ Save writes the changed text, flag and number fields and nothing else
-  - **Side effect:** `_init_core` first copies any missing `profile.example/` file into `profile/` (never config.json, story_bank.md or companies.json). If `profile/cv.md` is missing, a details Save **re-creates it as the example CV**. Verified: `copied: ["cv.md"]`. It also restores missing `cv.template.tex` and `cover-letter.template.tex`. So after a details Save, a "no CV" state turns into "example CV". — ✓ saving the details does not make up a CV (BUG)
+  - **Side effect:** `_init_core` first copies any missing `profile.example/` file into `profile/` (never config.json, story_bank.md or companies.json). If `profile/cv.md` is missing, a details Save **re-creates it as the example CV**. Verified: `copied: ["cv.md"]`. It also restores missing `cv.template.tex` and `cover-letter.template.tex`. So after a details Save, a "no CV" state turns into "example CV". — ✓ saving the details does not make up a CV
 - Failure: error lines are split by `fieldErrors`: — ✓ each refusal is said under its field, and nothing is written; ✓ a failing save says why above the form; the next one goes through; unit: `app/src/renderer/screens/Profile.test.tsx`
   - A line `^.+?: <key>[.sub] — <why>$` whose key is a known spec goes **under that field** as `p.field-error`. This is **not an alert**.
   - Everything else goes to the top as `ul role=alert` (one `li` per line).
@@ -150,7 +150,7 @@ Discovery switches are not on Profile: they are how the app works, in Settings (
 - A whole-model error (the path-exists check: `cv_content not found: /abs/...`, where `cv_template` or `cv_content` points to a missing **custom** path) has no key and no " — ", so it goes to the **general alert**. Default paths are restored by the copy step, so this needs a custom path. — not tested: unreachable from the form: a missing custom path already fails show_profile, so Details never renders
 - After a successful init_profile, if the follow-up `show_profile` fails, the page switches to the **load-error alert** even though the save went through. — unit: `app/src/renderer/screens/Profile.test.tsx`
 - `init_profile` takes **no ledger lock**, so it works during a run. — not tested: needs a run in progress (Finding area)
-- **Undo changes** does `setValues(saved)`. Glitch: CityField's internal `other` flag is **not** reset. After choosing "Other…" and then Undo, the select still shows "Other…" and "Your city" shows the saved city. — unit: `app/src/renderer/screens/Profile.test.tsx`; ✓ puts the city back after Other… (BUG)
+- **Undo changes** does `setValues(saved)`. Glitch: CityField's internal `other` flag is **not** reset. After choosing "Other…" and then Undo, the select still shows "Other…" and "Your city" shows the saved city. — unit: `app/src/renderer/screens/Profile.test.tsx`; ✓ puts the city back after Other…
 - **Unchosen discovery source:** `formValues` turns an absent `*_discovery` key into `false`. Ticking and then unticking is "no change", so it is not sent. **The Profile form cannot record "chosen: off"**, and the Finding screen's `discovery_unchosen` notice persists until the user saves it ticked once and then saves it unticked. — not covered by a journey
 
 ### 2.6 The search terms
@@ -182,8 +182,8 @@ See the search_keywords row above: nothing on screen; Claude proposes the terms 
 | own CV (the example CV too: it is never copied in, so no user has it) | no note | — | — ✓ opens on the CV as saved, with no note
 
 Other data-driven variants:
-- **CV exists but unreadable** (`text: null`, e.g. not UTF-8): the editor is empty, there is no note, and Save would overwrite it. — ✓ a cv.md that cannot be read as text is said, not shown as an empty CV (BUG)
-- **TODO gaps:** `CvEditor` passes no `onGap` to Markdown, so a `TODO` is **plain text** in the preview. There are no "to fill in" markers here (those exist only in the onboarding Review), and `todos.ts` has no effect in this area. — unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ the preview marks each gap to fill in (BUG: the caller expects gaps highlighted; they are plain text)
+- **CV exists but unreadable** (`text: null`, e.g. not UTF-8): the editor is empty, there is no note, and Save would overwrite it. — ✓ a cv.md that cannot be read as text is said, not shown as an empty CV
+- **TODO gaps:** `CvEditor` passes no `onGap` to Markdown, so a `TODO` is **plain text** in the preview. There are no "to fill in" markers here (those exist only in the onboarding Review), and `todos.ts` has no effect in this area. — unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ the preview marks each gap to fill in
 - **Config invalid** (config null): this view still loads. `show_profile` falls back to `profile/cv.md`. Expand sources become `[]`. — not tested: reachable only through the no-CV sidebar line with a config broken after launch
 
 ### 4.2 Editor / preview
@@ -197,7 +197,7 @@ Other data-driven variants:
   - `button "Undo changes"` shows only when dirty (disabled while saving) and restores the saved text. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
   - Status line: status "Saving…" while saving, then "Saved. The previous version is kept as cv.md.bak.", otherwise "Unsaved changes" when dirty. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak
 - **Save:** `save_cv({markdown: text})`, then `show_profile` again (the banner can disappear once the text is no longer the example; the editor resets to the file). — ✓ Save writes cv.md and keeps the previous one as cv.md.bak
-  - On disk: `profile/cv.md` = text; `profile/cv.md.bak` = the previous content (**only if a cv.md existed**; with no prior CV there is no .bak but the message still says it is kept); `profile/cv.draft.md` is deleted. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak (cv.draft.md deleted); unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ the first save does not speak of a backup (BUG)
+  - On disk: `profile/cv.md` = text; `profile/cv.md.bak` = the previous content (**only if a cv.md existed**; with no prior CV there is no .bak but the message still says it is kept); `profile/cv.draft.md` is deleted. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak (cv.draft.md deleted); unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ the first save does not speak of a backup
   - `save_cv` takes no lock.
 - **Save errors** (`alert` p.field-error in the save bar): — ✓ a failing save says why and keeps the text (through a tool fault; the empty-CV error is unreachable)
   - "the CV is empty; nothing was written" is **unreachable** (the button is disabled).
@@ -345,13 +345,13 @@ How the test world produces each part:
 
 **Surprises and bugs**
 1. **Enrich apply message bug.** The server returns `added` as a list, so the window says "Added [object Object],… to your CV." The unit test mocks a number. — not covered by a journey
-2. **A details Save re-creates a missing `cv.md` as the example CV** (and restores templates) through `_init_core`'s copy step. — ✓ saving the details does not make up a CV (BUG)
+2. **A details Save re-creates a missing `cv.md` as the example CV** (and restores templates) through `_init_core`'s copy step. — ✓ saving the details does not make up a CV
 3. **Bad number typed into "How close a match to show"** (or emptied) fails FastMCP argument validation. Four raw pydantic lines appear in the top alert instead of under the field. The other numeric fields go through `other` and get a clean under-field message. — not covered by a journey
-4. **Switching CV → Details unmounts CvEditor**, losing unsaved CV text. Leaving Profile loses everything. Neither prompts. — ✓ unsaved CV text survives a look at the details (BUG)
-5. **CV Save does not refresh App's profile**, so the "You have no CV yet" sidebar line stays stale. — ✓ the sidebar line goes once the first CV is saved (BUG)
+4. **Switching CV → Details unmounts CvEditor**, losing unsaved CV text. Leaving Profile loses everything. Neither prompts. — ✓ unsaved CV text survives a look at the details
+5. **CV Save does not refresh App's profile**, so the "You have no CV yet" sidebar line stays stale. — ✓ the sidebar line goes once the first CV is saved
 6. **Market "Add these titles"** does not refresh the Details form (stale values that a later details Save can overwrite). It also seeds an empty `search_keywords` with the role targets. — not covered by a journey; the seeding is right (the role targets are what an empty list searches for): unit: `tests/commands/test_market_cli.py`
 7. **The Profile form cannot record a discovery source as "chosen: off"**, so `discovery_unchosen` cannot be cleared by leaving it off. — not covered by a journey
-8. The Details error, spinner and invalid-config views have **no Details/CV switcher**. — ✓ the CV can still be reached when the details cannot be read (BUG)
+8. The Details error, spinner and invalid-config views have **no Details/CV switcher**. — ✓ the CV can still be reached when the details cannot be read
 
 **Unreachable from a real server or the UI**
 - The `path` field branch. — not tested: unreachable
@@ -364,10 +364,10 @@ How the test world produces each part:
 
 
 **Found by the journeys, not in the list above**
-- An unreadable (non-UTF-8) `cv.md` opens as an empty editor with no note — ✓ a cv.md that cannot be read as text is said, not shown as an empty CV (BUG)
-- Saving the first CV says "The previous version is kept as cv.md.bak." when there was none — ✓ the first save does not speak of a backup (BUG)
+- An unreadable (non-UTF-8) `cv.md` opens as an empty editor with no note — ✓ a cv.md that cannot be read as text is said, not shown as an empty CV
+- Saving the first CV says "The previous version is kept as cv.md.bak." when there was none — ✓ the first save does not speak of a backup
 - A Use these with no title words empties the saved title words — not covered by a journey
 - A Why? error is never cleared — not covered by a journey
 - A failed market report is never asked again — not covered by a journey
-- Undo after Other… leaves the select on Other… — ✓ puts the city back after Other… (BUG)
-- The CV preview marks no TODO gap — ✓ the preview marks each gap to fill in (BUG)
+- Undo after Other… leaves the select on Other… — ✓ puts the city back after Other…
+- The CV preview marks no TODO gap — ✓ the preview marks each gap to fill in

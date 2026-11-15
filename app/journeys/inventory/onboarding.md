@@ -64,7 +64,7 @@ SignIn states (main process `claude-login.ts`, pushed on IPC `door:claude-login`
 | idle / cancelled | `button "Sign in with Claude"` — unit: `app/src/main/claude-login.test.ts` |
 | starting | `status "Starting the sign-in…"` — not tested: lasts only while the main process asks doctor (well under a frame here) |
 | waiting | `status "Finish signing in in your browser. The other door waits here."`, `button "Open the sign-in page again"` (disabled until claude printed an `https://*.claude.ai|claude.com` URL, `canOpen`), `button "Cancel"`, `button "The page showed a code?"` → replaced by a form: `textbox "Sign-in code"` (label), `button "Send code"` (type submit; disabled while the box is blank; **Enter submits**). — ✓ a wrong code fails with claude’s reason…; unit: `app/src/renderer/screens/SignIn.test.tsx`; Open the sign-in page again… |
-| done (live) | `status "Checking the sign-in…"` and `onDone` → `doctor` — ✓ a sign-in claude reports done but doctor does not confirm says so instead of checking forever (BUG, expected fail) |
+| done (live) | `status "Checking the sign-in…"` and `onDone` → `doctor` — ✓ a sign-in claude reports done but doctor does not confirm says so instead of checking forever |
 | done carried from before this screen mounted (`stale`) | `alert` "claude said the sign-in worked, but The other door still can't see the sign-in." + `button "Try again"` — unit: `app/src/renderer/screens/SignIn.test.tsx` |
 | failed | `alert` "The sign-in didn't go through: <message>" + `button "Try again"` — ✓ a wrong code fails with claude’s reason, Try again and the right code signs in and moves on to the sources |
 | timeout (5 min, `LOGIN_TIMEOUT_MS`, not configurable) | `alert` "The sign-in waited five minutes for the browser and stopped." + `button "Try again"` — not tested: the five minutes are fixed in the main process; no journey waits five minutes |
@@ -79,7 +79,7 @@ Failure messages (`failed.message`), main-process wording:
 - the main process's `doctor` call throws → `The other door could not check claude: <e>`. — not tested: needs the server to die during the sign-in
 - Send code with a code that fails `^[A-Za-z0-9#_.~+/=-]{1,512}$` after trim (e.g. contains a space or `!`) or with no sign-in running → `alert` under the box: "That is not a sign-in code." (state stays waiting). — unit: `app/src/main/claude-login.test.ts`
 
-**Surprising branch:** if claude's login exits 0 ("Login successful") but `doctor` still says signed out (e.g. a stand-in whose `auth status` still prints `loggedIn:false`, or a `warn` login check), the screen stays on `status "Checking the sign-in…"` indefinitely: the stale message only appears when SignIn mounts with a `done` already there (leave the wizard and reopen it). Only "Check again" and Back remain. — ✓ a sign-in claude reports done but doctor does not confirm says so instead of checking forever (BUG, expected fail)
+**Surprising branch:** if claude's login exits 0 ("Login successful") but `doctor` still says signed out (e.g. a stand-in whose `auth status` still prints `loggedIn:false`, or a `warn` login check), the screen stays on `status "Checking the sign-in…"` indefinitely: the stale message only appears when SignIn mounts with a `done` already there (leave the wizard and reopen it). Only "Check again" and Back remain. — ✓ a sign-in claude reports done but doctor does not confirm says so instead of checking forever
 
 After the doctor says ready, the wizard shows Sources, "Step 1 of 3" current. — ✓ a wrong code fails with claude’s reason…; unit: `app/src/renderer/screens/onboarding/Connect.test.tsx`
 
@@ -89,7 +89,7 @@ After the doctor says ready, the wizard shows Sources, "Step 1 of 3" current. �
 
 Lead: redo "Your answers stay."; fresh none.
 
-From Google Drive (`FromDrive.tsx`, #616; a first set-up only, not in the sandbox or a redo): the quiet line "Already use The other door on another computer? `button "Bring my profile from Google Drive"`" under the title. Click → `connect_drive` (status "Finish signing in to Google in your browser…") then `sync_data` (status "Bringing your data from Google Drive…"); the button is off meanwhile. — unit: `app/src/renderer/screens/onboarding/FromDrive.test.tsx`
+From Google Drive (`FromDrive.tsx`, #616; a first set-up only, not in the sandbox or a redo): the quiet line "Already use The other door on another computer? `button "Bring my profile from Google Drive"`" under the title. Click → `connect_drive` (status "Finish signing in to Google in your browser. The other door waits here.") then `sync_data` (status "Bringing your data from Google Drive…"); the button is off meanwhile. — unit: `app/src/renderer/screens/onboarding/FromDrive.test.tsx`
 - A pull: the wizard ends on Matches with the pulled profile; no review, no `init_profile`, no run; Drive stays connected. — ✓ Bring my profile from Google Drive lands on Matches with the pulled profile: no review, no run
 - Nothing on Drive: `status` "There is nothing from The other door on your Google Drive yet. Go on below; …", Sources stays, nothing written. — ✓ says Drive has nothing yet and the onboarding goes on
 - A failure (e.g. Drive not configured in this build): `alert` with the reason, Sources stays. — ✓ says why, and the onboarding is still there
@@ -165,7 +165,7 @@ Save disabled (`p.onb-reason` beside it gives the first reason, in this order):
 3. "A valid email is needed." (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/` on the trimmed value) — unit: `app/src/renderer/screens/onboarding/Review.test.tsx`
 4. "A city is needed." — unit: `app/src/renderer/screens/onboarding/Review.test.tsx`; jonas’ CV names no city
 5. "Choose at least one language." — unit: `app/src/renderer/screens/onboarding/Review.test.tsx`
-6. "Choose at least one title." — unit: `app/src/renderer/screens/onboarding/Reading.test.tsx`; with every title unticked, Save says a title is needed
+6. "Choose at least one title." — unit: `app/src/renderer/screens/onboarding/Reading.test.tsx`; ✓ with every title unticked, Save says a title is needed
 7. "Your CV is needed: paste it above." (no CV text and no own `cv.md`; the example CV does not count) — unit: `app/src/renderer/screens/onboarding/reducer.test.ts`
 
 ### Part "You" (`region "You"`, `heading 2 "You"`)
