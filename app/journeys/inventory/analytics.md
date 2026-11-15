@@ -14,8 +14,14 @@ One `status_summary` {} call on opening, and one `market({save:false})` call fro
 - Nothing else: no bar of where each application stands (the Applications board's columns) and no split of the matches (the Matches list). — unit: `Analytics.test.tsx`; ✓ the same journey
 - No `pass_rates` in the summary: no section, no crash. — unit: `Analytics.test.tsx`
 
-## Claude usage (`region "Claude usage"`)
-- Branches (activities, singular, nothing in the window, before any call): — unit: `Analytics.test.tsx`; not covered by a journey, the world's Claude stand-in gives no usage to read
+## Claude usage (`region "Claude usage"`, `status_summary`'s `cost`, `core/usage.cost`)
+The world's stand-in claude prices each answer (`COST_USD` in `app/test/world/claude.py`: a scoring chunk $0.02, a title translation and a Market grouping $0.01, anything else $0.03; a failed call nothing), so a find in the world leaves a usage log to read.
+- Nothing yet (no call weighed, `cost` null): the muted line "What Claude's work costs shows here after your first search." — ✓ Claude usage: nothing before the first search, then what the search cost; unit: `Analytics.test.tsx`
+- A plan reading only (calls that reported the plan's windows but no `total_cost_usd`): `cost` stays null, the same line. — unit: `tests/core/test_usage_unit.py` (cost is None without a weight)
+- A week of calls: "≈ $<total>", the line "You don't pay this. Your Claude plan covers it. The last 7 days, estimated at API prices.", "About $<find> a search, $<prepare> an application" (each only when it can be sized), one bar (`img`, labelled with each activity's share), and per activity "<label> · <count> <what it did>" with its dollars and, when it has more than one, its features with theirs. — ✓ the same journey (≈ $0.04; $0.03 a search; Finding jobs · 3 postings scored, Scoring postings $0.02, Translating job titles $0.01; Everything else · 1 other request); unit: `Analytics.test.tsx`
+- Singular counts ("1 other request", "1 application prepared"). — ✓ the same journey ("1 other request"); unit: `Analytics.test.tsx`
+- Nothing in the last 7 days (older calls only): "Nothing in the last 7 days", no bar, no list. — unit: `Analytics.test.tsx`
+- Opening Analytics reads the summary and starts Market at once: a Market grouping call can land before or after the read, so what "Everything else" shows on that opening may lag one call; the next opening reads it all.
 
 ## Market (`region "Market"`, `Market.tsx`, always the last section)
 - Opening Analytics calls `market({save:false})` once, with the status "Counting the ads (new skill names may take one short Claude call)…" (timeout 180 s). Never asked again while the screen stays open. — ✓ counts the ads when Analytics opens, once, and writes no report

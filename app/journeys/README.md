@@ -26,7 +26,7 @@ Everything is door's own code except the edges that would leave the computer. Th
 | The network | `edges.py`: every non-local socket refused; `requests` answers from `world.json`'s `internet` | an URL that is not in `internet` is offline |
 | Job boards (`search`) | `edges.py`: one module per board, returning the world's `fresh` ads | `boards.<site>.fail` in world.json (the board records an error) |
 | Employer feeds (`follow`, `collect`) | `edges.py`: `feeds` (company → platform, entry, postings) | — |
-| `claude` | `claude.py`, first on PATH: sign-in, then every `-p` call by its system prompt (scores, titles, CV draft, keywords, enrich, gaps, revise, the tailor…) | `world.faults({ claude: { tailor: { fail: '…' } } })`, `delay_s`, `answer` |
+| `claude` | `claude.py`, first on PATH: sign-in, then every `-p` call by its system prompt (scores, titles, CV draft, keywords, enrich, gaps, revise, the tailor…), each answer priced at a fixed `total_cost_usd` per kind (`COST_USD`) so Analytics' Claude usage has a log to read | `world.faults({ claude: { tailor: { fail: '…' } } })`, `delay_s`, `answer` |
 | LaTeX | `tectonic.py`: real PDFs (pypdfium2), page count follows the text | a `.tex` containing `\worldfail` |
 | Google Drive | `edges.py`: a folder in the world plays the account; door's real sync logic runs over it | `world.faults({ drive: { upload: 'quota exceeded' } })` |
 | Phone tunnel | `edges.py`: a pretend tunnel | `world.faults({ phone: { start: { error: '…' } } })` |
