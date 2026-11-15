@@ -110,6 +110,21 @@ def _write_atomic(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
+_NOTE_RE = re.compile(r"^[ \t]*%[ \t]*(?:Keywords|Tailoring):.*$", re.MULTILINE)
+
+
+def _swap_head(old: str, new: str | None) -> str:
+    """The head to write: `new` (today's template) with the `% Keywords:` / `% Tailoring:` notes of `old` carried
+    over (just before \\begin{document}); `old` itself when there is no template head."""
+    if new is None or new == old:
+        return old
+    notes = [m.group(0) for m in _NOTE_RE.finditer(old) if m.group(0) not in new]
+    if not notes:
+        return new
+    cut = new.rfind("\\begin{document}")
+    return new[:cut] + "\n".join(notes) + "\n" + new[cut:]
+
+
 def _current_template_head(file: str, config: dict, profile_dir: Path) -> str | None:
     """The preamble of today's template for `file`, or None when it cannot be read or has no body."""
     key = "cv_template" if file == "cv" else "cover_letter_template"
@@ -200,7 +215,7 @@ def _revise_core(
         new_body = _clean_revised_body(answer)
 
         backup.write_text(original, encoding="utf-8")
-        new_head = current_head if current_head is not None else head
+        new_head = _swap_head(head, current_head)
         _write_atomic(tex_path, f"{new_head}\n{new_body}\n{tail}")
         outcome = "revised"
 

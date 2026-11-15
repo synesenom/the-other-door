@@ -87,7 +87,10 @@ if "\\worldfail" in tex:
     sys.stderr.write(f"error: {tex_path.name}:12: Undefined control sequence \\worldfail\n")
     sys.exit(1)
 
-body = tex.split("\\begin{document}", 1)[-1].split("\\end{document}", 1)[0]
+# The first \begin{document} not in a `%` comment (the shipped templates mention it in one).
+begin = re.search(r"^[^%\n]*?(\\begin\{document\})", tex, re.MULTILINE)
+body = tex[begin.end(1):] if begin else tex
+body = body.split("\\end{document}", 1)[0]
 blocks = []
 for para in re.split(r"\n\s*\n", body):
     heading = re.match(r"\s*\\(?:section|subsection)\*?\{(.*?)\}", para)
