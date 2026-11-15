@@ -27,7 +27,7 @@ Read `CLAUDE.md` and `docs/architecture.md`, then `git diff --stat <base_branch>
 
 Ask what the codebase would look like if this feature had been one of its founding principles. Look for:
 
-1. **An existing mechanism to widen.** The feature added a case, a flag, a sibling, or one copy per surface or kind (each scraper, tool, screen), where widening what exists upstream would serve them all: a registry (`SITES`, `discovery_sources.SOURCES`, `usage.FEATURES`, `stored.py`), a shared engine (`_scrape_core`, `_match_core`, `ledger_lock`, `claude_cli.ask`), a generic screen part, a config spec.
+1. **What already exists.** A new helper that does what an existing one does (`grep` for the same job under `src/door/core/`, `commands/_common.py`, `scrapers/sdk.py`, `app/src/renderer/`; name it by `file:line`); or the feature added a case, a flag, a sibling, or one copy per surface or kind (each scraper, tool, screen), where widening what exists upstream would serve them all: a registry (`SITES`, `discovery_sources.SOURCES`, `usage.FEATURES`, `stored.py`), a shared engine (`_scrape_core`, `_match_core`, `ledger_lock`, `claude_cli.ask`), a generic screen part, a config spec.
 2. **Special cases that a different shape would remove.** `if new_thing:` branches spread through existing functions, which a change of data model or of an interface would make the normal path.
 3. **Code the feature makes redundant.** Existing code that the new feature, done properly, would replace: an older mechanism now doing half of the same job, a workaround the feature supersedes.
 4. **The wrong home.** New code in a module whose job it is not, so its readers must know two things to understand one (CLAUDE.md "Code layout rules").
