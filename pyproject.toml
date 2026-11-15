@@ -1,6 +1,6 @@
 [project]
 name = "door"
-version = "0.1.0"
+version = "0.2.0"
 description = "Finding your next job, the way it should be."
 license = "MIT"
 authors = [
