@@ -24,6 +24,7 @@ LaTeX boundaries are processes, as they are for real. Every tool call is logged 
 import asyncio
 import functools
 import inspect
+import json
 import os
 import sys
 import time

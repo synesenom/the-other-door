@@ -69,7 +69,7 @@ app_tests() {   # $1: core | all — which journeys
 
 # The CLI journeys' stand-ins run on the Poetry interpreter.
 cli_journeys() {
-    DOOR_PYTHON="$(poetry run python -c 'import sys; print(sys.executable)')" \
+    DOOR_CLI_JOURNEYS_REQUIRED=1 DOOR_PYTHON="$(poetry run python -c 'import sys; print(sys.executable)')" \
         poetry run pytest -m cli_journeys -n 0 -p no:cacheprovider tests/cli_journeys "$@"
 }
 

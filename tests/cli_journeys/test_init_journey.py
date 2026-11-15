@@ -17,6 +17,8 @@ def test_init_then_the_first_find(world):
     world.script_prompts({"cv_sources": {"answer": world.info["cvFile"]}})
     code, out, err = world.door("init")
     assert code == 0, f"{out}\n{err}"
+    assert "Wrote profile/config.json." in out
+    assert "[1/5] search" in out and "[5/5] match" in out, out   # the first run it starts
 
     config = world.read("profile/config.json")
     assert config["name"] == world.persona["name"]

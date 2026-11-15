@@ -14,14 +14,20 @@ def world():
 
 
 def test_find_runs_the_five_steps(world):
+    runs = world.home / "jobs" / "runs"
+    log = runs / "latest.log"
+    before = set(runs.glob("2*.json"))
+    log_before = len(log.read_text(encoding="utf-8").splitlines()) if log.exists() else 0
     code, out, err = world.door("find")
     assert code == 0, f"{out}\n{err}"
-    for step in ("search", "discover", "follow", "collect", "match"):
-        assert step in out, out
-    records = sorted((world.home / "jobs" / "runs").glob("2*.json"))
-    assert records
-    assert "match" in world.read(f"jobs/runs/{records[-1].name}")
-    assert (world.home / "jobs" / "runs" / "latest.log").read_text(encoding="utf-8").strip()
+    for n, step in enumerate(("search", "discover", "follow", "collect", "match"), 1):
+        assert f"[{n}/5] {step}" in out, out
+    new = set(runs.glob("2*.json")) - before
+    assert len(new) == 1
+    record = world.read(f"jobs/runs/{new.pop().name}")
+    assert record["match"] is not None
+    assert record["search"] is not None
+    assert len(log.read_text(encoding="utf-8").splitlines()) == log_before + 1
 
 
 def test_jobs_show_names_the_posting(world):
@@ -49,4 +55,6 @@ def test_jobs_status_records_applied(world):
     entry = world.read("jobs/applications.json")[job]
     assert entry["status"] == "applied"
     assert entry["history"][-1]["status"] == "applied"
-    assert (world.home / "jobs" / "output" / job / "sent").is_dir()
+    sent = world.home / "jobs" / "output" / job / "sent"
+    assert (sent / "cv.pdf").exists() and (sent / "cover_letter.pdf").exists()
+    assert all(len(h) == 64 for h in entry["materials"].values()) and "cv.pdf" in entry["materials"]

@@ -78,6 +78,9 @@ class World:
 
 def build_world(persona: str = "mette", empty: bool = False) -> World:
     if reason := _skip_reason():
+        # In CI (or where the journeys are required: the workflow, `run-test.sh --cli-journeys|--release`) a skip would pass unseen.
+        if os.environ.get("CI") or os.environ.get("DOOR_CLI_JOURNEYS_REQUIRED") == "1":
+            pytest.fail(f"the CLI journeys cannot run here: {reason}", pytrace=False)
         pytest.skip(reason)
     cmd = ["npx", "tsx", "test/world/make-world.ts", persona, *(["--empty"] if empty else [])]
     out = subprocess.run(cmd, cwd=APP, capture_output=True, text=True, check=True, shell=IS_WINDOWS, encoding="utf-8")

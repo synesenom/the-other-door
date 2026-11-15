@@ -12,6 +12,10 @@ on:
       - "app/test/world/**"
       - "tests/cli_journeys/**"
       - "tests/cli_world.py"
+      - "tests/paths.py"
+      - "profile.example/**"
+      - "app/package.json"
+      - "app/package-lock.json"
       - "door"
       - "door.cmd"
       - "pyproject.toml"
@@ -36,6 +40,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
 
       - name: Set up (Linux)
         if: runner.os == 'Linux'
@@ -64,10 +73,20 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
+      # Python writes the path itself (no trailing carriage return from a Windows shell).
       - name: Point the world's stand-ins at the Poetry interpreter
         shell: bash
-        run: echo "DOOR_PYTHON=$(poetry run python -c 'import sys;print(sys.executable)')" >> "$GITHUB_ENV"
+        run: |
+          poetry run python -c "import os, sys; open(os.environ['GITHUB_ENV'], 'a').write('DOOR_PYTHON=' + sys.executable + '\n')"
+          grep -q '^DOOR_PYTHON=.' "$GITHUB_ENV" || { echo "DOOR_PYTHON is empty"; exit 1; }
+
+      # The unit tests of the world's edges, hook and scripted prompts: no other job runs them when only app/test/world changes.
+      - name: Unit tests of the test world
+        shell: bash
+        run: poetry run pytest -m "not cli_journeys" -n 0 -p no:cacheprovider tests/cli_journeys
 
       - name: CLI journeys
         shell: bash
+        env:
+          DOOR_CLI_JOURNEYS_REQUIRED: "1"
         run: poetry run pytest -m cli_journeys -n 0 -p no:cacheprovider tests/cli_journeys
