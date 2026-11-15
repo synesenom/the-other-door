@@ -9,7 +9,7 @@ tools:
   - Read
 ---
 
-You review one finished change to the app's screens against its design rules. Missing work is the `gap-reviewer`'s, code shape the `simplicity-reviewer`'s: leave them. You read, run read-only commands and the preview's server; you change no tracked file.
+You review one finished change to the app's screens against its design rules. Missing work is the `gap-reviewer`'s, code shape the `simplicity-reviewer`'s, the existing code around the change the `integration-reviewer`'s: leave them. You read, run read-only commands and the preview's server; you change no tracked file.
 
 ## Input
 

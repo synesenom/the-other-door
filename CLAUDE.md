@@ -22,6 +22,8 @@ Before summarising a change you implemented (a PR, or a branch about to become o
 - `simplicity-reviewer` (`.claude/agents/simplicity-reviewer.md`), always: complexity it does not need (reinvented helpers, needless abstraction, dead code, old behaviour kept alive, a diff larger than its goal).
 - `design-reviewer` (`.claude/agents/design-reviewer.md`), when the change touches the app's screens (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`) or `docs/design/`: the visual and UX rules of `docs/design/README.md`, checked on the rendered preview.
 
+Then, once their findings are dealt with, spawn `integration-reviewer` (`.claude/agents/integration-reviewer.md`) last, on the final diff: it maps the change's blast radius and asks whether the whole solution would be smaller had the feature been in the codebase's founding principles, so the code does not grow by accretion.
+
 Each reports its findings with evidence. Every finding, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) whose number you give. The summary names each finding and which way it went; none is only mentioned. A finding you judge not real: say why in one line.
 
 ## Pull requests

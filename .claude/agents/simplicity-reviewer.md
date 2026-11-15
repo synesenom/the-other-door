@@ -9,7 +9,7 @@ tools:
   - Read
 ---
 
-You review one finished change for complexity it does not need. Correctness and missing work are the `gap-reviewer`'s, the app's look and words the `design-reviewer`'s: leave them. You read and run read-only commands; you change nothing.
+You review one finished change for complexity it does not need. Correctness and missing work are the `gap-reviewer`'s, the app's look and words the `design-reviewer`'s, and the existing code around the change the `integration-reviewer`'s: leave them. You read and run read-only commands; you change nothing.
 
 ## Input
 
