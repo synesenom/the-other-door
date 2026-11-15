@@ -1,6 +1,6 @@
 # Inventory: Profile and CV (desktop app renderer)
 
-Sources read in full: `app/src/renderer/screens/{Profile,PageSections,SettingsFields,CvEditor,Markdown,Hint,Dialog,todos}.tsx|ts`, `profile-form/{form.ts,fields.json}`, `onboarding/parts.tsx` (ChipInput, CityField, TextField, FieldLabel), `Switch.tsx`, `Spinner.tsx`, `AppName.tsx`, `api.ts`, the Profile wiring in `App.tsx`, `app/src/main/{ipc.ts,door-server.ts}` (error envelopes, timeouts, path refusals), and the Python side: `commands/profile.py` (`_init_core`, `_save_cv_core`, `_show_profile_core`, `_profile_field_specs`, `_profile_options`), `core/profile_loader.py` (the `Profile` model and its error lines), `commands/{keywords,enrich,gaps,market,companies}.py`, `core/{companies,claude_cli,lock,skill_aliases,discovery_sources}.py`, `mcp_server.py` (`_tool_errors`, `_EXPECTED_ERRORS`).
+Sources read in full: `app/src/renderer/screens/{Profile,PageSections,SettingsFields,CvEditor,Markdown,Hint,Dialog,todos}.tsx|ts`, `profile-form/{form.ts,fields.json}`, `onboarding/parts.tsx` (ChipInput, CityField, TextField, FieldLabel), `Switch.tsx`, `Spinner.tsx`, `AppName.tsx`, `api.ts`, the Profile wiring in `App.tsx`, `app/src/main/{ipc.ts,door-server.ts}` (error envelopes, timeouts, path refusals), and the Python side: `commands/profile.py` (`_init_core`, `_save_cv_core`, `_show_profile_core`, `_profile_field_specs`, `_profile_options`), `core/profile_loader.py` (the `Profile` model and its error lines), `commands/{keywords,enrich,market,companies}.py`, `core/{companies,claude_cli,lock,skill_aliases,discovery_sources}.py`, `mcp_server.py` (`_tool_errors`, `_EXPECTED_ERRORS`).
 
 Conventions used below:
 - **alert** means `role="alert"`. **status** means `role="status"`, which is always the `Spinner`: `<p role=status>` holding the message.
@@ -184,7 +184,7 @@ See the search_keywords row above: nothing on screen; Claude proposes the terms 
 Other data-driven variants:
 - **CV exists but unreadable** (`text: null`, e.g. not UTF-8): the editor is empty, there is no note, and Save would overwrite it. — ✓ a cv.md that cannot be read as text is said, not shown as an empty CV (BUG)
 - **TODO gaps:** `CvEditor` passes no `onGap` to Markdown, so a `TODO` is **plain text** in the preview. There are no "to fill in" markers here (those exist only in the onboarding Review), and `todos.ts` has no effect in this area. — unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ the preview marks each gap to fill in (BUG: the caller expects gaps highlighted; they are plain text)
-- **Config invalid** (config null): this view still loads. `show_profile` falls back to `profile/cv.md`. Expand sources become `[]` and Gaps roles become `[]`. — not tested: reachable only through the no-CV sidebar line with a config broken after launch
+- **Config invalid** (config null): this view still loads. `show_profile` falls back to `profile/cv.md`. Expand sources become `[]`. — not tested: reachable only through the no-CV sidebar line with a config broken after launch
 
 ### 4.2 Editor / preview
 - Head: "Your CV" with an inline `button "Markdown"` (the cheatsheet), and on its right `switch "Preview"` (button role=switch, `aria-checked`). — unit: `app/src/renderer/screens/CvEditor.test.tsx`
@@ -243,11 +243,11 @@ Other data-driven variants:
 - **Clicking the scrim does not close.** There is no close (×) button. — not tested: the scrim: not pinned
 - Narrow: the width is `min(480px, 100vw − space-8)`.
 
-## 7. Markdown (Markdown.tsx), used by the CV preview and the Gaps report
+## 7. Markdown (Markdown.tsx), used by the CV preview
 
-- `#`…`######` render as headings **one level down**: h1→h2 (`display-s`), and h3–h6 use `md-heading`, capped at h6. — unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ makes a plan for the role targets (report headings)
+- `#`…`######` render as headings **one level down**: h1→h2 (`display-s`), and h3–h6 use `md-heading`, capped at h6. — unit: `app/src/renderer/screens/Markdown.test.tsx`
 - Blank lines separate paragraphs, and lines inside a paragraph are joined with a space.
-- `- * +` give `ul` items; `1.` or `1)` give `ol` items. A list item continues on lines indented by 2 spaces. — ✓ makes a plan for the role targets, shows it and saves it in upskill/
+- `- * +` give `ul` items; `1.` or `1)` give `ol` items. A list item continues on lines indented by 2 spaces. — unit: `app/src/renderer/screens/Markdown.test.tsx`
 - Inline formatting: `**bold**`, `*italic*`, `` `code` ``, `[label](url)`. Underscore emphasis and tables are not supported; table rows become paragraph text.
 - Links:
   - `http(s)` → `button "<label>"` (`.link-inline`); click calls `window.door.openExternal(url)`, which opens the system browser. Stub `shell.openExternal` in e2e. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
@@ -304,7 +304,7 @@ Variants to drive:
 - location in dk/hu/fr/se/other (which discovery switches show)
 - `languages` holding a code
 - `enrich_sources` (the pages above the CV, §4.3)
-- `role_targets` (Gaps prefill and the search terms proposed on Save)
+- `role_targets` (the search terms proposed on Save)
 
 ### init_profile (Details Save; Market's add titles is in analytics.md)
 - Reads only success or throw. `{config_path, copied:[rel paths]}`.
@@ -319,9 +319,6 @@ Variants to drive:
 ### enrich
 - Propose: `{ outcome: "proposed"|"nothing_new", urls, proposals: [{n, section, text, source}], unreachable: [str], proposals_path? }`. The window reads `proposals` and `unreachable` (each `?? []`).
 - Apply: `{ outcome: "applied", added: [{n,section,text,source}] /* LIST, window expects number */, cv_path, backup }`.
-
-### skill_gaps
-`{ report_path, report: str (Markdown), targets: [{kind,label,job_id?}], plan_items }`. The window reads `report` (`?? ''`) and `report_path` (basename shown).
 
 ### market (save:false)
 ```

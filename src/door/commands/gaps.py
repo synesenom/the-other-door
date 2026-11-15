@@ -1,8 +1,8 @@
 """`skill-gaps`: a prioritised, WebSearch-cited learning plan for the gaps between
 the CV and a target role or some matches, written to `upskill/report-<date>.md`.
 
-One `claude -p` call does the analysis and the searching; `/upskill` in a
-conversation and `skill-gaps` in a shell make the same call.
+One `claude -p` call does the analysis and the searching; the `skill_gaps` tool in a
+conversation and `cv gaps` in a shell make the same call.
 """
 
 import re

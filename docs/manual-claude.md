@@ -19,9 +19,8 @@ one review, written only after you confirm; then the first search starts. Each s
 `find_jobs`), so you can also ask for any one of them on its own: "here's my old CV, draft the new
 one", "what titles should I look for?", "expand my search keywords".
 
-Later, `/expand` adds to the CV what your public pages evidence (the `enrich` tool), and
-`/upskill` writes a learning plan for the gaps between your CV and a role or some matches
-(the `skill_gaps` tool) — see [Skills](skills.md).
+Later, `/expand` adds to the CV what your public pages evidence (the `enrich` tool) — see
+[Skills](skills.md).
 
 ## A typical review session
 
@@ -70,7 +69,7 @@ Things you can say:
   `min_score` below it), titles in your matches that no search keyword covers, and companies posting
   repeatedly (marked when you already follow them; `scored_companies=True` counts only scored ads). "Follow Pleo" on an unfollowed repeat employer → `add_company`. Then "make a plan for the top 3 gaps" → `skill_gaps` with those skills as targets;
   "add those titles" → after you confirm, `init_profile` with `search_keywords` (your current keywords plus those titles).
-- "What should I learn for the Trustpilot job?" (or `/upskill trustpilot`) → `skill_gaps` writes the learning plan
+- "What should I learn for the Trustpilot job?" → `skill_gaps` writes the learning plan
   (minutes).
 
 ## The MCP server behind it

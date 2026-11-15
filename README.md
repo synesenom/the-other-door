@@ -85,7 +85,7 @@ From then on, a session is a conversation:
 ![A review session in Claude Code: what's new, discard one, show the Head of Finance one, prepare it, done](docs/demo/claude.gif)
 
 The PDFs are in `jobs/output/<job_id>/`. The full list of things you can say, the skills
-(`/expand`, `/upskill`) and the MCP server behind it all: [*The other door* in Claude Code](docs/manual-claude.md).
+(`/expand`) and the MCP server behind it all: [*The other door* in Claude Code](docs/manual-claude.md).
 
 ### CLI
 
@@ -142,7 +142,7 @@ back to its source. You are responsible for the sites you configure (see [Job si
 | [*The other door* in Claude Code](docs/manual-claude.md) | Onboarding and a review session in a conversation: what you can say, the skills, and the MCP server behind it. |
 | [The desktop app](docs/manual-app.md) | Installing it, the first launch, every screen, where your data lives, updating and uninstalling. |
 | [*The other door* from the terminal](docs/manual-cli.md) | The same pipeline as shell commands: the walkthrough, every command and its options, scheduling. |
-| [Claude Code skills](docs/skills.md) | `/onboard`, `/expand`, `/upskill`, the developer skills and the agents. |
+| [Claude Code skills](docs/skills.md) | `/onboard`, `/expand`, the developer skills and the agents. |
 | [Configuration](docs/configuration.md) | `profile/config.json`: creating it, validation, every key. |
 | [Job sites](docs/job-sites.md) | Supported sites, per-company feeds, and the sources that find employers. |
 | [Adding a site or a country](docs/adding-a-site.md) | Adding the job boards of your country. |

@@ -1,5 +1,5 @@
 """`skill-gaps`: a skill-gap report for a role or some matches, written to
-upskill/report-<date>.md by one `claude -p` call — the core behind `/upskill`.
+upskill/report-<date>.md by one `claude -p` call — the core behind `cv gaps` and `skill_gaps`.
 
 Offline: `claude_cli.run` is replaced; nothing is searched.
 """

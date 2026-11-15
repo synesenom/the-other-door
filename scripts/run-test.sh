@@ -15,7 +15,7 @@
 #                            Serial (they pace requests per host) and not run
 #                            under coverage; the badge is left as-is.
 #
-#   ./scripts/run-test.sh --skills   The skills (/onboard, /expand, /upskill) and a review session run by the real model on
+#   ./scripts/run-test.sh --skills   The skills (/onboard, /expand) and a review session run by the real model on
 #                            the plan your `claude` is signed in to (no API key),
 #                            against the app's test world: nothing leaves the
 #                            computer. Run before a release (/dev-release does).

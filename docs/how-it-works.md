@@ -246,9 +246,8 @@ Working end to end. All ten scrapers are implemented with offline and live smoke
 runs as parallel `claude -p` calls against a fixed rubric (with a hand-labelled golden set
 as a live regression test); tailoring runs the tailor and reviewer agents headlessly through
 `prepare`; review, revision, status tracking, setup and `doctor` work from both the
-shell and a Claude Code conversation, and so does everything `/onboard`, `/expand` and
-`/upskill` do (`init`, whose wizard reads your sources, `cv titles`, `cv enrich`,
-`cv gaps`): every command is a tool with the same parameters, asserted by the test suite;
+shell and a Claude Code conversation, and so does everything `/onboard` and `/expand` do
+(`init`, whose wizard reads your sources, `cv titles`, `cv enrich`): every command is a tool with the same parameters, asserted by the test suite;
 editing a prepared CV or letter (`revise`) and closing a review session are conversation-only. What one surface still
 cannot do: a conversation cannot install it itself (`./scripts/setup.sh` and
 `claude auth login` come first; in a cloud session the `SessionStart` hook installs the
