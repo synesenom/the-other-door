@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, resourcesOf, signingCommands, uninstallFailures } from './installer'
+import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, resourcesOf, removeInstall, signingCommands, uninstallFailures } from './installer'
 import type { Plan } from './installer'
 
 const DIST = [
@@ -160,8 +160,49 @@ describe('uninstallFailures', () => {
     expect(f).toEqual([])
   })
 
+  it('carries on after a failed command and reports a folder left behind with it', () => {
+    const ran: string[] = []
+    const f = uninstallFailures(plan({ uninstall: [['a'], ['b']] }), 'win32', {
+      run: (argv) => { ran.push(argv[0]!); if (argv[0] === 'a') throw new Error('exit 2') },
+      exists: () => true,
+      wait: () => undefined,
+    })
+    expect(ran).toEqual(['a', 'b'])
+    expect(f).toEqual(['could not uninstall: a: exit 2', 'the uninstaller left C:\\root\\app behind'])
+  })
+
+  it('does not check the folder of a plan with no throwaway root', () => {
+    const f = uninstallFailures(plan({ root: null }), 'win32', { run: () => undefined, exists: () => true, wait: () => undefined })
+    expect(f).toEqual([])
+  })
+
   it('does not check the folder off Windows', () => {
     const f = uninstallFailures(plan({ kind: 'appimage', uninstall: [] }), 'linux', { run: () => undefined, exists: () => true, wait: () => undefined })
     expect(f).toEqual([])
+  })
+})
+
+describe('removeInstall', () => {
+  const plan: Plan = { kind: 'deb', install: [], executable: '/opt/x/x', uninstall: [['apt-get', 'remove']], root: null }
+  const io = (over: Partial<Parameters<typeof removeInstall>[3]>) => ({
+    run: () => undefined, exists: () => false, wait: () => undefined, rm: () => undefined, ...over,
+  })
+
+  it('removes the scratch folder and passes when the uninstall was clean', () => {
+    const removed: string[] = []
+    expect(() => removeInstall(plan, '/tmp/s', 'linux', io({ rm: (p) => { removed.push(p) } }))).not.toThrow()
+    expect(removed).toEqual(['/tmp/s'])
+  })
+
+  it('fails the run on a failed uninstall, after still removing the scratch folder', () => {
+    const removed: string[] = []
+    expect(() => removeInstall(plan, '/tmp/s', 'linux', io({ run: () => { throw new Error('exit 100') }, rm: (p) => { removed.push(p) } })))
+      .toThrow(/The uninstall failed:\ncould not uninstall: apt-get remove: exit 100/)
+    expect(removed).toEqual(['/tmp/s'])
+  })
+
+  it('keeps the uninstall failure in the message when removing the scratch folder fails too', () => {
+    expect(() => removeInstall(plan, '/tmp/s', 'linux', io({ run: () => { throw new Error('exit 100') }, rm: () => { throw new Error('EBUSY') } })))
+      .toThrow(/could not uninstall: apt-get remove: exit 100\ncould not remove \/tmp\/s: EBUSY/)
   })
 })

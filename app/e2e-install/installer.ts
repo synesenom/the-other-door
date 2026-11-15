@@ -180,7 +180,8 @@ export interface UninstallIo {
 /**
  * Run the plan's uninstall commands and return what went wrong (empty = clean). On Windows the NSIS uninstaller
  * hands over to a temporary copy and returns at once, so the install folder (which it must remove) is polled for
- * up to 30 s before it counts as left behind.
+ * up to 30 s before it counts as left behind. That folder is `root\app`, the installer's `/D=`, not `root`
+ * itself: `root` is the test's own throwaway folder, which the uninstaller never touches and teardown removes.
  */
 export function uninstallFailures(plan: Plan, platform: string, io: UninstallIo): string[] {
   const failures: string[] = []
@@ -197,4 +198,25 @@ export function uninstallFailures(plan: Plan, platform: string, io: UninstallIo)
     if (io.exists(dir)) failures.push(`the uninstaller left ${dir} behind`)
   }
   return failures
+}
+
+/**
+ * The install test's teardown after the app was installed: uninstall it, remove the throwaway folder `scratch` even
+ * when the uninstall failed, and throw when anything went wrong, which fails the Playwright run (#114).
+ */
+export function removeInstall(
+  plan: Plan,
+  scratch: string | undefined,
+  platform: string,
+  io: UninstallIo & { rm: (path: string) => void },
+): void {
+  const failures = uninstallFailures(plan, platform, io)
+  if (scratch) {
+    try {
+      io.rm(scratch)
+    } catch (e) {
+      failures.push(`could not remove ${scratch}: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+  if (failures.length) throw new Error(`The uninstall failed:\n${failures.join('\n')}`)
 }
