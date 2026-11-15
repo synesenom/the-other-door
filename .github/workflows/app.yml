@@ -4,11 +4,28 @@ name: App tests
 # and every journey (#121), which build the app and drive it against the real Python server, split
 # over four runners. So it runs when the app or the server's code changes, not for docs or Python
 # tests alone.
+# The paths are what the app, its build and the journeys read: the server's code and its agent prompts,
+# the example CV (journeys/helpers/profile.ts), the design tokens (gen-theme, before every build).
+# On main too, so two PRs green apart that break a journey together show at once.
 on:
   pull_request:
     paths:
       - "app/**"
       - "src/**"
+      - "profile.example/**"
+      - "docs/design/**"
+      - ".claude/agents/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/app.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "src/**"
+      - "profile.example/**"
+      - "docs/design/**"
+      - ".claude/agents/**"
       - "pyproject.toml"
       - "poetry.lock"
       - ".github/workflows/app.yml"
@@ -90,7 +107,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
 
     steps:
       - uses: actions/checkout@v7
@@ -130,9 +148,9 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
-      - name: Journeys ${{ matrix.shard }}/4
+      - name: Journeys ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         working-directory: app
-        run: xvfb-run -a npm run test:journeys -- --shard=${{ matrix.shard }}/4
+        run: xvfb-run -a npm run test:journeys -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           CI: "1"
 
@@ -140,7 +158,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: blob-report-${{ matrix.shard }}
+          name: blob-report-${{ matrix.shardIndex }}
           path: app/blob-report
           retention-days: 1
 
@@ -168,8 +186,11 @@ jobs:
           path: all-blob-reports
           merge-multiple: true
 
-      # The Playwright the journeys ran on, without installing the app's dependencies
+      # The Playwright the journeys ran on, without installing the app's dependencies. A report that will
+      # not merge (a registry hiccup, no shard got far enough to write one) never turns the run red:
+      # the shards' own results are the verdict.
       - name: Merge them
+        continue-on-error: true
         run: |
           version="$(node -p "require('./app/package.json').devDependencies['@playwright/test']")"
           npx -y -p "@playwright/test@$version" playwright merge-reports --reporter html all-blob-reports
@@ -183,3 +204,4 @@ jobs:
           name: journeys-report
           path: journeys-report
           retention-days: 7
+          if-no-files-found: ignore
