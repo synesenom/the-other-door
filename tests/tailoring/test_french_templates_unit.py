@@ -125,9 +125,9 @@ def test_french_link_text_keeps_its_colon(tmp_path):
 
 @needs_tex
 def test_french_header_links_keep_their_colons(tmp_path):
-    body = "\\selectlanguage{french}\n\\cvheader{A}{1}{a@x.fr}{x.fr/a:b}{C}\n\\section{Profil}\nTexte."
-    letter = "\\selectlanguage{french}\n\\letterheader{A}{1}{a@x.fr}{x.fr/a:b}{C}\n\\recipient{X}{Y}{Z}\nTexte.\n\\closing{A}"
+    body = "\\selectlanguage{french}\n\\cvheader{A}{1}{a@x.dk}{x.dk/a:b}{C}\n\\section{Profil}\nTexte."
+    letter = "\\selectlanguage{french}\n\\letterheader{A}{1}{a@x.dk}{x.dk/a:b}{C}\n\\recipient{X}{Y}{Z}\nTexte.\n\\closing{A}"
     _compile(tmp_path, body, letter)
     for name in ("cv", "cover_letter"):
         text = pdf_render.page_texts(tmp_path / "output" / "job-fr" / f"{name}.pdf")[0]
-        assert "x.fr/a:b" in text and " :b" not in text.replace("\u00a0", " ").replace("\u202f", " "), (name, text)
+        assert "x.dk/a:b" in text and " :b" not in text.replace("\u00a0", " ").replace("\u202f", " "), (name, text)
