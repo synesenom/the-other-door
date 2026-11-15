@@ -109,7 +109,7 @@ Discovery switches are not on Profile: they are how the app works, in Settings (
 
 | Key | Label | Control | Notes |
 |---|---|---|---|
-| enrich_sources | — | Not in the form: the CV part's pages (§4.3) remember and forget them | list | — | — ✓ the pages read before |
+| enrich_sources | — | Not in the form: the CV part's pages (§4.3) remember and forget them | list | — | — ✓ Check again reads them all and names the page of each proposal |
 
 
 **Never shown:** the `config`-section keys (cv_template, cv_content, cover_letter_template, recheck_after_days, scrape_workers, verify_liveness, liveness_expiry_phrases, dedup_*, max_postings_per_site, max_pages_per_keyword, condense_max_chars, prescreen_*, translate_titles, translate_model, revise_model). The `case 'path'` branch of `control()` ("Not set" / "Change it in profile/config.json.") is **unreachable** with the current fields.json, because every path key is in `config`. — ✓ opens on Details with every section and the saved values; the path branch: not tested, unreachable
@@ -151,7 +151,7 @@ Discovery switches are not on Profile: they are how the app works, in Settings (
 - After a successful init_profile, if the follow-up `show_profile` fails, the page switches to the **load-error alert** even though the save went through. — unit: `app/src/renderer/screens/Profile.test.tsx`
 - `init_profile` takes **no ledger lock**, so it works during a run. — not tested: needs a run in progress (Finding area)
 - **Undo changes** does `setValues(saved)`. Glitch: CityField's internal `other` flag is **not** reset. After choosing "Other…" and then Undo, the select still shows "Other…" and "Your city" shows the saved city. — unit: `app/src/renderer/screens/Profile.test.tsx`; ✓ puts the city back after Other… (BUG)
-- **Unchosen discovery source:** `formValues` turns an absent `*_discovery` key into `false`. Ticking and then unticking is "no change", so it is not sent. **The Profile form cannot record "chosen: off"**, and the Finding screen's `discovery_unchosen` notice persists until the user saves it ticked once and then saves it unticked. — ✓ can record it as off (BUG)
+- **Unchosen discovery source:** `formValues` turns an absent `*_discovery` key into `false`. Ticking and then unticking is "no change", so it is not sent. **The Profile form cannot record "chosen: off"**, and the Finding screen's `discovery_unchosen` notice persists until the user saves it ticked once and then saves it unticked. — not covered by a journey
 
 ### 2.6 The search terms
 
@@ -191,7 +191,7 @@ Other data-driven variants:
   - Off: `textbox "Your CV (Markdown)"` (textarea, spellcheck on). — ✓ opens on the CV as saved, with no note
   - On: rendered Markdown (`.markdown.cv-preview`, see §7). The preview is of the **current unsaved text**. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
 - Typing clears the "Saved…" message. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak
-- **Added lines:** after "Add N to my CV" (§4.4) each added bullet (`- <text>`) is tinted (`.md-added`, the `accent-tint` token): in the preview the list item, in the editor a tinted copy of the text behind the textarea (`.cv-backdrop`, scrolled with it). The first one is brought into view after the add and on each Preview switch. Typing or a Save clears the tint. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and shows them in the editor
+- **Added lines:** after "Add N to my CV" (§4.4) each added bullet (`- <text>`) is tinted (`.md-added`, the `accent-tint` token): in the preview the list item, in the editor a tinted copy of the text behind the textarea (`.cv-backdrop`, scrolled with it). The first one is brought into view after the add and on each Preview switch. Typing or a Save clears the tint. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor
 - Save bar:
   - `button "Save"` is disabled when the text is unchanged, a save is running, or the **text is empty or whitespace**. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
   - `button "Undo changes"` shows only when dirty (disabled while saving) and restores the saved text. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
@@ -229,17 +229,17 @@ Other data-driven variants:
 - Proposals: "What your CV does not have yet. Untick what should not go in.", then one `group` per CV section (a plain block named by the section, fixed gaps), a `checkbox` per proposal named by its text, all ticked. **Cancel**, **Add N to my CV** (primary; disabled at 0). — ✓ reads the page asked for…
 - `enrich` proposes nothing the CV already says, even in other punctuation, Markdown or near wording (the words compared, a line 90% alike), so a second read adds nothing twice. — unit: `tests/commands/test_enrich_cli.py`
 - Nothing on the page: "Nothing on that page is missing from your CV." and **Close**. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
-- Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and shows them in the editor
-- Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — ✓ a CV saved since the page was read is not overwritten; unit: `app/src/renderer/screens/CvEditor.test.tsx`
+- Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor
+- Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — not covered by a journey; unit: `app/src/renderer/screens/CvEditor.test.tsx`
 
 ---
 
 ## 6. Dialog (Dialog.tsx), used by Market (now in Analytics) and the CV pages
 
-- `role=dialog`, `aria-modal=true`, named by its `h2` title, inside `.scrim`. — ✓ asks first; Cancel and Escape keep the employer
-- Initial focus goes to the `initialFocus` selector if given, otherwise the first focusable element. Neither use here passes one, so focus goes to Cancel. — ✓ asks first; Cancel and Escape keep the employer
+- `role=dialog`, `aria-modal=true`, named by its `h2` title, inside `.scrim`. — ✓ Prepare again asks first…; unit: `app/src/renderer/screens/Dialog.test.tsx`
+- Initial focus goes to the `initialFocus` selector if given, otherwise the first focusable element. Neither use here passes one, so focus goes to Cancel. — ✓ Prepare again asks first…; unit: `app/src/renderer/screens/Dialog.test.tsx`
 - Tab on the last control wraps to the first; Shift+Tab on the first wraps to the last. — not tested: Tab wrapping: not pinned
-- Escape calls onClose and stops propagation. — ✓ asks first; Cancel and Escape keep the employer; ✓ Add these titles to my search asks first
+- Escape calls onClose and stops propagation. — ✓ Prepare again asks first…; unit: `app/src/renderer/screens/Dialog.test.tsx`
 - **Clicking the scrim does not close.** There is no close (×) button. — not tested: the scrim: not pinned
 - Narrow: the width is `min(480px, 100vw − space-8)`.
 
@@ -344,13 +344,13 @@ How the test world produces each part:
 - Failure and edge branches: about **75**, as enumerated above.
 
 **Surprises and bugs**
-1. **Enrich apply message bug.** The server returns `added` as a list, so the window says "Added [object Object],… to your CV." The unit test mocks a number. — ✓ Add says how many it added (BUG)
+1. **Enrich apply message bug.** The server returns `added` as a list, so the window says "Added [object Object],… to your CV." The unit test mocks a number. — not covered by a journey
 2. **A details Save re-creates a missing `cv.md` as the example CV** (and restores templates) through `_init_core`'s copy step. — ✓ saving the details does not make up a CV (BUG)
-3. **Bad number typed into "How close a match to show"** (or emptied) fails FastMCP argument validation. Four raw pydantic lines appear in the top alert instead of under the field. The other numeric fields go through `other` and get a clean under-field message. — ✓ a word for the minimum score is said plainly under its field (BUG)
+3. **Bad number typed into "How close a match to show"** (or emptied) fails FastMCP argument validation. Four raw pydantic lines appear in the top alert instead of under the field. The other numeric fields go through `other` and get a clean under-field message. — not covered by a journey
 4. **Switching CV → Details unmounts CvEditor**, losing unsaved CV text. Leaving Profile loses everything. Neither prompts. — ✓ unsaved CV text survives a look at the details (BUG)
 5. **CV Save does not refresh App's profile**, so the "You have no CV yet" sidebar line stays stale. — ✓ the sidebar line goes once the first CV is saved (BUG)
-6. **Market "Add these titles"** does not refresh the Details form (stale values that a later details Save can overwrite). It also seeds an empty `search_keywords` with the role targets. — ✓ titles added from the report show in the details (BUG); the seeding is right (the role targets are what an empty list searches for): unit: `tests/commands/test_market_cli.py`
-7. **The Profile form cannot record a discovery source as "chosen: off"**, so `discovery_unchosen` cannot be cleared by leaving it off. — ✓ can record it as off (BUG)
+6. **Market "Add these titles"** does not refresh the Details form (stale values that a later details Save can overwrite). It also seeds an empty `search_keywords` with the role targets. — not covered by a journey; the seeding is right (the role targets are what an empty list searches for): unit: `tests/commands/test_market_cli.py`
+7. **The Profile form cannot record a discovery source as "chosen: off"**, so `discovery_unchosen` cannot be cleared by leaving it off. — not covered by a journey
 8. The Details error, spinner and invalid-config views have **no Details/CV switcher**. — ✓ the CV can still be reached when the details cannot be read (BUG)
 
 **Unreachable from a real server or the UI**
@@ -366,8 +366,8 @@ How the test world produces each part:
 **Found by the journeys, not in the list above**
 - An unreadable (non-UTF-8) `cv.md` opens as an empty editor with no note — ✓ a cv.md that cannot be read as text is said, not shown as an empty CV (BUG)
 - Saving the first CV says "The previous version is kept as cv.md.bak." when there was none — ✓ the first save does not speak of a backup (BUG)
-- A Use these with no title words empties the saved title words — ✓ a proposal with no title words keeps the title words you have (BUG)
-- A Why? error is never cleared — ✓ a Why? that works after one that failed shows only the answer (BUG)
-- A failed market report is never asked again — ✓ a report that failed is asked again when reopened (BUG)
+- A Use these with no title words empties the saved title words — not covered by a journey
+- A Why? error is never cleared — not covered by a journey
+- A failed market report is never asked again — not covered by a journey
 - Undo after Other… leaves the select on Other… — ✓ puts the city back after Other… (BUG)
 - The CV preview marks no TODO gap — ✓ the preview marks each gap to fill in (BUG)
