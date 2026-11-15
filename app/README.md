@@ -4,7 +4,7 @@ An Electron shell over *The other door*'s MCP server, run from the checkout. Its
 **Matches** (the ranked list; a posting opened full width with
 "← Matches" and the previous and next match, "Prepare application", "Open in browser", "Status",
 "Not for me", "Add a job"; opening a match makes it seen), **Applications** (the board of jobs in play), **Profile** (the settings and
-the CV: the pages read for it, then the editor), **Settings** (connections, appearance, data moves, checks) and **Analytics** (Applications first: the interview rate of the applications with an outcome; then what Claude's work cost at API prices, per activity; then Market, the skills the ads ask for most; not on the phone); **Finding jobs** ("Find new
+the CV: the pages read for it, then the editor), **Settings** (connections, appearance, data moves, checks) and **Analytics** (Applications first: the interview rate of the applications with an outcome, and under it that rate for the better-scored and the near-minimum half of them; then what Claude's work cost at API prices, per activity; then Market, the skills the ads ask for most; not on the phone); **Finding jobs** ("Find new
 jobs": the five steps live, Stop, a summary card) takes the place of the page during a run, and a
 prepared job opens "Ready to send" (the pages, Revise and Undo). What each does is in
 [`../docs/manual-app.md`](../docs/manual-app.md). Below 900 px the sidebar becomes a tab bar, which steps aside while a posting is open. The visual design is in [`../docs/design/`](../docs/design/).

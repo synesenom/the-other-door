@@ -836,7 +836,7 @@ def status_summary() -> dict:
         "application": {"passed", "rejected", "ghosted", "withdrawn", "pending"}, "pass_rates":
         {<stage>: {"passed", "decided", "rate", "low", "high"}}, "pass_rates_by_score": None |
         {"split", "near_min", "top", "reading"} (the application pass rate of the sent applications scored at or
-        above their median score, ``top``, and below it, ``near_min``, each like a ``pass_rates`` entry; None until each
+        above a split near their median score, ``top``, and below it, ``near_min``, each like a ``pass_rates`` entry; None until each
         has 5 decided; ``reading`` is ``"near_min_lower"`` only when the near-minimum range lies wholly below the top's:
         say that raising ``min_score`` may help), "since_last_review":
         {"last_reviewed_at", "runs", "last_run", "new_matches",

@@ -526,7 +526,7 @@ def test_score_bands_split_at_the_median_and_rate_each_band():
 
     bands = score_bands(results, scores)
 
-    assert bands["split"] == 0.75
+    assert bands["split"] == 0.9
     assert bands["top"] == pass_rate({"passed": 5, "rejected": 1})
     assert bands["near_min"] == pass_rate({"passed": 1, "ghosted": 5})
     assert bands["reading"] == "near_min_lower"
@@ -556,7 +556,23 @@ def test_score_bands_need_five_decided_in_each_band():
     assert score_bands(results, scores) is None
 
 
-def test_score_bands_ties_at_the_median_go_to_the_top_and_an_empty_band_is_none():
+def test_score_bands_split_among_the_distinct_scores_as_evenly_as_possible():
+    from door.core.tracker import score_bands
+
+    results = {f"j{n}": "rejected" for n in range(7)} | {f"k{n}": "passed" for n in range(6)}
+    scores = {f"j{n}": 0.7 for n in range(7)} | {f"k{n}": 0.9 for n in range(6)}
+
+    bands = score_bands(results, scores)
+
+    assert bands["split"] == 0.9
+    assert (bands["top"]["decided"], bands["near_min"]["decided"]) == (6, 7)
+    # 4 at 0.5, 1 at 0.6, 4 at 0.7: splitting at 0.6 or at 0.7 is as even; the higher one wins
+    results = {f"j{n}": "passed" for n in range(9)}
+    scores = {f"j{n}": (0.5, 0.5, 0.5, 0.5, 0.6, 0.7, 0.7, 0.7, 0.7)[n] for n in range(9)}
+    assert score_bands(results, scores, min_decided=1)["split"] == 0.7
+
+
+def test_score_bands_with_one_distinct_score_are_none():
     from door.core.tracker import score_bands
 
     results = {f"j{n}": "passed" for n in range(12)}

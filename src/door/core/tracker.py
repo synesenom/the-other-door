@@ -54,7 +54,6 @@ all).
 
 import json
 import math
-import statistics
 from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -451,11 +450,21 @@ BAND_MIN_DECIDED = 5
 """Each score band needs this many decided applications before its rate is shown (#90)."""
 
 
+def _even_split(values: list[float]) -> float | None:
+    """The distinct value that splits ``values`` into ``>= split`` and ``< split`` of the most
+    equal sizes (the higher one on a tie); None below two distinct values."""
+    distinct = sorted(set(values))
+    if len(distinct) < 2:
+        return None
+    return min(distinct[1:], key=lambda split: (abs(sum(v >= split for v in values) * 2 - len(values)), -split))
+
+
 def score_bands(results: dict[str, str], scores: dict[str, float | None], min_decided: int = BAND_MIN_DECIDED) -> dict | None:
     """The application pass rate of the top and the near-minimum half of the scored applications (#90).
 
-    Splits ``results`` (:func:`application_results`) at the median of the positive ``scores``
-    (a job with no or zero score is left out): ``top`` is score at or above it, ``near_min`` below.
+    Splits ``results`` (:func:`application_results`) near the median of the positive ``scores``
+    (a job with no or zero score is left out), at the distinct score that makes the halves most equal
+    (the higher on a tie): ``top`` is score at or above it, ``near_min`` below.
 
     Returns:
         ``{"split", "near_min", "top", "reading"}``, each band a :func:`pass_rate`; ``reading`` is
@@ -463,9 +472,9 @@ def score_bands(results: dict[str, str], scores: dict[str, float | None], min_de
         else None. None when either band has fewer than ``min_decided`` decided applications.
     """
     scored = {job: scores[job] for job in results if scores.get(job)}
-    if not scored:
+    split = _even_split(list(scored.values()))
+    if split is None:
         return None
-    split = statistics.median(scored.values())
     top = dict.fromkeys(ROUND_RESULTS, 0)
     near = dict.fromkeys(ROUND_RESULTS, 0)
     for job, score in scored.items():

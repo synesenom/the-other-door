@@ -274,7 +274,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         `tracker.pass_rate` for ``application`` and then each interview stage
         (rate of the decided rounds with its one-sigma Wilson interval, None
         until one is decided); ``pass_rates_by_score`` is `tracker.score_bands` (#90): the application pass rate of the
-        sent applications scored at or above their median (``top``) and below it (``near_min``), None until each has
+        sent applications scored at or above a split near their median (``top``) and below it (``near_min``), None until each has
         5 decided, ``reading`` ``"near_min_lower"`` only when the near-minimum range lies wholly below the top's; ``standing`` is `tracker.standings` (where each sent application stands now); ``no_answer`` is how many applied or interviewing applications that `list_matches(ongoing=True)` lists have had no change for more than ``days`` days (`tracker.no_answer_count`, #92); ``since_last_review`` is `_since_last_review`'s dict;
         ``in_progress`` is None unless a run holds the ledger lock right now
         and has reported progress: ``{"purpose", "pid", "started_at",
@@ -327,7 +327,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "application": application,
         "pass_rates": {stage: _tracker_mod.pass_rate(counts) for stage, counts in stages.items()},
         "pass_rates_by_score": _tracker_mod.score_bands(
-            _tracker_mod.application_results(app_tracker), {p.get("id"): p.get("score") for p in postings}),
+            _tracker_mod.application_results(app_tracker), _first_scores(postings)),
         "standing": _tracker_mod.standings(app_tracker),
         "no_answer": {"count": _tracker_mod.no_answer_count(app_tracker, job_ids=ongoing_ids), "days": _tracker_mod.NO_ANSWER_DAYS},
         "in_progress": _in_progress(jobs_dir),
@@ -338,6 +338,16 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "plan": _plan_block(jobs_dir, records),
         "cost": usage.cost(jobs_dir, records=records),
     }
+
+
+def _first_scores(postings: list[dict]) -> dict[str, float]:
+    """``{job id: score}``, the first positive score of a job stored under several dates."""
+    scores: dict[str, float] = {}
+    for posting in postings:
+        score = posting.get("score")
+        if score and posting.get("id") not in scores:
+            scores[posting["id"]] = score
+    return scores
 
 
 def _plan_block(jobs_dir: Path, records: list[dict]) -> dict | None:
@@ -541,6 +551,18 @@ def _print_pipeline_status() -> None:
             rounds.add_row(stage, _pass_rate_text(rate), line)
         console.print(Padding(rounds, (0, 2)))
         console.print(Padding(Text("pass rate of the decided rounds (± one sigma, Wilson interval)", style="dim"), (0, 2)))
+        bands = result["pass_rates_by_score"]
+        if bands:
+            split = f"{bands['split']:.0%}"
+            by_score = Table.grid(padding=(0, 2))
+            by_score.add_column(no_wrap=True)
+            by_score.add_column(no_wrap=True)
+            by_score.add_row(f"score ≥ {split}", _pass_rate_text(bands["top"]))
+            by_score.add_row(f"below {split}", _pass_rate_text(bands["near_min"]))
+            console.print(Padding(by_score, (0, 2)))
+            if bands["reading"] == "near_min_lower":
+                console.print(Padding(Text(
+                    "Matches near your minimum score led to an interview less often: consider raising it.", style="yellow"), (0, 2)))
 
     employers = result["employers"]
     if any(employers.values()):
