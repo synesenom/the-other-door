@@ -222,7 +222,10 @@ def _render_matches_table(result: dict, *, title: str | None = None) -> None:
             headline.append(f" · {match['location']}", style="dim")
         cells = [common._score_text(match.get("score")), headline]
         if show_status:
-            cells.append(Text(match.get("status", "unapplied"), style="magenta"))
+            status_text = Text(match.get("status", "unapplied"), style="magenta")
+            if match.get("no_answer"):
+                status_text.append(f" · no answer in {match['no_answer_days']} days", style="yellow")
+            cells.append(status_text)
         table.add_row(*cells)
     console.print(table)
     if mark_new and any(m["is_new"] for m in matches):
@@ -292,7 +295,9 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
         history, `tracker.is_sent`). A sent application's materials are the copy taken when it was first
         sent (``output/<id>/sent/``), not the working files a later `revise` may have changed; without
         that copy, the working files. ``"salary"`` is the cached estimate (`salary.cached`: what
-        `prepare` found, #624) or None; `show` never asks for one.
+        `prepare` found, #624) or None; `show` never asks for one. ``"no_answer"`` is whether an applied
+        or interviewing job has been silent for more than ``"no_answer_days"`` days
+        (`tracker.NO_ANSWER_DAYS`, as in `list_matches`).
 
     Raises:
         ValueError: `job_id` is not a valid slug.
@@ -328,6 +333,8 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
         "history": app_tracker.timeline(job_id),
         "materials": materials,
         "salary": salary_cmd.cached(job_id, jobs_dir),
+        "no_answer": _tracker_mod.no_answer(app_tracker, job_id),
+        "no_answer_days": _tracker_mod.NO_ANSWER_DAYS,
     }
 
 
@@ -550,6 +557,8 @@ def _render_posting_detail(posting: dict, status: str, console=None, *, descript
     grid.add_column(overflow="fold")
     grid.add_row("Score", common._score_text(posting.get("score")))
     grid.add_row("Status", Text(status, style="bold magenta" if status != "unapplied" else "bold"))
+    if posting.get("no_answer"):
+        grid.add_row("", Text(f"No answer in {posting['no_answer_days']} days", style="yellow"))
     grid.add_row("Posted", _posted_text(posting.get("posted_at")))
     grid.add_row("Source", posting.get("source", ""))
     if "language" in posting:

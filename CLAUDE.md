@@ -186,6 +186,8 @@ and helps decide. Unless the user asks for something else:
    or little room; answer "can I prepare three more?" or "why did I hit my limit?" from it
    (`room`, `week`), saying it is an estimate as of `as_of`. Its `cost` block answers "what did
    that cost?": dollars at API prices per activity, an estimate and not a bill.
+   Its `no_answer` block counts applications with no answer in `days` days (`tracker.NO_ANSWER_DAYS`):
+   mention the count briefly.
 2. Then `list_matches(new_only=True)` (or plain `list_matches` if nothing is new, or the
    user wants everything). Present postings by title and company (with `title_en` next to
    a title in another language), never with numbers. The user names a job in their own
@@ -196,7 +198,10 @@ and helps decide. Unless the user asks for something else:
 3. Don't call `find_jobs` (it re-scrapes and re-scores) without the user's go-ahead.
    If a tool says
    "a run is in progress", tell the user and wait — don't retry in a loop.
-4. "show the Trustpilot one" → `show`; "not this one" → `set_status` `discarded` (their reason in `notes`); "prepare it" →
+4. A row with `no_answer` (from `list_matches(ongoing=True)`, or `show`): say it in words ("no answer in
+   `no_answer_days` days"), by title and company, and offer `set_status` `ghosted`, never unasked
+   (their words in `notes`).
+   "show the Trustpilot one" → `show`; "not this one" → `set_status` `discarded` (their reason in `notes`); "prepare it" →
    `prepare` ("prepare the best one": no `job_id`), then `show` and summarise its `materials` (keywords, what was tailored, page counts, letter length) with
    the PDF paths; `materials.unsupported` lists numbers, years, employers, skills, certifications and degrees in the CV or letter that `cv.md` and the story bank do not back, each with its context line: tell the user and offer `revise` to remove or fix them (never edit the `.tex`); `[]` is clean, `null` means not checked (no `cv.md`), and a sent status's `warning` may list them too; `materials.readability` (also `prepare`'s own `readability` and `warning`, after it retried the tailor once for a missing name, heading or keyword) lists what an ATS would not read back from the PDFs (`tailoring/readability.py`, pypdfium2 text: name, headings on their own line and in order, keywords, garbled or empty text; `[{file, kind, detail}]`, `[]` clean, `null` not checked): tell the user and offer `revise`; "tighten …" → `revise` (then `show` again); "undo" → `revise(undo=True)`.
    Change a prepared `.tex` only through `revise`, never with Write/Edit: `revise` recompiles

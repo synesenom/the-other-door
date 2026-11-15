@@ -399,6 +399,12 @@ def no_answer(tracker: ApplicationTracker, job_id: str, now: datetime | None = N
     return _silent(tracker, job_id, now if now is not None else _utcnow())
 
 
+def no_answer_count(tracker: ApplicationTracker, now: datetime | None = None) -> int:
+    """How many jobs :func:`no_answer` holds for, over the whole ledger (#92)."""
+    now = now if now is not None else _utcnow()
+    return sum(1 for job_id in tracker.job_ids() if no_answer(tracker, job_id, now))
+
+
 def _application_result(tracker: ApplicationTracker, job_id: str, now: datetime) -> str | None:
     """How one application went (a :data:`ROUND_RESULTS` key), or None if it was never sent."""
     statuses = [event.get("status") for event in tracker.history(job_id)]

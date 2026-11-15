@@ -807,6 +807,8 @@ def show(job_id: str, open: bool = False) -> dict:
         copy taken when it was sent (what the employer has), not ones a later
         ``revise`` changed. ``salary`` is the saved estimate (`salary_estimate`'s
         fields, from ``low`` to ``as_of``) or null; `show` never asks for one.
+        ``no_answer`` is true for an application (applied or in an interview round) with no change for
+        ``no_answer_days`` days: say so, and offer ``set_status`` ``ghosted``.
     """
     return matches_cmd._show_core(job_id, open=open, jobs_dir=workspace.JOBS_DIR)
 
@@ -827,7 +829,9 @@ def status_summary() -> dict:
         {<stage>: {"passed", "rejected", "ghosted", "withdrawn", "pending"}}, "standing":
         {"offer", "interviewing", "waiting", "rejected", "ghosted", "withdrawn"} (where each sent
         application stands now, each counted once; one with no change for 45 days (tracker.NO_ANSWER_DAYS) counts as ghosted, here
-        and in ``application``),
+        and in ``application``), "no_answer": {"count", "days"} (how many applied or interviewing
+        applications have had no change for more than ``days`` days, not the ``ghosted`` standing: name
+        them and offer ``set_status`` ``ghosted``),
         "application": {"passed", "rejected", "ghosted", "withdrawn", "pending"}, "pass_rates":
         {<stage>: {"passed", "decided", "rate", "low", "high"}}, "since_last_review":
         {"last_reviewed_at", "runs", "last_run", "new_matches",

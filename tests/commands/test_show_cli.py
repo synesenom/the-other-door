@@ -612,3 +612,41 @@ def test_show_carries_and_prints_the_reason_of_a_kept_item(cli_env, one_page):
     buf = StringIO()
     matches_cmd._render_materials(materials, Console(file=buf, width=120))
     assert "the ad says so" in buf.getvalue()
+
+
+def _track(cli_env, job_id, status, days_ago):
+    from datetime import datetime, timedelta, timezone
+
+    import door.core.tracker as tracker_mod
+    app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
+    app_tracker.set_status(job_id, status, now=datetime.now(tz=timezone.utc) - timedelta(days=days_ago))
+    app_tracker.save()
+
+
+def test_show_core_says_when_the_application_had_no_answer(cli_env):
+    from door.commands import matches as matches_cmd
+    import door.core.tracker as tracker_mod
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-old")
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-new")
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-none")
+    _track(cli_env, "job-old", "applied", tracker_mod.NO_ANSWER_DAYS + 5)
+    _track(cli_env, "job-new", "applied", 3)
+
+    old = matches_cmd._show_core("job-old", jobs_dir=cli_env.jobs_dir)
+    assert old["no_answer"] is True and old["no_answer_days"] == tracker_mod.NO_ANSWER_DAYS
+    for job_id in ("job-new", "job-none"):
+        assert matches_cmd._show_core(job_id, jobs_dir=cli_env.jobs_dir)["no_answer"] is False
+
+
+def test_show_prints_the_no_answer_line_only_for_a_silent_application(cli_env):
+    import door.core.tracker as tracker_mod
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-old")
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-new")
+    _track(cli_env, "job-old", "applied", tracker_mod.NO_ANSWER_DAYS + 5)
+    _track(cli_env, "job-new", "applied", 3)
+    line = f"No answer in {tracker_mod.NO_ANSWER_DAYS} days"
+
+    assert line in result_text(CliRunner().invoke(cli, ["jobs", "show", "job-old"]))
+    assert line not in result_text(CliRunner().invoke(cli, ["jobs", "show", "job-new"]))

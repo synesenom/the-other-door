@@ -384,6 +384,25 @@ def test_list_rows_say_when_an_application_had_no_answer_for_45_days(cli_env):
     assert all(row["no_answer_days"] == tracker_mod.NO_ANSWER_DAYS for row in rows.values())
 
 
+def test_list_ongoing_marks_an_application_with_no_answer(cli_env):
+    from datetime import datetime, timedelta, timezone
+
+    import door.core.tracker as tracker_mod
+
+    now = datetime.now(tz=timezone.utc)
+    app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
+    for job_id, title, days in (("job-old", "Silent Job", tracker_mod.NO_ANSWER_DAYS + 5), ("job-new", "Recent Job", 3)):
+        write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", job_id, score=0.9, title=title)
+        app_tracker.set_status(job_id, "applied", now=now - timedelta(days=days))
+    app_tracker.save()
+
+    text = " ".join(result_text(CliRunner().invoke(cli, ["jobs", "list", "--ongoing"])).split())
+    marker = f"no answer in {tracker_mod.NO_ANSWER_DAYS} days"
+
+    assert text.count(marker) == 1
+    assert f"applied · {marker}" in text
+
+
 # --------------------------------------------------------------------------- #
 # list_matches `scored` (issue #636)
 # --------------------------------------------------------------------------- #

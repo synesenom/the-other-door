@@ -233,6 +233,54 @@ def test_status_lists_the_ledger_counts(cli_env):
     assert "2" in _line_with(text, "applied")
 
 
+def _silent_ledger(cli_env, statuses):
+    from datetime import datetime, timedelta, timezone
+
+    import door.core.tracker as tracker_mod
+
+    cli_env.jobs_dir.mkdir(parents=True, exist_ok=True)
+    (cli_env.jobs_dir / "applications.json").unlink(missing_ok=True)
+    now = datetime.now(tz=timezone.utc)
+    app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
+    for n, (status, days) in enumerate(statuses):
+        app_tracker.set_status(f"job-{n}", status, now=now - timedelta(days=days))
+    app_tracker.save()
+
+
+def test_status_summary_counts_the_applications_with_no_answer(cli_env):
+    from door.commands import status as status_cmd
+    import door.core.tracker as tracker_mod
+
+    old = tracker_mod.NO_ANSWER_DAYS + 5
+    _silent_ledger(cli_env, [("applied", old), ("interview:screening", old), ("applied", 3),
+                             ("offer", old), ("rejected", old), ("prepared", old)])
+
+    result = status_cmd._status_summary_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
+    assert result["no_answer"] == {"count": 2, "days": tracker_mod.NO_ANSWER_DAYS}
+
+    _silent_ledger(cli_env, [])
+    result = status_cmd._status_summary_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
+    assert result["no_answer"]["count"] == 0
+
+
+def test_status_prints_the_count_of_applications_with_no_answer(cli_env):
+    import door.core.tracker as tracker_mod
+
+    days = tracker_mod.NO_ANSWER_DAYS
+    old = days + 5
+    _silent_ledger(cli_env, [("applied", old), ("applied", old)])
+    text = " ".join(result_text(CliRunner().invoke(cli, ["jobs", "summary"])).split())
+    assert f"2 applications with no answer in {days} days" in text
+    assert "jobs list --ongoing" in text and "jobs status" in text
+
+    _silent_ledger(cli_env, [("applied", old)])
+    text = " ".join(result_text(CliRunner().invoke(cli, ["jobs", "summary"])).split())
+    assert f"1 application with no answer in {days} days" in text
+
+    _silent_ledger(cli_env, [("applied", 3)])
+    assert "no answer" not in result_text(CliRunner().invoke(cli, ["jobs", "summary"]))
+
+
 def test_status_with_an_empty_ledger_says_so_in_one_line(cli_env):
     text = result_text(CliRunner().invoke(cli, ["jobs", "summary"]))
 
