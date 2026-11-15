@@ -51,25 +51,25 @@ describe('cardNote', () => {
   })
 
   it('applied and silent: says no answer, with the days the server sent', () => {
-    const m = match({ status: 'applied', updated_at: '2026-09-01T12:00:00Z', no_answer: true, no_answer_days: 30 })
-    expect(cardNote(m as never, NOW)).toEqual({ dots: [], text: 'No answer in 30 days' })
-    expect(cardNote({ ...m, no_answer_days: 45 } as never, NOW).text).toBe('No answer in 45 days')
+    const m = match({ status: 'applied', updated_at: '2026-09-01T12:00:00Z', no_answer: true, no_answer_days: 45 })
+    expect(cardNote(m as never, NOW)).toEqual({ dots: [], text: 'No answer in 45 days' })
+    expect(cardNote({ ...m, no_answer_days: 60 } as never, NOW).text).toBe('No answer in 60 days')
     expect(cardNote({ ...m, no_answer: false } as never, NOW).text).toMatch(/Sep|weeks/)
     expect(cardNote(match({ status: 'applied', updated_at: '2026-10-26T12:00:00Z' }) as never, NOW).text).toBe('4 days ago')
   })
 
   it('interviewing and silent: the dots and the round stay, then the silence', () => {
     const rounds = [{ stage: 'screening', result: 'passed' }, { stage: 'technical', result: 'pending' }]
-    const m = match({ status: 'interview:technical', rounds, no_answer: true, no_answer_days: 30 })
-    expect(cardNote(m as never, NOW)).toEqual({ dots: ['passed', 'pending'], text: 'technical · no answer in 30 days' })
+    const m = match({ status: 'interview:technical', rounds, no_answer: true, no_answer_days: 45 })
+    expect(cardNote(m as never, NOW)).toEqual({ dots: ['passed', 'pending'], text: 'technical · no answer in 45 days' })
     expect(cardNote({ ...m, no_answer: false } as never, NOW).text).toBe('technical')
   })
 
   it('offer, closed and prepared ignore the flag', () => {
     for (const status of ['offer', 'rejected', 'ghosted', 'discarded']) {
-      expect(cardNote(match({ status, no_answer: true, no_answer_days: 30 }) as never, NOW).text).not.toMatch(/answer/i)
+      expect(cardNote(match({ status, no_answer: true, no_answer_days: 45 }) as never, NOW).text).not.toMatch(/answer/i)
     }
-    expect(cardNote(match({ status: 'prepared', updated_at: '2026-10-26T12:00:00Z', no_answer: true, no_answer_days: 30 }) as never, NOW).text).toBe('4 days ago')
+    expect(cardNote(match({ status: 'prepared', updated_at: '2026-10-26T12:00:00Z', no_answer: true, no_answer_days: 45 }) as never, NOW).text).toBe('4 days ago')
   })
 
   it('offer: the rounds passed, then the word', () => {
