@@ -114,6 +114,8 @@ export function createUpdateManager(opts: {
   fetch: FetchLike
   log: (message: string) => void
   onState?: (result: UpdateResult) => void
+  /** Awaited before the app quits to install (the phone server is stopped there, #77); a rejection never stops the install. */
+  beforeInstall?: () => Promise<void>
   timeoutMs?: number
 }) {
   const { mode, current } = opts
@@ -166,8 +168,18 @@ export function createUpdateManager(opts: {
     return cached ?? unchecked()
   }
 
-  function install(): { ok: boolean } {
-    if (mode !== 'install' || !updater || !cached || !cached.enabled || !cached.checked || !cached.available || cached.state !== 'downloaded') return { ok: false }
+  /** True when quitting the app now installs a downloaded update (electron-updater's install on quit). */
+  function willInstallOnQuit(): boolean {
+    return mode === 'install' && Boolean(updater) && Boolean(cached && cached.enabled && cached.checked && cached.available && cached.state === 'downloaded')
+  }
+
+  async function install(): Promise<{ ok: boolean }> {
+    if (!updater || !willInstallOnQuit()) return { ok: false }
+    try {
+      await opts.beforeInstall?.()
+    } catch (e) {
+      opts.log(`before installing an update: ${e instanceof Error ? e.message : String(e)}`)
+    }
     updater.quitAndInstall()
     return { ok: true }
   }
@@ -178,7 +190,7 @@ export function createUpdateManager(opts: {
     return () => listeners.delete(listener)
   }
 
-  return { check, last: () => cached, install, subscribe }
+  return { check, last: () => cached, install, willInstallOnQuit, subscribe }
 }
 
 /** How often a running app looks again: one left open for days still learns of a release. */

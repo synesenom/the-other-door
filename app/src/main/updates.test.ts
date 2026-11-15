@@ -234,12 +234,56 @@ describe('createUpdateManager', () => {
   it('install(): restarts only when downloaded', async () => {
     const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
     const { m } = manager('install', updater)
-    expect(m.install()).toEqual({ ok: false })
+    expect(await m.install()).toEqual({ ok: false })
     await m.check()
-    expect(m.install()).toEqual({ ok: false })
+    expect(await m.install()).toEqual({ ok: false })
     updater.emit('update-downloaded', { version: '0.1.1' })
-    expect(m.install()).toEqual({ ok: true })
+    expect(await m.install()).toEqual({ ok: true })
     expect(updater.quitAndInstall).toHaveBeenCalledTimes(1)
+  })
+
+  it('install(): beforeInstall is awaited before quitAndInstall, and a rejection still installs', async () => {
+    for (const reject of [false, true]) {
+      const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
+      const order: string[] = []
+      updater.quitAndInstall.mockImplementation(() => void order.push('install'))
+      const m = createUpdateManager({
+        mode: 'install',
+        current: '0.1.0',
+        updater: updater as any,
+        fetch: vi.fn() as any,
+        log: vi.fn(),
+        beforeInstall: async () => {
+          await new Promise((r) => setTimeout(r, 5))
+          order.push('before')
+          if (reject) throw new Error('x')
+        },
+      })
+      await m.check()
+      updater.emit('update-downloaded', { version: '0.1.1' })
+      expect(await m.install()).toEqual({ ok: true })
+      expect(order).toEqual(['before', 'install'])
+    }
+  })
+
+  it('install(): beforeInstall is not called when nothing is downloaded', async () => {
+    const beforeInstall = vi.fn(async () => undefined)
+    const m = createUpdateManager({ mode: 'install', current: '0.1.0', updater: fakeUpdater() as any, fetch: vi.fn() as any, log: vi.fn(), beforeInstall })
+    expect(await m.install()).toEqual({ ok: false })
+    expect(beforeInstall).not.toHaveBeenCalled()
+  })
+
+  it('willInstallOnQuit: only in install mode with a downloaded update', async () => {
+    const updater = fakeUpdater((emit) => emit('update-available', { version: '0.1.1' }))
+    const { m } = manager('install', updater)
+    expect(m.willInstallOnQuit()).toBe(false)
+    await m.check()
+    expect(m.willInstallOnQuit()).toBe(false)
+    updater.emit('update-downloaded', { version: '0.1.1' })
+    expect(m.willInstallOnQuit()).toBe(true)
+    const link = manager('link').m
+    await link.check()
+    expect(link.willInstallOnQuit()).toBe(false)
   })
 
   it('a downloaded update is not checked again', async () => {
@@ -256,7 +300,7 @@ describe('createUpdateManager', () => {
     expect(await m.check()).toMatchObject({ enabled: true, mode: 'link', checked: true, available: true, version: '0.1.1', state: 'idle', url: 'https://github.com/o/r/releases/tag/v0.1.1' })
     expect(updater.checkForUpdates).not.toHaveBeenCalled()
     expect(updater.autoDownload).toBe(false)
-    expect(m.install()).toEqual({ ok: false })
+    expect(await m.install()).toEqual({ ok: false })
     expect(RELEASES_LATEST).toMatch(/^https:\/\/api\.github\.com\//)
     expect(fetch).toBeDefined()
   })
