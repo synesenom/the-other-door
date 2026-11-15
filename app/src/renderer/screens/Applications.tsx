@@ -24,7 +24,7 @@ function roundsText(dots: ('passed' | 'pending')[]): string {
 }
 
 /** One card: title, company, and when it moved, its interview rounds as dots, or how it ended. */
-function Card({ m, onOpen }: { m: Match; onOpen: () => void }) {
+function Card({ m, onOpen, onGhost }: { m: Match; onOpen: () => void; onGhost: () => void }) {
   const note = cardNote(m)
   return (
     <li className="board-card-item">
@@ -41,6 +41,11 @@ function Card({ m, onOpen }: { m: Match; onOpen: () => void }) {
           </span>
         )}
       </button>
+      {m.no_answer && (
+        <button type="button" className="quiet board-card-ghost small" onClick={onGhost}>
+          Mark ghosted
+        </button>
+      )}
     </li>
   )
 }
@@ -108,11 +113,22 @@ export function Applications({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opening?.n])
 
-  const changed = (result: SetStatusResult, title: string) => {
+  const told = (result: SetStatusResult, title: string) => {
     setNotice({ text: statusNotice(result.current ?? result.status, title), warning: result.warning })
+    refresh()
+  }
+  const changed = (result: SetStatusResult, title: string) => {
     setPushed(false)
     setView('posting')
-    refresh()
+    told(result, title)
+  }
+  // No answer for the tracker's 30 days: record it as ghosted, dated today.
+  const markGhosted = (m: Match) => {
+    setError(null)
+    call<SetStatusResult>('set_status', { job_id: m.id, status: 'ghosted' }).then(
+      (result) => told(result, m.title_en || m.title),
+      (e) => setError(errorText(e)),
+    )
   }
 
   // Preparing moves the job out of this list: it stays open while its application is on screen.
@@ -200,7 +216,7 @@ export function Applications({
                 </div>
                 <ul className="board-cards">
                   {c.rows.map((m) => (
-                    <Card key={m.id} m={m} onOpen={() => open(m.id)} />
+                    <Card key={m.id} m={m} onOpen={() => open(m.id)} onGhost={() => markGhosted(m)} />
                   ))}
                 </ul>
               </section>

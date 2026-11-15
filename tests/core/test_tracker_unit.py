@@ -347,6 +347,40 @@ def test_an_application_with_no_change_for_30_days_counts_as_ghosted():
         "offer": 0, "interviewing": 1, "waiting": 0, "rejected": 0, "ghosted": 1, "withdrawn": 0}
 
 
+def test_no_answer_is_an_applied_or_interview_card_silent_for_more_than_30_days():
+    from datetime import timedelta
+
+    from door.core.tracker import NO_ANSWER_DAYS, no_answer
+
+    tracker = _ledger(["applied"], ["applied", "interview:screening"], ["prepared"], ["applied", "offer"],
+                      ["applied", "rejected"], ["applied", "ghosted"], ["applied", "discarded"])
+    later = _at(1) + timedelta(days=NO_ANSWER_DAYS + 10)
+
+    assert no_answer(tracker, "job-0", later) is True
+    assert no_answer(tracker, "job-1", later + timedelta(days=1)) is True
+    for n in (2, 3, 4, 5, 6):
+        assert no_answer(tracker, f"job-{n}", later + timedelta(days=5)) is False, n
+
+
+def test_no_answer_waits_for_more_than_30_days_and_reads_the_last_event():
+    from datetime import timedelta
+
+    from door.core.tracker import no_answer
+
+    tracker = _ledger(["applied"])
+    assert no_answer(tracker, "job-0", _at(1) + timedelta(days=30)) is False
+    assert no_answer(tracker, "job-0", _at(1) + timedelta(days=31)) is True
+
+
+def test_no_answer_is_false_for_an_unknown_job_and_for_a_recent_one_on_the_default_clock():
+    from door.core.tracker import no_answer
+
+    tracker = _ledger()
+    assert no_answer(tracker, "job-missing", _at(30)) is False
+    tracker.set_status("job-new", "applied")
+    assert no_answer(tracker, "job-new") is False
+
+
 def test_the_pass_rate_counts_only_decided_rounds_with_a_one_sigma_binomial_interval():
     from door.core.tracker import pass_rate
 

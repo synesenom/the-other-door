@@ -50,6 +50,12 @@ export function cardNote(m: Match, now: Date = new Date()): { dots: ('passed' | 
   const dots = rounds.filter((r) => r.result === 'passed' || r.result === 'pending').map((r) => r.result as 'passed' | 'pending')
   if (m.status in ENDED) return { dots: [], text: ENDED[m.status]! }
   if (m.status === 'offer') return { dots, text: 'offer' }
-  if (m.status.startsWith('interview:')) return { dots, text: rounds[rounds.length - 1]?.stage ?? m.status.slice('interview:'.length) }
+  // The server says when an application has had no answer, and for how many days (the tracker's one rule).
+  const silence = m.no_answer && m.no_answer_days ? `no answer in ${m.no_answer_days} days` : null
+  if (m.status.startsWith('interview:')) {
+    const stage = rounds[rounds.length - 1]?.stage ?? m.status.slice('interview:'.length)
+    return { dots, text: silence ? `${stage} · ${silence}` : stage }
+  }
+  if (silence && m.status === 'applied') return { dots: [], text: silence[0]!.toUpperCase() + silence.slice(1) }
   return { dots: [], text: whenText(m.updated_at, now) }
 }

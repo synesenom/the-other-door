@@ -379,7 +379,8 @@ def interview_outcomes(tracker: ApplicationTracker) -> dict[str, dict[str, int]]
 
 NO_ANSWER_DAYS = 30
 """An application with no change for this many days counts as ghosted when the outcomes are read (#87):
-most employers answer within two or three weeks, and few users mark a silence by hand. Nothing is written."""
+most employers answer within two or three weeks, and few users mark a silence by hand. Nothing is written here;
+the Applications board marks such a card and offers to record it as ghosted (#89)."""
 
 
 def _silent(tracker: ApplicationTracker, job_id: str, now: datetime) -> bool:
@@ -387,6 +388,14 @@ def _silent(tracker: ApplicationTracker, job_id: str, now: datetime) -> bool:
     history = tracker.history(job_id)
     last = _parsed(history[-1].get("at")) if history else None
     return last is not None and now - last > timedelta(days=NO_ANSWER_DAYS)
+
+
+def no_answer(tracker: ApplicationTracker, job_id: str, now: datetime | None = None) -> bool:
+    """Whether an applied or interviewing job has had no change for more than :data:`NO_ANSWER_DAYS` days (#89)."""
+    status = tracker.get_status(job_id)
+    if status != "applied" and interview_stage(status) is None:
+        return False
+    return _silent(tracker, job_id, now if now is not None else _utcnow())
 
 
 def _application_result(tracker: ApplicationTracker, job_id: str, now: datetime) -> str | None:
