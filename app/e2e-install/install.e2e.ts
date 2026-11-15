@@ -11,6 +11,7 @@ import type { Page } from '@playwright/test'
 import { expect, INSTALLED, launch, osStub, test } from '../journeys/fixtures'
 import { LAUNCH, saveAndSearch, toReview } from '../journeys/helpers/onboarding'
 import { pagesLoaded } from '../journeys/helpers/applications'
+import { closeApp } from './close'
 import { bundledPython, documentedDataFolder, errorLines, kindOf } from './installer'
 import type { Spawned } from './redirect'
 
@@ -28,10 +29,25 @@ function processes(): string {
   } catch (p) { return `could not list: ${(p as Error).message}` }
 }
 
+/** Every app the test launched: each is closed on every path before the global teardown uninstalls (#111). */
+const launched: Awaited<ReturnType<typeof launch>>['app'][] = []
+
+async function open(world: Parameters<typeof launch>[0]): ReturnType<typeof launch> {
+  const opened = await launch(world)
+  launched.push(opened.app)
+  return opened
+}
+
 // A failed run keeps, in the report CI uploads (#98): the data folder's logs (door.log: the server's stderr and exit
 // status when it stopped), the world's server stacks, the stand-in claude's starts and the spawn, and the processes.
-test.afterEach(({ world }, info) => {
-  if (info.status === info.expectedStatus) return
+// Then every app still open is closed, its server with it: left running, they held the install folder on Windows
+// and the uninstaller could not remove it (#111).
+test.afterEach(async ({ world }, info) => {
+  if (info.status !== info.expectedStatus) keepReport(world)
+  for (const app of launched.splice(0)) await closeApp(app)
+})
+
+function keepReport(world: Parameters<typeof launch>[0]): void {
   try {
     cpSync(join(world.home, 'logs'), join(REPORT, 'logs'), { recursive: true })
   } catch {
@@ -42,7 +58,7 @@ test.afterEach(({ world }, info) => {
     if (existsSync(join(world.dir, f))) cpSync(join(world.dir, f), join(REPORT, 'world', f))
   }
   writeFileSync(join(REPORT, 'world', 'processes.txt'), processes())
-})
+}
 
 const summary = (page: Page) => page.getByRole('region', { name: 'Run summary' })
 const readyHeading = (page: Page) => page.getByRole('heading', { name: 'Ready to send', level: 1 })
@@ -60,7 +76,7 @@ const errors = (home: string): string[] => errorLines(existsSync(join(home, 'log
 const filesIn = (home: string, rel: string): string[] => (existsSync(join(home, rel)) ? readdirSync(join(home, rel)) : [])
 
 test('the installed app: set-up, the first run and Prepare on what the installer brought; reopened, the data is still there', async ({ world }) => {
-  const first = await launch(world)
+  const first = await open(world)
   const { app, page } = first
   const os = osStub(app)
   const resources = await app.evaluate(() => process.resourcesPath)
@@ -155,16 +171,13 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   if (!mounted) expect(snapshot(resources)).toEqual(before)
 
   // quit and open again: the profile, the match and the application are still there
-  const again = await launch(world)
-  try {
-    await expect(matchesHeading(again.page)).toBeVisible(LAUNCH)
-    await expect(again.page.getByRole('main').getByRole('list').first().getByRole('listitem').first()).toBeVisible()
-    await again.page.getByRole('navigation').getByRole('button', { name: 'Applications', exact: true }).click()
-    await expect(again.page.getByRole('group', { name: 'Applications board' })).toBeVisible()
-    await expect(again.page.getByRole('region', { name: 'Prepared', exact: true }).getByRole('button')).toHaveCount(1)
-    expect(errors(world.home)).toEqual([])
-  } finally {
-    await again.app.close()
-  }
+  const again = await open(world)
+  await expect(matchesHeading(again.page)).toBeVisible(LAUNCH)
+  await expect(again.page.getByRole('main').getByRole('list').first().getByRole('listitem').first()).toBeVisible()
+  await again.page.getByRole('navigation').getByRole('button', { name: 'Applications', exact: true }).click()
+  await expect(again.page.getByRole('group', { name: 'Applications board' })).toBeVisible()
+  await expect(again.page.getByRole('region', { name: 'Prepared', exact: true }).getByRole('button')).toHaveCount(1)
+  expect(errors(world.home)).toEqual([])
+  await again.app.close()
   if (!mounted) expect(snapshot(resources)).toEqual(before)
 })
