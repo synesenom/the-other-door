@@ -1,6 +1,7 @@
 // The install test's (#639) pure part: which installer to take, how a user installs it on each system, where
 // the installed app's executable and resources end up, how it is removed, and where its data folder is.
 // No process is started here; install.e2e.ts runs the plan.
+import { lstatSync } from 'node:fs'
 import { posix, win32 } from 'node:path'
 
 export type Kind = 'dmg' | 'exe' | 'appimage' | 'deb'
@@ -171,6 +172,16 @@ export function signingCommands(platform: string, executable: string): string[][
   return []
 }
 
+/** Whether `path` is there, a dangling link included (`existsSync` follows links, so it misses one). */
+export function present(path: string): boolean {
+  try {
+    lstatSync(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export interface UninstallIo {
   run: (argv: string[]) => void
   exists: (path: string) => boolean
@@ -182,7 +193,8 @@ export interface UninstallIo {
  * hands over to a temporary copy and returns at once, so the install folder (which it must remove) is polled for
  * up to 30 s before it counts as left behind. That folder is `root\app`, the installer's `/D=`, not `root`
  * itself: `root` is the test's own throwaway folder, which the uninstaller never touches and teardown removes.
- * The .deb's folder under /opt is checked after `apt-get remove`, which returns only when it is done.
+ * The .deb's folder under /opt, /usr/bin link and launcher are checked after `apt-get remove`, which returns only
+ * when it is done.
  */
 export function uninstallFailures(plan: Plan, platform: string, io: UninstallIo): string[] {
   const failures: string[] = []
@@ -198,10 +210,13 @@ export function uninstallFailures(plan: Plan, platform: string, io: UninstallIo)
     for (let i = 0; i < 30 && io.exists(dir); i++) io.wait(1000)
     if (io.exists(dir)) failures.push(`the uninstaller left ${dir} behind`)
   }
-  // the .deb: apt-get remove is synchronous, so its folder under /opt is checked once (#117)
+  // the .deb: apt-get remove is synchronous, so what the package put on the system is checked once (#117): its
+  // folder under /opt, the /usr/bin link its postinst made (update-alternatives or ln) and its postrm removes, and
+  // the launcher (electron-builder's templates/linux/after-install.tpl, after-remove.tpl; FpmTarget's .desktop)
   if (plan.kind === 'deb') {
-    const dir = posix.dirname(plan.executable)
-    if (io.exists(dir)) failures.push(`the uninstaller left ${dir} behind`)
+    for (const left of [posix.dirname(plan.executable), `/usr/bin/${EXE_NAME}`, `/usr/share/applications/${EXE_NAME}.desktop`]) {
+      if (io.exists(left)) failures.push(`the uninstaller left ${left} behind`)
+    }
   }
   return failures
 }
