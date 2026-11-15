@@ -139,6 +139,8 @@ jobs:
         run: |
           $env:DOOR_INSTALLER = (Get-ChildItem dist\The-other-door-*-Windows.exe | Select-Object -First 1).FullName
           $env:DEBUG = "pw:browser"   # the app's own output in the log
+          # the emulation is slow: Prepare and the run get twice the time (a red job still means a broken installer)
+          $env:DOOR_INSTALL_TIME_FACTOR = "2"
           npm run test:install
 
       - name: Keep the install test's report

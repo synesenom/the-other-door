@@ -170,3 +170,9 @@ export function signingCommands(platform: string, executable: string): string[][
   }
   return []
 }
+
+/** How many times longer than a native machine the slow steps may take (DOOR_INSTALL_TIME_FACTOR: 2 on Windows on ARM, emulated). */
+export function timeFactor(env: Record<string, string | undefined>): number {
+  const n = Number(env.DOOR_INSTALL_TIME_FACTOR)
+  return Number.isFinite(n) && n >= 1 ? n : 1
+}

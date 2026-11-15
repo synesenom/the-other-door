@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, resourcesOf, signingCommands } from './installer'
+import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, resourcesOf, signingCommands, timeFactor } from './installer'
 
 const DIST = [
   'the-other-door-0.1.0-mac-arm64.dmg',
@@ -126,5 +126,14 @@ describe('signingCommands', () => {
     expect(signingCommands('win32', "C:\\t\\app\\the-other-door.exe")[0]!.slice(0, 3)).toEqual(['powershell', '-NoProfile', '-Command'])
     expect(signingCommands('win32', "C:\\t\\app\\the-other-door.exe")[0]![3]).toContain("Get-AuthenticodeSignature 'C:\\t\\app\\the-other-door.exe'")
     expect(signingCommands('linux', '/t/x.AppImage')).toEqual([])
+  })
+})
+
+describe('timeFactor', () => {
+  it('scales the slow steps only when asked to, never below 1', () => {
+    expect(timeFactor({})).toBe(1)
+    expect(timeFactor({ DOOR_INSTALL_TIME_FACTOR: '2' })).toBe(2)
+    expect(timeFactor({ DOOR_INSTALL_TIME_FACTOR: '0.5' })).toBe(1)
+    expect(timeFactor({ DOOR_INSTALL_TIME_FACTOR: 'x' })).toBe(1)
   })
 })

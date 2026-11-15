@@ -140,6 +140,14 @@ describe('what goes wrong, for the problem log', () => {
     expect(r.seen).toEqual([['server stopped', expect.stringContaining('RuntimeError: the fake fell over')]])
   })
 
+  it('a child that dies in a call: its exit code too', async () => {
+    const r = recorder()
+    const s = make({}, { onProblem: r.onProblem })
+    await s.call('json')
+    await s.call('exit').catch(() => undefined)
+    expect(r.seen[0]![1]).toMatch(/^exit code 1, no signal/)
+  })
+
   it('a child that will not start: why, with its stderr', async () => {
     const r = recorder()
     await make({ FAKE_DIE_ON_START: '1' }, { onProblem: r.onProblem }).call('json').catch(() => undefined)

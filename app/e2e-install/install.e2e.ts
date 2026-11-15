@@ -5,16 +5,27 @@
 // one, so the first Prepare downloads its LaTeX packages. No real claude, no plan, no API key: the world's
 // stand-in claude is first on PATH.
 import { execFileSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { cpSync, existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect, INSTALLED, launch, osStub, test } from '../journeys/fixtures'
 import { LAUNCH, saveAndSearch, toReview } from '../journeys/helpers/onboarding'
 import { pagesLoaded } from '../journeys/helpers/applications'
-import { bundledPython, documentedDataFolder, errorLines, kindOf } from './installer'
+import { bundledPython, documentedDataFolder, errorLines, kindOf, timeFactor } from './installer'
 import type { Spawned } from './redirect'
 
 test.use({ worldOptions: { empty: true, persona: 'mette' } })
+
+// A failed run keeps the data folder's logs (door.log: the server's stderr and exit status when it stopped, #98)
+// in the report CI uploads.
+test.afterEach(({ world }, info) => {
+  if (info.status === info.expectedStatus) return
+  try {
+    cpSync(join(world.home, 'logs'), join(__dirname, '..', 'install-report', 'logs'), { recursive: true })
+  } catch {
+    // no logs to keep
+  }
+})
 
 const summary = (page: Page) => page.getByRole('region', { name: 'Run summary' })
 const readyHeading = (page: Page) => page.getByRole('heading', { name: 'Ready to send', level: 1 })
@@ -116,7 +127,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   // a failed Prepare says so in the log at once: stop there with its message instead of waiting out the timeout
   await expect
     .poll(async () => (errors(world.home).length ? errors(world.home) : (await readyHeading(page).isVisible()) ? 'ready' : 'preparing'), {
-      timeout: 10 * 60_000,
+      timeout: 10 * 60_000 * timeFactor(process.env),
       intervals: [2_000],
     })
     .toBe('ready')

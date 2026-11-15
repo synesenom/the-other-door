@@ -7,7 +7,7 @@ import { join } from 'node:path'
 /** As the server's log: rotated at about 1 MB, keeping door.log.1 and door.log.2. */
 export const MAX_BYTES = 1_000_000
 const BACKUPS = 2
-const MAX_MESSAGE = 2000
+const MAX_MESSAGE = 6000
 
 export interface ProblemLog {
   write(where: string, message: string): void
