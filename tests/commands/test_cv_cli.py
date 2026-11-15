@@ -161,3 +161,18 @@ def test_draft_keeps_a_todo_in_any_other_section(env, monkeypatch):
     result = _draft_answering(env, monkeypatch, "## Skills\n\nPython\n\n## Education\n\nMSc, TODO year\n", ["Add your skills list", "x"])
     assert "MSc, TODO year" in result["markdown"]
     assert result["todos"] == ["Add your skills list", "x"]  # nothing was taken out of Skills
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        "Ingénieure données – Clermont".encode("utf-8"),
+        b"\xef\xbb\xbf" + "Ingénieure données – Clermont".encode("utf-8"),  # UTF-8 with a BOM (Notepad's "UTF-8 with BOM")
+        "Ingénieure données – Clermont".encode("utf-16"),  # Notepad's "Unicode": UTF-16 with a BOM
+        "Ingénieure données – Clermont".encode("cp1252"),  # Notepad's "ANSI" on a Western Windows
+    ],
+    ids=["utf-8", "utf-8-bom", "utf-16", "ansi"],
+)
+def test_extract_text_reads_a_text_cv_in_the_encodings_windows_saves(tmp_path, data):
+    (tmp_path / "cv.txt").write_bytes(data)
+    assert cv_cmd._extract_text(tmp_path / "cv.txt") == "Ingénieure données – Clermont"
