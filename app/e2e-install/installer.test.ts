@@ -53,7 +53,7 @@ describe('installPlan', () => {
     const plan = installPlan('C:\\d\\The-other-door-0.1.1-Windows.exe', 'win32', 'C:\\t')
     expect(plan.install).toEqual([['C:\\d\\The-other-door-0.1.1-Windows.exe', '/S', '/D=C:\\t\\app']])
     expect(plan.executable).toBe('C:\\t\\app\\the-other-door.exe')
-    expect(plan.uninstall).toEqual([['C:\\t\\app\\Uninstall The other door.exe', '/S']])
+    expect(plan.uninstall).toEqual([['C:\\t\\app\\Uninstall the-other-door.exe', '/S', '_?=C:\\t\\app']])
   })
 
   it('Linux: the AppImage copied and made executable; the .deb through apt, into /opt, removed by its package name', () => {
