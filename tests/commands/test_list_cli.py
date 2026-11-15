@@ -360,7 +360,7 @@ def test_list_rows_say_when_an_application_had_no_answer_for_30_days(cli_env):
     import door.core.tracker as tracker_mod
 
     now = datetime.now(tz=timezone.utc)
-    old, recent = now - timedelta(days=40), now - timedelta(days=5)
+    old, recent = now - timedelta(days=50), now - timedelta(days=5)
     cases = {
         "job-a": [("applied", old)], "job-b": [("applied", old), ("interview:technical", old + timedelta(days=1))],
         "job-c": [("applied", recent)], "job-d": [("applied", old), ("offer", old)],

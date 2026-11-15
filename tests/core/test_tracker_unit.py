@@ -330,7 +330,7 @@ def test_an_application_ghosted_then_invited_passed_the_application_stage():
     assert application_outcomes(tracker, now=_at(10))["passed"] == 1
 
 
-def test_an_application_with_no_change_for_30_days_counts_as_ghosted():
+def test_an_application_with_no_change_for_45_days_counts_as_ghosted():
     from datetime import timedelta
 
     from door.core.tracker import application_outcomes, standings
@@ -338,16 +338,16 @@ def test_an_application_with_no_change_for_30_days_counts_as_ghosted():
     tracker = _ledger(["applied"], ["applied", "interview:screening"], ["prepared"])
     applied_at = _at(1)
 
-    assert application_outcomes(tracker, now=applied_at + timedelta(days=30))["pending"] == 1
-    assert standings(tracker, now=applied_at + timedelta(days=30))["waiting"] == 1
-    later = applied_at + timedelta(days=31)
+    assert application_outcomes(tracker, now=applied_at + timedelta(days=45))["pending"] == 1
+    assert standings(tracker, now=applied_at + timedelta(days=45))["waiting"] == 1
+    later = applied_at + timedelta(days=46)
     assert application_outcomes(tracker, now=later) == {"passed": 1, "rejected": 0, "ghosted": 1, "withdrawn": 0, "pending": 0}
     # only the silent application: an interview round stays an interview, an unsent job is not counted
     assert standings(tracker, now=later) == {
         "offer": 0, "interviewing": 1, "waiting": 0, "rejected": 0, "ghosted": 1, "withdrawn": 0}
 
 
-def test_no_answer_is_an_applied_or_interview_card_silent_for_more_than_30_days():
+def test_no_answer_is_an_applied_or_interview_card_silent_for_more_than_45_days():
     from datetime import timedelta
 
     from door.core.tracker import NO_ANSWER_DAYS, no_answer
@@ -362,14 +362,14 @@ def test_no_answer_is_an_applied_or_interview_card_silent_for_more_than_30_days(
         assert no_answer(tracker, f"job-{n}", later + timedelta(days=5)) is False, n
 
 
-def test_no_answer_waits_for_more_than_30_days_and_reads_the_last_event():
+def test_no_answer_waits_for_more_than_45_days_and_reads_the_last_event():
     from datetime import timedelta
 
     from door.core.tracker import no_answer
 
     tracker = _ledger(["applied"])
-    assert no_answer(tracker, "job-0", _at(1) + timedelta(days=30)) is False
-    assert no_answer(tracker, "job-0", _at(1) + timedelta(days=31)) is True
+    assert no_answer(tracker, "job-0", _at(1) + timedelta(days=45)) is False
+    assert no_answer(tracker, "job-0", _at(1) + timedelta(days=46)) is True
 
 
 def test_no_answer_is_false_for_an_unknown_job_and_for_a_recent_one_on_the_default_clock():

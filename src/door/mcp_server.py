@@ -826,7 +826,7 @@ def status_summary() -> dict:
         {"unapplied", "prepared", "applied", "discarded"}}, "ledger": {<each status>: count}, "interviews":
         {<stage>: {"passed", "rejected", "ghosted", "withdrawn", "pending"}}, "standing":
         {"offer", "interviewing", "waiting", "rejected", "ghosted", "withdrawn"} (where each sent
-        application stands now, each counted once; one with no change for 30 days counts as ghosted, here
+        application stands now, each counted once; one with no change for 45 days (tracker.NO_ANSWER_DAYS) counts as ghosted, here
         and in ``application``),
         "application": {"passed", "rejected", "ghosted", "withdrawn", "pending"}, "pass_rates":
         {<stage>: {"passed", "decided", "rate", "low", "high"}}, "since_last_review":

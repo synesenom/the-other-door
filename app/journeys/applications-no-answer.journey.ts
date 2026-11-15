@@ -24,13 +24,13 @@ function age(world: World, key: string, daysAgo: number): void {
   writeFileSync(file, JSON.stringify(book, null, 2))
 }
 
-test.describe('an applied card silent for 40 days', () => {
-  test.use({ seed: before((world) => age(world, 'sundline-network-optimisation', 40)) })
+test.describe('an applied card silent for 50 days', () => {
+  test.use({ seed: before((world) => age(world, 'sundline-network-optimisation', 50)) })
 
   test('says so, and Mark ghosted records it', async ({ page, world }) => {
     await toApplications(page)
     const applied = column(page, 'Applied')
-    await expect(card(applied, SUNDLINE)).toContainText('No answer in 30 days')
+    await expect(card(applied, SUNDLINE)).toContainText('No answer in 45 days')
     // only this card is silent
     await expect(page.getByRole('button', { name: 'Mark ghosted' })).toHaveCount(1)
 
@@ -53,13 +53,13 @@ test.describe('an applied card silent for 40 days', () => {
   })
 })
 
-test.describe('an interview round silent for 40 days', () => {
-  test.use({ seed: before((world) => age(world, 'pakkepost-causal-experimentation', 40)) })
+test.describe('an interview round silent for 50 days', () => {
+  test.use({ seed: before((world) => age(world, 'pakkepost-causal-experimentation', 50)) })
 
   test('keeps its rounds, says no answer, and Mark ghosted records it', async ({ page, world }) => {
     await toApplications(page)
     const interviewing = column(page, 'Interviewing')
-    await expect(card(interviewing, PAKKEPOST)).toContainText('technical · no answer in 30 days')
+    await expect(card(interviewing, PAKKEPOST)).toContainText('technical · no answer in 45 days')
     await interviewing.getByRole('button', { name: 'Mark ghosted' }).click()
     await expect(page.getByRole('status')).toContainText('Ghosted')
     await expect(card(column(page, 'Closed'), PAKKEPOST)).toContainText('ghosted')

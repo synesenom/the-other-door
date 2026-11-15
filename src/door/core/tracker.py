@@ -377,9 +377,10 @@ def interview_outcomes(tracker: ApplicationTracker) -> dict[str, dict[str, int]]
     return {stage: counts[stage] for stage in INTERVIEW_STAGES if stage in counts}
 
 
-NO_ANSWER_DAYS = 30
+NO_ANSWER_DAYS = 45
 """An application with no change for this many days counts as ghosted when the outcomes are read (#87):
-most employers answer within two or three weeks, and few users mark a silence by hand. Nothing is written here;
+about nine in ten applicants who hear back do so within six weeks, and the slow employers (the public
+sector, universities) take about that long, while few users mark a silence by hand. Nothing is written here;
 the Applications board marks such a card and offers to record it as ghosted (#89)."""
 
 
