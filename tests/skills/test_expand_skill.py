@@ -74,3 +74,16 @@ def test_it_uses_neither_a_shell_nor_a_file_write_and_does_not_end_a_review(acce
     for _, result in (accepted, declined):
         assert "mark_reviewed" not in result["tools"], result["tools"]
         assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write", "Edit")], result["used"]
+
+
+@pytest.fixture(scope="module")
+def no_profile(tmp_path_factory):
+    return run_skill(tmp_path_factory, "expand-no-profile", PROMPT, empty=True, max_turns=1, stop_after_tool="never",
+                     persona_kind="onboarded", facts_note="You want your CV expanded from these pages.")
+
+
+def test_with_no_profile_it_stops_after_the_check_and_writes_nothing(no_profile):
+    world, result = no_profile
+    assert result["tools"] == ["doctor"], result["tools"]
+    assert not (home(world) / "profile" / "config.json").exists()
+    assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write", "Edit")], result["used"]

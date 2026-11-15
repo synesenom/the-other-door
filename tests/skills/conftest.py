@@ -39,13 +39,17 @@ def make_world(*flags: str) -> dict:
     return json.loads(out.stdout)
 
 
-def run_skill(tmp_path_factory, name: str, prompt: str, *, empty: bool = False, max_turns: int = 12, **options):
-    """One run of `prompt` in a new world: (world, result). Skips the module when a real run is not possible."""
+def run_skill(tmp_path_factory, name: str, prompt: str, *, empty: bool = False, max_turns: int = 12, seed=None,
+              **options):
+    """One run of `prompt` in a new world: (world, result). `seed(world)` changes the world before the run.
+    Skips the module when a real run is not possible."""
     if reason := ready():
         pytest.skip(reason)
     import skill_run
 
     world = make_world(*(["--empty"] if empty else []))
+    if seed:
+        seed(world)
     folder = tmp_path_factory.mktemp(name)
     cv = home(world) / "profile" / "cv.md"
     before = cv.read_bytes() if cv.exists() else None
