@@ -308,8 +308,9 @@ poetry install   # runtime + dev deps (pytest, pytest-cov, pytest-xdist, respons
 ./scripts/run-test.sh           # offline suite + coverage + regenerate badge
 ./scripts/run-test.sh --live    # opt-in smoke tests against real sites
 ./scripts/run-test.sh --skills  # the skills (/onboard) run by the real model on your plan, before a release
+./scripts/run-test.sh --cli-journeys  # the real ./door in the app's test world (init, find, jobs show/prepare/status; needs Node and npm ci in app/; CI: cli-journeys.yml, Linux and Windows)
 ./scripts/run-test.sh --app     # the desktop app's tests as CI runs them (typecheck, unit, e2e, core journeys, phone)
-./scripts/run-test.sh --release # before a release: offline suite, app with every journey, skills, and the
+./scripts/run-test.sh --release # before a release: offline suite, app with every journey, CLI journeys, skills, and the
                                 # install test when DOOR_INSTALLER names an installer; a PASS/FAIL line each
 ```
 
