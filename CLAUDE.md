@@ -14,9 +14,15 @@ When a question comes up that is the user's to decide (a design choice, a policy
 
 This is for decisions, not permissions: a skill's or the harness's confirmation before an action that is hard to undo or outward-facing (pushing a tag, publishing a release, deleting data) is still asked of the user.
 
-## Gaps
+## Review
 
-Before summarising a change you implemented (a PR, or a branch about to become one), spawn the `gap-reviewer` agent (`.claude/agents/gap-reviewer.md`) with the base branch and the issue or goal; it reports what the change leaves missing, each gap with its evidence. Every gap it reports, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) whose number you give. The summary names each gap and which way it went; none is only mentioned. A gap the reviewer reports that you judge not real: say why in one line.
+Before summarising a change you implemented (a PR, or a branch about to become one), spawn the reviewers in parallel, each with the base branch and the issue or goal:
+
+- `gap-reviewer` (`.claude/agents/gap-reviewer.md`), always: what the change leaves missing (the goal not met, inconsistencies, untested cases, false docs, follow-ups).
+- `simplicity-reviewer` (`.claude/agents/simplicity-reviewer.md`), always: complexity it does not need (reinvented helpers, needless abstraction, dead code, old behaviour kept alive, a diff larger than its goal).
+- `design-reviewer` (`.claude/agents/design-reviewer.md`), when the change touches the app's screens (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`) or `docs/design/`: the visual and UX rules of `docs/design/README.md`, checked on the rendered preview.
+
+Each reports its findings with evidence. Every finding, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) whose number you give. The summary names each finding and which way it went; none is only mentioned. A finding you judge not real: say why in one line.
 
 ## Pull requests
 

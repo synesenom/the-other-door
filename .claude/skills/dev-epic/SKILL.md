@@ -61,9 +61,9 @@ git switch -c <type>/<sub>-<slug> origin/main          # independent: from main
 git switch -c <type>/<sub>-<slug> origin/<dep-branch>   # depends on a sibling whose PR is open: stack on it
 ```
 
-A stacked sub-issue is validated and gap-reviewed against its dependency branch (`base_branch: <dep-branch>`), so the dependency's commits are not judged as its own. A branch the session's own instructions fix (a cloud session's single branch) wins over this: then the epic's PRs go out one at a time, the next only once the last is merged, and Step 7 applies while waiting.
+A stacked sub-issue is validated and reviewed against its dependency branch (`base_branch: <dep-branch>`), so the dependency's commits are not judged as its own. A branch the session's own instructions fix (a cloud session's single branch) wins over this: then the epic's PRs go out one at a time, the next only once the last is merged, and Step 7 applies while waiting.
 
-**Gaps** (CLAUDE.md "Gaps"): before opening the PR, spawn `gap-reviewer` with the base branch and the sub-issue. Each gap is fixed in this PR (small, in scope) or filed. A filed gap **within the epic's goal** is attached to the epic as a new sub-issue, and so joins the queue; one outside it is filed on its own, not attached, and named in the final report. Attach only what the epic's own text asks for or makes necessary, so the queue does not grow without end.
+**Review** (CLAUDE.md "Review"): before opening the PR, spawn the reviewers it names (`gap-reviewer`, `simplicity-reviewer`, and `design-reviewer` when the app's screens or `docs/design/` changed) with the base branch and the sub-issue. Each finding is fixed in this PR (small, in scope) or filed. A filed finding **within the epic's goal** is attached to the epic as a new sub-issue, and so joins the queue; one outside it is filed on its own, not attached, and named in the final report. Attach only what the epic's own text asks for or makes necessary, so the queue does not grow without end.
 
 On validation PASS, open the PR with `/dev-pr` (branch check, merge `main`, push, its body format with `Closes #<sub>` and a line `Part of #<N>`, subscribe), but do not stay in its Step 7 watch: the loop's Step 3 watches it. A stacked PR's body also says `Depends on #<dep-pr>`. On FAIL after two attempts, open no PR: record the diagnosis, comment it on the sub-issue, mark it `failed`, and go on.
 
@@ -100,4 +100,4 @@ Filed outside the epic: #.., #..
 Left for you: <PRs to merge, in order (stacked ones after their base); questions; or nothing>
 ```
 
-Then at most 10 short bullets (CLAUDE.md "Reporting back"): what was done, each gap and which way it went.
+Then at most 10 short bullets (CLAUDE.md "Reporting back"): what was done, each review finding and which way it went.
