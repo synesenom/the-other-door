@@ -6,58 +6,27 @@ the user is a small model playing the persona (`skill_run.py`). Every check is o
 in which order, what was written and when, never on the model's wording.
 """
 
-import asyncio
 import json
-import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
-from paths import REPO_ROOT
+from conftest import home as _home_of
+from conftest import run_skill
 
 pytestmark = pytest.mark.skills
 
-APP = REPO_ROOT / "app"
 DISCOVERY_KEYS = ("linkedin_discovery", "profession_discovery", "jobbsafari_discovery", "hellowork_discovery")
-
-
-def _ready() -> str | None:
-    """Why the skill run cannot happen here, or None."""
-    try:
-        import claude_agent_sdk  # noqa: F401
-    except ImportError:
-        return "claude-agent-sdk is not installed (poetry install)"
-    if not shutil.which("claude"):
-        return "no claude on PATH"
-    if not (APP / "node_modules" / ".bin" / "tsx").exists():
-        return "the app's packages are not installed (npm ci in app/)"
-    status = subprocess.run(["claude", "auth", "status", "--json"], capture_output=True, text=True)
-    if status.returncode != 0 or not json.loads(status.stdout or "{}").get("loggedIn"):
-        return "claude is not signed in (claude auth login)"
-    return None
 
 
 @pytest.fixture(scope="module")
 def onboarded(tmp_path_factory):
     """One /onboard of mette, start to finish: the world, the run's result, its transcript folder."""
-    if reason := _ready():
-        pytest.skip(reason)
-    sys.path.insert(0, str(Path(__file__).parent))
-    import skill_run
-
-    out = subprocess.run(["npx", "tsx", "test/world/make-world.ts", "mette", "--empty"], cwd=APP,
-                         capture_output=True, text=True, check=True)
-    world = json.loads(out.stdout)
-    folder = tmp_path_factory.mktemp("onboard")
-    result = asyncio.run(skill_run.run(world, "/onboard", "sonnet", 12, folder))
-    print(f"\n/onboard transcript: {folder / 'transcript.md'}")
-    return world, result
+    return run_skill(tmp_path_factory, "onboard", "/onboard", empty=True)
 
 
 def _home(world) -> Path:
-    return Path(world["home"])
+    return _home_of(world)
 
 
 def _order(result) -> list[str]:

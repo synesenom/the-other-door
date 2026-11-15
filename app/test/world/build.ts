@@ -371,6 +371,24 @@ export function answersFor(persona: Persona) {
       ],
       unreachable: [],
     },
+    // the skill-gap report as `gaps._RULES` shapes it: plan items as `### N.` headings, then what was skipped
+    gaps: [
+      '## Skill gap report',
+      '',
+      '## Prioritised learning plan',
+      '',
+      '### 1. Bayesian hierarchical models (Priority: High)',
+      '- Why: three of the ads ask for it and the CV does not show it.',
+      '- Resource: PyMC documentation, https://www.pymc.io/projects/docs/en/stable/',
+      '',
+      '### 2. Grid operations basics (Priority: Medium)',
+      '- Why: the energy employers assume it.',
+      '- Resource: ENTSO-E transparency platform guide, https://transparency.entsoe.eu/',
+      '',
+      '## Skipped gaps',
+      '- Trading desk tooling: No vetted resource found — manual research recommended.',
+      '',
+    ].join('\n'),
     ask: { answer: 'Three of your matches are with energy companies, and the strongest is the forecasting role.', sources: [] },
   }
 }
