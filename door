@@ -3,11 +3,12 @@
 # ./door <command> — the command line (`./door --help` lists the commands).
 #
 # Runs `python -m door` in the project's Poetry environment with src/ on
-# PYTHONPATH: the package lives in src/door/ and is never installed. Stays in the
+# PYTHONPATH: the package lives in src/door/ and is never installed. UTF-8 mode, so
+# text is never read or written in a Windows code page (#132). Stays in the
 # current directory, so `./door export` writes the archive there. door.cmd is
 # the Windows twin.
 #
 set -euo pipefail
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-PYTHONPATH="$repo/src${PYTHONPATH:+:$PYTHONPATH}" exec poetry -C "$repo" run python -m door "$@"
+PYTHONUTF8=1 PYTHONPATH="$repo/src${PYTHONPATH:+:$PYTHONPATH}" exec poetry -C "$repo" run python -m door "$@"

@@ -270,7 +270,7 @@ describe('resolveSpawn', () => {
     expect(s.command).toBe('/repo/.venv/bin/python')
     expect(s.args).toEqual(['-m', 'door.mcp_server'])
     expect(s.cwd).toBe('/repo')
-    expect(s.env).toMatchObject({ PYTHONPATH: '/repo/src', HOME: '/h', XDG_CONFIG_HOME: '/xdg', APPDATA: '/ad', DOOR_HOME: '/hh', PATH: '/bin', DOOR_PATHS_FROM_DIALOGS: '1' })
+    expect(s.env).toMatchObject({ PYTHONPATH: '/repo/src', HOME: '/h', XDG_CONFIG_HOME: '/xdg', APPDATA: '/ad', DOOR_HOME: '/hh', PATH: '/bin', DOOR_PATHS_FROM_DIALOGS: '1', PYTHONUTF8: '1' })
     expect(s.env).not.toHaveProperty('SECRET')
   })
 
@@ -306,6 +306,7 @@ describe('resolvePackagedSpawn', () => {
       DOOR_WEB_DIR: '/Applications/door.app/Contents/Resources/web',
       PYTHONNOUSERSITE: '1',
       PYTHONDONTWRITEBYTECODE: '1',
+      PYTHONUTF8: '1',
       DOOR_PATHS_FROM_DIALOGS: '1',
       PATH: '/Applications/door.app/Contents/Resources/bin:/Users/ada/.local/bin:/usr/bin',
       HOME: '/Users/ada',

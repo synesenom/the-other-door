@@ -74,7 +74,8 @@ export function resolveSpawn(repoRoot: string, env: Env, platform: string = proc
   // The SDK merges only a short safe list from the parent; everything else is named here.
   // DOOR_PATHS_FROM_DIALOGS: every local path this app hands the server comes from a dialog the main
   // process ran (ipc.ts PATH_ARGS), so the server's data-folder check (path_scope.py) is not needed.
-  const child: Record<string, string> = { PYTHONPATH: path.join(repoRoot, 'src'), DOOR_PATHS_FROM_DIALOGS: '1' }
+  // PYTHONUTF8: UTF-8 mode, so on Windows no text is read or written in the code page (#132).
+  const child: Record<string, string> = { PYTHONPATH: path.join(repoRoot, 'src'), DOOR_PATHS_FROM_DIALOGS: '1', PYTHONUTF8: '1' }
   // CLAUDE_CONFIG_DIR picks which plan claude is signed in to (an isolated one in the onboarding sandbox).
   // PATH too when given, so a test can put a stand-in claude first (the SDK would pass the parent's).
   for (const key of ['DOOR_HOME', 'HOME', 'XDG_CONFIG_HOME', 'APPDATA', 'PATH', 'CLAUDE_CONFIG_DIR'] as const) {
@@ -112,6 +113,7 @@ export function resolvePackagedSpawn(opts: { resourcesPath: string; home: string
     DOOR_WEB_DIR: path.join(resourcesPath, 'web'),
     PYTHONNOUSERSITE: '1',
     PYTHONDONTWRITEBYTECODE: '1',
+    PYTHONUTF8: '1',  // never the Windows code page (#132)
     DOOR_PATHS_FROM_DIALOGS: '1',  // the paths it is handed come from the main process's dialogs
     PATH: [bin, ...(userHome ? [path.join(userHome, '.local', 'bin')] : []), ...(env.PATH ? [env.PATH] : [])].join(pathSep),
   }

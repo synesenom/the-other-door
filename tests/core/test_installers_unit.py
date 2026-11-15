@@ -229,3 +229,10 @@ def test_mcp_registration_without_claude_anywhere_says_install_it(tmp_path):
     repo = _mcp_repo(tmp_path / "repo", ".venv/bin/python")
     step = installers.plan_mcp_registration(repo, "windows", which=lambda n: None, home=tmp_path)
     assert step["commands"] == [] and "install the claude CLI, then re-run setup" in step["hint"]
+
+
+def test_mcp_registration_starts_the_server_in_utf8_mode(tmp_path):
+    # #132: on Windows the server would otherwise read and write text in the code page (cp1252)
+    step = installers.plan_mcp_registration(_mcp_repo(tmp_path, ".venv/bin/python"), "windows", which=lambda n: "C:/claude")
+    command = step["commands"][0]
+    assert command[command.index("PYTHONUTF8=1") - 1] == "-e"
