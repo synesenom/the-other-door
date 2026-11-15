@@ -35,7 +35,8 @@ export interface OsStub {
   opened(): Promise<{ external: string[]; shown: string[] }>
 }
 
-export async function launch(world: World, extraEnv: Record<string, string> = {}): Promise<{ app: ElectronApplication; page: Page }> {
+/** `onStart` gets the app as soon as it started, before anything here can fail: the install test closes it on every path (#111). */
+export async function launch(world: World, extraEnv: Record<string, string> = {}, onStart?: (app: ElectronApplication) => void): Promise<{ app: ElectronApplication; page: Page }> {
   const spawned = join(world.dir, 'spawned.json')
   rmSync(spawned, { force: true })
   const toolCallsBefore = world.calls().filter((c) => c.kind === 'tool').length
@@ -46,6 +47,7 @@ export async function launch(world: World, extraEnv: Record<string, string> = {}
     ? // its own Chromium folder: an installed app's default is the user's real one, whatever HOME says
       await electron.launch({ executablePath: INSTALLED, args: [...flags, `--user-data-dir=${join(world.scratch, 'chromium')}`], env })
     : await electron.launch({ args: ['.', ...flags], cwd: APP, env })
+  onStart?.(app)
   if (INSTALLED) await redirectServer(app, join(APP, 'test', 'world', 'boot.py'), world.dir)
   // The OS is never reached: links, folders and dialogs are recorded and answered from here.
   // (Playwright sometimes loses this first evaluate's promise to the main process's GC: it is idempotent, so it is sent again.)
