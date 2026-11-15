@@ -36,5 +36,7 @@ export default function teardown(): void {
       console.error(`could not uninstall: ${argv.join(' ')}: ${e instanceof Error ? e.message : e}`)
     }
   }
-  if (scratch) rmSync(scratch, { recursive: true, force: true })
+  // Windows holds a file for a moment after the process that ran it exited (the uninstaller under x64 emulation:
+  // EPERM on windows-arm): Node retries EPERM/EBUSY with these, 5 s in all
+  if (scratch) rmSync(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 })
 }
