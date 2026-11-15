@@ -20,12 +20,10 @@ from release_gate_utils import releases
 
 # Fields and files that exist in the current code but not in the newest saved release, as `<Model>.<field>` or the
 # inventory pattern. Emptied when a release is saved (docs/releasing.md).
-NEW_SINCE_RELEASE: set[str] = {"Profile.preferences"}
+NEW_SINCE_RELEASE: set[str] = set()
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).
 ABSENT_BY_DESIGN = {
-    "profile/.data_version": "v0.1.0 wrote no version file; a later release's sample has it, this one does not need to",
-    "jobs/.data_version": "same",
     "jobs/linkedin_discovery.json": "the state a version older than v0.1.0 kept; v0.1.0 writes jobs/discovery/linkedin.json",
     "upskill/**": "not in profile/ or jobs/, the two folders a sample holds",
 }

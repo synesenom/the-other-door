@@ -34,6 +34,7 @@ from door.commands import profile as profile_cmd  # noqa: E402
 from door.commands import stories as stories_cmd  # noqa: E402
 from door.core import candidates, companies, discovery_state, freshness, history, tracker  # noqa: E402
 from door.core import lock  # noqa: E402
+from door.core import migrations  # noqa: E402
 from door.core.models import JobPosting  # noqa: E402
 from door.core.profile_loader import Profile  # noqa: E402
 from door.tailoring import facts as facts_mod  # noqa: E402
@@ -112,6 +113,7 @@ FIELDS = {
     "role_targets": ["Financial Controller", "Head of Finance"],
     "search_keywords": ["financial controller", "head of finance", "group controller"],
     "topic_terms": ["controller", "finance*", "accounting"],
+    "preferences": "A smaller company in green energy, little travel; not banking.",
     "remote": "hybrid",
     "linkedin_discovery": True,
     "profession_discovery": True,
@@ -153,6 +155,10 @@ def make_profile() -> None:
     profile_cmd._save_cv_core(CV)
     profile_cmd._save_photo_core(str(picture))
     picture.unlink()
+    # The templates come from the code since v0.2.0: the keys name the user's own, so the sample keeps a changed copy.
+    for name in ("cv.template.tex", "cover-letter.template.tex"):
+        own = (workspace.PROFILE_EXAMPLE_DIR / name).read_text(encoding="utf-8") + "% the user's own styling\n"
+        (PROFILE / name).write_text(own, encoding="utf-8")
     profile_cmd._init_core(FIELDS, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
     (PROFILE / "story_bank.md").unlink(missing_ok=True)
     for index, story in enumerate(STORIES):
@@ -356,6 +362,9 @@ def make_run_record() -> None:
 def main() -> None:
     make_profile()
     make_companies()
+    # A release's own writes go through `ledger_lock`, which stamps a new jobs/ with its data version first; the sample
+    # writes the stores directly, so it stamps the folder as the lock would.
+    migrations.ensure_folder(JOBS, "jobs")
     make_postings()
     make_ledger()
     make_output()
