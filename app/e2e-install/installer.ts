@@ -100,7 +100,7 @@ export function installPlan(installer: string, platform: string, root: string): 
         kind,
         install: [[installer, '/S', `/D=${dir}`]],
         executable: p.join(dir, `${EXE_NAME}.exe`),
-        uninstall: [[p.join(dir, `Uninstall ${APP_NAME}.exe`), '/S']],
+        uninstall: [[p.join(dir, `Uninstall ${EXE_NAME}.exe`), '/S']],
         root,
       }
     }
@@ -169,4 +169,54 @@ export function signingCommands(platform: string, executable: string): string[][
     return [['powershell', '-NoProfile', '-Command', `Get-AuthenticodeSignature '${quoted}' | Format-List Status,StatusMessage,SignerCertificate`]]
   }
   return []
+}
+
+export interface UninstallIo {
+  run: (argv: string[]) => void
+  exists: (path: string) => boolean
+  wait: (ms: number) => void
+}
+
+/**
+ * Run the plan's uninstall commands and return what went wrong (empty = clean). On Windows the NSIS uninstaller
+ * hands over to a temporary copy and returns at once, so the install folder (which it must remove) is polled for
+ * up to 30 s before it counts as left behind. That folder is `root\app`, the installer's `/D=`, not `root`
+ * itself: `root` is the test's own throwaway folder, which the uninstaller never touches and teardown removes.
+ */
+export function uninstallFailures(plan: Plan, platform: string, io: UninstallIo): string[] {
+  const failures: string[] = []
+  for (const argv of plan.uninstall) {
+    try {
+      io.run(argv)
+    } catch (e) {
+      failures.push(`could not uninstall: ${argv.join(' ')}: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+  if (platform === 'win32' && plan.root) {
+    const dir = win32.dirname(plan.executable)
+    for (let i = 0; i < 30 && io.exists(dir); i++) io.wait(1000)
+    if (io.exists(dir)) failures.push(`the uninstaller left ${dir} behind`)
+  }
+  return failures
+}
+
+/**
+ * The install test's teardown after the app was installed: uninstall it, remove the throwaway folder `scratch` even
+ * when the uninstall failed, and throw when anything went wrong, which fails the Playwright run (#114).
+ */
+export function removeInstall(
+  plan: Plan,
+  scratch: string | undefined,
+  platform: string,
+  io: UninstallIo & { rm: (path: string) => void },
+): void {
+  const failures = uninstallFailures(plan, platform, io)
+  if (scratch) {
+    try {
+      io.rm(scratch)
+    } catch (e) {
+      failures.push(`could not remove ${scratch}: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+  if (failures.length) throw new Error(`The uninstall failed:\n${failures.join('\n')}`)
 }
