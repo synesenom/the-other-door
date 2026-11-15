@@ -157,12 +157,12 @@ describe('what goes wrong, for the problem log', () => {
     expect(r.seen[0]![1]).toMatch(/^exit code 1, no signal/)
   })
 
-  it('a child that was killed: the signal', async () => {
+  it('a child that was killed: the signal (Windows has none: the kill is exit code 1)', async () => {
     const r = recorder()
     const s = make({}, { onProblem: r.onProblem })
     await s.call('json')
     await s.call('kill').catch(() => undefined)
-    expect(r.seen[0]![1]).toMatch(/^exit code none, signal SIGKILL/)
+    expect(r.seen[0]![1]).toMatch(process.platform === 'win32' ? /^exit code 1, no signal/ : /^exit code none, signal SIGKILL/)
   })
 
   it('a child that dies in a call: the MCP request log left out of its stderr', async () => {
