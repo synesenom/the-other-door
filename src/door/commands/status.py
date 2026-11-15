@@ -265,7 +265,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "pending"}}, "application": {"passed", "rejected", "ghosted",
         "withdrawn", "pending"}, "pass_rates": {stage: {"passed", "decided",
         "rate", "low", "high"}}, "standing": {"offer", "interviewing", "waiting", "rejected", "ghosted",
-        "withdrawn"}, "in_progress": {...} | None, "employers": {"followed", "unfollowable",
+        "withdrawn"}, "no_answer": {"count", "days"}, "in_progress": {...} | None, "employers": {"followed", "unfollowable",
         "unresolved"}, "drive": {"connected", "account", "last_synced",
         "last_error", "configured"}, "recurring_problem": bool, "plan": {...} | None, "cost": {...} | None}`` — every ledger status is present,
         0 when unused; ``interviews`` is `tracker.interview_outcomes` (only the
@@ -273,7 +273,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         (did each sent application lead to an interview); ``pass_rates`` is
         `tracker.pass_rate` for ``application`` and then each interview stage
         (rate of the decided rounds with its one-sigma Wilson interval, None
-        until one is decided); ``standing`` is `tracker.standings` (where each sent application stands now); ``since_last_review`` is `_since_last_review`'s dict;
+        until one is decided); ``standing`` is `tracker.standings` (where each sent application stands now); ``no_answer`` is how many applied or interviewing applications that `list_matches(ongoing=True)` lists have had no change for more than ``days`` days (`tracker.no_answer_count`, #92); ``since_last_review`` is `_since_last_review`'s dict;
         ``in_progress`` is None unless a run holds the ledger lock right now
         and has reported progress: ``{"purpose", "pid", "started_at",
         "message", "done", "total", "site", "stage", "updated_at"}`` (the
@@ -305,6 +305,9 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
     for label, count in breakdown.items():
         ledger.setdefault(label, count)
 
+    # the applications `jobs list --ongoing` (`list_matches(ongoing=True)`) shows: the no-answer count names no other
+    ongoing_ids = [m["id"] for m in selection.select_matches(
+        jobs_dir, app_tracker, 0.0, status=_tracker_mod.ONGOING_STATUSES, postings=postings)]
     interviews = _tracker_mod.interview_outcomes(app_tracker)
     application = _tracker_mod.application_outcomes(app_tracker)
     stages = {"application": application, **interviews} if any(application.values()) else interviews
@@ -322,6 +325,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "application": application,
         "pass_rates": {stage: _tracker_mod.pass_rate(counts) for stage, counts in stages.items()},
         "standing": _tracker_mod.standings(app_tracker),
+        "no_answer": {"count": _tracker_mod.no_answer_count(app_tracker, job_ids=ongoing_ids), "days": _tracker_mod.NO_ANSWER_DAYS},
         "in_progress": _in_progress(jobs_dir),
         "employers": _employer_counts(profile_dir),
         "drive": _drive_block(),
@@ -507,6 +511,12 @@ def _print_pipeline_status() -> None:
             style = _LEDGER_STYLES.get(label, "") if count else "dim"
             ledger.add_row(Text(label, style=style), Text(str(count), style=f"bold {style}" if count else "dim"))
         console.print(Padding(ledger, (0, 2)))
+        silent = result["no_answer"]
+        if silent["count"]:
+            noun = "application" if silent["count"] == 1 else "applications"
+            console.print(Padding(Text(
+                f"{silent['count']} {noun} with no answer in {silent['days']} days — see `jobs list --ongoing`, "
+                "mark one ghosted with `jobs status`.", style="yellow"), (0, 2)))
     else:
         console.print(Padding(Text("No applications yet — `jobs status <company> applied` records one.", style="dim"), (0, 2)))
 

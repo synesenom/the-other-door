@@ -381,6 +381,20 @@ def test_no_answer_is_false_for_an_unknown_job_and_for_a_recent_one_on_the_defau
     assert no_answer(tracker, "job-new") is False
 
 
+def test_no_answer_count_counts_silent_applied_and_interview_jobs_only():
+    from datetime import timedelta
+
+    from door.core.tracker import NO_ANSWER_DAYS, no_answer_count
+
+    tracker = _ledger(["applied"], ["applied", "interview:screening"], ["prepared"], ["applied", "offer"],
+                      ["applied", "rejected"], ["applied", "ghosted"])
+    later = _at(1) + timedelta(days=NO_ANSWER_DAYS + 10)
+
+    assert no_answer_count(tracker, later) == 2
+    assert no_answer_count(tracker, _at(3)) == 0
+    assert no_answer_count(_ledger(), later) == 0
+
+
 def test_the_pass_rate_counts_only_decided_rounds_with_a_one_sigma_binomial_interval():
     from door.core.tracker import pass_rate
 
