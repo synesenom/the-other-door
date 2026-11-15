@@ -100,12 +100,14 @@ export interface WatchOptions {
   alive?: (pid: number) => boolean
   debounceMs?: number
   pollMs?: number
+  /** The file watch (a seam for tests); the real `fs.watch` by default. */
+  watchFn?: (dir: string, listener: () => void) => FSWatcher
 }
 
 /** Calls `onBoard` with each new board of the run in `<home>/jobs`: a file watch, debounced, and a poll for the platforms where it misses. */
 export function watchRunBoard(home: string, onBoard: (board: RunBoard) => void, options: WatchOptions = {}) {
   const dir = join(home, 'jobs')
-  const { debounceMs = 100, pollMs = 1000, alive = processAlive, ownPid } = options
+  const { debounceMs = 100, pollMs = 1000, alive = processAlive, ownPid, watchFn = watch } = options
   let last: RunBoard = { active: false }
   let stopped = false
   let watcher: FSWatcher | null = null
@@ -128,7 +130,7 @@ export function watchRunBoard(home: string, onBoard: (board: RunBoard) => void, 
   const attach = () => {
     if (watcher || stopped) return
     try {
-      watcher = watch(dir, soon)
+      watcher = watchFn(dir, soon)
       watcher.on('error', () => {
         watcher?.close()
         watcher = null
