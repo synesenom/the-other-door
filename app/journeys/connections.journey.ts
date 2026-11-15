@@ -270,7 +270,13 @@ test.describe('Google Drive, Drive changed since this computer synced', () => {
     expect(existsSync(join(world.home, 'backups', backups[0]!, 'jobs', 'notes-from-this-computer.txt'))).toBe(true)
     expect(readDriveState(world)!.synced_version).toBe(md5(driveArchive(world)))
     // a pull is new data: the screens read it again
-    await expect.poll(() => world.toolCalls('show_profile').length).toBeGreaterThan(1)
+    // flaky in CI (#127): on a failure, the tool calls in order say who pulled (sync_data, or a lock hook first)
+    try {
+      await expect.poll(() => world.toolCalls('show_profile').length).toBeGreaterThan(1)
+    } catch (e) {
+      const order = world.calls().filter((c) => c.kind === 'tool').map((c) => c.tool).join(', ')
+      throw new Error(`show_profile was not called again after the pull; the tool calls in order: ${order}\n${e}`)
+    }
   })
 })
 
