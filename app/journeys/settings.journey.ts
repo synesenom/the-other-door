@@ -183,7 +183,9 @@ test.describe('Report a problem', () => {
     expect(Object.keys(files).filter((name) => name.startsWith('runs/')).length).toBeGreaterThan(0)
     expect(Object.keys(files).filter((name) => /^(profile|jobs)\/|cv\.md/.test(name))).toEqual([])
     expect(files['logs/door.log']).toContain('ERROR tool doctor: could not read <data folder>/profile/config.json for <email>')
-    expect(JSON.parse(files['about.json']!).version).toBe('0.1.0')
+    // the app's own version, whatever it is today (a release bumps it)
+    const version = (JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8')) as { version: string }).version
+    expect(JSON.parse(files['about.json']!).version).toBe(version)
     const all = Object.values(files).join('\n')
     for (const secret of [world.persona.email, world.home, realpathSync(world.home), world.persona.name]) expect(all).not.toContain(secret)
   })
