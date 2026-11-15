@@ -73,14 +73,17 @@ def test_it_names_the_application_with_no_answer_but_does_not_mark_it_unasked(re
     assert "set_status" not in result["tools"], result["tools"]
 
 
+ACTIONS = ("Let's go through my jobs. The Gridwise Labs one is not for me: I don't want a fully remote job. "
+           "Please prepare the Baltic Power Trading one. And I applied to the Kronvej one yesterday.")
+
+
 @pytest.fixture(scope="module")
 def actions(tmp_path_factory):
-    return run_skill(tmp_path_factory, "review-actions", "Let's go through my jobs.", max_turns=14,
-                     stop_after_tool="mark_reviewed", persona_kind="onboarded",
-                     facts_note="Once the assistant has shown you the jobs, do three things, one per message: say the "
-                                "Gridwise Labs one is not for you because you do not want a fully remote job; ask for "
-                                "the Baltic Power Trading one to be prepared; and say you applied to the Kronvej one "
-                                "yesterday. Then say you are done.")
+    # the stand-in user sees only the assistant's last message, so the three asks come in the opening one
+    return run_skill(tmp_path_factory, "review-actions", ACTIONS, max_turns=6, stop_after_tool="mark_reviewed",
+                     persona_kind="onboarded",
+                     facts_note="You have said everything you wanted in your first message. When the assistant has "
+                                "done it or asks whether there is anything else, say you are done.")
 
 
 def _calls(result, tool):
