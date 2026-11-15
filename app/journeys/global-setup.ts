@@ -1,8 +1,12 @@
-import { electronBinary } from './electron-binary'
+import { ensureElectron } from './electron-binary'
 import { startRun } from './teardown'
 
-export default function globalSetup(): void {
-  // before the workers start: they would otherwise race to download Electron's binary (#126)
-  electronBinary()
-  startRun()
+/** Fetches Electron's binary before the workers start (they would otherwise race to download it, #126), then the run. */
+export function makeGlobalSetup(fetch: () => string = () => ensureElectron(), start: () => void = startRun): () => void {
+  return () => {
+    fetch()
+    start()
+  }
 }
+
+export default makeGlobalSetup()
