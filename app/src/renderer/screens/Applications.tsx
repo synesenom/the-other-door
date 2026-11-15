@@ -125,7 +125,7 @@ export function Applications({
     setView('posting')
     told(result, title)
   }
-  // No answer for the tracker's 30 days: record it as ghosted, dated today.
+  // No answer for the tracker's days: record it as ghosted, dated today.
   // One call at a time: a second click before the answer would record ghosted twice.
   const markGhosted = (m: Match) => {
     if (ghosting.current) return

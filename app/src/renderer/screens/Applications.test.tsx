@@ -78,15 +78,15 @@ describe('Applications', () => {
   })
 
   describe('a card with no answer', () => {
-    const silent = match({ id: 'jobindex.2', title: 'Silent job', company: 'Globex', status: 'applied', no_answer: true, no_answer_days: 30 })
-    const quiet = match({ id: 'jobindex.6', title: 'Quiet job', status: 'applied', no_answer: false, no_answer_days: 30 })
+    const silent = match({ id: 'jobindex.2', title: 'Silent job', company: 'Globex', status: 'applied', no_answer: true, no_answer_days: 45 })
+    const quiet = match({ id: 'jobindex.6', title: 'Quiet job', status: 'applied', no_answer: false, no_answer_days: 45 })
 
     it('says so and offers Mark ghosted beside the card, not inside it', async () => {
       stubNarrow(false)
       setup([silent, quiet])
       render(<Applications />)
       const card = await screen.findByRole('button', { name: /Silent job/ })
-      expect(card).toHaveTextContent('No answer in 30 days')
+      expect(card).toHaveTextContent('No answer in 45 days')
       const ghost = screen.getByRole('button', { name: 'Mark ghosted' })
       expect(card.contains(ghost)).toBe(false)
       expect(card.parentElement).toBe(ghost.parentElement)
@@ -117,7 +117,7 @@ describe('Applications', () => {
       stubNarrow(true)
       const { call } = setup([silent, quiet], { set_status: { status: 'ghosted', current: 'ghosted' } })
       render(<Applications />)
-      expect(await screen.findByRole('button', { name: /Silent job/ })).toHaveTextContent('No answer in 30 days')
+      expect(await screen.findByRole('button', { name: /Silent job/ })).toHaveTextContent('No answer in 45 days')
       await userEvent.click(screen.getByRole('button', { name: 'Mark ghosted' }))
       expect(call).toHaveBeenCalledWith('set_status', { job_id: 'jobindex.2', status: 'ghosted' })
     })

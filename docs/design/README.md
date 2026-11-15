@@ -207,7 +207,7 @@ When it ends, a summary card replaces the button. With no new match it states th
 **Applications**: five columns, Prepared, Applied, Interviewing, Offer, Closed (rejected,
 ghosted, discarded), with plain cards (title, company, when). Interview rounds are dots
 on the card: ink = passed, accent ring = next. A card with no answer for the tracker's days
-says "No answer in 30 days" in place of when (an interview card after its stage), with a
+says "No answer in 45 days" in place of when (an interview card after its stage), with a
 quiet "Mark ghosted" button under it, outside the card's own button. The board scrolls sideways in its own box
 on a narrow window.
 
@@ -223,7 +223,7 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 right, nothing in it changes anything. Applications first (#66, #87): the interview rate. It leads
 like Claude usage, with the interview rate in `display-s` (the applications with an outcome, an interview, a
 rejection or no reply, that led to an interview) and one `small` line saying so with "3 of 5,
-likely between 40% and 77%" (the Wilson range); before any outcome, one muted line instead (no reply: marked ghosted, or no change for 30 days).
+likely between 40% and 77%" (the Wilson range); before any outcome, one muted line instead (no reply: marked ghosted, or no change for 45 days).
 Nothing else: where each application stands is the Applications board's columns and the matches
 are the Matches list, so neither is drawn again here. Claude usage next: the total of the last 7 days in
 `display-s` marked "≈", then one `small` line in ink that starts in bold "You don't pay this." (the

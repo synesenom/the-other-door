@@ -144,7 +144,7 @@ describe('scenes', () => {
 
   it('applications shows a card with no answer and its Mark ghosted', async () => {
     mount('applications')
-    expect(await screen.findByRole('button', { name: /^Accounting Manager/ })).toHaveTextContent('No answer in 30 days')
+    expect(await screen.findByRole('button', { name: /^Accounting Manager/ })).toHaveTextContent('No answer in 45 days')
     expect(screen.getByRole('button', { name: 'Mark ghosted' })).toBeInTheDocument()
   })
 
