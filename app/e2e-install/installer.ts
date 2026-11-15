@@ -170,3 +170,31 @@ export function signingCommands(platform: string, executable: string): string[][
   }
   return []
 }
+
+export interface UninstallIo {
+  run: (argv: string[]) => void
+  exists: (path: string) => boolean
+  wait: (ms: number) => void
+}
+
+/**
+ * Run the plan's uninstall commands and return what went wrong (empty = clean). On Windows the NSIS uninstaller
+ * hands over to a temporary copy and returns at once, so the install folder (which it must remove) is polled for
+ * up to 30 s before it counts as left behind.
+ */
+export function uninstallFailures(plan: Plan, platform: string, io: UninstallIo): string[] {
+  const failures: string[] = []
+  for (const argv of plan.uninstall) {
+    try {
+      io.run(argv)
+    } catch (e) {
+      failures.push(`could not uninstall: ${argv.join(' ')}: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+  if (platform === 'win32' && plan.root) {
+    const dir = win32.dirname(plan.executable)
+    for (let i = 0; i < 30 && io.exists(dir); i++) io.wait(1000)
+    if (io.exists(dir)) failures.push(`the uninstaller left ${dir} behind`)
+  }
+  return failures
+}

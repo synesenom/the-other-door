@@ -94,7 +94,8 @@ npm run test:install    # about two minutes, plus the first LaTeX download
 copied out; Windows: the NSIS installer with `/S /D=`; Linux: the AppImage made executable, or with
 `DOOR_INSTALLER_KIND=deb` the `.deb` through `sudo apt-get`, into `/opt`), prints its signature (`codesign`/`spctl`,
 `Get-AuthenticodeSignature`; reported, not judged, while the builds are unsigned) and `teardown.ts` uninstalls it
-(`DOOR_INSTALL_KEEP=1` keeps it). `install.e2e.ts` then launches the installed app with a throwaway `DOOR_HOME`,
+(`DOOR_INSTALL_KEEP=1` keeps it; a failed uninstall command, or on Windows an install folder the NSIS uninstaller left
+behind, fails the run). `install.e2e.ts` then launches the installed app with a throwaway `DOOR_HOME`,
 HOME and Chromium folder and the journeys' test world (`test/world/`): a CV in, the review saved, the first run to
 its summary, the best match prepared with the **bundled** Tectonic (a real LaTeX download), quit, reopened. It
 checks the server is the bundled Python on the bundled door with the bundled `bin/` first on PATH, doctor finds

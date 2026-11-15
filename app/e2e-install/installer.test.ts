@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, resourcesOf, signingCommands } from './installer'
+import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, resourcesOf, signingCommands, uninstallFailures } from './installer'
+import type { Plan } from './installer'
 
 const DIST = [
   'the-other-door-0.1.0-mac-arm64.dmg',
@@ -126,5 +127,41 @@ describe('signingCommands', () => {
     expect(signingCommands('win32', "C:\\t\\app\\the-other-door.exe")[0]!.slice(0, 3)).toEqual(['powershell', '-NoProfile', '-Command'])
     expect(signingCommands('win32', "C:\\t\\app\\the-other-door.exe")[0]![3]).toContain("Get-AuthenticodeSignature 'C:\\t\\app\\the-other-door.exe'")
     expect(signingCommands('linux', '/t/x.AppImage')).toEqual([])
+  })
+})
+
+describe('uninstallFailures', () => {
+  const plan = (over: Partial<Plan>): Plan => ({ kind: 'exe', install: [], executable: 'C:\\root\\app\\x.exe', uninstall: [['un', '/S']], root: 'C:\\root', ...over })
+
+  it('is empty when every command succeeds and the folder is gone', () => {
+    const f = uninstallFailures(plan({}), 'win32', { run: () => undefined, exists: () => false, wait: () => undefined })
+    expect(f).toEqual([])
+  })
+
+  it('names a command that failed', () => {
+    const f = uninstallFailures(plan({}), 'linux', {
+      run: () => { throw new Error('exit 1') },
+      exists: () => false,
+      wait: () => undefined,
+    })
+    expect(f).toEqual(['could not uninstall: un /S: exit 1'])
+  })
+
+  it('on Windows fails when the install folder is still there after waiting', () => {
+    let waits = 0
+    const f = uninstallFailures(plan({}), 'win32', { run: () => undefined, exists: () => true, wait: () => { waits++ } })
+    expect(waits).toBeGreaterThan(0)
+    expect(f).toEqual(['the uninstaller left C:\\root\\app behind'])
+  })
+
+  it('on Windows accepts an install folder that disappears while waiting', () => {
+    let n = 0
+    const f = uninstallFailures(plan({}), 'win32', { run: () => undefined, exists: () => ++n < 3, wait: () => undefined })
+    expect(f).toEqual([])
+  })
+
+  it('does not check the folder off Windows', () => {
+    const f = uninstallFailures(plan({ kind: 'appimage', uninstall: [] }), 'linux', { run: () => undefined, exists: () => true, wait: () => undefined })
+    expect(f).toEqual([])
   })
 })
