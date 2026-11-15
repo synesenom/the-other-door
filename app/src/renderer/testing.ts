@@ -132,6 +132,7 @@ export const summary = (over: Record<string, unknown> = {}) => ({
   interviews: {},
   application: {},
   pass_rates: {},
+  pass_rates_by_score: null,
   in_progress: null,
   employers: {},
   drive: {},

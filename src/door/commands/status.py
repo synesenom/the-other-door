@@ -264,7 +264,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         {...}, "interviews": {stage: {"passed", "rejected", "ghosted", "withdrawn",
         "pending"}}, "application": {"passed", "rejected", "ghosted",
         "withdrawn", "pending"}, "pass_rates": {stage: {"passed", "decided",
-        "rate", "low", "high"}}, "standing": {"offer", "interviewing", "waiting", "rejected", "ghosted",
+        "rate", "low", "high"}}, "pass_rates_by_score": {"split", "near_min", "top", "reading"} | None, "standing": {"offer", "interviewing", "waiting", "rejected", "ghosted",
         "withdrawn"}, "no_answer": {"count", "days"}, "in_progress": {...} | None, "employers": {"followed", "unfollowable",
         "unresolved"}, "drive": {"connected", "account", "last_synced",
         "last_error", "configured"}, "recurring_problem": bool, "plan": {...} | None, "cost": {...} | None}`` — every ledger status is present,
@@ -273,7 +273,9 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         (did each sent application lead to an interview); ``pass_rates`` is
         `tracker.pass_rate` for ``application`` and then each interview stage
         (rate of the decided rounds with its one-sigma Wilson interval, None
-        until one is decided); ``standing`` is `tracker.standings` (where each sent application stands now); ``no_answer`` is how many applied or interviewing applications that `list_matches(ongoing=True)` lists have had no change for more than ``days`` days (`tracker.no_answer_count`, #92); ``since_last_review`` is `_since_last_review`'s dict;
+        until one is decided); ``pass_rates_by_score`` is `tracker.score_bands` (#90): the application pass rate of the
+        sent applications scored at or above their median (``top``) and below it (``near_min``), None until each has
+        5 decided, ``reading`` ``"near_min_lower"`` only when the near-minimum range lies wholly below the top's; ``standing`` is `tracker.standings` (where each sent application stands now); ``no_answer`` is how many applied or interviewing applications that `list_matches(ongoing=True)` lists have had no change for more than ``days`` days (`tracker.no_answer_count`, #92); ``since_last_review`` is `_since_last_review`'s dict;
         ``in_progress`` is None unless a run holds the ledger lock right now
         and has reported progress: ``{"purpose", "pid", "started_at",
         "message", "done", "total", "site", "stage", "updated_at"}`` (the
@@ -324,6 +326,8 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "interviews": interviews,
         "application": application,
         "pass_rates": {stage: _tracker_mod.pass_rate(counts) for stage, counts in stages.items()},
+        "pass_rates_by_score": _tracker_mod.score_bands(
+            _tracker_mod.application_results(app_tracker), {p.get("id"): p.get("score") for p in postings}),
         "standing": _tracker_mod.standings(app_tracker),
         "no_answer": {"count": _tracker_mod.no_answer_count(app_tracker, job_ids=ongoing_ids), "days": _tracker_mod.NO_ANSWER_DAYS},
         "in_progress": _in_progress(jobs_dir),

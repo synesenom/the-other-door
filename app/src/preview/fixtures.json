@@ -1241,6 +1241,12 @@
     "high": 1.0
    }
   },
+  "pass_rates_by_score": {
+   "split": 0.74,
+   "top": {"passed": 5, "decided": 6, "rate": 0.8333, "low": 0.65, "high": 0.94},
+   "near_min": {"passed": 1, "decided": 6, "rate": 0.1667, "low": 0.06, "high": 0.35},
+   "reading": "near_min_lower"
+  },
   "in_progress": null,
   "employers": {
    "followed": 5,

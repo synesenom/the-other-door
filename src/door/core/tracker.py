@@ -54,6 +54,7 @@ all).
 
 import json
 import math
+import statistics
 from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -429,13 +430,51 @@ def application_outcomes(tracker: ApplicationTracker, *, now: datetime | None = 
     Returns:
         ``{"passed", "rejected", "ghosted", "withdrawn", "pending"}``.
     """
-    now = now if now is not None else _utcnow()
     counts = dict.fromkeys(ROUND_RESULTS, 0)
+    for result in application_results(tracker, now=now).values():
+        counts[result] += 1
+    return counts
+
+
+def application_results(tracker: ApplicationTracker, *, now: datetime | None = None) -> dict[str, str]:
+    """How each sent application went (#90): ``{job_id: a ROUND_RESULTS key}``, never-sent jobs left out."""
+    now = now if now is not None else _utcnow()
+    results = {}
     for job_id in tracker.job_ids():
         result = _application_result(tracker, job_id, now)
         if result is not None:
-            counts[result] += 1
-    return counts
+            results[job_id] = result
+    return results
+
+
+BAND_MIN_DECIDED = 5
+"""Each score band needs this many decided applications before its rate is shown (#90)."""
+
+
+def score_bands(results: dict[str, str], scores: dict[str, float | None], min_decided: int = BAND_MIN_DECIDED) -> dict | None:
+    """The application pass rate of the top and the near-minimum half of the scored applications (#90).
+
+    Splits ``results`` (:func:`application_results`) at the median of the positive ``scores``
+    (a job with no or zero score is left out): ``top`` is score at or above it, ``near_min`` below.
+
+    Returns:
+        ``{"split", "near_min", "top", "reading"}``, each band a :func:`pass_rate`; ``reading`` is
+        ``"near_min_lower"`` only when the near-minimum band's range lies wholly below the top's,
+        else None. None when either band has fewer than ``min_decided`` decided applications.
+    """
+    scored = {job: scores[job] for job in results if scores.get(job)}
+    if not scored:
+        return None
+    split = statistics.median(scored.values())
+    top = dict.fromkeys(ROUND_RESULTS, 0)
+    near = dict.fromkeys(ROUND_RESULTS, 0)
+    for job, score in scored.items():
+        (top if score >= split else near)[results[job]] += 1
+    rates = {"near_min": pass_rate(near), "top": pass_rate(top)}
+    if any(rate["decided"] < min_decided for rate in rates.values()):
+        return None
+    reading = "near_min_lower" if rates["near_min"]["high"] < rates["top"]["low"] else None
+    return {"split": split, **rates, "reading": reading}
 
 
 STANDINGS: tuple = ("offer", "interviewing", "waiting", "rejected", "ghosted", "withdrawn")

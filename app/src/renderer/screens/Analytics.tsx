@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { statusSummary, type CostBlock, type PassRate, type StatusSummary } from '../api'
+import { statusSummary, type CostBlock, type PassRate, type ScoreBands, type StatusSummary } from '../api'
 import { Market } from './Market'
 import { PageSections } from './PageSections'
 
@@ -38,6 +38,24 @@ function Rate({ rate }: { rate: PassRate | undefined }) {
     <div className="part-head">
       <p className="display-s">{pct(rate.rate)}</p>
       <p className="small">{`of your applications with an outcome (an interview, a rejection or no reply) led to an interview: ${rate.passed} of ${rate.decided}${range}.`}</p>
+    </div>
+  )
+}
+
+function bandLine(label: string, rate: PassRate): string {
+  const range = rate.low !== null && rate.high !== null ? `, likely between ${pct(rate.low)} and ${pct(rate.high)}` : ''
+  return `${label}: ${rate.passed} of ${rate.decided} led to an interview${range}.`
+}
+
+/** The same rate for the better-scored half of the matches and the half near the minimum score (#90). */
+function ScoreBandsView({ bands }: { bands: ScoreBands }) {
+  return (
+    <div className="part-head">
+      <p className="small">{bandLine('Best-scored matches', bands.top)}</p>
+      <p className="small">{bandLine('Matches near your minimum score', bands.near_min)}</p>
+      {bands.reading === 'near_min_lower' && (
+        <p className="small">Matches near your minimum score led to an interview less often: consider raising it.</p>
+      )}
     </div>
   )
 }
@@ -124,6 +142,9 @@ export function Analytics() {
               Applications
             </h2>
             <Rate rate={summary.pass_rates.application} />
+            {summary.pass_rates.application?.rate != null && summary.pass_rates_by_score && (
+              <ScoreBandsView bands={summary.pass_rates_by_score} />
+            )}
           </section>
         )}
         <section className="part" aria-labelledby="analytics-usage">

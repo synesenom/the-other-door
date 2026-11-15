@@ -337,3 +337,33 @@ def test_status_summary_core_gives_the_application_stage_and_each_stages_pass_ra
     assert list(result["pass_rates"]) == ["application", "screening"]
     assert (result["pass_rates"]["application"]["passed"], result["pass_rates"]["application"]["decided"]) == (1, 2)
     assert result["pass_rates"]["screening"]["rate"] is None
+
+
+def _sent_with_scores(env, scores_and_steps):
+    for n, (score, steps) in enumerate(scores_and_steps):
+        job = f"job-{n}"
+        _posting(env.jobs_dir, job, score=score)
+        for step in steps:
+            status_cmd._set_status_core(job, step, jobs_dir=env.jobs_dir)
+
+
+def test_status_summary_core_compares_the_pass_rate_of_top_and_near_minimum_scores(env):
+    _sent_with_scores(env, [(0.9, ["applied", "interview:screening"])] * 5 + [(0.5, ["applied", "rejected"])] * 5)
+
+    result = status_cmd._status_summary_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
+
+    bands = result["pass_rates_by_score"]
+    assert (bands["top"]["decided"], bands["near_min"]["decided"]) == (5, 5)
+    assert bands["split"] == pytest.approx(0.7)
+    assert bands["reading"] == "near_min_lower"
+
+
+def test_status_summary_core_has_no_score_bands_below_the_floor_or_without_postings(env):
+    _sent_with_scores(env, [(0.9, ["applied", "interview:screening"])] * 2 + [(0.5, ["applied", "rejected"])] * 2)
+    for n in range(10):  # sent, but no posting on disk
+        status_cmd._set_status_core(f"ghost-{n}", "applied", jobs_dir=env.jobs_dir)
+        status_cmd._set_status_core(f"ghost-{n}", "rejected", jobs_dir=env.jobs_dir)
+
+    result = status_cmd._status_summary_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
+
+    assert result["pass_rates_by_score"] is None
