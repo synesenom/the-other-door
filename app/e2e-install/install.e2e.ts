@@ -5,7 +5,7 @@
 // one, so the first Prepare downloads its LaTeX packages. No real claude, no plan, no API key: the world's
 // stand-in claude is first on PATH.
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect, INSTALLED, launch, osStub, test } from '../journeys/fixtures'
@@ -16,15 +16,32 @@ import type { Spawned } from './redirect'
 
 test.use({ worldOptions: { empty: true, persona: 'mette' } })
 
-// A failed run keeps the data folder's logs (door.log: the server's stderr and exit status when it stopped, #98)
-// in the report CI uploads.
+const REPORT = join(__dirname, '..', 'install-report')
+
+/** On Windows, the python, claude, door and Tectonic processes with their parents: what was still running (#18, #98). */
+function processes(): string {
+  if (process.platform !== 'win32') return ''
+  try {
+    return execFileSync('powershell', ['-NoProfile', '-Command',
+      "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'python|claude|door|tectonic' } | ForEach-Object { \"$($_.ProcessId) <$($_.ParentProcessId) $($_.Name): $($_.CommandLine.Substring(0, [Math]::Min(300, $_.CommandLine.Length)))\" }"],
+      { encoding: 'utf8', timeout: 30_000 })
+  } catch (p) { return `could not list: ${(p as Error).message}` }
+}
+
+// A failed run keeps, in the report CI uploads (#98): the data folder's logs (door.log: the server's stderr and exit
+// status when it stopped), the world's server stacks, the stand-in claude's starts and the spawn, and the processes.
 test.afterEach(({ world }, info) => {
   if (info.status === info.expectedStatus) return
   try {
-    cpSync(join(world.home, 'logs'), join(__dirname, '..', 'install-report', 'logs'), { recursive: true })
+    cpSync(join(world.home, 'logs'), join(REPORT, 'logs'), { recursive: true })
   } catch {
     // no logs to keep
   }
+  mkdirSync(join(REPORT, 'world'), { recursive: true })
+  for (const f of ['server-stacks.txt', 'claude-starts.jsonl', 'spawned.json']) {
+    if (existsSync(join(world.dir, f))) cpSync(join(world.dir, f), join(REPORT, 'world', f))
+  }
+  writeFileSync(join(REPORT, 'world', 'processes.txt'), processes())
 })
 
 const summary = (page: Page) => page.getByRole('region', { name: 'Run summary' })
@@ -90,7 +107,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   await saveAndSearch(page).click()
   await expect(page.getByRole('heading', { name: 'Finding jobs', level: 1 })).toBeVisible(LAUNCH)
   try {
-    await expect(summary(page)).toBeVisible({ timeout: 5 * 60_000 })
+    await expect(summary(page)).toBeVisible({ timeout: 5 * 60_000 * timeFactor(process.env) })
   } catch (e) {
     // name where the first run stood (#18): its progress record, the log's errors, the world's last calls, the screen
     const progress = existsSync(join(world.home, 'jobs', '.progress.json')) ? readFileSync(join(world.home, 'jobs', '.progress.json'), 'utf8') : 'none'
@@ -102,14 +119,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
       const blocks = readFileSync(stacksFile, 'utf8').split(/(?=Thread 0x|Current thread 0x)/)
       return blocks.filter((b) => b.includes('_find_core')).slice(-1).join('').slice(0, 12000)
     })() : 'none'
-    let procs = ''
-    if (process.platform === 'win32') {
-      try {
-        procs = execFileSync('powershell', ['-NoProfile', '-Command',
-          "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'python|claude|door|tectonic' } | ForEach-Object { \"$($_.ProcessId) <$($_.ParentProcessId) $($_.Name): $($_.CommandLine.Substring(0, [Math]::Min(300, $_.CommandLine.Length)))\" }"],
-          { encoding: 'utf8', timeout: 30_000 })
-      } catch (p) { procs = `could not list: ${(p as Error).message}` }
-    }
+    const procs = processes()
     throw new Error(`${(e as Error).message}\nprogress: ${progress.slice(0, 3000)}\nlog errors: ${JSON.stringify(errors(world.home))}` +
       `\nlast calls: ${JSON.stringify(world.calls().slice(-15))}\nscreen: ${screen.slice(0, 1500)}\nclaude starts: ${starts}\nprocesses:\n${procs}\nserver stacks:\n${stacks}`)
   }
@@ -125,12 +135,14 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   await best.click()
   await page.getByRole('button', { name: 'Prepare application', exact: true }).click()
   // a failed Prepare says so in the log at once: stop there with its message instead of waiting out the timeout
-  await expect
-    .poll(async () => (errors(world.home).length ? errors(world.home) : (await readyHeading(page).isVisible()) ? 'ready' : 'preparing'), {
-      timeout: 10 * 60_000 * timeFactor(process.env),
-      intervals: [2_000],
-    })
-    .toBe('ready')
+  const deadline = Date.now() + 10 * 60_000 * timeFactor(process.env)
+  for (;;) {
+    const logged = errors(world.home)
+    if (logged.length) throw new Error(`Prepare failed: ${JSON.stringify(logged)}`)
+    if (await readyHeading(page).isVisible()) break
+    if (Date.now() > deadline) throw new Error('Prepare did not finish in time and logged no error')
+    await page.waitForTimeout(2_000)
+  }
   await pagesLoaded(page, 'Letter', 1)
   const output = filesIn(world.home, 'jobs/output')
   expect(output).toHaveLength(1)

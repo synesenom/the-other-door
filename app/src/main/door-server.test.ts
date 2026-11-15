@@ -157,6 +157,40 @@ describe('what goes wrong, for the problem log', () => {
     expect(r.seen[0]![1]).toMatch(/^exit code 1, no signal/)
   })
 
+  it('a child that was killed: the signal', async () => {
+    const r = recorder()
+    const s = make({}, { onProblem: r.onProblem })
+    await s.call('json')
+    await s.call('kill').catch(() => undefined)
+    expect(r.seen[0]![1]).toMatch(/^exit code none, signal SIGKILL/)
+  })
+
+  it('a child that dies in a call: the MCP request log left out of its stderr', async () => {
+    const r = recorder()
+    const s = make({}, { onProblem: r.onProblem })
+    await s.call('json')
+    await s.call('exit', { noise: 300 }).catch(() => undefined)
+    expect(r.seen[0]![1]).not.toContain('Processing request of type')
+    expect(r.seen[0]![1]).toContain('Traceback (most recent call last)')
+  })
+
+  it('a child that dies with a long stderr: its end kept, under the log\'s cap', async () => {
+    const r = recorder()
+    const s = make({}, { onProblem: r.onProblem })
+    await s.call('json')
+    await s.call('exit', { filler: 80 }).catch(() => undefined)
+    const message = r.seen[0]![1]
+    expect(message).toMatch(/^exit code 1/)
+    expect(message).toContain('RuntimeError: the fake fell over')
+    expect(message.length).toBeLessThan(6000)
+  })
+
+  it('a child that will not start: its exit code', async () => {
+    const r = recorder()
+    await make({ FAKE_DIE_ON_START: '1' }, { onProblem: r.onProblem }).call('json').catch(() => undefined)
+    expect(r.seen[0]![1]).toContain('exit code 3')
+  })
+
   it('a child that will not start: why, with its stderr', async () => {
     const r = recorder()
     await make({ FAKE_DIE_ON_START: '1' }, { onProblem: r.onProblem }).call('json').catch(() => undefined)

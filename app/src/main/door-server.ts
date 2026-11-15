@@ -130,6 +130,13 @@ export function resolvePackagedSpawn(opts: { resourcesPath: string; home: string
 }
 
 const STDERR_KEEP = 8192
+/** The MCP server's own log of each request: one line per call, it would push a traceback out of the kept stderr (#98). */
+const REQUEST_LOG = /^.*Processing request of type .*\n/gm
+
+/** How the child ended; the pipe closes a moment before the exit is reported, so wait for it, but not for long. */
+function exitedSoon(conn: Connection): Promise<string> {
+  return Promise.race([conn.exited, new Promise<string>((r) => setTimeout(() => r('exit unknown'), 3000).unref())])
+}
 
 interface Connection {
   client: Client
@@ -250,8 +257,7 @@ export class DoorServer {
     }
     if (e instanceof McpError && e.code === ErrorCode.ConnectionClosed) {
       this.drop(conn)
-      // the pipe closes a moment before the exit is reported: wait for it, but not for long
-      const how = await Promise.race([conn.exited, new Promise<string>((r) => setTimeout(() => r('exit unknown'), 3000).unref())])
+      const how = await exitedSoon(conn)
       this.problem('server stopped', `${how}; ${this.stderrLines(200) || 'no output'}`)
       return new DoorError("The other door's server stopped; try again")
     }
@@ -291,7 +297,7 @@ export class DoorServer {
     const conn: Connection = { client, transport, get exited() { return exited } }
     this.stderr = ''
     transport.stderr?.on('data', (chunk: Buffer) => {
-      this.stderr = (this.stderr + chunk.toString()).slice(-STDERR_KEEP)
+      this.stderr = (this.stderr + chunk.toString()).replace(REQUEST_LOG, '').slice(-STDERR_KEEP)
     })
     client.onclose = () => this.drop(conn)
     client.onerror = () => undefined
@@ -315,7 +321,8 @@ export class DoorServer {
       await client.close().catch(() => undefined)
       const detail = this.stderr.trim().split('\n').slice(-3).join(' ')
       const why = e instanceof Error ? e.message : String(e)
-      this.problem('server would not start', `${why}${this.stderr.trim() ? ` | ${this.stderrLines(20)}` : ''}`)
+      const how = await exitedSoon(conn)
+      this.problem('server would not start', `${why}; ${how}${this.stderr.trim() ? ` | ${this.stderrLines(200)}` : ''}`)
       throw new DoorError(`could not start the door server: ${why}${detail ? ` (${detail})` : ''}`)
     }
     const theirs = client.getServerVersion()?.version

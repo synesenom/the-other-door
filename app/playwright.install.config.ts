@@ -1,9 +1,11 @@
 import { defineConfig } from '@playwright/test'
+import { timeFactor } from './e2e-install/installer'
 
 // The install test (#639): install the installer a user downloads (`npm run package` builds it into dist/,
 // or DOOR_INSTALLER names one), then set-up, first run and Prepare in the installed app, then uninstall.
 // Run locally on each system (app/README.md, "The install test"); `npm run test:install`.
-const factor = Number(process.env.DOOR_INSTALL_TIME_FACTOR) >= 1 ? Number(process.env.DOOR_INSTALL_TIME_FACTOR) : 1
+// DOOR_INSTALL_TIME_FACTOR (2 on the emulated Windows on ARM, #98) scales the test's and its slow steps' time
+const factor = timeFactor(process.env)
 
 export default defineConfig({
   testDir: 'e2e-install',

@@ -7,7 +7,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 
 const object = { type: 'object', properties: {}, additionalProperties: true }
-const tools = ['json', 'err', 'ambiguous', 'conflict', 'iserror', 'exit', 'slow', 'env', 'slow_progress'].map((name) => ({
+const tools = ['json', 'err', 'ambiguous', 'conflict', 'iserror', 'exit', 'kill', 'slow', 'env', 'slow_progress'].map((name) => ({
   name,
   description: `fake ${name}`,
   inputSchema: object,
@@ -41,8 +41,13 @@ server.setRequestHandler(CallToolRequestSchema, async (req, extra) => {
     case 'iserror':
       return text('Error executing tool: boom', true)
     case 'exit':
+      writeSync(2, 'INFO     Processing request of type CallToolRequest\n'.repeat(args.noise ?? 0))
+      writeSync(2, `${'x'.repeat(99)}\n`.repeat(args.filler ?? 0))
       writeSync(2, `Traceback (most recent call last):\n${'  File "x.py", line 1, in f\n'.repeat(args.depth ?? 0)}RuntimeError: the fake fell over\n`)
       process.exit(1)
+    case 'kill':
+      process.kill(process.pid, 'SIGKILL')
+      break
     case 'slow':
       await new Promise((r) => setTimeout(r, args.ms ?? 5000))
       return text({ slow: true })
