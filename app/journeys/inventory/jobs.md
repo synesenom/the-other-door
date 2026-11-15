@@ -42,7 +42,7 @@ Calls at start: `info` IPC, then `show_profile` {}. Once the shell is up: `statu
   - "Claude's usage limit is reached, resets 15:30" / "Claude can prepare N more, resets 15:30": `status_summary.plan` (`status: rejected`; or room for 3 prepares or fewer, or a `warning`; none once the window's reset has passed) → opens nothing, a `<p>` on desktop too; read on opening, after a run and after a Prepare, and once at the reset time. Also on the phone. — unit: `app/src/renderer/screens/problems.test.ts`, `app/src/renderer/App.test.tsx`, `app/src/preview/preview.test.tsx`
   - "You have no CV yet": `show_profile.cv.exists === false`, only with a config and never in the demo → Profile on its CV view. — unit: `app/src/renderer/App.test.tsx` (matches)
   - "Google Drive sync failed": `status_summary.drive.connected && last_error` → Settings. — unit: `app/src/renderer/App.test.tsx` (matches)
-  - "Something keeps going wrong. Send a report": `status_summary.recurring_problem` (`door.core.recurring`: the same site failed in each of its last 3 runs, ads left unscored in each of the last 2 runs, the server stopped or would not start in the last 7 days, or the same tool failed 3 times in 24 hours; only what came after the last saved report) → Settings scrolled to Report a problem. Saving a report reads `status_summary` again and the line goes; it goes by itself once the failure stops. A one-off failure: no line. Not on the phone. — ✓ a board that failed in each of the last three runs: the line opens Report a problem, and a saved report takes it away (report.journey.ts); unit: `tests/core/test_recurring_unit.py` (and goes once a run scores them); ✓ a board that failed in one run is said nowhere; the phone: App.test.tsx; the server and tool conditions: tests/core/test_recurring_unit.py
+  - "Something keeps going wrong. Send a report": `status_summary.recurring_problem` (`door.core.recurring`: the same site failed in each of its last 3 runs, ads left unscored in each of the last 2 runs, the server stopped or would not start in the last 7 days, or the same tool failed 3 times in 24 hours; only what came after the last saved report) → Settings scrolled to Report a problem. Saving a report reads `status_summary` again and the line goes; it goes by itself once the failure stops. A one-off failure: no line. Not on the phone. — ✓ a board that failed in each of the last three runs: the line opens Report a problem, and a saved report takes it away (report.journey.ts); unit: `tests/core/test_recurring_unit.py` (and goes once a run scores them); ✓ a board that failed in one run is said nowhere: the next run reads it again; the phone: App.test.tsx; the server and tool conditions: tests/core/test_recurring_unit.py
   - doctor failing → `{ok:false,checks:[]}` → claudeRow "unknown" → **no** Claude line. A doctor that has not answered yet → no line either. — ✓ a home with nothing wrong has no Needs you lines (doctor answered); not tested: doctor failing (would need the doctor tool faulted at start-up; Settings area)
   - Note: the e2e stand-in claude answers `auth status` with loggedIn false, so expect "Claude is not signed in" in every e2e home unless `claude-signed-in` exists. — (the journeys world is signed in by default; signedIn:false gives the line)
 - Narrow: the same "Needs you" group sits on top of Matches (`.narrow-top`), only while nothing is pushed. — unit: `app/src/renderer/App.test.tsx`
@@ -93,7 +93,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
      - a lock held for a non-run purpose: "another process of The other door is writing the ledgers (<purpose>) (started …, pid …); try again in a moment". This does NOT match the busy regex. — ✓ another process writing the ledgers: the alert names it, and the run works once it is done
      - "The run stopped: The other door heard nothing for 15 minutes." — not tested: needs 15 minutes without progress
      - "The other door's server stopped; try again" — ✓ the server dying during the run: the alert says it stopped, and the next run starts a new one
-4. The Matches `finding` prop is 'own' while own, 'elsewhere' while foreign. — ✓ narrow: the pill on Matches starts the run…; unit: `app/src/renderer/screens/Matches.test.tsx`
+4. The Matches `finding` prop is 'own' while own, 'elsewhere' while foreign. — ✓ narrow: the pill on Matches starts the run and, while it goes, leads back to it; unit: `app/src/renderer/screens/Matches.test.tsx`
 
 ### Finding screen: visible when `finding && (findingState !== null || foreign)`
 `findingState` = `{kind:'running'}` when the board is active and own but this window's run is not running (e.g. after a renderer reload); otherwise it is this window's run state.
@@ -118,7 +118,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
   - **done / failed**: `step.detail` verbatim (failed has no distinct mark beyond the number and CSS class `step-failed`). — ✓ Find new jobs runs the five steps… (done details); a failed step not tested: no world fault makes a whole step fail (a failing board leaves Search done)
   - **progressbar** "<Title> progress" (aria-valuenow = round(done/total·100)): only while running, with no items, and total>0. — ✓ a run started in a terminal… (Follow progress 25)
   - **list "<Title> sources"**: while running and some item is not done. Items are names with ` · <sites[id]>` counts and marks: done ✓, failed ✗, else blank. — not tested: the world's boards answer at once, so Search's sources list is never on screen long enough to be seen deterministically
-  - **Unchosen discovery sources**: under the Discover row whenever its status is not waiting (running, done, skipped or failed), from `show_profile.discovery_unchosen` (not in the demo or remote). Each reads "<label> (not enabled, enable)" with **btn "Enable <label>"** → leaves Finding and opens Profile on its employers section. — ✓ the sources never chosen are said under Discover, and Enable opens Profile on Employers; unit: `app/src/renderer/screens/Finding.test.tsx`
+  - **Unchosen discovery sources**: under the Discover row whenever its status is not waiting (running, done, skipped or failed), from `show_profile.discovery_unchosen` (not in the demo or remote). Each reads "<label> (not enabled, enable)" with **btn "Enable <label>"** → leaves Finding and opens Settings at Risky sources. — ✓ the sources never chosen are said under Discover, and Enable opens Settings on Risky sources; unit: `app/src/renderer/screens/Finding.test.tsx`
   - `.step-sites`: "site N" spans for `sites` entries not listed as items, while running. — not tested: same as the sources list (boards answer at once)
   - Time on the right: "N s" / "N min" for running (live, 1 s tick), done and failed; it needs `started_at` (and `finished_at`). — ✓ (shown in finding-running / finding-elsewhere: the world's step times are real wall-clock, so they read "0 s")
 - **Summary** (state summary and not watching), region **"Run summary"**:
@@ -127,7 +127,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
   - "Took N s" / "Took N min" from `elapsed_s`. — ✓ Find new jobs runs the five steps…
   - **btn "View matches"** → Matches with **New only on** (remounted), refreshKey++. — ✓ View matches opens Matches on New only, with the ads the run found
   - **btn "Show run record"** → IPC `showRun(started_at)` → shows `jobs/runs/<started_at with [^A-Za-z0-9_-]→->.json` in the OS file manager. Failure ("that run record is not on disk") is silently ignored. Likely untestable beyond "no error". — unit: `app/src/renderer/screens/Finding.test.tsx`
-  - **Not shown**: `failures`, per-site outcomes, `match.failed`, `skipped`. A run with failed sites looks the same as a clean one (#478). — unit: `app/src/renderer/screens/Finding.test.tsx` (says nothing of a site it could not read or ads it could not score) (disk: ✓ a board that fails…; ✓ scoring that fails…)
+  - **Not shown**: `failures`, per-site outcomes, `match.failed`, `skipped`. A run with failed sites looks the same as a clean one (#478). — unit: `app/src/renderer/screens/Finding.test.tsx` (says nothing of a site it could not read or ads it could not score) (disk: ✓ a board that fails: the run still ends in a summary and its record names the board; ✓ scoring that fails: the ads stay on disk unscored and the record lists them as failed)
 - **Error state** (not running, state error): **alert** "The other door could not start the run: <message>" and **btn "Find new jobs"** (primary) → startRun(). — ✓ find_jobs answering an error…; ✓ the server dying during the run…
 - The idle "Find new jobs" button with no error is unreachable: the screen is hidden when the state is null. — not tested: unreachable
 - While a summary is shown and a foreign run starts: the watching view replaces it. — unit: `app/src/renderer/App.test.tsx`
@@ -138,7 +138,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 ## 2. Matches (`Matches.tsx`, `MatchRow.tsx`)
 
 ### Calls
-- On mount and on every `tick`: `list_matches` with `{}`. The list is cleared first, so "Loading…" shows again on every refresh. New only calls nothing: it filters the list the window has. — ✓ New only lists only the new matches, and off again lists them all; unit: `app/src/renderer/screens/Matches.test.tsx`
+- On mount and on every `tick`: `list_matches` with `{}`. The list is cleared first, so "Loading…" shows again on every refresh. New only calls nothing: it filters the list the window has. — ✓ New only lists only the new matches, and off again lists them all, with no call; unit: `app/src/renderer/screens/Matches.test.tsx`
 - On mount and every tick: `status_summary` (shared in flight with the App's call). — unit: `app/src/renderer/screens/Matches.test.tsx`
 - `mark_seen {job_id}` for each new match opened. Failures (e.g. the ledger lock is held during a run) stay queued and are re-sent on each later list load. Silent. — ✓ opens it full width, marks it seen, and back keeps the row marked; unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ (expected fail) a match opened while another process runs is recorded as seen once the run ends — BUG: Matches is remounted when the run ends and forgets the refused id, so the match is new again
 
@@ -147,7 +147,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 - **btn "Add a job"** → ImportDialog (§7). — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
 - Narrow only, when the App passes onFindJobs (always): **btn "Find new jobs" / "Finding jobs…"** (pill). Disabled when `finding==='elsewhere'` or `preparing`; title PREPARING_TIP only when preparing. "Finding jobs…" text whenever `finding` is set. Click: own → Finding; else startRun. — ✓ Matches has its own "Find new jobs"…; unit: `app/src/renderer/screens/Matches.test.tsx`
 - **Spinner** (`status`) with `status_summary.in_progress.message`. This is read once per tick, not live. — unit: `app/src/renderer/screens/Matches.test.tsx`
-- **switch "New only"** (aria-checked). Toggle → the rows that were new when it turned on (or the list was last read); a match opened under it stays listed without its dot until then. — ✓ New only lists only the new matches, and off again lists them all
+- **switch "New only"** (aria-checked). Toggle → the rows that were new when it turned on (or the list was last read); a match opened under it stays listed without its dot until then. — ✓ New only lists only the new matches, and off again lists them all, with no call
 - `p.notice.small` "Could not read the run summary: <err>" when `status_summary` failed. It has no role. — unit: `app/src/renderer/screens/Matches.test.tsx`
 - **status "Loading…"** while `matches===null` and there is no error. — unit: `app/src/renderer/screens/Matches.test.tsx`
 - **alert** <list_matches error> (named). E.g. an invalid config surfaces here. — ✓ a list that cannot be read says why, and reads again once it can
@@ -180,7 +180,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 - Otherwise the row now at the same index is selected, clamped to the last row. If the list became empty → null, and the pushed view collapses into the list view. — ✓ Discard records the reason and opens the next match in its place (same index); unit: `app/src/renderer/screens/Matches.test.tsx`
 
 ### Status change (`changed`)
-- The notice uses the row's `title_en || title`. If the job is not in the list (a prepared job, an imported ad, a notification-opened job) it uses the literal **"the job"**, e.g. "Applied: the job. It is in Applications now." — ✓ Applied through "Company site" records how it was sent (title_en); ✓ the notice names a job that is not in the list
+- The notice uses the row's `title_en || title`. If the job is not in the list (a prepared job, an imported ad, a notification-opened job) it uses the literal **"the job"**, e.g. "Applied: the job. It is in Applications now." — ✓ Applied records the application (title_en); ✓ the notice names a job that is not in the list
 - **discarded** → it stays pushed; the job leaves the list on refresh and the **next match opens in its place**, with the notice above it ("Not for me: <title>."). — ✓ Discard records the reason and opens the next match in its place; unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 - Any other status → back to the list view, with the notice. — ✓ Prepared moves the job to Applications…; unit: `app/src/renderer/screens/Matches.test.tsx`
 - The Materials "I've applied" path goes through the same `changed`.
@@ -195,7 +195,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 ## 3. Posting (`Posting.tsx`), inside Matches or Applications
 
 ### Calls
-- `show {job_id}` on mount, after a status change (`version++`), and again when the job id changes. — ✓ a Danish ad: … (show on mount); unit: `app/src/renderer/screens/Posting.test.tsx` (again on a step)
+- `show {job_id}` on mount, after a status change (`version++`), and again when the job id changes. — ✓ a Danish ad: its title in English, where and when, the score, why it fits, the gaps, its language and text (show on mount); unit: `app/src/renderer/screens/Posting.test.tsx` (again on a step)
 - While `watching`: `show {job_id}` every 5 s. 'adopted' is set when a Prepare for this job is already in the module-level `preparing` map at mount; 'busy' is set after an in-progress refusal.
 - Prepare: `prepare {job_id}` or `{job_id, force:true}`, with progress. — ✓ Prepare application on a new match tailors, compiles and opens Ready to send; ✓ Prepare again replaces the application with a new one
 
@@ -275,14 +275,14 @@ Opened by the Posting's "Status" (full form) and the Posting's "Not for me" (`pr
 - **radiogroup "Status"**, radios **"Not yet applied"**, **"Prepared"**, **"Applied"**, **"Interview"**, **"Ghosted"**, **"Rejected"**, **"Offer"**, **"Not for me"**. — ✓ opens on the current status, with every status to choose from
   - The current status's group is pre-checked: unapplied → "Not yet applied"; `interview:*` → "Interview". — ✓ opens on the current status…; unit: `app/src/renderer/screens/StatusDialog.test.tsx`; unit: `tests/commands/test_status_cli.py`
   - A ledger status outside the list checks nothing. — not tested: unreachable (every tracker status maps to a radio)
-- With **Interview** checked: a nested **radiogroup "Kind of interview"**. Each radio's accessible name joins word and meaning, so match them with regexes: — unit: `app/src/renderer/screens/StatusDialog.test.tsx`; ✓ Interview: screening/impression/assessment/technical needs the kind picked first
+- With **Interview** checked: a nested **radiogroup "Kind of interview"**. Each radio's accessible name joins word and meaning, so match them with regexes: — unit: `app/src/renderer/screens/StatusDialog.test.tsx`; ✓ Interview: screening needs the kind picked first
   - "Screening A pre-screening or recruiter call"
   - "First impression The first non-technical interview"
   - "Assessment A personality or cognitive test"
   - "Technical A technical interview, case or take-home"
   - The kind starts empty even when the current status is an interview, so Save stays disabled until a kind is picked. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 - Textbox **"Notes (optional)"**, or **"Why not?"** when "Not for me" is chosen; there the reason is required. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
-- **btn "Cancel"**, **btn "Save"**. Save is disabled while busy, when no status is chosen, for Interview with no kind, and for Not for me with no reason. **Save is enabled at once on the current status**, so saving it unchanged is possible. — unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ Interview: … needs the kind picked first; unit: `app/src/renderer/screens/StatusDialog.test.tsx`
+- **btn "Cancel"**, **btn "Save"**. Save is disabled while busy, when no status is chosen, for Interview with no kind, and for Not for me with no reason. **Save is enabled at once on the current status**, so saving it unchanged is possible. — unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ Interview: screening needs the kind picked first; unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 - Escape closes. Tab is trapped inside. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 
 ### Failure branches (**alert** inside the dialog, Save re-enabled)
@@ -305,7 +305,7 @@ Opened by the Posting's "Status" (full form) and the Posting's "Not for me" (`pr
 | Status | Text |
 |---|---|
 | unapplied | "Back in Matches." | — unit: `app/src/renderer/screens/Matches.test.tsx`
-| prepared / applied / offer | "Prepared: T. It is in Applications now." (word from the list) | — ✓ Prepared moves the job…; ✓ Applied through …; unit: `app/src/renderer/screens/StatusDialog.test.tsx`
+| prepared / applied / offer | "Prepared: T. It is in Applications now." (word from the list) | — ✓ Prepared moves the job…; ✓ Applied records the application; unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 | interview:* | "Interview: T. It is in Applications now." | — ✓ Interview: screening needs the kind picked first; the other three kinds: unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 | ghosted / rejected | "Ghosted: T." / "Rejected: T." | — unit: `app/src/renderer/screens/StatusDialog.test.tsx`; Rejected: ✓ a rejection ends the last round and moves the card to Closed
 | discarded | "Not for me: T." | — ✓ Discard records the reason and opens the next match in its place
@@ -386,7 +386,7 @@ Reached through:
   - the note
   - for dots: hidden text "N round(s) passed, one under way: "
 - Note variants (`cardNote`):
-  - status rejected / ghosted / discarded → "rejected" / "ghosted" / "withdrawn", no dots — unit: `app/src/renderer/screens/board.test.ts` (rejected, ghosted); ✓ Not for me on a prepared job, through Status, closes it as withdrawn. NOTE: a match discarded before it was prepared or sent is not in `list_matches(closed)` at all (FULL_LEDGER's Kystbanken), right: it was never an application
+  - status rejected / ghosted / discarded → "rejected" / "ghosted" / "withdrawn", no dots — unit: `app/src/renderer/screens/board.test.ts` (rejected, ghosted); ✓ Not for me on a prepared job, through Status, closes it as withdrawn (NOTE: a match discarded before it was prepared or sent is not in `list_matches(closed)` at all, FULL_LEDGER's Kystbanken, right: it was never an application)
   - offer → dots plus "offer" — unit: `app/src/renderer/screens/board.test.ts`
   - `interview:*` → dots plus the last round's `stage`, else the status suffix (e.g. "technical") — unit: `app/src/renderer/screens/board.test.ts`; ✓ an interview round moves an applied card to Interviewing
   - prepared / applied → "today", "yesterday", "N days ago" (2–6), "1 week ago", "N weeks ago" (2–3), else "Mon D", from `updated_at`; null or unparsable → no note — unit: `app/src/renderer/screens/board.test.ts` ("yesterday"; the other wordings are board.ts unit tests' job)
@@ -399,7 +399,7 @@ Reached through:
 - **btn "← Applications"** (posting view only). No stepper and no j/k/Esc keys. — unit: `app/src/renderer/screens/Applications.test.tsx`; ✓ a prepared card opens its application and comes back through its posting
 - ReadingPane → Posting (§3) / Materials (§5). — ✓ a prepared card opens its application and comes back through its posting
 - Notice lines are **not** rendered in the pushed view. — not tested: a notice is set only when the view unpushes
-- `changed` always unpushes back to the board with the notice. "Not for me" goes back too; there is no next card. The title comes from the ongoing rows; a closed or imported job gives "the job". — ✓ an interview round moves an applied card to Interviewing; ✓ I've applied records the application, …
+- `changed` always unpushes back to the board with the notice. "Not for me" goes back too; there is no next card. The title comes from the ongoing rows; a closed or imported job gives "the job". — ✓ an interview round moves an applied card to Interviewing; ✓ I've applied records the application in one click…
 - Transitions to test:
   - prepared → applied moves the card between columns. — ✓ I've applied records the application in one click and keeps a copy of what was sent
   - Discarding a prepared job puts it in Closed as "withdrawn", but the Posting's "Not for me" button is hidden for jobs with materials. Use Status → "Not for me". — ✓ Not for me on a prepared job, through Status, closes it as withdrawn

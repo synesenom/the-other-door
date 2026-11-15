@@ -52,7 +52,12 @@ A journey covers a main path end to end, or a failure the user can act on (docs/
 - One test per path or failure, named for what the user does and sees.
 - The checklist is `inventory/<area>.md`: every action and branch the screens have, with the exact
   words. Each item is marked with the journey that covers it, the unit test that does
-  (`— unit: <file>`), or why it is not a journey.
+  (`— unit: <file>`), or why it is not a journey. `✓ <title>` names a journey test by its whole title,
+  followed by a note (`;`, ` (`, ` —`, `:`), or shortened with `…` (`✓ Prepare again asks first…`, at
+  least 3 words or 20 characters before the `…`, fitting one test, and the whole title written once
+  somewhere); each title on a line has its own `✓`. A skipped journey covers nothing: say why it is
+  skipped instead. `journeys/inventory.test.ts` (in `npm test`) fails on any of these, and when a test
+  file a line points at is gone, so a renamed or removed journey shows.
 - Find things as the user does: `getByRole(role, { name, exact: true })`, `getByLabel`. No CSS classes,
   no test ids.
 - After each action: the screen, then the disk (`world.readJson('jobs/applications.json')`), then, where

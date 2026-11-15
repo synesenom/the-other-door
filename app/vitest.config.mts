@@ -10,7 +10,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts', 'e2e-install/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts', 'e2e-install/**/*.test.ts', 'journeys/**/*.test.ts'],
     exclude: ['**/*.integration.test.ts', 'node_modules/**'],
   },
 })
