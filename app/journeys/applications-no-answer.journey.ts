@@ -2,7 +2,7 @@
 // records it as ghosted. The seed ages one ledger entry; the other journeys' ledger stays as it is.
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { expect } from './fixtures'
+import { expect, notice } from './fixtures'
 import { card, column, ledgerEntry, narrow, ready, toApplications } from './helpers/applications'
 import { before, test } from './helpers/settings'
 import { NOW, type World } from '../test/world/build'
@@ -35,7 +35,7 @@ test.describe('an applied card silent for 50 days', () => {
     await expect(page.getByRole('button', { name: 'Mark ghosted' })).toHaveCount(1)
 
     await applied.getByRole('button', { name: 'Mark ghosted' }).click()
-    await expect(page.getByRole('status')).toContainText('Ghosted')
+    await expect(notice(page)).toContainText('Ghosted')
     await expect(applied.getByRole('button')).toHaveCount(0)
     await expect(card(column(page, 'Closed'), SUNDLINE)).toContainText('ghosted')
     const entry = ledgerEntry(world, 'sundline-network-optimisation')
@@ -61,7 +61,7 @@ test.describe('an interview round silent for 50 days', () => {
     const interviewing = column(page, 'Interviewing')
     await expect(card(interviewing, PAKKEPOST)).toContainText('technical · no answer in 45 days')
     await interviewing.getByRole('button', { name: 'Mark ghosted' }).click()
-    await expect(page.getByRole('status')).toContainText('Ghosted')
+    await expect(notice(page)).toContainText('Ghosted')
     await expect(card(column(page, 'Closed'), PAKKEPOST)).toContainText('ghosted')
     expect(ledgerEntry(world, 'pakkepost-causal-experimentation')?.status).toBe('ghosted')
   })

@@ -154,3 +154,6 @@ export const test = base.extend<Journey>({
 })
 
 export const expect = baseExpect
+
+/** The page's notice (role status): not the "Loading…" line a list shows while it reads again, which is a status too. */
+export const notice = (page: Page) => page.getByRole('status').filter({ hasNotText: 'Loading…' })

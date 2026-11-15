@@ -120,6 +120,8 @@ test.describe('Your data', () => {
     await expect(ask).toHaveCount(0)
     await os.nextOpen([archive])
     await button(region(page, 'Your data'), 'Import…').click()
+    // Escape on the dialog the user sees: pressed before it opened, it closed nothing (flaky, #121)
+    await expect(ask).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(ask).toHaveCount(0)
     expect(world.toolCalls('import_data')).toEqual([])

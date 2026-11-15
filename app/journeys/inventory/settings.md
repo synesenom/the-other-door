@@ -178,7 +178,7 @@ No Sync now: `sync_data {}` runs by itself on connecting, once when the app open
 - While running, the status reads "Syncing with Google Drive…". — not tested: the fake Drive is instant and a tool delay would hold the lock; the spinner is not caught
 - Success message by `action`: — ✓ opening the app syncs once: this computer’s data goes to an empty Drive, and the row says when
   - `push`: "Sent this computer's data to Drive." — ✓ opening the app syncs once: this computer’s data goes to an empty Drive, and the row says when; ✓ Keep this computer sends its data to Drive, replacing the copy there
-  - `pull`: "Brought Drive's data to this computer." Also calls `onDataChanged` (show_profile, doctor, summary refresh). — ✓ opening the app brings Drive’s data here, keeping this computer’s in backups/, and reads it again; ✓ Keep Drive brings Drive’s data here; this computer’s is kept in backups/
+  - `pull`: "Brought Drive's data to this computer." Also calls `onDataChanged` (show_profile, doctor, summary refresh); not covered by a journey. On opening, the server has already pulled as it started (`mcp_server._startup_pull`), so the window's sync finds nothing and the screens read Drive's data from their first read. — ✓ opening the app brings Drive’s data here, keeping this computer’s in backups/; ✓ Keep Drive brings Drive’s data here; this computer’s is kept in backups/
   - `nothing`: "Already in step." — ✓ opening the app syncs once: this computer’s data goes to an empty Drive, and the row says when
   - `skipped`: "Nothing to send yet." — not tested: skipped needs a home with no profile, which has no Settings
   - Anything else: "Synced." — not tested: unreachable: sync_core answers the four actions only

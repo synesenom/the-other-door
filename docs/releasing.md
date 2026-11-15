@@ -22,7 +22,7 @@ only after a person has installed it on a clean machine of each system and gone 
   and watch it. It builds exactly as the tag will (the same packaging, the same renames, the same smoke and install
   tests, Windows on ARM included) but makes no tag, no draft and no release; the renamed installers and manifests stay
   on the run's page for 14 days. A red dry run is fixed through a pull request, with nothing to clean up.
-- `main` is green (the Python suite and the app's unit tests, smoke test and core journeys).
+- `main` is green (the Python suite and the app's unit tests, smoke test and every journey).
 - Installed apps update from the public repo's published release (#17): nothing to configure. The draft holds
   the update files the apps read, `latest.yml`, `latest-linux.yml` and the merged `latest-mac.yml` (the
   `mac-manifest` job), the mac `.zip` files and the `.blockmap` files; every `url:` in a manifest is an asset of the
