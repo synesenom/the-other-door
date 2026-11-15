@@ -90,7 +90,7 @@ you tell Claude you're done reviewing.
 `find` works without a conversation: it scrapes only what's new, never scores a posting twice,
 and holds a lock on `jobs/` so a review session started while it works fails cleanly
 ("a run is in progress") instead of racing it. Into a pipe or a log file it prints one line
-per step and a summary line; the full record is in `jobs/runs/`. While it works, `jobs summary` from another terminal prints an
+per step and a summary line; the full record is in `jobs/runs/`. A site that failed is also named on stderr with its last error (so a log needs `2>&1`); sites that came back empty or are resting are in the run record only. While it works, `jobs summary` from another terminal prints an
 `In progress:` block (what it is doing now, read from `jobs/.progress.json`). `claude` must be logged in on that machine. Your next conversation (or `jobs summary`) then starts with "since last review: 1 run, N new matches".
 
 ## Command reference
@@ -234,7 +234,7 @@ and `collect` have, those two lines run again for the employers it found and end
 `[3/5] follow (late): …`, and discover's line comes when it ends). When stdout is a
 pipe or a log file, one plain line is printed as each step ends, for example
 `[4/5] collect: 158 employers, 2,431 postings, 2 failed (41m)`, and then the summary line.
-A site that failed is named under the lines with its last recorded error. The run then shows the top matches like `jobs list`, and what to run next.
+A site that failed is named under the lines with its last recorded error (on a pipe, on stderr, failed sites only; empty and resting ones are in the run record). The run then shows the top matches like `jobs list`, and what to run next.
 
 While a `find` holds the `jobs/` lock it keeps the latest event in
 `jobs/.progress.json`, and `jobs summary` (or the `status_summary` tool) prints it as

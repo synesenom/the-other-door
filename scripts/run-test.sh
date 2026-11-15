@@ -22,7 +22,7 @@
 #                            Serial; several minutes and some plan usage each.
 #
 #   ./scripts/run-test.sh --cli-journeys   The real ./door in the app's test world (init,
-#                            find, jobs show/prepare/status; tests/cli_journeys/). Needs
+#                            find, jobs show/prepare/status and their failures; tests/cli_journeys/). Needs
 #                            Node and `npm ci` in app/. CI runs it on Linux and Windows.
 #
 #   ./scripts/run-test.sh --app      The desktop app's tests, as CI runs them: type

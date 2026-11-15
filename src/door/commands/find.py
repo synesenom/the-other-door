@@ -327,10 +327,13 @@ def _echo_follow_results(block: dict) -> None:
             click.echo(f"{_MARKS[row['status']]} {row['company']}: {row['status']} - {row['reason']} ({verb})")
 
 
-def _echo_site_problems(record: dict) -> None:
-    """One line per site that failed, errored, came back empty or was left alone, on stderr."""
+def _echo_site_problems(record: dict, *, plain: bool = False) -> None:
+    """One line per site that failed, errored, came back empty or was left alone, on stderr.
+    On a pipe (`plain`) only the failed and errored ones, the sites that make `find` exit 2."""
     for entry in runs.site_entries(record):
         outcome = entry.get("outcome")
+        if plain and outcome not in ("failed", "error"):
+            continue
         if outcome in ("failed", "error", "empty"):
             click.echo(f"  {scrape_cmd._site_done_message(entry)}", err=True)
         elif outcome == "resting":
@@ -364,8 +367,8 @@ def _execute(ctx: click.Context, step: str | None, **options) -> None:
 
     if record["follow"] and (record["follow"]["dry_run"] or (not plain and step == "follow")):
         _echo_follow_results(record["follow"])
+    _echo_site_problems(record, plain=plain)
     if not plain:
-        _echo_site_problems(record)
         if record["match"]:
             _render_ending(record, min_score)
     if step is None and plain:

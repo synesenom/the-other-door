@@ -65,6 +65,23 @@ class World:
                               text=True, encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
         return done.returncode, done.stdout, done.stderr
 
+    def set_board(self, site: str, **fields) -> None:
+        """Change what the world's board `site` does (`fail="msg"`); read again by every scrape."""
+        path = self.dir / "world.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data.setdefault("boards", {}).setdefault(site, {}).update(fields)
+        path.write_text(json.dumps(data), encoding="utf-8")
+
+    def clear_board_fault(self, site: str) -> None:
+        path = self.dir / "world.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data.get("boards", {}).get(site, {}).pop("fail", None)
+        path.write_text(json.dumps(data), encoding="utf-8")
+
+    def faults(self, faults: dict) -> None:
+        """Make the stand-in `claude` fail as `faults` says (`{"claude": {"tailor": {"fail": "msg"}}}`); `{}` clears."""
+        (self.dir / "faults.json").write_text(json.dumps(faults), encoding="utf-8")
+
     def calls(self) -> list[dict]:
         path = self.dir / "calls.jsonl"
         return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line] if path.exists() else []
