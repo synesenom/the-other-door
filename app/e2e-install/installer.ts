@@ -100,7 +100,9 @@ export function installPlan(installer: string, platform: string, root: string): 
         kind,
         install: [[installer, '/S', `/D=${dir}`]],
         executable: p.join(dir, `${EXE_NAME}.exe`),
-        uninstall: [[p.join(dir, `Uninstall ${APP_NAME}.exe`), '/S']],
+        // electron-builder names the uninstaller after the executable; _?= runs it in place and waits (without it,
+        // NSIS copies it to %TEMP% and returns at once, racing the folder's removal); like /D=, last and unquoted
+        uninstall: [[p.join(dir, `Uninstall ${EXE_NAME}.exe`), '/S', `_?=${dir}`]],
         root,
       }
     }
