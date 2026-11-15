@@ -520,7 +520,7 @@ def _score_chunk(
     while True:
         error = ""
         try:
-            proc = run_fn(argv, input=user_message, capture_output=True, text=True, env=env)
+            proc = run_fn(argv, input=user_message, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
         except (FileNotFoundError, OSError) as exc:
             return _failed(ids, errors, f"claude could not be run: {exc}")
 

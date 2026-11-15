@@ -104,7 +104,7 @@ def _run_claude(
             argv,
             input=stdin,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=_TIMEOUT_S,
             env=claude_cli.env(),
         )

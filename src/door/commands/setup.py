@@ -223,7 +223,7 @@ def _install_step(step: dict, interactive: bool = False) -> dict:
         entry["ran"].append(argv)
         try:
             # interactive (a shell): an installer may ask on the keyboard; else nothing to read
-            proc = subprocess.run(argv, capture_output=not interactive, text=True,
+            proc = subprocess.run(argv, capture_output=not interactive, text=True, encoding="utf-8", errors="replace",
                                   stdin=None if interactive else subprocess.DEVNULL)
         except FileNotFoundError:
             entry.update(ok=False, error=f"`{argv[0]}` not found")
@@ -398,7 +398,7 @@ def _register_mcp_server(platform: str) -> tuple[bool, str | None]:
     if step is not None:
         if not step["commands"]:
             return False, step["hint"]
-        subprocess.run(step["cleanup"], capture_output=True, text=True, stdin=subprocess.DEVNULL)  # a stale entry from an earlier setup
+        subprocess.run(step["cleanup"], capture_output=True, text=True, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)  # a stale entry from an earlier setup
         entry = _install_step(step)
         if not entry["ok"]:
             return False, entry["error"]

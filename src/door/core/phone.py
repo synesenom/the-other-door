@@ -235,7 +235,7 @@ def start(home: Path, connection: str, **deps) -> dict:
         tailscale = d["find_tailscale"]()
         if not tailscale:
             return {"needs": "install_tailscale", "link": TAILSCALE_DOWNLOAD}
-        state = json.loads(d["run"]([tailscale, "status", "--json"], capture_output=True, text=True).stdout or "{}")
+        state = json.loads(d["run"]([tailscale, "status", "--json"], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout or "{}")
         if state.get("BackendState") != "Running":
             return {"needs": "sign_in_tailscale", "link": TAILSCALE_DOWNLOAD}
         dns = (state.get("Self") or {}).get("DNSName", "").rstrip(".")
@@ -278,7 +278,7 @@ def start(home: Path, connection: str, **deps) -> dict:
             return {"error": f"the tunnel could not connect to Cloudflare; see {log}"}
         run["address"] = address()
     else:
-        served = d["run"]([tailscale, "serve", "--bg", str(port)], capture_output=True, text=True)
+        served = d["run"]([tailscale, "serve", "--bg", str(port)], capture_output=True, text=True, encoding="utf-8", errors="replace")
         if served.returncode != 0:
             _stop_pids(run, d["kill"])
             said = (served.stdout or "") + (served.stderr or "")
@@ -304,7 +304,7 @@ def stop(home: Path, **deps) -> dict:
     if run.get("connection") == "tailscale":
         tailscale = d["find_tailscale"]()
         if tailscale:
-            d["run"]([tailscale, "serve", "--https=443", "off"], capture_output=True, text=True)
+            d["run"]([tailscale, "serve", "--https=443", "off"], capture_output=True, text=True, encoding="utf-8", errors="replace")
     _run_file(home).unlink(missing_ok=True)
     return {"stopped": True}
 

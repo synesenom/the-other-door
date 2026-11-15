@@ -163,7 +163,7 @@ def run(
     argv = [installers.find_claude() or "claude", "-p", *args]
     try:
         result = subprocess.run(
-            argv, capture_output=True, text=True, cwd=cwd or workspace.REPO_ROOT,
+            argv, capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=cwd or workspace.REPO_ROOT,
             timeout=timeout_s, env=env(profile_dir=profile_dir),
             # never the server's stdin (tests/core/test_subprocess_stdin_guard_unit.py): the input, else nothing
             input=input, stdin=None if input is not None else subprocess.DEVNULL,

@@ -78,7 +78,7 @@ def _run_scraper_fixer(site: str, raw_path: Path, timeout_s: float | None = _DEF
         result = subprocess.run(
             [installers.find_claude() or "claude", "-p", prompt, "--allowedTools", ",".join(_fixer_tools(repo_root, raw_path)),
              "--settings", json.dumps(_FIXER_SETTINGS), *claude_cli.STREAM_ARGS],
-            capture_output=True, text=True, cwd=repo_root, timeout=timeout_s, env=claude_cli.env(), stdin=subprocess.DEVNULL,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=repo_root, timeout=timeout_s, env=claude_cli.env(), stdin=subprocess.DEVNULL,
         )
     except subprocess.TimeoutExpired:
         raise ScraperFixerError(f"timed out after {timeout_s:.0f}s") from None
@@ -144,7 +144,7 @@ def default_gate(site: str, repo_root: Path, profile_dir: Path, run=subprocess.r
     """
     try:
         tests = run(["poetry", "run", "pytest", "-m", "not live", "-q"], cwd=repo_root,
-                    capture_output=True, text=True, timeout=_GATE_TEST_TIMEOUT_S)
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=_GATE_TEST_TIMEOUT_S)
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
         return False, f"could not run the test suite: {exc}"
     if tests.returncode != 0:
@@ -154,7 +154,7 @@ def default_gate(site: str, repo_root: Path, profile_dir: Path, run=subprocess.r
         # `python -c` puts only the current directory on sys.path; the package is src/door/.
         pythonpath = os.pathsep.join(p for p in (str(Path(repo_root) / "src"), os.environ.get("PYTHONPATH")) if p)
         probe = run(["poetry", "run", "python", "-c", _PROBE_SNIPPET, site, str(profile_dir)], cwd=repo_root,
-                    capture_output=True, text=True, timeout=_GATE_PROBE_TIMEOUT_S,
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=_GATE_PROBE_TIMEOUT_S,
                     env={**os.environ, "PYTHONPATH": pythonpath})
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
         return False, f"could not run the probe: {exc}"
@@ -194,7 +194,7 @@ def _changed_paths(porcelain: str) -> list[str]:
 
 
 def _git(run, repo_root: Path, *args: str):
-    return run(["git", *args], cwd=repo_root, capture_output=True, text=True)
+    return run(["git", *args], cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
 def _restore(run, repo_root: Path, original: str, branch: str) -> None:
@@ -309,7 +309,7 @@ def fix_scraper(
                 ["gh", "pr", "create", "--base", base, "--head", branch,
                  "--title", f"fix: {site} scraper for a changed site structure",
                  "--body", f"Found by `doctor` (scraper drift). Gated by the offline suite and a fresh probe.\n\n{summary}"],
-                cwd=repo_root, capture_output=True, text=True,
+                cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
             )
         except (FileNotFoundError, OSError):
             return {**out, "outcome": "local_branch", "branch": branch, "commands": [pr_cmd]}
