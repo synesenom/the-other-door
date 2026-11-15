@@ -353,6 +353,37 @@ def test_list_rows_carry_their_last_change_and_interview_rounds(cli_env):
     assert {m["id"]: (m["updated_at"], m["rounds"]) for m in fresh}["job-new"] == (None, [])
 
 
+def test_list_rows_say_when_an_application_had_no_answer_for_30_days(cli_env):
+    from datetime import datetime, timedelta, timezone
+
+    from door.commands import matches as matches_cmd
+    import door.core.tracker as tracker_mod
+
+    now = datetime.now(tz=timezone.utc)
+    old, recent = now - timedelta(days=40), now - timedelta(days=5)
+    cases = {
+        "job-a": [("applied", old)], "job-b": [("applied", old), ("interview:technical", old + timedelta(days=1))],
+        "job-c": [("applied", recent)], "job-d": [("applied", old), ("offer", old)],
+        "job-e": [("applied", old), ("rejected", old)], "job-f": [("prepared", old)],
+    }
+    app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
+    for job_id, events in cases.items():
+        write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", job_id, score=0.9, title=job_id)
+        for status, at in events:
+            app_tracker.set_status(job_id, status, now=at)
+    app_tracker.save()
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-g", score=0.9, title="untracked")
+
+    rows = {}
+    for kwargs in ({"ongoing": True}, {"closed": True}, {"min_score": 0.0}):
+        rows.update({m["id"]: m for m in matches_cmd._list_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir, **kwargs)["matches"]})
+    flags = {job_id: row["no_answer"] for job_id, row in rows.items()}
+    assert flags["job-a"] is True and flags["job-b"] is True
+    assert [flags[j] for j in ("job-c", "job-d", "job-e", "job-f")] == [False] * 4
+    assert flags.get("job-g", False) is False
+    assert all(row["no_answer_days"] == tracker_mod.NO_ANSWER_DAYS for row in rows.values())
+
+
 # --------------------------------------------------------------------------- #
 # list_matches `scored` (issue #636)
 # --------------------------------------------------------------------------- #
@@ -424,7 +455,8 @@ def test_weak_is_the_three_best_below_the_bar_when_nothing_cleared_it(cli_env):
     assert result["matches"] == []
     assert [m["id"] for m in result["weak"]["matches"]] == ["job-0", "job-1", "job-2"]
     assert set(result["weak"]["matches"][0]) == {
-        "id", "score", "title", "title_en", "company", "location", "work_permit", "status", "is_new", "updated_at", "rounds"}
+        "id", "score", "title", "title_en", "company", "location", "work_permit", "status", "is_new", "updated_at", "rounds",
+        "no_answer", "no_answer_days"}
 
 
 def test_weak_has_fewer_than_three_when_fewer_were_scored(cli_env):

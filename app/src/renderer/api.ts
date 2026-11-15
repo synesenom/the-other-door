@@ -205,6 +205,10 @@ export interface Match {
   updated_at?: string | null
   /** The interview rounds so far, each passed, still pending, or how it ended. */
   rounds?: { stage: string; result: string }[]
+  /** An applied or interviewing job with no change for more than `no_answer_days` days (the tracker's rule, #89). */
+  no_answer?: boolean
+  /** The tracker's `NO_ANSWER_DAYS`, sent with every row so the app does not repeat it. */
+  no_answer_days?: number
 }
 
 export interface MatchesResult {

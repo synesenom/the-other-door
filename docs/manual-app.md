@@ -353,7 +353,9 @@ its count, the most recently changed job first. A card is the job's title and co
 line: when it last moved, its interview rounds as dots (ink for a round passed, a blue ring for
 the one now) with the round's name, or how it ended. Closed holds the applications that ended,
 rejected, ghosted or withdrawn after you prepared or sent them (a match you dismissed with
-"Not for me" is not one). The line under the title counts
+"Not for me" is not one). An applied job, or one in interviews, with no change for 30 days
+says "No answer in 30 days" on its card, with a **Mark ghosted** button under it that records it as
+ghosted, dated today. The line under the title counts
 the jobs in play and in interviews. Clicking a card opens its posting across the whole window,
 where you change its status or open a prepared job's application; "← Applications" goes back.
 **Add a job** imports an ad. When nothing is in play, the screen says so. On a narrow window
@@ -547,7 +549,7 @@ How it is going, as figures: nothing here changes anything. Not on the phone.
 interview, a rejection or no reply) led to an interview (offers count, since they passed one), with
 the range it likely lies in while there are few. It says how well the matches *The other door*
 finds fit you. An application with no change for 30 days counts as no reply, whether or not you
-marked it ghosted; once you record what happened next, it counts as that. Until an application has
+marked it ghosted (the Applications board offers to); once you record what happened next, it counts as that. Until an application has
 an outcome it says only that the rate shows here then. Where each application stands is on the
 Applications board, and your matches are on Matches.
 

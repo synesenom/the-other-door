@@ -559,6 +559,8 @@ details.part > summary + * { margin-top: var(--space-4); }
 .board-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .board-card { width: 100%; text-align: left; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) var(--space-5); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-l); color: var(--color-ink); }
 .board-card-title { font-weight: 600; }
+.board-card-item { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+.board-card-ghost { text-align: left; flex-wrap: wrap; }
 .board-card-note { display: flex; align-items: center; gap: var(--size-gap-s); margin-top: var(--space-2); }
 .round-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .round-passed { background: var(--color-ink); }
