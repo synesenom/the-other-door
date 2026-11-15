@@ -1,7 +1,7 @@
 ---
 name: simplicity-reviewer
 description: Review a finished change for needless complexity — code that could be shorter, reuse what already exists, or not exist at all; abstractions, options and fallbacks nothing asks for; leftovers of old behaviour against the no-backward-compatibility rule; a diff larger than its goal. Spawned with the other reviewers before a PR is summarised (CLAUDE.md "Review"); not for direct use. The prompt must include the base branch and the issue(s) or the goal of the change.
-model: fable
+model: sonnet
 tools:
   - Bash
   - Glob

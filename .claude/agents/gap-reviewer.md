@@ -1,7 +1,7 @@
 ---
 name: gap-reviewer
 description: Review a finished change for the gaps its author did not mention — what the issue asked and the branch does not do, behaviour left inconsistent with the rest of the code, a case with no test, docs that now say something false, a follow-up the change makes necessary. Spawned before a PR is summarised to the user (CLAUDE.md "Review"); not for direct use. The prompt must include the base branch and the issue(s) or the goal of the change.
-model: fable
+model: opus
 tools:
   - Bash
   - Glob
