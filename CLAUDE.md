@@ -199,7 +199,7 @@ and helps decide. Unless the user asks for something else:
    If a tool says
    "a run is in progress", tell the user and wait — don't retry in a loop.
 4. A row with `no_answer` (from `list_matches(ongoing=True)`, or `show`): say it in words ("no answer in
-   `no_answer_days` days"), by title and company, and offer `set_status` `ghosted`, never unasked
+   `no_answer_days` days"), by title and company, and offer to mark it ghosted; call `set_status` `ghosted` only when they say so
    (their words in `notes`).
    "show the Trustpilot one" → `show`; "not this one" → `set_status` `discarded` (their reason in `notes`); "prepare it" →
    `prepare` ("prepare the best one": no `job_id`), then `show` and summarise its `materials` (keywords, what was tailored, page counts, letter length) with
