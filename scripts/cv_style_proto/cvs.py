@@ -8,7 +8,6 @@ education[{degree,school,dates}], skills[], languages[], extra_sections[{heading
 from __future__ import annotations
 
 import html
-from pathlib import Path
 
 
 _PEOPLE = [
