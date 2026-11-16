@@ -34,3 +34,19 @@ def test_every_class_a_templates_header_comment_names_is_one_the_guard_accepts()
         named = _classes(_header_comment(name))
         assert named, name
         assert named - html_guard.CLASSES - {"photo"} == set(), name
+
+
+KINDS = {"phone", "email", "web", "location", "linkedin", "github"}
+
+
+def test_the_tailor_is_told_the_tagline_and_every_contact_kind():
+    named = _classes(_tailor_blocks())
+    assert {"tagline"} | KINDS <= named
+
+
+def test_each_templates_header_comment_names_the_contact_kinds():
+    for name in ("cv.template.html", "cover-letter.template.html"):
+        text = _header_comment(name)
+        for kind in KINDS:
+            assert kind in text, (name, kind)
+    assert "tagline" in _header_comment("cv.template.html")
