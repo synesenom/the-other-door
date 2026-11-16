@@ -163,9 +163,11 @@ class Typography(_Strict):
 
 
 class DateFormat(_Strict):
-    """How a date is written out: ``pattern`` over ``{day}``, ``{month}`` and ``{year}``, the twelve month names."""
+    """How a date is written out: ``pattern`` over ``{day}``, ``{month}`` and ``{year}``, the twelve month names;
+    ``first`` is the pattern for the 1st of a month where it is written differently ("1er novembre")."""
 
     pattern: str = "{month} {day}, {year}"
+    first: str | None = None
     months: list[str] = []
 
     @field_validator("months")
@@ -180,6 +182,13 @@ class DateFormat(_Strict):
     def _fields(cls, v: str) -> str:
         if not all(f"{{{name}}}" in v for name in ("day", "month", "year")):
             raise ValueError("date.pattern holds {day}, {month} and {year}")
+        return v
+
+    @field_validator("first")
+    @classmethod
+    def _first_fields(cls, v: str | None) -> str | None:
+        if v is not None and not all(f"{{{name}}}" in v for name in ("month", "year")):
+            raise ValueError("date.first holds {month} and {year}")
         return v
 
 
@@ -652,7 +661,8 @@ def format_date(day, code: str | None = None) -> str:
     language file without a ``[date]`` block."""
     pack = languages().get(code or "")
     fmt = pack.date if pack and pack.date.months else languages()["en"].date
-    return fmt.pattern.format(day=day.day, month=fmt.months[day.month - 1], year=day.year)
+    pattern = fmt.first if day.day == 1 and fmt.first else fmt.pattern
+    return pattern.format(day=day.day, month=fmt.months[day.month - 1], year=day.year)
 
 
 def month_numbers(codes: tuple[str, ...] | None = None) -> dict[str, int]:
