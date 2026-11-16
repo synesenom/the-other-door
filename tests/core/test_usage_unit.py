@@ -458,3 +458,8 @@ def test_a_retry_older_than_every_selected_tailoring_is_left_out(monkeypatch):
     monkeypatch.setattr(usage, "PREPARES", 1)
     lines = [_ln(0, "tailoring", weight=1.0), _ln(1, "tailoring_retry", weight=5.0), _ln(2, "tailoring", weight=1.0)]
     assert usage.run_sizes(lines, [])["prepare"] == pytest.approx(1.0)
+
+
+def test_the_style_builder_names_its_calls_and_they_are_labelled():
+    assert usage.FEATURES["style"] == "other"
+    assert usage.FEATURE_LABELS["style"]

@@ -15,6 +15,7 @@ from door.core import stored
     "jobs/output/jobindex.123/cover_letter.html.bak", "jobs/output/jobindex.123/cv.tex", "jobs/output/jobindex.123/cv.tex.bak",
     "jobs/output/jobindex.123/sent/cv.pdf", "jobs/output/jobindex.123/photo.jpg", "jobs/market/report-2026-01-01.md",
     "jobs/drift/thehub/2026.html", "jobs/.lock",
+    "profile/style/cv.template.html", "profile/style/fonts/Lato-Regular.ttf", "profile/style/icons/phone.svg", "profile/style/source.pdf",
 ])
 def test_known_paths_are_named(path):
     assert stored.named(path) is not None
