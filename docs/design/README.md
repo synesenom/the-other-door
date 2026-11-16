@@ -156,7 +156,7 @@ the design canvas (<https://claude.ai/artifact/4UWNSV9JgaPXX4LZxPL1S5>, private 
 shared from its Share menu).
 
 What needs you (Claude not signed in, the Claude plan's window nearly full, no CV, a failed Drive sync or one that needs a choice, something that keeps going
-wrong) is a short underlined line each at the foot of the sidebar, under the last run, opening
+wrong, a CV style that is ready to compare) is a short underlined line each at the foot of the sidebar, under the last run, opening
 where it is fixed; nothing when all is well. The plan's line has nothing to fix, it is waited out: it opens nothing and goes when the window resets. The app opens on Matches.
 
 **Matches** (the home of a review session): the list, and a row opens its posting on the
@@ -240,7 +240,7 @@ Not the plan's 5-hour window: that is live, and this screen is about the days go
 centred (there is no sidebar to line up with), under a strip of thin segments (ink for the steps done, the blue for
 the current one, `border` for the rest). Each step has the Young Serif title (no blue dash: the current segment already marks where you are),
 one primary ink button, and Back and Skip as quiet buttons beside it. Connect Claude comes first, only when Claude is missing or signed out (one action, and a fourth segment), and moves on by itself. Then three screens: Tell me about yourself (the sources: one line in a drop zone, `surface` fill with a dashed `border` line, that also opens the file dialog, a URL field with only a placeholder, each with an info icon whose words open on hover or focus), Reading (the step rows of Finding jobs, asking nothing), and Check your answers (a note naming what could not be found, parts each under its heading with no rule, a What matters to you text box with no label of its own (optional), Search terms and CV folded; the CV is
-a textarea in the page colour). Save leads to Finding jobs.
+a textarea in the page colour; when an uploaded PDF has a look to copy, one part, Your CV's look, with a single tick box, off, and a muted line under it). Save leads to Finding jobs.
 
 ### Phone and narrow windows
 
