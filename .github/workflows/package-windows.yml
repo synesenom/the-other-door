@@ -157,23 +157,6 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: DIAG 167
-        run: |
-          Get-MpComputerStatus | Select-Object RealTimeProtectionEnabled,AMRunningMode | Format-List
-          Get-PSDrive C | Format-List
-          $t = Measure-Command { npm ci --foreground-scripts --loglevel=timing 2>&1 | ForEach-Object { "$(Get-Date -Format 'HH:mm:ss.fff') $_" } | Select-String -Pattern 'timing|postinstall|install|> |added' | Out-Host }
-          Write-Host "DIAG plain ci with scripts: $($t.TotalSeconds)s"
-          Remove-Item -Recurse -Force node_modules
-          $t = Measure-Command { npm ci --ignore-scripts | Out-Host }
-          Write-Host "DIAG ci --ignore-scripts: $($t.TotalSeconds)s"
-          Remove-Item -Recurse -Force node_modules
-          Add-MpPreference -ExclusionPath $PWD, 'C:\npm\cache'
-          $t = Measure-Command { npm ci | Out-Host }
-          Write-Host "DIAG ci with Defender exclusion: $($t.TotalSeconds)s"
-          Remove-Item -Recurse -Force node_modules
-          $t = Measure-Command { npm ci --ignore-scripts | Out-Host }
-          Write-Host "DIAG ci --ignore-scripts with Defender exclusion: $($t.TotalSeconds)s"
-
       - name: Install the app's packages
         run: npm ci
 
