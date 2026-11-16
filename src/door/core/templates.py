@@ -82,10 +82,12 @@ def _bare_name(name: str, suffix: str) -> str:
 
 
 class Columns(BaseModel):
-    """The sections placed in the narrow side column; the rest stay in the main one."""
+    """The sections placed in the narrow side column; the rest stay in the main one: those of the `side` kinds and those
+    whose heading is, whole and without case, one of `headings` (a built style names its original's side headings)."""
 
     model_config = ConfigDict(extra="forbid")
     side: list[str] = []
+    headings: list[str] = []
 
     @field_validator("side")
     @classmethod

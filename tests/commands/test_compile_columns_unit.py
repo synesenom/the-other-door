@@ -82,6 +82,14 @@ def test_the_side_sections_go_in_a_side_div_after_the_main_one_in_cv_order(world
     assert main.index("<h2>Experience</h2>") < main.index("<h2>Education</h2>")
 
 
+def test_a_heading_the_manifest_names_goes_to_the_side_in_a_prepare_compile(world):
+    (world.example / "template.json").write_text(json.dumps({"columns": {"side": [], "headings": ["Logiciels"]}}))
+    world.make(cv=CV + "<h2>Logiciels</h2><p>Excel</p>")
+    _compile(world)
+    main, side = _html(world).split('<div class="side">')
+    assert "<h2>Logiciels</h2>" in side and "<h2>Logiciels</h2>" not in main
+
+
 def test_the_file_on_disk_is_left_as_written(world):
     _columns(world)
     world.make(cv=CV)

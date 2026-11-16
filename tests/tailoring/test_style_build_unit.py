@@ -111,7 +111,13 @@ def test_a_side_band_of_unknown_headings_falls_back_to_the_kinds_the_cv_has():
     style = _style(_SIDE, [("Logiciels", 395), ("Savoir-être", 400), ("EXPERIENCE", 31)])
     cv_md = "# A\n\n## Expérience\n\n## Langues\n\n## Compétences\n\n## Loisirs\n"
     assert style_build._side_kinds(style, cv_md) == ["skills", "languages", "interests"]
-    assert style_build._manifest_data(style, [], {}, cv_md)["columns"] == {"side": ["skills", "languages", "interests"]}
+    assert style_build._manifest_data(style, [], {}, cv_md)["columns"] == {
+        "side": ["skills", "languages", "interests"], "headings": ["Logiciels", "Savoir-être"]}
+
+
+def test_a_side_band_whose_kinds_the_cv_lacks_is_still_a_column_by_its_headings():
+    style = _style(_SIDE, [("Logiciels", 395), ("EXPERIENCE", 31)])
+    assert style_build._manifest_data(style, [], {}, "# A\n\n## Expérience\n")["columns"] == {"side": [], "headings": ["Logiciels"]}
 
 
 def test_the_fallback_without_any_of_those_in_the_cv_is_one_column():
@@ -136,7 +142,7 @@ def test_the_manifest_has_the_fonts_icons_columns_and_the_original_page_count_wi
     style = _style([{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}], [("Skills", 400)], pages=5)
     manifest = style_build._manifest_data(style, ["A.ttf"], {"email": "email.svg"}, "")
     assert manifest == {"version": 1, "fonts": ["A.ttf"], "icons": {"email": "email.svg"}, "max_pages": 3,
-                        "columns": {"side": ["skills"]}}
+                        "columns": {"side": ["skills"], "headings": ["Skills"]}}
     assert templates.Manifest(**manifest)
     assert style_build._manifest_data(_style([], [], pages=1), [], {}, "")["max_pages"] == 1
     assert "columns" not in style_build._manifest_data(_style([], [], pages=1), [], {}, "")

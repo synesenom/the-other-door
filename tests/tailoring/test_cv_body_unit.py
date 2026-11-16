@@ -129,15 +129,16 @@ def test_headings_are_placed_in_any_supported_language():
 
 def test_a_heading_named_as_a_side_heading_goes_to_the_side_whatever_it_says():
     out = "<header></header><h2>Profil</h2><p>a</p><h2>Savoir-être</h2><p>b</p><h2>LOGICIELS</h2><p>c</p>"
-    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills"]), ("savoir-être", "Logiciels"))
+    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills"], headings=["savoir-être", "Logiciels"]))
     main, side = placed.split('<div class="side">')
     assert html_doc.headings(main) == ["Profil"]
     assert html_doc.headings(side) == ["Savoir-être", "LOGICIELS"]
 
 
-def test_side_headings_change_nothing_for_a_template_with_no_side_column():
+def test_side_headings_alone_make_a_side_column_and_a_template_with_none_places_nothing():
     out = "<h2>Logiciels</h2><p>c</p>"
-    assert compile_cmd._place_columns(out, None, ("Logiciels",)) == out
+    assert compile_cmd._place_columns(out, None) == out
+    assert '<div class="side"><h2>Logiciels</h2>' in compile_cmd._place_columns(out, templates.Columns(headings=["Logiciels"]))
 
 
 def test_every_section_kind_the_i18n_reads_is_the_one_the_columns_use():

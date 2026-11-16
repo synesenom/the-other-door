@@ -156,8 +156,9 @@ def _manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str
     page count within the 1 to 3 a template may name)."""
     data: dict = {"version": 1, "fonts": list(font_files), "icons": dict(icon_files),
                   "max_pages": min(templates.MAX_PAGES, max(1, style.get("page_count", 1)))}
-    if side := _side_kinds(style, cv_md):
-        data["columns"] = {"side": side}
+    side, headings = _side_kinds(style, cv_md), _side_headings(style)
+    if side or headings:
+        data["columns"] = {"side": side, "headings": headings}
     return data
 
 
@@ -307,8 +308,7 @@ class _Session:
         Raises:
             _Stop: the print has no text to read back.
         """
-        pdf = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns,
-                                     side_headings=_side_headings(self.style))[0]
+        pdf = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns)[0]
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
