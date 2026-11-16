@@ -112,6 +112,100 @@ def test_check_pdf_takes_a_name_that_is_not_text_as_no_name(tmp_path):
 
 def test_fixable_keeps_only_what_the_tailor_can_fix():
     found = [{"kind": "missing", "detail": "a"}, {"kind": "glued", "detail": "b"}, {"kind": "empty", "detail": "c"}]
-    assert readability.FIXABLE == {"missing"}
+    assert readability.FIXABLE == {"missing", "overflow"}
     assert readability.fixable(found) == [{"kind": "missing", "detail": "a"}]
     assert readability.fixable([]) == []
+
+
+# ---- layout (#152) ----
+
+BODY = "<h2>Experience</h2><p>Led the consolidation of group reporting, in 2021.</p>"
+PDF_TEXT = "Experience\nLed the consolidation of group re-\nporting, in 2021.\n" + "x" * 40
+
+
+def test_text_that_all_reached_the_pdf_is_no_overflow():
+    assert readability.overflow_problems(PDF_TEXT, BODY) == []
+
+
+def test_squashing_ignores_case_punctuation_spacing_and_hyphen_breaks():
+    assert readability.squash("Re-\nPorting, 2021!") == "reporting2021"
+    assert readability.overflow_problems("EXPERIENCE LED THE CONSOLIDATION OF GROUP REPORTING IN 2021 " + "x" * 40, BODY) == []
+
+
+def test_words_missing_from_the_pdf_are_one_overflow_naming_the_first_five():
+    body = "<p>one two three four five six seven eight</p>"
+    found = readability.overflow_problems("one two three " + "x" * 40, body)
+    assert kinds(found) == ["overflow"]
+    detail = found[0]["detail"]
+    assert detail == "text cut off: four, five, six, seven, eight"
+    found = readability.overflow_problems("one " + "x" * 40, "<p>one a1 b2 c3 d4 e5 f6 g7</p>")
+    assert "f6" not in found[0]["detail"] and "e5" in found[0]["detail"]
+
+
+def test_the_detail_is_plain_and_has_no_instruction():
+    detail = readability.overflow_problems("x" * 40, "<p>alpha</p>")[0]["detail"]
+    assert detail == "text cut off: alpha" and "trim" not in detail and "page" not in detail
+
+
+def test_a_word_cut_in_half_is_missing():
+    assert kinds(readability.overflow_problems("Led the consolidat " + "x" * 40, "<p>Led the consolidation</p>")) == ["overflow"]
+
+
+def test_a_body_with_no_words_has_no_overflow():
+    assert readability.overflow_problems(PDF_TEXT, "<!-- Keywords: a -->") == []
+
+
+def test_sparse_last_page_of_a_two_column_template():
+    full = page((60, 60, 70, 780))
+    last = page((60, 700, 70, 760))  # 60pt of ink on an 842pt page
+    assert kinds(readability.layout_problems([full, last], two_column=True)) == ["sparse"]
+    assert readability.layout_problems([full, last], two_column=False) == []
+
+
+def test_a_blank_last_page_of_a_two_column_cv_is_sparse():
+    assert kinds(readability.layout_problems([page((60, 60, 70, 780)), page()], two_column=True)) == ["sparse"]
+
+
+def test_check_pdf_reads_two_column_from_the_placed_body(tmp_path, monkeypatch):
+    from door.tailoring import pdf_render
+
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD, "x"])
+    monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])
+    placed = '<div class="main"><p>Jane Doe</p></div><div class="side"><p>Python</p></div>'
+    assert "sparse" in kinds(readability.check_pdf(pdf, placed, NAME, cv=True))
+    assert "sparse" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe Python</p>", NAME, cv=True))
+    assert "sparse" not in kinds(readability.check_pdf(pdf, placed, NAME))
+
+
+def test_sparse_needs_more_than_one_page_and_a_nearly_empty_last():
+    assert readability.layout_problems([page((60, 700, 70, 760))], two_column=True) == []
+    full = page((60, 60, 70, 780))
+    assert readability.layout_problems([full, page((60, 100, 70, 700))], two_column=True) == []
+
+
+def test_check_pdf_of_a_letter_does_no_layout_or_overflow_check(tmp_path):
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD])
+    assert "overflow" not in kinds(readability.check_pdf(pdf, "<p>zzzunseenword</p>", NAME))
+
+
+def test_check_pdf_for_a_cv_reports_words_that_never_reached_the_pdf(tmp_path):
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD])
+    found = readability.check_pdf(pdf, "<p>Jane Doe zzzunseenword</p>", NAME, cv=True)
+    assert "overflow" in kinds(found) and "zzzunseenword" in [p for p in found if p["kind"] == "overflow"][0]["detail"]
+    assert "overflow" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe Python</p>", NAME, cv=True))
+
+
+def test_no_overflow_is_said_for_a_pdf_with_no_readable_text(tmp_path):
+    pdf = make_pdf(tmp_path / "a.pdf", [""])
+    found = readability.check_pdf(pdf, "<p>some words here</p>", NAME, cv=True)
+    assert "empty" in kinds(found) and "overflow" not in kinds(found)
+
+
+def test_side_headings_read_in_the_wrong_order_are_reported():
+    text = "Experience\nx\nSkills\ny\nProfile\n"
+    found = readability.problems(text, name=None, headings=["Profile", "Experience", "Skills"], keywords=[])
+    assert "order" in kinds(found)
+
+
+def page(*boxes, size=(595.0, 842.0)):
+    return (size[0], size[1], list(boxes))

@@ -436,7 +436,8 @@ def _readability(output_dir: Path) -> list[dict] | None:
             body = body_path.read_text(encoding="utf-8") if body_path.is_file() else ""
             if material == "cv":
                 body = compile_cmd.placed_cv(body, config, posting)
-            found += [{"file": material, **p} for p in readability.check_pdf(output_dir / f"{material}.pdf", body, name)]
+            checks = readability.check_pdf(output_dir / f"{material}.pdf", body, name, cv=material == "cv")
+            found += [{"file": material, **p} for p in checks]
     except Exception:  # an unreadable PDF is "not checked", never an error in `show`
         return None
     return found

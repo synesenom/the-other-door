@@ -311,9 +311,12 @@ def _read_back(output_dir: Path) -> list[dict] | None:
         return None
 
 
+_TRIM = "; trim the lowest-value items so it fits, never invent anything"
+
+
 def _feedback_text(found: list[dict]) -> str:
-    """The fixable problems as one line each, ``file: detail``, for the retry's prompt."""
-    return "\n".join(f"- {p['file']}: {p['detail']}" for p in found)
+    """The fixable problems as one line each, ``file: detail``, for the retry's prompt (text cut off: what to do)."""
+    return "\n".join(f"- {p['file']}: {p['detail']}{_TRIM if p['kind'] == 'overflow' else ''}" for p in found)
 
 
 def _step(message: str, outcome: str | None = None) -> None:
@@ -378,7 +381,7 @@ def _prepare_core(
         "output_dir", "files": [name, ...], "regenerated_incomplete",
         "error"?, "missing"?, "unsupported"?, "stories"?, "salary"?, "readability"?, "warning"?}`` — ``readability`` (a prepared job only) is
         the ATS read-back of both PDFs, ``[{file, kind, detail}]`` (None when it could not be made), taken after
-        one more tailor run for the ``missing`` kinds (`readability.FIXABLE`) when there were any, and
+        one more tailor run for the ``missing`` and ``overflow`` kinds (`readability.FIXABLE`) when there were any, and
         ``warning`` says so when problems remain; neither can fail the prepare; ``salary`` (a prepared
         job only) is `_estimate_salary`'s estimate or None; ``stories`` is
         `_add_stories`'s count of the CARL stories added to the story bank; ``files`` lists the material files present

@@ -147,11 +147,11 @@ def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) ->
     entry.pop("stderr", None)
 
 
-def _read_back(entry: dict, pdf: Path, body: str, config: dict) -> None:
+def _read_back(entry: dict, pdf: Path, body: str, config: dict, cv: bool = False) -> None:
     """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from (a CV's sections as
-    placed); a failing check is a ``warning``, never a failed compile."""
+    placed); `cv` adds the CV's overflow and layout checks; a failing check is a ``warning``, never a failed compile."""
     try:
-        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"))
+        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"), cv=cv)
     except Exception as exc:  # the check must never fail a compile
         entry["readable"] = None
         entry["warning"] = f"could not read the PDF back: {exc}"
@@ -247,7 +247,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             continue
         _print(page, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
-            _read_back(entry, Path(entry["pdf"]), placed, config)
+            _read_back(entry, Path(entry["pdf"]), placed, config, cv=file == "cv.html")
         results.append(entry)
 
     for name in _PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use

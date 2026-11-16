@@ -76,6 +76,30 @@ def page_texts(pdf_path: Path) -> list[str]:
         doc.close()
 
 
+def page_boxes(pdf_path: Path) -> list[tuple[float, float, list[tuple[float, float, float, float]]]]:
+    """For every page of *pdf_path*: its ``(width, height)`` in points and the box ``(left, bottom, right, top)``
+    of each printed character (whitespace and control characters left out), origin bottom-left.
+
+    Raises:
+        FileNotFoundError: If *pdf_path* does not exist.
+    """
+    doc = _open(pdf_path)
+    try:
+        pages = []
+        for page in doc:
+            width, height = page.get_size()
+            textpage = page.get_textpage()
+            boxes = []
+            for index, char in enumerate(textpage.get_text_range()):
+                if char.isspace() or char < " " or char in "￾�":
+                    continue
+                boxes.append(tuple(textpage.get_charbox(index)))
+            pages.append((width, height, boxes))
+        return pages
+    finally:
+        doc.close()
+
+
 def render_pdf_pages(pdf_path: Path, output_dir: Path) -> list[Path]:
     """Render every page of *pdf_path* to a PNG image in *output_dir*.
 

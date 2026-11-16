@@ -701,3 +701,30 @@ def test_the_card_says_when_the_cv_is_over_its_limit(cli_env):
             {**base, "page_counts": {"cv": cv_pages, "cover_letter": 1}, "cv_max_pages": limit}, Console(file=buf, width=100))
         texts.append(buf.getvalue())
     assert "(limit 1)" in texts[0] and "limit" not in texts[1]
+
+
+def test_show_reports_words_of_the_cv_missing_from_its_pdf_and_not_the_letters(cli_env, one_page):
+    """A CV word that never reached the PDF is `overflow` (cut off the page); the letter gets no such check."""
+    from door.commands import matches as matches_cmd
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
+    _with_cv(cli_env, "<!-- Keywords: Python -->\n<p>Jane Doe, Python developer zzzcutword</p>")
+    (cli_env.jobs_dir / "output" / "job-abc" / "cover_letter.html").write_text("<p>zzzcutletterword</p>")
+    _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
+    found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
+    assert [(p["file"], p["kind"]) for p in found] == [("cv", "overflow")]
+    assert "zzzcutword" in found[0]["detail"]
+
+
+def test_show_passes_a_two_column_manifest_to_the_cv_check(cli_env, one_page, monkeypatch):
+    from door.commands import matches as matches_cmd
+    from door.tailoring import pdf_render
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
+    (cli_env.profile_dir / "cv.template.html").write_text("<html><body><<body>></body></html>")
+    (cli_env.profile_dir / "template.json").write_text('{"columns": {"side": ["skills"]}}')
+    _with_cv(cli_env, "<!-- Keywords: Python -->\n<p>Jane Doe, Python developer</p>")
+    _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
+    monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])
+    found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
+    assert [(p["file"], p["kind"]) for p in found] == [("cv", "sparse")]
