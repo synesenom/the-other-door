@@ -16,6 +16,11 @@
     location, linkedin or github (the details run in that order; none is written for a detail the CV lacks); any other detail is a plain <span>.
     <h2>Section</h2>
     <div class="entry"><h3>Role | Company - dates</h3><ul><li>...</li></ul></div>
+    An entry's heading may be written in parts, so a template can style each: <h3><span class="role">Role</span>
+    <span class="sep"> | </span><span class="org">Company</span><span class="sep"> - </span><span class="dates">dates</span>
+    <span class="sep"> | </span><span class="place">City</span></h3> (the place only when the CV gives one); the text read
+    back is the same as the plain heading's. A skill or language with a stated level is <li class="level level-5">Danish
+    (native)</li>, level-1 (basic) to level-5 (native), the word kept in the text; a template may draw it as dots or a bar.
     <p>, <ul><li>, <strong>, <em>, <a href="https://...">, <br>
 -->
 <html lang="<<lang>>">
@@ -45,6 +50,7 @@ h1 { font-size: 28pt; line-height: 32pt; }
 h2 { font-size: 15pt; line-height: 18pt; margin: 10pt 0 2pt; break-after: avoid; }
 h3 { font-size: 10pt; font-weight: 600; margin: 8pt 0 0; break-after: avoid; }
 .entry { break-inside: avoid; }
+h3 .dates { font-weight: 400; color: var(--muted); }
 ul, ol { padding-left: 1.1em; margin-top: 2pt; }
 li::marker { color: var(--muted); }
 li { break-inside: avoid; }

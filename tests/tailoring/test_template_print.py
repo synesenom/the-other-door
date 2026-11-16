@@ -283,3 +283,34 @@ def test_the_same_template_without_its_manifest_draws_no_icon(tmp_path, monkeypa
 def test_the_default_template_draws_no_icon(tmp_path, monkeypatch):
     out, _ = _setup(tmp_path, monkeypatch, cv=_KINDS, letter=_LETTER)
     assert _colours(out / "cv.pdf")[0] == 0
+
+
+# --- entries and levels (#147) ----------------------------------------------------------------------------------
+
+_SPAN_ENTRY = ('<h3><span class="role">Financial Controller</span><span class="sep"> | </span><span class="org">Globex Energy</span>'
+               '<span class="sep"> - </span><span class="dates">2021 - present</span><span class="sep"> | </span>'
+               '<span class="place">Aarhus</span></h3>')
+_PLAIN_ENTRY = "<h3>Financial Controller | Globex Energy - 2021 - present | Aarhus</h3>"
+_LEVELS = ('<h2>Languages</h2><ul><li class="level level-5">Danish (native)</li><li class="level level-4">English (fluent)</li>'
+           '<li class="level level-1">French (basic)</li></ul>')
+
+
+def _entries(entry):
+    return (f'{_HEADER}<h2>Experience</h2><div class="entry">{entry}<ul><li>Closed the books in four days.</li></ul></div>'
+            f"{_LEVELS}")
+
+
+def test_span_entry_headings_and_level_items_print_and_read_back(tmp_path, monkeypatch):
+    out, results = _setup(tmp_path, monkeypatch, cv=_entries(_SPAN_ENTRY), letter=_LETTER)
+    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
+    assert results["cv.html"]["readable"] == []
+    lines = _lines(out / "cv.pdf")
+    assert "Financial Controller | Globex Energy - 2021 - present | Aarhus" in lines, lines
+    for word in ("Danish (native)", "English (fluent)", "French (basic)"):
+        assert word in lines, lines
+
+
+def test_a_plain_entry_heading_prints_the_same_text_as_the_span_one(tmp_path, monkeypatch):
+    spans, _ = _setup(tmp_path / "a", monkeypatch, cv=_entries(_SPAN_ENTRY), letter=_LETTER)
+    plain, _ = _setup(tmp_path / "b", monkeypatch, cv=_entries(_PLAIN_ENTRY), letter=_LETTER)
+    assert pdf_render.page_texts(spans / "cv.pdf") == pdf_render.page_texts(plain / "cv.pdf")

@@ -595,3 +595,20 @@ def test_write_false_merges_saved_reasons_without_writing(tmp_path):
     found = facts.check(out, prof, write=False)
     assert next(i for i in found if i["value"] == "40%")["reason"] == "from the ad"
     assert (out / "facts.json").read_text(encoding="utf-8") == before
+
+
+_SPAN_H3 = ('<h3><span class="role">Senior Dev</span><span class="sep"> | </span><span class="org">Acme A/S</span>'
+            '<span class="sep"> - </span><span class="dates">2019 - present</span></h3>')
+
+
+def test_a_span_entry_heading_is_checked_as_the_plain_one():
+    plain = "<h3>Senior Dev | Acme A/S - 2019 - present</h3><ul><li>Cut churn by 40%</li></ul>"
+    spans = f"{_SPAN_H3}<ul><li>Cut churn by 40%</li></ul>"
+    assert _bad(spans) == _bad(plain)
+    assert _values(f'<h3><span class="role">Senior Dev</span><span class="sep"> | </span><span class="org">Initech</span></h3>') == \
+        _values("<h3>Senior Dev | Initech</h3>")
+
+
+def test_a_languages_section_is_not_read_as_skills():
+    body = '<h2>Languages</h2><ul><li class="level level-5">Danish (native), English (fluent)</li></ul>'
+    assert [c for c in facts.extract_claims(body, "cv") if c["kind"] == "skill"] == []

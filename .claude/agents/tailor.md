@@ -46,8 +46,9 @@ CV:
 <p class="contact"><span class="phone">phone</span><span class="email"><a href="mailto:email">email</a></span><span class="web"><a href="https://web">web</a></span><span class="linkedin"><a href="https://address">address</a></span><span class="github"><a href="https://github.com/name">github.com/name</a></span><span class="location">location</span></p></header>
 <h2>Section</h2>
 <p>text</p>
-<div class="entry"><h3>Role | Company - dates</h3>
+<div class="entry"><h3><span class="role">Role</span><span class="sep"> | </span><span class="org">Company</span><span class="sep"> - </span><span class="dates">dates</span><span class="sep"> | </span><span class="place">City</span></h3>
 <ul><li>a bullet</li></ul></div>
+<ul><li class="level level-4">Language (fluent)</li></ul>
 ```
 
 Letter:
@@ -64,6 +65,8 @@ Letter:
 - One `<span>` per contact detail, and none for a detail `cv.md` does not give (never an empty one). Each span carries the class of its kind: `phone`, `email`, `web`, `location`, `linkedin` or `github` (LinkedIn and GitHub are links, `<a href="https://...">`, whose text is the address without the scheme, `www.` and a trailing slash, as `cv.md` gives it: `github.com/janedoe`); any other detail (a date of birth, a second link) is a plain `<span>`, in the CV's header and the letter's. The template sets them on one line, or one per line beside the photo, and may draw an icon by kind: you never write an icon, an image or SVG.
 - The CV header has `<p class="tagline">` right after the `<h1>` only when `cv.md` has a tagline (the `> ...` line under the name): copy it, translated into the posting's language when that differs, never reworded to add a claim; no tagline in `cv.md`, none in the header. The letter has no tagline.
 - `<h2>` is a section title, `<h3>` an entry's title line (`Role | Company - dates`: the ` | ` and the company are how the facts check finds the employer; keep that form for a degree or any entry too), `<ul><li>` bullets, `<strong>` a name or label, `<em>` emphasis. Skills and languages are a `<p>` of comma-separated items, or a `<ul>`.
+- An entry's `<h3>` is written in parts, each in a `<span>` with its class: `role`, `org` (the company, school or institution), `dates` and, only when `cv.md` gives the entry a place, `place` (a city, never invented), with `<span class="sep"> | </span>` between the role and the company, `<span class="sep"> - </span>` before the dates and `<span class="sep"> | </span>` before the place. The text read back is still `Role | Company - dates` (and ` | City`), so the facts check finds the employer as before; the separators are always in the text, never left to the style.
+- A level: where `cv.md` gives a skill or language a level, write it as its own `<li class="level level-5">Danish (native)</li>` and keep the word in the text, in the posting's language. The number follows the level `cv.md` states: native or C2 is `level-5`; fluent, professional or C1 is `level-4`; working or B2 is `level-3`; conversational or B1 is `level-2`; basic, A1 or A2 is `level-1`. A level word that is not in that list gets no `level` class, and so does an item `cv.md` gives no level: never infer or raise one. The template may draw the level as dots or a bar; you never write one. Never write the classes `main` or `side`: `compile` places the columns.
 - Spacing is the template's: write no blank paragraphs, no `<br>` to make space (a `<br>` only ends a line inside a paragraph).
 - The notes are the two comments at the top of `cv.html`: `<!-- Keywords: ... -->` (the 3 keywords you emphasised most, comma-separated) and `<!-- Tailoring: ... -->` (the final `TAILORING_NOTES`, separated by semicolons on one line). They are the only comments allowed. The `show` tool reads both.
 
