@@ -104,7 +104,7 @@ def test_the_fonts_are_the_templates_own_truetype_ones_never_nameless_type_3_tex
 
 def test_the_example_cv_reads_back_with_every_heading_on_its_own_line_and_in_order(example):
     out, results, cv = example
-    assert readability.check_pdf(out / "cv.pdf", cv, "Jane Doe", two_column=False) == []
+    assert readability.check_pdf(out / "cv.pdf", cv, "Jane Doe", cv=True) == []
     assert results["cv.html"]["readable"] == []
     assert results["cover_letter.html"]["readable"] == []
 
@@ -178,7 +178,7 @@ def test_a_french_cv_and_letter_get_french_typography_date_and_links_untouched(t
     assert _gap(out / "cv.pdf", "donn\u00e9es", ":") > 1.8 and _gap(out / "cv.pdf", "r\u00e9sultats", "!") > 1.8
     cv_text = pdf_render.page_texts(out / "cv.pdf")[0]
     assert "arXiv:2408.10754" in cv_text and _gap(out / "cv.pdf", "arXiv", ":") < 1.5
-    assert readability.check_pdf(out / "cv.pdf", cv, None, two_column=False) == []
+    assert readability.check_pdf(out / "cv.pdf", cv, None, cv=True) == []
 
 
 def test_the_same_text_in_english_keeps_its_plain_spaces(tmp_path, monkeypatch):

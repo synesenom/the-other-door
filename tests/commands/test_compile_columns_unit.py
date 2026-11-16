@@ -202,7 +202,7 @@ def test_a_side_of_interests_alone_with_no_interests_section_leaves_main_whole_a
     assert result["status"] == "compiled" and not result.get("readable")
 
 
-def test_a_two_column_manifest_reaches_the_cvs_check_and_the_letter_gets_no_cv_checks(world, monkeypatch):
+def test_the_cvs_check_is_asked_for_and_the_letters_is_not(world, monkeypatch):
     seen = {}
 
     def check(pdf, body, name, **kw):
@@ -213,8 +213,8 @@ def test_a_two_column_manifest_reaches_the_cvs_check_and_the_letter_gets_no_cv_c
     monkeypatch.setattr(compile_cmd.readability, "check_pdf", check)
     world.make(cv=CV, letter="<p>Dear team</p>")
     _compile(world)
-    assert seen["cv.pdf"] == {"cv": True, "two_column": True}
-    assert seen["cover_letter.pdf"] == {"cv": False, "two_column": False}
+    assert seen["cv.pdf"] == {"cv": True}
+    assert seen["cover_letter.pdf"] == {"cv": False}
 
 
 def test_a_sparse_last_page_of_a_two_column_cv_comes_through_compile(world, monkeypatch):

@@ -166,14 +166,15 @@ def test_a_blank_last_page_of_a_two_column_cv_is_sparse():
     assert kinds(readability.layout_problems([page((60, 60, 70, 780)), page()], two_column=True)) == ["sparse"]
 
 
-def test_check_pdf_takes_two_column_for_the_sparse_check_only(tmp_path, monkeypatch):
+def test_check_pdf_reads_two_column_from_the_placed_body(tmp_path, monkeypatch):
     from door.tailoring import pdf_render
 
     pdf = make_pdf(tmp_path / "a.pdf", [GOOD, "x"])
     monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])
-    assert "sparse" in kinds(readability.check_pdf(pdf, "", NAME, cv=True, two_column=True))
-    assert "sparse" not in kinds(readability.check_pdf(pdf, "", NAME, cv=True))
-    assert "sparse" not in kinds(readability.check_pdf(pdf, "", NAME, two_column=True))
+    placed = '<div class="main"><p>Jane Doe</p></div><div class="side"><p>Python</p></div>'
+    assert "sparse" in kinds(readability.check_pdf(pdf, placed, NAME, cv=True))
+    assert "sparse" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe Python</p>", NAME, cv=True))
+    assert "sparse" not in kinds(readability.check_pdf(pdf, placed, NAME))
 
 
 def test_sparse_needs_more_than_one_page_and_a_nearly_empty_last():

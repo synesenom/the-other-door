@@ -147,18 +147,11 @@ def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) ->
     entry.pop("stderr", None)
 
 
-def cv_two_column(config: dict) -> bool:
-    """Whether the resolved CV template has a side column (what `readability.check_pdf` needs for a CV's layout)."""
-    m = templates.manifest(templates.resolve("cv_template", config))
-    return bool(m and m.columns and m.columns.side)
-
-
 def _read_back(entry: dict, pdf: Path, body: str, config: dict, cv: bool = False) -> None:
     """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from (a CV's sections as
     placed); `cv` adds the CV's overflow and layout checks; a failing check is a ``warning``, never a failed compile."""
     try:
-        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"), cv=cv,
-                                                two_column=cv and cv_two_column(config))
+        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"), cv=cv)
     except Exception as exc:  # the check must never fail a compile
         entry["readable"] = None
         entry["warning"] = f"could not read the PDF back: {exc}"

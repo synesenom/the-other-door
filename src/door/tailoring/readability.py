@@ -110,11 +110,12 @@ def layout_problems(pages: list[tuple[float, float, list[Box]]], *, two_column: 
     return []
 
 
-def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, two_column: bool = False) -> list[dict]:
+def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
     the raw config's value, used when it is a string). A `cv` is also checked for words lost off the page
-    (`overflow_problems`, unless no text could be read) and, when its template has a `two_column` side, for a sparse
-    last page (`layout_problems`); a letter gets neither."""
+    (`overflow_problems`, unless no text could be read) and, when `body` is placed in columns (the `side` div
+    `compile._place_columns` adds only for a template with a side column), for a sparse last page
+    (`layout_problems`); a letter gets neither."""
     from door.tailoring import pdf_render
 
     text, pages = extract(pdf)
@@ -124,5 +125,5 @@ def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, two_colum
     if cv:
         if not {"empty", "garbled"} & {p["kind"] for p in found}:
             found += overflow_problems(text, body)
-        found += layout_problems(pdf_render.page_boxes(pdf), two_column=two_column)
+        found += layout_problems(pdf_render.page_boxes(pdf), two_column='class="side"' in body)
     return found
