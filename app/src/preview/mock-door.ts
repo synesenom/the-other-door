@@ -297,6 +297,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
+    buildStyle: async () => ({ ok: true, data: { started: true } }),
     claudeLogin: {
       start: async () => {
         // A moment for the "Starting the sign-in" line, then signed in, with no browser.

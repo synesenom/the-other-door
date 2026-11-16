@@ -24,6 +24,8 @@ declare global {
       /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (save_photo's answer). */
       pickPhoto(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
       savePhoto(token: string): Promise<Envelope>
+      /** Start the CV style build from a CV file the wizard read, by its token. */
+      buildStyle(token: string): Promise<Envelope>
       /** Signing in to Claude: the main process runs `claude auth login` and pushes its state. */
       claudeLogin: {
         start(email?: string): Promise<{ ok: boolean; error?: string }>

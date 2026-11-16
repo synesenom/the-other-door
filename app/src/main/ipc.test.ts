@@ -774,3 +774,37 @@ describe('door:call refuses what names a local file', () => {
     }
   })
 })
+
+describe('the CV style build (#150)', () => {
+  const real = { demo: false }
+
+  it('a picked CV file goes to build_style by token: the tool gets the real path', async () => {
+    const { invoke, server, cvSources } = setup(async () => ({ started: true }), undefined, false, real)
+    expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: true, data: { started: true } })
+    expect(cvSources.resolve).toHaveBeenCalledWith(['tok1'])
+    expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/cv.pdf' })
+  })
+
+  it('a refusal by the tool reaches the window as the reason', async () => {
+    const { invoke } = setup(async () => {
+      throw new DoorError('this PDF is a scan: there is no style to copy')
+    }, undefined, false, real)
+    expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
+  })
+
+  it('an unknown token, or a path from the window, builds nothing', async () => {
+    const { invoke, server } = setup(undefined, undefined, false, real)
+    for (const t of ['nope', '/Users/ada/cv.pdf', 42]) {
+      expect((await invoke(CHANNELS.buildStyle, t)).ok).toBe(false)
+    }
+    expect(server.call).not.toHaveBeenCalled()
+  })
+
+  it('made-up data, the demo and the onboarding sandbox, builds nothing', async () => {
+    for (const info of [{ demo: true }, { demo: true, sandbox: 'onboard' as const }]) {
+      const { invoke, server } = setup(undefined, undefined, false, info)
+      expect((await invoke(CHANNELS.buildStyle, 'tok1')).ok).toBe(false)
+      expect(server.call).not.toHaveBeenCalled()
+    }
+  })
+})

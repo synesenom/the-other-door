@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('door', {
   // The CV photo: chosen in a dialog the main process runs, saved by the token it hands back.
   pickPhoto: () => ipcRenderer.invoke('door:pick-photo'),
   savePhoto: (token: string) => ipcRenderer.invoke('door:save-photo', token),
+  buildStyle: (token: string) => ipcRenderer.invoke('door:build-style', token),
   // Signing in to Claude: the main process runs claude and opens only the page claude printed.
   claudeLogin: {
     start: (email?: string) => ipcRenderer.invoke('door:claude-login-start', email),

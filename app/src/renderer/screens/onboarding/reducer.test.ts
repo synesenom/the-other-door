@@ -14,7 +14,7 @@ import {
   toInitArgs,
   wizardReducer,
   type Basics,
-  type WizardState, ownTitles, isLinkedIn, photoPolicy
+  type WizardState, ownTitles, isLinkedIn, photoPolicy, styleSource
 } from './reducer'
 import { cvState, doctorReport, existingProfile, freshProfile, savedConfig } from './testing'
 
@@ -442,5 +442,36 @@ describe('discoveryOff, the sources a first run could remind about', () => {
   it('names none without a config, and the worldwide ones for a city in no known country', () => {
     expect(discoveryOff(freshProfile)).toEqual([])
     expect(discoveryOff(withConfig({ location: 'Nowhere', linkedin_discovery: false })).map((d) => d.label)).toEqual(['LinkedIn'])
+  })
+})
+
+describe('the CV style tick (#150)', () => {
+  const file = (token: string) => ({ token, name: `${token}.pdf`, size: 1 })
+  const drafted = (sources: { style?: boolean; kind?: 'file' | 'url' }[], files = ['a', 'b']) =>
+    wizardReducer(
+      { ...fresh(), files: files.map(file) },
+      { type: 'draftDone', markdown: '# Ada\n', urls: [], sources: sources.map((s, i) => ({ source: `s${i}`, kind: s.kind ?? 'file', ...(s.style === undefined ? {} : { style: s.style }) })) },
+    )
+
+  it('is off by default and toggled by the review', () => {
+    expect(fresh().style).toBe(false)
+    const on = wizardReducer(fresh(), { type: 'style', on: true })
+    expect(on.style).toBe(true)
+    expect(wizardReducer(on, { type: 'style', on: false }).style).toBe(false)
+  })
+
+  it('the source is the first picked file whose style can be copied', () => {
+    expect(styleSource(drafted([{ style: false }, { style: true }]))).toBe('b')
+    expect(styleSource(drafted([{ style: true }, { style: true }]))).toBe('a')
+  })
+
+  it('there is none without a draft, without a copyable file, or on a set-up again', () => {
+    expect(styleSource(fresh())).toBeNull()
+    expect(styleSource(drafted([{ style: false }, {}]))).toBeNull()
+    expect(styleSource({ ...drafted([{ style: true }]), mode: 'redo' })).toBeNull()
+  })
+
+  it('pages do not shift which file is meant', () => {
+    expect(styleSource(drafted([{ kind: 'url' }, { style: true }], ['a']))).toBe('a')
   })
 })

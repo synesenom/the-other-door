@@ -35,6 +35,8 @@ export const CHANNELS = {
   /** The CV photo (photo-file.ts): a picture chosen in main, then saved by its token. */
   pickPhoto: 'door:pick-photo',
   savePhoto: 'door:save-photo',
+  /** The CV style build (#150): a CV file the wizard read, by its token. */
+  buildStyle: 'door:build-style',
   /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
   claudeLoginStart: 'door:claude-login-start',
   claudeLoginCode: 'door:claude-login-code',
@@ -355,6 +357,19 @@ export function registerIpc(
     if (!path) return { ok: false, error: 'Choose the picture again.' }
     try {
       return { ok: true, data: await server.call('save_photo', { path }) }
+    } catch (e) {
+      return failureEnvelope(e)
+    }
+  })
+
+  // The CV style build: the CV file the wizard read, by its token (the window never names a path); not on made-up data.
+  ipcMain.handle(CHANNELS.buildStyle, async (_event, token: unknown): Promise<Envelope> => {
+    if (deps.info?.demo) return { ok: false, error: 'A style cannot be built from made-up data.' }
+    if (typeof token !== 'string' || !deps.cvSources) return { ok: false, error: 'Choose the file again.' }
+    const resolved = await deps.cvSources.resolve([token])
+    if (!resolved.ok) return resolved
+    try {
+      return { ok: true, data: await server.call('build_style', { file: resolved.paths[0] }) }
     } catch (e) {
       return failureEnvelope(e)
     }

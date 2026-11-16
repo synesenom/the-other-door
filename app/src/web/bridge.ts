@@ -193,6 +193,7 @@ export function createWebDoor(deps: WebDeps) {
       return { error: ON_THE_MACHINE }
     },
     savePhoto: machineOnly,
+    buildStyle: machineOnly,
     claudeLogin: {
       start: machineOnly,
       sendCode: machineOnly,
