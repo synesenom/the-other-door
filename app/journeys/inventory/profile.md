@@ -232,6 +232,24 @@ Other data-driven variants:
 - Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor
 - Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — not covered by a journey; the refusal: unit: `tests/commands/test_enrich_cli.py`; the dialog showing it: no test
 
+### 4.5 The Style (StyleRow.tsx, above "Your CV")
+
+Sources: `StyleRow.tsx`, `PageStack.tsx`, `style-file.ts` (main), `commands/style.py` (`_use_core`, `status`, `_show_core`), `tailoring/style_preview.py`. `show_style` answers `{styles: {default, like?}, in_use, candidate}`; `use_style(style: like|default|current, rerender)` answers `{in_use, prepared, rerendered?, failed?}`. Shown only in the app window (the phone has no Profile), and the build actions are not offered on made-up data.
+
+| State | What is on screen | Controls |
+|---|---|---|
+| First read | two empty sheets' worth of room and "Preparing the previews…" | none — unit: `app/src/renderer/screens/StyleRow.test.tsx`; preview: `profile-cv-style-loading` |
+| No previews (no Chromium, or the call fails) | nothing but the build action; no error | `button "Use the style of my CV…"` — unit: `app/src/renderer/screens/StyleRow.test.tsx` |
+| No style of your own | the sheet of The other door's with "In use", the line "Make your tailored CVs look like a CV of yours. Takes 5–10 minutes in the background." | secondary `button "Use the style of my CV…"`: main's open dialog (a PDF, opening at the CV the set-up read while it is there), then `build_style`; a cancelled dialog does nothing; a refusal ("no style to copy") is an alert — ✓ compare the default with a style built from a CV: build, choose it, print the prepared CVs again, go back; unit: `app/src/renderer/screens/StyleRow.test.tsx` |
+| Building | the sheet stays, "Building your style…" in place of the button; a failed build goes back to the line above, saying nothing | none — ✓ compare the default with a style built from a CV: build, choose it, print the prepared CVs again, go back; preview: `profile-cv-style-building` |
+| A built style waits (`candidate`) | "Like your CV" and "The other door's", each sheet a button that opens its full pages | primary `button "Use this style"` (`use_style like`: the style moves into profile/style/ and both template keys point at it); on The other door's `button "Keep The other door's"` (`use_style default`); with an earlier style of your own in use also "You use your earlier style now." and `button "Keep my current style"` (`use_style current`); every pick ends the candidate and clears the sidebar's line — ✓ compare the default with a style built from a CV: build, choose it, print the prepared CVs again, go back; unit: `app/src/renderer/App.test.tsx`; preview: `profile-cv-style-candidate`, `profile-cv-style-earlier` |
+| A style of your own in use, or kept | "In use" on the one in use | `button "Use The other door's"` (clears both keys, only where they point into profile/style/), `button "Use my CV's style"`, `button "Use the style of another CV…"` — ✓ compare the default with a style built from a CV: build, choose it, print the prepared CVs again, go back; preview: `profile-cv-style-inuse` |
+| Two-column style | "Some application systems read two-column CVs less well." | none — preview: `profile-cv-style-two-column` |
+| After a switch with prepared CVs | `button "Re-render N prepared CVs in the new style"`, then "Re-rendering…", then "N re-rendered." (and how many could not be printed); the line is not kept after a restart; sent applications are never changed | `use_style(rerender: true)`, no model — ✓ compare the default with a style built from a CV: build, choose it, print the prepared CVs again, go back |
+| Full pages | `dialog` named by the style: `pill "CV · N pages"`, `pill "Cover letter · N page"`, the pages, Close, Esc | — ✓ compare the default with a style built from a CV: build, choose it, print the prepared CVs again, go back |
+
+The previews are read on opening, after each CV Save and when a build ends; the sheets already shown stay until the new ones come. `door-file://style/<default|like>/<cv|letter>_page_N.png?v=<version>` serves them (`resolveStylePreviewRequest`: unit: `app/src/main/protocol.test.ts`).
+
 ---
 
 ## 6. Dialog (Dialog.tsx), used by Market (now in Analytics) and the CV pages

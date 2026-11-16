@@ -61,6 +61,8 @@ export interface WorldOptions {
   python?: string
   /** The stand-in Chromium print (default true). The install test leaves it out: the app's own Chromium prints. */
   chromium?: boolean
+  /** The application ledger (default: the full one for mette, none for the others), by the persona's ad keys. */
+  ledger?: Record<string, LedgerEntry>
 }
 
 /** The ledger most journeys start from: a job in every column of the Applications board. */
@@ -436,7 +438,7 @@ export function buildWorld(options: WorldOptions = {}): World {
 
   if (!options.empty) writeHome(home, persona, ads, options)
   if (!options.empty && options.drive?.connected) connectDrive(worldDir, persona)
-  if (!options.empty) prepareMaterials({ home, py, env, ads, persona, ledger: persona.key === 'mette' ? FULL_LEDGER : {} })
+  if (!options.empty) prepareMaterials({ home, py, env, ads, persona, ledger: options.ledger ?? (persona.key === 'mette' ? FULL_LEDGER : {}) })
 
   const read = <T>(rel: string): T => JSON.parse(readFileSync(join(home, rel), 'utf8'))
   const calls = (): Call[] =>

@@ -432,6 +432,17 @@ while you look at Details. With no CV yet, a line above says so and offers "Draf
 file or pages", the wizard's screens. A `cv.md` that cannot be read as text (another encoding, a Word file
 renamed) is said above an empty editor; saving there keeps that file as `cv.md.bak`.
 
+- **Style** (above "Your CV"): how your tailored CVs are printed. The sheet of The other door's style is
+  there, marked "In use". "Use the style of my CV…" opens a file dialog (a PDF of a CV of yours, starting at
+  the one you gave the set-up while it is still there) and builds a template from its look in the
+  background (5-10 minutes on your Claude plan; "Building your style…" says so, and nothing is said if it
+  does not work out, except a file with no look to copy). The built style waits beside the other one:
+  "Like your CV" and "The other door's", each a sheet you can open to read its pages (your CV and a sample
+  letter) in a dialog. "Use this style" puts it in use; "Keep The other door's" (or "Keep my current style"
+  when an earlier style of yours is in use) drops it. Later you can switch with "Use The other door's" and "Use my CV's
+  style", or build another with "Use the style of another CV…". Prepared applications keep their look; after
+  a switch "Re-render N prepared CVs in the new style" prints them again (no Claude call; sent ones never
+  change). A two-column style may be read less well by application systems, and the row says so.
 - **Add a page** (the `/expand` skill as a button): a dialog asks for one page (your portfolio, GitHub,
   a publication list, a course page) and "Read it". One Claude call on your plan (a few minutes)
   proposes what the page shows and your CV does not, grouped by the section each would go into.
