@@ -32,3 +32,20 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
     if own.is_file():
         return own
     return Path(example_dir if example_dir is not None else workspace.PROFILE_EXAMPLE_DIR) / name
+
+
+# Fixes made to the shipped templates that a user's own copy only gets by hand (#156): `has` is a string the fixed
+# template contains, `when` one that makes the fix relevant to a copy, `what` the words the user reads.
+FIXES = [
+    {"template": "cv_template", "has": "\\newcommand*{\\cv@photo}", "when": "\\cv@photo",
+     "what": "the contact details on one line when there is no photo", "issue": 142},
+    {"template": "cv_template", "has": "\\hyper@linkurl", "when": "hyperref",
+     "what": "no French space before the colon in a link's text", "issue": 143},
+    {"template": "cover_letter_template", "has": "\\hyper@linkurl", "when": "hyperref",
+     "what": "no French space before the colon in a link's text", "issue": 143},
+]
+
+
+def missing_fixes(key: str, text: str) -> list[dict]:
+    """The `FIXES` of template ``key`` that apply to ``text`` (a user's copy) and are not in it."""
+    return [f for f in FIXES if f["template"] == key and f["when"] in text and f["has"] not in text]
