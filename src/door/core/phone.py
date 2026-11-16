@@ -41,10 +41,14 @@ _LINK = re.compile(r"https://login\.tailscale\.com/\S+")
 
 
 # ----------------------------------------------------------------------------- the real world
-def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None):
+def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None, hidden_console: bool = False):
+    """Start `argv` as a process of its own. On Windows a server has no console (DETACHED_PROCESS); with
+    `hidden_console` it has an invisible one instead (CREATE_NO_WINDOW), which the console programs it starts
+    (claude, node) share rather than each opening a window."""
     log.parent.mkdir(parents=True, exist_ok=True)
     out = open(log, "ab")  # noqa: SIM115 - handed to the child, which outlives this call
-    extra = {"creationflags": 0x00000008 | 0x00000200} if sys.platform == "win32" else {"start_new_session": True}
+    no_console = 0x08000000 if hidden_console else 0x00000008  # CREATE_NO_WINDOW, DETACHED_PROCESS
+    extra = {"creationflags": no_console | 0x00000200} if sys.platform == "win32" else {"start_new_session": True}
     return subprocess.Popen(argv, stdout=out, stderr=out, stdin=subprocess.DEVNULL, env=env, **extra)
 
 
@@ -62,13 +66,16 @@ def is_alive(pid: int) -> bool:
 
 def kill_tree(pid: int) -> None:
     """End a process this module started, with everything it started: each runs in a session of its own
-    (`spawn_detached`), and Python on a Mac starts the real server as a child of a launcher."""
+    (`spawn_detached`), and Python on a Mac starts the real server as a child of a launcher. A pid that leads no
+    group is ended alone: the group is somebody else's."""
     try:
-        if sys.platform != "win32":
-            os.killpg(os.getpgid(pid), signal.SIGTERM)
+        if sys.platform == "win32":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True, timeout=15, stdin=subprocess.DEVNULL)
+        elif os.getpgid(pid) == pid:
+            os.killpg(pid, signal.SIGTERM)
         else:
             os.kill(pid, signal.SIGTERM)
-    except OSError:
+    except (OSError, subprocess.SubprocessError):
         pass
 
 
