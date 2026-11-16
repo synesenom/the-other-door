@@ -166,11 +166,27 @@ class _Blocks:
         self.items.append(text)
 
 
+def _header_parts(cv_md: str) -> tuple[str | None, str | None, list[str]]:
+    """What is above the first `## ` heading: the name (`# `), the tagline (the first `>` line) and the contact lines."""
+    name = tagline = None
+    preamble: list[str] = []
+    for raw in cv_md.splitlines():
+        stripped = raw.strip()
+        if stripped.startswith("## "):
+            break
+        if stripped.startswith("# ") and name is None:
+            name = stripped[2:].strip()
+        elif stripped.startswith(">"):
+            tagline = tagline or stripped.lstrip("> ").strip() or None
+        elif stripped and not stripped.startswith("#"):
+            preamble.append(stripped)
+    return name, tagline, preamble
+
+
 def body(cv_md: str, lang: str = "en") -> str:
     """The CV in `cv_md` as a body (see the module's docstring); '' for a CV with nothing in it. `lang` is the ad's
     language, which reads the section headings that tell a skills or languages list (levels)."""
-    name = tagline = None
-    preamble: list[str] = []
+    name, tagline, preamble = _header_parts(cv_md)
     blocks = _Blocks()
     in_header = True
     for raw in cv_md.splitlines():
@@ -183,12 +199,7 @@ def body(cv_md: str, lang: str = "en") -> str:
             blocks.levels = i18n.cv_section_kind(heading, _LEVEL_SECTIONS, (lang, "en")) is not None
             blocks.out.append(f"<h2>{_inline(heading)}</h2>")
         elif in_header:
-            if stripped.startswith("# ") and name is None:
-                name = stripped[2:].strip()
-            elif stripped.startswith(">"):
-                tagline = tagline or stripped.lstrip("> ").strip() or None
-            elif stripped and not stripped.startswith("#"):
-                preamble.append(stripped)
+            continue
         elif stripped.startswith("### "):
             blocks.close_entry()
             blocks.out.append(f'<div class="entry">{_heading3(stripped[4:].strip())}')
@@ -219,15 +230,7 @@ def body(cv_md: str, lang: str = "en") -> str:
 def letter_header(cv_md: str) -> tuple[str, str]:
     """The letter's header from the CV: ``(html, name)``, the CV's name and contact details in the `letter-header`
     shape (what the tailor writes at the top of a letter); ``("", "")`` for a CV with no name. The tagline is left out."""
-    name, preamble = None, []
-    for raw in cv_md.splitlines():
-        line = raw.strip()
-        if line.startswith("## "):
-            break
-        if line.startswith("# ") and name is None:
-            name = line[2:].strip()
-        elif line and not line.startswith(("#", ">")):
-            preamble.append(line)
+    name, _, preamble = _header_parts(cv_md)
     if not name:
         return "", ""
     return f'<header class="letter-header"><h1>{_inline(name)}</h1>{_contact(preamble)}</header>', name

@@ -187,7 +187,7 @@ tool list equals the command list, and until the tool takes every option the com
 (and vice versa) — `--quiet` excepted; a renaming goes in that test's `_ALIASES`.
 A tool with no command is allowed only by name in `CONVERSATION_ONLY_TOOLS` (`revise`,
 `mark_reviewed`, `mark_seen`, `compile`, `check_facts`, `preview_matches`: what a user says to Claude, or an agent's or a wizard's plumbing). The CLI is
-two levels where it helps: `cv enrich|gaps|titles|stories` (`cv stories list|add|remove|draft`, bare = list), `companies list|add|remove|why`, `jobs list|show|add|status|summary|prepare` (bare `jobs` is `jobs list`), `data export|import` and `find search|discover|follow|collect|match` (keys like `"data export"`
+two levels where it helps: `cv enrich|gaps|titles|stories|style` (`cv stories list|add|remove|draft`, bare = list; `cv style build|show`), `companies list|add|remove|why`, `jobs list|show|add|status|summary|prepare` (bare `jobs` is `jobs list`), `data export|import` and `find search|discover|follow|collect|match` (keys like `"data export"`
 in `CLI_COMMAND_TOOLS`; the five `find` steps are one `find_jobs` tool whose `step` parameter picks the subcommand, with the group's own options like `skip` beside it); `doctor --fix` is the `setup` tool. Skills and agents call these tools — no `.claude/` file
 runs `./door`. See
 `docs/architecture.md`'s "Two modes, one core" section for the full CLI / MCP /

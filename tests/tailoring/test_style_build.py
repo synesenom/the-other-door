@@ -76,7 +76,7 @@ def test_a_built_style_is_what_compile_prints_a_tailored_application_in(tmp_path
     out.mkdir(parents=True)
     (out / "posting.json").write_text(json.dumps({"title": "Head of Finance", "company": "Globex", "location": "Aarhus"}))
     (out / "cv.html").write_text(cv_body.body((EXAMPLE / "cv.md").read_text(encoding="utf-8")), encoding="utf-8")
-    (out / "cover_letter.html").write_text(style_preview.sample_letter(), encoding="utf-8")
+    (out / "cover_letter.html").write_text(style_preview.sample_letter((EXAMPLE / "cv.md").read_text(encoding="utf-8")), encoding="utf-8")
     compiled = {r["file"]: r for r in compile_cmd._compile_core("job", jobs_dir=tmp_path / "jobs")["results"]}
     assert compiled["cv.html"]["status"] == "compiled", compiled["cv.html"]
     assert compiled["cover_letter.html"]["status"] == "compiled", compiled["cover_letter.html"]

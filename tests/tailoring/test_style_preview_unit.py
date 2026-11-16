@@ -5,11 +5,14 @@ print is stood in by a one page PDF; the real one is in test_style_preview.py.""
 import io
 import json
 import shutil
+import threading
+import time
 
 import pytest
 from PIL import Image
 
 from door.core import workspace
+from door import version
 from door.tailoring import html_pdf, style_preview
 from paths import REPO_ROOT, TESTS_DIR
 
@@ -61,9 +64,14 @@ def test_the_sample_letter_is_the_users_name_and_contact_with_the_date_filled():
     assert letter.rstrip().endswith("<p>Ada Lovelace</p></div>")
 
 
-def test_the_sample_letter_of_the_build_keeps_a_fictional_header():
-    letter = style_preview.sample_letter()
-    assert "Jane Doe" in letter and "<<date>>" not in letter
+def test_a_cv_with_no_name_gives_a_letter_with_no_header_and_no_signature(world):
+    letter = style_preview.sample_letter("## Experience\n\n- x\n")
+    assert "letter-header" not in letter and "Jane Doe" not in letter and "<p></p></div>" in letter
+    home, profile, printer = world
+    (profile / "cv.md").write_text("## Experience\n\n- x\n", encoding="utf-8")
+    _show(home, profile)
+    assert "Hiring team" in printer.calls[1]["html"] and "<p></p></div>" in printer.calls[1]["html"]
+    assert "Jane Doe" not in printer.calls[1]["html"]
 
 
 def test_the_sample_letter_escapes_the_name():
@@ -77,11 +85,11 @@ def test_without_a_style_only_the_default_is_shown_and_it_is_written_whole(world
     default = shown["styles"]["default"]
     folder = home / ".style" / "preview" / "default"
     assert default["cv"] == [str(folder / "cv_page_1.png")] and default["letter"] == [str(folder / "letter_page_1.png")]
-    assert sorted(p.name for p in folder.iterdir()) == ["cv.pdf", "cv_page_1.png", "letter.pdf", "letter_page_1.png", "meta.json"]
     Image.open(default["cv"][0]).verify()
     assert [c["pdf"] for c in printer.calls] == ["cv.pdf", "letter.pdf"]
     assert "Ada Lovelace" in printer.calls[0]["html"] and "Ada Lovelace" in printer.calls[1]["html"]
     assert list((home / ".style" / "preview").iterdir()) == [folder]  # no staging left
+    assert default["version"] and default["two_column"] is False
 
 
 def test_a_second_show_prints_nothing_while_nothing_changed(world):
@@ -153,3 +161,83 @@ def test_the_photo_is_in_the_cv_when_the_country_allows_it_and_its_change_prints
     Image.new("RGB", (100, 100), "black").save(profile / "photo.jpg")
     _show(home, profile, config)
     assert len(printer.calls) == 4
+
+
+def test_a_set_is_made_again_when_the_version_or_a_served_font_changes(world, monkeypatch):
+    home, profile, printer = world
+    folder = _style(profile)
+    (folder / "fonts").mkdir()
+    (folder / "fonts" / "F.ttf").write_bytes(b"one")
+    (folder / "template.json").write_text(json.dumps({"fonts": ["F.ttf"]}), encoding="utf-8")
+    first = _show(home, profile)
+    assert len(printer.calls) == 4
+    (folder / "fonts" / "F.ttf").write_bytes(b"two")
+    second = _show(home, profile)
+    assert len(printer.calls) == 6 and second["styles"]["like"]["version"] != first["styles"]["like"]["version"]
+    monkeypatch.setattr(version, "VERSION", "9.9.9")
+    _show(home, profile)
+    assert len(printer.calls) == 10
+
+
+def test_the_letter_is_printed_with_the_cv_templates_assets(world):
+    home, profile, printer = world
+    _show(home, profile)
+    assert printer.calls[0]["assets"] == printer.calls[1]["assets"]
+
+
+def test_a_style_with_a_broken_manifest_is_left_out_and_the_default_is_shown(world):
+    home, profile, printer = world
+    folder = _style(profile)
+    (folder / "template.json").write_text("{not json", encoding="utf-8")
+    assert list(_show(home, profile)["styles"]) == ["default"]
+
+
+def test_a_set_with_a_missing_image_is_made_again(world):
+    home, profile, printer = world
+    _show(home, profile)
+    (home / ".style" / "preview" / "default" / "cv_page_1.png").unlink()
+    shown = _show(home, profile)
+    assert len(printer.calls) == 4 and (home / ".style" / "preview" / "default" / "cv_page_1.png").is_file() and shown["styles"]["default"]["cv"]
+
+
+def test_without_a_cv_the_example_one_is_shown(world):
+    home, profile, printer = world
+    (profile / "cv.md").unlink()
+    _show(home, profile)
+    assert "Jane Doe" in printer.calls[0]["html"]
+
+
+def test_a_pdf_that_cannot_be_read_back_leaves_the_set_out(world, monkeypatch):
+    import pypdfium2
+    home, profile, printer = world
+
+    def broken(*a, **kw):
+        raise pypdfium2.PdfiumError("Failed to load document")
+    monkeypatch.setattr(style_preview.pdf_render, "render_pdf_pages", broken)
+    assert _show(home, profile) == {"styles": {}}
+
+
+def test_two_shows_at_once_both_get_every_image(world, monkeypatch):
+    home, profile, _ = world
+
+    def slow(folder, html, pdf, *, assets=None, **kw):
+        time.sleep(0.2)
+        shutil.copyfile(PDF, pdf)
+    monkeypatch.setattr(html_pdf, "print_html", slow)
+    results, errors = {}, []
+
+    def run(i):
+        try:
+            results[i] = _show(home, profile)
+        except Exception as exc:  # the test names what was raised
+            errors.append(repr(exc))
+    threads = [threading.Thread(target=run, args=(i,)) for i in range(2)]
+    for t in threads:
+        t.start()
+        time.sleep(0.05)
+    for t in threads:
+        t.join()
+    assert errors == [] and len(results) == 2
+    for shown in results.values():
+        assert shown["styles"]["default"]["cv"] and shown["styles"]["default"]["letter"]
+    assert [p.name for p in (home / ".style" / "preview").iterdir()] == ["default"]

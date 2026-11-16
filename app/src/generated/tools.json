@@ -1630,7 +1630,7 @@
   },
   {
     "name": "show_style",
-    "description": "Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built\n    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the\n    CV, the photo or a style changed; no model is used.\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths]}, \"like\": {...}}}``: ``like`` only once a\n        style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is left out.\n    ",
+    "description": "Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built\n    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the\n    CV, the photo or a style changed; no model is used.\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\", \"two_column\"}, \"like\": {...}}}``:\n        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;\n        ``like`` only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is\n        left out.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {},

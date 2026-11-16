@@ -2,6 +2,7 @@
 with its state in HOME/.style/run.json, and the `style` block of `status_summary`. The builder (`style_build.build`)
 and the process are stood in; no model is called."""
 
+import asyncio
 import contextlib
 import json
 import os
@@ -394,4 +395,4 @@ def test_the_show_command_says_when_nothing_could_be_printed(home, cli_env, monk
 def test_the_show_tool_is_a_writing_tool_the_phone_does_not_get(home, cli_env, shown):
     from door import serve_policy
     assert "show_style" in mcp_server.WRITING_TOOLS and "show_style" not in serve_policy.PHONE_TOOLS
-    assert mcp_server.show_style()["styles"]["default"]["letter"] == ["/x/letter_page_1.png"]
+    assert asyncio.run(mcp_server.show_style())["styles"]["default"]["letter"] == ["/x/letter_page_1.png"]
