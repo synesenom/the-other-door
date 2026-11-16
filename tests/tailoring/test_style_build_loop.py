@@ -399,3 +399,15 @@ def test_a_swap_that_was_interrupted_puts_the_style_in_use_back_too(world):
     (old / "keep.txt").write_text("old")
     world.build("html-word-two-column", Stylist("no"), cap=1)
     assert (world.profile / "style" / "keep.txt").read_text() == "old" and not old.exists()
+
+
+def test_a_side_band_of_unknown_headings_is_a_column_in_the_template_and_in_the_printed_sample(world):
+    heads = [h["text"] for h in style_build.style_extract.extract(STYLES / "scrubbed-pages-sidebar-fr.pdf")["headings"]]
+    side = [h for h in heads if h not in ("YENFANCE ATIROIR", "LEUNE YAUTOMNE", "YDIMANCHE")]
+    body = ("<header class=\"cv-header\"><h1>A B</h1></header><h2>Parcours</h2><p>x</p>"
+            + "".join(f"<h2>{h}</h2><p>y</p>" for h in side[:2]))
+    world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(body=body), letter_round()))  # its two page original fails the letter
+    assert json.loads((world.work / "template.json").read_text())["columns"]["side"]
+    printed = world.prints[0]["html"]
+    main, side_html = printed.split('<div class="side">')
+    assert all(h in side_html for h in side[:2]) and "Parcours" in main and "Parcours" not in side_html

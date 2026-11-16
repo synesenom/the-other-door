@@ -25,7 +25,7 @@ The task names the files in the current folder; open them with the Read tool:
 
 One page of HTML with `<<lang>>` in `<html lang>` and `<<body>>` once, on a line of its own in `<body>`. Everything else is CSS around that body: you write no text, no script, no `<link>`, no `<img>`, no SVG, no `@import`, no `on*` attribute, no `content:` with letters or digits in it. Fonts and icons are loaded only as `url(/fonts/<file>)` and `url(/icons/<file>)` of the files named; use an icon as a `background` or a `mask` on a contact span's `::before` by its kind. Put the CSS in one `<style>` in `<head>`. Keep, as the shipped template does:
 
-- `@page { size: A4; margin: ... }` set from the CV's margins; `html { font-synthesis: none; hyphens: manual; }`;
+- `@page { size: <the page size the task names>; margin: ... }` set from the CV's margins; `html { font-synthesis: none; hyphens: manual; }`;
 - a `.photo` rule (the CV's photo, if any, is an `<img class="photo">` placed in the header; the rule sizes and crops it);
 - a first HTML comment listing the building blocks and every class below (the tailor reads it to write the body).
 

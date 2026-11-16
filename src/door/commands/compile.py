@@ -8,6 +8,7 @@ PDF is read back as an ATS would, and its pages rendered to PNGs. The file on di
 
 import re
 import shutil
+from collections.abc import Sequence
 from datetime import date
 from pathlib import Path
 
@@ -88,7 +89,7 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
 
 
 def page(body: str, template: str, folder: Path, *, photo: Path | None, columns: templates.Columns | None,
-         language: str) -> tuple[str, str, str | None]:
+         language: str, side_headings: Sequence[str] = ()) -> tuple[str, str, str | None]:
     """The page `compile` prints for a body: the photo placed (copied into `folder`), the two columns, the language's
     typography, wrapped in `template`. Returns the page, the body as placed and the photo's file name (None when it
     was not placed).
@@ -97,12 +98,13 @@ def page(body: str, template: str, folder: Path, *, photo: Path | None, columns:
         ValueError: the template cannot hold the body.
     """
     built, name = _with_photo(body, template, folder, photo)
-    placed = _place_columns(built, columns)
+    placed = _place_columns(built, columns, side_headings)
     return _wrap(template, typography.apply(placed, language), language), placed, name
 
 
 def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,
-               columns: templates.Columns | None = None, photo: Path | None = None) -> tuple[Path, str, str | None]:
+               columns: templates.Columns | None = None, photo: Path | None = None,
+               side_headings: Sequence[str] = ()) -> tuple[Path, str, str | None]:
     """`body` placed in `template` (its text) by `page` and printed to `folder/<name>.pdf` with the pinned Chromium,
     the fonts and icons that the template file `assets_of` names served. Returns the pdf, the body as placed and the
     photo's file name in `folder` (None when it was not placed).
@@ -113,7 +115,8 @@ def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Pat
     """
     folder.mkdir(parents=True, exist_ok=True)
     assets = templates.assets(assets_of)
-    html_text, placed, picture = page(body, template, folder, photo=photo, language=lang, columns=columns)
+    html_text, placed, picture = page(body, template, folder, photo=photo, language=lang, columns=columns,
+                                      side_headings=side_headings)
     pdf = folder / f"{name}.pdf"
     html_pdf.print_html(folder, html_text, pdf, assets=assets)
     return pdf, placed, picture
@@ -122,12 +125,13 @@ def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Pat
 _H2 = re.compile(r"(?=<h2[\s>])")
 
 
-def _place_columns(body: str, columns: templates.Columns | None) -> str:
+def _place_columns(body: str, columns: templates.Columns | None, side_headings: Sequence[str] = ()) -> str:
     """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` (the
     notes, the photo, the header) as it is, then `<div class="main">` and `<div class="side">`, each section in the
     order the body has it. A section goes to the side when its heading is, whole and without case, a title of one of
     the template's ``columns.side`` kinds in any supported language (a CV's headings are in its own language, whatever
-    the ad's, #227); any other goes to the main column. `body`
+    the ad's, #227), or is, whole and without case, one of `side_headings` (the build's sample body keeps the original's
+    own headings, #227); any other goes to the main column. `body`
     itself when the template has no side column."""
     if columns is None or not columns.side:
         return body
@@ -135,11 +139,12 @@ def _place_columns(body: str, columns: templates.Columns | None) -> str:
     main, side = [], []
     for section in sections:
         heading = (html_doc.headings(section) or [""])[0]
-        (side if i18n.cv_section_kind(heading, columns.side) else main).append(section)
+        named = heading.casefold() in {h.casefold() for h in side_headings}
+        (side if named or i18n.cv_section_kind(heading, columns.side) else main).append(section)
     return f'{first}<div class="main">{"".join(main)}</div><div class="side">{"".join(side)}</div>'
 
 
-def placed_cv(body: str, config: dict, posting: dict) -> str:
+def placed_cv(body: str, config: dict) -> str:
     """The CV `body` as its printed page reads it (`_place_columns` by the resolved CV template's manifest); `body` itself when the template has no side column or cannot be read."""
     try:
         columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns

@@ -97,11 +97,11 @@ def _style(bands, headings, pages=1):
 def test_the_side_column_holds_the_known_sections_whose_headings_are_in_the_side_band():
     style = _style([{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}],
                    [("PROFILE", 31), ("CONTACT", 395), ("COMPÉTENCES", 395), ("Languages", 400), ("EXPERIENCE", 31)])
-    assert style_build._side_kinds(style) == ["skills", "languages"]
+    assert style_build._side_kinds(style, "") == ["skills", "languages"]
 
 
 def test_no_side_band_means_one_column():
-    assert style_build._side_kinds(_style([{"x0": 30, "x1": 500, "kind": "main"}], [("Skills", 31)])) == []
+    assert style_build._side_kinds(_style([{"x0": 30, "x1": 500, "kind": "main"}], [("Skills", 31)]), "") == []
 
 
 _SIDE = [{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}]
@@ -114,9 +114,9 @@ def test_a_side_band_of_unknown_headings_falls_back_to_the_kinds_the_cv_has():
     assert style_build._manifest_data(style, [], {}, cv_md)["columns"] == {"side": ["skills", "languages", "interests"]}
 
 
-def test_the_fallback_without_any_of_those_in_the_cv_is_skills_and_languages():
+def test_the_fallback_without_any_of_those_in_the_cv_is_one_column():
     style = _style(_SIDE, [("Logiciels", 395)])
-    assert style_build._side_kinds(style, "# A\n\n## Expérience\n") == ["skills", "languages"]
+    assert style_build._side_kinds(style, "# A\n\n## Expérience\n") == []
 
 
 def test_the_fallback_does_not_apply_without_a_side_band():
@@ -134,12 +134,12 @@ def test_the_stylist_is_told_the_original_page_size():
 
 def test_the_manifest_has_the_fonts_icons_columns_and_the_original_page_count_within_the_template_limits():
     style = _style([{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}], [("Skills", 400)], pages=5)
-    manifest = style_build._manifest_data(style, ["A.ttf"], {"email": "email.svg"})
+    manifest = style_build._manifest_data(style, ["A.ttf"], {"email": "email.svg"}, "")
     assert manifest == {"version": 1, "fonts": ["A.ttf"], "icons": {"email": "email.svg"}, "max_pages": 3,
                         "columns": {"side": ["skills"]}}
     assert templates.Manifest(**manifest)
-    assert style_build._manifest_data(_style([], [], pages=1), [], {})["max_pages"] == 1
-    assert "columns" not in style_build._manifest_data(_style([], [], pages=1), [], {})
+    assert style_build._manifest_data(_style([], [], pages=1), [], {}, "")["max_pages"] == 1
+    assert "columns" not in style_build._manifest_data(_style([], [], pages=1), [], {}, "")
 
 
 # ---------- the stress variants ----------
@@ -184,3 +184,13 @@ def test_the_stress_variants_of_a_cv_with_no_entries_are_still_all_there():
     variants = style_build._stress_variants("# Jane Doe\n\n## Profile\n\nA text.\n")
     assert variants["fewer"]["md"] == variants["photo"]["md"]
     assert variants["long_title"]["md"] != variants["photo"]["md"]
+
+
+def test_the_side_headings_are_every_heading_in_a_side_band_known_or_not():
+    style = _style(_SIDE, [("Logiciels", 395), ("COMPÉTENCES", 400), ("EXPERIENCE", 31)])
+    assert style_build._side_headings(style) == ["Logiciels", "COMPÉTENCES"]
+
+
+@pytest.mark.parametrize("size, words", [([595.3, 841.9], "A4"), ([612, 792], "US Letter"), ([500, 700], "500 x 700 pt")])
+def test_the_page_size_is_a_name_or_the_points(size, words):
+    assert style_build._page_size({"page": {"size": size}}) == words

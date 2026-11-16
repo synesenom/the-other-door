@@ -128,26 +128,30 @@ _FALLBACK_SIDE = ("skills", "languages", "interests")
 _CV_HEADING = re.compile(r"^##[ \t]+(.+?)[ \t]*$", re.M)
 
 
-def _side_kinds(style: dict, cv_md: str = "") -> list[str]:
+def _side_headings(style: dict) -> list[str]:
+    """The texts of the original's headings that sit in a side band, in reading order, known to a section kind or not."""
+    bands = [b for b in style["columns"]["bands"] if b["kind"] == "side"]
+    return [h["text"] for h in style["headings"]
+            if any(b["x0"] - 2 <= (h["bbox"][0] + h["bbox"][2]) / 2 <= b["x1"] + 2 for b in bands)]
+
+
+def _side_kinds(style: dict, cv_md: str) -> list[str]:
     """The section kinds of the side column: those whose headings in the original sit in its side band, in reading
     order (a heading no section kind names stays in the main column). When it has a side band but none of its headings
-    names a kind, the kinds of skills, languages and interests that `cv_md` has (skills and languages when it has none
-    of them). Empty for a CV with no side band."""
-    bands = [b for b in style["columns"]["bands"] if b["kind"] == "side"]
+    names a kind, the kinds of skills, languages and interests that `cv_md` has: a tailored CV puts those there. Empty
+    for a CV with no side band, or with nothing of those in `cv_md` (one column)."""
     kinds: list[str] = []
-    for heading in style["headings"]:
-        x = (heading["bbox"][0] + heading["bbox"][2]) / 2
-        if any(b["x0"] - 2 <= x <= b["x1"] + 2 for b in bands):
-            kind = i18n.cv_section_kind(heading["text"], templates.SECTION_KINDS)
-            if kind and kind not in kinds:
-                kinds.append(kind)
-    if not kinds and bands:
+    for text in _side_headings(style):
+        kind = i18n.cv_section_kind(text, templates.SECTION_KINDS)
+        if kind and kind not in kinds:
+            kinds.append(kind)
+    if not kinds and _side_headings(style):
         own = {i18n.cv_section_kind(h, _FALLBACK_SIDE) for h in _CV_HEADING.findall(cv_md)}
-        kinds = [k for k in _FALLBACK_SIDE if k in own] or ["skills", "languages"]
+        kinds = [k for k in _FALLBACK_SIDE if k in own]
     return kinds
 
 
-def _manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str], cv_md: str = "") -> dict:
+def _manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str], cv_md: str) -> dict:
     """The `template.json` of a build: its fonts and icons, the side column's kinds and the page limit (the original's
     page count within the 1 to 3 a template may name)."""
     data: dict = {"version": 1, "fonts": list(font_files), "icons": dict(icon_files),
@@ -303,7 +307,8 @@ class _Session:
         Raises:
             _Stop: the print has no text to read back.
         """
-        pdf = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns)[0]
+        pdf = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns,
+                                     side_headings=_side_headings(self.style))[0]
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")

@@ -215,10 +215,10 @@ def test_it_stops_when_every_matched_element_is_within_two_points():
     assert not style_compare.should_stop([0.6], 2.1)
 
 
-def test_it_stops_when_the_last_round_gained_under_half_a_percent_over_the_best_before():
-    assert style_compare.should_stop([0.80, 0.90, 0.903], 9.0)
+def test_it_stops_when_the_last_round_gained_under_a_quarter_percent_over_the_best_before():
+    assert style_compare.should_stop([0.80, 0.90, 0.902], 9.0)
     assert style_compare.should_stop([0.80, 0.90, 0.85], 9.0)
-    assert not style_compare.should_stop([0.80, 0.90, 0.906], 9.0)
+    assert not style_compare.should_stop([0.80, 0.90, 0.904], 9.0)
 
 
 def test_a_small_gain_does_not_stop_a_build_whose_best_score_is_still_low():

@@ -20,7 +20,9 @@ from door.tailoring import pdf_render, readability, style_trace
 
 CAP = 7  # rounds
 WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
-MIN_GAIN = 0.005  # a round that adds less than this over the best before it is not worth another
+# a round that adds less than this over the best before it is not worth another: half of the old 0.005, as `blurred_score`
+# (which weighs the difference against the ink) roughly halves what a round gains, so the same sensitivity
+MIN_GAIN = 0.0025
 MIN_SCORE = 0.2  # the small-gain rule applies only once the best round scored this: below it the rebuild is still far off
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 _FEEDBACK_LIMIT = 12
@@ -206,7 +208,7 @@ def blurred_score(a: Image.Image, b: Image.Image) -> float:
         return 1.0
     mse = _sum_squares(ImageChops.difference(x, y)) / pixels / 255**2
     ink = (_sum_squares(ImageChops.invert(x)) + _sum_squares(ImageChops.invert(y))) / pixels / 255**2
-    return min(1.0, max(0.0, 1 - mse / max(ink, 0.005)))
+    return 1 - mse / max(ink, 0.005)
 
 
 def pages_score(original: list[Image.Image], render: list[Image.Image]) -> float:
