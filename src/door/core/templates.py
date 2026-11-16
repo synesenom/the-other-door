@@ -44,6 +44,7 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
 
 
 MANIFEST_FILE = "template.json"
+MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
 ICON_KINDS = (*i18n.CONTACT_KINDS, "date")
 # The section kinds a column can hold: the CV sections `i18n` names.
 SECTION_KINDS = tuple(i18n.CvSections.model_fields)
@@ -79,7 +80,7 @@ class Manifest(BaseModel):
     version: Literal[1] = 1
     fonts: list[str] = []
     icons: dict[str, str] = {}
-    max_pages: int | None = Field(default=None, ge=1, le=3)
+    max_pages: int | None = Field(default=None, ge=1, le=MAX_PAGES)
     columns: Columns | None = None
 
     @field_validator("fonts")

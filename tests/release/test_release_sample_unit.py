@@ -23,6 +23,8 @@ from release_gate_utils import releases
 NEW_SINCE_RELEASE: set[str] = {
     # the CV and letter are HTML bodies since #146 (the sample the generator writes has them; the saved 0.2.0 holds .tex)
     "jobs/output/*/cv.html", "jobs/output/*/cover_letter.html", "jobs/output/*/*.html.bak",
+    # a CV template built from an uploaded CV (#149): written only when a user asks for one
+    "profile/style/**",
 }
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).

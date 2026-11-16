@@ -108,25 +108,6 @@ def _tailor_tools(job_id: str, posting_path: Path) -> list[str]:
     return [*_TAILOR_ALLOWED_TOOLS, *reads, *writes]
 
 
-def _agent_definition(name: str) -> dict:
-    """`.claude/agents/<name>.md` as an `--agents` entry: its frontmatter's description,
-    model and tools, and its body as the prompt."""
-    text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
-    _, front, body = text.split("---", 2)
-    entry: dict = {"prompt": body.strip()}
-    key = None
-    for line in front.splitlines():
-        if line.lstrip().startswith("- ") and key == "tools":
-            entry["tools"].append(line.strip()[2:].strip())
-        elif ":" in line and not line.startswith(" "):
-            key, value = (part.strip() for part in line.split(":", 1))
-            if key == "tools":
-                entry["tools"] = []
-            elif key in ("description", "model"):
-                entry[key] = value
-    return entry
-
-
 def _tailor_folders(posting_path: Path) -> list[Path]:
     """The folders the tailor session works in besides its output folder (its working
     directory): the profile, the posting's own folder, and the folder of a CV or template
@@ -288,7 +269,7 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None,
         for name in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE):
             (output_dir / name).unlink(missing_ok=True)
     try:
-        agents = {name: _agent_definition(name) for name in _TAILOR_AGENTS}
+        agents = {name: claude_cli.agent_definition(name) for name in _TAILOR_AGENTS}
         (Path(posting_path).parent / _AGENTS_FILE).write_text(json.dumps(agents), encoding="utf-8")
     except (OSError, ValueError) as exc:
         raise TailorError(f"cannot set up the tailor agents: {exc}") from None

@@ -180,6 +180,25 @@ def run(
     return envelope if envelope is not None else result.stdout
 
 
+def agent_definition(name: str) -> dict:
+    """`.claude/agents/<name>.md` as an `--agents` entry: its frontmatter's description,
+    model and tools, and its body as the prompt."""
+    text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
+    _, front, body = text.split("---", 2)
+    entry: dict = {"prompt": body.strip()}
+    key = None
+    for line in front.splitlines():
+        if line.lstrip().startswith("- ") and key == "tools":
+            entry["tools"].append(line.strip()[2:].strip())
+        elif ":" in line and not line.startswith(" "):
+            key, value = (part.strip() for part in line.split(":", 1))
+            if key == "tools":
+                entry["tools"] = []
+            elif key in ("description", "model"):
+                entry[key] = value
+    return entry
+
+
 def envelope_result(stdout: str):
     """The `result` of a `--output-format json` envelope: the answer text, or
     the structured answer when the CLI already decoded it.
