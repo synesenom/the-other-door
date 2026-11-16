@@ -66,20 +66,23 @@ def test_events_before_the_reply_are_queued_and_waited_for(ws):
     assert cdp.wait_event("Page.loadEventFired", timeout=2) == {"t": 5}
 
 
-def test_a_handler_may_send_while_a_reply_is_awaited(ws):
+def test_a_handler_may_post_and_its_reply_is_dropped(ws):
     def script(conn):
         first = conn.read_json()
-        conn.send_json({"method": "Fetch.requestPaused", "params": {"requestId": "r1"}, "sessionId": "S"})
-        inner = conn.read_json()  # the handler's command
-        assert inner["method"] == "Fetch.failRequest"
-        conn.send_json({"id": inner["id"], "result": {}})
+        for i in range(3000):  # a flood of events, each answered from the handler: no recursion
+            conn.send_json({"method": "Fetch.requestPaused", "params": {"requestId": f"r{i}"}, "sessionId": "S"})
+        for _ in range(3000):
+            inner = conn.read_json()
+            assert inner["method"] == "Fetch.failRequest"
+            conn.send_json({"id": inner["id"], "result": {}})
         conn.send_json({"id": first["id"], "result": {"done": True}})
 
     fake = ws(script)
     cdp = Cdp.connect(fake.url)
-    cdp.on("Fetch.requestPaused", lambda p, sid: cdp.send("Fetch.failRequest", {"requestId": p["requestId"]}, session_id=sid))
-    assert cdp.send("Page.navigate") == {"done": True}
+    cdp.on("Fetch.requestPaused", lambda p, sid: cdp.post("Fetch.failRequest", {"requestId": p["requestId"]}, session_id=sid))
+    assert cdp.send("Page.navigate", timeout=10) == {"done": True}
     assert fake.error is None
+    assert not cdp._replies
 
 
 @pytest.mark.parametrize("size,form", [(200, "16"), (70_000, "64")])

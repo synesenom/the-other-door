@@ -138,12 +138,14 @@ def print_html(folder: Path, html: str, out_pdf: Path, *, timeout: float = 60.0,
 
         def paused(params: dict, session: str | None) -> None:
             url = params.get("request", {}).get("url", "")
-            allowed = url == origin or url.startswith(origin + "/")
-            if allowed:
-                conn.send("Fetch.continueRequest", {"requestId": params["requestId"]}, session_id=session, timeout=left())
+            rid = params["requestId"]
+            if url == origin or url.startswith(origin + "/"):
+                conn.post("Fetch.continueRequest", {"requestId": rid}, session_id=session)
+            elif params.get("resourceType") == "Document":
+                # a page that navigates away (meta refresh, a link, a frame) stays where it is: an empty 204 is no navigation
+                conn.post("Fetch.fulfillRequest", {"requestId": rid, "responseCode": 204}, session_id=session)
             else:
-                conn.send("Fetch.failRequest", {"requestId": params["requestId"], "errorReason": "BlockedByClient"},
-                          session_id=session, timeout=left())
+                conn.post("Fetch.failRequest", {"requestId": rid, "errorReason": "BlockedByClient"}, session_id=session)
 
         conn.on("Fetch.requestPaused", paused)
         conn.send("Emulation.setScriptExecutionDisabled", {"value": True}, session_id=sid, timeout=left())

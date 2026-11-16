@@ -6,6 +6,8 @@ import base64
 import http.client
 import os
 import socket
+import sys
+import time
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -35,7 +37,9 @@ class Fake:
         self.bodies: dict[str, bytes] = {}
         self.origin = ""
         self.paused: list[str] = []
+        self.paused_types: dict[str, str] = {}
         self.pdf_error = False
+        self.nav_error = ""
         self.hang = False
         self.servers: list[FakeWs] = []
         self.proc = type("P", (), {"poll": lambda self: None, "pid": 1})()
@@ -75,14 +79,15 @@ class Fake:
             elif m == "Page.navigate":
                 url = msg["params"]["url"]
                 self.origin = url.rsplit("/", 1)[0]
-                conn.send_json({"id": mid, "result": {"frameId": "F", "loaderId": "L1"}})
+                conn.send_json({"id": mid, "result": {"frameId": "F", "loaderId": "L1", **({"errorText": self.nav_error} if self.nav_error else {})}})
                 # the blank page's own networkIdle, which a print must not wait for
                 conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "networkIdle", "loaderId": "L0"}})
                 for path in ["/index.html", *self.probe_paths]:
                     self._fetch(path)
                 for i, url in enumerate(self.paused):
                     conn.send_json({"method": "Fetch.requestPaused", "sessionId": "S1",
-                                    "params": {"requestId": f"r{i}", "request": {"url": url}}})
+                                    "params": {"requestId": f"r{i}", "request": {"url": url},
+                                               "resourceType": self.paused_types.get(url, "Image")}})
                 conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "load", "loaderId": "L1"}})
                 conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "networkIdle", "loaderId": "L1"}})
             elif m == "Page.printToPDF":
@@ -152,6 +157,23 @@ def test_only_the_loopback_origin_is_continued_every_other_url_is_failed(fake, t
     assert all(c["sessionId"] == "S1" for c in failed)
 
 
+def test_a_blocked_navigation_gets_an_empty_204_so_the_page_stays_and_prints(fake, tmp_path):
+    fake.paused = ["http://other.test/refresh"]
+    fake.paused_types = {"http://other.test/refresh": "Document"}
+    _, out = _print(fake, tmp_path)
+    fulfilled = [c for c in fake.commands if c["method"] == "Fetch.fulfillRequest"]
+    assert [c["params"] for c in fulfilled] == [{"requestId": "r0", "responseCode": 204}]
+    assert not [c for c in fake.commands if c["method"] == "Fetch.failRequest"]
+    assert out.read_bytes() == PDF
+
+
+def test_thousands_of_blocked_requests_do_not_overflow_the_stack(fake, tmp_path):
+    fake.paused = [f"https://example.invalid/{i}.png" for i in range(2000)]
+    _, out = _print(fake, tmp_path)
+    assert len([c for c in fake.commands if c["method"] == "Fetch.failRequest"]) == 2000
+    assert out.read_bytes() == PDF
+
+
 def test_a_url_on_the_loopback_origin_is_continued(fake, tmp_path, monkeypatch):
     real = fake._script
 
@@ -213,6 +235,52 @@ def test_profile_removed_and_process_killed_on_a_cdp_error(fake, tmp_path):
         _print(fake, tmp_path)
     _cleaned(fake)
     assert not (tmp_path / "out.pdf").exists()
+
+
+def test_a_page_that_does_not_load_is_a_print_error(fake, tmp_path):
+    fake.nav_error = "net::ERR_FAILED"
+    with pytest.raises(PrintError, match="did not load: net::ERR_FAILED"):
+        _print(fake, tmp_path)
+    _cleaned(fake)
+
+
+def test_a_pdf_that_cannot_be_written_is_a_print_error(fake, tmp_path):
+    folder = tmp_path / "work"
+    folder.mkdir()
+    with pytest.raises(PrintError, match="printing failed"):
+        html_pdf.print_html(folder, "<p/>", tmp_path / "no-such-dir" / "out.pdf", launcher=fake.launcher)
+    _cleaned(fake)
+
+
+def _alive(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the POSIX process group; Windows uses taskkill /T")
+def test_kill_tree_ends_the_browser_and_its_children(tmp_path):
+    child_pid = tmp_path / "child.pid"
+    code = (
+        "import subprocess, sys, time, pathlib\n"
+        "c = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+        f"pathlib.Path({str(child_pid)!r}).write_text(str(c.pid))\n"
+        "time.sleep(60)\n"
+    )
+    proc = html_pdf._launch([sys.executable, "-c", code])
+    deadline = time.monotonic() + 15
+    while not child_pid.exists() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    grandchild = int(child_pid.read_text())
+    assert _alive(proc.pid) and _alive(grandchild)
+    html_pdf._kill_tree(proc)
+    deadline = time.monotonic() + 5
+    while _alive(grandchild) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert proc.poll() is not None
+    assert not _alive(grandchild)
 
 
 def test_a_hung_browser_times_out_and_is_cleaned_up(fake, tmp_path):

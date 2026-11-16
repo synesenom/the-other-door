@@ -148,6 +148,37 @@ def test_install_refuses_an_entry_that_escapes(tmp_path, pinned):
     assert not (tmp_path / "dest" / "chrome-headless-shell-linux64").exists()
 
 
+def test_install_refuses_an_archive_without_the_shell(tmp_path, pinned):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("chrome-headless-shell-linux64/readme.txt", "no binary")
+    data = buf.getvalue()
+    key = pinned(data)
+    if key != "linux64":
+        pytest.skip("fake zip is the linux one")
+    with pytest.raises(chromium.ChromiumError, match="no headless shell"):
+        chromium.install(tmp_path / "dest", fetch=lambda url, to: to.write_bytes(data))
+    assert not list((tmp_path / "dest").glob("*.part"))
+
+
+def test_install_turns_a_bad_zip_into_a_chromium_error(tmp_path, pinned):
+    data = b"this is not a zip"
+    pinned(data)
+    with pytest.raises(chromium.ChromiumError):
+        chromium.install(tmp_path / "dest", fetch=lambda url, to: to.write_bytes(data))
+
+
+def test_install_turns_a_failed_download_into_a_chromium_error(tmp_path, pinned):
+    pinned(b"x")
+
+    def fetch(url, to):
+        raise OSError("connection reset")
+
+    with pytest.raises(chromium.ChromiumError, match="connection reset"):
+        chromium.install(tmp_path / "dest", fetch=fetch)
+    assert not list((tmp_path / "dest").glob("*.part"))
+
+
 def test_install_twice_downloads_once(tmp_path, pinned):
     data = _zip("linux64")
     key = pinned(data)

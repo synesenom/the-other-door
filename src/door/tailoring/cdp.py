@@ -1,7 +1,8 @@
 """A small Chrome DevTools Protocol client over a plain RFC 6455 websocket (#165).
 
 Standard library only: the print path needs no Node and no extra package. Single-threaded: the
-replies and events are read inside `send` and `wait_event`; an event handler may itself `send`.
+replies and events are read inside `send` and `wait_event`; an event handler may `post` (write, no
+wait for the reply) but never `send`, which would read again from inside the read.
 """
 
 from __future__ import annotations
@@ -34,6 +35,7 @@ class Cdp:
         self._replies: dict[int, dict] = {}
         self._events: list[dict] = []
         self._handlers: dict[str, list] = {}
+        self._unanswered: set[int] = set()
 
     @classmethod
     def connect(cls, ws_url: str, timeout: float = 10.0) -> "Cdp":
@@ -68,6 +70,15 @@ class Cdp:
     def on(self, event: str, handler) -> None:
         """Call `handler(params, session_id)` for each `event` as it is read."""
         self._handlers.setdefault(event, []).append(handler)
+
+    def post(self, method: str, params: dict | None = None, *, session_id: str | None = None) -> None:
+        """Send a command whose reply nobody reads (safe inside an event handler)."""
+        self._next_id += 1
+        self._unanswered.add(self._next_id)
+        message = {"id": self._next_id, "method": method, "params": params or {}}
+        if session_id:
+            message["sessionId"] = session_id
+        self._write(json.dumps(message).encode())
 
     def send(self, method: str, params: dict | None = None, *, session_id: str | None = None, timeout: float = 30.0) -> dict:
         self._next_id += 1
@@ -164,6 +175,9 @@ class Cdp:
                     break
         message = json.loads(b"".join(parts).decode("utf-8"))
         if "id" in message:
+            if message["id"] in self._unanswered:
+                self._unanswered.discard(message["id"])
+                return
             self._replies[message["id"]] = message
             return
         handlers = self._handlers.get(message.get("method", ""), [])
