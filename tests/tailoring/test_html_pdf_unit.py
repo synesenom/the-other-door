@@ -75,14 +75,16 @@ class Fake:
             elif m == "Page.navigate":
                 url = msg["params"]["url"]
                 self.origin = url.rsplit("/", 1)[0]
-                conn.send_json({"id": mid, "result": {"frameId": "F"}})
+                conn.send_json({"id": mid, "result": {"frameId": "F", "loaderId": "L1"}})
+                # the blank page's own networkIdle, which a print must not wait for
+                conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "networkIdle", "loaderId": "L0"}})
                 for path in ["/index.html", *self.probe_paths]:
                     self._fetch(path)
                 for i, url in enumerate(self.paused):
                     conn.send_json({"method": "Fetch.requestPaused", "sessionId": "S1",
                                     "params": {"requestId": f"r{i}", "request": {"url": url}}})
-                conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "load"}})
-                conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "networkIdle"}})
+                conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "load", "loaderId": "L1"}})
+                conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "networkIdle", "loaderId": "L1"}})
             elif m == "Page.printToPDF":
                 if self.pdf_error:
                     conn.send_json({"id": mid, "error": {"message": "printing failed"}})
@@ -121,6 +123,7 @@ def _print(fake, tmp_path, html="<p>hi</p>", **kw):
 def test_a_page_is_printed_to_the_pdf_as_a4_with_css_page_size(fake, tmp_path):
     _, out = _print(fake, tmp_path)
     assert out.read_bytes() == PDF
+    assert fake.methods().index("Page.printToPDF") > fake.methods().index("Page.navigate")
     pdf = next(c for c in fake.commands if c["method"] == "Page.printToPDF")
     assert pdf["sessionId"] == "S1"
     p = pdf["params"]

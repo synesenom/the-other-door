@@ -155,8 +155,10 @@ def print_html(folder: Path, html: str, out_pdf: Path, *, timeout: float = 60.0,
         nav = conn.send("Page.navigate", {"url": f"{origin}/index.html"}, session_id=sid, timeout=left())
         if nav.get("errorText"):
             raise PrintError(f"the page did not load: {nav['errorText']}")
-        while conn.wait_event("Page.lifecycleEvent", timeout=left()).get("name") != "networkIdle":
-            pass
+        while True:  # the blank page's own events come first: only this navigation's networkIdle counts
+            event = conn.wait_event("Page.lifecycleEvent", timeout=left())
+            if event.get("name") == "networkIdle" and event.get("loaderId") == nav.get("loaderId"):
+                break
         result = conn.send("Page.printToPDF", {
             "preferCSSPageSize": True, "printBackground": True,
             "paperWidth": A4_INCHES[0], "paperHeight": A4_INCHES[1],
