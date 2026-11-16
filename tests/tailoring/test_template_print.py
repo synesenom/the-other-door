@@ -1,11 +1,13 @@
 """The shipped templates, really printed by the pinned Chromium (#146, #357, #623, #142, #143, #389).
 
-Skipped where no Chromium headless shell is installed (`./door doctor --fix`, or `DOOR_BIN`). These pin each template
+Part of the offline suite (marker `real_chromium`). Skipped where no Chromium headless shell is installed
+(`./door doctor --fix`, or `DOOR_BIN`), but not in CI, which installs it. These pin each template
 feature: the photo header and the one-line header without it, French typography and date, the page limit, TrueType
 fonts (no nameless Type 3 text), no automatic hyphenation, and that an ATS reads the pages back cleanly."""
 
 import io
 import json
+import os
 import re
 from datetime import date
 
@@ -19,9 +21,11 @@ from door.tailoring import pdf_render, readability
 from paths import REPO_ROOT, TESTS_DIR
 from pdf_utils import font_names, image_count, page_count
 
-pytestmark = [  # `live`: the offline suite hides the developer's Chromium (tests/conftest.py)
-    pytest.mark.live,
-    pytest.mark.skipif(chromium.find_chromium() is None, reason="no Chromium headless shell installed"),
+pytestmark = [  # `real_chromium`: the offline suite otherwise hides the developer's Chromium (tests/conftest.py)
+    pytest.mark.real_chromium,
+    # CI installs the pinned shell (tests.yml), so a missing one there is a failure, not a skip
+    pytest.mark.skipif(chromium.find_chromium() is None and not os.environ.get("CI"),
+                       reason="no Chromium headless shell installed"),
 ]
 
 FIXTURES = TESTS_DIR / "tailoring" / "fixtures"

@@ -4,7 +4,7 @@ name: Seed caches
 # cache a pull request saves is scoped to that pull request: only caches saved on main are shared. This saves the
 # npm cache (setup-node) on every runner the package and release workflows use, and the bundle's downloads
 # (app/.bundle-cache: the Python runtime, Tectonic, Chromium, the pip wheels) on the four that build a bundle, and Poetry's
-# cache that tests.yml and app.yml restore. It builds no installer and runs no test. Runs when a lock file changes
+# cache that tests.yml and app.yml restore, and the Chromium shell tests.yml prints with. It builds no installer and runs no test. Runs when a lock file changes
 # on main, twice a week so a cache unused for 7 days is not evicted (a run that finds the cache only restores it),
 # and by hand from main (run from another branch, it saves into that branch's scope, which pull requests cannot
 # read).
@@ -102,3 +102,17 @@ jobs:
       - name: Install dependencies
         if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: poetry install
+
+      # The pinned Chromium shell that tests.yml's real-print tests use
+      - name: Cache Chromium
+        id: chromium-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.local/share/door
+          key: chromium-${{ hashFiles('src/door/core/chromium_pin.json') }}
+
+      - name: Install Chromium
+        if: steps.chromium-cache.outputs.cache-hit != 'true'
+        run: |
+          export PYTHONPATH=src
+          python -m door.core.chromium --dest "$(python -c 'from door.core import chromium; print(chromium.chromium_root())')"
