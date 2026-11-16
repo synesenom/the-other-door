@@ -39,7 +39,7 @@ def test_a_good_template_builds_and_is_written_whole(tmp_path):
     assert result["problems"] == [] and result["rounds"] >= 1 and all(0 <= s <= 1 for s in result["scores"])
     assert result["rounds"] == len(stylist.calls) - 1  # the letter's call is not a round of the CV template
     assert {f["family"] for f in result["fonts"]} == {"Figtree", "Young Serif"}
-    style = profile / "style"
+    style = profile / "style.next"
     assert sorted(p.name for p in style.iterdir()) == ["cover-letter.template.html", "cv.template.html", "fonts", "source.pdf",
                                                       "style.json", "template.json"]
     manifest = templates.manifest(style / "cv.template.html")
@@ -49,7 +49,7 @@ def test_a_good_template_builds_and_is_written_whole(tmp_path):
     assert html_guard.template_problems((style / "cv.template.html").read_text(), manifest) == []
     assert html_guard.template_problems((style / "cover-letter.template.html").read_text(), manifest, "letter") == []
     assert (style / "source.pdf").read_bytes() == (STYLES / "html-word-two-column.pdf").read_bytes()
-    assert not [p for p in profile.iterdir() if p.name != "style"]  # nothing staged is left
+    assert not [p for p in profile.iterdir() if p.name != "style.next"]  # nothing staged is left
 
 
 def test_a_template_that_fails_the_stress_renders_even_after_the_extra_round_is_failed_and_writes_nothing(tmp_path):
@@ -65,6 +65,7 @@ def test_a_built_style_is_what_compile_prints_a_tailored_application_in(tmp_path
     stylist = Stylist(cv_round(edit=icon), cv_only(edit=icon), letter_round())
     result, profile = _build(tmp_path, "scrubbed-altacv-icons-fr", stylist)
     assert result["state"] == "ready", result["problems"]
+    (profile / "style.next").rename(profile / "style")  # chosen
     manifest = templates.manifest(profile / "style" / "cv.template.html")
     assert "email" in manifest.icons
     config = {"name": "Jane Doe", "location": "Aarhus", "cv_template": "profile/style/cv.template.html",

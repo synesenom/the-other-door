@@ -60,7 +60,7 @@
   },
   {
     "name": "build_style",
-    "description": "Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.\n    Identical to `./door cv style build`, which waits for it. Takes a few minutes of the model's time; this call returns\n    at once, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or ``failed``. A build already\n    going is replaced. The result is written to profile/style/ only when it passes; nothing uses it until it is chosen.\n\n    Args:\n        file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).\n\n    Returns:\n        ``{\"started\": True}``, or ``{\"error\": <why there is no style to copy: not a PDF, a scan, a LinkedIn export>}``.\n    ",
+    "description": "Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.\n    Identical to `./door cv style build`, which waits for it. Takes a few minutes of the model's time; this call returns\n    at once, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or ``failed``. A build already\n    going is replaced. The result waits in profile/style.next/ and is written only when it passes; nothing uses it until it is chosen (``use_style``).\n\n    Args:\n        file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).\n\n    Returns:\n        ``{\"started\": True}``, or ``{\"error\": <why there is no style to copy: not a PDF, a scan, a LinkedIn export>}``.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1630,7 +1630,7 @@
   },
   {
     "name": "show_style",
-    "description": "Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built\n    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the\n    CV, the photo or a style changed; no model is used.\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\", \"two_column\"}, \"like\": {...}}}``:\n        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;\n        ``like`` only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is\n        left out.\n    ",
+    "description": "Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built\n    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the\n    CV, the photo or a style changed; no model is used.\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\", \"two_column\"}, \"like\": {...}},\n        \"in_use\": \"like\" | \"default\", \"candidate\": whether a style just built waits to be chosen}``:\n        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;\n        ``like`` (the candidate when one waits, else the style kept) only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is\n        left out.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {},
@@ -1809,6 +1809,26 @@
         "device"
       ],
       "title": "unpair_phoneArguments"
+    }
+  },
+  {
+    "name": "use_style",
+    "description": "Choose the CV style: the one built from the user's own CV (``like``: the candidate a build leaves moves in, and\n    both template keys point at it), The other door's (``default``) or ``current`` (keep what is in use and drop the\n    candidate). Identical to `./door cv style use`. Any pick ends the candidate. Applications already prepared keep their\n    old look unless ``rerender`` is true: those prepared and not sent are printed again in the style in use (no model,\n    no plan usage; sent ones never change).\n\n    Args:\n        style: ``like``, ``default`` or ``current``.\n        rerender: Print the prepared applications again in the style in use.\n\n    Returns:\n        ``{\"in_use\": \"like\" | \"default\", \"prepared\": <how many are prepared and not sent>}`` and, with ``rerender``,\n        ``\"rerendered\"`` and ``\"failed\"`` (job ids); or ``{\"error\": ...}`` (``like`` with no style built).\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "default": "like",
+          "title": "Style",
+          "type": "string"
+        },
+        "rerender": {
+          "default": false,
+          "title": "Rerender",
+          "type": "boolean"
+        }
+      },
+      "title": "use_styleArguments"
     }
   },
   {

@@ -25,6 +25,8 @@ NEW_SINCE_RELEASE: set[str] = {
     "jobs/output/*/cv.html", "jobs/output/*/cover_letter.html", "jobs/output/*/*.html.bak",
     # a CV template built from an uploaded CV (#149): written only when a user asks for one
     "profile/style/**",
+    # the candidate a build leaves, waiting to be chosen (#151)
+    "profile/style.next/**",
 }
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).
