@@ -9,6 +9,8 @@
 // next version in the background (electron-updater reads latest*.yml and the .zip/.blockmap files); an unsigned
 // macOS app and the .deb only link to the release page. `doorSigned` in the packed package.json tells which.
 const signed = Boolean(process.env.CSC_LINK)
+// Pull-request package checks set DOOR_DMG_ONLY=1: only the release needs the updater's .zip and blockmap.
+const dmgOnly = process.env.DOOR_DMG_ONLY === '1'
 const notarized = signed && Boolean(process.env.APPLE_TEAM_ID)
 
 module.exports = {
@@ -34,7 +36,7 @@ module.exports = {
   publish: { provider: 'github', owner: 'synesenom', repo: 'the-other-door', releaseType: 'draft' },
   mac: {
     // the .dmg a person downloads, and the .zip (with its blockmap) that macOS's updater installs from
-    target: ['dmg', 'zip'],
+    target: dmgOnly ? ['dmg'] : ['dmg', 'zip'],
     category: 'public.app-category.productivity',
     artifactName: 'the-other-door-${version}-mac-${arch}.${ext}',
     ...(signed
