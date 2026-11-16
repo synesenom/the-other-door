@@ -10,7 +10,7 @@ folder of the call's own and moved in whole, so calls at once do not meet. A set
 is left out.
 
 The CV is `cv_body.body(cv.md, language)` with the photo as a prepare places it (the profile's rule, `_profile_photo`);
-the letter is `sample_letter`, in English. `print_body` is the one place a body is placed in a template and printed,
+the letter is `sample_letter`, in English. `compile.print_page` is the one place a body is placed in a template and printed,
 shared with the style build's own renders.
 """
 
@@ -48,25 +48,9 @@ def sample_letter(cv_md: str) -> str:
     return _LETTER.format(header=header, name=html.escape(name, quote=False)).replace("<<date>>", _SAMPLE_DATE)
 
 
-def print_body(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,
-               columns: templates.Columns | None = None, photo: Path | None = None) -> tuple[Path, str, str | None]:
-    """`body` placed in `template` (its text) as `compile` places it (the photo, the `columns`, the language's
-    typography) and printed to `folder/<name>.pdf` with the pinned Chromium, the fonts and icons that the template
-    file `assets_of` names served. Returns the pdf, the body as placed and the photo's file name in `folder` (None when
-    it was not placed).
-
-    Raises:
-        html_pdf.PrintError: the print failed.
-        ValueError: the template or its manifest cannot be used.
-    """
-    folder.mkdir(parents=True, exist_ok=True)
-    html_text, placed, picture = compile_cmd.page(body, template, folder, photo=photo, language=lang, columns=columns)
-    pdf = folder / f"{name}.pdf"
-    html_pdf.print_html(folder, html_text, pdf, assets=templates.assets(assets_of))
-    return pdf, placed, picture
-
-
-def _cv_text(profile_dir: Path, config: dict) -> str:
+def cv_text(profile_dir: Path, config: dict) -> str:
+    """The CV the previews and the style build's stress renders are made from: the one `config`'s `cv_content` names
+    (the profile's `cv.md` by default), else the example CV."""
     path = common._cv_path(config, profile_dir)
     return (path if path.is_file() else workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_text(encoding="utf-8")
 
@@ -120,11 +104,11 @@ def _fresh(folder: Path, key: str) -> list[str] | None:
 def _make(stage: Path, cv_md: str, lang: str, photo: Path | None, cv_template: Path, letter_template: Path) -> list[str]:
     """Print the CV and the letter into `stage` and the pages of both to images; the file names of the images."""
     columns = (templates.manifest(cv_template) or templates.Manifest()).columns
-    pdf, _, picture = print_body(cv_body.body(cv_md, lang), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv",
+    pdf, _, picture = compile_cmd.print_page(cv_body.body(cv_md, lang), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv",
                                  columns=columns, photo=photo)
     images = [p.name for p in pdf_render.render_pdf_pages(pdf, stage)]
     # the letter is printed with the CV template's fonts and icons, as `style_build` checks it
-    letter = print_body(sample_letter(cv_md), letter_template.read_text(encoding="utf-8"), cv_template, "en", stage, "letter")
+    letter = compile_cmd.print_page(sample_letter(cv_md), letter_template.read_text(encoding="utf-8"), cv_template, "en", stage, "letter")
     images += [p.name for p in pdf_render.render_pdf_pages(letter[0], stage)]
     if picture:
         (stage / picture).unlink(missing_ok=True)
@@ -158,7 +142,7 @@ def show(home: Path, profile_dir: Path, config: dict) -> dict:
     buster). `like` is there only when `profile/style/cv.template.html` exists; a set that could not be printed is left
     out. Nothing is raised for a print that fails."""
     root = Path(home) / ".style" / "preview"
-    cv_md = _cv_text(Path(profile_dir), config)
+    cv_md = cv_text(Path(profile_dir), config)
     lang = _language(cv_md)
     photo = compile_cmd._profile_photo({}, config)
     out: dict[str, dict] = {}

@@ -21,6 +21,8 @@ from PIL import Image
 from pypdfium2 import PdfiumError
 
 from door import i18n
+from door.commands import _common as common
+from door.commands import compile as compile_cmd
 from door.core import chromium, claude_cli, fonts, progress as progress_mod, templates, workspace
 from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_preview)
 
@@ -292,7 +294,7 @@ class _Session:
         Raises:
             _Stop: the print has no text to read back.
         """
-        pdf = style_preview.print_body(body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns)[0]
+        pdf = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns)[0]
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
@@ -381,7 +383,7 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     for variant, v in _stress_variants(cv_md).items():
         progress_mod.report(f"stress render: {variant}", stage="style")
         try:
-            pdf, placed, photo = style_preview.print_body(
+            pdf, placed, photo = compile_cmd.print_page(
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
                 columns=s.manifest.columns, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
@@ -416,7 +418,7 @@ def _letter(s: _Session, template: str, cv_md: str) -> tuple[str | None, list[st
         elif not (problems := html_guard.template_problems(candidate, s.manifest, "letter")):
             candidate = _clean(candidate, "letter")
             try:
-                pdf = style_preview.print_body(body, candidate, s.work / _CV_FILE, "en", s.work / "letter", "letter")[0]
+                pdf = compile_cmd.print_page(body, candidate, s.work / _CV_FILE, "en", s.work / "letter", "letter")[0]
                 problems = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, body, None)]
                 if (pages := pdf_render.get_page_count(pdf)) != 1:
                     problems.append(f"the sample letter prints on {pages} pages, it must be one")
@@ -465,12 +467,6 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
         shutil.rmtree(staging, ignore_errors=True)
 
 
-def _stress_cv(profile_dir: Path) -> str:
-    """The CV the stress renders are made from: the profile's, else the example one."""
-    path = profile_dir / "cv.md"
-    return (path if path.is_file() else workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_text(encoding="utf-8")
-
-
 def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap: int, result: dict) -> None:
     refused = style_extract.not_pdf(pdf_path)
     if refused:
@@ -506,7 +502,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
     if template is None:
         raise _Stop(f"no template of the stylist's passed the guard and printed in {s.rounds} rounds: {feedback}")
     template = _clean(template, "cv")
-    cv_md = _stress_cv(profile_dir)
+    cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
     if failures := _stress(s, template, cv_md):
         progress_mod.report("one more round for the stress renders", stage="style")
         _write(s.work / _CV_FILE, template)

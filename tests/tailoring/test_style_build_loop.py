@@ -10,6 +10,7 @@ import pytest
 
 from door.core import claude_cli, fonts, templates
 from door.tailoring import html_guard, html_pdf, readability, style_build
+from profile_utils import base_config
 from style_build_utils import (EXAMPLE, SAMPLE_BODY, STYLES, Stylist, adapt, cv_only, cv_round, fake_fonts, letter_round,
                                reply)
 
@@ -365,3 +366,12 @@ def test_progress_is_reported_through_the_reporter(world):
     assert ("style", "building the letter template") in events
     assert any(m.startswith("building the template, round") for _, m in events)
     assert any(m.startswith("stress render") for _, m in events)
+
+
+def test_the_stress_renders_and_the_letter_use_the_cv_the_config_names(world, tmp_path):
+    other = tmp_path / "other.md"
+    other.write_text("# Zebulon Quux\n\n## Profile\n\nA text.\n\n## Experience\n\n### Role, Org\n\n- did a thing\n", encoding="utf-8")
+    (world.profile / "config.json").write_text(json.dumps({**base_config(world.profile), "cv_content": str(other)}), encoding="utf-8")
+    assert world.build("html-word-two-column", Stylist(*GOOD))["state"] == "ready"
+    assert any("Zebulon Quux" in p["html"] for p in world.prints if p["folder"].parent.name == "stress")
+    assert "Zebulon Quux" in next(p["html"] for p in world.prints if p["folder"].name == "letter")
