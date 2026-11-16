@@ -156,11 +156,13 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
           <span id={caption}>{named(NAMES[which])}</span>
           {marked(which) && <span className="style-mark">In use</span>}
         </p>
-        {actions(which).map(([label, choice]) => (
-          <button key={label} type="button" className="secondary" disabled={busy} onClick={() => void use(choice)}>
-            {named(label)}
-          </button>
-        ))}
+        <div className="style-actions-slot">
+          {actions(which).map(([label, choice]) => (
+            <button key={label} type="button" className="secondary" disabled={busy} onClick={() => void use(choice)}>
+              {named(label)}
+            </button>
+          ))}
+        </div>
       </div>
     )
   }
@@ -169,14 +171,18 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
     <div className="style-row">
       <span className="field-label">Style</span>
       {shown === null ? (
-        <div className="style-cards">
-          <div className="style-card" aria-hidden="true">
-            <div className="style-sheet" />
-            <p className="small style-caption">&nbsp;</p>
-            <div className="style-actions-slot" />
+        <>
+          <div className="style-cards">
+            <div className="style-card" aria-hidden="true">
+              <div className="style-sheet" />
+              <p className="small style-caption"><span>&nbsp;</span></p>
+              <div className="style-actions-slot" />
+            </div>
           </div>
-          <Spinner message="Preparing the previews…" />
-        </div>
+          <div className="style-below">
+            <Spinner message="Preparing the previews…" />
+          </div>
+        </>
       ) : (
         <>
           {(hasLike || sets.default) && (
@@ -185,25 +191,27 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
               {card('like')}
             </div>
           )}
-          {earlier && <p className="small muted">Your earlier style is in use.</p>}
-          {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
-          {!hasLike && !building && canBuild && <p className="small muted">Make your tailored CVs look like a CV of yours. Takes 5–10 minutes in the background.</p>}
-          {building ? (
-            <Spinner message="Building your style…" />
-          ) : (
-            canBuild &&
-            !candidate && (
-              <div className="actions">
-                <button type="button" className="secondary" disabled={busy} onClick={() => void choose()}>
-                  {hasLike ? 'Use the style of another CV…' : 'Use the style of my CV…'}
-                </button>
-              </div>
-            )
-          )}
+          <div className="style-below">
+            {earlier && <p className="small muted">Your earlier style is in use.</p>}
+            {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
+            {!hasLike && !building && canBuild && <p className="small muted">Make your tailored CVs look like a CV of yours. Takes 5–10 minutes in the background.</p>}
+            {building ? (
+              <Spinner message="Building your style…" />
+            ) : (
+              canBuild &&
+              !candidate && (
+                <div className="actions">
+                  <button type="button" className="secondary" disabled={busy} onClick={() => void choose()}>
+                    {hasLike ? 'Use the style of another CV…' : 'Use the style of my CV…'}
+                  </button>
+                </div>
+              )
+            )}
+          </div>
           {rerender?.kind === 'offer' && (
             <div className="style-rerender">
               <button type="button" className="secondary" onClick={() => void printAgain(rerender.style)}>
-                {`Print ${noun(rerender.prepared)} again in the new style`}
+                {`Print ${noun(rerender.prepared)} again`}
               </button>
             </div>
           )}

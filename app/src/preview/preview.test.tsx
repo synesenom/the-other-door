@@ -6,6 +6,7 @@ import { App } from '../renderer/App'
 import { stubNarrow } from '../renderer/testing'
 import { createMockDoor } from './mock-door'
 import { Guide } from './Guide'
+import { pressInOrder } from './press'
 import { DATA_STATES, readSelection, sceneById, SCENES } from './scenes'
 
 beforeEach(() => stubNarrow(false))
@@ -252,8 +253,17 @@ describe('scenes', () => {
   it('profile-cv-style-candidate chooses the new style, then offers to print the prepared CVs again', async () => {
     mount('profile-cv-style-candidate')
     await userEvent.click(await screen.findByRole('button', { name: 'Use this style' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again in the new style' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again' }))
     expect(await screen.findByText('2 printed again.')).toBeInTheDocument()
+  })
+
+  it('profile-cv-style-printed shows the count printed again and, for the one that failed, Try again', async () => {
+    mount('profile-cv-style-printed')
+    await pressInOrder(sceneById('profile-cv-style-printed')!.press!)
+    expect(await screen.findByText('2 printed again.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText('3 printed again.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
   it('profile-cv-style-earlier can keep the style in use', async () => {

@@ -442,7 +442,7 @@ renamed) is said above an empty editor; saving there keeps that file as `cv.md.b
   when an earlier style of yours is in use) keeps what you use now: the new style is dropped, except the
   first one you build, which is kept to switch to later. Later you can switch with "Use The other door's" and "Use my CV's
   style", or build another with "Use the style of another CV…". Prepared applications keep their look; after
-  a switch "Print N prepared CVs again in the new style" does it (no Claude call; sent ones never
+  a switch "Print N prepared CVs again" does it (no Claude call; sent ones never
   change; "Try again" appears if some could not be printed). A two-column style may be read less well by application systems, and the row says so.
 - **Add a page** (the `/expand` skill as a button): a dialog asks for one page (your portfolio, GitHub,
   a publication list, a course page) and "Read it". One Claude call on your plan (a few minutes)

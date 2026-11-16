@@ -75,7 +75,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   // Google Drive as the scene starts it: connect_drive, sync_data and disconnect_drive change it.
   // Profile → CV's Style, as the server would keep it: `use_style` and a build change it.
   const styled = scene.style ?? {}
-  const style = { in_use: styled.in_use ?? 'default', like: Boolean(styled.like), candidate: Boolean(styled.candidate), building: Boolean(styled.building), two_column: Boolean(styled.two_column) }
+  const style = { in_use: styled.in_use ?? 'default', like: Boolean(styled.like), candidate: Boolean(styled.candidate), building: Boolean(styled.building), two_column: Boolean(styled.two_column), failing: styled.failing ?? 0 }
   const styleSet = (version: string, two_column = false) => ({ cv: ['cv_page_1.png', 'cv_page_2.png'], letter: ['letter_page_1.png'], version, two_column })
   const ACCOUNT = 'jane.doe@example.com'
   const start = scene.drive ?? 'off'
@@ -176,7 +176,10 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         else if (pick === 'default') style.in_use = 'default'
         style.candidate = false
         const prepared = styled.prepared ?? 0
-        return { in_use: style.in_use, prepared, ...(args['rerender'] ? { rerendered: Array.from({ length: prepared }, (_, i) => `job.${i}`), failed: [] } : {}) }
+        const jobs = Array.from({ length: prepared }, (_, i) => `job.${i}`)
+        const failed = args['rerender'] ? jobs.slice(0, style.failing) : []
+        if (args['rerender']) style.failing = 0 // the next print works
+        return { in_use: style.in_use, prepared, ...(args['rerender'] ? { rerendered: jobs.filter((j) => !failed.includes(j)), failed } : {}) }
       }
       case 'doctor':
         if (!installed) return { ok: false, checks: [{ name: 'claude CLI', status: 'missing', required: true, detail: 'no claude found' }] }

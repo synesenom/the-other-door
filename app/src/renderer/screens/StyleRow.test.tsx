@@ -116,7 +116,7 @@ describe('StyleRow, a style built and waiting', () => {
     const h = await open({ ...waiting, use_style: (a: Record<string, unknown>) => (calls.push(a), { in_use: 'like', prepared: 2 }) }, { state: 'ready' })
     await ready()
     await userEvent.click(screen.getByRole('button', { name: 'Use this style' }))
-    expect(await screen.findByRole('button', { name: 'Print 2 prepared CVs again in the new style' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Print 2 prepared CVs again' })).toBeTruthy()
     expect(calls[0]).toEqual({ style: 'like' })
     expect(h.onChanged).toHaveBeenCalled()
   })
@@ -200,12 +200,12 @@ describe('StyleRow, the prepared CVs after a switch', () => {
 
   it('says "1 prepared CV" for one', async () => {
     await use(1, {})
-    expect(await screen.findByRole('button', { name: 'Print 1 prepared CV again in the new style' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Print 1 prepared CV again' })).toBeTruthy()
   })
 
   it('re-renders on request with the style now in use, then says how many', async () => {
     const h = await use(2, { rerendered: ['a.1', 'a.2'], failed: [] })
-    await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again in the new style' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again' }))
     expect(await screen.findByText('2 printed again.')).toBeTruthy()
     expect(h.call).toHaveBeenCalledWith('use_style', { style: 'like', rerender: true })
     expect(screen.queryByRole('button', { name: /Print .* again/ })).toBeNull()
