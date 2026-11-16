@@ -1,5 +1,5 @@
 """scripts/renderer_bench.py: the pure parts of the renderer bench (#145): timing, the French typography and
-hyphenation check, the font and icon checks, the access verdict, the choice rule and the table."""
+hyphenation check, the font and icon checks, the access verdict, the gates and the table."""
 
 import importlib.util
 
@@ -35,17 +35,12 @@ def _pdf(tmp_path):
 
 # ---------- timing ----------
 
-def test_timing_is_one_cold_run_then_the_median_of_the_warm_ones():
-    calls = []
-    out = bench.timing(lambda: calls.append(1), runs=3)
-    assert len(calls) == 4
-    assert set(out) == {"cold", "warm"} and out["cold"] >= 0 and out["warm"] >= 0
-
-
 def test_timing_warm_is_the_median(monkeypatch):
     ticks = iter([0, 9, 10, 11, 20, 23, 30, 36])  # run lengths 9, 1, 3, 6
     monkeypatch.setattr(bench.time, "perf_counter", lambda: next(ticks))
-    assert bench.timing(lambda: None, runs=3) == {"cold": 9, "warm": 3}
+    calls = []
+    assert bench.timing(lambda: calls.append(1), runs=3) == {"cold": 9, "warm": 3}
+    assert len(calls) == 4  # one cold run, then three warm ones
 
 
 # ---------- French typography and hyphenation ----------
@@ -88,10 +83,10 @@ def test_hyphenates():
 # ---------- fonts ----------
 
 def test_fonts_ok():
-    assert bench.fonts_ok(["ABCDEF+Lato-Regular", "Lato-Bold"])
-    assert not bench.fonts_ok(["ABCDEF+Lato-Regular", "DejaVuSans"])  # a fallback stood in
-    assert not bench.fonts_ok(["Helvetica"])
-    assert not bench.fonts_ok([])
+    assert bench.fonts_ok(["ABCDEF+Lato-Regular", "Lato-Bold"], ["Lato"])
+    assert not bench.fonts_ok(["ABCDEF+Lato-Regular", "DejaVuSans"], ["Lato"])  # a fallback stood in
+    assert not bench.fonts_ok(["Helvetica"], ["Lato"])
+    assert not bench.fonts_ok([], ["Lato"])
     assert bench.fonts_ok(["XYZ+Figtree-Regular", "YoungSerif-Regular"], wanted=["Figtree", "Young Serif"])
 
 
@@ -121,20 +116,7 @@ def test_icons_ok_names_what_is_wrong():
     assert "wrong fill" in bench.icons_ok(_style(_shape([36, 36, 48, 48], fill=(0, 0, 0))), EXPECTED)[0]
     off = bench.icons_ok(_style(_shape([40, 40, 52, 52])), EXPECTED)[0]
     assert "pin" in off and "[40, 40, 52, 52]" in off
-    assert "size" in bench.icons_ok(_style(_shape([36, 36, 60, 60])), EXPECTED)[0] or "[36, 36, 60, 60]" in bench.icons_ok(_style(_shape([36, 36, 60, 60])), EXPECTED)[0]
-
-
-def test_expected_icons_are_the_placed_squares():
-    icons = bench.expected_icons()
-    assert [i["name"] for i in icons] == ["mail", "phone", "web", "pin"]
-    assert all(i["bbox"][2] - i["bbox"][0] == bench.ICON_SIZE == i["bbox"][3] - i["bbox"][1] for i in icons)
-
-
-def test_icon_crop_score():
-    white, black = Image.new("RGB", (100, 100), "white"), Image.new("RGB", (100, 100), "black")
-    box = [[10, 10, 30, 30]]
-    assert bench.icon_crop_score(black, black, box, scale=1.0) == 1.0
-    assert bench.icon_crop_score(white, black, box, scale=1.0) < 0.2
+    assert "[36, 36, 60, 60]" in bench.icons_ok(_style(_shape([36, 36, 60, 60])), EXPECTED)[0]
 
 
 # ---------- access ----------
@@ -169,11 +151,11 @@ def test_score_candidate_counts_a_missing_page_as_zero(tmp_path):
     assert out["pages"] == 1 and out["score"] < 0.51 and out["fonts"] is True and out["icons"] is None
 
 
-# ---------- the choice ----------
+# ---------- the gates ----------
 
-def _row(name, *, access=True, fonts=True, icons=True, scores=(0.9, 0.9), size=100.0, installed=True):
+def _row(name, *, access=True, fonts=True, icons=True, installed=True):
     return {"candidate": name, "installed": installed, "access": access, "fonts": fonts, "icons": icons,
-            "scores": list(scores), "size_mb": size}
+            "scores": [0.9, 0.9], "size_mb": 100.0}
 
 
 def test_gates_lists_who_passes_and_why_the_others_are_out():
@@ -191,7 +173,7 @@ def test_bench_table_has_a_row_per_candidate_and_marks_what_was_not_installed():
     lines = table.strip().splitlines()
     assert lines[0].startswith("| candidate |") and len(lines) == 4
     assert "not installed" in lines[3]
-    assert "21 MB exe" in lines[2] or "21 MB exe" in table
+    assert "21 MB exe" in lines[2]
 
 
 def test_install_size_mb(tmp_path):

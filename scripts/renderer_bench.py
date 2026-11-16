@@ -5,7 +5,7 @@ content); sources in scripts/renderer_bench/. Per candidate: render time (cold, 
 blurred score against a Tectonic reference, what an ATS reads back (readability.problems), French typography and
 hyphenation, whether only the template's own folder can be read (fonts and icons beside it load, a file outside it
 and an address do not), whether the font files and SVG icons come out as drawn, and the install size. One markdown
-table, one choice and a fallback, written to thoughts/research/145-bench/. A throwaway harness: nothing here is
+table and who passes the gates (access, fonts, icons), written to thoughts/research/145-bench/. A throwaway harness: nothing here is
 product code.
 
     WEASYPRINT=<weasyprint executable> TYPST=<typst binary> FONTS=<folder with the Lato TTFs> \
@@ -16,6 +16,7 @@ A candidate whose executable is missing is recorded as "not installed".
 
 from __future__ import annotations
 
+import functools
 import http.server
 import importlib.util
 import os
@@ -44,7 +45,6 @@ ICON_SIZE = 12
 ICON_FILL = [11, 114, 133]
 SECRET_FILL = [255, 0, 255]
 ICON_NAMES = ["mail", "phone", "web", "pin"]
-PX_PER_PT = 150 / 72  # render_pdf_pages draws at 150 DPI
 
 
 # ---------- the pure parts ----------
@@ -119,9 +119,8 @@ def _flat(name: str) -> str:
     return re.sub(r"[^a-z]", "", name.split("+")[-1].lower())
 
 
-def fonts_ok(embedded: list[str], wanted: str | list[str] = "Lato") -> bool:
+def fonts_ok(embedded: list[str], wanted: list[str]) -> bool:
     """Every wanted family is embedded and nothing else stands in (a subset prefix is fine)."""
-    wanted = [wanted] if isinstance(wanted, str) else wanted
     flat = [_flat(n) for n in embedded]
     return bool(flat) and all(any(_flat(w) in n for n in flat) for w in wanted) \
         and all(any(_flat(w) in n for w in wanted) for n in flat)
@@ -154,16 +153,6 @@ def icons_ok(style: dict, expected: list[dict], tol: float = 1.0) -> list[str]:
     return problems
 
 
-def icon_crop_score(page: Image.Image, reference: Image.Image, boxes: list[list[float]], scale: float = PX_PER_PT,
-                    pad: float = 2.0) -> float:
-    """The mean blurred score of the icons' crops (boxes in points) of a page against the reference."""
-    scores = []
-    for x0, y0, x1, y1 in boxes:
-        crop = tuple(int(round(v * scale)) for v in (x0 - pad, y0 - pad, x1 + pad, y1 + pad))
-        scores.append(proto.blurred_score(page.crop(crop), reference.crop(crop), radius=1.0))
-    return sum(scores) / len(scores)
-
-
 def access_verdict(results: dict) -> dict:
     """Pass only when the sibling font and icon loaded and a file outside the folder and an address did not."""
     problems = []
@@ -179,7 +168,7 @@ def access_verdict(results: dict) -> dict:
 
 
 def score_candidate(pdf: Path, reference_pngs: list[Image.Image], work: Path, *, name: str | None,
-                    headings: list[str], keywords: list[str], wanted_font: str | list[str],
+                    headings: list[str], keywords: list[str], wanted_font: list[str],
                     expected: list[dict] | None = None) -> dict:
     """One PDF, scored the same way for every candidate."""
     from door.tailoring import pdf_render, readability
@@ -340,8 +329,8 @@ def probe_access(cand: Candidate, work: Path, fonts: Path) -> dict:
     outside = work / "outside"
     outside.mkdir(parents=True, exist_ok=True)
     shutil.copy(SOURCES / "probe" / "secret.svg", outside)
-    handler = type("Log", (_Log,), {"hits": [], "directory": str(outside)})
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), lambda *a, **k: handler(*a, directory=str(outside), **k))
+    handler = type("Log", (_Log,), {"hits": []})
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(handler, directory=str(outside)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     results, errors = {}, {}
     try:
@@ -360,7 +349,7 @@ def probe_access(cand: Candidate, work: Path, fonts: Path) -> dict:
             except Exception as exc:  # a refused read can fail the render: blocked
                 rendered, errors[kind] = False, str(exc)[-300:]
             if kind == "ok":
-                results["sibling_font"] = rendered and fonts_ok(embedded_fonts(pdf), "Lato")
+                results["sibling_font"] = rendered and fonts_ok(embedded_fonts(pdf), ["Lato"])
                 results["sibling_icon"] = rendered and not icons_ok(
                     proto.extract_style(pdf), [{"name": "pin", "fill": ICON_FILL, "bbox": [36, 36, 36 + ICON_SIZE, 36 + ICON_SIZE]}])
             elif kind == "file":
@@ -418,7 +407,7 @@ CVS = {
     1: {"name": "Jane Doe", "headings": ["Profile", "Work experience", "Education", "Skills", "Certifications", "Languages"],
         "keywords": ["IFRS", "SAP S/4HANA", "budgeting"], "wanted": ["Figtree", "Young Serif"], "expected": None},
     2: {"name": "Mira Valdis", "headings": ["Experience", "Education", "Skills", "Languages"],
-        "keywords": ["Docker", "SQL", "TypeScript"], "wanted": "Lato", "expected": expected_icons()},
+        "keywords": ["Docker", "SQL", "TypeScript"], "wanted": ["Lato"], "expected": expected_icons()},
 }
 
 DOCS = {
@@ -474,7 +463,6 @@ def run_candidate(cand: Candidate, refs: dict[int, list[Image.Image]], work: Pat
         if s["icons"] is not None:
             row["icons"] = not s["icons"]
             row["icon_problems"] = s["icons"]
-            row["cv2_page"] = str(folder / "png" / f"{pdf.stem}_page_1.png")
     row["cold"], row["warm"] = (statistics.mean(cold), statistics.mean(warm)) if cold else (0.0, 0.0)
     row["fonts"] = bool(row.get("fonts_all")) and all(row["fonts_all"])
     row.setdefault("icons", False)
@@ -488,7 +476,7 @@ def run_candidate(cand: Candidate, refs: dict[int, list[Image.Image]], work: Pat
     return row
 
 
-def main(argv: list[str] | None = None) -> None:
+def main() -> None:
     import json
     fonts_dir = Path(os.environ.get("FONTS", ""))
     if not (fonts_dir / "Lato-Regular.ttf").exists():
@@ -502,12 +490,6 @@ def main(argv: list[str] | None = None) -> None:
     refs = references(work)
     rows = [run_candidate(c, refs, work, fonts) for c in candidates()]
     result = gates(rows)
-    chrome = next((r for r in rows if r["candidate"] == "chromium" and r.get("cv2_page")), None)
-    for r in rows:  # the reference has no icons: compare each candidate's icon crops with Chromium's
-        if chrome and r.get("cv2_page") and r is not chrome:
-            r["icon_crop_vs_chromium"] = icon_crop_score(Image.open(r["cv2_page"]).convert("RGB"),
-                                                         Image.open(chrome["cv2_page"]).convert("RGB"),
-                                                         [i["bbox"] for i in expected_icons()])
     OUT.mkdir(parents=True, exist_ok=True)
     for n in CVS:  # judged by eye: the LaTeX reference, then each candidate's page
         pages = [refs[n][0]] + [Image.open(f).convert("RGB") for c in rows if c.get("installed")
