@@ -50,3 +50,9 @@ def test_each_templates_header_comment_names_the_contact_kinds():
         for kind in KINDS:
             assert kind in text, (name, kind)
     assert "tagline" in _header_comment("cv.template.html")
+
+
+def test_the_tailor_is_told_the_entry_parts_and_every_level_class():
+    named = _classes(_tailor_blocks())
+    assert {"role", "org", "dates", "place", "sep", "level", "level-1", "level-2", "level-3", "level-4",
+            "level-5"} <= named

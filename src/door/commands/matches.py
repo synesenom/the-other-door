@@ -423,12 +423,16 @@ def _materials(output_dir: Path) -> dict | None:
 
 def _readability(output_dir: Path) -> list[dict] | None:
     """The ATS read-back of both PDFs in `output_dir`, or None when either cannot be read."""
-    name = common._load_json_tolerant(workspace.PROFILE_DIR / "config.json").get("name")
+    config = common._load_json_tolerant(workspace.PROFILE_DIR / "config.json")
+    posting = common._load_json_tolerant(output_dir / "posting.json")
+    name = config.get("name")
     found: list[dict] = []
     try:
         for material in _MATERIALS:
             body_path = output_dir / f"{material}.html"
             body = body_path.read_text(encoding="utf-8") if body_path.is_file() else ""
+            if material == "cv":
+                body = compile_cmd.placed_cv(body, config, posting)
             found += [{"file": material, **p} for p in readability.check_pdf(output_dir / f"{material}.pdf", body, name)]
     except Exception:  # an unreadable PDF is "not checked", never an error in `show`
         return None

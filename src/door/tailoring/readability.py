@@ -82,4 +82,6 @@ def check_pdf(pdf: Path, body: str, name: object) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
     the raw config's value, used when it is a string)."""
     text, pages = extract(pdf)
-    return problems(text, name=name if isinstance(name, str) else None, headings=html_doc.headings(body), keywords=html_doc.keywords(body), pages=pages)
+    return problems(text, name=name if isinstance(name, str) else None,
+                    headings=html_doc.headings(body),
+                    keywords=html_doc.keywords(body), pages=pages)

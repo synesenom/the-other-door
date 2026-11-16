@@ -929,6 +929,20 @@ def test_the_page_limit_is_the_stricter_of_the_templates_and_the_countrys(cli_en
     assert f"at most {expected} pages" in prompt
 
 
+def test_the_prompt_names_the_sections_a_template_puts_in_a_narrow_side_column(cli_env, tmp_path):
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text(json.dumps({"columns": {"side": ["skills", "languages"]}}))
+    prompt = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
+    assert "narrow side column" in prompt and "skills, languages" in prompt
+
+
+def test_the_prompt_says_nothing_of_columns_for_a_one_column_template(cli_env, tmp_path):
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": 1}))
+    plain = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
+    assert "side column" not in plain
+
+
 def test_a_broken_template_manifest_leaves_the_countrys_page_limit(cli_env, tmp_path):
     (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
     (cli_env.profile_dir / "template.json").write_text("{broken")
