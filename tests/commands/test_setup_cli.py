@@ -327,7 +327,7 @@ def test_setup_cli_registers_the_server_locally_where_mcp_json_cannot_start_it(e
     result = CliRunner().invoke(cli, ["doctor", "--fix", "--yes"])
     python = str(root / ".venv" / "Scripts" / "python.exe")
     assert [
-        "C:/bin/claude.cmd", "mcp", "add", "--scope", "local", "door", "-e", f"PYTHONPATH={root / 'src'}",
+        "C:/bin/claude.cmd", "mcp", "add", "--scope", "local", "door", "-e", f"PYTHONPATH={root / 'src'}", "-e", "PYTHONUTF8=1",
         "--", python, "-m", "door.mcp_server",
     ] in env.ran
     assert result.exit_code == 0, result_text(result)
