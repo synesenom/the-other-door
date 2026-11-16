@@ -98,6 +98,6 @@ def test_the_claims_keep_role_company_and_dates_of_a_span_entry():
 
 
 def test_a_level_item_keeps_its_word_in_the_text_and_the_claims():
-    body = '<h2>Languages</h2><ul><li class="level level-5">Danish (native)</li></ul>'
-    assert "Danish (native)" in html_doc.text(body)
-    assert "Danish (native)" in html_doc.claim_text(body)
+    body = '<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>'
+    assert "Danish native" in html_doc.text(body)
+    assert "Danish native" in html_doc.claim_text(body)

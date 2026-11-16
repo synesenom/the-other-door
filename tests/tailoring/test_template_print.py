@@ -291,8 +291,8 @@ _SPAN_ENTRY = ('<h3><span class="role">Financial Controller</span><span class="s
                '<span class="sep"> - </span><span class="dates">2021 - present</span><span class="sep"> | </span>'
                '<span class="place">Aarhus</span></h3>')
 _PLAIN_ENTRY = "<h3>Financial Controller | Globex Energy - 2021 - present | Aarhus</h3>"
-_LEVELS = ('<h2>Languages</h2><ul><li class="level level-5">Danish (native)</li><li class="level level-4">English (fluent)</li>'
-           '<li class="level level-1">French (basic)</li></ul>')
+_LEVELS = ('<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li><li><strong>English</strong> <span class="level level-4">fluent</span></li>'
+           '<li><strong>French</strong> <span class="level level-1">basic</span></li></ul>')
 
 
 def _entries(entry):
@@ -306,7 +306,7 @@ def test_span_entry_headings_and_level_items_print_and_read_back(tmp_path, monke
     assert results["cv.html"]["readable"] == []
     lines = _lines(out / "cv.pdf")
     assert "Financial Controller | Globex Energy - 2021 - present | Aarhus" in lines, lines
-    for word in ("Danish (native)", "English (fluent)", "French (basic)"):
+    for word in ("Danish native", "English fluent", "French basic"):
         assert word in lines, lines
 
 
@@ -321,7 +321,7 @@ def test_a_plain_entry_heading_prints_the_same_text_as_the_span_one(tmp_path, mo
 _TWO_COLUMNS = (_HEADER + '<h2>Experience</h2><div class="entry"><h3>Controller | Globex Energy - 2021</h3>'
                 '<ul><li>Closed the books in four days.</li></ul></div>'
                 '<h2>Skills</h2><p>IFRS, SQL</p><h2>Education</h2><p>MSc, CBS</p>'
-                '<h2>Languages</h2><ul><li class="level level-5">Danish (native)</li></ul>')
+                '<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>')
 
 
 def test_a_two_column_template_prints_every_heading_on_a_line_and_the_side_after_the_main(tmp_path, monkeypatch):
@@ -333,7 +333,7 @@ def test_a_two_column_template_prints_every_heading_on_a_line_and_the_side_after
     for heading in ("Experience", "Skills", "Education", "Languages"):
         assert heading in lines, lines
     assert lines.index("Education") < lines.index("Skills") < lines.index("Languages"), lines
-    assert "Danish (native)" in lines and page_count(out / "cv.pdf") == 1
+    assert "Danish native" in lines and page_count(out / "cv.pdf") == 1
 
 
 def test_the_default_template_keeps_one_column_in_the_bodys_order(tmp_path, monkeypatch):

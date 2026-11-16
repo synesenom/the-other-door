@@ -88,7 +88,7 @@ def test_an_entry_heading_with_role_org_dates_place_and_separators_passes():
 
 
 def test_a_skill_level_class_one_to_five_passes():
-    body = "".join(f'<ul><li class="level level-{n}">Danish ({n})</li></ul>' for n in range(1, 6))
+    body = "".join(f'<ul><li><strong>Danish</strong> <span class="level level-{n}">level</span></li></ul>' for n in range(1, 6))
     assert html_guard.unsafe(body) == []
 
 

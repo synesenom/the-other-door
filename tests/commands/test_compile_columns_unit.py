@@ -52,7 +52,7 @@ CV = """<!-- Keywords: IFRS -->
 <h2>Experience</h2><div class="entry"><h3>Controller | Acme - 2021</h3><ul><li>Closed books.</li></ul></div>
 <h2>Skills</h2><p>IFRS, SQL</p>
 <h2>Education</h2><div class="entry"><h3>MSc | CBS - 2015</h3></div>
-<h2>Languages</h2><ul><li class="level level-5">Danish (native)</li></ul>
+<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>
 """
 
 
@@ -181,3 +181,21 @@ def test_without_columns_the_readback_keeps_the_bodys_own_order(world, monkeypat
     world.make(cv=CV)
     _compile(world)
     assert seen["headings"] == ["Profile", "Experience", "Skills", "Education", "Languages"]
+
+
+def test_a_side_of_interests_alone_with_no_interests_section_leaves_main_whole_and_side_empty(world, monkeypatch):
+    seen = {}
+
+    def check(pdf, body, name, headings=None):
+        seen["headings"] = headings
+        return []
+
+    monkeypatch.setattr(compile_cmd.readability, "check_pdf", check)
+    _columns(world, side=("interests",))
+    world.make(cv=CV)
+    result = _compile(world)["results"][0]
+    main, side = _html(world).split('<div class="side">')
+    assert all(f"<h2>{h}</h2>" in main for h in ("Profile", "Experience", "Skills", "Education", "Languages"))
+    assert side.split("</div>")[0].strip() == ""
+    assert seen["headings"] == ["Profile", "Experience", "Skills", "Education", "Languages"]
+    assert result["status"] == "compiled" and not result.get("readable")

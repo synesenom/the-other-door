@@ -610,10 +610,20 @@ def test_a_span_entry_heading_is_checked_as_the_plain_one():
 
 
 def test_a_languages_section_is_not_read_as_skills():
-    body = '<h2>Languages</h2><ul><li class="level level-5">Danish (native), English (fluent)</li></ul>'
+    body = '<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li><li><strong>English</strong> <span class="level level-4">fluent</span></li></ul>'
     assert [c for c in facts.extract_claims(body, "cv") if c["kind"] == "skill"] == []
 
 
 def test_a_place_after_the_dates_is_not_part_of_the_employer():
     claims = facts.extract_claims("<h3>Senior Dev | Acme A/S - 2019 - present | Aarhus</h3>", "cv")
     assert [c["value"] for c in claims if c["kind"] == "employer"] == ["Acme A/S"]
+
+
+def test_a_place_without_dates_is_not_part_of_the_employer():
+    claims = facts.extract_claims("<h3>Volunteer | Red Cross | Aarhus</h3>", "cv")
+    assert [c["value"] for c in claims if c["kind"] == "employer"] == ["Red Cross"]
+
+
+def test_a_dated_entry_with_a_place_still_gives_only_the_employer():
+    claims = facts.extract_claims("<h3>Volunteer | Red Cross - 2019 - 2021 | Aarhus</h3>", "cv")
+    assert [c["value"] for c in claims if c["kind"] == "employer"] == ["Red Cross"]
