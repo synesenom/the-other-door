@@ -2,7 +2,7 @@
 # Builds what a packaged app carries (#223) for this computer's system and processor, into app/resources/:
 #   python/   python-build-standalone 3.12 with The other door's locked packages installed into it (by hash, wheels only)
 #   door/   src/, .claude/agents/{tailor,reviewer,matcher}.md and profile.example/, as in a checkout
-#   bin/      Tectonic, and chromium/ (the Chromium headless shell that prints CVs, #165)
+#   bin/      chromium/ (the Chromium headless shell that prints CVs, #165)
 # Pinned in scripts/bundle.lock.json (Chromium: src/door/core/chromium_pin.json, the pin `doctor --fix` installs from too); downloads are cached in app/.bundle-cache/ (DOOR_BUNDLE_CACHE).
 # No cross-building: run it on each system. Windows: bundle-python.ps1 (#355). Then: scripts/check-bundle.sh.
 set -euo pipefail
@@ -14,9 +14,9 @@ CACHE="${DOOR_BUNDLE_CACHE:-$APP/.bundle-cache}"
 LOCK="$APP/scripts/bundle.lock.json"
 
 case "$(uname -s)-$(uname -m)" in
-  Darwin-arm64) PY_TRIPLE=aarch64-apple-darwin; TT_TRIPLE=aarch64-apple-darwin; CR_KEY=mac-arm64 ;;
-  Darwin-x86_64) PY_TRIPLE=x86_64-apple-darwin; TT_TRIPLE=x86_64-apple-darwin; CR_KEY=mac-x64 ;;
-  Linux-x86_64) PY_TRIPLE=x86_64-unknown-linux-gnu; TT_TRIPLE=x86_64-unknown-linux-musl; CR_KEY=linux64 ;;
+  Darwin-arm64) PY_TRIPLE=aarch64-apple-darwin; CR_KEY=mac-arm64 ;;
+  Darwin-x86_64) PY_TRIPLE=x86_64-apple-darwin; CR_KEY=mac-x64 ;;
+  Linux-x86_64) PY_TRIPLE=x86_64-unknown-linux-gnu; CR_KEY=linux64 ;;
   *) echo "bundle-python.sh: $(uname -s) $(uname -m) is not supported (x64 Linux, macOS)" >&2; exit 2 ;;
 esac
 
@@ -64,14 +64,7 @@ rsync -a --exclude '__pycache__' "$REPO/src/" "$OUT/door/src/"
 cp "$REPO/.claude/agents/tailor.md" "$REPO/.claude/agents/reviewer.md" "$REPO/.claude/agents/matcher.md" "$OUT/door/.claude/agents/"
 rsync -a "$REPO/profile.example/" "$OUT/door/profile.example/"
 
-# 4. Tectonic
-TT_VERSION="$(field tectonic.version)"
-tt_url="$(field tectonic.url)"; tt_url="${tt_url//\{version\}/$TT_VERSION}"; tt_url="${tt_url//\{triple\}/$TT_TRIPLE}"; tt_url="${tt_url//\{ext\}/tar.gz}"
-fetch "$tt_url" "$(field "tectonic.sha256.$TT_TRIPLE")"
-tar -xzf "$FETCHED" -C "$OUT/bin"
-chmod +x "$OUT/bin/tectonic"
-
-# 4b. the Chromium headless shell, unpacked as bin/chromium/chrome-headless-shell-<key>/ (what core/chromium.find_chromium reads)
+# 4. the Chromium headless shell, unpacked as bin/chromium/chrome-headless-shell-<key>/ (what core/chromium.find_chromium reads)
 CR_VERSION="$(pinfield version)"
 cr_url="$(pinfield url)"; cr_url="${cr_url//\{version\}/$CR_VERSION}"; cr_url="${cr_url//\{key\}/$CR_KEY}"
 fetch "$cr_url" "$(pinfield "platforms.$CR_KEY.sha256")"

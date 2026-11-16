@@ -44,19 +44,19 @@ process, use `npm run dev:demo`.
 
 ## The bundle a packaged app carries (#223)
 
-A packaged app does not use the checkout's `.venv`: it carries its own Python, Tectonic and Chromium. Build them for
+A packaged app does not use the checkout's `.venv`: it carries its own Python and Chromium. Build them for
 this computer (macOS, or x64 Linux; Windows has `bundle-python.ps1`, #355) and check them:
 
 ```sh
 scripts/bundle-python.sh   # → app/resources/{python,door,bin}, about 310 MB before Chromium, which adds an estimated 200 MB unpacked; downloads cached in app/.bundle-cache/
-scripts/check-bundle.sh    # imports, the MCP handshake, doctor, a Tectonic page, a Chromium page, nothing written inside (--offline: no page)
+scripts/check-bundle.sh    # imports, the MCP handshake, doctor (with its Chromium test print), nothing written inside
 ```
 
 - `python/` is [python-build-standalone](https://github.com/astral-sh/python-build-standalone) 3.12 with *The other door*'s
   `poetry.lock` main group installed into it, every package by hash and from a wheel only
   (`scripts/lock_requirements.py` writes the requirements; a package with no wheel for the system fails the build).
 - `door/` is `src/`, `.claude/agents/{tailor,matcher}.md` and `profile.example/`, laid out as in a checkout.
-- `bin/` is Tectonic (the static musl build on Linux) and `chromium/`, the Chrome for Testing headless shell that
+- `bin/` is `chromium/`, the Chrome for Testing headless shell that
   prints CVs (#165), pinned in `src/door/core/chromium_pin.json` (the one pin, also what `doctor --fix` installs;
   not in `bundle.lock.json`): an estimated 105-128 MB more per installer zipped and about 200 MB unpacked. On Windows on ARM the
   win64 shell runs under emulation.
@@ -71,7 +71,7 @@ After the bundle (above), on the system you are packaging for:
 
 ```sh
 npm run package:dir     # an unpacked app in dist/ (dist/mac/The other door.app, dist/linux-unpacked, dist/win-unpacked)
-npm run test:package    # its smoke test: the bundled server serves Matches, doctor finds the bundled Tectonic, the bundled Chromium prints a page,
+npm run test:package    # its smoke test: the bundled server serves Matches, doctor finds the bundled Chromium and prints a page with it,
                         # nothing is written inside the app (DOOR_PACKAGED_APP=<executable> for an installed one)
 npm run package         # the installer: dist/the-other-door-<version>-mac-<arch>.dmg/.zip, The-other-door-<version>-Windows.exe, The-other-door-<version>-Linux.AppImage, the-other-door-<version>-linux-<arch>.deb
 ```
@@ -90,7 +90,7 @@ installer (#18): the package workflows on each build (macOS arm64 and x64, Windo
 
 ```sh
 npm run package         # or DOOR_INSTALLER=<file> for an installer from a draft release
-npm run test:install    # about two minutes, plus the first LaTeX download
+npm run test:install    # about two minutes
 ```
 
 `e2e-install/setup.ts` installs it the user's way into a throwaway folder (macOS: the `.dmg` mounted and the app
@@ -100,9 +100,9 @@ copied out; Windows: the NSIS installer with `/S /D=`, except in CI's x64 job, w
 (`DOOR_INSTALL_KEEP=1` keeps it; a failed uninstall command, an install folder the NSIS uninstaller left behind on
 Windows, or after the `.deb`'s `apt-get remove` its `/opt` folder, `/usr/bin` link or launcher left behind, fails the run). `install.e2e.ts` then launches the installed app with a throwaway `DOOR_HOME`,
 HOME and Chromium folder and the journeys' test world (`test/world/`): a CV in, the review saved, the first run to
-its summary, the best match prepared with the **bundled** Tectonic (a real LaTeX download), quit, reopened. It
-checks the server is the bundled Python on the bundled door with the bundled `bin/` first on PATH, doctor finds
-that Tectonic and the bundled Chromium, a page printed with the installed interpreter (`python -m door.tailoring.html_pdf`), the data folder is where `docs/manual-app.md` says, no ERROR line in `logs/door.log`, and nothing
+its summary, the best match prepared (its CV printed by the **bundled** Chromium), quit, reopened. It
+checks the server is the bundled Python on the bundled door with `DOOR_BIN` the bundled `bin/`, doctor finds
+the bundled Chromium, a page printed with the installed interpreter (`python -m door.tailoring.html_pdf`), the data folder is where `docs/manual-app.md` says, no ERROR line in `logs/door.log`, and nothing
 written inside the app. The plan per system is `e2e-install/installer.ts` (unit-tested in `npm test`).
 A Prepare that logs an ERROR line fails the test at once. A failed run leaves in
 `install-report/` (uploaded by CI) the data folder's `logs/` (`door.log`: when the server stopped, its exit code or

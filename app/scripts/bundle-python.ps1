@@ -1,7 +1,7 @@
 # Windows twin of bundle-python.sh (#355, #223): builds app\resources\ for x64 Windows.
 #   python\   python-build-standalone 3.12 (python.exe at its root) with door's locked packages, by hash, wheels only
 #   door\   src\, .claude\agents\{tailor,reviewer,matcher}.md and profile.example\, as in a checkout
-#   bin\      tectonic.exe, and chromium\ (the Chromium headless shell that prints CVs, #165; win64 also runs on Windows on ARM)
+#   bin\      chromium\ (the Chromium headless shell that prints CVs, #165; win64 also runs on Windows on ARM)
 # Pinned in scripts\bundle.lock.json; downloads cached in app\.bundle-cache\ (DOOR_BUNDLE_CACHE).
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -48,12 +48,7 @@ robocopy (Join-Path $Repo 'src') (Join-Path $Out 'door\src') /E /XD __pycache__ 
 foreach ($Agent in 'tailor.md', 'reviewer.md', 'matcher.md') { Copy-Item (Join-Path $Repo ".claude\agents\$Agent") (Join-Path $Out 'door\.claude\agents') }
 robocopy (Join-Path $Repo 'profile.example') (Join-Path $Out 'door\profile.example') /E /NFL /NDL /NJH /NJS | Out-Null
 
-# 4. Tectonic
-$Tt = $Lock.tectonic
-$TtUrl = $Tt.url.Replace('{version}', $Tt.version).Replace('{triple}', $Triple).Replace('{ext}', 'zip')
-Expand-Archive -Force -Path (Fetch $TtUrl $Tt.sha256.$Triple) -DestinationPath (Join-Path $Out 'bin')
-
-# 4b. the Chromium headless shell, pinned in src\door\core\chromium_pin.json (the pin `doctor --fix` installs from too)
+# 4. the Chromium headless shell, pinned in src\door\core\chromium_pin.json (the pin `doctor --fix` installs from too)
 $Cr = Get-Content (Join-Path $Repo 'src\door\core\chromium_pin.json') -Raw | ConvertFrom-Json
 $CrUrl = $Cr.url.Replace('{version}', $Cr.version).Replace('{key}', 'win64')
 Expand-Archive -Force -Path (Fetch $CrUrl $Cr.platforms.'win64'.sha256) -DestinationPath (Join-Path $Out 'bin\chromium')

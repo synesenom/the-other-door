@@ -1,12 +1,12 @@
 // The install test (#639): the app a user downloads, installed the user's way (setup.ts), goes through a first
-// launch — the CV in, the review saved, the first run to its summary, a match prepared with the bundled
-// Tectonic — then is quit and opened again. Its server is the bundled Python on the bundled door, with only the
-// edges that would leave the computer answered from the test world (redirect.ts); Tectonic is the real, bundled
-// one, so the first Prepare downloads its LaTeX packages. No real claude, no plan, no API key: the world's
+// launch — the CV in, the review saved, the first run to its summary, a match prepared (its CV printed by the bundled
+// Chromium) — then is quit and opened again. Its server is the bundled Python on the bundled door, with only the
+// edges that would leave the computer answered from the test world (redirect.ts); Chromium is the real, bundled
+// one. No real claude, no plan, no API key: the world's
 // stand-in claude is first on PATH.
 import { execFileSync, spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
-import { delimiter, join } from 'node:path'
+import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect, INSTALLED, launch, osStub, test } from '../journeys/fixtures'
 import { LAUNCH, saveAndSearch, toReview } from '../journeys/helpers/onboarding'
@@ -19,12 +19,12 @@ test.use({ worldOptions: { empty: true, persona: 'mette' } })
 
 const REPORT = join(__dirname, '..', 'install-report')
 
-/** On Windows, the python, claude, door and Tectonic processes with their parents: what was still running (#18, #98). */
+/** On Windows, the python, claude, door and Chromium processes with their parents: what was still running (#18, #98). */
 function processes(): string {
   if (process.platform !== 'win32') return ''
   try {
     return execFileSync('powershell', ['-NoProfile', '-Command',
-      "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'python|claude|door|tectonic' } | ForEach-Object { \"$($_.ProcessId) <$($_.ParentProcessId) $($_.Name): $($_.CommandLine.Substring(0, [Math]::Min(300, $_.CommandLine.Length)))\" }"],
+      "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'python|claude|door|chrome' } | ForEach-Object { \"$($_.ProcessId) <$($_.ParentProcessId) $($_.Name): $($_.CommandLine.Substring(0, [Math]::Min(300, $_.CommandLine.Length)))\" }"],
       { encoding: 'utf8', timeout: 30_000 })
   } catch (p) { return `could not list: ${(p as Error).message}` }
 }
@@ -81,23 +81,22 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   const mounted = kindOf(INSTALLED ?? '') === 'appimage'
   const before = mounted ? [] : snapshot(resources)
 
-  // the server: the bundled Python on the bundled door, the bundled Tectonic first on its PATH
+  // the server: the bundled Python on the bundled door, the bundled bin folder as DOOR_BIN
   const spawned = JSON.parse(readFileSync(join(world.dir, 'spawned.json'), 'utf8')) as Spawned
   expect(spawned.command).toBe(bundledPython(resources, process.platform))
   expect(spawned.args).toEqual(['-s', '-m', 'door.mcp_server'])
   expect(spawned.env.PYTHONPATH).toBe(join(resources, 'door', 'src'))
   expect(spawned.env.DOOR_HOME).toBe(world.home)
-  expect(spawned.env.PATH!.split(delimiter)[0]).toBe(join(resources, 'bin'))
+  expect(spawned.env.DOOR_BIN).toBe(join(resources, 'bin'))
 
-  // doctor (the full check, which prints a page with the bundled Chromium, #176) finds the bundled Tectonic and no checkout
+  // doctor (the full check, which prints a page with the bundled Chromium, #176) finds the bundled Chromium and no checkout
   const doctor = (await page.evaluate(() => window.door.call('doctor'))) as { data: { checks: { name: string; status: string; detail: string }[] } }
   expect(doctor.data?.checks, `doctor answered: ${JSON.stringify(doctor).slice(0, 2000)}`).toBeDefined()
   const checks = Object.fromEntries(doctor.data.checks.map((c) => [c.name, c]))
-  expect(checks['latex']!.status).toBe('ok')
-  expect(checks['latex']!.detail).toContain(join(resources, 'bin'))
   expect(checks['dev dependencies']).toBeUndefined()
   // the bundled Chromium headless shell that prints CVs (#165), found in the bundle
   expect(checks['chromium']?.status, JSON.stringify(checks['chromium'])).toBe('ok')
+  expect(checks['chromium']!.detail).toContain(join(resources, 'bin'))
   expect(checks['chromium']!.detail).toContain(join(resources, 'bin', 'chromium'))
   // macOS: every Mach-O of the bundled Chromium passes codesign (#176), the hardened runtime too in a Developer ID build
   if (process.platform === 'darwin') {

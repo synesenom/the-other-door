@@ -80,7 +80,7 @@ describe('createTracker', () => {
 })
 
 describe('sweepCommand', () => {
-  it('on Windows, stops every process whose executable is under the install folder (the app, its Python, Tectonic)', () => {
+  it('on Windows, stops every process whose executable is under the install folder (the app, its Python, Chromium)', () => {
     const argv = sweepCommand('win32', "C:\\Temp\\door-install-x\\app")!
     expect(argv.slice(0, 3)).toEqual(['powershell', '-NoProfile', '-Command'])
     expect(argv[3]).toContain("StartsWith('C:\\Temp\\door-install-x\\app\\', 'OrdinalIgnoreCase')")

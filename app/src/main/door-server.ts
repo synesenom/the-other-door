@@ -93,7 +93,7 @@ export const APP_ID = 'dev.door.app'
  * installed into it) on the bundled `src/`, from `<resources>/door` (where `.claude/agents` and
  * `profile.example` sit beside `src`, as in a checkout). Nothing is written inside the app: the data
  * is `home` (the user's data folder, or DOOR_HOME), Python writes no bytecode and reads no user
- * site-packages. PATH starts with the bundled Tectonic, then where claude's own installer puts it.
+ * site-packages. PATH starts with where claude's own installer puts it; Chromium is found through DOOR_BIN, not PATH.
  */
 export function resolvePackagedSpawn(opts: { resourcesPath: string; home: string; platform: string; env: Env }): SpawnSpec {
   const { resourcesPath, home, platform, env } = opts
@@ -115,7 +115,7 @@ export function resolvePackagedSpawn(opts: { resourcesPath: string; home: string
     PYTHONDONTWRITEBYTECODE: '1',
     PYTHONUTF8: '1',  // never the Windows code page (#132)
     DOOR_PATHS_FROM_DIALOGS: '1',  // the paths it is handed come from the main process's dialogs
-    PATH: [bin, ...(userHome ? [path.join(userHome, '.local', 'bin')] : []), ...(env.PATH ? [env.PATH] : [])].join(pathSep),
+    PATH: [...(userHome ? [path.join(userHome, '.local', 'bin')] : []), ...(env.PATH ? [env.PATH] : [])].join(pathSep),
   }
   for (const key of ['HOME', 'USERPROFILE', 'XDG_CONFIG_HOME', 'APPDATA', 'LOCALAPPDATA', 'CLAUDE_CONFIG_DIR'] as const) {
     const value = env[key]

@@ -93,7 +93,7 @@ interface ServerLike {
 // compile with no progress at all; find_jobs reports all the time, so 15 minutes of silence
 // (each report restarts the clock) means it is stuck, and there is no total limit. The
 // onboarding wizard's calls: draft_cv is one sonnet call of up to 900 s with no progress,
-// keywords one Haiku call (120 s), setup may install LaTeX or claude.
+// keywords one Haiku call (120 s), setup may install Chromium or claude.
 const TOOL_TIMEOUTS: Record<string, number> = {
   import_posting: 180_000,
   prepare: 180_000,
@@ -103,7 +103,7 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   keywords: 150_000,
   suggest_titles: 150_000,
   infer_basics: 150_000,
-  // setup installs LaTeX or claude, or (a developer action) runs the scraper fixer, tests and a probe.
+  // setup installs Chromium or claude, or (a developer action) runs the scraper fixer, tests and a probe.
   setup: 1_800_000,
   // connect_drive waits up to five minutes for the browser; sync_data moves one archive.
   connect_drive: 330_000,

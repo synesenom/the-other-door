@@ -1,5 +1,5 @@
 // electron-builder's afterPack (#223): on macOS, an unsigned build is signed ad hoc, every binary in it included
-// (the bundled Python's .so files, Tectonic and the Chromium headless shell with its dylibs under bin/chromium, #165): Apple silicon refuses to run an unsigned or partly signed binary
+// (the bundled Python's .so files, the Chromium headless shell with its dylibs under bin/chromium, #165): Apple silicon refuses to run an unsigned or partly signed binary
 // ("damaged"). A release build with a Developer ID certificate (CSC_LINK, #224) is signed by electron-builder.
 const { execFileSync } = require('node:child_process')
 const { join } = require('node:path')

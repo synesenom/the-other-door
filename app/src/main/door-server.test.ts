@@ -308,7 +308,7 @@ describe('resolvePackagedSpawn', () => {
       PYTHONDONTWRITEBYTECODE: '1',
       PYTHONUTF8: '1',
       DOOR_PATHS_FROM_DIALOGS: '1',
-      PATH: '/Applications/door.app/Contents/Resources/bin:/Users/ada/.local/bin:/usr/bin',
+      PATH: '/Users/ada/.local/bin:/usr/bin',
       HOME: '/Users/ada',
       CLAUDE_CONFIG_DIR: '/Users/ada/.claude-work',
     })
@@ -317,7 +317,7 @@ describe('resolvePackagedSpawn', () => {
   it('on Windows: python.exe at the runtime root, ; between PATH entries', () => {
     const s = resolvePackagedSpawn({ resourcesPath: 'C:\\Program Files\\door\\resources', home: 'C:\\Users\\ada\\AppData\\Roaming\\door', platform: 'win32', env: { PATH: 'C:\\Windows', USERPROFILE: 'C:\\Users\\ada', APPDATA: 'C:\\Users\\ada\\AppData\\Roaming' } })
     expect(s.command).toBe('C:\\Program Files\\door\\resources\\python\\python.exe')
-    expect(s.env!['PATH']).toBe('C:\\Program Files\\door\\resources\\bin;C:\\Users\\ada\\.local\\bin;C:\\Windows')
+    expect(s.env!['PATH']).toBe('C:\\Users\\ada\\.local\\bin;C:\\Windows')
     expect(s.env!['APPDATA']).toBe('C:\\Users\\ada\\AppData\\Roaming')
   })
 

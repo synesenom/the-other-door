@@ -28,7 +28,7 @@ export default function teardown(): void {
     return
   }
   // whatever still runs from the install folder holds it on Windows (#111): a server the app's quit did not wait
-  // for, Tectonic under it, an app no test closed (a crashed worker, a timeout)
+  // for, Chromium under it, an app no test closed (a crashed worker, a timeout)
   if (plan.root) sweep(plan.root)
   removeInstall(plan, scratch, process.platform, {
     run: (argv) => void execFileSync(argv[0]!, argv.slice(1), { stdio: 'inherit' }),
