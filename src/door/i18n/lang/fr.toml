@@ -94,6 +94,12 @@ certifications = ["certifications", "certificats", "habilitations", "certificati
 languages = ["langues", "compétences linguistiques"]
 interests = ["centres d'intérêt", "centres d’intérêt", "loisirs", "intérêts"]
 
+[contact_labels]
+phone = ["téléphone", "tél", "mobile"]
+email = ["courriel", "e-mail"]
+web = ["site", "site web", "portfolio"]
+location = ["lieu", "ville", "adresse"]
+
 [headings]
 requirement = [
     "profil recherché", "profil recherche", "votre profil", "compétences requises", "competences requises",

@@ -12,7 +12,7 @@ and only `https:`, `mailto:` and `#` links are kept.
 - `## Heading` is an `<h2>`, whatever it says (a heading the columns do not know stays in the main column).
 - `### Role | Org — dates | Place` is an `<div class="entry">` whose `<h3>` has the parts in `role`, `org`, `dates` and
   `place` spans with `sep` spans between (` | `, ` - `, ` | `): a heading with no ` | ` is a role alone, and the dates
-  split off at an em or en dash, or at a spaced hyphen when a number follows it. Its bullets and paragraphs go inside it.
+  split off at the first spaced em or en dash, else at the first spaced hyphen when a number follows it. Its bullets and paragraphs go inside it.
 - `- item` is an `<li>` of a `<ul>`, `1. item` of an `<ol>`; other lines are a `<p>` (consecutive lines joined).
 - A skill or language with a level, `**Danish** — conversational`, in a Skills or Languages section (the ad's language
   or English), gets `<span class="level level-N">` around the level word, by the tailor's table: native and C2 are 5;
@@ -31,18 +31,10 @@ from door import i18n
 _LEVELS = {"native": 5, "c2": 5, "fluent": 4, "professional": 4, "c1": 4, "working": 3, "b2": 3,
            "conversational": 2, "b1": 2, "basic": 1, "a1": 1, "a2": 1}
 _LEVEL_SECTIONS = ("skills", "languages")
-# the label of a contact detail (lower case), by kind; the details are written in this order
-_KINDS = {
-    "phone": ("phone", "tel", "telephone", "téléphone", "mobile", "telefon"),
-    "email": ("email", "e-mail", "mail"),
-    "web": ("web", "website", "site", "site web", "portfolio", "hjemmeside", "weboldal"),
-    "linkedin": ("linkedin",),
-    "github": ("github",),
-    "location": ("location", "lieu", "city", "ville", "address", "adresse", "sted", "by", "helyszín"),
-}
 _SAFE_URL = re.compile(r"(?:https://|mailto:|#)[^\s<>\"']+$", re.I)
 _INLINE = re.compile(r"\*\*(?P<b>.+?)\*\*|\*(?P<i>[^*\s][^*]*?)\*|\[(?P<t>[^\]]+)\]\((?P<u>(?:[^()\s]|\([^()\s]*\))+)\)")
-_ENTRY_DATES = re.compile(r"\s+[—–]\s+|\s+-\s+(?=\S*\d)")
+_DASH_DATES = re.compile(r"\s+[—–]\s+")
+_HYPHEN_DATES = re.compile(r"\s+-\s+(?=\S*\d)")
 _LEVEL_ITEM = re.compile(r"^(?:\*\*(?P<bold>[^*]+?)\*\*|(?P<plain>[^—–:()*]+?))\s*(?:[—–:]|\()\s*(?P<word>[^()]+?)\)?\s*$")
 _ITEM = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*)$")
 
@@ -67,10 +59,7 @@ def _inline(text: str) -> str:
 
 def _link(url: str) -> str:
     """`url` as a safe https link target (a bare address gets the scheme, http becomes https), or ''."""
-    url = url.strip()
-    url = re.sub(r"^http://", "https://", url, flags=re.I)
-    if not re.match(r"https://", url, re.I):
-        url = "https://" + url
+    url = re.sub(r"^(?:https?://)?", "https://", url.strip(), count=1, flags=re.I)
     return url if _SAFE_URL.match(url) else ""
 
 
@@ -78,10 +67,9 @@ def _detail(kind: str | None, value: str) -> str:
     cls = f' class="{kind}"' if kind else ""
     plain = re.sub(r"\*\*|\[|\]\(.*?\)", "", value)  # a markdown link or bold in a detail: its text
     mail = re.fullmatch(r"(?:mailto:)?([^\s@<>\"']+@[^\s@<>\"']+)", plain)
-    if kind == "email" or (kind is None and mail):
-        if mail:
-            address = html.escape(mail.group(1))
-            return f'<span class="email"><a href="mailto:{address}">{address}</a></span>'
+    if mail and kind in ("email", None):
+        address = html.escape(mail.group(1))
+        return f'<span class="email"><a href="mailto:{address}">{address}</a></span>'
     if kind in ("web", "linkedin", "github"):
         href = _link(plain)
         if href:
@@ -104,13 +92,13 @@ def _contact(lines: list[str]) -> str:
             if label:
                 name = label.group(1).strip(" :  ").casefold()
                 value = label.group(2).strip(" :") or ""
-                kind = next((k for k, names in _KINDS.items() if name in names), None)
+                kind = i18n.contact_kind(name)
                 if kind is None:
                     value = part  # an unknown label: keep it with its text
                 elif not value:
                     continue
             (found.setdefault(kind, []) if kind else other).append(_detail(kind, value))
-    spans = [s for kind in _KINDS for s in found.get(kind, [])] + other
+    spans = [s for kind in i18n.CONTACT_KINDS for s in found.get(kind, [])] + other
     return f'<p class="contact">{"".join(spans)}</p>' if spans else ""
 
 
@@ -121,10 +109,9 @@ def _heading3(text: str) -> str:
     if len(parts) == 1:
         return f'<h3>{span("role", parts[0])}</h3>'
     org, dates = parts[1], None
-    split = list(_ENTRY_DATES.finditer(org))
+    split = _DASH_DATES.search(org) or _HYPHEN_DATES.search(org)  # the first dash is the org's, the dates may hold more
     if split:
-        last = split[-1]
-        org, dates = org[:last.start()], org[last.end():]
+        org, dates = org[:split.start()], org[split.end():]
     out = [span("role", parts[0]), sep(" | "), span("org", org)]
     if dates:
         out += [sep(" - "), span("dates", dates)]
@@ -145,40 +132,56 @@ def _level_item(text: str) -> str | None:
     return f'<li><strong>{_inline(name)}</strong> <span class="level level-{number}">{html.escape(word, quote=False)}</span></li>'
 
 
+class _Blocks:
+    """The body's blocks as `body` reads the lines: a paragraph or list is kept as text until it ends, and is built
+    then, so a wrapped list item is whole before it is read for a level."""
+
+    def __init__(self) -> None:
+        self.out: list[str] = []
+        self.entry = False
+        self.levels = False  # in a skills or languages section
+        self.para: list[str] = []
+        self.tag = ""  # the open list's tag
+        self.items: list[str] = []
+
+    def flush(self) -> None:
+        if self.para:
+            self.out.append(f"<p>{_inline(' '.join(self.para))}</p>")
+            self.para = []
+        if self.items:
+            built = [(_level_item(t) if self.levels else None) or f"<li>{_inline(t)}</li>" for t in self.items]
+            self.out.append(f"<{self.tag}>{''.join(built)}</{self.tag}>")
+            self.items = []
+
+    def close_entry(self) -> None:
+        self.flush()
+        if self.entry:
+            self.out[-1] += "</div>"
+            self.entry = False
+
+    def item(self, tag: str, text: str) -> None:
+        if self.para or (self.items and self.tag != tag):
+            self.flush()
+        self.tag = tag
+        self.items.append(text)
+
+
 def body(cv_md: str, lang: str = "en") -> str:
     """The CV in `cv_md` as a body (see the module's docstring); '' for a CV with nothing in it. `lang` is the ad's
     language, which reads the section headings that tell a skills or languages list (levels)."""
     name = tagline = None
     preamble: list[str] = []
-    out: list[str] = []
-    state = {"entry": False, "list": None, "para": [], "levels": False}
-
-    def flush() -> None:
-        if state["para"]:
-            out.append(f"<p>{_inline(' '.join(state['para']))}</p>")
-            state["para"] = []
-        if state["list"]:
-            tag, items = state["list"]
-            out.append(f"<{tag}>{''.join(items)}</{tag}>")
-            state["list"] = None
-
-    def close_entry() -> None:
-        flush()
-        if state["entry"]:
-            out[-1] += "</div>"
-            state["entry"] = False
-
+    blocks = _Blocks()
     in_header = True
     for raw in cv_md.splitlines():
         line = raw.rstrip()
         stripped = line.strip()
         if stripped.startswith("## "):
             in_header = False
-            close_entry()
+            blocks.close_entry()
             heading = stripped[3:].strip()
-            kind = i18n.cv_section_kind(heading, _LEVEL_SECTIONS, (lang, "en"))
-            state["levels"] = kind is not None
-            out.append(f"<h2>{_inline(heading)}</h2>")
+            blocks.levels = i18n.cv_section_kind(heading, _LEVEL_SECTIONS, (lang, "en")) is not None
+            blocks.out.append(f"<h2>{_inline(heading)}</h2>")
         elif in_header:
             if stripped.startswith("# ") and name is None:
                 name = stripped[2:].strip()
@@ -187,30 +190,20 @@ def body(cv_md: str, lang: str = "en") -> str:
             elif stripped and not stripped.startswith("#"):
                 preamble.append(stripped)
         elif stripped.startswith("### "):
-            close_entry()
-            out.append(f'<div class="entry">{_heading3(stripped[4:].strip())}')
-            state["entry"] = True
+            blocks.close_entry()
+            blocks.out.append(f'<div class="entry">{_heading3(stripped[4:].strip())}')
+            blocks.entry = True
         elif not stripped:
-            if state["para"]:
-                flush()
+            blocks.flush()
+        elif item := _ITEM.match(line):
+            blocks.item("ol" if re.match(r"^\s*\d", line) else "ul", item.group(1))
+        elif line[:1] in " \t" and blocks.items:  # a wrapped list item
+            blocks.items[-1] += " " + stripped
         else:
-            item = _ITEM.match(line)
-            if item:
-                if state["para"]:
-                    flush()
-                tag = "ol" if re.match(r"^\s*\d", line) else "ul"
-                if state["list"] and state["list"][0] != tag:
-                    flush()
-                state["list"] = state["list"] or (tag, [])
-                text = item.group(1)
-                state["list"][1].append((_level_item(text) if state["levels"] else None) or f"<li>{_inline(text)}</li>")
-            elif line[:1] in " \t" and state["list"]:  # a wrapped list item
-                state["list"][1][-1] = state["list"][1][-1][:-5] + " " + _inline(stripped) + "</li>"
-            else:
-                if state["list"]:
-                    flush()
-                state["para"].append(stripped)
-    close_entry()
+            if blocks.items:
+                blocks.flush()
+            blocks.para.append(stripped)
+    blocks.close_entry()
     header = []
     if name:
         header.append(f"<h1>{_inline(name)}</h1>")
@@ -220,4 +213,4 @@ def body(cv_md: str, lang: str = "en") -> str:
     if contact:
         header.append(contact)
     head = f'<header class="cv-header"><<photo>>{chr(10).join(header)}</header>' if header else ""
-    return "\n".join(x for x in [head, *out] if x)
+    return "\n".join(x for x in [head, *blocks.out] if x)

@@ -33,6 +33,12 @@ certifications = ["tanúsítványok", "képesítések", "bizonyítványok", "tan
 languages = ["nyelvek", "nyelvismeret", "nyelvtudás"]
 interests = ["érdeklődési kör", "érdeklődési körök", "hobbi", "hobbik", "érdeklődés"]
 
+[contact_labels]
+phone = ["telefon", "mobil"]
+email = ["e-mail"]
+web = ["weboldal", "honlap"]
+location = ["helyszín", "város", "cím"]
+
 [headings]
 requirement = ["elvárások", "követelmények", "amit várunk", "mit várunk", "milyen vagy", "kit keresünk", "ideális jelölt", "a te profilod"]
 responsibility = ["a pozícióról", "a munkakörről", "feladatok", "amit csinálsz", "mi lesz a feladatod"]

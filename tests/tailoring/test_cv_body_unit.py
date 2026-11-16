@@ -129,3 +129,38 @@ def test_french_headings_are_placed_by_the_ads_language():
 
 def test_every_section_kind_the_i18n_reads_is_the_one_the_columns_use():
     assert i18n.cv_section_kind("Languages", ("languages",), ("en",)) == "languages"
+
+
+# ---------- review fixes ----------
+
+def entry_parts(heading):
+    out = cv_body.body(f"## Experience\n\n### {heading}\n", "en")
+    return {c: text_of(m) for c, m in re.findall(r'<span class="(role|org|dates|place)">(.*?)</span>', out)}
+
+
+@pytest.mark.parametrize("heading,expected", [
+    ("Controller | Big Bank — 2018 - 2021", {"role": "Controller", "org": "Big Bank", "dates": "2018 - 2021"}),
+    ("Analyst | Acme — Jan 2018 – Mar 2021", {"role": "Analyst", "org": "Acme", "dates": "Jan 2018 – Mar 2021"}),
+    ("Analyst | Acme — 2018 - 2021 | Aarhus", {"role": "Analyst", "org": "Acme", "dates": "2018 - 2021", "place": "Aarhus"}),
+    ("Analyst | Acme - 2018 - 2021", {"role": "Analyst", "org": "Acme", "dates": "2018 - 2021"}),
+])
+def test_the_dates_split_off_at_the_first_dash_not_the_last(heading, expected):
+    assert entry_parts(heading) == expected
+
+
+def test_the_example_cvs_entry_with_a_range_keeps_its_org_whole():
+    heading = next(ln[4:] for ln in EXAMPLE.splitlines() if ln.startswith("### ") and "Big Bank" in ln)
+    assert entry_parts(heading)["org"].startswith("Big Bank") and "20" not in entry_parts(heading)["org"]
+
+
+def test_a_level_item_wrapped_onto_a_second_line_keeps_its_level():
+    out = cv_body.body("## Languages\n\n- **Danish** —\n  conversational\n- English — native\n", "en")
+    assert '<span class="level level-2">conversational</span>' in out
+    assert '<span class="level level-5">native</span>' in out
+    assert out.count("<li>") == 2
+
+
+def test_contact_labels_of_every_supported_language_name_their_kind():
+    for label, kind in [("Hjemmeside", "web"), ("Weboldal", "web"), ("Helyszín", "location"), ("Telefon", "phone"),
+                        ("E-post", "email"), ("Webbplats", "web"), ("Ort", "location"), ("Courriel", "email")]:
+        assert i18n.contact_kind(label) == kind
