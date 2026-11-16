@@ -76,3 +76,53 @@ def image_count(path: Path, index: int = 0) -> int:
         return sum(1 for _ in pdf[index].get_objects(filter=[raw.FPDF_PAGEOBJ_IMAGE]))
     finally:
         pdf.close()
+
+
+_FONTS = {"F1": "Helvetica", "F2": "Helvetica-Bold", "F3": "Times-Roman", "F4": "Courier", "F5": "Helvetica-Oblique"}
+
+
+def raw_pdf(pages: list[str] | str, size: tuple[float, float] = (595, 842), producer: str | None = None,
+            fonts: dict[str, str] | None = None, images: dict[str, tuple[int, int, bytes]] | None = None) -> bytes:
+    """A PDF written by hand: one content stream per page, in PDF operators (origin bottom left).
+
+    The fonts F1 Helvetica, F2 Helvetica-Bold, F3 Times-Roman, F4 Courier and F5 Helvetica-Oblique are there to
+    use; `fonts` adds more as ``{resource name: BaseFont}`` (a Type1 font that is not embedded, only its name
+    matters). `images` adds uncompressed RGB images as ``{resource name: (width, height, rgb bytes)}``, drawn with
+    ``q w 0 0 h x y cm /Name Do Q``. `producer` fills the document's /Producer.
+    """
+    contents = [pages] if isinstance(pages, str) else list(pages)
+    objs: list[bytes] = []
+
+    def add(body: bytes) -> int:
+        objs.append(body)
+        return len(objs)
+
+    catalog, tree = add(b""), add(b"")
+    font_refs = {name: add(f"<</Type/Font/Subtype/Type1/BaseFont/{base}>>".encode())
+                 for name, base in {**_FONTS, **(fonts or {})}.items()}
+    image_refs = {name: add(f"<</Type/XObject/Subtype/Image/Width {w}/Height {h}/ColorSpace/DeviceRGB"
+                            f"/BitsPerComponent 8/Length {len(data)}>>stream\n".encode() + data + b"\nendstream")
+                  for name, (w, h, data) in (images or {}).items()}
+    resources = ("<</Font<<" + "".join(f"/{n} {r} 0 R" for n, r in font_refs.items()) + ">>"
+                 + ("/XObject<<" + "".join(f"/{n} {r} 0 R" for n, r in image_refs.items()) + ">>" if image_refs else "")
+                 + ">>")
+    kids = []
+    for content in contents:
+        data = content.encode("latin-1")
+        stream = add(f"<</Length {len(data)}>>stream\n".encode() + data + b"\nendstream")
+        kids.append(add(f"<</Type/Page/Parent {tree} 0 R/MediaBox[0 0 {size[0]} {size[1]}]/Contents {stream} 0 R"
+                        f"/Resources{resources}>>".encode()))
+    objs[catalog - 1] = f"<</Type/Catalog/Pages {tree} 0 R>>".encode()
+    objs[tree - 1] = f"<</Type/Pages/Kids[{' '.join(f'{k} 0 R' for k in kids)}]/Count {len(kids)}>>".encode()
+    info = add(f"<</Producer({producer})>>".encode()) if producer else None
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for number, body in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += f"{number} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objs) + 1}\n0000000000 65535 f \n".encode()
+    out += b"".join(f"{o:010d} 00000 n \n".encode() for o in offsets)
+    out += f"trailer<</Size {len(objs) + 1}/Root {catalog} 0 R".encode() + (f"/Info {info} 0 R".encode() if info else b"")
+    out += f">>\nstartxref\n{xref}\n%%EOF\n".encode()
+    return bytes(out)
