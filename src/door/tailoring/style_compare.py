@@ -24,12 +24,17 @@ WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
 MIN_GAIN = 0.005  # a round that adds less than this over the best before it is not worth another
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 _FEEDBACK_LIMIT = 12
+MIN_PART = 5  # characters: a shorter text is not paired by being part of another ("2019" is in many runs)
 # a difference smaller than these is not worth telling the model about
 _OFF_SIZE, _OFF_COLOR, _OFF_SHIFT = 0.5, 40, 6.0
 
 
 def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().casefold()
+
+
+def _page(item: dict) -> int:
+    return item.get("page", 1)
 
 
 def _centre(icon: dict) -> tuple[float, float]:
@@ -42,71 +47,97 @@ def _extent(icon: dict) -> float:
     return max(b[2] - b[0], b[3] - b[1])
 
 
-def _run_pair(a: dict, b: dict) -> dict:
-    return {"text": a["text"], "dx": round(b["bbox"][0] - a["bbox"][0], 1), "dy": round(b["bbox"][1] - a["bbox"][1], 1),
-            "d_size": round(b["size"] - a["size"], 1),
+def _offsets(a: dict, b: dict) -> dict:
+    """What a pair of an original's element and the render's has in common: the shift of the box, the colours, and the
+    two pages when they differ (an element on another page is off by any distance)."""
+    pair = {"dx": round(b["bbox"][0] - a["bbox"][0], 1), "dy": round(b["bbox"][1] - a["bbox"][1], 1),
             "d_color": style_trace.distance(style_trace.channels(a["color"]), style_trace.channels(b["color"])),
             "color": a["color"], "render_color": b["color"]}
+    if _page(a) != _page(b):
+        pair["page"], pair["render_page"] = _page(a), _page(b)
+    return pair
 
 
-def _text_pairs(original: list[dict], render: list[dict]) -> tuple[list[dict], list[str], list[str]]:
-    pool: dict[str, list[dict]] = {}
-    for run in render:
-        pool.setdefault(_norm(run["text"]), []).append(run)
-    pairs, missing = [], []
-    for run in original:
-        candidates = pool.get(_norm(run["text"]))
-        if not candidates:
-            missing.append(run)
-            continue
-        other = min(candidates, key=lambda c: abs(c["bbox"][0] - run["bbox"][0]) + abs(c["bbox"][1] - run["bbox"][1]))
-        candidates.remove(other)
-        pairs.append(_run_pair(run, other))
-    rest = [r for runs in pool.values() for r in runs]
-    still_missing = []
-    for run in missing:  # a run the render split or joined differently: pair it with an unused one that holds it or is held by it
-        key = _norm(run["text"])
-        hit = next((r for r in rest if key in _norm(r["text"]) or _norm(r["text"]) in key), None)
-        if hit is None:
-            still_missing.append(run["text"])
-            continue
-        rest.remove(hit)
-        pairs.append({"text": run["text"], "dx": 0.0, "dy": 0.0, "d_size": 0.0, "d_color": 0, "split": True,
-                      "color": run["color"], "render_color": hit["color"]})
-    return pairs, still_missing, [r["text"] for r in rest]
+def _run_pair(a: dict, b: dict) -> dict:
+    return {"text": a["text"], "d_size": round(b["size"] - a["size"], 1), **_offsets(a, b)}
 
 
 def _icon_pair(a: dict, b: dict) -> dict:
-    return {"near": (a.get("near") or {}).get("text"), "dx": round(b["bbox"][0] - a["bbox"][0], 1),
-            "dy": round(b["bbox"][1] - a["bbox"][1], 1), "d_size": round(_extent(b) - _extent(a), 1),
-            "d_color": style_trace.distance(style_trace.channels(a["color"]), style_trace.channels(b["color"])),
-            "color": a["color"], "render_color": b["color"]}
+    return {"near": (a.get("near") or {}).get("text"), "d_size": round(_extent(b) - _extent(a), 1), **_offsets(a, b)}
+
+
+def _greedy(left: list[dict], right: list[dict], key, dist) -> tuple[list[tuple[dict, dict]], list[dict], list[dict]]:
+    """Pair `left` with `right` elements that have the same `key` (None pairs nothing), the closest pairs first, so
+    that of several alike elements each takes its own partner. Returns the pairs and what is left on each side."""
+    buckets: dict = {}
+    for j, b in enumerate(right):
+        k = key(b)
+        if k is not None:
+            buckets.setdefault(k, []).append(j)
+    candidates = sorted((dist(a, right[j]), i, j) for i, a in enumerate(left) if key(a) is not None
+                        for j in buckets.get(key(a), ()))
+    used_left, used_right, pairs = set(), set(), []
+    for _, i, j in candidates:
+        if i not in used_left and j not in used_right:
+            used_left.add(i)
+            used_right.add(j)
+            pairs.append((left[i], right[j]))
+    return (pairs, [a for i, a in enumerate(left) if i not in used_left],
+            [b for j, b in enumerate(right) if j not in used_right])
+
+
+def _origin_distance(a: dict, b: dict) -> float:
+    return math.hypot(a["bbox"][0] - b["bbox"][0], a["bbox"][1] - b["bbox"][1])
+
+
+def _text_pairs(original: list[dict], render: list[dict]) -> tuple[list[dict], list[str], list[str]]:
+    pairs: list[dict] = []
+    missing, rest = original, render
+    for key in (lambda r: (_norm(r["text"]), _page(r)), lambda r: _norm(r["text"])):  # on the same page first
+        found, missing, rest = _greedy(missing, rest, key, _origin_distance)
+        pairs += [_run_pair(a, b) for a, b in found]
+    still_missing: list[str] = []
+    joined: list[dict] = []  # renders that hold several originals: they stay there for the next one
+    for run in missing:  # a run the render split or joined differently: pair it with the runs that hold it or are held by it
+        text = _norm(run["text"])
+        if len(text) < MIN_PART:
+            still_missing.append(run["text"])
+            continue
+        parts = [r for r in rest if len(_norm(r["text"])) >= MIN_PART and _norm(r["text"]) in text]
+        hosts = [r for r in (*rest, *joined) if text in _norm(r["text"])]
+        if parts:  # the render cut it in pieces: all of them belong to it, the first one is where it starts
+            hit = min(parts, key=lambda r: (_page(r), r["bbox"][1], r["bbox"][0]))
+            rest = [r for r in rest if r not in parts]
+        elif hosts:  # the render joined it with other text: it starts where its place in that text is
+            host = min(hosts, key=lambda r: _origin_distance(run, r))
+            held = _norm(host["text"])
+            x0, x1 = host["bbox"][0], host["bbox"][2]
+            hit = {**host, "bbox": [x0 + (x1 - x0) * held.index(text) / len(held), *host["bbox"][1:]]}
+            if host in rest:
+                rest.remove(host)
+                joined.append(host)
+        else:
+            still_missing.append(run["text"])
+            continue
+        pairs.append({**_run_pair(run, hit), "split": True})
+    return pairs, still_missing, [r["text"] for r in rest]
 
 
 def _icon_pairs(original: list[dict], render: list[dict]) -> tuple[list[dict], int, int]:
-    unused = list(render)
+    def near(icon: dict) -> str:
+        return _norm((icon.get("near") or {}).get("text") or "")
 
-    def far(a, b):
+    def far(a: dict, b: dict) -> float:
         (ax, ay), (bx, by) = _centre(a), _centre(b)
         return math.hypot(ax - bx, ay - by)
 
-    pairs, unpaired = [], []
-    for icon in original:  # beside the same text first
-        key = _norm((icon.get("near") or {}).get("text") or "")
-        same = [c for c in unused if key and _norm((c.get("near") or {}).get("text") or "") == key]
-        if same:
-            other = min(same, key=lambda c: far(icon, c))
-            unused.remove(other)
-            pairs.append(_icon_pair(icon, other))
-        else:
-            unpaired.append(icon)
-    for icon in unpaired:  # then the nearest one left
-        if not unused:
-            break
-        other = min(unused, key=lambda c: far(icon, c))
-        unused.remove(other)
-        pairs.append(_icon_pair(icon, other))
-    return pairs, len(original) - len(pairs), len(unused)
+    pairs: list[dict] = []
+    left, right = original, render
+    # beside the same text first, then by position, each on the same page before any
+    for key in (lambda i: (near(i), _page(i)) if near(i) else None, lambda i: near(i) or None, _page, lambda i: 0):
+        found, left, right = _greedy(left, right, key, far)
+        pairs += [_icon_pair(a, b) for a, b in found]
+    return pairs, len(left), len(right)
 
 
 def _texts(style: dict) -> list[dict]:
@@ -127,32 +158,35 @@ def match(original: dict, render: dict) -> dict:
 def worst_offset_pt(diffs: dict) -> float:
     """The largest shift, in points, of a matched text or icon; 0 when there is nothing to compare and infinity when
     the original has text and none of it was matched (a render that is not that CV is not within any distance)."""
-    pairs = [p for p in (*diffs["runs"], *diffs["icons"]) if not p.get("split")]
+    pairs = [*diffs["runs"], *diffs["icons"]]
     if not pairs:
         return math.inf if diffs["missing"] else 0.0
-    return max(max(abs(p["dx"]), abs(p["dy"])) for p in pairs)
+    return max(math.inf if "render_page" in p else max(abs(p["dx"]), abs(p["dy"])) for p in pairs)
 
 
 def _weight(p: dict) -> float:
-    return abs(p["d_size"]) + abs(p["dx"]) / 10 + abs(p["dy"]) / 10
+    return math.inf if "render_page" in p else abs(p["d_size"]) + abs(p["dx"]) / 10 + abs(p["dy"]) / 10
 
 
 def _off(p: dict) -> bool:
-    return abs(p["d_size"]) >= _OFF_SIZE or p["d_color"] > _OFF_COLOR or abs(p["dx"]) > _OFF_SHIFT or abs(p["dy"]) > _OFF_SHIFT
+    return "render_page" in p or abs(p["d_size"]) >= _OFF_SIZE or p["d_color"] > _OFF_COLOR or abs(p["dx"]) > _OFF_SHIFT or abs(p["dy"]) > _OFF_SHIFT
 
 
-def feedback(diffs: dict, score: float, limit: int = _FEEDBACK_LIMIT) -> str:
+def feedback(diffs: dict, score: float) -> str:
     """What the next round tells the model: the blurred score, the elements that differ most (worst first), and
     what only one side has."""
     lines = [f"Blurred similarity to the original: {score:.2f} (1.00 = identical)."]
-    worst = sorted((p for p in (*diffs["runs"], *diffs["icons"]) if not p.get("split") and _off(p)), key=lambda p: -_weight(p))
-    for p in worst[:limit]:
+    worst = sorted((p for p in (*diffs["runs"], *diffs["icons"]) if _off(p)), key=lambda p: -_weight(p))
+    for p in worst[:_FEEDBACK_LIMIT]:
         what = f"'{p['text'][:40]}'" if "text" in p else f"icon beside '{(p['near'] or '?')[:40]}'"
+        if "render_page" in p:
+            lines.append(f"- {what}: on page {p['render_page']}, original page {p['page']}")
+            continue
         lines.append(f"- {what}: size {p['d_size']:+}, colour {p['render_color']} (original {p['color']}), "
                      f"x {p['dx']:+}, y {p['dy']:+} (points)")
     for label, items in (("Missing from your rebuild", diffs["missing"]), ("Not in the original", diffs["extra"])):
         if items:
-            lines.append(f"{label}: " + "; ".join(t[:40] for t in items[:limit]))
+            lines.append(f"{label}: " + "; ".join(t[:40] for t in items[:_FEEDBACK_LIMIT]))
     for label, count in (("icons missing from your rebuild", diffs["icons_missing"]), ("icons not in the original", diffs["icons_extra"])):
         if count:
             lines.append(f"{count} {label}.")
@@ -165,12 +199,12 @@ def _sum_squares(image: Image.Image) -> int:
     return sum(count * value * value for value, count in enumerate(image.histogram()))
 
 
-def blurred_score(a: Image.Image, b: Image.Image, radius: float = BLUR_RADIUS) -> float:
+def blurred_score(a: Image.Image, b: Image.Image) -> float:
     """How alike two page images look, 0 to 1: both grey and blurred (a shift of a pixel costs little), over their
     common part, the mean squared difference against what a blank page would differ by (on a mostly white page a plain
     difference is near 0 for any rebuild)."""
     size = (min(a.width, b.width), min(a.height, b.height))
-    x, y = (im.convert("L").crop((0, 0, *size)).filter(ImageFilter.GaussianBlur(radius)) for im in (a, b))
+    x, y = (im.convert("L").crop((0, 0, *size)).filter(ImageFilter.GaussianBlur(BLUR_RADIUS)) for im in (a, b))
     pixels = size[0] * size[1]
     if not pixels:
         return 1.0

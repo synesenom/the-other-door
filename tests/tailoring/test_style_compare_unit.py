@@ -10,12 +10,13 @@ from paths import TESTS_DIR
 STYLES = TESTS_DIR / "tailoring" / "fixtures" / "styles"
 
 
-def run(text, x=50.0, y=100.0, size=10.0, color="#000000", icon=False):
-    return {"text": text, "bbox": [x, y, x + 5 * len(text), y + size], "size": size, "color": color, "icon": icon}
+def run(text, x=50.0, y=100.0, size=10.0, color="#000000", icon=False, page=1):
+    return {"text": text, "bbox": [x, y, x + 5 * len(text), y + size], "size": size, "color": color, "icon": icon, "page": page}
 
 
-def icon(x, y, near=None, size=9.0, color="#ffffff"):
-    return {"bbox": [x, y, x + size, y + size], "color": color, "near": {"text": near, "side": "right"} if near else None}
+def icon(x, y, near=None, size=9.0, color="#ffffff", page=1):
+    return {"bbox": [x, y, x + size, y + size], "color": color, "near": {"text": near, "side": "right"} if near else None,
+            "page": page}
 
 
 def style(runs, icons=()):
@@ -55,7 +56,60 @@ def test_a_run_the_render_split_or_joined_is_paired_without_an_offset():
     diffs = style_compare.match(style([run("Senior Controller")]), style([run("Senior Controller | Acme", x=90)]))
     assert diffs["missing"] == [] and diffs["extra"] == []
     assert diffs["runs"][0]["split"] is True
-    assert style_compare.worst_offset_pt(diffs) == 0.0
+    assert style_compare.worst_offset_pt(diffs) == 40.0  # its own shift, not none: round one is not "within"
+    assert not style_compare.should_stop([0.5], style_compare.worst_offset_pt(diffs))
+
+
+def test_a_line_the_render_cut_in_two_pairs_both_parts_and_a_joined_render_holds_both_originals():
+    cut = style_compare.match(style([run("Senior Controller Acme", y=100)]),
+                              style([run("Senior Controller", y=102), run("Acme", y=102, x=150)]))
+    assert cut["missing"] == [] and cut["extra"] == ["Acme"]  # "Acme" is under the minimum length: not a part
+    cut = style_compare.match(style([run("Senior Controller | Acme Corp", y=100)]),
+                              style([run("Senior Controller", y=102), run("| Acme Corp", y=102, x=150)]))
+    assert cut["missing"] == [] and cut["extra"] == [] and cut["runs"][0]["dy"] == 2.0
+    joined = style_compare.match(style([run("First line here", y=100), run("Second line here", y=120)]),
+                                 style([run("First line here Second line here", y=100)]))
+    assert joined["missing"] == [] and joined["extra"] == [] and len(joined["runs"]) == 2
+
+
+def test_a_short_text_is_not_paired_by_being_part_of_another():
+    diffs = style_compare.match(style([run("2019"), run("|", y=120), run("IT", y=140)]),
+                                style([run("Controller 2019 | IT Aarhus", y=300)]))
+    assert diffs["runs"] == [] and diffs["missing"] == ["2019", "|", "IT"]
+
+
+def test_only_split_pairs_do_not_stop_the_loop_in_round_one():
+    diffs = style_compare.match(style([run("Senior Controller", y=100)]), style([run("Senior Controller | Acme", y=160)]))
+    assert style_compare.worst_offset_pt(diffs) == 60.0
+
+
+def test_alike_runs_take_their_own_nearest_partner_not_the_first_one_in_order():
+    original = style([run("Python", y=200), run("Python", y=100)])
+    render = style([run("Python", y=140), run("Python", y=400)])
+    diffs = style_compare.match(original, render)
+    assert style_compare.worst_offset_pt(diffs) == 200.0  # 100 takes 140 (40 away), 200 gets 400; in order it was 300
+
+
+def test_alike_icons_take_their_own_nearest_partner_too():
+    diffs = style_compare.match(style([], [icon(10, 200), icon(10, 100)]), style([], [icon(10, 140), icon(10, 400)]))
+    assert style_compare.worst_offset_pt(diffs) == 200.0
+
+
+def test_a_run_is_paired_on_its_own_page_first():
+    original = style([run("Python", y=100, page=1), run("Python", y=100, page=2)])
+    render = style([run("Python", y=100, page=2), run("Python", y=103, page=1)])
+    diffs = style_compare.match(original, render)
+    assert sorted(p["dy"] for p in diffs["runs"]) == [0.0, 3.0]
+    assert style_compare.worst_offset_pt(diffs) == 3.0
+
+
+def test_a_pair_across_pages_is_off_by_any_distance_and_the_feedback_says_so():
+    diffs = style_compare.match(style([run("Experience", page=2)]), style([run("Experience", page=1)]))
+    assert style_compare.worst_offset_pt(diffs) == float("inf")
+    assert "on page 1, original page 2" in style_compare.feedback(diffs, 0.9)
+    icons = style_compare.match(style([], [icon(10, 10, "a@b.c", page=2)]), style([], [icon(10, 10, "a@b.c", page=1)]))
+    assert style_compare.worst_offset_pt(icons) == float("inf")
+    assert "icon beside 'a@b.c': on page 1, original page 2" in style_compare.feedback(icons, 0.9)
 
 
 def test_icon_font_runs_are_not_text():
