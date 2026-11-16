@@ -78,11 +78,11 @@ describe('prepare', () => {
     expect(needsJob(done('prepare', { outcome: 'failed', job_id: 'jobindex.1' }))).toBe(false)
   })
   it('an error opens the posting', () => {
-    const event = failed('prepare', 'LaTeX is missing\nmore', {}, { job_id: 'jobindex.1' })
+    const event = failed('prepare', 'Chromium is missing\nmore', {}, { job_id: 'jobindex.1' })
     expect(needsJob(event)).toBe(true)
     expect(noticeFor({ ...event, job: { ...job, inPlay: true } } as NoticeEvent)).toEqual({
       title: "Preparing didn't finish",
-      body: 'Data Analyst · Acme: LaTeX is missing',
+      body: 'Data Analyst · Acme: Chromium is missing',
       target: { screen: 'posting', jobId: 'jobindex.1', inPlay: true },
     })
   })

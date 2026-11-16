@@ -22,7 +22,7 @@ def base_config(profile_dir: Path) -> dict:
     cv = tpl_dir / "cv.md"
     if not cv.exists():
         cv.write_text("x")
-    paths = {"cv_content": str(cv)}  # the LaTeX templates come from the code (door.core.templates)
+    paths = {"cv_content": str(cv)}  # the HTML templates come from the code (door.core.templates)
     return {
         "name": "Jane Doe",
         "email": "jane@example.com",

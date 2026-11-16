@@ -437,10 +437,10 @@ describe('notifications', () => {
   })
 
   it('announces a failed call, with the job in words', async () => {
-    const { invoke, notify } = setup(impl({ prepare: new DoorError('LaTeX failed') }))
+    const { invoke, notify } = setup(impl({ prepare: new DoorError('the print failed') }))
     expect((await invoke(CHANNELS.call, 'prepare', { job_id: 'jobindex.1' })).ok).toBe(false)
     expect(notify).toHaveBeenCalledTimes(1)
-    expect(notify.mock.calls[0][0].body).toBe('Data Analyst · Acme: LaTeX failed')
+    expect(notify.mock.calls[0][0].body).toBe('Data Analyst · Acme: the print failed')
   })
 
   it('a failing show still announces, without the job words', async () => {
