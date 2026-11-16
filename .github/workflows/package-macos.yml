@@ -70,7 +70,7 @@ jobs:
           mnt="$(hdiutil attach -nobrowse -readonly dist/the-other-door-*-mac-${{ matrix.arch }}.dmg | tail -1 | awk -F'\t' '{print $NF}')"
           mkdir -p ~/Applications
           cp -R "$mnt/The other door.app" ~/Applications/
-          hdiutil detach -quiet "$mnt"
+          hdiutil detach -force -quiet "$mnt"
           codesign --verify --deep --strict "$HOME/Applications/The other door.app"
           echo "DOOR_PACKAGED_APP=$HOME/Applications/The other door.app/Contents/MacOS/The other door" >> "$GITHUB_ENV"
 
