@@ -1,6 +1,6 @@
 """The style corpus (#148): made-up and scrubbed CV PDFs of different designs, each read back as expected.json says
 (its fonts, accent colour, column count, icon count, whether it has a photo, what to copy at all). The real CVs are
-there only scrubbed (scripts/cv_style_proto/scrub_pdf.py); the made-up ones are built by scripts/make_style_corpus.py."""
+there only scrubbed (scripts/style_corpus/scrub_pdf.py); the made-up ones are built by scripts/make_style_corpus.py."""
 
 import json
 import re
