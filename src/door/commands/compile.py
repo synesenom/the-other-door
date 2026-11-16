@@ -95,6 +95,28 @@ def _fonts_dir() -> Path:
     return workspace.PROFILE_EXAMPLE_DIR / "fonts"
 
 
+def _assets(template_path: Path) -> dict[str, Path | list[Path]]:
+    """What the print serves beside the page: with a `template.json` (#188) only the fonts and icons it names, from the
+    `fonts/` and `icons/` beside the template; without one the fonts as `_fonts_dir` finds them.
+
+    Raises:
+        ValueError: the manifest is invalid, or names a file that is not there.
+    """
+    manifest = templates.manifest(template_path)
+    if not manifest.exists:
+        return {"fonts": _fonts_dir()}
+    folder = Path(template_path).parent
+    assets: dict[str, Path | list[Path]] = {}
+    for key, folder_name, names in (("fonts", "fonts", manifest.fonts), ("icons", "icons", manifest.icons.values())):
+        files = [folder / folder_name / name for name in names]
+        for file in files:
+            if not file.is_file():
+                raise ValueError(f"{templates.MANIFEST_FILE} names {folder_name}/{file.name}, which is not in {file.parent}")
+        if files:
+            assets[key] = files
+    return assets
+
+
 def _wrap(template: str, body: str, language: str) -> str:
     """`template` with its language and `body` in place.
 
@@ -106,7 +128,7 @@ def _wrap(template: str, body: str, language: str) -> str:
     return template.replace("<<lang>>", language).replace("<<body>>", body)
 
 
-def _print(html: str, output_dir: Path, name: str, entry: dict) -> None:
+def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) -> None:
     """Print `html` to `output_dir/<name>.pdf`; the outcome goes in ``entry`` (``status`` ``compiled`` with ``pdf``, or
     ``error`` with ``stderr``). The page is served from memory: the body on disk is not it.
 
@@ -119,7 +141,7 @@ def _print(html: str, output_dir: Path, name: str, entry: dict) -> None:
         raise common.MissingToolError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
     pdf = output_dir / f"{name}.pdf"
     try:
-        html_pdf.print_html(output_dir, html, pdf, assets={"fonts": _fonts_dir()})
+        html_pdf.print_html(output_dir, html, pdf, assets=assets)
     except html_pdf.PrintError as exc:
         entry.update(status="error", stderr=str(exc))
         return
@@ -140,7 +162,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
     """Print the HTML bodies of a job application into PDFs; return structured data.
 
     Mirrors the `compile` tool's side effects (starts the pinned Chromium headless shell, sealed: scripts off, only
-    the job folder and the fonts served) but never prints to stdout: callers render their own presentation from the
+    the job folder and the template's fonts and icons served) but never prints to stdout: callers render their own presentation from the
     returned dict.
 
     Args:
@@ -200,9 +222,16 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             results.append(entry)
             continue
         try:
-            template = templates.resolve(key, config).read_text(encoding="utf-8")
+            template_path = templates.resolve(key, config)
+            template = template_path.read_text(encoding="utf-8")
         except (OSError, UnicodeError) as exc:
             entry.update(status="error", stderr=f"could not read the template: {exc}")
+            results.append(entry)
+            continue
+        try:
+            assets = _assets(template_path)
+        except ValueError as exc:
+            entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
         built, photo_name = _with_photo(body, template, output_dir, posting, config)
@@ -215,7 +244,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
-        _print(page, output_dir, Path(file).stem, entry)
+        _print(page, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
             _read_back(entry, Path(entry["pdf"]), body, config)
         results.append(entry)

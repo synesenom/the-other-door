@@ -115,4 +115,7 @@ def manifest(template_path: Path) -> Manifest:
         raise ValueError(f"{MANIFEST_FILE}: expected an object")
     if "exists" in data:
         raise ValueError(f"{MANIFEST_FILE}: unknown field 'exists'")
-    return Manifest(**data, exists=True)
+    try:
+        return Manifest(**data, exists=True)
+    except ValueError as exc:
+        raise ValueError(f"{MANIFEST_FILE}: {exc}") from exc
