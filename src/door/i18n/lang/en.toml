@@ -48,6 +48,14 @@ certifications = ["certifications", "certificates", "licences", "licenses", "cer
 languages = ["languages", "language skills"]
 interests = ["interests", "hobbies", "hobbies and interests", "interests and hobbies"]
 
+[contact_labels]
+phone = ["phone", "tel", "telephone", "mobile", "cell"]
+email = ["email", "e-mail", "mail"]
+web = ["web", "website", "site", "portfolio"]
+linkedin = ["linkedin"]
+github = ["github"]
+location = ["location", "city", "address"]
+
 [headings]
 requirement = ["requirements", "qualifications", "who you are", "nice to have"]
 responsibility = ["responsibilities", "what you'll do", "your role"]

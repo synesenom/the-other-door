@@ -67,6 +67,12 @@ certifications = ["certificeringer", "certifikater", "kurser", "certificeringer 
 languages = ["sprog", "sprogkundskaber"]
 interests = ["interesser", "fritidsinteresser", "hobbyer"]
 
+[contact_labels]
+phone = ["telefon", "tlf", "mobil"]
+email = ["e-mail", "mail"]
+web = ["hjemmeside", "websted", "portfolio"]
+location = ["sted", "by", "adresse"]
+
 [headings]
 requirement = ["vi forventer", "kvalifikationer", "krav", "hvem er du", "din profil"]
 responsibility = ["om jobbet", "dine opgaver", "om stillingen", "arbejdsopgaver", "ansvarsområder"]

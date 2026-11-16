@@ -44,7 +44,7 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
 
 
 MANIFEST_FILE = "template.json"
-ICON_KINDS = ("phone", "email", "web", "location", "linkedin", "github", "date")
+ICON_KINDS = (*i18n.CONTACT_KINDS, "date")
 # The section kinds a column can hold: the CV sections `i18n` names.
 SECTION_KINDS = tuple(i18n.CvSections.model_fields)
 

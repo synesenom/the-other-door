@@ -35,7 +35,7 @@ def test_a_full_manifest_is_read(tmp_path):
 def test_the_section_kinds_are_the_cv_sections():
     assert templates.SECTION_KINDS == tuple(i18n.CvSections.model_fields)
     assert {"skills", "education", "certifications", "languages", "interests"} == set(templates.SECTION_KINDS)
-    assert set(templates.ICON_KINDS) == {"phone", "email", "web", "location", "linkedin", "github", "date"}
+    assert templates.ICON_KINDS == (*i18n.CONTACT_KINDS, "date")
 
 
 @pytest.mark.parametrize("data", [
