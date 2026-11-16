@@ -7,9 +7,6 @@ would install a tool there — nothing here executes anything. `door doctor --fi
 
 Tools (a `door.core.doctor` check names its tool in `tool`):
 
-    latex       Tectonic everywhere: one ~60 MB binary from its official
-                installer into ~/.local/bin, no sudo; it fetches the LaTeX
-                packages a document needs on first use
     chromium    the pinned Chromium headless shell that prints CVs (#165): `python -m
                 door.core.chromium` downloads it, checks its sha256 and unpacks it into a
                 per-user folder, no sudo
@@ -24,14 +21,13 @@ human-readable `hint`.
 from __future__ import annotations
 
 import platform as _platform
-import os
 import shutil
 import sys
 from pathlib import Path
 
 from door.core import chromium
 
-INSTALLABLE = ("latex", "claude", "chromium")
+INSTALLABLE = ("claude", "chromium")
 
 def _downloaded_then_run(download: str, shell: str) -> str:
     """A POSIX shell line that downloads an install script, then runs it.
@@ -73,33 +69,7 @@ def detect_platform(system: str | None = None, os_release: str | None = None) ->
     return "linux"
 
 
-_TECTONIC_SH = _downloaded_then_run("curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net", "sh")
-_TECTONIC_PS1 = "iex ((New-Object System.Net.WebClient).DownloadString('https://drop-ps1.fullyjustified.net'))"
 _UNIX = ("macos", "debian", "fedora", "arch", "linux")
-
-
-def tectonic_dir(home: Path | None = None) -> Path:
-    """Where `setup` installs Tectonic: ~/.local/bin (user-owned, no sudo)."""
-    return (Path(home) if home is not None else Path.home()) / ".local" / "bin"
-
-
-def find_tectonic(which=shutil.which, home: Path | None = None) -> str | None:
-    """The Tectonic binary: the packaged app's own (`$DOOR_BIN`, #223), else on PATH, else where
-    `setup` put it (which may not be on PATH)."""
-    bundled = os.environ.get("DOOR_BIN")
-    if bundled:
-        for name in ("tectonic", "tectonic.exe"):
-            candidate = Path(bundled) / name
-            if candidate.is_file():
-                return str(candidate)
-    found = which("tectonic")
-    if found:
-        return found
-    for name in ("tectonic", "tectonic.exe"):
-        candidate = tectonic_dir(home) / name
-        if candidate.is_file():
-            return str(candidate)
-    return None
 
 
 def claude_dir(home: Path | None = None) -> Path:
@@ -136,30 +106,7 @@ def plan_install(tool: str, platform: str, *, which=shutil.which, home: Path | N
     commands: list[list[str]] = []
     hint = note = None
 
-    if tool == "latex":
-        # Tectonic's official installers drop one binary into the current
-        # directory; run them inside ~/.local/bin. The other door finds it there even
-        # when that directory is not on PATH (`find_tectonic`).
-        bin_dir = tectonic_dir(home)
-        note = (
-            f"Tectonic is in {bin_dir}; The other door finds it there, so adding that folder to PATH is "
-            "optional. The first PDF takes a minute or two while it downloads LaTeX packages."
-        )
-        if platform in _UNIX:
-            if which("curl"):
-                commands = [["sh", "-c", f"mkdir -p '{bin_dir}' && cd '{bin_dir}' && {_TECTONIC_SH}"]]
-            else:
-                hint = "install curl, then re-run setup — or install Tectonic yourself (https://tectonic-typesetting.github.io)"
-        elif platform == "windows":
-            commands = [[
-                "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
-                f"New-Item -ItemType Directory -Force -Path '{bin_dir}' | Out-Null; "
-                f"Set-Location '{bin_dir}'; {_TECTONIC_PS1}",
-            ]]
-        else:
-            hint = "install Tectonic (https://tectonic-typesetting.github.io) or a TeX distribution with xelatex"
-
-    elif tool == "claude":
+    if tool == "claude":
         note = (
             "claude goes into ~/.local/bin (no sudo) and updates itself; The other door finds it there even "
             "if that folder is not on PATH. Run `claude` once afterwards to log in with your Pro/Max plan"

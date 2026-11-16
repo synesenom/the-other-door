@@ -9,7 +9,7 @@ import subprocess
 import pytest
 
 from door.core import installers
-from door.core.installers import detect_platform, find_tectonic, plan_install
+from door.core.installers import detect_platform, plan_install
 
 
 @pytest.fixture(autouse=True)
@@ -49,41 +49,6 @@ def _which(*present):
     return lambda name: f"/usr/bin/{name}" if name in present else None
 
 
-TECTONIC_SH = "s=\"$(curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net)\" && printf '%s\\n' \"$s\" | sh"
-
-
-@pytest.mark.parametrize("platform", ["macos", "linux"])
-def test_plan_latex_is_tectonic_into_local_bin_without_sudo(platform, tmp_path):
-    plan = plan_install("latex", platform, which=_which("curl"), home=tmp_path)
-    [argv] = plan["commands"]
-    assert argv[:2] == ["sh", "-c"]
-    bin_dir = tmp_path / ".local" / "bin"
-    assert argv[2] == f"mkdir -p '{bin_dir}' && cd '{bin_dir}' && {TECTONIC_SH}"
-    assert "sudo" not in " ".join(argv)
-    assert plan["hint"] is None
-    assert "PATH is optional" in plan["note"]
-
-
-def test_plan_latex_on_windows_uses_the_powershell_installer(tmp_path):
-    plan = plan_install("latex", "windows", which=_which(), home=tmp_path)
-    [argv] = plan["commands"]
-    assert argv[:4] == ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass"]
-    assert str(tmp_path / ".local" / "bin") in argv[-1]
-    assert "https://drop-ps1.fullyjustified.net" in argv[-1]
-
-
-def test_plan_latex_without_curl_is_a_hint(tmp_path):
-    plan = plan_install("latex", "debian", which=_which(), home=tmp_path)
-    assert plan["commands"] == []
-    assert "curl" in plan["hint"]
-
-
-def test_plan_latex_on_an_unknown_os_is_a_hint(tmp_path):
-    plan = plan_install("latex", "other", which=_which("curl"), home=tmp_path)
-    assert plan["commands"] == []
-    assert "tectonic" in plan["hint"].lower()
-
-
 @pytest.mark.parametrize("platform", ["macos", "debian", "fedora", "arch", "linux", "windows"])
 def test_plan_chromium_runs_the_pinned_installer_module(platform, tmp_path, monkeypatch):
     import sys
@@ -107,29 +72,6 @@ def test_plan_chromium_where_no_shell_is_pinned_is_a_hint(tmp_path, monkeypatch)
     assert plan["hint"]
     other = plan_install("chromium", "other", which=_which(), home=tmp_path)
     assert other["commands"] == [] and other["hint"]
-
-
-def test_find_tectonic_prefers_path(tmp_path):
-    assert find_tectonic(which=_which("tectonic"), home=tmp_path) == "/usr/bin/tectonic"
-
-
-def test_find_tectonic_falls_back_to_local_bin(tmp_path):
-    assert find_tectonic(which=_which(), home=tmp_path) is None
-    binary = tmp_path / ".local" / "bin" / "tectonic"
-    binary.parent.mkdir(parents=True)
-    binary.write_text("")
-    assert find_tectonic(which=_which(), home=tmp_path) == str(binary)
-
-
-def test_find_tectonic_takes_the_bundled_one_first(tmp_path, monkeypatch):
-    # A packaged app ships its own Tectonic and names its folder in DOOR_BIN (#223).
-    bundled = tmp_path / "bundle" / "bin" / "tectonic"
-    bundled.parent.mkdir(parents=True)
-    bundled.write_text("")
-    monkeypatch.setenv("DOOR_BIN", str(bundled.parent))
-    assert find_tectonic(which=_which("tectonic"), home=tmp_path) == str(bundled)
-    monkeypatch.setenv("DOOR_BIN", str(tmp_path / "nowhere"))
-    assert find_tectonic(which=_which("tectonic"), home=tmp_path) == "/usr/bin/tectonic"
 
 
 _NATIVE_SH = [["sh", "-c", "s=\"$(curl -fsSL https://claude.ai/install.sh)\" && printf '%s\\n' \"$s\" | bash -s stable"]]
@@ -199,7 +141,7 @@ def test_plan_unknown_tool():
         plan_install("emacs", "debian", which=_which())
 
 
-@pytest.mark.parametrize("tool", ["latex", "claude", "chromium"])
+@pytest.mark.parametrize("tool", ["claude", "chromium"])
 @pytest.mark.parametrize("platform", ["macos", "debian", "fedora", "windows"])
 def test_no_plan_uses_sudo(tool, platform):
     plan = plan_install(tool, platform, which=_which("curl", "npm", "brew"))

@@ -51,19 +51,6 @@ def test_check_python():
     assert "3.12" in bad["fix"]
 
 
-def test_check_latex_falls_back_to_xelatex(tmp_path):
-    check = doctor.check_latex(which=_which("xelatex"), home=tmp_path)
-    assert check["status"] == "ok"
-    assert "xelatex" in check["detail"]
-
-
-def test_check_latex_missing_points_at_doctor_fix(tmp_path):
-    check = doctor.check_latex(which=_which(), home=tmp_path)
-    assert check["status"] == "warn" and check["required"] is False  # nothing prints with LaTeX any more
-    assert check["fix"].startswith("./door doctor --fix")
-    assert check["tool"] == "latex" and check["installable"] is True
-
-
 def test_a_found_chromium_that_does_not_start_is_never_installable():
     err = "error while loading shared libraries: libnss3.so: cannot open shared object file"
     for check in (doctor.check_chromium(find=lambda: "/x/c", run=_ran(stderr=err, code=127), quick=True),
@@ -72,18 +59,9 @@ def test_a_found_chromium_that_does_not_start_is_never_installable():
         assert "doctor --fix" not in check["fix"]
 
 
-def test_latex_and_claude_checks_name_their_tool():
-    assert doctor.check_latex(which=lambda n: None, home=Path("/nonexistent"))["tool"] == "latex"
+def test_chromium_and_claude_checks_name_their_tool():
+    assert doctor.check_chromium(find=lambda: None, quick=True)["tool"] == "chromium"
     assert doctor.check_claude_cli(which=lambda n: None, home=Path("/nonexistent"))["tool"] == "claude"
-
-
-def test_check_latex_finds_tectonic_in_local_bin_off_path(tmp_path):
-    binary = tmp_path / ".local" / "bin" / "tectonic"
-    binary.parent.mkdir(parents=True)
-    binary.write_text("")
-    check = doctor.check_latex(which=_which(), home=tmp_path)
-    assert check["status"] == "ok"
-    assert str(binary) in check["detail"]
 
 
 def _ran(stdout="", stderr="", code=0):
@@ -324,7 +302,7 @@ def test_run_checks_ok_iff_every_required_check_passes(tmp_path):
     result = doctor.run_checks(
         profile_dir,
         tmp_path / "jobs",
-        which=_which("xelatex", "claude"),
+        which=_which("claude"),
         find_spec=lambda name: object(),
         now=NOW,
         run=_auth(json.dumps({"loggedIn": True, "authMethod": "oauth_token"})),
@@ -333,7 +311,6 @@ def test_run_checks_ok_iff_every_required_check_passes(tmp_path):
     statuses = _statuses(result["checks"])
     assert statuses["python"] == "ok"
     assert statuses["profile"] == "ok"
-    assert statuses["latex"] == "ok"
     assert statuses["claude CLI"] == "ok"
     assert statuses["claude login"] == "ok"
     assert "playwright chromium" not in statuses  # no board and no discovery drives a browser
@@ -343,7 +320,7 @@ def test_run_checks_ok_iff_every_required_check_passes(tmp_path):
     assert result["last_scrape"] == [{"site": "jobindex", "last_success": None, "age_hours": None}]
 
     result = doctor.run_checks(
-        profile_dir, tmp_path / "jobs", which=_which("xelatex"),
+        profile_dir, tmp_path / "jobs", which=_which(),
         find_spec=lambda name: object(), now=NOW, run=_auth(),
         probe=_NO_PROBE,
     )
@@ -352,7 +329,7 @@ def test_run_checks_ok_iff_every_required_check_passes(tmp_path):
     assert "claude login" not in _statuses(result["checks"])
 
     result = doctor.run_checks(
-        profile_dir, tmp_path / "jobs", which=_which("xelatex", "claude"),
+        profile_dir, tmp_path / "jobs", which=_which("claude"),
         find_spec=lambda name: object(), now=NOW,
         run=_auth(json.dumps({"loggedIn": False})),
         probe=_NO_PROBE,
@@ -509,12 +486,12 @@ def test_run_checks_scraper_checks_come_last_and_are_non_fatal(tmp_path):
     write_config(profile_dir, {"role_targets": ["x"], "location": "Copenhagen"})
     kw = dict( find_spec=lambda n: object(), now=NOW, run=_auth(json.dumps({"loggedIn": True, "authMethod": "oauth_token"})),
               probe=_stub(_result(structure_ok=False, postings=[], reason="x")), probe_sites=True)
-    result = doctor.run_checks(profile_dir, tmp_path / "jobs", which=_which("xelatex", "claude"), **kw)
+    result = doctor.run_checks(profile_dir, tmp_path / "jobs", which=_which("claude"), **kw)
     names = [c["name"] for c in result["checks"]]
     assert names[-1] == "scraper: jobindex"
     assert result["checks"][-1]["status"] == "drift"
     assert result["ok"] is True
-    result = doctor.run_checks(profile_dir, tmp_path / "jobs", which=_which("xelatex"), **kw)
+    result = doctor.run_checks(profile_dir, tmp_path / "jobs", which=_which(), **kw)
     assert result["ok"] is False
 
 
@@ -528,7 +505,7 @@ def _checks_for(tmp_path, **kw):
     profile_dir = tmp_path / "profile"
     write_config(profile_dir, kw.pop("config", {}))
     return doctor.run_checks(
-        profile_dir, tmp_path / "jobs", which=_which("xelatex", "claude"),
+        profile_dir, tmp_path / "jobs", which=_which("claude"),
         find_spec=lambda name: object(), now=NOW,
         run=_auth(json.dumps({"loggedIn": True, "authMethod": "oauth_token"})), repo_root=tmp_path, **kw,
     )
@@ -865,10 +842,10 @@ def test_check_claude_login_unreadable_fix_is_claude_update():
 def test_outside_a_checkout_there_is_no_developer_tools_check(tmp_path, monkeypatch):
     # A packaged app has no pytest to look for (#223).
     monkeypatch.setattr(workspace, "is_checkout", lambda: False)
-    result = doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", which=_which("xelatex", "claude"))
+    result = doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", which=_which("claude"))
     assert "dev dependencies" not in [c["name"] for c in result["checks"]]
     monkeypatch.setattr(workspace, "is_checkout", lambda: True)
-    result = doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", which=_which("xelatex", "claude"))
+    result = doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", which=_which("claude"))
     assert "dev dependencies" in [c["name"] for c in result["checks"]]
 
 

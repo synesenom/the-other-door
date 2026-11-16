@@ -77,7 +77,7 @@ def env(tmp_path, monkeypatch):
             {"name": "profile", "status": "ok", "required": True, "detail": f"{profile_dir}/config.json is valid", "fix": None},
             {"name": "claude login", "status": "ok", "required": True, "detail": "logged in (ada.lovelace@example.com, max)",
              "fix": None, "details": {"config_dir": str(user / ".claude")}},
-            {"name": "latex", "status": "missing", "required": True, "detail": "no tectonic", "fix": "./door doctor --fix"},
+            {"name": "chromium", "status": "missing", "required": True, "detail": "no chromium", "fix": "./door doctor --fix"},
         ],
         "last_run": {"started_at": "2026-10-27T09:00:00+00:00", "outcome": "failed", "failures": ["thehub"]},
         "last_scrape": [],
@@ -111,7 +111,7 @@ def test_writes_one_zip_with_the_logs_runs_checks_and_versions(env):
     assert about["version"] == version_mod.VERSION
     assert about["os"] and about["python"]
     checks = json.loads(files["doctor.json"])["checks"]
-    assert [c["name"] for c in checks] == ["profile", "claude login", "latex"]
+    assert [c["name"] for c in checks] == ["profile", "claude login", "chromium"]
     assert "older" in files["logs/door.log.1"]
 
 

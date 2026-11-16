@@ -26,7 +26,7 @@ MCP_CONFIG = HOME / ".mcp.json"   # the checkout's committed file, or the one `e
 def mcp_config_entry() -> dict:
     """The `.mcp.json` content that starts the door server with the interpreter running now."""
     env = {"PYTHONPATH": str(REPO_ROOT / "src"), "DOOR_HOME": str(HOME), "PYTHONUTF8": "1"}  # never the code page (#132)
-    if os.environ.get("DOOR_BIN"):  # the packaged app's bundled Tectonic, for the tailor's compile
+    if os.environ.get("DOOR_BIN"):  # the packaged app's bundled Chromium, for the tailor's compile
         env["DOOR_BIN"] = os.environ["DOOR_BIN"]
     return {"mcpServers": {"door": {
         "command": sys.executable,

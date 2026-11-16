@@ -43,10 +43,3 @@ def test_tailor_md_names_every_tag_and_class_the_guard_allows():
         assert name in text, name
     for token in ("<<photo>>", "<<company>>", "<<title>>", "<<date>>"):
         assert token in text, token
-
-
-def test_tailor_md_no_longer_speaks_latex():
-    text = _tailor()
-    for word in ("\\section", "\\cvheader", "\\usepackage", "\\workexperience", "\\begin{document}", "cv.tex",
-                 "cover_letter.tex", "<<fonts>>"):
-        assert word not in text, word

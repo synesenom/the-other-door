@@ -1559,7 +1559,7 @@ def setup(
     `init_profile`. Same logic as `./door doctor --fix`.
 
     Args:
-        install: Tools to install: "latex", "chromium", "claude". Omit
+        install: Tools to install: "chromium", "claude". Omit
             for every tool `doctor` reports missing.
         yes: The user approved the plan — run it.
         probe: Probe each configured site live (as `doctor` with
