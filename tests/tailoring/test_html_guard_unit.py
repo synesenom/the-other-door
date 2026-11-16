@@ -1,0 +1,65 @@
+"""A prepared cv.html / cover_letter.html is a body fragment in a closed vocabulary (#146): it never loads another
+file, reaches the network or runs anything. It is model output, steered by a job ad or an instruction from a phone,
+and a real browser prints it. The guard is an allow-list; compile refuses to build a body that it names anything in."""
+
+import pytest
+
+from door.tailoring import html_guard
+
+CV = """<!-- Keywords: IFRS, budgeting -->
+<!-- Tailoring: led with the close -->
+<<photo>>
+<header class="cv-header"><h1>Ada Lovelace</h1>
+<p class="contact"><span>+45 1</span><span><a href="mailto:ada@example.com">ada@example.com</a></span>
+<span><a href="https://ada.dev">ada.dev</a></span></p></header>
+<h2>Experience</h2>
+<div class="entry"><h3>Controller | Acme &mdash; 2021 - present</h3>
+<ul><li>Cut the close by <strong>40%</strong> &amp; saved <em>time</em><br>twice.</li></ul></div>
+<p><a href="#top">top</a></p>
+"""
+LETTER = """<header class="letter-header"><h1>Ada</h1><p class="contact"><span>x</span></p></header>
+<div class="recipient"><p>Hiring team</p><p>Acme</p></div><p class="date"><<date>></p>
+<p>Dear team,</p><p>I would like the <<title>> role at <<company>>.</p>
+<div class="closing"><p class="signoff">Kind regards,</p><p>Ada</p></div>"""
+
+
+def test_an_ordinary_cv_and_letter_pass():
+    assert html_guard.unsafe(CV) == []
+    assert html_guard.unsafe(LETTER) == []
+
+
+@pytest.mark.parametrize("snippet", [
+    "<script>alert(1)</script>", "<SCRIPT>alert(1)</SCRIPT>", "scr<script>ipt", "<p onclick=\"x()\">a</p>",
+    "<p ONCLICK='x()'>a</p>", "<p style=\"background:url(file:///etc/passwd)\">a</p>",
+    "<style>@import 'http://evil/x.css';</style>", "<img src=\"file:///etc/passwd\">",
+    "<svg><use xlink:href=\"file:///etc/passwd\"></use></svg>", "<iframe src=\"file:///etc/passwd\"></iframe>",
+    "<object data=\"x\"></object>", "<embed src=\"x\">", "<link rel=\"stylesheet\" href=\"http://evil/x.css\">",
+    "<meta http-equiv=\"refresh\" content=\"0;url=http://evil\">", "<base href=\"http://evil/\">",
+    "<form action=\"http://evil\"><input name=a></form>", "<button>x</button>", "<video src=\"x\"></video>",
+    "<a href=\"javascript:alert(1)\">x</a>", "<a href=\"&#106;avascript:alert(1)\">x</a>",
+    "<a href=\"JaVa&#x73;cript:alert(1)\">x</a>", "<a href=\" \tjavascript:alert(1)\">x</a>",
+    "<a href=\"data:text/html,x\">x</a>", "<a href=\"file:///etc/passwd\">x</a>", "<a href=\"../secret.pdf\">x</a>",
+    "<a href=\"photo.jpg\">x</a>", "<a href=\"http://insecure.example\">x</a>", "<a href=\"//evil.example/x\">x</a>",
+    "<a href=\"https://x/<b\">x</a>", "<a href=\"https://x\" target=\"_blank\">x</a>", "<p src=\"x\">a</p>",
+    "<marquee>x</marquee>", "<p class=\"evil\">x</p>", "<p class=\"entry evil\">x</p>", "<p class=\"photo\">x</p>",
+    "<!-- anything else -->", "<!-- Keywords: a --!><script>x</script> -->", "<!DOCTYPE html>", "<![CDATA[x]]>",
+    "<?xml version=\"1.0\"?>", "<!-- Keywords: never closed", "<a href>x</a>", "<math><mi>x</mi></math>",
+])
+def test_anything_outside_the_vocabulary_is_named(snippet):
+    assert html_guard.unsafe(CV + snippet), snippet
+
+
+def test_allowed_links_pass():
+    for href in ("mailto:ada@example.com", "https://ada.dev/a?b=c#d", "#experience", "HTTPS://ada.dev"):
+        assert html_guard.unsafe(f'<p><a href="{href}">x</a></p>') == [], href
+
+
+def test_a_refusal_is_named_once():
+    found = html_guard.unsafe("<script>a</script><script>b</script><p onclick='x'>c</p><p onclick='y'>d</p>")
+    assert len(found) == len(set(found)) and "<script>" in found
+    assert any("onclick" in name for name in found)
+
+
+def test_an_unclosed_or_stray_tag_is_not_a_way_in():
+    assert html_guard.unsafe("<p>text <scr")
+    assert html_guard.unsafe("a < b and c > d") == []
