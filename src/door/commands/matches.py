@@ -13,12 +13,11 @@ from door import i18n
 from door.commands import _common as common
 from door.commands import _prompts
 from door.commands import compile as compile_cmd
-from door.commands import revise as revise_cmd
 from door.commands import salary as salary_cmd
 from door.commands import status as status_cmd
 from door.core import sites, workspace
 from door.tailoring import facts as facts_mod
-from door.tailoring import readability
+from door.tailoring import html_doc, readability
 
 
 def _list_core(
@@ -278,7 +277,6 @@ def list_matches(score: float | None, new_only: bool, status: str | None, ongoin
 
 
 _MATERIALS = ("cv", "cover_letter")
-_TAILORING_RE = re.compile(r"^\s*%\s*Tailoring:\s*(.+?)\s*$", re.MULTILINE)
 _PAGE_PNG_RE = re.compile(r"_page_(\d+)\.png$")
 
 
@@ -364,8 +362,8 @@ def _materials(output_dir: Path) -> dict | None:
     until both PDFs are in `output_dir`.
 
     PDF and page-PNG paths (rendering the PNGs first if any are missing),
-    the ``% Keywords:`` and ``% Tailoring:`` lines the tailor writes into
-    ``cv.tex`` (what it emphasised; what it cut, kept or condensed), page
+    the ``Keywords`` and ``Tailoring`` comments the tailor writes into
+    ``cv.html`` (what it emphasised; what it cut, kept or condensed; empty for a job prepared before the HTML bodies), page
     counts and the cover letter's word count.
 
     Returns:
@@ -391,20 +389,16 @@ def _materials(output_dir: Path) -> dict | None:
         compile_cmd._render_pages(output_dir)
         rendered = True
 
-    cv_tex = output_dir / "cv.tex"
+    cv_html = output_dir / "cv.html"
     keywords: list[str] = []
     tailoring: list[str] = []
-    if cv_tex.is_file():
-        cv_text = cv_tex.read_text(encoding="utf-8")
-        match = readability.KEYWORDS_RE.search(cv_text)
-        if match:
-            keywords = [k.strip() for k in match.group(1).split(",") if k.strip()]
-        match = _TAILORING_RE.search(cv_text)
-        if match:
-            tailoring = [n.strip() for n in match.group(1).split(";") if n.strip()]
+    if cv_html.is_file():
+        cv_body = cv_html.read_text(encoding="utf-8")
+        keywords = readability.keywords_from_html(cv_body)
+        tailoring = [n.strip() for n in (html_doc.note(cv_body, "Tailoring") or "").split(";") if n.strip()]
 
-    letter_tex = output_dir / "cover_letter.tex"
-    words = revise_cmd._latex_word_count(letter_tex.read_text(encoding="utf-8")) if letter_tex.is_file() else None
+    letter_html = output_dir / "cover_letter.html"
+    words = html_doc.word_count(letter_html.read_text(encoding="utf-8")) if letter_html.is_file() else None
 
     unsupported = facts_mod.check(output_dir, workspace.PROFILE_DIR, write=False)
     if unsupported is None:
@@ -431,9 +425,9 @@ def _readability(output_dir: Path) -> list[dict] | None:
     found: list[dict] = []
     try:
         for material in _MATERIALS:
-            tex_path = output_dir / f"{material}.tex"
-            tex = tex_path.read_text(encoding="utf-8") if tex_path.is_file() else ""
-            found += [{"file": material, **p} for p in readability.check_pdf(output_dir / f"{material}.pdf", tex, name)]
+            body_path = output_dir / f"{material}.html"
+            body = body_path.read_text(encoding="utf-8") if body_path.is_file() else ""
+            found += [{"file": material, **p} for p in readability.check_pdf(output_dir / f"{material}.pdf", body, name)]
     except Exception:  # an unreadable PDF is "not checked", never an error in `show`
         return None
     return found
@@ -650,8 +644,8 @@ def _render_materials(materials: dict, console=None) -> None:
     grid = Table.grid(padding=(0, 2))
     grid.add_column(style="dim", no_wrap=True)
     grid.add_column()
-    grid.add_row("Emphasised", ", ".join(materials["keywords"]) or Text("(no % Keywords line in cv.tex)", style="dim"))
-    grid.add_row("Tailored", "\n".join(f"• {n}" for n in materials["tailoring"]) or Text("(no % Tailoring line in cv.tex)", style="dim"))
+    grid.add_row("Emphasised", ", ".join(materials["keywords"]) or Text("(no Keywords comment in cv.html)", style="dim"))
+    grid.add_row("Tailored", "\n".join(f"• {n}" for n in materials["tailoring"]) or Text("(no Tailoring comment in cv.html)", style="dim"))
     grid.add_row("CV", pages(materials["page_counts"]["cv"]))
     grid.add_row(
         "Cover letter",

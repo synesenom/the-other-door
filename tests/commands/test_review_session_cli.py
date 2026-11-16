@@ -1,7 +1,7 @@
 """Review-session ergonomics (issues #146, #312): jobs named by words, discarding with notes,
 `show`'s materials, `revise`, and the `max_age_days` freshness cutoff — core, CLI and MCP tool.
 
-Offline: `claude -p` (revise), LaTeX (compile) and PDF rendering are faked.
+Offline: `claude -p` (revise), the Chromium print (compile) and PDF rendering are faked.
 """
 
 import json
@@ -18,6 +18,7 @@ from door.commands import compile as compile_cmd
 from door.commands import matches as matches_cmd
 from door.commands import prepare as prepare_cmd
 from door.commands import revise as revise_cmd
+from door.tailoring import html_doc
 from door.commands import status as status_cmd
 from door.core import workspace
 import door.mcp_server as server
@@ -189,32 +190,24 @@ def test_a_later_status_change_drops_the_discard_notes(env):
 # show: prepared materials
 # --------------------------------------------------------------------------- #
 
-CV_TEX = r"""\documentclass{article}
-% Keywords: MLOps, PyTorch, stakeholder management
-% Tailoring: Publications: 2 of 7 kept; Skills: dropped Java, C/C++; ETH Zurich condensed to 1 bullet
-\begin{document}
-Hello CV
-\end{document}
+CV_HTML = """<!-- Keywords: MLOps, PyTorch, stakeholder management -->
+<!-- Tailoring: Publications: 2 of 7 kept; Skills: dropped Java, C/C++; ETH Zurich condensed to 1 bullet -->
+<h2>Experience</h2><p>Hello CV</p>
 """
 
-LETTER_TEX = r"""\documentclass{letter}
-\usepackage{hyperref}
-\begin{document}
-% a comment that is not counted
-Dear Hiring Team,
+LETTER_HTML = """<p>Dear Hiring Team,</p>
 
-I \textbf{love} shipping models to production.
+<p>I <strong>love</strong> shipping models to production.</p>
 
-Best regards
-\end{document}
+<p>Best regards</p>
 """
 
 
 def _materials(env, job_id="jobindex-top", pngs=True):
     out = env.jobs_dir / "output" / job_id
     out.mkdir(parents=True, exist_ok=True)
-    (out / "cv.tex").write_text(CV_TEX)
-    (out / "cover_letter.tex").write_text(LETTER_TEX)
+    (out / "cv.html").write_text(CV_HTML)
+    (out / "cover_letter.html").write_text(LETTER_HTML)
     (out / "cv.pdf").write_bytes(b"%PDF")
     (out / "cover_letter.pdf").write_bytes(b"%PDF")
     (out / "posting.json").write_text("{}")
@@ -316,11 +309,9 @@ def test_show_cli_open_before_prepare_errors(env):
 # revise
 # --------------------------------------------------------------------------- #
 
-NEW_BODY = r"""Dear Hiring Team,
-
-I ship models.
-
-Best regards"""
+NEW_BODY = """<p>Dear Hiring Team,</p>
+<p>I ship models.</p>
+<p>Best regards</p>"""
 
 
 def _envelope(text: str) -> str:
@@ -332,148 +323,70 @@ def _envelope(text: str) -> str:
 def revise_env(env, monkeypatch):
     _posting(env.jobs_dir, "jobindex-top", 0.95)
     out = _materials(env)
-    # The job's preamble is the current template's, so only the body changes unless a test says otherwise.
-    (env.profile_dir / "cover-letter.template.tex").write_text(LETTER_TEX, encoding="utf-8")
     calls = types.SimpleNamespace(claude=[], compile=[], render=[])
 
     def fake_run(argv, **kwargs):
         calls.claude.append((argv, kwargs))
-        return subprocess.CompletedProcess(argv, 0, stdout=_envelope(f"```latex\n{NEW_BODY}\n```\n"), stderr="")
+        return subprocess.CompletedProcess(argv, 0, stdout=_envelope(f"```html\n{NEW_BODY}\n```\n"), stderr="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
+
     def fake_compile(job_id, render=False, jobs_dir=None):
         calls.compile.append(job_id)
         if render:
             calls.render.append(job_id)
-        return {"job_id": job_id, "output_dir": str(out), "results": [{"file": "cover_letter.tex", "status": "compiled"}], "render": []}
+        return {"job_id": job_id, "output_dir": str(out), "results": [{"file": "cover_letter.html", "status": "compiled"}], "render": []}
 
     monkeypatch.setattr(compile_cmd, "_compile_core", fake_compile)
     return types.SimpleNamespace(**vars(env), out=out, calls=calls)
 
 
-def test_revise_replaces_only_the_body_recompiles_and_keeps_a_backup(revise_env):
+def test_revise_replaces_the_body_recompiles_and_keeps_a_backup(revise_env):
     result = revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten paragraph two", jobs_dir=revise_env.jobs_dir)
 
-    tex = (revise_env.out / "cover_letter.tex").read_text()
-    preamble = LETTER_TEX.split("\\begin{document}")[0]
-    assert tex.startswith(preamble + "\\begin{document}\n")
-    assert NEW_BODY in tex
-    assert tex.rstrip().endswith("\\end{document}")
-    assert "```" not in tex
-    assert (revise_env.out / "cover_letter.tex.bak").read_text() == LETTER_TEX
+    html = (revise_env.out / "cover_letter.html").read_text()
+    assert html == NEW_BODY + "\n"
+    assert "```" not in html
+    assert (revise_env.out / "cover_letter.html.bak").read_text() == LETTER_HTML
 
     assert revise_env.calls.compile == ["jobindex-top"]
     assert revise_env.calls.render == ["jobindex-top"]
     assert result["outcome"] == "revised"
-    assert result["file"] == str(revise_env.out / "cover_letter.tex")
-    assert result["backup"] == str(revise_env.out / "cover_letter.tex.bak")
+    assert result["file"] == str(revise_env.out / "cover_letter.html")
+    assert result["backup"] == str(revise_env.out / "cover_letter.html.bak")
 
 
-NEW_PREAMBLE = "\\documentclass{letter}\n\\usepackage{hyperref}\n\\usepackage{fixed}\n\\begin{document}"
+def test_revise_keeps_the_cvs_notes_the_answer_dropped(revise_env):
+    revise_cmd._revise_core("jobindex-top", "cv", "tighten", jobs_dir=revise_env.jobs_dir)
+    html = (revise_env.out / "cv.html").read_text()
+    assert html.count("<!-- Keywords: MLOps, PyTorch, stakeholder management -->") == 1
+    assert "<!-- Tailoring: Publications: 2 of 7 kept" in html and NEW_BODY in html
+    assert html.index("Keywords") < html.index("<p>Dear")
 
 
-def _new_template(env, preamble=NEW_PREAMBLE):
-    (env.profile_dir / "cover-letter.template.tex").write_text(preamble + "\nTemplate body\n\\end{document}\n", encoding="utf-8")
-
-
-def test_revise_brings_the_preamble_up_to_the_current_template(revise_env):
-    _new_template(revise_env)
-    revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    tex = (revise_env.out / "cover_letter.tex").read_text()
-    assert tex.startswith(NEW_PREAMBLE + "\n")
-    assert NEW_BODY in tex and "Template body" not in tex
-    assert tex.rstrip().endswith("\\end{document}")
-    assert (revise_env.out / "cover_letter.tex.bak").read_text() == LETTER_TEX
-
-
-def test_revise_undo_restores_the_old_preamble(revise_env):
-    _new_template(revise_env)
-    kw = dict(jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", **kw)
-    revise_cmd._revise_core("jobindex-top", "cover_letter", undo=True, **kw)
-    assert (revise_env.out / "cover_letter.tex").read_text() == LETTER_TEX
-
-
-def test_revise_falls_back_to_the_old_preamble_when_the_new_one_does_not_compile(revise_env, monkeypatch):
-    _new_template(revise_env)
-    seen = []
-
-    def fake_compile(job_id, render=False, jobs_dir=None):
-        tex = (revise_env.out / "cover_letter.tex").read_text()
-        seen.append(tex)
-        status = "error" if "fixed" in tex else "compiled"
-        return {"job_id": job_id, "output_dir": str(revise_env.out), "results": [{"file": "cover_letter.tex", "status": status}], "render": []}
-
-    monkeypatch.setattr(compile_cmd, "_compile_core", fake_compile)
-    result = revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    tex = (revise_env.out / "cover_letter.tex").read_text()
-    assert len(seen) == 2
-    assert tex.startswith(LETTER_TEX.split("\\begin{document}")[0] + "\\begin{document}\n")
-    assert NEW_BODY in tex
-    assert result["compile"][0]["status"] == "compiled"
-
-
-def _cv_template(env):
-    (env.profile_dir / "cv.template.tex").write_text("\\documentclass{article}\n\\usepackage{fixed}\n\\begin{document}\nT\n\\end{document}\n", encoding="utf-8")
-
-
-def test_revise_brings_the_cv_up_to_the_current_template_and_keeps_its_notes(revise_env):
-    _cv_template(revise_env)
-    revise_cmd._revise_core("jobindex-top", "cv", "tighten", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    tex = (revise_env.out / "cv.tex").read_text()
-    assert "\\usepackage{fixed}" in tex and NEW_BODY in tex
-    assert "% Keywords: MLOps, PyTorch, stakeholder management" in tex
-    assert "% Tailoring: Publications: 2 of 7 kept" in tex
-    assert tex.count("% Keywords:") == 1
-    assert tex.index("% Keywords:") < tex.index("\\begin{document}")
-
-
-def test_revise_reverts_only_the_file_whose_own_compile_failed(revise_env, monkeypatch):
-    _new_template(revise_env)
-    _cv_template(revise_env)
-    (revise_env.out / "cv.tex").write_text(CV_TEX)
-
-    def fake_compile(job_id, render=False, jobs_dir=None):
-        cv = (revise_env.out / "cv.tex").read_text()
-        return {"job_id": job_id, "output_dir": str(revise_env.out), "render": [],
-                "results": [{"file": "cv.tex", "status": "error" if "fixed" in cv else "compiled"},
-                            {"file": "cover_letter.tex", "status": "compiled"}]}
-
-    monkeypatch.setattr(compile_cmd, "_compile_core", fake_compile)
-    revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    assert "\\usepackage{fixed}" in (revise_env.out / "cover_letter.tex").read_text()
-
-
-def test_revise_double_failure_ends_with_the_old_preamble_and_the_error(revise_env, monkeypatch):
-    _new_template(revise_env)
-    calls = []
-
-    def fake_compile(job_id, render=False, jobs_dir=None):
-        calls.append(1)
-        return {"job_id": job_id, "output_dir": str(revise_env.out), "render": [],
-                "results": [{"file": "cover_letter.tex", "status": "error", "stderr": "boom"}]}
-
-    monkeypatch.setattr(compile_cmd, "_compile_core", fake_compile)
-    result = revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    tex = (revise_env.out / "cover_letter.tex").read_text()
-    assert len(calls) == 2
-    assert "fixed" not in tex and NEW_BODY in tex
-    assert result["compile"][0]["status"] == "error"
+def test_revise_does_not_double_a_note_the_answer_kept(revise_env, monkeypatch):
+    answer = "<!-- Keywords: MLOps -->\n<p>x</p>"
+    monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(answer), stderr=""))
+    revise_cmd._revise_core("jobindex-top", "cv", "tighten", jobs_dir=revise_env.jobs_dir)
+    html = (revise_env.out / "cv.html").read_text()
+    assert html.count("Keywords:") == 1 and "<!-- Keywords: MLOps -->" in html and "Tailoring: Publications" in html
 
 
 def test_revise_never_touches_the_sent_copy(revise_env):
     sent = revise_env.out / "sent"
     sent.mkdir()
-    (sent / "cover_letter.tex").write_bytes(LETTER_TEX.encode())
-    _new_template(revise_env)
-    revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    assert (sent / "cover_letter.tex").read_bytes() == LETTER_TEX.encode()
+    (sent / "cover_letter.pdf").write_bytes(b"%PDF-sent")
+    revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
+    assert (sent / "cover_letter.pdf").read_bytes() == b"%PDF-sent"
 
 
-def test_revise_keeps_the_job_preamble_when_the_template_is_unreadable(revise_env):
-    (revise_env.profile_dir / "cover-letter.template.tex").write_text("no document here", encoding="utf-8")
-    revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    assert (revise_env.out / "cover_letter.tex").read_text().startswith(LETTER_TEX.split("\\begin{document}")[0])
+def test_revise_on_a_job_prepared_with_latex_says_to_prepare_it_again(revise_env):
+    (revise_env.out / "cover_letter.html").unlink()
+    (revise_env.out / "cover_letter.tex").write_text("\\documentclass{letter}")
+    with pytest.raises(FileNotFoundError, match="prepare it again"):
+        revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
+    assert (revise_env.out / "cover_letter.tex").read_text() == "\\documentclass{letter}"
+    assert revise_env.calls.claude == [] and revise_env.calls.compile == []
 
 
 def test_revise_calls_claude_print_mode_without_tools_and_sends_context_on_stdin(revise_env):
@@ -484,9 +397,9 @@ def test_revise_calls_claude_print_mode_without_tools_and_sends_context_on_stdin
     assert argv[argv.index("--model") + 1] == "sonnet"
     stdin = kwargs["input"]
     assert "tighten paragraph two" in stdin
-    assert "I \\textbf{love} shipping models" in stdin  # the current body
+    assert "I <strong>love</strong> shipping models" in stdin  # the current body
     assert "We need a data scientist who ships." in stdin  # the posting
-    assert "\\usepackage{hyperref}" not in stdin  # never the preamble
+    assert "<html" not in stdin.split("Current body:")[1]  # the body only, never a page
     assert kwargs["cwd"] == workspace.REPO_ROOT
 
 
@@ -508,8 +421,8 @@ def test_revise_undo_restores_the_backup(revise_env):
     revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", jobs_dir=revise_env.jobs_dir)
     result = revise_cmd._revise_core("jobindex-top", "cover_letter", undo=True, jobs_dir=revise_env.jobs_dir)
     assert result["outcome"] == "undone"
-    assert (revise_env.out / "cover_letter.tex").read_text() == LETTER_TEX
-    assert not (revise_env.out / "cover_letter.tex.bak").exists()
+    assert (revise_env.out / "cover_letter.html").read_text() == LETTER_HTML
+    assert not (revise_env.out / "cover_letter.html.bak").exists()
     assert revise_env.calls.compile == ["jobindex-top", "jobindex-top"]
 
 
@@ -520,7 +433,7 @@ def test_revise_reruns_the_facts_check(revise_env, monkeypatch):
     assert clean["unsupported"] == []
     assert json.loads((out / "facts.json").read_text())["unsupported"] == []
 
-    invented = "Dear team,\n\nI raised revenue by 60\\% last year.\n"
+    invented = "<p>Dear team,</p><p>I raised revenue by 60% last year.</p>"
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(invented), stderr=""))
     result = revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
     assert [c["value"] for c in result["unsupported"]] == ["60%"]
@@ -533,7 +446,7 @@ def test_revise_reruns_the_facts_check(revise_env, monkeypatch):
 
 def test_revise_keeps_a_reason_while_the_item_is_flagged_and_drops_it_when_gone(revise_env, monkeypatch):
     (revise_env.profile_dir / "cv.md").write_text("Shipped models. Raised 38%.")
-    invented = "Dear team,\n\nI raised revenue by 60\\% last year.\n"
+    invented = "<p>Dear team,</p><p>I raised revenue by 60% last year.</p>"
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(invented), stderr=""))
     kw = dict(jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
     revise_cmd._revise_core("jobindex-top", "cover_letter", "x", **kw)
@@ -542,7 +455,7 @@ def test_revise_keeps_a_reason_while_the_item_is_flagged_and_drops_it_when_gone(
                 keep=[{"kind": "number", "value": "60%", "file": "cover_letter", "reason": "in the ad"}])
     again = revise_cmd._revise_core("jobindex-top", "cover_letter", "y", **kw)
     assert again["unsupported"][0]["reason"] == "in the ad"
-    clean = "Dear team,\n\nI shipped models.\n"
+    clean = "<p>Dear team,</p><p>I shipped models.</p>"
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(clean), stderr=""))
     assert revise_cmd._revise_core("jobindex-top", "cover_letter", "z", **kw)["unsupported"] == []
 
@@ -560,19 +473,31 @@ def test_revise_undo_without_backup_errors(revise_env):
 def test_revise_rejects_an_answer_that_is_a_whole_document(revise_env, monkeypatch):
     monkeypatch.setattr(
         subprocess, "run",
-        lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope("\\documentclass{letter}\\begin{document}x\\end{document}"), stderr=""),
+        lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope("<!doctype html><html><body><p>x</p></body></html>"), stderr=""),
     )
-    with pytest.raises(ValueError, match="body"):
+    with pytest.raises(ValueError, match="whole page"):
         revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
-    assert (revise_env.out / "cover_letter.tex").read_text() == LETTER_TEX
+    assert (revise_env.out / "cover_letter.html").read_text() == LETTER_HTML
+
+
+@pytest.mark.parametrize("answer", [
+    "<p>x</p><script>alert(1)</script>", "<p onclick=\"x()\">x</p>", "<p><a href=\"file:///etc/passwd\">x</a></p>",
+    "<img src=\"photo.jpg\">", "<style>p{color:red}</style><p>x</p>",
+])
+def test_revise_rejects_an_answer_the_guard_refuses_and_leaves_the_file(revise_env, monkeypatch, answer):
+    monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(answer), stderr=""))
+    with pytest.raises(ValueError, match="file left unchanged"):
+        revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
+    assert (revise_env.out / "cover_letter.html").read_text() == LETTER_HTML
+    assert not (revise_env.out / "cover_letter.html.bak").exists() and revise_env.calls.compile == []
 
 
 def test_revise_claude_failure_leaves_the_file_alone(revise_env, monkeypatch):
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 1, stdout="", stderr="rate limited"))
     with pytest.raises(RuntimeError, match="rate limited"):
         revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
-    assert (revise_env.out / "cover_letter.tex").read_text() == LETTER_TEX
-    assert not (revise_env.out / "cover_letter.tex.bak").exists()
+    assert (revise_env.out / "cover_letter.html").read_text() == LETTER_HTML
+    assert not (revise_env.out / "cover_letter.html.bak").exists()
 
 
 def test_revise_validates_file_and_instruction(revise_env):
@@ -633,32 +558,19 @@ def test_prepare_without_a_job_id_skips_stale_postings_like_list(env):
 # --------------------------------------------------------------------------- #
 
 @pytest.mark.parametrize("answer", [
-    "Here is the revised body:\n```latex\nHello\n```",
+    "Here is the revised body:\n```html\n<p>Hello</p>\n```",
     "Sure! Here is the revised body:\n\nDear Team,",
 ])
 def test_revise_rejects_answers_with_commentary(revise_env, monkeypatch, answer):
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(answer), stderr=""))
     with pytest.raises(ValueError, match="commentary"):
         revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
-    assert (revise_env.out / "cover_letter.tex").read_text() == LETTER_TEX
+    assert (revise_env.out / "cover_letter.html").read_text() == LETTER_HTML
 
 
-def test_revise_ignores_a_commented_begin_document_in_the_preamble(revise_env):
-    tex = "\\documentclass{letter}\n% usage: \\begin{document} ... \\end{document}\n\\usepackage{x}\n\\begin{document}\nOld body\n\\end{document}\n"
-    (revise_env.out / "cover_letter.tex").write_text(tex)
-    (revise_env.profile_dir / "cover-letter.template.tex").write_text(tex)  # the current template: same preamble
-    revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
-    stdin = revise_env.calls.claude[0][1]["input"]
-    assert "\\usepackage{x}" not in stdin
-    assert "Old body" in stdin
-    new = (revise_env.out / "cover_letter.tex").read_text()
-    assert new.startswith("\\documentclass{letter}\n% usage: \\begin{document} ... \\end{document}\n\\usepackage{x}\n\\begin{document}\n")
-    assert NEW_BODY in new
-
-
-def test_word_count_skips_layout_command_arguments():
-    tex = "\\begin{document}\n\\vspace{1em}\nHello there\n\\begin{itemize}\\item one two\\end{itemize}\\hspace*{2cm}\n\\end{document}"
-    assert revise_cmd._latex_word_count(tex) == 4
+def test_word_count_counts_the_text_not_the_tags():
+    body = "<!-- Keywords: a b --><h2>Hi</h2><p class=\"date\">Hello there</p><ul><li>one two</li></ul>"
+    assert html_doc.word_count(body) == 5
 
 
 def test_show_tool_returns_the_materials(env, fake_pages):
@@ -672,7 +584,7 @@ def test_show_tool_returns_the_materials(env, fake_pages):
 def test_show_without_a_tailoring_line_reports_none(env, fake_pages):
     _posting(env.jobs_dir, "jobindex-top", 0.95)
     out = _materials(env)
-    (out / "cv.tex").write_text(CV_TEX.replace("% Tailoring:", "% Not tailoring:"))
+    (out / "cv.html").write_text(CV_HTML.replace("<!-- Tailoring:", "<!-- Not tailoring:"))
 
     assert matches_cmd._show_core("jobindex-top", jobs_dir=env.jobs_dir)["materials"]["tailoring"] == []
 

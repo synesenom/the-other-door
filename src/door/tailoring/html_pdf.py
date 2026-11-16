@@ -1,6 +1,6 @@
 """Print an HTML page to a PDF with the pinned Chromium headless shell, sealed (#165).
 
-The seal stands where `tex_guard` stands for LaTeX: a model wrote the page, so the browser
+The seal is the second layer after `html_guard`: a model wrote the page, so the browser
 gets nothing to reach. JavaScript is off (`Emulation.setScriptExecutionDisabled`), the page is
 served by a loopback server over one folder (127.0.0.1, a random port, only files whose resolved
 path is under the folder), and every request that is not on that origin is failed through
