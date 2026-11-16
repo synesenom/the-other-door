@@ -39,11 +39,27 @@ class PrintError(Exception):
 
 class _Handler(http.server.BaseHTTPRequestHandler):
     root: Path
+    assets: dict[str, Path] = {}
+
+    def _target(self, path: str) -> Path:
+        """The file a path names: under an asset name, inside that asset folder; else inside the page's folder."""
+        first, _, rest = path.lstrip("/").partition("/")
+        if first in self.assets:
+            base = self.assets[first]
+            return (base / rest).resolve() if rest else base / "\0"
+        return (self.root / path.lstrip("/")).resolve()
 
     def do_GET(self) -> None:  # noqa: N802 - http.server's name
         path = unquote(urlsplit(self.path).path)
-        target = (self.root / path.lstrip("/")).resolve()
-        if not target.is_relative_to(self.root) or not target.is_file():
+        first = path.lstrip("/").partition("/")[0]
+        base = self.assets.get(first, self.root)
+        try:
+            target = self._target(path)
+            inside = target.is_relative_to(base)
+            found = inside and target.is_file()
+        except (OSError, ValueError):
+            found = False
+        if not found:
             self.send_error(404)
             return
         data = target.read_bytes()
@@ -57,8 +73,9 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def _serve(folder: Path) -> http.server.ThreadingHTTPServer:
-    handler = type("Handler", (_Handler,), {"root": Path(folder).resolve()})
+def _serve(folder: Path, assets: dict[str, Path] | None = None) -> http.server.ThreadingHTTPServer:
+    resolved = {name: Path(path).resolve() for name, path in (assets or {}).items()}
+    handler = type("Handler", (_Handler,), {"root": Path(folder).resolve(), "assets": resolved})
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -132,20 +149,25 @@ def _refused_sandbox(profile: Path) -> bool:
         return False
 
 
-def print_html(folder: Path, html: str, out_pdf: Path, *, timeout: float = 60.0, launcher=_launch) -> None:
-    """Print `html` (written as `folder/index.html`, with the folder's other files beside it) to `out_pdf`."""
+def print_html(folder: Path, html: str, out_pdf: Path, *, entry: str = "index.html",
+               assets: dict[str, Path] | None = None, timeout: float = 60.0, launcher=_launch) -> None:
+    """Print `html` (written as `folder/<entry>`, with the folder's other files beside it) to `out_pdf`.
+
+    `assets` maps one URL segment to a folder outside the page's (``{"fonts": Path}`` serves ``/fonts/x.ttf`` from it):
+    a shared asset such as the fonts is served, not copied into the job's folder, and only files inside it.
+    """
     exe = chromium.find_chromium()
     if exe is None:
         raise PrintError("no Chromium headless shell found; run `./door doctor --fix`")
     folder = Path(folder)
-    (folder / "index.html").write_text(html, encoding="utf-8")
+    (folder / entry).write_text(html, encoding="utf-8")
     deadline = time.monotonic() + timeout
 
     def left() -> float:
         return max(deadline - time.monotonic(), 0.1)
 
     profile = Path(tempfile.mkdtemp(prefix="door-chromium-"))
-    server = _serve(folder)
+    server = _serve(folder, assets)
     origin = f"http://127.0.0.1:{server.server_address[1]}"
     proc = None
     conn = None
@@ -178,7 +200,7 @@ def print_html(folder: Path, html: str, out_pdf: Path, *, timeout: float = 60.0,
         conn.send("Fetch.enable", {"patterns": [{"urlPattern": "*"}]}, session_id=sid, timeout=left())
         conn.send("Page.enable", session_id=sid, timeout=left())
         conn.send("Page.setLifecycleEventsEnabled", {"enabled": True}, session_id=sid, timeout=left())
-        nav = conn.send("Page.navigate", {"url": f"{origin}/index.html"}, session_id=sid, timeout=left())
+        nav = conn.send("Page.navigate", {"url": f"{origin}/{entry}"}, session_id=sid, timeout=left())
         if nav.get("errorText"):
             raise PrintError(f"the page did not load: {nav['errorText']}")
         while True:  # the blank page's own events come first: only this navigation's networkIdle counts

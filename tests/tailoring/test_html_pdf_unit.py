@@ -46,6 +46,7 @@ class Fake:
         self.servers: list[FakeWs] = []
         self.proc = type("P", (), {"poll": lambda self: None, "pid": 1})()
         self.probe_paths: list[str] = []
+        self.navigated = ""
 
     def launcher(self, args):
         self.args = list(args)
@@ -81,10 +82,11 @@ class Fake:
             elif m == "Page.navigate":
                 url = msg["params"]["url"]
                 self.origin = url.rsplit("/", 1)[0]
+                self.navigated = url
                 conn.send_json({"id": mid, "result": {"frameId": "F", "loaderId": "L1", **({"errorText": self.nav_error} if self.nav_error else {})}})
                 # the blank page's own networkIdle, which a print must not wait for
                 conn.send_json({"method": "Page.lifecycleEvent", "sessionId": "S1", "params": {"name": "networkIdle", "loaderId": "L0"}})
-                for path in ["/index.html", *self.probe_paths]:
+                for path in [self.navigated[len(self.origin):], *self.probe_paths]:
                     self._fetch(path)
                 for i, url in enumerate(self.paused):
                     conn.send_json({"method": "Fetch.requestPaused", "sessionId": "S1",
@@ -212,6 +214,40 @@ def test_the_server_is_loopback_serves_the_page_and_only_files_under_the_folder(
     for blocked in ("/../secret.txt", "/%2e%2e/secret.txt", "/out-link", "/missing", "/"):
         assert fake.statuses[blocked] == 404, blocked
         assert b"outside" not in fake.bodies[blocked]
+
+
+def test_the_page_is_written_and_navigated_under_the_entry_name(fake, tmp_path):
+    folder, _ = _print(fake, tmp_path, html="<p>the cv</p>", entry="cv.html")
+    assert (folder / "cv.html").read_text(encoding="utf-8") == "<p>the cv</p>"
+    assert not (folder / "index.html").exists()
+    assert fake.navigated.endswith("/cv.html") and b"the cv" in fake.bodies["/cv.html"]
+
+
+def test_an_asset_root_is_served_under_its_name_and_only_inside_it(fake, tmp_path):
+    fonts = tmp_path / "shared" / "fonts"
+    fonts.mkdir(parents=True)
+    (fonts / "x.ttf").write_bytes(b"font")
+    (tmp_path / "shared" / "secret.txt").write_text("outside")
+    (fonts / "escape").symlink_to(tmp_path / "shared" / "secret.txt")
+    fake.probe_paths = ["/fonts/x.ttf", "/fonts/../secret.txt", "/fonts/%2e%2e/secret.txt", "/fonts/escape",
+                        "/fonts/missing.ttf", "/fonts", "/other/x.ttf"]
+    _print(fake, tmp_path, assets={"fonts": fonts})
+    assert fake.statuses["/fonts/x.ttf"] == 200 and fake.bodies["/fonts/x.ttf"] == b"font"
+    for blocked in ("/fonts/../secret.txt", "/fonts/%2e%2e/secret.txt", "/fonts/escape", "/fonts/missing.ttf",
+                    "/fonts", "/other/x.ttf"):
+        assert fake.statuses[blocked] == 404, blocked
+        assert b"outside" not in fake.bodies[blocked]
+
+
+def test_a_folder_file_shadowed_by_an_asset_name_is_not_served_from_the_folder(fake, tmp_path):
+    work = tmp_path / "work"
+    (work / "fonts").mkdir(parents=True)
+    (work / "fonts" / "own.ttf").write_bytes(b"in the folder")
+    fonts = tmp_path / "f"
+    fonts.mkdir()
+    fake.probe_paths = ["/fonts/own.ttf"]
+    _print(fake, tmp_path, assets={"fonts": fonts})
+    assert fake.statuses["/fonts/own.ttf"] == 404
 
 
 def test_the_server_is_closed_after_the_print(fake, tmp_path):
