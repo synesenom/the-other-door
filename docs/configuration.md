@@ -175,7 +175,7 @@ with no file gets no photo, no date of birth and two pages), and the tailor foll
 language rules: no photo where it is `"no"`, one only if your profile has a `photo` where it is `"optional"`, and
 `<<photo>>` where it is `"expected"` (nothing is printed when you have none). A date of birth is never added: it is
 kept only if your `cv.md` already has one. A place of birth, marital status and nationality are never added, in
-any country. A template that does not define `\cvphotobox` (a copy made before photos) prints no photo.
+any country. A template that does not style `.photo` (a copy made before photos) prints no photo.
 
 ## Keys
 
