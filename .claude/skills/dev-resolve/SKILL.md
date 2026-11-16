@@ -111,7 +111,6 @@ Spawn the `issue-validator` agent with a prompt containing:
 ```
 issue_number: <number>
 issue_title: <title>
-issue_body: <full body>
 base_branch: <base branch>
 ```
 

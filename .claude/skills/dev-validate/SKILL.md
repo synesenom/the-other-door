@@ -18,7 +18,6 @@ You are checking that the suite passes and the current implementation of a GitHu
    ```
    issue_number: <number>
    issue_title: <title from fetched issue>
-   issue_body: <body from fetched issue>
    base_branch: <default branch, e.g. main>
    ```
 
