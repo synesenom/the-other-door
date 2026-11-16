@@ -1,4 +1,4 @@
-"""Measuring the fonts of a PDF (#199) on the style corpus: Lato's x-height is 0.507 em, its cap height 0.717."""
+"""Measuring the fonts of a PDF (#199) on the style corpus: Lato's x-height is 0.507 em."""
 
 import pytest
 
@@ -15,10 +15,10 @@ def lato():
     return font_measure.measure(pdf, style_extract.extract(pdf)["fonts"])
 
 
-def test_the_x_height_and_cap_height_of_the_regular_face_are_read_off_the_glyph_boxes(lato):
+def test_the_x_height_and_stem_of_the_regular_face_are_read_off_the_glyph_boxes(lato):
     regular = lato["Lato-Regular"]
     assert regular["x_height"] == pytest.approx(0.51, abs=0.03)
-    assert regular["cap_height"] == pytest.approx(0.72, abs=0.03)
+    assert "cap_height" not in regular
     assert 0.03 < regular["stem"] < 0.2
 
 

@@ -17,19 +17,19 @@ def _sha(data: bytes) -> str:
 FILES = {}
 
 
-def _family(name, klass, weights=(400, 700), italics=(False,), x=0.5, cap=0.7, stem=0.09, adv=500, licence="OFL.txt"):
+def _family(name, klass, weights=(400, 700), italics=(False,), x=0.5, stem=0.09, adv=500, licence="OFL.txt"):
     files = []
     for italic in italics:
         for w in weights:
             fname = f"{name.replace(' ', '')}-{w}{'i' if italic else ''}.ttf"
             data = f"{name}:{fname}".encode()
             FILES[fname] = data
-            files.append({"name": fname, "weight": w, "italic": italic, "size": len(data), "sha256": _sha(data)})
+            files.append({"name": fname, "weight": w, "italic": italic, "sha256": _sha(data)})
     lic = f"licence of {name}".encode()
     FILES[f"{name}/{licence}"] = lic
     return {"commit": "a" * 40, "dir": f"ofl/{fonts.key(name)}", "class": klass,
             "licence": {"name": licence, "sha256": _sha(lic)}, "files": files,
-            "metrics": {"x_height": x, "cap_height": cap, "stem": stem, "advance": [adv] * len(fonts.ADVANCE_CHARS)}}
+            "metrics": {"x_height": x, "stem": stem, "advance": [adv] * len(fonts.ADVANCE_CHARS)}}
 
 
 @pytest.fixture
@@ -45,7 +45,8 @@ def data():
                 "Fraunces": _family("Fraunces", "serif", adv=470, x=0.46),
                 "Carlito": _family("Carlito", "sans", adv=490),
             },
-            "aliases": {"calibri": "Carlito", "arial": "Arimo", "helvetica": "Arimo", "timesnewroman": "Tinos"}}
+            "aliases": {"calibri": "Carlito", "arial": "Arimo", "helvetica": "Arimo", "timesnewroman": "Tinos"},
+            "lookalikes": {"centurygothic": "Narrow"}}
 
 
 def font(name, family, weight=400, italic=False, serif=False, fixed=False, icon=False, type3=False, chars=100):
@@ -70,7 +71,13 @@ def test_a_same_width_stand_in_is_taken_for_the_font_it_replaces(data):
                            ("Times New Roman", "Tinos")):
         [p] = one([font(family + "-Regular", family, serif="Times" in family)], data)
         assert (p["source"], p["resolved"]) == ("standin", wanted), family
-        assert wanted in p["reason"] and family in p["reason"]
+        assert wanted in p["reason"] and family in p["reason"] and "same widths" in p["reason"]
+
+
+def test_a_look_alike_is_taken_but_not_said_to_have_the_same_widths(data):
+    [p] = one([font("CenturyGothic", "Century Gothic")], data)
+    assert (p["source"], p["resolved"]) == ("lookalike", "Narrow")
+    assert "same widths" not in p["reason"] and "looks alike" in p["reason"] and "may differ" in p["reason"]
 
 
 def test_an_icon_font_is_not_fetched_and_a_font_with_no_family_is_left_out(data):
@@ -95,23 +102,41 @@ def test_the_files_are_the_nearest_weight_and_italic_the_cv_uses(data):
     assert by_name["Lato-400i.ttf"]["italic"] is True
 
 
-def test_an_italic_the_family_lacks_is_the_upright_face(data):
+def test_an_italic_the_family_lacks_is_the_upright_face_and_is_said_faked(data):
     [p] = one([font("Tinos-Italic", "Tinos", italic=True, serif=True)], data)
     assert [f["name"] for f in p["files"]] == ["Tinos-400.ttf"]
+    assert p["faked"] == [[400, True]] and "italic" in p["reason"] and "faked" in p["reason"]
+
+
+def test_a_bold_the_family_lacks_is_faked_but_a_near_weight_is_not(data):
+    data["families"]["Tinos"]["files"] = [f for f in data["families"]["Tinos"]["files"] if f["weight"] == 400]
+    [p] = one([font("Tinos-Bold", "Tinos", weight=700, serif=True)], data)
+    assert p["faked"] == [[700, False]]
+    [q] = one([font("Lato-Semibold", "Lato", weight=600)], data)
+    [r] = one([font("Lato-Regular", "Lato")], data)
+    assert q["faked"] == r["faked"] == []
+
+
+def test_among_tied_families_the_one_with_the_faces_the_cv_uses_comes_first(data):
+    # Fraunces ties with Crimson on width but is the worse x-height; only Fraunces has an italic
+    data["families"]["Fraunces"] = _family("Fraunces", "serif", italics=(False, True), adv=430, x=0.7)
+    fonts_ = [font("Pal-Roma", "Pal", serif=True), font("Pal-Ital", "Pal", serif=True, italic=True)]
+    [p] = one(fonts_, data, _measure("Pal-Roma", per_char=0.43, x=0.5))
+    assert p["resolved"] == "Fraunces" and p["faked"] == []
 
 
 def test_each_file_has_its_url_hash_and_the_family_its_licence_with_a_family_name(data):
     [p] = one([font("Tinos-Regular", "Tinos", serif=True)], data)
     f = p["files"][0]
     assert f["url"] == f"https://raw.githubusercontent.com/google/fonts/{'a' * 40}/ofl/tinos/Tinos-400.ttf"
-    assert f["sha256"] == _sha(FILES["Tinos-400.ttf"]) and f["size"] == len(FILES["Tinos-400.ttf"])
+    assert f["sha256"] == _sha(FILES["Tinos-400.ttf"])
     assert p["licence"]["name"] == "Tinos-LICENSE.txt"
     assert p["licence"]["url"].endswith("/ofl/tinos/LICENSE.txt") and p["licence"]["sha256"]
 
 
-def _measure(font_name, size=10, x=0.5, cap=0.7, stem=0.09, per_char=0.5, n=6):
+def _measure(font_name, size=10, x=0.5, stem=0.09, per_char=0.5, n=6):
     runs = [("abcdefghijklmnop", 16 * per_char * size, size)] * n
-    return {font_name: {"x_height": x, "cap_height": cap, "stem": stem, "runs": runs}}
+    return {font_name: {"x_height": x, "stem": stem, "runs": runs}}
 
 
 def test_a_font_with_no_free_copy_gets_the_nearest_of_its_class_by_width(data):
@@ -145,6 +170,12 @@ def test_too_far_a_match_is_the_class_default_with_none_and_a_reason(data):
     [p] = one([font("Wide-Regular", "Wide")], data, _measure("Wide-Regular", per_char=0.8))
     assert (p["source"], p["resolved"]) == ("none", "Arimo")
     assert "Wide" in p["reason"] and "%" in p["reason"] and p["files"]
+
+
+def test_runs_with_no_width_are_no_measurement(data):
+    runs = [("abcdefghijklmnop", 0, 10)] * 6
+    [p] = one([font("Zero-Regular", "Zero")], data, {"Zero-Regular": {"x_height": 0.5, "stem": 0.09, "runs": runs}})
+    assert p["source"] == "none" and p["resolved"] == "Arimo"
 
 
 def test_with_no_measurement_the_class_default_stands_in(data):

@@ -3,7 +3,7 @@
 
 A developer tool, not run in CI, and the only place that decides which families are pinned (`FAMILIES`: add one
 there). For each family it finds the newest google/fonts commit whose folder still holds static TrueType files and
-a licence, downloads them, hashes them (sha256) and measures the regular face with Pillow (x-height, cap height,
+a licence, downloads them, hashes them (sha256) and measures the regular face with Pillow (x-height,
 the width of an `l`, and the advance of 63 characters, in em fractions of 1000) so that `door.core.fonts.plan` can
 pick the nearest family to a CV's own font without a font file at hand. Static only: variable files print as
 nameless Type 3 text, and making statics would need a modified font. A family that was never static, or whose
@@ -35,8 +35,8 @@ REPO = "google/fonts"
 RAW = "https://raw.githubusercontent.com/google/fonts/{commit}/{dir}/{name}"
 LICENCES = ("OFL.txt", "LICENSE.txt")
 
-# (family, class, folders to try in order). `ofl/<name without spaces>` unless said: the Croscore families
-# (Arimo, Tinos, Cousine) are static only in apache/, before their move to ofl/ made them variable.
+# (family, class, folders to try in order). A family is under `ofl/<name without spaces>` and, for an older static
+# copy, `apache/<same>`; the Croscore ones (Arimo, Tinos, Cousine) and Roboto Slab sit under apache/ only.
 _SANS = [
     "Carlito", "Lato", "Open Sans", "Roboto", "Montserrat", "Source Sans Pro", "Raleway", "Poppins", "Nunito",
     "Nunito Sans", "PT Sans", "Work Sans", "DM Sans", "Fira Sans", "Karla", "Rubik", "Jost", "Mulish", "Muli",
@@ -53,7 +53,7 @@ _FIXED = [
     "Roboto Mono", "Source Code Pro", "IBM Plex Mono", "Fira Mono", "Inconsolata", "Space Mono", "PT Mono",
     "Courier Prime", "JetBrains Mono", "Anonymous Pro", "Oxygen Mono",
 ]
-_APACHE = {"Arimo": "sans", "Tinos": "serif", "Cousine": "fixed"}
+_APACHE_ONLY = [("Arimo", "sans"), ("Tinos", "serif"), ("Cousine", "fixed"), ("Roboto Slab", "serif")]
 
 
 def _slug(name: str) -> str:
@@ -61,16 +61,13 @@ def _slug(name: str) -> str:
 
 
 FAMILIES: list[tuple[str, str, tuple[str, ...]]] = (
-    [(n, "sans", (f"ofl/{_slug(n)}",)) for n in _SANS]
-    + [(n, "serif", (f"ofl/{_slug(n)}",)) for n in _SERIF]
-    + [(n, "fixed", (f"ofl/{_slug(n)}",)) for n in _FIXED]
-    + [(n, c, (f"apache/{_slug(n)}",)) for n, c in _APACHE.items()]
+    [(n, c, (f"ofl/{_slug(n)}", f"apache/{_slug(n)}"))
+     for c, names in (("sans", _SANS), ("serif", _SERIF), ("fixed", _FIXED)) for n in names]
+    + [(n, c, (f"apache/{_slug(n)}",)) for n, c in _APACHE_ONLY]
 )
-FAMILIES = [(n, c, (*d, *(("apache/" + _slug(n),) if d[0].startswith("ofl/") else ()))) for n, c, d in FAMILIES]
-# The Roboto Slab family sits under apache/ only.
-FAMILIES.append(("Roboto Slab", "serif", ("apache/robotoslab",)))
 
-# Each name a CV may give a font that a pinned family replaces at the same metrics (or nearly: Georgia).
+# Each name a CV may give a font that a pinned family replaces at the same widths: a metric-compatible clone (Carlito,
+# Arimo, ...) or the same family under a newer name.
 ALIASES = {
     "Carlito": ["calibri"],
     "Caladea": ["cambria"],
@@ -82,6 +79,9 @@ ALIASES = {
     "Source Sans Pro": ["sourcesans3", "sourcesans"],
     "Source Serif Pro": ["sourceserif4"],
     "Muli": ["mulish"],
+}
+# A free family that only looks like the font: its line widths may differ.
+LOOKALIKES = {
     "Libre Baskerville": ["baskerville"],
     "Libre Franklin": ["franklingothic"],
     "Questrial": ["centurygothic"],
@@ -120,8 +120,15 @@ def find_static(folder: str):
     return reason
 
 
+_SHORT_STYLE = re.compile(r"[A-Za-z]+[a-z](BI|B|I|R)")   # GenBkBasB, GenBkBasBI: no hyphen, a style letter or two
+
+
 def weight_italic(name: str) -> tuple[int, bool]:
-    facts = style_extract.font_facts_from_name(name.removesuffix(".ttf"))
+    stem = name.removesuffix(".ttf")
+    short = _SHORT_STYLE.fullmatch(stem)
+    if short:
+        stem = "X-" + {"BI": "BoldItalic", "B": "Bold", "I": "Italic", "R": "Regular"}[short.group(1)]
+    facts = style_extract.font_facts_from_name(stem)
     return facts["weight"], facts["italic"]
 
 
@@ -141,7 +148,7 @@ def _ink_width(font, ch: str) -> int:
 
 
 def measure_font(path: Path) -> dict:
-    """x-height, cap height and the ink width of `l` as fractions of the em, and the advance of each of
+    """x-height and the ink width of `l` as fractions of the em, and the advance of each of
     `fonts.ADVANCE_CHARS` in 1/1000 em, all at size 1000 with Pillow (the ink boxes the PDF side reads too)."""
     from PIL import ImageFont
 
@@ -152,7 +159,6 @@ def measure_font(path: Path) -> dict:
 
     return {
         "x_height": round(statistics.median(-ink(c)[1] for c in "xzvw") / 1000, 3),
-        "cap_height": round(statistics.median(-ink(c)[1] for c in "HE") / 1000, 3),
         "stem": round(_ink_width(font, "l") / 1000, 3),
         "advance": [round(font.getlength(c)) for c in fonts.ADVANCE_CHARS],
     }
@@ -214,10 +220,11 @@ def main(argv=None) -> int:
         else:
             skipped[name] = why
             print(f"skipped {name}: {why}")
-    aliases = {a: target for target, keys in ALIASES.items() if target in families for a in keys}
+    tables = {name: {a: target for target, keys in table.items() if target in families for a in keys}
+              for name, table in (("aliases", ALIASES), ("lookalikes", LOOKALIKES))}
     write({"version": 1, "url": RAW, "families": dict(sorted(families.items())),
-           "aliases": dict(sorted(aliases.items()))}, args.out)
-    print(f"{len(families)} families, {len(aliases)} aliases; skipped: {', '.join(skipped) or 'none'}")
+           **{name: dict(sorted(t.items())) for name, t in tables.items()}}, args.out)
+    print(f"{len(families)} families, {len(tables['aliases'])} aliases, {len(tables['lookalikes'])} look-alikes; skipped: {', '.join(skipped) or 'none'}")
     return 0
 
 

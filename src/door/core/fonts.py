@@ -5,7 +5,7 @@ still static, with the sha256 of every file and of its licence, so a file is fet
 partly written. Static only: Chromium prints a variable font as nameless Type 3 text. `plan` is pure: the pin, the
 fonts `style_extract` found and, if there are any, their measurements (`tailoring.font_measure`); it picks per
 family, in this order, the family of the same name, a metric-compatible stand-in (Calibri to Carlito, Arial to
-Arimo, ...), the nearest pinned family of the same class by measured width, x-height and stem, else the class
+Arimo, ...; `aliases`), a free look-alike whose widths may differ (`lookalikes`), the nearest pinned family of the same class by measured width, x-height and stem, else the class
 default with `source: "none"`. Icon fonts are skipped (#148 traces their glyphs); a symbol font gets nothing.
 The embedded subset in a PDF is only measured, never shipped.
 """
@@ -18,8 +18,9 @@ import re
 import shutil
 import statistics
 import tempfile
-import urllib.request
 from pathlib import Path
+
+from door.core import chromium
 
 _PIN = Path(__file__).with_name("fonts_pin.json")
 ADVANCE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
@@ -38,15 +39,9 @@ def key(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
-def file_url(family: str, name: str, data: dict | None = None) -> str:
-    data = data or pin()
+def file_url(family: str, name: str, data: dict) -> str:
     fam = data["families"][family]
     return data["url"].format(commit=fam["commit"], dir=fam["dir"], name=name)
-
-
-def licence_url(family: str, data: dict | None = None) -> str:
-    data = data or pin()
-    return file_url(family, data["families"][family]["licence"]["name"], data)
 
 
 # ---------- plan ----------
@@ -62,7 +57,7 @@ _SYMBOL = re.compile(r"^(cm(sy|mi|ex|bsy)|msam|msbm|symbol|wingdings|webdings|za
 
 def _lookup(family: str, data: dict) -> tuple[str, str] | None:
     """(source, pinned family) for a font family named as a CV writes it: the pin's own name, else the stand-in
-    the aliases give, trying the name without a trailing PostScript `MT`/`PS` too."""
+    its aliases or look-alikes give, trying the name without a trailing PostScript `MT`/`PS` too."""
     k = key(family)
     names = {key(n): n for n in data["families"]}
     for candidate in dict.fromkeys((k, re.sub(r"(mt|ps)+$", "", k))):
@@ -70,6 +65,8 @@ def _lookup(family: str, data: dict) -> tuple[str, str] | None:
             return "name", names[candidate]
         if candidate in data["aliases"]:
             return "standin", data["aliases"][candidate]
+        if candidate in data["lookalikes"]:
+            return "lookalike", data["lookalikes"][candidate]
     return None
 
 
@@ -86,6 +83,17 @@ def _pick(files: list[dict], weight: int, italic: bool) -> dict:
     return min(same, key=lambda f: (abs(f["weight"] - weight), -f["weight"]))
 
 
+def _faked(files: list[dict], uses) -> list[list]:
+    """The (weight, italic) of `uses` that Chromium would have to synthesise from the file `_pick` gives (an italic
+    from an upright file, a bold from a lighter one), which it prints as nameless Type 3 text."""
+    out = []
+    for weight, italic in uses:
+        got = _pick(files, weight, italic)
+        if (italic and not got["italic"]) or (weight >= 600 and got["weight"] < 600):
+            out.append([weight, italic])
+    return out
+
+
 def _files(family: str, uses: list[tuple[int, bool]], data: dict) -> list[dict]:
     chosen: dict[str, dict] = {}
     for weight, italic in uses:
@@ -97,7 +105,8 @@ def _files(family: str, uses: list[tuple[int, bool]], data: dict) -> list[dict]:
 
 def _licence(family: str, data: dict) -> dict:
     lic = data["families"][family]["licence"]
-    return {"name": f"{family.replace(' ', '')}-{lic['name']}", "url": licence_url(family, data), "sha256": lic["sha256"]}
+    return {"name": f"{family.replace(' ', '')}-{lic['name']}", "url": file_url(family, lic["name"], data),
+            "sha256": lic["sha256"]}
 
 
 def _width_error(runs: list, advance: list[int]) -> float:
@@ -108,21 +117,22 @@ def _width_error(runs: list, advance: list[int]) -> float:
         if width > 0:
             predicted = (sum(table.get(c, mean) for c in text) / 1000 - BEARING) * size
             errors.append(abs(predicted - width) / width)
-    return statistics.median(errors)
+    return statistics.median(errors) if errors else 1.0   # no run to go by: as far off as can be
 
 
 def _own_measure(group: list[dict], measured: dict) -> dict | None:
     """The measurement of the family's regular face (else the nearest to it) with enough runs to go by."""
-    have = [f for f in group if f["font"] in measured and len(measured[f["font"]]["runs"]) >= MIN_RUNS]
+    have = [f for f in group if f["font"] in measured
+            and sum(1 for run in measured[f["font"]]["runs"] if run[1] > 0) >= MIN_RUNS]
     if not have:
         return None
     best = min(have, key=lambda f: (f["italic"], abs(f["weight"] - 400)))
     return measured[best["font"]]
 
 
-def _rank(klass: str, own: dict, data: dict) -> list[dict]:
-    """Every pinned family of the class by how near it is to the measured font: width first, a tie by x-height,
-    then stem."""
+def _rank(klass: str, own: dict, uses, data: dict) -> list[dict]:
+    """Every pinned family of the class by how near it is to the measured font: width first; families tied on width
+    go by how few of the faces the CV uses they would have to fake, then x-height, then stem."""
     scored = []
     for name, fam in data["families"].items():
         if fam["class"] != klass:
@@ -130,17 +140,21 @@ def _rank(klass: str, own: dict, data: dict) -> list[dict]:
         m = fam["metrics"]
         gap = lambda a, b: abs(a - b) / b if a and b else 0.0   # noqa: E731 - a measure that is missing counts for nothing
         scored.append({"family": name, "error": _width_error(own["runs"], m["advance"]),
-                       "x": gap(m["x_height"], own["x_height"]), "stem": gap(m["stem"], own["stem"])})
+                       "x": gap(m["x_height"], own["x_height"]), "stem": gap(m["stem"], own["stem"]),
+                       "faked": len(_faked(fam["files"], uses))})
     if not scored:
         return []
     best = min(s["error"] for s in scored)
-    tied = sorted((s for s in scored if s["error"] - best <= TIE), key=lambda s: (s["x"], s["stem"]))
+    tied = sorted((s for s in scored if s["error"] - best <= TIE), key=lambda s: (s["faked"], s["x"], s["stem"]))
     rest = sorted((s for s in scored if s["error"] - best > TIE), key=lambda s: s["error"])
     return tied + rest
 
 
 def _entry(family: str, source: str, resolved: str | None, reason: str, uses, data: dict, alternatives=()) -> dict:
-    return {"family": family, "source": source, "resolved": resolved, "reason": reason,
+    faked = _faked(data["families"][resolved]["files"], uses) if resolved else []
+    if faked:
+        reason += "; " + ", ".join(f"{'italic' if i else 'bold'} ({w})" for w, i in faked) + " faked: the family has no such file"
+    return {"family": family, "source": source, "resolved": resolved, "reason": reason, "faked": faked,
             "files": _files(resolved, uses, data) if resolved else [],
             "licence": _licence(resolved, data) if resolved else None,
             "alternatives": [{"family": a["family"], "error": round(a["error"], 3)} for a in alternatives],
@@ -154,8 +168,9 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
     found = _lookup(family, data)
     if found:
         source, resolved = found
-        reason = (f"{family}: the pinned {resolved}" if source == "name"
-                  else f"{family}: {resolved} has the same widths and is free")
+        reason = {"name": f"{family}: the pinned {resolved}",
+                  "standin": f"{family}: {resolved} has the same widths and is free",
+                  "lookalike": f"{family}: {resolved} looks alike and is free; line widths may differ"}[source]
         return _entry(family, source, resolved, reason, uses, data)
     klass = _class_of(group)
     default = CLASS_DEFAULT[klass] if CLASS_DEFAULT[klass] in data["families"] else None
@@ -163,7 +178,7 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
     if own is None:
         return _entry(family, "none", default,
                       f"{family}: no free copy, and no measurement of it to compare; {default or 'nothing'} stands in", uses, data)
-    ranked = _rank(klass, own, data)
+    ranked = _rank(klass, own, uses, data)
     if ranked and ranked[0]["error"] <= MAX_WIDTH_ERROR:
         best = ranked[0]
         return _entry(family, "nearest", best["family"],
@@ -176,9 +191,9 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
 
 def plan(fonts: list[dict], measured: dict | None = None, *, data: dict | None = None) -> list[dict]:
     """One entry per font family of `fonts` (what `style_extract.extract` returns), in order of use: ``family`` as the
-    CV names it, ``source`` (`name`, `standin`, `nearest`, `none`), ``resolved`` (the pinned family, or None),
-    ``reason``, ``files`` (name, weight, italic, size, sha256, url, `for`: the weights and styles the CV uses),
-    ``licence``, ``alternatives`` (the next nearest) and ``uses``. Icon fonts and fonts with no name are left out."""
+    CV names it, ``source`` (`name`, `standin`, `lookalike`, `nearest`, `none`), ``resolved`` (the pinned family, or None),
+    ``reason``, ``faked`` (the weights and styles the family has no file for, which Chromium would synthesise), ``files`` (name,
+    weight, italic, sha256, url, `for`: the weights and styles the CV uses), ``licence``, ``alternatives`` (the next nearest) and ``uses``. Icon fonts and fonts with no name are left out."""
     data = data or pin()
     groups: dict[str, list[dict]] = {}
     for f in fonts:
@@ -190,16 +205,11 @@ def plan(fonts: list[dict], measured: dict | None = None, *, data: dict | None =
 
 # ---------- fetch ----------
 
-def _http_get(url: str, to: Path) -> None:
-    with urllib.request.urlopen(url, timeout=60) as response, open(to, "wb") as out:  # noqa: S310 - https, pinned
-        shutil.copyfileobj(response, out)
-
-
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def fetch(plan: list[dict], dest: Path, *, fetch=_http_get) -> list[Path]:
+def fetch(plan: list[dict], dest: Path, *, fetch=None) -> list[Path]:
     """Download what `plan` names into `dest` (the font files and each family's licence beside them) and return the
     font files. A file there with the pinned hash is left alone; every download is checked against the pin before
     anything is moved in, so a bad one leaves `dest` as it was.
@@ -207,6 +217,7 @@ def fetch(plan: list[dict], dest: Path, *, fetch=_http_get) -> list[Path]:
     Raises:
         FontsError: a download failed or does not match the pinned sha256.
     """
+    get = fetch or chromium.http_get
     wanted: list[tuple[str, str, str]] = []   # (url, file name in dest, sha256)
     for entry in plan:
         wanted += [(f["url"], f["name"], f["sha256"]) for f in entry["files"]]
@@ -215,15 +226,13 @@ def fetch(plan: list[dict], dest: Path, *, fetch=_http_get) -> list[Path]:
     dest = Path(dest)
     missing = [w for w in wanted if not (dest / w[1]).is_file() or _sha256(dest / w[1]) != w[2]]
     if missing:
+        staging = None
         try:
             dest.mkdir(parents=True, exist_ok=True)
             staging = Path(tempfile.mkdtemp(prefix=".fonts.", suffix=".part", dir=dest))
-        except OSError as exc:
-            raise FontsError(str(exc)) from exc
-        try:
             for url, name, sha in missing:
                 part = staging / name
-                fetch(url, part)
+                get(url, part)
                 if _sha256(part) != sha:
                     raise FontsError(f"{name} does not match the pinned checksum; nothing was written")
             for _, name, _ in missing:
@@ -231,5 +240,6 @@ def fetch(plan: list[dict], dest: Path, *, fetch=_http_get) -> list[Path]:
         except OSError as exc:
             raise FontsError(str(exc)) from exc
         finally:
-            shutil.rmtree(staging, ignore_errors=True)
+            if staging:
+                shutil.rmtree(staging, ignore_errors=True)
     return [dest / f["name"] for entry in plan for f in entry["files"]]

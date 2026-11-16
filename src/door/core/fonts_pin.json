@@ -15,76 +15,65 @@
      "name": "Alegreya-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 322792,
      "sha256": "becbe4034a8c33322f5bed15c5c28f94aff1b6155a6d01b14212c480586e47cb"
     },
     {
      "name": "Alegreya-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 324684,
      "sha256": "dfcbeea98b037ca4fa4fe195db3b86c9de6bee585df14c4a960587637cc6321e"
     },
     {
      "name": "Alegreya-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 327132,
      "sha256": "b163d6ae7eca8e5dade4416076eec954ef98ebb331f4b681964d5ff0f0d22174"
     },
     {
      "name": "Alegreya-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 326428,
      "sha256": "c03d1aa4b8e454b3f02053d353550db2263e1bb2ad155b48f77f3b6d60f0d28e"
     },
     {
      "name": "Alegreya-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 322812,
      "sha256": "f3f1556c27bf92b53c0c54293cbc9872b98689eb27708139d81d69d93b637ff7"
     },
     {
      "name": "Alegreya-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 323660,
      "sha256": "95b26ca484441d56bc305b2e2fffde924c077da54232dfdfcec270e4c50cae5c"
     },
     {
      "name": "Alegreya-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 319164,
      "sha256": "b5f8340d36078797780df0a23392a24f4c67c27429303eedee40ffeff111f417"
     },
     {
      "name": "Alegreya-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 329560,
      "sha256": "0100e2c4ba9b82b6e9b92a66fe43c9a31dbfc39468be74ccc69ba07bac8ff097"
     },
     {
      "name": "Alegreya-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 322388,
      "sha256": "27556a7f74d51f86d63118333c1c1f13f82e11141073555a46622f89d3db3dab"
     },
     {
      "name": "Alegreya-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 318140,
      "sha256": "b2652047d486c44b9da87d5bf0899f989a2423d091e095cd5c03d3f35ce04c0f"
     }
    ],
    "metrics": {
     "x_height": 0.459,
-    "cap_height": 0.647,
     "stem": 0.202,
     "advance": [466, 508, 424, 537, 448, 330, 501, 534, 282, 250, 497, 244, 832, 548, 498, 528, 516, 383, 402, 330, 541, 445, 705, 475, 446, 460, 584, 597, 626, 703, 591, 512, 667, 754, 361, 327, 628, 507, 847, 719, 692, 551, 697, 611, 530, 546, 681, 610, 932, 656, 538, 568, 533, 342, 475, 416, 453, 430, 462, 420, 485, 455, 198]
    }
@@ -102,34 +91,29 @@
      "name": "AnonymousPro-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 153616,
      "sha256": "52895657e7d48860089ebfac63a27244f37a2218ec9c5019a0b37fe885c0fc0c"
     },
     {
      "name": "AnonymousPro-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 141924,
      "sha256": "4e811e1e3b60fc763fb24acd27781e72241a8380beb0ffa5e07af2b87133496d"
     },
     {
      "name": "AnonymousPro-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 144424,
      "sha256": "bc13ac34e9994128c61b54bf4e78a8adb439b543ea0b19761d159342599f441a"
     },
     {
      "name": "AnonymousPro-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 158100,
      "sha256": "46d8b9a5f4b38fc9d30f3cdd676d4c6f78a9bef949bb1a8304216cc731eb87f8"
     }
    ],
    "metrics": {
     "x_height": 0.455,
-    "cap_height": 0.637,
     "stem": 0.274,
     "advance": [546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546, 546]
    }
@@ -147,62 +131,53 @@
      "name": "Archivo-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 102212,
      "sha256": "5c435798c73395161244fbe9910edd47a7b5a00587ceafaf36ef891447430dcc"
     },
     {
      "name": "Archivo-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 104176,
      "sha256": "580d4d6d7dc5dcf4cf0f101848a7433bac9406b46529c49434ed4ace6b417358"
     },
     {
      "name": "Archivo-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 102604,
      "sha256": "4999d8f88541c6d0af267b7dadf5f6b57b1fe20c36346a598847c90449991541"
     },
     {
      "name": "Archivo-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 101416,
      "sha256": "a25eb3f8d1d49bab1c490e9c5ab2f74d8de988d42591509d1a3ee3e935ac510a"
     },
     {
      "name": "Archivo-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 104168,
      "sha256": "6e0b7cad20508845387b5acc6f48de32aa9d8ac01ed7559f0f84e3b4b3abb591"
     },
     {
      "name": "Archivo-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 99920,
      "sha256": "82015ef0c6737358190e7a51e36d34bf816685ca1107d12c80c2e906b5d1afbc"
     },
     {
      "name": "Archivo-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 101932,
      "sha256": "b7b7533e8237a034895f22b1540431f9c540f3564fdbdd0a0433e57f74e6c597"
     },
     {
      "name": "Archivo-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 104268,
      "sha256": "e4f0c0c49776e515a2918a96abc84eaa623d9f6de9055837b9ae9335247b361c"
     }
    ],
    "metrics": {
     "x_height": 0.526,
-    "cap_height": 0.686,
     "stem": 0.088,
     "advance": [556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278]
    }
@@ -220,34 +195,29 @@
      "name": "Arimo-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 438516,
      "sha256": "89a9a8f88a1da4cc2a96238a19239ef85e12205ea06122e226dd36932cbd482e"
     },
     {
      "name": "Arimo-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 435028,
      "sha256": "35c0e8abf09b2f8855bb8e90ffbd5bee362c19f12a159298053ecb493332fe9a"
     },
     {
      "name": "Arimo-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 440740,
      "sha256": "edcc229e781249b3f623061f5ac3f94b5fa6b880c85876f73b09b99b23ab6223"
     },
     {
      "name": "Arimo-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 436180,
      "sha256": "eafef8c99e94d10f17506c125e24d98a84256e0e665e6c659498eca96b19e148"
     }
    ],
    "metrics": {
     "x_height": 0.528,
-    "cap_height": 0.688,
     "stem": 0.089,
     "advance": [556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278]
    }
@@ -265,34 +235,29 @@
      "name": "Arvo-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 37652,
      "sha256": "6239b2edee762db0ab99343137c9ba15ae81fc843da2e76a0a395781748cc21f"
     },
     {
      "name": "Arvo-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 36872,
      "sha256": "fc29e57f5558873e41ca9ff9a9c77521565f12c6972756d0fbcc592e1f0f4edb"
     },
     {
      "name": "Arvo-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 35156,
      "sha256": "a2eb63a0771b8d13d8e54bf650a02aef813eeaa2e10f6298358e6b15d26c6686"
     },
     {
      "name": "Arvo-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 38780,
      "sha256": "f41bd41471ec2db7140351bdde614da5341524503598ff7fe79f3c89c13b605e"
     }
    ],
    "metrics": {
     "x_height": 0.506,
-    "cap_height": 0.741,
     "stem": 0.242,
     "advance": [547, 612, 546, 619, 574, 364, 586, 661, 321, 295, 628, 325, 1001, 667, 598, 610, 589, 469, 485, 372, 659, 537, 801, 532, 574, 451, 753, 660, 737, 736, 628, 607, 822, 900, 376, 333, 765, 633, 1069, 793, 780, 621, 780, 712, 591, 700, 757, 725, 1250, 732, 661, 593, 649, 419, 537, 542, 611, 556, 610, 526, 623, 620, 219]
    }
@@ -310,62 +275,53 @@
      "name": "Asap-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 108676,
      "sha256": "745e2e8251b5ba1b866662b6bd8723209c6a16c50e300cedffbe6d2833ce4394"
     },
     {
      "name": "Asap-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 117380,
      "sha256": "851802a810953264bb56d18168e224c46a77b17f48983754b58e7653c0a4c559"
     },
     {
      "name": "Asap-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 115536,
      "sha256": "f9b8bb4bb761c801d8f8efa983fdc92bb9bdffaec2af56f8194db7456a486363"
     },
     {
      "name": "Asap-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 108696,
      "sha256": "8e9830e13045f27b5a3ae41a3d04d534cb357286fac72ea9ec644615fd076605"
     },
     {
      "name": "Asap-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 117556,
      "sha256": "eb394eda4e773856c63056db8f482f8e898e73123f9586ace0873d012381ca83"
     },
     {
      "name": "Asap-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 107292,
      "sha256": "791d08f3eae21196ab004b642e252792e135ac82ed5775a5ff7c1af521aedfc4"
     },
     {
      "name": "Asap-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 109036,
      "sha256": "cd10615156b551688005e27c2817d38a118babca9685f7d28cc67817d0c73d06"
     },
     {
      "name": "Asap-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 118512,
      "sha256": "64fc7f004543fecfcbbff56eb04d0df9373d4ba024c18010c870a3a2f4948e89"
     }
    ],
    "metrics": {
     "x_height": 0.525,
-    "cap_height": 0.701,
     "stem": 0.202,
     "advance": [545, 569, 485, 565, 539, 325, 546, 565, 265, 276, 521, 297, 848, 557, 569, 573, 566, 366, 413, 342, 557, 485, 747, 485, 481, 489, 613, 593, 619, 695, 546, 503, 672, 733, 283, 402, 576, 484, 843, 719, 731, 570, 731, 610, 500, 549, 712, 617, 910, 611, 559, 616, 535, 535, 535, 535, 535, 535, 535, 535, 535, 535, 240]
    }
@@ -383,132 +339,113 @@
      "name": "Barlow-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 111116,
      "sha256": "fc4f74e8475b181003f7597450c62d630622b417e367a6842972b286c49f9440"
     },
     {
      "name": "Barlow-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 114596,
      "sha256": "109ad3b4fff5bfd338d0fbc908e68d601893b97b9b1d8ae698aaab2209f6a618"
     },
     {
      "name": "Barlow-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 108220,
      "sha256": "84e6a4d61e7c3e21f3c50ea6a4f7e5303a3467864c038be6ea3759bab8d547f9"
     },
     {
      "name": "Barlow-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 111996,
      "sha256": "079dcee4a53544177f3b16354b27b40b521e22861a40084ab4d052f0289ed9e8"
     },
     {
      "name": "Barlow-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 110228,
      "sha256": "5234d91030e1bb89525cbaccc4386892c3fe005a0582c705264ce3572d96a1a1"
     },
     {
      "name": "Barlow-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 113112,
      "sha256": "5a78d6f6b7281ac38af2479d87209712457a91478019f9542abfd78fe8bdb332"
     },
     {
      "name": "Barlow-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 102504,
      "sha256": "bd47db14c6305ebb647a3f0c6afc0370ffd4e3368f12405c8cd141683a4c2b05"
     },
     {
      "name": "Barlow-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 107988,
      "sha256": "8501cb7dafc8a5941fa559854a2e53ca8220bb27be29071e7b5767240dac177f"
     },
     {
      "name": "Barlow-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 109624,
      "sha256": "70cf45c354af39e55082fd506e748cc6a0a1812949875f99ded3f76bf691e4ca"
     },
     {
      "name": "Barlow-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 103136,
      "sha256": "20b1375c0c6606701867bf34c7cc97f44087850567a36587d25abb9510b183cc"
     },
     {
      "name": "Barlow-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 108924,
      "sha256": "567f200fdd53e848cc5966f8bf3fe5aefc6eb5a5f15149a47412777b8cc4c203"
     },
     {
      "name": "Barlow-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 103536,
      "sha256": "f8906f762cb73dca441da034bc363b2d8e2e68bc10d5c05e58717646c20cc4b4"
     },
     {
      "name": "Barlow-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 109184,
      "sha256": "dbf6d2df1348c4a91874a15bbe7b3f3d893d491bd2ae73370795afe157c993b9"
     },
     {
      "name": "Barlow-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 104068,
      "sha256": "95aa02c7c43096e0dd44d787ba6216864a67157e402adab59b35572e0c1577ea"
     },
     {
      "name": "Barlow-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 108348,
      "sha256": "86577cb32f8abe3673db53ca0f4221e6856751a4f6730c867e00f720f8bb1fc5"
     },
     {
      "name": "Barlow-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 111820,
      "sha256": "277b45fc0b9f066bf77e88e5d147baae8d1ad7441cedee1dc305fc3dc6e84ce7"
     },
     {
      "name": "Barlow-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 101704,
      "sha256": "103671e5a8daf1c02ac2cb35c61fa30088e055e5ff718d51b4fb20012581d252"
     },
     {
      "name": "Barlow-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 107296,
      "sha256": "4e948103b1bf05649baaea64747e410dc21671ad56eafd5dd3e6f2062b5ff35d"
     }
    ],
    "metrics": {
     "x_height": 0.506,
-    "cap_height": 0.7,
     "stem": 0.071,
     "advance": [511, 546, 520, 546, 533, 356, 535, 539, 255, 245, 501, 230, 827, 539, 545, 552, 552, 364, 481, 364, 536, 475, 721, 477, 461, 445, 607, 627, 607, 618, 605, 568, 613, 654, 259, 577, 611, 568, 715, 676, 622, 592, 576, 612, 584, 569, 648, 589, 878, 589, 567, 549, 565, 350, 536, 515, 551, 514, 515, 473, 521, 521, 200]
    }
@@ -526,27 +463,23 @@
      "name": "Bitter-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 25732,
      "sha256": "917e378ba9d105bcc360431c196735310dad63676a44e7067055d11b43a31d14"
     },
     {
      "name": "Bitter-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 39252,
      "sha256": "e40756137ac02f3d5fa8a9f0be0d8632d1a0fbe82858c74b9e76d6fd50d472fd"
     },
     {
      "name": "Bitter-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 90116,
      "sha256": "1e12bf5775872f2769263436e41c4552ff10fe39fb887ce47b30ab681a3bea08"
     }
    ],
    "metrics": {
     "x_height": 0.53,
-    "cap_height": 0.7,
     "stem": 0.287,
     "advance": [565, 585, 510, 615, 530, 440, 585, 650, 335, 289, 585, 317, 980, 665, 570, 615, 580, 465, 471, 395, 650, 559, 830, 565, 577, 505, 725, 630, 645, 730, 625, 570, 751, 795, 355, 359, 710, 530, 875, 790, 755, 590, 755, 650, 598, 565, 790, 700, 1035, 700, 645, 615, 645, 512, 570, 550, 610, 530, 600, 502, 590, 600, 230]
    }
@@ -564,62 +497,53 @@
      "name": "Cabin-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 102476,
      "sha256": "85bc3031aabb020dc98144ce81deb86b1fefe83c483af19cd5dea9e0e1a1390e"
     },
     {
      "name": "Cabin-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 103948,
      "sha256": "a63061f859a3ee91e781833bb674e0231f68494a1572e14b18432b22a67f3671"
     },
     {
      "name": "Cabin-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 103544,
      "sha256": "5b376cbd2026651712668dd0af354fe887f59b299484fa223197fb8e6244811a"
     },
     {
      "name": "Cabin-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 105060,
      "sha256": "bff11c3223a96fec3a9042fe4464dc04eb0943ccaadf686cf8850a3fd480d7ee"
     },
     {
      "name": "Cabin-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 104932,
      "sha256": "f70430094ed4c6d167fd8f7cdc8fbd71eba14b9107a890083b10bf8d77522c58"
     },
     {
      "name": "Cabin-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 104776,
      "sha256": "4c2e1fa3c5fb75fe902ea787cddfe572f8afc700a8b291e6719cd3f8295ad21e"
     },
     {
      "name": "Cabin-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 104932,
      "sha256": "59746e9042f7bf09a2470a0eec96a08a3840862038b47f2a1378df0d1d677fda"
     },
     {
      "name": "Cabin-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 106184,
      "sha256": "bb653804155eb719f704f59b432c719668854c1f5d0d3e810946c744a9df4ec7"
     }
    ],
    "metrics": {
     "x_height": 0.49,
-    "cap_height": 0.7,
     "stem": 0.169,
     "advance": [480, 555, 454, 555, 512, 331, 498, 542, 212, 212, 448, 236, 877, 559, 550, 557, 557, 316, 414, 337, 524, 492, 725, 474, 505, 471, 616, 597, 616, 727, 554, 523, 672, 706, 255, 255, 566, 501, 812, 704, 770, 572, 770, 603, 584, 533, 724, 610, 946, 593, 567, 549, 698, 326, 524, 541, 578, 541, 568, 503, 606, 568, 225]
    }
@@ -637,34 +561,29 @@
      "name": "Caladea-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 84492,
      "sha256": "ae3cb2dcbc925809dd29d2a44e9802211cab66be541bacbfc9c08c74b27c3742"
     },
     {
      "name": "Caladea-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 83356,
      "sha256": "ccabaa7b7e2fdf253d2b1a5fa699dd8a3df8d835a9eb285ad82631a677eb76c0"
     },
     {
      "name": "Caladea-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 83780,
      "sha256": "4359a8e24f748b6447b1ff6d7a174febe70961d29f8bb8634b56dacd740a3deb"
     },
     {
      "name": "Caladea-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 81600,
      "sha256": "f1e899278b7b4491aba5b6a8253c4b04c050cc59b21865be5c37559a775153cd"
     }
    ],
    "metrics": {
     "x_height": 0.467,
-    "cap_height": 0.667,
     "stem": 0.225,
     "advance": [470, 520, 421, 520, 441, 313, 459, 554, 277, 255, 525, 271, 813, 558, 480, 520, 501, 396, 392, 325, 546, 470, 720, 483, 482, 428, 599, 579, 519, 625, 540, 509, 539, 696, 343, 304, 630, 501, 888, 693, 599, 533, 599, 613, 453, 557, 687, 598, 889, 571, 557, 507, 517, 362, 472, 461, 492, 475, 470, 470, 485, 478, 220]
    }
@@ -682,27 +601,23 @@
      "name": "Cardo-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 348320,
      "sha256": "6c9383b1471936ee83b08b67bf79f0ed92bee3d5e8363ec3ba21309d5a272e36"
     },
     {
      "name": "Cardo-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 262388,
      "sha256": "52c51cfde3a827dd9428511c4a968699952b8a917c5f0e97be782cbfa1880f9c"
     },
     {
      "name": "Cardo-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 400468,
      "sha256": "bcb81f376f1c3892c7026dabf2beafbd1a7ee8ae95d132ee7d4ff7d7c3988261"
     }
    ],
    "metrics": {
     "x_height": 0.44,
-    "cap_height": 0.689,
     "stem": 0.228,
     "advance": [432, 537, 456, 532, 454, 305, 560, 549, 281, 282, 535, 254, 845, 568, 542, 533, 535, 365, 335, 316, 548, 506, 802, 497, 529, 447, 711, 680, 764, 812, 617, 569, 791, 836, 341, 338, 744, 605, 942, 853, 865, 591, 863, 692, 501, 734, 816, 735, 1104, 786, 745, 713, 512, 512, 512, 512, 512, 512, 512, 512, 512, 512, 269]
    }
@@ -720,34 +635,29 @@
      "name": "Carlito-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 682468,
      "sha256": "bb5d20f79b82599ec72983597437373a80f2d2085fa91fc144fd74e876a594db"
     },
     {
      "name": "Carlito-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 808508,
      "sha256": "b32928186c119599e03ca6a1ffc680fdcb7fac95772f4b95d989cf6cd3861517"
     },
     {
      "name": "Carlito-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 615236,
      "sha256": "0b019225e58d702bfedcbd35c21696769f8ee115cb6343f84c2f240312450d1c"
     },
     {
      "name": "Carlito-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 628032,
      "sha256": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595"
     }
    ],
    "metrics": {
     "x_height": 0.478,
-    "cap_height": 0.642,
     "stem": 0.087,
     "advance": [479, 525, 423, 525, 498, 305, 471, 525, 230, 239, 455, 230, 799, 525, 527, 525, 525, 349, 391, 335, 525, 452, 715, 433, 453, 395, 579, 544, 533, 615, 488, 459, 631, 623, 252, 319, 520, 420, 855, 646, 662, 517, 673, 543, 459, 487, 642, 567, 890, 519, 487, 468, 507, 507, 507, 507, 507, 507, 507, 507, 507, 507, 226]
    }
@@ -765,69 +675,59 @@
      "name": "Catamaran-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 69864,
      "sha256": "b380d9847e50968132d5b34b5de8c92347f161707160159ae13514d6c542b4b4"
     },
     {
      "name": "Catamaran-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 71156,
      "sha256": "e88b63e5b808c1297246739f560312e77af65cfcbef2e9693da94b78d352be6b"
     },
     {
      "name": "Catamaran-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 69648,
      "sha256": "202fcb25731f0396271d3e1bcb3539280039f622cff45014d9eb58f401921b22"
     },
     {
      "name": "Catamaran-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 70144,
      "sha256": "09c053e2c62be31d91441e40227d970bd5e3db688c98c5e7c19dec69d4c3b327"
     },
     {
      "name": "Catamaran-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 70460,
      "sha256": "ad1e561798414ef05396cfb5f0725f883ab5641521ed70f0a02163dc7c47c391"
     },
     {
      "name": "Catamaran-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 70176,
      "sha256": "c241a2b87ffdbbaa2f0695460998e14ca0e128df8c7cf789d2885eea754b4c7e"
     },
     {
      "name": "Catamaran-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 71344,
      "sha256": "e854cebaef3f52385c4d0f68302caa8723fb39a39bc78ec3599b189826f16806"
     },
     {
      "name": "Catamaran-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 70076,
      "sha256": "88620fc7c0aa8ff82c5f4ade70dc2fb16902509cccfd09dcde39657da2817c1e"
     },
     {
      "name": "Catamaran-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 69816,
      "sha256": "0bb3e460c85cef0d35a93550762676cb50ad2799aef8aead051a922a1de9d015"
     }
    ],
    "metrics": {
     "x_height": 0.499,
-    "cap_height": 0.682,
     "stem": 0.079,
     "advance": [488, 529, 458, 530, 499, 299, 526, 539, 205, 228, 472, 224, 818, 529, 536, 525, 526, 324, 420, 320, 529, 456, 672, 450, 456, 433, 609, 590, 557, 671, 523, 481, 627, 663, 264, 255, 609, 506, 763, 700, 725, 562, 725, 592, 513, 563, 682, 609, 857, 589, 563, 562, 593, 312, 479, 463, 524, 496, 511, 440, 516, 511, 233]
    }
@@ -845,76 +745,65 @@
      "name": "Cormorant-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 469620,
      "sha256": "4263a6069018c2cf729e38c04b7a703b4dcdc5fe87d5cb0671147d3bc92c9722"
     },
     {
      "name": "Cormorant-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 325520,
      "sha256": "61804946c225106deec7f399f80b0f6edeab098c2fc857e9e8754c4de1ad72af"
     },
     {
      "name": "Cormorant-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 324196,
      "sha256": "f36d6768db65f1ce24aa0bdcb4c5dec1d21795bb110f44ed50ba254e85963538"
     },
     {
      "name": "Cormorant-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 478500,
      "sha256": "007d53a57a9fb568c10195f6fb8a29dc0214d7ccb723232adbfd914b1edbb14b"
     },
     {
      "name": "Cormorant-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 324176,
      "sha256": "e67ca8e956d688f46361abe3033e7681a175c0dbc9a94db3afa58ac089bd303a"
     },
     {
      "name": "Cormorant-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 475204,
      "sha256": "aadf9c483afe6de2300d3dc7e33392cd91a52585a7a08b3a42a51df63b3d07e6"
     },
     {
      "name": "Cormorant-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 327308,
      "sha256": "5946f2a380956eea5f0232d4acadfbe42776a8d97f2fe31cf4464d2e82c4243d"
     },
     {
      "name": "Cormorant-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 480840,
      "sha256": "ebb587db8619df066692617e3cd2cd1aae1d241df2c2065a74192da9f23f9e49"
     },
     {
      "name": "Cormorant-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 471652,
      "sha256": "c489a4e44d57e3b4f05f25ac8e98d3ab0ab73371ac81e6594e17c264a3ca9095"
     },
     {
      "name": "Cormorant-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 323856,
      "sha256": "a9529b0ed56363681c8a83992340f26848f24d42856be34edf07b4a789e810da"
     }
    ],
    "metrics": {
     "x_height": 0.386,
-    "cap_height": 0.625,
     "stem": 0.209,
     "advance": [419, 510, 411, 512, 408, 305, 433, 499, 273, 257, 491, 258, 763, 517, 479, 511, 488, 364, 338, 338, 493, 434, 671, 439, 435, 405, 702, 558, 669, 691, 537, 509, 714, 759, 332, 322, 650, 533, 836, 727, 766, 543, 766, 673, 491, 634, 698, 666, 931, 652, 609, 595, 477, 332, 402, 389, 451, 409, 465, 429, 489, 465, 234]
    }
@@ -932,76 +821,65 @@
      "name": "CormorantGaramond-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 786744,
      "sha256": "2884048acfab68270fe2e5166dbdda0adbbb1032f31fe4928112167454395398"
     },
     {
      "name": "CormorantGaramond-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 475988,
      "sha256": "a262693f28727bc2e50859f6a3cc94992e85b4df2ffec7ca3b846b6b5ef0c985"
     },
     {
      "name": "CormorantGaramond-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 474388,
      "sha256": "50fccbdc299c232d25dd66868a2a2b55fd0e85d6238a58638986c5f66deca1bf"
     },
     {
      "name": "CormorantGaramond-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 788248,
      "sha256": "721d7cadaf01cc69f8e8bedf74d9a1a50eb417e29a5168464b319b55a9ff194d"
     },
     {
      "name": "CormorantGaramond-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 476708,
      "sha256": "a98bf4bfff73b72ddf4b63f417b4e557a5d0d052f4b2a8ec91c18446007ea911"
     },
     {
      "name": "CormorantGaramond-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 785888,
      "sha256": "c20509089926d9db5e5487fa1c06bca90e2563d31dc2d09670bb9f43205288f2"
     },
     {
      "name": "CormorantGaramond-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 474760,
      "sha256": "d3360ddd9d7ecaa5ec4fb12c5e08a6d2324688d8aacd977b0fe27005ec492e19"
     },
     {
      "name": "CormorantGaramond-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 787200,
      "sha256": "3f20a07914c56de160a4057f8fa48ec5372d77edf35c168fe4b0547b66502106"
     },
     {
      "name": "CormorantGaramond-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 786492,
      "sha256": "159bda7bac64c80f02612c163bc21da028e9f990cbc4d469005de694428aee83"
     },
     {
      "name": "CormorantGaramond-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 475232,
      "sha256": "a60241b18c93f5702a380e1e13cdc8ea87c44be6e63fe98b901854c9eadf79cb"
     }
    ],
    "metrics": {
     "x_height": 0.386,
-    "cap_height": 0.624,
     "stem": 0.209,
     "advance": [419, 510, 411, 512, 408, 305, 445, 499, 273, 257, 491, 258, 763, 517, 479, 511, 488, 364, 338, 338, 493, 434, 671, 439, 435, 405, 702, 558, 686, 691, 537, 509, 713, 759, 332, 322, 650, 533, 835, 727, 766, 543, 766, 673, 491, 634, 698, 666, 931, 652, 609, 595, 477, 332, 402, 389, 451, 409, 465, 429, 489, 465, 234]
    }
@@ -1019,34 +897,29 @@
      "name": "CourierPrime-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 72856,
      "sha256": "ff1f38786c849d1c41fa8e447960abdb2bd75fdfb0cfcdeb524fad65a5af3638"
     },
     {
      "name": "CourierPrime-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 80872,
      "sha256": "3355273f3ea6d6362658f9564f4e83d59e156cf1a182e3c1592b5c5943627dcc"
     },
     {
      "name": "CourierPrime-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 79980,
      "sha256": "f1b9a5829789f7e56432a9f3bc7665ef4531dbba1c112639e48bef39621a006b"
     },
     {
      "name": "CourierPrime-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 71188,
      "sha256": "72f793376f8e2841656bf21d77a5de010f2929bd6956a22ee848ad0c7eb978af"
     }
    ],
    "metrics": {
     "x_height": 0.452,
-    "cap_height": 0.58,
     "stem": 0.445,
     "advance": [600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600]
    }
@@ -1064,34 +937,29 @@
      "name": "Cousine-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 296624,
      "sha256": "42d14baaf1802f8edf7659346a8574b41c4c78e264eb81cdb0891ca6686354ce"
     },
     {
      "name": "Cousine-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 272700,
      "sha256": "ef65b8624e7993977feb9f9ba18f514a1fa9adc4e1c4737c8839574685c188ae"
     },
     {
      "name": "Cousine-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 269840,
      "sha256": "9b2b98e5d389fe74968af2abb440ac4b6fcd24e2a1aba5ed895b0337b6b0b5e6"
     },
     {
      "name": "Cousine-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 308360,
      "sha256": "69e1ea59eb770014204e5174f805750f9a793db4a2531e6516b30b7460d470b3"
     }
    ],
    "metrics": {
     "x_height": 0.528,
-    "cap_height": 0.659,
     "stem": 0.48,
     "advance": [600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600]
    }
@@ -1109,48 +977,41 @@
      "name": "CrimsonText-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 112796,
      "sha256": "a3a0765fc5e8d0b49b540a23aefe0184887dd79f06a0bdf4db7035cea6befa93"
     },
     {
      "name": "CrimsonText-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 115112,
      "sha256": "467013e913e46304760461c46661c994b2aa1769e3fbd31371026300315181b4"
     },
     {
      "name": "CrimsonText-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 110216,
      "sha256": "4ed1699ac7c64e8b3d33f6bb8323c3d7206b0d7bacb9ee2d65c697e6014d29de"
     },
     {
      "name": "CrimsonText-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 107200,
      "sha256": "48e6c5d5ad1d01599d374ecb817e15890d1feb3b8a3a88e527d44c90389e1f06"
     },
     {
      "name": "CrimsonText-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 111176,
      "sha256": "802e84000740fec2a9fbe0ae09b6b6811bd86a78a0173b15d44450a1530e9410"
     },
     {
      "name": "CrimsonText-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 112120,
      "sha256": "8f4a0db2d181ba4493a4ad53042edc3b57ab50fedd8fa32c7b2ad57173208543"
     }
    ],
    "metrics": {
     "x_height": 0.424,
-    "cap_height": 0.648,
     "stem": 0.217,
     "advance": [413, 487, 396, 485, 420, 294, 463, 518, 275, 258, 484, 245, 781, 530, 498, 499, 478, 371, 351, 307, 505, 481, 717, 456, 443, 404, 668, 578, 641, 705, 558, 538, 698, 690, 311, 314, 677, 555, 889, 704, 711, 532, 707, 645, 480, 653, 702, 692, 1051, 672, 634, 586, 504, 369, 473, 448, 473, 474, 473, 472, 473, 473, 224]
    }
@@ -1168,48 +1029,41 @@
      "name": "DMSans-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 73452,
      "sha256": "9d801f8a966a9860a9fd2921a54362a7d7058c7821e2cafc7f75ed055884a034"
     },
     {
      "name": "DMSans-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 74908,
      "sha256": "3736512ae41892adcf246ba8305f14e16e2157b56436f2da4837d4824e4c0418"
     },
     {
      "name": "DMSans-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 75108,
      "sha256": "53992066f9370ce6738551b753e347373ff6f318ce7c9f7f59e73f99cd7996f3"
     },
     {
      "name": "DMSans-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 73300,
      "sha256": "4f6a909db85e054e53cd180fe781cfe048416cdd87f7365ac2871c8d646a9033"
     },
     {
      "name": "DMSans-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 74800,
      "sha256": "3768622886d0984cee17b249e3340655bb864b827d9702014a160fbdd5a6b8d6"
     },
     {
      "name": "DMSans-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 73524,
      "sha256": "1adb096acaa3d14f5ed678e99b808b0c8800f62cb342fa5c276298ad8030b458"
     }
    ],
    "metrics": {
     "x_height": 0.496,
-    "cap_height": 0.7,
     "stem": 0.084,
     "advance": [541, 628, 570, 628, 569, 333, 552, 572, 239, 242, 504, 222, 895, 572, 592, 628, 628, 363, 500, 387, 572, 521, 754, 498, 556, 452, 664, 602, 720, 696, 564, 534, 757, 679, 232, 499, 582, 525, 847, 689, 784, 579, 789, 593, 578, 560, 656, 668, 967, 602, 579, 535, 693, 302, 572, 588, 605, 612, 630, 533, 610, 630, 265]
    }
@@ -1227,20 +1081,17 @@
      "name": "Domine-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 146200,
      "sha256": "d3a54ebdf4811bb8aee01c9617e418ce9e5e0e8abcfd675f4b51adb2ad19446e"
     },
     {
      "name": "Domine-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 137880,
      "sha256": "506e373ccfe036ede8b8488e1beb2b86c3839ebe32b7a2dba43270164fcd443b"
     }
    ],
    "metrics": {
     "x_height": 0.54,
-    "cap_height": 0.72,
     "stem": 0.251,
     "advance": [537, 601, 536, 620, 544, 363, 560, 644, 312, 284, 596, 308, 975, 655, 582, 619, 601, 458, 503, 341, 633, 593, 877, 573, 590, 538, 721, 684, 684, 766, 685, 636, 753, 803, 374, 583, 741, 629, 961, 801, 764, 631, 764, 706, 599, 658, 772, 716, 1041, 740, 678, 647, 674, 400, 589, 580, 559, 550, 603, 513, 572, 603, 254]
    }
@@ -1258,76 +1109,65 @@
      "name": "EBGaramond-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 617816,
      "sha256": "d3c03678a47809d90649e48ef0c37f2d65c6f000360aa21f4172dba3cb7736a2"
     },
     {
      "name": "EBGaramond-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 596316,
      "sha256": "6fad92145604e8808d8b2677472908caeab73e37b1188fcc69af20d153188fe1"
     },
     {
      "name": "EBGaramond-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 620560,
      "sha256": "80275782272b75a3fa6b6ed93d29f15bb457d0c321e928564a38e2b38c07375a"
     },
     {
      "name": "EBGaramond-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 589392,
      "sha256": "04db74870ae2b69df0d2c28c50387faf50d09df624aeed0642fdb96d9f757210"
     },
     {
      "name": "EBGaramond-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 574704,
      "sha256": "1712f5c2115883a76450335bb4122c06a0fce3dc05c7affb78fb77de8d4322de"
     },
     {
      "name": "EBGaramond-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 614200,
      "sha256": "9c465f144798eb42245e914fc1fd8ee0056474db03d64f147ffbf5e6d08ef1a4"
     },
     {
      "name": "EBGaramond-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 611072,
      "sha256": "3957b21a09f2bf29932467c6d7835427f9964c304f16f46f9280ce0c9809bd01"
     },
     {
      "name": "EBGaramond-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 582928,
      "sha256": "b7ea01de395bc600d5490105b11ed25f4c885d25f69c6302a22a44d4b3b53542"
     },
     {
      "name": "EBGaramond-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 617056,
      "sha256": "12d930f3240bf388920865289166bd5de641e0880468575cd8386e161ca1f4ff"
     },
     {
      "name": "EBGaramond-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 592892,
      "sha256": "0d9cd9dd9a945abe189e3b34e8c8da3430ba21ac8532f88cf8b82b1abea56006"
     }
    ],
    "metrics": {
     "x_height": 0.405,
-    "cap_height": 0.653,
     "stem": 0.202,
     "advance": [399, 515, 407, 506, 390, 318, 435, 515, 245, 226, 469, 240, 778, 528, 495, 519, 522, 334, 323, 314, 527, 438, 685, 430, 438, 377, 692, 587, 710, 754, 564, 512, 729, 810, 340, 340, 681, 584, 901, 792, 763, 552, 763, 713, 465, 670, 738, 672, 916, 707, 578, 603, 480, 480, 480, 480, 480, 480, 480, 480, 480, 480, 200]
    }
@@ -1345,27 +1185,23 @@
      "name": "FiraMono-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 206488,
      "sha256": "61f0ca3ae72a83deb807040f314e1b8b4e40b08213df243db9fd430095cab305"
     },
     {
      "name": "FiraMono-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 173428,
      "sha256": "a5bc1a2db2f65946049de615ecc08603d788eb0c02b520f4ed95f05a5cc58532"
     },
     {
      "name": "FiraMono-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 174596,
      "sha256": "2e00b0cf3106a3d792f35711b7722740b76c02ee7300ea8c60f940584b7a8ac9"
     }
    ],
    "metrics": {
     "x_height": 0.527,
-    "cap_height": 0.689,
     "stem": 0.443,
     "advance": [600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600]
    }
@@ -1383,132 +1219,113 @@
      "name": "FiraSans-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 507204,
      "sha256": "0ab27e9178d7f74898dd26e3a5f10eb7922bb2a88a2903e00796c4f7c7e08cc0"
     },
     {
      "name": "FiraSans-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 527560,
      "sha256": "81bc0f5fac5b1ba562c1625319676e8202fec01b47e1e09b35db88210c30cf68"
     },
     {
      "name": "FiraSans-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 489720,
      "sha256": "a4d8e149ecdd4874a0726eb0af894488b3b31c423d6b0017c8f415ed1b795b45"
     },
     {
      "name": "FiraSans-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 506864,
      "sha256": "1b96c16db9819bcaa9d588068bb397bb6e977c4874965d3d50d789a1943757eb"
     },
     {
      "name": "FiraSans-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 497028,
      "sha256": "0a26cff904d790f7ade2bffaf227b5fecdbeffdac1695fdbd640e086fe4e7152"
     },
     {
      "name": "FiraSans-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 536744,
      "sha256": "eb26df1afeec1f817977c8729b4a1ba5ef07d7c821d39cbff6348e491c748f5f"
     },
     {
      "name": "FiraSans-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 447324,
      "sha256": "f575442d8b863086599208c9b69d0e345a0936f3ec27b12b3fbc41526b56e838"
     },
     {
      "name": "FiraSans-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 463000,
      "sha256": "f4d66af27c828a269d5df483a488404605957d0f4aeead8ebbc9a20dad24b115"
     },
     {
      "name": "FiraSans-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 472396,
      "sha256": "a4204f9a8029c1c55daa5385ac95936f74abea3e232770f1fb2862a19d1dfa13"
     },
     {
      "name": "FiraSans-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 449660,
      "sha256": "e2172f4a23e9be22f977c34de3897d890401bbc5e9c47df968dfa2c01fb32235"
     },
     {
      "name": "FiraSans-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 463212,
      "sha256": "ca4228bdd77761e229e74e3e30f3a3786a75275b77e675decb75f7d356d7f7b4"
     },
     {
      "name": "FiraSans-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 457248,
      "sha256": "cbc1842cbed8c1d1146ba7c9db97d8f28c9bedfd25f41c5b0e1259ca48622328"
     },
     {
      "name": "FiraSans-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 472624,
      "sha256": "d892b7a6e874d839bc7e712b1d57cf64bcf8013ae143c3eab09e0fd9a0604411"
     },
     {
      "name": "FiraSans-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 456996,
      "sha256": "c29556a2719bf613ef3d5e070e40d903a8965d9c081beca1375dc1e6e0f93c23"
     },
     {
      "name": "FiraSans-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 489028,
      "sha256": "db0321f83eb3e9f527b8af384a1b3fefdc1039cf2b06fd39b3f61492bda9561c"
     },
     {
      "name": "FiraSans-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 506544,
      "sha256": "97dc5696fe0aabcabf7e041527e0ca39215661cb8174cd1a92c01d9fe224c73d"
     },
     {
      "name": "FiraSans-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 442852,
      "sha256": "cd9d582ffae151bc616b26cf84b3c4912d04363b9c5e1b3e599b66e0e7d532a4"
     },
     {
      "name": "FiraSans-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 457188,
      "sha256": "7275879630990f5bc13a3c3fcd68eea1c902aa8827769de4985390104a71a149"
     }
    ],
    "metrics": {
     "x_height": 0.527,
-    "cap_height": 0.689,
     "stem": 0.183,
     "advance": [544, 594, 478, 598, 545, 335, 520, 586, 282, 280, 512, 293, 857, 586, 584, 594, 598, 386, 467, 361, 582, 492, 717, 485, 492, 437, 573, 608, 560, 644, 535, 491, 631, 680, 295, 305, 589, 498, 778, 683, 692, 581, 691, 605, 545, 517, 662, 556, 826, 540, 550, 522, 558, 433, 495, 499, 532, 501, 533, 444, 551, 525, 265]
    }
@@ -1526,62 +1343,53 @@
      "name": "Gelasio-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 122348,
      "sha256": "fc97890f6b059afb5c3ee72ae58707a89281899ecd6e4ad11bf91576ee4c1d95"
     },
     {
      "name": "Gelasio-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 131440,
      "sha256": "839de43ec55423ed6f592150a1bb7629bc0d6f874652fdd86a0f019a332a60b2"
     },
     {
      "name": "Gelasio-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 132116,
      "sha256": "0df93b4eb365dbe93b4b22edbded45460add10defc97961c57afb350e069a05b"
     },
     {
      "name": "Gelasio-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 124120,
      "sha256": "0b580cd06b49e5f61c3c3e5cfd164bed6fd7aaa31e079c8a663b308c1ff68b46"
     },
     {
      "name": "Gelasio-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 133680,
      "sha256": "cebd1357051b97c2c3ceb8117a23bf6e42b782a6f4318f911ea80c8c696047c2"
     },
     {
      "name": "Gelasio-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 123176,
      "sha256": "5f99733733e8ee2d96409f28eba7888dc5ff7626eb40f9df7d9b37b15642b544"
     },
     {
      "name": "Gelasio-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 121200,
      "sha256": "4d2f75840dc04dfa34881de83fcf3ecefa695f1a69599103daa4ca8614337748"
     },
     {
      "name": "Gelasio-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 131148,
      "sha256": "31175f3ca2cf859c6129bf09add428499abe3b9f9f9aa92b746f9fbff6252c68"
     }
    ],
    "metrics": {
     "x_height": 0.486,
-    "cap_height": 0.694,
     "stem": 0.259,
     "advance": [504, 560, 454, 574, 483, 325, 509, 582, 293, 292, 536, 286, 881, 591, 539, 571, 560, 410, 432, 345, 575, 497, 737, 505, 492, 444, 671, 654, 642, 749, 653, 599, 725, 815, 390, 518, 694, 604, 927, 767, 744, 610, 744, 702, 561, 619, 756, 667, 976, 710, 615, 602, 614, 430, 559, 552, 565, 528, 566, 502, 596, 566, 241]
    }
@@ -1597,36 +1405,31 @@
    "files": [
     {
      "name": "GenBkBasB.ttf",
-     "weight": 400,
+     "weight": 700,
      "italic": false,
-     "size": 267024,
      "sha256": "37fc25b7916e4055ffff0b9bda2b9a9efe7d3404773339fa8cde00a15d5589a9"
     },
     {
      "name": "GenBkBasBI.ttf",
-     "weight": 400,
-     "italic": false,
-     "size": 245096,
+     "weight": 700,
+     "italic": true,
      "sha256": "dccbca56a0d1bdbcc440e3b2070ee0ef63fd834454196baeaa8226ead9c82f07"
     },
     {
      "name": "GenBkBasI.ttf",
      "weight": 400,
-     "italic": false,
-     "size": 261328,
+     "italic": true,
      "sha256": "6879e401a0c44c6473fb796c284112f3139bd20c289cff92e6c4abb4dab7d369"
     },
     {
      "name": "GenBkBasR.ttf",
      "weight": 400,
      "italic": false,
-     "size": 267604,
      "sha256": "f0e5c2d48408804caf9779ee2e039687b3ac5cf56edff51577fc0aedc0908994"
     }
    ],
    "metrics": {
     "x_height": 0.454,
-    "cap_height": 0.615,
     "stem": 0.233,
     "advance": [473, 518, 443, 534, 469, 321, 498, 562, 281, 269, 517, 281, 817, 562, 510, 540, 526, 412, 397, 353, 541, 498, 710, 509, 498, 451, 606, 567, 543, 607, 506, 488, 589, 664, 308, 315, 592, 487, 820, 654, 607, 538, 607, 576, 488, 561, 659, 655, 850, 620, 601, 530, 481, 481, 481, 481, 481, 481, 481, 481, 481, 481, 230]
    }
@@ -1644,41 +1447,35 @@
      "name": "Hind-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 286604,
      "sha256": "330c54396bc27628c32e69b88654e41065722182c6f33b936a2a46d72c9d6774"
     },
     {
      "name": "Hind-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 287484,
      "sha256": "c31b8b6073b14f89187586fb1fa38710d8adae3429ef41e1a398dacbfe839e51"
     },
     {
      "name": "Hind-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 277300,
      "sha256": "70f9c1158390d0c93a8bc24b35b4be4b2439653372bbce7381a32c686fb91a98"
     },
     {
      "name": "Hind-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 299532,
      "sha256": "01de158022f53077b52303e46de3b0ab5fb245222a7ffe25a2a57fdd9e969162"
     },
     {
      "name": "Hind-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 281940,
      "sha256": "1742a1b0aba97b49da1d3ee3af568fa997c59a3cfe73829f7bec293f416d25dd"
     }
    ],
    "metrics": {
     "x_height": 0.507,
-    "cap_height": 0.674,
     "stem": 0.079,
     "advance": [492, 570, 471, 567, 522, 329, 549, 540, 233, 228, 480, 233, 818, 540, 562, 567, 567, 326, 412, 369, 540, 505, 792, 478, 493, 453, 648, 571, 602, 661, 501, 489, 670, 643, 247, 358, 573, 477, 857, 673, 700, 545, 709, 548, 524, 482, 645, 637, 938, 613, 593, 569, 544, 323, 494, 466, 540, 509, 526, 451, 536, 504, 244]
    }
@@ -1696,104 +1493,89 @@
      "name": "IBMPlexMono-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 137784,
      "sha256": "ac27abd6450a64dd94467580a02fe6235156d5b92f2926ebbc8e7489df64e0be"
     },
     {
      "name": "IBMPlexMono-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 144512,
      "sha256": "af4e05a761e98c1adf064c48a6352c9bec1a6ad70982cd2a544149323391f98e"
     },
     {
      "name": "IBMPlexMono-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 135980,
      "sha256": "826b765bd5173b97d521053330a66277edc224f8cc5f1e0035df1d995d5f003c"
     },
     {
      "name": "IBMPlexMono-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 144672,
      "sha256": "8ae22766094bd04c2808a3c9dec812dcf061786c26ebd25eea211ae685eb2c39"
     },
     {
      "name": "IBMPlexMono-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 143920,
      "sha256": "3362fc791b0652193328b862c1c5f23a789bc7288b1617fa63302f88689a2a34"
     },
     {
      "name": "IBMPlexMono-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 135216,
      "sha256": "780bcf65509d72a35ec114b57bcbe220dc6b77d8ea2e9b25e294be3c570c5025"
     },
     {
      "name": "IBMPlexMono-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 143432,
      "sha256": "2bb4dd18abb03cb8a0a1ae69a0a10b194e02027b817c7b13126ef4724a7f5c73"
     },
     {
      "name": "IBMPlexMono-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 136704,
      "sha256": "a9b4c49bb299e05b5f6c481e7fb5e78943d2793249a0c8874ab574a2d1ea6755"
     },
     {
      "name": "IBMPlexMono-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 144004,
      "sha256": "de6e0f805a15a2a1538be5d1074741298a07ffcba6fa1f4cd93983ff73155a7d"
     },
     {
      "name": "IBMPlexMono-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 135580,
      "sha256": "6a3412f058c7d8dfd9170c41e85ade48e5156ecb89356110ca57a0a27734af46"
     },
     {
      "name": "IBMPlexMono-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 140216,
      "sha256": "d3c38e55c78f5b0f28009fddba4834ec503278936a5986032424c9bd2d23aa46"
     },
     {
      "name": "IBMPlexMono-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 147368,
      "sha256": "391ef0e273eb52571eccaab6a6dbddeec48e1d282cb7bf153043512b797ed6f0"
     },
     {
      "name": "IBMPlexMono-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 137900,
      "sha256": "c44c820c14b4f1b818344e5f5dc189cee98b1d5e56b4e80055496c228f3cc7ea"
     },
     {
      "name": "IBMPlexMono-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 146100,
      "sha256": "3782f01f12b444c62be712676646c552fc23443e8fd02d5b5619c6c4b975516d"
     }
    ],
    "metrics": {
     "x_height": 0.516,
-    "cap_height": 0.698,
     "stem": 0.44,
     "advance": [600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600]
    }
@@ -1811,104 +1593,89 @@
      "name": "IBMPlexSans-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 179860,
      "sha256": "a20702eabc06feecafd8de9eec45ec2294353006e0c101acc3e6c70f4a52d997"
     },
     {
      "name": "IBMPlexSans-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 188952,
      "sha256": "59e201d9ffa61cce19153e94814676b4ba0bbf238cac442d75523ea15a5789b6"
     },
     {
      "name": "IBMPlexSans-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 183544,
      "sha256": "cb62a9a0d1d83ff9f00d13676df824e1b1175635d4631da7ab13fa71a896e7d9"
     },
     {
      "name": "IBMPlexSans-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 191732,
      "sha256": "27d618d182c4fa220d520e83bf0aeb1c9bece79c685262aa6070f9eb2eac7d78"
     },
     {
      "name": "IBMPlexSans-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 188192,
      "sha256": "c80122573572bd04056c0f82ea3e1c8b1df7922621f3a4b447915d519ccf706a"
     },
     {
      "name": "IBMPlexSans-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 182160,
      "sha256": "2f3651400f85b1d604935686b786862d9f9278606c04260bd6d63d690eb16a10"
     },
     {
      "name": "IBMPlexSans-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 191036,
      "sha256": "742ea7fdf4caaa7929cd319475b2503d27be468f93bfa1eb148e02d98b266d32"
     },
     {
      "name": "IBMPlexSans-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 181240,
      "sha256": "791716d014b493b533a4faee947b3bef6078f31ee9dacee719445357aa9c0e1b"
     },
     {
      "name": "IBMPlexSans-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 190012,
      "sha256": "7f218d51bd7ba75d3c526b172fc2b95f788506236d08fb419fdbce478a5e5c15"
     },
     {
      "name": "IBMPlexSans-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 179740,
      "sha256": "52babd121ff827c4f6ebbb20844d51569795eee6373580fc8979afc540048596"
     },
     {
      "name": "IBMPlexSans-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 181356,
      "sha256": "76bd04cf3b2321586e668ecae60b73ecb5b86b4dc68bbbcdc6715ac6605f7783"
     },
     {
      "name": "IBMPlexSans-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 190564,
      "sha256": "fb3ddc2f987dc683f69c711f7ab1ec2964294ca9a4fe14e32b794c327828510f"
     },
     {
      "name": "IBMPlexSans-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 182860,
      "sha256": "f5e91036b6d793d33becce4ca40218920eee7fc9a6a8d156674996c286990fab"
     },
     {
      "name": "IBMPlexSans-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 192272,
      "sha256": "f9cee8809c5403f9ba8a1ab1105239416bd8de4f4d4dd55284d17b475a0eb0ac"
     }
    ],
    "metrics": {
     "x_height": 0.516,
-    "cap_height": 0.698,
     "stem": 0.156,
     "advance": [534, 580, 503, 580, 549, 324, 528, 568, 250, 250, 527, 272, 873, 568, 560, 580, 580, 367, 487, 351, 568, 492, 768, 507, 499, 464, 641, 653, 621, 671, 583, 559, 695, 707, 400, 510, 634, 501, 812, 707, 708, 606, 708, 640, 581, 572, 678, 609, 891, 613, 593, 580, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 236]
    }
@@ -1926,104 +1693,89 @@
      "name": "IBMPlexSerif-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 163800,
      "sha256": "534c02c295999dd86e770457ece1d43db0de9256dd98bf741426f63ae904209e"
     },
     {
      "name": "IBMPlexSerif-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 173032,
      "sha256": "2a32b76ac19c1942bf5942dbbd2a1566e5f1ae9833e421ebcf36d3522715e153"
     },
     {
      "name": "IBMPlexSerif-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 163956,
      "sha256": "e70801926e16dd77c41f4a7c1099f6bab7140f489f03fb80856ec678820be60d"
     },
     {
      "name": "IBMPlexSerif-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 172260,
      "sha256": "f45aca4b4a1402c0c07c4a4665b278eb01aced90b6b719af29e8ae1a2a8bdc43"
     },
     {
      "name": "IBMPlexSerif-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 173004,
      "sha256": "4b75b38be4673527231f49c48818d090c913d5042dd5c747b525bf6185d29ecb"
     },
     {
      "name": "IBMPlexSerif-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 162748,
      "sha256": "698bad1d5e52004cb1d504249bd704cf0aed03740d7ef22d7a533db2bc020f69"
     },
     {
      "name": "IBMPlexSerif-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 171364,
      "sha256": "f4e4364e8fb60d9a0a4ed41e5bbe757672b042cdf2a963215035951782de8060"
     },
     {
      "name": "IBMPlexSerif-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 164104,
      "sha256": "32925e73e5b4a441df9d23e847f2b8c4046c1fc3db094e90bad8883157811509"
     },
     {
      "name": "IBMPlexSerif-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 173212,
      "sha256": "a3b5c5b291db0b88abf833bd02864adcaa4ba994d9f7d9b790f552e2fd0cbabd"
     },
     {
      "name": "IBMPlexSerif-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 163068,
      "sha256": "e882efa9c41949a528ac2369079ec5ef050c1c996bbd0bacce3c3326d44cf80d"
     },
     {
      "name": "IBMPlexSerif-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 164528,
      "sha256": "27ce4d105591b48f666b228e1e399838a704594efea22b730000951bea700a60"
     },
     {
      "name": "IBMPlexSerif-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 173748,
      "sha256": "15f4e3974b83b2459a6a1b252caa356a9a11316deeba45adbc89b46fb4aab820"
     },
     {
      "name": "IBMPlexSerif-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 161232,
      "sha256": "1b4df73116dad2432f2d13337ae347fff71a03b8c1ba2b3e1c06cc98aadba72b"
     },
     {
      "name": "IBMPlexSerif-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 168660,
      "sha256": "772397765d3842e375712a277609783dc1c753653157de3c807c5390d6a1513d"
     }
    ],
    "metrics": {
     "x_height": 0.516,
-    "cap_height": 0.698,
     "stem": 0.23,
     "advance": [546, 598, 516, 608, 536, 342, 544, 624, 315, 303, 584, 300, 953, 639, 564, 613, 598, 443, 488, 353, 619, 534, 777, 561, 534, 508, 686, 670, 649, 706, 641, 626, 721, 787, 346, 457, 707, 594, 872, 778, 716, 625, 716, 672, 588, 652, 735, 664, 968, 669, 634, 637, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 232]
    }
@@ -2041,20 +1793,17 @@
      "name": "Inconsolata-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 108360,
      "sha256": "76a242626e1c791b6945060d7a61b5b61f6f1c6b364b6c7868a30af1ef44b623"
     },
     {
      "name": "Inconsolata-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 95960,
      "sha256": "2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc"
     }
    ],
    "metrics": {
     "x_height": 0.457,
-    "cap_height": 0.624,
     "stem": 0.342,
     "advance": [500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500]
    }
@@ -2072,76 +1821,65 @@
      "name": "JosefinSans-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 86300,
      "sha256": "5a1389056f87903a1c2176a28cc754587342ac65c860a4b79e7c5fc25ee73018"
     },
     {
      "name": "JosefinSans-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 83100,
      "sha256": "194d6685b9b392bcf2c2a515fa875f75db095430ac81237e32233f3fd37b4bc1"
     },
     {
      "name": "JosefinSans-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 84916,
      "sha256": "898c2cc72d2304371dd7ec531f34569d010269c73943fc98639bd308bdc35c44"
     },
     {
      "name": "JosefinSans-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 87320,
      "sha256": "15d5463872ae62cebd82f190c731fa51c5a6339b6c3e4dacec294eee4af64de8"
     },
     {
      "name": "JosefinSans-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 85684,
      "sha256": "5a1063cb5509200ba34b1934bf9261d6405644103e979cff1614fa6c50f0e8eb"
     },
     {
      "name": "JosefinSans-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 87260,
      "sha256": "73a4c076e4b469c7956e6a3f625b79e0fb4b6a7ee3cfe4bc3ed0533209586fcf"
     },
     {
      "name": "JosefinSans-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 87880,
      "sha256": "1436fc740da2183b71437031f78fb88e5b8603595ae106ff9217f27a1b91cbea"
     },
     {
      "name": "JosefinSans-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 84824,
      "sha256": "aa81855cc6919d3f94da4333379eb4082f7fad890de0be91c53c8a6d6f768112"
     },
     {
      "name": "JosefinSans-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 88088,
      "sha256": "07a9e2e991e567edaadee090d46f6466fde95b5feddafa17f13e1b726e65b7e7"
     },
     {
      "name": "JosefinSans-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 85420,
      "sha256": "327c0bbf9f7ee0a9f9fab7a9ea5761bedcdf512f14958387374e0180e4398b44"
     }
    ],
    "metrics": {
     "x_height": 0.414,
-    "cap_height": 0.723,
     "stem": 0.093,
     "advance": [587, 593, 456, 593, 520, 380, 599, 553, 255, 260, 499, 255, 825, 553, 545, 593, 593, 376, 408, 360, 547, 494, 675, 466, 494, 463, 701, 619, 694, 754, 653, 589, 752, 781, 305, 365, 680, 622, 927, 838, 857, 595, 888, 660, 582, 582, 732, 719, 1008, 673, 692, 713, 624, 330, 545, 524, 536, 523, 545, 490, 523, 538, 316]
    }
@@ -2159,34 +1897,29 @@
      "name": "Karla-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 17868,
      "sha256": "6916f29111d92d1b90729c4e207b8f0a766ed1052301808e61ca8b83e994c1ba"
     },
     {
      "name": "Karla-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 18672,
      "sha256": "4e706aa0ebc0002add658353c017bd523781c52cc3adffb032d4136109c390b8"
     },
     {
      "name": "Karla-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 18548,
      "sha256": "5319b5b9b6609b2270f0c4cefe191d4af1da366a3faecbc729df23172682d3f0"
     },
     {
      "name": "Karla-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 16816,
      "sha256": "e2e0c223601a6a31d42d9a85152169a457938127b07446d26d9e10ddf6084969"
     }
    ],
    "metrics": {
     "x_height": 0.478,
-    "cap_height": 0.629,
     "stem": 0.079,
     "advance": [560, 584, 515, 594, 515, 343, 565, 604, 299, 314, 564, 280, 935, 603, 546, 594, 585, 381, 526, 376, 606, 503, 725, 512, 484, 475, 575, 622, 613, 661, 562, 524, 645, 669, 280, 404, 609, 468, 848, 685, 646, 554, 652, 613, 605, 501, 654, 563, 895, 642, 549, 592, 594, 331, 580, 591, 559, 565, 573, 470, 615, 581, 238]
    }
@@ -2204,132 +1937,113 @@
      "name": "Lato-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 664748,
      "sha256": "808c62839c62dbce7de689af7603666fc7f8b81e0df537d8a5212c87580d4337"
     },
     {
      "name": "Lato-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 698264,
      "sha256": "3214f75bf96783a571bd25338c867c669e7c5e7c08a227f18a7b63766d6e6cbe"
     },
     {
      "name": "Lato-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 656544,
      "sha256": "8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1"
     },
     {
      "name": "Lato-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 698364,
      "sha256": "62c1b7f0d2e74b45960154c3520efc337b553db0961bfdc950d5618334596cc8"
     },
     {
      "name": "Lato-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 613920,
      "sha256": "61018de62bdaf90d4ac80b1d53c5c130756c8e9219aea3d2773fc9bd5869af97"
     },
     {
      "name": "Lato-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 671876,
      "sha256": "a42b384b9c37913a61023e3a47c07fead26e776127bbc9e6a0c96fe413089374"
     },
     {
      "name": "Lato-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 626624,
      "sha256": "989989b481db5df0827d90c51fd08d024fe7bc4e367046e2584a0d3b0487936d"
     },
     {
      "name": "Lato-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 653640,
      "sha256": "fc56526250b9b64ce0908c52350b03e91b84afecb08fd2834a12e57b91abdb31"
     },
     {
      "name": "Lato-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 722900,
      "sha256": "e399c44efe1387100531d26c7e4800c5d12251b890d6654a3098c7c679cb1786"
     },
     {
      "name": "Lato-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 643884,
      "sha256": "cf2a774503baf418d584f49967bd160e1e03f087c13b25602f28024ec7788f08"
     },
     {
      "name": "Lato-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 657552,
      "sha256": "700e6722fd14a10e7646347a6b14c486d4c364a373ba61c70e0b5ccee7811635"
     },
     {
      "name": "Lato-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 636396,
      "sha256": "d3ac182a6833e005745dd75679fbad081c0b12535df4e93ad8ed57817a31a338"
     },
     {
      "name": "Lato-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 694924,
      "sha256": "ecbce6cffa42d8a67afeb27a9d6e85d515e81481d4b2cece989e833a48048405"
     },
     {
      "name": "Lato-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 656568,
      "sha256": "d636e4683231f931eda222d588e944d082bfd3bdba02f928bee461c0f185b251"
     },
     {
      "name": "Lato-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 668548,
      "sha256": "71b8b7decbe75a881ed267be539d402bd1e9420b799658aada4e0d1bd5af803c"
     },
     {
      "name": "Lato-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 697364,
      "sha256": "5adeb6b334d8fb99ef053bc052b952773d544315e0e1d668a12c0ce8bd51375c"
     },
     {
      "name": "Lato-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 584056,
      "sha256": "663c55bfe9a38270fff44da273bf4d792eafc3e7e1201f62c3064cad80c5d5e7"
     },
     {
      "name": "Lato-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 608716,
      "sha256": "e5e86e219ce6987b175470d94d57753a387d1860b635da6327a60e8d19a33beb"
     }
    ],
    "metrics": {
     "x_height": 0.507,
-    "cap_height": 0.717,
     "stem": 0.09,
     "advance": [497, 560, 478, 560, 528, 351, 520, 558, 240, 240, 508, 236, 823, 558, 567, 561, 560, 364, 433, 359, 558, 516, 786, 498, 516, 452, 677, 647, 668, 761, 578, 566, 731, 764, 280, 423, 663, 514, 929, 764, 801, 601, 801, 627, 543, 591, 736, 677, 1036, 649, 624, 602, 580, 580, 580, 580, 580, 580, 580, 580, 580, 580, 256]
    }
@@ -2347,27 +2061,23 @@
      "name": "LibreBaskerville-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 150848,
      "sha256": "6f329db31dea139b15210963fadcea6f37fbfddf1f28669e257da9eda8cb9849"
     },
     {
      "name": "LibreBaskerville-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 156936,
      "sha256": "5ed54bfcac9ecd3e7cbaba07243b3848dbd49d6ffed18cbdde43edc5694bef95"
     },
     {
      "name": "LibreBaskerville-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 152072,
      "sha256": "f6553cf1a8dc8092a073b0135b254f5f7261306e608d9b85485a321878e804ac"
     }
    ],
    "metrics": {
     "x_height": 0.53,
-    "cap_height": 0.77,
     "stem": 0.278,
     "advance": [554, 654, 536, 675, 573, 412, 599, 688, 341, 304, 616, 325, 1073, 689, 654, 679, 653, 477, 454, 378, 670, 610, 852, 609, 639, 557, 772, 767, 802, 884, 726, 670, 870, 925, 415, 394, 779, 727, 1090, 902, 946, 687, 948, 788, 645, 803, 861, 784, 1176, 818, 733, 770, 714, 446, 616, 616, 585, 568, 643, 502, 606, 643, 287]
    }
@@ -2385,27 +2095,23 @@
      "name": "LibreCaslonText-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 94400,
      "sha256": "5cce51169a90340560e1a2302b683ccb8649596a52e7dda9ee2404f7976e858b"
     },
     {
      "name": "LibreCaslonText-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 104828,
      "sha256": "b60822407e3fc62ba0b0faf002af6466ba75d1b4e951926bc63bab24a5dae957"
     },
     {
      "name": "LibreCaslonText-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 94380,
      "sha256": "b8a8395ada81aba88932378c7c0c338154cadf77fd1a404cc2c174fbf61dd297"
     }
    ],
    "metrics": {
     "x_height": 0.53,
-    "cap_height": 0.77,
     "stem": 0.231,
     "advance": [525, 602, 535, 607, 560, 351, 514, 619, 300, 280, 591, 289, 907, 611, 616, 615, 602, 415, 435, 350, 598, 566, 849, 579, 572, 513, 744, 699, 774, 810, 692, 650, 808, 857, 374, 362, 783, 656, 1012, 828, 836, 663, 836, 733, 599, 754, 774, 721, 1090, 787, 709, 676, 640, 420, 579, 554, 582, 547, 590, 493, 595, 591, 272]
    }
@@ -2423,132 +2129,113 @@
      "name": "LibreFranklin-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 83276,
      "sha256": "cb8ed9f082c83239b6a7163a011583b9c628b525a13d8164a8b9351d5d7f0438"
     },
     {
      "name": "LibreFranklin-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 86544,
      "sha256": "86f44e32053c2580964bd8ef0be03ef106a510c95f45c76677737ce8f5962669"
     },
     {
      "name": "LibreFranklin-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 81244,
      "sha256": "9da22ab31acff7a18425491d4822bfb228146d6b3cbed6c33449380904979ee3"
     },
     {
      "name": "LibreFranklin-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 84824,
      "sha256": "2b99f4abddc5b6d291966444ef78971b7287a7066dfcfba3b59cffb44d6294a2"
     },
     {
      "name": "LibreFranklin-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 82652,
      "sha256": "b97d6df985b901e75d3462e41f081e44a1c80392139db59260786da54c6353e4"
     },
     {
      "name": "LibreFranklin-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 86592,
      "sha256": "923a58e23407758baec0be60184b088642d7a5da8a56a6fddb8d4e9333a6330b"
     },
     {
      "name": "LibreFranklin-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 77084,
      "sha256": "072bafddee8e171d56e2cb50ea94cb8bef3957fb0e9d5497247009c1551ffc6d"
     },
     {
      "name": "LibreFranklin-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 79796,
      "sha256": "caef9cce31fa14a6af2896672c8595aefcbbf5f48fa24ebac445776fe7c941b3"
     },
     {
      "name": "LibreFranklin-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 81824,
      "sha256": "f7ce99ed4561e7a2a6e0ad295cc2f02f30c90b7fc22c187111e867aefc39ff97"
     },
     {
      "name": "LibreFranklin-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 76968,
      "sha256": "6942643565ab95ff9ec7643043892419fc67faa284c009b562fa21ec12868df6"
     },
     {
      "name": "LibreFranklin-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 80612,
      "sha256": "2845d3c3d5d19e8ffd926304f3b7060532c0d54a117bd62071e97c4024c059df"
     },
     {
      "name": "LibreFranklin-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 80732,
      "sha256": "c04298239b5768b007ca0079b0db8b931d4c5d08b7aa644ea061ae057489ec08"
     },
     {
      "name": "LibreFranklin-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 83004,
      "sha256": "a82ce9500139cc3be51da92a2b467bdf1d2db7bf5b0c0b0b5184bdae5ff05407"
     },
     {
      "name": "LibreFranklin-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 78768,
      "sha256": "1192091dde4666a1c57ded2e2f85e98b09d187cb361b35d976402cb4c7f4e6a1"
     },
     {
      "name": "LibreFranklin-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 80352,
      "sha256": "278c0b25b643823566167212fe9d4e72e1c44943f967df82fc84c001b85f4e1a"
     },
     {
      "name": "LibreFranklin-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 84220,
      "sha256": "eb14c73c296078840b95490e03337bdb208711cf376e67300f6d323a9b8ea7f4"
     },
     {
      "name": "LibreFranklin-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 74840,
      "sha256": "11140e94407919902f488071bb513a7194c6d558e2f2717ca83a3722e8fb625e"
     },
     {
      "name": "LibreFranklin-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 77424,
      "sha256": "e2a7479546bff167cdccbf3b9b0d265c37293b599fdd32736e9c70e520c6e9dc"
     }
    ],
    "metrics": {
     "x_height": 0.53,
-    "cap_height": 0.742,
     "stem": 0.085,
     "advance": [548, 599, 542, 599, 581, 379, 602, 584, 239, 239, 564, 239, 906, 584, 599, 597, 599, 383, 512, 387, 579, 547, 796, 544, 530, 482, 727, 699, 707, 722, 628, 601, 739, 735, 290, 418, 701, 602, 906, 757, 764, 690, 765, 696, 641, 645, 709, 707, 1045, 688, 675, 631, 688, 465, 599, 641, 649, 654, 661, 599, 668, 658, 215]
    }
@@ -2566,34 +2253,29 @@
      "name": "Lora-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 201580,
      "sha256": "6cc7ecf18af9e7e0e6d29bdc35dfd713b3e047fd6187ca2e7fcc8303ce8395b8"
     },
     {
      "name": "Lora-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 188412,
      "sha256": "4960511a741c96cf6de98a1c0d2abef228d63999540bacfe811e22a5f4e5831a"
     },
     {
      "name": "Lora-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 188860,
      "sha256": "195f109ee5e20a6df6789141ed582c8679ba0c84627a536017cf1bc7b8967661"
     },
     {
      "name": "Lora-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 182152,
      "sha256": "178a698904efd9f1e87b35f764d56cc2ee3654c0dc92ebd05f5ed7e208abdc84"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.7,
     "stem": 0.213,
     "advance": [516, 582, 532, 598, 542, 338, 553, 599, 281, 218, 537, 272, 894, 607, 585, 597, 576, 433, 463, 387, 597, 505, 801, 530, 528, 511, 626, 622, 699, 745, 622, 548, 761, 780, 335, 373, 683, 578, 918, 762, 794, 606, 796, 628, 567, 640, 752, 653, 995, 649, 634, 610, 621, 364, 537, 557, 542, 544, 578, 461, 562, 578, 263]
    }
@@ -2611,20 +2293,17 @@
      "name": "Lusitana-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 29284,
      "sha256": "7ce8affe6a9cf98304d33443f26b172f24230dc2b96d880f98679780e2e181ad"
     },
     {
      "name": "Lusitana-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 30188,
      "sha256": "582ef819effed258c236f4924e2799323f3d474472d50939b817f91022ed1e60"
     }
    ],
    "metrics": {
     "x_height": 0.434,
-    "cap_height": 0.712,
     "stem": 0.227,
     "advance": [450, 530, 442, 542, 459, 396, 478, 562, 293, 258, 510, 264, 840, 577, 529, 543, 530, 379, 393, 326, 558, 481, 763, 521, 473, 451, 726, 621, 762, 803, 649, 575, 808, 787, 353, 332, 702, 614, 984, 795, 813, 560, 842, 698, 549, 682, 754, 720, 1058, 706, 704, 718, 593, 340, 513, 439, 577, 440, 518, 514, 508, 518, 198]
    }
@@ -2642,13 +2321,11 @@
      "name": "Marcellus-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 46004,
      "sha256": "1cf0cd10b17d35e852729962cc1ffaffed94514895972458345e2df34abb2f81"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.705,
     "stem": 0.114,
     "advance": [517, 584, 505, 604, 542, 320, 584, 568, 241, 237, 486, 241, 884, 568, 601, 584, 584, 392, 354, 384, 568, 476, 751, 523, 501, 466, 678, 561, 677, 714, 490, 466, 742, 727, 265, 249, 646, 460, 1018, 739, 806, 512, 806, 591, 455, 597, 710, 658, 1014, 698, 621, 642, 806, 295, 532, 504, 573, 466, 558, 489, 538, 554, 300]
    }
@@ -2666,62 +2343,53 @@
      "name": "Merriweather-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 148824,
      "sha256": "dff1048499a2c245713dfa41e3683cfecfd15df757cc4cb20f85bceba7bfd58b"
     },
     {
      "name": "Merriweather-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 149360,
      "sha256": "42b5cdd80b293acb1d7a15958a2c2f8b6b95213709110777486763c75bc83ebf"
     },
     {
      "name": "Merriweather-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 149112,
      "sha256": "55139769a87085bff777f68e3ecf92450c21a04c5ddd1e9e9528960ba4088c9f"
     },
     {
      "name": "Merriweather-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 150560,
      "sha256": "403b1bece3d70420e65c670315693e9bca255e9c95884d9cb2b334838e67b509"
     },
     {
      "name": "Merriweather-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 149340,
      "sha256": "fc80dbac0ca9da894ae1801df9abe58f6dcca179ec4f8f6f7ea80fd13a1d387d"
     },
     {
      "name": "Merriweather-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 155192,
      "sha256": "d3ecc46bab128ed073ad9189bd7efdd2df455d8942ec056f14129bf35bcea7e5"
     },
     {
      "name": "Merriweather-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 148736,
      "sha256": "8521c8eb542adf178b19c7ab7a0210fb4715fe68bb6ea578be129277b642c1f0"
     },
     {
      "name": "Merriweather-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 156096,
      "sha256": "bc38fe756b3e259248183fc0b75ad81b02774f3ca68e5e544e925827b0186d40"
     }
    ],
    "metrics": {
     "x_height": 0.555,
-    "cap_height": 0.743,
     "stem": 0.27,
     "advance": [561, 607, 513, 621, 544, 400, 607, 659, 333, 317, 600, 333, 995, 664, 608, 628, 609, 458, 505, 407, 632, 568, 839, 595, 572, 554, 692, 685, 653, 758, 651, 619, 740, 828, 403, 381, 726, 634, 990, 799, 722, 649, 727, 704, 594, 692, 740, 670, 1000, 712, 644, 654, 643, 440, 598, 560, 644, 594, 664, 588, 633, 660, 237]
    }
@@ -2739,132 +2407,113 @@
      "name": "Montserrat-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 275192,
      "sha256": "da0b09317f1ceffb9767876579b15dc4dc9f75784e678404aa80632b6771207d"
     },
     {
      "name": "Montserrat-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 279380,
      "sha256": "87279bedd810d29f8b83e36e486258c4ba683dbe445241c7962eff05223db58c"
     },
     {
      "name": "Montserrat-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 261588,
      "sha256": "c4c8cb572a5a2c43d78b3701f4b2349684e6ca4d1557e469af6065b1e099c26c"
     },
     {
      "name": "Montserrat-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 266748,
      "sha256": "91371db417bc137a0edb00a9b441c0d4913bbf3320dd038dea124eaf8a565c23"
     },
     {
      "name": "Montserrat-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 262108,
      "sha256": "257af9a05de6371e1f7b345d02a93af5c2e0ab9b9224418a45189b8cc86049cd"
     },
     {
      "name": "Montserrat-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 267004,
      "sha256": "0fc80e1fe468b4edce5831f35315c7e8372a0af549a17d8138b66a17f9f9d00e"
     },
     {
      "name": "Montserrat-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 259888,
      "sha256": "6a15672ddcc6b5bc51515daee2010dba7f1d21add02bdc4c7f89b480fc7e5a99"
     },
     {
      "name": "Montserrat-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 264004,
      "sha256": "defabfd139d3fb07704eca1ace2b961fb2260394d2f792e0fb7a7a7232da7799"
     },
     {
      "name": "Montserrat-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 266628,
      "sha256": "4854167729baeda55f3169812cb10cfadad93614218c2cbe1274fb6123b3a916"
     },
     {
      "name": "Montserrat-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 259416,
      "sha256": "9b87925d061b1affb66417717731ad781f7d7678fb089b49f14bd922c2338559"
     },
     {
      "name": "Montserrat-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 263712,
      "sha256": "a634ac89c843302afa15a4c4e7353f7a5bff3e72fa0e0b2d9d0f144ad3b2c674"
     },
     {
      "name": "Montserrat-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 260236,
      "sha256": "92b3d3c6e135eb1dc95f88e6ca75bd6113d9eb3261a95ca39f733e3897e53675"
     },
     {
      "name": "Montserrat-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 265176,
      "sha256": "08edb1a99610549dce56ed6ca137c6c6f5f8a53751efb52a504aac95ed056480"
     },
     {
      "name": "Montserrat-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 263192,
      "sha256": "81ebc3916b524007b756d91d9df13c7673ec401161f2cad161662d08dcf1cc72"
     },
     {
      "name": "Montserrat-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 260936,
      "sha256": "bab583d38d105dac9141b287fb2b7763b6d8b0bae97e745faaccedb40a579c29"
     },
     {
      "name": "Montserrat-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 266336,
      "sha256": "13db98b04dc90a529d0387ef5db4e5e5511746f460a3d820e75f6ceee0082652"
     },
     {
      "name": "Montserrat-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 258748,
      "sha256": "5583fb2839a295334e3164d5fcd560013101631696e23d228fdffdd282ffd44f"
     },
     {
      "name": "Montserrat-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 262776,
      "sha256": "ee11b78b84090bfd14e3a9e5c23a13b646773fea299fb28fcff926fa2db1ac80"
     }
    ],
    "metrics": {
     "x_height": 0.526,
-    "cap_height": 0.7,
     "stem": 0.071,
     "advance": [590, 678, 563, 678, 604, 339, 686, 677, 269, 274, 601, 269, 1061, 677, 627, 678, 678, 401, 489, 406, 673, 542, 879, 534, 542, 511, 717, 754, 719, 826, 669, 633, 773, 813, 302, 501, 711, 589, 955, 813, 839, 718, 839, 723, 615, 574, 792, 698, 1111, 656, 635, 651, 662, 361, 568, 564, 661, 566, 609, 589, 638, 609, 262]
    }
@@ -2882,20 +2531,17 @@
      "name": "Muli-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 153292,
      "sha256": "d8d4624d0b54f1af859f1f65552ca9d3c85d10122fc599b6331fc8a9b651a1a7"
     },
     {
      "name": "Muli-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 150696,
      "sha256": "764b12af6ea23ed1fac3cb9e34d30f648a426e6255a9b254f45da4e95dfe901b"
     }
    ],
    "metrics": {
     "x_height": 0.503,
-    "cap_height": 0.712,
     "stem": 0.081,
     "advance": [600, 600, 495, 600, 544, 337, 604, 585, 238, 238, 515, 238, 879, 585, 572, 600, 600, 362, 496, 350, 577, 531, 869, 535, 531, 518, 734, 681, 684, 746, 588, 563, 731, 766, 258, 329, 634, 545, 849, 746, 772, 651, 772, 693, 623, 603, 731, 697, 1112, 652, 607, 596, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 261]
    }
@@ -2913,48 +2559,41 @@
      "name": "Neuton-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 60344,
      "sha256": "6e9594b4efae7508d434acd863e0c5fd22502ee76798e72a2e79a94a4255fa74"
     },
     {
      "name": "Neuton-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 61840,
      "sha256": "5b590903d739180edbca3c20363466358824e7ce34895829a53495ed91122a65"
     },
     {
      "name": "Neuton-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 53996,
      "sha256": "0dde410696b33f5546bf3975cecce5d00810dc367fb9d62c4e8c4deda6c84eb6"
     },
     {
      "name": "Neuton-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 63292,
      "sha256": "b5c66a502ed69b489300887b7019923e79925f90f1bed92cebbc398ec54b5199"
     },
     {
      "name": "Neuton-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 54056,
      "sha256": "055582e4bafdb13759e9f9bfc0b88d64c57c395c414b2c1e452866ccd1f5ef9d"
     },
     {
      "name": "Neuton-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 64628,
      "sha256": "28ae41fd0ff18925c1a829358b7bd334e27994da23d6abdd72eaff646cacadb6"
     }
    ],
    "metrics": {
     "x_height": 0.427,
-    "cap_height": 0.608,
     "stem": 0.241,
     "advance": [405, 466, 380, 482, 392, 339, 435, 502, 263, 226, 475, 249, 773, 518, 456, 473, 466, 359, 340, 317, 489, 441, 622, 468, 455, 399, 624, 550, 542, 648, 525, 502, 623, 691, 293, 289, 600, 520, 813, 653, 646, 493, 651, 592, 421, 546, 668, 627, 900, 587, 591, 493, 480, 480, 480, 480, 480, 480, 480, 480, 480, 480, 149]
    }
@@ -2972,34 +2611,29 @@
      "name": "NotoSerif-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 399668,
      "sha256": "58de10340959ee1abd715fb6f8a670f44ca3adfc5d9c7e09e48d7af4a1ff4192"
     },
     {
      "name": "NotoSerif-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 363928,
      "sha256": "c8d7e9e9a586cd5f671fc267906c8739be70fb5e92069fd891e1177e1d255fe1"
     },
     {
      "name": "NotoSerif-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 353736,
      "sha256": "4a5ae30931a7590be230ae1867650679f803188c5211493bd1a5e3fc0ac78181"
     },
     {
      "name": "NotoSerif-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 379228,
      "sha256": "375e83eade60ffc1c2f516a89175358ba5fcb785a9bdb68c6a3be1b6470704dd"
     }
    ],
    "metrics": {
     "x_height": 0.536,
-    "cap_height": 0.714,
     "stem": 0.284,
     "advance": [563, 614, 492, 614, 535, 369, 538, 635, 320, 300, 585, 310, 945, 645, 577, 614, 614, 471, 451, 352, 635, 579, 862, 578, 565, 511, 705, 654, 614, 727, 623, 590, 714, 793, 367, 357, 700, 623, 938, 763, 742, 604, 742, 656, 544, 613, 717, 675, 1047, 660, 625, 592, 559, 559, 559, 559, 559, 559, 559, 559, 559, 559, 260]
    }
@@ -3017,104 +2651,89 @@
      "name": "Nunito-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 157108,
      "sha256": "d6667951b63587cd9374c5f7c02d2d0200704329d0f50ff1fac44e949fd2c7c0"
     },
     {
      "name": "Nunito-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 161588,
      "sha256": "71285463fe3191d2b242906a056715f76b9753df06287ab917b6b3e47d7f7fa2"
     },
     {
      "name": "Nunito-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 154140,
      "sha256": "f922b74ed5cca7c8675d352fd5ed197e0f38b3ac4a427c15b7a3db039dc6294c"
     },
     {
      "name": "Nunito-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 161216,
      "sha256": "e34e5bc2560aa0cd5254d7b1c6433f151b6a8dd36fd6f9096527f99fa36496fb"
     },
     {
      "name": "Nunito-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 156188,
      "sha256": "2d0979711b8cdf8be91827776b493e5483e639985d79acd937d752e1c13ce6c6"
     },
     {
      "name": "Nunito-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 162056,
      "sha256": "7430a4627cbc8fb8d800fd6f71d129deab3ecd22a748f6fed2cd7727f77b90fc"
     },
     {
      "name": "Nunito-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 151356,
      "sha256": "6acf0cc1c75c902bb1c597a7e46cd248b1d04d6812e88ba3c725d6a7e6c9fda2"
     },
     {
      "name": "Nunito-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 155676,
      "sha256": "e9a5cac926b69928712808a2da9e2d94d41f5faf6b7b141794ec822156916909"
     },
     {
      "name": "Nunito-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 158696,
      "sha256": "2e19528ebd89ae7bc0442744206730319a03b40d550ac3711c49b691286e7e10"
     },
     {
      "name": "Nunito-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 152784,
      "sha256": "b91b65047974abea9f5190de9aa4284dbd76bdf31f72f17da8e322d1345fddd9"
     },
     {
      "name": "Nunito-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 157416,
      "sha256": "f69276adaba5fed9d386bdf213cfd9168d1b73ed368e2cdd43296d8dcd6b68c0"
     },
     {
      "name": "Nunito-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 154312,
      "sha256": "880ead818af373b0da8c2a3e493f7d0a9c1db149a67a867b04f0952c475d667a"
     },
     {
      "name": "Nunito-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 154524,
      "sha256": "b993b443935abd1e26e290c20ba3febf1c2bb752eeabbb88cfb399c877f947af"
     },
     {
      "name": "Nunito-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 160052,
      "sha256": "178dfdafb5ba00d4f08bec0ecd77022978bd922fcf12e06225b863e297ccdbae"
     }
    ],
    "metrics": {
     "x_height": 0.493,
-    "cap_height": 0.709,
     "stem": 0.216,
     "advance": [530, 583, 463, 583, 532, 333, 586, 568, 232, 236, 500, 296, 856, 568, 556, 583, 583, 358, 481, 350, 561, 515, 841, 525, 514, 463, 729, 676, 673, 742, 583, 548, 726, 761, 257, 324, 625, 543, 855, 740, 767, 633, 767, 669, 615, 602, 728, 689, 1101, 650, 596, 589, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 258]
    }
@@ -3132,104 +2751,89 @@
      "name": "NunitoSans-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 142272,
      "sha256": "9306e907161cb7feb3358612b1b8a58c4dfdda58ac8a3def46406ebf58dab0d7"
     },
     {
      "name": "NunitoSans-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 143492,
      "sha256": "2ba5da5ec3079525728aa938dbd9cdb5abddc9498bf1df8f2ab94f36be5c05a8"
     },
     {
      "name": "NunitoSans-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 142512,
      "sha256": "4f4f1043f1fe2c44bb00d305dfa7084befd08e25d6be39e6b2383e1b8b874791"
     },
     {
      "name": "NunitoSans-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 144456,
      "sha256": "dbfa5f91b69753f98b6a28b4cc9ac0c7954bf04a55d8061d99d8057570b83851"
     },
     {
      "name": "NunitoSans-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 142924,
      "sha256": "aa2a5c1cb55b1681ea978ae6c3e9d194e5352230e8e49761a3a95f9dba85ad44"
     },
     {
      "name": "NunitoSans-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 144732,
      "sha256": "52620d3dd80f0dbd5a4e1ec22f429259e5a526f778c6a7a9b9e45ae756380f30"
     },
     {
      "name": "NunitoSans-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 138416,
      "sha256": "d3e68453bc7ef37e1c684cb408d0d38386ded50af065843ccbbe93ef26844913"
     },
     {
      "name": "NunitoSans-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 141760,
      "sha256": "8f9f09f2fad368cb5ea9cb5ff8ff9e0a23504efe790ccf0e9eea530888bee43b"
     },
     {
      "name": "NunitoSans-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 143628,
      "sha256": "456214f2a2743714d80367be43a00dedf45018e215c232fb9204e8dde50ba0a0"
     },
     {
      "name": "NunitoSans-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 143028,
      "sha256": "3df1ac568f1d9f4a1aff71f0c72bf340c18f9a247648bf470cd528a3b8ebfdb7"
     },
     {
      "name": "NunitoSans-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 145988,
      "sha256": "9276286683bade29e1f03bd55f96b87ffdd738daf529f0191ff2bda69d3274da"
     },
     {
      "name": "NunitoSans-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 140408,
      "sha256": "b26d1677f7776c8a07fd87a83db3a6fdc7486bb627332c73ec8b6c37d9416834"
     },
     {
      "name": "NunitoSans-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 141236,
      "sha256": "e51e66d6a3e519f70b76a156066182406e464b1e8731fba28d16372b6b03fab0"
     },
     {
      "name": "NunitoSans-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 144064,
      "sha256": "0c585b4ef9c8049bae908b61656d28604f5c4964fc41ce4b76ec57ef7b2e6efd"
     }
    ],
    "metrics": {
     "x_height": 0.486,
-    "cap_height": 0.705,
     "stem": 0.211,
     "advance": [530, 583, 463, 583, 532, 333, 586, 568, 232, 236, 500, 296, 856, 568, 556, 583, 583, 358, 481, 350, 561, 515, 841, 525, 514, 463, 729, 676, 673, 742, 583, 548, 726, 761, 256, 324, 625, 543, 855, 740, 767, 633, 767, 669, 615, 602, 728, 689, 1101, 650, 596, 589, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 257]
    }
@@ -3247,27 +2851,23 @@
      "name": "OldStandard-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 267128,
      "sha256": "7d831e9d799ad23ee98e889381a9db2a283b2dac7f228dd5c06071decb9c54db"
     },
     {
      "name": "OldStandard-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 272692,
      "sha256": "4b9522f4711317fc06e2413a58b4662c249cb707df193d682b9d640e365ef564"
     },
     {
      "name": "OldStandard-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 249668,
      "sha256": "42717a1280b523a506ca2b0285cca380e77fe214b1f6e3d75a8b925005f19eac"
     }
    ],
    "metrics": {
     "x_height": 0.456,
-    "cap_height": 0.712,
     "stem": 0.22,
     "advance": [494, 512, 436, 522, 460, 330, 540, 544, 270, 320, 520, 270, 794, 540, 496, 518, 502, 410, 434, 350, 534, 530, 776, 520, 530, 440, 764, 690, 670, 780, 690, 676, 720, 788, 394, 540, 756, 670, 838, 770, 700, 680, 700, 716, 620, 714, 780, 772, 1068, 750, 728, 652, 580, 580, 580, 580, 580, 580, 580, 580, 580, 580, 280]
    }
@@ -3285,76 +2885,65 @@
      "name": "OpenSans-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 224452,
      "sha256": "1b43de2449d39b65ff6f63315d4afda585f72fbbec2e3d9a56f59de6c75149d3"
     },
     {
      "name": "OpenSans-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 213168,
      "sha256": "3575d2afaaad69970380237a5d6357b6db241f53b77607482eaf9f299b8c07ec"
     },
     {
      "name": "OpenSans-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 222424,
      "sha256": "395f150240d43dff8baea6586baf5665337de57b8204a501fbd6148b2fe165b7"
     },
     {
      "name": "OpenSans-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 213336,
      "sha256": "d5de39bcdd010089d9db8dd1aebaefaf9e691bf9a49282ff43e1d1869b417892"
     },
     {
      "name": "OpenSans-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 212760,
      "sha256": "6cb918a707a06c4f98221d09344af4b98c9cb6184b13309a579caf0418d5eb74"
     },
     {
      "name": "OpenSans-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 222236,
      "sha256": "1c8d3cc6810ecd3623ebff7d2c3db1a44024260c5ae662f8166d69b9425828ed"
     },
     {
      "name": "OpenSans-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 213024,
      "sha256": "fda70df85987b394ff384b899703bc0e55ac7bdba94d06f47462e155cf0c0350"
     },
     {
      "name": "OpenSans-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 217276,
      "sha256": "13c03e22a633919beb2847c58c8285fb8a735ee97097d7c48fd403f8294b05f8"
     },
     {
      "name": "OpenSans-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 221164,
      "sha256": "b4c2050b25d3d296d5cf58589ca00816dc72df42262c2f629d5c6a984a161aa4"
     },
     {
      "name": "OpenSans-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 212732,
      "sha256": "a8f2af8e79f46686b1cfcfb3a1fd53e94e88308d7c6ee7f85c733f4796fcc3a0"
     }
    ],
    "metrics": {
     "x_height": 0.535,
-    "cap_height": 0.714,
     "stem": 0.082,
     "advance": [556, 613, 476, 613, 561, 339, 548, 614, 253, 253, 525, 253, 930, 614, 604, 613, 613, 408, 477, 353, 614, 501, 778, 524, 504, 468, 633, 648, 631, 729, 556, 516, 728, 738, 279, 267, 614, 519, 903, 754, 779, 602, 779, 618, 549, 553, 728, 595, 926, 577, 560, 571, 572, 572, 572, 572, 572, 572, 572, 572, 572, 572, 260]
    }
@@ -3372,27 +2961,23 @@
      "name": "Oxygen-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 48708,
      "sha256": "d86d9a11ad1aa242dbf50d2a2a3295baab2a11349dcf6db5bd28e36036b7f6c0"
     },
     {
      "name": "Oxygen-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 43788,
      "sha256": "014b444c3073bcf433577cca0aaa177b35ab1b9a46ada562710006cb35128409"
     },
     {
      "name": "Oxygen-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 47988,
      "sha256": "a328b8fa366bdd94f507ad02e2721ac49cb4257a9ef1e49560b230079386010e"
     }
    ],
    "metrics": {
     "x_height": 0.536,
-    "cap_height": 0.723,
     "stem": 0.229,
     "advance": [536, 593, 473, 591, 541, 327, 580, 543, 250, 217, 508, 278, 866, 578, 586, 586, 591, 364, 465, 347, 537, 503, 784, 516, 499, 445, 636, 628, 630, 733, 558, 508, 713, 727, 264, 269, 606, 499, 887, 740, 794, 566, 794, 654, 599, 537, 702, 606, 983, 605, 583, 578, 606, 306, 545, 539, 591, 575, 585, 514, 577, 569, 250]
    }
@@ -3410,13 +2995,11 @@
      "name": "OxygenMono-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 68940,
      "sha256": "dcc671da93f7fc31f2e7a4a7c058c815c1eaec6a3d27792e18edff4d3bf539f0"
     }
    ],
    "metrics": {
     "x_height": 0.536,
-    "cap_height": 0.729,
     "stem": 0.446,
     "advance": [600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600]
    }
@@ -3434,13 +3017,11 @@
      "name": "PTM55FT.ttf",
      "weight": 400,
      "italic": false,
-     "size": 185912,
      "sha256": "cbe732b3b8fd211fd986ebdfc9b870ddeca4faab0bb5425fc509b37f9b4ac804"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.7,
     "stem": 0.393,
     "advance": [600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600]
    }
@@ -3458,34 +3039,29 @@
      "name": "PT_Sans-Web-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 470240,
      "sha256": "3128bd5ecf01816e59a23d54c57a7a6b14615b07db53ff277c77376010265b05"
     },
     {
      "name": "PT_Sans-Web-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 375204,
      "sha256": "81ac221cdd02bccfa679c74adb122478e9d092e65a722e31ca11469961483785"
     },
     {
      "name": "PT_Sans-Web-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 436452,
      "sha256": "5a90fe2d0cd798700935240580bdcc12c0ffc9102c0c7163b3418e13bc21debd"
     },
     {
      "name": "PT_Sans-Web-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 442960,
      "sha256": "9cc831490532009bae2b3ce0d39c62adfc889060beb421593bfd9d2396d0f10a"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.7,
     "stem": 0.197,
     "advance": [496, 540, 451, 538, 508, 319, 537, 547, 268, 267, 479, 292, 812, 547, 536, 541, 537, 340, 421, 339, 539, 482, 735, 515, 466, 447, 585, 584, 571, 654, 536, 517, 612, 672, 291, 291, 610, 517, 791, 673, 684, 559, 684, 595, 531, 555, 652, 568, 828, 618, 558, 545, 545, 545, 545, 545, 545, 545, 545, 545, 545, 545, 267]
    }
@@ -3503,34 +3079,29 @@
      "name": "PT_Serif-Web-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 339996,
      "sha256": "038ba7336bd7ea14f12ad155bed51a4345cac5153275d521dec3ba04021c526e"
     },
     {
      "name": "PT_Serif-Web-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 337580,
      "sha256": "f003788ba08981eb0988b3557a6f224a53dab49c20e283e8b74d5af3c466f8be"
     },
     {
      "name": "PT_Serif-Web-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 375356,
      "sha256": "f57e95ff9dc85691a3b2e193f2028db36f6663939a46c0fc4f286d618b80b7ce"
     },
     {
      "name": "PT_Serif-Web-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 359048,
      "sha256": "a4951fade06ff8f09b7673aa81ffb65a8cd409e24d3289a6dc670bc4dda2557a"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.7,
     "stem": 0.232,
     "advance": [505, 545, 466, 555, 503, 342, 526, 587, 301, 288, 516, 301, 863, 594, 553, 566, 548, 384, 433, 371, 574, 507, 728, 519, 505, 488, 683, 615, 644, 708, 582, 544, 688, 728, 352, 341, 646, 549, 867, 732, 740, 596, 740, 637, 536, 619, 672, 684, 934, 670, 644, 610, 533, 533, 533, 533, 533, 533, 533, 533, 533, 533, 243]
    }
@@ -3548,48 +3119,41 @@
      "name": "PlayfairDisplay-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 211776,
      "sha256": "145f22e93511706943bb9f0af3496e70ec139e89c675a9c1543301634b11262f"
     },
     {
      "name": "PlayfairDisplay-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 209992,
      "sha256": "b9f4b47055adea18249253913994b06eba9c3c073c4ef3bf890732b5b433c13c"
     },
     {
      "name": "PlayfairDisplay-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 213592,
      "sha256": "37fcc00a7503976693088bed271e64ce34fca5119181da9acf5b74bd59da8c7e"
     },
     {
      "name": "PlayfairDisplay-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 215008,
      "sha256": "aa17c37411fc706e484f29591a86c5b15be51022cb7b33a3ce411274a7d9e9b5"
     },
     {
      "name": "PlayfairDisplay-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 213028,
      "sha256": "f658325ffab1a9f9ce0bdcd2cfc2f7d6ac144bf92a49580eb70913732825a3e2"
     },
     {
      "name": "PlayfairDisplay-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 210208,
      "sha256": "844b4c3b02e307318abb61d8ebd55bfb8e19304515075fd8af06af099480191e"
     }
    ],
    "metrics": {
     "x_height": 0.517,
-    "cap_height": 0.708,
     "stem": 0.242,
     "advance": [498, 563, 486, 581, 506, 332, 528, 588, 293, 267, 550, 286, 888, 597, 548, 581, 563, 445, 447, 354, 581, 489, 770, 519, 504, 476, 630, 623, 688, 723, 609, 569, 703, 757, 339, 326, 655, 588, 871, 706, 741, 585, 741, 648, 540, 621, 682, 630, 905, 634, 591, 594, 600, 370, 479, 451, 494, 415, 517, 406, 520, 509, 249]
    }
@@ -3607,132 +3171,113 @@
      "name": "Poppins-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 153440,
      "sha256": "d82aaaf98a9283f9a8edd24e51173337d8eaf09e25cd3d98831f8ec8461748a1"
     },
     {
      "name": "Poppins-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 174116,
      "sha256": "f4852ca89c29f69d800e14f097ed4d1f0a0cc454e9f77d73bfd6db1f71c287a0"
     },
     {
      "name": "Poppins-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 155996,
      "sha256": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c"
     },
     {
      "name": "Poppins-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 179108,
      "sha256": "3572ac8116a0ac7317d342262b29937bcbaf94d8f03f90df6fe666fa7e2fb43a"
     },
     {
      "name": "Poppins-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 154836,
      "sha256": "f2ab17c1a63a0ecc12c2461848fc8a469395e3cd2d641803e889c643d9f958e1"
     },
     {
      "name": "Poppins-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 176468,
      "sha256": "dc00a2eb988373e9f4e99bf8ff76c6315ee21d36b341cbbff024e4c18cc7ac03"
     },
     {
      "name": "Poppins-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 163568,
      "sha256": "55c03314cc754e26f741f97890e5e9cbe3b3278fe3abcecfecafd60111b2643d"
     },
     {
      "name": "Poppins-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 188748,
      "sha256": "7171a17e4cda8f6ded78a7a931f9b7f38987057f3ffd1fe07a71528ad0f01e49"
     },
     {
      "name": "Poppins-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 184544,
      "sha256": "4fa76ae75b40f926420514044722cb97f32186cafd3b38263cc34dad7174d46d"
     },
     {
      "name": "Poppins-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 161936,
      "sha256": "650ba57fa99d12ec40c31ccfb680be656be4497fbe14164617d67e32ffe9cd46"
     },
     {
      "name": "Poppins-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 186976,
      "sha256": "b8f9c5be59723fadf8e5447fa1245c2c53b60a3464a24d6ece9ee3c283d8917b"
     },
     {
      "name": "Poppins-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 158576,
      "sha256": "90373e7d838d32468438fc3e152dca0bdb12edcab99ea639f158790b1ba1fd05"
     },
     {
      "name": "Poppins-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 183012,
      "sha256": "765addf6c7c11ec3c54325cacd68cabd05df8e4b6455302d812a9b9bafd1c614"
     },
     {
      "name": "Poppins-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 160316,
      "sha256": "7e65201e9b79159e2300267cc885e16c8dcef2424cdfa09a29bfb0980a94a7ba"
     },
     {
      "name": "Poppins-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 157312,
      "sha256": "d3bf1bdaf0550e83da9ac0b1d1d9fe6db086835a83aa28578e609a394b9a0286"
     },
     {
      "name": "Poppins-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 181108,
      "sha256": "16bb118aa232c9a13fa238027d24d7854dd1a1d9cbaf99b17fec4388d56b432c"
     },
     {
      "name": "Poppins-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 163672,
      "sha256": "6d8e5d9d29140cc93e321745fa1243c67889e6bc3639ec34db64f3da7a496352"
     },
     {
      "name": "Poppins-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 189552,
      "sha256": "46df80ac970f5e84829b868d283878b4d97e289c7b1245541d8bbf66b5d670a8"
     }
    ],
    "metrics": {
     "x_height": 0.548,
-    "cap_height": 0.698,
     "stem": 0.091,
     "advance": [676, 676, 607, 676, 620, 329, 676, 640, 246, 248, 515, 246, 1030, 640, 640, 676, 676, 373, 522, 364, 640, 561, 820, 479, 563, 455, 674, 613, 772, 707, 513, 504, 778, 692, 246, 530, 599, 432, 861, 703, 786, 579, 788, 608, 587, 541, 675, 676, 976, 621, 584, 541, 628, 320, 575, 589, 629, 628, 635, 546, 631, 630, 267]
    }
@@ -3750,13 +3295,11 @@
      "name": "Questrial-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 184176,
      "sha256": "0ee7f2debabb13773fd38468b31820e11fca202a8f98c4d80b6ffcb796899b6f"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.662,
     "stem": 0.075,
     "advance": [595, 595, 544, 595, 557, 307, 595, 566, 205, 205, 502, 205, 868, 566, 564, 595, 595, 345, 482, 326, 566, 489, 746, 482, 497, 458, 662, 662, 690, 703, 608, 583, 723, 697, 237, 527, 641, 533, 806, 733, 750, 628, 750, 669, 615, 565, 709, 628, 958, 613, 636, 584, 550, 550, 550, 550, 550, 550, 550, 550, 550, 550, 213]
    }
@@ -3774,34 +3317,29 @@
      "name": "Quicksand-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 107584,
      "sha256": "8f144a2fe7cf8f34a35d290376fd1892ea5e91722514a9e83af52b3dd2d98d75"
     },
     {
      "name": "Quicksand-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 109060,
      "sha256": "96c73d510174a363670f015d8fabe8fd476e5ecf508b73e45945f9d062a9790f"
     },
     {
      "name": "Quicksand-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 106468,
      "sha256": "e81f62ce1264450b3bb215d4e3fddb981cfe4f304cdeff9179f8ee25bf4545e7"
     },
     {
      "name": "Quicksand-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 107196,
      "sha256": "485393d6f99eaed0e2122ca867ab0bd6d8c24648d3087ef4733740f14b252737"
     }
    ],
    "metrics": {
     "x_height": 0.52,
-    "cap_height": 0.7,
     "stem": 0.06,
     "advance": [602, 602, 514, 602, 556, 353, 620, 568, 214, 241, 535, 230, 912, 578, 595, 602, 602, 385, 469, 339, 569, 529, 752, 484, 568, 479, 647, 651, 653, 719, 568, 566, 695, 720, 250, 572, 675, 532, 827, 728, 766, 596, 775, 670, 562, 604, 713, 665, 966, 606, 559, 644, 595, 333, 567, 520, 556, 549, 537, 518, 565, 553, 273]
    }
@@ -3819,132 +3357,113 @@
      "name": "Raleway-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 180592,
      "sha256": "5d2aec83bf60483dc15a92e393a12be3f19245e82fa913c3a55df4dd810c405c"
     },
     {
      "name": "Raleway-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 148368,
      "sha256": "e0f379b4e2f8d735fa6b189a1d095c17a11e5ab9fd755c87fc6bb64f3779b801"
     },
     {
      "name": "Raleway-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 179244,
      "sha256": "ca9de8b3be7ccd4b80774a9c7dd56a98c49c276771c5957729b5958d1d579112"
     },
     {
      "name": "Raleway-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 148184,
      "sha256": "647fb029a65c0cd0b5a64a1d178ee4e118731e963cb1ef62cf24427b8b251c2a"
     },
     {
      "name": "Raleway-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 178128,
      "sha256": "a89c06c1793eb0b173c2101744cf53ea66f8b24b360f5aef7649f6f2b7120e9e"
     },
     {
      "name": "Raleway-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 148100,
      "sha256": "43ee1a9aabfef25012cdfd38d683760f7e9c9e5d90adfb02125b4e1b602c7e6c"
     },
     {
      "name": "Raleway-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 176344,
      "sha256": "2620b63bff6f16fb1fa5e28209777cfdfc51a0c8aa1d54ea24a590541e2fd54f"
     },
     {
      "name": "Raleway-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 142192,
      "sha256": "02e952d32fc8fe96cddd4c3350d4a809f151e105de14d935974c9a19f3b6bac5"
     },
     {
      "name": "Raleway-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 145920,
      "sha256": "f9c5e089b4bb57662171cc7120e1dcae8d66432b4447dd7a7babb0c5e06aa93e"
     },
     {
      "name": "Raleway-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 182376,
      "sha256": "b3d8986142d28fd27c5158b5d24b072bbed301b1763fe0bfe3076a631e8ea0ca"
     },
     {
      "name": "Raleway-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 148368,
      "sha256": "c767a43c0012cdcb76e32f2f3b5005e054ba60fcf52653f7c456f0044e14f1d3"
     },
     {
      "name": "Raleway-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 179444,
      "sha256": "3d8a045b2c853ee51e5d734d3b53eacf3f5f5290d6b5b862134af53b29dd6818"
     },
     {
      "name": "Raleway-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 147568,
      "sha256": "f7ac99eee53833254c89097c36ec68c0de390377cd31b4c1c082ec3b0132862e"
     },
     {
      "name": "Raleway-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 178520,
      "sha256": "20e4ae409ffbe8bfd2af14d7f717398408ae8b481005beccb83d62ef4052b681"
     },
     {
      "name": "Raleway-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 180492,
      "sha256": "b7680f30199f65ce3b2620713f7cb27a175560ea7402e0b4cba01c5d54508a17"
     },
     {
      "name": "Raleway-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 146584,
      "sha256": "b8d486395fa65b66cb63321cb4a277d51035fe4d0bd9b49edf8322ea9d55c42c"
     },
     {
      "name": "Raleway-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 177572,
      "sha256": "59ee38a0d6f119171f896098603246f2bfc5780d75d23c3298b66a03b45d32db"
     },
     {
      "name": "Raleway-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 141884,
      "sha256": "961a831acb582dbc3ed7d79dc991118d60238c8683c50584e126a293a881264f"
     }
    ],
    "metrics": {
     "x_height": 0.521,
-    "cap_height": 0.71,
     "stem": 0.195,
     "advance": [545, 617, 549, 622, 587, 330, 618, 583, 218, 225, 530, 272, 919, 583, 595, 617, 617, 351, 487, 335, 594, 533, 813, 504, 542, 492, 676, 666, 686, 715, 609, 589, 716, 738, 248, 481, 643, 583, 877, 772, 751, 622, 749, 653, 607, 610, 755, 679, 1046, 632, 651, 629, 612, 428, 521, 534, 546, 545, 603, 535, 593, 586, 255]
    }
@@ -3962,90 +3481,77 @@
      "name": "Roboto-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 171480,
      "sha256": "3872e9b39760a1b59ac1e192633dbb3b58e595b4d423930ac7ded525e9ae25e0"
     },
     {
      "name": "Roboto-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 177552,
      "sha256": "013d22a4fb2638adba28555ee19366f4585f6dc533b7c332f4931a231497cb22"
     },
     {
      "name": "Roboto-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 170760,
      "sha256": "7d0b991ee3e0be7af01ad7ea8cd2beea6c00a25e679a0226b6737f079aafff86"
     },
     {
      "name": "Roboto-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 174952,
      "sha256": "a4bcac14f419a97de0917198a4bc51c3ed4fc4a3db9f68a5102f23664ee01354"
     },
     {
      "name": "Roboto-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 173932,
      "sha256": "5fce8b6f8ba9f4d19f0d535e241d56a2b8e72bb07e7df711d968d092ef7f9fca"
     },
     {
      "name": "Roboto-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 170420,
      "sha256": "a6d343d425bc38db90152fa06058b1c7391eca9264f334ef65c1ce175085c6f6"
     },
     {
      "name": "Roboto-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 176616,
      "sha256": "364a23e13c64937c3fcea3db778628b89379c893849bbade6e5bf83c5f605c6a"
     },
     {
      "name": "Roboto-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 172064,
      "sha256": "f205cc511821ea56078a105557fcea6253129404d411c997e1866fbd006abb68"
     },
     {
      "name": "Roboto-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 176864,
      "sha256": "f177eed10d2470d13ec68d04907a582829d0ee8281f8a02a906f6954c7816e58"
     },
     {
      "name": "Roboto-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 171676,
      "sha256": "79e851404657dac2106b3d22ad256d47824a9a5765458edb72c9102a45816d95"
     },
     {
      "name": "Roboto-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 171904,
      "sha256": "3d91f7aa69cb7f7064035895c566ac5cb9b2084582d351af7267bb4e0fba60f5"
     },
     {
      "name": "Roboto-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 176300,
      "sha256": "f5e89a344894a60f0f98f1c0182ba51f5046e29dde3118820d39025445aeaae8"
     }
    ],
    "metrics": {
     "x_height": 0.528,
-    "cap_height": 0.711,
     "stem": 0.091,
     "advance": [544, 561, 523, 564, 530, 347, 561, 551, 243, 239, 507, 243, 876, 552, 570, 561, 568, 338, 516, 327, 551, 484, 751, 496, 473, 496, 652, 623, 651, 656, 568, 553, 681, 713, 272, 552, 627, 538, 873, 713, 688, 631, 688, 616, 593, 597, 648, 636, 887, 627, 601, 599, 562, 562, 562, 562, 562, 562, 562, 562, 562, 562, 248]
    }
@@ -4063,76 +3569,65 @@
      "name": "RobotoMono-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 113628,
      "sha256": "d5ba59021ad93bc505bc7a5e317aacc8ad408b4790b49b72429ae00659238f83"
     },
     {
      "name": "RobotoMono-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 121644,
      "sha256": "5f58d09712433c7f1f367ef5efb9a53c32e4fa64d8c2efadb590b61f7b434310"
     },
     {
      "name": "RobotoMono-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 119660,
      "sha256": "abd8c8470d448bdee13c8ee6a9b3e5e75f52617eed83d61139d80cc947855eb1"
     },
     {
      "name": "RobotoMono-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 117796,
      "sha256": "8a40d51f12d893655960757e1e1816c973c60354df294def5cca8173055b19c1"
     },
     {
      "name": "RobotoMono-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 126428,
      "sha256": "4cc36f82257e6b2290242ec0ee2a87c7b1faa07e0044e484603518cf9fc5c223"
     },
     {
      "name": "RobotoMono-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 113472,
      "sha256": "1e1b6ccb0d09ccad6f94cc23e03383a67d1c0f1f0889f6e45cccaf065a223003"
     },
     {
      "name": "RobotoMono-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 122504,
      "sha256": "ab985cd18485de9d5b9f5ea66c2a7a04cac9b8dcd7d20b2b86561d491735b43b"
     },
     {
      "name": "RobotoMono-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 113444,
      "sha256": "5d2a2caecd820a2ec200daf29a71ea672579adcb938b4bf2c51f1ee317c926b9"
     },
     {
      "name": "RobotoMono-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 116968,
      "sha256": "bed66ad44715f4d7836770cd7a3f1888961179de0f59b436703e4a477f92b13a"
     },
     {
      "name": "RobotoMono-ThinItalic.ttf",
      "weight": 100,
      "italic": true,
-     "size": 120308,
      "sha256": "c7569d57dc40a12183a7370dc32f599f837d56f01f3bc46d08034d6d256cfc56"
     }
    ],
    "metrics": {
     "x_height": 0.529,
-    "cap_height": 0.711,
     "stem": 0.443,
     "advance": [600, 600, 600, 600, 600, 601, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600]
    }
@@ -4150,34 +3645,29 @@
      "name": "RobotoSlab-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 170616,
      "sha256": "ba12d2eab1fa765b6b05398fa7e047dd76293f0c051ce57a8f7b0c591c14d42b"
     },
     {
      "name": "RobotoSlab-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 179096,
      "sha256": "153bf5b428d5cd0b27a63f9a36941cd7d6c7523a7afd59c76a12f798e4c33127"
     },
     {
      "name": "RobotoSlab-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 169064,
      "sha256": "13aa5f54c6f2fa2e388fe0e675cdbcc6a81f6270a8bf9c03a5df8af9cb022810"
     },
     {
      "name": "RobotoSlab-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 181156,
      "sha256": "4e2f26097538925162cad2a3e6051f659b9895386559a1890a4664d8e9a9a0c1"
     }
    ],
    "metrics": {
     "x_height": 0.529,
-    "cap_height": 0.711,
     "stem": 0.256,
     "advance": [551, 579, 539, 600, 538, 355, 566, 646, 329, 279, 608, 315, 945, 644, 561, 605, 564, 414, 510, 366, 607, 558, 827, 582, 567, 529, 732, 657, 645, 693, 638, 622, 677, 768, 323, 578, 709, 585, 930, 762, 706, 635, 706, 677, 609, 627, 752, 718, 933, 686, 691, 596, 570, 412, 552, 540, 580, 528, 559, 551, 552, 563, 249]
    }
@@ -4195,104 +3685,89 @@
      "name": "SourceCodePro-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 211460,
      "sha256": "4bd014ef597a70d4ce5f280ee56cb36c3253bede15a17dc656d3b6f417938a83"
     },
     {
      "name": "SourceCodePro-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 174208,
      "sha256": "9491ecc389697092868e80e1b94c75a48bbdc9ca9e995c8f55bb4f5b38d161e0"
     },
     {
      "name": "SourceCodePro-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 211716,
      "sha256": "0e0e7549a4eaaa46d142336b4338718d3f96ef2ee3a5fa6ace056bb188bfea54"
     },
     {
      "name": "SourceCodePro-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 174372,
      "sha256": "e6071e867602d9d461b107fc55fef5f996766c35deec1d5c8fbb9c51199e97c7"
     },
     {
      "name": "SourceCodePro-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 213512,
      "sha256": "e5b7061877d2192c09df29790766bc65f738bb50efed42afefa4edaf8a6a8eea"
     },
     {
      "name": "SourceCodePro-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 176076,
      "sha256": "929abf6ec572928bf37c1c69c46cea0404ad7754348c232d977a4283054ceb43"
     },
     {
      "name": "SourceCodePro-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 180472,
      "sha256": "d7c3f212fa549085754b22bcf5032b7bdd5e4fa8f8a6e46abc3e1b5cb69c5e02"
     },
     {
      "name": "SourceCodePro-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 213252,
      "sha256": "f5afed1e50880ceacf3f5eb21863b55593693bcaf6172ee348cbe53cfed84c2d"
     },
     {
      "name": "SourceCodePro-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 176124,
      "sha256": "894a67b050cb9daed7b4df4c323f779286452b7f71a55139f4ac1a9bde8184d6"
     },
     {
      "name": "SourceCodePro-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 212160,
      "sha256": "959ec858df4563d734f3200ad238ac13097baaedc30adb4e811e32858ce54002"
     },
     {
      "name": "SourceCodePro-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 175308,
      "sha256": "9f92311a8d0669cd1555c8080b7eb8fe63343ea7842f6323cdb62f905003363d"
     },
     {
      "name": "SourceCodePro-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 212880,
      "sha256": "50b50d9fad5a49ac34129b606027a80e1b7ccd799bb91734bb4f60cdaaeb0ac0"
     },
     {
      "name": "SourceCodePro-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 212048,
      "sha256": "15f19188d8f3b53be672f60a638604832c079abf2a9212264a38e65d68ed61b3"
     },
     {
      "name": "SourceCodePro-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 174764,
      "sha256": "ac78f663151a2f8472612fb7386eb904819c9b6689e11c515e0794525357e4e8"
     }
    ],
    "metrics": {
     "x_height": 0.486,
-    "cap_height": 0.656,
     "stem": 0.463,
     "advance": [600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600]
    }
@@ -4310,90 +3785,77 @@
      "name": "SourceSansPro-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 253584,
      "sha256": "51fb02911c19199d2b0b35789ef52b0179380e7294abaac93855bfd1b0b1b704"
     },
     {
      "name": "SourceSansPro-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 113988,
      "sha256": "0de64da2f8b859920cb60e8ea617274b9f1c9dba427773be61307d79c982204a"
     },
     {
      "name": "SourceSansPro-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 253344,
      "sha256": "e1ac971e7b62b2ad0b0bb9f55bc15f6215df8af5bf69e894905341cfdfa51aea"
     },
     {
      "name": "SourceSansPro-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 114704,
      "sha256": "0ad42cce23ed61aada9e6a156bfa411fd03354067711e04b3bb3c8470f82d8c6"
     },
     {
      "name": "SourceSansPro-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 252736,
      "sha256": "7a44c30e92eda0963633377ff584dd83505f56e65e6c118c5ca327190db42dcd"
     },
     {
      "name": "SourceSansPro-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 115108,
      "sha256": "609d64c048f49ffc52b5f1d6f4cd2f3f87840c0639b3564adaf2e47097a01ef3"
     },
     {
      "name": "SourceSansPro-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 114984,
      "sha256": "740798947aa0151c6bec4508ba73eb7cb22f9ef2e4354314fc638f66eaa2f072"
     },
     {
      "name": "SourceSansPro-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 252560,
      "sha256": "719319e7fe1ed06a6bc5e66a1cfea8c52250eefee502d175780cf4571ddc5bf0"
     },
     {
      "name": "SourceSansPro-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 115696,
      "sha256": "605425dc687ecc7bdce9329c0fc976ea38eb38a910c24144ced60d73f35e855e"
     },
     {
      "name": "SourceSansPro-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 254076,
      "sha256": "3d2e962599d4bd83b797ab813f2017f2c7f7e7e0e2e8e3a497f4e713a0b3c9c9"
     },
     {
      "name": "SourceSansPro-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 253832,
      "sha256": "37bb472f47d33a04f5616c6e9120723ed944c31306838ecd692feb7c69084da2"
     },
     {
      "name": "SourceSansPro-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 114808,
      "sha256": "8e1136c1c135261a389118f9758d477d3582c9dda10fec6b7511e27e866adfbc"
     }
    ],
    "metrics": {
     "x_height": 0.486,
-    "cap_height": 0.656,
     "stem": 0.134,
     "advance": [504, 553, 456, 555, 496, 292, 504, 544, 246, 247, 495, 255, 829, 547, 542, 555, 555, 347, 419, 338, 544, 467, 718, 446, 467, 425, 544, 588, 571, 615, 527, 494, 617, 652, 263, 480, 579, 486, 727, 647, 664, 566, 664, 569, 534, 536, 645, 515, 786, 513, 476, 539, 497, 497, 497, 497, 497, 497, 497, 497, 497, 497, 200]
    }
@@ -4411,90 +3873,77 @@
      "name": "SourceSerifPro-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 232940,
      "sha256": "3445b5253de87c466a8f7137182cb454862520305868fd7ba568e8e972c3f895"
     },
     {
      "name": "SourceSerifPro-BlackItalic.ttf",
      "weight": 900,
      "italic": true,
-     "size": 173296,
      "sha256": "1fdf5660ad04209a6743d5f1062c9ed9b777a1481d92ed4f05dd9bad8b564016"
     },
     {
      "name": "SourceSerifPro-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 234000,
      "sha256": "894ce53379baf2c0036ef60528dbd0aeba568d9c0d78f43417cf175fb52655c8"
     },
     {
      "name": "SourceSerifPro-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 176380,
      "sha256": "5ca368d56229a606e840a4432808174dbf5f3c16bf2838d2ab0459eb8614348c"
     },
     {
      "name": "SourceSerifPro-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 227632,
      "sha256": "803a193ae3ee2c7cd28c58c94d45127cc41b25b02a04e7d184341ade7ad8e5c8"
     },
     {
      "name": "SourceSerifPro-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 171700,
      "sha256": "63cdce26f4b317bd9f075e629bf54bdc2d453d7ef93bc0993c80a90dab9179b8"
     },
     {
      "name": "SourceSerifPro-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 173200,
      "sha256": "a8ccc55ed2a7304a03d001d48b73382f739e0fe5f805533f54a3adb32049c82a"
     },
     {
      "name": "SourceSerifPro-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 231652,
      "sha256": "4230b332164cf94d4d5150c579ccc7a571525b0d8ae482452edfd1fb9d1fa0db"
     },
     {
      "name": "SourceSerifPro-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 175124,
      "sha256": "8e68a17854172c5f16830b1e0bae9fd20905509c261c8246f72da0077852200c"
     },
     {
      "name": "SourceSerifPro-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 231084,
      "sha256": "4eb0d346de8ef092800db6b49a426afb8abd95c875d6a392e35f53ab8254ea62"
     },
     {
      "name": "SourceSerifPro-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 233856,
      "sha256": "0de9f1ccb2745b0761f2200749f8fe58f68d272f50c845747b351fc94da4edfa"
     },
     {
      "name": "SourceSerifPro-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 176460,
      "sha256": "d46c0e030a0f08fd18c70e62c5950ab37500363e75d9b90c7b74241922948211"
     }
    ],
    "metrics": {
     "x_height": 0.475,
-    "cap_height": 0.669,
     "stem": 0.248,
     "advance": [509, 577, 488, 567, 510, 354, 518, 601, 298, 277, 547, 298, 901, 606, 549, 583, 557, 423, 434, 325, 583, 505, 764, 526, 512, 456, 664, 629, 631, 710, 603, 579, 682, 789, 371, 374, 667, 596, 902, 735, 707, 589, 707, 651, 512, 604, 727, 674, 962, 648, 633, 551, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 233]
    }
@@ -4512,34 +3961,29 @@
      "name": "SpaceMono-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 98232,
      "sha256": "405e73d41afb7e5906efce206a326af5c956f38e255f35421c260e861e599c59"
     },
     {
      "name": "SpaceMono-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 111904,
      "sha256": "cdcc95eddee312879a9728494e595f591cb159f3f276d79bc58673dec7e57138"
     },
     {
      "name": "SpaceMono-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 121396,
      "sha256": "eca264c8690a91fe837d19a6badf2d88961610c4c8aafcb196526192a9f258c5"
     },
     {
      "name": "SpaceMono-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 99356,
      "sha256": "95837e182baeeada83368f7748db28357f0a1b75c6b84ff7065b5edf933c8e18"
     }
    ],
    "metrics": {
     "x_height": 0.496,
-    "cap_height": 0.7,
     "stem": 0.438,
     "advance": [612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612, 612]
    }
@@ -4557,104 +4001,89 @@
      "name": "Spectral-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 273220,
      "sha256": "70ddb1ec6ae3b0b8d0c79231f670de786978f19baeba2130757526e407aebf9b"
     },
     {
      "name": "Spectral-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 284356,
      "sha256": "709fa4f2da9be216fd52125db2d6caa4f90150f48de1a453c9ecf91117ab49b6"
     },
     {
      "name": "Spectral-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 260528,
      "sha256": "af3f8513db8d047ebecb1682b5e04dfc12ec7e6b51b71654d4d348f12a5e6b5a"
     },
     {
      "name": "Spectral-ExtraBoldItalic.ttf",
      "weight": 800,
      "italic": true,
-     "size": 273528,
      "sha256": "680ba360e376759b54f33154a89e3c75842d4cf8faa498a717c3e1a65a93305a"
     },
     {
      "name": "Spectral-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 244808,
      "sha256": "5d852db897fd7ad5ce640a6e88f1cd70eac75777c541d02d86749af8d4797ff1"
     },
     {
      "name": "Spectral-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 267536,
      "sha256": "492e823b5d8d67d2f18fe06938d84e8decee24b1790d4c6ebdade3cbd1b83b44"
     },
     {
      "name": "Spectral-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 270468,
      "sha256": "7ec97244259db4008c4b1224c7914e5371c797c0044af9d85c2d761ba0e5f787"
     },
     {
      "name": "Spectral-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 269312,
      "sha256": "a2a530303d326473b69ab7863b879e9203ec747e51d5fa7c7b19e0e975e00740"
     },
     {
      "name": "Spectral-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 282836,
      "sha256": "4cb424aeb1d6b822e9ce6213789afeabd403c6765fc7339e184c27ae4d6a6b01"
     },
     {
      "name": "Spectral-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 272920,
      "sha256": "f385bc588599c879112272711d4acecc126674009d747a27284f59e93a240e83"
     },
     {
      "name": "Spectral-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 284312,
      "sha256": "82388c41e76d6417ce9947418fa2cda1ed99f24d4ff295b2f05572178127663f"
     },
     {
      "name": "Spectral-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 261088,
      "sha256": "c89021dc20720c8d0dcf40b0b2f6e00c13665fa8041717f581396f51b8c78f5d"
     },
     {
      "name": "Spectral-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 273068,
      "sha256": "5f86915a744832ecf6e4a17ab04bea091b9fa992ef5164ff65ae34c1da2fe94b"
     },
     {
      "name": "Spectral-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 284032,
      "sha256": "46ad3a9f93b98dc2dbdeee265e76eb846c5be912aa8f09f42e3692706c6f563b"
     }
    ],
    "metrics": {
     "x_height": 0.45,
-    "cap_height": 0.66,
     "stem": 0.206,
     "advance": [489, 560, 479, 559, 484, 342, 546, 582, 313, 314, 558, 294, 860, 582, 540, 567, 558, 397, 432, 354, 561, 480, 753, 496, 480, 482, 750, 658, 726, 775, 652, 614, 768, 810, 390, 390, 719, 632, 959, 799, 807, 638, 807, 661, 531, 674, 809, 740, 981, 740, 718, 646, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 250]
    }
@@ -4672,34 +4101,29 @@
      "name": "Tinos-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 451516,
      "sha256": "6a0afe87068ba5ddeb6a9bb7b9d0dc41666966c044767df69de3efb7e33f5af8"
     },
     {
      "name": "Tinos-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 456592,
      "sha256": "52c4d87a988eb1f1c25e1fcb97970d456a2fb252e0fa2116e2b4bb33e7824bda"
     },
     {
      "name": "Tinos-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 455400,
      "sha256": "751c979043c9641dad389ab9c680c2c9ffb0a0c7352153f48b9ebd958e8963d8"
     },
     {
      "name": "Tinos-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 475288,
      "sha256": "1061395ac6775f3cea27dc9ef3d7a3b9cc34c2b4a2d97aa649411294d5165990"
     }
    ],
    "metrics": {
     "x_height": 0.459,
-    "cap_height": 0.655,
     "stem": 0.238,
     "advance": [444, 500, 444, 500, 444, 333, 500, 500, 278, 278, 500, 278, 778, 500, 500, 500, 500, 333, 389, 278, 500, 500, 722, 500, 500, 444, 722, 667, 667, 722, 611, 556, 722, 722, 333, 389, 722, 611, 889, 722, 722, 556, 722, 667, 556, 611, 722, 722, 944, 722, 722, 611, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 250]
    }
@@ -4717,83 +4141,71 @@
      "name": "TitilliumWeb-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 49328,
      "sha256": "6e064771c29aee4c79c9aebbd560db79faa71f4c1944ea27f12d82be8a04b1cb"
     },
     {
      "name": "TitilliumWeb-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 59884,
      "sha256": "e2e8e1812041e2c5868f1d03ac24994312052c5381cca2e80748f08cb7e13093"
     },
     {
      "name": "TitilliumWeb-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 69772,
      "sha256": "744068ee0f1623c61567b0981d51c49edba012d74c5ba73076847c0143284a25"
     },
     {
      "name": "TitilliumWeb-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 63172,
      "sha256": "38d310af66c015016c39455b0fde799d83980b844fd1f5d4c45ef558e6d700a2"
     },
     {
      "name": "TitilliumWeb-ExtraLightItalic.ttf",
      "weight": 200,
      "italic": true,
-     "size": 67860,
      "sha256": "3160c0243db4ba708a5a6ffade89847d506a5fe7accc06423dd1705a6a47aebb"
     },
     {
      "name": "TitilliumWeb-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 72392,
      "sha256": "4f08e681c1b38f825125a1a5a9c8a38d0eb94eea51b04cdb2a17cbec47f90833"
     },
     {
      "name": "TitilliumWeb-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 64004,
      "sha256": "c9bbaf3fdb9cfcfa4a1b4e860f2c5ee32158e80b6b0f1160b40dda2c98037d10"
     },
     {
      "name": "TitilliumWeb-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 71708,
      "sha256": "cc48c25d01e36a414864de23e223145e9b76234e2a12beeac8d204c83ccafc45"
     },
     {
      "name": "TitilliumWeb-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 63660,
      "sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5"
     },
     {
      "name": "TitilliumWeb-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 63008,
      "sha256": "7c92f15302d7ac1836015cb9cf4068796406667b304a061b75df8e11f1648c81"
     },
     {
      "name": "TitilliumWeb-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 71796,
      "sha256": "dcc38dfead3e114992922cb06844d467ce5cfe62baba841ff4053c250dcb41e9"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.692,
     "stem": 0.075,
     "advance": [501, 526, 436, 529, 505, 331, 514, 537, 219, 219, 479, 231, 836, 537, 528, 527, 526, 346, 465, 351, 531, 481, 762, 452, 483, 455, 596, 616, 544, 645, 553, 526, 616, 675, 246, 289, 569, 479, 840, 676, 660, 593, 660, 616, 542, 526, 644, 582, 886, 558, 538, 536, 560, 560, 560, 560, 560, 560, 560, 560, 560, 560, 220]
    }
@@ -4811,20 +4223,17 @@
      "name": "Vollkorn-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 412912,
      "sha256": "af5893110f170f7a05484304e51514b339e5495b5c54116611c3465a68985976"
     },
     {
      "name": "Vollkorn-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 542688,
      "sha256": "0f2949f3db470cede08a49c0f484d55d02040708c68a429efe9205ede737e564"
     }
    ],
    "metrics": {
     "x_height": 0.46,
-    "cap_height": 0.677,
     "stem": 0.229,
     "advance": [498, 547, 447, 564, 474, 342, 511, 596, 301, 283, 545, 299, 885, 597, 532, 573, 546, 419, 428, 351, 564, 528, 774, 521, 541, 501, 704, 623, 653, 730, 601, 561, 731, 753, 354, 329, 678, 560, 931, 742, 731, 581, 731, 684, 552, 585, 675, 686, 1003, 667, 630, 631, 601, 388, 537, 513, 597, 481, 506, 485, 508, 519, 200]
    }
@@ -4842,69 +4251,59 @@
      "name": "WorkSans-Black.ttf",
      "weight": 900,
      "italic": false,
-     "size": 139644,
      "sha256": "a1ef0759b74464d8f39e4f4dc09de0669880fba05573b279849f32db68763961"
     },
     {
      "name": "WorkSans-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 143920,
      "sha256": "d208b3c1cfe945d2077ca5277b9144cabbb515a1a7c6d6021386f6a59d3de0b4"
     },
     {
      "name": "WorkSans-ExtraBold.ttf",
      "weight": 800,
      "italic": false,
-     "size": 146244,
      "sha256": "0c35fdf796bd085bfe0cd7ead4a7eb8ba1ec36256fc59bd39b4dbbeeb83a8565"
     },
     {
      "name": "WorkSans-ExtraLight.ttf",
      "weight": 200,
      "italic": false,
-     "size": 135500,
      "sha256": "7cf89c1c8347af0a259a553026aa684a468e6ac94f8dec3b98ea66e0c361444b"
     },
     {
      "name": "WorkSans-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 136980,
      "sha256": "6e70c1f9dba4772556c72c5ee23063bd25dc67922c01519b4072308a741507c0"
     },
     {
      "name": "WorkSans-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 143036,
      "sha256": "f35f060d9f1d4dce79ef2fb033d5171dc98432fd41a18135a9934d76156eb082"
     },
     {
      "name": "WorkSans-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 135828,
      "sha256": "4e8b90b2380c6f73922e90ac611f7d79ed0ace91bbcd5fc73ea6f3b6d7cb3441"
     },
     {
      "name": "WorkSans-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 142548,
      "sha256": "22e10fe34441064aa9f299fa998528c5fa9b139ad8febc19721970d5c41089b6"
     },
     {
      "name": "WorkSans-Thin.ttf",
      "weight": 100,
      "italic": false,
-     "size": 135044,
      "sha256": "cab9c618dc58951d31ca5f72662607469c75ee20573cf742cf6c966583db3318"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.66,
     "stem": 0.207,
     "advance": [566, 630, 564, 630, 581, 393, 549, 619, 266, 266, 567, 306, 953, 619, 608, 630, 631, 408, 527, 419, 619, 520, 856, 533, 535, 534, 660, 653, 686, 721, 638, 610, 724, 734, 296, 566, 656, 598, 854, 734, 748, 610, 748, 665, 641, 604, 720, 648, 961, 601, 572, 630, 622, 409, 583, 583, 611, 582, 618, 561, 616, 623, 341]
    }
@@ -4922,13 +4321,11 @@
      "name": "YoungSerif-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 106608,
      "sha256": "42bb2602364b28569fdce5eeb6ab3d81cf8090ba81b211f1229ed69f33155523"
     }
    ],
    "metrics": {
     "x_height": 0.5,
-    "cap_height": 0.756,
     "stem": 0.317,
     "advance": [619, 609, 514, 619, 515, 402, 522, 681, 347, 303, 631, 347, 1036, 681, 574, 631, 625, 530, 542, 410, 659, 600, 932, 603, 578, 544, 786, 719, 749, 790, 755, 694, 772, 898, 407, 525, 798, 699, 1036, 891, 822, 700, 822, 798, 723, 788, 808, 784, 1207, 853, 794, 745, 602, 397, 543, 529, 575, 537, 608, 572, 558, 608, 250]
    }
@@ -4946,76 +4343,65 @@
      "name": "ZillaSlab-Bold.ttf",
      "weight": 700,
      "italic": false,
-     "size": 273044,
      "sha256": "4ec3a04a4eef37074b42ef542e4d874e13646668cfe65256e0bf100441cf8719"
     },
     {
      "name": "ZillaSlab-BoldItalic.ttf",
      "weight": 700,
      "italic": true,
-     "size": 280236,
      "sha256": "7951036c92de71e3c88ea01abe031d5bdaddf4639022a3e1cb92322f2e88d2cf"
     },
     {
      "name": "ZillaSlab-Italic.ttf",
      "weight": 400,
      "italic": true,
-     "size": 277732,
      "sha256": "ff0cd7a2f0db59d017d51b4ed9003f58bf21ae218ab2a965aa3bc1dd894c152b"
     },
     {
      "name": "ZillaSlab-Light.ttf",
      "weight": 300,
      "italic": false,
-     "size": 265056,
      "sha256": "4c3dfcd4a5bb71ee28b6c2ec8e8bfec720f619bc00e12a13a88f0f233af7f851"
     },
     {
      "name": "ZillaSlab-LightItalic.ttf",
      "weight": 300,
      "italic": true,
-     "size": 270260,
      "sha256": "899c8f381f7b82a78fd5ac458405b6c212ad25bc11447f235aa097f3faf34b9e"
     },
     {
      "name": "ZillaSlab-Medium.ttf",
      "weight": 500,
      "italic": false,
-     "size": 268184,
      "sha256": "d344b0f60cd5fb2d34c4168d2811ba684163e5665e20cccbcfb6ac822d84a500"
     },
     {
      "name": "ZillaSlab-MediumItalic.ttf",
      "weight": 500,
      "italic": true,
-     "size": 276812,
      "sha256": "de6be2985329891035a3b3863a325a82a918a2018650c3b43fa5c4ae14815f58"
     },
     {
      "name": "ZillaSlab-Regular.ttf",
      "weight": 400,
      "italic": false,
-     "size": 270104,
      "sha256": "41a4626844da9216b031308d4423045c765fe4231d99862d85d7d74509d37703"
     },
     {
      "name": "ZillaSlab-SemiBold.ttf",
      "weight": 600,
      "italic": false,
-     "size": 270088,
      "sha256": "aafcb295b88d520357db1ecf9a1c3167055e87e9ddf5f63e560cbd139ec2805e"
     },
     {
      "name": "ZillaSlab-SemiBoldItalic.ttf",
      "weight": 600,
      "italic": true,
-     "size": 277604,
      "sha256": "23815b73da57186d64adc71cdab4cd2bbd9be21f71efdce60d9676638f070e2f"
     }
    ],
    "metrics": {
     "x_height": 0.445,
-    "cap_height": 0.65,
     "stem": 0.227,
     "advance": [483, 534, 462, 549, 470, 319, 548, 560, 280, 252, 520, 266, 863, 573, 513, 550, 534, 420, 438, 371, 561, 509, 766, 514, 511, 464, 648, 604, 646, 705, 588, 558, 691, 755, 322, 456, 642, 545, 882, 738, 729, 574, 736, 617, 533, 620, 718, 648, 934, 632, 613, 577, 576, 385, 515, 489, 539, 512, 531, 471, 538, 531, 227]
    }
@@ -5024,14 +4410,11 @@
  "aliases": {
   "arial": "Arimo",
   "arialmt": "Arimo",
-  "baskerville": "Libre Baskerville",
   "calibri": "Carlito",
   "cambria": "Caladea",
-  "centurygothic": "Questrial",
   "courier": "Cousine",
   "couriernew": "Cousine",
   "couriernewps": "Cousine",
-  "franklingothic": "Libre Franklin",
   "freesans": "Arimo",
   "freeserif": "Tinos",
   "georgia": "Gelasio",
@@ -5056,5 +4439,10 @@
   "timesnewroman": "Tinos",
   "timesnewromanps": "Tinos",
   "timesnewromanpsmt": "Tinos"
+ },
+ "lookalikes": {
+  "baskerville": "Libre Baskerville",
+  "centurygothic": "Questrial",
+  "franklingothic": "Libre Franklin"
  }
 }

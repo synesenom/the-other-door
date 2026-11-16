@@ -82,7 +82,7 @@ def find_chromium(home: Path | None = None) -> str | None:
     return None
 
 
-def _http_get(url: str, to: Path) -> None:
+def http_get(url: str, to: Path) -> None:
     with urllib.request.urlopen(url, timeout=60) as response, open(to, "wb") as out:  # noqa: S310 - https, pinned
         shutil.copyfileobj(response, out)
 
@@ -108,7 +108,7 @@ def _sweep_stale_parts(dest: Path) -> None:
             shutil.rmtree(part, ignore_errors=True)
 
 
-def install(dest: Path, fetch=_http_get) -> None:
+def install(dest: Path, fetch=http_get) -> None:
     """Download the pinned zip, check its sha256 and unpack it into `dest` (a no-op when there)."""
     key = platform_key()
     if key is None:

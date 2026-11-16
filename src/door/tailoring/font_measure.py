@@ -1,4 +1,4 @@
-"""What a PDF's fonts measure (#199): the x-height, cap height and stem of each font as fractions of the font size,
+"""What a PDF's fonts measure (#199): the x-height and stem of each font as fractions of the font size,
 and its text runs with their widths, read from the characters' boxes through pypdfium2. They are what
 `door.core.fonts.plan` compares with each pinned family when no free copy of the font exists.
 
@@ -18,7 +18,7 @@ import pypdfium2.raw as raw
 
 from door.tailoring import pdf_render
 
-X_CHARS, CAP_CHARS, STEM_CHARS = "xzvw", "HE", "l"
+X_CHARS, STEM_CHARS = "xzvw", "l"
 _MIN_RUN = 8   # characters, spaces included: a shorter run says little about a font's widths
 
 
@@ -82,10 +82,10 @@ def _split(chars) -> list[list]:
 
 def measure(pdf_path: Path, fonts: list[dict]) -> dict[str, dict]:
     """For each font of `fonts` (the entries `style_extract.extract` returns) that has text in the PDF, by its base
-    name: ``x_height``, ``cap_height`` and ``stem`` (fractions of the size, None when no letter to read them from)
+    name: ``x_height`` and ``stem`` (fractions of the size, None when no letter to read them from)
     and ``runs`` (text, width, size)."""
     wanted = {f["font"] for f in fonts if not f.get("icon")}
-    samples: dict[str, dict[str, list[float]]] = {n: {"x": [], "cap": [], "stem": []} for n in wanted}
+    samples: dict[str, dict[str, list[float]]] = {n: {"x": [], "stem": []} for n in wanted}
     runs: dict[str, list[tuple[str, float, float]]] = {n: [] for n in wanted}
     doc = pdf_render.open_pdf(pdf_path)
     try:
@@ -101,8 +101,6 @@ def measure(pdf_path: Path, fonts: list[dict]) -> dict[str, dict]:
                 height, width = (top - bottom) / size, (right - left) / size
                 if ch in X_CHARS:
                     samples[font]["x"].append(height)
-                elif ch in CAP_CHARS:
-                    samples[font]["cap"].append(height)
                 elif ch in STEM_CHARS:
                     samples[font]["stem"].append(width)
             for run in _split(chars):
@@ -116,5 +114,5 @@ def measure(pdf_path: Path, fonts: list[dict]) -> dict[str, dict]:
 
     def med(values: list[float]) -> float | None:
         return round(statistics.median(values), 3) if values else None
-    return {n: {"x_height": med(s["x"]), "cap_height": med(s["cap"]), "stem": med(s["stem"]), "runs": runs[n]}
+    return {n: {"x_height": med(s["x"]), "stem": med(s["stem"]), "runs": runs[n]}
             for n, s in samples.items() if runs[n] or any(s.values())}
