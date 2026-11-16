@@ -15,4 +15,4 @@ def test_a_test_outside_the_folder_is_not_marked_cli_journeys():
     nodes = [line for line in out.splitlines() if "::" in line]
     assert nodes, out
     assert all(n.startswith("tests/cli_journeys/") for n in nodes), nodes
-    assert not any(n.endswith("_unit.py") or "_unit.py::" in n for n in nodes)
+    assert not any("_unit.py::" in n for n in nodes)
