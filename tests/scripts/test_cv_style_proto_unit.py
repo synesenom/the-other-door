@@ -169,11 +169,11 @@ def test_the_prototype_is_not_wired_into_the_product():
 
 
 def test_a_given_pdf_is_rebuilt_as_its_own_cv_named_after_the_file(tmp_path, monkeypatch):
-    pdf = tmp_path / "lorem-altacv-icons.pdf"
+    pdf = tmp_path / "scrubbed-altacv-icons-fr.pdf"
     pdf.write_bytes(_PDF)
     seen = []
     monkeypatch.setattr(proto, "run_pdf", lambda path, with_stress: seen.append((path, with_stress)) or {"cv": path.stem})
     monkeypatch.setattr(proto, "OUT", tmp_path / "out")
     proto.main(["--pdf", str(pdf), "--stress"])
     assert seen == [(pdf, True)]
-    assert proto.pdf_work_dir(pdf) == tmp_path / "out" / "pdf-lorem-altacv-icons"
+    assert proto.pdf_work_dir(pdf) == tmp_path / "out" / "pdf-scrubbed-altacv-icons-fr"
