@@ -153,12 +153,9 @@ describe('scenes', () => {
     expect(await screen.findByRole('listitem', { name: 'Rebuilt the cash forecast at Acme Foods' })).toBeInTheDocument()
   })
 
-  it('onboarding-review-style offers the CV style, off, and the ticked scene has it on', async () => {
+  it('onboarding-review-style offers the CV style, off', async () => {
     mount('onboarding-review-style')
     expect(await screen.findByRole('checkbox', { name: 'Make my tailored CVs look like the CV I uploaded' })).not.toBeChecked()
-    cleanup()
-    mount('onboarding-review-style-on')
-    expect(await screen.findByRole('checkbox', { name: 'Make my tailored CVs look like the CV I uploaded' })).toBeChecked()
   })
 
   it('matches-style-ready says at the sidebar\'s foot that the style is ready', async () => {

@@ -154,7 +154,7 @@ def _has_style(path: Path) -> bool:
     """Whether the file at `path` has a CV style to copy (`style._intake` passes); false on any failure (#150)."""
     try:
         style_cmd._intake(path)
-    except Exception:  # noqa: BLE001 - an unreadable file simply offers no style
+    except ValueError:  # an unreadable file simply offers no style
         return False
     return True
 

@@ -207,7 +207,7 @@ export interface WizardState {
   cvText: string | null
   enrichSources: string[]
   /** What a CV draft learned (`draft_cv`): where each part came from, what is left to fill in, what was read. */
-  cvDraft: CvDraftInfo | null
+  cvDraft: (CvDraftInfo & { tokens: string[] }) | null
   /** The public pages the draft was made from and added to `enrichSources`, to take them out again. */
   cvUrls: string[]
   /** Messages from a failed Save, by the review section that owns the field. */
@@ -345,7 +345,7 @@ export type Action =
   | { type: 'dropTitle'; title: string }
   | { type: 'keywords'; keywords: string[]; topicTerms: string[] }
   | { type: 'skipKeywords'; warning?: string }
-  | ({ type: 'draftDone'; markdown: string; urls: string[] } & CvDraftInfo)
+  | ({ type: 'draftDone'; markdown: string; urls: string[]; tokens: string[] } & CvDraftInfo)
   | { type: 'saveFailed'; error: string }
   | { type: 'photo'; choice: PhotoChoice }
   | { type: 'style'; on: boolean }
@@ -459,7 +459,7 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       const added: string[] = []
       for (const url of action.urls) if (!isLinkedIn(url) && ![...kept, ...added].includes(url)) added.push(url)
       return withoutErrors(
-        { ...state, cvText: action.markdown, cvDraft: { sources: action.sources }, cvUrls: added, enrichSources: [...kept, ...added] },
+        { ...state, cvText: action.markdown, cvDraft: { sources: action.sources, tokens: action.tokens }, cvUrls: added, enrichSources: [...kept, ...added] },
         'cv',
       )
     }
@@ -507,12 +507,14 @@ export function toInitArgs(state: WizardState): Record<string, unknown> {
 }
 
 /** The token of the CV file whose style the build copies: the first picked file `draft_cv` says has one. None on a
- * set-up again or without such a file (the draft's files come in the order they were picked). */
+ * set-up again or without such a file (the draft's files come in the order they were read, `cvDraft.tokens`). */
 export function styleSource(state: WizardState): string | null {
   if (state.mode !== 'fresh') return null
   const files = state.cvDraft?.sources.filter((s) => s.kind === 'file') ?? []
   const at = files.findIndex((s) => s.style === true)
-  return at >= 0 ? state.files[at]?.token ?? null : null
+  const token = at >= 0 ? state.cvDraft?.tokens[at] : undefined
+  // the draft read those files; one dropped since is no longer there to copy
+  return token !== undefined && state.files.some((f) => f.token === token) ? token : null
 }
 
 /** What the city's country does with a CV photo: `no` for a city the options do not know. */

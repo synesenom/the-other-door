@@ -150,10 +150,11 @@ const ANSWERED: Partial<WizardState> = {
   cvText: CV,
   cvDraft: {
     sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }],
+    tokens: [],
   },
 }
 
-const STYLED_DRAFT = { sources: [{ source: 'jane-doe-cv.pdf', kind: 'file' as const, chars: 5400, style: true }] }
+const STYLED_DRAFT = { sources: [{ source: 'jane-doe-cv.pdf', kind: 'file' as const, chars: 5400, style: true }], tokens: ['preview-1'] }
 
 export const SCENES: readonly Scene[] = [
   { id: 'guide', group: 'Visual guide', title: 'Buttons, fields, marks, type and colours', guide: true },
@@ -194,7 +195,6 @@ export const SCENES: readonly Scene[] = [
   { id: 'onboarding-reading-last', group: 'Onboarding', title: '2. Reading, stays on the last step', fresh: true, start: { wizard: { step: 'reading', files: [FILE] } }, hold: 'keywords' },
   { id: 'onboarding-review', group: 'Onboarding', title: '3. Review', fresh: true, start: { wizard: { ...ANSWERED, step: 'review' } } },
   { id: 'onboarding-review-style', group: 'Onboarding', title: '3. Review, the CV style offered (off)', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', files: [FILE], cvDraft: STYLED_DRAFT } } },
-  { id: 'onboarding-review-style-on', group: 'Onboarding', title: '3. Review, the CV style ticked', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', files: [FILE], cvDraft: STYLED_DRAFT, style: true } } },
   { id: 'onboarding-review-unfound', group: 'Onboarding', title: '3. Review, details not found', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', name: '', email: '', location: '', titles: [], roleTargets: [], keywords: [], topicTerms: [], keywordsState: 'none', missing: ['name', 'email', 'location', 'titles'] } } },
   { id: 'onboarding-review-gaps', group: 'Onboarding', title: '3. Review, the CV has gaps', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', cvText: CV.replace('+45 00 00 00 00', 'TODO').replace(/(BSc in Business Administration.*— ).*/, '$1TODO') } } },
   { id: 'onboarding-review-no-cv', group: 'Onboarding', title: '3. Review, the draft failed', fresh: true, start: { wizard: { ...ANSWERED, cvText: null, cvDraft: null, step: 'review' } } },

@@ -204,7 +204,7 @@ describe('Review', () => {
   })
 
   it('the CV names a file with no text, and is editable', async () => {
-    setup({ ...answers, cvText: '# Ada\nTODO phone\n', cvDraft: { sources: [{ source: '/x/scan.pdf', kind: 'file', chars: 0 }] } })
+    setup({ ...answers, cvText: '# Ada\nTODO phone\n', cvDraft: { sources: [{ source: '/x/scan.pdf', kind: 'file', chars: 0 }], tokens: [] } })
     expect(screen.getByText(/scan.pdf: no text found/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
     fireEvent.change(screen.getByLabelText('Your CV'), { target: { value: '# New' } })
@@ -401,7 +401,7 @@ describe('Review, the CV style tick', () => {
   const styled: Partial<WizardState> = {
     ...answers,
     files: [{ token: 'f1', name: 'cv.pdf', size: 1 }],
-    cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: true }] },
+    cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: true }], tokens: ['f1'] },
   }
   const box = () => screen.queryByRole('checkbox', { name: /Make my tailored CVs look like the CV I uploaded/ })
 
@@ -423,7 +423,7 @@ describe('Review, the CV style tick', () => {
   })
 
   it('is not there without a style to copy, on a set-up again, or in the sandbox', () => {
-    setup({ ...answers, files: styled.files, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false }] } })
+    setup({ ...answers, files: styled.files, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false }], tokens: ['f1'] } })
     expect(box()).toBeNull()
     cleanup()
     setup({ ...styled, mode: 'redo' })

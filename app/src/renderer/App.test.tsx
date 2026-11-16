@@ -630,6 +630,32 @@ describe('App, the first-launch gate', () => {
       }
     })
 
+    it('a CV style build that failed stops the poll and says nothing', async () => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+      try {
+        let state = 'building'
+        const { call } = gated(profile(), { status_summary: () => summary({ style: { state } }) })
+        render(<App />)
+        await screen.findByRole('heading', { name: 'Matches' })
+        const reads = () => call.mock.calls.filter((c) => c[0] === 'status_summary').length
+        await waitFor(() => expect(reads()).toBeGreaterThan(0))
+        const before = reads()
+        state = 'failed'
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(30_000)
+        })
+        await waitFor(() => expect(reads()).toBeGreaterThan(before))
+        const after = reads()
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(120_000)
+        })
+        expect(reads()).toBe(after)
+        expect(lines().queryByText('Your CV style is ready to compare')).toBeNull()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('on the phone a ready CV style is not said', async () => {
       const { info, call } = gated(profile(), { status_summary: summary({ style: { state: 'ready' } }) })
       info.mockResolvedValue({ demo: false, remote: true })

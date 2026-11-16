@@ -5,7 +5,7 @@ installer (below) or runs from a checkout ([`app/README.md`](../app/README.md)).
 each screen does. The look is in [`design/`](design/README.md).
 
 The first time you open it on a computer with no profile, a short wizard sets *The other door* up
-([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
+([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, your CV style being ready, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
 Preparing an application needs the `claude` command line and a Chromium headless shell, which prints the PDFs. The installed app
 brings Chromium (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all.
@@ -109,7 +109,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    what you did; a story tells what was behind it, and the tailor draws on your stories for every application.
    Fill in what the CV could not say, usually what you learned, or untick "Keep this story"; Save waits for one or the other.
    More stories go in Profile → [Stories](#your-stories));
-   **Your CV's look** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 5-10 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV. Nothing is said if it does not work out);
+   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 5-10 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV. Nothing is said if it does not work out);
    **Where to find employers** (LinkedIn, and profession.hu, HelloWork or Jobbsafari where they serve your city:
    each stays off unless you tick it, because their terms forbid automated access; see the
    [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Risky sources changes it later).

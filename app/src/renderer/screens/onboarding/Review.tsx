@@ -309,7 +309,7 @@ export function Review({ state, profile, dispatch, onSaved, onBack, sandbox = fa
       </Folded>
 
       {!sandbox && styleSource(state) && (
-        <Part title="Your CV's look">
+        <Part title="Your CV's style">
           <div className="field onb-field">
             <label className="choice">
               <input type="checkbox" checked={state.style} onChange={(e) => dispatch({ type: 'style', on: e.target.checked })} />

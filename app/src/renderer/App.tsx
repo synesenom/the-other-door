@@ -35,9 +35,9 @@ function lastRunText(finishedAt: string | null | undefined): string | null {
   return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-/** Search and match only on the first run: following and collecting employers wait for the next one. */
 /** How often the sidebar reads the summary again while a CV style is being built. */
 const STYLE_POLL_MS = 30_000
+/** Search and match only on the first run: following and collecting employers wait for the next one. */
 const FIRST_RUN_SKIP = ['discover', 'follow', 'collect']
 
 /** What the first launch decided: still asking, the wizard, or the app. */
