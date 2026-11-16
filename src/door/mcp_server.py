@@ -82,6 +82,7 @@ from door.commands import find as find_cmd
 from door.commands import setup as setup_cmd
 from door.commands import status as status_cmd
 from door.commands import stories as stories_cmd
+from door.commands import style as style_cmd
 from door.core import claude_cli, drive, migrations, problem_log, sync, workspace
 from door.core.lock import LockHeldError, SyncConflict, ledger_lock, lock_holder
 from door.core import companies as companies_store
@@ -191,6 +192,7 @@ CLI_COMMAND_TOOLS = {
     "cv stories add": ("save_story",),
     "cv stories remove": ("remove_story",),
     "cv stories draft": ("draft_stories",),
+    "cv style build": ("build_style",),
     "market": ("market",),
     "ask": ("ask",),
     "doctor": ("doctor", "setup"),  # `doctor --fix` is `setup`
@@ -234,7 +236,7 @@ READ_ONLY_TOOLS = frozenset({
 WRITING_TOOLS = frozenset({
     "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
     "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
-    "remove_company", "merge_companies", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
+    "remove_company", "merge_companies", "build_style", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
 })
 
@@ -868,7 +870,10 @@ def status_summary() -> dict:
         "calls"}]}], "per_run": {"find", "prepare"}}``: what the last 7 days' calls would cost
         at Claude's API prices, per activity (largest first) and what it was spent on, and one
         find and one prepare. An estimate from `claude`'s price table, not a bill (the plan is
-        not charged per call); answer "what did that cost?" from it.
+        not charged per call); answer "what did that cost?" from it. ``style`` is the state of the CV template
+        built from the user's own CV PDF (``build_style``): ``{"state": "none" | "building" | "ready" | "failed"}``,
+        with ``problems`` when failed (say them in words, once, when the user asked for the build) and ``fonts`` and
+        ``dropped_icons`` of the last build when ready.
     """
     return status_cmd._status_summary_core(jobs_dir=workspace.JOBS_DIR, profile_dir=workspace.PROFILE_DIR)
 
@@ -1436,6 +1441,23 @@ def save_photo(path: str) -> dict:
 
     path_scope.check(path)
     return profile_cmd._save_photo_core(path)
+
+
+@mcp.tool()
+@_tool_errors
+def build_style(file: str) -> dict:
+    """Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.
+    Identical to `./door cv style build`, which waits for it. Takes a few minutes of the model's time; this call returns
+    at once, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or ``failed``. A build already
+    going is replaced. The result is written to profile/style/ only when it passes; nothing uses it until it is chosen.
+
+    Args:
+        file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).
+
+    Returns:
+        ``{"started": True}``, or ``{"error": <why there is no style to copy: not a PDF, a scan, a LinkedIn export>}``.
+    """
+    return style_cmd._start_core(str(path_scope.check(file)))
 
 
 @mcp.tool()

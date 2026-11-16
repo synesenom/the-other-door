@@ -136,6 +136,8 @@ export const PATH_ARGS: Record<string, { arg: string; urlsOnly?: true }> = {
   report_problem: { arg: 'path' },
   // the CV photo is chosen in a dialog and saved by token (door:save-photo)
   save_photo: { arg: 'path' },
+  // a CV PDF whose look is copied
+  build_style: { arg: 'file' },
   // enrich reads web pages; a local file is never one of them.
   enrich: { arg: 'urls', urlsOnly: true },
 }
