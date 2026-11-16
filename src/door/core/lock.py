@@ -32,6 +32,7 @@ import json
 import os
 import sys
 import threading
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -185,11 +186,38 @@ def lock_holder(jobs_dir: Path) -> dict | None:
     lock_path = jobs_dir / _LOCK_NAME
     if not lock_path.exists():
         return None
-    with open(lock_path, "a+", encoding="utf-8") as fh:
+    if not held(lock_path):
+        return None
+    return _read_info(jobs_dir) or {"pid": None, "purpose": None, "started_at": None}
+
+
+def held(path: Path) -> bool:
+    """Whether some process or handle holds the OS lock on the file `path` right now (a missing file: no)."""
+    path = Path(path)
+    if not path.exists():
+        return False
+    with open(path, "ab") as fh:
         if _try_os_lock(fh):
             _os_unlock(fh)
-            return None
-    return _read_info(jobs_dir) or {"pid": None, "purpose": None, "started_at": None}
+            return False
+    return True
+
+
+@contextmanager
+def hold(path: Path, wait: float):
+    """Hold the OS lock on the file `path` (created) for the block, waiting up to `wait` seconds; `TimeoutError` if not got."""
+    fh = open(path, "ab")  # noqa: SIM115 - closed below
+    deadline = time.monotonic() + wait
+    while not _try_os_lock(fh):
+        if time.monotonic() >= deadline:
+            fh.close()
+            raise TimeoutError(f"{path} is locked")
+        time.sleep(0.2)
+    try:
+        yield
+    finally:
+        _os_unlock(fh)
+        fh.close()
 
 
 @contextmanager

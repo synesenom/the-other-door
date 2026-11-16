@@ -2,6 +2,7 @@
 with its state in HOME/.style/run.json, and the `style` block of `status_summary`. The builder (`style_build.build`)
 and the process are stood in; no model is called."""
 
+import contextlib
 import json
 import os
 import shutil
@@ -58,13 +59,11 @@ class Holder:
 
     def __init__(self, home):
         (home / ".style").mkdir(exist_ok=True)
-        self.fh = open(home / ".style" / "build.lock", "ab")
-        assert lock._try_os_lock(self.fh)
+        self.stack = contextlib.ExitStack()
+        self.stack.enter_context(lock.hold(home / ".style" / "build.lock", 0))
 
     def release(self):
-        if not self.fh.closed:
-            lock._os_unlock(self.fh)
-            self.fh.close()
+        self.stack.close()
 
 
 class World:
@@ -251,9 +250,9 @@ def test_a_build_waits_for_the_one_it_replaced_to_let_go_of_the_lock(home, cv_pd
 
 def test_the_lock_is_held_for_the_whole_build_and_let_go_after(home, cv_pdf, monkeypatch):
     seen = {}
-    monkeypatch.setattr(style_build, "build", lambda *a, **k: seen.update(held=style_cmd._held(home)) or dict(READY))
+    monkeypatch.setattr(style_build, "build", lambda *a, **k: seen.update(held=lock.held(style_cmd._lock_path(home))) or dict(READY))
     style_cmd._build_core(str(cv_pdf))
-    assert seen["held"] is True and style_cmd._held(home) is False
+    assert seen["held"] is True and lock.held(style_cmd._lock_path(home)) is False
 
 
 def test_a_build_that_is_asked_to_stop_ends_its_print_and_is_recorded_failed(home, cv_pdf, monkeypatch):

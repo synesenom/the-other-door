@@ -297,3 +297,16 @@ def test_a_refused_second_holder_runs_no_hooks(tmp_path, hooks):
     finally:
         _release(proc)
     assert hooks == []
+
+
+def test_held_tells_a_free_file_from_one_another_handle_holds(tmp_path):
+    path = tmp_path / "x.lock"
+    assert lock_mod.held(path) is False  # no file
+    path.write_bytes(b"")
+    assert lock_mod.held(path) is False  # a file nobody holds
+    with lock_mod.hold(path, 0):
+        assert lock_mod.held(path) is True
+        with pytest.raises(TimeoutError):
+            with lock_mod.hold(path, 0):
+                pass
+    assert lock_mod.held(path) is False

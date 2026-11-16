@@ -79,39 +79,21 @@ def _lock_path(home: Path) -> Path:
     return _style_dir(home) / "build.lock"
 
 
-def _held(home: Path) -> bool:
-    """Whether a build is running: some process holds the build lock."""
-    if not _lock_path(home).exists():
-        return False
-    with open(_lock_path(home), "ab") as fh:
-        if lock._try_os_lock(fh):
-            lock._os_unlock(fh)
-            return False
-    return True
-
-
 @contextmanager
 def _building(home: Path):
     """Hold the build lock for the block, waiting up to `LOCK_WAIT` seconds for a build being ended to let go."""
     _style_dir(home).mkdir(parents=True, exist_ok=True)
-    fh = open(_lock_path(home), "ab")  # noqa: SIM115 - closed below
-    deadline = time.monotonic() + LOCK_WAIT
-    while not lock._try_os_lock(fh):
-        if time.monotonic() >= deadline:
-            fh.close()
-            raise ValueError("a build of a CV style is still running")
-        time.sleep(0.2)
     try:
-        yield
-    finally:
-        lock._os_unlock(fh)
-        fh.close()
+        with lock.hold(_lock_path(home), LOCK_WAIT):
+            yield
+    except TimeoutError:
+        raise ValueError("a build of a CV style is still running") from None
 
 
 def _end_running(home: Path) -> None:
     """End the build that is running (its process group), unless it is this process or its launcher."""
     run = _read(home)
-    if run and run["state"] == "building" and run.get("pid") not in (None, os.getpid(), os.getppid()) and _held(home):
+    if run and run["state"] == "building" and run.get("pid") not in (None, os.getpid(), os.getppid()) and lock.held(_lock_path(home)):
         phone.kill_tree(run["pid"])
 
 
@@ -201,7 +183,7 @@ def status(home: Path, profile_dir: Path) -> dict:
     run = _read(home) or {}
     state = run.get("state")
     if state == "building":
-        if _held(home) or ("pid" not in run and _age(run["started_at"]) < PENDING_SECONDS):
+        if lock.held(_lock_path(home)) or ("pid" not in run and _age(run["started_at"]) < PENDING_SECONDS):
             return {"state": "building", "started_at": run["started_at"]}
         return {"state": "failed", "problems": ["the build stopped before it finished"]}
     if state == "failed":

@@ -52,7 +52,7 @@ def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None, hidde
     return subprocess.Popen(argv, stdout=out, stderr=out, stdin=subprocess.DEVNULL, env=env, **extra)
 
 
-def is_alive(pid: int) -> bool:
+def _is_alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -115,7 +115,7 @@ def default_web_dir() -> Path:
 
 def _defaults() -> dict:
     return {
-        "spawn": spawn_detached, "is_alive": is_alive, "kill": kill_tree, "run": subprocess.run, "answers": _answers,
+        "spawn": spawn_detached, "is_alive": _is_alive, "kill": kill_tree, "run": subprocess.run, "answers": _answers,
         "sleep": time.sleep, "platform": sys.platform, "find_cloudflared": find_cloudflared,
         "find_tailscale": find_tailscale, "web_dir": default_web_dir(),
     }
