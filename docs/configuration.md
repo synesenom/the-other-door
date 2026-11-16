@@ -1,16 +1,15 @@
 # Configuration
 
 Your profile lives in `profile/` (gitignored, never committed): `config.json` and `cv.md`
-carry your data. The LaTeX templates (`cv.template.tex`, `cover-letter.template.tex`) hold the styling —
-fonts, colours, margins and the macros the tailor uses — and nothing personal; the tailor
-writes the whole document body from `cv.md` and `config.json` for every application, so
-there is nothing to keep in sync by hand. They ship with the code (`profile.example/`, with the `fonts/` they load:
-Figtree and Young Serif, under the SIL Open Font License) and are not copied into `profile/`, so a release that
-changes them never breaks your profile. To restyle the PDFs, put your own `cv.template.tex` and/or
-`cover-letter.template.tex` in `profile/` (copy the shipped one and edit it; a `profile/fonts/` folder replaces the
-shipped fonts) or name a file in `cv_template` / `cover_letter_template`: yours wins, and earlier materials pick it up on their next revise. Your own copy does not get later fixes to the shipped template; `./door doctor` lists the ones it lacks and where to copy them from. Keep the `babel` line (English
-first, French available), which a French application relies on, and the fonts line that loads from `<<fonts>>/`
-(`compile` puts the fonts folder there).
+carry your data. The HTML templates (`cv.template.html`, `cover-letter.template.html`) hold the page and its styling —
+fonts, colours, margins, the CSS of each building block — and nothing personal; the tailor
+writes only the body of the document (headings, entries, lists, links) from `cv.md` and `config.json` for every
+application, so there is nothing to keep in sync by hand. They ship with the code (`profile.example/`, with the `fonts/` they load:
+Figtree and Young Serif as TrueType files, under the SIL Open Font License) and are not copied into `profile/`, so a release that
+changes them never breaks your profile. To restyle the PDFs, put your own `cv.template.html` and/or
+`cover-letter.template.html` in `profile/` (copy the shipped one and edit it; a `profile/fonts/` folder with `.ttf`
+files replaces the shipped fonts) or name a file in `cv_template` / `cover_letter_template`: yours wins, and earlier materials pick it up on their next revise. Your own copy does not get later changes to the shipped template. Keep the two places the shipped template marks for the page's language and the body, the class names it styles (the
+tailor writes only those) and `.photo` (a template without it prints no photo). The fonts load from `/fonts/<file>` and must be TrueType (`.ttf`), never `.otf`: Chromium writes such a font into a PDF as text no reader can extract. A LaTeX template (`.tex`) of an earlier version is not read: the shipped one is used.
 
 ## Where your data lives
 
@@ -176,7 +175,7 @@ with no file gets no photo, no date of birth and two pages), and the tailor foll
 language rules: no photo where it is `"no"`, one only if your profile has a `photo` where it is `"optional"`, and
 `<<photo>>` where it is `"expected"` (nothing is printed when you have none). A date of birth is never added: it is
 kept only if your `cv.md` already has one. A place of birth, marital status and nationality are never added, in
-any country. A template that does not define `\cvphotobox` (a copy made before photos) prints no photo.
+any country. A template that does not style `.photo` (a copy made before photos) prints no photo.
 
 ## Keys
 

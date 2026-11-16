@@ -9,13 +9,13 @@
 3. **Match** — score each survivor 0–1 against your CV with one small `claude -p` request,
    with a one-sentence reason.
 4. **Tailor** — for the match you pick, the tailor agent writes a CV and cover letter from
-   `profile/cv.md` into your LaTeX templates (styling only), in the language the ad is
-   written in, a reviewer agent critiques them, and they are compiled to PDF. A French ad gets French
+   `profile/cv.md` as HTML bodies in your templates (styling only), in the language the ad is
+   written in, a reviewer agent critiques them, and they are printed to PDF with a headless Chromium. A French ad gets French
    section names, the letter's place and date line, "Objet :" and "Madame, Monsieur,", and French
-   typography (the templates load babel, so a non-breaking space comes before `: ; ! ?` and « » are set
-   properly). The job country's CV conventions (`[cv]` in `src/door/i18n/country/<cc>.toml`: photo, date of
+   typography (`compile` sets a narrow no-break space before `: ; ! ?` and inside « », never inside a link or an
+   identifier, and the page's language and the letter's date). The job country's CV conventions (`[cv]` in `src/door/i18n/country/<cc>.toml`: photo, date of
    birth, page limit, date format) go to the tailor with the job; the photo you added is copied beside the
-   `.tex` by `compile` (never written by the model) only where they allow one, and the first sent status keeps
+   page by `compile` (never written by the model) only where they allow one, and the first sent status keeps
    it with the materials in `sent/` and records its sha256.
 5. **Track** — record what you applied to.
 
@@ -121,11 +121,11 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    (precision over recall), but every item of the Skills section is. A `TODO` left in a document is always flagged:
    it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing. Company forms (`ApS`, `GmbH`, `Ltd`, `S.A.S.`) are never read as skills.
    The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json`, which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
-   `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `\section` heading
-   on a line of its own and in order, the `% Keywords:` and no garbled or empty text. What does not read back is
+   `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `<h2>` heading
+   on a line of its own and in order, the `Keywords` note and no garbled or empty text. What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);
    reported, never a block.
-   Chromium prints HTML pages to PDF without a TeX engine (`door.tailoring.html_pdf`, #165): one pinned headless shell, installed by `doctor --fix` or carried by the desktop app, driven over the DevTools protocol on a fresh profile. JavaScript is off, the page is served from loopback over one folder and every other request, `file:` and other hosts included, is refused. `prepare` does not use it yet.
+   Chromium prints HTML pages to PDF without a TeX engine (`door.tailoring.html_pdf`, #165): one pinned headless shell, installed by `doctor --fix` or carried by the desktop app, driven over the DevTools protocol on a fresh profile. JavaScript is off, the page is served from loopback over one folder and every other request, `file:` and other hosts included, is refused.
    When the tailor is done, `prepare` reads both PDFs back this way itself. If the name, a heading or a keyword
    is missing it runs the tailor once more, in a fresh session, told which problems and that the files exist; the
    retry counts in the plan estimate. What still does not read back is `readability` in `prepare`'s answer, with a

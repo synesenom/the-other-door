@@ -77,8 +77,7 @@ On each, download the installer from the draft release and check, in order:
    command line and **Sign in with Claude** signs in to a plan; the wizard then goes on to the sources.
 3. **Set-up.** A CV goes in (a file, or dropped), the reading finishes, the review saves.
 4. **First run.** Finding jobs runs all five steps to the summary card, and Matches lists what it found.
-5. **Prepare.** Prepare on one match makes both PDFs (the bundled Tectonic, which downloads its LaTeX
-   packages the first time), and Open shows them.
+5. **Prepare.** Prepare on one match makes both PDFs (printed by the bundled Chromium), and Open shows them.
 6. **Reopen.** Quit and open the app again: the profile, the matches and the prepared materials are
    still there, and the data is in the user's data folder, not inside the app (Settings → Your data).
 7. **Update** (from the second release on). Install the previous version, set it up, then install this one

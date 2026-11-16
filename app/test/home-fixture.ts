@@ -34,7 +34,7 @@ function posting(id: string, extra: Record<string, unknown>) {
 
 const PREPARED = join(__dirname, 'fixtures', 'prepared')
 
-/** A finished prepare for `jobId`: the output folder (2-page CV, 1-page letter, their page images and .tex) and a `prepared` ledger entry. */
+/** A finished prepare for `jobId`: the output folder (2-page CV, 1-page letter, their page images and .html) and a `prepared` ledger entry. */
 function preparePrepared(home: string, jobId: string, row: unknown): void {
   const out = join(home, 'jobs', 'output', jobId)
   mkdirSync(out, { recursive: true })

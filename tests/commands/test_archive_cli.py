@@ -265,7 +265,7 @@ def test_import_holds_the_ledger_lock(env, monkeypatch):
 
 def test_import_warns_about_paths_missing_on_this_machine(env):
     config = json.loads((env.profile_dir / "config.json").read_text())
-    config["cv_template"] = str(env.tmp_path / "no-such-template.tex")
+    config["cv_template"] = str(env.tmp_path / "no-such-template.html")
     (env.profile_dir / "config.json").write_text(json.dumps(config))
     archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
 
@@ -434,7 +434,7 @@ def test_import_cli(env, monkeypatch):
 
 def test_import_cli_warns_on_stderr(env, monkeypatch):
     config = json.loads((env.profile_dir / "config.json").read_text())
-    config["cv_template"] = str(env.tmp_path / "no-such-template.tex")
+    config["cv_template"] = str(env.tmp_path / "no-such-template.html")
     (env.profile_dir / "config.json").write_text(json.dumps(config))
     archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
     monkeypatch.setattr(workspace, "PROFILE_DIR", env.dst_profile)

@@ -96,36 +96,36 @@ def check_latex(which=shutil.which, home: Path | None = None) -> dict:
 
     tectonic = find_tectonic(which=which, home=home)
     if tectonic:
-        return _check("latex", True, f"tectonic: {tectonic}", tool="latex")
+        return _check("latex", True, f"tectonic: {tectonic}", tool="latex", required=False)
     found = which("xelatex")
     if found:
-        return _check("latex", True, f"xelatex: {found}", tool="latex")
-    return _check("latex", False, "no tectonic or xelatex found — needed by compile/prepare", _LATEX_FIX, tool="latex")
+        return _check("latex", True, f"xelatex: {found}", tool="latex", required=False)
+    return _check("latex", False, "no tectonic or xelatex found — nothing prints with it any more", _LATEX_FIX, tool="latex", required=False)
 
 
 def check_chromium(find=None, run=subprocess.run) -> dict:
-    """The Chromium headless shell that prints CVs (#165). Not required until `prepare` prints with it (#146).
+    """The Chromium headless shell that prints CVs (#165, #146): `compile` and so `prepare` need it.
 
     A shell that will not start on Linux usually lacks system libraries: the check names them
     and installs nothing (that takes sudo).
     """
     path = (find or chromium.find_chromium)()
     if not path:
-        return _check("chromium", False, "no Chromium headless shell found — it prints CVs", _CHROMIUM_FIX, required=False, tool="chromium")
+        return _check("chromium", False, "no Chromium headless shell found — it prints CVs", _CHROMIUM_FIX, tool="chromium")
     try:
         proc = run([path, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
                    stdin=subprocess.DEVNULL)
     except (OSError, subprocess.SubprocessError) as exc:
-        return _check("chromium", False, f"{path} did not start: {exc}", _NO_START_FIX, required=False, tool="chromium", installable=False)
+        return _check("chromium", False, f"{path} did not start: {exc}", _NO_START_FIX, tool="chromium", installable=False)
     output = f"{proc.stdout or ''}\n{proc.stderr or ''}"
     if proc.returncode != 0:
         libs = sorted(set(re.findall(r"(lib[\w.+-]+\.so[\w.]*): cannot open", output)))
         if libs:
             return _check("chromium", False, f"{path} needs system libraries: {', '.join(libs)}",
                           "install them with your package manager (for example `sudo apt install libnss3 libgbm1 libxkbcommon0 libasound2`)",
-                          required=False, tool="chromium", installable=False)
+                          tool="chromium", installable=False)
         return _check("chromium", False, f"{path} did not start (exit {proc.returncode})", _NO_START_FIX,
-                      required=False, tool="chromium", installable=False)
+                      tool="chromium", installable=False)
     return _check("chromium", True, f"chromium: {path}", tool="chromium")
 
 
@@ -567,37 +567,6 @@ def check_serve_instances(reach=_reaches, sleep_minutes=_sleep_minutes) -> dict 
                   required=False)
 
 
-def check_templates(config: dict, profile_dir: Path) -> dict | None:
-    """The user's own LaTeX templates against the fixes of the shipped ones (#156); None when they have none."""
-    from door.core import templates, workspace
-
-    profile_dir = Path(profile_dir)
-    parts, fixes, own = [], [], 0
-    for key, name in templates.FILES.items():
-        path = templates.resolve(key, config, profile_dir)
-        shipped = Path(workspace.PROFILE_EXAMPLE_DIR) / name
-        if path == shipped:
-            continue
-        own += 1
-        shown = _data_file(path, f"profile/{name}") if path == profile_dir / name else str(path)
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeError):
-            parts.append(f"could not read {shown}")
-            fixes.append(f"make {shown} a readable UTF-8 file")
-            continue
-        missing = templates.missing_fixes(key, text)
-        if missing:
-            parts.append(f"{shown} lacks: " + "; ".join(f["what"] for f in missing))
-            where = _data_file(shipped, f"profile.example/{name}")
-            fixes.extend(f"copy the lines around {f['has']} from {where} into {shown}" for f in missing)
-    if not own:
-        return None
-    if not parts:
-        return _check("templates", True, "your own, with every fix of the shipped ones", required=False)
-    return _check("templates", False, "; ".join(parts), "; ".join(fixes), required=False)
-
-
 def run_checks(
     profile_dir: Path,
     jobs_dir: Path,
@@ -651,7 +620,6 @@ def run_checks(
         check_dev_deps(find_spec=find_spec) if workspace.is_checkout() else None,
         check_serve_instances(),
         check_unsure_sources(config),
-        check_templates(config, profile_dir),
     ]
     checks = [c for c in checks if c is not None]
     if probe_sites:

@@ -237,7 +237,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 ### startPrepare outcomes
 - Start: the module map `preparing.set(jobId)`, so the App sidebar's Find button turns disabled with PREPARING_TIP, as does the narrow pill. The action buttons lock and the primary is hidden. — ✓ while Prepare runs: the progress line, the elapsed time, locked actions and no Find new jobs (the narrow pill: not tested here, §2's)
 - **The call resolves (any `outcome`)** → `onOpenMaterials()`: the view switches to Materials. **The renderer never reads `outcome` or `error`.** So: — WRONG: door-server.ts turns any result carrying `error` into a thrown DoorError, so a `failed` outcome (which always carries `error`) throws and is shown as the posting's alert; only `prepared`/`skipped` resolve. ✓ Prepare application on a new match tailors, compiles and opens Ready to send
-  - `prepared` / `skipped` → Materials with pages. Ledger `jobs/applications.json` → `prepared`; `jobs/output/<id>/` gets cv.tex, cover_letter.tex, cv.pdf, cover_letter.pdf, facts.json and PNGs. — ✓ Prepare application on a new match tailors, compiles and opens Ready to send (`skipped`: not tested: the posting offers Prepare only when there are no complete materials, so only a race reaches it)
+  - `prepared` / `skipped` → Materials with pages. Ledger `jobs/applications.json` → `prepared`; `jobs/output/<id>/` gets cv.html, cover_letter.html, cv.pdf, cover_letter.pdf, facts.json and PNGs. — ✓ Prepare application on a new match tailors, compiles and opens Ready to send (`skipped`: not tested: the posting offers Prepare only when there are no complete materials, so only a race reaches it)
   - **`failed`** → Materials says "There is nothing prepared for this job yet." when there were no materials before, or shows the **old** materials on a force re-prepare. Nothing tells the user what failed. Causes: — WRONG, see above: the error is shown as an alert on the posting, the view stays; ✓ a failing tailor: Prepare says what went wrong and the job stays unprepared; unit: `app/src/renderer/screens/Posting.test.tsx`
     - the tailor failed: the e2e stand-in claude exits 97, giving "tailor step failed for 'x': …; status left unchanged." — ✓ a failing tailor: Prepare says what went wrong and the job stays unprepared; unit: `tests/commands/test_prepare_cli.py`
     - the example CV: "Your CV is still the example (Jane Doe's). Add your own CV first." — unit: `tests/commands/test_prepare_cli.py`
@@ -335,7 +335,7 @@ Reached through:
   - **btn "I've applied"** (primary, header): wide only, not remote, not sent. Disabled while busy or recording. One click records Applied (`set_status`), no dialog; a failure is an **alert** on the page and the job stays. Success → the parent's `changed` (in Matches the title is "the job", since a prepared job is not in the list). — ✓ I've applied records the application in one click and keeps a copy of what was sent; unit: `app/src/renderer/screens/Materials.test.tsx`; ✓ I've applied from Matches names the job in its notice
   - **status** notices (a revise or an undo that worked says nothing: the pages redraw and the box empties — ✓ Revise changes the letter, shows the new pages, and Undo puts it back):
     - "Saved as <file> in <folder>." (or "Saved as <file>." when the path has no folder) — ✓ Save letter writes the PDF where the save dialog says (the folder-less form: not tested, a save dialog always answers a full path)
-    - "Nothing to undo." (only for an undo whose error matches `/nothing to undo/i`; server: "nothing to undo: no cover_letter.tex.bak for 'x'"). The e2e already covers this. — unit: `app/src/renderer/screens/Materials.test.tsx`
+    - "Nothing to undo." (only for an undo whose error matches `/nothing to undo/i`; server: "nothing to undo: no cover_letter.html.bak for 'x'"). The e2e already covers this. — unit: `app/src/renderer/screens/Materials.test.tsx`
     - "The change was made but the PDF could not be rebuilt, so the pages still show the previous version. Undo last change puts it back." (`revise.compile[].status === 'error'`; no reload, the instruction is kept) — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **alert** failures:
     - a revise error (stand-in claude: "…; file left unchanged"; "an instruction is required…" is unreachable because the button needs text; "…not found — prepare 'x' first"; timeouts at 420 s) — unit: `app/src/renderer/screens/Materials.test.tsx` ("an instruction is required": not tested, unreachable; "not found — prepare first": not tested, Revise shows only with materials; timeout: not tested, 420 s)
@@ -343,9 +343,10 @@ Reached through:
     - a cancelled save: nothing — unit: `app/src/renderer/screens/Materials.test.tsx`
   - A reload failure after a successful revise also lands in the failure alert (the show error text). — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **status** spinner "Revising…" while busy. The pages get `aria-busy=true` and the `.dimmed` class. — ✓ Revise changes the letter, shows the new pages, and Undo puts it back
+  - Revise box ("Anything to change?", Revise, Undo last change): not sent and `revisable`; for a job prepared with LaTeX (no HTML bodies) the line "Prepare it again to change it." stands in its place. — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **group "Document"** with two pills (aria-pressed, disabled while busy). The letter is the default unless a notification asked for `document`. — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded (a notification's document: §0's)
     - **btn "CV · N page(s)"** (`page_counts.cv`; "1 page" or "N pages"). — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded; unit: `app/src/renderer/screens/Materials.test.tsx`
-    - **btn "Letter · N words"** (`cover_letter_words`), or **"Letter · N page(s)"** when the words are null (no cover_letter.tex). — unit: `app/src/renderer/screens/Materials.test.tsx`
+    - **btn "Letter · N words"** (`cover_letter_words`), or **"Letter · N page(s)"** when the words are null (no cover_letter.html). — unit: `app/src/renderer/screens/Materials.test.tsx`
   - Pages: `img` alt **"CV, page i"** / **"Letter, page i"**, for `pngs[doc].slice(0, page_counts[doc])`. Stale extra PNGs are hidden. The src is `door-file://output/<id>/[sent/]<png>?v=<version>`; the version bumps after each revise to beat the cache. — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded; ✓ Revise changes the letter, … (new pages after a revise)
   - **note** (figcaption) limit text:
     - CV with more than 2 pages: "(limit is 2)" — unit: `app/src/renderer/screens/Materials.test.tsx`
@@ -502,7 +503,7 @@ Reached through:
 
 **`show`** (Posting, Materials, ImportDialog, notices):
 - Posting fields: `id, title, title_en, company, location, url, apply_url, description, score, score_reason, posted_at, source_name, language, language_requirement ('required'|'advantage'|'none'|null), matching_skills[], missing_skills[], status`.
-- `materials`: null, or `{output_dir, pngs: {cv[], cover_letter[]}, page_counts: {cv, cover_letter}, cover_letter_words (null when there is no .tex), sent, file_names: {cv, cover_letter}}`.
+- `materials`: null, or `{output_dir, pngs: {cv[], cover_letter[]}, page_counts: {cv, cover_letter}, cover_letter_words (null when there is no .html), revisable (both HTML bodies there), sent, file_names: {cv, cover_letter}}`.
 - Not read: `pdfs`, `keywords`, `tailoring`, `rendered`, `unsupported`, `history`, `source`.
 - ImportDialog reads only title, company and location.
 - Notices read title, company and status (inPlay).

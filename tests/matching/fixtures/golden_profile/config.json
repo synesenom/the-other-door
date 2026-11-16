@@ -2,9 +2,9 @@
   "name": "Jane Doe",
   "email": "jane.doe@example.com",
   "location": "Copenhagen",
-  "cv_template": "profile/cv.template.tex",
+  "cv_template": "profile/cv.template.html",
   "cv_content": "profile/cv.md",
-  "cover_letter_template": "profile/cover-letter.template.tex",
+  "cover_letter_template": "profile/cover-letter.template.html",
   "role_targets": [
     "Lead Data Scientist",
     "Principal Data Scientist",

@@ -12,6 +12,7 @@ from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import prepare as prepare_cmd
 from door.commands import setup as setup_cmd
+from door.core import chromium as chromium_mod
 from door.core import workspace
 import door.core.doctor as doctor
 import door.mcp_server as server
@@ -189,21 +190,18 @@ def test_doctor_real_checks_run_offline(env, monkeypatch):
 # guards
 # --------------------------------------------------------------------------- #
 
-def test_compile_without_tex_is_a_one_line_error_from_the_tool(env, monkeypatch):
+def test_compile_without_chromium_is_a_one_line_error_from_the_tool(env, monkeypatch):
     out = env.jobs_dir / "output" / "jobindex-acme-ds"
     out.mkdir(parents=True)
-    (out / "cv.tex").write_text("x")
+    (out / "cv.html").write_text("<p>x</p>")
 
-    def no_tex(argv, **kwargs):
-        raise FileNotFoundError(argv[0])
-
-    monkeypatch.setattr(subprocess, "run", no_tex)
-    with pytest.raises(common.MissingToolError, match="no LaTeX compiler"):
+    monkeypatch.setattr(chromium_mod, "find_chromium", lambda home=None: None)
+    with pytest.raises(common.MissingToolError, match="no Chromium"):
         compile_cmd._compile_core("jobindex-acme-ds", jobs_dir=env.jobs_dir)
 
     monkeypatch.setattr(workspace, "JOBS_DIR", env.jobs_dir)
     error = server.compile("jobindex-acme-ds")["error"]
-    assert "no LaTeX compiler" in error
+    assert "no Chromium" in error
     assert "door doctor --fix" in error
     assert "None" not in error  # the hint must not depend on what this machine has installed
 
@@ -232,6 +230,16 @@ def test_prepare_without_claude_fails_before_tailoring(env, monkeypatch):
     out = CliRunner().invoke(cli, ["jobs", "prepare", "jobindex-acme-ds"])
     assert out.exit_code == 1
     assert "claude" in result_text(out)
+
+
+def test_prepare_without_chromium_fails_before_tailoring(env, monkeypatch):
+    _posting(env)
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("tailored without a Chromium to print with"))
+
+    result = prepare_cmd._prepare_core("jobindex-acme-ds", jobs_dir=env.jobs_dir)
+    assert result["outcome"] == "failed"
+    assert "Chromium" in result["error"] and "./door doctor --fix" in result["error"]
 
 
 def test_prepare_top_match_without_claude_fails_before_selecting(env, monkeypatch):
@@ -270,8 +278,17 @@ def test_mcp_registration_passes_door_home_only_when_it_is_not_the_checkout(tmp_
     assert f"DOOR_HOME={tmp_path / 'data'}" in custom
 
 
+def test_chromium_available_follows_find_chromium(monkeypatch):
+    monkeypatch.setattr(common, "_chromium_available", _REAL_CHROMIUM_AVAILABLE)
+    monkeypatch.setattr(chromium_mod, "find_chromium", lambda home=None: "/x/chrome")
+    assert common._chromium_available() is True
+    monkeypatch.setattr(chromium_mod, "find_chromium", lambda home=None: None)
+    assert common._chromium_available() is False
+
+
 # Captured at import, before the suite's autouse fixture stubs it to "claude present".
 _REAL_CLAUDE_AVAILABLE = common._claude_available
+_REAL_CHROMIUM_AVAILABLE = common._chromium_available
 
 
 def test_claude_available_follows_find_claude(monkeypatch):
@@ -282,14 +299,3 @@ def test_claude_available_follows_find_claude(monkeypatch):
     assert common._claude_available() is True
     monkeypatch.setattr(installers, "find_claude", lambda *a, **k: None)
     assert common._claude_available() is False
-
-
-def test_doctor_prints_the_templates_warning_and_exits_0(env):
-    (env.profile_dir / "cv.template.tex").write_text("\\usepackage{hyperref}\n")
-    result = CliRunner().invoke(cli, ["doctor"])
-    lines = result.output.splitlines()
-    at = next(i for i, line in enumerate(lines) if "⚠ templates" in line)
-    assert "profile/cv.template.tex lacks" in lines[at]
-    assert "fix: copy the lines around" in lines[at + 1]
-    assert "profile.example/cv.template.tex" in lines[at + 1]
-    assert result.exit_code in (0, 1)  # other checks may be missing on this machine; the warning alone never fails

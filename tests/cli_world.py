@@ -4,7 +4,7 @@ Not in the default offline suite (marker `cli_journeys`): CI runs them on Linux 
 `setup.sh` / `setup.ps1` on a fresh checkout (.github/workflows/cli-journeys.yml), and
 `./scripts/run-test.sh --cli-journeys` runs them here. The world is built by `app/test/world/make-world.ts`
 (needs Node and `npm ci` in `app/`); `DOOR_PYTHON` names the Poetry interpreter its stand-in `claude` and
-`tectonic` run on. The world's edges reach the CLI through the test-only hook `app/test/world/hook`
+Chromium print stand-in run on. The world's edges reach the CLI through the test-only hook `app/test/world/hook`
 (`sitecustomize`, `python -m door` inside a world only) and `init`'s prompts are scripted (`prompts.json`).
 """
 

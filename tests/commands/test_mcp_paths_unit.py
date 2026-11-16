@@ -44,7 +44,7 @@ def test_paths_inside_and_urls_pass(scoped):
     assert server.draft_cv([str(home / "cv.pdf"), "https://me.example"]) == {"ok": True}
     assert server.import_posting(path=str(home / "ad.txt")) == {"ok": True}
     assert server.export_data() == {"ok": True}
-    assert server.init_profile(other={"cv_template": "profile/cv.template.tex"}) == {"ok": True}
+    assert server.init_profile(other={"cv_template": "profile/cv.template.html"}) == {"ok": True}
     assert len(calls) == 4
 
 

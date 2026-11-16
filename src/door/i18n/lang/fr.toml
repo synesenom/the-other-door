@@ -204,3 +204,15 @@ nav = [
     "voir toutes les offres", "voir toutes nos offres", "suivant", "précédent", "page suivante",
     "page précédente", "retour", "voir plus", "afficher plus", "accueil", "postuler", "rechercher", "se connecter",
 ]
+
+# The letter's date written out (filled by `compile`; the tailor writes <<date>>).
+[date]
+pattern = "{day} {month} {year}"
+first = "1er {month} {year}"
+months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+# French typography at compile time: a narrow no-break space before these marks and inside guillemets.
+[typography]
+space = "\u202f"
+space_before = [":", ";", "!", "?"]
+guillemets = [["«", "»"]]

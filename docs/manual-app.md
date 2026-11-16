@@ -6,14 +6,14 @@ each screen does. The look is in [`design/`](design/README.md).
 
 The first time you open it on a computer with no profile, a short wizard sets *The other door* up
 ([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
-Preparing an application needs the `claude` command line and a LaTeX compiler. The installed app
-brings LaTeX (and the Python it runs on) with it; the first screen of the wizard installs Claude and
+Preparing an application needs the `claude` command line and a Chromium headless shell, which prints the PDFs. The installed app
+brings Chromium (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all.
 
 ## Installing the app
 
 The installer carries everything *The other door* needs except Claude: its own Python with the pipeline's packages,
-the pipeline itself, Tectonic (the LaTeX engine for the PDFs) and a Chromium headless shell (which prints CVs). Nothing else has to be installed. On the
+the pipeline itself and a Chromium headless shell (which prints the CVs and letters). Nothing else has to be installed. On the
 first launch the wizard offers to install the `claude` command line if it is missing (Anthropic's
 own installer, into `~/.local/bin`, for you only and without a password; it keeps itself up to date)
 and signs you in to your Claude plan.
@@ -42,9 +42,7 @@ checkout and the demo never check, and then Settings has no Version part. The ap
 **Your data** (profile, jobs, applications, backups) lives in your user folder, never inside the
 app: `~/Library/Application Support/The other door` on macOS, `%APPDATA%\The other door` on Windows, `~/.config/The other door`
 on Linux (the same folder as the app's own settings). Settings → Your data shows it.
-Uninstalling the app leaves it; delete that folder to remove your data too. Tectonic downloads the
-LaTeX packages a CV needs the first time it makes one (`~/Library/Caches/Tectonic`, or the system's
-cache folder), so the first Prepare needs the network, which it needs for Claude anyway.
+Uninstalling the app leaves it; delete that folder to remove your data too.
 
 ### Opening it on macOS the first time
 
@@ -82,8 +80,8 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
 1. **Tell me about yourself.** Drop your CV and your LinkedIn PDF on the dashed box, or click it to choose them (PDF, DOCX,
    Markdown or text, up to 25 MB each), and type any public page, such as a personal site or GitHub, in the field below it.
    LinkedIn pages cannot be read: save your profile as a PDF (More, then Save to PDF) and add that
-   file. LaTeX,
-   needed only to make the PDFs, installs quietly by itself. Setup needs a source: a CV, a LinkedIn PDF
+   file. Chromium,
+   needed only to make the PDFs, installs quietly by itself (from a checkout; the installed app brings it). Setup needs a source: a CV, a LinkedIn PDF
    or a public page. The example CV (Jane Doe's) is never used:
    nothing is scored or prepared while it is still in place.
    If you already use *The other door* on another computer, "Bring my profile from Google Drive" (a line under

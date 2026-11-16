@@ -162,7 +162,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   await pagesLoaded(page, 'Letter', 1)
   const output = filesIn(world.home, 'jobs/output')
   expect(output).toHaveLength(1)
-  for (const f of ['cv.tex', 'cover_letter.tex', 'cv.pdf', 'cover_letter.pdf']) expect(world.exists(`jobs/output/${output[0]}/${f}`), f).toBe(true)
+  for (const f of ['cv.html', 'cover_letter.html', 'cv.pdf', 'cover_letter.pdf']) expect(world.exists(`jobs/output/${output[0]}/${f}`), f).toBe(true)
   expect(world.claudeCalls('tailor')).toHaveLength(1)
 
   // the bundled Chromium prints a page with the installed interpreter, as the server would (#165; win64's shell on Windows on ARM too)

@@ -480,11 +480,11 @@ def test_parse_at_reads_a_date_or_a_datetime():
 
 def test_the_materials_sent_are_kept_through_later_changes(tmp_path):
     t = _tracker(tmp_path)
-    t.set_status("job-1", "applied", now=_NOW, materials={"cv.tex": "abc"})
+    t.set_status("job-1", "applied", now=_NOW, materials={"cv.html": "abc"})
     t.set_status("job-1", "interview:screening", now=_NOW)
     t.save()
 
-    assert ApplicationTracker(tmp_path / "applications.json").materials("job-1") == {"cv.tex": "abc"}
+    assert ApplicationTracker(tmp_path / "applications.json").materials("job-1") == {"cv.html": "abc"}
 
 
 def test_is_sent_covers_applied_and_everything_after_it():

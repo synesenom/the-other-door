@@ -131,3 +131,8 @@ nav = [
     "nästa", "föregående", "tillbaka", "visa fler", "hem", "ansök", "ansök nu", "sök", "sök jobb",
     "jobbagent", "logga in",
 ]
+
+# The letter's date written out (filled by `compile`; the tailor writes <<date>>).
+[date]
+pattern = "{day} {month} {year}"
+months = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"]

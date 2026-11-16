@@ -6,46 +6,13 @@ from pathlib import Path
 
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
-from door.core import claude_cli, templates, workspace
+from door.core import claude_cli, workspace
 from door.matching import integrity
 from door.tailoring import facts as facts_mod
+from door.tailoring import html_doc, html_guard
 
 
 _MATERIALS = ("cv", "cover_letter")
-
-
-_BEGIN_DOC_RE = re.compile(r"^[^%\n]*?(\\begin\{document\})", re.MULTILINE)
-_END_DOC_RE = re.compile(r"^[^%\n]*?(\\end\{document\})", re.MULTILINE)
-
-
-def _document_span(tex: str) -> tuple[int, int] | None:
-    """(end of the first uncommented \\begin{document}, start of the last
-    uncommented \\end{document}), or None — a `%`-commented one never counts."""
-    begin = _BEGIN_DOC_RE.search(tex)
-    if begin is None:
-        return None
-    ends = [m.start(1) for m in _END_DOC_RE.finditer(tex, begin.end(1))]
-    return begin.end(1), (ends[-1] if ends else -1)
-
-
-def _latex_body(tex: str) -> str:
-    """The text between \\begin{document} and \\end{document} (all of it if absent)."""
-    span = _document_span(tex)
-    if span is None:
-        return tex
-    start, end = span
-    return tex[start:end] if end >= start else tex[start:]
-
-
-def _latex_word_count(tex: str) -> int:
-    """Rough word count of a LaTeX document's body: comments and command
-    names dropped, their braced arguments kept."""
-    body = _latex_body(tex)
-    body = re.sub(r"(?<!\\)%.*", "", body)
-    # Arguments that are layout, not prose: environment names and lengths.
-    body = re.sub(r"\\(begin|end|[vh]space\*?|vskip|hskip|setlength|documentclass|usepackage)(\[[^\]]*\])?\{[^}]*\}", " ", body)
-    body = re.sub(r"\\[A-Za-z@]+\*?(\[[^\]]*\])?", " ", body)
-    return sum(1 for token in body.split() if re.search(r"\w", token))
 
 
 class ReviseError(claude_cli.ClaudeError):
@@ -54,14 +21,15 @@ class ReviseError(claude_cli.ClaudeError):
 
 _DEFAULT_REVISE_MODEL = "sonnet"
 _DEFAULT_REVISE_TIMEOUT_S = 300
-_REVISE_PROMPT = """You are revising the body of a LaTeX {what} for a job application.
+_REVISE_PROMPT = """You are revising the body of an HTML {what} for a job application.
 
 Apply this instruction from the candidate, and change nothing else:
 {instruction}
 
 Rules:
-- Return ONLY the revised LaTeX body — the text that goes between \\begin{{document}} and \\end{{document}}. No preamble, no \\documentclass, no \\begin{{document}}/\\end{{document}}, no markdown fences, no commentary.
-- Keep every command and environment the body uses valid LaTeX; escape special characters (& % $ # _ {{ }}) in any new text.
+- Return ONLY the revised body: the fragment of tags that goes inside the page. No <html>, <head>, <body> or <style>, no markdown fences, no commentary.
+- Write only these tags: header, h1, h2, h3, p, ul, ol, li, div, span, strong, em, a, br. The only attributes are class (only the classes the body already uses) and href on a (https:, mailto: or #).
+- Keep the <!-- Keywords: ... --> and <!-- Tailoring: ... --> comments, and the <<photo>>, <<company>>, <<title>> and <<date>> tokens, as they are. Write & as &amp; and < as &lt; in text.
 - Never invent experience, employers, dates, numbers or skills that are not already in the body.
 
 The posting it is for: {title} at {company}
@@ -73,17 +41,7 @@ Current body:
 """
 
 
-def _split_latex(tex: str) -> tuple[str, str, str]:
-    """(preamble up to and incl. \\begin{document}, body, tail from \\end{document}).
-
-    Raises:
-        ValueError: no \\begin{document} / \\end{document}.
-    """
-    span = _document_span(tex)
-    if span is None or span[1] < span[0]:
-        raise ValueError("the file has no \\begin{document} ... \\end{document} body to revise")
-    head_end, end = span
-    return tex[:head_end], tex[head_end:end], tex[end:]
+_PAGE_RE = re.compile(r"<!doctype|<html[\s>]|<head[\s>]|<body[\s>]", re.IGNORECASE)
 
 
 def _clean_revised_body(text: str) -> str:
@@ -99,39 +57,24 @@ def _clean_revised_body(text: str) -> str:
         raise ValueError("the revision came with commentary before the body; file left unchanged")
     if not body:
         raise ValueError("the revision came back empty; file left unchanged")
-    if "\\documentclass" in body or "\\begin{document}" in body or "\\end{document}" in body:
-        raise ValueError("the revision came back as a whole document, not just the body; file left unchanged")
+    if _PAGE_RE.search(body):
+        raise ValueError("the revision came back as a whole page, not just the body; file left unchanged")
     return body
+
+
+def _carry_notes(old: str, new: str) -> str:
+    """`new` with the `Keywords` and `Tailoring` comments of `old` put back in front when the revision dropped them."""
+    notes = [
+        f"<!-- {label}: {text} -->" for label in html_guard.NOTES
+        if (text := html_doc.note(old, label)) is not None and html_doc.note(new, label) is None
+    ]
+    return "\n".join([*notes, new]) if notes else new
 
 
 def _write_atomic(path: Path, text: str) -> None:
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
-
-
-_NOTE_RE = re.compile(r"^[ \t]*%[ \t]*(?:Keywords|Tailoring):.*$", re.MULTILINE)
-
-
-def _swap_head(old: str, new: str | None) -> str:
-    """The head to write: `new` (today's template) with the `% Keywords:` / `% Tailoring:` notes of `old` carried
-    over (just before \\begin{document}); `old` itself when there is no template head."""
-    if new is None or new == old:
-        return old
-    notes = [m.group(0) for m in _NOTE_RE.finditer(old) if m.group(0) not in new]
-    if not notes:
-        return new
-    cut = new.rfind("\\begin{document}")
-    return new[:cut] + "\n".join(notes) + "\n" + new[cut:]
-
-
-def _current_template_head(file: str, config: dict, profile_dir: Path) -> str | None:
-    """The preamble of today's template for `file`, or None when it cannot be read or has no body."""
-    key = "cv_template" if file == "cv" else "cover_letter_template"
-    try:
-        return _split_latex(templates.resolve(key, config, profile_dir).read_text(encoding="utf-8"))[0]
-    except (OSError, ValueError, UnicodeDecodeError):
-        return None
 
 
 def _revise_core(
@@ -144,14 +87,14 @@ def _revise_core(
     profile_dir: Path | None = None,
     timeout_s: float = _DEFAULT_REVISE_TIMEOUT_S,
 ) -> dict:
-    """One targeted edit to `cv.tex` or `cover_letter.tex`, recompiled and re-rendered.
+    """One targeted edit to `cv.html` or `cover_letter.html`, recompiled and re-rendered.
 
-    Sends the document *body* (never the preamble), the posting and the
+    Sends the body (the template is not part of the file), the posting and the
     instruction to one `claude -p` call (config's ``revise_model``, default
-    sonnet; no tools), swaps the answer in as the new body, keeps the
-    previous file as ``<file>.tex.bak``, then runs `_compile_core` with
-    ``render``. ``undo=True`` restores the ``.bak`` instead (and
-    recompiles). The preamble is brought up to the current template's. Never prints.
+    sonnet; no tools), swaps the answer in as the new body (after the guard has read it), keeps the
+    previous file as ``<file>.html.bak``, then runs `_compile_core` with
+    ``render``: today's template styles it. ``undo=True`` restores the ``.bak`` instead (and
+    recompiles). Never prints.
 
     Returns:
         ``{"outcome": "revised" | "undone", "job_id", "file", "backup",
@@ -161,8 +104,9 @@ def _revise_core(
 
     Raises:
         ValueError: bad reference/file/instruction, or an unusable answer
-            (the file is left unchanged).
-        FileNotFoundError: no such material, or nothing to undo.
+            (the file is left unchanged), or a body the guard refuses.
+        FileNotFoundError: no such material (a job prepared before the HTML bodies: prepare it again), or nothing
+            to undo.
         ReviseError: the `claude -p` call failed (file unchanged).
     """
     from door.core.selection import find_posting
@@ -174,23 +118,24 @@ def _revise_core(
     if file not in _MATERIALS:
         raise ValueError(f"file must be 'cv' or 'cover_letter', not {file!r}")
     job_id = common._resolve_job_ref(job_id, jobs_dir)
-    tex_path = jobs_dir / "output" / job_id / f"{file}.tex"
-    backup = tex_path.with_name(tex_path.name + ".bak")
-    if not tex_path.is_file():
-        raise FileNotFoundError(f"{tex_path} not found — prepare {job_id!r} first")
+    path = jobs_dir / "output" / job_id / f"{file}.html"
+    backup = path.with_name(path.name + ".bak")
+    if not path.is_file():
+        if path.with_suffix(".tex").is_file():
+            raise FileNotFoundError(
+                f"{job_id!r} was prepared with an older version (a {file}.tex): prepare it again to revise it")
+        raise FileNotFoundError(f"{path} not found — prepare {job_id!r} first")
 
     if undo:
         if not backup.is_file():
             raise FileNotFoundError(f"nothing to undo: no {backup.name} for {job_id!r}")
-        os.replace(backup, tex_path)
+        os.replace(backup, path)
         outcome = "undone"
     else:
         if not instruction or not instruction.strip():
             raise ValueError("an instruction is required, e.g. \"tighten the second paragraph\"")
-        original = tex_path.read_text(encoding="utf-8")
-        head, body, tail = _split_latex(original)
+        original = path.read_text(encoding="utf-8")
         config = common._load_config_or_defaults(profile_dir)
-        current_head = _current_template_head(file, config, profile_dir)
         posting = find_posting(jobs_dir, job_id) or {}
         integrity.ensure(posting)  # a posting stored before the gate: clean in memory
         model = config.get("revise_model") or _DEFAULT_REVISE_MODEL
@@ -200,7 +145,7 @@ def _revise_core(
             title=posting.get("title", ""),
             company=posting.get("company", ""),
             description=posting.get("description", ""),
-            body=body.strip(),
+            body=original.strip(),
         )
         try:
             stdout = claude_cli.run(
@@ -212,25 +157,21 @@ def _revise_core(
                 raise claude_cli.ClaudeError("claude's answer is not text")
         except claude_cli.ClaudeError as exc:
             raise ReviseError(f"{exc}; file left unchanged") from None
-        new_body = _clean_revised_body(answer)
+        new_body = _carry_notes(original, _clean_revised_body(answer))
+        refused = html_guard.unsafe(new_body)
+        if refused:
+            raise ValueError(f"the revision uses {', '.join(refused)}, outside the tags and links a {file} is written in; file left unchanged")
 
         backup.write_text(original, encoding="utf-8")
-        new_head = _swap_head(head, current_head)
-        _write_atomic(tex_path, f"{new_head}\n{new_body}\n{tail}")
+        _write_atomic(path, new_body + "\n")
         outcome = "revised"
 
     compiled = compile_cmd._compile_core(job_id, render=True, jobs_dir=jobs_dir)
-    if outcome == "revised" and new_head != head and any(
-        r.get("file") == tex_path.name and r.get("status") == "error" for r in compiled["results"]
-    ):
-        # The current template's preamble does not compile for this body: keep the job's own.
-        _write_atomic(tex_path, f"{head}\n{new_body}\n{tail}")
-        compiled = compile_cmd._compile_core(job_id, render=True, jobs_dir=jobs_dir)
     unsupported = facts_mod.check(jobs_dir / "output" / job_id, profile_dir)
     return {
         "outcome": outcome,
         "job_id": job_id,
-        "file": str(tex_path),
+        "file": str(path),
         "backup": str(backup),
         "compile": compiled["results"],
         "render": compiled["render"],

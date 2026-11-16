@@ -54,7 +54,7 @@ class Profile(BaseModel):
     # You need the employer to sponsor a visa or work permit: ads that say they will not, or that
     # require an existing permit, score 0 (matching/scorer.apply_result).
     needs_work_permit: bool = False
-    # The LaTeX templates: None = the code's own (`door.core.templates`); a path names the user's own.
+    # The HTML templates: None = the code's own (`door.core.templates`); a path names the user's own.
     cv_template: Path | None = None
     cv_content: Path
     cover_letter_template: Path | None = None

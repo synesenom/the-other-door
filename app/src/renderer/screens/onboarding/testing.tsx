@@ -37,11 +37,11 @@ export const savedConfig = {
 /** `show_profile` for a profile that exists, with the user's own CV. */
 export const existingProfile: ShowProfile = { ...freshProfile, config: savedConfig, errors: [], cv: cvState({ exists: true, text: '# Ada\n' }) }
 
-export const doctorReport = (login: 'ok' | 'out' = 'ok', latex = true): DoctorReport => ({
-  ok: login === 'ok' && latex,
+export const doctorReport = (login: 'ok' | 'out' = 'ok', chromium = true): DoctorReport => ({
+  ok: login === 'ok' && chromium,
   checks: [
     { name: 'python', status: 'ok', required: true, detail: 'Python 3.12.1' },
-    { name: 'latex', status: latex ? 'ok' : 'missing', required: true, detail: latex ? 'tectonic: /bin/tectonic' : 'no tectonic or xelatex found', fix: latex ? null : 'install it' },
+    { name: 'chromium', status: chromium ? 'ok' : 'missing', required: true, detail: chromium ? 'chromium: /bin/chrome-headless-shell' : 'no Chromium headless shell found', fix: chromium ? null : 'install it' },
     { name: 'claude CLI', status: 'ok', required: true, detail: 'claude: /bin/claude', details: { path: '/bin/claude' } },
     login === 'ok'
       ? { name: 'claude login', status: 'ok', required: true, detail: 'logged in', details: { loggedIn: true, email: 'ada@example.com', subscriptionType: 'max' } }

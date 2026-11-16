@@ -82,3 +82,8 @@ nav = [
     "karrier", "állások", "összes állás", "összes pozíció", "további állások", "következő", "előző",
     "vissza", "több", "jelentkezés", "jelentkezem", "keresés", "főoldal", "bejelentkezés",
 ]
+
+# The letter's date written out (filled by `compile`; the tailor writes <<date>>).
+[date]
+pattern = "{year}. {month} {day}."
+months = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"]

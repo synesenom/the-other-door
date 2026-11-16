@@ -73,8 +73,8 @@ polite); after that it is mostly the new postings. It ends with your best matche
 
 ![./door jobs show globex, then jobs prepare globex, then jobs status: the posting, then its description in the pager, the tailoring steps and the materials summary, then the posting and its new status picked from lists](demo/prepare.gif)
 
-The PDFs are in `jobs/output/<job_id>/`. Not happy with the letter or the CV? Open Claude Code here (`claude`) and ask: "tighten the letter's second paragraph" — it edits and recompiles the PDF. There is no
-command for editing: a `.tex` file is never changed by hand, so its PDF is always current.
+The PDFs are in `jobs/output/<job_id>/`. Not happy with the letter or the CV? Open Claude Code here (`claude`) and ask: "tighten the letter's second paragraph" — it edits and prints the PDF again. There is no
+command for editing: a `.html` file is never changed by hand, so its PDF is always current.
 
 Apply by hand, then record it:
 
@@ -105,7 +105,7 @@ several open a list of just those to pick from; where the job is optional (`jobs
 
 | Command | What it does |
 |---------|--------------|
-| `doctor [--probe] [--fix [--yes] [--no-tex] [--no-claude]]` | Check prerequisites (and print the data folder in use, `DOOR_HOME` or the checkout), the profile, that `claude` is logged in to a Pro/Max plan (a dim `Connected as <email> (<plan>, <organisation>)` line under the check), and that Claude Code can start the MCP server, and, if you keep your own LaTeX template, which fixes of the shipped one it lacks; print the fix for anything missing (for an invalid `profile/config.json`, every error). `--probe` also checks each site live for [changes](job-sites.md#when-a-site-changes) (slow). `--fix` installs whatever is missing of Tectonic, Chromium (the pinned headless shell that will print CVs, about 200 MB, checked against a sha256 and kept in `~/.local/share/door/`; on Linux it needs system libraries such as `libnss3`, which `doctor` names and never installs; a warning, not a failure, until a CV is printed with it) and the `claude` CLI (lists them, asks once), then checks that the MCP server answers; with `--probe` too it offers to fix a scraper that no longer fits its site. `./scripts/setup.sh` ends with `doctor --fix`. |
+| `doctor [--probe] [--fix [--yes] [--no-tex] [--no-claude]]` | Check prerequisites (and print the data folder in use, `DOOR_HOME` or the checkout), the profile, that `claude` is logged in to a Pro/Max plan (a dim `Connected as <email> (<plan>, <organisation>)` line under the check), and that Claude Code can start the MCP server; print the fix for anything missing (for an invalid `profile/config.json`, every error). `--probe` also checks each site live for [changes](job-sites.md#when-a-site-changes) (slow). `--fix` installs whatever is missing of Tectonic, Chromium (the pinned headless shell that prints CVs, about 200 MB, checked against a sha256 and kept in `~/.local/share/door/`; on Linux it needs system libraries such as `libnss3`, which `doctor` names and never installs; required: a CV is printed with it) and the `claude` CLI (lists them, asks once), then checks that the MCP server answers; with `--probe` too it offers to fix a scraper that no longer fits its site. `./scripts/setup.sh` ends with `doctor --fix`. |
 | `init [--name …] [--role-targets a,b] [--search-keywords a,b] [--topic-terms a,b] [--set KEY=VALUE …]` | Without flags, the setup wizard above (your sources, reading them, one review, a first run; on an existing profile, the same with your answers filled in). With flags it asks nothing and changes only the keys you name (`--set` takes any other config key, as JSON or a plain string: `--set preferences="a smaller company; not banking"` writes what matters to you). `init --show` writes nothing: it prints the configured details (or the `config.json` errors), the CV outline, and whether the CV, the two templates and the story bank are still `profile.example/`'s; it cannot be combined with field options. |
 
 ### Your CV over time: `cv`
@@ -254,7 +254,7 @@ nobody follows an employer on is simply not collected. `doctor` exits non-zero w
 | `jobs/postings/<date>/<site>/<job_id>.json` | Scraped postings; `find`'s scoring adds the score to the same file. |
 | `jobs/candidates.json` | The employers `search` and `discover` saw that `follow` has yet to look at. |
 | `profile/companies.json` | The employers *The other door* follows, and the ones it found it cannot (`companies`). |
-| `jobs/output/<job_id>/` | Tailored `cv.tex`, `cover_letter.tex` and their PDFs. |
+| `jobs/output/<job_id>/` | Tailored `cv.html`, `cover_letter.html` (the bodies) and their PDFs. |
 | `jobs/applications.json` | Application status for each posting, with the history of every change (interview stages, notes, when each happened) and the hashes of the materials sent (copied to `jobs/output/<id>/sent/`). |
 | `jobs/runs/` | One record per `find` (a block per step), plus `latest.log`. |
 | `backups/<timestamp>/` | The `profile/` and `jobs/` a `data import` replaced. |

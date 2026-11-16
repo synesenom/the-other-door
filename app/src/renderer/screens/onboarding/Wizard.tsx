@@ -38,11 +38,11 @@ export function Wizard({ profile: initial, sandbox, onFinish, onCancel, start }:
     void recheck()
   }, [recheck])
 
-  // LaTeX is needed only at `prepare`, so it is no question here: it installs quietly (the installed app brings its own, so this is a checkout's).
+  // The Chromium that prints the CV is needed only at `prepare`, so it is no question here: it installs quietly (the installed app brings its own, so this is a checkout's).
   useEffect(() => {
-    if (sandbox || quietInstall.current || !doctor?.checks.some((c) => c.name === 'latex' && c.status !== 'ok')) return
+    if (sandbox || quietInstall.current || !doctor?.checks.some((c) => c.name === 'chromium' && c.status !== 'ok')) return
     quietInstall.current = true
-    call('setup', { install: ['latex'], yes: true }).catch(() => undefined)
+    call('setup', { install: ['chromium'], yes: true }).catch(() => undefined)
   }, [doctor, sandbox])
 
   // A first set-up (no profile) that may reach Google Drive can bring the profile from there instead (issue 616).

@@ -546,7 +546,7 @@ def test_init_partial_profile_dir_copies_missing_files_only(init_env, prompts):
     assert config_path.exists()
     profile_loader.Profile.model_validate(json.loads(config_path.read_text()))
 
-    for name in ("cv.template.tex", "cover-letter.template.tex", "fonts"):
+    for name in ("cv.template.html", "cover-letter.template.html", "fonts"):
         assert not (init_env.profile_dir / name).exists()  # the templates and fonts come from the code (#56)
     assert (init_env.profile_dir / ".data_version").read_text() == "0.1\n"  # made by this build: nothing to upgrade
     assert not (init_env.profile_dir / "cv.md").exists()  # no CV yet, not the example's
@@ -900,7 +900,7 @@ def test_show_profile_core_missing_config(init_env):
     (profile_dir / "config.json").unlink()
     result = profile_cmd._show_profile_core(profile_dir, init_env.example_dir)
     assert result["config"] is None and result["errors"] and result["enrich_sources"] == []
-    assert result["cv"]["exists"] and result["templates"]["cv"]["path"] == str(profile_dir / "cv.template.tex")
+    assert result["cv"]["exists"] and result["templates"]["cv"]["path"] == str(profile_dir / "cv.template.html")
 
 
 def test_show_profile_core_missing_files(init_env):

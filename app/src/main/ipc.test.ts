@@ -209,7 +209,7 @@ describe('registerIpc', () => {
     await invoke(CHANNELS.saveMaterial, 'jobindex.123', 'cv', false, '../../etc/x')
     expect(showSaveDialog).toHaveBeenLastCalledWith(expect.objectContaining({ defaultPath: join('/Users/ada/Downloads', 'x.pdf') }))
     showSaveDialog.mockClear()
-    for (const [id, which, sent] of [['../x', 'cv', false], ['jobindex.123', 'cv.tex', false], ['nope.1', 'cv', false], [7, 'cv', false], ['jobindex.123', 'cv', 'yes'], ['jobindex.123', 'cv', true]]) {
+    for (const [id, which, sent] of [['../x', 'cv', false], ['jobindex.123', 'cv.html', false], ['nope.1', 'cv', false], [7, 'cv', false], ['jobindex.123', 'cv', 'yes'], ['jobindex.123', 'cv', true]]) {
       expect((await invoke(CHANNELS.saveMaterial, id, which, sent, 'CV.pdf')).ok).toBe(false)
     }
     expect(showSaveDialog).not.toHaveBeenCalled()

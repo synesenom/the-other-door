@@ -25,6 +25,19 @@ SAMPLES_DIR = REPO_ROOT / "tests" / "data_versions"
 # one. Each is an exact path into `expected.json` and the PR that changed it; kept until a major bump deletes the
 # samples it applies to. `/dev-release`'s `data-migrator` adds them; a `release` test fails for one that covers nothing.
 READ_CHANGES: dict[str, tuple[tuple[str, str], ...]] = {
+    "0.2.0": (
+        # #146: the CV and letter are HTML bodies; a job prepared with LaTeX (cv.tex) is kept and never read, and a
+        # `.tex` template is not read (the shipped HTML one is used), so what show and show_profile read back is empty
+        *(
+            (f"show.jobindex.{job}.materials.{field}", "#146: the CV and letter are HTML bodies; the LaTeX ones are kept, never read")
+            for job in ("1002", "1004") for field in ("cover_letter_words", "keywords", "tailoring")
+        ),
+        ("show.jobindex.1004.materials.unsupported", "#146: the CV and letter are HTML bodies; the LaTeX ones are kept, never read"),
+        ("show_profile.templates.cover_letter.is_example", "#146: a LaTeX template is not read; the shipped HTML one is used"),
+        ("show_profile.templates.cover_letter.path", "#146: a LaTeX template is not read; the shipped HTML one is used"),
+        ("show_profile.templates.cv.is_example", "#146: a LaTeX template is not read; the shipped HTML one is used"),
+        ("show_profile.templates.cv.path", "#146: a LaTeX template is not read; the shipped HTML one is used"),
+    ),
     "0.1.0": (
         ("status_summary.application.ghosted", "#87: no change for 45 days counts as no answer"),
         ("status_summary.application.pending", "#87: no change for 45 days counts as no answer"),

@@ -25,7 +25,7 @@ from door.tailoring import facts as facts_mod
 from door.tailoring import readability
 
 
-_TAILOR_OUTPUTS = ("posting.json", "cv.tex", "cover_letter.tex", "cv.pdf", "cover_letter.pdf")
+_TAILOR_OUTPUTS = ("posting.json", "cv.html", "cover_letter.html", "cv.pdf", "cover_letter.pdf")
 _DEFAULT_TAILOR_TIMEOUT_MIN = 20
 # Seconds between "tailoring <id> · 3m20s elapsed" events while the (opaque)
 # tailor run is going; read at call time so tests can shorten it.
@@ -73,7 +73,7 @@ def _rule_path(path) -> str:
 
 
 def _tailor_templates(profile_dir: Path) -> dict[str, Path]:
-    """The two LaTeX templates the tailor reads, as absolute paths (`door.core.templates`: the user's own, else the code's)."""
+    """The two HTML templates the tailor reads, as absolute paths (`door.core.templates`: the user's own, else the code's)."""
     try:
         config = common._load_config_or_defaults(profile_dir)
     except Exception:  # noqa: BLE001 - an invalid config fails the run on its own; the rules stay narrow
@@ -175,9 +175,10 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
         f"Tailor job_id {job_id!r}: `job` is the posting at {posting_path}, `profile` is "
         f"{workspace.PROFILE_DIR / 'config.json'} (the profile folder is {workspace.PROFILE_DIR}; "
         f"the story bank is {workspace.PROFILE_DIR / 'story_bank.md'}). The CV template is {tpl['cv_template']} and "
-        f"the cover letter template is {tpl['cover_letter_template']}. Produce "
-        f"{output_dir}/posting.json, cv.tex and "
-        f"cover_letter.tex and compile them to PDFs, following your steps in order; "
+        f"the cover letter template is {tpl['cover_letter_template']} (they hold the building blocks; you write only "
+        f"the body, never a whole page). Produce "
+        f"{output_dir}/posting.json, cv.html and "
+        f"cover_letter.html and compile them to PDFs, following your steps in order; "
         f"new stories go to {output_dir / _STORIES_FILE}. "
         f"{_cv_conventions_text(posting_path)} "
         f"Use these absolute paths, not paths relative to the working directory."
@@ -444,6 +445,11 @@ def _prepare_core(
     if not common._claude_available():
         return {**result, "error": f"the `claude` CLI is not installed — {common._CLAUDE_FIX}; status left unchanged."}
 
+    if not common._chromium_available():
+        from door.core import doctor
+
+        return {**result, "error": f"no Chromium to print the CV with — {doctor._CHROMIUM_FIX}; status left unchanged."}
+
     label = common._job_label(job_id, jobs_dir)
     progress_mod.report(f"tailoring {label}", stage="prepare")
     tailor_dir = jobs_dir / ".tailor" / job_id  # the posting copy and agents file; the tailor sees only this of jobs/
@@ -601,8 +607,8 @@ def prepare(job_id: str | None, force: bool, timeout_min: float):
     several matches are picked from) or its id; without it, the single
     highest-scoring unapplied match (in `jobs list` order).
     Locates the posting, invokes the tailor flow, and on success advances
-    its application status to 'prepared' — but only once cv.tex,
-    cover_letter.tex, both PDFs and posting.json are all on disk. Idempotent
+    its application status to 'prepared' — but only once cv.html,
+    cover_letter.html, both PDFs and posting.json are all on disk. Idempotent
     by default — skips work if jobs/output/<job_id>/ already holds complete
     materials (an incomplete directory is regenerated); pass --force to
     regenerate anyway.

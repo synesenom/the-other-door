@@ -11,7 +11,7 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.core import companies, installers, progress, workspace
+from door.core import chromium, companies, installers, progress, workspace
 from door.core.lock import ledger_lock
 from door.core.profile_loader import ConfigError, Profile, load_config
 
@@ -248,7 +248,7 @@ def _pick_job() -> str | None:
 
 
 class MissingToolError(FileNotFoundError):
-    """A required external tool (LaTeX, `claude`) is not installed.
+    """A required external tool (Chromium, `claude`) is not installed.
 
     The message carries the one-line fix; `doctor` lists them all (#138).
     """
@@ -260,6 +260,11 @@ _CLAUDE_FIX = "run ./door doctor --fix"
 def _claude_available() -> bool:
     """Whether the `claude` CLI is on PATH or in ~/.local/bin (monkeypatched in tests)."""
     return installers.find_claude() is not None
+
+
+def _chromium_available() -> bool:
+    """Whether the pinned Chromium headless shell that prints CVs is installed (monkeypatched in tests)."""
+    return chromium.find_chromium() is not None
 
 
 def _with_progress(fn):
@@ -502,13 +507,14 @@ def _format_elapsed(elapsed_s: float) -> str:
 
 
 def _load_json_tolerant(path: Path) -> dict:
-    """Load a JSON object from `path`, tolerating a missing or corrupt file."""
+    """Load a JSON object from `path`, tolerating a missing, corrupt or non-object file (``{}``)."""
     if not path.exists():
         return {}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return {}
+    return data if isinstance(data, dict) else {}
 
 
 # Rich rendering shared by `show`, `list` and `status`.

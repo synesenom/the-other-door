@@ -106,9 +106,9 @@ FIELDS = {
     "email": "alex.example@example.com",
     "location": "Copenhagen",
     "needs_work_permit": True,
-    "cv_template": "profile/cv.template.tex",
+    "cv_template": "profile/cv.template.html",
     "cv_content": "profile/cv.md",
-    "cover_letter_template": "profile/cover-letter.template.tex",
+    "cover_letter_template": "profile/cover-letter.template.html",
     "photo": "profile/photo.jpg",
     "role_targets": ["Financial Controller", "Head of Finance"],
     "search_keywords": ["financial controller", "head of finance", "group controller"],
@@ -156,8 +156,8 @@ def make_profile() -> None:
     profile_cmd._save_photo_core(str(picture))
     picture.unlink()
     # The templates come from the code since v0.2.0: the keys name the user's own, so the sample keeps a changed copy.
-    for name in ("cv.template.tex", "cover-letter.template.tex"):
-        own = (workspace.PROFILE_EXAMPLE_DIR / name).read_text(encoding="utf-8") + "% the user's own styling\n"
+    for name in ("cv.template.html", "cover-letter.template.html"):
+        own = (workspace.PROFILE_EXAMPLE_DIR / name).read_text(encoding="utf-8") + "<!-- the user's own styling -->\n"
         (PROFILE / name).write_text(own, encoding="utf-8")
     profile_cmd._init_core(FIELDS, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
     (PROFILE / "story_bank.md").unlink(missing_ok=True)
@@ -296,11 +296,11 @@ def make_output() -> None:
         claim = "" if sent else ". Led a team of 25 analysts"
         data = next(f for _, f, _ in POSTINGS if f["id"] == job_id)
         (folder / "posting.json").write_text(json.dumps(json.loads(JobPosting(**data).model_dump_json()), indent=2), encoding="utf-8")
-        (folder / "cv.tex").write_text(
-            "% Keywords: close, forecast, IFRS\n% Tailoring: kept the close story; cut the older role\n"
-            f"\\documentclass{{article}}\\begin{{document}}Alex Example, {company}{claim}\\end{{document}}\n", encoding="utf-8")
-        (folder / "cover_letter.tex").write_text(
-            f"\\documentclass{{article}}\\begin{{document}}Dear {company}, I would like to own your close.\\end{{document}}\n", encoding="utf-8")
+        (folder / "cv.html").write_text(
+            "<!-- Keywords: close, forecast, IFRS -->\n<!-- Tailoring: kept the close story; cut the older role -->\n"
+            f"<h2>Experience</h2><p>Alex Example, {company}{claim}</p>\n", encoding="utf-8")
+        (folder / "cover_letter.html").write_text(
+            f"<p>Dear {company}, I would like to own your close.</p>\n", encoding="utf-8")
         pdf_utils.make_pdf(folder / "cv.pdf", ["Alex Example\nSummary\nExperience\nSkills\nEducation\nclose forecast IFRS"])
         pdf_utils.make_pdf(folder / "cover_letter.pdf", [f"Alex Example\nDear {company},\nI would like to own your close."])
         (folder / "stories.json").write_text(json.dumps([]), encoding="utf-8")
@@ -308,12 +308,12 @@ def make_output() -> None:
         keep = [{**item, "reason": "the team size is from the interview notes, not the CV"} for item in flagged]
         facts_mod.check(folder, PROFILE, keep=keep)
         if sent:
-            (folder / "cv.tex.bak").write_bytes((folder / "cv.tex").read_bytes())  # the version before a revise
+            (folder / "cv.html.bak").write_bytes((folder / "cv.html").read_bytes())  # the version before a revise
             (folder / "photo.jpg").write_bytes((PROFILE / "photo.jpg").read_bytes())
             copy = folder / "sent"
             copy.mkdir(exist_ok=True)
             digests = {}
-            for name in ("cv.pdf", "cover_letter.pdf", "cv.tex", "cover_letter.tex", "photo.jpg"):
+            for name in ("cv.pdf", "cover_letter.pdf", "cv.html", "cover_letter.html", "photo.jpg"):
                 (copy / name).write_bytes((folder / name).read_bytes())
                 digests[name] = hashlib.sha256((folder / name).read_bytes()).hexdigest()
             raw = json.loads((JOBS / "applications.json").read_text(encoding="utf-8"))

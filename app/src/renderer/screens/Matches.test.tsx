@@ -664,6 +664,7 @@ describe('Matches', () => {
       page_counts: { cv: 1, cover_letter: 1 },
       cover_letter_words: 300,
       rendered: false,
+      revisable: true,
     }
     const prepared = () =>
       setup({

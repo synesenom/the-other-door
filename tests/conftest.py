@@ -55,6 +55,13 @@ def _claude_cli_present(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _chromium_present(monkeypatch):
+    """`prepare` refuses to start without a Chromium to print with (#146). Tests fake the tailor run and the
+    print, so pretend it is installed; the guard's own tests override this."""
+    monkeypatch.setattr(common, "_chromium_available", lambda: True)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_claude_lookup(monkeypatch, tmp_path_factory):
     """A test never sees the developer's real `claude` (PATH or ~/.local/bin): the runtime
     lookup finds nothing (the callers fall back to the bare name) unless a test passes its own
@@ -79,10 +86,10 @@ def _no_real_claude_lookup(monkeypatch, tmp_path_factory):
 def _no_real_chromium_lookup(request, monkeypatch, tmp_path_factory):
     """A test never finds the developer's Chromium shell (`$DOOR_BIN`, `~/.local/share/door`), so
     `doctor` starts none: the lookup reads an empty home unless a test passes its own `home` or
-    patches `find_chromium` itself."""
+    patches `find_chromium` itself; a test marked `real_chromium` prints with the real one."""
     from door.core import chromium
 
-    if request.node.get_closest_marker("live"):
+    if request.node.get_closest_marker("live") or request.node.get_closest_marker("real_chromium"):
         return
     monkeypatch.delenv("DOOR_BIN", raising=False)
     real = chromium.find_chromium

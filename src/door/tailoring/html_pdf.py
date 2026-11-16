@@ -1,6 +1,6 @@
 """Print an HTML page to a PDF with the pinned Chromium headless shell, sealed (#165).
 
-The seal stands where `tex_guard` stands for LaTeX: a model wrote the page, so the browser
+The seal is the second layer after `html_guard`: a model wrote the page, so the browser
 gets nothing to reach. JavaScript is off (`Emulation.setScriptExecutionDisabled`), the page is
 served by a loopback server over one folder (127.0.0.1, a random port, only files whose resolved
 path is under the folder), and every request that is not on that origin is failed through
@@ -39,16 +39,39 @@ class PrintError(Exception):
 
 class _Handler(http.server.BaseHTTPRequestHandler):
     root: Path
+    page: bytes = b""
+    assets: dict[str, Path] = {}
+
+    def _target(self, path: str) -> tuple[Path, Path] | None:
+        """``(file, folder it must stay inside)`` for a path: under an asset name, in that asset folder; else in the
+        page's folder. None where no file can be meant (a bare asset name)."""
+        first, _, rest = path.lstrip("/").partition("/")
+        if first in self.assets:
+            return (self.assets[first] / rest, self.assets[first]) if rest else None
+        return self.root / path.lstrip("/"), self.root
 
     def do_GET(self) -> None:  # noqa: N802 - http.server's name
+        target = None
         path = unquote(urlsplit(self.path).path)
-        target = (self.root / path.lstrip("/")).resolve()
-        if not target.is_relative_to(self.root) or not target.is_file():
+        if path == "/index.html":
+            self._send(self.page, "text/html; charset=utf-8")
+            return
+        try:
+            where = self._target(path)
+            if where:
+                resolved = where[0].resolve()
+                if resolved.is_relative_to(where[1]) and resolved.is_file():
+                    target = resolved
+        except (OSError, ValueError):
+            pass
+        if target is None:
             self.send_error(404)
             return
-        data = target.read_bytes()
+        self._send(target.read_bytes(), mimetypes.guess_type(target.name)[0] or "application/octet-stream")
+
+    def _send(self, data: bytes, content_type: str) -> None:
         self.send_response(200)
-        self.send_header("Content-Type", mimetypes.guess_type(target.name)[0] or "application/octet-stream")
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
@@ -57,8 +80,9 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def _serve(folder: Path) -> http.server.ThreadingHTTPServer:
-    handler = type("Handler", (_Handler,), {"root": Path(folder).resolve()})
+def _serve(folder: Path, page: bytes, assets: dict[str, Path] | None = None) -> http.server.ThreadingHTTPServer:
+    resolved = {name: Path(path).resolve() for name, path in (assets or {}).items()}
+    handler = type("Handler", (_Handler,), {"root": Path(folder).resolve(), "page": page, "assets": resolved})
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -132,20 +156,24 @@ def _refused_sandbox(profile: Path) -> bool:
         return False
 
 
-def print_html(folder: Path, html: str, out_pdf: Path, *, timeout: float = 60.0, launcher=_launch) -> None:
-    """Print `html` (written as `folder/index.html`, with the folder's other files beside it) to `out_pdf`."""
+def print_html(folder: Path, html: str, out_pdf: Path, *,
+               assets: dict[str, Path] | None = None, timeout: float = 60.0, launcher=_launch) -> None:
+    """Print `html` (served from memory as `/index.html`, with the folder's files beside it) to `out_pdf`.
+
+    `assets` maps one URL segment to a folder outside the page's (``{"fonts": Path}`` serves ``/fonts/x.ttf`` from it):
+    a shared asset such as the fonts is served, not copied into the job's folder, and only files inside it.
+    """
     exe = chromium.find_chromium()
     if exe is None:
         raise PrintError("no Chromium headless shell found; run `./door doctor --fix`")
     folder = Path(folder)
-    (folder / "index.html").write_text(html, encoding="utf-8")
     deadline = time.monotonic() + timeout
 
     def left() -> float:
         return max(deadline - time.monotonic(), 0.1)
 
     profile = Path(tempfile.mkdtemp(prefix="door-chromium-"))
-    server = _serve(folder)
+    server = _serve(folder, html.encode("utf-8"), assets)
     origin = f"http://127.0.0.1:{server.server_address[1]}"
     proc = None
     conn = None

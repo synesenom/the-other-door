@@ -1041,9 +1041,9 @@
    "name": "Jane Doe",
    "email": "jane.doe@example.com",
    "location": "Copenhagen",
-   "cv_template": "/demo/profile/cv.template.tex",
+   "cv_template": "/demo/profile/cv.template.html",
    "cv_content": "/demo/profile/cv.md",
-   "cover_letter_template": "/demo/profile/cover-letter.template.tex",
+   "cover_letter_template": "/demo/profile/cover-letter.template.html",
    "role_targets": [
     "Financial Controller",
     "Senior Financial Controller",
@@ -1134,12 +1134,12 @@
   },
   "templates": {
    "cv": {
-    "path": "/demo/profile/cv.template.tex",
+    "path": "/demo/profile/cv.template.html",
     "exists": true,
     "is_example": true
    },
    "cover_letter": {
-    "path": "/demo/profile/cover-letter.template.tex",
+    "path": "/demo/profile/cover-letter.template.html",
     "exists": true,
     "is_example": true
    }
@@ -1627,6 +1627,7 @@
     },
     "cover_letter_words": 311,
     "rendered": false,
+    "revisable": true,
     "unsupported": [],
     "sent": true,
     "file_names": {
@@ -1768,6 +1769,7 @@
     },
     "cover_letter_words": 311,
     "rendered": false,
+    "revisable": true,
     "unsupported": [],
     "sent": true,
     "file_names": {
@@ -1844,6 +1846,7 @@
     },
     "cover_letter_words": 311,
     "rendered": false,
+    "revisable": true,
     "unsupported": [
      {
       "kind": "skill",

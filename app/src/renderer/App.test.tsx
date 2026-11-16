@@ -140,7 +140,7 @@ describe('App', () => {
         list_matches: matchesResult([match({ id: 'jobindex.1', title: 'Dataanalytiker' })]),
         show: {
           id: 'jobindex.1', title: 'Dataanalytiker', company: 'Acme', status: 'prepared',
-          materials: { output_dir: '/abs/jobs/output/jobindex.1', pdfs: {}, pngs: { cv: [], cover_letter: [] }, keywords: [], tailoring: [], page_counts: { cv: 1, cover_letter: 1 }, cover_letter_words: 300, rendered: false },
+          materials: { output_dir: '/abs/jobs/output/jobindex.1', pdfs: {}, pngs: { cv: [], cover_letter: [] }, keywords: [], tailoring: [], page_counts: { cv: 1, cover_letter: 1 }, cover_letter_words: 300, rendered: false, revisable: true },
         },
       })
       render(<App />)
@@ -381,6 +381,7 @@ describe('App, Find new jobs', () => {
       page_counts: { cv: 1, cover_letter: 1 },
       cover_letter_words: 300,
       rendered: false,
+      revisable: true,
     }
     const posting = (over: Record<string, unknown> = {}) => ({ id: 'jobindex.1', title: 'Data Analyst', company: 'Acme', location: 'Copenhagen', description: 'text', status: 'unapplied', materials: null, ...over })
     const open = (over: Record<string, unknown> = {}) => mockDoor({ status_summary: summary(), list_matches: matchesResult([match()]), show: posting(), ...over })

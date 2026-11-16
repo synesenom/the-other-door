@@ -1,5 +1,5 @@
 // The test world of the journeys (app/journeys/): a temp door home made from a persona and the
-// ad corpus, and the world.json the server's edges answer from (boot.py, claude.py, tectonic.py).
+// ad corpus, and the world.json the server's edges answer from (boot.py, claude.py, print_standin.py).
 // Nothing here starts a process except the one-off compile of prepared applications; the caller
 // hands `env` to Electron, which starts the real server through the DOOR_PYTHON wrapper.
 import { execFileSync } from 'node:child_process'
@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { ADS, type Ad } from './data/ads'
 import { PERSONAS, type Persona } from './data/personas'
-import { coverLetterTex, cvTex } from './tailor'
+import { coverLetterHtml, cvHtml } from './tailor'
 import { JOBS_DATA_VERSION, PROFILE_DATA_VERSION } from '../../src/main/data-versions'
 
 export const repoRoot = resolve(__dirname, '..', '..', '..')
@@ -59,8 +59,8 @@ export interface WorldOptions {
   /** The Python that runs the world's scripts: a path (default: the checkout's, or DOOR_PYTHON), or `bundled`,
    * the installed app's own, found from the DOOR_BIN its server is given (the install test, e2e-install/). */
   python?: string
-  /** The stand-in `tectonic` on PATH (default true). The install test leaves it out: the app's own compiles. */
-  tectonic?: boolean
+  /** The stand-in Chromium print (default true). The install test leaves it out: the app's own Chromium prints. */
+  chromium?: boolean
 }
 
 /** The ledger most journeys start from: a job in every column of the Applications board. */
@@ -215,7 +215,7 @@ function csc(): string | null {
 function wrapper(bin: string, name: string, py: string, file: string, worldDir: string, passArgs: boolean): string {
   if (process.platform === 'win32') {
     const exe = py === BUNDLED ? '%DOOR_BIN%\\..\\python\\python.exe' : py
-    // A program that takes arguments is a real .exe, as the real claude and tectonic are: a .cmd's arguments go
+    // A program that takes arguments is a real .exe, as the real claude and Chromium are: a .cmd's arguments go
     // through cmd.exe, which mangles quotes (a --json-schema), so the stand-in would not see what door sent.
     const compiler = passArgs ? csc() : null
     if (compiler) {
@@ -238,7 +238,7 @@ function wrapper(bin: string, name: string, py: string, file: string, worldDir: 
 /** `python: 'bundled'`: the world's scripts run on the installed app's own Python. */
 export const BUNDLED = 'bundled'
 
-/** The PATH of the world: its own bin/ first, then only the system's own folders (no Python, Node or TeX of the machine's). */
+/** The PATH of the world: its own bin/ first, then only the system's own folders (no Python or Node of the machine's). */
 export function worldPath(bin: string, platform: string = process.platform, systemRoot = process.env.SystemRoot ?? 'C:\\Windows'): string {
   return platform === 'win32' ? [bin, `${systemRoot}\\System32`, systemRoot].join(';') : [bin, '/usr/bin', '/bin'].join(':')
 }
@@ -324,9 +324,10 @@ function worldJson(persona: Persona, ads: Ad[], options: WorldOptions) {
     read_ads: readAds,
     scores,
     titles_en: titlesEn,
-    tailor: { cv: cvTex(persona), cover_letter: coverLetterTex(persona) },
+    tailor: { cv: cvHtml(persona), cover_letter: coverLetterHtml(persona) },
     answers: answersFor(persona),
     drive: { configured: options.drive?.configured ?? true, account: persona.email },
+    printer: options.chromium ?? true, // the stand-in Chromium print (print_standin.py); false: the app's own prints
   }
 }
 
@@ -418,7 +419,7 @@ export function buildWorld(options: WorldOptions = {}): World {
   const doorPython = wrapper(bin, 'door-python', py, join(HERE, 'boot.py'), worldDir, false)
   const installClaude = () => void wrapper(bin, 'claude', py, join(HERE, 'claude.py'), worldDir, true)
   if (!options.noClaude) installClaude()
-  if (options.tectonic ?? true) wrapper(bin, 'tectonic', py, join(HERE, 'tectonic.py'), worldDir, true)
+  if (options.chromium ?? true) wrapper(bin, 'chrome-headless-shell', py, join(HERE, 'print_standin.py'), worldDir, true)
 
   const env: Record<string, string> = {
     DOOR_PYTHON: doorPython,
@@ -545,7 +546,7 @@ function connectDrive(worldDir: string, persona: Persona) {
   writeFileSync(join(config, 'drive.json'), JSON.stringify({ refresh_token: 'world', access_token: 'world', expires_at: NOW_MS / 1000 + 3600, account: persona.email }))
 }
 
-/** The ledger, and the output folder of every job in it with materials: tailored .tex compiled by door's own compile. */
+/** The ledger, and the output folder of every job in it with materials: tailored HTML bodies printed by door's own compile. */
 function prepareMaterials(opts: { home: string; py: string; env: Record<string, string>; ads: Ad[]; persona: Persona; ledger: Record<string, LedgerEntry> }) {
   const { home, py, env, ads, persona, ledger } = opts
   const entries = Object.entries(ledger)
@@ -568,9 +569,9 @@ function prepareMaterials(opts: { home: string; py: string; env: Record<string, 
       const out = join(jobs, 'output', id)
       mkdirSync(out, { recursive: true })
       writeFileSync(join(out, 'posting.json'), JSON.stringify(postingJson(ad, persona), null, 2))
-      writeFileSync(join(out, 'cv.tex'), cvTex(persona))
-      writeFileSync(join(out, 'cover_letter.tex'), coverLetterTex(persona))
-      execFileSync(py, ['-c', 'import sys; from door.commands import compile as c; c._compile_core(sys.argv[1], render=True)', id], {
+      writeFileSync(join(out, 'cv.html'), cvHtml(persona))
+      writeFileSync(join(out, 'cover_letter.html'), coverLetterHtml(persona))
+      execFileSync(py, ['-c', 'import sys; sys.path.insert(0, sys.argv[2]); import print_standin; print_standin.install(); from door.commands import compile as c; c._compile_core(sys.argv[1], render=True)', id, HERE], {
         env: { ...env, PYTHONPATH: join(repoRoot, 'src') },
         stdio: 'pipe',
       })
@@ -581,7 +582,7 @@ function prepareMaterials(opts: { home: string; py: string; env: Record<string, 
         const hashes: Record<string, string> = {}
         for (const name of readdirSync(out).filter((n) => n !== 'sent')) {
           copyFileSync(join(out, name), join(sent, name))
-          if (['posting.json', 'cv.tex', 'cover_letter.tex', 'cv.pdf', 'cover_letter.pdf'].includes(name))
+          if (['posting.json', 'cv.html', 'cover_letter.html', 'cv.pdf', 'cover_letter.pdf'].includes(name))
             hashes[name] = createHash('sha256').update(readFileSync(join(out, name))).digest('hex')
         }
         ;(book[id] as Record<string, unknown>).materials = hashes

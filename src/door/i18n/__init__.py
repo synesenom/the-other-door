@@ -146,6 +146,52 @@ class CvSections(_Strict):
         return _check_words(v)
 
 
+class Typography(_Strict):
+    """How the language sets punctuation (French: a narrow no-break space before : ; ! ? and inside guillemets)."""
+
+    space: str = "\u202f"                  # the space to set
+    space_before: list[str] = []          # marks that take it before them
+    guillemets: list[list[str]] = []      # [open, close] pairs that take it inside
+
+    @field_validator("guillemets")
+    @classmethod
+    def _pairs(cls, v: list[list[str]]) -> list[list[str]]:
+        for pair in v:
+            if len(pair) != 2 or not all(pair):
+                raise ValueError(f"{pair!r}: a guillemet pair is [open, close]")
+        return v
+
+
+class DateFormat(_Strict):
+    """How a date is written out: ``pattern`` over ``{day}``, ``{month}`` and ``{year}``, the twelve month names;
+    ``first`` is the pattern for the 1st of a month where it is written differently ("1er novembre")."""
+
+    pattern: str = "{month} {day}, {year}"
+    first: str | None = None
+    months: list[str] = []
+
+    @field_validator("months")
+    @classmethod
+    def _twelve(cls, v: list[str]) -> list[str]:
+        if v and len(v) != 12:
+            raise ValueError("date.months must name each of the twelve months")
+        return v
+
+    @field_validator("pattern")
+    @classmethod
+    def _fields(cls, v: str) -> str:
+        if not all(f"{{{name}}}" in v for name in ("day", "month", "year")):
+            raise ValueError("date.pattern holds {day}, {month} and {year}")
+        return v
+
+    @field_validator("first")
+    @classmethod
+    def _first_fields(cls, v: str | None) -> str | None:
+        if v is not None and not all(f"{{{name}}}" in v for name in ("month", "year")):
+            raise ValueError("date.first holds {month} and {year}")
+        return v
+
+
 class LanguagePack(_Strict):
     code: str
     name: str
@@ -169,6 +215,8 @@ class LanguagePack(_Strict):
     role_nouns: list[str] = []            # generic words of a job title that name no field ("consultant", "partner")
     months: dict[str, int] = {}           # month names and abbreviations (lower case) -> 1..12, all twelve or none
     title_tags: list[str] = []            # gender tags a job title carries ("H/F", "m/k"), dropped from stored titles
+    typography: Typography = Typography()  # punctuation spacing the printed CV and letter get
+    date: DateFormat = DateFormat()        # the letter's date written out, in this language
 
     @field_validator("names", "false_friends", "stop_words", "skill_stop_words", "career_site_words", "role_nouns")
     @classmethod
@@ -606,6 +654,15 @@ def language_codes(names) -> tuple[str, ...]:
     ones dropped; English when none is left."""
     codes = [c for c in (language_code(str(n)) for n in names or []) if c]
     return tuple(dict.fromkeys(codes)) or ("en",)
+
+
+def format_date(day, code: str | None = None) -> str:
+    """`day` (a `date`) written out in language `code` ("16 novembre 2026"); English for an unknown code or a
+    language file without a ``[date]`` block."""
+    pack = languages().get(code or "")
+    fmt = pack.date if pack and pack.date.months else languages()["en"].date
+    pattern = fmt.first if day.day == 1 and fmt.first else fmt.pattern
+    return pattern.format(day=day.day, month=fmt.months[day.month - 1], year=day.year)
 
 
 def month_numbers(codes: tuple[str, ...] | None = None) -> dict[str, int]:

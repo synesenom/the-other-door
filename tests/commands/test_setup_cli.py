@@ -10,7 +10,6 @@ import pytest
 from click.testing import CliRunner
 
 from door.cli import cli
-from door.commands import compile as compile_cmd
 from door.commands import setup as setup_cmd
 from door.core import workspace
 import shutil
@@ -70,7 +69,6 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
     monkeypatch.setattr(setup_cmd, "_detect_platform", lambda: "debian")
     monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/curl" if name == "curl" else None)
-    monkeypatch.setattr(compile_cmd, "_find_tectonic", lambda: None)
     real_plan = installers.plan_install
 
     def plan(tool, platform, **kw):  # keep the real ~/.local/bin out of these CLI tests
@@ -351,16 +349,6 @@ def test_setup_cli_does_not_probe_the_sites_unless_asked(env, monkeypatch):
 # --------------------------------------------------------------------------- #
 # Tectonic
 # --------------------------------------------------------------------------- #
-
-def test_compile_prefers_tectonic(env, monkeypatch):
-    out = env.jobs_dir / "output" / "jobindex-acme-ds"
-    out.mkdir(parents=True)
-    (out / "cv.tex").write_text("x")
-    monkeypatch.setattr(compile_cmd, "_find_tectonic", lambda: "/home/me/.local/bin/tectonic")
-    result = compile_cmd._compile_core("jobindex-acme-ds", jobs_dir=env.jobs_dir)
-    assert result["results"][0]["compiler"] == "tectonic"
-    assert env.ran[0][:3] == ["/home/me/.local/bin/tectonic", "--outdir", str(out)]
-
 
 def test_doctor_accepts_tectonic():
     check = doctor.check_latex(which=lambda name: "/usr/bin/tectonic" if name == "tectonic" else None)

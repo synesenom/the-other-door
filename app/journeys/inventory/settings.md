@@ -18,7 +18,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 ### Child environment (what a test can and cannot inject)
 - From a checkout, `resolveSpawn` passes the Python child only `PYTHONPATH`, `DOOR_PATHS_FROM_DIALOGS=1`, `DOOR_HOME`, `HOME`, `XDG_CONFIG_HOME`, `APPDATA`, `PATH`, `CLAUDE_CONFIG_DIR`, plus the MCP SDK's short default list (HOME, LOGNAME, PATH, SHELL, TERM, USER). — not tested: a note on the harness, not an action
 - **`BROWSER`, `HTTPS_PROXY`, `DOOR_BIN`, `DOOR_WEB_DIR` etc. do NOT reach Python.** To set any other variable, or to monkeypatch Python, use `DOOR_PYTHON`: point it at a wrapper script that exports the variables (or puts a `sitecustomize.py` on the path) and then execs the real venv python. — not tested: a note on the harness, not an action
-- `PATH` does reach Python, so stand-in executables work: `claude` (already in `home-fixture.ts`), `cloudflared`, `curl`, `xdg-open` on Linux. — not tested: a note on the harness, not an action (the world's bin/: claude, tectonic, and these journeys' stand-in curl)
+- `PATH` does reach Python, so stand-in executables work: `claude` (already in `home-fixture.ts`), `cloudflared`, `curl`, `xdg-open` on Linux. — not tested: a note on the harness, not an action (the world's bin/: claude, chrome-headless-shell, and these journeys' stand-in curl)
 - Drive state lives in `$XDG_CONFIG_HOME/door/drive.json` and phone instances in `$XDG_CONFIG_HOME/door/instances.json`. The fixture already isolates `XDG_CONFIG_HOME`. — not tested: a note on the harness, not an action (the world keeps drive.json in <world>/config, boot.py)
 
 ### Main-process stub seams (Playwright `app.evaluate`, as `journeys/fixtures.ts`'s `os` does for `settings.journey.ts`'s Your data)

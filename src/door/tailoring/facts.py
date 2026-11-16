@@ -1,7 +1,7 @@
 """Offline check of a tailored CV and cover letter against the candidate's own sources.
 
-Every number, year, employer, skill or tool, certification and degree in ``cv.tex`` /
-``cover_letter.tex`` should appear in ``profile/cv.md`` or the story bank (the letter may
+Every number, year, employer, skill or tool, certification and degree in ``cv.html`` /
+``cover_letter.html`` should appear in ``profile/cv.md`` or the story bank (the letter may
 also echo the ad's figures and skills). What does not is *reported*, never blocked: the tailor is told not to invent, this checks it
 did not. Pure and deterministic: no model call, no network, never raises out of `check`.
 """
@@ -19,15 +19,10 @@ from pathlib import Path
 from door import i18n
 from door.core import skill_aliases, workspace
 from door.matching import integrity
+from door.tailoring import html_doc
 
 FACTS_FILE = "facts.json"
 
-_MACROS = {
-    "cvheader": 5, "letterheader": 5, "recipient": 3, "closing": 1, "renewcommand": 2,
-    "href": 2, "url": 1, "vspace": 1, "hspace": 1, "setlength": 2, "fontsize": 2,
-    "definecolor": 3, "color": 1, "textcolor": 1, "includegraphics": 1,
-}
-_MACRO_RE = re.compile(r"\\(" + "|".join(_MACROS) + r")(?![a-zA-Z])\*?")
 # A figure: digits with ``.`` / ``,`` groups, or French groups of three after a (narrow, non-breaking) space
 # ("45 000"); a ``%`` (a space before it allowed) or a ``k`` / ``m`` / ``b`` / ``x`` suffix, a ``k`` also after a
 # space when a currency sign follows ("45 k€").
@@ -58,70 +53,8 @@ def _strip_dates(line: str) -> str:
     return numeric.sub("", month.sub("", line))
 
 
-def _strip_comments(tex: str) -> str:
-    return "\n".join(re.sub(r"(?<!\\)%.*", "", line) for line in tex.splitlines())
-
-
-def _unescape(text: str) -> str:
-    text = text.replace("\\%", "%").replace("\\&", "&").replace("\\$", "$").replace("~", " ")
-    text = text.replace("\\,", " ").replace("{,}", ",")  # LaTeX thin space (thousands) and braced decimal comma
+def _dashes(text: str) -> str:
     return _DASHES_RE.sub(" - ", text)
-
-
-def _group_end(text: str, start: int) -> int | None:
-    """Index just past the brace group opening at ``text[start]``, or None."""
-    depth = 0
-    i = start
-    while i < len(text):
-        ch = text[i]
-        if ch == "\\":
-            i += 2
-            continue
-        if ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                return i + 1
-        i += 1
-    return None
-
-
-def _drop_macros(text: str) -> str:
-    """Remove the macros whose arguments are not content (with those arguments)."""
-    out, pos = [], 0
-    while True:
-        match = _MACRO_RE.search(text, pos)
-        if not match:
-            out.append(text[pos:])
-            break
-        out.append(text[pos:match.start()])
-        i = match.end()
-        opt = re.compile(r"\s*\[[^\]]*\]").match(text, i)
-        if opt:
-            i = opt.end()
-        for _ in range(_MACROS[match.group(1)]):
-            j = i
-            while j < len(text) and text[j].isspace():
-                j += 1
-            if j >= len(text) or text[j] != "{":
-                break
-            end = _group_end(text, j)
-            if end is None:
-                i = len(text)
-                break
-            i = end
-        out.append(" ")
-        pos = i
-    return "".join(out)
-
-
-def _plain(text: str) -> str:
-    text = _drop_macros(text)
-    text = re.sub(r"\\\\\[[^\]]*\]", " ", text)
-    text = re.sub(r"\\begin\{[^}]*\}(\[[^\]]*\])?", " ", text)
-    text = re.sub(r"\\[a-zA-Z]+\*?", " ", text)
-    return re.sub(r"[{}]", " ", text)
 
 
 def _canon(token: str) -> str:
@@ -147,7 +80,7 @@ def _squash(text: str) -> str:
 
 
 def _window(line: str, raw: str) -> str:
-    line = _squash(line.replace("\\item", " "))
+    line = _squash(line)
     idx = line.find(_squash(raw))
     if len(line) <= 2 * _CONTEXT_CHARS or idx < 0:
         return line[: 2 * _CONTEXT_CHARS + 1] if len(line) > 2 * _CONTEXT_CHARS + 1 and idx < 0 else line
@@ -156,36 +89,26 @@ def _window(line: str, raw: str) -> str:
     return ("…" if lo else "") + line[lo:hi] + ("…" if hi < len(line) else "")
 
 
-def extract_claims(tex: str, file: str) -> list[dict]:
-    """The checkable claims of one document: numbers, years, (CV only) employers, skills, certifications and
-    degrees, and each `TODO`, a gap of cv.md's that must not reach a document."""
-    text = _unescape(_strip_comments(tex))
-    text = text.partition("\\begin{document}")[2] or text  # the template's preamble holds no claims (\hbadness=99999)
+def extract_claims(body: str, file: str) -> list[dict]:
+    """The checkable claims of one document (a CV or letter body): numbers, years, (CV only) employers, skills,
+    certifications and degrees, and each `TODO`, a gap of cv.md's that must not reach a document."""
     claims: list[dict] = [
-        # Read off the source, not `_plain`: the macros it drops include \cvheader's contact details.
+        # Read off the whole text, header included: a TODO in the contact details is still a gap.
         {"kind": "placeholder", "value": "TODO", "context": _window(line, "TODO"), "file": file}
-        for line in map(_squash, text.splitlines()) if _TODO_RE.search(line)
+        for line in map(_squash, html_doc.text(body).splitlines()) if _TODO_RE.search(line)
     ]
     if file == "cv":
-        pos = 0
-        while True:
-            at = text.find("\\workexperience", pos)
-            if at < 0:
-                break
-            pos = at + 1
-            brace = text.find("{", at)
-            if brace < 0:
-                continue
-            end = _group_end(text, brace)
-            if end is None:
-                continue
-            head = _squash(_plain(text[brace + 1:end - 1]))
+        for head in html_doc.h3s(body):
+            head = _squash(_dashes(head))
             if " | " not in head:
                 continue
             company = re.split(r"\s[-–—]{1,3}\s", head.split(" | ", 1)[1], maxsplit=1)[0].strip()
             if company:
                 claims.append({"kind": "employer", "value": company, "context": head, "file": file})
-    for line in _plain(text).splitlines():
+    text = _dashes(html_doc.claim_text(body))
+    for line in text.splitlines():
+        if line.startswith(html_doc.SECTION):
+            continue
         shown = line
         line = _strip_dates(line)
         for match in _NUM_RE.finditer(line):
@@ -200,8 +123,6 @@ def extract_claims(tex: str, file: str) -> list[dict]:
 
 # --- skills, tools, certifications and degrees --------------------------------
 
-_SENTINEL = "\x00SECTION "
-_SECTION_RE = re.compile(r"\\section\*?\s*\{((?:[^{}]|\{[^{}]*\})*)\}")
 _PAREN_RE = re.compile(r"\([^)]*\)")
 _SPLIT_RE = re.compile(r"[,;•|]")
 _SKILL_MAX_WORDS = 4
@@ -221,7 +142,7 @@ def _term_tokens(text: str) -> list[str]:
     punctuation and simple plurals removed; ``+ # . /`` inside a token stay (``c++``,
     ``.net``, ``s/4hana``)."""
     out = []
-    for raw in _TERM_SPLIT_RE.split(text.replace("\\&", "&").replace("\u2019s", "").casefold()):
+    for raw in _TERM_SPLIT_RE.split(text.replace("\u2019s", "").casefold()):
         for tok in re.split(r"[-_–—]+", raw):
             tok = tok.rstrip(".'/")
             if not tok.startswith(".") or not re.match(r"\.[a-z]", tok):  # keep ".net"
@@ -253,7 +174,7 @@ def _filler() -> set[str]:
 
 
 def _section_kind(title: str) -> str:
-    key = _squash(_plain(title)).casefold().strip(" :")
+    key = _squash(title).casefold().strip(" :")
     for kind in ("skills", "education", "certifications"):
         if key in i18n.cv_section(kind):
             return kind
@@ -319,20 +240,16 @@ def _entries(line: str, kind: str) -> list[str]:
 
 
 def extract_term_claims(text: str, file: str) -> list[dict]:
-    """Skills, certifications and degrees of one document (``text`` already uncommented and
-    unescaped). Section-aware: every item of a Skills, Certifications or Education section is a
+    """Skills, certifications and degrees of one document (``text`` is `html_doc.claim_text`: a line per block, each
+    `<h2>` a section marker). Section-aware: every item of a Skills, Certifications or Education section is a
     claim; elsewhere (bullets, profile, letter) only technical-looking words are."""
-    text = text.replace("\\#", "#").replace("\\_", "_")
-    text = re.sub(r"\\end\{[^}]*\}", " ", text)
-    text = re.sub(r"\\\\(\[[^\]]*\])?", "\n", text)  # a LaTeX line break is not part of a term
-    text = _SECTION_RE.sub(lambda m: f"\n{_SENTINEL}{m.group(1)}\n", text)
     stop = _stop_keys()
     legal = _legal_keys()
     claims: list[dict] = []
     section = "other"
-    for line in _plain(text).splitlines():
-        if line.startswith(_SENTINEL):
-            section = _section_kind(line[len(_SENTINEL):])
+    for line in text.splitlines():
+        if line.startswith(html_doc.SECTION):
+            section = _section_kind(line[len(html_doc.SECTION):])
             continue
         if not line.strip():
             continue
@@ -357,13 +274,13 @@ def source_tokens(*texts: str) -> set[str]:
     """Every canonical number token of the given source texts."""
     tokens: set[str] = set()
     for text in texts:
-        for match in _NUM_RE.finditer(_strip_dates(text.replace("\\%", "%"))):
+        for match in _NUM_RE.finditer(_strip_dates(text)):
             tokens.add(_canon(match.group(0)))
     return tokens
 
 
 def _norm_name(text: str) -> str:
-    return _squash(text.replace("\\&", "&")).casefold()
+    return _squash(text).casefold()
 
 
 _TERM_KINDS = ("skill", "certification", "degree")
@@ -503,8 +420,8 @@ def check(
     """
     try:
         cv_md = profile_dir / "cv.md"
-        cv_tex = output_dir / "cv.tex"
-        if not cv_md.is_file() or not cv_tex.is_file():
+        cv_html = output_dir / "cv.html"
+        if not cv_md.is_file() or not cv_html.is_file():
             return None
         cv_sources = [cv_md.read_text(encoding="utf-8"), _read(profile_dir / "story_bank.md")]
         try:
@@ -519,8 +436,8 @@ def check(
         except Exception:  # noqa: BLE001 - the alias file only widens what counts as supported
             aliases = {}
         ad = f"{posting.get('title') or ''}\n{posting.get('description') or ''}"
-        claims = extract_claims(cv_tex.read_text(encoding="utf-8"), "cv")
-        letter = output_dir / "cover_letter.tex"
+        claims = extract_claims(cv_html.read_text(encoding="utf-8"), "cv")
+        letter = output_dir / "cover_letter.html"
         if letter.is_file():
             claims += extract_claims(letter.read_text(encoding="utf-8"), "cover_letter")
         found = unsupported(claims, cv_sources, cv_sources + [ad], current_year=current_year, aliases=aliases)

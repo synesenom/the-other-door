@@ -238,6 +238,7 @@ describe('Applications', () => {
       page_counts: { cv: 1, cover_letter: 1 },
       cover_letter_words: 300,
       rendered: false,
+      revisable: true,
     }
 
     it('a prepared row opens the posting pane and then Ready to send', async () => {

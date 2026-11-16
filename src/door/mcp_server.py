@@ -210,7 +210,7 @@ CLI_COMMAND_TOOLS = {
 # Tools with no command: the conversation (or an agent) is their only caller.
 # `revise` and `mark_reviewed` are what a user says ("tighten the second
 # paragraph", "I'm done"); `mark_seen` is the desktop app opening a posting; `compile` and `check_facts` are the tailor agent's, and `revise`
-# recompiles itself, so a .tex never changes without its PDF. `save_cv` is the
+# recompiles itself, so a .html never changes without its PDF. `save_cv` is the
 # desktop app's wizard putting the reviewed CV in place; `init`'s CV step is its shell twin.
 CONVERSATION_ONLY_TOOLS = (
     "revise", "mark_reviewed", "mark_seen", "compile", "check_facts", "save_cv", "job_result", "cancel_job",
@@ -601,7 +601,7 @@ def check_facts(job_id: str, keep: list[dict] | None = None) -> dict:
 @mcp.tool()
 @_tool_errors
 def compile(job_id: str, render: bool = False) -> dict:
-    """Compile LaTeX sources for a job application into PDFs.
+    """Print the HTML bodies (cv.html, cover_letter.html) of a job application into PDFs.
 
     The tailor agent's tool (`revise` recompiles on its own); there is no
     command, since PDFs are never built by hand.
@@ -614,7 +614,7 @@ def compile(job_id: str, render: bool = False) -> dict:
 
     Returns:
         The output directory and a per-file compile result (compiled/
-        skipped/error, with the resulting PDF path or compiler stderr); with
+        skipped/error, with the resulting PDF path or the error text); with
         ``render``, also ``"render": [{"file", "status", "pages",
         "page_count"}, ...]``.
     """
@@ -783,8 +783,8 @@ def show(job_id: str, open: bool = False) -> dict:
 
     Call it after `prepare` or `revise` to summarise the result: PDF paths,
     page PNG paths (rendered first if missing — read them to see the
-    pages), the keywords the tailor emphasised (`% Keywords:` in cv.tex),
-    what it cut, kept or condensed per section (`% Tailoring:`), page
+    pages), the keywords the tailor emphasised (the `Keywords` comment in cv.html),
+    what it cut, kept or condensed per section (the `Tailoring` comment), page
     counts and the cover letter's word count. Identical to
     `./door jobs show <job_id> [--open]`.
 
@@ -881,7 +881,7 @@ async def prepare(
 
     Runs the tailor agent through `claude -p` (minutes, not seconds — the
     call blocks until it finishes or `timeout_min` passes). The status only
-    becomes "prepared" once posting.json, cv.tex, cover_letter.tex, cv.pdf
+    becomes "prepared" once posting.json, cv.html, cover_letter.html, cv.pdf
     and cover_letter.pdf are all in `jobs/output/<job_id>/`. Identical to
     `./door jobs prepare [job_id]`. Then call `show` to summarise the materials.
     A prepared job also gets its salary estimate (`salary_estimate`, one Haiku web
@@ -1489,10 +1489,10 @@ def revise(job_id: str, file: str = "cover_letter", instruction: str | None = No
     """One targeted edit to the CV or cover letter, recompiled and re-rendered.
 
     For "tighten the letter's second paragraph" — no full tailor re-run.
-    One `claude -p` call rewrites the document body (the model never sees the preamble), and
-    the preamble is brought up to the current template's; the previous version is kept as `<file>.tex.bak`, and ``undo=True``
-    restores it. Call `show` afterwards to check the pages. This is the
-    only way to change a prepared document: never edit a `.tex` with Write
+    One `claude -p` call rewrites the document body (an HTML fragment: the template, today's, styles it); the previous
+    version is kept as `<file>.html.bak`, and ``undo=True``
+    restores it. A job prepared before the HTML bodies (a `.tex`) must be prepared again. Call `show` afterwards to check the pages. This is the
+    only way to change a prepared document: never edit a `.html` with Write
     or Edit, since `revise` is what recompiles and re-renders the PDF.
     Conversation-only: there is no command.
 
@@ -1515,7 +1515,7 @@ def revise(job_id: str, file: str = "cover_letter", instruction: str | None = No
 @mcp.tool()
 @_tool_errors
 def doctor(probe: bool = False) -> dict:
-    """Check every prerequisite: Python, profile, LaTeX, the `claude` CLI,
+    """Check every prerequisite: Python, profile, Chromium, the `claude` CLI,
     the MCP server entry and dev deps.
 
     Instant and offline by default. With ``probe=True`` it also probes each

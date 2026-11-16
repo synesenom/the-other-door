@@ -31,7 +31,7 @@ describe('names', () => {
   it('isPngName', () => {
     expect(isPngName('cv_page_2.png')).toBe(true)
     expect(isPngName('cover_letter_page_1.png')).toBe(true)
-    for (const bad of ['cv_page_x.png', 'cv.tex', 'cv_page_1.pdf', '../cv_page_1.png', 'x_page_1.png']) {
+    for (const bad of ['cv_page_x.png', 'cv.html', 'cv_page_1.pdf', '../cv_page_1.png', 'x_page_1.png']) {
       expect(isPngName(bad)).toBe(false)
     }
   })
@@ -42,7 +42,7 @@ describe('materialPath', () => {
     const h = realpathSync(mkdtempSync(join(tmpdir(), 'files-')))
     const dir = join(h, 'jobs', 'output', 'jobindex.123')
     mkdirSync(dir, { recursive: true })
-    for (const f of ['cv.pdf', 'cover_letter.pdf', 'cv_page_2.png', 'cv.tex']) writeFileSync(join(dir, f), 'x')
+    for (const f of ['cv.pdf', 'cover_letter.pdf', 'cv_page_2.png', 'cv.html']) writeFileSync(join(dir, f), 'x')
     return { h, dir }
   }
   it('accepts the known files', () => {
@@ -63,7 +63,7 @@ describe('materialPath', () => {
     expect(materialPath(h, 'a/../b', 'cv.pdf')).toBeNull()
     expect(materialPath(h, '', 'cv.pdf')).toBeNull()
     expect(materialPath(h, 'jobindex.123', '../cv.pdf')).toBeNull()
-    expect(materialPath(h, 'jobindex.123', 'cv.tex')).toBeNull()
+    expect(materialPath(h, 'jobindex.123', 'cv.html')).toBeNull()
     expect(materialPath(h, 'jobindex.123', 'cv_page_x.png')).toBeNull()
   })
   it('returns null for a missing file', () => {
