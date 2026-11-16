@@ -406,3 +406,27 @@ describe('Materials', () => {
     })
   })
 })
+
+describe('Materials: text running off the page', () => {
+  const overflow = { file: 'cv', kind: 'overflow', detail: 'text on page 2 runs past the page margin' }
+  const shows = async (readability: unknown, over: Record<string, unknown> = {}) => {
+    mockDoor({ show: posting({ materials: materials({ readability, ...over }) }) })
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    await screen.findByRole('heading', { name: /Ready to send|Sent/ })
+  }
+
+  it('says it once when the CV overflows', async () => {
+    await shows([overflow, { ...overflow, detail: 'again' }])
+    expect(screen.getByText('Some text runs off the page in your CV. Ask for a shorter version below.')).toBeInTheDocument()
+  })
+
+  it.each([
+    [[{ file: 'cv', kind: 'sparse', detail: 'x' }, { file: 'cv', kind: 'missing', detail: 'y' }]],
+    [[{ ...overflow, file: 'cover_letter' }]],
+    [[]],
+    [null],
+  ])('says nothing for %j', async (readability) => {
+    await shows(readability)
+    expect(screen.queryByText(/runs off the page/)).toBeNull()
+  })
+})

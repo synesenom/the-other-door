@@ -53,6 +53,10 @@ function unbackedLine(m: MaterialsData): string | null {
   return values.length ? `Not in your CV: ${values.join(', ')}. Check them before you send it.` : null
 }
 
+/** Shown when text of the CV runs off the page (`overflow`); the tailor was already asked once to trim it. */
+const OVERFLOW_LINE = 'Some text runs off the page in your CV. Ask for a shorter version below.'
+const overflows = (m: MaterialsData) => (m.readability ?? []).some((p) => p.file === 'cv' && p.kind === 'overflow')
+
 type Notice = { text: string } | null
 
 export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
@@ -127,6 +131,7 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
   const sent = m.sent === true
   const inSent = fromSentCopy(m)
   const unbacked = sent ? null : unbackedLine(m)
+  const overflowing = !sent && overflows(m)
   const subtitle = `${posting.title_en || posting.title} · ${posting.company}`
 
   // The desktop's save dialog answers where the file went; the phone's download is the browser's own, and says so itself.
@@ -212,6 +217,14 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
             <WarningMark />
           </span>
           <span>{unbacked}</span>
+        </p>
+      )}
+      {overflowing && (
+        <p className="small marked">
+          <span className="mark">
+            <WarningMark />
+          </span>
+          <span>{OVERFLOW_LINE}</span>
         </p>
       )}
       {notice && (
