@@ -229,6 +229,7 @@ def fetch(plan: list[dict], dest: Path, *, fetch=None) -> list[Path]:
         staging = None
         try:
             dest.mkdir(parents=True, exist_ok=True)
+            chromium.sweep_stale_parts(dest)
             staging = Path(tempfile.mkdtemp(prefix=".fonts.", suffix=".part", dir=dest))
             for url, name, sha in missing:
                 part = staging / name

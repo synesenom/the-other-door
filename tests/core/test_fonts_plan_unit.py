@@ -251,3 +251,12 @@ def test_a_plan_with_nothing_to_fetch_makes_no_request(data, tmp_path):
     plan = one([font("CMSY10", "Computer Modern", serif=True)], data)
     calls = []
     assert fonts.fetch(plan, tmp_path / "x", fetch=_fake_fetch(calls)) == [] and calls == []
+
+
+def test_a_staging_folder_a_killed_fetch_left_is_swept_and_a_fresh_one_kept(data, tmp_path):
+    import os
+    old, fresh = tmp_path / ".fonts.old.part", tmp_path / ".fonts.new.part"
+    old.mkdir(), fresh.mkdir()
+    os.utime(old, (0, 0))
+    fonts.fetch(one([font("Lato-Regular", "Lato")], data), tmp_path, fetch=_fake_fetch())
+    assert not old.exists() and fresh.exists()

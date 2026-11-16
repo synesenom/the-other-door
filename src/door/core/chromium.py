@@ -100,7 +100,7 @@ def _remove_other_versions(dest: Path) -> None:
 STALE_PART_SECONDS = 3600
 
 
-def _sweep_stale_parts(dest: Path) -> None:
+def sweep_stale_parts(dest: Path) -> None:
     """Remove the staging folders a killed install left in `dest`, never one still in use."""
     cutoff = time.time() - STALE_PART_SECONDS
     for part in dest.glob("*.part"):
@@ -119,7 +119,7 @@ def install(dest: Path, fetch=http_get) -> None:
         _remove_other_versions(dest)
         return
     dest.mkdir(parents=True, exist_ok=True)
-    _sweep_stale_parts(dest)
+    sweep_stale_parts(dest)
     # Names unique to this process, so two installs never share a half-written file.
     staging = Path(tempfile.mkdtemp(prefix=f"{folder.name}.", suffix=".part", dir=dest))
     part = staging / "download.zip"
