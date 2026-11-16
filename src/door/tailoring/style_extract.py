@@ -128,6 +128,136 @@ def _same_style(a: dict, b: dict) -> bool:
     return all(a[k] == b[k] for k in keys)
 
 
+# ---------- drawn shapes ----------
+
+_RULE_MAX, _RULE_MIN_LENGTH, _DOT_MAX = 3.5, 20.0, 10.0
+
+
+def _segments(obj, height: float) -> list[tuple[int, float, float, bool]]:
+    """A path's segments as (type, x, y, closes) in page points, the origin at the top left."""
+    m = obj.get_matrix()
+    out = []
+    for i in range(raw.FPDFPath_CountSegments(obj.raw)):
+        seg = raw.FPDFPath_GetPathSegment(obj.raw, i)
+        x, y = ctypes.c_float(), ctypes.c_float()
+        raw.FPDFPathSegment_GetPoint(seg, x, y)
+        out.append((raw.FPDFPathSegment_GetType(seg), m.a * x.value + m.c * y.value + m.e,
+                    height - (m.b * x.value + m.d * y.value + m.f), bool(raw.FPDFPathSegment_GetClose(seg))))
+    return out
+
+
+def _dash(obj) -> list[float] | None:
+    count = raw.FPDFPageObj_GetDashCount(obj.raw)
+    if count <= 0:
+        return None
+    array = (ctypes.c_float * count)()
+    raw.FPDFPageObj_GetDashArray(obj.raw, array, count)
+    return [round(v, 2) for v in array]
+
+
+def _axis_aligned(points: list[tuple[float, float]]) -> bool:
+    return all(abs(a[0] - b[0]) < 0.05 or abs(a[1] - b[1]) < 0.05 for a, b in zip(points, points[1:] + points[:1]))
+
+
+def _shape_kind(segs, width: float, height: float, fill, stroke_width: float, stroked: bool, dash) -> tuple[str, bool] | None:
+    """(kind, rounded) of a path from its geometry, or None for anything else (an icon candidate)."""
+    curves = sum(t == raw.FPDF_SEGMENT_BEZIERTO for t, *_ in segs)
+    points = [(x, y) for _, x, y, _ in segs]
+    if dash and stroked:
+        return "dash", False
+    if not curves and len(points) <= 3 and stroked and not fill and max(width, height) >= _RULE_MIN_LENGTH \
+            and stroke_width <= _RULE_MAX:
+        return "rule", False
+    if fill and not curves and min(width, height) <= _RULE_MAX and max(width, height) >= _RULE_MIN_LENGTH \
+            and _axis_aligned(points):
+        return "rule", False
+    if fill and width <= _DOT_MAX and height <= _DOT_MAX and abs(width - height) <= 1 and (curves or len(points) >= 8):
+        return "dot", False
+    if not curves and 4 <= len(points) <= 5 and _axis_aligned(points[:4]):
+        return "box", False
+    lines = [((a[1], a[2]), (b[1], b[2])) for a, b in zip(segs, segs[1:]) if b[0] == raw.FPDF_SEGMENT_LINETO]
+    if curves and curves // 3 <= 8 and abs(width - height) <= 1 and not lines:
+        return "box", True  # a circle, bigger than a dot
+    if curves and curves // 3 <= 8 and len(lines) >= 3 and all(abs(a[0] - b[0]) < 0.05 or abs(a[1] - b[1]) < 0.05 for a, b in lines):
+        return "box", True  # a rectangle with round corners
+    return None
+
+
+def _read_shapes(page, number: int, height: float) -> list[dict]:
+    """Every path of a page: its kind (rule, dash, dot, box; None: left for the icon pass), colours, stroke width,
+    dash pattern, the segments and a box from the points (a stroke's own width not in it)."""
+    out = []
+    for obj in page.get_objects(filter=[raw.FPDF_PAGEOBJ_PATH]):
+        segs = _segments(obj, height)
+        if len(segs) < 2:
+            continue
+        fill, stroke = ctypes.c_int(), ctypes.c_int()
+        raw.FPDFPath_GetDrawMode(obj.raw, fill, stroke)
+        if not (fill.value or stroke.value):
+            continue
+        m = obj.get_matrix()
+        stroke_width = ctypes.c_float()
+        raw.FPDFPageObj_GetStrokeWidth(obj.raw, stroke_width)
+        scale = math.sqrt(abs(m.a * m.d - m.b * m.c)) or 1.0
+        xs, ys = [p[1] for p in segs], [p[2] for p in segs]
+        bbox = [round(min(xs), 1), round(min(ys), 1), round(max(xs), 1), round(max(ys), 1)]
+        width_pt = round(stroke_width.value * scale, 2) if stroke.value else 0.0
+        fill_color = _rgb(raw.FPDFPageObj_GetFillColor, obj) if fill.value else None
+        dash = _dash(obj) if stroke.value else None
+        found = _shape_kind(segs, bbox[2] - bbox[0], bbox[3] - bbox[1], fill_color, width_pt, bool(stroke.value), dash)
+        thickness = round(min(bbox[2] - bbox[0], bbox[3] - bbox[1]), 2)
+        out.append({"page": number, "kind": found[0] if found else None, "bbox": bbox, "fill": fill_color,
+                    "stroke": _rgb(raw.FPDFPageObj_GetStrokeColor, obj) if stroke.value else None,
+                    "width": width_pt or (thickness if found and found[0] == "rule" else 0.0), "dash": dash,
+                    "rounded": bool(found and found[1]), "segments": segs})
+    return out
+
+
+def _page_background(shapes: list[dict], size: list[float]) -> tuple[str | None, list[dict]]:
+    """The fill of a path that covers the page (90% of it), and the shapes without it."""
+    area = size[0] * size[1]
+    for shape in shapes:
+        x0, y0, x1, y1 = shape["bbox"]
+        if shape["fill"] and (x1 - x0) * (y1 - y0) >= 0.9 * area:
+            return shape["fill"], [s for s in shapes if s is not shape]
+    return None, shapes
+
+
+def _bleed(shapes: list[dict], size: list[float]) -> list[str]:
+    """The sides of the page a drawn shape runs off to: touching the edge and covering half of it or more."""
+    sides = []
+    for shape in shapes:
+        x0, y0, x1, y1 = shape["bbox"]
+        for side, touches, extent, whole in (("left", x0 <= 1, y1 - y0, size[1]), ("right", x1 >= size[0] - 1, y1 - y0, size[1]),
+                                              ("top", y0 <= 1, x1 - x0, size[0]), ("bottom", y1 >= size[1] - 1, x1 - x0, size[0])):
+            if touches and extent >= 0.5 * whole and side not in sides:
+                sides.append(side)
+    return sides
+
+
+# ---------- margins ----------
+
+def _is_footer(run: dict, size: list[float]) -> bool:
+    low = run["bbox"][3] > size[1] * 0.94
+    return low and (run["text"].strip().isdigit() or bool(_PAGE_FOOTER.fullmatch(run["text"].strip())))
+
+
+def margins(pages: list[dict]) -> dict:
+    """The space between the page edge and the text, the smallest over the pages (to 0.5 pt): a page number or
+    `Page N of M` in the foot, rotated text and icons are not counted."""
+    out = {"top": [], "right": [], "bottom": [], "left": []}
+    for page in pages:
+        runs = [r for r in page["runs"] if not r["rotated"] and not r["icon"] and not _is_footer(r, page["size"])]
+        if not runs:
+            continue
+        w, h = page["size"]
+        out["left"].append(min(r["bbox"][0] for r in runs))
+        out["top"].append(min(r["bbox"][1] for r in runs))
+        out["right"].append(w - max(r["bbox"][2] for r in runs))
+        out["bottom"].append(h - max(r["bbox"][3] for r in runs))
+    return {side: round(min(values) * 2) / 2 if values else 0.0 for side, values in out.items()}
+
+
 # ---------- nothing to copy ----------
 
 _NOT_PDF = {".docx", ".doc", ".odt", ".rtf", ".txt", ".md", ".html", ".htm"}
@@ -185,13 +315,19 @@ def extract(pdf_path: Path) -> dict:
         for number, page in enumerate(doc, 1):
             width, height = page.get_size()
             runs, _ = _text_runs(page, number, height)
-            pages.append({"size": [round(width, 1), round(height, 1)], "runs": merge_runs(runs)})
+            size = [round(width, 1), round(height, 1)]
+            background, shapes = _page_background(_read_shapes(page, number, height), size)
+            pages.append({"size": size, "runs": merge_runs(runs), "shapes": shapes, "background": background})
         head = {"version": VERSION, "verdict": style_verdict(pages), "producer": doc.get_metadata_value("Producer"),
                 "creator": doc.get_metadata_value("Creator"), "page_count": len(doc)}
         if not head["verdict"]["copyable"]:
             return head
         runs = [r for p in pages for r in p["runs"]]
-        return {**head, "page": {"size": pages[0]["size"]}, "fonts": _fonts_used(runs),
-                "runs": [{k: v for k, v in r.items() if k != "baseline"} for r in runs]}
+        shapes = [s for p in pages for s in p["shapes"] if s["kind"]]
+        page = {"size": pages[0]["size"], "background": pages[0]["background"], "margins": margins(pages),
+                "bleed": _bleed(shapes, pages[0]["size"])}
+        return {**head, "page": page, "fonts": _fonts_used(runs),
+                "runs": [{k: v for k, v in r.items() if k != "baseline"} for r in runs],
+                "shapes": [{k: v for k, v in s.items() if k != "segments"} for s in shapes]}
     finally:
         doc.close()

@@ -154,3 +154,96 @@ def test_a_file_that_is_not_a_pdf_has_no_layout(name):
 
 def test_a_pdf_name_is_left_to_extract():
     assert style_extract.not_pdf("cv.pdf") is None and style_extract.not_pdf("CV.PDF") is None
+
+
+# ---------- margins, bleed, background ----------
+
+def block(x, top, bottom, size=10):
+    """lines of body text from baseline `top` down to `bottom` (PDF y), at x"""
+    n = int((top - bottom) / 14) + 1
+    return "".join(text("F1", size, x, top - 14 * i, f"A line of the body text, number {i}, to read") for i in range(n))
+
+
+def test_margins_are_the_space_around_the_text(tmp_path):
+    margins = read(tmp_path, block(60, 780, 90))["page"]["margins"]
+    assert 59 <= margins["left"] <= 62 and 53 <= margins["top"] <= 57 and 90 <= margins["bottom"] <= 94
+    assert 345 <= margins["right"] <= 355  # the longest line is about 185 wide
+
+
+def test_a_page_number_in_the_foot_is_not_the_bottom_margin(tmp_path):
+    plain = read(tmp_path, block(60, 780, 100))["page"]["margins"]
+    footed = read(tmp_path, block(60, 780, 100) + text("F1", 9, 290, 20, "3"))["page"]["margins"]
+    assert footed["bottom"] == plain["bottom"]
+
+
+def test_the_smallest_margin_of_any_page_counts(tmp_path):
+    style = read_pages(tmp_path, [block(60, 780, 100), block(40, 780, 100)])
+    assert 39 <= style["page"]["margins"]["left"] <= 42
+
+
+def test_a_page_sized_fill_is_the_background_not_a_box(tmp_path):
+    style = read(tmp_path, "0.95 0.9 0.8 rg 0 0 595 842 re f\n" + block(60, 780, 100))
+    assert style["page"]["background"] == "#f2e6cc" and style["shapes"] == [] and style["page"]["bleed"] == []
+
+
+def test_a_sidebar_to_the_edge_bleeds_that_side_and_is_a_box(tmp_path):
+    style = read(tmp_path, "0.1 0.2 0.4 rg 0 0 150 842 re f\n" + block(180, 780, 100))
+    assert style["page"]["bleed"] == ["left"] and style["page"]["background"] is None
+    (box,) = style["shapes"]
+    assert box["kind"] == "box" and box["fill"] == "#1a3366" and box["bbox"] == [0.0, 0.0, 150.0, 842.0]
+
+
+# ---------- shapes ----------
+
+def shapes_of(tmp_path, drawing):
+    return read(tmp_path, drawing + block(60, 780, 100))["shapes"]
+
+
+def test_a_thin_filled_bar_is_a_rule_with_its_thickness(tmp_path):
+    (rule,) = shapes_of(tmp_path, "0 0.5 0.5 rg 60 700 200 1.5 re f\n")
+    assert (rule["kind"], rule["fill"], rule["stroke"], rule["width"]) == ("rule", "#008080", None, 1.5)
+    assert rule["bbox"] == [60.0, 140.5, 260.0, 142.0] and rule["dash"] is None
+
+
+def test_a_stroked_line_is_a_rule_with_its_stroke_width_and_colour(tmp_path):
+    (rule,) = shapes_of(tmp_path, "1 0 0 RG 0.75 w 60 700 m 260 700 l S\n")
+    assert (rule["kind"], rule["fill"], rule["stroke"], rule["width"]) == ("rule", None, "#ff0000", 0.75)
+
+
+def test_a_vertical_line_is_a_rule_too(tmp_path):
+    (rule,) = shapes_of(tmp_path, "0 0 0 RG 1 w 200 300 m 200 600 l S\n")
+    assert rule["kind"] == "rule" and rule["width"] == 1.0
+
+
+def test_a_dashed_line_is_a_dash_with_its_pattern(tmp_path):
+    (dash,) = shapes_of(tmp_path, "0.5 0.5 0.5 RG 1 w [3 2] 0 d 60 700 m 260 700 l S\n")
+    assert dash["kind"] == "dash" and dash["dash"] == [3.0, 2.0] and dash["stroke"] == "#808080"
+
+
+def test_a_small_filled_circle_is_a_dot(tmp_path):
+    k = 0.5523 * 3
+    circle = f"1 0 0 rg 100 600 m 100 {600 + k} {103 - k} 603 103 603 c 103 603 {106 - 0} {600 + k} 106 600 c " \
+             f"106 {600 - k} {103 + k} 597 103 597 c {103 - k} 597 100 {600 - k} 100 600 c f\n"
+    (dot,) = shapes_of(tmp_path, circle)
+    assert dot["kind"] == "dot" and dot["fill"] == "#ff0000"
+
+
+def test_a_filled_rectangle_is_a_box(tmp_path):
+    (box,) = shapes_of(tmp_path, "0.9 0.9 0.9 rg 300 500 120 80 re f\n")
+    assert box["kind"] == "box" and box["fill"] == "#e6e6e6" and box["rounded"] is False
+
+
+def test_an_outlined_rectangle_is_a_box_with_a_stroke(tmp_path):
+    (box,) = shapes_of(tmp_path, "0 0 1 RG 2 w 300 500 120 80 re S\n")
+    assert box["kind"] == "box" and box["fill"] is None and box["stroke"] == "#0000ff" and box["width"] == 2.0
+
+
+def test_a_rectangle_with_round_corners_is_a_rounded_box(tmp_path):
+    r, x, y, w, h = 8, 300, 500, 120, 80
+    k = 0.5523 * r
+    path = (f"0.8 0.9 1 rg {x + r} {y} m {x + w - r} {y} l {x + w - r + k} {y} {x + w} {y + r - k} {x + w} {y + r} c "
+            f"{x + w} {y + h - r} l {x + w} {y + h - r + k} {x + w - r + k} {y + h} {x + w - r} {y + h} c "
+            f"{x + r} {y + h} l {x + r - k} {y + h} {x} {y + h - r + k} {x} {y + h - r} c "
+            f"{x} {y + r} l {x} {y + r - k} {x + r - k} {y} {x + r} {y} c f\n")
+    (box,) = shapes_of(tmp_path, path)
+    assert box["kind"] == "box" and box["rounded"] is True
