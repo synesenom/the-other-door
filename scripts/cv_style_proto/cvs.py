@@ -1,8 +1,8 @@
-"""Four made-up CVs for the style prototype (#154): one structured record each, drawn in a different HTML design.
+"""Four made-up CVs for the style corpus (`scripts/make_style_corpus.py`): one structured record each; the first three are drawn in an HTML design.
 
 Everything here is invented (fake names, example.com); no real person's data. A record is
 ``{name, title, contact{phone,email,web,location}, summary, experience[{role,company,dates,bullets}],
-education[{degree,school,dates}], skills[], languages[], extra_sections[{heading,items[]}]}``.
+education[{degree,school,dates}], skills[], languages[]}``.
 """
 
 from __future__ import annotations
@@ -50,16 +50,11 @@ def record(n: int) -> dict:
                       {"degree": "BSc in Mathematics", "school": "Example University", "dates": "2010 - 2013"}],
         "skills": [_SKILLS[(n + i) % len(_SKILLS)] for i in range(7)],
         "languages": ["English (fluent)", "Danish (native)", "French (basic)"],
-        "extra_sections": [],
     }
 
 
 def e(text: str) -> str:
     return html.escape(str(text), quote=False)
-
-
-def _sections(r: dict) -> list[tuple[str, list[str]]]:
-    return [(x["heading"], x["items"]) for x in r["extra_sections"]]
 
 
 # ---------- HTML designs (printed by Chromium; macOS system fonts, noted in the write-up) ----------
@@ -69,15 +64,11 @@ def _html(css: str, body: str) -> str:
             f"*{{box-sizing:border-box}}body{{margin:0}}{css}</style></head><body>{body}</body></html>")
 
 
-def _jobs_html(r, cls="job"):
+def _jobs_html(r):
     return "".join(
-        f"<div class='{cls}'><div class='row'><b>{e(j['role'])}</b><span class='dates'>{e(j['dates'])}</span></div>"
+        f"<div class='job'><div class='row'><b>{e(j['role'])}</b><span class='dates'>{e(j['dates'])}</span></div>"
         f"<div class='co'>{e(j['company'])}</div><ul>{''.join(f'<li>{e(b)}</li>' for b in j['bullets'])}</ul></div>"
         for j in r["experience"])
-
-
-def _extra_html(r, tag="h2"):
-    return "".join(f"<{tag}>{e(h)}</{tag}><p>{e('; '.join(i))}</p>" for h, i in _sections(r))
 
 
 def html_word_two_column(r: dict) -> str:
@@ -89,8 +80,7 @@ def html_word_two_column(r: dict) -> str:
     side = (f"<h2>Contact</h2>{''.join(f'<div>{e(v)}</div>' for v in c.values())}<h2>Skills</h2>"
             f"{''.join(f'<div>{e(s)}</div>' for s in r['skills'])}<h2>Languages</h2>{''.join(f'<div>{e(s)}</div>' for s in r['languages'])}")
     main = (f"<h2>Profile</h2><p>{e(r['summary'])}</p><h2>Experience</h2>{_jobs_html(r)}<h2>Education</h2>"
-            + "".join(f"<div><b>{e(x['degree'])}</b>, {e(x['school'])} <span class='dates'>{e(x['dates'])}</span></div>" for x in r["education"])
-            + _extra_html(r))
+            + "".join(f"<div><b>{e(x['degree'])}</b>, {e(x['school'])} <span class='dates'>{e(x['dates'])}</span></div>" for x in r["education"]))
     return _html(css, f"<h1>{e(r['name'])}</h1><div>{e(r['title'])}</div><div class='cols'><div class='main'>{main}</div><div class='side'>{side}</div></div>")
 
 
@@ -116,7 +106,7 @@ def html_canva_icons(r: dict) -> str:
             + "<h2>Skills</h2>" + "".join(f"<span class='chip'>{e(s)}</span>" for s in r["skills"])
             + "<h2>Languages</h2>" + "".join(f"<div>{e(s)}</div>" for s in r["languages"]))
     main = (f"<h2>About me</h2><p>{e(r['summary'])}</p><h2>Experience</h2>{_jobs_html(r)}<h2>Education</h2>"
-            + "".join(f"<div><b>{e(x['degree'])}</b><br>{e(x['school'])}, {e(x['dates'])}</div>" for x in r["education"]) + _extra_html(r))
+            + "".join(f"<div><b>{e(x['degree'])}</b><br>{e(x['school'])}, {e(x['dates'])}</div>" for x in r["education"]))
     return _html(css, f"<div class='side'>{side}</div><div class='main'>{main}</div>")
 
 
@@ -128,31 +118,16 @@ def html_plain_single(r: dict) -> str:
     body = (f"<h1>{e(r['name'])}</h1><div class='contact'>{e(' | '.join(c.values()))}</div><h2>Summary</h2><p>{e(r['summary'])}</p>"
             f"<h2>Experience</h2>{_jobs_html(r)}<h2>Education</h2>"
             + "".join(f"<div class='row'><span><b>{e(x['degree'])}</b>, {e(x['school'])}</span><span>{e(x['dates'])}</span></div>" for x in r["education"])
-            + f"<h2>Skills</h2><p>{e(', '.join(r['skills']))}</p><h2>Languages</h2><p>{e(', '.join(r['languages']))}</p>" + _extra_html(r))
-    return _html(css, body)
-
-
-def html_banner_timeline(r: dict) -> str:
-    c = r["contact"]
-    css = ("body{font:10pt 'Helvetica Neue',Arial,sans-serif;color:#1d2b36}.banner{background:#14532D;color:#fff;padding:34px 44px}"
-           "h1{margin:0;font-size:28pt;font-weight:300;letter-spacing:1px}.sub{color:#BBF7D0}.wrap{padding:16px 44px}"
-           "h2{font-size:11pt;color:#14532D;text-transform:uppercase;letter-spacing:1.5px;margin:16px 0 6px}"
-           ".job{border-left:3px solid #86EFAC;padding-left:14px;margin-bottom:10px}.row{display:flex;justify-content:space-between}"
-           ".co{color:#4b5d6b}ul{padding-left:16px;margin:3px 0}.tags span{border:1px solid #14532D;border-radius:3px;padding:1px 7px;margin-right:4px;display:inline-block;margin-bottom:4px}")
-    body = (f"<div class='banner'><h1>{e(r['name'])}</h1><div class='sub'>{e(r['title'])} &middot; {e(c['email'])} &middot; {e(c['phone'])} &middot; {e(c['location'])}</div></div>"
-            f"<div class='wrap'><h2>Profile</h2><p>{e(r['summary'])}</p><h2>Experience</h2>{_jobs_html(r)}<h2>Education</h2>"
-            + "".join(f"<div><b>{e(x['degree'])}</b>, {e(x['school'])}, {e(x['dates'])}</div>" for x in r["education"])
-            + "<h2>Skills</h2><div class='tags'>" + "".join(f"<span>{e(s)}</span>" for s in r["skills"]) + "</div>"
-            + f"<h2>Languages</h2><p>{e(', '.join(r['languages']))}</p>" + _extra_html(r) + "</div>")
+            + f"<h2>Skills</h2><p>{e(', '.join(r['skills']))}</p><h2>Languages</h2><p>{e(', '.join(r['languages']))}</p>")
     return _html(css, body)
 
 
 DESIGNS = [
     ("html-word-two-column", html_word_two_column), ("html-canva-icons", html_canva_icons),
-    ("html-plain-single", html_plain_single), ("html-banner-timeline", html_banner_timeline),
+    ("html-plain-single", html_plain_single),
 ]
 
 
-def source(n: int, r: dict | None = None) -> str:
-    """The HTML of CV number *n*, from its own record unless *r* is given."""
-    return DESIGNS[n - 1][1](r or record(n))
+def source(n: int) -> str:
+    """The HTML of CV number *n* (1-3)."""
+    return DESIGNS[n - 1][1](record(n))

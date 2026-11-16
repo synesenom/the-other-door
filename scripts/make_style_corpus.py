@@ -1,7 +1,7 @@
 """Build the made-up CVs of the style corpus (#148): tests/tailoring/fixtures/styles/*.pdf that no real tool wrote.
 
-Four HTML designs of `scripts/cv_style_proto/cvs.py` (a Word-like two columns, a Canva-like coloured sidebar with
-icons, a plain single column) plus a LinkedIn-like export are printed by the pinned Chromium (`door.tailoring.html_pdf`),
+Three HTML designs of `scripts/cv_style_proto/cvs.py` (a Word-like two columns, a Canva-like coloured sidebar with
+icons, a plain single column) plus a LinkedIn-like export (record 4) are printed by the pinned Chromium (`door.tailoring.html_pdf`),
 set in the fonts of `profile.example/fonts` only (Figtree, Young Serif) so that nothing depends on the fonts of the
 computer that runs this; the scan is the plain one rendered to a grey picture. Everything is made up: fake names,
 `example.com` addresses. Not run in CI: the PDFs are committed, and `expected.json` beside them is what the

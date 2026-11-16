@@ -51,3 +51,9 @@ def test_building_the_corpus_prints_each_html_design_and_makes_the_scan(tmp_path
     assert [n for n, _ in printed] == ["html-word-two-column.pdf", "html-canva-icons.pdf", "html-plain-single.pdf", "linkedin-like.pdf"]
     assert all(set(fonts) <= FONTS for _, fonts in printed)
     assert (tmp_path / "scan.pdf").exists()
+
+
+def test_the_made_up_cvs_use_example_addresses_only():
+    for n in (1, 2, 3, 4):
+        c = corpus.cvs.record(n)["contact"]
+        assert c["email"].endswith("@example.com") and c["web"].startswith("example.com/")
