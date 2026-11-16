@@ -336,14 +336,26 @@ def _page_size(style: dict) -> str:
 def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
     pages = len(s.images)
     icons = ", ".join(f"{kind} -> /icons/{name}" for kind, name in icon_files.items()) or "none"
-    columns = ", ".join(s.manifest.columns.side) if s.manifest.columns else "none: one column, no .main or .side"
+    cols = s.manifest.columns
+    if not cols:
+        columns = "none: one column, no .main or .side"
+    else:
+        parts = []
+        if cols.side:
+            parts.append("the kinds " + ", ".join(cols.side))
+        if cols.headings:
+            parts.append("the sections headed " + ", ".join(cols.headings))
+        columns = (
+            " and ".join(parts) + " (the code wraps the sections into div.main and div.side and your CSS styles them; "
+            "the sample body is plain sections with no div, no class on a div)"
+        )
     return (
         f"Rebuild the look of the CV in this folder as a template. Files here: original_page_1.png to original_page_{pages}.png "
         f"(the CV; look at them with the Read tool), style.json, text.txt, fonts.css, template.json. "
         f"Your last template, when there is one, is cv.template.html and the print of the last one that printed is "
         f"render_page_1.png and on (render_page_N.png for the other pages).\n"
         f"Fonts (use only these; the @font-face rules are in fonts.css):\n{notes or '- none: use generic families'}\n"
-        f"Icons you may draw, by kind: {icons}.\nSide column sections: {columns}. Page limit: {s.manifest.max_pages}. "
+        f"Icons you may draw, by kind: {icons}.\nSide column: {columns}. Page limit: {s.manifest.max_pages}. "
         f"Page size: {_page_size(s.style)}, set it with @page size."
     )
 

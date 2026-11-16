@@ -200,3 +200,11 @@ def test_the_side_headings_are_every_heading_in_a_side_band_known_or_not():
 @pytest.mark.parametrize("size, words", [([595.3, 841.9], "A4"), ([612, 792], "US Letter"), ([500, 700], "500 x 700 pt")])
 def test_the_page_size_is_a_name_or_the_points(size, words):
     assert style_build._page_size({"page": {"size": size}}) == words
+
+
+def test_the_stylist_is_told_which_headings_go_to_the_side_and_that_the_code_wraps_them():
+    manifest = templates.Manifest(max_pages=1, columns={"side": [], "headings": ["Logiciels", "Atouts"]})
+    session = types.SimpleNamespace(style=_style(_SIDE, []), images=[1], manifest=manifest)
+    text = style_build._files_text(session, "", {})
+    assert "Logiciels" in text and "Atouts" in text
+    assert "no div" in text and "wraps" in text
