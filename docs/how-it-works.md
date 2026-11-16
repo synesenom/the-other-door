@@ -9,13 +9,13 @@
 3. **Match** — score each survivor 0–1 against your CV with one small `claude -p` request,
    with a one-sentence reason.
 4. **Tailor** — for the match you pick, the tailor agent writes a CV and cover letter from
-   `profile/cv.md` into your LaTeX templates (styling only), in the language the ad is
-   written in, a reviewer agent critiques them, and they are compiled to PDF. A French ad gets French
+   `profile/cv.md` as HTML bodies in your templates (styling only), in the language the ad is
+   written in, a reviewer agent critiques them, and they are printed to PDF with a headless Chromium. A French ad gets French
    section names, the letter's place and date line, "Objet :" and "Madame, Monsieur,", and French
-   typography (the templates load babel, so a non-breaking space comes before `: ; ! ?` and « » are set
-   properly). The job country's CV conventions (`[cv]` in `src/door/i18n/country/<cc>.toml`: photo, date of
+   typography (`compile` sets a narrow no-break space before `: ; ! ?` and inside « », never inside a link or an
+   identifier, and the page's language and the letter's date). The job country's CV conventions (`[cv]` in `src/door/i18n/country/<cc>.toml`: photo, date of
    birth, page limit, date format) go to the tailor with the job; the photo you added is copied beside the
-   `.tex` by `compile` (never written by the model) only where they allow one, and the first sent status keeps
+   page by `compile` (never written by the model) only where they allow one, and the first sent status keeps
    it with the materials in `sent/` and records its sha256.
 5. **Track** — record what you applied to.
 

@@ -248,7 +248,7 @@ def _pick_job() -> str | None:
 
 
 class MissingToolError(FileNotFoundError):
-    """A required external tool (LaTeX, `claude`) is not installed.
+    """A required external tool (Chromium, `claude`) is not installed.
 
     The message carries the one-line fix; `doctor` lists them all (#138).
     """

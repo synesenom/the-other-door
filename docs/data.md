@@ -13,7 +13,7 @@ Two things do leave your computer:
 
 | Folder | What's in it |
 |--------|--------------|
-| `profile/` | your config, the employers you follow (`companies.json`; each entry's other names are its `aliases`, formerly `also`, migrated when read), CV and story bank (and the LaTeX templates, only if you keep your own) |
+| `profile/` | your config, the employers you follow (`companies.json`; each entry's other names are its `aliases`, formerly `also`, migrated when read), CV and story bank (and the HTML templates, only if you keep your own) |
 | `jobs/` | scraped and scored postings (`postings/<date>/<site>/`; day folders an older version left directly under `jobs/` are moved there the next time *The other door* reads or writes them), the history and application ledgers, run records (a block per `find` step), the candidates queue (`candidates.json`: employers `follow` has yet to look at), the discovery state, one file per source (`discovery/linkedin.json`, `discovery/profession.json`; an older `linkedin_discovery.json` is copied there the first time and kept), the `market` reports (`market/report-<date>.md`) the salary estimates (`salary.json`: `{job_id: {low, high, currency, period, position, sources, as_of}}`, from `jobs salary` or `jobs prepare`; delete an entry to ask again) and its skill-name groups (`skill_aliases.json`: `{"variant": "Canonical"}`, `null` for a name that is not a skill; edit it freely, your edits are kept), and the generated CVs and cover letters (`jobs/output/<job_id>/`); every posting carries an `integrity` verdict (see [how it works](how-it-works.md#the-ad-is-untrusted-input)) |
 
 By default both folders sit in the checkout. Set the environment variable `DOOR_HOME` to a
@@ -104,10 +104,16 @@ app, `./door` or the MCP server), before anything reads it, with no hand edit:
 - A session started before you updated (Claude Code left open while the app updated) notices the newer data at
   its next tool call and refuses it with the same "Install the latest version" line; restart it to use the new version.
 
-The first step (`0.0` to `0.1`): the LaTeX templates and fonts come from the code. A copy in `profile/`
+The first step (`0.0` to `0.1`): the templates and fonts come from the code. A copy in `profile/`
 that is byte for byte a shipped version is removed, and an edited one stays and keeps being used (see
 [configuration](configuration.md)). The steps live in `src/door/core/migrations.py`, and
 `src/door/core/stored.py` names every file The other door stores and the model or format that describes it.
+
+The CV and the letter are printed from HTML (`jobs/output/<job_id>/cv.html`, `cover_letter.html`: a body, the template
+styles it) since the LaTeX ones (`cv.tex`, `cover_letter.tex`) of earlier versions. The next release's step drops a
+`cv_template` / `cover_letter_template` key that names a `.tex` file from `config.json` (the file stays, unread, and the
+shipped template is used). Jobs prepared before stay as they are: their `.tex`, PDFs and `sent/` copies are kept and
+never read, and `revise` says to prepare the job again.
 
 ## Older data
 

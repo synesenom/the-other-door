@@ -99,7 +99,7 @@ def _match_core(
     Never prints.
 
     Deliberately does not use `door.core.profile_loader.load_profile`
-    (which requires the LaTeX template files referenced by `profile/
+    (which requires the template files referenced by `profile/
     config.json` to exist on disk): matching only needs the raw config
     dict and the CV text, the same subset `_scrape_core`'s condense pass
     already reads, so matching has no template-file dependency.
