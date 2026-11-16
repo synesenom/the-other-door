@@ -32,7 +32,7 @@ from pypdfium2 import PdfiumError
 from door.commands import _common as common
 from door.commands import _progress
 from door.core import lock, phone, workspace
-from door.tailoring import style_build, style_extract
+from door.tailoring import style_build, style_extract, style_preview
 
 TEMPLATE = "cv.template.html"
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
@@ -196,6 +196,14 @@ def status(home: Path, profile_dir: Path) -> dict:
     return {"state": "none"}
 
 
+def _show_core(*, home: Path | None = None, profile_dir: Path | None = None) -> dict:
+    """The previews of the profile's `cv.md` and a sample letter in the default style and, once one is built, in the
+    rebuilt one (`style_preview.show`): ``{"styles": {"default" | "like": {"cv": [png], "letter": [png]}}}``, made again
+    only where stale, no model. A style that could not be printed (no Chromium) is left out."""
+    profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
+    return style_preview.show(Path(home or workspace.HOME), profile_dir, common._load_config_or_defaults(profile_dir))
+
+
 @click.group("style")
 def style_group():
     """Build a CV template from the look of a CV PDF of yours."""
@@ -227,3 +235,19 @@ def build_style(file):
             click.echo(f"Error: {problem}", err=True)
         sys.exit(1)
     click.echo(f"The template is ready after {result['rounds']} rounds: profile/style/.")
+
+
+@style_group.command("show")
+def show_style():
+    """Print your CV and a sample letter in the default style and in the one built from your CV, as page images.
+
+    Made again only when your CV, photo or style changed; no model is used."""
+    styles = _show_core()["styles"]
+    if not styles:
+        click.echo("Nothing could be printed. Run `./door doctor --fix` to install the browser that prints pages.")
+        return
+    for name, sets in styles.items():
+        click.echo(f"{'Like your CV' if name == 'like' else 'The default'}:")
+        for kind, images in sets.items():
+            for image in images:
+                click.echo(f"  {kind}: {common._display_path(Path(image))}")

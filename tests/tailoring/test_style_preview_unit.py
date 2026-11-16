@@ -146,7 +146,7 @@ def test_the_photo_is_in_the_cv_when_the_country_allows_it_and_its_change_prints
     _jpeg(profile / "photo.jpg")
     config = {"photo": str(profile / "photo.jpg"), "location": "Paris"}
     (profile / "cv.template.html").write_text("<html lang='<<lang>>'><style>.photo{width:2cm}</style><body><<body>></body></html>", encoding="utf-8")
-    (profile / "cv.md").write_text("# Ada\n\n**Email:** a@b.co\n\n## Experience\n\n- x\n", encoding="utf-8")
+    (profile / "cv.md").write_text("# Ada\n\n**Email:** ada@example.com\n\n## Experience\n\n- x\n", encoding="utf-8")
     _show(home, profile, config)
     assert '<img class="photo"' in printer.calls[0]["html"] and "<img" not in printer.calls[1]["html"]
     assert not list((home / ".style" / "preview" / "default").glob("photo.*"))

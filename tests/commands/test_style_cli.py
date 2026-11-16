@@ -19,7 +19,7 @@ from door.cli import cli
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
 from door.core import lock, phone, workspace
-from door.tailoring import style_build
+from door.tailoring import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR
 
@@ -351,3 +351,47 @@ def test_status_is_ready_with_a_template_and_no_run_record(home, cli_env):
 
 def test_status_summary_carries_the_style_block(home, cli_env):
     assert status_cmd._status_summary_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["style"] == {"state": "none"}
+
+
+# ----------------------------------------------------------------------------- `show`
+@pytest.fixture
+def shown(monkeypatch):
+    calls = []
+
+    def fake_show(home, profile_dir, config):
+        calls.append((home, profile_dir, config))
+        return {"styles": {"default": {"cv": ["/x/cv_page_1.png"], "letter": ["/x/letter_page_1.png"]}}}
+
+    monkeypatch.setattr(style_preview, "show", fake_show)
+    return calls
+
+
+def test_the_show_core_gives_the_previews_of_the_profile_in_the_home(home, cli_env, shown):
+    result = style_cmd._show_core()
+    assert result["styles"]["default"]["cv"] == ["/x/cv_page_1.png"]
+    assert shown[0][0] == home and shown[0][1] == cli_env.profile_dir
+
+
+def test_the_show_core_works_with_no_config(home, cli_env, shown):
+    (cli_env.profile_dir / "config.json").unlink(missing_ok=True)
+    assert style_cmd._show_core()["styles"]
+    assert shown[0][2] == {}
+
+
+def test_the_show_command_names_each_image(home, cli_env, shown):
+    result = CliRunner().invoke(cli, ["cv", "style", "show"])
+    assert result.exit_code == 0
+    text = result_text(result)
+    assert "default" in text and "cv_page_1.png" in text and "letter_page_1.png" in text
+
+
+def test_the_show_command_says_when_nothing_could_be_printed(home, cli_env, monkeypatch):
+    monkeypatch.setattr(style_preview, "show", lambda *a: {"styles": {}})
+    result = CliRunner().invoke(cli, ["cv", "style", "show"])
+    assert result.exit_code == 0 and "doctor" in result_text(result)
+
+
+def test_the_show_tool_is_a_writing_tool_the_phone_does_not_get(home, cli_env, shown):
+    from door import serve_policy
+    assert "show_style" in mcp_server.WRITING_TOOLS and "show_style" not in serve_policy.PHONE_TOOLS
+    assert mcp_server.show_style()["styles"]["default"]["letter"] == ["/x/letter_page_1.png"]
