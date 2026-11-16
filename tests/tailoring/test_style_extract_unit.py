@@ -247,3 +247,49 @@ def test_a_rectangle_with_round_corners_is_a_rounded_box(tmp_path):
             f"{x} {y + r} l {x} {y + r - k} {x + r - k} {y} {x + r} {y} c f\n")
     (box,) = shapes_of(tmp_path, path)
     assert box["kind"] == "box" and box["rounded"] is True
+
+
+# ---------- columns ----------
+
+def stack(x, top, n, label, size=10, color="0 0 0"):
+    return "".join(text("F1", size, x, top - 14 * i, f"{label} {i} some words", color) for i in range(n))
+
+
+def test_two_stacks_of_lines_are_a_main_column_and_a_side_column(tmp_path):
+    columns = read(tmp_path, stack(40, 780, 30, "Side") + stack(200, 780, 40, "The main text goes on and on"))["columns"]
+    assert columns["count"] == 2
+    side, main = columns["bands"]
+    assert (side["kind"], main["kind"]) == ("side", "main") and side["x1"] < 200 <= main["x0"]
+    assert side["lines"] == 30 and main["lines"] == 40 and side["background"] is None
+
+
+def test_one_stack_is_one_column(tmp_path):
+    columns = read(tmp_path, stack(60, 780, 40, "The one column of text"))["columns"]
+    assert columns["count"] == 1 and columns["bands"][0]["kind"] == "only"
+
+
+def test_a_banner_over_both_columns_does_not_join_them(tmp_path):
+    banner = text("F2", 24, 40, 810, "A Name Over Both Columns Of The Page Here")
+    columns = read(tmp_path, banner + stack(40, 770, 30, "Side") + stack(260, 770, 30, "Main text body of words"))["columns"]
+    assert columns["count"] == 2
+
+
+def test_dates_on_the_right_of_a_single_column_are_not_a_column(tmp_path):
+    content = ""
+    for job in range(8):
+        top = 780 - job * 90
+        content += text("F2", 11, 50, top, f"Role number {job}, Company") + text("F1", 10, 470, top, "2019 - 2021")
+        content += stack(60, top - 14, 4, "Did something useful")
+    assert read(tmp_path, content)["columns"]["count"] == 1
+
+
+def test_a_note_in_the_margin_is_not_a_column(tmp_path):
+    columns = read(tmp_path, stack(50, 780, 40, "The one column of text") + text("F1", 8, 500, 400, "a note"))["columns"]
+    assert columns["count"] == 1
+
+
+def test_a_sidebar_on_a_coloured_box_has_its_background(tmp_path):
+    drawing = "0.1 0.2 0.4 rg 0 0 170 842 re f\n"
+    columns = read(tmp_path, drawing + stack(20, 780, 30, "Side", color="1 1 1") + stack(200, 780, 40, "Main text of the page"))["columns"]
+    side, main = columns["bands"]
+    assert side["kind"] == "side" and side["background"] == "#1a3366" and main["background"] is None

@@ -258,6 +258,106 @@ def margins(pages: list[dict]) -> dict:
     return {side: round(min(values) * 2) / 2 if values else 0.0 for side, values in out.items()}
 
 
+# ---------- columns ----------
+
+def body_size(runs: list[dict]) -> float:
+    """The font size most characters are set in."""
+    chars: dict[float, int] = {}
+    for run in runs:
+        chars[run["size"]] = chars.get(run["size"], 0) + len(run["text"])
+    return max(chars, key=chars.get) if chars else 10.0
+
+
+def line_groups(runs: list[dict]) -> list[list[dict]]:
+    """The runs as lines: those of a page whose baselines are within 0.3 of their size, left to right."""
+    lines: list[list[dict]] = []
+    for run in sorted(runs, key=lambda r: (r["page"], r["baseline"], r["bbox"][0])):
+        if lines and lines[-1][0]["page"] == run["page"] and abs(lines[-1][0]["baseline"] - run["baseline"]) <= 0.3 * run["size"]:
+            lines[-1].append(run)
+        else:
+            lines.append([run])
+    return [sorted(line, key=lambda r: r["bbox"][0]) for line in lines]
+
+
+def _gaps(runs: list[dict], body: float) -> list[tuple[int, int]]:
+    """The x ranges inside the text where (almost) no run is: at most 5% of the busiest x (and one run, so a banner
+    over both columns does not close it) and at least 14 pt or two body sizes wide."""
+    lo, hi = int(min(r["bbox"][0] for r in runs)), int(max(r["bbox"][2] for r in runs)) + 1
+    cover = [0] * (hi - lo + 1)
+    for run in runs:
+        for x in range(int(run["bbox"][0]) - lo, int(run["bbox"][2]) - lo + 1):
+            cover[x] += 1
+    limit = max(1, 0.05 * max(cover))
+    gaps, start = [], None
+    for x, n in enumerate(cover + [limit + 1]):
+        if n <= limit and start is None:
+            start = x
+        elif n > limit and start is not None:
+            if x - start >= max(14, 2 * body) and start > 0 and x <= len(cover) - 1:
+                gaps.append((lo + start, lo + x))
+            start = None
+    return gaps
+
+
+def _stacked(lines: list[list[dict]], body: float) -> int:
+    """How many lines have another line within two and a half body sizes below or above on the page."""
+    count = 0
+    for i, line in enumerate(lines):
+        near = [o for j in (i - 1, i + 1) if 0 <= j < len(lines) for o in [lines[j]]
+                if o[0]["page"] == line[0]["page"] and abs(o[0]["baseline"] - line[0]["baseline"]) <= 2.5 * body]
+        count += bool(near)
+    return count
+
+
+def column_bands(pages: list[dict]) -> dict:
+    """The column bands of the text: stacks of lines apart by a gap. A band needs four lines that stand together
+    (the dates down the right of a single column, or a note in the margin, are no column) and a twelfth of the
+    lines. One band is `only`; with more, the narrowest, if under 40% of the text's width or on a coloured box, is
+    the `side`, the others `main`. `background` is the fill of a box covering most of the page's height."""
+    runs = [r for p in pages for r in p["runs"] if not r["rotated"] and not r["icon"]]
+    if not runs:
+        return {"count": 0, "bands": []}
+    body = body_size(runs)
+    edges = [int(min(r["bbox"][0] for r in runs)) - 1] + [x for g in _gaps(runs, body) for x in g] \
+        + [int(max(r["bbox"][2] for r in runs)) + 2]
+    intervals = [(edges[i], edges[i + 1]) for i in range(0, len(edges), 2)]
+
+    def band_of(x: float) -> int | None:
+        return next((i for i, (lo, hi) in enumerate(intervals) if lo <= x <= hi), None)
+
+    members: list[list[dict]] = [[] for _ in intervals]
+    for run in runs:  # a run across a gap is a banner: no band's
+        first, last = band_of(run["bbox"][0]), band_of(run["bbox"][2])
+        if first is not None and first == last:
+            members[first].append(run)
+    total = sum(len(line_groups(m)) for m in members) or 1
+    bands = []
+    for member in members:
+        lines = line_groups(member)
+        if member and _stacked(lines, body) >= 4 and len(lines) >= total / 12:
+            bands.append({"x0": round(min(r["bbox"][0] for r in member), 1), "x1": round(max(r["bbox"][2] for r in member), 1),
+                          "lines": len(lines)})
+    if not bands:
+        bands = [{"x0": round(min(r["bbox"][0] for r in runs), 1), "x1": round(max(r["bbox"][2] for r in runs), 1),
+                  "lines": len(line_groups(runs))}]
+    height = pages[0]["size"][1]
+    boxes = [s for p in pages for s in p["shapes"] if s["kind"] == "box" and s["fill"]
+             and s["bbox"][3] - s["bbox"][1] >= 0.8 * height]
+
+    def box_under(band: dict) -> dict | None:
+        mid = (band["x0"] + band["x1"]) / 2
+        return next((b for b in boxes if b["bbox"][0] - 1 <= mid <= b["bbox"][2] + 1), None)
+
+    width = max(b["x1"] for b in bands) - min(b["x0"] for b in bands)
+    narrowest = min(bands, key=lambda b: b["x1"] - b["x0"])
+    for band in bands:
+        box = box_under(band)
+        band["background"] = box["fill"] if box else None
+        side = band is narrowest and len(bands) > 1 and (band["x1"] - band["x0"] < 0.4 * width or box)
+        band["kind"] = "only" if len(bands) == 1 else "side" if side else "main"
+    return {"count": len(bands), "bands": [{k: b[k] for k in ("x0", "x1", "kind", "background", "lines")} for b in bands]}
+
+
 # ---------- nothing to copy ----------
 
 _NOT_PDF = {".docx", ".doc", ".odt", ".rtf", ".txt", ".md", ".html", ".htm"}
@@ -327,6 +427,7 @@ def extract(pdf_path: Path) -> dict:
         page = {"size": pages[0]["size"], "background": pages[0]["background"], "margins": margins(pages),
                 "bleed": _bleed(shapes, pages[0]["size"])}
         return {**head, "page": page, "fonts": _fonts_used(runs),
+                "columns": column_bands([{**p, "shapes": [s for s in p["shapes"] if s["kind"]]} for p in pages]),
                 "runs": [{k: v for k, v in r.items() if k != "baseline"} for r in runs],
                 "shapes": [{k: v for k, v in s.items() if k != "segments"} for s in shapes]}
     finally:
