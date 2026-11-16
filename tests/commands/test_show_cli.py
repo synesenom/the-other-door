@@ -714,3 +714,17 @@ def test_show_reports_words_of_the_cv_missing_from_its_pdf_and_not_the_letters(c
     found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
     assert [(p["file"], p["kind"]) for p in found] == [("cv", "overflow")]
     assert "zzzcutword" in found[0]["detail"]
+
+
+def test_show_passes_a_two_column_manifest_to_the_cv_check(cli_env, one_page, monkeypatch):
+    from door.commands import matches as matches_cmd
+    from door.tailoring import pdf_render
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
+    (cli_env.profile_dir / "cv.template.html").write_text("<html><body><<body>></body></html>")
+    (cli_env.profile_dir / "template.json").write_text('{"columns": {"side": ["skills"]}}')
+    _with_cv(cli_env, "<!-- Keywords: Python -->\n<p>Jane Doe, Python developer</p>")
+    _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
+    monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])
+    found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
+    assert [(p["file"], p["kind"]) for p in found] == [("cv", "sparse")]

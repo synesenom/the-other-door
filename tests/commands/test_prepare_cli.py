@@ -1261,16 +1261,19 @@ def test_cv_max_pages_is_the_stricter_of_the_templates_and_the_countrys(cli_env,
     assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == expected
 
 
-_OVERFLOW = {"file": "cv", "kind": "overflow", "detail": "text on page 2 runs past the page margin; trim the lowest-value items"}
+_OVERFLOW = {"file": "cv", "kind": "overflow", "detail": "text cut off: Kubernetes, Airflow"}
 _SPARSE = {"file": "cv", "kind": "sparse", "detail": "the last page (2) is almost empty"}
 
 
-def test_an_overflow_gets_one_retry_with_its_detail_in_the_prompt(prep, monkeypatch):
+def test_an_overflow_gets_one_retry_with_its_detail_and_the_instruction_in_the_prompt(prep, monkeypatch):
     calls = []
     monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
     _script_readability(monkeypatch, [_OVERFLOW], [])
     result = _go(prep)
-    assert len(calls) == 2 and "trim the lowest-value items" in calls[1]["feedback"]
+    feedback = calls[1]["feedback"]
+    assert len(calls) == 2 and "text cut off: Kubernetes, Airflow" in feedback
+    assert "trim the lowest-value items so it fits, never invent anything" in feedback
+    assert "trim" not in _MISSING["detail"] and "trim" not in prepare_cmd._feedback_text([_MISSING])
     assert result["readability"] == [] and "warning" not in result
 
 

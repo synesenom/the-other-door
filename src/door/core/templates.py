@@ -156,4 +156,3 @@ def assets(template_path: Path) -> dict[str, list[Path]]:
     if found and found.icons:
         served["icons"] = _named(folder / "icons", found.icons.values())
     return served
-

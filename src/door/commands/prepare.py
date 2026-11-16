@@ -311,9 +311,12 @@ def _read_back(output_dir: Path) -> list[dict] | None:
         return None
 
 
+_TRIM = "; trim the lowest-value items so it fits, never invent anything"
+
+
 def _feedback_text(found: list[dict]) -> str:
-    """The fixable problems as one line each, ``file: detail``, for the retry's prompt."""
-    return "\n".join(f"- {p['file']}: {p['detail']}" for p in found)
+    """The fixable problems as one line each, ``file: detail``, for the retry's prompt (text cut off: what to do)."""
+    return "\n".join(f"- {p['file']}: {p['detail']}{_TRIM if p['kind'] == 'overflow' else ''}" for p in found)
 
 
 def _step(message: str, outcome: str | None = None) -> None:

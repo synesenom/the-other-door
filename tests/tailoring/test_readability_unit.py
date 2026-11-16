@@ -137,9 +137,14 @@ def test_words_missing_from_the_pdf_are_one_overflow_naming_the_first_five():
     found = readability.overflow_problems("one two three " + "x" * 40, body)
     assert kinds(found) == ["overflow"]
     detail = found[0]["detail"]
-    assert "four, five, six, seven, eight" in detail and "trim the lowest-value items" in detail and "invent" in detail
+    assert detail == "text cut off: four, five, six, seven, eight"
     found = readability.overflow_problems("one " + "x" * 40, "<p>one a1 b2 c3 d4 e5 f6 g7</p>")
     assert "f6" not in found[0]["detail"] and "e5" in found[0]["detail"]
+
+
+def test_the_detail_is_plain_and_has_no_instruction():
+    detail = readability.overflow_problems("x" * 40, "<p>alpha</p>")[0]["detail"]
+    assert detail == "text cut off: alpha" and "trim" not in detail and "page" not in detail
 
 
 def test_a_word_cut_in_half_is_missing():
@@ -157,32 +162,41 @@ def test_sparse_last_page_of_a_two_column_template():
     assert readability.layout_problems([full, last], two_column=False) == []
 
 
+def test_a_blank_last_page_of_a_two_column_cv_is_sparse():
+    assert kinds(readability.layout_problems([page((60, 60, 70, 780)), page()], two_column=True)) == ["sparse"]
+
+
+def test_check_pdf_takes_two_column_for_the_sparse_check_only(tmp_path, monkeypatch):
+    from door.tailoring import pdf_render
+
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD, "x"])
+    monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])
+    assert "sparse" in kinds(readability.check_pdf(pdf, "", NAME, cv=True, two_column=True))
+    assert "sparse" not in kinds(readability.check_pdf(pdf, "", NAME, cv=True))
+    assert "sparse" not in kinds(readability.check_pdf(pdf, "", NAME, two_column=True))
+
+
 def test_sparse_needs_more_than_one_page_and_a_nearly_empty_last():
     assert readability.layout_problems([page((60, 700, 70, 760))], two_column=True) == []
     full = page((60, 60, 70, 780))
     assert readability.layout_problems([full, page((60, 100, 70, 700))], two_column=True) == []
 
 
-def test_only_missing_and_overflow_are_fixable():
-    found = [{"kind": k, "detail": "d"} for k in ("missing", "overflow", "sparse", "order", "glued")]
-    assert kinds(readability.fixable(found)) == ["missing", "overflow"]
-
-
-def test_check_pdf_without_two_column_does_no_layout_or_overflow_check(tmp_path):
+def test_check_pdf_of_a_letter_does_no_layout_or_overflow_check(tmp_path):
     pdf = make_pdf(tmp_path / "a.pdf", [GOOD])
     assert "overflow" not in kinds(readability.check_pdf(pdf, "<p>zzzunseenword</p>", NAME))
 
 
 def test_check_pdf_for_a_cv_reports_words_that_never_reached_the_pdf(tmp_path):
     pdf = make_pdf(tmp_path / "a.pdf", [GOOD])
-    found = readability.check_pdf(pdf, "<p>Jane Doe zzzunseenword</p>", NAME, two_column=False)
+    found = readability.check_pdf(pdf, "<p>Jane Doe zzzunseenword</p>", NAME, cv=True)
     assert "overflow" in kinds(found) and "zzzunseenword" in [p for p in found if p["kind"] == "overflow"][0]["detail"]
-    assert "overflow" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe Python</p>", NAME, two_column=False))
+    assert "overflow" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe Python</p>", NAME, cv=True))
 
 
 def test_no_overflow_is_said_for_a_pdf_with_no_readable_text(tmp_path):
     pdf = make_pdf(tmp_path / "a.pdf", [""])
-    found = readability.check_pdf(pdf, "<p>some words here</p>", NAME, two_column=False)
+    found = readability.check_pdf(pdf, "<p>some words here</p>", NAME, cv=True)
     assert "empty" in kinds(found) and "overflow" not in kinds(found)
 
 

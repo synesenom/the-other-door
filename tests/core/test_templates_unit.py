@@ -89,4 +89,3 @@ def test_the_shipped_templates_are_pinned():
         digest = hashlib.sha256((REPO_ROOT / "profile.example" / name).read_text(encoding="utf-8")
                                 .replace("\r\n", "\n").encode()).hexdigest()
         assert digest == SHIPPED_HASHES[key], f"{name} changed: if that is meant, update its hash (now {digest})"
-

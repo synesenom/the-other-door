@@ -408,7 +408,7 @@ describe('Materials', () => {
 })
 
 describe('Materials: text running off the page', () => {
-  const overflow = { file: 'cv', kind: 'overflow', detail: 'text on page 2 runs past the page margin' }
+  const overflow = { file: 'cv', kind: 'overflow', detail: 'text cut off: Kubernetes, Airflow' }
   const shows = async (readability: unknown, over: Record<string, unknown> = {}) => {
     mockDoor({ show: posting({ materials: materials({ readability, ...over }) }) })
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
@@ -417,7 +417,13 @@ describe('Materials: text running off the page', () => {
 
   it('says it once when the CV overflows', async () => {
     await shows([overflow, { ...overflow, detail: 'again' }])
-    expect(screen.getByText('Some text runs off the page in your CV. Ask for a shorter version below.')).toBeInTheDocument()
+    expect(screen.getAllByText(/runs off the page/)).toHaveLength(1)
+    expect(screen.getByText('Some text runs off the page in your CV. Switch to the CV and ask for a shorter version.')).toBeInTheDocument()
+  })
+
+  it('says to prepare again when the materials cannot be revised', async () => {
+    await shows([overflow], { revisable: false })
+    expect(screen.getByText('Some text runs off the page in your CV. Prepare it again to fix it.')).toBeInTheDocument()
   })
 
   it.each([

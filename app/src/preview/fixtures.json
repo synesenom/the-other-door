@@ -1850,6 +1850,13 @@
     "cover_letter_words": 311,
     "rendered": false,
     "revisable": true,
+    "readability": [
+     {
+      "file": "cv",
+      "kind": "overflow",
+      "detail": "text cut off: stakeholder, reporting"
+     }
+    ],
     "unsupported": [
      {
       "kind": "skill",

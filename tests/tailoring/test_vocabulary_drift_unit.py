@@ -56,3 +56,8 @@ def test_the_tailor_is_told_the_entry_parts_and_every_level_class():
     named = _classes(_tailor_blocks())
     assert {"role", "org", "dates", "place", "sep", "level", "level-1", "level-2", "level-3", "level-4",
             "level-5"} <= named
+
+
+def test_the_tailor_is_told_what_overflow_and_sparse_mean():
+    text = (REPO_ROOT / ".claude" / "agents" / "tailor.md").read_text(encoding="utf-8")
+    assert "`overflow`" in text and "`sparse`" in text and "never invent" in text

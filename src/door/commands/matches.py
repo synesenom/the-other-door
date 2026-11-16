@@ -432,13 +432,14 @@ def _readability(output_dir: Path) -> list[dict] | None:
     found: list[dict] = []
     try:
         for material in _MATERIALS:
-            two_column = None
             body_path = output_dir / f"{material}.html"
             body = body_path.read_text(encoding="utf-8") if body_path.is_file() else ""
             if material == "cv":
                 body = compile_cmd.placed_cv(body, config, posting)
-                two_column = compile_cmd.cv_two_column(config)
-            found += [{"file": material, **p} for p in readability.check_pdf(output_dir / f"{material}.pdf", body, name, two_column=two_column)]
+            is_cv = material == "cv"
+            checks = readability.check_pdf(output_dir / f"{material}.pdf", body, name, cv=is_cv,
+                                           two_column=is_cv and compile_cmd.cv_two_column(config))
+            found += [{"file": material, **p} for p in checks]
     except Exception:  # an unreadable PDF is "not checked", never an error in `show`
         return None
     return found

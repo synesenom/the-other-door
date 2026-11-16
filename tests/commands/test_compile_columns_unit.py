@@ -200,3 +200,29 @@ def test_a_side_of_interests_alone_with_no_interests_section_leaves_main_whole_a
     assert side.split("</div>")[0].strip() == ""
     assert seen["headings"] == ["Profile", "Experience", "Skills", "Education", "Languages"]
     assert result["status"] == "compiled" and not result.get("readable")
+
+
+def test_a_two_column_manifest_reaches_the_cvs_check_and_the_letter_gets_no_cv_checks(world, monkeypatch):
+    seen = {}
+
+    def check(pdf, body, name, **kw):
+        seen[pdf.name] = kw
+        return []
+
+    _columns(world)
+    monkeypatch.setattr(compile_cmd.readability, "check_pdf", check)
+    world.make(cv=CV, letter="<p>Dear team</p>")
+    _compile(world)
+    assert seen["cv.pdf"] == {"cv": True, "two_column": True}
+    assert seen["cover_letter.pdf"] == {"cv": False, "two_column": False}
+
+
+def test_a_sparse_last_page_of_a_two_column_cv_comes_through_compile(world, monkeypatch):
+    from door.tailoring import pdf_render
+
+    _columns(world)
+    monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])
+    world.make(cv=CV, letter="<p>Dear team</p>")
+    readable = {r["file"]: r["readable"] for r in _compile(world)["results"]}
+    assert "sparse" in [p["kind"] for p in readable["cv.html"]]
+    assert "sparse" not in [p["kind"] for p in readable["cover_letter.html"]]
