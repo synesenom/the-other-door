@@ -106,10 +106,8 @@ def install(dest: Path, fetch=_http_get) -> None:
         return
     dest.mkdir(parents=True, exist_ok=True)
     # Names unique to this process, so two installs never share a half-written file.
-    fd, part_name = tempfile.mkstemp(prefix=f"{folder.name}.", suffix=".zip.part", dir=dest)
-    os.close(fd)
-    part = Path(part_name)
     staging = Path(tempfile.mkdtemp(prefix=f"{folder.name}.", suffix=".part", dir=dest))
+    part = staging / "download.zip"
     try:
         fetch(download_url(key), part)
         digest = hashlib.sha256(part.read_bytes()).hexdigest()
@@ -134,7 +132,6 @@ def install(dest: Path, fetch=_http_get) -> None:
     except (OSError, zipfile.BadZipFile) as exc:
         raise ChromiumError(str(exc)) from exc
     finally:
-        part.unlink(missing_ok=True)
         shutil.rmtree(staging, ignore_errors=True)
 
 
