@@ -656,6 +656,26 @@ describe('App, the first-launch gate', () => {
       }
     })
 
+    it('choosing the style in Profile → CV reads the summary again, so its line goes; a build started there starts the poll', async () => {
+      let state = 'ready'
+      const shownStyles = { styles: { default: { cv: ['/h/cv_page_1.png'], letter: [], version: 'd', two_column: false }, like: { cv: ['/h/cv_page_1.png'], letter: [], version: 'l', two_column: false } }, in_use: 'default', candidate: true }
+      const { call, chooseStyleFile } = gated(profile(), {
+        status_summary: () => summary({ style: { state } }),
+        show_style: shownStyles,
+        use_style: () => {
+          state = 'none'
+          return { in_use: 'like', prepared: 0 }
+        },
+      })
+      render(<App />)
+      await screen.findByRole('heading', { name: 'Matches' })
+      await userEvent.click(await lines().findByRole('button', { name: 'Your CV style is ready to compare' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Use this style' }))
+      await waitFor(() => expect(lines().queryByText('Your CV style is ready to compare')).toBeNull())
+      expect(call).toHaveBeenCalledWith('use_style', { style: 'like' })
+      expect(chooseStyleFile).not.toHaveBeenCalled()
+    })
+
     it('on the phone a ready CV style is not said', async () => {
       const { info, call } = gated(profile(), { status_summary: summary({ style: { state: 'ready' } }) })
       info.mockResolvedValue({ demo: false, remote: true })

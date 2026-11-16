@@ -468,6 +468,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             key={profileStart?.n ?? 0}
             start={profileStart?.at}
             onDraft={() => void setUpAgain().catch(() => undefined)}
+            style={{ state: styleState, canBuild: !demo, onChanged: () => setSummaryKey((k) => k + 1) }}
             onSaved={() => {
               void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
               setRefreshKey((k) => k + 1) // the matches may change with the minimum score or the age limit

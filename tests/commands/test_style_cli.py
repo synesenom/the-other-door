@@ -305,9 +305,9 @@ def _state(home, **run):
     (home / ".style" / "run.json").write_text(json.dumps(run))
 
 
-def _template(cli_env):
-    (cli_env.profile_dir / "style").mkdir(exist_ok=True)
-    (cli_env.profile_dir / "style" / "cv.template.html").write_text("x")
+def _template(cli_env, folder="style.next"):
+    (cli_env.profile_dir / folder).mkdir(exist_ok=True)
+    (cli_env.profile_dir / folder / "cv.template.html").write_text("x")
 
 
 def test_status_is_none_without_a_build_or_a_template(home, cli_env):
@@ -333,7 +333,6 @@ def test_a_stale_building_with_a_live_unrelated_pid_reads_failed(home, cli_env):
 
 
 def test_status_is_failed_with_the_problems_the_build_gave(home, cli_env):
-    _template(cli_env)
     _state(home, pid=5, state="failed", started_at="t0", result={"problems": ["no luck"]})
     assert style_cmd.status(home, cli_env.profile_dir) == {"state": "failed", "problems": ["no luck"]}
 
@@ -343,6 +342,25 @@ def test_status_is_ready_when_the_template_exists_and_names_the_fonts_and_icons_
     _state(home, pid=5, state="ready", started_at="t0", result=READY)
     assert style_cmd.status(home, cli_env.profile_dir) == {
         "state": "ready", "fonts": READY["fonts"], "dropped_icons": READY["dropped_icons"]}
+
+
+def test_a_failed_build_does_not_hide_the_candidate_that_waits(home, cli_env):
+    _template(cli_env)
+    _state(home, pid=5, state="failed", started_at="t0", result={"problems": ["no luck"]})
+    assert style_cmd.status(home, cli_env.profile_dir)["state"] == "ready"
+
+
+def test_a_build_in_progress_comes_before_a_waiting_candidate(home, cli_env, world):
+    _template(cli_env)
+    _state(home, pid=5, state="building", started_at="t0")
+    world.hold(home)
+    assert style_cmd.status(home, cli_env.profile_dir)["state"] == "building"
+
+
+def test_a_style_in_use_and_no_candidate_is_nothing_to_choose(home, cli_env):
+    _template(cli_env, "style")
+    _state(home, pid=5, state="ready", started_at="t0", result=READY)
+    assert style_cmd.status(home, cli_env.profile_dir) == {"state": "none"}
 
 
 def test_status_is_ready_with_a_template_and_no_run_record(home, cli_env):
@@ -371,6 +389,16 @@ def test_the_show_core_gives_the_previews_of_the_profile_in_the_home(home, cli_e
     result = style_cmd._show_core()
     assert result["styles"]["default"]["cv"] == ["/x/cv_page_1.png"]
     assert shown[0][0] == home and shown[0][1] == cli_env.profile_dir
+
+
+def test_the_show_core_says_which_style_is_in_use_and_whether_a_candidate_waits(home, cli_env, shown):
+    assert style_cmd._show_core()["in_use"] == "default" and style_cmd._show_core()["candidate"] is False
+    _template(cli_env)
+    assert style_cmd._show_core()["candidate"] is True
+    _template(cli_env, "style")
+    config = json.loads((cli_env.profile_dir / "config.json").read_text())
+    (cli_env.profile_dir / "config.json").write_text(json.dumps({**config, "cv_template": "profile/style/cv.template.html"}))
+    assert style_cmd._show_core()["in_use"] == "like"
 
 
 def test_the_show_core_works_with_no_config(home, cli_env, shown):

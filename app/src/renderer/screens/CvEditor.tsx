@@ -6,6 +6,7 @@ import { Markdown } from './Markdown'
 import { MarkdownLink } from './MarkdownHelp'
 import type { ShowProfile } from './onboarding/reducer'
 import { Spinner } from './Spinner'
+import { StyleRow } from './StyleRow'
 import { Switch } from './Switch'
 import { todoOffsets } from './todos'
 
@@ -190,6 +191,7 @@ export function CvEditor({
   onSaved,
   unsaved = null,
   onUnsaved,
+  style,
 }: {
   onDraft: () => void
   /** cv.md was written: what reads the profile (the sidebar's "no CV yet") reads it again. */
@@ -197,6 +199,9 @@ export function CvEditor({
   /** Text typed and not saved when the editor was last shown (Profile keeps it while Details is shown). */
   unsaved?: string | null
   onUnsaved?: (text: string | null) => void
+  /** The CV style: how its build stands (the sidebar's summary), whether one can be built here (not on made-up data),
+   * and what to tell the app when a build starts or a style is chosen. */
+  style?: { state: 'none' | 'building' | 'ready' | 'failed' | null; canBuild: boolean; onChanged: () => void }
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -210,6 +215,8 @@ export function CvEditor({
   // What the last "Add … to my CV" put in: tinted in the preview until the next edit or save.
   const [added, setAdded] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
+  // counts the saves: the style previews are made from the CV
+  const [saves, setSaves] = useState(0)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const editorId = useId()
@@ -277,6 +284,7 @@ export function CvEditor({
       const r = await call<{ backup?: string | null }>('save_cv', { markdown: text })
       await load()
       setMessage(r.backup ? 'Saved. The previous version is kept as cv.md.bak.' : 'Saved.')
+      setSaves((n) => n + 1)
       onSaved?.()
     } catch (e) {
       setError(errorText(e))
@@ -362,6 +370,7 @@ export function CvEditor({
           }}
         />
       )}
+      {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} />}
       {/* the CV: its name, with the Preview switch on the right, then the text or how it reads */}
       <div className="cv-head">
         <div className="field-name">

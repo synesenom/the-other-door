@@ -84,7 +84,7 @@ export interface StatusSummary {
   plan?: PlanBlock | null
   /** Each stage's pass rate of the decided ones; `application`: the applications with an outcome that led to an interview. */
   pass_rates?: Record<string, PassRate>
-  /** The CV style build: `ready` once `profile/style/` holds a template. */
+  /** The CV style build: `ready` while a built style waits in `profile/style.next/` to be chosen. */
   style?: { state: 'none' | 'building' | 'ready' | 'failed' }
   /** The application pass rate of the better-scored and the near-minimum half (#90); null until each has enough outcomes. */
   pass_rates_by_score?: ScoreBands | null
@@ -435,6 +435,12 @@ const base = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? ''
 export function materialUrl(jobId: string, pngPath: string, v: number, sent = false): string {
   if (window.door.pageUrl) return window.door.pageUrl(jobId, pngPath, v, sent) // the phone app: /files over door serve
   return `door-file://output/${encodeURIComponent(jobId)}/${sent ? 'sent/' : ''}${encodeURIComponent(base(pngPath))}?v=${v}`
+}
+
+/** The door-file address of a style preview page (`show_style`): the style, the file name and the set's `version`, which changes with the images. */
+export function styleUrl(style: 'default' | 'like', pngPath: string, version: string): string {
+  if (window.door.pageUrl) return window.door.pageUrl(style, pngPath, 0) // the preview's pictures; the phone has no Profile
+  return `door-file://style/${style}/${encodeURIComponent(base(pngPath))}?v=${encodeURIComponent(version)}`
 }
 
 /** The page images that belong to the document now (a shorter revision leaves old ones on disk). */

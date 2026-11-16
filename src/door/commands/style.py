@@ -11,6 +11,10 @@ the build takes its lock and writes its own. A build is alive while it holds the
 (dropped by the OS when it dies, so a record left by a crash or a reboot, or a pid since reused, never reads as a build
 and is never ended); `status` reads that for `status_summary`'s `style` block. A build writes only `profile/style/`
 and never takes the ledger lock, so it runs beside a `find`.
+
+A build writes the candidate, `profile/style.next/`, never `profile/style/`. The style in use is the two template keys
+(`cv_template`, `cover_letter_template`) pointing into `profile/style/`; `_use_core` (`use_style`, `cv style use`)
+changes them and moves a candidate in or ends it (#151).
 """
 
 from __future__ import annotations
@@ -31,10 +35,9 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import lock, phone, workspace
+from door.core import lock, phone, templates, tracker, workspace
 from door.tailoring import style_build, style_extract, style_preview
 
-TEMPLATE = "cv.template.html"
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
 PENDING_SECONDS = 30  # a started build that has not yet taken its lock still reads as building this long
 
@@ -175,33 +178,103 @@ def _age(started_at: str) -> float:
 
 
 def status(home: Path, profile_dir: Path) -> dict:
-    """`status_summary`'s `style` block: ``{"state": "building" | "failed" | "ready" | "none", ...}``.
+    """`status_summary`'s `style` block: ``{"state": "building" | "ready" | "failed" | "none", ...}``, in that order.
 
-    building: the build holds its lock (or was started a moment ago and has not taken it yet). failed: the last build
-    failed (``problems`` say why) or its process died before it finished. ready: `profile/style/cv.template.html`
-    exists (``fonts`` and ``dropped_icons`` of the last build's result when it was that one's). none: nothing built."""
+    building: the build holds its lock (or was started a moment ago and has not taken it yet). ready: a candidate is
+    waiting, `profile/style.next/cv.template.html` exists (``fonts`` and ``dropped_icons`` of the last build's result
+    when it was that one's), even when a later build failed. failed: the last build failed (``problems`` say why) or its
+    process died before it finished. none: no candidate waits."""
+    style_build.restore(Path(profile_dir))
     run = _read(home) or {}
     state = run.get("state")
     if state == "building":
         if lock.held(_lock_path(home)) or ("pid" not in run and _age(run["started_at"]) < PENDING_SECONDS):
             return {"state": "building", "started_at": run["started_at"]}
         return {"state": "failed", "problems": ["the build stopped before it finished"]}
-    if state == "failed":
-        return {"state": "failed", "problems": run["result"]["problems"]}
-    if (Path(profile_dir) / "style" / TEMPLATE).is_file():
+    if templates.liked(Path(profile_dir)).name == templates.CANDIDATE:
         out = {"state": "ready"}
         if state == "ready":
             out.update({k: run["result"][k] for k in ("fonts", "dropped_icons") if k in run["result"]})
         return out
+    if state == "failed":
+        return {"state": "failed", "problems": run["result"]["problems"]}
     return {"state": "none"}
+
+
+def _keys(profile_dir: Path) -> dict:
+    folder = Path(profile_dir) / templates.STYLE
+    return {key: (folder / name).relative_to(workspace.HOME).as_posix() for key, name in templates.FILES.items()}
+
+
+def _prepared(jobs_dir: Path) -> list[str]:
+    """The jobs prepared and not sent (ledger status exactly ``prepared``) that have a ``cv.html`` to print again."""
+    ledger = tracker.ApplicationTracker(jobs_dir / "applications.json")
+    return [job for job in ledger.job_ids()
+            if ledger.get_status(job) == "prepared" and (jobs_dir / "output" / job / "cv.html").is_file()]
+
+
+def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
+    """Choose the CV style: ``like`` (the one built from the user's CV: the candidate moves into `profile/style/`
+    and both template keys point at it), ``default`` (both keys cleared, only where they point into `profile/style/`)
+    or ``current`` (what is in use stays). Any pick ends the candidate: it is deleted when a built style is already
+    kept, and moved into `profile/style/` unused when none is.
+
+    With `rerender` the candidate is left alone (choosing it is a call of its own), and the prepared applications (status ``prepared``, not sent) are printed again in the style in use by
+    `compile`: no model, a failing job listed and the rest done.
+
+    Returns ``{"in_use": "like" | "default", "prepared": N}`` and, with `rerender`, ``"rerendered"`` and ``"failed"``
+    (job ids). Raises ValueError, in words, when ``like`` has no style built."""
+    from door.commands import compile as compile_cmd
+    from door.commands import profile as profile_cmd
+
+    profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
+    candidate, kept = profile_dir / templates.CANDIDATE, profile_dir / templates.STYLE
+    if style not in ("like", "default", "current"):
+        raise ValueError(f"unknown style {style!r}: like, default or current")
+    config = common._load_config_or_defaults(profile_dir)
+    style_build.restore(profile_dir)
+    if style == "like" and not (kept.is_dir() or (candidate.is_dir() and not rerender)):
+        raise ValueError("no CV style is built yet: build one from a CV of yours first")
+    if style != "current" and not (profile_dir / "config.json").is_file():
+        raise ValueError("there is no profile yet: set one up first, then choose a style")
+    if candidate.is_dir() and not rerender:
+        if style == "like" or not kept.is_dir():
+            style_build.move_in(candidate, profile_dir, templates.STYLE)
+        else:
+            style_build.end(candidate, profile_dir)
+    fields: dict = {}
+    if style == "like":
+        fields = _keys(profile_dir)
+    elif style == "default":
+        fields = {key: None for key in templates.FILES if config.get(key) and templates.points_into(config[key], kept)}
+    if fields:
+        profile_cmd._init_core(fields, profile_dir=profile_dir, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    result = {"in_use": templates.in_use(profile_dir, common._load_config_or_defaults(profile_dir))}
+    jobs = _prepared(workspace.JOBS_DIR)
+    result["prepared"] = len(jobs)
+    if rerender:
+        result.update(rerendered=[], failed=[])
+        for job in jobs:
+            try:
+                done = compile_cmd._compile_core(job, render=True)
+                ok = not any(r.get("status") == "error" for r in done.get("results", []))
+            except Exception:  # noqa: BLE001 - one job that cannot print is listed, the others go on
+                ok = False
+            result["rerendered" if ok else "failed"].append(job)
+    return result
 
 
 def _show_core(*, home: Path | None = None, profile_dir: Path | None = None) -> dict:
     """The previews of the profile's `cv.md` and a sample letter in the default style and, once one is built, in the
-    rebuilt one (`style_preview.show`): ``{"styles": {"default" | "like": {"cv": [png], "letter": [png]}}}``, made again
-    only where stale, no model. A style that could not be printed (no Chromium) is left out."""
+    rebuilt one (`style_preview.show`): ``{"styles": {"default" | "like": {"cv": [png], "letter": [png]}}, "in_use":
+    "like" | "default", "candidate": bool}``, made again only where stale, no model. ``like`` is the candidate when one
+    waits, else the style kept in `profile/style/`. A style that could not be printed (no Chromium) is left out."""
     profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
-    return style_preview.show(Path(home or workspace.HOME), profile_dir, common._load_config_or_defaults(profile_dir))
+    style_build.restore(profile_dir)
+    config = common._load_config_or_defaults(profile_dir)
+    shown = style_preview.show(Path(home or workspace.HOME), profile_dir, config)
+    shown.update(in_use=templates.in_use(profile_dir, config), candidate=templates.liked(profile_dir).name == templates.CANDIDATE)
+    return shown
 
 
 @click.group("style")
@@ -215,7 +288,7 @@ def build_style(file):
     """Build a template from FILE's look (a CV as a PDF): fonts, colours, layout, in a few minutes of the model's time.
 
     Runs here and now; the `build_style` tool starts the same thing in the background. The result is written to
-    profile/style/ only when it passes; nothing uses it until it is chosen."""
+    profile/style.next/ only when it passes; nothing uses it until `cv style use` chooses it."""
     interactive = common._stdout_is_tty()
     try:
         with _progress.live_progress(enabled=interactive) as reporter:
@@ -234,7 +307,34 @@ def build_style(file):
         for problem in result["problems"] or ["the build failed"]:
             click.echo(f"Error: {problem}", err=True)
         sys.exit(1)
-    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style/.")
+    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style.next/; `cv style use` chooses it.")
+
+
+_USE_WORDS = {"like": "Your own style is in use: the one built from your CV.", "default": "The other door's style is in use."}
+
+
+@style_group.command("use")
+@click.argument("style", type=click.Choice(["like", "default", "current"]), default="like")
+@click.option("--rerender", is_flag=True, help="Print the prepared applications again in the style in use (no model).")
+def use_style(style, rerender):
+    """Choose the CV style: like (the one built from your CV, the default), default (The other door's) or current (keep
+    what you use now and drop the one just built).
+
+    Applications already prepared keep their old look unless --rerender prints them again; sent ones never change."""
+    try:
+        result = _use_core(style)
+        if rerender:  # choosing and printing again are two calls: the second never touches a candidate
+            result = _use_core("current", True)
+    except (ValueError, common.ConfigError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+    click.echo(_USE_WORDS[result["in_use"]])
+    if rerender:
+        click.echo(f"{len(result['rerendered'])} of {result['prepared']} prepared applications printed again.")
+        if result["failed"]:
+            click.echo(f"Could not print: {', '.join(result['failed'])}", err=True)
+    elif result["prepared"]:
+        click.echo(f"{result['prepared']} prepared applications keep their look; --rerender prints them again.")
 
 
 @style_group.command("show")

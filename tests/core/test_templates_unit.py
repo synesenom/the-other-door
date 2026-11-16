@@ -89,3 +89,20 @@ def test_the_shipped_templates_are_pinned():
         digest = hashlib.sha256((REPO_ROOT / "profile.example" / name).read_text(encoding="utf-8")
                                 .replace("\r\n", "\n").encode()).hexdigest()
         assert digest == SHIPPED_HASHES[key], f"{name} changed: if that is meant, update its hash (now {digest})"
+
+
+def test_the_liked_style_is_the_candidate_when_one_waits_else_the_style_kept(tmp_path):
+    (tmp_path / "style").mkdir()
+    assert templates.liked(tmp_path) == tmp_path / "style"
+    (tmp_path / "style.next").mkdir()  # no template in it: not a candidate
+    assert templates.liked(tmp_path) == tmp_path / "style"
+    (tmp_path / "style.next" / "cv.template.html").write_text("x")
+    assert templates.liked(tmp_path) == tmp_path / "style.next"
+
+
+def test_in_use_is_like_only_for_a_template_in_the_style_folder(dirs):
+    profile = dirs[0] if isinstance(dirs, tuple) else dirs
+    (profile / "style").mkdir(parents=True, exist_ok=True)
+    (profile / "style" / "cv.template.html").write_text("x")
+    assert templates.in_use(profile, {}) == "default"
+    assert templates.in_use(profile, {"cv_template": str(profile / "style" / "cv.template.html")}) == "like"

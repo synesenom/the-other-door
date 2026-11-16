@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { realpath, stat } from 'node:fs/promises'
+import { readFile, realpath, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, Notification, protocol, session, shell } from 'electron'
@@ -15,8 +15,9 @@ import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
 import { quitStep, restorePhoneAfterUpdate, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
 import { createProblemLog } from './problem-log'
-import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest } from './protocol'
+import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest, resolveStylePreviewRequest } from './protocol'
 import { createPhotoFile } from './photo-file'
+import { createStyleFile } from './style-file'
 import { watchRunBoard, type RunBoard } from './run-board'
 import { cspHeader, isAllowedNavigation } from './security'
 import { CHECK_EVERY_MS, checkEvery, createUpdateManager, doorSignedOf, updateMode, updatesAllowed, type UpdaterLike } from './updates'
@@ -172,7 +173,7 @@ app.whenReady().then(() => {
   })
   session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
   protocol.handle(MATERIAL_SCHEME, async (request) => {
-    const path = resolveMaterialRequest(request.url, home) ?? resolvePhotoRequest(request.url, home)
+    const path = resolveMaterialRequest(request.url, home) ?? resolvePhotoRequest(request.url, home) ?? resolveStylePreviewRequest(request.url, home)
     if (!path) return new Response('not found', { status: 404 })
     const response = await net.fetch(pathToFileURL(path).toString())
     const headers = new Headers(response.headers)
@@ -227,6 +228,21 @@ app.whenReady().then(() => {
       },
       stat,
       realpath,
+    }),
+    // The CV a style is built from (Profile → CV): chosen here, the build started here; its dialog opens at the CV
+    // the set-up read (the path kept in a file of the app's own folder, never sent anywhere).
+    styleFile: createStyleFile({
+      showOpenDialog: (options) => {
+        const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+        return win ? dialog.showOpenDialog(win, options as Electron.OpenDialogOptions) : dialog.showOpenDialog(options as Electron.OpenDialogOptions)
+      },
+      stat,
+      realpath,
+      exists: existsSync,
+      hintStore: {
+        read: async () => (await readFile(join(app.getPath('userData'), 'style-source.txt'), 'utf-8')).trim() || null,
+        write: (path) => writeFile(join(app.getPath('userData'), 'style-source.txt'), path, 'utf-8'),
+      },
     }),
     // In the demo and the onboarding sandbox "Find new jobs" is a simulation: nothing reaches the network or claude.
     ...(simulated

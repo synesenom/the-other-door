@@ -36,7 +36,7 @@ test('a CV with a style to copy: tick, Save, the search starts at once, the buil
   expect(world.toolCalls('save_cv')).toHaveLength(1)
 
   await expect(readyLine(page)).toBeVisible({ timeout: 240_000 })
-  expect(world.exists('profile/style/cv.template.html')).toBe(true)
+  expect(world.exists('profile/style.next/cv.template.html')).toBe(true)
   await readyLine(page).click()
   await expect(page.getByLabel('Your CV (Markdown)')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Profile', exact: true })).toHaveAttribute('aria-current', 'page')

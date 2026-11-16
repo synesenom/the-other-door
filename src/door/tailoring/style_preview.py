@@ -1,5 +1,5 @@
 """Previews of a CV and a letter in a style (#207, epic #144): the user's own `cv.md` and one sample letter, printed in
-the rebuilt template (`profile/style/`, "like") and in the default one ("default"), with no model and nothing copied
+the rebuilt template (`profile/style.next/`, the candidate, else `profile/style/`: "like") and in the default one ("default"), with no model and nothing copied
 from the uploaded PDF.
 
 `show(home, profile_dir, config)` makes what is stale and returns the page images. A set lives in
@@ -76,7 +76,7 @@ def _bytes(path: Path | None) -> bytes:
 def _paths(style: str, profile_dir: Path) -> tuple[Path, Path]:
     """The CV template and the letter template of `style`."""
     if style == "like":
-        folder = Path(profile_dir) / "style"
+        folder = templates.liked(profile_dir)
         return folder / templates.FILES["cv_template"], folder / templates.FILES["cover_letter_template"]
     return (templates.resolve("cv_template", {}, profile_dir), templates.resolve("cover_letter_template", {}, profile_dir))
 
@@ -139,7 +139,7 @@ def _set(root: Path, folder: Path, key: str, cv_md: str, lang: str, photo: Path 
 def show(home: Path, profile_dir: Path, config: dict) -> dict:
     """The previews, made again where stale: ``{"styles": {"default": {"cv": [png], "letter": [png], "version": key,
     "two_column": bool}, "like": {...}}}`` (absolute paths, page order; `version` changes with the images, for a cache
-    buster). `like` is there only when `profile/style/cv.template.html` exists; a set that could not be printed is left
+    buster). `like` is there only when a style is built (`profile/style.next/` or `profile/style/` has `cv.template.html`); a set that could not be printed is left
     out. Nothing is raised for a print that fails."""
     root = Path(home) / ".style" / "preview"
     cv_md = cv_text(Path(profile_dir), config)

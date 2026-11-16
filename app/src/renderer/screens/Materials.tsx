@@ -5,6 +5,7 @@ import { call, errorText, materialUrl, saveMaterial, visiblePages } from '../api
 import type { Document, Materials as MaterialsData, Posting, ReviseResult, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
 import { WarningMark } from './CheckMark'
+import { PageStack } from './PageStack'
 import { SalaryLine } from './SalaryLine'
 import { Spinner } from './Spinner'
 
@@ -174,11 +175,7 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
     const note = limitNote(m, which)
     return (
       <figure key={which} className="paper-figure">
-        <div className="pages-stack">
-          {visiblePages(m, which).map((png, i) => (
-            <img key={png} className="paper" src={materialUrl(id, png, version, inSent)} alt={`${NAMES[which]}, page ${i + 1}`} />
-          ))}
-        </div>
+        <PageStack urls={visiblePages(m, which).map((png) => materialUrl(id, png, version, inSent))} label={NAMES[which]} />
         {/* The switch above names the document and its size; only a limit it is over is said here. */}
         {note && (
           <figcaption role="note" className="small">

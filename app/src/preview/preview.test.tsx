@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../renderer/App'
 import { stubNarrow } from '../renderer/testing'
 import { createMockDoor } from './mock-door'
 import { Guide } from './Guide'
+import { pressInOrder } from './press'
 import { DATA_STATES, readSelection, sceneById, SCENES } from './scenes'
 
 beforeEach(() => stubNarrow(false))
@@ -235,5 +237,59 @@ describe('scenes', () => {
   it('onboarding-sources opens the wizard on its first step', async () => {
     mount('onboarding-sources')
     await waitFor(() => expect(screen.getByLabelText('Step 1 of 3')).toHaveAttribute('aria-current', 'step'))
+  })
+
+  it('profile-cv-style-loading holds the sheet and says the previews are being made', async () => {
+    mount('profile-cv-style-loading')
+    expect(await screen.findByText('Preparing the previews…')).toBeInTheDocument()
+  })
+
+  it('profile-cv-style-building keeps the sheet and says the build runs', async () => {
+    mount('profile-cv-style-building')
+    expect(await screen.findByText('Building your style…')).toBeInTheDocument()
+    expect(screen.getAllByRole('img', { name: /first page/ })).toHaveLength(1)
+  })
+
+  it('profile-cv-style-candidate chooses the new style, then offers to print the prepared CVs again', async () => {
+    mount('profile-cv-style-candidate')
+    await userEvent.click(await screen.findByRole('button', { name: 'Use this style' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again' }))
+    expect(await screen.findByText('2 printed again.')).toBeInTheDocument()
+  })
+
+  it('profile-cv-style-printed shows the count printed again and, for the one that failed, Try again', async () => {
+    mount('profile-cv-style-printed')
+    await pressInOrder(sceneById('profile-cv-style-printed')!.press!)
+    expect(await screen.findByText('2 printed again.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText('3 printed again.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
+  it('profile-cv-style-earlier can keep the style in use', async () => {
+    mount('profile-cv-style-earlier')
+    await userEvent.click(await screen.findByRole('button', { name: 'Keep my current style' }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Use this style' })).toBeNull())
+    expect(screen.getByText('In use')).toBeInTheDocument()
+  })
+
+  it('profile-cv-style-inuse opens the full pages of a style, and goes back to The other door\'s', async () => {
+    mount('profile-cv-style-inuse')
+    await userEvent.click(await screen.findByRole('button', { name: 'Show Like your CV in full' }))
+    expect(within(await screen.findByRole('dialog', { name: 'Like your CV' })).getAllByRole('img')).toHaveLength(2)
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(screen.getByRole('button', { name: "Use The other door's" }))
+    await waitFor(() => expect(within(screen.getByRole('group', { name: "The other door's" })).getByText('In use')).toBeInTheDocument())
+  })
+
+  it('profile-cv-style-two-column says what two columns may cost', async () => {
+    mount('profile-cv-style-two-column')
+    expect(await screen.findByText('Some application systems read two-column CVs less well.')).toBeInTheDocument()
+  })
+
+  it('profile-cv starts a build, which ends with a style to compare', async () => {
+    mount('profile-cv')
+    await userEvent.click(await screen.findByRole('button', { name: 'Use the style of my CV…' }))
+    expect(await screen.findByText('Building your style…')).toBeInTheDocument()
   })
 })

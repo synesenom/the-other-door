@@ -6,7 +6,7 @@ page, the builder checks it (`html_guard.template_problems`), prints a sample bo
 the print back and compares it with the original (`style_compare`) until the loop's rule says stop. The best round is
 then stress-rendered with `profile/cv.md` made shorter, longer, French and with a photo (no model: `cv_body`), one more
 round when that fails, and a second call writes the matching letter template. Only a build that passes is written, whole,
-to `profile/style/`; a failed one writes nothing there.
+to `profile/style.next/`, the candidate; a failed one writes nothing there.
 """
 
 from __future__ import annotations
@@ -430,24 +430,45 @@ def _letter(s: _Session, template: str, cv_md: str) -> tuple[str | None, list[st
     return None, [f"letter template: {p}" for p in problems]
 
 
-def _restore(profile_dir: Path) -> None:
-    """Put back the style a publish that was interrupted set aside (`_publish` moves the earlier one to `.style.old`
-    before it moves the new one in)."""
-    dest, old = profile_dir / "style", profile_dir / ".style.old"
-    if old.is_dir() and not dest.exists():
-        old.rename(dest)
+def restore(profile_dir: Path) -> None:
+    """Put back the style a swap that was interrupted set aside (`move_in` moves the earlier one to `.<name>.old`
+    before it moves the new one in), for the candidate and for the style in use."""
+    for name in (templates.CANDIDATE, templates.STYLE):
+        dest, old = profile_dir / name, profile_dir / f".{name}.old"
+        if old.is_dir() and not dest.exists():
+            old.rename(dest)
+
+
+def move_in(source: Path, profile_dir: Path, name: str) -> None:
+    """Rename the folder `source` (beside `profile_dir/name`, on the same disk) to `profile_dir/name`, the earlier one
+    set aside as `.<name>.old` until the new one is there (`restore` puts it back after an interruption)."""
+    dest, old = profile_dir / name, profile_dir / f".{name}.old"
+    shutil.rmtree(old, ignore_errors=True)
+    if dest.exists():
+        dest.rename(old)
+    source.rename(dest)
+    shutil.rmtree(old, ignore_errors=True)
+
+
+def end(candidate: Path, profile_dir: Path) -> None:
+    """Delete the candidate: renamed to a staging name first, so an interrupted delete never leaves a
+    `style.next/` that could be chosen (the stale-staging sweep of the next build removes the rest)."""
+    gone = profile_dir / ".style.ended.part"
+    shutil.rmtree(gone, ignore_errors=True)
+    candidate.rename(gone)
+    shutil.rmtree(gone, ignore_errors=True)
 
 
 def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, letter: str) -> None:
-    """Write `profile_dir/style/` whole: staged beside it and moved in, an earlier one set aside until the new one is
-    there (`_restore` puts it back after an interruption). No ledger lock (nothing else writes there).
+    """Write `profile_dir/style.next/` whole, the candidate: staged beside it and moved in, an earlier one set aside
+    until the new one is there (`restore` puts it back after an interruption). `profile_dir/style/`, the style in use,
+    is never touched here. No ledger lock (nothing else writes there).
 
     Raises:
         OSError: the files could not be written or moved.
     """
     profile_dir.mkdir(parents=True, exist_ok=True)
     chromium.sweep_stale_parts(profile_dir)
-    dest, old = profile_dir / "style", profile_dir / ".style.old"
     staging = Path(tempfile.mkdtemp(prefix=".style.", suffix=".part", dir=profile_dir))
     try:
         _write(staging / _CV_FILE, cv)
@@ -458,11 +479,7 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
         for folder in ("fonts", "icons"):
             if (work / folder).is_dir():
                 shutil.copytree(work / folder, staging / folder, ignore=shutil.ignore_patterns("*.part"))
-        shutil.rmtree(old, ignore_errors=True)
-        if dest.exists():
-            dest.rename(old)
-        staging.rename(dest)
-        shutil.rmtree(old, ignore_errors=True)
+        move_in(staging, profile_dir, templates.CANDIDATE)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
 
@@ -522,7 +539,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
 
 def build(pdf_path, *, work_dir, profile_dir=None, run=None, fonts_fetch=None, progress=None, cap: int = style_compare.CAP) -> dict:
     """Build a CV template from the CV PDF at `pdf_path` (see the module's docstring) and write it to
-    `profile_dir/style/` (default the profile) when it is ready; a failed build writes nothing there.
+    `profile_dir/style.next/` (default the profile) when it is ready; a failed build writes nothing there.
 
     `work_dir` is the build's own folder (emptied first): the files the stylist reads, its drafts and the stress
     prints. `run` is the model call (default `claude_cli.run`: tests give a stand-in), `fonts_fetch(plan, dest)` the font
@@ -539,7 +556,7 @@ def build(pdf_path, *, work_dir, profile_dir=None, run=None, fonts_fetch=None, p
     profile = Path(profile_dir) if profile_dir else workspace.PROFILE_DIR
     with progress_mod.activate(progress):
         try:
-            _restore(profile)
+            restore(profile)
             _build(Path(pdf_path), Path(work_dir), profile, run or claude_cli.run, fonts_fetch, cap, result)
         except _Stop as exc:
             result["problems"] = [str(exc)]

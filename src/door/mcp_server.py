@@ -194,6 +194,7 @@ CLI_COMMAND_TOOLS = {
     "cv stories draft": ("draft_stories",),
     "cv style build": ("build_style",),
     "cv style show": ("show_style",),
+    "cv style use": ("use_style",),
     "market": ("market",),
     "ask": ("ask",),
     "doctor": ("doctor", "setup"),  # `doctor --fix` is `setup`
@@ -237,7 +238,7 @@ READ_ONLY_TOOLS = frozenset({
 WRITING_TOOLS = frozenset({
     "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
     "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
-    "remove_company", "merge_companies", "build_style", "show_style", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
+    "remove_company", "merge_companies", "build_style", "show_style", "use_style", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
 })
 
@@ -1451,7 +1452,7 @@ def build_style(file: str) -> dict:
     """Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.
     Identical to `./door cv style build`, which waits for it. Takes a few minutes of the model's time; this call returns
     at once, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or ``failed``. A build already
-    going is replaced. The result is written to profile/style/ only when it passes; nothing uses it until it is chosen.
+    going is replaced. The result waits in profile/style.next/ and is written only when it passes; nothing uses it until it is chosen (``use_style``).
 
     Args:
         file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).
@@ -1470,13 +1471,35 @@ async def show_style() -> dict:
     CV, the photo or a style changed; no model is used.
 
     Returns:
-        ``{"styles": {"default": {"cv": [png paths], "letter": [png paths], "version", "two_column"}, "like": {...}}}``:
+        ``{"styles": {"default": {"cv": [png paths], "letter": [png paths], "version", "two_column"}, "like": {...}},
+        "in_use": "like" | "default", "candidate": whether a style just built waits to be chosen}``:
         ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;
-        ``like`` only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is
+        ``like`` (the candidate when one waits, else the style kept) only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is
         left out.
     """
     # On a thread: a cold set prints four pages with Chromium, and the other calls must not wait for it.
     return await asyncio.to_thread(style_cmd._show_core)
+
+
+@mcp.tool()
+@_tool_errors
+async def use_style(style: str = "like", rerender: bool = False) -> dict:
+    """Choose the CV style: the one built from the user's own CV (``like``: the candidate a build leaves moves in, and
+    both template keys point at it), The other door's (``default``) or ``current`` (keep what is in use and drop the
+    candidate). Identical to `./door cv style use`. Any pick ends the candidate. Applications already prepared keep their
+    old look unless ``rerender`` is true: those prepared and not sent are printed again in the style in use (no model,
+    no plan usage; sent ones never change).
+
+    Args:
+        style: ``like``, ``default`` or ``current``.
+        rerender: Print the prepared applications again in the style in use.
+
+    Returns:
+        ``{"in_use": "like" | "default", "prepared": <how many are prepared and not sent>}`` and, with ``rerender``,
+        ``"rerendered"`` and ``"failed"`` (job ids); or ``{"error": ...}`` (``like`` with no style built).
+    """
+    # On a thread: printing the prepared applications again takes Chromium a few seconds each.
+    return await asyncio.to_thread(style_cmd._use_core, style, rerender)
 
 
 @mcp.tool()

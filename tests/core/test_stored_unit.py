@@ -16,6 +16,7 @@ from door.core import stored
     "jobs/output/jobindex.123/sent/cv.pdf", "jobs/output/jobindex.123/photo.jpg", "jobs/market/report-2026-01-01.md",
     "jobs/drift/thehub/2026.html", "jobs/.lock",
     "profile/style/cv.template.html", "profile/style/fonts/Lato-Regular.ttf", "profile/style/icons/phone.svg", "profile/style/source.pdf",
+    "profile/style.next/cv.template.html", "profile/style.next/fonts/Lato-Regular.ttf", "profile/style.next/source.pdf",
 ])
 def test_known_paths_are_named(path):
     assert stored.named(path) is not None
@@ -74,7 +75,8 @@ def test_an_old_latex_file_is_named_as_kept_and_never_read():
 
 def test_a_style_publish_in_progress_or_interrupted_leaves_only_named_files(tmp_path):
     """`style_build._publish` stages in `.style.<x>.part` and sets the earlier style aside as `.style.old`."""
-    for name in (".style.ab12cd.part/cv.template.html", ".style.ab12cd.part/fonts/Lato-Regular.ttf", ".style.old/template.json"):
+    for name in (".style.ab12cd.part/cv.template.html", ".style.ab12cd.part/fonts/Lato-Regular.ttf", ".style.old/template.json",
+                 ".style.next.old/template.json"):
         path = tmp_path / "profile" / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("x")

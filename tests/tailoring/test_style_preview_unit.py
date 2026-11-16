@@ -241,3 +241,29 @@ def test_two_shows_at_once_both_get_every_image(world, monkeypatch):
     for shown in results.values():
         assert shown["styles"]["default"]["cv"] and shown["styles"]["default"]["letter"]
     assert [p.name for p in (home / ".style" / "preview").iterdir()] == ["default"]
+
+
+def test_like_is_the_candidate_when_one_waits_else_the_style_kept(world):
+    home, profile, printer = world
+    kept = _style(profile)
+    (kept / "cv.template.html").write_text((kept / "cv.template.html").read_text() + "<!-- kept -->", encoding="utf-8")
+    _show(home, profile)
+    printer.calls.clear()
+    candidate = profile / "style.next"
+    shutil.copytree(kept, candidate)
+    (candidate / "cv.template.html").write_text((REPO_ROOT / "profile.example" / "cv.template.html").read_text() + "<!-- candidate -->",
+                                                 encoding="utf-8")
+    _show(home, profile)
+    assert any("<!-- candidate -->" in c["html"] for c in printer.calls)
+    assert not any("<!-- kept -->" in c["html"] for c in printer.calls)
+
+
+def test_moving_the_candidate_in_prints_nothing_again(world):
+    home, profile, printer = world
+    candidate = _style(profile)
+    candidate.rename(profile / "style.next")
+    _show(home, profile)
+    printed = len(printer.calls)
+    (profile / "style.next").rename(profile / "style")
+    _show(home, profile)
+    assert len(printer.calls) == printed

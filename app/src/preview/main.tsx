@@ -7,6 +7,7 @@ import { applyTheme, readTheme, type Theme } from '../renderer/theme'
 import { createMockDoor } from './mock-door'
 import { Guide } from './Guide'
 import { Picker } from './Picker'
+import { pressInOrder } from './press'
 import { readSelection } from './scenes'
 import '@fontsource/figtree/latin-400.css'
 import '@fontsource/figtree/latin-ext-400.css'
@@ -30,3 +31,4 @@ if (selection) window.door = createMockDoor(selection.scene, selection.state)
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>{!selection ? <Picker /> : selection.scene.guide ? <Guide /> : <App start={selection.scene.start} />}</StrictMode>,
 )
+if (selection?.scene.press) void pressInOrder(selection.scene.press)

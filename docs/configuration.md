@@ -187,7 +187,7 @@ The keys you set up — `init` and `/onboard` ask for the ones without a default
 |-----|------|----------------------|---------|
 | `name`, `email` | string | required | tailoring |
 | `location` | string | required | scrapers (search location), pre-filter, prescreen |
-| `cv_template`, `cover_letter_template` | path or `null` | the built-in template (`profile/<name>` if you put one there); a path set must exist | tailoring |
+| `cv_template`, `cover_letter_template` | path or `null` | the built-in template (`profile/<name>` if you put one there); a path set must exist | tailoring (`cv style use like` sets both to the style built from your CV, `profile/style/cv.template.html` and `profile/style/cover-letter.template.html`; `cv style use default` clears them when they point there) |
 | `cv_content` | path | required (the file may not exist yet) | `match`, prescreen, tailoring |
 | `photo` | path or `null` | none | your CV photo, a JPEG or PNG; `compile` puts it in the CV where the job country's conventions allow one (below). Set it by giving the picture to `init`, the desktop app's Profile screen or `/onboard`, not by hand: they check it, drop its EXIF and GPS data, scale it to CV size and keep it as `profile/photo.jpg`. A file `config.json` names that is missing, over 10 MB or not a JPEG or PNG is refused with the reason under the key |
 | `role_targets` | list of strings, ≥1 | required | scrapers, prescreen, `match` |

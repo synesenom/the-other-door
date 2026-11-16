@@ -48,7 +48,7 @@ class World:
 
     @property
     def style(self):
-        return self.profile / "style"
+        return self.profile / "style.next"
 
 
 @pytest.fixture
@@ -317,7 +317,7 @@ def test_a_rebuild_replaces_the_earlier_style_whole(world):
     world.style.mkdir()
     (world.style / "stale.txt").write_text("old")
     assert world.build("html-word-two-column", Stylist(*GOOD))["state"] == "ready"
-    assert not (world.style / "stale.txt").exists() and not (world.profile / ".style.old").exists()
+    assert not (world.style / "stale.txt").exists() and not (world.profile / ".style.next.old").exists()
 
 
 def test_a_build_sweeps_the_old_staging_folders_a_killed_publish_left(world):
@@ -340,7 +340,7 @@ def test_a_failed_rebuild_leaves_the_earlier_style_alone(world):
 
 
 def test_a_publish_that_was_interrupted_is_put_back_when_the_next_build_starts(world):
-    old = world.profile / ".style.old"
+    old = world.profile / ".style.next.old"
     old.mkdir()
     (old / "keep.txt").write_text("old")  # the earlier style, set aside when the machine stopped
     result = world.build("html-word-two-column", Stylist("no"), cap=1)  # this build fails
@@ -350,7 +350,7 @@ def test_a_publish_that_was_interrupted_is_put_back_when_the_next_build_starts(w
 def test_an_interrupted_publish_does_not_overwrite_a_style_that_is_there(world):
     world.style.mkdir()
     (world.style / "new.txt").write_text("new")
-    (world.profile / ".style.old").mkdir()
+    (world.profile / ".style.next.old").mkdir()
     world.build("html-word-two-column", Stylist("no"), cap=1)
     assert (world.style / "new.txt").is_file()
 
@@ -375,3 +375,27 @@ def test_the_stress_renders_and_the_letter_use_the_cv_the_config_names(world, tm
     assert world.build("html-word-two-column", Stylist(*GOOD))["state"] == "ready"
     assert any("Zebulon Quux" in p["html"] for p in world.prints if p["folder"].parent.name == "stress")
     assert "Zebulon Quux" in next(p["html"] for p in world.prints if p["folder"].name == "letter")
+
+
+def test_a_build_writes_only_the_candidate_and_leaves_the_style_in_use_alone(world):
+    in_use = world.profile / "style"
+    in_use.mkdir()
+    (in_use / "cv.template.html").write_text("chosen")
+    assert world.build("html-word-two-column", Stylist(*GOOD))["state"] == "ready"
+    assert (in_use / "cv.template.html").read_text() == "chosen" and (world.profile / "style.next" / "cv.template.html").is_file()
+
+
+def test_a_failed_build_leaves_the_style_in_use_and_the_candidate_alone(world):
+    for name in ("style", "style.next"):
+        (world.profile / name).mkdir()
+        (world.profile / name / "keep.txt").write_text(name)
+    assert world.build("html-word-two-column", Stylist("no"), cap=1)["state"] == "failed"
+    assert [(world.profile / n / "keep.txt").read_text() for n in ("style", "style.next")] == ["style", "style.next"]
+
+
+def test_a_swap_that_was_interrupted_puts_the_style_in_use_back_too(world):
+    old = world.profile / ".style.old"
+    old.mkdir()
+    (old / "keep.txt").write_text("old")
+    world.build("html-word-two-column", Stylist("no"), cap=1)
+    assert (world.profile / "style" / "keep.txt").read_text() == "old" and not old.exists()
