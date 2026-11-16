@@ -56,7 +56,7 @@ def env(tmp_path, monkeypatch):
     _write(out / "posting.json", _posting(OLD_DS, "jobindex", "h2", day="2026-10-02"))
     (out / "cv.pdf").write_bytes(b"%PDF")
     (out / "sent").mkdir()
-    (out / "sent" / "cv.tex").write_text("sent cv")
+    (out / "sent" / "cv.html").write_text("sent cv")
     _write(jobs_dir / "applications.json", {OLD_DS: {"status": "applied", "updated_at": "x", "history": []}})
     _write(jobs_dir / "history.json", {
         "h1": _history_entry(OLD_DS, "jobindex"),
@@ -140,7 +140,7 @@ def test_the_ledger_entry_and_output_folder_follow_the_posting_the_output_holds(
     assert not (env.jobs_dir / "output" / OLD_DS).exists()
     out = env.jobs_dir / "output" / "jobindex.h2"
     assert _load(out / "posting.json")["id"] == "jobindex.h2"
-    assert (out / "cv.pdf").exists() and (out / "sent" / "cv.tex").read_text() == "sent cv"
+    assert (out / "cv.pdf").exists() and (out / "sent" / "cv.html").read_text() == "sent cv"
     assert result["split"] == 1 and result["applications"] == 1 and result["outputs"] == 1
 
 

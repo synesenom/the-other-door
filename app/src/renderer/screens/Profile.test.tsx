@@ -29,7 +29,7 @@ const FIELDS: FieldSpec[] = [
 
 const show = (config: Record<string, unknown> = {}) => ({
   path: '/home/ada/profile',
-  config: { name: 'Ada Lovelace', email: 'ada@example.com', location: 'Copenhagen', cv_template: '/home/ada/profile/cv.template.tex', role_targets: ['Data Analyst'], remote: 'hybrid', languages: ['English'], ...config },
+  config: { name: 'Ada Lovelace', email: 'ada@example.com', location: 'Copenhagen', cv_template: '/home/ada/profile/cv.template.html', role_targets: ['Data Analyst'], remote: 'hybrid', languages: ['English'], ...config },
   errors: [],
   cv: { path: '', exists: true, is_example: false, text: '', headline: null, sections: [] },
   options: { cities: [{ name: 'Copenhagen', country: 'Denmark', boards: ['jobindex'] }, { name: 'Aarhus', country: 'Denmark', boards: ['jobindex'] }], languages: ['English', 'Danish'], worldwide_boards: [], fields: FIELDS },
@@ -207,7 +207,7 @@ describe('Profile', () => {
 
   it('the tuning keys and file paths are left to config.json: not shown, never sent', async () => {
     const { call } = await open({ init_profile: {} }, { scrape_workers: 4 })
-    expect(screen.queryByText('/home/ada/profile/cv.template.tex')).toBeNull()
+    expect(screen.queryByText('/home/ada/profile/cv.template.html')).toBeNull()
     expect(screen.queryByLabelText('Sites read at once')).toBeNull()
     await userEvent.type(screen.getByLabelText('Name'), 'x')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))

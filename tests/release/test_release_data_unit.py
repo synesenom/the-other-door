@@ -7,7 +7,7 @@ from release_gate_utils import release_data as rd
 
 BEFORE = {
     "list_companies": {"companies": [{"name": "A", "status": "followed"}, {"name": "B", "status": "dormant"}]},
-    "show_profile": {"config": {"cv_template": "<home>/profile/cv.template.tex", "min_score": 0.6}},
+    "show_profile": {"config": {"cv_template": "<home>/profile/cv.template.html", "min_score": 0.6}},
 }
 
 

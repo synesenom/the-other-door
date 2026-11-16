@@ -15,13 +15,13 @@ const specs: FieldSpec[] = [
   { key: 'preferences', type: 'string', required: false, nullable: false, default: '' },
 ]
 
-const config = { name: 'Ada', cv_template: '/p/cv.template.tex', role_targets: ['Analyst'], remote: 'hybrid', min_score: 0.7, exclude: { companies: ['Acme'] } }
+const config = { name: 'Ada', cv_template: '/p/cv.template.html', role_targets: ['Analyst'], remote: 'hybrid', min_score: 0.7, exclude: { companies: ['Acme'] } }
 
 describe('formValues', () => {
   it('takes what the config sets, else the default; numbers as text, null as empty, a switch never set as null', () => {
     expect(formValues(config, specs)).toEqual({
       name: 'Ada',
-      cv_template: '/p/cv.template.tex',
+      cv_template: '/p/cv.template.html',
       role_targets: ['Analyst'],
       remote: 'hybrid',
       exclude: { companies: ['Acme'], keywords: [] },

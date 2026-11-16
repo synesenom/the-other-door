@@ -35,7 +35,7 @@ describe('Your data', () => {
   it('Import names the file and what it replaces, and imports only after the yes', async () => {
     const { pickArchive, importData, onImported } = show()
     pickArchive.mockResolvedValueOnce({ token: 't1', name: 'door-export.tar.gz' })
-    importData.mockResolvedValueOnce({ ok: true, data: { files: 120, backup_dir: '/home/backups/2026-10-30T10-00', warnings: ['config cv_template: /Users/old/cv.tex is not on this computer'] } })
+    importData.mockResolvedValueOnce({ ok: true, data: { files: 120, backup_dir: '/home/backups/2026-10-30T10-00', warnings: ['config cv_template: /Users/old/cv.html is not on this computer'] } })
     await userEvent.click(screen.getByRole('button', { name: 'Import…' }))
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent('door-export.tar.gz')

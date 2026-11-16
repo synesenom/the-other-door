@@ -142,7 +142,7 @@ def test_init_core_copies_merges_validates_and_writes(tmp_path, example_dir):
     )
 
     assert result["config_path"] == str(profile_dir / "config.json")
-    assert not any(name.endswith(".tex") or name.startswith("fonts") for name in result["copied"])  # from the code (#56)
+    assert not any(name.endswith(".html") or name.startswith("fonts") for name in result["copied"])  # from the code (#56)
     assert "template" not in " ".join(json.loads((profile_dir / "config.json").read_text()))
     assert "cv.md" not in result["copied"]  # the example CV is never made the candidate's
     assert not (profile_dir / "cv.md").exists()
@@ -208,7 +208,7 @@ def test_init_core_drops_nothing_from_a_valid_config(tmp_path, example_dir):
 def test_doctor_reports_missing_template_files(env):
     from door.core import doctor
 
-    write_config(env.profile_dir, {"cv_template": str(env.profile_dir / "gone.tex")})
+    write_config(env.profile_dir, {"cv_template": str(env.profile_dir / "gone.html")})
     check = doctor.check_profile(env.profile_dir)
     assert check["status"] == "missing"
     assert "cv_template not found" in check["detail"]
@@ -241,7 +241,7 @@ def test_status_summary_reads_the_report_stamp_of_the_data_folder_holding_jobs(e
 
 
 def test_status_summary_does_not_need_template_files(env):
-    write_config(env.profile_dir, {"cv_template": str(env.profile_dir / "gone.tex")})
+    write_config(env.profile_dir, {"cv_template": str(env.profile_dir / "gone.html")})
     assert status_cmd._status_summary_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)["pipeline"]["total"] == 0
 
 

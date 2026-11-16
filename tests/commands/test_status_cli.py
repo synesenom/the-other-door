@@ -423,8 +423,8 @@ def _ledger(jobs_dir: Path) -> dict:
 def _write_materials(jobs_dir: Path, job_id: str, cv: str = "cv v1") -> Path:
     out = jobs_dir / "output" / job_id
     out.mkdir(parents=True, exist_ok=True)
-    (out / "cv.tex").write_text(cv)
-    (out / "cover_letter.tex").write_text("letter v1")
+    (out / "cv.html").write_text(cv)
+    (out / "cover_letter.html").write_text("letter v1")
     (out / "cv.pdf").write_bytes(b"%PDF cv")
     (out / "posting.json").write_text(json.dumps({"id": job_id, "description": _AD}))
     return out
@@ -471,11 +471,11 @@ def test_sending_an_application_keeps_a_copy_of_the_materials_sent(cli_env):
     result = status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)
 
     assert result["sent_dir"] == str(out / "sent")
-    assert (out / "sent" / "cv.tex").read_text() == "cv v1"
+    assert (out / "sent" / "cv.html").read_text() == "cv v1"
     assert (out / "sent" / "posting.json").exists()
     materials = _ledger(cli_env.jobs_dir)["job-1"]["materials"]
-    assert materials["cv.tex"] == hashlib.sha256(b"cv v1").hexdigest()
-    assert set(materials) == {"cv.tex", "cover_letter.tex", "cv.pdf", "posting.json"}
+    assert materials["cv.html"] == hashlib.sha256(b"cv v1").hexdigest()
+    assert set(materials) == {"cv.html", "cover_letter.html", "cv.pdf", "posting.json"}
 
 
 def test_sending_keeps_the_cv_photo_with_the_materials_and_records_its_hash(cli_env):
@@ -504,12 +504,12 @@ def test_the_copy_is_taken_once_when_the_application_is_first_sent(cli_env):
 
     out = _write_materials(cli_env.jobs_dir, "job-1")
     status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)
-    (out / "cv.tex").write_text("cv revised after sending")
+    (out / "cv.html").write_text("cv revised after sending")
 
     result = status_cmd._set_status_core("job-1", "interview:screening", jobs_dir=cli_env.jobs_dir)
 
     assert "sent_dir" not in result
-    assert (out / "sent" / "cv.tex").read_text() == "cv v1"
+    assert (out / "sent" / "cv.html").read_text() == "cv v1"
 
 
 def test_a_status_before_sending_takes_no_copy(cli_env):

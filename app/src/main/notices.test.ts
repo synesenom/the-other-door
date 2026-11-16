@@ -103,26 +103,26 @@ describe('prepare', () => {
 describe('revise', () => {
   const revised = (file: string, compile?: unknown) => ({ ...done('revise', { outcome: 'revised', job_id: 'jobindex.1', file, ...(compile ? { compile } : {}) }), job }) as NoticeEvent
   it('a CV revision', () => {
-    expect(noticeFor(revised('cv.tex'))).toEqual({
+    expect(noticeFor(revised('cv.html'))).toEqual({
       title: 'Revision done',
       body: 'Data Analyst · Acme: the CV is updated.',
       target: { screen: 'materials', jobId: 'jobindex.1', inPlay: false, document: 'cv' },
     })
   })
   it('a letter revision', () => {
-    const n = noticeFor(revised('cover_letter.tex', [{ file: 'cover_letter.tex', status: 'compiled' }]))
+    const n = noticeFor(revised('cover_letter.html', [{ file: 'cover_letter.html', status: 'compiled' }]))
     expect(n?.body).toBe('Data Analyst · Acme: the letter is updated.')
     expect(n?.target).toEqual({ screen: 'materials', jobId: 'jobindex.1', inPlay: false, document: 'cover_letter' })
   })
   it('a compile error', () => {
-    expect(noticeFor(revised('cv.tex', [{ file: 'cv.tex', status: 'error' }]))).toEqual({
+    expect(noticeFor(revised('cv.html', [{ file: 'cv.html', status: 'error' }]))).toEqual({
       title: 'The PDF could not be rebuilt',
       body: 'Undo last change puts it back.',
       target: { screen: 'materials', jobId: 'jobindex.1', inPlay: false, document: 'cv' },
     })
   })
   it('an undo is silent', () => {
-    expect(noticeFor(done('revise', { outcome: 'undone', job_id: 'jobindex.1', file: 'cv.tex' }))).toBeNull()
+    expect(noticeFor(done('revise', { outcome: 'undone', job_id: 'jobindex.1', file: 'cv.html' }))).toBeNull()
   })
 })
 
@@ -140,7 +140,7 @@ describe('import_posting', () => {
   })
   it('without the job read, opens it as not in play', () => {
     expect(noticeFor(done('import_posting', { job_id: 'jobindex.9', score: 0.81 }, { url: 'https://example.com/ad' }))?.target).toEqual({ screen: 'posting', jobId: 'jobindex.9', inPlay: false })
-    expect(noticeFor(done('revise', { outcome: 'revised', job_id: 'jobindex.1', file: 'cv.tex' }))?.target).toMatchObject({ inPlay: false })
+    expect(noticeFor(done('revise', { outcome: 'revised', job_id: 'jobindex.1', file: 'cv.html' }))?.target).toMatchObject({ inPlay: false })
   })
   it('a pasted ad is quick and stays silent; only an import by link is announced', () => {
     expect(noticeFor({ ...done('import_posting', { job_id: 'manual.1', score: 0.7 }, { text: 'ad', title: 'T', company: 'C' }), job } as NoticeEvent)).toBeNull()
@@ -174,11 +174,11 @@ describe('quiet tools and words', () => {
       done('find_jobs', record()),
       { ...done('prepare', { outcome: 'prepared', job_id: 'jobindex.1' }), job } as NoticeEvent,
       { ...done('import_posting', { job_id: 'jobindex.9', score: 0.5 }, { url: 'https://example.com/ad' }), job } as NoticeEvent,
-      { ...done('revise', { outcome: 'revised', job_id: 'jobindex.1', file: 'cv.tex' }), job } as NoticeEvent,
+      { ...done('revise', { outcome: 'revised', job_id: 'jobindex.1', file: 'cv.html' }), job } as NoticeEvent,
     ]
     for (const e of events) {
       const n = noticeFor(e)!
-      expect(`${n.title} ${n.body}`).not.toMatch(/jobindex\.\d|\.tex|\/|unapplied/)
+      expect(`${n.title} ${n.body}`).not.toMatch(/jobindex\.\d|\.html|\/|unapplied/)
     }
   })
 })

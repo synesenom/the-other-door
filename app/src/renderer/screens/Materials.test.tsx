@@ -265,7 +265,7 @@ describe('Materials', () => {
     it('sends the instruction, reloads the posting, bumps the image version, and says nothing', async () => {
       const { call } = mockDoor({
         show: revisedShow(),
-        revise: { outcome: 'revised', job_id: 'jobindex.1', file: `${dir}/cover_letter.tex`, compile: [{ file: 'cover_letter.tex', status: 'compiled' }] },
+        revise: { outcome: 'revised', job_id: 'jobindex.1', file: `${dir}/cover_letter.html`, compile: [{ file: 'cover_letter.html', status: 'compiled' }] },
       })
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'Ready to send' })
@@ -292,7 +292,7 @@ describe('Materials', () => {
     it('says the PDF was not rebuilt when LaTeX failed, and keeps the old pages', async () => {
       mockDoor({
         show: posting(),
-        revise: { outcome: 'revised', job_id: 'jobindex.1', file: 'x', compile: [{ file: 'cover_letter.tex', status: 'error', stderr: 'boom' }] },
+        revise: { outcome: 'revised', job_id: 'jobindex.1', file: 'x', compile: [{ file: 'cover_letter.html', status: 'error', stderr: 'boom' }] },
       })
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'Ready to send' })
@@ -317,7 +317,7 @@ describe('Materials', () => {
     })
 
     it('treats nothing to undo as a quiet notice, not an alert', async () => {
-      mockDoor({ show: posting(), revise: () => { throw new Error('nothing to undo: no cover_letter.tex.bak') } })
+      mockDoor({ show: posting(), revise: () => { throw new Error('nothing to undo: no cover_letter.html.bak') } })
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'Ready to send' })
       await userEvent.click(screen.getByRole('button', { name: 'Undo last change' }))

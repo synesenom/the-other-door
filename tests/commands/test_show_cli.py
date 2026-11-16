@@ -219,7 +219,7 @@ def _show_on_a_terminal(cli_env, monkeypatch, lines: int = 40):
 def _prepared(cli_env, job_id="job-abc"):
     out = cli_env.jobs_dir / "output" / job_id
     out.mkdir(parents=True, exist_ok=True)
-    (out / "cv.tex").write_text("% Keywords: Python, SQL\n")
+    (out / "cv.html").write_text("% Keywords: Python, SQL\n")
     for name in ("cv.pdf", "cover_letter.pdf"):
         (out / name).write_bytes(b"%PDF")
     for name in ("cv_page_1.png", "cover_letter_page_1.png"):
@@ -330,7 +330,7 @@ def test_show_core_names_the_site_in_words(cli_env):
 # --------------------------------------------------------------------------- #
 def _with_cv(cli_env, cv_tex, cv_md="Cut churn by 38%."):
     _prepared(cli_env)
-    (cli_env.jobs_dir / "output" / "job-abc" / "cv.tex").write_text(cv_tex)
+    (cli_env.jobs_dir / "output" / "job-abc" / "cv.html").write_text(cv_tex)
     if cv_md is not None:
         (cli_env.profile_dir / "cv.md").write_text(cv_md)
 

@@ -10,7 +10,6 @@ from __future__ import annotations
 import html
 from pathlib import Path
 
-from door.core import utils
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -62,7 +61,13 @@ def e(text: str) -> str:
     return html.escape(str(text), quote=False)
 
 
-tex = utils._escape_latex  # *text* with LaTeX's special characters escaped
+def tex(text: str) -> str:
+    """*text* with LaTeX's special characters escaped (this prototype's own copy: door writes HTML now)."""
+    text = text.replace("\\", "\x00B\x00")
+    for char, escaped in (("&", r"\&"), ("%", r"\%"), ("$", r"\$"), ("#", r"\#"), ("_", r"\_"), ("{", r"\{"),
+                          ("}", r"\}"), ("~", r"\~{}"), ("^", r"\^{}")):
+        text = text.replace(char, escaped)
+    return text.replace("\x00B\x00", r"\textbackslash{}")
 
 
 def _sections(r: dict) -> list[tuple[str, list[str]]]:
@@ -72,7 +77,7 @@ def _sections(r: dict) -> list[tuple[str, list[str]]]:
 # ---------- default look: the shipped template's macros, the same text ----------
 
 def to_default_tex(r: dict) -> str:
-    template = (REPO / "profile.example" / "cv.template.tex").read_text(encoding="utf-8")
+    template = (Path(__file__).resolve().parent / "default.template.tex").read_text(encoding="utf-8")
     template = template.replace("<<fonts>>", str(REPO / "profile.example" / "fonts"))
     c = r["contact"]
     body = [f"\\cvheader{{{tex(r['name'])}}}{{{tex(c['phone'])}}}{{{tex(c['email'])}}}{{{tex(c['web'])}}}"
