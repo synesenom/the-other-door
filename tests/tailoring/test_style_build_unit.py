@@ -90,7 +90,7 @@ def test_font_entries_of_the_result_name_family_source_reason_and_faked():
 # ---------- the icons ----------
 
 @pytest.mark.parametrize("text, kind", [
-    ("jane.doe@example.com", "email"), ("+45 20 30 40 20", "phone"), ("(+89) 079788144", "phone"),
+    ("jane.doe@example.com", "email"), ("+45 00 00 00 00", "phone"), ("(+89) 079788144", "phone"),
     ("example.com/jane.doe", "web"), ("www.example.com", "web"), ("linkedin.com/in/jane", "linkedin"),
     ("github.com/jane", "github"), ("Email", "email"), ("Téléphone", "phone"), ("2019 - 2022", "date"),
     ("Aarhus", None), ("", None), (None, None),
@@ -105,7 +105,7 @@ def _icon(near, *, d="M0 0 L10 0 L10 10 Z", color="#112233", view="0 0 10 10"):
 
 
 def test_icons_are_written_as_svg_files_by_kind_the_first_of_each_kind_wins(tmp_path):
-    files, dropped = style_build.write_icons([_icon("a@b.co"), _icon("c@d.co", color="#ffffff"), _icon("+45 20 30 40 20")], tmp_path)
+    files, dropped = style_build.write_icons([_icon("a@example.com"), _icon("c@example.com", color="#ffffff"), _icon("+45 00 00 00 00")], tmp_path)
     assert files == {"email": "email.svg", "phone": "phone.svg"}
     svg = (tmp_path / "email.svg").read_text()
     assert 'viewBox="0 0 10 10"' in svg and 'd="M0 0 L10 0 L10 10 Z"' in svg and 'fill="#112233"' in svg and 'evenodd' in svg
@@ -120,12 +120,12 @@ def test_icons_of_no_known_kind_are_dropped_and_named(tmp_path):
 
 
 def test_an_icon_with_a_path_that_is_more_than_numbers_and_commands_is_dropped(tmp_path):
-    files, dropped = style_build.write_icons([_icon("a@b.co", d='M0 0" onload="x')], tmp_path)
+    files, dropped = style_build.write_icons([_icon("a@example.com", d='M0 0" onload="x')], tmp_path)
     assert files == {} and "path" in dropped[0]["reason"]
 
 
 def test_icon_files_are_accepted_by_the_manifest(tmp_path):
-    files, _ = style_build.write_icons([_icon("a@b.co")], tmp_path)
+    files, _ = style_build.write_icons([_icon("a@example.com")], tmp_path)
     assert templates.Manifest(icons=files).icons == {"email": "email.svg"}
 
 
