@@ -674,3 +674,30 @@ def test_show_on_a_terminal_says_no_answer_too(cli_env, monkeypatch):
 
     result = CliRunner().invoke(cli, ["jobs", "show", "job-old"])
     assert f"No answer in {tracker_mod.NO_ANSWER_DAYS} days" in result_text(result) + "".join(paged)
+
+
+@pytest.mark.parametrize("template_pages, expected", [(1, 1), (None, 2)])
+def test_show_carries_the_page_limit_the_cv_was_made_for(cli_env, one_page, template_pages, expected):
+    from door.commands import matches as matches_cmd
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", location="Aarhus, Denmark")
+    _prepared(cli_env)
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
+    assert matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["cv_max_pages"] == expected
+
+
+def test_the_card_says_when_the_cv_is_over_its_limit(cli_env):
+    from io import StringIO
+    from rich.console import Console
+    from door.commands import matches as matches_cmd
+
+    base = {"keywords": [], "tailoring": [], "cover_letter_words": 300, "file_names": {}, "pdfs": {"cv": "cv.pdf", "cover_letter": "l.pdf"},
+            "pngs": {"cv": [], "cover_letter": []}}
+    texts = []
+    for cv_pages, limit in ((2, 1), (2, 2)):
+        buf = StringIO()
+        matches_cmd._render_materials(
+            {**base, "page_counts": {"cv": cv_pages, "cover_letter": 1}, "cv_max_pages": limit}, Console(file=buf, width=100))
+        texts.append(buf.getvalue())
+    assert "(limit 1)" in texts[0] and "limit" not in texts[1]

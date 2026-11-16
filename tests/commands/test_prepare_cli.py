@@ -440,6 +440,7 @@ _FAKE_MATERIALS = {
     "keywords": ["Python", "MLOps"],
     "tailoring": ["kept the ML platform role"],
     "page_counts": {"cv": 2, "cover_letter": 1},
+    "cv_max_pages": 2,
     "cover_letter_words": 310,
     "rendered": False,
 }
@@ -450,7 +451,7 @@ def stub_materials(monkeypatch):
     """The fake PDFs are not PDFs: hand the renderer a fixed materials summary."""
     from door.commands import matches as matches_cmd
 
-    monkeypatch.setattr(matches_cmd, "_materials", lambda output_dir: dict(_FAKE_MATERIALS))
+    monkeypatch.setattr(matches_cmd, "_materials", lambda output_dir, posting=None: dict(_FAKE_MATERIALS))
 
 
 def test_prepare_cli_renders_card_materials_and_next(cli_env, monkeypatch, stub_materials):
@@ -517,7 +518,7 @@ def test_prepare_cli_regenerated_incomplete_warns(cli_env, monkeypatch, stub_mat
 def test_prepare_cli_survives_materials_it_cannot_summarise(cli_env, monkeypatch):
     from door.commands import matches as matches_cmd
 
-    def _broken(output_dir):
+    def _broken(output_dir, posting=None):
         raise RuntimeError("not a PDF")
 
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
@@ -1220,3 +1221,13 @@ def test_prepare_tags_the_language_of_an_ad_stored_without_one(cli_env, monkeypa
     monkeypatch.setattr(prepare_cmd, "_run_tailor", tailor)
     CliRunner().invoke(cli, ["jobs", "prepare", "manual.abc"])
     assert seen == ["da"]
+
+
+@pytest.mark.parametrize("template_pages, expected", [(1, 1), (3, 2), (None, 2)])
+def test_cv_max_pages_is_the_stricter_of_the_templates_and_the_countrys(cli_env, template_pages, expected):
+    from door.commands import _common as common
+
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
+    config = common._load_config_or_defaults(cli_env.profile_dir)
+    assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == expected

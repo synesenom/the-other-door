@@ -317,7 +317,7 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
     sent = any(_tracker_mod.is_sent(event.get("status")) for event in app_tracker.history(job_id))
     output_dir = jobs_dir / "output" / job_id
     sent_dir = output_dir / "sent"
-    materials = (_materials(sent_dir) if sent else None) or _materials(output_dir)
+    materials = (_materials(sent_dir, posting) if sent else None) or _materials(output_dir, posting)
     if materials is not None:
         materials["sent"] = sent
     if open:
@@ -357,7 +357,7 @@ def _file_names(name: str | None) -> dict[str, str]:
     return {"cv": f"{prefix}CV.pdf", "cover_letter": f"{prefix}Cover letter.pdf"}
 
 
-def _materials(output_dir: Path) -> dict | None:
+def _materials(output_dir: Path, posting: dict | None = None) -> dict | None:
     """Everything needed to judge a posting's prepared materials, or None
     until both PDFs are in `output_dir`.
 
@@ -365,6 +365,7 @@ def _materials(output_dir: Path) -> dict | None:
     the ``Keywords`` and ``Tailoring`` comments the tailor writes into
     ``cv.html`` (what it emphasised; what it cut, kept or condensed; empty for a job prepared before the HTML bodies), page
     counts and the cover letter's word count.
+    ``cv_max_pages`` is the page limit the CV was made to (`common._cv_max_pages`, for ``posting`` when given).
 
     Returns:
         ``{"output_dir", "pdfs": {"cv", "cover_letter"}, "pngs": {"cv":
@@ -413,6 +414,7 @@ def _materials(output_dir: Path) -> dict | None:
         "keywords": keywords,
         "tailoring": tailoring,
         "page_counts": {name: pdf_render.get_page_count(path) for name, path in pdfs.items()},
+        "cv_max_pages": common._cv_max_pages(posting or {}, common._load_config_or_defaults(workspace.PROFILE_DIR)),
         "cover_letter_words": words,
         "rendered": rendered,
         "revisable": cv_html.is_file() and letter_html.is_file(),
@@ -652,7 +654,8 @@ def _render_materials(materials: dict, console=None) -> None:
     grid.add_column()
     grid.add_row("Emphasised", ", ".join(materials["keywords"]) or Text("(no Keywords comment in cv.html)", style="dim"))
     grid.add_row("Tailored", "\n".join(f"• {n}" for n in materials["tailoring"]) or Text("(no Tailoring comment in cv.html)", style="dim"))
-    grid.add_row("CV", pages(materials["page_counts"]["cv"]))
+    over = materials["page_counts"]["cv"] > materials["cv_max_pages"]
+    grid.add_row("CV", pages(materials["page_counts"]["cv"]) + (f" (limit {materials['cv_max_pages']})" if over else ""))
     grid.add_row(
         "Cover letter",
         f"{pages(materials['page_counts']['cover_letter'])}, {words if words is not None else '?'} words",

@@ -151,13 +151,8 @@ def _cv_conventions_text(posting_path: Path) -> str:
     cv = country.cv if country else i18n.CvConventions()
     photo = config.get("photo")
     has_photo = bool(photo) and photo_mod.problem(Path(photo) if Path(photo).is_absolute() else workspace.HOME / photo) is None
-    max_pages = cv.max_pages
-    try:  # the template's own limit counts when it is stricter; a broken manifest is refused before the tailor runs
-        manifest = templates.manifest(templates.resolve("cv_template", config))
-    except ValueError:
-        manifest = None
-    if manifest and manifest.max_pages:
-        max_pages = min(max_pages, manifest.max_pages)
+    manifest = common._cv_manifest(config)
+    max_pages = common._cv_max_pages(posting, config)
     side = f" The template puts the sections {', '.join(manifest.columns.side)} in a narrow side column: keep each short." \
         if manifest and manifest.columns and manifest.columns.side else ""
     return (
@@ -586,7 +581,7 @@ def _render_prepared(result: dict, *, interactive: bool) -> None:
         status = _tracker_mod.ApplicationTracker(workspace.JOBS_DIR / "applications.json").get_status(job_id) or "unapplied"
         matches_cmd._render_posting_detail(posting, status, console, description=False)
     try:
-        materials = matches_cmd._materials(output_dir)
+        materials = matches_cmd._materials(output_dir, posting)
     except Exception as exc:  # noqa: BLE001 - page counts/PNGs are a summary; the files are there
         console.print()
         common._mark_line(console, "warn", f"could not summarise the materials ({exc}); they are in [bold]{where}[/]")
