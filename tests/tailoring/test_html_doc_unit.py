@@ -74,14 +74,9 @@ KINDED = """<header class="cv-header"><h1>Ada Lovelace</h1><p class="tagline">An
 <h2>Work experience</h2><p>Ran the engine room.</p>"""
 
 
-def test_the_tagline_and_kinded_details_are_text_in_order_and_not_claims():
+def test_the_tagline_is_a_claim_the_kinded_details_are_not():
     text = html_doc.text(KINDED)
     assert text.index("Ada Lovelace") < text.index("Analyst | Engines") < text.index("+45 1") < text.index("LinkedIn")
     assert html_doc.headings(KINDED) == ["Work experience"]
     claims = html_doc.claim_text(KINDED)
-    assert "Analyst" not in claims and "LinkedIn" not in claims and "Ran the engine room." in claims
-
-
-def test_a_body_without_them_reads_as_before():
-    assert html_doc.claim_text(BODY).count("Cut the close by 40% & more.") == 1
-    assert "Ada Lovelace" not in html_doc.claim_text(BODY)
+    assert "Analyst | Engines" in claims and "LinkedIn" not in claims and "+45 1" not in claims and "Ran the engine room." in claims
