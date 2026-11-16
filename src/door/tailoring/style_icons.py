@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 
-from door.tailoring import style_trace
+from door.tailoring import pdf_render, style_trace
 
 # every icon's `fill_rule`: the traced path has its holes as loops of their own
 FILL_RULE = "evenodd"
@@ -17,15 +17,6 @@ _ICON_FONT = re.compile(r"awesome|icon|symbol|material|glyph|fontello|ionicons|d
 _ICON_SIZE = 24.0  # points: a drawing larger than this is not an icon
 _PICTURE_SIZE = 48.0  # points: nor is a picture, which is then a photo or a background
 _SCALE = 10.0  # pixels per point an icon is traced at
-
-
-def render_box(page, bbox: list[float], scale: float, pad: float = 0.0):
-    """The part of *page* in *bbox* (points, origin top left), padded by *pad* and kept inside the page, as a
-    PIL image at *scale* pixels per point, with the box the image shows."""
-    width, height = page.get_size()
-    x0, y0, x1, y1 = max(bbox[0] - pad, 0.0), max(bbox[1] - pad, 0.0), min(bbox[2] + pad, width), min(bbox[3] + pad, height)
-    image = page.render(scale=scale, crop=(x0, height - y1, width - x1, y0)).to_pil().convert("RGB")
-    return image, [x0, y0, x1, y1]
 
 
 def _glyph_only(text: str) -> bool:
@@ -80,7 +71,7 @@ def near(box: list[float], runs: list[dict]) -> dict | None:
 
 
 def _icon(page, number: int, box: list[float], color: str | None, source: str, font: str | None, runs: list[dict]) -> dict | None:
-    image, shown = render_box(page, box, _SCALE, pad=1.0)
+    image, shown = pdf_render.render_box(page, box, _SCALE, pad=1.0)
     scale = image.width / (shown[2] - shown[0])
     traced = style_trace.trace(image, scale)
     if not traced:

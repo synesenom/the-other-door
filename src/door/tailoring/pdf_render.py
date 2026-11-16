@@ -130,3 +130,12 @@ def render_pdf_pages(pdf_path: Path, output_dir: Path) -> list[Path]:
     finally:
         doc.close()
     return results
+
+
+def render_box(page, bbox: list[float], scale: float, pad: float = 0.0):
+    """The part of *page* in *bbox* (points, origin top left), padded by *pad* and kept inside the page, as a
+    PIL image at *scale* pixels per point, with the box the image shows."""
+    width, height = page.get_size()
+    x0, y0, x1, y1 = max(bbox[0] - pad, 0.0), max(bbox[1] - pad, 0.0), min(bbox[2] + pad, width), min(bbox[3] + pad, height)
+    image = page.render(scale=scale, crop=(x0, height - y1, width - x1, y0)).to_pil().convert("RGB")
+    return image, [x0, y0, x1, y1]

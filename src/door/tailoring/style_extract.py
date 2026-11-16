@@ -316,7 +316,7 @@ def _seen(page, bbox: list[float], background: str | None) -> tuple[list[float],
     """What a picture shows of its box: the box of the pixels that differ from what is around it (a picture often
     has a blank margin), and its `shape`: `circle` when the corners of that box show the ground and the middle of
     each side does not, else `rect`."""
-    image, shown = style_icons.render_box(page, bbox, 2.0, pad=3.0)
+    image, shown = pdf_render.render_box(page, bbox, 2.0, pad=3.0)
     scale = image.width / (shown[2] - shown[0])
     around = image.getpixel((0, 0)) if bbox[0] - shown[0] >= 2 and bbox[1] - shown[1] >= 2 else style_trace.channels(background or "#ffffff")
     px = image.load()
@@ -637,9 +637,6 @@ def colors(runs: list[dict], shapes: list[dict]) -> dict:
 
 # ---------- nothing to copy ----------
 
-_LINKEDIN_HEADINGS = {"contact", "top skills", "languages", "certifications", "summary", "experience", "education"}
-_PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
-_MIN_CHARS = 50
 
 
 def not_pdf(path) -> dict | None:
