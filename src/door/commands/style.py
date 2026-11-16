@@ -64,8 +64,8 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def _intake(path: Path) -> None:
-    """Raise ValueError, in words, when there is no style to copy from the file at `path`."""
+def _look(path: Path) -> None:
+    """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print)."""
     if not path.is_file():
         raise ValueError(f"{path} is not a file")
     if refused := style_extract.not_pdf(path):
@@ -76,6 +76,13 @@ def _intake(path: Path) -> None:
         raise ValueError(f"{path.name} could not be read as a PDF ({exc})") from exc
     if not verdict["copyable"]:
         raise ValueError(verdict["detail"] or f"no style to copy ({verdict['reason']})")
+
+
+def _intake(path: Path) -> None:
+    """Raise ValueError, in words, when a build of the file at `path` cannot start: no Chromium to print with, or no style."""
+    if not common._chromium_available():
+        raise ValueError("no Chromium to print with: run ./door doctor --fix")
+    _look(path)
 
 
 def _lock_path(home: Path) -> Path:
@@ -163,8 +170,6 @@ def _start_core(file: str, *, home: Path | None = None) -> dict:
 
     Raises ValueError, in words, when the file has no style to copy or there is no Chromium to print with: nothing starts and
     the style in use is untouched."""
-    if not common._chromium_available():
-        raise ValueError("no Chromium to print with: run ./door doctor --fix")
     home = Path(home or workspace.HOME)
     pdf = Path(file).expanduser()
     _intake(pdf)

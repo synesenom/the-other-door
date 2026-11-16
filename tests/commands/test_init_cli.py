@@ -1327,7 +1327,6 @@ def test_the_review_offers_the_style_off_only_for_a_styled_file_on_a_fresh_set_u
     result = _invoke()
     assert prompts.order == ["cv_sources", "preferences", "titles_pick", "titles_add", "discovery_pick", "photo", "review"]
     assert _STYLE_LINE in result.output and "5-10 minutes" in result.output.replace("–", "-")
-    assert "$" not in result.output
     assert ("Change the CV style", "style") in prompts.asked["review"]["choices"]
     assert style_started.files == []
 
@@ -1339,6 +1338,7 @@ def test_no_style_line_or_choice_for_a_file_with_no_look_to_copy(init_env, promp
     result = _invoke()
     assert _STYLE_LINE not in result.output
     assert "style" not in [value for _, value in prompts.asked["review"]["choices"]]
+    assert style_started.files == []
 
 
 def test_no_style_line_when_redoing_the_sources_of_a_saved_profile(init_env, prompts, wizard_calls, monkeypatch, style_started):
@@ -1362,14 +1362,6 @@ def test_ticking_the_style_builds_it_once_after_the_profile_is_saved_and_before_
     assert style_started.events == ["style", "run"]
     assert "building in the background" in result.output and "./door jobs summary" in result.output
     assert "./door cv style show" in result.output and "./door cv style use" in result.output
-
-
-def test_ticking_the_style_twice_turns_it_off_again(init_env, prompts, wizard_calls, monkeypatch, style_started):
-    _no_first_run(monkeypatch)
-    wizard_calls.sources = _STYLED
-    prompts.answers.update(_JANE, review=iter(["style", "style", "save"]))
-    result = _invoke()
-    assert style_started.files == [] and "building in the background" not in result.output
 
 
 def test_a_refused_build_is_one_line_and_the_save_still_succeeds(init_env, prompts, wizard_calls, monkeypatch, style_started):

@@ -150,7 +150,7 @@ colours, margins, columns, headings, rules, photo and icons); it fetches the fre
 Google's open font collection (pinned and checked by hash; no CV data is sent); then the stylist agent (Sonnet,
 usage feature `style`, shown as "Building a CV template") writes an HTML and CSS template round by round. Each
 draft is printed with the pinned Chromium and compared with your PDF page by page, and it is stress-tested on
-shorter, longer, French and with-photo variants of `cv.md`. Only a template that passes is kept, in
+variants of `cv.md` (`photo`: with a photo; `fewer`: one entry a section; `long_title`: a very long job title; `extra_section`: one more section; `french`: a French paragraph first). Only a template that passes is kept, in
 `profile/style.next/`; a build that fails writes nothing and says nothing in the app. A two-column result may be read
 less well by some application systems.
 
@@ -165,7 +165,7 @@ on the same plan window as a find that runs beside it, and it is not measured ye
 before: the template is just another input file.
 
 Privacy: the PDF is read on this computer. The stylist is shown page images of it and the text read from it,
-through `claude -p` on your plan, like every other call that reads `cv.md`; nothing else leaves. The copy of the
+through `claude -p` on your plan, like every other call that reads `cv.md`. When a stress render cuts text off the page, a few of the cut words of `cv.md` are sent back to the stylist so it can fix the layout; nothing else leaves. The copy of the
 PDF used by a build, its work folder and its printed previews live under `.style/` in the data folder and are not
 exported or synced; `profile/style/source.pdf` and `profile/style.next/source.pdf` are part of the profile, so
 `data export` and Google Drive carry them like the rest of `profile/`.

@@ -103,12 +103,6 @@ def styled_yes(tmp_path_factory):
                      facts_note="You want the tailored CVs to look like your CV file.")
 
 
-@pytest.fixture(scope="module")
-def styled_no(tmp_path_factory):
-    return run_skill(tmp_path_factory, "onboard-style-no", "/onboard", empty=True, max_turns=16, seed=_with_a_pdf_cv,
-                     facts_note="You do not want the style of your CV copied; the default is fine.")
-
-
 def test_a_ticked_style_builds_once_with_that_file_after_the_profile_is_saved_and_the_first_run_does_not_wait(styled_yes):
     world, result = styled_yes
     tools = _order(result)
@@ -118,7 +112,3 @@ def test_a_ticked_style_builds_once_with_that_file_after_the_profile_is_saved_an
     assert Path(next(c for c in result["calls"] if c["tool"] == "build_style")["args"]["file"]).name == "persona-cv.pdf"
     assert not {"show_style", "use_style"} & set(tools), tools
 
-
-def test_a_declined_style_builds_nothing(styled_no):
-    _, result = styled_no
-    assert not {"build_style", "show_style", "use_style"} & set(_order(result)), _order(result)

@@ -60,7 +60,7 @@
   },
   {
     "name": "build_style",
-    "description": "Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.\n    Identical to `./door cv style build`, which waits for it. Takes a few minutes of the model's time; this call returns\n    at once, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or ``failed``. A build already\n    going is replaced. The result waits in profile/style.next/ and is written only when it passes; nothing uses it until it is chosen (``use_style``).\n\n    Args:\n        file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).\n\n    Returns:\n        ``{\"started\": True}``, or ``{\"error\": <why there is no style to copy: not a PDF, a scan, a LinkedIn export>}``.\n    ",
+    "description": "Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.\n    Identical to `./door cv style build`, which waits for it. Takes a few minutes of the model's time; this call returns\n    at once, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or ``failed``. A build already\n    going is replaced. The result waits in profile/style.next/ and is written only when it passes; nothing uses it until it is chosen (``use_style``).\n\n    Args:\n        file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).\n\n    Returns:\n        ``{\"started\": True}``, or ``{\"error\": <why nothing started: no Chromium to print with, or no style to copy (not a PDF, a scan, a LinkedIn export)>}``.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {

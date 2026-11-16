@@ -239,7 +239,6 @@ def init(**flags):
     pulled = "drive" in steps and _drive_step()
     if pulled:
         steps = []  # the data came from Google Drive: nothing left to ask
-    answers: dict = {}
     if "sources" in steps or "review" in steps:
         answers = _answers_from(read_config_data(workspace.PROFILE_DIR / "config.json") if existing else None)
         if "sources" in steps:
@@ -248,9 +247,6 @@ def init(**flags):
     if "run" in steps:
         _first_run_step()
     _drive_push()
-    if answers.get("style_started"):
-        click.echo("Your CV style is building in the background (5–10 minutes). `./door jobs summary` says when it is ready; "
-                   "`./door cv style show` compares, `./door cv style use` chooses.")
     click.echo("Done. From now on, `./door find` fetches and scores what's new; `./door jobs` shows the matches.")
 
 
@@ -690,10 +686,13 @@ def _edit(choice: str, answers: dict) -> None:
         click.edit(filename=answers["draft_path"])
 
 
+_STYLE_WAIT = "5–10 minutes"
+
+
 def _style_line(answers: dict) -> str:
-    if answers.get("style"):
-        return f"Like {Path(answers['style_source']).name} (takes 5–10 minutes in the background)"
-    return "The other door's. Make my tailored CVs look like the CV I uploaded? (takes 5–10 minutes in the background)"
+    what = (f"Like {Path(answers['style_source']).name}" if answers.get("style")
+            else "The other door's. Make my tailored CVs look like the CV I uploaded?")
+    return f"{what} (takes {_STYLE_WAIT} in the background)"
 
 
 def _print_review(answers: dict) -> None:
@@ -784,9 +783,11 @@ def _save_answers(answers: dict) -> bool:
 
         try:
             style_cmd._start_core(answers["style_source"])
-            answers["style_started"] = True
-        except (ValueError, OSError) as exc:
+        except ValueError as exc:
             click.echo(f"The CV style was not started: {exc}", err=True)
+        else:
+            click.echo(f"Your CV style is building in the background ({_STYLE_WAIT}). `./door jobs summary` says when it is ready; "
+                       "`./door cv style show` compares, `./door cv style use` chooses.")
     return True
 
 

@@ -151,9 +151,9 @@ def _skills_line_without_todo(line: str) -> str | None:
 
 
 def _has_style(path: Path) -> bool:
-    """Whether the file at `path` has a CV style to copy (`style._intake` passes); false on any failure (#150)."""
+    """Whether the file at `path` has a CV style to copy (`style._look` passes); false on any failure (#150)."""
     try:
-        style_cmd._intake(path)
+        style_cmd._look(path)
     except ValueError:  # an unreadable file simply offers no style
         return False
     return True

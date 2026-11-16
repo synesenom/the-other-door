@@ -78,6 +78,17 @@ describe('StyleRow, no style of your own yet', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('this PDF is a scan')
   })
 
+  it('says nothing when there is no Chromium to print with: the sidebar and doctor say that', async () => {
+    const h = await open({})
+    await ready()
+    h.chooseStyleFile.mockResolvedValueOnce({ ok: false, error: 'no Chromium to print with: install it' })
+    await userEvent.click(screen.getByRole('button', { name: 'Use the style of my CV…' }))
+    await waitFor(() => expect(h.chooseStyleFile).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 0))
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(h.onChanged).not.toHaveBeenCalled()
+  })
+
   it('has no way to build on made-up data', async () => {
     await open({}, { canBuild: false })
     await ready()
