@@ -259,3 +259,58 @@ def test_two_installs_racing_end_with_one_complete_folder(tmp_path, pinned):
     exe = dest / "chrome-headless-shell-linux64" / "chrome-headless-shell"
     assert exe.read_text() == "binary"
     assert [p.name for p in dest.iterdir()] == ["chrome-headless-shell-linux64"]
+
+
+def test_install_into_a_folder_not_named_by_version_removes_no_sibling(tmp_path, pinned):
+    data = _zip("linux64")
+    if pinned(data) != "linux64":
+        pytest.skip("fake zip is the linux one")
+    sibling = tmp_path / "chromium-0.0.1.1"
+    sibling.mkdir()
+    chromium.install(tmp_path / "chromium", fetch=lambda url, to: to.write_bytes(data))
+    assert sibling.exists()
+
+
+def test_a_rename_that_fails_with_no_other_install_done_is_an_error(tmp_path, pinned, monkeypatch):
+    data = _zip("linux64")
+    if pinned(data) != "linux64":
+        pytest.skip("fake zip is the linux one")
+
+    def refuse(self, target):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(Path, "rename", refuse)
+    with pytest.raises(chromium.ChromiumError):
+        chromium.install(tmp_path / "chromium-1.2.3.4", fetch=lambda url, to: to.write_bytes(data))
+
+
+def test_an_install_already_there_still_removes_the_older_versions(tmp_path, pinned):
+    data = _zip("linux64")
+    if pinned(data) != "linux64":
+        pytest.skip("fake zip is the linux one")
+    dest = tmp_path / "chromium-1.2.3.4"
+    chromium.install(dest, fetch=lambda url, to: to.write_bytes(data))
+    old = tmp_path / "chromium-0.0.1.1"
+    old.mkdir()
+    chromium.install(dest, fetch=lambda url, to: pytest.fail("no download"))
+    assert not old.exists()
+
+
+def test_install_sweeps_a_stale_part_folder_a_killed_install_left_and_keeps_a_fresh_one(tmp_path, pinned):
+    import os
+    import time
+    data = _zip("linux64")
+    if pinned(data) != "linux64":
+        pytest.skip("fake zip is the linux one")
+    dest = tmp_path / "chromium-1.2.3.4"
+    stale = dest / "chrome-headless-shell-linux64.abc.part"
+    fresh = dest / "chrome-headless-shell-linux64.def.part"
+    for p in (stale, fresh):
+        p.mkdir(parents=True)
+        (p / "download.zip").write_bytes(b"half")
+    old = time.time() - 2 * 3600
+    os.utime(stale, (old, old))
+    seen = []
+    chromium.install(dest, fetch=lambda url, to: (seen.append(fresh.exists()), to.write_bytes(data)))
+    assert not stale.exists()
+    assert seen == [True]

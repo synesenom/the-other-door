@@ -18,6 +18,7 @@ import shutil
 import stat
 import sys
 import tempfile
+import time
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -95,6 +96,18 @@ def _remove_other_versions(dest: Path) -> None:
             shutil.rmtree(other, ignore_errors=True)
 
 
+# An install takes minutes; a staging folder older than this was left by one that was killed.
+STALE_PART_SECONDS = 3600
+
+
+def _sweep_stale_parts(dest: Path) -> None:
+    """Remove the staging folders a killed install left in `dest`, never one still in use."""
+    cutoff = time.time() - STALE_PART_SECONDS
+    for part in dest.glob("*.part"):
+        if part.is_dir() and part.stat().st_mtime < cutoff:
+            shutil.rmtree(part, ignore_errors=True)
+
+
 def install(dest: Path, fetch=_http_get) -> None:
     """Download the pinned zip, check its sha256 and unpack it into `dest` (a no-op when there)."""
     key = platform_key()
@@ -103,8 +116,10 @@ def install(dest: Path, fetch=_http_get) -> None:
     dest = Path(dest)
     folder = dest / f"chrome-headless-shell-{key}"
     if (folder / exe_name(key)).is_file():
+        _remove_other_versions(dest)
         return
     dest.mkdir(parents=True, exist_ok=True)
+    _sweep_stale_parts(dest)
     # Names unique to this process, so two installs never share a half-written file.
     staging = Path(tempfile.mkdtemp(prefix=f"{folder.name}.", suffix=".part", dir=dest))
     part = staging / "download.zip"
