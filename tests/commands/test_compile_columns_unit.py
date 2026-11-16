@@ -180,4 +180,4 @@ def test_without_columns_the_readback_keeps_the_bodys_own_order(world, monkeypat
                         lambda pdf, body, name, headings=None: seen.setdefault("headings", headings) or [])
     world.make(cv=CV)
     _compile(world)
-    assert seen["headings"] is None
+    assert seen["headings"] == ["Profile", "Experience", "Skills", "Education", "Languages"]

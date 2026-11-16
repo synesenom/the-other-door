@@ -106,6 +106,26 @@ def _place_columns(body: str, columns: templates.Columns | None, language: str) 
     return f'{first}<div class="main">{"".join(main)}</div><div class="side">{"".join(side)}</div>'
 
 
+def cv_headings(body: str, config: dict, posting: dict) -> list[str]:
+    """The CV `body`'s headings in the order its printed page reads them (a side column after the main one), by the
+    resolved CV template's manifest and the ad's language; the body's own order when the template cannot be read."""
+    try:
+        columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns
+    except (OSError, ValueError):
+        columns = None
+    return html_doc.headings(_place_columns(body, columns, _language(posting)))
+
+
+def cv_headings(body: str, config: dict, posting: dict) -> list[str]:
+    """The CV `body`'s headings in the order its printed page reads them (a side column after the main one), by the
+    resolved CV template's manifest and the ad's language; the body's own order when the template cannot be read."""
+    try:
+        columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns
+    except (OSError, ValueError):
+        columns = None
+    return html_doc.headings(_place_columns(body, columns, _language(posting)))
+
+
 def _wrap(template: str, body: str, language: str) -> str:
     """`template` with its language and `body` in place.
 
@@ -238,7 +258,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             continue
         _print(page, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
-            _read_back(entry, Path(entry["pdf"]), body, config, html_doc.headings(placed) if placed != built else None)
+            _read_back(entry, Path(entry["pdf"]), body, config, html_doc.headings(placed))
         results.append(entry)
 
     for name in _PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use
