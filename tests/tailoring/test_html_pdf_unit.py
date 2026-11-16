@@ -408,12 +408,16 @@ def test_main_prints_a_test_page(fake, tmp_path, monkeypatch):
 
     def fake_print(folder, html, out, **kw):
         seen["html"] = html
+        seen["kw"] = kw
         Path(out).write_bytes(PDF)
 
     monkeypatch.setattr(html_pdf, "print_html", fake_print)
     out = tmp_path / "t.pdf"
     assert html_pdf.main(["--out", str(out)]) == 0
     assert out.read_bytes() == PDF and "<html" in seen["html"]
+    assert seen["kw"]["timeout"] == 60
+    assert html_pdf.main(["--out", str(out), "--timeout", "30"]) == 0
+    assert seen["kw"]["timeout"] == 30
 
     def boom(*a, **k):
         raise PrintError("no browser")

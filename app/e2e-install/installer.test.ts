@@ -1,8 +1,8 @@
-import { existsSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, present, resourcesOf, removeInstall, signingCommands, uninstallFailures } from './installer'
+import { bundledPython, documentedDataFolder, errorLines, installPlan, layEnv, pickInstaller, present, resourcesOf, removeInstall, signingCommands, chromiumSigningChecks, machOFiles, uninstallFailures } from './installer'
 import type { Plan } from './installer'
 
 const DIST = [
@@ -246,5 +246,30 @@ describe('present', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe('chromiumSigningChecks', () => {
+  it('verifies every file strictly; a Developer ID build also has to carry the hardened runtime flag', () => {
+    expect(chromiumSigningChecks(['/a/shell', '/a/lib.dylib'], false)).toEqual([
+      { argv: ['codesign', '--verify', '--strict', '/a/shell'] },
+      { argv: ['codesign', '--verify', '--strict', '/a/lib.dylib'] },
+    ])
+    const signed = chromiumSigningChecks(['/a/shell'], true)
+    expect(signed.map((c) => c.argv)).toEqual([['codesign', '--verify', '--strict', '/a/shell'], ['codesign', '-dv', '/a/shell']])
+    expect(signed[1]!.mustMatch!.test('CodeDirectory v=20500 size=1 flags=0x10000(runtime) hashes=1')).toBe(true)
+    expect(signed[1]!.mustMatch!.test('CodeDirectory v=20400 size=1 flags=0x2(adhoc) hashes=1')).toBe(false)
+  })
+})
+
+describe('machOFiles', () => {
+  it('picks the Mach-O files through the whole tree by their first bytes, nothing else', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'macho-'))
+    mkdirSync(join(dir, 'sub'))
+    writeFileSync(join(dir, 'shell'), Buffer.from([0xcf, 0xfa, 0xed, 0xfe, 7, 0, 0, 1]))   // 64-bit Mach-O
+    writeFileSync(join(dir, 'sub', 'libx.dylib'), Buffer.from([0xca, 0xfe, 0xba, 0xbe, 0, 0, 0, 2]))   // universal
+    writeFileSync(join(dir, 'icudtl.dat'), 'data')
+    writeFileSync(join(dir, 'run.sh'), '#!/bin/sh\n', { mode: 0o755 })
+    expect(machOFiles(dir)).toEqual([join(dir, 'shell'), join(dir, 'sub', 'libx.dylib')])
   })
 })

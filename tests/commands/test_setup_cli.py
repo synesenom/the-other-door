@@ -126,6 +126,22 @@ def test_setup_core_install_list_limits_the_steps(env, monkeypatch):
     assert result["outcome"] == "incomplete"  # latex still missing
 
 
+def test_setup_core_with_an_explicit_install_list_checks_quickly(env, monkeypatch):
+    """The app names its tools (`install`): no test print there; the shell's `doctor --fix` keeps the full check."""
+    seen = []
+
+    def fake(*a, quick=False, **k):
+        seen.append(quick)
+        return _report()
+
+    monkeypatch.setattr(doctor, "run_checks", fake)
+    setup_cmd._setup_core(install=["chromium"], yes=True)
+    assert seen == [True, True]
+    seen.clear()
+    setup_cmd._setup_core(yes=True)
+    assert seen[0] is False
+
+
 def test_setup_core_unknown_tool(env, monkeypatch):
     monkeypatch.setattr(doctor, "run_checks", Sequence(_report()))
     with pytest.raises(ValueError, match="unknown tool"):

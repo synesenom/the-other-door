@@ -32,7 +32,7 @@ def _chromium_installed(request, monkeypatch):
     the real one)."""
     if "chromium" in request.node.name:
         return
-    monkeypatch.setattr(doctor, "check_chromium", lambda find=None, run=None: doctor._check(
+    monkeypatch.setattr(doctor, "check_chromium", lambda find=None, run=None, quick=False: doctor._check(
         "chromium", True, "chromium: /x/chrome-headless-shell", tool="chromium"))
 
 
@@ -66,8 +66,8 @@ def test_check_latex_missing_points_at_doctor_fix(tmp_path):
 
 def test_a_found_chromium_that_does_not_start_is_never_installable():
     err = "error while loading shared libraries: libnss3.so: cannot open shared object file"
-    for check in (doctor.check_chromium(find=lambda: "/x/c", run=_ran(stderr=err, code=127)),
-                  doctor.check_chromium(find=lambda: "/x/c", run=_ran(code=1))):
+    for check in (doctor.check_chromium(find=lambda: "/x/c", run=_ran(stderr=err, code=127), quick=True),
+                  doctor.check_chromium(find=lambda: "/x/c", run=_ran(code=1), quick=True)):
         assert check["status"] == "missing" and check["required"] is True and check["installable"] is False
         assert "doctor --fix" not in check["fix"]
 
@@ -93,7 +93,7 @@ def _ran(stdout="", stderr="", code=0):
 
 
 def test_check_chromium_ok_names_the_path():
-    check = doctor.check_chromium(find=lambda: "/x/chrome-headless-shell", run=_ran("Google Chrome 157.0\n"))
+    check = doctor.check_chromium(find=lambda: "/x/chrome-headless-shell", run=_ran("Google Chrome 157.0\n"), quick=True)
     assert check["name"] == "chromium" and check["status"] == "ok"
     assert "/x/chrome-headless-shell" in check["detail"]
 
@@ -107,7 +107,7 @@ def test_check_chromium_missing_is_required_and_names_the_fix():
 
 def test_check_chromium_names_missing_linux_libraries_and_installs_nothing():
     err = "chrome-headless-shell: error while loading shared libraries: libnss3.so: cannot open shared object file"
-    check = doctor.check_chromium(find=lambda: "/x/c", run=_ran(stderr=err, code=127))
+    check = doctor.check_chromium(find=lambda: "/x/c", run=_ran(stderr=err, code=127), quick=True)
     assert check["status"] == "missing"
     assert "libnss3" in check["detail"]
     assert "sudo" not in (check["fix"] or "") or "apt" in check["fix"]
@@ -119,8 +119,71 @@ def test_check_chromium_that_will_not_start_is_missing():
 
         raise subprocess.TimeoutExpired(argv, 10)
 
-    check = doctor.check_chromium(find=lambda: "/x/c", run=hang)
+    check = doctor.check_chromium(find=lambda: "/x/c", run=hang, quick=True)
     assert check["status"] == "missing"
+
+
+def _printing(pdf=b"%PDF-1.4 x", stderr="", code=0, hang=False):
+    """A `run` that answers `--version`, then the print subprocess, writing `pdf` where `--out` says."""
+    import subprocess
+
+    calls = []
+
+    def run(argv, **kw):
+        calls.append((argv, kw))
+        if argv[0] == "/x/c":
+            return subprocess.CompletedProcess(argv, 0, "Chrome 1\n", "")
+        if hang:
+            raise subprocess.TimeoutExpired(argv, kw.get("timeout", 0))
+        if pdf is not None:
+            Path(argv[argv.index("--out") + 1]).write_bytes(pdf)
+        return subprocess.CompletedProcess(argv, code, "", stderr)
+
+    run.calls = calls
+    return run
+
+
+def test_check_chromium_prints_a_page_unless_quick():
+    run = _printing()
+    check = doctor.check_chromium(find=lambda: "/x/c", run=run)
+    assert check["status"] == "ok" and "/x/c" in check["detail"]
+    argv, kw = run.calls[1]
+    assert argv[1:3] == ["-m", "door.tailoring.html_pdf"] and argv[argv.index("--timeout") + 1] == "30"
+    assert kw["timeout"] == doctor._PRINT_TIMEOUT + 25
+    assert "src" in kw["env"]["PYTHONPATH"]
+
+    quick = _printing()
+    assert doctor.check_chromium(find=lambda: "/x/c", run=quick, quick=True)["status"] == "ok"
+    assert len(quick.calls) == 1
+
+
+def test_check_chromium_that_cannot_print_names_why():
+    check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(pdf=None, code=1, stderr="x\nprint: boom\n"))
+    assert check["status"] == "missing" and check["required"] is True and check["installable"] is False
+    assert "print: boom" in check["detail"] and "doctor --fix" not in check["fix"]
+    assert "door.tailoring.html_pdf" in check["fix"] and check["fix"] != doctor._NO_START_FIX
+    check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(pdf=b"not a pdf"))
+    assert check["status"] == "missing"
+
+
+def test_check_chromium_print_that_hangs_says_so():
+    check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(hang=True))
+    assert check["status"] == "missing" and "did not finish in 30 s" in check["detail"]
+
+
+def test_check_chromium_print_that_cannot_be_run_or_leaves_no_pdf_says_why():
+    import subprocess
+
+    def broken(argv, **kw):
+        if argv[0] == "/x/c":
+            return subprocess.CompletedProcess(argv, 0, "Chrome 1\n", "")
+        raise OSError("no interpreter")
+
+    check = doctor.check_chromium(find=lambda: "/x/c", run=broken)
+    assert check["status"] == "missing" and "could not print a page: no interpreter" in check["detail"]
+
+    check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(pdf=None, code=0))
+    assert check["status"] == "missing" and check["detail"].endswith("could not print a page: exit 0")
 
 
 def test_check_claude_cli():

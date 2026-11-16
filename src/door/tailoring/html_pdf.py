@@ -248,10 +248,11 @@ def main(argv: list[str] | None = None) -> int:
     """Print a fixed test page (the install test's and the bundle check's proof that printing works)."""
     parser = argparse.ArgumentParser(prog="python -m door.tailoring.html_pdf")
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--timeout", type=float, default=60.0, help="seconds Chromium has to print")
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="door-print-") as folder:
         try:
-            print_html(Path(folder), _TEST_PAGE, args.out)
+            print_html(Path(folder), _TEST_PAGE, args.out, timeout=args.timeout)
         except PrintError as exc:
             sys.stderr.write(f"print: {exc}\n")
             return 1

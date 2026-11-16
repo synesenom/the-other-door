@@ -87,3 +87,9 @@ def test_a_world_body_with_worldfail_fails_compile_with_its_words(standin, tmp_p
     (out / "cv.html").write_text("<p>worldfail</p>")
     cv = compile_cmd._compile_core("job", jobs_dir=tmp_path / "jobs")["results"][0]
     assert cv["status"] == "error" and "worldfail" in cv["stderr"]
+
+
+def test_the_standin_pdf_is_not_chromiums(standin, tmp_path):
+    """The install test tells a real Chromium print by its Skia producer (#176): the stand-in must not carry it."""
+    pdf = _print(standin, tmp_path, "<html><body><p>text</p></body></html>")
+    assert b"Skia/PDF" not in pdf.read_bytes()

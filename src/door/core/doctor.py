@@ -24,6 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -41,6 +42,8 @@ HISTORY_RUNS = 10           # how many recent run records the average spans
 DEV_MODULES = ("pytest", "responses", "genbadge")
 
 _CHROMIUM_FIX = "./door doctor --fix   (downloads the pinned Chromium headless shell, no sudo)"
+_PRINT_TIMEOUT = 30  # seconds Chromium gets to print the test page
+_NO_PRINT_FIX = "run `python -m door.tailoring.html_pdf --out test.pdf` with door's Python (in a checkout: `poetry run python -m ...` from the repository with PYTHONPATH=src) to see the error"
 _NO_START_FIX = "run the shell by hand with --version to see why; it was found, so setup does not reinstall it"
 _LATEX_FIX = "./door doctor --fix   (installs Tectonic, no sudo)"
 
@@ -103,11 +106,13 @@ def check_latex(which=shutil.which, home: Path | None = None) -> dict:
     return _check("latex", False, "no tectonic or xelatex found — nothing prints with it any more", _LATEX_FIX, tool="latex", required=False)
 
 
-def check_chromium(find=None, run=subprocess.run) -> dict:
+def check_chromium(find=None, run=subprocess.run, quick: bool = False) -> dict:
     """The Chromium headless shell that prints CVs (#165, #146): `compile` and so `prepare` need it.
 
     A shell that will not start on Linux usually lacks system libraries: the check names them
-    and installs nothing (that takes sudo).
+    and installs nothing (that takes sudo). Unless ``quick``, the shell then prints a test page
+    (a few seconds): a shell that starts but cannot print, or a build macOS refuses, shows here and
+    not on the first Prepare.
     """
     path = (find or chromium.find_chromium)()
     if not path:
@@ -126,7 +131,36 @@ def check_chromium(find=None, run=subprocess.run) -> dict:
                           tool="chromium", installable=False)
         return _check("chromium", False, f"{path} did not start (exit {proc.returncode})", _NO_START_FIX,
                       tool="chromium", installable=False)
-    return _check("chromium", True, f"chromium: {path}", tool="chromium")
+    if quick:
+        return _check("chromium", True, f"chromium: {path}", tool="chromium")
+    return _check_print(path, run)
+
+
+def _check_print(path: str, run) -> dict:
+    """The print half of `check_chromium`: `html_pdf`'s test page through a subprocess, ok only for a PDF."""
+    from door.core import progress, workspace
+
+    progress.report("printing a test page with Chromium…", site="chromium", stage="probe")
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join(
+        p for p in (str(workspace.REPO_ROOT / "src"), os.environ.get("PYTHONPATH", "")) if p)}
+    with tempfile.TemporaryDirectory(prefix="door-doctor-") as folder:
+        out = Path(folder) / "test.pdf"
+        argv = [sys.executable, "-m", "door.tailoring.html_pdf", "--out", str(out), "--timeout", str(_PRINT_TIMEOUT)]
+        detail = None
+        try:  # the outer margin lets print_html kill Chromium's process tree first
+            proc = run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       timeout=_PRINT_TIMEOUT + 25, stdin=subprocess.DEVNULL, env=env)
+        except subprocess.TimeoutExpired:
+            detail = f"{path} did not finish in {_PRINT_TIMEOUT} s printing a page"
+        except (OSError, subprocess.SubprocessError) as exc:
+            detail = f"{path} could not print a page: {exc}"
+        else:
+            if not (out.is_file() and out.read_bytes()[:4] == b"%PDF"):
+                lines = [ln for ln in (proc.stderr or "").splitlines() if ln.startswith("print:")]
+                detail = f"{path} could not print a page: {lines[-1] if lines else f'exit {proc.returncode}'}"
+        if detail:
+            return _check("chromium", False, detail, _NO_PRINT_FIX, tool="chromium", installable=False)
+    return _check("chromium", True, f"chromium: {path} (printed a page)", tool="chromium")
 
 
 def check_claude_cli(which=shutil.which, home: Path | None = None) -> dict:
@@ -578,10 +612,12 @@ def run_checks(
     probe=None,
     probe_sites: bool = False,
     repo_root: Path | None = None,
+    quick: bool = False,
 ) -> dict:
     """Every check, plus the last run and last scrapes.
 
-    The local checks are instant and offline. The ``scraper: <site>`` checks
+    The local checks are offline and take a few seconds at most: Chromium prints a test page,
+    which ``quick`` leaves out (it only starts the shell; the desktop app's status calls). The ``scraper: <site>`` checks
     hit every configured site,
     so they only run with ``probe_sites=True`` (`doctor --probe`, or `doctor --probe --fix`
     when it looks for scrapers to fix); ``probe(site, config, profile_dir)``
@@ -612,7 +648,7 @@ def run_checks(
         check_python(),
         check_profile(profile_dir),
         check_latex(which=which),
-        check_chromium(run=run),
+        check_chromium(run=run, quick=quick),
         check_claude_cli(which=which),
         check_claude_login(installers.find_claude(which), run=run, env=claude_cli.env(profile_dir=profile_dir)),
         check_generated_mcp(find_spec=find_spec) if _custom_home() else check_mcp_server(repo_root, find_spec=find_spec),

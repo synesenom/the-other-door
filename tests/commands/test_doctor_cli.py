@@ -168,6 +168,53 @@ def test_doctor_probes_live_sites_when_asked(env, monkeypatch):
     assert called == ["jobindex"]
 
 
+def test_doctor_quick_reaches_the_checks_from_core_cli_and_tool(env, monkeypatch):
+    seen = []
+
+    def fake(*a, quick=False, **k):
+        seen.append(quick)
+        return _fake_checks(True)
+
+    monkeypatch.setattr(doctor, "run_checks", fake)
+    setup_cmd._doctor_core(quick=True)
+    setup_cmd._doctor_core()
+    CliRunner().invoke(cli, ["doctor", "--quick"])
+    CliRunner().invoke(cli, ["doctor"])
+    server.doctor(quick=True)
+    assert seen == [True, False, True, False, True]
+
+
+def test_doctor_fix_refuses_quick(env):
+    result = CliRunner().invoke(cli, ["doctor", "--fix", "--quick"])
+    assert result.exit_code == 2 and "--quick" in result.output
+
+
+def test_doctor_shows_a_line_while_chromium_prints(env, monkeypatch):
+    events = []
+
+    class Rec:
+        def report(self, event):
+            events.append(event.message)
+
+    monkeypatch.setattr(setup_cmd.common, "_stdout_is_tty", lambda: True)
+    monkeypatch.setattr(setup_cmd._progress, "live_progress", lambda enabled, **k: __import__("contextlib").nullcontext(Rec() if enabled else None))
+    monkeypatch.setattr(doctor.chromium, "find_chromium", lambda: "/x/c")
+
+    def run(argv, **kw):
+        import subprocess
+        if argv[0] == "/x/c":
+            return subprocess.CompletedProcess(argv, 0, "Chrome 1\n", "")
+        raise OSError("stop")
+
+    real = doctor.run_checks
+    monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: real(*a, run=run, **k))
+    CliRunner().invoke(cli, ["doctor"])
+    assert any("print" in m for m in events)
+    events.clear()
+    CliRunner().invoke(cli, ["doctor", "--quick"])
+    assert not any("print" in m for m in events)
+
+
 def test_doctor_command_exit_1_when_required_missing(env, monkeypatch):
     monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: _fake_checks(False))
     result = CliRunner().invoke(cli, ["doctor"])

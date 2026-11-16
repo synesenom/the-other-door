@@ -518,6 +518,7 @@ describe('App, the first-launch gate', () => {
     expect(call.mock.calls[0]![0]).toBe('show_profile')
     // doctor is asked once the shell is open, a moment after Matches shows
     await waitFor(() => expect(call.mock.calls.map((c) => c[0])).toContain('doctor'))
+    expect(call).toHaveBeenCalledWith('doctor', { quick: true }) // no test print on the app's own status call
   })
 
   it('never shows the wizard in the demo, even if the profile has no config', async () => {

@@ -126,7 +126,7 @@ function pushBoard(b: RunBoard): void {
 // Signing in to Claude from the app: claude's own login, in the folder doctor says The other door's claude calls use.
 const claudeLogin = createClaudeLogin({
   env,
-  doctor: () => server.call('doctor', {}),
+  doctor: () => server.call('doctor', { quick: true }),
   openExternal: (url) => shell.openExternal(url),
   onState: (state) => {
     for (const win of BrowserWindow.getAllWindows()) win.webContents.send(CHANNELS.claudeLogin, state)

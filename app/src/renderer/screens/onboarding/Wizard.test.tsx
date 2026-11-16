@@ -136,6 +136,8 @@ describe('Wizard', () => {
     await screen.findByRole('button', { name: 'Drop relevant documents here (CV or LinkedIn PDF)' })
     await waitFor(() => expect(sandboxed.call.mock.calls.map((c) => c[0])).toContain('doctor'))
     expect(sandboxed.call.mock.calls.map((c) => c[0])).not.toContain('setup')
+    // the status call skips the test print: the app asks often
+    expect(sandboxed.call).toHaveBeenCalledWith('doctor', { quick: true })
   })
 
   it('forgets the picked CV files when it closes', async () => {

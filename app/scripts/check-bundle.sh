@@ -44,9 +44,6 @@ if [ "$OFFLINE" = 0 ]; then
   "$RES/bin/tectonic" -X compile --outdir "$TMP" "$TMP/page.tex" >/dev/null 2>&1
   [ -s "$TMP/page.pdf" ] && ok "tectonic compiles a page"
 fi
-# the bundled Chromium prints a page (it needs no network: the page is served from loopback)
-"$PY" -s -m door.tailoring.html_pdf --out "$TMP/chromium.pdf"
-[ -s "$TMP/chromium.pdf" ] && head -c 4 "$TMP/chromium.pdf" | grep -q '%PDF' && ok "chromium prints a page"
 # nothing was written inside the bundle
 if find "$RES" -newer "$TMP/data" -not -path "*/__pycache__*" | grep -q .; then
   echo "FAIL something was written inside $RES:" >&2; find "$RES" -newer "$TMP/data" | head >&2; exit 1

@@ -1,8 +1,8 @@
 // The install test's (#639) pure part: which installer to take, how a user installs it on each system, where
 // the installed app's executable and resources end up, how it is removed, and where its data folder is.
 // No process is started here; install.e2e.ts runs the plan.
-import { lstatSync } from 'node:fs'
-import { posix, win32 } from 'node:path'
+import { closeSync, lstatSync, openSync, readdirSync, readSync } from 'node:fs'
+import { join, posix, win32 } from 'node:path'
 
 export type Kind = 'dmg' | 'exe' | 'appimage' | 'deb'
 
@@ -172,6 +172,45 @@ export function signingCommands(platform: string, executable: string): string[][
   }
   return []
 }
+
+/** One command the macOS build must pass: its exit status, and for `mustMatch` the text it prints (codesign -dv writes to stderr). */
+export type SigningCheck = { argv: string[]; mustMatch?: RegExp }
+
+/**
+ * What the bundled Chromium's Mach-O files must pass on macOS (#176): a valid signature each (`--strict`, so
+ * a file macOS would refuse to run fails here and not on the user's first Prepare) and, in a Developer ID
+ * build (`doorSigned`), the hardened runtime flag.
+ */
+export function chromiumSigningChecks(machOs: string[], doorSigned: boolean): SigningCheck[] {
+  return machOs.flatMap((file) => [
+    { argv: ['codesign', '--verify', '--strict', file] },
+    ...(doorSigned ? [{ argv: ['codesign', '-dv', file], mustMatch: /flags=0x[0-9a-f]+\([^)]*\bruntime\b/ }] : []),
+  ])
+}
+
+/** The Mach-O files of a folder, whole tree, told by their first four bytes; links are not followed. */
+export function machOFiles(dir: string): string[] {
+  const out: string[] = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...machOFiles(path))
+    else if (entry.isFile() && MACH_O.has(head(path))) out.push(path)
+  }
+  return out.sort()
+}
+
+function head(path: string): string {
+  const fd = openSync(path, 'r')
+  try {
+    const bytes = Buffer.alloc(4)
+    return readSync(fd, bytes, 0, 4, 0) === 4 ? bytes.toString('hex') : ''
+  } finally {
+    closeSync(fd)
+  }
+}
+
+/** The first four bytes of a Mach-O file, thin (32 and 64 bit, either byte order) or universal. */
+const MACH_O = new Set(['feedface', 'feedfacf', 'cefaedfe', 'cffaedfe', 'cafebabe', 'bebafeca'])
 
 /** Whether `path` is there, a dangling link included (`existsSync` follows links, so it misses one). */
 export function present(path: string): boolean {

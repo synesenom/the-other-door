@@ -16,10 +16,10 @@ from door.core import workspace
 # --------------------------------------------------------------------------- #
 # doctor (issue #138)
 # --------------------------------------------------------------------------- #
-def _doctor_core(profile_dir: Path | None = None, jobs_dir: Path | None = None, *, probe: bool = False) -> dict:
+def _doctor_core(profile_dir: Path | None = None, jobs_dir: Path | None = None, *, probe: bool = False, quick: bool = False) -> dict:
     """Check every prerequisite and report the last run and scrapes. Never prints.
 
-    The checks are local and instant. With ``probe`` each configured
+    The checks are local and take seconds (Chromium prints a test page; ``quick`` skips that). With ``probe`` each configured
     site also gets a live ``scraper: <site>`` probe (page 1 of the first
     keyword), which is what finds a
     scraper whose site changed.
@@ -37,6 +37,7 @@ def _doctor_core(profile_dir: Path | None = None, jobs_dir: Path | None = None, 
         jobs_dir if jobs_dir is not None else workspace.JOBS_DIR,
         probe_sites=probe,
         probe=_reporting_probe if probe else None,
+        quick=quick,
     )
 
 
@@ -61,12 +62,13 @@ def _check_kind(check: dict) -> str:
 
 @click.command()
 @click.option("--probe", "probe", is_flag=True, default=False, help="Also probe each configured site live for a scraper that no longer fits it (slow). With --fix, offer to repair a drifted one.")
+@click.option("--quick", "quick", is_flag=True, default=False, help="Skip the test print: Chromium only has to start (what the desktop app asks for).")
 @click.option("--fix", "fix", is_flag=True, default=False, help="Install what is missing (Tectonic, Chromium, the claude CLI), then check the MCP server starts.")
 @click.option("--yes", is_flag=True, default=False, help="With --fix: install without asking.")
 @click.option("--no-tex", "no_tex", is_flag=True, default=False, help="With --fix: don't install a TeX engine.")
 @click.option("--no-chromium", "no_chromium", is_flag=True, default=False, help="With --fix: don't download the Chromium headless shell.")
 @click.option("--no-claude", "no_claude", is_flag=True, default=False, help="With --fix: don't install the claude CLI.")
-def doctor(probe: bool, fix: bool, yes: bool, no_tex: bool, no_chromium: bool, no_claude: bool):
+def doctor(probe: bool, quick: bool, fix: bool, yes: bool, no_tex: bool, no_chromium: bool, no_claude: bool):
     """Check prerequisites (Python, profile, LaTeX, `claude`, the MCP server); --fix installs what is missing.
 
     Prints a "Prerequisites" section, one ✓/⚠/✗ line per check with the fix
@@ -74,7 +76,7 @@ def doctor(probe: bool, fix: bool, yes: bool, no_tex: bool, no_chromium: bool, n
     With --probe each configured site also gets a live probe (page 1 only),
     shown under "Live probes": ✗ means its page no longer has the structure
     the scraper reads, ⚠ a wall or an unreachable site; the raw response is
-    saved under jobs/drift/<site>/. Exit 1 only if a required tool is missing.
+    saved under jobs/drift/<site>/. Chromium prints a test page (a few seconds); --quick only starts it. Exit 1 only if a required tool is missing.
 
     With --fix: lists Tectonic (LaTeX), Chromium (CV printing) and the claude CLI
     with what is already there, asks once (--yes skips the question),
@@ -90,8 +92,10 @@ def doctor(probe: bool, fix: bool, yes: bool, no_tex: bool, no_chromium: bool, n
     if not fix:
         if yes or no_tex or no_chromium or no_claude:
             raise click.UsageError("--yes, --no-tex, --no-chromium and --no-claude only go with --fix.")
-        _check(probe)
+        _check(probe, quick)
         return
+    if quick:
+        raise click.UsageError("--quick does not go with --fix.")
     _fix(yes, no_tex, no_chromium, no_claude, fix_scrapers=probe)
 
 
@@ -151,15 +155,15 @@ def _print_last_run(console, last: dict | None, last_scrape: list[dict]) -> None
         ]))
 
 
-def _check(probe: bool) -> None:
+def _check(probe: bool, quick: bool) -> None:
     """`doctor` without --fix: print every check, the last run and the last scrapes."""
     from rich.text import Text
 
     from door.core import progress
 
-    with _progress.live_progress(probe and common._stdout_is_tty()) as live:
+    with _progress.live_progress((probe or not quick) and common._stdout_is_tty()) as live:
         with progress.activate(live):
-            result = _doctor_core(workspace.PROFILE_DIR, workspace.JOBS_DIR, probe=probe)
+            result = _doctor_core(workspace.PROFILE_DIR, workspace.JOBS_DIR, probe=probe, quick=quick)
 
     console = common._console()
     prefix = "scraper: "
@@ -296,7 +300,7 @@ def _setup_core(
     platform = _detect_platform()
 
     probe_sites = probe_sites or bool(fix_scrapers)
-    before = report if report is not None else doctor.run_checks(profile_dir, jobs_dir, probe_sites=probe_sites)
+    before = report if report is not None else doctor.run_checks(profile_dir, jobs_dir, probe_sites=probe_sites, quick=install is not None)
     offered = [
         {"site": c["name"].split(": ", 1)[1], "check": c} for c in before["checks"]
         if c["name"].startswith("scraper: ") and c["status"] in ("drift", "warn") and c.get("fixable")
@@ -317,7 +321,7 @@ def _setup_core(
     for step in plan:
         result["results"].append(_install_step(step, interactive))
 
-    after = doctor.run_checks(profile_dir, jobs_dir) if plan else before
+    after = doctor.run_checks(profile_dir, jobs_dir, quick=install is not None) if plan else before
     missing = [c for c in after["checks"] if c["status"] == "missing" and not (skip_profile and c["name"] == "profile")]
     result.update(
         outcome="incomplete" if missing else "ok",
