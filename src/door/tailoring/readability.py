@@ -78,8 +78,11 @@ def extract(pdf: Path) -> tuple[str, int]:
     return "\n".join(texts), len(texts)
 
 
-def check_pdf(pdf: Path, body: str, name: object) -> list[dict]:
+def check_pdf(pdf: Path, body: str, name: object, headings: list[str] | None = None) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
-    the raw config's value, used when it is a string)."""
+    the raw config's value, used when it is a string). `headings` is the order the page reads in when it is not the
+    body's own (a side column comes after the main one)."""
     text, pages = extract(pdf)
-    return problems(text, name=name if isinstance(name, str) else None, headings=html_doc.headings(body), keywords=html_doc.keywords(body), pages=pages)
+    return problems(text, name=name if isinstance(name, str) else None,
+                    headings=html_doc.headings(body) if headings is None else headings,
+                    keywords=html_doc.keywords(body), pages=pages)

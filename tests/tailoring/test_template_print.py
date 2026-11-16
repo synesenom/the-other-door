@@ -314,3 +314,30 @@ def test_a_plain_entry_heading_prints_the_same_text_as_the_span_one(tmp_path, mo
     spans, _ = _setup(tmp_path / "a", monkeypatch, cv=_entries(_SPAN_ENTRY), letter=_LETTER)
     plain, _ = _setup(tmp_path / "b", monkeypatch, cv=_entries(_PLAIN_ENTRY), letter=_LETTER)
     assert pdf_render.page_texts(spans / "cv.pdf") == pdf_render.page_texts(plain / "cv.pdf")
+
+
+# --- two columns (#147) -----------------------------------------------------------------------------------------
+
+_TWO_COLUMNS = (_HEADER + '<h2>Experience</h2><div class="entry"><h3>Controller | Globex Energy - 2021</h3>'
+                '<ul><li>Closed the books in four days.</li></ul></div>'
+                '<h2>Skills</h2><p>IFRS, SQL</p><h2>Education</h2><p>MSc, CBS</p>'
+                '<h2>Languages</h2><ul><li class="level level-5">Danish (native)</li></ul>')
+
+
+def test_a_two_column_template_prints_every_heading_on_a_line_and_the_side_after_the_main(tmp_path, monkeypatch):
+    template = FIXTURES / "columns_template" / "cv.template.html"
+    out, results = _setup(tmp_path, monkeypatch, cv=_TWO_COLUMNS, letter=_LETTER, extra={"cv_template": str(template)})
+    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
+    assert results["cv.html"]["readable"] == []
+    lines = _lines(out / "cv.pdf")
+    for heading in ("Experience", "Skills", "Education", "Languages"):
+        assert heading in lines, lines
+    assert lines.index("Education") < lines.index("Skills") < lines.index("Languages"), lines
+    assert "Danish (native)" in lines and page_count(out / "cv.pdf") == 1
+
+
+def test_the_default_template_keeps_one_column_in_the_bodys_order(tmp_path, monkeypatch):
+    out, results = _setup(tmp_path, monkeypatch, cv=_TWO_COLUMNS, letter=_LETTER)
+    assert results["cv.html"]["readable"] == []
+    lines = _lines(out / "cv.pdf")
+    assert lines.index("Skills") < lines.index("Education") < lines.index("Languages"), lines

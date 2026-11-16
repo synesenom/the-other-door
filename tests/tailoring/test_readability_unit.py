@@ -115,3 +115,13 @@ def test_fixable_keeps_only_what_the_tailor_can_fix():
     assert readability.FIXABLE == {"missing"}
     assert readability.fixable(found) == [{"kind": "missing", "detail": "a"}]
     assert readability.fixable([]) == []
+
+
+def test_check_pdf_reads_the_headings_it_is_given_instead_of_the_bodys(tmp_path):
+    from pdf_utils import make_pdf
+
+    pdf = tmp_path / "cv.pdf"
+    make_pdf(pdf, ["Jane Doe\nExperience\nacme\nSkills\nsql"])
+    body = "<h2>Skills</h2><p>sql</p><h2>Experience</h2><p>acme</p>"
+    assert [p["kind"] for p in readability.check_pdf(pdf, body, "Jane Doe")] == ["order"]
+    assert readability.check_pdf(pdf, body, "Jane Doe", headings=["Experience", "Skills"]) == []
