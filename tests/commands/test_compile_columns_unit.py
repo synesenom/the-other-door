@@ -8,6 +8,7 @@ import pytest
 
 from compile_utils import install
 from door.commands import compile as compile_cmd
+from door.tailoring import html_doc
 from door.core import workspace
 
 POSTING = {"title": "T", "company": "C", "location": "Copenhagen"}
@@ -163,8 +164,8 @@ def test_the_photo_stays_in_the_header_before_the_columns(world, tmp_path):
 def test_the_readback_follows_the_placed_order(world, monkeypatch):
     seen = {}
 
-    def check(pdf, body, name, headings=None):
-        seen["headings"] = headings
+    def check(pdf, body, name):
+        seen["headings"] = html_doc.headings(body)
         return []
 
     _columns(world)
@@ -177,7 +178,7 @@ def test_the_readback_follows_the_placed_order(world, monkeypatch):
 def test_without_columns_the_readback_keeps_the_bodys_own_order(world, monkeypatch):
     seen = {}
     monkeypatch.setattr(compile_cmd.readability, "check_pdf",
-                        lambda pdf, body, name, headings=None: seen.setdefault("headings", headings) or [])
+                        lambda pdf, body, name: seen.setdefault("headings", html_doc.headings(body)) or [])
     world.make(cv=CV)
     _compile(world)
     assert seen["headings"] == ["Profile", "Experience", "Skills", "Education", "Languages"]
@@ -186,8 +187,8 @@ def test_without_columns_the_readback_keeps_the_bodys_own_order(world, monkeypat
 def test_a_side_of_interests_alone_with_no_interests_section_leaves_main_whole_and_side_empty(world, monkeypatch):
     seen = {}
 
-    def check(pdf, body, name, headings=None):
-        seen["headings"] = headings
+    def check(pdf, body, name):
+        seen["headings"] = html_doc.headings(body)
         return []
 
     monkeypatch.setattr(compile_cmd.readability, "check_pdf", check)

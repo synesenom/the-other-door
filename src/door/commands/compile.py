@@ -97,33 +97,22 @@ def _place_columns(body: str, columns: templates.Columns | None, language: str) 
     itself when the template has no side column."""
     if columns is None or not columns.side:
         return body
-    titles = {t.casefold() for kind in columns.side for t in i18n.cv_section(kind, (language, "en"))}
     first, *sections = _H2.split(body)
     main, side = [], []
     for section in sections:
         heading = (html_doc.headings(section) or [""])[0]
-        (side if " ".join(heading.split()).casefold().strip(" :") in titles else main).append(section)
+        (side if i18n.cv_section_kind(heading, columns.side, (language, "en")) else main).append(section)
     return f'{first}<div class="main">{"".join(main)}</div><div class="side">{"".join(side)}</div>'
 
 
-def cv_headings(body: str, config: dict, posting: dict) -> list[str]:
-    """The CV `body`'s headings in the order its printed page reads them (a side column after the main one), by the
-    resolved CV template's manifest and the ad's language; the body's own order when the template cannot be read."""
+def placed_cv(body: str, config: dict, posting: dict) -> str:
+    """The CV `body` as its printed page reads it (`_place_columns` by the resolved CV template's manifest and the ad's
+    language); `body` itself when the template has no side column or cannot be read."""
     try:
         columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns
     except (OSError, ValueError):
         columns = None
-    return html_doc.headings(_place_columns(body, columns, _language(posting)))
-
-
-def cv_headings(body: str, config: dict, posting: dict) -> list[str]:
-    """The CV `body`'s headings in the order its printed page reads them (a side column after the main one), by the
-    resolved CV template's manifest and the ad's language; the body's own order when the template cannot be read."""
-    try:
-        columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns
-    except (OSError, ValueError):
-        columns = None
-    return html_doc.headings(_place_columns(body, columns, _language(posting)))
+    return _place_columns(body, columns, _language(posting))
 
 
 def _wrap(template: str, body: str, language: str) -> str:
@@ -158,11 +147,11 @@ def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) ->
     entry.pop("stderr", None)
 
 
-def _read_back(entry: dict, pdf: Path, body: str, config: dict, headings: list[str] | None = None) -> None:
-    """Set ``entry["readable"]`` from the compiled PDF (its headings in the order the page reads them, when `headings`
-    says); a failing check is a ``warning``, never a failed compile."""
+def _read_back(entry: dict, pdf: Path, body: str, config: dict) -> None:
+    """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from (a CV's sections as
+    placed); a failing check is a ``warning``, never a failed compile."""
     try:
-        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"), headings=headings)
+        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"))
     except Exception as exc:  # the check must never fail a compile
         entry["readable"] = None
         entry["warning"] = f"could not read the PDF back: {exc}"
@@ -258,7 +247,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             continue
         _print(page, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
-            _read_back(entry, Path(entry["pdf"]), body, config, html_doc.headings(placed))
+            _read_back(entry, Path(entry["pdf"]), placed, config)
         results.append(entry)
 
     for name in _PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use

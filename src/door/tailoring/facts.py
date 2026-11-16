@@ -175,11 +175,7 @@ def _filler() -> set[str]:
 
 
 def _section_kind(title: str) -> str:
-    key = _squash(title).casefold().strip(" :")
-    for kind in ("skills", "education", "certifications"):
-        if key in i18n.cv_section(kind):
-            return kind
-    return "other"
+    return i18n.cv_section_kind(title, ("skills", "education", "certifications")) or "other"
 
 
 def _is_technical(tok: str) -> bool:

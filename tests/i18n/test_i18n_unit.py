@@ -869,3 +869,10 @@ def test_preload_keeps_a_blas_thread_count_the_user_set(monkeypatch):
     monkeypatch.setenv("OPENBLAS_NUM_THREADS", "4")
     i18n.preload_language_detection()
     assert os.environ["OPENBLAS_NUM_THREADS"] == "4"
+
+
+def test_a_heading_is_the_section_kind_whose_title_it_is_whole_without_case_or_a_colon():
+    assert i18n.cv_section_kind(" Technical  SKILLS: ", ("skills", "education")) == "skills"
+    assert i18n.cv_section_kind("Sprog", ("languages",), ("da", "en")) == "languages"
+    assert i18n.cv_section_kind("Skills and hobbies", ("skills", "interests")) is None
+    assert i18n.cv_section_kind("Education", ("skills",)) is None  # only the kinds asked for

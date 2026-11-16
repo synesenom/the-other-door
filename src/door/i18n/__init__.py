@@ -690,6 +690,13 @@ def cv_section(kind: str, codes: tuple[str, ...] | None = None) -> list[str]:
     return _union(getattr(p.cv_sections, kind) for p in _packs(codes))
 
 
+def cv_section_kind(title: str, kinds, codes: tuple[str, ...] | None = None) -> str | None:
+    """The one of `kinds` whose titles hold `title` as a whole heading (spaces squashed, without case or a trailing
+    colon), or None: how the facts check and the column placement read a CV heading."""
+    key = " ".join(title.split()).casefold().strip(" :")
+    return next((kind for kind in kinds if key in {t.casefold() for t in cv_section(kind, codes)}), None)
+
+
 def _ascii_only(text: str) -> str:
     return unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode()
 
