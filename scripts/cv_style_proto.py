@@ -324,7 +324,7 @@ Close the largest gaps and keep every word of the text. Do not write files or ru
 on what you changed, then the whole new page in one ```html block, nothing after."""
 
 
-def rebuild(n: int, work: Path, original_pdf: Path, max_rounds: int = MAX_ROUNDS) -> dict:
+def rebuild(work: Path, original_pdf: Path) -> dict:
     """The loop for one CV: returns {rounds, minutes, cost, score, history, first_reply}."""
     from door.core import claude_cli
     from door.tailoring import pdf_render
@@ -337,7 +337,7 @@ def rebuild(n: int, work: Path, original_pdf: Path, max_rounds: int = MAX_ROUNDS
     original_runs = [t for p in style["pages"] for t in p["texts"]]
     cost, history, best, best_html, first_reply = 0.0, [], -1.0, "", ""
     prompt = PROMPT_FIRST
-    for round_no in range(1, max_rounds + 1):
+    for round_no in range(1, MAX_ROUNDS + 1):
         envelope = claude_cli.run(["--model", "sonnet", "--allowedTools", "Read", *claude_cli.STREAM_ARGS,
                                    "--no-session-persistence"], feature="draft_cv", cwd=work, input=prompt, timeout_s=900)
         cost += cost_of(envelope)
@@ -358,7 +358,7 @@ def rebuild(n: int, work: Path, original_pdf: Path, max_rounds: int = MAX_ROUNDS
         history.append({"round": round_no, "score": round(score, 3), "missing": len(match["missing"]),
                         "extra": len(match["extra"]), "cost": round(cost, 3)})
         if score > best + 0.005:
-            best, best_html = score, html_path.read_text(encoding="utf-8")
+            best, best_html = score, page_html
             (work / "best.html").write_text(best_html, encoding="utf-8")
         else:
             break  # no real improvement: stop, keep the best
@@ -373,8 +373,8 @@ def pages_of(pdf: Path) -> int:
 
 
 def stress(n: int, work: Path, best_html: str, base_pages: int) -> dict:
-    """The rebuild's own CSS with the stress variants' text: each is the best rebuild re-drawn from a record by
-    the original design's generator, so the text is swapped by re-asking the model once per variant (counted)."""
+    """The best rebuild with CV n's stress variants as its text: the model swaps the text once per variant
+    (its cost counted), keeping the design; holds when the page count grows by at most one."""
     from door.core import claude_cli
     results, cost = {}, 0.0
     for name, variant in stress_variants(cvs.record(n)).items():
@@ -409,20 +409,24 @@ def default_render(n: int, work: Path) -> Image.Image:
     return pages_png(pdf, work)[0]
 
 
-def run_cv(n: int, with_stress: bool) -> dict:
-    work = OUT / f"cv{n}-{cvs.DESIGNS[n - 1][0]}"
-    original = make_original(n, work)
-    result = rebuild(n, work, original)
-    summary = {"cv": n, "design": cvs.DESIGNS[n - 1][0], **result}
+def finish(work: Path, original: Path, head: dict, stress_cv: int, with_stress: bool, extra: list) -> dict:
+    """Rebuild, stress, then save the side-by-side (original | rebuild | extra panels) and record.json."""
+    summary = {**head, **rebuild(work, original)}
     if with_stress and (work / "best.html").exists():
-        summary["stress"] = stress(n, work, (work / "best.html").read_text(encoding="utf-8"), pages_of(original))
+        summary["stress"] = stress(stress_cv, work, (work / "best.html").read_text(encoding="utf-8"), pages_of(original))
         summary["cost"] += summary["stress"]["cost"]
     orig_img = Image.open(work / "original_page_1.png")
-    parts = [orig_img, Image.open(work / "render_page_1.png") if (work / "render_page_1.png").exists() else orig_img,
-             default_render(n, work)]
-    side_by_side(parts).save(work / "side_by_side.png")
+    render = work / "render_page_1.png"
+    side_by_side([orig_img, Image.open(render) if render.exists() else orig_img, *extra]).save(work / "side_by_side.png")
     (work / "record.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     return summary
+
+
+def run_cv(n: int, with_stress: bool) -> dict:
+    design = cvs.DESIGNS[n - 1][0]
+    work = OUT / f"cv{n}-{design}"
+    original = make_original(n, work)
+    return finish(work, original, {"cv": n, "design": design}, n, with_stress, [default_render(n, work)])
 
 
 def pdf_work_dir(pdf: Path) -> Path:
@@ -436,16 +440,7 @@ def run_pdf(pdf: Path, with_stress: bool) -> dict:
     work.mkdir(parents=True, exist_ok=True)
     original = work / "original.pdf"
     shutil.copyfile(pdf, original)
-    result = rebuild(0, work, original)
-    summary = {"cv": pdf.name, "design": work.name, **result}
-    if with_stress and (work / "best.html").exists():
-        summary["stress"] = stress(1, work, (work / "best.html").read_text(encoding="utf-8"), pages_of(original))
-        summary["cost"] += summary["stress"]["cost"]
-    orig_img = Image.open(work / "original_page_1.png")
-    render = work / "render_page_1.png"
-    side_by_side([orig_img, Image.open(render) if render.exists() else orig_img]).save(work / "side_by_side.png")
-    (work / "record.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    return summary
+    return finish(work, original, {"cv": pdf.name, "design": work.name}, 1, with_stress, [])
 
 
 def parse_cvs(text: str) -> list[int]:

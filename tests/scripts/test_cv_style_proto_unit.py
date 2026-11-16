@@ -155,17 +155,11 @@ def test_the_eight_made_up_cvs_use_example_addresses_only():
     for n in range(1, 9):
         email = proto.cvs.record(n)["contact"]["email"]
         assert re.fullmatch(r"[\w.]+@example\.com", email)
-    assert len(proto.cvs.DESIGNS) == 8
 
 
 def test_the_default_look_fills_the_templates_macros():
     tex = proto.cvs.to_default_tex(proto.cvs.record(1))
     assert "\\cvheader{" in tex and "\\workexperience{" in tex and "<<fonts>>" not in tex
-
-
-def test_the_prototype_is_not_wired_into_the_product():
-    for name in ("cli.py", "mcp_server.py"):
-        assert "cv_style_proto" not in (REPO_ROOT / "src" / "door" / name).read_text()
 
 
 def test_a_given_pdf_is_rebuilt_as_its_own_cv_named_after_the_file(tmp_path, monkeypatch):

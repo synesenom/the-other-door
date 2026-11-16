@@ -7,9 +7,7 @@ education[{degree,school,dates}], skills[], languages[], extra_sections[{heading
 
 from __future__ import annotations
 
-import copy
 import html
-import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
