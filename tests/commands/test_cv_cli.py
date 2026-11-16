@@ -176,3 +176,9 @@ def test_draft_keeps_a_todo_in_any_other_section(env, monkeypatch):
 def test_extract_text_reads_a_text_cv_in_the_encodings_windows_saves(tmp_path, data):
     (tmp_path / "cv.txt").write_bytes(data)
     assert cv_cmd._extract_text(tmp_path / "cv.txt") == "Ingénieure données – Clermont"
+
+
+def test_the_draft_rules_allow_a_location_as_the_last_part_of_an_entry_heading():
+    from door.commands import cv as cv_cmd
+
+    assert "### Role | Company — dates | Location" in cv_cmd._RULES

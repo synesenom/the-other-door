@@ -19,10 +19,11 @@ from html.parser import HTMLParser
 
 TAGS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "span", "strong", "em", "a", "br"})
 VOID = frozenset({"br"})
-# What the template's CSS styles; `photo` is written by `compile` after the guard, never by the model.
+# What the template's CSS styles; `photo`, `main` and `side` are written by `compile` after the guard, never by the model.
 CLASSES = frozenset({
     "cv-header", "contact", "entry", "letter-header", "recipient", "date", "closing", "signoff",
     "tagline", "phone", "email", "web", "location", "linkedin", "github",
+    "role", "org", "dates", "place", "sep", "level", "level-1", "level-2", "level-3", "level-4", "level-5",
 })
 NOTES = ("Keywords", "Tailoring")
 TOKENS = re.compile(r"<<(?:photo|date|company|title)>>")

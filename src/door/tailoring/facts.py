@@ -102,7 +102,8 @@ def extract_claims(body: str, file: str) -> list[dict]:
             head = _squash(_dashes(head))
             if " | " not in head:
                 continue
-            company = re.split(r"\s[-–—]{1,3}\s", head.split(" | ", 1)[1], maxsplit=1)[0].strip()
+            company = head.split(" | ", 1)[1].split(" | ", 1)[0]  # the place after the company is not part of it
+            company = re.split(r"\s[-–—]{1,3}\s", company, maxsplit=1)[0].strip()
             if company:
                 claims.append({"kind": "employer", "value": company, "context": head, "file": file})
     text = _dashes(html_doc.claim_text(body))
@@ -174,11 +175,7 @@ def _filler() -> set[str]:
 
 
 def _section_kind(title: str) -> str:
-    key = _squash(title).casefold().strip(" :")
-    for kind in ("skills", "education", "certifications"):
-        if key in i18n.cv_section(kind):
-            return kind
-    return "other"
+    return i18n.cv_section_kind(title, ("skills", "education", "certifications")) or "other"
 
 
 def _is_technical(tok: str) -> bool:

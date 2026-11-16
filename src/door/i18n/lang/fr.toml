@@ -91,6 +91,8 @@ decembre = 12
 skills = ["compétences", "competences", "compétences clés", "compétences techniques", "outils", "technologies"]
 education = ["formation", "formations", "éducation", "diplômes", "parcours académique", "formation et diplômes"]
 certifications = ["certifications", "certificats", "habilitations", "certifications et formations"]
+languages = ["langues", "compétences linguistiques"]
+interests = ["centres d'intérêt", "centres d’intérêt", "loisirs", "intérêts"]
 
 [headings]
 requirement = [

@@ -539,6 +539,21 @@ def test_cv_section_titles_cover_english_and_danish():
     assert {"certifications", "certificeringer"} <= set(i18n.cv_section("certifications"))
 
 
+@pytest.mark.parametrize("code", ["en", "da", "fr", "hu", "sv"])
+@pytest.mark.parametrize("kind", ["skills", "education", "certifications", "languages", "interests"])
+def test_every_supported_language_names_every_cv_section(code, kind):
+    assert i18n.cv_section(kind, (code,)) != []
+
+
+def test_the_languages_and_interests_titles_are_the_ones_a_cv_uses():
+    assert {"languages", "sprog", "langues", "nyelvek", "språk"} <= set(i18n.cv_section("languages"))
+    assert {"interests", "interesser", "centres d'intérêt", "érdeklődési kör", "intressen"} <= set(i18n.cv_section("interests"))
+
+
+def test_the_skills_titles_do_not_include_the_new_kinds():
+    assert not {"languages", "sprog", "interests"} & set(i18n.cv_section("skills"))
+
+
 def test_cv_section_of_an_unknown_kind_is_refused():
     with pytest.raises(ValueError):
         i18n.cv_section("hobbies")
@@ -854,3 +869,10 @@ def test_preload_keeps_a_blas_thread_count_the_user_set(monkeypatch):
     monkeypatch.setenv("OPENBLAS_NUM_THREADS", "4")
     i18n.preload_language_detection()
     assert os.environ["OPENBLAS_NUM_THREADS"] == "4"
+
+
+def test_a_heading_is_the_section_kind_whose_title_it_is_whole_without_case_or_a_colon():
+    assert i18n.cv_section_kind(" Technical  SKILLS: ", ("skills", "education")) == "skills"
+    assert i18n.cv_section_kind("Sprog", ("languages",), ("da", "en")) == "languages"
+    assert i18n.cv_section_kind("Skills and hobbies", ("skills", "interests")) is None
+    assert i18n.cv_section_kind("Education", ("skills",)) is None  # only the kinds asked for

@@ -16,7 +16,7 @@ from door.commands import _common as common
 from door.core import chromium, templates
 from door.core import photo as photo_mod
 from door.core import utils, workspace
-from door.tailoring import html_guard, html_pdf, readability, typography
+from door.tailoring import html_doc, html_guard, html_pdf, readability, typography
 
 _FILES = {"cv.html": "cv_template", "cover_letter.html": "cover_letter_template"}
 
@@ -86,6 +86,35 @@ def _with_photo(body: str, template: str, output_dir: Path, posting: dict, confi
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
+_H2 = re.compile(r"(?=<h2[\s>])")
+
+
+def _place_columns(body: str, columns: templates.Columns | None, language: str) -> str:
+    """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` (the
+    notes, the photo, the header) as it is, then `<div class="main">` and `<div class="side">`, each section in the
+    order the body has it. A section goes to the side when its heading is, whole and without case, a title of one of
+    the template's ``columns.side`` kinds in the ad's language or English; any other goes to the main column. `body`
+    itself when the template has no side column."""
+    if columns is None or not columns.side:
+        return body
+    first, *sections = _H2.split(body)
+    main, side = [], []
+    for section in sections:
+        heading = (html_doc.headings(section) or [""])[0]
+        (side if i18n.cv_section_kind(heading, columns.side, (language, "en")) else main).append(section)
+    return f'{first}<div class="main">{"".join(main)}</div><div class="side">{"".join(side)}</div>'
+
+
+def placed_cv(body: str, config: dict, posting: dict) -> str:
+    """The CV `body` as its printed page reads it (`_place_columns` by the resolved CV template's manifest and the ad's
+    language); `body` itself when the template has no side column or cannot be read."""
+    try:
+        columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns
+    except (OSError, ValueError):
+        columns = None
+    return _place_columns(body, columns, _language(posting))
+
+
 def _wrap(template: str, body: str, language: str) -> str:
     """`template` with its language and `body` in place.
 
@@ -119,7 +148,8 @@ def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) ->
 
 
 def _read_back(entry: dict, pdf: Path, body: str, config: dict) -> None:
-    """Set ``entry["readable"]`` from the compiled PDF; a failing check is a ``warning``, never a failed compile."""
+    """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from (a CV's sections as
+    placed); a failing check is a ``warning``, never a failed compile."""
     try:
         entry["readable"] = readability.check_pdf(pdf, body, config.get("name"))
     except Exception as exc:  # the check must never fail a compile
@@ -204,18 +234,20 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             results.append(entry)
             continue
         built, photo_name = _with_photo(body, template, output_dir, posting, config)
+        columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
+        placed = _place_columns(built, columns, language)
         if photo_name:
             entry["photo"] = photo_name
             photos.append(photo_name)
         try:
-            page = _wrap(template, typography.apply(built, language), language)
+            page = _wrap(template, typography.apply(placed, language), language)
         except ValueError as exc:
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
         _print(page, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
-            _read_back(entry, Path(entry["pdf"]), body, config)
+            _read_back(entry, Path(entry["pdf"]), placed, config)
         results.append(entry)
 
     for name in _PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use

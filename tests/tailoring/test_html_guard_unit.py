@@ -76,3 +76,22 @@ def test_a_refusal_is_named_once():
 def test_an_unclosed_or_stray_tag_is_not_a_way_in():
     assert html_guard.unsafe("<p>text <scr")
     assert html_guard.unsafe("a < b and c > d") == []
+
+
+ENTRY = ('<div class="entry"><h3><span class="role">Controller</span><span class="sep"> | </span><span class="org">Acme</span>'
+         '<span class="sep"> - </span><span class="dates">2021 - present</span><span class="sep"> | </span>'
+         '<span class="place">Aarhus</span></h3></div>')
+
+
+def test_an_entry_heading_with_role_org_dates_place_and_separators_passes():
+    assert html_guard.unsafe(ENTRY) == []
+
+
+def test_a_skill_level_class_one_to_five_passes():
+    body = "".join(f'<ul><li><strong>Danish</strong> <span class="level level-{n}">level</span></li></ul>' for n in range(1, 6))
+    assert html_guard.unsafe(body) == []
+
+
+@pytest.mark.parametrize("cls", ["level level-6", "level-0", "main", "side", "level level-10"])
+def test_a_level_beyond_five_or_a_column_class_is_refused(cls):
+    assert html_guard.unsafe(f'<div class="{cls}">x</div>') != []

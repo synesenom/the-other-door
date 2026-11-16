@@ -45,6 +45,8 @@ career_site_words = ["careers", "career", "jobs", "job", "vacancies", "open posi
 skills = ["skills", "key skills", "technical skills", "core competencies", "competencies", "tools", "technologies"]
 education = ["education", "education and training", "academic background"]
 certifications = ["certifications", "certificates", "licences", "licenses", "certifications and licences", "certifications and licenses", "courses"]
+languages = ["languages", "language skills"]
+interests = ["interests", "hobbies", "hobbies and interests", "interests and hobbies"]
 
 [headings]
 requirement = ["requirements", "qualifications", "who you are", "nice to have"]

@@ -80,3 +80,24 @@ def test_the_tagline_is_a_claim_the_kinded_details_are_not():
     assert html_doc.headings(KINDED) == ["Work experience"]
     claims = html_doc.claim_text(KINDED)
     assert "Analyst | Engines" in claims and "LinkedIn" not in claims and "+45 1" not in claims and "Ran the engine room." in claims
+
+
+SPANS = ('<h3><span class="role">Role</span><span class="sep"> | </span><span class="org">Company</span>'
+         '<span class="sep"> - </span><span class="dates">2021 - present</span><span class="sep"> | </span>'
+         '<span class="place">City</span></h3>')
+
+
+def test_a_span_structured_entry_heading_reads_as_the_plain_one():
+    assert html_doc.h3s(SPANS) == ["Role | Company - 2021 - present | City"]
+    assert html_doc.h3s(SPANS) == html_doc.h3s("<h3>Role | Company - 2021 - present | City</h3>")
+
+
+def test_the_claims_keep_role_company_and_dates_of_a_span_entry():
+    claims = html_doc.claim_text(f'<h2>Experience</h2><div class="entry">{SPANS}</div>')
+    assert "Role | Company - 2021 - present | City" in claims.replace("  ", " ")
+
+
+def test_a_level_item_keeps_its_word_in_the_text_and_the_claims():
+    body = '<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>'
+    assert "Danish native" in html_doc.text(body)
+    assert "Danish native" in html_doc.claim_text(body)

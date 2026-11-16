@@ -64,6 +64,8 @@ career_site_words = ["karriere", "job", "jobs", "ledige stillinger", "stillinger
 skills = ["kompetencer", "færdigheder", "it-kompetencer", "nøglekompetencer", "værktøjer"]
 education = ["uddannelse", "uddannelser", "uddannelse og kurser"]
 certifications = ["certificeringer", "certifikater", "kurser", "certificeringer og kurser"]
+languages = ["sprog", "sprogkundskaber"]
+interests = ["interesser", "fritidsinteresser", "hobbyer"]
 
 [headings]
 requirement = ["vi forventer", "kvalifikationer", "krav", "hvem er du", "din profil"]
