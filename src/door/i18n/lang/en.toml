@@ -189,3 +189,8 @@ nov = 11
 december = 12
 dec = 12
 "dec." = 12
+
+# The letter's date written out (filled by `compile`; the tailor writes <<date>>).
+[date]
+pattern = "{month} {day}, {year}"
+months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
