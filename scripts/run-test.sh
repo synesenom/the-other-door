@@ -122,10 +122,16 @@ fi
 # pytest-cov measures every xdist worker and combines their data into .coverage
 # (`coverage run -m pytest -n auto` would measure only the controller); the
 # report itself comes from coverage below. `--cov-report=` keeps pytest quiet.
-# `|| true` tolerates pytest exit code 5 (no tests collected yet).
-poetry run pytest -n auto --cov --cov-report= "$@" || true
+# A failing suite still prints its coverage, then exits with pytest's code and
+# leaves the badge alone; exit code 5 (no tests collected) counts as a pass.
+rc=0
+poetry run pytest -n auto --cov --cov-report= "$@" || rc=$?
+[[ $rc -eq 5 ]] && rc=0
 poetry run coverage xml
 poetry run coverage report
+if [[ $rc -ne 0 ]]; then
+    exit "$rc"
+fi
 
 # Only the whole suite says what the coverage is: a run narrowed by arguments
 # (one test file, -k, -m) leaves the badge as it is.
