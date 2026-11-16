@@ -209,7 +209,7 @@ jobs:
 
       - run: npm ci
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: mac-manifest-*
           path: app/mac-manifests
@@ -254,7 +254,7 @@ jobs:
 
       - name: The installer of the dry run
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dry-run-windows-x64
           path: app/dist
