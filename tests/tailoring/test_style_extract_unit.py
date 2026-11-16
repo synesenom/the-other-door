@@ -378,3 +378,42 @@ def test_a_cv_in_black_and_grey_has_no_accent(tmp_path):
 def test_a_coloured_shape_counts_towards_the_accent(tmp_path):
     content = body() + "0.9 0.3 0.1 rg 400 400 150 150 re f\n"
     assert read(tmp_path, content)["colors"]["accent"] == "#e64d1a"
+
+
+# ---------- photo and images ----------
+
+RED = {"Im1": (2, 2, bytes([255, 0, 0] * 4))}
+
+
+def image_at(x, y, w, h):
+    return f"q {w} 0 0 {h} {x} {y} cm /Im1 Do Q\n"
+
+
+def test_a_portrait_sized_image_on_the_first_page_is_the_photo(tmp_path):
+    style = read(tmp_path, image_at(450, 650, 90, 120) + body(), images=RED)
+    assert style["photo"] == {"page": 1, "bbox": [450.0, 72.0, 540.0, 192.0], "shape": "rect"}
+    assert style["background_images"] == 0
+
+
+def test_an_image_clipped_to_a_circle_is_a_round_photo(tmp_path):
+    cx, cy, r = 495, 700, 50
+    k = 0.5523 * r
+    clip = (f"q {cx - r} {cy} m {cx - r} {cy + k} {cx - k} {cy + r} {cx} {cy + r} c {cx + k} {cy + r} {cx + r} {cy + k} {cx + r} {cy} c "
+            f"{cx + r} {cy - k} {cx + k} {cy - r} {cx} {cy - r} c {cx - k} {cy - r} {cx - r} {cy - k} {cx - r} {cy} c W n\n"
+            f"{2 * r} 0 0 {2 * r} {cx - r} {cy - r} cm /Im1 Do Q\n")
+    assert read(tmp_path, clip + body(), images=RED)["photo"]["shape"] == "circle"
+
+
+def test_a_page_sized_image_is_a_background_not_a_photo(tmp_path):
+    style = read(tmp_path, image_at(0, 0, 595, 842) + body(), images=RED)
+    assert style["photo"] is None and style["background_images"] == 1
+
+
+@pytest.mark.parametrize("w,h", [(20, 20), (300, 40), (60, 200)])
+def test_an_image_too_small_or_too_long_is_no_photo(tmp_path, w, h):
+    assert read(tmp_path, image_at(400, 600, w, h) + body(), images=RED)["photo"] is None
+
+
+def test_an_image_on_a_later_page_is_no_photo(tmp_path):
+    style = read_pages(tmp_path, [body(), image_at(400, 600, 90, 120) + body()], images=RED)
+    assert style["photo"] is None

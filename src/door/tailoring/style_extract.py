@@ -236,6 +236,60 @@ def _bleed(shapes: list[dict], size: list[float]) -> list[str]:
     return sides
 
 
+# ---------- images, the photo ----------
+
+def _read_images(page, number: int, height: float) -> list[dict]:
+    return [{"page": number, "bbox": _bbox(obj, height)} for obj in page.get_objects(filter=[raw.FPDF_PAGEOBJ_IMAGE])]
+
+
+def render_box(page, bbox: list[float], scale: float, pad: float = 0.0):
+    """The part of *page* in *bbox* (points, origin top left), padded by *pad* and kept inside the page, as a
+    PIL image at *scale* pixels per point, with the box the image shows."""
+    width, height = page.get_size()
+    x0, y0, x1, y1 = max(bbox[0] - pad, 0.0), max(bbox[1] - pad, 0.0), min(bbox[2] + pad, width), min(bbox[3] + pad, height)
+    image = page.render(scale=scale, crop=(x0, height - y1, width - x1, y0)).to_pil().convert("RGB")
+    return image, [x0, y0, x1, y1]
+
+
+def _is_round(page, bbox: list[float], background: str | None) -> bool:
+    """Whether a picture is cut to a circle: the corners of its box show what is around it, the middle does not."""
+    image, shown = render_box(page, bbox, 2.0, pad=3.0)
+    scale = image.width / (shown[2] - shown[0])
+    inner = [round((bbox[0] - shown[0]) * scale), round((bbox[1] - shown[1]) * scale),
+             round((bbox[2] - shown[0]) * scale) - 1, round((bbox[3] - shown[1]) * scale) - 1]
+    around = image.getpixel((0, 0)) if bbox[0] - shown[0] >= 2 and bbox[1] - shown[1] >= 2 else _hex_rgb(background or "#ffffff")
+    corners = [image.getpixel((inner[0] + 1, inner[1] + 1)), image.getpixel((inner[2] - 1, inner[1] + 1)),
+               image.getpixel((inner[0] + 1, inner[3] - 1)), image.getpixel((inner[2] - 1, inner[3] - 1))]
+    middle = image.getpixel(((inner[0] + inner[2]) // 2, (inner[1] + inner[3]) // 2))
+    return all(_distance(c, around) <= 12 for c in corners) and _distance(middle, around) > 40
+
+
+def _hex_rgb(color: str) -> tuple[int, int, int]:
+    return tuple(int(color[i:i + 2], 16) for i in (1, 3, 5))  # type: ignore[return-value]
+
+
+def _distance(a, b) -> int:
+    return max(abs(x - y) for x, y in zip(a[:3], b[:3]))
+
+
+def find_photo(page, images: list[dict], size: list[float], background: str | None) -> dict | None:
+    """The photo: the largest picture of page one with both sides at least 40 pt, an aspect between 1:2 and 2:1 and
+    under 90% of the page; `circle` when it is cut round, else `rect`."""
+    best = None
+    for image in images:
+        w, h = image["bbox"][2] - image["bbox"][0], image["bbox"][3] - image["bbox"][1]
+        if min(w, h) >= 40 and 0.5 <= w / h <= 2 and w * h < 0.9 * size[0] * size[1] and (not best or w * h > best[0]):
+            best = (w * h, image)
+    if not best:
+        return None
+    box = best[1]["bbox"]
+    return {"page": 1, "bbox": box, "shape": "circle" if _is_round(page, box, background) else "rect"}
+
+
+def background_images(images: list[dict], size: list[float]) -> int:
+    return sum((i["bbox"][2] - i["bbox"][0]) * (i["bbox"][3] - i["bbox"][1]) >= 0.9 * size[0] * size[1] for i in images)
+
+
 # ---------- margins ----------
 
 def _is_footer(run: dict, size: list[float]) -> bool:
@@ -519,7 +573,10 @@ def extract(pdf_path: Path) -> dict:
             runs, _ = _text_runs(page, number, height)
             size = [round(width, 1), round(height, 1)]
             background, shapes = _page_background(_read_shapes(page, number, height), size)
-            pages.append({"size": size, "runs": merge_runs(runs), "shapes": shapes, "background": background})
+            images = _read_images(page, number, height)
+            photo = find_photo(page, images, size, background) if number == 1 else None
+            pages.append({"size": size, "runs": merge_runs(runs), "shapes": shapes, "background": background,
+                          "images": images, "photo": photo})
         head = {"version": VERSION, "verdict": style_verdict(pages), "producer": doc.get_metadata_value("Producer"),
                 "creator": doc.get_metadata_value("Creator"), "page_count": len(doc)}
         if not head["verdict"]["copyable"]:
@@ -533,6 +590,7 @@ def extract(pdf_path: Path) -> dict:
         headings = find_headings(runs, shapes, columns["bands"], name)
         return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
                 "columns": columns, "headings": headings, "heading_style": heading_style(headings),
+                "photo": pages[0]["photo"], "background_images": sum(background_images(p["images"], p["size"]) for p in pages),
                 "runs": [{k: v for k, v in r.items() if k != "baseline"} for r in runs],
                 "shapes": [{k: v for k, v in s.items() if k != "segments"} for s in shapes]}
     finally:
