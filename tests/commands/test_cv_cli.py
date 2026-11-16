@@ -182,3 +182,12 @@ def test_the_draft_rules_allow_a_location_as_the_last_part_of_an_entry_heading()
     from door.commands import cv as cv_cmd
 
     assert "### Role | Company — dates | Location" in cv_cmd._RULES
+
+
+def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
+    """The wizard offers the style build only for a file that has a style to copy (#150)."""
+    _answer(monkeypatch)
+    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    sources = [str(styled), str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane"]
+    result = cv_cmd._draft_cv_core(sources, profile_dir=env.profile_dir)
+    assert [s.get("style") for s in result["sources"]] == [True, False, False, None]

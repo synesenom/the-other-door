@@ -18,6 +18,7 @@ import click
 
 from door import i18n
 from door.commands import _common as common
+from door.commands import style as style_cmd
 from door.core import claude_cli, migrations, workspace
 
 _DEFAULT_MODEL = "sonnet"
@@ -149,6 +150,15 @@ def _skills_line_without_todo(line: str) -> str | None:
     return left if re.sub(r"^[\s*_-]*", "", left) and not left.rstrip("*_ ").endswith(":") else None
 
 
+def _has_style(path: Path) -> bool:
+    """Whether the file at `path` has a CV style to copy (`style._intake` passes); false on any failure (#150)."""
+    try:
+        style_cmd._intake(path)
+    except Exception:  # noqa: BLE001 - an unreadable file simply offers no style
+        return False
+    return True
+
+
 def _draft_cv_core(
     sources: list[str],
     *,
@@ -165,7 +175,7 @@ def _draft_cv_core(
 
     Returns:
         ``{"draft_path" | "cv_path" + "backup", "written", "sources":
-        [{"source", "kind", "chars"?}], "provenance", "todos"}``.
+        [{"source", "kind", "chars"?, "style"?}], "provenance", "todos"}``.
 
     Raises:
         ValueError: no sources, or a file of another type.
@@ -190,7 +200,7 @@ def _draft_cv_core(
             urls.append(source)
         else:
             text = _extract_text(Path(source))
-            described.append({"source": source, "kind": "file", "chars": len(text)})
+            described.append({"source": source, "kind": "file", "chars": len(text), "style": _has_style(Path(source))})
             parts.append(f"Source file {source}:\n<<<\n{text}\n>>>")
 
     template = workspace.PROFILE_EXAMPLE_DIR / "cv.md"
