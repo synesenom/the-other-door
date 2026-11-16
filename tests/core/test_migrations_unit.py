@@ -593,3 +593,28 @@ def test_ensure_folder_tolerates_the_stamp_appearing_meanwhile(tmp_path, monkeyp
     monkeypatch.setattr(migrations, "write_version", racing)
     migrations.ensure_folder(folder, "profile")
     assert (folder / ".data_version").read_text() == "0.1\n"
+
+
+def test_drop_tex_templates_removes_only_the_keys_that_name_a_tex_file(tmp_path):
+    profile = tmp_path / "profile"
+    profile.mkdir()
+    (profile / "my.tex").write_text("\\documentclass{article}")
+    (profile / "config.json").write_text(json.dumps({
+        "name": "Ada", "cv_template": "profile/my.tex", "cover_letter_template": "profile/letter.html"}))
+    migrations._drop_tex_templates(profile)
+    assert json.loads((profile / "config.json").read_text()) == {"name": "Ada", "cover_letter_template": "profile/letter.html"}
+    assert (profile / "my.tex").read_text() == "\\documentclass{article}"  # the file stays, unread
+
+
+def test_drop_tex_templates_is_a_no_op_without_the_keys_or_a_config(tmp_path):
+    profile = tmp_path / "profile"
+    profile.mkdir()
+    migrations._drop_tex_templates(profile)
+    assert not (profile / "config.json").exists()
+    (profile / "config.json").write_text(json.dumps({"name": "Ada"}))
+    before = (profile / "config.json").read_text()
+    migrations._drop_tex_templates(profile)
+    assert (profile / "config.json").read_text() == before
+    (profile / "config.json").write_text("{nope")
+    migrations._drop_tex_templates(profile)
+    assert (profile / "config.json").read_text() == "{nope"

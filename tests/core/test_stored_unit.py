@@ -8,9 +8,11 @@ from door.core import stored
 
 
 @pytest.mark.parametrize("path", [
-    "profile/config.json", "profile/fonts/Figtree-Regular.otf", "profile/cv.md.bak", "profile/.data_version",
+    "profile/config.json", "profile/fonts/Figtree-Regular.ttf", "profile/cv.template.html",
+    "profile/cover-letter.template.html", "profile/cv.template.tex", "profile/cover-letter.template.tex", "profile/cv.md.bak", "profile/.data_version",
     "jobs/history.json", "jobs/discovery/linkedin.json", "jobs/runs/2026-01-01T10-00-00.json", "jobs/runs/latest.log",
-    "jobs/postings/2026-01-01/jobindex/jobindex.123.json", "jobs/output/jobindex.123/cv.tex",
+    "jobs/postings/2026-01-01/jobindex/jobindex.123.json", "jobs/output/jobindex.123/cv.html",
+    "jobs/output/jobindex.123/cover_letter.html.bak", "jobs/output/jobindex.123/cv.tex", "jobs/output/jobindex.123/cv.tex.bak",
     "jobs/output/jobindex.123/sent/cv.pdf", "jobs/output/jobindex.123/photo.jpg", "jobs/market/report-2026-01-01.md",
     "jobs/drift/thehub/2026.html", "jobs/.lock",
 ])
@@ -62,3 +64,8 @@ def test_cores_store_only_named_files(tmp_path, monkeypatch):
     assert (profile_dir / ".data_version").exists()
     assert stored.unnamed(tmp_path) == []
     assert [p for p in (tmp_path / "profile").rglob("*") if p.is_file()]
+
+
+def test_an_old_latex_file_is_named_as_kept_and_never_read():
+    for path in ("profile/cv.template.tex", "jobs/output/x/cv.tex", "jobs/output/x/cover_letter.tex.bak"):
+        assert "never read" in (stored.named(path).note + stored.named(path).model), path

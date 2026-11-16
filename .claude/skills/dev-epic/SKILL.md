@@ -14,6 +14,8 @@ You are working through an epic issue of The other door. The epic's number is th
 
 Merging is the maintainer's: never merge, approve or enable auto-merge. Run the loop below until done, or until only the maintainer can move things on (Step 7). Do not stop after one sub-issue to report or ask whether to go on.
 
+**Never stop to report.** A sub-issue's PR opened, a step of `/dev-resolve` done, an agent returned, a decision taken, an issue filed: none ends the run. Go on to the next step or sub-issue in the same turn; the progress line (Step 6) is one line printed on the way, not a stopping point. While background agents or checks run, end the turn without a summary or a question and pick up the moment they finish. The only stops are Step 7 (only the maintainer can move things on), a CANNOT DECIDE, and a permission the harness must ask for. The report is Step 8, once, at the end.
+
 State lives in `thoughts/epic/<N>.md` (the chain, in order; per sub-issue its branch, PR, state, notes; the open questions), so a later `/dev-epic <N>` picks up where this one stopped. Write it after every step that changes something.
 
 **The chain.** The PRs build on each other: each sub-issue's branch starts from the previous sub-issue's branch, the first one from `main`. The chain is the ordered list of those branches whose PRs are still open; its **tip** is the last one (or `main` when the chain is empty, at the start or once everything is merged). Each PR still targets `main`, and `/dev-pr` describes only its own commits and says `Depends on #<previous pr>`. The maintainer merges them in chain order. Never rebase or force-push a chain branch: changes move up the chain by merges.

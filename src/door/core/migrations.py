@@ -200,6 +200,24 @@ def _templates_from_code(profile_dir: Path) -> None:
         config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
 
+def _drop_tex_templates(profile_dir: Path) -> None:
+    """The CV and letter are printed from HTML templates (#146): a `cv_template` / `cover_letter_template` that names a
+    LaTeX file is dropped from `config.json`, so the shipped template is used. The file itself stays where it is,
+    unread. Registered as a step by the release that ships the HTML templates."""
+    config_path = Path(profile_dir) / "config.json"
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if not isinstance(config, dict):
+        return
+    dropped = [key for key in _TEMPLATE_KEYS if str(config.get(key) or "").lower().endswith(".tex")]
+    if dropped:
+        for key in dropped:
+            del config[key]
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+
 PROFILE_STEPS: list[Step] = [
     Step(
         "templates come from the code", _templates_from_code,

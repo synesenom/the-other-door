@@ -12,6 +12,8 @@ Two optional arguments, which `/dev-epic` passes for each sub-issue:
 
 **Decision policy**: make all decisions autonomously without pausing for user input. If anything is ambiguous, pick the simplest reasonable interpretation, document the choice, and proceed.
 
+**Never stop to report.** The run ends only at Step 6 (or, inside `/dev-epic`, by handing back to the epic's loop, which goes straight on). Finishing a step, an agent returning, a decision taken or an issue filed is not a reason to end the turn with a summary: start the next step in the same turn. While a background agent runs, end the turn only with no question and no summary, and resume the next step as soon as it returns. The only stops are a CANNOT DECIDE, a permission the harness must ask for, or FAIL after two attempts.
+
 ---
 
 ## Step 1: Fetch and assess the issue
