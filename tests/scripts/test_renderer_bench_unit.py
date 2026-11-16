@@ -221,3 +221,17 @@ def test_a_missing_executable_is_recorded_not_installed(tmp_path):
     names = {c.name: c for c in cand}
     assert set(names) == {"chromium", "weasyprint", "typst"}
     assert not names["weasyprint"].installed and not names["typst"].installed
+
+
+def test_a_word_broken_with_a_unicode_hyphen_at_a_line_end_hyphenates():
+    assert bench.hyphenates("l'interdépen‐\r\ndance")
+
+
+def test_a_hyphen_that_reads_back_as_a_junk_character_is_named():
+    assert bench.junk_in_words("organisation￾nelles est considérable") == ["organisation￾nelles"]
+    assert bench.junk_in_words("l'interdépen‐\r\ndance") == []
+
+
+def test_font_names_are_read_from_the_descriptors_when_the_font_has_no_base_name():
+    data = b"<< /Type /FontDescriptor /FontName /BAAAAA+Figtree-Regular /Flags 4 >>"
+    assert bench.descriptor_font_names([data]) == ["BAAAAA+Figtree-Regular"]

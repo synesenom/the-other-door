@@ -93,7 +93,17 @@ def french_typography(text: str) -> list[str]:
 
 def hyphenates(text: str) -> bool:
     """True when the text has a soft hyphen or a word broken with a hyphen at a line end."""
-    return "­" in text or bool(re.search(r"[^\W\d_]-\r?\n", text))
+    return "\u00ad" in text or bool(re.search(r"[^\W\d_][-\u2010]\r?\n", text))
+
+
+def junk_in_words(text: str) -> list[str]:
+    """Words that read back with a junk character inside (a hyphen extracted as U+FFFE or a private-use glyph)."""
+    return [w for w in re.findall(r"\S+", text) if re.search(r"[\ufffe\uffff\ue000-\uf8ff]", w)]
+
+
+def descriptor_font_names(blobs: list[bytes]) -> list[str]:
+    """The /FontName of every font descriptor in these PDF bytes: what a Type 3 font with no base name is called."""
+    return sorted({m.decode("latin-1") for b in blobs for m in re.findall(rb"/FontName\s*/([^\s/<>\[\]()]+)", b)})
 
 
 def _flat(name: str) -> str:
@@ -192,6 +202,16 @@ def embedded_fonts(pdf: Path) -> list[str]:
                  if obj.type == raw.FPDF_PAGEOBJ_TEXT}
     finally:
         doc.close()
+    if "" in names:  # Chromium writes CFF (.otf) fonts as Type 3 with no base name: read their descriptors
+        import zlib
+        data = pdf.read_bytes()
+        blobs = [data]
+        for m in re.finditer(rb"stream\r?\n(.*?)\r?\nendstream", data, re.S):
+            try:
+                blobs.append(zlib.decompress(m.group(1)))
+            except zlib.error:
+                pass
+        names = (names - {""}) | set(descriptor_font_names(blobs))
     return sorted(names)
 
 
@@ -358,7 +378,8 @@ def french_probe(cand: Candidate, work: Path, fonts: Path) -> dict:
     shutil.copy(SOURCES / "probe" / f"french.{cand.ext}", source)
     cand.render(source, pdf)
     text = "\n".join(pdf_render.page_texts(pdf))
-    return {"french": french_typography(text), "hyphens": hyphenates(text)}
+    return {"french": french_typography(text) + [f"junk inside {w!r}" for w in junk_in_words(text)],
+            "hyphens": hyphenates(text)}
 
 
 # what the sources say, for the readability check of each CV
@@ -480,6 +501,10 @@ def main(argv: list[str] | None = None) -> None:
                                                          Image.open(chrome["cv2_page"]).convert("RGB"),
                                                          [i["bbox"] for i in expected_icons()])
     OUT.mkdir(parents=True, exist_ok=True)
+    for n in CVS:  # judged by eye: the LaTeX reference, then each candidate's page
+        pages = [refs[n][0]] + [Image.open(f).convert("RGB") for c in rows if c.get("installed")
+                                for f in [work / c["candidate"] / f"cv{n}" / "png" / "cv_page_1.png"] if f.exists()]
+        proto.side_by_side(pages).save(OUT / f"cv{n}_side_by_side.png")
     report = (bench_table(rows, DOCS) + f"\nChoice: {result['choice']}; fallback: {result['fallback']}; "
               f"excluded: {result['excluded']}\n")
     (OUT / "table.md").write_text(report, encoding="utf-8")
