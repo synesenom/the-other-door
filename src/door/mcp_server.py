@@ -1514,11 +1514,12 @@ def revise(job_id: str, file: str = "cover_letter", instruction: str | None = No
 
 @mcp.tool()
 @_tool_errors
-def doctor(probe: bool = False) -> dict:
+def doctor(probe: bool = False, quick: bool = False) -> dict:
     """Check every prerequisite: Python, profile, Chromium, the `claude` CLI,
     the MCP server entry and dev deps.
 
-    Instant and offline by default. With ``probe=True`` it also probes each
+    Offline by default, a few seconds: Chromium prints a test page. ``quick=True`` skips the print
+    (Chromium only has to start). With ``probe=True`` it also probes each
     configured site's live scraper (one ``scraper: <site>`` check per site,
     page 1 only; live requests, so it can take a
     while) and saves the raw response of a suspicious probe under
@@ -1529,6 +1530,7 @@ def doctor(probe: bool = False) -> dict:
 
     Args:
         probe: Also run the live ``scraper: <site>`` probes.
+        quick: Skip the test print of the Chromium check.
 
     Returns:
         ``{"ok", "checks": [{"name", "status": "ok" | "missing" | "warn" |
@@ -1539,7 +1541,7 @@ def doctor(probe: bool = False) -> dict:
         login/bot wall or a result count far from the recent runs. Neither
         makes ``ok`` false.
     """
-    return setup_cmd._doctor_core(profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR, probe=probe)
+    return setup_cmd._doctor_core(profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR, probe=probe, quick=quick)
 
 
 @mcp.tool()

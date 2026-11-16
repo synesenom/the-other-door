@@ -72,6 +72,12 @@ jobs:
           cp -R "$mnt/The other door.app" ~/Applications/
           hdiutil detach -force -quiet "$mnt"
           codesign --verify --deep --strict "$HOME/Applications/The other door.app"
+          # the bundled Chromium's own Mach-O files (#176): a file macOS refuses to run fails here, not on a first Prepare
+          chromium="$HOME/Applications/The other door.app/Contents/Resources/bin/chromium"
+          test -d "$chromium"
+          while IFS= read -r f; do
+            codesign --verify --strict "$f"
+          done < <(find "$chromium" -type f \( -perm -u+x -o -name '*.dylib' \))
           echo "DOOR_PACKAGED_APP=$HOME/Applications/The other door.app/Contents/MacOS/The other door" >> "$GITHUB_ENV"
 
       - name: Smoke-test the installed app

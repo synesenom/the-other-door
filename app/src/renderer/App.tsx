@@ -305,7 +305,7 @@ export function App({ start }: { start?: AppStart } = {}) {
     const keep = (r: DoctorReport) => {
       if (mine === doctorCalls.current) setDoctor(r)
     }
-    return call<DoctorReport>('doctor').then(keep, (e) => keep({ ok: false, checks: [], error: errorText(e) }))
+    return call<DoctorReport>('doctor', { quick: true }).then(keep, (e) => keep({ ok: false, checks: [], error: errorText(e) }))
   }, [])
   useEffect(() => {
     if (inShell && !remote) recheck() // the phone has no Claude sign-in to show: that is the computer's

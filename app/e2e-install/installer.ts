@@ -1,8 +1,8 @@
 // The install test's (#639) pure part: which installer to take, how a user installs it on each system, where
 // the installed app's executable and resources end up, how it is removed, and where its data folder is.
 // No process is started here; install.e2e.ts runs the plan.
-import { lstatSync } from 'node:fs'
-import { posix, win32 } from 'node:path'
+import { lstatSync, readdirSync } from 'node:fs'
+import { join, posix, win32 } from 'node:path'
 
 export type Kind = 'dmg' | 'exe' | 'appimage' | 'deb'
 
@@ -171,6 +171,32 @@ export function signingCommands(platform: string, executable: string): string[][
     return [['powershell', '-NoProfile', '-Command', `Get-AuthenticodeSignature '${quoted}' | Format-List Status,StatusMessage,SignerCertificate`]]
   }
   return []
+}
+
+/** One command the macOS build must pass: its exit status, and for `mustMatch` the text it prints (codesign -dv writes to stderr). */
+export type SigningCheck = { argv: string[]; mustMatch?: RegExp }
+
+/**
+ * What the bundled Chromium's Mach-O files must pass on macOS (#176): a valid signature each (`--strict`, so
+ * a file macOS would refuse to run fails here and not on the user's first Prepare) and, in a Developer ID
+ * build (`doorSigned`), the hardened runtime flag.
+ */
+export function chromiumSigningChecks(machOs: string[], doorSigned: boolean): SigningCheck[] {
+  return machOs.flatMap((file) => [
+    { argv: ['codesign', '--verify', '--strict', file] },
+    ...(doorSigned ? [{ argv: ['codesign', '-dv', file], mustMatch: /flags=0x[0-9a-f]+\([^)]*\bruntime\b/ }] : []),
+  ])
+}
+
+/** The Mach-O files of a folder, whole tree: executables (any execute bit) and `*.dylib`; links are not followed. */
+export function machOFiles(dir: string): string[] {
+  const out: string[] = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...machOFiles(path))
+    else if (entry.isFile() && (entry.name.endsWith('.dylib') || (lstatSync(path).mode & 0o111) !== 0)) out.push(path)
+  }
+  return out.sort()
 }
 
 /** Whether `path` is there, a dangling link included (`existsSync` follows links, so it misses one). */

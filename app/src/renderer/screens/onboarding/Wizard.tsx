@@ -32,7 +32,7 @@ export function Wizard({ profile: initial, sandbox, onFinish, onCancel, start }:
 
   // The last answer stays while the next is on its way: the sign-in screen stays up during a check.
   const recheck = useCallback(() => {
-    return call<DoctorReport>('doctor').then(setDoctor, (e) => setDoctor({ ok: false, checks: [], error: errorText(e) }))
+    return call<DoctorReport>('doctor', { quick: true }).then(setDoctor, (e) => setDoctor({ ok: false, checks: [], error: errorText(e) }))
   }, [])
   useEffect(() => {
     void recheck()

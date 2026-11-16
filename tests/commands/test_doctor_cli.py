@@ -168,6 +168,22 @@ def test_doctor_probes_live_sites_when_asked(env, monkeypatch):
     assert called == ["jobindex"]
 
 
+def test_doctor_quick_reaches_the_checks_from_core_cli_and_tool(env, monkeypatch):
+    seen = []
+
+    def fake(*a, quick=False, **k):
+        seen.append(quick)
+        return _fake_checks(True)
+
+    monkeypatch.setattr(doctor, "run_checks", fake)
+    setup_cmd._doctor_core(quick=True)
+    setup_cmd._doctor_core()
+    CliRunner().invoke(cli, ["doctor", "--quick"])
+    CliRunner().invoke(cli, ["doctor"])
+    server.doctor(quick=True)
+    assert seen == [True, False, True, False, True]
+
+
 def test_doctor_command_exit_1_when_required_missing(env, monkeypatch):
     monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: _fake_checks(False))
     result = CliRunner().invoke(cli, ["doctor"])

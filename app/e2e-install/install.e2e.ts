@@ -4,7 +4,7 @@
 // edges that would leave the computer answered from the test world (redirect.ts); Tectonic is the real, bundled
 // one, so the first Prepare downloads its LaTeX packages. No real claude, no plan, no API key: the world's
 // stand-in claude is first on PATH.
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 import type { Page } from '@playwright/test'
@@ -12,7 +12,7 @@ import { expect, INSTALLED, launch, osStub, test } from '../journeys/fixtures'
 import { LAUNCH, saveAndSearch, toReview } from '../journeys/helpers/onboarding'
 import { pagesLoaded } from '../journeys/helpers/applications'
 import { createTracker } from './close'
-import { bundledPython, documentedDataFolder, errorLines, kindOf } from './installer'
+import { bundledPython, chromiumSigningChecks, documentedDataFolder, errorLines, kindOf, machOFiles } from './installer'
 import type { Spawned } from './redirect'
 
 test.use({ worldOptions: { empty: true, persona: 'mette' } })
@@ -89,7 +89,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(spawned.env.DOOR_HOME).toBe(world.home)
   expect(spawned.env.PATH!.split(delimiter)[0]).toBe(join(resources, 'bin'))
 
-  // doctor finds the bundled Tectonic and no checkout
+  // doctor (the full check, which prints a page with the bundled Chromium, #176) finds the bundled Tectonic and no checkout
   const doctor = (await page.evaluate(() => window.door.call('doctor'))) as { data: { checks: { name: string; status: string; detail: string }[] } }
   expect(doctor.data?.checks, `doctor answered: ${JSON.stringify(doctor).slice(0, 2000)}`).toBeDefined()
   const checks = Object.fromEntries(doctor.data.checks.map((c) => [c.name, c]))
@@ -99,6 +99,21 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   // the bundled Chromium headless shell that prints CVs (#165), found in the bundle
   expect(checks['chromium']?.status, JSON.stringify(checks['chromium'])).toBe('ok')
   expect(checks['chromium']!.detail).toContain(join(resources, 'bin', 'chromium'))
+  // macOS: every Mach-O of the bundled Chromium passes codesign (#176), the hardened runtime too in a Developer ID build
+  if (process.platform === 'darwin') {
+    const signed = await app.evaluate(({ app }) => {
+      const fs = process.mainModule!.require('node:fs') as typeof import('node:fs')
+      const pkg = JSON.parse(fs.readFileSync(`${app.getAppPath()}/package.json`, 'utf8')) as { doorSigned?: boolean }
+      return pkg.doorSigned === true
+    })
+    const files = machOFiles(join(resources, 'bin', 'chromium'))
+    expect(files.length, 'no Mach-O file under bin/chromium').toBeGreaterThan(0)
+    for (const check of chromiumSigningChecks(files, signed)) {
+      const r = spawnSync(check.argv[0]!, check.argv.slice(1), { encoding: 'utf8' })
+      expect(r.status, `${check.argv.join(' ')}: ${r.stderr}`).toBe(0)
+      if (check.mustMatch) expect(r.stderr, check.argv.join(' ')).toMatch(check.mustMatch)
+    }
+  }
   // the world's stand-in claude, found and signed in: else the wizard opens on Connect
   const claude = JSON.stringify([checks['claude CLI'], checks['claude login']])
   expect(checks['claude CLI']?.status, claude).toBe('ok')
@@ -144,7 +159,7 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(world.exists('profile/cv.md')).toBe(true)
   expect(filesIn(world.home, 'jobs/runs').filter((f) => f.endsWith('.json'))).toHaveLength(1)
 
-  // Matches, the best one opened and prepared: the real Tectonic compiles both PDFs
+  // Matches, the best one opened and prepared: the bundled Chromium prints both PDFs
   await summary(page).getByRole('button', { name: 'View matches' }).click()
   await expect(matchesHeading(page)).toBeVisible()
   const best = page.getByRole('main').getByRole('list').first().getByRole('listitem').first().getByRole('button').first()
@@ -164,6 +179,13 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(output).toHaveLength(1)
   for (const f of ['cv.html', 'cover_letter.html', 'cv.pdf', 'cover_letter.pdf']) expect(world.exists(`jobs/output/${output[0]}/${f}`), f).toBe(true)
   expect(world.claudeCalls('tailor')).toHaveLength(1)
+  // real PDFs, not the world's stand-ins: the header and at least one page object (#176)
+  for (const f of ['cv.pdf', 'cover_letter.pdf']) {
+    const bytes = readFileSync(join(world.home, 'jobs', 'output', output[0]!, f))
+    expect(bytes.subarray(0, 4).toString(), `${f} is no PDF`).toBe('%PDF')
+    expect(bytes.length, `${f} is empty`).toBeGreaterThan(1000)
+    expect(bytes.toString('latin1'), `${f} has no page`).toMatch(/\/Type\s*\/Page\b/)
+  }
 
   // the bundled Chromium prints a page with the installed interpreter, as the server would (#165; win64's shell on Windows on ARM too)
   const printed = join(world.scratch, 'chromium-print.pdf')

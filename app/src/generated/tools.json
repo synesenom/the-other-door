@@ -142,13 +142,18 @@
   },
   {
     "name": "doctor",
-    "description": "Check every prerequisite: Python, profile, Chromium, the `claude` CLI,\n    the MCP server entry and dev deps.\n\n    Instant and offline by default. With ``probe=True`` it also probes each\n    configured site's live scraper (one ``scraper: <site>`` check per site,\n    page 1 only; live requests, so it can take a\n    while) and saves the raw response of a suspicious probe under\n    ``jobs/drift/<site>/``. Call it when a command fails for an environment\n    reason, or first thing in a setup conversation; pass ``probe`` when a\n    site returned nothing and the user wants to know whether its scraper\n    broke. Identical to `./door doctor [--probe]`.\n\n    Args:\n        probe: Also run the live ``scraper: <site>`` probes.\n\n    Returns:\n        ``{\"ok\", \"checks\": [{\"name\", \"status\": \"ok\" | \"missing\" | \"warn\" |\n        \"drift\", \"required\", \"detail\", \"fix\"}], \"last_run\", \"last_scrape\"}`` —\n        ``fix`` is the command to run for a failed check. ``drift`` means a\n        site's page no longer has the structure its scraper reads (offered a\n        fix by `setup` with ``probe=True``); a ``scraper:`` ``warn`` is an unreachable site, a\n        login/bot wall or a result count far from the recent runs. Neither\n        makes ``ok`` false.\n    ",
+    "description": "Check every prerequisite: Python, profile, Chromium, the `claude` CLI,\n    the MCP server entry and dev deps.\n\n    Offline by default, a few seconds: Chromium prints a test page. ``quick=True`` skips the print\n    (Chromium only has to start). With ``probe=True`` it also probes each\n    configured site's live scraper (one ``scraper: <site>`` check per site,\n    page 1 only; live requests, so it can take a\n    while) and saves the raw response of a suspicious probe under\n    ``jobs/drift/<site>/``. Call it when a command fails for an environment\n    reason, or first thing in a setup conversation; pass ``probe`` when a\n    site returned nothing and the user wants to know whether its scraper\n    broke. Identical to `./door doctor [--probe]`.\n\n    Args:\n        probe: Also run the live ``scraper: <site>`` probes.\n        quick: Skip the test print of the Chromium check.\n\n    Returns:\n        ``{\"ok\", \"checks\": [{\"name\", \"status\": \"ok\" | \"missing\" | \"warn\" |\n        \"drift\", \"required\", \"detail\", \"fix\"}], \"last_run\", \"last_scrape\"}`` —\n        ``fix`` is the command to run for a failed check. ``drift`` means a\n        site's page no longer has the structure its scraper reads (offered a\n        fix by `setup` with ``probe=True``); a ``scraper:`` ``warn`` is an unreachable site, a\n        login/bot wall or a result count far from the recent runs. Neither\n        makes ``ok`` false.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
         "probe": {
           "default": false,
           "title": "Probe",
+          "type": "boolean"
+        },
+        "quick": {
+          "default": false,
+          "title": "Quick",
           "type": "boolean"
         }
       },
