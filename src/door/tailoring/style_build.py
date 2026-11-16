@@ -80,7 +80,7 @@ def font_results(plan: list[dict]) -> list[dict]:
 
 
 _URL = re.compile(r"(?:https?://)?(?:www\.)?[\w-]+(?:\.[\w-]+)+(?:/\S*)?")
-_PHONE = re.compile(r"[+(]?[\d\s().\-]{7,}")
+_PHONE = re.compile(r"[\d\s()+.\-]{7,}")
 _YEAR = re.compile(r"\b(19[5-9]\d|20[0-3]\d)\b")
 _PATH = re.compile(r"[MLHVCSQTAZmlhvcsqtaz\d\s.,\-]+")
 _VIEWBOX = re.compile(r"[\d\s.\-]+")
