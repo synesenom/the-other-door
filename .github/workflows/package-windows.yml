@@ -157,7 +157,17 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
+      # npm ci takes over 2 minutes on this runner, cache or not: unpacking 497 packages on its disk, not the
+      # install scripts (under a second) nor Defender (#167). One restore of node_modules takes seconds.
+      - name: Restore the app's packages
+        id: modules
+        uses: actions/cache@v6
+        with:
+          path: app/node_modules
+          key: node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('app/package-lock.json') }}
+
       - name: Install the app's packages
+        if: steps.modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - uses: actions/download-artifact@v8
