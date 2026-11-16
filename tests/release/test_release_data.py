@@ -92,6 +92,7 @@ def test_a_change_no_step_lists_fails_the_gate(tmp_path, monkeypatch):
     """The steps run, but none of them says what it changes on purpose: the gate reports it."""
     unlisted = [Step(step.name, step.run) for step in migrations.PROFILE_STEPS]
     sample = _newest()
+    monkeypatch.setattr(gate, "READ_CHANGES", {})  # a read change excuses its difference too: leave none
     status, now, changes = open_release(sample, tmp_path / "home", monkeypatch, profile_steps=unlisted)
     assert status is None and changes == []
     expected = json.loads((sample / "expected.json").read_text(encoding="utf-8"))
