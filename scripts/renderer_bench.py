@@ -224,22 +224,16 @@ def embedded_fonts(pdf: Path) -> list[str]:
     return sorted(names)
 
 
-def choose(rows: list[dict]) -> dict:
-    """The gates (access, fonts, icons), then the best mean score, a tie to the smaller install; the next is the fallback."""
+def gates(rows: list[dict]) -> dict:
+    """Who passes the hard checks (access, fonts, icons) and why each other one is out. The choice itself is made
+    from the whole table by judgement: hand-written ports differ, so their blurred scores cannot rank renderers."""
     excluded: dict[str, str] = {}
-    passing = []
     for r in rows:
-        if not r.get("installed", True):
-            excluded[r["candidate"]] = "not installed"
-            continue
-        failed = next((g for g in ("access", "fonts", "icons") if not r.get(g)), None)
+        failed = "not installed" if not r.get("installed", True) else \
+            next((g for g in ("access", "fonts", "icons") if not r.get(g)), None)
         if failed:
             excluded[r["candidate"]] = failed
-        else:
-            passing.append(r)
-    passing.sort(key=lambda r: (-round(sum(r["scores"]) / len(r["scores"]), 2), r["size_mb"] if r["size_mb"] is not None else 1e9))
-    names = [r["candidate"] for r in passing] + [None, None]
-    return {"choice": names[0], "fallback": names[1], "excluded": excluded}
+    return {"passed": [r["candidate"] for r in rows if r["candidate"] not in excluded], "excluded": excluded}
 
 
 def install_size_mb(path: Path) -> float | None:
@@ -507,7 +501,7 @@ def main(argv: list[str] | None = None) -> None:
         shutil.copy(f, fonts)
     refs = references(work)
     rows = [run_candidate(c, refs, work, fonts) for c in candidates()]
-    result = choose(rows)
+    result = gates(rows)
     chrome = next((r for r in rows if r["candidate"] == "chromium" and r.get("cv2_page")), None)
     for r in rows:  # the reference has no icons: compare each candidate's icon crops with Chromium's
         if chrome and r.get("cv2_page") and r is not chrome:
@@ -519,10 +513,10 @@ def main(argv: list[str] | None = None) -> None:
         pages = [refs[n][0]] + [Image.open(f).convert("RGB") for c in rows if c.get("installed")
                                 for f in [work / c["candidate"] / f"cv{n}" / "png" / "cv_page_1.png"] if f.exists()]
         proto.side_by_side(pages).save(OUT / f"cv{n}_side_by_side.png")
-    report = (bench_table(rows, DOCS) + f"\nChoice: {result['choice']}; fallback: {result['fallback']}; "
+    report = (bench_table(rows, DOCS) + f"\nPass the gates: {', '.join(result['passed']) or 'none'}; "
               f"excluded: {result['excluded']}\n")
     (OUT / "table.md").write_text(report, encoding="utf-8")
-    (OUT / "rows.json").write_text(json.dumps({"rows": rows, "choice": result}, indent=1, default=str), encoding="utf-8")
+    (OUT / "rows.json").write_text(json.dumps({"rows": rows, "gates": result}, indent=1, default=str), encoding="utf-8")
     print(report)
 
 

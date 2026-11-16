@@ -176,21 +176,10 @@ def _row(name, *, access=True, fonts=True, icons=True, scores=(0.9, 0.9), size=1
             "scores": list(scores), "size_mb": size}
 
 
-def test_choose_takes_the_best_score_among_those_that_pass_the_gates():
-    rows = [_row("chromium", scores=(0.95, 0.9), size=376), _row("typst", scores=(0.9, 0.9), size=14),
-            _row("weasyprint", access=False, scores=(0.99, 0.99))]
-    assert bench.choose(rows) == {"choice": "chromium", "fallback": "typst", "excluded": {"weasyprint": "access"}}
-
-
-def test_choose_breaks_a_tie_by_the_smaller_install():
-    rows = [_row("chromium", size=376), _row("typst", size=14)]
-    assert bench.choose(rows)["choice"] == "typst"
-
-
-def test_choose_when_none_passes_or_is_installed():
-    rows = [_row("a", fonts=False), _row("b", installed=False), _row("c", icons=False)]
-    assert bench.choose(rows) == {"choice": None, "fallback": None,
-                                  "excluded": {"a": "fonts", "b": "not installed", "c": "icons"}}
+def test_gates_lists_who_passes_and_why_the_others_are_out():
+    rows = [_row("chromium"), _row("typst", access=False), _row("weasyprint", fonts=False), _row("x", installed=False)]
+    assert bench.gates(rows) == {"passed": ["chromium"],
+                                 "excluded": {"typst": "access", "weasyprint": "fonts", "x": "not installed"}}
 
 
 # ---------- the table and the size ----------
