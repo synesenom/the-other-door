@@ -1,4 +1,4 @@
-"""scripts/cv_style_proto/scrub_pdf.py and scrub_check.py: the pure parts of the tools that scrub a real CV PDF for the style corpus."""
+"""scripts/style_corpus/scrub_pdf.py and scrub_check.py: the pure parts of the tools that scrub a real CV PDF for the style corpus."""
 
 import importlib.util
 import re
@@ -8,7 +8,7 @@ import pytest
 from paths import REPO_ROOT
 
 # scrub_pdf.py's pure parts (pikepdf, which only its own venv has, is imported where a PDF is opened)
-_scrub_spec = importlib.util.spec_from_file_location("scrub_pdf", REPO_ROOT / "scripts" / "cv_style_proto" / "scrub_pdf.py")
+_scrub_spec = importlib.util.spec_from_file_location("scrub_pdf", REPO_ROOT / "scripts" / "style_corpus" / "scrub_pdf.py")
 scrub = importlib.util.module_from_spec(_scrub_spec)
 _scrub_spec.loader.exec_module(scrub)
 
@@ -89,7 +89,7 @@ def test_only_the_producing_programs_names_are_kept_from_the_document_info():
     assert scrub.kept_info(info) == {"/Creator": "Pages", "/Producer": "Quartz"}
 
 
-_check_spec = importlib.util.spec_from_file_location("scrub_check", REPO_ROOT / "scripts" / "cv_style_proto" / "scrub_check.py")
+_check_spec = importlib.util.spec_from_file_location("scrub_check", REPO_ROOT / "scripts" / "style_corpus" / "scrub_check.py")
 scrub_check = importlib.util.module_from_spec(_check_spec)
 _check_spec.loader.exec_module(scrub_check)
 

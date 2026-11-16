@@ -1,6 +1,6 @@
 """Build the made-up CVs of the style corpus (#148): tests/tailoring/fixtures/styles/*.pdf that no real tool wrote.
 
-Three HTML designs of `scripts/cv_style_proto/cvs.py` (a Word-like two columns, a Canva-like coloured sidebar with
+Three HTML designs of `scripts/style_corpus/cvs.py` (a Word-like two columns, a Canva-like coloured sidebar with
 icons, a plain single column) plus a LinkedIn-like export (record 4) are printed by the pinned Chromium (`door.tailoring.html_pdf`),
 set in the fonts of `profile.example/fonts` only (Figtree, Young Serif) so that nothing depends on the fonts of the
 computer that runs this; the scan is the plain one rendered to a grey picture. Everything is made up: fake names,
@@ -25,7 +25,7 @@ sys.path.insert(0, str(REPO / "src"))
 
 from door.tailoring import html_pdf, pdf_render  # noqa: E402
 
-_spec = importlib.util.spec_from_file_location("cvs", REPO / "scripts" / "cv_style_proto" / "cvs.py")
+_spec = importlib.util.spec_from_file_location("cvs", REPO / "scripts" / "style_corpus" / "cvs.py")
 cvs = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cvs)
 
