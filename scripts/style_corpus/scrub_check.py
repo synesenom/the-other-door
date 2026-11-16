@@ -87,12 +87,12 @@ def check(original: str, scrubbed: str, words_json: str) -> None:
             blobs.append(zlib.decompress(m.group(1)))
         except zlib.error:
             continue
-    blobs = [b for b in blobs if searchable(b) is not None]  # not a font program or a CMap
-    print("structure left (tags, /ActualText, /Alt):", structure_left(blobs))
-    blobs = [searchable(b) for b in blobs]
+    seen = [(x, searchable(x)) for x in blobs]
+    seen = [(x, y) for x, y in seen if y is not None]  # not a font program or a CMap
+    print("structure left (tags, /ActualText, /Alt):", structure_left([x for x, _ in seen]))
     print("original words (4+ letters) in the bytes:",
           sorted(w for w in banned if len(w) >= 4 and not w.isdigit()
-                 and any(re.search(rb"\b" + re.escape(w.encode()) + rb"\b", x) for x in blobs)))
+                 and any(re.search(rb"\b" + re.escape(w.encode()) + rb"\b", y) for _, y in seen)))
     print("links:", sum(raw.FPDFPage_GetAnnotCount(p.raw) for p in b),
           "| metadata:", {k: v for k, v in b.get_metadata_dict().items() if v})
     b[0].render(scale=150 / 72).to_pil().save(scrubbed.removesuffix(".pdf") + "-pdfium.png")

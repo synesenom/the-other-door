@@ -214,9 +214,16 @@ def test_text_in_a_font_with_no_codes_to_unicode_is_left_alone_and_other_operato
     assert [x for op, x in new if op == "Tj"] == [[b"\x01"]]
 
 
-def test_marked_content_keeps_only_its_mcid():
-    assert scrub.mcid_only({"/MCID": 4, "/ActualText": "x", "/Alt": "y"}) == {"/MCID": 4}
-    assert scrub.mcid_only({"/ActualText": "x"}) == {}
+def test_a_letter_beyond_french_is_part_of_its_word_and_goes_with_it():
+    chars = {i + 1: ch for i, ch in enumerate(LETTERS)} | {60: "ő", 61: "Ő", 40: " "}
+    font = scrub.Font.from_unicode(chars, lambda c: 500.0, 2)
+    assert font.char_of[60] == "ő" and font.char_of[61] == "Ő" and 60 not in font.code_for_char.values()
+    code = lambda cs: b"".join(c.to_bytes(2, "big") for c in cs)  # noqa: E731
+    ops = [("BT", []), ("Tf", ["/F1", 10.0]), ("Td", [10.0, 10.0]),
+           ("Tj", [code([19, 26, 60, 11, 5])]), ("ET", [])]  # s z ő k e
+    new = scrub.rewrite_content(ops, {"/F1": font}, {"szőke"})
+    text = "".join(font.char_of[int.from_bytes(d[i:i + 2], "big")] for op, args in new if op == "Tj" for d in args for i in range(0, len(d), 2))
+    assert text and "ő" not in text and text != "szőke"  # one word replaced whole, not "Se", "ő", "kk"
 
 
 def test_a_cff_font_program_and_the_structure_of_a_tagged_pdf_are_told_apart_in_the_check():
@@ -261,11 +268,41 @@ def test_a_word_like_pdf_loses_its_words_its_structure_and_its_author(tmp_path):
     assert not {"/StructTreeRoot", "/MarkInfo", "/Lang"} & set(pdf.Root.keys()) and "/Author" not in (pdf.trailer.get("/Info") or {})
     ops = [(str(op), operands) for operands, op in pikepdf.parse_content_stream(pdf.pages[0])]
     bdc = [operands[1] for op, operands in ops if op == "BDC"][0]
-    assert list(bdc.keys()) == ["/MCID"]
+    assert list(bdc.keys()) == ["/MCID"]  # /ActualText and /Alt gone
     font = scrub.Font.from_pdf(pdf.pages[0].Resources.Font.F1)
     text = "".join(font.char_of.get(int.from_bytes(bytes(o)[k:k + 2], "big"), " ")
                    for op, operands in ops if op == "Tj" for o in operands for k in range(0, len(bytes(o)), 2))
     assert text and not {"zebra", "yacht", "quilt"} & set(text.split())
+
+
+def test_a_word_like_pdf_loses_links_form_text_and_named_marked_content_properties_too(tmp_path):
+    pikepdf = pytest.importorskip("pikepdf")
+    src, dst, words = tmp_path / "in.pdf", tmp_path / "out.pdf", tmp_path / "w.json"
+    _word_like_pdf(src)
+    pdf = pikepdf.open(src, allow_overwriting_input=True)
+    page = pdf.pages[0]
+    link = pikepdf.Dictionary(Type=pikepdf.Name.Annot, Subtype=pikepdf.Name.Link, Rect=[0, 0, 10, 10],
+                              A=pikepdf.Dictionary(S=pikepdf.Name.URI, URI=pikepdf.String("mailto:zebra@yacht.dk")))
+    page.Annots = pikepdf.Array([pdf.make_indirect(link)])
+    page.StructParents = 0
+    page.Resources.Properties = pikepdf.Dictionary(P0=pikepdf.Dictionary(MCID=1, ActualText=pikepdf.String("zebra secret")))
+    code = "".join("%04X" % (ord(ch) - 96) for ch in "quilt")
+    form = pdf.make_stream(f"BT /F1 11 Tf 72 600 Td <{code}> Tj ET".encode())
+    form.Type, form.Subtype, form.BBox = pikepdf.Name.XObject, pikepdf.Name.Form, [0, 0, 300, 800]
+    form.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=page.Resources.Font.F1))
+    page.Resources.XObject = pikepdf.Dictionary(X0=form)
+    page.Contents = pdf.make_stream(page.Contents.read_bytes() + b" /Span /P0 BDC EMC /X0 Do")
+    pdf.save(src)
+    words.write_text('["zebra", "yacht", "quilt"]')
+    scrub.main(str(src), str(dst), str(words))
+    result = pikepdf.open(dst)
+    out = result.pages[0]
+    assert "/Annots" not in out and "/StructParents" not in out
+    assert list(out.Resources.Properties.P0.keys()) == ["/MCID"]
+    font = scrub.Font.from_pdf(out.Resources.Font.F1)
+    codes = [int.from_bytes(bytes(o)[k:k + 2], "big") for operands, op in pikepdf.parse_content_stream(out.Resources.XObject.X0)
+             if str(op) == "Tj" for o in operands for k in range(0, len(bytes(o)), 2)]
+    assert codes and "quilt" != "".join(font.char_of.get(c, " ") for c in codes)
 
 
 STYLES = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles"
