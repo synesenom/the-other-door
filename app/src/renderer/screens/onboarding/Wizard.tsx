@@ -74,6 +74,7 @@ export function Wizard({ profile: initial, sandbox, onFinish, onCancel, start }:
           state={state}
           profile={initial}
           dispatch={dispatch}
+          sandbox={sandbox}
           onBack={() => dispatch({ type: 'back' })}
           onSaved={(saved) => onFinish(state.mode === 'fresh' && canRunFirst(state, saved, doctor, sandbox))}
         />
