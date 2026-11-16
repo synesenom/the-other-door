@@ -240,32 +240,36 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
         </div>
         {!sent && (
           <aside className="materials-aside">
-            <section className="revise">
-              <label className="field" htmlFor="revise-instruction">
-                <span className="display-s">Anything to change?</span>
-              </label>
-              <textarea
-                id="revise-instruction"
-                rows={3}
-                value={instruction}
-                disabled={busy}
-                placeholder={doc === 'cv' ? 'Change the CV: lead with the dashboards project…' : 'Change the letter: make it shorter and warmer…'}
-                onChange={(e) => setInstruction(e.target.value)}
-              />
-              <div className="actions">
-                <button
-                  type="button"
-                  className="primary"
-                  disabled={busy || instruction.trim() === ''}
-                  onClick={() => void run({ instruction: instruction.trim() })}
-                >
-                  Revise
-                </button>
-                <button type="button" className="quiet" disabled={busy} onClick={() => void run({ undo: true })}>
-                  Undo last change
-                </button>
-              </div>
-            </section>
+            {m.revisable ? (
+              <section className="revise">
+                <label className="field" htmlFor="revise-instruction">
+                  <span className="display-s">Anything to change?</span>
+                </label>
+                <textarea
+                  id="revise-instruction"
+                  rows={3}
+                  value={instruction}
+                  disabled={busy}
+                  placeholder={doc === 'cv' ? 'Change the CV: lead with the dashboards project…' : 'Change the letter: make it shorter and warmer…'}
+                  onChange={(e) => setInstruction(e.target.value)}
+                />
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={busy || instruction.trim() === ''}
+                    onClick={() => void run({ instruction: instruction.trim() })}
+                  >
+                    Revise
+                  </button>
+                  <button type="button" className="quiet" disabled={busy} onClick={() => void run({ undo: true })}>
+                    Undo last change
+                  </button>
+                </div>
+              </section>
+            ) : (
+              <p className="body muted">Prepare it again to change it.</p>
+            )}
           </aside>
         )}
       </div>

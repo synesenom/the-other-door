@@ -253,6 +253,19 @@ def test_show_returns_the_materials_once_prepared(env, fake_pages, monkeypatch):
     assert result["page_counts"] == {"cv": 2, "cover_letter": 1}
     assert result["cover_letter_words"] == 11
     assert result["rendered"] is False
+    assert result["revisable"] is True
+
+
+def test_materials_prepared_with_latex_cannot_be_revised(env, fake_pages):
+    """No HTML body, only the LaTeX of an older version: `revise` could only refuse, so the row says so."""
+    _posting(env.jobs_dir, "jobindex-top", 0.95)
+    out = _materials(env)
+    for name in ("cv", "cover_letter"):
+        (out / f"{name}.html").rename(out / f"{name}.tex")
+
+    result = matches_cmd._show_core("acme top", jobs_dir=env.jobs_dir)["materials"]
+
+    assert result["revisable"] is False
 
 
 def test_show_renders_when_pngs_are_missing(env, fake_pages, monkeypatch):

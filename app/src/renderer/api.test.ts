@@ -113,6 +113,7 @@ const materials = (over: Partial<Materials> = {}): Materials => ({
   page_counts: { cv: 2, cover_letter: 1 },
   cover_letter_words: 310,
   rendered: false,
+  revisable: true,
   ...over,
 })
 

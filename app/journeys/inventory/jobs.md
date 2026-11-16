@@ -343,6 +343,7 @@ Reached through:
     - a cancelled save: nothing — unit: `app/src/renderer/screens/Materials.test.tsx`
   - A reload failure after a successful revise also lands in the failure alert (the show error text). — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **status** spinner "Revising…" while busy. The pages get `aria-busy=true` and the `.dimmed` class. — ✓ Revise changes the letter, shows the new pages, and Undo puts it back
+  - Revise box ("Anything to change?", Revise, Undo last change): not sent and `revisable`; for a job prepared with LaTeX (no HTML bodies) the line "Prepare it again to change it." stands in its place. — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **group "Document"** with two pills (aria-pressed, disabled while busy). The letter is the default unless a notification asked for `document`. — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded (a notification's document: §0's)
     - **btn "CV · N page(s)"** (`page_counts.cv`; "1 page" or "N pages"). — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded; unit: `app/src/renderer/screens/Materials.test.tsx`
     - **btn "Letter · N words"** (`cover_letter_words`), or **"Letter · N page(s)"** when the words are null (no cover_letter.html). — unit: `app/src/renderer/screens/Materials.test.tsx`
@@ -502,7 +503,7 @@ Reached through:
 
 **`show`** (Posting, Materials, ImportDialog, notices):
 - Posting fields: `id, title, title_en, company, location, url, apply_url, description, score, score_reason, posted_at, source_name, language, language_requirement ('required'|'advantage'|'none'|null), matching_skills[], missing_skills[], status`.
-- `materials`: null, or `{output_dir, pngs: {cv[], cover_letter[]}, page_counts: {cv, cover_letter}, cover_letter_words (null when there is no .html), sent, file_names: {cv, cover_letter}}`.
+- `materials`: null, or `{output_dir, pngs: {cv[], cover_letter[]}, page_counts: {cv, cover_letter}, cover_letter_words (null when there is no .html), revisable (both HTML bodies there), sent, file_names: {cv, cover_letter}}`.
 - Not read: `pdfs`, `keywords`, `tailoring`, `rendered`, `unsupported`, `history`, `source`.
 - ImportDialog reads only title, company and location.
 - Notices read title, company and status (inPlay).

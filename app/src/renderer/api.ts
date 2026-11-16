@@ -241,6 +241,8 @@ export interface Materials {
   page_counts: { cv: number; cover_letter: number }
   cover_letter_words: number | null
   rendered: boolean
+  /** Both HTML bodies are there; false for a job prepared with LaTeX (an older version), which only Prepare again changes. */
+  revisable: boolean
   /** The application went out: these are the files as sent (`jobs/output/<id>/sent/`), not to be revised. */
   sent?: boolean
   /** What to save each PDF as: the candidate's name first (`show`'s file_names). */

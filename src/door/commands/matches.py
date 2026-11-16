@@ -370,7 +370,8 @@ def _materials(output_dir: Path) -> dict | None:
         ``{"output_dir", "pdfs": {"cv", "cover_letter"}, "pngs": {"cv":
         [...], "cover_letter": [...]}, "keywords": [...], "tailoring": [...],
         "page_counts": {"cv", "cover_letter"}, "cover_letter_words",
-        "rendered", "unsupported", "file_names"}`` — ``rendered`` says whether this call rendered PNGs;
+        "rendered", "revisable", "unsupported", "file_names"}`` — ``rendered`` says whether this call rendered PNGs;
+        ``revisable`` is whether both HTML bodies are there (a job prepared with LaTeX is not: `revise` refuses it);
         ``file_names`` is what to save each PDF as (`_file_names`);
         ``unsupported`` lists the numbers, years, employers, skills, certifications and degrees of the CV and letter
         that ``profile/cv.md`` and the story bank do not back (each ``{kind, value,
@@ -414,6 +415,7 @@ def _materials(output_dir: Path) -> dict | None:
         "page_counts": {name: pdf_render.get_page_count(path) for name, path in pdfs.items()},
         "cover_letter_words": words,
         "rendered": rendered,
+        "revisable": cv_html.is_file() and letter_html.is_file(),
         "unsupported": unsupported,
         "file_names": _file_names(common._load_config_or_defaults(workspace.PROFILE_DIR).get("name")),
     }

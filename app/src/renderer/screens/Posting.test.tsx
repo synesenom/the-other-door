@@ -334,7 +334,7 @@ describe('Posting', () => {
       vi.useRealTimers()
       delete (window as { matchMedia?: unknown }).matchMedia
     })
-    const materials = { output_dir: '/abs/jobs/output/jobindex.1', page_counts: { cv: 2, cover_letter: 1 }, pngs: { cv: [], cover_letter: [] }, pdfs: {}, keywords: [], tailoring: [], cover_letter_words: 300, rendered: false }
+    const materials = { output_dir: '/abs/jobs/output/jobindex.1', page_counts: { cv: 2, cover_letter: 1 }, pngs: { cv: [], cover_letter: [] }, pdfs: {}, keywords: [], tailoring: [], cover_letter_words: 300, rendered: false, revisable: true }
     const prepared = { job_id: 'jobindex.1', outcome: 'prepared', output_dir: materials.output_dir, files: [] }
 
     it.each(['unapplied', 'prepared'])('with no materials and status %s, Prepare application is the one primary button', async (status) => {

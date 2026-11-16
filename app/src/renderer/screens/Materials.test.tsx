@@ -17,6 +17,7 @@ const materials = (over: Record<string, unknown> = {}) => ({
   page_counts: { cv: 2, cover_letter: 1 },
   cover_letter_words: 310,
   rendered: false,
+  revisable: true,
   file_names: { cv: 'Jane Doe - CV.pdf', cover_letter: 'Jane Doe - Cover letter.pdf' },
   ...over,
 })
@@ -247,6 +248,15 @@ describe('Materials', () => {
   })
 
   describe('revise', () => {
+    it('offers no Revise for a job prepared with LaTeX, and says what to do', async () => {
+      mockDoor({ show: posting({ materials: materials({ revisable: false }) }) })
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      await screen.findByRole('heading', { name: 'Ready to send' })
+      expect(screen.queryByRole('button', { name: 'Revise' })).toBeNull()
+      expect(screen.queryByRole('textbox')).toBeNull()
+      expect(screen.getByText('Prepare it again to change it.')).toBeInTheDocument()
+    })
+
     const revisedShow = () => {
       let n = 0
       return () => (++n === 1 ? posting() : posting({ materials: materials({ page_counts: { cv: 2, cover_letter: 1 }, cover_letter_words: 280 }) }))
