@@ -20,9 +20,10 @@ case "$(uname -s)-$(uname -m)" in
   *) echo "bundle-python.sh: $(uname -s) $(uname -m) is not supported (x64 Linux, macOS)" >&2; exit 2 ;;
 esac
 
-field() { node -e "const l=require(process.argv[1]);const v=process.argv[2].split('.').reduce((o,k)=>o[k],l);process.stdout.write(String(v))" "$LOCK" "$1"; }
+jsonfield() { node -e "const l=require(process.argv[1]);const v=process.argv[2].split('.').reduce((o,k)=>o[k],l);process.stdout.write(String(v))" "$1" "$2"; }
+field() { jsonfield "$LOCK" "$1"; }
 # pinfield PATH: a value of the Chromium pin (src/door/core/chromium_pin.json)
-pinfield() { node -e "const l=require(process.argv[1]);const v=process.argv[2].split('.').reduce((o,k)=>o[k],l);process.stdout.write(String(v))" "$REPO/src/door/core/chromium_pin.json" "$1"; }
+pinfield() { jsonfield "$REPO/src/door/core/chromium_pin.json" "$1"; }
 sha256() { if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
 
 # fetch URL SHA256: sets FETCHED to the cached file, downloaded once and checked every time

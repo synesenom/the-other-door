@@ -113,7 +113,7 @@ class Cdp:
             head += bytes([0x80 | 126]) + struct.pack(">H", n)
         else:
             head += bytes([0x80 | 127]) + struct.pack(">Q", n)
-        masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload)) if n < 4096 else _mask_big(payload, mask)
+        masked = _mask_big(payload, mask)
         self._sock.sendall(head + mask + masked)
 
     def _read_exact(self, n: int, deadline: float, what: str) -> bytes:

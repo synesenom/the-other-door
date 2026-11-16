@@ -43,7 +43,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 - http.server's name
         path = unquote(urlsplit(self.path).path)
         target = (self.root / path.lstrip("/")).resolve()
-        if path.endswith("/") or not target.is_relative_to(self.root) or not target.is_file():
+        if not target.is_relative_to(self.root) or not target.is_file():
             self.send_error(404)
             return
         data = target.read_bytes()
@@ -52,8 +52,6 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
-
-    do_HEAD = do_GET  # noqa: N815
 
     def log_message(self, *args) -> None:
         pass

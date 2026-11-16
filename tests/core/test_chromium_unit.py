@@ -23,7 +23,6 @@ def test_the_pin_names_a_version_and_a_checksum_per_platform():
     for key in KEYS:
         sha = pin["platforms"][key]["sha256"]
         assert len(sha) == 64 and int(sha, 16) >= 0
-        assert pin["platforms"][key]["bytes"] > 10_000_000
 
 
 def test_download_url_is_the_pinned_chrome_for_testing_zip():
@@ -108,7 +107,7 @@ def pinned(monkeypatch):
         monkeypatch.setattr(chromium, "pin", lambda: {
             "url": real["url"],
             "version": "1.2.3.4",
-            "platforms": {key: {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}},
+            "platforms": {key: {"sha256": hashlib.sha256(data).hexdigest()}},
         })
         return key
 
