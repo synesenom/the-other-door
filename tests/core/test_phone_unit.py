@@ -274,5 +274,5 @@ def test_stopping_ends_each_process_group_not_just_its_first_process(monkeypatch
     monkeypatch.setattr(phone.os, "killpg", lambda pgid, sig: sent.append(("group", pgid)), raising=False)
     monkeypatch.setattr(phone.os, "getpgid", lambda pid: pid, raising=False)
     monkeypatch.setattr(phone.sys, "platform", "darwin")
-    phone._kill(4242)
+    phone.kill_tree(4242)
     assert sent == [("group", 4242)]

@@ -41,14 +41,14 @@ _LINK = re.compile(r"https://login\.tailscale\.com/\S+")
 
 
 # ----------------------------------------------------------------------------- the real world
-def _spawn(argv: list[str], *, log: Path, env: dict | None = None):
+def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None):
     log.parent.mkdir(parents=True, exist_ok=True)
     out = open(log, "ab")  # noqa: SIM115 - handed to the child, which outlives this call
     extra = {"creationflags": 0x00000008 | 0x00000200} if sys.platform == "win32" else {"start_new_session": True}
     return subprocess.Popen(argv, stdout=out, stderr=out, stdin=subprocess.DEVNULL, env=env, **extra)
 
 
-def _is_alive(pid: int) -> bool:
+def is_alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -60,9 +60,9 @@ def _is_alive(pid: int) -> bool:
     return True
 
 
-def _kill(pid: int) -> None:
+def kill_tree(pid: int) -> None:
     """End a process this module started, with everything it started: each runs in a session of its own
-    (`_spawn`), and Python on a Mac starts the real server as a child of a launcher."""
+    (`spawn_detached`), and Python on a Mac starts the real server as a child of a launcher."""
     try:
         if sys.platform != "win32":
             os.killpg(os.getpgid(pid), signal.SIGTERM)
@@ -108,7 +108,7 @@ def default_web_dir() -> Path:
 
 def _defaults() -> dict:
     return {
-        "spawn": _spawn, "is_alive": _is_alive, "kill": _kill, "run": subprocess.run, "answers": _answers,
+        "spawn": spawn_detached, "is_alive": is_alive, "kill": kill_tree, "run": subprocess.run, "answers": _answers,
         "sleep": time.sleep, "platform": sys.platform, "find_cloudflared": find_cloudflared,
         "find_tailscale": find_tailscale, "web_dir": default_web_dir(),
     }
