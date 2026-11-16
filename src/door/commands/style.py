@@ -5,9 +5,12 @@ Two cores. `_build_core` is the build itself, in the foreground (the command, wi
 `build_style` tool calls: it takes the file in (intake, a copy at `HOME/.style/source.pdf`), ends a build already
 running, starts `python -m door cv style build <copy>` as a process of its own (`core/phone.py`'s way, so it outlives
 the server or the app that asked) and returns at once. Its state is `HOME/.style/run.json` (`pid`, `state`
-building|ready|failed, `started_at`, `result`), its folder `HOME/.style/work` and its log `HOME/.style/build.log`;
-`status` reads them for `status_summary`'s `style` block. A build writes only `profile/style/` and never takes the
-ledger lock, so it runs beside a `find`.
+building|ready|failed, `started_at`, `result`), its folder `HOME/.style/work` and its log `HOME/.style/build.log`.
+Both the starter and the build write run.json, on purpose: the starter's `building` (no pid yet) covers the gap until
+the build takes its lock and writes its own. A build is alive while it holds the OS lock `HOME/.style/build.lock`
+(dropped by the OS when it dies, so a record left by a crash or a reboot, or a pid since reused, never reads as a build
+and is never ended); `status` reads that for `status_summary`'s `style` block. A build writes only `profile/style/`
+and never takes the ledger lock, so it runs beside a `find`.
 """
 
 from __future__ import annotations
@@ -15,7 +18,11 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import signal
 import sys
+import threading
+import time
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -24,18 +31,16 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import phone, workspace
+from door.core import lock, phone, workspace
 from door.tailoring import style_build, style_extract
 
 TEMPLATE = "cv.template.html"
+LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
+PENDING_SECONDS = 30  # a started build that has not yet taken its lock still reads as building this long
 
 
 def _style_dir(home: Path) -> Path:
     return Path(home) / ".style"
-
-
-def _defaults() -> dict:
-    return {"spawn": phone.spawn_detached, "is_alive": phone.is_alive, "kill": phone.kill_tree}
 
 
 def _read(home: Path) -> dict | None:
@@ -43,7 +48,7 @@ def _read(home: Path) -> dict | None:
         run = json.loads((_style_dir(home) / "run.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    return run if isinstance(run, dict) else None
+    return run
 
 
 def _write(home: Path, run: dict) -> None:
@@ -70,74 +75,141 @@ def _intake(path: Path) -> None:
         raise ValueError(verdict["detail"] or f"no style to copy ({verdict['reason']})")
 
 
-def _end_running(home: Path, deps: dict, *, own_pid: int | None = None) -> None:
-    """End a build that is still going (its process group), unless it is this process."""
+def _lock_path(home: Path) -> Path:
+    return _style_dir(home) / "build.lock"
+
+
+def _held(home: Path) -> bool:
+    """Whether a build is running: some process holds the build lock."""
+    if not _lock_path(home).exists():
+        return False
+    with open(_lock_path(home), "ab") as fh:
+        if lock._try_os_lock(fh):
+            lock._os_unlock(fh)
+            return False
+    return True
+
+
+@contextmanager
+def _building(home: Path):
+    """Hold the build lock for the block, waiting up to `LOCK_WAIT` seconds for a build being ended to let go."""
+    _style_dir(home).mkdir(parents=True, exist_ok=True)
+    fh = open(_lock_path(home), "ab")  # noqa: SIM115 - closed below
+    deadline = time.monotonic() + LOCK_WAIT
+    while not lock._try_os_lock(fh):
+        if time.monotonic() >= deadline:
+            fh.close()
+            raise ValueError("a build of a CV style is still running")
+        time.sleep(0.2)
+    try:
+        yield
+    finally:
+        lock._os_unlock(fh)
+        fh.close()
+
+
+def _end_running(home: Path) -> None:
+    """End the build that is running (its process group), unless it is this process or its launcher."""
     run = _read(home)
-    if run and run.get("state") == "building" and run.get("pid") not in (None, own_pid) and deps["is_alive"](run["pid"]):
-        deps["kill"](run["pid"])
+    if run and run["state"] == "building" and run.get("pid") not in (None, os.getpid(), os.getppid()) and _held(home):
+        phone.kill_tree(run["pid"])
 
 
-def _build_core(file: str, *, progress=None, home: Path | None = None, profile_dir: Path | None = None, **deps) -> dict:
+def _fail_pending(home: Path, exc: Exception) -> None:
+    """A start's `building` record (no pid yet) of a process that was refused the file is a failure, not a build."""
+    run = _read(home)
+    if run and run["state"] == "building" and "pid" not in run:
+        _write(home, {**run, "state": "failed", "result": {"problems": [str(exc)]}})
+
+
+def _terminate(signum, frame):
+    raise SystemExit(128 + signum)
+
+
+def _build_core(file: str, *, progress=None, home: Path | None = None, profile_dir: Path | None = None) -> dict:
     """Build a CV template from the PDF at `file` here and now, recording the build in `HOME/.style/run.json`.
 
-    Returns `style_build.build`'s result. Raises ValueError (intake: nothing is written) or whatever the builder
-    raises, after recording the build as failed."""
-    d = {**_defaults(), **deps}
+    Returns `style_build.build`'s result. Raises ValueError (intake: nothing is written, but a start's pending record
+    turns failed) or whatever the builder raises, after recording the build as failed. SIGTERM, from the build that
+    replaces this one, unwinds like an exception, so the print's `finally` ends Chromium (a session of its own)."""
     home = Path(home or workspace.HOME)
     pdf = Path(file).expanduser()
-    _intake(pdf)
-    _end_running(home, d, own_pid=os.getpid())
-    run = {"pid": os.getpid(), "state": "building", "started_at": _now()}
-    _write(home, run)
     try:
-        result = style_build.build(
-            pdf, work_dir=_style_dir(home) / "work", profile_dir=profile_dir or workspace.PROFILE_DIR, progress=progress)
-    except BaseException as exc:
-        _write(home, {**run, "state": "failed", "result": {"problems": [f"{type(exc).__name__}: {exc}"]}})
+        _intake(pdf)
+    except ValueError as exc:
+        _fail_pending(home, exc)
         raise
-    _write(home, {**run, "state": result["state"], "result": result})
+    _end_running(home)
+    run = {"pid": os.getpid(), "state": "building", "started_at": _now()}
+
+    def record(state: dict) -> None:
+        # not over a newer build's record: this one was replaced
+        if (_read(home) or {}).get("pid") == os.getpid():
+            _write(home, state)
+
+    main = threading.current_thread() is threading.main_thread()
+    before = signal.signal(signal.SIGTERM, _terminate) if main else None
+    try:
+        with _building(home):
+            _write(home, run)
+            try:
+                result = style_build.build(
+                    pdf, work_dir=_style_dir(home) / "work", profile_dir=profile_dir or workspace.PROFILE_DIR, progress=progress)
+            except BaseException as exc:
+                record({**run, "state": "failed", "result": {"problems": [f"{type(exc).__name__}: {exc}"]}})
+                raise
+            record({**run, "state": result["state"], "result": result})
+    finally:
+        if main:
+            signal.signal(signal.SIGTERM, before)
     return result
 
 
-def _start_core(file: str, *, home: Path | None = None, **deps) -> dict:
+def _spawn(home: Path, copy: Path) -> None:
+    folder = _style_dir(home)
+    _write(home, {"state": "building", "started_at": _now()})
+    env = {**os.environ, "DOOR_HOME": str(home), "PYTHONPATH": str(workspace.REPO_ROOT / "src")}
+    phone.spawn_detached([sys.executable, "-m", "door", "cv", "style", "build", str(copy)],
+                         log=folder / "build.log", env=env, hidden_console=True)
+
+
+def _start_core(file: str, *, home: Path | None = None) -> dict:
     """Start a build of the PDF at `file` in a process of its own and return ``{"started": True}`` at once.
 
     Raises ValueError, in words, when the file has no style to copy: nothing starts and the style in use is untouched."""
-    d = {**_defaults(), **deps}
     home = Path(home or workspace.HOME)
     pdf = Path(file).expanduser()
     _intake(pdf)
-    _end_running(home, d)
-    folder = _style_dir(home)
-    folder.mkdir(parents=True, exist_ok=True)
-    copy = folder / "source.pdf"
+    _end_running(home)
+    copy = _style_dir(home) / "source.pdf"
+    copy.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(pdf, copy)
-    env = {**os.environ, "DOOR_HOME": str(home), "PYTHONPATH": str(workspace.REPO_ROOT / "src")}
-    process = d["spawn"]([sys.executable, "-m", "door", "cv", "style", "build", str(copy)], log=folder / "build.log", env=env)
-    _write(home, {"pid": process.pid, "state": "building", "started_at": _now()})
+    _spawn(home, copy)
     return {"started": True}
 
 
-def status(home: Path, profile_dir: Path, *, is_alive=None) -> dict:
+def _age(started_at: str) -> float:
+    return (datetime.now(UTC) - datetime.fromisoformat(started_at)).total_seconds()
+
+
+def status(home: Path, profile_dir: Path) -> dict:
     """`status_summary`'s `style` block: ``{"state": "building" | "failed" | "ready" | "none", ...}``.
 
-    building: the build's process lives. failed: the last build failed (``problems`` say why) or its process died before
-    it finished. ready: `profile/style/cv.template.html` exists (``fonts`` and ``dropped_icons`` of the last build's
-    result when it was that one's). none: nothing built."""
-    is_alive = is_alive or phone.is_alive
+    building: the build holds its lock (or was started a moment ago and has not taken it yet). failed: the last build
+    failed (``problems`` say why) or its process died before it finished. ready: `profile/style/cv.template.html`
+    exists (``fonts`` and ``dropped_icons`` of the last build's result when it was that one's). none: nothing built."""
     run = _read(home) or {}
     state = run.get("state")
     if state == "building":
-        if is_alive(run.get("pid") or 0):
-            return {"state": "building", "started_at": run.get("started_at")}
+        if _held(home) or ("pid" not in run and _age(run["started_at"]) < PENDING_SECONDS):
+            return {"state": "building", "started_at": run["started_at"]}
         return {"state": "failed", "problems": ["the build stopped before it finished"]}
     if state == "failed":
-        return {"state": "failed", "problems": (run.get("result") or {}).get("problems") or []}
+        return {"state": "failed", "problems": run["result"]["problems"]}
     if (Path(profile_dir) / "style" / TEMPLATE).is_file():
         out = {"state": "ready"}
         if state == "ready":
-            result = run.get("result") or {}
-            out.update({k: result[k] for k in ("fonts", "dropped_icons") if k in result})
+            out.update({k: run["result"][k] for k in ("fonts", "dropped_icons") if k in run["result"]})
         return out
     return {"state": "none"}
 

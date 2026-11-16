@@ -72,3 +72,21 @@ def test_the_tailor_answers_with_a_priced_envelope(tmp_path):
     envelope, _ = claude_cli.read_stream(out.stdout)
     assert usage.weight(envelope) == 0.40
     assert (out_dir / "cover_letter.html").read_text() == "letter"
+
+
+def test_the_stylist_answers_with_the_template_blocks_in_a_priced_envelope(tmp_path):
+    """#205: a CV style build in the world gets the shipped template over the builder's fonts, and is weighed."""
+    world = tmp_path / "world"
+    world.mkdir()
+    (world / "world.json").write_text(json.dumps({}))
+    call = tmp_path / "call"
+    call.mkdir()
+    (call / "fonts.css").write_text('@font-face { font-family: "Lato"; }\n')
+    env = {**os.environ, "PYTHONPATH": str(REPO_ROOT / "src"), "DOOR_WORLD_PYTHON": sys.executable}
+    argv = [sys.executable, str(CLAUDE), str(world), "-p", "--agent", "stylist", *claude_cli.STREAM_ARGS]
+    out = subprocess.run(argv, cwd=call, env=env, input="", capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    envelope, _ = claude_cli.read_stream(out.stdout)
+    assert usage.weight(envelope) == 0.30
+    answer = claude_cli.envelope_result(out.stdout)
+    assert "```template" in answer and "```body" in answer and '"Lato"' in answer
