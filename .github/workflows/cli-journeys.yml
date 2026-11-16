@@ -3,7 +3,7 @@ name: CLI journeys
 # The real ./door (door.cmd on Windows) end to end in the test world (#33, tests/cli_journeys/): after
 # setup.sh / setup.ps1 on a fresh checkout, `init`, `find`, `jobs show`, `jobs prepare` and `jobs status`
 # against the stand-in claude and tectonic of app/test/world. This replaces the manual fresh-clone check.
-# setup runs with --no-claude --no-tex: the stand-ins take the place of both, so no network install.
+# setup runs with --no-claude --no-tex --no-chromium: the stand-ins take the place of the first two, and nothing here prints a CV with a browser, so no network install.
 on:
   pull_request:
     paths:
@@ -49,14 +49,14 @@ jobs:
       - name: Set up (Linux)
         if: runner.os == 'Linux'
         run: |
-          ./scripts/setup.sh --yes --no-claude --no-tex || [ $? -eq 1 ]
+          ./scripts/setup.sh --yes --no-claude --no-tex --no-chromium || [ $? -eq 1 ]
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Set up (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          .\scripts\setup.ps1 --yes --no-claude --no-tex
+          .\scripts\setup.ps1 --yes --no-claude --no-tex --no-chromium
           if ($LASTEXITCODE -notin 0, 1) { exit $LASTEXITCODE }
           Add-Content -Path $env:GITHUB_PATH -Value "$env:APPDATA\Python\Scripts"
           Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.local\bin"

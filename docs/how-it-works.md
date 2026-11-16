@@ -125,6 +125,7 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    on a line of its own and in order, the `% Keywords:` and no garbled or empty text. What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);
    reported, never a block.
+   Chromium prints HTML pages to PDF without a TeX engine (`door.tailoring.html_pdf`, #165): one pinned headless shell, installed by `doctor --fix` or carried by the desktop app, driven over the DevTools protocol on a fresh profile. JavaScript is off, the page is served from loopback over one folder and every other request, `file:` and other hosts included, is refused. `prepare` does not use it yet.
    When the tailor is done, `prepare` reads both PDFs back this way itself. If the name, a heading or a keyword
    is missing it runs the tailor once more, in a fresh session, told which problems and that the files exist; the
    retry counts in the plan estimate. What still does not read back is `readability` in `prepare`'s answer, with a

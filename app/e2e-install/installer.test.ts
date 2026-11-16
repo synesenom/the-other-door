@@ -42,12 +42,12 @@ describe('pickInstaller', () => {
 })
 
 describe('installPlan', () => {
-  it('macOS: mounts the .dmg, copies the app into the throwaway folder, unmounts', () => {
+  it('macOS: mounts the .dmg, copies the app into the throwaway folder, unmounts by force (a busy volume refuses a plain detach)', () => {
     const plan = installPlan('/d/the-other-door-0.1.1-mac-arm64.dmg', 'darwin', '/t')
     expect(plan.install).toEqual([
       ['hdiutil', 'attach', '-nobrowse', '-readonly', '-noautoopen', '-mountpoint', '/t/volume', '/d/the-other-door-0.1.1-mac-arm64.dmg'],
       ['ditto', '/t/volume/The other door.app', '/t/The other door.app'],
-      ['hdiutil', 'detach', '/t/volume'],
+      ['hdiutil', 'detach', '-force', '/t/volume'],
     ])
     expect(plan.executable).toBe('/t/The other door.app/Contents/MacOS/The other door')
     expect(plan.root).toBe('/t')

@@ -180,7 +180,7 @@ jobs:
           node-version: 22
 
       - name: Download the quarters' reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: blob-report-*
           path: all-blob-reports

@@ -82,7 +82,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/.bundle-cache
-          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'src/door/core/chromium_pin.json', 'poetry.lock') }}
 
       - run: npm ci
 
@@ -209,7 +209,7 @@ jobs:
 
       - run: npm ci
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: mac-manifest-*
           path: app/mac-manifests
@@ -254,7 +254,7 @@ jobs:
 
       - name: The installer of the dry run
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dry-run-windows-x64
           path: app/dist

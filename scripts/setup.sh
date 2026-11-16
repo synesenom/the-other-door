@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
 # One-shot setup: Python 3.12 -> Poetry -> the Python packages, then `door doctor --fix`,
-# which installs the rest (Tectonic, the claude CLI) and checks
+# which installs the rest (Tectonic, Chromium, the claude CLI) and checks
 # that the MCP server starts. Asks once up front; each step then shows a spinner and
 # a checkmark. Safe to re-run: it is also the "repair my install" command.
 #
 #   ./scripts/setup.sh                 ask once, then install what is missing
 #   ./scripts/setup.sh --yes           install without asking
-#   ./scripts/setup.sh --no-tex --no-claude   (passed on; see `door setup --help`)
+#   ./scripts/setup.sh --no-tex --no-chromium --no-claude   (passed on; see `door setup --help`)
 #
 # Then open Claude Code here (`claude`) and say /onboard.
 #
@@ -70,7 +70,7 @@ for arg in "$@"; do [[ $arg == --yes ]] && yes=1; done
 command -v curl >/dev/null || die "curl is needed to download Python and Poetry. Install it, then re-run ./scripts/setup.sh"
 
 echo "door setup installs whatever of these is missing:"
-echo "  Python 3.12, Poetry, the Python packages, Tectonic (LaTeX), the claude CLI"
+echo "  Python 3.12, Poetry, the Python packages, Tectonic (LaTeX), Chromium (CV printing), the claude CLI"
 if [[ $yes -eq 0 ]]; then
     printf "Continue? [Y/n] "
     read -r answer || answer=n
@@ -124,7 +124,7 @@ fi
 
 step "Python packages" sh -c "poetry env use '${PY312:-3.12}' && poetry install"
 
-# Tectonic, the claude CLI, the MCP server check: same list style.
+# Tectonic, Chromium, the claude CLI, the MCP server check: same list style.
 args=("$@")
 [[ $yes -eq 1 ]] || args=(--yes "${args[@]+"${args[@]}"}")
 exec ./door doctor --fix "${args[@]}"

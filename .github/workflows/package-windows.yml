@@ -45,7 +45,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/.bundle-cache
-          key: bundle-windows-x64-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+          key: bundle-windows-x64-${{ hashFiles('app/scripts/bundle.lock.json', 'src/door/core/chromium_pin.json', 'poetry.lock') }}
 
       - name: Install the app's packages
         run: npm ci
@@ -85,7 +85,7 @@ jobs:
       - name: Install the app's packages
         run: npm ci
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: the-other-door-windows
           path: app/dist
@@ -157,7 +157,7 @@ jobs:
       - name: Install the app's packages
         run: npm ci
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: the-other-door-windows
           path: app/dist

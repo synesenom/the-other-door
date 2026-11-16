@@ -1,6 +1,6 @@
 # One-shot setup for Windows (PowerShell): Python 3.12 -> Poetry -> the Python
-# packages, then `door doctor --fix`, which installs the rest (Tectonic, the claude
-# CLI) and checks that the MCP server starts. Asks once up front;
+# packages, then `door doctor --fix`, which installs the rest (Tectonic, Chromium, the
+# claude CLI) and checks that the MCP server starts. Asks once up front;
 # each step then shows a spinner and a checkmark. Safe to re-run.
 #
 #   .\scripts\setup.ps1              ask once, then install what is missing
@@ -73,7 +73,7 @@ foreach ($candidate in @(@("py", "-3.12"), @("py", $null), @("python", $null))) 
 
 $Yes = $args -contains "--yes"
 Write-Host "door setup installs whatever of these is missing:"
-Write-Host "  Python 3.12, Poetry, the Python packages, Tectonic (LaTeX), the claude CLI"
+Write-Host "  Python 3.12, Poetry, the Python packages, Tectonic (LaTeX), Chromium (CV printing), the claude CLI"
 if (-not $Yes) {
     $answer = Read-Host "Continue? [Y/n]"
     if ($answer -match '^[Nn]') { Fail "Nothing installed." }
@@ -119,7 +119,7 @@ if ($Py312) {
 
 Step "Python packages" { poetry env use 3.12; if ($LASTEXITCODE) { return }; poetry install }
 
-# Tectonic, the claude CLI, the MCP server check: same list style.
+# Tectonic, Chromium, the claude CLI, the MCP server check: same list style.
 $rest = @($args)
 if (-not $Yes) { $rest = @("--yes") + $rest }
 & .\door.cmd doctor --fix @rest
