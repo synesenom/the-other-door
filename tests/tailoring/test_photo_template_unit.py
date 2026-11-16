@@ -19,7 +19,7 @@ def test_the_template_styles_the_photo_class_compile_looks_for():
 
 def test_a_header_with_a_photo_is_a_grid_and_one_without_is_a_dotted_line():
     assert ".cv-header:has(.photo)" in _TEMPLATE and "grid-template-columns" in _TEMPLATE
-    assert re.search(r'\.contact span \+ span::before \{ content: "\\00B7"', _TEMPLATE)
+    assert re.search(r'\.contact span:not\(:last-child\)::after \{ content: "\\00B7"', _TEMPLATE)
     assert re.search(r"\.cv-header:has\(\.photo\) \.contact span \{ display: block", _TEMPLATE)
 
 

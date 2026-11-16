@@ -32,11 +32,11 @@ FIXTURES = TESTS_DIR / "tailoring" / "fixtures"
 NB = " "
 
 
-def _setup(tmp_path, monkeypatch, *, cv, letter, posting=None, photo=False):
+def _setup(tmp_path, monkeypatch, *, cv, letter, posting=None, photo=False, extra=None):
     """A job folder holding the two bodies, printed by `compile`; returns the folder and the results by file."""
     profile = tmp_path / "profile"
-    profile.mkdir()
-    config = {"name": "Jane Doe", "location": "Copenhagen"}
+    profile.mkdir(parents=True)
+    config = {"name": "Jane Doe", "location": "Copenhagen", **(extra or {})}
     if photo:
         buf = io.BytesIO()
         Image.new("RGB", (350, 450), "tan").save(buf, "JPEG")
@@ -195,3 +195,91 @@ def test_no_word_is_split_at_a_line_end_without_a_soft_hyphen(tmp_path, monkeypa
     text = pdf_render.page_texts(out / "cv.pdf")[0]
     assert len(text.splitlines()) > 5  # it wrapped
     assert not re.search(r"\w-\n", text), text  # no hyphen was added where a line broke
+
+
+# --- a tagline and a kind on each contact span (#189) ---------------------------------------------------------
+
+_KINDS = ('<header class="cv-header"><<photo>><h1>Jane Doe</h1><p class="tagline">Financial Controller | Group Reporting</p>'
+          '<p class="contact"><span class="phone">+45 00 00 00 00</span>'
+          '<span class="email"><a href="mailto:jane.doe@example.com">jane.doe@example.com</a></span>'
+          '<span class="web"><a href="https://janedoe.example.com">janedoe.example.com</a></span>'
+          '<span class="linkedin"><a href="https://www.linkedin.com/in/janedoe">linkedin.com/in/janedoe</a></span>'
+          '<span class="github"><a href="https://github.com/janedoe">github.com/janedoe</a></span>'
+          '<span class="location">Copenhagen</span></p></header>'
+          "<h2>Profile</h2><p>Jane Doe is a financial controller with a long record in group reporting.</p>")
+_PLAIN = _KINDS.replace(' class="phone"', "").replace(' class="email"', "").replace(' class="web"', "") \
+    .replace(' class="linkedin"', "").replace(' class="github"', "").replace(' class="location"', "") \
+    .replace('<p class="tagline">Financial Controller | Group Reporting</p>', "")
+_LETTER_KINDS = ('<header class="letter-header"><h1>Jane Doe</h1><p class="contact"><span class="phone">+45 00 00 00 00</span>'
+                 '<span class="location">Copenhagen</span></p></header><p>Dear team, Jane Doe writes about the role.</p>')
+
+
+def test_a_tagline_and_the_kind_classed_details_print_and_read_back(tmp_path, monkeypatch):
+    out, results = _setup(tmp_path, monkeypatch, cv=_KINDS, letter=_LETTER_KINDS)
+    assert [r["status"] for r in results.values()] == ["compiled", "compiled"], results
+    assert results["cv.html"]["readable"] == [] and results["cover_letter.html"]["readable"] == []
+    lines = _lines(out / "cv.pdf")
+    assert "Financial Controller | Group Reporting" in lines, lines
+    # the six details are too long for one line at 9pt: it breaks between two of them, the dot ending the first line
+    start = next(i for i, line in enumerate(lines) if line.startswith("+45 00 00 00 00 · jane.doe@example.com"))
+    details = " ".join(lines[start:start + 2])
+    assert "linkedin.com/in/janedoe · github.com/janedoe · Copenhagen" in details, lines
+    assert lines[start].endswith("·") and not lines[start + 1].startswith("·"), lines
+    assert lines.index("Financial Controller | Group Reporting") == lines.index("Jane Doe") + 1
+
+
+def test_kind_classes_do_not_change_the_details_text(tmp_path, monkeypatch):
+    kinds, _ = _setup(tmp_path / "a", monkeypatch, cv=_KINDS.replace('<p class="tagline">Financial Controller | Group Reporting</p>', ""),
+                      letter=_LETTER)
+    plain, _ = _setup(tmp_path / "b", monkeypatch, cv=_PLAIN, letter=_LETTER)
+    assert pdf_render.page_texts(kinds / "cv.pdf") == pdf_render.page_texts(plain / "cv.pdf")
+
+
+def test_a_photo_header_with_a_tagline_puts_it_under_the_name_beside_the_picture(tmp_path, monkeypatch):
+    out, results = _setup(tmp_path, monkeypatch, cv=_KINDS, letter=_LETTER, photo=True)
+    assert results["cv.html"]["photo"] == "photo.jpg" and results["cv.html"]["readable"] == []
+    lines = _lines(out / "cv.pdf")
+    assert lines.index("Financial Controller | Group Reporting") == lines.index("Jane Doe") + 1
+    assert image_count(out / "cv.pdf") == 1 and page_count(out / "cv.pdf") == 1
+
+
+# --- icons drawn by a template (#189) ---------------------------------------------------------------------------
+
+def _colours(pdf_path):
+    """The (red, green) pixel counts of the first page, drawn by pdfium."""
+    import pypdfium2 as pdfium
+
+    pdf = pdfium.PdfDocument(str(pdf_path))
+    try:
+        image = pdf[0].render(scale=1).to_pil().convert("RGB")
+    finally:
+        pdf.close()
+    pixels = list(image.getdata())
+    return (sum(1 for r, g, b in pixels if r > 200 and g < 60 and b < 60),
+            sum(1 for r, g, b in pixels if g > 200 and r < 60 and b < 60))
+
+
+def test_a_template_with_icons_draws_them_beside_the_details_it_names(tmp_path, monkeypatch):
+    template = FIXTURES / "icon_template" / "cv.template.html"
+    out, results = _setup(tmp_path, monkeypatch, cv=_KINDS, letter=_LETTER, extra={"cv_template": str(template)})
+    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
+    red, green = _colours(out / "cv.pdf")
+    assert red > 50 and green > 50, (red, green)
+    assert results["cv.html"]["readable"] == []
+
+
+def test_the_same_template_without_its_manifest_draws_no_icon(tmp_path, monkeypatch):
+    import shutil
+
+    copy = tmp_path / "tpl"
+    copy.mkdir()
+    shutil.copy(FIXTURES / "icon_template" / "cv.template.html", copy)  # no template.json, no icons/
+    out, results = _setup(tmp_path / "job", monkeypatch, cv=_KINDS, letter=_LETTER,
+                          extra={"cv_template": str(copy / "cv.template.html")})
+    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
+    assert _colours(out / "cv.pdf") == (0, 0)
+
+
+def test_the_default_template_draws_no_icon(tmp_path, monkeypatch):
+    out, _ = _setup(tmp_path, monkeypatch, cv=_KINDS, letter=_LETTER)
+    assert _colours(out / "cv.pdf")[0] == 0

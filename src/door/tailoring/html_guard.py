@@ -20,7 +20,10 @@ from html.parser import HTMLParser
 TAGS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "span", "strong", "em", "a", "br"})
 VOID = frozenset({"br"})
 # What the template's CSS styles; `photo` is written by `compile` after the guard, never by the model.
-CLASSES = frozenset({"cv-header", "contact", "entry", "letter-header", "recipient", "date", "closing", "signoff"})
+CLASSES = frozenset({
+    "cv-header", "contact", "entry", "letter-header", "recipient", "date", "closing", "signoff",
+    "tagline", "phone", "email", "web", "location", "linkedin", "github",
+})
 NOTES = ("Keywords", "Tailoring")
 TOKENS = re.compile(r"<<(?:photo|date|company|title)>>")
 _OPENER = re.compile(r"<[A-Za-z/!?]")

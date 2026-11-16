@@ -10,7 +10,10 @@
   (.ttf): Chromium writes a CFF (.otf) font into a PDF as text no reader can extract.
 
   Building blocks (the tailor's vocabulary):
-    <header class="cv-header"><<photo>><h1>Name</h1><p class="contact"><span>detail</span>...</p></header>
+    <header class="cv-header"><<photo>><h1>Name</h1><p class="tagline">tagline</p>
+      <p class="contact"><span class="phone">detail</span>...</p></header>
+    The tagline is there only when the CV has one. Each contact span has its kind as a class: phone, email, web,
+    location, linkedin or github (the details run in that order; none is written for a detail the CV lacks); any other detail is a plain <span>.
     <h2>Section</h2>
     <div class="entry"><h3>Role | Company - dates</h3><ul><li>...</li></ul></div>
     <p>, <ul><li>, <strong>, <em>, <a href="https://...">, <br>
@@ -50,15 +53,19 @@ p + p { margin-top: 3pt; }
 /* the name and the contact line; the details run on one line, apart by a middle dot (#142) */
 .cv-header { padding-bottom: 8pt; border-bottom: 0.6pt solid var(--hairline); margin-bottom: 4pt; }
 .contact { margin-top: 8pt; font-size: 9pt; color: var(--muted); }
-.contact span + span::before { content: "\00B7"; margin: 0 0.5em; }
+.contact span { display: inline-block; white-space: nowrap; margin-right: 0.5em; } /* a line breaks between details, never inside one */
+.contact span:not(:last-child)::after { content: "\00B7"; margin-left: 0.5em; } /* the dot ends a line, never starts one */
+.cv-header .tagline { margin-top: 2pt; font-size: 11pt; color: var(--muted); }
+/* To draw an icon by kind on a contact span: see docs/configuration.md. (This template draws none.) */
 
 /* with a photo: the details one per line beside it, so the name and the details are about as tall as the photo */
 .cv-header:has(.photo) { display: grid; grid-template-columns: 1fr 2.2cm; column-gap: 0.6cm; align-items: start; }
 .cv-header:has(.photo) h1 { grid-column: 1; grid-row: 1; }
-.cv-header:has(.photo) .contact { grid-column: 1; grid-row: 2; }
+.cv-header:has(.photo) .tagline { grid-column: 1; grid-row: 2; }
+.cv-header:has(.photo) .contact { grid-column: 1; grid-row: 3; }
 .cv-header:has(.photo) .contact span { display: block; }
-.cv-header:has(.photo) .contact span + span::before { content: none; }
-.cv-header .photo { grid-column: 2; grid-row: 1 / span 2; width: 2.2cm; height: 2.2cm; object-fit: cover; display: block; }
+.cv-header:has(.photo) .contact span::after { content: none; }
+.cv-header .photo { grid-column: 2; grid-row: 1 / span 3; width: 2.2cm; height: 2.2cm; object-fit: cover; display: block; }
 </style>
 </head>
 <body>

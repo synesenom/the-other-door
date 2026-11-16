@@ -54,3 +54,13 @@ def test_an_invented_skill_and_certification_are_the_only_findings(example):
     assert [(c["kind"], c["value"]) for c in found] == [
         ("skill", "Terraform"), ("certification", "PMP Project Management Professional")]
     assert all(c["context"] for c in found)
+
+
+def test_a_tagline_claiming_what_the_cv_does_not_say_is_flagged(example):
+    out, prof = example
+    cv = (out / "cv.html").read_text()
+    assert 'class="tagline"' in cv
+    cv = cv.replace('<p class="tagline">', '<p class="tagline">23 years of ', 1)
+    (out / "cv.html").write_text(cv)
+    found = facts.check(out, prof, write=False, current_year=2026)
+    assert any(c["value"] == "23" for c in found)

@@ -135,3 +135,44 @@ def test_no_cv_of_the_users_own_leaves_everything_to_ask(env, monkeypatch, cv):
     assert result["languages"] == ["English"] and result["remote"] == "hybrid"
 
 
+
+
+# --- a tagline and LinkedIn / GitHub parts in the header (#189) ---------------------------------------------
+
+EXTENDED = (
+    "# Jane Doe\n\n> Financial Controller | Group Reporting & Process Improvement\n\n"
+    "**Phone:** +45 00 00 00 00 | **Email:** jane@example.com | **Web:** janedoe.example.com | "
+    "**LinkedIn:** https://www.linkedin.com/in/janedoe | **GitHub:** https://github.com/janedoe | "
+    "**Location:** Frederiksberg, Denmark\n\n"
+)
+
+
+def test_a_tagline_with_a_bar_and_the_link_parts_do_not_disturb_the_basics(env, monkeypatch):
+    _no_model(monkeypatch)
+    assert _infer(env, EXTENDED + "## Profile\n\nController.\n") == {
+        "name": "Jane Doe", "email": "jane@example.com", "location": "Copenhagen", "languages": ["English"],
+        "remote": "hybrid", "missing": [],
+    }
+
+
+def test_a_header_with_only_a_tagline_is_read_like_one_without(env, monkeypatch):
+    _no_model(monkeypatch)
+    text = "# Jane Doe\n\n> Location: Nowhere | Email: tag@example.org\n\n" + HEADER.split("\n\n", 1)[1]
+    found = _infer(env, text)
+    assert found["name"] == "Jane Doe" and found["location"] == "Copenhagen"
+
+
+def test_the_draft_rules_say_the_tagline_and_links_are_written_only_when_a_source_gives_them():
+    rules = cv_cmd._RULES
+    assert "tagline" in rules and "LinkedIn" in rules and "GitHub" in rules
+    assert "never a `TODO`" in rules.split("tagline", 1)[1]
+
+
+def test_the_example_cv_has_a_tagline_under_the_name_and_parses(env, monkeypatch):
+    _answer(monkeypatch)  # its Danish language line is read by the model
+    text = (REPO_ROOT / "profile.example" / "cv.md").read_text(encoding="utf-8")
+    lines = text.splitlines()
+    assert lines[0] == "# Jane Doe" and lines[2].startswith("> ")
+    assert "**LinkedIn:**" in text and "**GitHub:**" in text
+    found = _infer(env, text)
+    assert found["name"] == "Jane Doe" and found["location"] == "Copenhagen" and found["email"] == "jane.doe@example.com"

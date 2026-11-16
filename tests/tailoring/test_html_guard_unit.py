@@ -23,6 +23,19 @@ LETTER = """<header class="letter-header"><h1>Ada</h1><p class="contact"><span>x
 <div class="closing"><p class="signoff">Kind regards,</p><p>Ada</p></div>"""
 
 
+KINDS = ("phone", "email", "web", "location", "linkedin", "github")
+
+
+def test_a_header_with_a_tagline_and_a_kind_on_each_contact_span_passes():
+    spans = "".join(f'<span class="{k}">x</span>' for k in KINDS)
+    body = f'<header class="cv-header"><h1>Ada</h1><p class="tagline">Controller | Reporting</p><p class="contact">{spans}</p></header>'
+    assert html_guard.unsafe(body) == []
+
+
+def test_an_unknown_kind_class_is_refused():
+    assert html_guard.unsafe('<p class="contact"><span class="fax">x</span></p>') != []
+
+
 def test_an_ordinary_cv_and_letter_pass():
     assert html_guard.unsafe(CV) == []
     assert html_guard.unsafe(LETTER) == []

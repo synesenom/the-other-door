@@ -64,3 +64,19 @@ def test_claim_text_marks_each_section_heading_on_its_own_line():
 
 def test_h3_texts_are_the_entry_headings():
     assert html_doc.h3s(CLAIMS) == ["Dev | Acme A/S \u2014 2019"]
+
+
+# --- the tagline and the contact kinds (#189) ---------------------------------------------------------------------
+
+KINDED = """<header class="cv-header"><h1>Ada Lovelace</h1><p class="tagline">Analyst | Engines</p>
+<p class="contact"><span class="phone">+45 1</span><span class="linkedin"><a href="https://www.linkedin.com/in/ada">LinkedIn</a></span>
+<span class="location">Copenhagen</span></p></header>
+<h2>Work experience</h2><p>Ran the engine room.</p>"""
+
+
+def test_the_tagline_is_a_claim_the_kinded_details_are_not():
+    text = html_doc.text(KINDED)
+    assert text.index("Ada Lovelace") < text.index("Analyst | Engines") < text.index("+45 1") < text.index("LinkedIn")
+    assert html_doc.headings(KINDED) == ["Work experience"]
+    claims = html_doc.claim_text(KINDED)
+    assert "Analyst | Engines" in claims and "LinkedIn" not in claims and "+45 1" not in claims and "Ran the engine room." in claims
