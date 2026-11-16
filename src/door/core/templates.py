@@ -12,6 +12,7 @@ and icons it serves, its own page limit, a side column). Without one the templat
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -156,3 +157,29 @@ def assets(template_path: Path) -> dict[str, list[Path]]:
     if found and found.icons:
         served["icons"] = _named(folder / "icons", found.icons.values())
     return served
+
+
+_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+_PAGE_MARGIN = re.compile(r"@page\b[^{]*\{[^}]*?\bmargin\s*:\s*([^;}]+)", re.I)
+_POINTS = {"cm": 72 / 2.54, "mm": 72 / 25.4, "pt": 1.0, "in": 72.0, "px": 0.75}
+_LENGTH = re.compile(r"^(-?\d*\.?\d+)(cm|mm|pt|in|px)?$")
+
+
+def page_margins(template_html: str) -> tuple[float, float, float, float]:
+    """The ``@page { margin }`` of `template_html` in points as (top, right, bottom, left), CSS shorthand of 1 to 4
+    values in cm, mm, pt, in or px (a bare 0 too). Zeros (the page box) when there is no such rule or any value is
+    not one of these (auto, rem, var(...))."""
+    match = _PAGE_MARGIN.search(_COMMENT.sub("", template_html))
+    if not match:
+        return (0.0, 0.0, 0.0, 0.0)
+    values: list[float] = []
+    for part in match.group(1).split():
+        length = _LENGTH.match(part.strip())
+        if not length or (length.group(2) is None and float(length.group(1)) != 0):
+            return (0.0, 0.0, 0.0, 0.0)
+        values.append(float(length.group(1)) * _POINTS.get(length.group(2) or "pt", 1.0))
+    if not 1 <= len(values) <= 4:
+        return (0.0, 0.0, 0.0, 0.0)
+    top, right, bottom, left = {1: lambda v: (v[0],) * 4, 2: lambda v: (v[0], v[1], v[0], v[1]),
+                                3: lambda v: (v[0], v[1], v[2], v[1]), 4: lambda v: tuple(v)}[len(values)](values)
+    return (top, right, bottom, left)
