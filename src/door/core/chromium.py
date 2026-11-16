@@ -82,7 +82,7 @@ def find_chromium(home: Path | None = None) -> str | None:
     return None
 
 
-def _http_get(url: str, to: Path) -> None:
+def http_get(url: str, to: Path) -> None:
     with urllib.request.urlopen(url, timeout=60) as response, open(to, "wb") as out:  # noqa: S310 - https, pinned
         shutil.copyfileobj(response, out)
 
@@ -100,7 +100,7 @@ def _remove_other_versions(dest: Path) -> None:
 STALE_PART_SECONDS = 3600
 
 
-def _sweep_stale_parts(dest: Path) -> None:
+def sweep_stale_parts(dest: Path) -> None:
     """Remove the staging folders a killed install left in `dest`, never one still in use."""
     cutoff = time.time() - STALE_PART_SECONDS
     for part in dest.glob("*.part"):
@@ -108,7 +108,7 @@ def _sweep_stale_parts(dest: Path) -> None:
             shutil.rmtree(part, ignore_errors=True)
 
 
-def install(dest: Path, fetch=_http_get) -> None:
+def install(dest: Path, fetch=http_get) -> None:
     """Download the pinned zip, check its sha256 and unpack it into `dest` (a no-op when there)."""
     key = platform_key()
     if key is None:
@@ -119,7 +119,7 @@ def install(dest: Path, fetch=_http_get) -> None:
         _remove_other_versions(dest)
         return
     dest.mkdir(parents=True, exist_ok=True)
-    _sweep_stale_parts(dest)
+    sweep_stale_parts(dest)
     # Names unique to this process, so two installs never share a half-written file.
     staging = Path(tempfile.mkdtemp(prefix=f"{folder.name}.", suffix=".part", dir=dest))
     part = staging / "download.zip"
