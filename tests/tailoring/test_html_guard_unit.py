@@ -249,3 +249,46 @@ def test_every_problem_is_a_short_line_named_once():
     found = problems(page(head="<script></script><script></script>"))
     assert len(found) == len(set(found)) and all(isinstance(p, str) and len(p) < 200 for p in found)
     assert not [p for p in found if re.search(r"\n", p)]
+
+
+# ---------- review fixes: baked-in text, unclosed url(, raw-text elements, messages ----------
+
+@pytest.mark.parametrize("css", [
+    '.x::after { content: "Jane Doe"; }', '.x::after { content: "\\4A ane"; }', '.x::after { content: "\\004A\\0061ne"; }',
+    '@page { @top-center { content: "Jane"; } }', ".x::before { content: attr(data-x); }", '.x::before { content: "2019"; }',
+    ".x::before { content: 'a'; }", '.x::before { content : counter(n) "Jane"; }',
+])
+def test_text_baked_in_by_css_is_refused(css):
+    assert problems(page(css=css))
+
+
+@pytest.mark.parametrize("css", [
+    '.x::before { content: "\\00B7"; }', '.x::before { content: "•"; }', '.x::before { content: ""; }',
+    ".x::before { content: none; }", ".x::before { content: counter(item) \". \"; }", '.x::before { content: open-quote; }',
+    '.x::before { content: "\\2014"; }', '@page { @bottom-center { content: counter(page) " / " counter(pages); } }',
+])
+def test_symbols_counters_and_quotes_in_css_content_pass(css):
+    assert problems(page(css=css)) == []
+
+
+def test_an_unclosed_url_is_refused():
+    assert problems(page(css="a { background: url(https://evil.example/x.png; }"))
+    assert problems(page(css='a { background: url("/fonts/Lato-Regular.ttf"; }'))
+
+
+@pytest.mark.parametrize("tag", ["xmp", "template", "plaintext", "noembed", "noframes", "textarea"])
+def test_raw_text_elements_around_the_body_token_are_refused(tag):
+    assert any(f"<{tag}>" in p for p in problems(page(body=f"<{tag}><<body>></{tag}>")))
+
+
+def test_an_attribute_or_meta_outside_the_allow_list_is_refused():
+    assert problems(page(body='<div id="x"></div>\n<<body>>'))
+    assert problems(page(head='<meta property="og:title" content="x">'))
+    assert problems(page(head='<meta name="viewport" content="width=device-width">')) == []
+
+
+@pytest.mark.parametrize("css,named", [
+    ("a { background: image('x.png'); }", "image()"), ("a { background: image-set('x.png' 1x); }", "image-set()"),
+])
+def test_a_function_is_named_with_its_parentheses(css, named):
+    assert named in problems(page(css=css))

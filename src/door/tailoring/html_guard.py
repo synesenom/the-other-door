@@ -32,6 +32,11 @@ _NOTE = re.compile(r"\s*(?:" + "|".join(NOTES) + r"):[^<>]*", re.S)
 _LINK = re.compile(r"(?:https://[^\s/]|mailto:[^\s]|#[^\s]*$)", re.I)
 
 
+def _head_word(text: str) -> str:
+    """The first word of a declaration or processing instruction: what a refusal names."""
+    return re.match(r"[^\s\[]*", text.strip()).group(0)
+
+
 class _Collector(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -75,15 +80,15 @@ class _Collector(HTMLParser):
 
     def handle_decl(self, decl):
         self.events += 1
-        self._flag("<!" + decl.split(None, 1)[0] + ">" if decl.split() else "<!>")
+        self._flag(f"<!{_head_word(decl)}>")
 
     def handle_pi(self, data):
         self.events += 1
-        self._flag("<?" + data.split(None, 1)[0] + ">" if data.split() else "<?>")
+        self._flag(f"<?{_head_word(data)}>")
 
     def unknown_decl(self, data):
         self.events += 1
-        self._flag("<![" + data.split("[", 1)[0] + "[")
+        self._flag(f"<![{_head_word(data)}[")
 
 
 def unsafe(body: str) -> list[str]:
@@ -108,24 +113,35 @@ def unsafe(body: str) -> list[str]:
 # frame, nothing loaded but the manifest's fonts and icons, the two tokens once each, the rules `compile` and the tailor
 # rely on. Not called by `compile`: a template in `profile/` is the user's own.
 
-_BLOCKED_TAGS = frozenset({"script", "link", "img", "svg", "iframe", "object", "embed", "frame", "frameset", "base", "form",
-                           "input", "button", "textarea", "select", "audio", "video", "source", "track", "picture", "canvas",
-                           "math", "applet", "portal", "image", "use"})
-_BLOCKED_ATTRS = frozenset({"src", "srcset", "href", "data", "action", "formaction", "poster", "background", "ping", "xlink:href"})
+_TEMPLATE_TAGS = TAGS | {"html", "head", "meta", "title", "style", "body"}
+_TEMPLATE_ATTRS = {"class", "lang", "style"}
+_META_ATTRS = {"charset", "name", "content"}  # no http-equiv: a <meta> may not refresh or redirect
 _TEMPLATE_TOKEN = re.compile(r"<<(\w*)>>")
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
 _CSS_COMMENT = re.compile(r"/\*.*?(?:\*/|$)", re.S)
 _CSS_STRING = re.compile(r"\"(?:[^\"\\\n]|\\.)*\"|'(?:[^'\\\n]|\\.)*'")
 _CSS_URL = re.compile(r"url\(\s*(?:\"([^\"]*)\"|'([^']*)'|([^)\"'\s]*))\s*\)", re.I)
-_CSS_LOADERS = re.compile(r"@import|image-set\(|(?<![\w-])image\(|cross-fade\(|element\(|paint\(|(?<![\w-])src\(|expression\(|"
-                          r"-moz-binding|behavior\s*:", re.I)
-_VOCABULARY_KINDS = ("phone", "email", "web", "location", "linkedin", "github")
-_COMMENT_CLASSES = {
-    "cv": ("cv-header", "contact", "tagline", *_VOCABULARY_KINDS, "entry", "role", "org", "dates", "place", "sep", "level"),
-    "letter": ("letter-header", "contact", *_VOCABULARY_KINDS, "recipient", "date", "closing", "signoff"),
-}
+_CSS_LOADERS = re.compile(r"@import|url\(|attr\(|image-set\(|(?<![\w-])image\(|cross-fade\(|element\(|paint\(|(?<![\w-])src\(|"
+                          r"expression\(|-moz-binding|behavior\s*:", re.I)
+_CSS_CONTENT = re.compile(r"(?<![\w-])content\s*:([^;}]*)", re.I)
+_CSS_ESCAPE = re.compile(r"\\(?:([0-9a-fA-F]{1,6})\s?|\r?\n|(.))", re.S)
+
+
+def _unescape_css(text: str) -> str:
+    """`text` (the inside of a CSS string) with its escapes decoded: `\\4A` is J."""
+    def char(m):
+        if m.group(1):
+            code = int(m.group(1), 16)
+            return chr(code) if 0 < code <= 0x10FFFF else "\ufffd"
+        return m.group(2) or ""
+    return _CSS_ESCAPE.sub(char, text)
+# the classes the shipped templates' header comment lists, by what the tailor writes in each kind of page
+_LEVELS = frozenset(f"level-{n}" for n in range(1, 6))
+_LETTER_ONLY = frozenset({"letter-header", "recipient", "date", "closing", "signoff"})
+_CV_ONLY = frozenset({"cv-header", "entry", "tagline", "role", "org", "dates", "place", "sep", "level"})
+_COMMENT_CLASSES = {"cv": sorted(CLASSES - _LETTER_ONLY - _LEVELS | {"level"}), "letter": sorted(CLASSES - _CV_ONLY - _LEVELS)}
 _BODY_MARK = "\x01"  # stands for <<body>> while the template is read: it must land in a text node of the page
-_TEMPLATE_TOKENS = {"body": "<<body>>", "lang": "<<lang>>"}
+_TOKEN_STANDINS = {"body": _BODY_MARK, "lang": "en"}  # the template's two tokens, and what each is read as
 
 
 class _TemplateReader(HTMLParser):
@@ -141,16 +157,13 @@ class _TemplateReader(HTMLParser):
 
     def _tag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.events += 1
-        if tag in _BLOCKED_TAGS:
+        if tag not in _TEMPLATE_TAGS:
             self.found.append(f"<{tag}>")
-        elif tag == "meta" and any(n == "http-equiv" for n, _ in attrs):
-            self.found.append("<meta http-equiv=>")
+        allowed = _META_ATTRS if tag == "meta" else _TEMPLATE_ATTRS
         for name, value in attrs:
             if _BODY_MARK in (value or ""):
                 self.found.append("<<body>> inside an attribute")
-            if name.startswith("on"):
-                self.found.append(f"{name}=")
-            elif name in _BLOCKED_ATTRS:
+            if name not in allowed:
                 self.found.append(f"{name}= on <{tag}>")
             elif name == "style":
                 self.css.append(value or "")
@@ -165,7 +178,7 @@ class _TemplateReader(HTMLParser):
 
     def handle_endtag(self, tag):
         self.events += 1
-        if tag in _BLOCKED_TAGS:
+        if tag not in _TEMPLATE_TAGS or tag in VOID:
             self.found.append(f"</{tag}>")
         if self._in and self._in[-1] == tag:
             self._in.pop()
@@ -187,30 +200,34 @@ class _TemplateReader(HTMLParser):
     def handle_decl(self, decl):
         self.events += 1
         if decl.strip().lower() != "doctype html":
-            self.found.append("<!" + (decl.split(None, 1)[0] if decl.split() else "") + ">")
+            self.found.append(f"<!{_head_word(decl)}>")
 
     def handle_pi(self, data):
         self.events += 1
-        self.found.append("<?" + (data.split(None, 1)[0] if data.split() else "") + ">")
+        self.found.append(f"<?{_head_word(data)}>")
 
     def unknown_decl(self, data):
         self.events += 1
-        self.found.append("<![" + data.split("[", 1)[0] + "[")
+        self.found.append(f"<![{_head_word(data)}[")
 
 
 def _css_problems(css: str, manifest) -> list[str]:
     found: list[str] = []
     css = _CSS_COMMENT.sub("", css)
-    fonts = set(getattr(manifest, "fonts", None) or [])
-    icons = set((getattr(manifest, "icons", None) or {}).values())
+    fonts = manifest.fonts if manifest else []
+    icons = list(manifest.icons.values()) if manifest else []
     for m in _CSS_URL.finditer(css):
         target = next(g for g in m.groups() if g is not None).strip()
         folder, _, name = target.rpartition("/")
         if not ((folder == "/fonts" and name in fonts) or (folder == "/icons" and name in icons)):
             found.append(f"url({target[:60]}) (only /fonts/ and /icons/ files template.json names)")
+    for m in _CSS_CONTENT.finditer(css):  # text a rule bakes into the page is not the CV's: it would print on every one
+        if any(c.isalnum() for string in _CSS_STRING.findall(m.group(1)) for c in _unescape_css(string[1:-1])):
+            found.append("a letter or digit in content: (text belongs in the CV)")
     stripped = _CSS_URL.sub("", _CSS_STRING.sub('""', css))
     for m in _CSS_LOADERS.finditer(stripped):
-        found.append(m.group(0).lower().rstrip("(") + (")" if m.group(0).endswith("(") else ""))
+        word = m.group(0).lower()
+        found.append(word + ")" if word.endswith("(") else word)
     if "\\" in stripped:
         found.append("a CSS escape outside a string")
     return found
@@ -230,11 +247,11 @@ def template_problems(html: str, manifest, kind: str = "cv") -> list[str]:
     found: list[str] = []
     visible = _HTML_COMMENT.sub("<!---->", html)  # the header comment documents the tokens and the tags
     tokens = [m.group(1) for m in _TEMPLATE_TOKEN.finditer(visible)]
-    for name, token in _TEMPLATE_TOKENS.items():
+    for name in _TOKEN_STANDINS:
         if tokens.count(name) != 1:
-            found.append(f"{token} must be there exactly once (found {tokens.count(name)})")
-    found += [f"<<{t}>> (the body's tokens are not the template's)" for t in dict.fromkeys(tokens) if t not in _TEMPLATE_TOKENS]
-    text = _TEMPLATE_TOKEN.sub(lambda m: {"lang": "en", "body": _BODY_MARK}.get(m.group(1), ""), html)
+            found.append(f"<<{name}>> must be there exactly once (found {tokens.count(name)})")
+    found += [f"<<{t}>> (the body's tokens are not the template's)" for t in dict.fromkeys(tokens) if t not in _TOKEN_STANDINS]
+    text = _TEMPLATE_TOKEN.sub(lambda m: _TOKEN_STANDINS.get(m.group(1), ""), html)
     counted = _TEMPLATE_TOKEN.sub("", visible)
     parser = _TemplateReader()
     parser.feed(text)
