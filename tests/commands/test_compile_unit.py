@@ -413,3 +413,25 @@ def test_a_users_own_template_reads_its_manifest_and_fonts_beside_it(world):
     world.make(cv="<p>Jane Doe</p>")
     assert _compile(world)["results"][0]["status"] == "compiled"
     assert world.print.calls[0]["assets"] == {"fonts": [world.profile / "fonts" / "Own.ttf"]}
+
+
+# --- a tagline and the contact kinds (#189) ------------------------------------------------------------------------
+
+def test_a_header_with_a_tagline_and_kinds_compiles_and_the_file_stays_as_written(world):
+    body = ('<header class="cv-header"><h1>Jane Doe</h1><p class="tagline">Controller | Reporting</p>'
+            '<p class="contact"><span class="phone">+45 1</span><span class="linkedin">'
+            '<a href="https://www.linkedin.com/in/jane">LinkedIn</a></span></p></header><h2>Experience</h2>')
+    world.make(cv=body)
+    cv = _compile(world)["results"][0]
+    assert cv["status"] == "compiled", cv
+    assert (world.out / "cv.html").read_text(encoding="utf-8") == body
+    assert 'class="tagline"' in world.print.calls[0]["html"]
+
+
+def test_a_body_without_the_new_classes_prints_exactly_as_before(world):
+    body = ('<header class="cv-header"><h1>Jane Doe</h1><p class="contact"><span>+45 1</span></p></header>'
+            "<h2>Experience</h2>")
+    world.make(cv=body)
+    _compile(world)
+    assert (world.out / "cv.html").read_text(encoding="utf-8") == body
+    assert body in world.print.calls[0]["html"]
