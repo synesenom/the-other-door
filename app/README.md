@@ -94,7 +94,7 @@ npm run test:install    # about two minutes, plus the first LaTeX download
 ```
 
 `e2e-install/setup.ts` installs it the user's way into a throwaway folder (macOS: the `.dmg` mounted and the app
-copied out; Windows: the NSIS installer with `/S /D=`; Linux: the AppImage made executable, or with
+copied out; Windows: the NSIS installer with `/S /D=`, except in CI's x64 job, which runs it on its own default per-user install through `DOOR_INSTALLED_APP` (#168); Linux: the AppImage made executable, or with
 `DOOR_INSTALLER_KIND=deb` the `.deb` through `sudo apt-get`, into `/opt`), prints its signature (`codesign`/`spctl`,
 `Get-AuthenticodeSignature`; reported, not judged, while the builds are unsigned) and `teardown.ts` uninstalls it
 (`DOOR_INSTALL_KEEP=1` keeps it; a failed uninstall command, an install folder the NSIS uninstaller left behind on
