@@ -87,7 +87,8 @@ export function installPlan(installer: string, platform: string, root: string): 
         install: [
           ['hdiutil', 'attach', '-nobrowse', '-readonly', '-noautoopen', '-mountpoint', mount, installer],
           ['ditto', p.join(mount, `${APP_NAME}.app`), app],
-          ['hdiutil', 'detach', mount],
+          // forced: diskimages-helper or Spotlight can still hold the read-only volume ("Resource busy")
+          ['hdiutil', 'detach', '-force', mount],
         ],
         executable: p.join(app, 'Contents', 'MacOS', APP_NAME),
         uninstall: [],
