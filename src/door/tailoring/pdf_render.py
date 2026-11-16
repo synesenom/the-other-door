@@ -32,7 +32,7 @@ def clean_text(text: str) -> str:
     return _CONTROL.sub("", _SOFT_HYPHEN.sub("", text))
 
 
-def _open(pdf_path: Path) -> pdfium.PdfDocument:
+def open_pdf(pdf_path: Path) -> pdfium.PdfDocument:
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
@@ -51,7 +51,7 @@ def get_page_count(pdf_path: Path) -> int:
     Raises:
         FileNotFoundError: If *pdf_path* does not exist.
     """
-    doc = _open(pdf_path)
+    doc = open_pdf(pdf_path)
     try:
         return len(doc)
     finally:
@@ -64,7 +64,7 @@ def page_texts(pdf_path: Path) -> list[str]:
     Raises:
         FileNotFoundError: If *pdf_path* does not exist.
     """
-    doc = _open(pdf_path)
+    doc = open_pdf(pdf_path)
     try:
         texts = []
         for page in doc:
@@ -83,7 +83,7 @@ def page_boxes(pdf_path: Path) -> list[tuple[float, float, list[tuple[float, flo
     Raises:
         FileNotFoundError: If *pdf_path* does not exist.
     """
-    doc = _open(pdf_path)
+    doc = open_pdf(pdf_path)
     try:
         pages = []
         for page in doc:
@@ -118,7 +118,7 @@ def render_pdf_pages(pdf_path: Path, output_dir: Path) -> list[Path]:
     """
     pdf_path = Path(pdf_path)
     output_dir = Path(output_dir)
-    doc = _open(pdf_path)
+    doc = open_pdf(pdf_path)
     stem = pdf_path.stem
     results: list[Path] = []
     try:
@@ -130,3 +130,12 @@ def render_pdf_pages(pdf_path: Path, output_dir: Path) -> list[Path]:
     finally:
         doc.close()
     return results
+
+
+def render_box(page, bbox: list[float], scale: float, pad: float = 0.0):
+    """The part of *page* in *bbox* (points, origin top left), padded by *pad* and kept inside the page, as a
+    PIL image at *scale* pixels per point, with the box the image shows."""
+    width, height = page.get_size()
+    x0, y0, x1, y1 = max(bbox[0] - pad, 0.0), max(bbox[1] - pad, 0.0), min(bbox[2] + pad, width), min(bbox[3] + pad, height)
+    image = page.render(scale=scale, crop=(x0, height - y1, width - x1, y0)).to_pil().convert("RGB")
+    return image, [x0, y0, x1, y1]
