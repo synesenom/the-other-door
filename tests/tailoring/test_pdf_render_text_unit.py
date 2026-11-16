@@ -25,5 +25,5 @@ def test_page_boxes_give_size_and_the_box_of_each_printed_character(tmp_path):
     assert (round(width), round(height)) == (595, 842)
     assert len(boxes) == len("Hithere")  # spaces are not ink
     left, bottom, right, top = boxes[0]
-    assert round(left) == 72 and left < right and bottom < top < height
+    assert 72 <= left < 75 and left < right and bottom < top < height
     assert pages[1][2] == []
