@@ -214,3 +214,20 @@ def body(cv_md: str, lang: str = "en") -> str:
         header.append(contact)
     head = f'<header class="cv-header"><<photo>>{chr(10).join(header)}</header>' if header else ""
     return "\n".join(x for x in [head, *blocks.out] if x)
+
+
+def letter_header(cv_md: str) -> tuple[str, str]:
+    """The letter's header from the CV: ``(html, name)``, the CV's name and contact details in the `letter-header`
+    shape (what the tailor writes at the top of a letter); ``("", "")`` for a CV with no name. The tagline is left out."""
+    name, preamble = None, []
+    for raw in cv_md.splitlines():
+        line = raw.strip()
+        if line.startswith("## "):
+            break
+        if line.startswith("# ") and name is None:
+            name = line[2:].strip()
+        elif line and not line.startswith(("#", ">")):
+            preamble.append(line)
+    if not name:
+        return "", ""
+    return f'<header class="letter-header"><h1>{_inline(name)}</h1>{_contact(preamble)}</header>', name
