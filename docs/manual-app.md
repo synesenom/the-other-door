@@ -13,7 +13,7 @@ signs you in when it is missing. From a checkout, `./door doctor` checks them al
 ## Installing the app
 
 The installer carries everything *The other door* needs except Claude: its own Python with the pipeline's packages,
-the pipeline itself and Tectonic (the LaTeX engine for the PDFs). Nothing else has to be installed. On the
+the pipeline itself, Tectonic (the LaTeX engine for the PDFs) and a Chromium headless shell (which prints CVs). Nothing else has to be installed. On the
 first launch the wizard offers to install the `claude` command line if it is missing (Anthropic's
 own installer, into `~/.local/bin`, for you only and without a password; it keeps itself up to date)
 and signs you in to your Claude plan.

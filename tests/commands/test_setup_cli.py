@@ -21,15 +21,20 @@ from profile_utils import write_config
 from cli_utils import result_text
 
 
-def _check(name, status, required=True, fix=None):
-    return {"name": name, "status": status, "required": required, "detail": f"{name} detail", "fix": fix}
+_TOOLS = {"latex": "latex", "chromium": "chromium", "claude CLI": "claude"}
 
 
-def _report(*, latex="ok", claude="ok", profile="ok"):
+def _check(name, status, required=True, fix=None, installable=True):
+    check = {"name": name, "status": status, "required": required, "detail": f"{name} detail", "fix": fix}
+    return {**check, "tool": _TOOLS[name], "installable": installable} if name in _TOOLS else check
+
+
+def _report(*, latex="ok", claude="ok", profile="ok", chromium="ok", chromium_installable=True):
     checks = [
         _check("python", "ok"),
         _check("profile", profile, fix="./door init"),
         _check("latex", latex, fix="apt-get install texlive-xetex"),
+        _check("chromium", chromium, required=False, fix="./door doctor --fix", installable=chromium_installable),
         _check("claude CLI", claude, fix="./door doctor --fix"),
     ]
     return {"ok": all(c["status"] != "missing" for c in checks), "checks": checks, "last_run": None, "last_scrape": []}
@@ -205,6 +210,55 @@ def test_setup_cli_lists_every_tool_and_asks_once(env, monkeypatch, prompts):
     assert env.ran == [LATEX_ARGV]
     assert "✓ Tectonic" in out
     assert result.exit_code == 0, result_text(result)
+
+
+CHROMIUM_ARGV = ["python", "-m", "door.core.chromium", "--dest", "<root>"]
+
+
+def test_setup_cli_installs_a_missing_chromium_when_asked(env, monkeypatch, prompts):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn"), _report()))
+    real = installers.plan_install
+
+    def plan(tool, platform, **kw):
+        if tool == "chromium":
+            return {"tool": "chromium", "commands": [CHROMIUM_ARGV], "hint": None, "note": None}
+        return real(tool, platform, **kw)
+
+    monkeypatch.setattr(installers, "plan_install", plan)
+    result = CliRunner().invoke(cli, ["doctor", "--fix"])
+    assert "Chromium (CV printing)" in result.output
+    assert env.ran == [CHROMIUM_ARGV]
+    assert result.exit_code == 0, result_text(result)
+
+
+def test_setup_core_default_installs_a_missing_chromium_too(env, monkeypatch):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
+    result = setup_cmd._setup_core()
+    assert [p["tool"] for p in result["plan"]] == ["chromium"]
+
+
+def test_a_found_shell_that_lacks_libraries_is_not_offered_an_install(env, monkeypatch, prompts):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn", chromium_installable=False)))
+    assert setup_cmd._setup_core()["plan"] == []
+    result = CliRunner().invoke(cli, ["doctor", "--fix"])
+    assert prompts.order == [] and env.ran == []
+    assert "not installed by --fix" in result.output
+    assert "chromium detail" in result.output
+
+
+def test_setup_cli_no_chromium_skips_it(env, monkeypatch):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
+    result = CliRunner().invoke(cli, ["doctor", "--fix", "--yes", "--no-chromium"])
+    assert env.ran == []
+    assert "skipped" in result.output
+    assert result.exit_code == 0, result_text(result)
+
+
+def test_setup_cli_declined_chromium_installs_nothing(env, monkeypatch, prompts):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
+    prompts.answers.update(install=False)
+    result = CliRunner().invoke(cli, ["doctor", "--fix"])
+    assert env.ran == []
 
 
 def test_setup_cli_declined_installs_nothing(env, monkeypatch, prompts):
@@ -496,7 +550,7 @@ def test_progress_spinner_is_yellow(monkeypatch, capsys):
 
 
 def test_doctor_install_flags_need_fix(cli_env):
-    for flag in ("--yes", "--no-tex", "--no-claude"):
+    for flag in ("--yes", "--no-tex", "--no-chromium", "--no-claude"):
         result = CliRunner().invoke(cli, ["doctor", flag])
         assert result.exit_code == 2, flag
         assert "only go with --fix" in result_text(result)

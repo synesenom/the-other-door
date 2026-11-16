@@ -44,19 +44,22 @@ process, use `npm run dev:demo`.
 
 ## The bundle a packaged app carries (#223)
 
-A packaged app does not use the checkout's `.venv`: it carries its own Python and Tectonic. Build them for
+A packaged app does not use the checkout's `.venv`: it carries its own Python, Tectonic and Chromium. Build them for
 this computer (macOS, or x64 Linux; Windows has `bundle-python.ps1`, #355) and check them:
 
 ```sh
-scripts/bundle-python.sh   # → app/resources/{python,door,bin}, about 310 MB; downloads cached in app/.bundle-cache/
-scripts/check-bundle.sh    # imports, the MCP handshake, doctor, a Tectonic page, nothing written inside (--offline: no page)
+scripts/bundle-python.sh   # → app/resources/{python,door,bin}, about 310 MB before Chromium, which adds an estimated 200 MB unpacked; downloads cached in app/.bundle-cache/
+scripts/check-bundle.sh    # imports, the MCP handshake, doctor, a Tectonic page, a Chromium page, nothing written inside (--offline: no page)
 ```
 
 - `python/` is [python-build-standalone](https://github.com/astral-sh/python-build-standalone) 3.12 with *The other door*'s
   `poetry.lock` main group installed into it, every package by hash and from a wheel only
   (`scripts/lock_requirements.py` writes the requirements; a package with no wheel for the system fails the build).
 - `door/` is `src/`, `.claude/agents/{tailor,matcher}.md` and `profile.example/`, laid out as in a checkout.
-- `bin/` is Tectonic (the static musl build on Linux).
+- `bin/` is Tectonic (the static musl build on Linux) and `chromium/`, the Chrome for Testing headless shell that
+  prints CVs (#165), pinned in `src/door/core/chromium_pin.json` (the one pin, also what `doctor --fix` installs;
+  not in `bundle.lock.json`): an estimated 105-128 MB more per installer zipped and about 200 MB unpacked. On Windows on ARM the
+  win64 shell runs under emulation.
 - Versions and sha256s are pinned in `scripts/bundle.lock.json` (from each release's metadata); a download
   that does not match is refused.
 - No cross-building: each system builds its own. The app starts it through `resolvePackagedSpawn`
@@ -99,7 +102,7 @@ Windows, or after the `.deb`'s `apt-get remove` its `/opt` folder, `/usr/bin` li
 HOME and Chromium folder and the journeys' test world (`test/world/`): a CV in, the review saved, the first run to
 its summary, the best match prepared with the **bundled** Tectonic (a real LaTeX download), quit, reopened. It
 checks the server is the bundled Python on the bundled door with the bundled `bin/` first on PATH, doctor finds
-that Tectonic, the data folder is where `docs/manual-app.md` says, no ERROR line in `logs/door.log`, and nothing
+that Tectonic and the bundled Chromium, a page printed with the installed interpreter (`python -m door.tailoring.html_pdf`), the data folder is where `docs/manual-app.md` says, no ERROR line in `logs/door.log`, and nothing
 written inside the app. The plan per system is `e2e-install/installer.ts` (unit-tested in `npm test`).
 A Prepare that logs an ERROR line fails the test at once. A failed run leaves in
 `install-report/` (uploaded by CI) the data folder's `logs/` (`door.log`: when the server stopped, its exit code or
