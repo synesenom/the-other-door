@@ -400,9 +400,9 @@ def _prepare_core(
     config = common._load_config_or_defaults(home)
     if common._cv_is_example(config, home):
         return {"job_id": job_id, "outcome": "failed", "error": common.EXAMPLE_CV_MESSAGE}
-    try:  # a broken template.json would only fail compile, after the tailor spent the plan (#188)
-        for key in templates.FILES:
-            templates.manifest(templates.resolve(key, config))
+    try:  # a broken template.json, or a file it names missing, would only fail compile after the tailor ran (#188)
+        for template_path in _tailor_templates(home).values():
+            templates.assets(template_path)
     except ValueError as exc:
         return {"job_id": job_id, "outcome": "failed", "error": str(exc)}
     if job_id is None:
@@ -424,7 +424,7 @@ def _prepare_core(
             utils.write_json_atomic(posting_path, stored)
         if "language" not in stored:  # an ad stored before imports were tagged: the tailor needs its language
             language.tag_posting(
-                posting_path, common._load_config_or_defaults(home), feature="import_posting"
+                posting_path, config, feature="import_posting"
             )
     except (OSError, ValueError, ConfigError):
         pass

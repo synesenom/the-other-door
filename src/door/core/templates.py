@@ -116,3 +116,43 @@ def manifest(template_path: Path) -> Manifest | None:
         return Manifest(**data)
     except ValueError as exc:
         raise ValueError(f"{MANIFEST_FILE}: {exc}") from exc
+
+
+def _fonts_dir() -> Path:
+    """The folder the templates' `/fonts/...` is served from: the profile's own when it holds TrueType files, else the
+    code's. (Chromium writes a CFF `.otf` font into a PDF as nameless text.)"""
+    own = workspace.PROFILE_DIR / "fonts"
+    if own.is_dir() and any(own.glob("*.ttf")):
+        return own
+    return workspace.PROFILE_EXAMPLE_DIR / "fonts"
+
+
+def _named(folder: Path, names) -> list[Path]:
+    """The files `names` in `folder`.
+
+    Raises:
+        ValueError: one of them is not there.
+    """
+    files = [folder / name for name in names]
+    for file in files:
+        if not file.is_file():
+            raise ValueError(f"{MANIFEST_FILE} names {folder.name}/{file.name}, which is not in {folder}")
+    return files
+
+
+def assets(template_path: Path) -> dict[str, list[Path]]:
+    """What the print serves beside the page: the fonts a `template.json` names (#188), from the `fonts/` beside the
+    template, else the TrueType files `_fonts_dir` finds; and the icons it names, from the `icons/` beside it.
+
+    Raises:
+        ValueError: the manifest is invalid, or names a file that is not there.
+    """
+    found = manifest(template_path)
+    folder = Path(template_path).parent
+    if found and found.fonts:
+        served = {"fonts": _named(folder / "fonts", found.fonts)}
+    else:
+        served = {"fonts": sorted(_fonts_dir().glob("*.ttf"))}
+    if found and found.icons:
+        served["icons"] = _named(folder / "icons", found.icons.values())
+    return served

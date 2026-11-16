@@ -86,46 +86,6 @@ def _with_photo(body: str, template: str, output_dir: Path, posting: dict, confi
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-def _fonts_dir() -> Path:
-    """The folder the templates' `/fonts/...` is served from: the profile's own when it holds TrueType files, else the
-    code's. (Chromium writes a CFF `.otf` font into a PDF as nameless text.)"""
-    own = workspace.PROFILE_DIR / "fonts"
-    if own.is_dir() and any(own.glob("*.ttf")):
-        return own
-    return workspace.PROFILE_EXAMPLE_DIR / "fonts"
-
-
-def _named(folder: Path, names) -> list[Path]:
-    """The files `names` in `folder`.
-
-    Raises:
-        ValueError: one of them is not there.
-    """
-    files = [folder / name for name in names]
-    for file in files:
-        if not file.is_file():
-            raise ValueError(f"{templates.MANIFEST_FILE} names {folder.name}/{file.name}, which is not in {folder}")
-    return files
-
-
-def _assets(template_path: Path) -> dict[str, list[Path]]:
-    """What the print serves beside the page: the fonts a `template.json` names (#188), from the `fonts/` beside the
-    template, else the TrueType files `_fonts_dir` finds; and the icons it names, from the `icons/` beside it.
-
-    Raises:
-        ValueError: the manifest is invalid, or names a file that is not there.
-    """
-    manifest = templates.manifest(template_path)
-    folder = Path(template_path).parent
-    if manifest and manifest.fonts:
-        assets = {"fonts": _named(folder / "fonts", manifest.fonts)}
-    else:
-        assets = {"fonts": sorted(_fonts_dir().glob("*.ttf"))}
-    if manifest and manifest.icons:
-        assets["icons"] = _named(folder / "icons", manifest.icons.values())
-    return assets
-
-
 def _wrap(template: str, body: str, language: str) -> str:
     """`template` with its language and `body` in place.
 
@@ -238,7 +198,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             results.append(entry)
             continue
         try:
-            assets = _assets(template_path)
+            assets = templates.assets(template_path)
         except ValueError as exc:
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
