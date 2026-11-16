@@ -89,7 +89,7 @@ def build(out: Path, printer=html_pdf.print_html) -> None:
 
 
 def _first_page_image(pdf: Path) -> Image.Image:
-    doc = pdf_render._open(pdf)
+    doc = pdf_render.open_pdf(pdf)
     try:
         return doc[0].render(scale=100 / 72).to_pil()
     finally:

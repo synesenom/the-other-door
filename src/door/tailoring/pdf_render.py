@@ -32,7 +32,7 @@ def clean_text(text: str) -> str:
     return _CONTROL.sub("", _SOFT_HYPHEN.sub("", text))
 
 
-def _open(pdf_path: Path) -> pdfium.PdfDocument:
+def open_pdf(pdf_path: Path) -> pdfium.PdfDocument:
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
@@ -51,7 +51,7 @@ def get_page_count(pdf_path: Path) -> int:
     Raises:
         FileNotFoundError: If *pdf_path* does not exist.
     """
-    doc = _open(pdf_path)
+    doc = open_pdf(pdf_path)
     try:
         return len(doc)
     finally:
@@ -64,7 +64,7 @@ def page_texts(pdf_path: Path) -> list[str]:
     Raises:
         FileNotFoundError: If *pdf_path* does not exist.
     """
-    doc = _open(pdf_path)
+    doc = open_pdf(pdf_path)
     try:
         texts = []
         for page in doc:
@@ -83,7 +83,7 @@ def page_boxes(pdf_path: Path) -> list[tuple[float, float, list[tuple[float, flo
     Raises:
         FileNotFoundError: If *pdf_path* does not exist.
     """
-    doc = _open(pdf_path)
+    doc = open_pdf(pdf_path)
     try:
         pages = []
         for page in doc:
@@ -118,7 +118,7 @@ def render_pdf_pages(pdf_path: Path, output_dir: Path) -> list[Path]:
     """
     pdf_path = Path(pdf_path)
     output_dir = Path(output_dir)
-    doc = _open(pdf_path)
+    doc = open_pdf(pdf_path)
     stem = pdf_path.stem
     results: list[Path] = []
     try:

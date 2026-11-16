@@ -6,14 +6,13 @@ import pypdfium2.raw as raw
 from pdf_utils import raw_pdf
 
 
-def test_a_hand_written_pdf_opens_with_its_text_pages_and_producer(tmp_path):
+def test_a_hand_written_pdf_opens_with_its_text_and_pages(tmp_path):
     path = tmp_path / "a.pdf"
     path.write_bytes(raw_pdf(["BT /F1 12 Tf 50 700 Td (Hello) Tj ET", "BT /F2 12 Tf 50 700 Td (Page two) Tj ET"],
-                             size=(300, 400), producer="Test Maker"))
+                             size=(300, 400)))
     doc = pdfium.PdfDocument(str(path))
     assert len(doc) == 2 and doc[0].get_size() == (300, 400)
     assert "Hello" in doc[0].get_textpage().get_text_range()
-    assert doc.get_metadata_value("Producer") == "Test Maker"
     objs = list(doc[1].get_objects(filter=[raw.FPDF_PAGEOBJ_TEXT]))
     assert "Bold" in objs[0].get_font().get_base_name()
 

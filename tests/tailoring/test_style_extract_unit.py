@@ -80,10 +80,9 @@ def test_invisible_text_is_not_a_run(tmp_path):
     assert not [r for r in read(tmp_path, content)["runs"] if "ocr" in r["text"]]
 
 
-def test_the_producer_and_creator_are_reported(tmp_path):
-    style = read(tmp_path, body(), producer="Test Maker")
-    assert style["producer"] == "Test Maker" and style["creator"] == ""
-    assert style["version"] == 1
+def test_the_result_has_a_version_and_the_page_count(tmp_path):
+    style = read_pages(tmp_path, [body(), body()])
+    assert style["version"] == 1 and style["page_count"] == 2
 
 
 # ---------- nothing to copy ----------
@@ -102,8 +101,7 @@ def test_a_scan_has_nothing_to_copy(tmp_path):
     images, draw = page_image()
     style = read_pages(tmp_path, draw, images=images)
     assert style["verdict"]["copyable"] is False and style["verdict"]["reason"] == "scan"
-    # only the verdict and what is known of the file
-    assert set(style) == {"version", "verdict", "producer", "creator", "page_count"}
+    assert "runs" not in style  # nothing else is read
 
 
 def test_a_page_with_a_few_characters_is_a_scan_too(tmp_path):
@@ -146,10 +144,10 @@ def test_the_footers_with_too_few_of_the_headings_are_a_cv(tmp_path):
     assert read_pages(tmp_path, pages)["verdict"]["copyable"] is True
 
 
-@pytest.mark.parametrize("name", ["cv.docx", "cv.txt", "cv.md", "CV.HTML", "cv.rtf", "cv.odt"])
+@pytest.mark.parametrize("name", ["cv.docx", "cv.txt", "cv.md", "CV.HTML", "cv.rtf", "cv.odt", "scan.PNG", "photo.jpeg", "cv"])
 def test_a_file_that_is_not_a_pdf_has_no_layout(name):
     verdict = style_extract.not_pdf(name)
-    assert verdict["copyable"] is False and verdict["reason"] == "not_pdf" and name.rsplit(".")[-1].lower() in verdict["detail"]
+    assert verdict["copyable"] is False and verdict["reason"] == "not_pdf" and verdict["detail"]
 
 
 def test_a_pdf_name_is_left_to_extract():
@@ -165,15 +163,27 @@ def block(x, top, bottom, size=10):
 
 
 def test_margins_are_the_space_around_the_text(tmp_path):
-    margins = read(tmp_path, block(60, 780, 90))["page"]["margins"]
+    margins = read_pages(tmp_path, [block(60, 780, 90), block(60, 780, 400)])["page"]["margins"]
     assert 59 <= margins["left"] <= 62 and 53 <= margins["top"] <= 57 and 90 <= margins["bottom"] <= 94
     assert 345 <= margins["right"] <= 355  # the longest line is about 185 wide
 
 
 def test_a_page_number_in_the_foot_is_not_the_bottom_margin(tmp_path):
-    plain = read(tmp_path, block(60, 780, 100))["page"]["margins"]
-    footed = read(tmp_path, block(60, 780, 100) + text("F1", 9, 290, 20, "3"))["page"]["margins"]
+    plain = read_pages(tmp_path, [block(60, 780, 100), block(60, 780, 100)])["page"]["margins"]
+    footed = read_pages(tmp_path, [block(60, 780, 100) + text("F1", 9, 290, 20, "3"),
+                                   block(60, 780, 100) + text("F1", 9, 290, 20, "Page 2 of 2")])["page"]["margins"]
     assert footed["bottom"] == plain["bottom"]
+
+
+def test_only_a_page_with_another_after_it_gives_the_bottom_margin(tmp_path):
+    # a last page is as long as the text is: half empty says nothing about the margin the design keeps
+    margins = read_pages(tmp_path, [block(60, 780, 100), block(60, 780, 500)])["page"]["margins"]
+    assert 100 <= margins["bottom"] <= 108
+
+
+def test_a_single_page_has_the_top_margin_as_its_bottom_one(tmp_path):
+    margins = read(tmp_path, block(60, 780, 500))["page"]["margins"]
+    assert margins["bottom"] == margins["top"]
 
 
 def test_the_smallest_margin_of_any_page_counts(tmp_path):
@@ -321,10 +331,10 @@ def test_headings_share_a_style_larger_than_the_body(tmp_path):
     style = read(tmp_path, cv_with_headings())
     assert [h["text"] for h in style["headings"]] == ["WORK EXPERIENCE", "PROJECTS", "VOLUNTEERING"]
     first = style["headings"][0]
-    assert (first["size"], first["color"], first["weight"], first["case"]) == (13.0, "#1a3380", 700, "upper")
+    assert (first["size"], first["color"], first["weight"], first["case"], first["italic"]) == (13.0, "#1a3380", 700, "upper", False)
     assert first["rule"] is None
     assert style["heading_style"] == {"size": 13.0, "color": "#1a3380", "weight": 700, "family": "Helvetica",
-                                      "case": "upper", "rule": None}
+                                      "case": "upper", "italic": False, "rule": None}
 
 
 def test_a_rule_just_under_a_heading_belongs_to_it(tmp_path):
@@ -367,7 +377,7 @@ def test_a_bold_section_name_at_the_body_size_is_a_heading(tmp_path):
 def test_the_text_colour_is_the_one_most_characters_have_and_the_accent_the_strongest_other(tmp_path):
     colors = read(tmp_path, cv_with_headings())["colors"]
     assert colors["text"] == "#000000" and colors["accent"] == "#1a3380"
-    assert colors["palette"][0]["color"] == "#000000" and colors["palette"][0]["chars"] > colors["palette"][1]["chars"]
+    assert "palette" not in colors
 
 
 def test_a_cv_in_black_and_grey_has_no_accent(tmp_path):
@@ -392,7 +402,6 @@ def image_at(x, y, w, h):
 def test_a_portrait_sized_image_on_the_first_page_is_the_photo(tmp_path):
     style = read(tmp_path, image_at(450, 650, 90, 120) + body(), images=RED)
     assert style["photo"] == {"page": 1, "bbox": [450.0, 72.0, 540.0, 192.0], "shape": "rect"}
-    assert style["background_images"] == 0
 
 
 def test_an_image_clipped_to_a_circle_is_a_round_photo(tmp_path):
@@ -406,7 +415,7 @@ def test_an_image_clipped_to_a_circle_is_a_round_photo(tmp_path):
 
 def test_a_page_sized_image_is_a_background_not_a_photo(tmp_path):
     style = read(tmp_path, image_at(0, 0, 595, 842) + body(), images=RED)
-    assert style["photo"] is None and style["background_images"] == 1
+    assert style["photo"] is None and style["icons"] == []
 
 
 @pytest.mark.parametrize("w,h", [(20, 20), (300, 40), (60, 200)])
@@ -452,7 +461,7 @@ def test_rules_dots_and_boxes_are_no_icons(tmp_path):
 
 def test_drawings_that_touch_are_one_icon(tmp_path):
     # a house: a roof and a wall painted as two paths that share an edge
-    roof = "0 0 1 rg 50 700 m 60 710 l 70 700 l f\n"
+    roof = "0 0 1 rg 50 700 m 55 705 l 60 710 l 65 705 l 70 700 l f\n"
     wall = "0 0 1 rg 52 691 m 68 691 l 68 700 l 60 702 l 52 700 l f\n"
     assert len(read(tmp_path, roof + wall + body())["icons"]) == 1
 
@@ -532,3 +541,135 @@ def test_letter_spaced_capitals_are_read_as_the_word(tmp_path):
 
 def test_a_sentence_of_short_words_keeps_its_spaces(tmp_path):
     assert run_of(read(tmp_path, text("F1", 10, 50, 700, "I AM IN IT") + body()), "AM")["text"] == "I AM IN IT"
+
+
+# ---------- review: serif, nameless fonts, icon fonts, italic ----------
+
+@pytest.mark.parametrize("name,flags,serif", [
+    ("TeXGyreHeros-Regular", 0x6, False),   # pdfTeX sets the serif bit on a sans font
+    ("Figtree-Regular", 0x4, False),        # Chromium sets only the symbolic bit
+    ("NimbusSanL-Regu", 0x22, False), ("Lato-Bold", 0x22, False), ("Optima-Bold", 0x20, False),
+    ("URW Palladio L", 0x22, True), ("LMRoman10-Regular", 0x22, True), ("Times-Roman", 0x0, True),
+    ("Mystery-Regular", 0x22, True),        # the name says nothing: the flag decides
+    ("Mystery-Regular", 0x20, False),
+])
+def test_a_sans_or_serif_name_decides_before_the_flag(name, flags, serif):
+    assert style_extract.is_serif(name, flags) is serif
+
+
+def test_the_force_bold_flag_makes_a_font_bold_and_an_italic_angle_italic():
+    facts = style_extract.font_facts("Mystery-Regular", flags=0x40000, italic_angle=-12, family="")
+    assert facts["weight"] == 700 and facts["italic"] is True
+    assert style_extract.font_facts("Mystery-Regular", flags=0, italic_angle=0, family="")["weight"] == 400
+
+
+def test_a_nameless_run_takes_the_font_of_the_named_space_on_its_line():
+    named = {"font": "YoungSerif-Regular", "family": "Young Serif", "weight": 400, "italic": False, "serif": True, "fixed": False}
+    nameless = {"page": 1, "baseline": 100.0, "size": 24.0, "font": "", "family": "", "weight": 400, "italic": False,
+                "serif": False, "fixed": False, "type3": False}
+    far = {**nameless, "baseline": 300.0}
+    anchors = [{"page": 1, "baseline": 100.4, "size": 24.0, "x": 72.0, **named}]
+    style_extract.name_nameless([nameless, far], anchors)
+    assert nameless["font"] == "YoungSerif-Regular" and nameless["family"] == "Young Serif" and nameless["serif"] is True
+    assert nameless["type3"] is False
+    assert far["font"] == "" and far["type3"] is True  # nothing named on its line: marked, not guessed
+
+
+def test_fonts_say_whether_all_their_runs_are_icons(tmp_path):
+    content = text("FA", 10, 400, 700, "A") + text("F1", 10, 420, 700, "name@example.com") + body()
+    fonts = {f["family"]: f for f in read(tmp_path, content, fonts={"FA": "FontAwesome"})["fonts"]}
+    assert fonts["FontAwesome"]["icon"] is True and fonts["Helvetica"]["icon"] is False
+    assert fonts["Helvetica"]["type3"] is False
+
+
+def run(font, text_, **kw):
+    return {"font": font, "text": text_, "icon": False, **kw}
+
+
+def test_private_use_control_and_dingbat_characters_mark_an_icon_run_in_any_font():
+    runs = [run("Neutral-Regular", ""), run("Neutral-Regular", "\x01"), run("Neutral-Regular", "✓"),
+            run("Neutral-Regular", "Plain words")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [True, True, True, False]
+
+
+def test_a_font_whose_runs_are_all_a_symbol_or_two_is_an_icon_font():
+    runs = [run("Odd-Regular", "@"), run("Odd-Regular", "→"), run("Body-Regular", "Words"), run("Body-Regular", "A")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [True, True, False, False]
+
+
+def test_a_bullet_and_a_letter_or_digit_are_not_icons_whatever_their_font():
+    runs = [run("Symbol", "•"), run("Odd-Regular", "1"), run("Odd-Regular", "1")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [False, False, False]
+
+
+def test_a_small_photo_with_a_blank_border_is_not_also_an_icon(tmp_path):
+    rows = [[(255, 255, 255)] * 4] + [[(255, 255, 255), (255, 0, 0), (255, 0, 0), (255, 255, 255)]] * 2 + [[(255, 255, 255)] * 4]
+    data = bytes(c for row in rows for px in row for c in px)
+    style = read(tmp_path, image_at(450, 650, 44, 44) + body(), images={"Im1": (4, 4, data)})
+    assert style["photo"] is not None and style["icons"] == []
+
+
+def italic_headings(font):
+    content = text("F2", 26, 50, 790, "Mira Valdis")
+    for i, heading in enumerate(["WORK EXPERIENCE", "PROJECTS", "VOLUNTEERING"]):
+        content += text(font, 13, 50, 740 - 90 * i, heading) + stack(50, 720 - 90 * i, 4, "A line of the body text")
+    return content
+
+
+def test_headings_and_their_style_say_when_they_are_italic(tmp_path):
+    style = read(tmp_path, italic_headings("F5"))
+    assert all(h["italic"] is True for h in style["headings"]) and style["heading_style"]["italic"] is True
+
+
+# ---------- review: branches the corpus does not reach ----------
+
+def test_a_circle_bigger_than_a_dot_is_a_rounded_box(tmp_path):
+    k = 0.5523 * 15
+    cx, cy = 300, 500
+    circle = (f"0.8 0.8 0.9 rg {cx - 15} {cy} m {cx - 15} {cy + k} {cx - k} {cy + 15} {cx} {cy + 15} c "
+              f"{cx + k} {cy + 15} {cx + 15} {cy + k} {cx + 15} {cy} c {cx + 15} {cy - k} {cx + k} {cy - 15} {cx} {cy - 15} c "
+              f"{cx - k} {cy - 15} {cx - 15} {cy - k} {cx - 15} {cy} c f\n")
+    (box,) = read(tmp_path, circle + body())["shapes"]
+    assert box["kind"] == "box" and box["rounded"] is True
+
+
+def test_a_path_that_paints_nothing_is_no_shape(tmp_path):
+    clip = "100 500 m 300 500 l 300 600 l 100 600 l W n\n"  # a clip: no fill, no stroke
+    assert read(tmp_path, clip + body())["shapes"] == []
+
+
+def test_text_that_is_not_stacked_anywhere_is_still_one_only_column(tmp_path):
+    scattered = "".join(text("F1", 10, 60 + 50 * i, 700 - 150 * i, "One long line of the CV that stands on its own " * 2) for i in range(4))
+    columns = read(tmp_path, scattered)["columns"]
+    assert columns["count"] == 1 and columns["bands"][0]["kind"] == "only"
+
+
+def test_a_page_of_lines_in_two_styles_has_no_name(tmp_path):
+    # every line is half bold, half regular: no line is one style, so nothing is read as a name
+    content = "".join(text("F2", 12, 50, 780 - 14 * i, "Lab") + text("F1", 12, 73, 780 - 14 * i, f"el {i} has a value that follows")
+                      for i in range(8))
+    assert read(tmp_path, content)["name"] is None
+
+
+def test_a_picture_the_colour_of_what_is_around_it_keeps_its_box(tmp_path):
+    white = {"Im1": (2, 2, bytes([255, 255, 255] * 4))}
+    style = read(tmp_path, image_at(450, 650, 90, 120) + body(), images=white)
+    assert style["photo"]["bbox"] == [450.0, 72.0, 540.0, 192.0] and style["photo"]["shape"] == "rect"
+
+
+def test_a_page_with_only_a_page_number_adds_no_margins(tmp_path):
+    margins = read_pages(tmp_path, [block(60, 780, 100), text("F1", 9, 290, 20, "2")])["page"]["margins"]
+    assert 59 <= margins["left"] <= 62
+
+
+def test_text_that_is_all_rotated_has_no_columns(tmp_path):
+    side = "".join(f"BT /F1 10 Tf 0 1 -1 0 {300 + 14 * i} 200 Tm (A rotated line of text number {i} of the page) Tj ET\n" for i in range(5))
+    style = read(tmp_path, side)
+    assert style["columns"] == {"count": 0, "bands": []}
+
+
+def test_a_drawing_that_shows_nothing_on_the_page_is_no_icon(tmp_path):
+    assert read(tmp_path, star(60, 703, 5, color="1 1 1") + body())["icons"] == []

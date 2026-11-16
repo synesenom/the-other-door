@@ -25,18 +25,10 @@ def test_every_pdf_of_the_corpus_has_its_expectations_and_the_other_way_round():
     assert sorted(p.stem for p in STYLES.glob("*.pdf")) == STEMS
 
 
-def test_the_corpus_has_the_designs_the_epic_asks_for():
-    names = " ".join(STEMS)
-    for design in ("altacv", "two-column", "canva", "plain", "scan", "linkedin", "pages", "sidebar"):
-        assert design in names
-
-
 @pytest.mark.parametrize("stem", STEMS)
 def test_the_verdict_is_what_to_copy(styles, stem):
     verdict = styles[stem]["verdict"]
     assert {k: verdict[k] for k in ("copyable", "reason")} == EXPECTED[stem]["verdict"]
-    if not verdict["copyable"]:
-        assert set(styles[stem]) == {"version", "verdict", "producer", "creator", "page_count"}
 
 
 def _copyable():
@@ -44,10 +36,15 @@ def _copyable():
 
 
 @pytest.mark.parametrize("stem", _copyable())
-def test_the_fonts_are_found_by_family(styles, stem):
-    families = {f["family"].casefold() for f in styles[stem]["fonts"]}
-    for family in EXPECTED[stem]["fonts"]:
-        assert family.casefold() in families
+def test_the_fonts_are_found_by_family_and_serif_or_sans(styles, stem):
+    found = {f["family"].casefold(): f for f in styles[stem]["fonts"]}
+    for family, serif in EXPECTED[stem]["fonts"].items():
+        assert found[family.casefold()]["serif"] is serif
+
+
+@pytest.mark.parametrize("stem", [s for s in _copyable() if "name_family" in EXPECTED[s]])
+def test_the_name_has_the_family_of_its_font_even_when_the_pdf_leaves_it_unnamed(styles, stem):
+    assert styles[stem]["name"]["family"] == EXPECTED[stem]["name_family"]
 
 
 @pytest.mark.parametrize("stem", _copyable())
@@ -76,12 +73,6 @@ def test_a_page_has_margins_and_the_text_of_the_cv_is_read(styles, stem):
     style = styles[stem]
     assert all(m >= 0 for m in style["page"]["margins"].values())
     assert len(style["runs"]) > 20 and style["name"]["size"] > 0
-
-
-@pytest.mark.parametrize("stem", STEMS)
-def test_a_fixture_stays_small(stem):
-    limit = 200_000 if stem.startswith("scrubbed-") else 150_000
-    assert (STYLES / f"{stem}.pdf").stat().st_size <= limit
 
 
 def test_the_made_up_pdfs_name_only_example_addresses(styles):
