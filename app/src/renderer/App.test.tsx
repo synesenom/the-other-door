@@ -676,6 +676,24 @@ describe('App, the first-launch gate', () => {
       expect(chooseStyleFile).not.toHaveBeenCalled()
     })
 
+    describe.each([
+      [true, true],
+      [false, false],
+    ])('Profile → CV with chromium ok=%s', (chromium, offered) => {
+      it(offered ? 'offers the build' : 'a failing chromium check hides the build action', async () => {
+        const shown = { styles: { default: { cv: ['/h/cv_page_1.png'], letter: [], version: 'd', two_column: false } }, in_use: 'default', candidate: false }
+        const { call } = gated(profile(), { doctor: doctorReport('ok', chromium), show_style: shown })
+        render(<App />)
+        await userEvent.click(await screen.findByRole('button', { name: 'Profile' }))
+        await userEvent.click(await screen.findByRole('button', { name: 'CV' }))
+        await screen.findByText('Style')
+        await waitFor(() => expect(call.mock.calls.map((c) => c[0])).toContain('doctor'))
+        await act(() => new Promise((r) => setTimeout(r, 50)))
+        const button = screen.queryByRole('button', { name: /Use the style of/ })
+        expect(button !== null).toBe(offered)
+      })
+    })
+
     it('on the phone a ready CV style is not said', async () => {
       const { info, call } = gated(profile(), { status_summary: summary({ style: { state: 'ready' } }) })
       info.mockResolvedValue({ demo: false, remote: true })

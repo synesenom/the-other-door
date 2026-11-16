@@ -35,7 +35,7 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import lock, phone, templates, tracker, workspace
+from door.core import doctor, lock, phone, templates, tracker, workspace
 from door.tailoring import style_build, style_extract, style_preview
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
@@ -81,7 +81,7 @@ def _look(path: Path) -> None:
 def _intake(path: Path) -> None:
     """Raise ValueError, in words, when a build of the file at `path` cannot start: no Chromium to print with, or no style."""
     if not common._chromium_available():
-        raise ValueError("no Chromium to print with: run ./door doctor --fix")
+        raise ValueError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
     _look(path)
 
 

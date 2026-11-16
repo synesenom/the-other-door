@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import json
 import os
+import re
 import shutil
 import signal
 import sys
@@ -20,7 +21,7 @@ from door.cli import cli
 from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, lock, phone, workspace
+from door.core import chromium, doctor, lock, phone, workspace
 from door.tailoring import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR
@@ -108,7 +109,7 @@ def test_a_file_that_is_not_a_pdf_is_refused_in_words_and_nothing_starts(home, w
 
 def test_start_refuses_in_words_without_a_chromium_and_starts_nothing(home, world, cv_pdf, monkeypatch):
     monkeypatch.setattr(common, "_chromium_available", lambda: False)
-    with pytest.raises(ValueError, match="no Chromium to print with: run ./door doctor --fix"):
+    with pytest.raises(ValueError, match=re.escape(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")):
         style_cmd._start_core(str(cv_pdf))
     assert world.spawned == [] and not (home / ".style").exists()
 
@@ -118,7 +119,7 @@ def test_the_build_command_refuses_without_a_chromium_before_any_model_round(hom
     monkeypatch.setattr(style_cmd.style_build, "build", lambda *a, **k: pytest.fail("a round ran without Chromium"))
     result = CliRunner().invoke(cli, ["cv", "style", "build", str(cv_pdf)])
     assert result.exit_code != 0
-    assert "no Chromium to print with: run ./door doctor --fix" in result_text(result)
+    assert f"no Chromium to print with: {doctor._CHROMIUM_FIX}" in result_text(result)
 
 
 def test_a_scan_is_refused_with_the_verdict_and_leaves_the_existing_style_and_state_alone(home, world, cli_env):

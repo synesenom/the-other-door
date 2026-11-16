@@ -56,8 +56,6 @@ function Pages({ which, set, onClose }: { which: Which; set: StyleSet; onClose: 
  * makes the previews stale (a saved CV). Nothing is said when the previews cannot be made or a build fails (the
  * doctor and the sidebar say what the user can act on), but a file with no style to copy is named.
  */
-const NO_CHROMIUM = /no Chromium to print with/
-
 export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none' | 'building' | 'ready' | 'failed' | null; canBuild: boolean; onChanged: () => void; reload: number }) {
   // null: the first read is still going. A later read keeps what is shown until it answers.
   const [shown, setShown] = useState<Shown | null>(null)
@@ -93,8 +91,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
     setBusy(true)
     try {
       const r = (await window.door.chooseStyleFile()) as { ok: boolean; error?: string; data?: { canceled?: true } }
-      // No Chromium is the doctor's and the sidebar's to say, not a refusal of this file
-      if (!r.ok) setError(r.error && NO_CHROMIUM.test(r.error) ? null : (r.error ?? 'That file could not be used.'))
+      if (!r.ok) setError(r.error ?? 'That file could not be used.')
       else if (!r.data?.canceled) {
         setRerender(null)
         onChanged()
