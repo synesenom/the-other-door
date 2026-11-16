@@ -38,7 +38,6 @@ from door.commands import _progress
 from door.core import lock, phone, templates, tracker, workspace
 from door.tailoring import style_build, style_extract, style_preview
 
-TEMPLATE = "cv.template.html"
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
 PENDING_SECONDS = 30  # a started build that has not yet taken its lock still reads as building this long
 
@@ -185,14 +184,14 @@ def status(home: Path, profile_dir: Path) -> dict:
     waiting, `profile/style.next/cv.template.html` exists (``fonts`` and ``dropped_icons`` of the last build's result
     when it was that one's), even when a later build failed. failed: the last build failed (``problems`` say why) or its
     process died before it finished. none: no candidate waits."""
-    style_build._restore(Path(profile_dir))
+    style_build.restore(Path(profile_dir))
     run = _read(home) or {}
     state = run.get("state")
     if state == "building":
         if lock.held(_lock_path(home)) or ("pid" not in run and _age(run["started_at"]) < PENDING_SECONDS):
             return {"state": "building", "started_at": run["started_at"]}
         return {"state": "failed", "problems": ["the build stopped before it finished"]}
-    if (Path(profile_dir) / style_build.CANDIDATE / TEMPLATE).is_file():
+    if templates.liked(Path(profile_dir)).name == templates.CANDIDATE:
         out = {"state": "ready"}
         if state == "ready":
             out.update({k: run["result"][k] for k in ("fonts", "dropped_icons") if k in run["result"]})
@@ -202,15 +201,8 @@ def status(home: Path, profile_dir: Path) -> dict:
     return {"state": "none"}
 
 
-def in_use(profile_dir: Path, config: dict) -> str:
-    """``"like"`` when the CV template in use is the one in `profile/style/`, else ``"default"`` (the code's, or a file
-    of the user's own)."""
-    resolved = templates.resolve("cv_template", config, profile_dir)
-    return "like" if resolved.resolve().parent == (Path(profile_dir) / style_build.STYLE).resolve() else "default"
-
-
 def _keys(profile_dir: Path) -> dict:
-    folder = Path(profile_dir) / style_build.STYLE
+    folder = Path(profile_dir) / templates.STYLE
     return {key: (folder / name).relative_to(workspace.HOME).as_posix() for key, name in templates.FILES.items()}
 
 
@@ -236,28 +228,28 @@ def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path 
     from door.commands import profile as profile_cmd
 
     profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
-    candidate, kept = profile_dir / style_build.CANDIDATE, profile_dir / style_build.STYLE
+    candidate, kept = profile_dir / templates.CANDIDATE, profile_dir / templates.STYLE
     if style not in ("like", "default", "current"):
         raise ValueError(f"unknown style {style!r}: like, default or current")
     config = common._load_config_or_defaults(profile_dir)
-    style_build._restore(profile_dir)
+    style_build.restore(profile_dir)
     if style == "like" and not (kept.is_dir() or (candidate.is_dir() and not rerender)):
         raise ValueError("no CV style is built yet: build one from a CV of yours first")
     if style != "current" and not (profile_dir / "config.json").is_file():
         raise ValueError("there is no profile yet: set one up first, then choose a style")
     if candidate.is_dir() and not rerender:
         if style == "like" or not kept.is_dir():
-            style_build.move_in(candidate, profile_dir, style_build.STYLE)
+            style_build.move_in(candidate, profile_dir, templates.STYLE)
         else:
-            _end(candidate, profile_dir)
+            style_build.end(candidate, profile_dir)
     fields: dict = {}
     if style == "like":
         fields = _keys(profile_dir)
     elif style == "default":
-        fields = {key: None for key in templates.FILES if config.get(key) and _points_into(config[key], kept)}
+        fields = {key: None for key in templates.FILES if config.get(key) and templates.points_into(config[key], kept)}
     if fields:
         profile_cmd._init_core(fields, profile_dir=profile_dir, example_dir=workspace.PROFILE_EXAMPLE_DIR)
-    result = {"in_use": in_use(profile_dir, common._load_config_or_defaults(profile_dir))}
+    result = {"in_use": templates.in_use(profile_dir, common._load_config_or_defaults(profile_dir))}
     jobs = _prepared(workspace.JOBS_DIR)
     result["prepared"] = len(jobs)
     if rerender:
@@ -272,31 +264,16 @@ def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path 
     return result
 
 
-def _end(candidate: Path, profile_dir: Path) -> None:
-    """Delete the candidate: renamed to a staging name first, so an interrupted delete never leaves a
-    `style.next/` that could be chosen (the stale-staging sweep of the next build removes the rest)."""
-    gone = profile_dir / ".style.ended.part"
-    shutil.rmtree(gone, ignore_errors=True)
-    candidate.rename(gone)
-    shutil.rmtree(gone, ignore_errors=True)
-
-
-def _points_into(value: str, folder: Path) -> bool:
-    path = Path(value)
-    path = path if path.is_absolute() else workspace.HOME / path
-    return path.resolve().parent == folder.resolve()
-
-
 def _show_core(*, home: Path | None = None, profile_dir: Path | None = None) -> dict:
     """The previews of the profile's `cv.md` and a sample letter in the default style and, once one is built, in the
     rebuilt one (`style_preview.show`): ``{"styles": {"default" | "like": {"cv": [png], "letter": [png]}}, "in_use":
     "like" | "default", "candidate": bool}``, made again only where stale, no model. ``like`` is the candidate when one
     waits, else the style kept in `profile/style/`. A style that could not be printed (no Chromium) is left out."""
     profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
-    style_build._restore(profile_dir)
+    style_build.restore(profile_dir)
     config = common._load_config_or_defaults(profile_dir)
     shown = style_preview.show(Path(home or workspace.HOME), profile_dir, config)
-    shown.update(in_use=in_use(profile_dir, config), candidate=(profile_dir / style_build.CANDIDATE / TEMPLATE).is_file())
+    shown.update(in_use=templates.in_use(profile_dir, config), candidate=templates.liked(profile_dir).name == templates.CANDIDATE)
     return shown
 
 

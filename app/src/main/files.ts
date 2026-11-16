@@ -36,11 +36,14 @@ export function materialPath(home: string, jobId: unknown, file: unknown, sent =
   const pdf = /^(cv|cover_letter)\.pdf$/.test(file)
   if (!pdf && !isPngName(file)) return null
   const candidate = sent ? join(home, 'jobs', 'output', jobId, 'sent', file) : join(home, 'jobs', 'output', jobId, file)
+  return contained(candidate, join(home, 'jobs', 'output'))
+}
+
+/** `candidate` when it exists and, links resolved, still lies under `root`; else null. */
+export function contained(candidate: string, root: string): string | null {
   try {
     if (!existsSync(candidate)) return null
-    const root = realpathSync(join(home, 'jobs', 'output'))
-    const real = realpathSync(candidate)
-    return real.startsWith(root + sep) ? candidate : null
+    return realpathSync(candidate).startsWith(realpathSync(root) + sep) ? candidate : null
   } catch {
     return null
   }

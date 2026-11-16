@@ -430,14 +430,10 @@ def _letter(s: _Session, template: str, cv_md: str) -> tuple[str | None, list[st
     return None, [f"letter template: {p}" for p in problems]
 
 
-STYLE = "style"  # the style in use (`use_style` moves a candidate in); a built style waits in CANDIDATE until it is chosen
-CANDIDATE = "style.next"
-
-
-def _restore(profile_dir: Path) -> None:
+def restore(profile_dir: Path) -> None:
     """Put back the style a swap that was interrupted set aside (`move_in` moves the earlier one to `.<name>.old`
     before it moves the new one in), for the candidate and for the style in use."""
-    for name in (CANDIDATE, STYLE):
+    for name in (templates.CANDIDATE, templates.STYLE):
         dest, old = profile_dir / name, profile_dir / f".{name}.old"
         if old.is_dir() and not dest.exists():
             old.rename(dest)
@@ -445,7 +441,7 @@ def _restore(profile_dir: Path) -> None:
 
 def move_in(source: Path, profile_dir: Path, name: str) -> None:
     """Rename the folder `source` (beside `profile_dir/name`, on the same disk) to `profile_dir/name`, the earlier one
-    set aside as `.<name>.old` until the new one is there (`_restore` puts it back after an interruption)."""
+    set aside as `.<name>.old` until the new one is there (`restore` puts it back after an interruption)."""
     dest, old = profile_dir / name, profile_dir / f".{name}.old"
     shutil.rmtree(old, ignore_errors=True)
     if dest.exists():
@@ -454,9 +450,18 @@ def move_in(source: Path, profile_dir: Path, name: str) -> None:
     shutil.rmtree(old, ignore_errors=True)
 
 
+def end(candidate: Path, profile_dir: Path) -> None:
+    """Delete the candidate: renamed to a staging name first, so an interrupted delete never leaves a
+    `style.next/` that could be chosen (the stale-staging sweep of the next build removes the rest)."""
+    gone = profile_dir / ".style.ended.part"
+    shutil.rmtree(gone, ignore_errors=True)
+    candidate.rename(gone)
+    shutil.rmtree(gone, ignore_errors=True)
+
+
 def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, letter: str) -> None:
     """Write `profile_dir/style.next/` whole, the candidate: staged beside it and moved in, an earlier one set aside
-    until the new one is there (`_restore` puts it back after an interruption). `profile_dir/style/`, the style in use,
+    until the new one is there (`restore` puts it back after an interruption). `profile_dir/style/`, the style in use,
     is never touched here. No ledger lock (nothing else writes there).
 
     Raises:
@@ -474,7 +479,7 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
         for folder in ("fonts", "icons"):
             if (work / folder).is_dir():
                 shutil.copytree(work / folder, staging / folder, ignore=shutil.ignore_patterns("*.part"))
-        move_in(staging, profile_dir, CANDIDATE)
+        move_in(staging, profile_dir, templates.CANDIDATE)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
 
@@ -551,7 +556,7 @@ def build(pdf_path, *, work_dir, profile_dir=None, run=None, fonts_fetch=None, p
     profile = Path(profile_dir) if profile_dir else workspace.PROFILE_DIR
     with progress_mod.activate(progress):
         try:
-            _restore(profile)
+            restore(profile)
             _build(Path(pdf_path), Path(work_dir), profile, run or claude_cli.run, fonts_fetch, cap, result)
         except _Stop as exc:
             result["problems"] = [str(exc)]

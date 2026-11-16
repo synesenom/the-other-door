@@ -75,10 +75,8 @@ def _bytes(path: Path | None) -> bytes:
 
 def _paths(style: str, profile_dir: Path) -> tuple[Path, Path]:
     """The CV template and the letter template of `style`."""
-    if style == "like":  # the candidate when one waits, else the style kept
-        folder = Path(profile_dir) / "style.next"
-        if not (folder / templates.FILES["cv_template"]).is_file():
-            folder = Path(profile_dir) / "style"
+    if style == "like":
+        folder = templates.liked(profile_dir)
         return folder / templates.FILES["cv_template"], folder / templates.FILES["cover_letter_template"]
     return (templates.resolve("cv_template", {}, profile_dir), templates.resolve("cover_letter_template", {}, profile_dir))
 

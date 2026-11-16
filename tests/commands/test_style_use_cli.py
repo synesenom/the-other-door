@@ -130,7 +130,7 @@ def test_a_template_of_the_users_own_reads_as_the_default_in_use(home, cli_env):
     own.write_text("<html></html>")
     _set_keys(cli_env, str(own), None)
     _folder(cli_env, "style", "kept")
-    assert style_cmd.in_use(cli_env.profile_dir, json.loads((cli_env.profile_dir / "config.json").read_text())) == "default"
+    assert templates.in_use(cli_env.profile_dir, json.loads((cli_env.profile_dir / "config.json").read_text())) == "default"
 
 
 def test_like_overwrites_the_users_own_keys(home, cli_env):
@@ -266,7 +266,7 @@ def test_an_interrupted_end_of_a_candidate_never_leaves_it_to_be_chosen(home, cl
     monkeypatch.setattr(style_cmd.shutil, "rmtree", killed)
     with pytest.raises(OSError):
         style_cmd._use_core("current")
-    style_build._restore(cli_env.profile_dir)
+    style_build.restore(cli_env.profile_dir)
     assert not (cli_env.profile_dir / "style.next").exists()
 
 

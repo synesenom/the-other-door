@@ -1,22 +1,14 @@
 // door-file://output/<jobId>/[sent/]<page>.png: the page images of a prepared job (or of the copy sent), served
 // from HOME/jobs/output, and the previews of a CV style, and nothing else. Pure; index.ts does the serving.
-import { existsSync, realpathSync } from 'node:fs'
-import { join, sep } from 'node:path'
-import { isJobId, isPngName, materialPath } from './files'
+import { join } from 'node:path'
+import { contained, isJobId, isPngName, materialPath } from './files'
 
 export const MATERIAL_SCHEME = 'door-file'
 
 /** The file a door-file request names, or null (answer 404). */
 export function resolveMaterialRequest(url: string, home: string): string | null {
-  // Encoded dots, slashes and backslashes have no business in a page name; the URL parser would fold them.
-  if (/%2e|%2f|%5c/i.test(url)) return null
-  let u: URL
-  try {
-    u = new URL(url)
-  } catch {
-    return null
-  }
-  if (u.protocol !== `${MATERIAL_SCHEME}:` || u.host !== 'output') return null
+  const u = parse(url, 'output')
+  if (!u) return null
   const parts = u.pathname.split('/').filter((_, i) => i > 0)
   const sent = parts.length === 3 && parts[1] === 'sent'
   if (parts.length !== 2 && !sent) return null
@@ -38,16 +30,6 @@ function parse(url: string, host: string): URL | null {
   try {
     const u = new URL(url)
     return u.protocol === `${MATERIAL_SCHEME}:` && u.host === host ? u : null
-  } catch {
-    return null
-  }
-}
-
-/** `candidate` when it exists and, links resolved, still lies under `root`; else null. */
-function contained(candidate: string, root: string): string | null {
-  try {
-    if (!existsSync(candidate)) return null
-    return realpathSync(candidate).startsWith(realpathSync(root) + sep) ? candidate : null
   } catch {
     return null
   }

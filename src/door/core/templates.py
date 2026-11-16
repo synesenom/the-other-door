@@ -43,6 +43,30 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
     return Path(example_dir if example_dir is not None else workspace.PROFILE_EXAMPLE_DIR) / name
 
 
+STYLE = "style"  # the style in use (`use_style` moves a candidate in); a built style waits in CANDIDATE until it is chosen
+CANDIDATE = "style.next"
+
+
+def liked(profile_dir: Path) -> Path:
+    """The folder of the style built from the user's CV ("like"): the candidate when one waits, else the style kept."""
+    candidate = Path(profile_dir) / CANDIDATE
+    return candidate if (candidate / FILES["cv_template"]).is_file() else Path(profile_dir) / STYLE
+
+
+def points_into(value: str, folder: Path) -> bool:
+    """Whether the config value `value` (relative paths from the data folder) is a file directly in `folder`."""
+    path = Path(value)
+    path = path if path.is_absolute() else workspace.HOME / path
+    return path.resolve().parent == Path(folder).resolve()
+
+
+def in_use(profile_dir: Path, config: dict) -> str:
+    """``"like"`` when the CV template in use is the one in `profile/style/`, else ``"default"`` (the code's, or a file
+    of the user's own)."""
+    resolved = resolve("cv_template", config, profile_dir)
+    return "like" if resolved.resolve().parent == (Path(profile_dir) / STYLE).resolve() else "default"
+
+
 MANIFEST_FILE = "template.json"
 MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
 ICON_KINDS = (*i18n.CONTACT_KINDS, "date")
