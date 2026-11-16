@@ -153,7 +153,7 @@ def _print_last_run(console, last: dict | None, last_scrape: list[dict]) -> None
         ]))
 
 
-def _check(probe: bool, quick: bool = False) -> None:
+def _check(probe: bool, quick: bool) -> None:
     """`doctor` without --fix: print every check, the last run and the last scrapes."""
     from rich.text import Text
 
