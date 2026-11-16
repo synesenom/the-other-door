@@ -84,7 +84,7 @@ def wizard_calls(monkeypatch, prompts):
         {"title": "Data Scientist", "reason": "your latest title", "recommended": True},
         {"title": "ML Lead", "reason": "you led a team", "recommended": True},
         {"title": "Quant", "reason": "maths", "recommended": False},
-    ], titles_warning=None)
+    ], titles_warning=None, sources=[])
 
     def _refuse(*a, **k):
         pytest.fail("init's wizard reached the real run; stub it in the test")
@@ -99,7 +99,7 @@ def wizard_calls(monkeypatch, prompts):
         profile_dir.mkdir(parents=True, exist_ok=True)
         path = profile_dir / "cv.draft.md"
         path.write_text(_CV)
-        return {"draft_path": str(path), "written": False, "sources": [],
+        return {"draft_path": str(path), "written": False, "sources": calls.sources,
                 "provenance": [{"source": "github", "contributed": "two projects"}], "todos": ["phone number"]}
 
     def canned_titles(titles=None, **k):
@@ -1287,3 +1287,97 @@ def test_a_templates_manifest_and_icons_are_never_copied_into_the_profile(tmp_pa
     profile.mkdir()
     profile_cmd._copy_missing_example_files(example, profile)
     assert sorted(p.name for p in profile.iterdir()) == ["notes.md"]  # the manifest and icons belong to the code's template (#188)
+
+
+# --------------------------------------------------------------------------- #
+# the CV style opt-in (#153)
+# --------------------------------------------------------------------------- #
+
+_STYLED = [{"source": "old-cv.pdf", "kind": "file", "chars": 900, "style": True}]
+_STYLE_LINE = "Make my tailored CVs look like the CV I uploaded"
+
+
+@pytest.fixture
+def style_started(monkeypatch):
+    """`style._start_core` recorded, never spawning; what `init` had written when it was called."""
+    from door.commands import style as style_cmd
+
+    calls = types.SimpleNamespace(files=[], seen=[], events=[], error=None)
+
+    def start(file, **k):
+        calls.files.append(file)
+        calls.events.append("style")
+        calls.seen.append({name: (workspace.PROFILE_DIR / name).exists() for name in ("config.json", "cv.md", "photo.jpg")})
+        if calls.error:
+            raise ValueError(calls.error)
+        return {"started": True}
+
+    monkeypatch.setattr(style_cmd, "_start_core", start)
+    return calls
+
+
+def _no_first_run(monkeypatch, events=None):
+    monkeypatch.setattr(profile_cmd, "_first_run_step", lambda: events.append("run") if events is not None else None)
+
+
+def test_the_review_offers_the_style_off_only_for_a_styled_file_on_a_fresh_set_up(init_env, prompts, wizard_calls, monkeypatch, style_started):
+    _no_first_run(monkeypatch)
+    wizard_calls.sources = _STYLED
+    prompts.answers.update(_JANE)
+    result = _invoke()
+    assert prompts.order == ["cv_sources", "preferences", "titles_pick", "titles_add", "discovery_pick", "photo", "review"]
+    assert _STYLE_LINE in result.output and "5-10 minutes" in result.output.replace("–", "-")
+    assert "$" not in result.output
+    assert ("Change the CV style", "style") in prompts.asked["review"]["choices"]
+    assert style_started.files == []
+
+
+def test_no_style_line_or_choice_for_a_file_with_no_look_to_copy(init_env, prompts, wizard_calls, monkeypatch, style_started):
+    _no_first_run(monkeypatch)
+    wizard_calls.sources = [{"source": "old-cv.pdf", "kind": "file", "chars": 900, "style": False}]
+    prompts.answers.update(_JANE)
+    result = _invoke()
+    assert _STYLE_LINE not in result.output
+    assert "style" not in [value for _, value in prompts.asked["review"]["choices"]]
+
+
+def test_no_style_line_when_redoing_the_sources_of_a_saved_profile(init_env, prompts, wizard_calls, monkeypatch, style_started):
+    _write_existing_profile_config(init_env, name="Existing User")
+    _no_first_run(monkeypatch)
+    wizard_calls.sources = _STYLED
+    prompts.answers.update(steps=["sources", "review"], **_JANE)
+    result = _invoke()
+    assert _STYLE_LINE not in result.output
+    assert "style" not in [value for _, value in prompts.asked["review"]["choices"]]
+
+
+def test_ticking_the_style_builds_it_once_after_the_profile_is_saved_and_before_the_first_run(init_env, prompts, wizard_calls, monkeypatch, style_started, tmp_path):
+    _no_first_run(monkeypatch, style_started.events)
+    wizard_calls.sources = _STYLED
+    _picture(tmp_path / "me.jpg")
+    prompts.answers.update(_JANE, photo=str(tmp_path / "me.jpg"), review=iter(["style", "save"]))
+    result = _invoke()
+    assert style_started.files == ["old-cv.pdf"]
+    assert style_started.seen == [{"config.json": True, "cv.md": True, "photo.jpg": True}]
+    assert style_started.events == ["style", "run"]
+    assert "building in the background" in result.output and "./door jobs summary" in result.output
+    assert "./door cv style show" in result.output and "./door cv style use" in result.output
+
+
+def test_ticking_the_style_twice_turns_it_off_again(init_env, prompts, wizard_calls, monkeypatch, style_started):
+    _no_first_run(monkeypatch)
+    wizard_calls.sources = _STYLED
+    prompts.answers.update(_JANE, review=iter(["style", "style", "save"]))
+    result = _invoke()
+    assert style_started.files == [] and "building in the background" not in result.output
+
+
+def test_a_refused_build_is_one_line_and_the_save_still_succeeds(init_env, prompts, wizard_calls, monkeypatch, style_started):
+    _no_first_run(monkeypatch)
+    wizard_calls.sources = _STYLED
+    style_started.error = "no Chromium to print with: run ./door doctor --fix"
+    prompts.answers.update(_JANE, review=iter(["style", "save"]))
+    result = _invoke()
+    assert result.output.count("no Chromium to print with") == 1
+    assert "building in the background" not in result.output
+    assert (init_env.profile_dir / "cv.md").read_text() == _CV

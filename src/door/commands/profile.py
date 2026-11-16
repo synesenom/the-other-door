@@ -202,6 +202,8 @@ def init(**flags):
     3. One review: every value, editable; which titles to look for; and which
        sites to find employers on, each off unless you tick it. Save writes
        profile/config.json and profile/cv.md (the old one is kept as cv.md.bak).
+       On a first set-up, a CV PDF with a look to copy adds one line, off unless
+       you tick it: tailored CVs built in that style, in the background.
     4. A first run (search the boards, then score) starts right away.
 
     With flags, asks nothing: the given fields are merged over the current
@@ -237,6 +239,7 @@ def init(**flags):
     pulled = "drive" in steps and _drive_step()
     if pulled:
         steps = []  # the data came from Google Drive: nothing left to ask
+    answers: dict = {}
     if "sources" in steps or "review" in steps:
         answers = _answers_from(read_config_data(workspace.PROFILE_DIR / "config.json") if existing else None)
         if "sources" in steps:
@@ -245,6 +248,9 @@ def init(**flags):
     if "run" in steps:
         _first_run_step()
     _drive_push()
+    if answers.get("style_started"):
+        click.echo("Your CV style is building in the background (5–10 minutes). `./door jobs summary` says when it is ready; "
+                   "`./door cv style show` compares, `./door cv style use` chooses.")
     click.echo("Done. From now on, `./door find` fetches and scores what's new; `./door jobs` shows the matches.")
 
 
@@ -477,6 +483,8 @@ def _draft_from_sources(answers: dict) -> None:
         except (ValueError, FileNotFoundError, claude_cli.ClaudeError) as exc:
             click.echo(f"Error: {exc}", err=True)
     answers.update(draft_path=result["draft_path"], provenance=result["provenance"], todos=result["todos"])
+    if answers["fresh"]:  # the app's rule: a style is offered on a first set-up only
+        answers["style_source"] = next((s["source"] for s in result["sources"] if s.get("style")), None)
     urls = [s for s in sources if common._is_url(s) and not re.match(r"https?://([^/]+\.)?linkedin\.", s, re.IGNORECASE)]
     if urls:
         # Kept so `enrich` (/expand) can read them again later.
@@ -676,8 +684,16 @@ def _edit(choice: str, answers: dict) -> None:
     elif choice == "photo":
         answers["has_photo"] = False
         _pick_photo(answers)
+    elif choice == "style":
+        answers["style"] = not answers.get("style")
     elif choice == "cv":
         click.edit(filename=answers["draft_path"])
+
+
+def _style_line(answers: dict) -> str:
+    if answers.get("style"):
+        return f"Like {Path(answers['style_source']).name} (takes 5–10 minutes in the background)"
+    return "The other door's. Make my tailored CVs look like the CV I uploaded? (takes 5–10 minutes in the background)"
 
 
 def _print_review(answers: dict) -> None:
@@ -698,6 +714,7 @@ def _print_review(answers: dict) -> None:
         ("Title terms", ", ".join(answers.get("topic_terms") or [])),
         ("What matters to you", answers.get("preferences") or "none"),
         *([("Photo", Path(answers["photo"]).name)] if answers.get("photo") else []),
+        *([("CV style", _style_line(answers))] if answers.get("style_source") else []),
     ):
         click.echo(f"  {label:<14}{value or ''}")
     if sources:
@@ -762,6 +779,14 @@ def _save_answers(answers: dict) -> bool:
             answers["has_photo"] = False
             return False
         click.echo(f"Wrote {common._display_path(Path(saved['photo_path']))}.")
+    if answers.get("style"):
+        from door.commands import style as style_cmd
+
+        try:
+            style_cmd._start_core(answers["style_source"])
+            answers["style_started"] = True
+        except (ValueError, OSError) as exc:
+            click.echo(f"The CV style was not started: {exc}", err=True)
     return True
 
 
@@ -785,6 +810,7 @@ def _review_step(answers: dict) -> None:
             ("Change what matters to you", "preferences"),
             ("Change where to find employers", "discovery"),
             *([("Change the photo", "photo")] if i18n.cv_conventions_for_location(answers.get("location") or "").photo != "no" else []),
+            *([("Change the CV style", "style")] if answers.get("style_source") else []),
             *([("Open the CV draft in my editor", "cv")] if answers.get("draft_path") else []),
         ]
         choice = _prompts.select("review", "Does this look right?", choices=choices, default="save")
