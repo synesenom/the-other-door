@@ -95,25 +95,34 @@ def _fonts_dir() -> Path:
     return workspace.PROFILE_EXAMPLE_DIR / "fonts"
 
 
-def _assets(template_path: Path) -> dict[str, Path | list[Path]]:
-    """What the print serves beside the page: with a `template.json` (#188) only the fonts and icons it names, from the
-    `fonts/` and `icons/` beside the template; without one the fonts as `_fonts_dir` finds them.
+def _named(folder: Path, names) -> list[Path]:
+    """The files `names` in `folder`.
+
+    Raises:
+        ValueError: one of them is not there.
+    """
+    files = [folder / name for name in names]
+    for file in files:
+        if not file.is_file():
+            raise ValueError(f"{templates.MANIFEST_FILE} names {folder.name}/{file.name}, which is not in {folder}")
+    return files
+
+
+def _assets(template_path: Path) -> dict[str, list[Path]]:
+    """What the print serves beside the page: the fonts a `template.json` names (#188), from the `fonts/` beside the
+    template, else the TrueType files `_fonts_dir` finds; and the icons it names, from the `icons/` beside it.
 
     Raises:
         ValueError: the manifest is invalid, or names a file that is not there.
     """
     manifest = templates.manifest(template_path)
-    if not manifest.exists:
-        return {"fonts": _fonts_dir()}
     folder = Path(template_path).parent
-    assets: dict[str, Path | list[Path]] = {}
-    for key, folder_name, names in (("fonts", "fonts", manifest.fonts), ("icons", "icons", manifest.icons.values())):
-        files = [folder / folder_name / name for name in names]
-        for file in files:
-            if not file.is_file():
-                raise ValueError(f"{templates.MANIFEST_FILE} names {folder_name}/{file.name}, which is not in {file.parent}")
-        if files:
-            assets[key] = files
+    if manifest and manifest.fonts:
+        assets = {"fonts": _named(folder / "fonts", manifest.fonts)}
+    else:
+        assets = {"fonts": sorted(_fonts_dir().glob("*.ttf"))}
+    if manifest and manifest.icons:
+        assets["icons"] = _named(folder / "icons", manifest.icons.values())
     return assets
 
 

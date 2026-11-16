@@ -936,6 +936,14 @@ def test_a_broken_template_manifest_leaves_the_countrys_page_limit(cli_env, tmp_
     assert "at most 2 pages" in prompt
 
 
+def test_prepare_refuses_a_broken_template_manifest_before_the_tailor_runs(cli_env, monkeypatch):
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text('{"fonts": ["A.otf"]}')
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("the tailor ran"))
+    result = prepare_cmd._prepare_core("job-1")
+    assert result["outcome"] == "failed" and "template.json" in result["error"]
+
+
 def test_run_tailor_clears_the_fact_check_rounds_and_stale_facts_before_it_starts(cli_env, monkeypatch):
     seen = {}
     out = cli_env.jobs_dir / "output" / "job-abc"

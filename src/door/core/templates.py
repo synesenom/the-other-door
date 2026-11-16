@@ -81,7 +81,6 @@ class Manifest(BaseModel):
     icons: dict[str, str] = {}
     max_pages: int | None = Field(default=None, ge=1, le=3)
     columns: Columns | None = None
-    exists: bool = Field(default=False, exclude=True)
 
     @field_validator("fonts")
     @classmethod
@@ -98,24 +97,22 @@ class Manifest(BaseModel):
         return v
 
 
-def manifest(template_path: Path) -> Manifest:
-    """The manifest of the folder `template_path` is in; the defaults (``exists`` False) when it has none.
+def manifest(template_path: Path) -> Manifest | None:
+    """The manifest of the folder `template_path` is in; None when it has none.
 
     Raises:
         ValueError: `template.json` is not valid JSON, or names a field, font, icon or section it may not.
     """
     path = Path(template_path).parent / MANIFEST_FILE
     if not path.is_file():
-        return Manifest()
+        return None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, ValueError) as exc:
         raise ValueError(f"{MANIFEST_FILE}: {exc}") from exc
     if not isinstance(data, dict):
         raise ValueError(f"{MANIFEST_FILE}: expected an object")
-    if "exists" in data:
-        raise ValueError(f"{MANIFEST_FILE}: unknown field 'exists'")
     try:
-        return Manifest(**data, exists=True)
+        return Manifest(**data)
     except ValueError as exc:
         raise ValueError(f"{MANIFEST_FILE}: {exc}") from exc

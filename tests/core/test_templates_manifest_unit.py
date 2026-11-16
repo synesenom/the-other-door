@@ -15,17 +15,19 @@ def _write(tmp_path, data):
     return folder / "cv.template.html"
 
 
-def test_no_manifest_gives_the_defaults(tmp_path):
-    m = templates.manifest(tmp_path / "cv.template.html")
+def test_no_manifest_is_none(tmp_path):
+    assert templates.manifest(tmp_path / "cv.template.html") is None
+
+
+def test_an_empty_manifest_gives_the_defaults(tmp_path):
+    m = templates.manifest(_write(tmp_path, {}))
     assert (m.fonts, m.icons, m.max_pages, m.columns) == ([], {}, None, None)
-    assert m.exists is False
 
 
 def test_a_full_manifest_is_read(tmp_path):
     path = _write(tmp_path, {"version": 1, "fonts": ["A.ttf"], "icons": {"phone": "p.svg"}, "max_pages": 1,
                              "columns": {"side": ["skills"]}})
     m = templates.manifest(path)
-    assert m.exists is True
     assert m.fonts == ["A.ttf"] and m.icons == {"phone": "p.svg"} and m.max_pages == 1
     assert m.columns.side == ["skills"]
 

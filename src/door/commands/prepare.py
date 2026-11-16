@@ -152,12 +152,12 @@ def _cv_conventions_text(posting_path: Path) -> str:
     photo = config.get("photo")
     has_photo = bool(photo) and photo_mod.problem(Path(photo) if Path(photo).is_absolute() else workspace.HOME / photo) is None
     max_pages = cv.max_pages
-    try:  # the template's own limit counts when it is stricter; a broken manifest fails compile, not the prompt
-        template_pages = templates.manifest(templates.resolve("cv_template", config)).max_pages
+    try:  # the template's own limit counts when it is stricter; a broken manifest is refused before the tailor runs
+        manifest = templates.manifest(templates.resolve("cv_template", config))
     except ValueError:
-        template_pages = None
-    if template_pages:
-        max_pages = min(max_pages, template_pages)
+        manifest = None
+    if manifest and manifest.max_pages:
+        max_pages = min(max_pages, manifest.max_pages)
     return (
         f"CV conventions for this job's country ({country.code if country else 'no country file'}): "
         f"photo: {cv.photo}; the profile has a photo: {'yes' if has_photo else 'no'}; "
@@ -397,8 +397,14 @@ def _prepare_core(
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
     home = workspace.PROFILE_DIR if profile_dir is None else profile_dir
-    if common._cv_is_example(common._load_config_or_defaults(home), home):
+    config = common._load_config_or_defaults(home)
+    if common._cv_is_example(config, home):
         return {"job_id": job_id, "outcome": "failed", "error": common.EXAMPLE_CV_MESSAGE}
+    try:  # a broken template.json would only fail compile, after the tailor spent the plan (#188)
+        for key in templates.FILES:
+            templates.manifest(templates.resolve(key, config))
+    except ValueError as exc:
+        return {"job_id": job_id, "outcome": "failed", "error": str(exc)}
     if job_id is None:
         if not common._claude_available():
             return {"job_id": None, "outcome": "failed", "error": f"the `claude` CLI is not installed — {common._CLAUDE_FIX}."}

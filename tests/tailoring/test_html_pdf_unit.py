@@ -230,7 +230,7 @@ def test_an_asset_root_is_served_under_its_name_and_only_inside_it(fake, tmp_pat
     (fonts / "escape").symlink_to(tmp_path / "shared" / "secret.txt")
     fake.probe_paths = ["/fonts/x.ttf", "/fonts/../secret.txt", "/fonts/%2e%2e/secret.txt", "/fonts/escape",
                         "/fonts/missing.ttf", "/fonts", "/other/x.ttf"]
-    _print(fake, tmp_path, assets={"fonts": fonts})
+    _print(fake, tmp_path, assets={"fonts": [fonts / "x.ttf", fonts / "escape"]})
     assert fake.statuses["/fonts/x.ttf"] == 200 and fake.bodies["/fonts/x.ttf"] == b"font"
     for blocked in ("/fonts/../secret.txt", "/fonts/%2e%2e/secret.txt", "/fonts/escape", "/fonts/missing.ttf",
                     "/fonts", "/other/x.ttf"):
@@ -245,7 +245,7 @@ def test_a_folder_file_shadowed_by_an_asset_name_is_not_served_from_the_folder(f
     fonts = tmp_path / "f"
     fonts.mkdir()
     fake.probe_paths = ["/fonts/own.ttf"]
-    _print(fake, tmp_path, assets={"fonts": fonts})
+    _print(fake, tmp_path, assets={"fonts": []})
     assert fake.statuses["/fonts/own.ttf"] == 404
 
 
