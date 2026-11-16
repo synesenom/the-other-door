@@ -2,9 +2,9 @@
 import { mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
-import { cvTex } from '../test/world/tailor'
+import { cvHtml } from '../test/world/tailor'
 import { expect, notice, test } from './fixtures'
-import { card, ledgerEntry, letterTex, openMatch, pagesLoaded, postingHeading, toApplications } from './helpers/applications'
+import { card, ledgerEntry, letterHtml, openMatch, pagesLoaded, postingHeading, toApplications } from './helpers/applications'
 
 const VESTVIND = 'Senior Data Scientist, Production Forecasting'
 const VESTVIND_KEY = 'vestvind-senior-ds-forecasting'
@@ -58,10 +58,10 @@ test('Prepare application on a new match tailors, compiles and opens Ready to se
 
   const id = world.jobId(VESTVIND_KEY)
   expect(ledgerEntry(world, VESTVIND_KEY)?.status).toBe('prepared')
-  for (const f of ['cv.tex', 'cover_letter.tex', 'cv.pdf', 'cover_letter.pdf', 'facts.json', 'cv_page_1.png', 'cover_letter_page_1.png'])
+  for (const f of ['cv.html', 'cover_letter.html', 'cv.pdf', 'cover_letter.pdf', 'facts.json', 'cv_page_1.png', 'cover_letter_page_1.png'])
     expect(world.exists(`jobs/output/${id}/${f}`), f).toBe(true)
   // compile filled in the posting's title and company
-  expect(readFileSync(join(outDir(world, VESTVIND_KEY), 'cover_letter.tex'), 'utf8')).toContain('Vestvind Service A/S')
+  expect(readFileSync(join(outDir(world, VESTVIND_KEY), 'cover_letter.html'), 'utf8')).toContain('Vestvind Service A/S')
   expect(world.claudeCalls('tailor')).toHaveLength(1)
   expect(world.toolCalls('prepare')).toHaveLength(1)
   expect(world.toolCalls('prepare')[0]!.args).toMatchObject({ job_id: id, force: false })
@@ -118,7 +118,7 @@ test('Prepare again asks first; Cancel and Escape leave the application as it is
   await toApplications(page)
   await card(page, KRONVEJ).click()
   await expect(postingHeading(page, KRONVEJ)).toBeVisible()
-  const before = readFileSync(join(outDir(world, KRONVEJ_KEY), 'cv.tex'), 'utf8')
+  const before = readFileSync(join(outDir(world, KRONVEJ_KEY), 'cv.html'), 'utf8')
 
   await page.getByRole('button', { name: 'Prepare again', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Prepare again?' })
@@ -134,11 +134,11 @@ test('Prepare again asks first; Cancel and Escape leave the application as it is
   await expect(postingHeading(page, KRONVEJ)).toBeVisible()
 
   expect(world.toolCalls('prepare')).toHaveLength(0)
-  expect(readFileSync(join(outDir(world, KRONVEJ_KEY), 'cv.tex'), 'utf8')).toBe(before)
+  expect(readFileSync(join(outDir(world, KRONVEJ_KEY), 'cv.html'), 'utf8')).toBe(before)
 })
 
 test('Prepare again replaces the application with a new one', async ({ page, world }) => {
-  world.faults({ claude: { tailor: { cover_letter: letterTex(300, world.persona.name) } } })
+  world.faults({ claude: { tailor: { cover_letter: letterHtml(300, world.persona.name) } } })
   await toApplications(page)
   await card(page, KRONVEJ).click()
   await page.getByRole('button', { name: 'Prepare again', exact: true }).click()
@@ -148,7 +148,7 @@ test('Prepare again replaces the application with a new one', async ({ page, wor
   await expect(page.getByRole('button', { name: 'Letter · 300 words' })).toBeVisible()
   expect(world.toolCalls('prepare')[0]!.args).toMatchObject({ job_id: world.jobId(KRONVEJ_KEY), force: true })
   expect(world.claudeCalls('tailor')).toHaveLength(1)
-  expect(readFileSync(join(outDir(world, KRONVEJ_KEY), 'cover_letter.tex'), 'utf8')).toBe(letterTex(300, world.persona.name))
+  expect(readFileSync(join(outDir(world, KRONVEJ_KEY), 'cover_letter.html'), 'utf8')).toBe(letterHtml(300, world.persona.name))
   expect(ledgerEntry(world, KRONVEJ_KEY)?.status).toBe('prepared')
 })
 
@@ -191,8 +191,8 @@ test('Save letter writes the PDF where the save dialog says', async ({ page, wor
 test('Revise changes the letter, shows the new pages, and Undo puts it back', async ({ page, world }) => {
   world.faults({ claude: { revise: { delay_s: 3 } } })
   await openKronvejMaterials(page)
-  const tex = join(outDir(world, KRONVEJ_KEY), 'cover_letter.tex')
-  const before = readFileSync(tex, 'utf8')
+  const letter = join(outDir(world, KRONVEJ_KEY), 'cover_letter.html')
+  const before = readFileSync(letter, 'utf8')
   const words = (await page.getByRole('button', { name: /^Letter · / }).textContent())!
 
   const box = page.getByRole('textbox', { name: 'Anything to change?' })
@@ -209,18 +209,18 @@ test('Revise changes the letter, shows the new pages, and Undo puts it back', as
   await expect(box).toHaveValue('', { timeout: 60_000 })
   await expect(page.getByRole('button', { name: /^Letter · / })).not.toHaveText(words)
   await pagesLoaded(page, 'Letter', 1)
-  expect(readFileSync(tex, 'utf8')).not.toBe(before)
+  expect(readFileSync(letter, 'utf8')).not.toBe(before)
   expect(world.toolCalls('revise')[0]!.args).toMatchObject({ job_id: world.jobId(KRONVEJ_KEY), file: 'cover_letter', instruction: 'Make it shorter.' })
   expect(world.claudeCalls('revise')).toHaveLength(1)
 
   await page.getByRole('button', { name: 'Undo last change' }).click()
   await expect(page.getByRole('button', { name: /^Letter · / })).toHaveText(words, { timeout: 60_000 })
-  expect(readFileSync(tex, 'utf8')).toBe(before)
+  expect(readFileSync(letter, 'utf8')).toBe(before)
   expect(world.toolCalls('revise')[1]!.args).toMatchObject({ file: 'cover_letter', undo: true })
 })
 
 test('Ready to send names the claims the CV does not back', async ({ page, world }) => {
-  world.faults({ claude: { tailor: { cv: cvTex(world.persona).replace('\\end{document}', 'Cut forecast error by 87% across 140 wind parks.\n\n\\end{document}') } } })
+  world.faults({ claude: { tailor: { cv: cvHtml(world.persona) + '\n<p>Cut forecast error by 87% across 140 wind parks.</p>\n' } } })
   await prepareVestvind(page)
   const facts = world.readJson<{ value: string }[] | { unsupported: { value: string }[] }>(`jobs/output/${world.jobId(VESTVIND_KEY)}/facts.json`)
   expect(JSON.stringify(facts)).toContain('87')

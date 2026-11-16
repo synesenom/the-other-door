@@ -6,8 +6,8 @@ process boundary. Run as `python claude.py <world dir> <claude's own arguments>`
   signs in (any other code fails as a bad code does).
 - `-p` calls are told apart by the words of their system prompt (or, for `revise`, of stdin) and
   answered from `world.json`: scores and English titles by the ad's title and company, the
-  onboarding and CV answers from `answers`, the tailor by writing the .tex files and running door's
-  own `compile` (whose LaTeX is the stand-in tectonic). Every envelope carries a fixed
+  onboarding and CV answers from `answers`, the tailor by writing the .html bodies and running door's
+  own `compile` (whose print is the stand-in of print_standin.py). Every envelope carries a fixed
   `total_cost_usd` per kind (`COST_USD`), so the usage log has something to weigh; a failed call none.
 - `faults.json`'s `claude` map makes one kind of call fail (`{"fail": "message"}`), wait first
   (`delay_s`), or answer something else (`answer`). Every call is logged to `calls.jsonl`.
@@ -108,7 +108,7 @@ KINDS = [
     ("keywords", "You propose search terms"),
     ("titles", "You suggest the job titles"),
     ("gaps", "You write a skill-gap analysis"),
-    ("revise", "You are revising the body of a LaTeX"),
+    ("revise", "You are revising the body of an HTML"),
     ("market", "You group skill names"),
     ("ask", "You answer one question about the user's job search"),
     ("careers", "You find the official careers page"),
@@ -183,11 +183,13 @@ elif kind == "tailor":
     (out / "posting.json").write_text(json.dumps(posting), encoding="utf-8")
     tailored = W.get("tailor", {})
     for name in ("cv", "cover_letter"):
-        tex = said.get(name) or tailored.get(name, "")
-        (out / f"{name}.tex").write_text(tex, encoding="utf-8")
+        body = said.get(name) or tailored.get(name, "")
+        (out / f"{name}.html").write_text(body, encoding="utf-8")
+    standin = "import print_standin; print_standin.install(); " if W.get("printer", True) else ""
     compiled = subprocess.run(
         [os.environ.get("DOOR_WORLD_PYTHON", sys.executable), "-c",
-         "import sys; from door.commands import compile as c; c._compile_core(sys.argv[1], render=True)", job_id],
+         "import sys; sys.path.insert(0, sys.argv[2]); " + standin
+         + "from door.commands import compile as c; c._compile_core(sys.argv[1], render=True)", job_id, str(Path(__file__).resolve().parent)],
         capture_output=True, text=True,
     )
     if compiled.returncode != 0:

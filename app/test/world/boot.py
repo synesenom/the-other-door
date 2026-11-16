@@ -17,8 +17,8 @@ bundled Python and door. No production code knows about it. What it replaces:
 - faults: before every tool call `faults.json` is read again, so a test can make a named tool
   answer `{"error": ...}`, wait, or kill the server, at the moment it wants.
 
-`claude` and `tectonic` are stand-ins first on PATH (claude.py, tectonic.py), so the model and
-LaTeX boundaries are processes, as they are for real. Every tool call is logged to `calls.jsonl`.
+`claude` is a stand-in first on PATH (claude.py), so the model boundary is a process, as it is for real; the
+Chromium print is replaced in this process (print_standin.py, by edges.py). Every tool call is logged to `calls.jsonl`.
 """
 
 import asyncio

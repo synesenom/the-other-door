@@ -362,3 +362,10 @@ phone.start = _phone_start
 phone.stop = _phone_stop
 phone.pair = _phone_pair
 phone.remove = _phone_remove
+
+
+# --------------------------------------------------------------------------- the printer: no Chromium
+if world().get("printer", True):  # the install test prints with the app's own Chromium (world.json `printer: false`)
+    import print_standin
+
+    print_standin.install()

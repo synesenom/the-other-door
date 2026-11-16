@@ -33,7 +33,7 @@ _PRICED = {
     "translate": ("You translate job titles into English.", json.dumps([{"id": "a", "title": "Analytiker"}]), 0.01),
     "read_ad": ("You read a job ad.", "Analyst at Acme", 0.01),
     "market": ("You group skill names.", json.dumps({"names": ["Python"]}), 0.01),
-    "revise": ("", "You are revising the body of a LaTeX letter.\nCurrent body:\nOne.\n\nTwo.\n\nThree.", 0.05),
+    "revise": ("", "You are revising the body of an HTML letter.\nCurrent body:\nOne.\n\nTwo.\n\nThree.", 0.05),
     "gaps": (gaps._RULES, "the CV and the targets", 0.03),
 }
 
@@ -55,12 +55,12 @@ def test_the_tailor_answers_with_a_priced_envelope(tmp_path):
     """#67: the tailor's run ends in an envelope too, so a prepare in the world is weighed."""
     world = tmp_path / "world"
     world.mkdir()
-    (world / "world.json").write_text(json.dumps({"tailor": {"cv": "cv", "cover_letter": "letter"}}))
+    (world / "world.json").write_text(json.dumps({"tailor": {"cv": "cv", "cover_letter": "letter"}, "printer": False}))
     out_dir = tmp_path / "jobs" / "output" / "acme.1"
     out_dir.mkdir(parents=True)
     (tmp_path / "jobs" / ".tailor" / "acme.1").mkdir(parents=True)
     (tmp_path / "jobs" / ".tailor" / "acme.1" / "posting.json").write_text(json.dumps({"id": "acme.1"}))
-    stub = tmp_path / "stub" / "door" / "commands"  # door's compile, stood in: no LaTeX here
+    stub = tmp_path / "stub" / "door" / "commands"  # door's compile, stood in: nothing prints here
     stub.mkdir(parents=True)
     (stub.parent / "__init__.py").write_text("")
     (stub / "__init__.py").write_text("")
@@ -71,4 +71,4 @@ def test_the_tailor_answers_with_a_priced_envelope(tmp_path):
     assert out.returncode == 0, out.stderr
     envelope, _ = claude_cli.read_stream(out.stdout)
     assert usage.weight(envelope) == 0.40
-    assert (out_dir / "cover_letter.tex").read_text() == "letter"
+    assert (out_dir / "cover_letter.html").read_text() == "letter"

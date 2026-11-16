@@ -122,7 +122,7 @@ export function osStub(app: ElectronApplication): OsStub {
 export const test = base.extend<Journey>({
   worldOptions: [{}, { option: true }],
   world: async ({ worldOptions }, use, testInfo) => {
-    const world = buildWorld(INSTALLED ? { ...worldOptions, python: BUNDLED, tectonic: false } : worldOptions)
+    const world = buildWorld(INSTALLED ? { ...worldOptions, python: BUNDLED, chromium: false } : worldOptions)
     await use(world)
     // A failed test keeps its world to look at; the run's global teardown removes the others (journeys/teardown.ts).
     if (testInfo.status !== testInfo.expectedStatus) {

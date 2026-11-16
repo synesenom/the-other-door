@@ -45,7 +45,7 @@ def write_list_posting(jobs_dir: Path, date: str, site: str, job_id: str, **over
     return path
 
 
-TAILOR_OUTPUTS = ("posting.json", "cv.tex", "cover_letter.tex", "cv.pdf", "cover_letter.pdf")
+TAILOR_OUTPUTS = ("posting.json", "cv.html", "cover_letter.html", "cv.pdf", "cover_letter.pdf")
 
 
 def write_tailor_outputs(output_dir, names=TAILOR_OUTPUTS):
