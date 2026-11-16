@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 interface Props {
-  title: string
+  title: ReactNode
   onClose: () => void
   children: ReactNode
   /** A CSS selector inside the dialog for the control that takes focus first; else the first control. */

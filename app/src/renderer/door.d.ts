@@ -44,7 +44,6 @@ declare global {
       /** The phone app's address of a prepared page image (issue 303); the desktop app uses door-file://. */
       pageUrl?(jobId: string, pngPath: string, v: number, sent?: boolean): string
       /** The preview page's own address for a style preview image (a browser has no door-file scheme). */
-      stylePageUrl?(style: string, pngPath: string, v: string): string
       /** Writes an export where the user says in a save dialog (export_data's answer, or canceled). */
       exportData(): Promise<Envelope | { ok: false; canceled: true }>
       /** Picks an archive to import in an open dialog: a token and the file's name. */

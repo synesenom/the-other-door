@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { named } from './AppName'
 import { call, errorText, styleUrl } from '../api'
 import { Dialog } from './Dialog'
@@ -19,18 +19,19 @@ interface Shown {
 }
 type Doc = 'cv' | 'letter'
 /** After a switch: the prepared CVs the new style could be printed on, asked about, being printed, or done. */
-type Rerender = { kind: 'offer'; prepared: number; style: Which } | { kind: 'busy' } | { kind: 'done'; printed: number; failed: number }
+type Rerender = { kind: 'offer'; prepared: number; style: Which } | { kind: 'busy'; style: Which } | { kind: 'done'; printed: number; failed: number; style: Which }
 
 const NAMES: Record<Which, string> = { like: 'Like your CV', default: "The other door's" }
 const pages = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`
 const noun = (n: number) => `${n} prepared ${n === 1 ? 'CV' : 'CVs'}`
+type Choice = Which | 'current'
 
 /** The full pages of one style in a dialog: a document to read and close. */
 function Pages({ which, set, onClose }: { which: Which; set: StyleSet; onClose: () => void }) {
   const [doc, setDoc] = useState<Doc>('cv')
   const files = set[doc]
   return (
-    <Dialog title={NAMES[which]} onClose={onClose} wide>
+    <Dialog title={named(NAMES[which])} onClose={onClose} wide>
       <div className="doc-switch" role="group" aria-label="Document">
         {(['cv', 'letter'] as const).map((d) => (
           <button key={d} type="button" className="pill" aria-pressed={doc === d} onClick={() => setDoc(d)}>
@@ -63,6 +64,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
   const [error, setError] = useState<string | null>(null)
   const [rerender, setRerender] = useState<Rerender | null>(null)
   const latest = useRef(0)
+  const ids = useId()
 
   const read = async () => {
     const n = ++latest.current
@@ -98,7 +100,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
       setBusy(false)
     }
   }
-  const use = async (style: Which | 'current') => {
+  const use = async (style: Choice) => {
     setError(null)
     setBusy(true)
     try {
@@ -113,10 +115,10 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
     }
   }
   const printAgain = async (style: Which) => {
-    setRerender({ kind: 'busy' })
+    setRerender({ kind: 'busy', style })
     try {
       const r = await call<{ rerendered?: string[]; failed?: string[] }>('use_style', { style, rerender: true })
-      setRerender({ kind: 'done', printed: r.rerendered?.length ?? 0, failed: r.failed?.length ?? 0 })
+      setRerender({ kind: 'done', printed: r.rerendered?.length ?? 0, failed: r.failed?.length ?? 0, style })
     } catch (e) {
       setRerender(null)
       setError(errorText(e))
@@ -132,44 +134,33 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
   const marked = (which: Which) => (which === 'default' ? inUse === 'default' : inUse === 'like' && !candidate)
   const twoColumn = sets.like?.two_column === true
 
+  /** The choices under a style, in the order they are read: what to keep, then what to use. */
+  const actions = (which: Which): [label: string, choice: Choice][] => {
+    if (which === 'like') {
+      if (candidate) return [...(earlier ? ([['Keep my current style', 'current']] as [string, Choice][]) : []), ['Use this style', 'like']]
+      return inUse !== 'like' ? [["Use my CV's style", 'like']] : []
+    }
+    return inUse !== 'default' || candidate ? [[inUse === 'default' ? "Keep The other door's" : "Use The other door's", 'default']] : []
+  }
+
   const card = (which: Which) => {
     const set = sets[which]
     if (!set) return null
-    const action =
-      which === 'like'
-        ? candidate
-          ? (
-            <>
-              <button type="button" className="primary" disabled={busy} onClick={() => void use('like')}>
-                Use this style
-              </button>
-              {earlier && (
-                <button type="button" className="secondary" disabled={busy} onClick={() => void use('current')}>
-                  Keep my current style
-                </button>
-              )}
-            </>
-          )
-          : inUse !== 'like' && (
-            <button type="button" className="secondary" disabled={busy} onClick={() => void use('like')}>
-              Use my CV's style
-            </button>
-          )
-        : (inUse !== 'default' || candidate) && (
-          <button type="button" className="secondary" disabled={busy} onClick={() => void use('default')}>
-            {inUse === 'default' ? "Keep The other door's" : "Use The other door's"}
-          </button>
-        )
+    const caption = `${ids}-${which}`
     return (
-      <div key={which} className="style-card" role="group" aria-label={NAMES[which]}>
+      <div key={which} className="style-card" role="group" aria-labelledby={caption}>
         <button type="button" className="style-thumb" aria-label={`Show ${NAMES[which]} in full`} onClick={() => setOpen(which)}>
           <img className="paper" src={styleUrl(which, set.cv[0]!, set.version)} alt={`${NAMES[which]}, first page`} />
         </button>
         <p className="small style-caption">
-          <span>{NAMES[which]}</span>
+          <span id={caption}>{named(NAMES[which])}</span>
           {marked(which) && <span className="style-mark">In use</span>}
         </p>
-        {action}
+        {actions(which).map(([label, choice]) => (
+          <button key={label} type="button" className="secondary" disabled={busy} onClick={() => void use(choice)}>
+            {named(label)}
+          </button>
+        ))}
       </div>
     )
   }
@@ -179,8 +170,10 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
       <span className="field-label">Style</span>
       {shown === null ? (
         <div className="style-cards">
-          <div className="style-card">
-            <div className="style-sheet" aria-hidden="true" />
+          <div className="style-card" aria-hidden="true">
+            <div className="style-sheet" />
+            <p className="small style-caption">&nbsp;</p>
+            <div className="style-actions-slot" />
           </div>
           <Spinner message="Preparing the previews…" />
         </div>
@@ -188,11 +181,11 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
         <>
           {(hasLike || sets.default) && (
             <div className="style-cards">
-              {card('like')}
               {card('default')}
+              {card('like')}
             </div>
           )}
-          {earlier && <p className="small muted">You use your earlier style now.</p>}
+          {earlier && <p className="small muted">Your earlier style is in use.</p>}
           {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
           {!hasLike && !building && canBuild && <p className="small muted">Make your tailored CVs look like a CV of yours. Takes 5–10 minutes in the background.</p>}
           {building ? (
@@ -210,15 +203,22 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
           {rerender?.kind === 'offer' && (
             <div className="style-rerender">
               <button type="button" className="secondary" onClick={() => void printAgain(rerender.style)}>
-                {`Re-render ${noun(rerender.prepared)} in the new style`}
+                {`Print ${noun(rerender.prepared)} again in the new style`}
               </button>
             </div>
           )}
-          {rerender?.kind === 'busy' && <Spinner message="Re-rendering…" />}
+          {rerender?.kind === 'busy' && <Spinner message="Printing again…" />}
           {rerender?.kind === 'done' && (
-            <p role="status" className="small">
-              {`${rerender.printed} re-rendered.${rerender.failed > 0 ? ` ${rerender.failed} could not be printed.` : ''}`}
-            </p>
+            <div className="style-rerender">
+              <p role="status" className="small">
+                {`${rerender.printed} printed again.`}
+              </p>
+              {rerender.failed > 0 && (
+                <button type="button" className="secondary" onClick={() => void printAgain(rerender.style)}>
+                  Try again
+                </button>
+              )}
+            </div>
           )}
           {error && (
             <p role="alert" className="field-error">

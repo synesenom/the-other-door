@@ -252,8 +252,8 @@ describe('scenes', () => {
   it('profile-cv-style-candidate chooses the new style, then offers to print the prepared CVs again', async () => {
     mount('profile-cv-style-candidate')
     await userEvent.click(await screen.findByRole('button', { name: 'Use this style' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Re-render 2 prepared CVs in the new style' }))
-    expect(await screen.findByText('2 re-rendered.')).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again in the new style' }))
+    expect(await screen.findByText('2 printed again.')).toBeInTheDocument()
   })
 
   it('profile-cv-style-earlier can keep the style in use', async () => {

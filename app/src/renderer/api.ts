@@ -439,7 +439,7 @@ export function materialUrl(jobId: string, pngPath: string, v: number, sent = fa
 
 /** The door-file address of a style preview page (`show_style`): the style, the file name and the set's `version`, which changes with the images. */
 export function styleUrl(style: 'default' | 'like', pngPath: string, version: string): string {
-  if (window.door.stylePageUrl) return window.door.stylePageUrl(style, pngPath, version)
+  if (window.door.pageUrl) return window.door.pageUrl(style, pngPath, 0) // the preview's pictures; the phone has no Profile
   return `door-file://style/${style}/${encodeURIComponent(base(pngPath))}?v=${encodeURIComponent(version)}`
 }
 

@@ -67,15 +67,15 @@ test('compare the default with a style built from a CV: build, choose it, print 
   const before = { prepared: printed(prepared), sent: printed(sent), sentCopy: printed(sent, 'sent/cv.pdf') }
   await page.getByRole('button', { name: 'Use this style', exact: true }).click()
   await expect(readyLine(page)).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Re-render 1 prepared CV in the new style' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Print 1 prepared CV again in the new style' })).toBeVisible()
   expect(config(world).cv_template).toBe('profile/style/cv.template.html')
   expect(config(world).cover_letter_template).toBe('profile/style/cover-letter.template.html')
   expect(exists(world, 'profile/style/cv.template.html')).toBe(true)
   expect(exists(world, 'profile/style.next')).toBe(false)
   expect(printed(prepared)).toBe(before.prepared) // not printed again until asked
 
-  await page.getByRole('button', { name: 'Re-render 1 prepared CV in the new style' }).click()
-  await expect(page.getByText('1 re-rendered.')).toBeVisible({ timeout: 120_000 })
+  await page.getByRole('button', { name: 'Print 1 prepared CV again in the new style' }).click()
+  await expect(page.getByText('1 printed again.')).toBeVisible({ timeout: 120_000 })
   expect(argsOf(world, 'use_style').map((a) => a['rerender'] ?? false)).toEqual([false, true])
   expect(printed(prepared)).toBeGreaterThan(before.prepared)
   expect(printed(sent)).toBe(before.sent) // an application already sent is never touched

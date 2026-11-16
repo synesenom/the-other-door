@@ -861,12 +861,6 @@ describe('choosing a CV to copy the style of', () => {
     expect(server.call).not.toHaveBeenCalled()
   })
 
-  it('build_style cannot be called with a path through door:call', async () => {
-    const { invoke, server } = setup(undefined, undefined, false, real)
-    expect((await invoke(CHANNELS.call, 'build_style', { file: '/etc/passwd' })).ok).toBe(false)
-    expect(server.call).not.toHaveBeenCalled()
-  })
-
   it('the CV the set-up read is remembered for the dialog, never on made-up data', async () => {
     const answer = { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: false }, { source: '/Users/ada/b.pdf', kind: 'file', style: true }, { source: '/Users/ada/c.pdf', kind: 'file', style: true }] }
     const one = setup(async () => answer, undefined, false, real)

@@ -42,9 +42,10 @@ function listFor(args: Record<string, unknown>): List {
 /** The page images: the demo's (`test/fixtures/prepared/`, the example CV laid out as the templates do, rendered
  * at prepare's 150 DPI), picked by the file name the fixture asks for. */
 const PAGES: Record<string, string> = { cv_page_1: cvPage1, cv_page_2: cvPage2, cover_letter_page_1: letterPage1 }
-const pageUrl = (_jobId: string, pngPath: string): string => PAGES[pngPath.split('/').pop()!.replace(/\.png$/, '')] ?? cvPage1
-const stylePageUrl = (_style: string, pngPath: string): string =>
-  pngPath.includes('letter') ? letterPage1 : (PAGES[pngPath.split('/').pop()!.replace(/\.png$/, '')] ?? cvPage1)
+const pageUrl = (_jobId: string, pngPath: string): string => {
+  const name = pngPath.split('/').pop()!.replace(/\.png$/, '')
+  return PAGES[name] ?? (name.startsWith('letter') ? letterPage1 : cvPage1) // a style preview's letter is `letter_page_N`
+}
 
 
 // What a page shows and the CV lacks, as the preview's enrich proposes it.
@@ -348,7 +349,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       return { demo: false, home: '/demo' }
     },
     pageUrl,
-    stylePageUrl,
     exportData: async () => ({ ok: false, canceled: true }),
     pickArchive: async () => ({ canceled: true }),
     importData: async () => ({ ok: false, error: 'Nothing is imported in the preview.' }),

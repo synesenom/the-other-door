@@ -252,6 +252,8 @@ textarea { resize: none; }
 .matches:not(.pushed) .list-pane > :not(.list-head) { max-width: 620px; }
 
 @media (max-width: 899px) {
+  .style-row { --sheet: 136px; }
+  .style-cards { gap: var(--space-3); }
   .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); }
   .page-aside { display: none; }
   .board-screen { padding: var(--space-6) var(--space-4) var(--space-8); }
@@ -659,13 +661,17 @@ details[open] > summary::before { transform: rotate(90deg); }
 /* Profile → CV's Style: the sheets side by side, each a button that opens the full pages. The sheet keeps its size
    while the previews are made, so the row does not move. */
 .dialog-wide { width: min(720px, calc(100vw - var(--space-8))); }
-.style-row { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
-.style-cards { display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start; }
-.style-card { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; width: 160px; }
-.style-thumb { display: block; width: 160px; padding: 0; background: none; border: 1px solid var(--color-border); border-radius: var(--radius-s); overflow: hidden; cursor: pointer; }
+.style-row { --sheet: 160px; display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+.style-row .spinner-line { margin-left: 0; margin-right: 0; }
+.style-cards { display: flex; gap: var(--space-6); align-items: flex-start; }
+.style-card { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-width: var(--sheet); }
+.style-card > .secondary { width: max-content; white-space: nowrap; }
+.style-thumb { display: block; width: var(--sheet); padding: 0; background: none; border: 1px solid var(--color-border); border-radius: var(--radius-s); overflow: hidden; cursor: pointer; }
 .style-thumb .paper { border-radius: 0; }
-.style-sheet { width: 160px; aspect-ratio: 1 / 1.414; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
+.style-sheet { width: var(--sheet); aspect-ratio: 1 / 1.414; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
 .style-caption { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
 .style-mark { color: var(--color-accent); }
-.style-rerender { display: flex; }
+/* the loading card holds the room of the caption and of one action, so nothing jumps when the previews arrive */
+.style-actions-slot { min-height: var(--size-control-height); }
+.style-rerender { display: flex; gap: var(--space-3); align-items: center; }
 @media (hover: hover) { .style-thumb:hover { border-color: var(--color-ink); } }
