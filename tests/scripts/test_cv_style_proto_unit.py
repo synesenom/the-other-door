@@ -140,7 +140,7 @@ def test_verdict_is_go_when_every_threshold_is_met():
 
 
 def test_verdict_names_each_threshold_it_misses():
-    rows = [_row(recognisable=i < 4, rounds=6, minutes=11, cost=2.0, stress=False) for i in range(8)]
+    rows = [_row(recognisable=i < 4, rounds=6, minutes=11, cost=3.0, stress=False) for i in range(8)]
     result = proto.verdict(rows)
     assert result["go"] is False
     assert len(result["failed"]) == 5

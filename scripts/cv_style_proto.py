@@ -46,7 +46,7 @@ OUT = REPO / "thoughts" / "research" / "154-proto"
 RENDER_MJS = REPO / "scripts" / "cv_style_proto" / "render.mjs"
 MAX_ROUNDS = 5
 # the go rule of #154
-GO = {"recognisable": 5, "of": 8, "rounds": 5, "minutes": 10.0, "cost": 1.5}
+GO = {"recognisable": 5, "of": 8, "rounds": 5, "minutes": 10.0, "cost": 2.5}
 
 
 # ---------- reading a PDF's style ----------
@@ -254,7 +254,7 @@ def record_row(cv: str, *, rounds: int, minutes: float, cost: float, score: floa
 
 def verdict(rows: list[dict]) -> dict:
     """#154's rule: go when at least 5 of 8 are recognisable, the medians are within 5 rounds, 10 minutes and
-    $1.50 and the stress renders hold; `failed` names each threshold missed."""
+    $2.50 and the stress renders hold; `failed` names each threshold missed."""
     failed = []
     if sum(r["recognisable"] for r in rows) < GO["recognisable"]:
         failed.append(f"fewer than {GO['recognisable']} of {GO['of']} recognisable")
