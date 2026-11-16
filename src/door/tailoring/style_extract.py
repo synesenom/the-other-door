@@ -3,8 +3,9 @@ shapes, icons as SVG paths, the photo. Pure and offline: pypdfium2 and Pillow, n
 
 `extract(pdf_path)` returns one dict (schema version 1, points, the origin at the top left, colours `#rrggbb`):
 `verdict` first (`style_verdict` says when there is nothing to copy: a scan or a LinkedIn export; the other
-keys are then left out), then `runs` (one per line piece of text), `fonts`, `page`, `colors`, `columns`,
-`headings`, `shapes`, `icons`, `photo`. Fonts are only described (family, weight, italic, serif, fixed); looking
+keys are then left out), then `runs` (one per piece of text on a line), `fonts`, `page` (size, margins, bleed,
+background), `colors` (text, accent), `name`, `columns` (bands), `headings` and `heading_style`, `shapes`, `icons`
+(SVG paths next to the text they belong to), `photo`. Fonts are only described (family, weight, italic, serif, fixed); looking
 them up is another step. The icon tracer is `door.tailoring.style_trace`.
 """
 
@@ -30,6 +31,8 @@ _WEIGHTS = [  # longest names first: "extrabold" holds "bold"
     ("thin", 100), ("book", 400),
 ]
 _STYLE_WORDS = {w for w, _ in _WEIGHTS} | {"italic", "oblique", "roman", "ital", "it"}
+# what a bullet of a list is set as: no icon, and no column of its own
+_BULLETS = set("\u2022\u00b7\u2023\u25e6\u25aa\u25cf\u25cb\u25a0\u25a1\u2013\u2219-*")
 _SERIF_NAMES = re.compile(r"times|georgia|garamond|palatino|cambria|minion|baskerville|bookman|caslon|didot|(?<!sans)serif", re.I)
 _FIXED_NAMES = re.compile(r"courier|mono|consolas|typewriter|menlo", re.I)
 _FLAG_FIXED, _FLAG_SERIF, _FLAG_ITALIC, _FLAG_FORCE_BOLD = 0x1, 0x2, 0x40, 0x40000
@@ -84,14 +87,13 @@ def _bbox(obj, height: float) -> list[float]:
     return [round(left, 1), round(height - top, 1), round(right, 1), round(height - bottom, 1)]
 
 
-def _text_runs(page, number: int, height: float) -> tuple[list[dict], int]:
-    """The visible text objects of a page as runs, and how many invisible ones (render mode 3) there were."""
+def _text_runs(page, number: int, height: float) -> list[dict]:
+    """The visible text objects of a page as runs (the invisible ones, render mode 3, an OCR layer's, are left out)."""
     textpage = page.get_textpage()
-    runs, invisible = [], 0
+    runs = []
     try:
         for obj in page.get_objects(filter=[raw.FPDF_PAGEOBJ_TEXT]):
             if raw.FPDFTextObj_GetTextRenderMode(obj.raw) == 3:
-                invisible += 1
                 continue
             obj.textpage = textpage
             raw_text = obj.extract()
@@ -106,7 +108,7 @@ def _text_runs(page, number: int, height: float) -> tuple[list[dict], int]:
                          "lead": raw_text[:1].isspace(), "trail": raw_text[-1:].isspace(), **_font_facts(obj.get_font())})
     finally:
         textpage.close()
-    return runs, invisible
+    return runs
 
 
 def merge_runs(runs: list[dict]) -> list[dict]:
@@ -589,7 +591,9 @@ def heading_style(headings: list[dict]) -> dict | None:
     ruled = [h["rule"] for h in same if h["rule"]]
     rule = None
     if len(ruled) * 2 > len(same):
-        sig = lambda r: (r["color"], r["width"], r["gap"], r["span"])  # noqa: E731
+        def sig(r: dict) -> tuple:
+            return (r["color"], r["width"], r["gap"], r["span"])
+
         top = max(ruled, key=lambda r: sum(sig(o) == sig(r) for o in ruled))
         rule = {k: top[k] for k in ("color", "width", "gap", "span")}
     return {**dict(zip(keys, best)), "rule": rule}
@@ -656,7 +660,6 @@ def _verdict(copyable: bool, reason: str, detail: str) -> dict:
 # ---------- icons ----------
 
 _ICON_FONT = re.compile(r"awesome|icon|symbol|material|glyph|fontello|ionicons|dingbats|wingdings", re.I)
-_BULLETS = set("\u2022\u00b7\u2023\u25e6\u25aa\u25cf\u25cb\u25a0\u25a1\u2013\u2219-*")
 _ICON_SIZE = 24.0  # points: a drawing larger than this is not an icon
 _SCALE = 10.0  # pixels per point an icon is traced at
 
@@ -770,7 +773,7 @@ def _read_pages(doc) -> list[dict]:
     pages = []
     for number, page in enumerate(doc, 1):
         width, height = page.get_size()
-        runs, _ = _text_runs(page, number, height)
+        runs = _text_runs(page, number, height)
         size = [round(width, 1), round(height, 1)]
         background, shapes = _page_background(_read_shapes(page, number, height), size)
         images = _read_images(page, number, height)
