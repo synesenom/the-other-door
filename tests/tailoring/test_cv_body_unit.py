@@ -164,3 +164,16 @@ def test_contact_labels_of_every_supported_language_name_their_kind():
     for label, kind in [("Hjemmeside", "web"), ("Weboldal", "web"), ("Helyszín", "location"), ("Telefon", "phone"),
                         ("E-post", "email"), ("Webbplats", "web"), ("Ort", "location"), ("Courriel", "email")]:
         assert i18n.contact_kind(label) == kind
+
+
+def test_letter_header_is_the_name_and_contact_of_the_cv_in_the_letter_header_shape():
+    md = "# Jane Doe\n\n> Analyst\n\n**Email:** jane@example.com | **Phone:** +45 1234 5678\n\n## Experience\n\n- x\n"
+    header, name = cv_body.letter_header(md)
+    assert name == "Jane Doe"
+    assert header.startswith('<header class="letter-header"><h1>Jane Doe</h1>')
+    assert '<span class="email"><a href="mailto:jane@example.com">' in header and "Analyst" not in header
+    assert "Experience" not in header
+
+
+def test_letter_header_of_a_cv_with_no_name_is_empty():
+    assert cv_body.letter_header("## Experience\n\n- x\n") == ("", "")

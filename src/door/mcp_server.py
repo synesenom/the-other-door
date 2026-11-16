@@ -193,6 +193,7 @@ CLI_COMMAND_TOOLS = {
     "cv stories remove": ("remove_story",),
     "cv stories draft": ("draft_stories",),
     "cv style build": ("build_style",),
+    "cv style show": ("show_style",),
     "market": ("market",),
     "ask": ("ask",),
     "doctor": ("doctor", "setup"),  # `doctor --fix` is `setup`
@@ -236,7 +237,7 @@ READ_ONLY_TOOLS = frozenset({
 WRITING_TOOLS = frozenset({
     "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
     "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
-    "remove_company", "merge_companies", "build_style", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
+    "remove_company", "merge_companies", "build_style", "show_style", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
 })
 
@@ -1459,6 +1460,23 @@ def build_style(file: str) -> dict:
         ``{"started": True}``, or ``{"error": <why there is no style to copy: not a PDF, a scan, a LinkedIn export>}``.
     """
     return style_cmd._start_core(str(path_scope.check(file)))
+
+
+@mcp.tool()
+@_tool_errors
+async def show_style() -> dict:
+    """Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built
+    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the
+    CV, the photo or a style changed; no model is used.
+
+    Returns:
+        ``{"styles": {"default": {"cv": [png paths], "letter": [png paths], "version", "two_column"}, "like": {...}}}``:
+        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;
+        ``like`` only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is
+        left out.
+    """
+    # On a thread: a cold set prints four pages with Chromium, and the other calls must not wait for it.
+    return await asyncio.to_thread(style_cmd._show_core)
 
 
 @mcp.tool()

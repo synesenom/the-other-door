@@ -1629,6 +1629,15 @@
     }
   },
   {
+    "name": "show_style",
+    "description": "Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built\n    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the\n    CV, the photo or a style changed; no model is used.\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\", \"two_column\"}, \"like\": {...}}}``:\n        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;\n        ``like`` only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is\n        left out.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "show_styleArguments"
+    }
+  },
+  {
     "name": "skill_gaps",
     "description": "A skill-gap report with a WebSearch-cited learning plan, written to\n    `upskill/report-<today>.md`.\n\n    \"What should I learn for the Trustpilot job?\": one `claude -p` call (minutes)\n    compares the CV with the targets — a hard-skill diff, then broader gaps\n    (soft skills, domain depth, tooling maturity, credentials, evidence) —\n    searches for real resources and writes the prioritised plan. Read the\n    report back to summarise it. Identical to `./door cv gaps`.\n\n    Args:\n        targets: Role names (\"Senior Accountant\") or skills.\n        jobs: Postings to analyse: each a job id or words from its company\n            and title (\"trustpilot\"). Never ask the user for an id.\n        top: Also analyse the top N matches.\n        model: Claude model to analyse with (default: sonnet).\n\n    Returns:\n        ``{\"report_path\", \"report\" (its Markdown), \"targets\": [{\"kind\", \"label\", \"job_id\"?}], \"plan_items\"}``.\n    ",
     "inputSchema": {

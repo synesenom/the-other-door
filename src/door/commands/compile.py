@@ -101,6 +101,24 @@ def page(body: str, template: str, folder: Path, *, photo: Path | None, columns:
     return _wrap(template, typography.apply(placed, language), language), placed, name
 
 
+def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,
+               columns: templates.Columns | None = None, photo: Path | None = None) -> tuple[Path, str, str | None]:
+    """`body` placed in `template` (its text) by `page` and printed to `folder/<name>.pdf` with the pinned Chromium,
+    the fonts and icons that the template file `assets_of` names served. Returns the pdf, the body as placed and the
+    photo's file name in `folder` (None when it was not placed).
+
+    Raises:
+        html_pdf.PrintError: the print failed.
+        ValueError: the template or its manifest cannot be used.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    assets = templates.assets(assets_of)
+    html_text, placed, picture = page(body, template, folder, photo=photo, language=lang, columns=columns)
+    pdf = folder / f"{name}.pdf"
+    html_pdf.print_html(folder, html_text, pdf, assets=assets)
+    return pdf, placed, picture
+
+
 _H2 = re.compile(r"(?=<h2[\s>])")
 
 
@@ -139,27 +157,6 @@ def _wrap(template: str, body: str, language: str) -> str:
     if "<<body>>" not in template:
         raise ValueError("the template has no <<body>> to put the page in")
     return template.replace("<<lang>>", language).replace("<<body>>", body)
-
-
-def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) -> None:
-    """Print `html` to `output_dir/<name>.pdf`; the outcome goes in ``entry`` (``status`` ``compiled`` with ``pdf``, or
-    ``error`` with ``stderr``). The page is served from memory: the body on disk is not it.
-
-    Raises:
-        MissingToolError: no Chromium is installed.
-    """
-    if chromium.find_chromium() is None:
-        from door.core import doctor
-
-        raise common.MissingToolError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
-    pdf = output_dir / f"{name}.pdf"
-    try:
-        html_pdf.print_html(output_dir, html, pdf, assets=assets)
-    except html_pdf.PrintError as exc:
-        entry.update(status="error", stderr=str(exc))
-        return
-    entry.update(status="compiled", pdf=str(pdf))
-    entry.pop("stderr", None)
 
 
 def _read_back(entry: dict, pdf: Path, body: str, config: dict, cv: bool = False) -> None:
@@ -242,26 +239,23 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             entry.update(status="error", stderr=f"could not read the template: {exc}")
             results.append(entry)
             continue
+        if chromium.find_chromium() is None:
+            from door.core import doctor
+
+            raise common.MissingToolError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
         try:
-            assets = templates.assets(template_path)
-        except ValueError as exc:
-            entry.update(status="error", stderr=str(exc))
-            results.append(entry)
-            continue
-        columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
-        try:
-            built, placed, photo_name = page(body, template, output_dir, photo=_profile_photo(posting, config),
-                                             columns=columns, language=language)
-        except ValueError as exc:
+            columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
+            pdf, placed, photo_name = print_page(body, template, template_path, language, output_dir, Path(file).stem,
+                                                 columns=columns, photo=_profile_photo(posting, config))
+        except (ValueError, html_pdf.PrintError) as exc:
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
         if photo_name:
             entry["photo"] = photo_name
             photos.append(photo_name)
-        _print(built, output_dir, Path(file).stem, entry, assets)
-        if entry.get("status") == "compiled":
-            _read_back(entry, Path(entry["pdf"]), placed, config, cv=file == "cv.html")
+        entry.update(status="compiled", pdf=str(pdf))
+        _read_back(entry, pdf, placed, config, cv=file == "cv.html")
         results.append(entry)
 
     for name in _PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use

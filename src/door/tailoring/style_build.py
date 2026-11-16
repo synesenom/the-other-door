@@ -21,9 +21,10 @@ from PIL import Image
 from pypdfium2 import PdfiumError
 
 from door import i18n
+from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.core import chromium, claude_cli, fonts, progress as progress_mod, templates, workspace
-from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract)
+from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_preview)
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
@@ -202,15 +203,6 @@ def _stress_variants(cv_md: str) -> dict[str, dict]:
 TIMEOUT_S = 900  # one stylist call
 _CV_FILE, _LETTER_FILE = templates.FILES["cv_template"], templates.FILES["cover_letter_template"]
 _NAME = re.compile(r"^#\s+(.+)$", re.M)
-_SAMPLE_LETTER = """<header class="letter-header"><h1>Jane Doe</h1>
-<p class="contact"><span class="phone">+45 1234 5678</span><span class="email"><a href="mailto:jane@example.com">jane@example.com</a></span><span class="location">Aarhus</span></p></header>
-<div class="recipient"><p>Hiring team</p><p>Example Company</p><p>Copenhagen</p></div>
-<p class="date"><<date>></p>
-<p>Dear hiring team, I am writing to apply for the role you advertise. My eight years of work on data platforms taught me to plan in small steps and to keep the people who use a system informed of what changes and when.</p>
-<p>At my last employer I led a team of four through a migration that ran without a single hour of downtime, and I cut a nightly job from three hours to twenty-five minutes. I would bring the same habits to your team.</p>
-<p>Thank you for your time. I would be glad to tell you more in an interview.</p>
-<div class="closing"><p class="signoff">Kind regards,</p><p>Jane Doe</p></div>"""
-_SAMPLE_DATE = "1 January 2026"
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
 _CSS_COMMENT = re.compile(r"/\*.*?\*/", re.S)
 _TITLE = re.compile(r"<title>.*?</title>", re.S | re.I)
@@ -282,25 +274,6 @@ def _clean(template: str, kind: str) -> str:
     return _TITLE.sub(f"<title>{_TITLES[kind]}</title>", text)
 
 
-def _render(s: "_Session", template: str, body: str, lang: str, folder: Path, name: str, photo: Path | None = None,
-            letter: bool = False) -> tuple[Path, str, str | None]:
-    """`body` placed in `template` as `compile` places it (the photo, the two columns, the language's typography) and
-    printed to `folder/<name>.pdf` with the pinned Chromium, the fonts and icons the manifest names served. Returns
-    the pdf, the body as placed and the photo's file name in `folder` (None when it was not placed).
-
-    Raises:
-        html_pdf.PrintError: the print failed.
-        ValueError: the manifest names a file that is not there.
-    """
-    folder.mkdir(parents=True, exist_ok=True)
-    html, placed, picture = compile_cmd.page(body, template, folder, photo=photo, language=lang,
-                                             columns=None if letter else s.manifest.columns)
-    pdf = folder / f"{name}.pdf"
-    html_pdf.print_html(folder, html, pdf,
-                        assets=templates.assets(s.work / _CV_FILE))
-    return pdf, placed, picture
-
-
 class _Session:
     """One build's state: the original's style and page images, the folder it works in, the manifest and the model seam."""
 
@@ -321,7 +294,7 @@ class _Session:
         Raises:
             _Stop: the print has no text to read back.
         """
-        pdf = _render(self, template, body, "en", self.work, "render")[0]
+        pdf = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns)[0]
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
@@ -410,8 +383,9 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     for variant, v in _stress_variants(cv_md).items():
         progress_mod.report(f"stress render: {variant}", stage="style")
         try:
-            pdf, placed, photo = _render(s, template, cv_body.body(v["md"], v["lang"]), v["lang"], s.work / "stress" / variant,
-                                         "cv", picture if v["photo"] else None)
+            pdf, placed, photo = compile_cmd.print_page(
+                cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
+                columns=s.manifest.columns, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
             pages = pdf_render.get_page_count(pdf)
         except (html_pdf.PrintError, ValueError) as exc:
@@ -426,7 +400,7 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     return failures
 
 
-def _letter(s: _Session, template: str) -> tuple[str | None, list[str]]:
+def _letter(s: _Session, template: str, cv_md: str) -> tuple[str | None, list[str]]:
     """The letter template for the final CV `template`: a second stylist call given the CV template and the default
     letter template, its page guarded, printed with a sample letter (readable, one page); one more call when it fails."""
     shutil.copyfile(workspace.PROFILE_EXAMPLE_DIR / _LETTER_FILE, s.work / f"default.{_LETTER_FILE}")
@@ -434,7 +408,7 @@ def _letter(s: _Session, template: str) -> tuple[str | None, list[str]]:
     files = (f"Write the cover letter template that matches the CV template. Files here: cv.template.html (the CV template "
              f"you wrote: its fonts, colours, margins and header), default.{_LETTER_FILE} (the default letter template: its "
              f"building blocks and structure), template.json, fonts.css. Read the first two with the Read tool.")
-    body = _SAMPLE_LETTER.replace("<<date>>", _SAMPLE_DATE)
+    body = style_preview.sample_letter(cv_md)
     feedback, problems = None, []
     for _ in range(2):
         progress_mod.report("building the letter template", stage="style")
@@ -444,7 +418,7 @@ def _letter(s: _Session, template: str) -> tuple[str | None, list[str]]:
         elif not (problems := html_guard.template_problems(candidate, s.manifest, "letter")):
             candidate = _clean(candidate, "letter")
             try:
-                pdf = _render(s, candidate, body, "en", s.work / "letter", "letter", letter=True)[0]
+                pdf = compile_cmd.print_page(body, candidate, s.work / _CV_FILE, "en", s.work / "letter", "letter")[0]
                 problems = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, body, None)]
                 if (pages := pdf_render.get_page_count(pdf)) != 1:
                     problems.append(f"the sample letter prints on {pages} pages, it must be one")
@@ -493,12 +467,6 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
         shutil.rmtree(staging, ignore_errors=True)
 
 
-def _stress_cv(profile_dir: Path) -> str:
-    """The CV the stress renders are made from: the profile's, else the example one."""
-    path = profile_dir / "cv.md"
-    return (path if path.is_file() else workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_text(encoding="utf-8")
-
-
 def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap: int, result: dict) -> None:
     refused = style_extract.not_pdf(pdf_path)
     if refused:
@@ -534,7 +502,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
     if template is None:
         raise _Stop(f"no template of the stylist's passed the guard and printed in {s.rounds} rounds: {feedback}")
     template = _clean(template, "cv")
-    cv_md = _stress_cv(profile_dir)
+    cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
     if failures := _stress(s, template, cv_md):
         progress_mod.report("one more round for the stress renders", stage="style")
         _write(s.work / _CV_FILE, template)
@@ -545,7 +513,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
         template = _clean(template, "cv")
         if failures := _stress(s, template, cv_md):
             raise _Stop("the stress renders still fail after the extra round: " + "; ".join(failures[:_LIMIT]))
-    letter, problems = _letter(s, template)
+    letter, problems = _letter(s, template, cv_md)
     if letter is None:
         raise _Stop("; ".join(problems))
     _publish(profile_dir, s.work, pdf, style, template, letter)
