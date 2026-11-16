@@ -92,13 +92,22 @@ def french_typography(text: str) -> list[str]:
 
 
 def hyphenates(text: str) -> bool:
-    """True when the text has a soft hyphen or a word broken with a hyphen at a line end."""
-    return "\u00ad" in text or bool(re.search(r"[^\W\d_][-\u2010]\r?\n", text))
+    """True when a word is broken at a line end: a soft hyphen (pdfium reads it as U+FFFE or U+00AD) or a hyphen."""
+    return bool(re.search("[\ufffe\u00ad]", text)) or bool(re.search(r"[^\W\d_][-\u2010]\r?\n", text))
 
 
-def junk_in_words(text: str) -> list[str]:
-    """Words that read back with a junk character inside (a hyphen extracted as U+FFFE or a private-use glyph)."""
-    return [w for w in re.findall(r"\S+", text) if re.search(r"[\ufffe\uffff\ue000-\uf8ff]", w)]
+def hyphen_cell(row: dict) -> str:
+    """The table's hyphenation cell: whether words break, and how many read back split."""
+    if not row.get("hyphens"):
+        return "no"
+    split = row.get("split_words") or []
+    return f"yes, {len(split)} words read back split" if split else "yes, words read back whole"
+
+
+def split_words(text: str) -> list[str]:
+    """Words broken by a hard hyphen at a line end: they read back as two halves (a keyword an ATS may miss).
+    A soft hyphen is not one: the text reader joins the word again."""
+    return [a + h + b for a, h, b in re.findall(r"([^\W\d_]+)([-\u2010])\r?\n([^\W\d_]+)", text)]
 
 
 def descriptor_font_names(blobs: list[bytes]) -> list[str]:
@@ -262,7 +271,7 @@ def bench_table(rows: list[dict], docs: dict[str, dict[str, str]] | None = None)
             cells = [r["candidate"], r.get("size_mb", "-"), f"{r['cold']:.2f}", f"{r['warm']:.2f}",
                      *[f"{s:.2f}" for s in scores], *["-"] * (2 - len(scores)),
                      "; ".join(f"{p['kind']}" for cv in r.get("readability", []) for p in cv) or "none",
-                     "; ".join(r["french"]) or "ok", _yn(r.get("hyphens")), _yn(r.get("access")),
+                     "; ".join(r["french"]) or "ok", hyphen_cell(r), _yn(r.get("access")),
                      _yn(r.get("fonts")), _yn(r.get("icons")), doc]
         lines.append("| " + " | ".join(str(c) for c in cells) + " |")
     return "\n".join(lines) + "\n"
@@ -377,9 +386,14 @@ def french_probe(cand: Candidate, work: Path, fonts: Path) -> dict:
     source, pdf = work / f"french.{cand.ext}", work / "french.pdf"
     shutil.copy(SOURCES / "probe" / f"french.{cand.ext}", source)
     cand.render(source, pdf)
+    import pypdfium2 as pdfium
+    doc = pdfium.PdfDocument(str(pdf))
+    try:  # pdfium's own text, before door's reader joins a soft-hyphenated word: the hyphen is what is measured
+        raw = "\n".join(page.get_textpage().get_text_range() for page in doc)
+    finally:
+        doc.close()
     text = "\n".join(pdf_render.page_texts(pdf))
-    return {"french": french_typography(text) + [f"junk inside {w!r}" for w in junk_in_words(text)],
-            "hyphens": hyphenates(text)}
+    return {"french": french_typography(text), "hyphens": hyphenates(raw), "split_words": split_words(raw)}
 
 
 # what the sources say, for the readability check of each CV

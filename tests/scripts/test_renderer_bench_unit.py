@@ -227,9 +227,14 @@ def test_a_word_broken_with_a_unicode_hyphen_at_a_line_end_hyphenates():
     assert bench.hyphenates("l'interdépen‐\r\ndance")
 
 
-def test_a_hyphen_that_reads_back_as_a_junk_character_is_named():
-    assert bench.junk_in_words("organisation￾nelles est considérable") == ["organisation￾nelles"]
-    assert bench.junk_in_words("l'interdépen‐\r\ndance") == []
+def test_a_soft_hyphen_hyphenates_and_keeps_the_word_whole():
+    text = "organisa\ufffetionnelles est considérable"  # pdfium's mark of a soft hyphen at a line end
+    assert bench.hyphenates(text)
+    assert bench.split_words(text) == []
+
+
+def test_a_word_broken_by_a_hard_hyphen_reads_back_split():
+    assert bench.split_words("l'interdépen\u2010\r\ndance des or-\nganisations") == ["interdépen‐dance", "or-ganisations"]
 
 
 def test_font_names_are_read_from_the_descriptors_when_the_font_has_no_base_name():
