@@ -112,6 +112,83 @@ def test_check_pdf_takes_a_name_that_is_not_text_as_no_name(tmp_path):
 
 def test_fixable_keeps_only_what_the_tailor_can_fix():
     found = [{"kind": "missing", "detail": "a"}, {"kind": "glued", "detail": "b"}, {"kind": "empty", "detail": "c"}]
-    assert readability.FIXABLE == {"missing"}
+    assert readability.FIXABLE == {"missing", "overflow"}
     assert readability.fixable(found) == [{"kind": "missing", "detail": "a"}]
     assert readability.fixable([]) == []
+
+
+# ---- layout (#152): boxes are (left, bottom, right, top) in points, origin bottom-left ----
+
+A4 = (595.0, 842.0)
+M = (56.0, 56.0, 56.0, 56.0)  # top, right, bottom, left
+
+
+def page(*boxes, size=A4):
+    return (size[0], size[1], list(boxes))
+
+
+INSIDE = (60, 700, 70, 710)
+
+
+def test_layout_inside_the_margins_is_clean():
+    assert readability.layout_problems([page(INSIDE)], margins=M, two_column=False) == []
+
+
+@pytest.mark.parametrize("box", [
+    (60, 40, 70, 50),     # below the bottom margin
+    (540, 700, 560, 710),  # past the right edge of the content box
+    (40, 700, 50, 710),    # left of the left margin
+    (60, 700, 70, 900),    # off the top of the page
+])
+def test_layout_char_outside_the_content_box_is_overflow(box):
+    found = readability.layout_problems([page(INSIDE), page(box)], margins=M, two_column=False)
+    assert kinds(found) == ["overflow"]
+    assert "page 2" in found[0]["detail"] and "trim" in found[0]["detail"] and "invent" in found[0]["detail"]
+
+
+def test_layout_two_points_of_slack_is_not_overflow():
+    assert readability.layout_problems([page((54.5, 54.5, 70, 710))], margins=M, two_column=False) == []
+
+
+def test_layout_without_margins_checks_the_page_box():
+    assert readability.layout_problems([page((-5, 100, 10, 110))], margins=(0, 0, 0, 0), two_column=False)[0]["kind"] == "overflow"
+
+
+def test_overflow_is_reported_once_for_the_cv():
+    found = readability.layout_problems([page((60, 40, 70, 50), (60, 30, 70, 40))], margins=M, two_column=True)
+    assert kinds(found) == ["overflow"]
+
+
+def test_sparse_last_page_of_a_two_column_template():
+    full = page((60, 60, 70, 780))
+    last = page((60, 700, 70, 760))  # 60pt of ink in a 730pt content height
+    assert kinds(readability.layout_problems([full, last], margins=M, two_column=True)) == ["sparse"]
+    assert readability.layout_problems([full, last], margins=M, two_column=False) == []
+
+
+def test_sparse_needs_more_than_one_page_and_a_nearly_empty_last():
+    assert readability.layout_problems([page((60, 700, 70, 760))], margins=M, two_column=True) == []
+    full = page((60, 60, 70, 780))
+    assert readability.layout_problems([full, page((60, 100, 70, 700))], margins=M, two_column=True) == []
+
+
+def test_only_missing_and_overflow_are_fixable():
+    found = [{"kind": k, "detail": "d"} for k in ("missing", "overflow", "sparse", "order", "glued")]
+    assert kinds(readability.fixable(found)) == ["missing", "overflow"]
+
+
+def test_check_pdf_without_geometry_does_no_layout_check(tmp_path):
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD])
+    assert readability.check_pdf(pdf, "", NAME) == []
+
+
+def test_check_pdf_with_margins_reports_text_below_the_bottom_margin(tmp_path):
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD])  # text starts 72pt from the top, lines 14pt apart
+    found = readability.check_pdf(pdf, "", NAME, margins=(0, 0, 790.0, 0), two_column=False)
+    assert "overflow" in kinds(found)
+
+
+def test_side_headings_read_in_the_wrong_order_are_reported():
+    text = "Experience\nx\nSkills\ny\nProfile\n"
+    found = readability.problems(text, name=None, headings=["Profile", "Experience", "Skills"], keywords=[])
+    assert "order" in kinds(found)

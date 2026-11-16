@@ -56,9 +56,9 @@ def problems(text: str, *, name: str | None, headings: list[str], keywords: list
     return found
 
 
-# The kinds a second tailor run can fix by rewriting the text (the name, a heading or a keyword absent);
-# the others are layout, reported and not retried.
-FIXABLE = {"missing"}
+# The kinds a second tailor run can fix by rewriting the text (the name, a heading or a keyword absent, or text that
+# ran off the page, which a shorter CV cures); the others are reported and not retried.
+FIXABLE = {"missing", "overflow"}
 
 
 def fixable(found: list[dict]) -> list[dict]:
@@ -78,10 +78,49 @@ def extract(pdf: Path) -> tuple[str, int]:
     return "\n".join(texts), len(texts)
 
 
-def check_pdf(pdf: Path, body: str, name: object) -> list[dict]:
+Box = tuple[float, float, float, float]
+Margins = tuple[float, float, float, float]  # top, right, bottom, left, in points
+_SLACK = 2.0  # points a character may stand past the content box before it counts (hinting, rounding)
+SPARSE_SHARE = 0.2  # a last page with less ink than this share of the content height is sparse
+
+
+def layout_problems(pages: list[tuple[float, float, list[Box]]], *, margins: Margins, two_column: bool) -> list[dict]:
+    """What the page geometry of a CV shows: `pages` is ``[(width, height, [char box (l, b, r, t)])]`` (points, origin
+    bottom-left, `pdf_render.page_boxes`), `margins` the template's ``@page`` margins (top, right, bottom, left).
+
+    ``overflow``: a character past the left or right margin, below the bottom margin or off the page (once, naming
+    the first page), told to the tailor as a cut to make; ``sparse``: the last of several pages of a `two_column` CV
+    holds ink under a fifth of the content height (reported only).
+    """
+    top, right, bottom, left = margins
+    found: list[dict] = []
+    for number, (width, height, boxes) in enumerate(pages, 1):
+        if any(l < left - _SLACK or r > width - right + _SLACK or b < bottom - _SLACK or t > height + _SLACK
+               for l, b, r, t in boxes):
+            found.append({"kind": "overflow", "detail": (
+                f"text on page {number} runs past the page margin; trim the lowest-value items so it fits, "
+                "never invent anything")})
+            break
+    if two_column and len(pages) > 1:
+        _, height, boxes = pages[-1]
+        content = height - top - bottom
+        if boxes and content > 0:
+            ink = max(t for *_, t in boxes) - min(b for _, b, _, _ in boxes)
+            if ink < SPARSE_SHARE * content:
+                found.append({"kind": "sparse", "detail": f"the last page ({len(pages)}) is almost empty"})
+    return found
+
+
+def check_pdf(pdf: Path, body: str, name: object, *, margins: Margins | None = None, two_column: bool = False) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
-    the raw config's value, used when it is a string)."""
+    the raw config's value, used when it is a string). With `margins` (a CV: the template's page margins) the page
+    geometry is checked too (`layout_problems`); without, it is not (a letter)."""
+    from door.tailoring import pdf_render
+
     text, pages = extract(pdf)
-    return problems(text, name=name if isinstance(name, str) else None,
-                    headings=html_doc.headings(body),
-                    keywords=html_doc.keywords(body), pages=pages)
+    found = problems(text, name=name if isinstance(name, str) else None,
+                     headings=html_doc.headings(body),
+                     keywords=html_doc.keywords(body), pages=pages)
+    if margins is not None:
+        found += layout_problems(pdf_render.page_boxes(pdf), margins=margins, two_column=two_column)
+    return found
