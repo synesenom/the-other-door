@@ -44,11 +44,11 @@ process, use `npm run dev:demo`.
 
 ## The bundle a packaged app carries (#223)
 
-A packaged app does not use the checkout's `.venv`: it carries its own Python and Tectonic. Build them for
+A packaged app does not use the checkout's `.venv`: it carries its own Python, Tectonic and Chromium. Build them for
 this computer (macOS, or x64 Linux; Windows has `bundle-python.ps1`, #355) and check them:
 
 ```sh
-scripts/bundle-python.sh   # → app/resources/{python,door,bin}, about 310 MB; downloads cached in app/.bundle-cache/
+scripts/bundle-python.sh   # → app/resources/{python,door,bin}, about 310 MB before Chromium, which adds an estimated 200 MB unpacked; downloads cached in app/.bundle-cache/
 scripts/check-bundle.sh    # imports, the MCP handshake, doctor, a Tectonic page, a Chromium page, nothing written inside (--offline: no page)
 ```
 
@@ -58,7 +58,7 @@ scripts/check-bundle.sh    # imports, the MCP handshake, doctor, a Tectonic page
 - `door/` is `src/`, `.claude/agents/{tailor,matcher}.md` and `profile.example/`, laid out as in a checkout.
 - `bin/` is Tectonic (the static musl build on Linux) and `chromium/`, the Chrome for Testing headless shell that
   prints CVs (#165), pinned in `src/door/core/chromium_pin.json` (the one pin, also what `doctor --fix` installs;
-  not in `bundle.lock.json`): about 105-128 MB zipped and 200 MB unpacked per installer. On Windows on ARM the
+  not in `bundle.lock.json`): an estimated 105-128 MB more per installer zipped and about 200 MB unpacked. On Windows on ARM the
   win64 shell runs under emulation.
 - Versions and sha256s are pinned in `scripts/bundle.lock.json` (from each release's metadata); a download
   that does not match is refused.
