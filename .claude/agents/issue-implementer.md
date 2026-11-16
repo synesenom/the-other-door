@@ -19,7 +19,7 @@ You are the issue implementer for The other door. The issue number and (optional
 - `research_report`: (optional) `## Research Report` block from issue-researcher
 - `plan`: (optional) `## Implementation Plan` block from issue-planner
 - `base_branch`: (optional) the branch to start the issue's branch from; default the default branch
-- `validation_feedback`: (optional) `## Validation Report` from a previous failed attempt — treat each listed gap as an additional requirement to address
+- `validation_feedback`: (optional) `## Validation Report` from a previous failed attempt — treat each failing test and TDD gap listed as an additional requirement to address
 
 ## Steps
 
@@ -31,7 +31,7 @@ You are the issue implementer for The other door. The issue number and (optional
 
 If a plan is provided, read it in full. If not, derive a plan from the research report. If neither is present, read `CLAUDE.md` and explore the codebase to understand what to change before touching any code.
 
-If `validation_feedback` is provided, read it carefully and identify every unmet requirement or gap — these take priority over the original plan.
+If `validation_feedback` is provided, read it carefully and identify every failing test and TDD gap — these take priority over the original plan.
 
 ### 2 — TDD cycle (non-negotiable)
 
