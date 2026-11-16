@@ -282,7 +282,7 @@ def test_a_word_like_pdf_loses_links_form_text_and_named_marked_content_properti
     pdf = pikepdf.open(src, allow_overwriting_input=True)
     page = pdf.pages[0]
     link = pikepdf.Dictionary(Type=pikepdf.Name.Annot, Subtype=pikepdf.Name.Link, Rect=[0, 0, 10, 10],
-                              A=pikepdf.Dictionary(S=pikepdf.Name.URI, URI=pikepdf.String("mailto:zebra@yacht.dk")))
+                              A=pikepdf.Dictionary(S=pikepdf.Name.URI, URI=pikepdf.String("mailto:zebra@example.com")))
     page.Annots = pikepdf.Array([pdf.make_indirect(link)])
     page.StructParents = 0
     page.Resources.Properties = pikepdf.Dictionary(P0=pikepdf.Dictionary(MCID=1, ActualText=pikepdf.String("zebra secret")))
