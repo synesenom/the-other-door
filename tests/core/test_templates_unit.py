@@ -79,8 +79,8 @@ def test_the_shipped_templates_carry_the_two_tokens_and_the_page():
 
 # A pinned hash: a change to a shipped template is deliberate (a user's own copy does not follow it).
 SHIPPED_HASHES = {
-    "cv_template": "",
-    "cover_letter_template": "",
+    "cv_template": "b8a1df9c5dce960d3c2aa3c6edd048709f92792a5f9ca394111837602217fcdc",
+    "cover_letter_template": "341e7f98a2abefdaaac4067b2711d029beb4f670ae497a8335d69d0a0e320238",
 }
 
 
