@@ -111,7 +111,6 @@ Spawn the `issue-validator` agent with a prompt containing:
 ```
 issue_number: <number>
 issue_title: <title>
-issue_body: <full body>
 base_branch: <base branch>
 ```
 
@@ -124,8 +123,6 @@ validation_feedback: <full content of thoughts/validate/<issue_number>.md>
 ```
 
 Then validate once more and write the new report to `thoughts/validate/<issue_number>.md`. Proceed to Step 4 regardless of the second result.
-
-If the validator names a small gap it would still accept (a doc line, a comment), fix it yourself, commit it, and do not re-validate.
 
 ---
 
