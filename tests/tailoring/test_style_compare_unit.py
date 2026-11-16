@@ -251,3 +251,10 @@ def test_two_different_cvs_score_lower_and_differ(corpus):
     assert style_compare.pages_score(a_images, b_images) < 0.9
     diffs = style_compare.match(a, b)
     assert diffs["missing"] and style_compare.should_stop([0.5], style_compare.worst_offset_pt(diffs)) is False
+
+
+def test_a_compatibility_form_in_one_render_pairs_with_its_plain_letters_in_the_other():
+    original = style([run("Skills 2021", x=50, y=100)])
+    render = style([run("Ｓｋｉｌｌｓ 2021", x=50, y=103)])  # full-width letters, as some PDFs encode them
+    result = style_compare.match(original, render)
+    assert [p["dy"] for p in result["runs"]] == [3.0]

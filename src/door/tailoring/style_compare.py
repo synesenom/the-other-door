@@ -12,12 +12,11 @@ points, or when the last round gained under `MIN_GAIN` over the best before it; 
 from __future__ import annotations
 
 import math
-import re
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageFilter
 
-from door.tailoring import pdf_render, style_trace
+from door.tailoring import pdf_render, readability, style_trace
 
 CAP = 7  # rounds
 WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
@@ -27,10 +26,6 @@ _FEEDBACK_LIMIT = 12
 MIN_PART = 5  # characters: a shorter text is not paired by being part of another ("2019" is in many runs)
 # a difference smaller than these is not worth telling the model about
 _OFF_SIZE, _OFF_COLOR, _OFF_SHIFT = 0.5, 40, 6.0
-
-
-def _norm(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip().casefold()
 
 
 def _page(item: dict) -> int:
@@ -93,24 +88,24 @@ def _origin_distance(a: dict, b: dict) -> float:
 def _text_pairs(original: list[dict], render: list[dict]) -> tuple[list[dict], list[str], list[str]]:
     pairs: list[dict] = []
     missing, rest = original, render
-    for key in (lambda r: (_norm(r["text"]), _page(r)), lambda r: _norm(r["text"])):  # on the same page first
+    for key in (lambda r: (readability.normalise(r["text"]), _page(r)), lambda r: readability.normalise(r["text"])):  # on the same page first
         found, missing, rest = _greedy(missing, rest, key, _origin_distance)
         pairs += [_run_pair(a, b) for a, b in found]
     still_missing: list[str] = []
     joined: list[dict] = []  # renders that hold several originals: they stay there for the next one
     for run in missing:  # a run the render split or joined differently: pair it with the runs that hold it or are held by it
-        text = _norm(run["text"])
+        text = readability.normalise(run["text"])
         if len(text) < MIN_PART:
             still_missing.append(run["text"])
             continue
-        parts = [r for r in rest if len(_norm(r["text"])) >= MIN_PART and _norm(r["text"]) in text]
-        hosts = [r for r in (*rest, *joined) if text in _norm(r["text"])]
+        parts = [r for r in rest if len(readability.normalise(r["text"])) >= MIN_PART and readability.normalise(r["text"]) in text]
+        hosts = [r for r in (*rest, *joined) if text in readability.normalise(r["text"])]
         if parts:  # the render cut it in pieces: all of them belong to it, the first one is where it starts
             hit = min(parts, key=lambda r: (_page(r), r["bbox"][1], r["bbox"][0]))
             rest = [r for r in rest if r not in parts]
         elif hosts:  # the render joined it with other text: it starts where its place in that text is
             host = min(hosts, key=lambda r: _origin_distance(run, r))
-            held = _norm(host["text"])
+            held = readability.normalise(host["text"])
             x0, x1 = host["bbox"][0], host["bbox"][2]
             hit = {**host, "bbox": [x0 + (x1 - x0) * held.index(text) / len(held), *host["bbox"][1:]]}
             if host in rest:
@@ -125,7 +120,7 @@ def _text_pairs(original: list[dict], render: list[dict]) -> tuple[list[dict], l
 
 def _icon_pairs(original: list[dict], render: list[dict]) -> tuple[list[dict], int, int]:
     def near(icon: dict) -> str:
-        return _norm((icon.get("near") or {}).get("text") or "")
+        return readability.normalise((icon.get("near") or {}).get("text") or "")
 
     def far(a: dict, b: dict) -> float:
         (ax, ay), (bx, by) = _centre(a), _centre(b)
