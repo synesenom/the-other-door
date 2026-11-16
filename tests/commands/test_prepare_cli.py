@@ -921,6 +921,37 @@ def test_a_job_in_no_known_country_gets_the_profiles_and_else_the_neutral_conven
     assert "(no country file)" in neutral and "photo: no" in neutral and "at most 2 pages" in neutral
 
 
+@pytest.mark.parametrize("template_pages, expected", [(1, 1), (3, 2), (None, 2)])
+def test_the_page_limit_is_the_stricter_of_the_templates_and_the_countrys(cli_env, tmp_path, template_pages, expected):
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
+    prompt = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
+    assert f"at most {expected} pages" in prompt
+
+
+def test_a_broken_template_manifest_leaves_the_countrys_page_limit(cli_env, tmp_path):
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text("{broken")
+    prompt = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
+    assert "at most 2 pages" in prompt
+
+
+def test_prepare_refuses_a_broken_template_manifest_before_the_tailor_runs(cli_env, monkeypatch):
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text('{"fonts": ["A.otf"]}')
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("the tailor ran"))
+    result = prepare_cmd._prepare_core("job-1")
+    assert result["outcome"] == "failed" and "template.json" in result["error"]
+
+
+def test_prepare_refuses_a_manifest_naming_a_missing_font_before_the_tailor_runs(cli_env, monkeypatch):
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text('{"fonts": ["Gone.ttf"]}')
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("the tailor ran"))
+    result = prepare_cmd._prepare_core("job-1")
+    assert result["outcome"] == "failed" and "Gone.ttf" in result["error"]
+
+
 def test_run_tailor_clears_the_fact_check_rounds_and_stale_facts_before_it_starts(cli_env, monkeypatch):
     seen = {}
     out = cli_env.jobs_dir / "output" / "job-abc"

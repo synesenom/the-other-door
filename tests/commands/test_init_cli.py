@@ -1276,3 +1276,14 @@ def test_the_first_look_scores_with_the_preferences(init_env, prompts, wizard_ca
     prompts.answers.update(_JANE, preferences=_PREFERENCES)
     CliRunner().invoke(cli, ["init"])
     assert seen["preferences"] == _PREFERENCES
+
+
+def test_a_templates_manifest_and_icons_are_never_copied_into_the_profile(tmp_path):
+    example, profile = tmp_path / "example", tmp_path / "profile"
+    (example / "icons").mkdir(parents=True)
+    (example / "icons" / "phone.svg").write_text("<svg/>")
+    (example / "template.json").write_text("{}")
+    (example / "notes.md").write_text("kept")
+    profile.mkdir()
+    profile_cmd._copy_missing_example_files(example, profile)
+    assert sorted(p.name for p in profile.iterdir()) == ["notes.md"]  # the manifest and icons belong to the code's template (#188)

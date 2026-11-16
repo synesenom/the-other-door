@@ -151,11 +151,18 @@ def _cv_conventions_text(posting_path: Path) -> str:
     cv = country.cv if country else i18n.CvConventions()
     photo = config.get("photo")
     has_photo = bool(photo) and photo_mod.problem(Path(photo) if Path(photo).is_absolute() else workspace.HOME / photo) is None
+    max_pages = cv.max_pages
+    try:  # the template's own limit counts when it is stricter; a broken manifest is refused before the tailor runs
+        manifest = templates.manifest(templates.resolve("cv_template", config))
+    except ValueError:
+        manifest = None
+    if manifest and manifest.max_pages:
+        max_pages = min(max_pages, manifest.max_pages)
     return (
         f"CV conventions for this job's country ({country.code if country else 'no country file'}): "
         f"photo: {cv.photo}; the profile has a photo: {'yes' if has_photo else 'no'}; "
         f"{'a date of birth is usual there' if cv.date_of_birth else 'no date of birth is expected there'}, but never add a date of birth: keep one only if cv.md already has it; "
-        f"at most {cv.max_pages} pages; a full date is written {cv.date_format}."
+        f"at most {max_pages} pages; a full date is written {cv.date_format}."
     )
 
 
@@ -390,8 +397,14 @@ def _prepare_core(
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
     home = workspace.PROFILE_DIR if profile_dir is None else profile_dir
-    if common._cv_is_example(common._load_config_or_defaults(home), home):
+    config = common._load_config_or_defaults(home)
+    if common._cv_is_example(config, home):
         return {"job_id": job_id, "outcome": "failed", "error": common.EXAMPLE_CV_MESSAGE}
+    try:  # a broken template.json, or a file it names missing, would only fail compile after the tailor ran (#188)
+        for template_path in _tailor_templates(home).values():
+            templates.assets(template_path)
+    except ValueError as exc:
+        return {"job_id": job_id, "outcome": "failed", "error": str(exc)}
     if job_id is None:
         if not common._claude_available():
             return {"job_id": None, "outcome": "failed", "error": f"the `claude` CLI is not installed — {common._CLAUDE_FIX}."}
@@ -411,7 +424,7 @@ def _prepare_core(
             utils.write_json_atomic(posting_path, stored)
         if "language" not in stored:  # an ad stored before imports were tagged: the tailor needs its language
             language.tag_posting(
-                posting_path, common._load_config_or_defaults(home), feature="import_posting"
+                posting_path, config, feature="import_posting"
             )
     except (OSError, ValueError, ConfigError):
         pass

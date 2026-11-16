@@ -86,15 +86,6 @@ def _with_photo(body: str, template: str, output_dir: Path, posting: dict, confi
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-def _fonts_dir() -> Path:
-    """The folder the templates' `/fonts/...` is served from: the profile's own when it holds TrueType files, else the
-    code's. (Chromium writes a CFF `.otf` font into a PDF as nameless text.)"""
-    own = workspace.PROFILE_DIR / "fonts"
-    if own.is_dir() and any(own.glob("*.ttf")):
-        return own
-    return workspace.PROFILE_EXAMPLE_DIR / "fonts"
-
-
 def _wrap(template: str, body: str, language: str) -> str:
     """`template` with its language and `body` in place.
 
@@ -106,7 +97,7 @@ def _wrap(template: str, body: str, language: str) -> str:
     return template.replace("<<lang>>", language).replace("<<body>>", body)
 
 
-def _print(html: str, output_dir: Path, name: str, entry: dict) -> None:
+def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) -> None:
     """Print `html` to `output_dir/<name>.pdf`; the outcome goes in ``entry`` (``status`` ``compiled`` with ``pdf``, or
     ``error`` with ``stderr``). The page is served from memory: the body on disk is not it.
 
@@ -119,7 +110,7 @@ def _print(html: str, output_dir: Path, name: str, entry: dict) -> None:
         raise common.MissingToolError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
     pdf = output_dir / f"{name}.pdf"
     try:
-        html_pdf.print_html(output_dir, html, pdf, assets={"fonts": _fonts_dir()})
+        html_pdf.print_html(output_dir, html, pdf, assets=assets)
     except html_pdf.PrintError as exc:
         entry.update(status="error", stderr=str(exc))
         return
@@ -140,7 +131,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
     """Print the HTML bodies of a job application into PDFs; return structured data.
 
     Mirrors the `compile` tool's side effects (starts the pinned Chromium headless shell, sealed: scripts off, only
-    the job folder and the fonts served) but never prints to stdout: callers render their own presentation from the
+    the job folder and the template's fonts and icons served) but never prints to stdout: callers render their own presentation from the
     returned dict.
 
     Args:
@@ -200,9 +191,16 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             results.append(entry)
             continue
         try:
-            template = templates.resolve(key, config).read_text(encoding="utf-8")
+            template_path = templates.resolve(key, config)
+            template = template_path.read_text(encoding="utf-8")
         except (OSError, UnicodeError) as exc:
             entry.update(status="error", stderr=f"could not read the template: {exc}")
+            results.append(entry)
+            continue
+        try:
+            assets = templates.assets(template_path)
+        except ValueError as exc:
+            entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
         built, photo_name = _with_photo(body, template, output_dir, posting, config)
@@ -215,7 +213,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
-        _print(page, output_dir, Path(file).stem, entry)
+        _print(page, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
             _read_back(entry, Path(entry["pdf"]), body, config)
         results.append(entry)

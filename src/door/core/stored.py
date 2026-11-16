@@ -47,6 +47,8 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("profile/cover-letter.template.html", CODE_OWNED, "HTML page, CSS and fonts for the letter", "ships as profile.example/; a file in profile/ overrides it"),
     Stored("profile/*.template.tex", CODE_OWNED, "a LaTeX template of an older version, kept and never read", "a browser cannot print it; the HTML template is used instead"),
     Stored("profile/fonts/**", CODE_OWNED, "TrueType font files and licences the templates load from /fonts/", "ships as profile.example/fonts/; a profile/fonts/ with .ttf files overrides it"),
+    Stored("profile/template.json", CODE_OWNED, "door.core.templates.Manifest (extra=forbid): the fonts, icons, page limit and side column of a template", "ships beside a template; one per folder, CV and letter both; a profile/ one belongs to the user's own template"),
+    Stored("profile/icons/**", CODE_OWNED, "SVG icon files the template's template.json names, served as /icons/<file>", "ships beside a template; only the files the manifest names are served"),
     Stored("profile/cv.draft.md", SCRATCH, "draft_cv's proposal, Markdown"),
     Stored("profile/cv.md.bak", SCRATCH, "the CV before the last save_cv"),
     Stored("profile/.enrich_proposals.json", SCRATCH, "enrich's pending proposals"),

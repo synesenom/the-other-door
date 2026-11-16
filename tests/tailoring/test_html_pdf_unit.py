@@ -230,7 +230,7 @@ def test_an_asset_root_is_served_under_its_name_and_only_inside_it(fake, tmp_pat
     (fonts / "escape").symlink_to(tmp_path / "shared" / "secret.txt")
     fake.probe_paths = ["/fonts/x.ttf", "/fonts/../secret.txt", "/fonts/%2e%2e/secret.txt", "/fonts/escape",
                         "/fonts/missing.ttf", "/fonts", "/other/x.ttf"]
-    _print(fake, tmp_path, assets={"fonts": fonts})
+    _print(fake, tmp_path, assets={"fonts": [fonts / "x.ttf", fonts / "escape"]})
     assert fake.statuses["/fonts/x.ttf"] == 200 and fake.bodies["/fonts/x.ttf"] == b"font"
     for blocked in ("/fonts/../secret.txt", "/fonts/%2e%2e/secret.txt", "/fonts/escape", "/fonts/missing.ttf",
                     "/fonts", "/other/x.ttf"):
@@ -245,7 +245,7 @@ def test_a_folder_file_shadowed_by_an_asset_name_is_not_served_from_the_folder(f
     fonts = tmp_path / "f"
     fonts.mkdir()
     fake.probe_paths = ["/fonts/own.ttf"]
-    _print(fake, tmp_path, assets={"fonts": fonts})
+    _print(fake, tmp_path, assets={"fonts": []})
     assert fake.statuses["/fonts/own.ttf"] == 404
 
 
@@ -424,3 +424,18 @@ def test_main_prints_a_test_page(fake, tmp_path, monkeypatch):
 
     monkeypatch.setattr(html_pdf, "print_html", boom)
     assert html_pdf.main(["--out", str(out)]) == 1
+
+
+def test_an_asset_given_as_files_serves_only_those_files(fake, tmp_path):
+    icons = tmp_path / "tpl" / "icons"
+    icons.mkdir(parents=True)
+    (icons / "p.svg").write_bytes(b"phone")
+    (icons / "other.svg").write_bytes(b"not listed")
+    (tmp_path / "tpl" / "secret.txt").write_bytes(b"outside")
+    fake.probe_paths = ["/icons/p.svg", "/icons/other.svg", "/icons/../secret.txt", "/icons/%2e%2e/secret.txt",
+                        "/icons", "/icons/", "/icons/sub/p.svg"]
+    _print(fake, tmp_path, assets={"icons": [icons / "p.svg"]})
+    assert fake.statuses["/icons/p.svg"] == 200 and fake.bodies["/icons/p.svg"] == b"phone"
+    for blocked in ("/icons/other.svg", "/icons/../secret.txt", "/icons/%2e%2e/secret.txt", "/icons", "/icons/",
+                    "/icons/sub/p.svg"):
+        assert fake.statuses[blocked] == 404, blocked
