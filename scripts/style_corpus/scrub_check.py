@@ -6,7 +6,7 @@ usage: scrub_check.py words <original.pdf> > words.json
 check prints how far icons (FontAwesome) and text runs moved, every original word or number still found in the
 text, every word in the decompressed streams (PDF names, fonts and CMaps left out), links and metadata left,
 and writes <scrubbed>-pdfium.png to look at.
-Run with the project's environment (pypdfium2): `PYTHONPATH=src poetry run python -I scripts/cv_style_proto/scrub_check.py ...`
+Run with the project's environment (pypdfium2): `PYTHONPATH=src poetry run python -I scripts/style_corpus/scrub_check.py ...`
 """
 from __future__ import annotations
 

@@ -18,14 +18,14 @@ FONTS = {p.name for p in (REPO_ROOT / "profile.example" / "fonts").glob("*.ttf")
 
 
 def test_the_designs_are_set_in_the_fonts_of_the_example_profile_only():
-    html = corpus.with_fonts(corpus.cvs.source(1))
+    html = corpus.with_fonts(corpus.source(1))
     urls = re.findall(r"url\(/fonts/([^)]+)\)", html)
     assert urls and set(urls) <= FONTS
     assert "Figtree" in html and "Young Serif" in html
 
 
 def test_the_linkedin_like_page_has_the_headings_and_page_footers_of_an_export():
-    html = corpus.linkedin_html(corpus.cvs.record(4))
+    html = corpus.linkedin_html(corpus.record(4))
     for heading in ("Contact", "Top Skills", "Languages", "Certifications", "Summary", "Experience", "Education"):
         assert f">{heading}<" in html
     assert re.findall(r"Page \d of 2", html) == ["Page 1 of 2", "Page 2 of 2"]
@@ -51,3 +51,9 @@ def test_building_the_corpus_prints_each_html_design_and_makes_the_scan(tmp_path
     assert [n for n, _ in printed] == ["html-word-two-column.pdf", "html-canva-icons.pdf", "html-plain-single.pdf", "linkedin-like.pdf"]
     assert all(set(fonts) <= FONTS for _, fonts in printed)
     assert (tmp_path / "scan.pdf").exists()
+
+
+def test_the_made_up_cvs_use_example_addresses_only():
+    for n in (1, 2, 3, 4):
+        c = corpus.record(n)["contact"]
+        assert c["email"].endswith("@example.com") and c["web"].startswith("example.com/")
