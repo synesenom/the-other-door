@@ -85,3 +85,9 @@ def test_login_check_asks_the_configured_plan(profile):
     check = doctor.check_claude_login("/bin/claude", run=run, env=claude_cli.env({}))
     assert calls[0]["CLAUDE_CONFIG_DIR"] == "/plans/personal"
     assert "/plans/personal" in check["detail"]
+
+
+def test_an_agent_definition_is_its_frontmatter_and_its_body_as_the_prompt():
+    entry = claude_cli.agent_definition("stylist")
+    assert entry["model"] == "sonnet" and entry["tools"] == ["Read"]
+    assert entry["description"] and entry["prompt"].startswith("You")
