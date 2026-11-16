@@ -165,6 +165,24 @@ def make_profile() -> None:
         stories_cmd._save_story_core(*story, replace_example=index == 0, profile_dir=PROFILE)
 
 
+def make_style() -> None:
+    """`profile/style/` as a build of a CV writes it (#149): plain files, so any release's sample can hold it."""
+    import shutil
+
+    style = PROFILE / "style"
+    (style / "fonts").mkdir(parents=True)
+    (style / "icons").mkdir()
+    for name in ("cv.template.html", "cover-letter.template.html"):
+        shutil.copyfile(workspace.PROFILE_EXAMPLE_DIR / name, style / name)
+    (style / "template.json").write_text(json.dumps({"version": 1, "fonts": ["YoungSerif-Regular.ttf"],
+                                                     "icons": {"email": "email.svg"}, "max_pages": 1}, indent=1), encoding="utf-8")
+    (style / "style.json").write_text(json.dumps({"verdict": {"copyable": True}, "fonts": [], "icons": []}, indent=1), encoding="utf-8")
+    (style / "icons" / "email.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path fill="#000000" d="M0 0 L10 0 L10 10 Z"/></svg>\n', encoding="utf-8")
+    shutil.copyfile(HERE.parent / "tests" / "tailoring" / "fixtures" / "styles" / "latex-sidebar.pdf", style / "source.pdf")
+    for name in ("YoungSerif-Regular.ttf", "YoungSerif-OFL.txt"):
+        shutil.copyfile(workspace.PROFILE_EXAMPLE_DIR / "fonts" / name, style / "fonts" / name)
+
+
 def make_companies() -> None:
     now = at(10).isoformat()
     items = [
@@ -366,6 +384,7 @@ def make_run_record() -> None:
 
 def main() -> None:
     make_profile()
+    make_style()
     make_companies()
     # A release's own writes go through `ledger_lock`, which stamps a new jobs/ with its data version first; the sample
     # writes the stores directly, so it stamps the folder as the lock would.
