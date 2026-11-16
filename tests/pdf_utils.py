@@ -70,6 +70,15 @@ def font_names(path: Path, index: int = 0) -> set[str]:
         pdf.close()
 
 
+def path_count(path: Path, index: int = 0) -> int:
+    """The drawn paths of one page (an SVG icon printed as a background is some)."""
+    pdf = pdfium.PdfDocument(str(path))
+    try:
+        return sum(1 for _ in pdf[index].get_objects(filter=[raw.FPDF_PAGEOBJ_PATH]))
+    finally:
+        pdf.close()
+
+
 def image_count(path: Path, index: int = 0) -> int:
     pdf = pdfium.PdfDocument(str(path))
     try:

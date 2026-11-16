@@ -21,28 +21,13 @@ from PIL import Image
 from pypdfium2 import PdfiumError
 
 from door import i18n
+from door.commands import compile as compile_cmd
 from door.core import claude_cli, fonts, progress as progress_mod, templates, workspace
-from door.tailoring import cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract
+from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract,
+                            typography)
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
-
-
-def agent() -> dict:
-    """The stylist agent's definition from `.claude/agents/stylist.md`: ``description``, ``model``, ``tools`` and its
-    body as the ``prompt``."""
-    text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{STYLIST}.md").read_text(encoding="utf-8")
-    _, front, body = text.split("---", 2)
-    entry: dict = {"prompt": body.strip(), "tools": []}
-    key = None
-    for line in front.splitlines():
-        if line.lstrip().startswith("- ") and key == "tools":
-            entry["tools"].append(line.strip()[2:].strip())
-        elif ":" in line and not line.startswith(" "):
-            key, value = (part.strip() for part in line.split(":", 1))
-            if key in ("description", "model"):
-                entry[key] = value
-    return entry
 
 
 def blocks(reply: str) -> dict[str, str]:
@@ -56,7 +41,7 @@ def blocks(reply: str) -> dict[str, str]:
 
 # ---------- what the stylist is given: fonts, icons, manifest ----------
 
-def font_face_css(plan: list[dict]) -> str:
+def _font_face_css(plan: list[dict]) -> str:
     """One `@font-face` rule per file of each entry of `fonts.plan`, under the family the file belongs to, served as
     `/fonts/<file>`; an entry with no files (no free copy of its kind) has none."""
     rules = []
@@ -68,7 +53,7 @@ def font_face_css(plan: list[dict]) -> str:
     return "\n".join(rules)
 
 
-def font_notes(plan: list[dict]) -> str:
+def _font_notes(plan: list[dict]) -> str:
     """What the stylist is told of each font the CV uses: which family stands for it and which faces are faked."""
     lines = []
     for entry in plan:
@@ -80,25 +65,17 @@ def font_notes(plan: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def font_results(plan: list[dict]) -> list[dict]:
-    """The result's font entries: the family the CV names, how it was resolved and why, what is faked."""
-    return [{"family": e["family"], "source": e["source"], "reason": e["reason"], "faked": e["faked"],
-             "resolved": e["resolved"]} for e in plan]
-
-
 _URL = re.compile(r"(?:https?://)?(?:www\.)?[\w-]+(?:\.[\w-]+)+(?:/\S*)?")
 _PHONE = re.compile(r"[\d\s()+.\-]{7,}")
 _YEAR = re.compile(r"\b(19[5-9]\d|20[0-3]\d)\b")
 _PATH = re.compile(r"[MLHVCSQTAZmlhvcsqtaz\d\s.,\-]+")
 _VIEWBOX = re.compile(r"[\d\s.\-]+")
 _COLOR = re.compile(r"#[0-9a-fA-F]{6}")
-_NOT_RECOGNISED = "no kind of contact detail or date recognised beside it"
-_NEAR = 30  # characters of the text beside a dropped icon the result names
 
 
 def icon_kind(near: str | None) -> str | None:
     """The kind of icon (one of `templates.ICON_KINDS`) that belongs beside `near`: a contact label in any supported
-    language, else what the text looks like (an address, a number, a link, a date); None when it is none of them."""
+    language, else what the text looks like (a number, a link, a date, a place name); None when it is none of them."""
     text = " ".join((near or "").split())
     if not text:
         return None
@@ -118,6 +95,8 @@ def icon_kind(near: str | None) -> str | None:
         return "phone"
     if _URL.fullmatch(text):
         return "web"
+    if i18n.known_city(text) or i18n.country_for_location(text):
+        return "location"
     return None
 
 
@@ -130,9 +109,9 @@ def write_icons(icons: list[dict], folder: Path) -> tuple[dict[str, str], list[d
     for icon in icons:
         near = (icon.get("near") or {}).get("text")
         kind = icon_kind(near)
-        label = near[:_NEAR] if near else None
+        label = near[:30] if near else None
         if kind is None:
-            dropped.append({"near": label, "reason": _NOT_RECOGNISED})
+            dropped.append({"near": label, "reason": "no kind of contact detail or date recognised beside it"})
         elif not (_PATH.fullmatch(icon.get("d") or "") and _VIEWBOX.fullmatch(icon.get("viewBox") or "")):
             dropped.append({"near": label, "reason": "its path is not plain path data"})
         elif kind not in files:
@@ -145,7 +124,7 @@ def write_icons(icons: list[dict], folder: Path) -> tuple[dict[str, str], list[d
     return files, dropped
 
 
-def side_kinds(style: dict) -> list[str]:
+def _side_kinds(style: dict) -> list[str]:
     """The section kinds of the side column: those whose headings in the original sit in its side band, in reading
     order (a heading no section kind names stays in the main column). Empty for a CV with no side band."""
     bands = [b for b in style["columns"]["bands"] if b["kind"] == "side"]
@@ -159,12 +138,12 @@ def side_kinds(style: dict) -> list[str]:
     return kinds
 
 
-def manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str]) -> dict:
+def _manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str]) -> dict:
     """The `template.json` of a build: its fonts and icons, the side column's kinds and the page limit (the original's
     page count within the 1 to 3 a template may name)."""
     data: dict = {"version": 1, "fonts": list(font_files), "icons": dict(icon_files),
-                  "max_pages": min(3, max(1, style.get("page_count", 1)))}
-    if side := side_kinds(style):
+                  "max_pages": min(templates.MAX_PAGES, max(1, style.get("page_count", 1)))}
+    if side := _side_kinds(style):
         data["columns"] = {"side": side}
     return data
 
@@ -175,7 +154,7 @@ _LONG_ROLE = "Senior Principal Engineering Manager for Distributed Data Platform
 _FRENCH = ("Professionnel polyvalent, fort de huit années d'expérience dans des environnements exigeants, attaché à des plans "
            "clairs, à des étapes régulières et à une communication ouverte avec les équipes, les clients et les partenaires, "
            "capable de conduire des projets complexes de leur cadrage jusqu'à leur mise en production, en tenant les délais "
-           "comme les budgets et en formant les collègues qui rejoignent l'équipe en cours de route.")
+           "comme les budgets et en formant les collègues qui rejoignent l'équipe en cours de route : toujours avec soin !")
 
 
 def _section_at(lines: list[str]) -> int:
@@ -204,24 +183,23 @@ def _long_title(lines: list[str]) -> list[str]:
     return [*lines, "", "## Experience", "", f"### {_LONG_ROLE} | Example Company — 2020 - 2023", "", "- A bullet.", ""]
 
 
-def stress_variants(cv_md: str) -> dict[str, dict]:
-    """The CV in `cv_md` made into the texts a template must hold (no model): ``base``, ``photo`` (the same, printed with
-    a photo), ``fewer`` (one entry a section), ``long_title`` (a very long job title), ``extra_section`` (one more
+def _stress_variants(cv_md: str) -> dict[str, dict]:
+    """The CV in `cv_md` made into the texts a template must hold (no model): ``photo`` (the same, printed with a
+    photo), ``fewer`` (one entry a section), ``long_title`` (a very long job title), ``extra_section`` (one more
     section) and ``french`` (a long French paragraph first, `lang` "fr"). Each is ``{"md", "lang", "photo"}``."""
     lines = cv_md.rstrip("\n").splitlines()
     at = _section_at(lines)
     variants = {
-        "base": lines, "photo": lines, "fewer": _fewer(lines), "long_title": _long_title(lines),
+        "photo": lines, "fewer": _fewer(lines), "long_title": _long_title(lines),
         "extra_section": [*lines, "", "## Publications", "", "- A study of nightly pipelines (2021)", "- Notes on small steady steps (2019)"],
         "french": [*lines[:at], "## Profil", "", _FRENCH, "", *lines[at:]],
     }
-    return {name: {"md": cv_md if name in ("base", "photo") else "\n".join(v) + "\n", "lang": "fr" if name == "french" else "en",
+    return {name: {"md": cv_md if name == "photo" else "\n".join(v) + "\n", "lang": "fr" if name == "french" else "en",
                    "photo": name == "photo"} for name, v in variants.items()}
 
 
 # ---------- the loop ----------
 
-CAP = style_compare.CAP
 TIMEOUT_S = 900  # one stylist call
 _CV_FILE, _LETTER_FILE = templates.FILES["cv_template"], templates.FILES["cover_letter_template"]
 _NAME = re.compile(r"^#\s+(.+)$", re.M)
@@ -235,6 +213,10 @@ _SAMPLE_LETTER = """<header class="letter-header"><h1>Jane Doe</h1>
 <p>Thank you for your time. I would be glad to tell you more in an interview.</p>
 <div class="closing"><p class="signoff">Kind regards,</p><p>Jane Doe</p></div>"""
 _SAMPLE_DATE = "1 January 2026"
+_HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
+_CSS_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+_TITLE = re.compile(r"<title>.*?</title>", re.S | re.I)
+_TITLES = {"cv": "CV", "letter": "Cover letter"}
 
 
 class _Stop(Exception):
@@ -242,49 +224,31 @@ class _Stop(Exception):
 
 
 def _task(files: str, feedback: str | None, reply: str) -> str:
-    return f"{files}\n\n{feedback + chr(10) + chr(10) if feedback else ''}{reply}"
+    return "\n\n".join(part for part in (files, feedback, reply) if part)
 
 
 def _ask(run, task: str, work: Path, profile_dir: Path | None) -> str:
-    """One stylist call (a `claude -p` session in `work`, read-only: the agent's own tools, `--restricted`) and its
-    reply text."""
-    definition = agent()
-    entry = {"description": definition["description"], "prompt": definition["prompt"], "tools": definition["tools"],
-             "model": definition["model"]}
-    args = ["--restricted", "--agents", json.dumps({STYLIST: entry}), "--agent", STYLIST,
-            "--allowedTools", ",".join(definition["tools"]), "--no-session-persistence", *claude_cli.STREAM_ARGS]
+    """One stylist call (a `claude -p` session in `work`, read-only: the agent's own tools, `--restricted`, no tool
+    server of the user's) and its reply text."""
+    definition = claude_cli.agent_definition(STYLIST)
+    args = ["--restricted", "--agents", json.dumps({STYLIST: definition}), "--agent", STYLIST,
+            "--allowedTools", ",".join(definition["tools"]), "--strict-mcp-config", "--no-session-persistence",
+            *claude_cli.STREAM_ARGS]
     envelope = run(args, feature="style", input=task, timeout_s=TIMEOUT_S, profile_dir=profile_dir, cwd=work)
     return str(claude_cli.envelope_result(envelope))
 
 
 def _shipped_plan(style_fonts: list[dict], font_dir: Path) -> list[dict]:
-    """What stands in for the fonts when none could be fetched: the TrueType fonts the code ships
-    (`profile.example/fonts/`: Figtree for a sans, Young Serif for a serif), copied into `font_dir`."""
+    """The font plan when the free fonts could not be fetched: `fonts.plan` over only the families the code ships
+    (`profile.example/fonts/`), copied into `font_dir`; any other font of the CV has no stand-in."""
     shipped = workspace.PROFILE_EXAMPLE_DIR / "fonts"
-    faces = {"Regular": (400, False), "Italic": (400, True), "SemiBold": (600, False), "SemiBoldItalic": (600, True),
-             "Bold": (700, False), "BoldItalic": (700, True)}
-    by_family: dict[str, list[dict]] = {}
-    for path in sorted(shipped.glob("*.ttf")):
-        stem, _, face = path.stem.partition("-")
-        if face in faces:
-            family = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", stem)
-            by_family.setdefault(family, []).append({"name": path.name, "weight": faces[face][0], "italic": faces[face][1]})
+    data = fonts.pin()
+    data["families"] = {name: f for name, f in data["families"].items() if (shipped / f["files"][0]["name"]).is_file()}
+    plan = fonts.plan(style_fonts, data=data)
     font_dir.mkdir(parents=True, exist_ok=True)
-    plan: list[dict] = []
-    for original in (f for f in style_fonts if f.get("family") and not f.get("icon")):
-        if any(e["family"] == original["family"] for e in plan):
-            continue
-        resolved = "Young Serif" if original.get("serif") and "Young Serif" in by_family else next(iter(by_family))
-        files = by_family[resolved]
-        uses = sorted({(f["weight"], f["italic"]) for f in style_fonts if f.get("family") == original["family"]})
-        faked = [[w, i] for w, i in uses if not any(f["italic"] == i and abs(f["weight"] - w) <= 100 for f in files)]
-        for f in files:
-            shutil.copyfile(shipped / f["name"], font_dir / f["name"])
-        for licence in shipped.glob(f"{resolved.replace(' ', '')}-OFL.txt"):
-            shutil.copyfile(licence, font_dir / licence.name)
-        plan.append({"family": original["family"], "source": "shipped", "resolved": resolved, "faked": faked,
-                     "reason": f"{original['family']}: its free copy could not be fetched; the shipped {resolved} stands in",
-                     "files": files, "licence": None, "alternatives": [], "uses": [list(u) for u in uses]})
+    for entry in plan:
+        for name in [f["name"] for f in entry["files"]] + ([entry["licence"]["name"]] if entry["licence"] else []):
+            shutil.copyfile(shipped / name, font_dir / name)
     return plan
 
 
@@ -300,10 +264,6 @@ def _get_fonts(pdf: Path, style: dict, font_dir: Path, fetch) -> tuple[list[dict
         return _shipped_plan(style["fonts"], font_dir), str(exc)
 
 
-def _font_names(plan: list[dict]) -> list[str]:
-    return list(dict.fromkeys(f["name"] for e in plan for f in e["files"]))
-
-
 def _agent_style(style: dict) -> dict:
     """`style` as the stylist reads and `profile/style/style.json` keeps it: the icons' traced paths are in the SVG files."""
     return {**style, "icons": [{k: v for k, v in icon.items() if k not in ("d", "viewBox", "fill_rule")} for icon in style["icons"]]}
@@ -314,20 +274,34 @@ def _write(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def _print(template: str, body: str, lang: str, folder: Path, name: str, work: Path) -> Path:
-    """`body` placed in `template` and printed to `folder/<name>.pdf` with the pinned Chromium, the fonts and icons the
-    manifest next to the template in `work` names served.
+def _clean(template: str, kind: str) -> str:
+    """`template` as it is published: the model wrote it, so its comments are not kept. The first comment is the
+    vocabulary header of the shipped template of its `kind` (the code's own text), every other HTML or CSS comment is
+    dropped and the title is a fixed one."""
+    shipped = (workspace.PROFILE_EXAMPLE_DIR / (_CV_FILE if kind == "cv" else _LETTER_FILE)).read_text(encoding="utf-8")
+    header = iter([_HTML_COMMENT.search(shipped).group(0)])
+    text = _HTML_COMMENT.sub(lambda m: next(header, ""), _CSS_COMMENT.sub("", template))
+    return _TITLE.sub(f"<title>{_TITLES[kind]}</title>", text)
+
+
+def _render(s: "_Session", template: str, body: str, lang: str, folder: Path, name: str, photo: Path | None = None,
+            letter: bool = False) -> tuple[Path, str, str | None]:
+    """`body` placed in `template` as `compile` places it (the photo, the two columns, the language's typography) and
+    printed to `folder/<name>.pdf` with the pinned Chromium, the fonts and icons the manifest names served. Returns
+    the pdf, the body as placed and the photo's file name in `folder` (None when it was not placed).
 
     Raises:
         html_pdf.PrintError: the print failed.
         ValueError: the manifest names a file that is not there.
     """
-    from door.commands import compile as compile_cmd
-
     folder.mkdir(parents=True, exist_ok=True)
+    config = {"photo": str(photo)} if photo else {}
+    built, picture = compile_cmd._with_photo(body, template, folder, _STRESS_PHOTO, config)
+    placed = built if letter else compile_cmd._place_columns(built, s.manifest.columns, lang)
     pdf = folder / f"{name}.pdf"
-    html_pdf.print_html(folder, compile_cmd._wrap(template, body, lang), pdf, assets=templates.assets(work / _CV_FILE))
-    return pdf
+    html_pdf.print_html(folder, compile_cmd._wrap(template, typography.apply(placed, lang), lang), pdf,
+                        assets=templates.assets(s.work / _CV_FILE))
+    return pdf, placed, picture
 
 
 class _Session:
@@ -350,10 +324,7 @@ class _Session:
         Raises:
             _Stop: the print has no text to read back.
         """
-        from door.commands import compile as compile_cmd
-
-        placed = compile_cmd._place_columns(compile_cmd._with_photo(body, template, self.work, {}, {})[0], self.manifest.columns, "en")
-        pdf = _print(template, placed, "en", self.work, "render", self.work)
+        pdf = _render(self, template, body, "en", self.work, "render")[0]
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
@@ -361,15 +332,11 @@ class _Session:
         score = style_compare.pages_score(self.images, style_compare.page_images(pdf, self.work))
         return diffs, score, style_compare.worst_offset_pt(diffs)
 
-    def guard(self, template: str, kind: str = "cv") -> list[str]:
-        return html_guard.template_problems(template, self.manifest, kind)
-
 
 _REPLY_FIRST = ("Reply with one line on what you see (layout, colours), then the ```template block and the ```body block, "
                 "nothing after them.")
 _REPLY_NEXT = "Reply with one line on what you changed and the whole new template in one ```template block, nothing after it."
 _REPLY_LETTER = "Reply with one line and the whole letter template in one ```letter block, nothing after it."
-MAX_PAGES = 3  # the most a template may name (`templates.Manifest.max_pages`)
 _LIMIT = 12  # problems one message to the stylist names
 
 
@@ -418,7 +385,7 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
             if body is None:
                 continue
         _write(s.work / _CV_FILE, template)
-        if problems := s.guard(template):
+        if problems := html_guard.template_problems(template, s.manifest):
             feedback = "The guard refused your template, so it was not printed. Fix these:\n" + _list(problems)
             continue
         try:
@@ -435,34 +402,27 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
 
 
 def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
-    """The failures of the template printed with the variants of `cv_md` (`stress_variants`), through the same placing
-    and photo steps `compile` takes, no model: a print that fails, text lost off the page (`readability`'s checks,
-    a last page nearly empty excepted), a photo not placed, too many pages (the compact variant must fit the
-    manifest's `max_pages`, the rest `MAX_PAGES`)."""
-    from door.commands import compile as compile_cmd
-
+    """The failures of the template printed with the variants of `cv_md` (`_stress_variants`), through the same placing,
+    photo and typography steps `compile` takes, no model: a print that fails, text lost off the page (`readability`'s
+    checks, a last page nearly empty excepted), a photo not placed, too many pages (the compact variant must fit the
+    manifest's `max_pages`, the rest `templates.MAX_PAGES`)."""
     name = (_NAME.search(cv_md) or [None, None])[1]
     picture = s.work / "stress-photo.jpg"
     Image.new("RGB", (350, 450), "tan").save(picture, "JPEG")
     failures: list[str] = []
-    for variant, v in stress_variants(cv_md).items():
+    for variant, v in _stress_variants(cv_md).items():
         progress_mod.report(f"stress render: {variant}", stage="style")
-        folder = s.work / "stress" / variant
-        folder.mkdir(parents=True, exist_ok=True)
-        placed = compile_cmd._place_columns(cv_body.body(v["md"], v["lang"]), s.manifest.columns, v["lang"])
-        config = {**_STRESS_PHOTO, "photo": str(picture)} if v["photo"] else {}
-        built, photo = compile_cmd._with_photo(placed, template, folder, _STRESS_PHOTO, config)
-        if v["photo"] and photo is None:
-            failures.append(f"{variant}: the photo was not placed")
-            continue
         try:
-            pdf = _print(template, built, v["lang"], folder, "cv", s.work)
-            found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, built, name, cv=True) if p["kind"] != "sparse"]
+            pdf, placed, photo = _render(s, template, cv_body.body(v["md"], v["lang"]), v["lang"], s.work / "stress" / variant,
+                                         "cv", picture if v["photo"] else None)
+            found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
             pages = pdf_render.get_page_count(pdf)
         except (html_pdf.PrintError, ValueError) as exc:
             failures.append(f"{variant}: printing failed: {exc}")
             continue
-        limit = s.manifest.max_pages if variant == "fewer" else MAX_PAGES
+        if v["photo"] and photo is None:
+            found.append("the photo was not placed")
+        limit = s.manifest.max_pages if variant == "fewer" else templates.MAX_PAGES
         if pages > limit:
             found.append(f"{pages} pages, at most {limit}")
         failures += [f"{variant}: {f}" for f in found]
@@ -484,9 +444,10 @@ def _letter(s: _Session, template: str) -> tuple[str | None, list[str]]:
         candidate = blocks(s.ask(_task(files, feedback, _REPLY_LETTER), count=False)).get("letter")
         if candidate is None:
             problems = ["no ```letter block: the whole page in one fenced block named letter"]
-        elif not (problems := s.guard(candidate, "letter")):
+        elif not (problems := html_guard.template_problems(candidate, s.manifest, "letter")):
+            candidate = _clean(candidate, "letter")
             try:
-                pdf = _print(candidate, body, "en", s.work / "letter", "letter", s.work)
+                pdf = _render(s, candidate, body, "en", s.work / "letter", "letter", letter=True)[0]
                 problems = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, body, None)]
                 if (pages := pdf_render.get_page_count(pdf)) != 1:
                     problems.append(f"the sample letter prints on {pages} pages, it must be one")
@@ -498,9 +459,17 @@ def _letter(s: _Session, template: str) -> tuple[str | None, list[str]]:
     return None, [f"letter template: {p}" for p in problems]
 
 
+def _restore(profile_dir: Path) -> None:
+    """Put back the style a publish that was interrupted set aside (`_publish` moves the earlier one to `.style.old`
+    before it moves the new one in)."""
+    dest, old = profile_dir / "style", profile_dir / ".style.old"
+    if old.is_dir() and not dest.exists():
+        old.rename(dest)
+
+
 def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, letter: str) -> None:
-    """Write `profile_dir/style/` whole: staged beside it and moved in, an earlier one set aside and put back when the
-    move fails. No ledger lock (nothing else writes there).
+    """Write `profile_dir/style/` whole: staged beside it and moved in, an earlier one set aside until the new one is
+    there (`_restore` puts it back after an interruption). No ledger lock (nothing else writes there).
 
     Raises:
         OSError: the files could not be written or moved.
@@ -520,25 +489,16 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
         shutil.rmtree(old, ignore_errors=True)
         if dest.exists():
             dest.rename(old)
-        try:
-            staging.rename(dest)
-        except OSError:
-            if old.exists() and not dest.exists():
-                old.rename(dest)
-            raise
+        staging.rename(dest)
+        shutil.rmtree(old, ignore_errors=True)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
-        shutil.rmtree(old, ignore_errors=True)
 
 
 def _stress_cv(profile_dir: Path) -> str:
     """The CV the stress renders are made from: the profile's, else the example one."""
-    for folder in (profile_dir, workspace.PROFILE_EXAMPLE_DIR):
-        try:
-            return (folder / "cv.md").read_text(encoding="utf-8")
-        except OSError:
-            continue
-    return ""
+    path = profile_dir / "cv.md"
+    return (path if path.is_file() else workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_text(encoding="utf-8")
 
 
 def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap: int, result: dict) -> None:
@@ -557,10 +517,10 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
     _write(work / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
     progress_mod.report("fetching the fonts", stage="style")
     plan, result["font_error"] = _get_fonts(pdf, style, work / "fonts", fonts_fetch)
-    result["fonts"] = font_results(plan)
-    _write(work / "fonts.css", font_face_css(plan))
+    result["fonts"] = [{k: e[k] for k in ("family", "source", "reason", "faked", "resolved")} for e in plan]
+    _write(work / "fonts.css", _font_face_css(plan))
     icon_files, result["dropped_icons"] = write_icons(style["icons"], work / "icons")
-    data = manifest_data(style, _font_names(plan), icon_files)
+    data = _manifest_data(style, list(dict.fromkeys(f["name"] for e in plan for f in e["files"])), icon_files)
     _write(work / templates.MANIFEST_FILE, json.dumps(data, indent=1))
     s = _Session(style, pdf, work, templates.Manifest(**data), run, profile_dir)
     try:
@@ -571,26 +531,22 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
 
 def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path, style: dict, profile_dir: Path, cap: int,
             result: dict) -> None:
-    files = _files_text(s, font_notes(plan), icon_files)
-    template, body, scores, feedback = _draft(s, files, cap)
-    result["scores"], result["score"] = scores, max(scores, default=None)
+    files = _files_text(s, _font_notes(plan), icon_files)
+    template, _, result["scores"], feedback = _draft(s, files, cap)
     if template is None:
         raise _Stop(f"no template of the stylist's passed the guard and printed in {s.rounds} rounds: {feedback}")
+    template = _clean(template, "cv")
     cv_md = _stress_cv(profile_dir)
     if failures := _stress(s, template, cv_md):
         progress_mod.report("one more round for the stress renders", stage="style")
         _write(s.work / _CV_FILE, template)
         reply = blocks(s.ask(_task(files, "Printed with other texts, your template fails:\n" + _list(failures), _REPLY_NEXT)))
         template = reply.get("template") or ""
-        if problems := (s.guard(template) if template else ["no ```template block in the reply"]):
+        if problems := (html_guard.template_problems(template, s.manifest) if template else ["no ```template block in the reply"]):
             raise _Stop("the stress renders failed and the extra round's template was refused: " + "; ".join(problems[:3]))
+        template = _clean(template, "cv")
         if failures := _stress(s, template, cv_md):
             raise _Stop("the stress renders still fail after the extra round: " + "; ".join(failures[:_LIMIT]))
-        try:
-            result["score"] = s.sample(template, body)[1]
-            result["scores"] = [*scores, result["score"]]
-        except (html_pdf.PrintError, _Stop, ValueError):
-            pass
     letter, problems = _letter(s, template)
     if letter is None:
         raise _Stop("; ".join(problems))
@@ -598,7 +554,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
     result["state"] = "ready"
 
 
-def build(pdf_path, *, work_dir, profile_dir=None, run=None, fonts_fetch=None, progress=None, cap: int = CAP) -> dict:
+def build(pdf_path, *, work_dir, profile_dir=None, run=None, fonts_fetch=None, progress=None, cap: int = style_compare.CAP) -> dict:
     """Build a CV template from the CV PDF at `pdf_path` (see the module's docstring) and write it to
     `profile_dir/style/` (default the profile) when it is ready; a failed build writes nothing there.
 
@@ -606,17 +562,19 @@ def build(pdf_path, *, work_dir, profile_dir=None, run=None, fonts_fetch=None, p
     prints. `run` is the model call (default `claude_cli.run`: tests give a stand-in), `fonts_fetch(plan, dest)` the font
     download (default `fonts.fetch`), `progress` a `progress.Reporter`; `cap` bounds the comparison rounds.
 
-    Returns ``{"state": "ready" | "failed", "rounds", "score", "fonts": [{family, source, reason, faked, resolved}],
-    "dropped_icons": [{near, reason}], "font_error", "scores", "problems": [str]}``: ``font_error`` is why the fonts
-    were not fetched (the shipped fonts stood in), ``problems`` why it failed. A model, print or file error is a
-    failed result, not an exception.
+    Returns ``{"state": "ready" | "failed", "rounds", "scores", "fonts": [{family, source, reason, faked, resolved}],
+    "dropped_icons": [{near, reason}], "font_error", "problems": [str]}``: ``scores`` the blurred score of each
+    comparison round that printed (1 is the original's own page), ``font_error`` why the fonts were not fetched (only
+    the fonts the code ships stood in), ``problems`` why it failed. A model, print or file error is a failed result,
+    not an exception.
     """
-    result: dict = {"state": "failed", "rounds": 0, "score": None, "fonts": [], "dropped_icons": [], "font_error": None,
-                    "scores": [], "problems": []}
+    result: dict = {"state": "failed", "rounds": 0, "scores": [], "fonts": [], "dropped_icons": [], "font_error": None,
+                    "problems": []}
+    profile = Path(profile_dir) if profile_dir else workspace.PROFILE_DIR
     with progress_mod.activate(progress):
         try:
-            _build(Path(pdf_path), Path(work_dir), Path(profile_dir) if profile_dir else workspace.PROFILE_DIR,
-                   run or claude_cli.run, fonts_fetch, cap, result)
+            _restore(profile)
+            _build(Path(pdf_path), Path(work_dir), profile, run or claude_cli.run, fonts_fetch, cap, result)
         except _Stop as exc:
             result["problems"] = [str(exc)]
         except (claude_cli.ClaudeError, html_pdf.PrintError, OSError, ValueError, PdfiumError) as exc:

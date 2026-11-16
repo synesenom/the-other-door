@@ -54,6 +54,8 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("profile/cv.md.bak", SCRATCH, "the CV before the last save_cv"),
     Stored("profile/.enrich_proposals.json", SCRATCH, "enrich's pending proposals"),
     Stored("profile/.data_version", LEDGER, "door.core.migrations: `<major>.<n>`, the profile's data version"),
+    Stored("profile/.style.*.part/**", TRANSIENT, "door.tailoring.style_build: a style being written, moved to profile/style/ when whole"),
+    Stored("profile/.style.old/**", TRANSIENT, "door.tailoring.style_build: the earlier style, set aside while the new one is moved in; put back after an interruption"),
     Stored("profile/.upgrading", TRANSIENT, "door.core.migrations: the backup's path while an upgrade runs; left out of export"),
     # --- jobs/ ledgers ---
     Stored("jobs/history.json", LEDGER, "door.core.history: {job_id: entry}"),
