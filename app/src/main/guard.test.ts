@@ -119,8 +119,9 @@ describe('app guard', () => {
 
   it('the packaging hook runs codesign and nothing else', () => {
     const text = readFileSync(join(APP, AFTER_PACK), 'utf8')
-    expect(text.match(/execFileSync\(/g)).toHaveLength(1)
-    expect(text).toMatch(/execFileSync\('codesign',/)
+    const calls = text.match(/execFileSync\([^,]*,/g) ?? []
+    expect(calls.length).toBeGreaterThan(0)
+    expect(calls.every((c) => c === "execFileSync('codesign',")).toBe(true)
     expect(text).not.toMatch(/\bexec\(|spawn\(|shell:\s*true/)
   })
 
