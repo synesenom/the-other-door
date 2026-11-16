@@ -164,6 +164,8 @@ def compiled(monkeypatch):
         calls.append((job_id, render))
         if job_id.endswith("bad"):
             raise ValueError("no way")
+        if job_id.endswith("err"):
+            return {"job_id": job_id, "results": [{"file": "cv.html", "status": "error", "stderr": "refused"}]}
         return {"job_id": job_id, "results": []}
 
     monkeypatch.setattr(compile_cmd, "_compile_core", fake)
@@ -181,7 +183,7 @@ def test_prepared_jobs_are_counted_whether_or_not_they_are_rerendered(home, cli_
 
 
 def test_rerender_prints_the_prepared_jobs_again_and_only_those(home, cli_env, compiled):
-    _folder(cli_env, "style.next")
+    _folder(cli_env, "style")
     _job(home, "a.1", "prepared")
     _job(home, "a.2", "applied")
     _job(home, "a.4", "prepared", html=False, tex=True)
@@ -190,11 +192,82 @@ def test_rerender_prints_the_prepared_jobs_again_and_only_those(home, cli_env, c
 
 
 def test_a_job_that_fails_to_print_is_listed_and_the_rest_go_on(home, cli_env, compiled):
-    _folder(cli_env, "style.next")
+    _folder(cli_env, "style")
     _job(home, "a.bad", "prepared")
     _job(home, "b.1", "prepared")
     result = style_cmd._use_core("like", rerender=True)
     assert result["rerendered"] == ["b.1"] and result["failed"] == ["a.bad"]
+
+
+def test_a_job_whose_compile_answers_an_error_is_failed_not_rerendered(home, cli_env, compiled):
+    _folder(cli_env, "style")
+    _job(home, "a.err", "prepared")
+    _job(home, "b.1", "prepared")
+    result = style_cmd._use_core("like", rerender=True)
+    assert result["rerendered"] == ["b.1"] and result["failed"] == ["a.err"]
+
+
+def test_rerender_never_moves_in_or_ends_a_candidate(home, cli_env, compiled):
+    _folder(cli_env, "style", "kept")
+    _set_keys(cli_env, *IN_USE)
+    _folder(cli_env, "style.next", "newer")
+    assert style_cmd._use_core("current", rerender=True)["in_use"] == "like"
+    assert (cli_env.profile_dir / "style.next" / "mark.txt").read_text() == "newer"
+    assert (cli_env.profile_dir / "style" / "mark.txt").read_text() == "kept"
+
+
+def test_like_without_a_profile_refuses_in_words_and_writes_nothing(home, cli_env):
+    _folder(cli_env, "style.next")
+    (cli_env.profile_dir / "config.json").unlink()
+    with pytest.raises(ValueError, match="profile"):
+        style_cmd._use_core("like")
+    assert not (cli_env.profile_dir / "config.json").exists()
+    assert (cli_env.profile_dir / "style.next").is_dir()
+
+
+def _crash(cli_env):
+    """A swap that died between setting the style in use aside and moving the candidate in."""
+    _folder(cli_env, "style", "earlier")
+    (cli_env.profile_dir / "style").rename(cli_env.profile_dir / ".style.old")
+    _folder(cli_env, "style.next", "new")
+    _set_keys(cli_env, *IN_USE)
+
+
+def test_use_after_an_interrupted_swap_brings_the_earlier_style_back(home, cli_env):
+    _crash(cli_env)
+    assert style_cmd._use_core("current")["in_use"] == "like"
+    assert (cli_env.profile_dir / "style" / "mark.txt").read_text() == "earlier"
+    assert not (cli_env.profile_dir / "style.next").exists()
+
+
+def test_show_after_an_interrupted_swap_brings_the_earlier_style_back(home, cli_env):
+    _crash(cli_env)
+    assert style_cmd._show_core(home=home, profile_dir=cli_env.profile_dir)["in_use"] == "like"
+    assert (cli_env.profile_dir / "style" / "mark.txt").read_text() == "earlier"
+    assert (cli_env.profile_dir / "style.next").is_dir()
+
+
+def test_status_after_an_interrupted_swap_brings_the_earlier_style_back(home, cli_env):
+    _crash(cli_env)
+    style_cmd.status(home, cli_env.profile_dir)
+    assert (cli_env.profile_dir / "style" / "mark.txt").read_text() == "earlier"
+
+
+def test_an_interrupted_end_of_a_candidate_never_leaves_it_to_be_chosen(home, cli_env, monkeypatch):
+    from door.tailoring import style_build
+    _folder(cli_env, "style", "kept")
+    _folder(cli_env, "style.next", "new")
+
+    def killed(path, *a, **k):
+        if (cli_env.profile_dir / "style.next").exists() or not path.exists():
+            return None  # only the delete of what was renamed away is cut short
+        raise OSError("killed")
+
+    monkeypatch.setattr(style_cmd.shutil, "rmtree", killed)
+    with pytest.raises(OSError):
+        style_cmd._use_core("current")
+    style_build._restore(cli_env.profile_dir)
+    assert not (cli_env.profile_dir / "style.next").exists()
 
 
 # ----------------------------------------------------------------------------- command and tool
@@ -211,11 +284,12 @@ def test_the_command_exits_non_zero_when_nothing_is_built(home, cli_env):
     assert result.exit_code == 1 and "no CV style is built" in result_text(result)
 
 
-def test_the_command_rerenders_with_the_flag(home, cli_env, compiled):
+def test_the_command_chooses_then_rerenders_with_the_flag(home, cli_env, compiled):
     _folder(cli_env, "style.next")
     _job(home, "a.1", "prepared")
     result = CliRunner().invoke(cli, ["cv", "style", "use", "like", "--rerender"])
     assert result.exit_code == 0 and compiled == [("a.1", True)] and "1" in result_text(result)
+    assert (cli_env.profile_dir / "style" / CV).is_file() and not (cli_env.profile_dir / "style.next").exists()
 
 
 def test_the_tool_is_a_writing_tool_the_phone_does_not_get_and_answers_in_words(home, cli_env, compiled):

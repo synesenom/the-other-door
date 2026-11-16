@@ -185,6 +185,7 @@ def status(home: Path, profile_dir: Path) -> dict:
     waiting, `profile/style.next/cv.template.html` exists (``fonts`` and ``dropped_icons`` of the last build's result
     when it was that one's), even when a later build failed. failed: the last build failed (``problems`` say why) or its
     process died before it finished. none: no candidate waits."""
+    style_build._restore(Path(profile_dir))
     run = _read(home) or {}
     state = run.get("state")
     if state == "building":
@@ -210,14 +211,7 @@ def in_use(profile_dir: Path, config: dict) -> str:
 
 def _keys(profile_dir: Path) -> dict:
     folder = Path(profile_dir) / style_build.STYLE
-    return {key: _home_relative(folder / name) for key, name in templates.FILES.items()}
-
-
-def _home_relative(path: Path) -> str:
-    try:
-        return path.relative_to(workspace.HOME).as_posix()
-    except ValueError:
-        return str(path)
+    return {key: (folder / name).relative_to(workspace.HOME).as_posix() for key, name in templates.FILES.items()}
 
 
 def _prepared(jobs_dir: Path) -> list[str]:
@@ -233,7 +227,7 @@ def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path 
     or ``current`` (what is in use stays). Any pick ends the candidate: it is deleted when a built style is already
     kept, and moved into `profile/style/` unused when none is.
 
-    With `rerender`, the prepared applications (status ``prepared``, not sent) are printed again in the style in use by
+    With `rerender` the candidate is left alone (choosing it is a call of its own), and the prepared applications (status ``prepared``, not sent) are printed again in the style in use by
     `compile`: no model, a failing job listed and the rest done.
 
     Returns ``{"in_use": "like" | "default", "prepared": N}`` and, with `rerender`, ``"rerendered"`` and ``"failed"``
@@ -246,14 +240,16 @@ def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path 
     if style not in ("like", "default", "current"):
         raise ValueError(f"unknown style {style!r}: like, default or current")
     config = common._load_config_or_defaults(profile_dir)
-    if style == "like" and not (candidate.is_dir() or kept.is_dir()):
-        raise ValueError("no CV style is built yet: build one from a CV of yours first")
     style_build._restore(profile_dir)
-    if candidate.is_dir():
+    if style == "like" and not (kept.is_dir() or (candidate.is_dir() and not rerender)):
+        raise ValueError("no CV style is built yet: build one from a CV of yours first")
+    if style != "current" and not (profile_dir / "config.json").is_file():
+        raise ValueError("there is no profile yet: set one up first, then choose a style")
+    if candidate.is_dir() and not rerender:
         if style == "like" or not kept.is_dir():
             style_build.move_in(candidate, profile_dir, style_build.STYLE)
         else:
-            shutil.rmtree(candidate, ignore_errors=True)
+            _end(candidate, profile_dir)
     fields: dict = {}
     if style == "like":
         fields = _keys(profile_dir)
@@ -268,11 +264,21 @@ def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path 
         result.update(rerendered=[], failed=[])
         for job in jobs:
             try:
-                compile_cmd._compile_core(job, render=True)
-                result["rerendered"].append(job)
+                done = compile_cmd._compile_core(job, render=True)
+                ok = not any(r.get("status") == "error" for r in done.get("results", []))
             except Exception:  # noqa: BLE001 - one job that cannot print is listed, the others go on
-                result["failed"].append(job)
+                ok = False
+            result["rerendered" if ok else "failed"].append(job)
     return result
+
+
+def _end(candidate: Path, profile_dir: Path) -> None:
+    """Delete the candidate: renamed to a staging name first, so an interrupted delete never leaves a
+    `style.next/` that could be chosen (the stale-staging sweep of the next build removes the rest)."""
+    gone = profile_dir / ".style.ended.part"
+    shutil.rmtree(gone, ignore_errors=True)
+    candidate.rename(gone)
+    shutil.rmtree(gone, ignore_errors=True)
 
 
 def _points_into(value: str, folder: Path) -> bool:
@@ -287,6 +293,7 @@ def _show_core(*, home: Path | None = None, profile_dir: Path | None = None) -> 
     "like" | "default", "candidate": bool}``, made again only where stale, no model. ``like`` is the candidate when one
     waits, else the style kept in `profile/style/`. A style that could not be printed (no Chromium) is left out."""
     profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
+    style_build._restore(profile_dir)
     config = common._load_config_or_defaults(profile_dir)
     shown = style_preview.show(Path(home or workspace.HOME), profile_dir, config)
     shown.update(in_use=in_use(profile_dir, config), candidate=(profile_dir / style_build.CANDIDATE / TEMPLATE).is_file())
@@ -338,7 +345,9 @@ def use_style(style, rerender):
 
     Applications already prepared keep their old look unless --rerender prints them again; sent ones never change."""
     try:
-        result = _use_core(style, rerender)
+        result = _use_core(style)
+        if rerender:  # choosing and printing again are two calls: the second never touches a candidate
+            result = _use_core("current", True)
     except (ValueError, common.ConfigError) as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
