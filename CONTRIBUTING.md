@@ -61,8 +61,8 @@ and its row in [docs/job-sites.md](docs/job-sites.md#all-sites) the date you che
 ## Developer skills
 
 Claude Code skills prefixed `dev-` drive the issue workflow: `/dev-resolve <issue>` runs
-research → plan → TDD implementation → validation, `/dev-pr` opens and watches a pull
-request, and `/dev-add-scraper <site>` scaffolds a new scraper. Each step also exists on
+research → plan → TDD implementation → validation → review → pull request, `/dev-pr` opens
+and watches a pull request, and `/dev-add-scraper <site>` scaffolds a new scraper. Each step also exists on
 its own (`/dev-research`, `/dev-plan`, `/dev-implement`, `/dev-validate`); see
 [docs/skills.md](docs/skills.md#developer-skills) for what each one does.
 

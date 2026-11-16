@@ -1,11 +1,16 @@
 ---
 name: dev-pr
-description: Merge latest main into the current branch, push, open a pull request, and start listening to CI and review activity. Invoked with /dev-pr.
+description: Merge latest main into the current branch, push, open a pull request, and start listening to CI and review activity. Invoked with /dev-pr [base=<branch>] [epic=<number>].
 ---
 
 You are preparing and opening a pull request for The other door. Follow all steps in order.
 
 **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
+
+Two optional arguments, which `/dev-resolve` passes on:
+
+- `base=<branch>`: the branch this one was built on (in an epic, the previous sub-issue's). The PR still targets `main`, but everything below that reads the change uses `origin/<base>` (shown as `<FROM>`; `origin/main` without it), so the dependency's commits are not described as this change's. The body adds `Depends on #<pr>`, the open PR of that branch, when it has one (`mcp__github__list_pull_requests`, `head: synesenom:<base>`, `state: open`).
+- `epic=<number>`: the body adds `Part of #<epic>`, and the run stops after Step 6: the caller watches.
 
 ---
 
@@ -28,7 +33,7 @@ A branch is named `<type>/<slug>` (with an issue: `<type>/<issue>-<slug>`), `<sl
 | `docs` | documentation only |
 | `refactor`, `test`, `ci`, `chore` | internal: no user would notice |
 
-Dependabot's `dependabot/...` branches and the skills' own (`feat/country-<cc>`, `feat/profession-...`, `release/vX.Y.Z`, `fix/scraper-...`) already follow it. If `BRANCH` has no such prefix, or its prefix does not match what the commits do (`git log origin/main..HEAD --oneline`), propose a name with AskUserQuestion (the proposal first, "Keep <BRANCH>" second). On a new name, and only if the branch was never pushed (`git ls-remote --heads origin <BRANCH>` is empty), `git branch -m <new>` and use it as `BRANCH`; a pushed branch keeps its name and the body's **Type** line says the kind.
+Dependabot's `dependabot/...` branches and the skills' own (`feat/country-<cc>`, `feat/profession-...`, `release/vX.Y.Z`, `fix/scraper-...`) already follow it. If `BRANCH` has no such prefix, or its prefix does not match what the commits do (`git log <FROM>..HEAD --oneline`), propose a name with AskUserQuestion (the proposal first, "Keep <BRANCH>" second). On a new name, and only if the branch was never pushed (`git ls-remote --heads origin <BRANCH>` is empty), `git branch -m <new>` and use it as `BRANCH`; a pushed branch keeps its name and the body's **Type** line says the kind.
 
 ---
 
@@ -57,9 +62,9 @@ Retry up to 4 times with exponential backoff (2 s, 4 s, 8 s, 16 s) on network fa
 
 Run these in parallel to gather context:
 
-- `git log origin/main..HEAD --format='%h %s%n%b'` — the commits being proposed, with their bodies (`closes #N` names the issues).
-- `git diff origin/main...HEAD --stat` — the changed files.
-- `git diff origin/main...HEAD` — read it: the body says what the change does, not what the commit subjects guess.
+- `git log <FROM>..HEAD --format='%h %s%n%b'` — the commits being proposed, with their bodies (`closes #N` names the issues).
+- `git diff <FROM>...HEAD --stat` — the changed files.
+- `git diff <FROM>...HEAD` — read it: the body says what the change does, not what the commit subjects guess.
 - For each issue named: `gh issue view <N> --json title,body` — why the change was wanted.
 
 From these, draft:
@@ -69,6 +74,7 @@ From these, draft:
   ```
   **Type**: feat | fix | change | docs | internal
   Closes #<N>   (one line per issue; leave out if none)
+  Part of #<epic> / Depends on #<pr>   (only with `epic` / `base`)
 
   ## For users
   <What someone using The other door will notice, in their words and with no code names: what they can now do, what works differently, what stopped going wrong, what was removed. One to four bullets, each one sentence a release note can take as is. For internal work: "Nothing a user would notice.">

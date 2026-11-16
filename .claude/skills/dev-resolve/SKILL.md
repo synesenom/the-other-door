@@ -1,9 +1,14 @@
 ---
 name: dev-resolve
-description: Fully resolve a GitHub issue — assess complexity, optionally research and plan, implement, then validate. Invoked with /dev-resolve <issue_number>.
+description: Fully resolve a GitHub issue — assess complexity, optionally research and plan, implement, validate, review, then open the pull request. Invoked with /dev-resolve <issue_number> [base=<branch>] [epic=<number>].
 ---
 
 You are the issue resolution orchestrator for The other door. The issue number is passed as the argument. Follow all steps in order without skipping.
+
+Two optional arguments, which `/dev-epic` passes for each sub-issue:
+
+- `base=<branch>`: the branch the change builds on (in an epic, the previous sub-issue's); default the default branch. The issue's branch starts from it (`issue-implementer`'s step 0, given `base_branch`).
+- `epic=<number>`: the epic the issue belongs to; `/dev-pr` says what changes.
 
 **Decision policy**: make all decisions autonomously without pausing for user input. If anything is ambiguous, pick the simplest reasonable interpretation, document the choice, and proceed.
 
@@ -43,6 +48,7 @@ issue_title: <title>
 issue_body: <full body>
 research_report: none
 plan: none
+base_branch: <base, when given>
 ```
 
 Go to Step 3.
@@ -91,13 +97,14 @@ issue_title: <title>
 issue_body: <full body>
 research_report: <full content of thoughts/research/<issue_number>.md>
 plan: <full content of thoughts/plan/<issue_number>.md>
+base_branch: <base, when given>
 ```
 
 ---
 
 ## Step 3: Validate
 
-Determine the default branch: `git remote show origin | grep 'HEAD branch'`
+The base branch is `base` when given, else the default branch (`git remote show origin | grep 'HEAD branch'`).
 
 Spawn the `issue-validator` agent with a prompt containing:
 
@@ -105,7 +112,7 @@ Spawn the `issue-validator` agent with a prompt containing:
 issue_number: <number>
 issue_title: <title>
 issue_body: <full body>
-base_branch: <default branch>
+base_branch: <base branch>
 ```
 
 Write the `## Validation Report` output to `thoughts/validate/<issue_number>.md`.
@@ -122,15 +129,21 @@ If the validator names a small gap it would still accept (a doc line, a comment)
 
 ---
 
-## Step 4: Open the pull request
+## Step 4: Review
 
-On **PASS**, open the PR without asking: run `/dev-pr` and follow it to the end (branch name check, merge `main`, push, a body in its format built from the research, plan and validation reports, so the release notes can use it). A suite failure the validator showed also fails on a clean `main` goes in the body's test plan, said plainly.
-
-On **FAIL** after two attempts, do not open a PR: the branch stays local, and Step 5 says why.
+On **PASS** only (on FAIL go to Step 6). Run the reviewers CLAUDE.md "Review" names, in its order, with `base_branch: <base branch>` and the issue as the goal. Fix each finding on the branch (test-first, then run the tests it touches) or file it as an issue that stands alone and names this one. Keep the list of findings and how each ended (fixed, filed `#N`, not real) for the PR body and Step 6.
 
 ---
 
-## Step 5: Final report
+## Step 5: Open the pull request
+
+On **PASS**, open the PR without asking: run `/dev-pr` and follow it (branch name check, merge `main`, push, a body in its format built from the research, plan and validation reports and the review, so the release notes can use it). The body's Changes say each review finding and how it ended. A suite failure the validator showed also fails on a clean `main` goes in the body's test plan, said plainly. Pass on `base` and `epic` (`/dev-pr base=<base> epic=<epic>`), when given.
+
+On **FAIL** after two attempts, do not open a PR: the branch stays local, and Step 6 says why.
+
+---
+
+## Step 6: Final report
 
 Summarise to the user:
 
@@ -140,6 +153,7 @@ Path:        Simple | Complex
 Attempts:    1 | 2
 Commit:      <short hash>
 Validation:  PASS | FAIL
+Review:      <n> fixed, <n> filed (#.., #..), <n> not real
 PR:          #<number> <url> | not opened (FAIL)
 ```
 

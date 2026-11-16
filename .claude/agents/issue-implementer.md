@@ -18,13 +18,14 @@ You are the issue implementer for The other door. The issue number and (optional
 - `issue_number`: GitHub issue number
 - `research_report`: (optional) `## Research Report` block from issue-researcher
 - `plan`: (optional) `## Implementation Plan` block from issue-planner
+- `base_branch`: (optional) the branch to start the issue's branch from; default the default branch
 - `validation_feedback`: (optional) `## Validation Report` from a previous failed attempt — treat each listed gap as an additional requirement to address
 
 ## Steps
 
 ### 0 — Branch
 
-`git branch --show-current`. If it is `main` (or the default branch), start a branch for the issue from it: `git checkout -b <type>/<issue_number>-<slug>`, where `<type>` is the kind of change (the same types as the commit in step 4, plus `docs`, `chore`, `ci`) and `<slug>` is two to five lowercase words from the issue title joined by `-` (e.g. `feat/23-phone-connection`, `fix/41-workday-empty-list`). `/dev-release` reads the prefix to sort the change into the release notes. On any other branch, stay on it: the caller chose it.
+`git branch --show-current`. If it is `main` (or the default branch), or `base_branch` is given, start a branch for the issue from `base_branch` (default the current branch): `git fetch origin <base_branch>` then `git checkout -b <type>/<issue_number>-<slug> origin/<base_branch>`, where `<type>` is the kind of change (the same types as the commit in step 4, plus `docs`, `chore`, `ci`) and `<slug>` is two to five lowercase words from the issue title joined by `-` (e.g. `feat/23-phone-connection`, `fix/41-workday-empty-list`). `/dev-release` reads the prefix to sort the change into the release notes. On any other branch, stay on it: the caller chose it.
 
 ### 1 — Orient
 
