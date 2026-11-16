@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+
 import base64
 import http.client
 import os
@@ -269,7 +271,7 @@ def test_kill_tree_ends_the_browser_and_its_children(tmp_path):
         f"pathlib.Path({str(child_pid)!r}).write_text(str(c.pid))\n"
         "time.sleep(60)\n"
     )
-    proc = html_pdf._launch([sys.executable, "-c", code])
+    proc = html_pdf._launch([sys.executable, "-c", code, f"--user-data-dir={tmp_path}"])
     deadline = time.monotonic() + 15
     while not child_pid.exists() and time.monotonic() < deadline:
         time.sleep(0.05)
@@ -288,6 +290,19 @@ def test_a_hung_browser_times_out_and_is_cleaned_up(fake, tmp_path):
     with pytest.raises(PrintError, match="did not finish"):
         _print(fake, tmp_path, timeout=1.5)
     _cleaned(fake)
+
+
+def test_a_browser_that_exits_early_says_what_it_wrote(tmp_path, monkeypatch):
+    monkeypatch.setattr(chromium, "find_chromium", lambda home=None: "/fake/c")
+    monkeypatch.setattr(html_pdf, "_kill_tree", lambda proc: None)
+    dead = type("P", (), {"poll": lambda self: 1, "pid": 2})()
+
+    def launcher(args):
+        profile = next(a.split("=", 1)[1] for a in args if a.startswith("--user-data-dir="))
+        (pathlib.Path(profile) / html_pdf.STDERR_LOG).write_text("line 1\nNo usable sandbox!\n")
+        return dead
+    with pytest.raises(PrintError, match="No usable sandbox"):
+        html_pdf.print_html(tmp_path, "<p/>", tmp_path / "o.pdf", launcher=launcher, timeout=5)
 
 
 def test_a_browser_that_never_opens_its_port_is_a_print_error(tmp_path, monkeypatch):

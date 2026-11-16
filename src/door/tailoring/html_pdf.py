@@ -77,9 +77,14 @@ def _browser_args(exe: str, profile: str, *, system: str | None = None, euid: in
     return args
 
 
+STDERR_LOG = "door-stderr.log"  # in the throwaway profile: what Chromium said, for an early exit's error
+
+
 def _launch(args: list[str]) -> subprocess.Popen:
     kwargs = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if sys.platform == "win32" else {"start_new_session": True}
-    return subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kwargs)
+    profile = next(a.split("=", 1)[1] for a in args if a.startswith("--user-data-dir="))
+    with open(Path(profile) / STDERR_LOG, "wb") as log:
+        return subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=log, **kwargs)
 
 
 def _kill_tree(proc) -> None:
@@ -101,7 +106,12 @@ def _wait_port(proc, profile: Path, deadline: float) -> tuple[int, str]:
     port_file = profile / "DevToolsActivePort"
     while time.monotonic() < deadline:
         if proc.poll() is not None:
-            raise PrintError("Chromium exited before it was ready (on Linux, run `./door doctor` for missing libraries)")
+            try:
+                said = (profile / STDERR_LOG).read_text(encoding="utf-8", errors="replace").strip().splitlines()[-3:]
+            except OSError:
+                said = []
+            raise PrintError("Chromium exited before it was ready (on Linux, run `./door doctor` for missing libraries)"
+                             + (": " + " | ".join(said) if said else ""))
         try:
             lines = port_file.read_text(encoding="utf-8").splitlines()
             if len(lines) >= 2:
