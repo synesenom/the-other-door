@@ -10,7 +10,7 @@ tests/
 │   ├── discovery/         # the discovery sources' tests, with their fixtures/<source>/
 │   └── feeds/             # the employer feed platforms' tests, with their fixtures/<site>/
 ├── commands/              # one test_<command>_cli.py per CLI command, plus the MCP tool list
-├── core/                  # src/door/core/: doctor, installers, sites, history, lock, candidates, runs, …
+├── core/                  # src/door/core/: doctor, installers, sites, history, lock, candidates, runs, the font pin and plan (`test_fonts_pin_unit.py`, `test_fonts_plan_unit.py`, #199), …
 ├── pipeline/              # src/door/pipeline/: `find`'s five steps (search, discover, follow, collect, match), the step display, and all of them together (`test_pipeline_countries_end_to_end.py`: one `find` per country and ad languages)
 ├── i18n/                  # src/door/i18n/: every language and country data file, detection
 ├── matching/              # prefilter, dedup, condense, language, prescreen, scorer; fixtures/golden/
