@@ -125,7 +125,6 @@ validation_feedback: <full content of thoughts/validate/<issue_number>.md>
 
 Then validate once more and write the new report to `thoughts/validate/<issue_number>.md`. Proceed to Step 4 regardless of the second result.
 
-
 ---
 
 ## Step 4: Review

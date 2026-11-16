@@ -3,7 +3,7 @@ name: dev-validate
 description: Run the suite and check TDD compliance for the current implementation of a GitHub issue. Invoked with /dev-validate <issue_number>.
 ---
 
-You are validating whether the current implementation resolves a GitHub issue. The issue number is passed as the argument.
+You are checking that the suite passes and the current implementation of a GitHub issue was made test-first; whether it meets the issue is the gap review's (CLAUDE.md "Review"). The issue number is passed as the argument.
 
 ## Steps
 
