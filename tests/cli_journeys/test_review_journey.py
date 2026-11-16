@@ -4,6 +4,8 @@ import pytest
 
 from cli_world import build_world
 
+pytestmark = pytest.mark.cli_journeys
+
 AD = "vestvind-senior-ds-forecasting"   # scored well above min_score, not yet prepared
 WORDS = "vestvind"
 

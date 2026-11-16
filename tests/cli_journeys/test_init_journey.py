@@ -8,6 +8,8 @@ import pytest
 from cli_world import build_world
 from paths import REPO_ROOT
 
+pytestmark = pytest.mark.cli_journeys
+
 
 @pytest.fixture(scope="module")
 def world():
