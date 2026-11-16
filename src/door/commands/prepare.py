@@ -151,11 +151,18 @@ def _cv_conventions_text(posting_path: Path) -> str:
     cv = country.cv if country else i18n.CvConventions()
     photo = config.get("photo")
     has_photo = bool(photo) and photo_mod.problem(Path(photo) if Path(photo).is_absolute() else workspace.HOME / photo) is None
+    max_pages = cv.max_pages
+    try:  # the template's own limit counts when it is stricter; a broken manifest fails compile, not the prompt
+        template_pages = templates.manifest(templates.resolve("cv_template", config)).max_pages
+    except ValueError:
+        template_pages = None
+    if template_pages:
+        max_pages = min(max_pages, template_pages)
     return (
         f"CV conventions for this job's country ({country.code if country else 'no country file'}): "
         f"photo: {cv.photo}; the profile has a photo: {'yes' if has_photo else 'no'}; "
         f"{'a date of birth is usual there' if cv.date_of_birth else 'no date of birth is expected there'}, but never add a date of birth: keep one only if cv.md already has it; "
-        f"at most {cv.max_pages} pages; a full date is written {cv.date_format}."
+        f"at most {max_pages} pages; a full date is written {cv.date_format}."
     )
 
 
