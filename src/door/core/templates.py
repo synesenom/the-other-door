@@ -45,8 +45,8 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
 
 MANIFEST_FILE = "template.json"
 ICON_KINDS = ("phone", "email", "web", "location", "linkedin", "github", "date")
-# The section kinds a column can hold: the CV sections `i18n` names, and the two more a CV commonly has.
-SECTION_KINDS = (*i18n.CvSections.model_fields, "languages", "interests")
+# The section kinds a column can hold: the CV sections `i18n` names.
+SECTION_KINDS = tuple(i18n.CvSections.model_fields)
 
 
 def _bare_name(name: str, suffix: str) -> str:

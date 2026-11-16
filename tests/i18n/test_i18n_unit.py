@@ -539,6 +539,21 @@ def test_cv_section_titles_cover_english_and_danish():
     assert {"certifications", "certificeringer"} <= set(i18n.cv_section("certifications"))
 
 
+@pytest.mark.parametrize("code", ["en", "da", "fr", "hu", "sv"])
+@pytest.mark.parametrize("kind", ["languages", "interests"])
+def test_every_supported_language_names_the_languages_and_interests_sections(code, kind):
+    assert i18n.cv_section(kind, (code,)) != []
+
+
+def test_the_languages_and_interests_titles_are_the_ones_a_cv_uses():
+    assert {"languages", "sprog", "langues", "nyelvek", "språk"} <= set(i18n.cv_section("languages"))
+    assert {"interests", "interesser", "centres d'intérêt", "érdeklődési kör", "intressen"} <= set(i18n.cv_section("interests"))
+
+
+def test_the_skills_titles_do_not_include_the_new_kinds():
+    assert not {"languages", "sprog", "interests"} & set(i18n.cv_section("skills"))
+
+
 def test_cv_section_of_an_unknown_kind_is_refused():
     with pytest.raises(ValueError):
         i18n.cv_section("hobbies")

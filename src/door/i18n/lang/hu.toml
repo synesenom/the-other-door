@@ -25,6 +25,11 @@ stop_words = ["és", "vagy", "a", "az", "egy", "valamint"]
 # Generic words around an employer's name in a careers site's title.
 career_site_words = ["karrier", "állások", "állás", "állásajánlatok", "nyitott pozíciók", "munkalehetőségek"]
 
+# The titles of a CV's sections that a template can place in a column.
+[cv_sections]
+languages = ["nyelvek", "nyelvismeret", "nyelvtudás"]
+interests = ["érdeklődési kör", "érdeklődési körök", "hobbi", "hobbik", "érdeklődés"]
+
 [headings]
 requirement = ["elvárások", "követelmények", "amit várunk", "mit várunk", "milyen vagy", "kit keresünk", "ideális jelölt", "a te profilod"]
 responsibility = ["a pozícióról", "a munkakörről", "feladatok", "amit csinálsz", "mi lesz a feladatod"]
