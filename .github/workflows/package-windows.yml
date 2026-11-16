@@ -107,24 +107,27 @@ jobs:
       - name: Smoke-test the installed app
         run: npm run test:package
 
+      # The install test (#639, #18) on that same install (#168: DOOR_INSTALLED_APP, no second install): set-up,
+      # the first run and Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
+      - name: The install test
+        run: |
+          $env:DOOR_INSTALLED_APP = $env:DOOR_PACKAGED_APP
+          $env:DEBUG = "pw:browser"   # the app's own output in the log
+          npm run test:install
+
       - name: Uninstall silently; the data stays
         run: |
           $data = Join-Path $env:APPDATA 'The other door\profile'
           New-Item -ItemType Directory -Force -Path $data | Out-Null
           'kept' | Set-Content (Join-Path $data 'marker')
+          # what still runs from the install folder holds it (#111): a server the app's quit did not wait for
+          Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith($env:DOOR_INSTALL_DIR) } | Stop-Process -Force -ErrorAction SilentlyContinue
           $uninstaller = Get-ChildItem $env:DOOR_INSTALL_DIR -Filter 'Uninstall*.exe' | Select-Object -First 1
           Start-Process -Wait -FilePath $uninstaller.FullName -ArgumentList '/S'
-          Start-Sleep -Seconds 10
-          if (Test-Path $env:DOOR_PACKAGED_APP) { throw 'the app is still installed' }
+          # the uninstaller hands over to a temporary copy and returns at once
+          for ($i = 0; $i -lt 30 -and (Test-Path $env:DOOR_INSTALL_DIR); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path $env:DOOR_INSTALL_DIR) { throw "the uninstaller left $env:DOOR_INSTALL_DIR behind" }
           if ((Get-Content (Join-Path $data 'marker')) -ne 'kept') { throw 'the data folder was removed' }
-
-      # The install test (#639, #18): the installer run the user's way into a throwaway folder, then set-up, the
-      # first run and Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
-      - name: The install test
-        run: |
-          $env:DOOR_INSTALLER = (Get-ChildItem dist\The-other-door-*-Windows.exe | Select-Object -First 1).FullName
-          $env:DEBUG = "pw:browser"   # the app's own output in the log
-          npm run test:install
 
       - name: Keep the install test's report
         if: failure()
