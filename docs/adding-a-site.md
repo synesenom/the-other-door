@@ -156,7 +156,7 @@ company hosts).
      `headings`, requirement / remote / salary `markers`, `seniority` words mapped to
      the canonical levels (`junior`, `senior`, `lead`, `principal`, `head`, `manager`, and `academic` for postdoc, assistant or associate professor and professor, one level so any rank matches any other), `false_friends` (English words that mean something else in
      it), `stop_words` (connecting words like "of" that a search phrase drops), letters to `transliterate`, `title_tags` (the gender tags its job titles carry, `"H/F"`, `"m/k"`: letters split by `/` or `.`; every board and feed posting's stored title drops them, bare or in parentheses, in any case), `months` (the twelve month names and abbreviations with their numbers, all or none; a date written out is read with them), and the `language_requirement` and `work_permit` (no sponsorship, permit required, sponsorship offered) phrases the matcher
-     looks for ("Deutsch ist ein Muss"), and the `[careers] link` words (and phrases) that make a link a careers page ("Karriere", "Stellenangebote"; `companies add` follows them).
+     looks for ("Deutsch ist ein Muss"), and the `cv_sections` (the titles of a CV's skills, education, certifications, languages and interests sections) and `contact_labels` (the words that label a phone, email, web, location, LinkedIn or GitHub line of a CV), and the `[careers] link` words (and phrases) that make a link a careers page ("Karriere", "Stellenangebote"; `companies add` follows them).
 
    Word lists match whole words in any case; end one with `*` to match the start of
    longer words (compounds). A language's headings, markers and seniority words apply only
