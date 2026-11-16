@@ -1625,6 +1625,7 @@
      "cv": 2,
      "cover_letter": 1
     },
+    "cv_max_pages": 2,
     "cover_letter_words": 311,
     "rendered": false,
     "revisable": true,
@@ -1767,6 +1768,7 @@
      "cv": 2,
      "cover_letter": 1
     },
+    "cv_max_pages": 2,
     "cover_letter_words": 311,
     "rendered": false,
     "revisable": true,
@@ -1844,6 +1846,7 @@
      "cv": 2,
      "cover_letter": 1
     },
+    "cv_max_pages": 2,
     "cover_letter_words": 311,
     "rendered": false,
     "revisable": true,

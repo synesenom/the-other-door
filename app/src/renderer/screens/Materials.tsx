@@ -18,8 +18,7 @@ interface Props {
   initialDoc?: Document
 }
 
-// The limits the tailor works to (.claude/agents/tailor.md).
-const CV_PAGES = 2
+// The letter's limits the tailor works to (.claude/agents/tailor.md); the CV's page limit comes with the materials.
 const LETTER_PAGES = 1
 const WORDS_MIN = 250
 const WORDS_MAX = 350
@@ -38,7 +37,7 @@ function savedText(path: string): string {
 
 /** The limit a document is over, in words; null when it is within them. */
 function limitNote(m: MaterialsData, which: Document): string | null {
-  if (which === 'cv') return m.page_counts.cv > CV_PAGES ? `(limit is ${CV_PAGES})` : null
+  if (which === 'cv') return m.page_counts.cv > m.cv_max_pages ? `(limit is ${m.cv_max_pages})` : null
   if (m.page_counts.cover_letter > LETTER_PAGES) return `(limit is ${LETTER_PAGES})`
   const words = m.cover_letter_words
   return words !== null && (words < WORDS_MIN || words > WORDS_MAX) ? `(aim for ${WORDS_MIN}–${WORDS_MAX})` : null

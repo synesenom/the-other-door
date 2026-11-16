@@ -140,7 +140,7 @@ describe('App', () => {
         list_matches: matchesResult([match({ id: 'jobindex.1', title: 'Dataanalytiker' })]),
         show: {
           id: 'jobindex.1', title: 'Dataanalytiker', company: 'Acme', status: 'prepared',
-          materials: { output_dir: '/abs/jobs/output/jobindex.1', pdfs: {}, pngs: { cv: [], cover_letter: [] }, keywords: [], tailoring: [], page_counts: { cv: 1, cover_letter: 1 }, cover_letter_words: 300, rendered: false, revisable: true },
+          materials: { output_dir: '/abs/jobs/output/jobindex.1', pdfs: {}, pngs: { cv: [], cover_letter: [] }, keywords: [], tailoring: [], page_counts: { cv: 1, cover_letter: 1 }, cv_max_pages: 2, cover_letter_words: 300, rendered: false, revisable: true },
         },
       })
       render(<App />)
@@ -378,7 +378,7 @@ describe('App, Find new jobs', () => {
       pngs: { cv: [`${dir}/cv_page_1.png`], cover_letter: [`${dir}/cover_letter_page_1.png`] },
       keywords: [],
       tailoring: [],
-      page_counts: { cv: 1, cover_letter: 1 },
+      page_counts: { cv: 1, cover_letter: 1 }, cv_max_pages: 2,
       cover_letter_words: 300,
       rendered: false,
       revisable: true,
