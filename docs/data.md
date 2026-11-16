@@ -110,10 +110,10 @@ that is byte for byte a shipped version is removed, and an edited one stays and 
 `src/door/core/stored.py` names every file The other door stores and the model or format that describes it.
 
 The CV and the letter are printed from HTML (`jobs/output/<job_id>/cv.html`, `cover_letter.html`: a body, the template
-styles it) since the LaTeX ones (`cv.tex`, `cover_letter.tex`) of earlier versions. The next release's step drops a
-`cv_template` / `cover_letter_template` key that names a `.tex` file from `config.json` (the file stays, unread, and the
-shipped template is used). Jobs prepared before stay as they are: their `.tex`, PDFs and `sent/` copies are kept and
-never read, and `revise` says to prepare the job again.
+styles it) since the LaTeX ones (`cv.tex`, `cover_letter.tex`) of earlier versions. The old `.tex` templates and a
+`cv_template` / `cover_letter_template` key that names one are simply not read: the shipped template is used. Jobs
+prepared before stay as they are: their `.tex`, PDFs and `sent/` copies are kept and never read, and `revise` says to
+prepare the job again.
 
 ## Older data
 
