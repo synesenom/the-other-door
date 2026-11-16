@@ -232,6 +232,16 @@ def test_prepare_without_claude_fails_before_tailoring(env, monkeypatch):
     assert "claude" in result_text(out)
 
 
+def test_prepare_without_chromium_fails_before_tailoring(env, monkeypatch):
+    _posting(env)
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("tailored without a Chromium to print with"))
+
+    result = prepare_cmd._prepare_core("jobindex-acme-ds", jobs_dir=env.jobs_dir)
+    assert result["outcome"] == "failed"
+    assert "Chromium" in result["error"] and "./door doctor --fix" in result["error"]
+
+
 def test_prepare_top_match_without_claude_fails_before_selecting(env, monkeypatch):
     _posting(env)
     monkeypatch.setattr(common, "_claude_available", lambda: False)
@@ -268,8 +278,17 @@ def test_mcp_registration_passes_door_home_only_when_it_is_not_the_checkout(tmp_
     assert f"DOOR_HOME={tmp_path / 'data'}" in custom
 
 
+def test_chromium_available_follows_find_chromium(monkeypatch):
+    monkeypatch.setattr(common, "_chromium_available", _REAL_CHROMIUM_AVAILABLE)
+    monkeypatch.setattr(chromium_mod, "find_chromium", lambda home=None: "/x/chrome")
+    assert common._chromium_available() is True
+    monkeypatch.setattr(chromium_mod, "find_chromium", lambda home=None: None)
+    assert common._chromium_available() is False
+
+
 # Captured at import, before the suite's autouse fixture stubs it to "claude present".
 _REAL_CLAUDE_AVAILABLE = common._claude_available
+_REAL_CHROMIUM_AVAILABLE = common._chromium_available
 
 
 def test_claude_available_follows_find_claude(monkeypatch):

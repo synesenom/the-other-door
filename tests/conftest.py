@@ -55,6 +55,13 @@ def _claude_cli_present(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _chromium_present(monkeypatch):
+    """`prepare` refuses to start without a Chromium to print with (#146). Tests fake the tailor run and the
+    print, so pretend it is installed; the guard's own tests override this."""
+    monkeypatch.setattr(common, "_chromium_available", lambda: True)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_claude_lookup(monkeypatch, tmp_path_factory):
     """A test never sees the developer's real `claude` (PATH or ~/.local/bin): the runtime
     lookup finds nothing (the callers fall back to the bare name) unless a test passes its own

@@ -11,7 +11,7 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.core import companies, installers, progress, workspace
+from door.core import chromium, companies, installers, progress, workspace
 from door.core.lock import ledger_lock
 from door.core.profile_loader import ConfigError, Profile, load_config
 
@@ -260,6 +260,11 @@ _CLAUDE_FIX = "run ./door doctor --fix"
 def _claude_available() -> bool:
     """Whether the `claude` CLI is on PATH or in ~/.local/bin (monkeypatched in tests)."""
     return installers.find_claude() is not None
+
+
+def _chromium_available() -> bool:
+    """Whether the pinned Chromium headless shell that prints CVs is installed (monkeypatched in tests)."""
+    return chromium.find_chromium() is not None
 
 
 def _with_progress(fn):

@@ -445,6 +445,11 @@ def _prepare_core(
     if not common._claude_available():
         return {**result, "error": f"the `claude` CLI is not installed — {common._CLAUDE_FIX}; status left unchanged."}
 
+    if not common._chromium_available():
+        from door.core import doctor
+
+        return {**result, "error": f"no Chromium to print the CV with — {doctor._CHROMIUM_FIX}; status left unchanged."}
+
     label = common._job_label(job_id, jobs_dir)
     progress_mod.report(f"tailoring {label}", stage="prepare")
     tailor_dir = jobs_dir / ".tailor" / job_id  # the posting copy and agents file; the tailor sees only this of jobs/
