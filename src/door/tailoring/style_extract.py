@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pypdfium2.raw as raw
 
+from door import i18n
 from door.tailoring import pdf_render
 
 VERSION = 1
@@ -358,6 +359,107 @@ def column_bands(pages: list[dict]) -> dict:
     return {"count": len(bands), "bands": [{k: b[k] for k in ("x0", "x1", "kind", "background", "lines")} for b in bands]}
 
 
+# ---------- name, headings, colours ----------
+
+_SECTION_KINDS = tuple(i18n.CvSections.model_fields)
+
+
+def _case(text: str) -> str:
+    return "upper" if text.isupper() else "title" if text.istitle() else "as_written"
+
+
+def find_name(runs: list[dict]) -> dict | None:
+    """The largest text of the first page: the candidate's name."""
+    first = [r for r in runs if r["page"] == 1 and not r["rotated"] and not r["icon"]]
+    if not first:
+        return None
+    run = max(first, key=lambda r: (r["size"], -r["bbox"][1]))
+    return {k: run[k] for k in ("text", "size", "color", "family")}
+
+
+def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | None:
+    """The rule or dashed line 0 to 10 pt under a heading that starts where it starts and runs under at least half
+    of it; `span` is `column` when it runs the width of the heading's column, else `text`."""
+    x0, _, x1, bottom = heading["bbox"]
+    for shape in shapes:
+        if shape["page"] != heading["page"] or shape["kind"] not in ("rule", "dash"):
+            continue
+        sx0, sy0, sx1, sy1 = shape["bbox"]
+        gap = sy0 - bottom
+        overlap = min(x1, sx1) - max(x0, sx0)
+        if sx1 - sx0 > sy1 - sy0 and -1 <= gap <= 10 and abs(sx0 - x0) <= 6 and overlap >= 0.5 * (x1 - x0):
+            wide = band and sx1 - sx0 >= 0.9 * (band["x1"] - band["x0"])
+            return {"color": shape["fill"] or shape["stroke"], "width": shape["width"], "gap": round(max(gap, 0), 1),
+                    "x0": sx0, "x1": sx1, "span": "column" if wide else "text"}
+    return None
+
+
+def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name: dict | None) -> list[dict]:
+    """The section headings: a short line alone on its baseline, not set like the body text, that is a known
+    section name (any supported language) or larger than the body and styled like at least two other short lines."""
+    body = body_size([r for r in runs if not r["rotated"]])
+    chars: dict[tuple, int] = {}
+    for r in runs:
+        chars[(r["family"], r["size"], r["weight"])] = chars.get((r["family"], r["size"], r["weight"]), 0) + len(r["text"])
+    body_style = max(chars, key=chars.get) if chars else None
+    singles = [line[0] for line in line_groups([r for r in runs if not r["rotated"] and not r["icon"]]) if len(line) == 1]
+    short = [r for r in singles if len(r["text"].split()) <= 6 and not (name and r["text"] == name["text"] and r["size"] == name["size"])
+             and (r["family"], r["size"], r["weight"]) != body_style]
+    shared: dict[tuple, int] = {}
+    for r in short:
+        key = (r["family"], r["size"], r["color"], r["weight"])
+        shared[key] = shared.get(key, 0) + 1
+    found = []
+    for r in short:
+        known = i18n.cv_section_kind(r["text"], _SECTION_KINDS) is not None
+        styled = r["size"] >= body and shared[(r["family"], r["size"], r["color"], r["weight"])] >= 3
+        if known or styled:
+            mid = (r["bbox"][0] + r["bbox"][2]) / 2
+            band = next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
+            found.append({"page": r["page"], "text": r["text"], "bbox": r["bbox"], "size": r["size"], "color": r["color"],
+                          "weight": r["weight"], "family": r["family"], "case": _case(r["text"]),
+                          "rule": _rule_under(r, shapes, band)})
+    return found
+
+
+def heading_style(headings: list[dict]) -> dict | None:
+    """What most headings share: size, colour, weight, family, case and (if most have one) their rule."""
+    if not headings:
+        return None
+    keys = ("size", "color", "weight", "family", "case")
+    best = max({tuple(h[k] for k in keys) for h in headings}, key=lambda t: sum(tuple(h[k] for k in keys) == t for h in headings))
+    same = [h for h in headings if tuple(h[k] for k in keys) == best]
+    ruled = [h["rule"] for h in same if h["rule"]]
+    rule = None
+    if len(ruled) * 2 > len(same):
+        sig = lambda r: (r["color"], r["width"], r["gap"], r["span"])  # noqa: E731
+        top = max(ruled, key=lambda r: sum(sig(o) == sig(r) for o in ruled))
+        rule = {k: top[k] for k in ("color", "width", "gap", "span")}
+    return {**dict(zip(keys, best)), "rule": rule}
+
+
+def _chromatic(color: str) -> bool:
+    channels = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
+    return max(channels) - min(channels) > 40
+
+
+def colors(runs: list[dict], shapes: list[dict]) -> dict:
+    """The colours of the text (the one most characters have) and of drawn fills, and the accent: the strongest
+    colour (characters, plus the area of fills at one character to 70 pt2) that is not grey and not the text's."""
+    palette: dict[str, dict] = {}
+    for r in runs:
+        entry = palette.setdefault(r["color"], {"color": r["color"], "chars": 0, "area": 0.0})
+        entry["chars"] += sum(not c.isspace() for c in r["text"])
+    for s in shapes:
+        if s["fill"] and s["kind"] in ("box", "dot", "rule"):
+            entry = palette.setdefault(s["fill"], {"color": s["fill"], "chars": 0, "area": 0.0})
+            entry["area"] = round(entry["area"] + (s["bbox"][2] - s["bbox"][0]) * (s["bbox"][3] - s["bbox"][1]), 1)
+    ranked = sorted(palette.values(), key=lambda e: -(e["chars"] + e["area"] / 70))
+    text = max(palette.values(), key=lambda e: e["chars"])["color"] if palette else None
+    accent = next((e["color"] for e in ranked if e["color"] != text and _chromatic(e["color"])), None)
+    return {"text": text, "accent": accent, "palette": ranked}
+
+
 # ---------- nothing to copy ----------
 
 _NOT_PDF = {".docx", ".doc", ".odt", ".rtf", ".txt", ".md", ".html", ".htm"}
@@ -426,8 +528,11 @@ def extract(pdf_path: Path) -> dict:
         shapes = [s for p in pages for s in p["shapes"] if s["kind"]]
         page = {"size": pages[0]["size"], "background": pages[0]["background"], "margins": margins(pages),
                 "bleed": _bleed(shapes, pages[0]["size"])}
-        return {**head, "page": page, "fonts": _fonts_used(runs),
-                "columns": column_bands([{**p, "shapes": [s for s in p["shapes"] if s["kind"]]} for p in pages]),
+        columns = column_bands([{**p, "shapes": [s for s in p["shapes"] if s["kind"]]} for p in pages])
+        name = find_name(runs)
+        headings = find_headings(runs, shapes, columns["bands"], name)
+        return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
+                "columns": columns, "headings": headings, "heading_style": heading_style(headings),
                 "runs": [{k: v for k, v in r.items() if k != "baseline"} for r in runs],
                 "shapes": [{k: v for k, v in s.items() if k != "segments"} for s in shapes]}
     finally:

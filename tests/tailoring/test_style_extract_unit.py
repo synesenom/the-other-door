@@ -293,3 +293,88 @@ def test_a_sidebar_on_a_coloured_box_has_its_background(tmp_path):
     columns = read(tmp_path, drawing + stack(20, 780, 30, "Side", color="1 1 1") + stack(200, 780, 40, "Main text of the page"))["columns"]
     side, main = columns["bands"]
     assert side["kind"] == "side" and side["background"] == "#1a3366" and main["background"] is None
+
+
+# ---------- name, headings, colours ----------
+
+NAVY = "0.1 0.2 0.5"
+
+
+def cv_with_headings(rule=""):
+    out = text("F2", 26, 50, 790, "Mira Valdis", NAVY)
+    y = 740
+    for heading in ("WORK EXPERIENCE", "PROJECTS", "VOLUNTEERING"):
+        out += text("F2", 13, 50, y, heading, NAVY)
+        if rule:
+            out += rule.format(y=y - 4)
+        out += "".join(text("F1", 10, 50, y - 20 - 13 * i, f"A line of body text number {i} under it") for i in range(5))
+        y -= 120
+    return out
+
+
+def test_the_name_is_the_largest_line_of_the_first_page(tmp_path):
+    name = read(tmp_path, cv_with_headings())["name"]
+    assert name["text"] == "Mira Valdis" and name["size"] == 26.0 and name["color"] == "#1a3380" and name["family"] == "Helvetica"
+
+
+def test_headings_share_a_style_larger_than_the_body(tmp_path):
+    style = read(tmp_path, cv_with_headings())
+    assert [h["text"] for h in style["headings"]] == ["WORK EXPERIENCE", "PROJECTS", "VOLUNTEERING"]
+    first = style["headings"][0]
+    assert (first["size"], first["color"], first["weight"], first["case"]) == (13.0, "#1a3380", 700, "upper")
+    assert first["rule"] is None
+    assert style["heading_style"] == {"size": 13.0, "color": "#1a3380", "weight": 700, "family": "Helvetica",
+                                      "case": "upper", "rule": None}
+
+
+def test_a_rule_just_under_a_heading_belongs_to_it(tmp_path):
+    style = read(tmp_path, cv_with_headings("0.1 0.2 0.5 rg 50 {y} 90 1 re f\n"))
+    rule = style["headings"][0]["rule"]
+    assert rule["color"] == "#1a3380" and rule["width"] == 1.0 and rule["span"] == "text" and 1 <= rule["gap"] <= 8
+    assert rule["x0"] == 50.0 and rule["x1"] == 140.0 and style["heading_style"]["rule"]["span"] == "text"
+
+
+def test_a_rule_across_the_column_is_a_column_wide_rule(tmp_path):
+    style = read(tmp_path, cv_with_headings("0.5 0.5 0.5 RG 0.5 w 50 {y} m 540 {y} l S\n"))
+    assert style["headings"][0]["rule"]["span"] == "column"
+
+
+def test_the_case_of_a_heading_is_upper_title_or_as_written(tmp_path):
+    content = text("F2", 26, 50, 790, "Mira Valdis")
+    for i, heading in enumerate(["Work Experience", "Core Projects", "Volunteer Work"]):
+        content += text("F2", 13, 50, 740 - 80 * i, heading) + text("F1", 10, 50, 720 - 80 * i, "A line of the body text here")
+    assert {h["case"] for h in read(tmp_path, content)["headings"]} == {"title"}
+    content = text("F2", 26, 50, 790, "Mira Valdis")
+    for i, heading in enumerate(["Work experience", "Core projects", "Volunteer work"]):
+        content += text("F2", 13, 50, 740 - 80 * i, heading) + text("F1", 10, 50, 720 - 80 * i, "A line of the body text here")
+    assert {h["case"] for h in read(tmp_path, content)["headings"]} == {"as_written"}
+
+
+def test_a_known_section_name_is_a_heading_even_alone_and_in_another_language(tmp_path):
+    content = body() + text("F2", 10, 50, 100, "Formation") + text("F1", 10, 50, 86, "A school and a year of study")
+    headings = read(tmp_path, content)["headings"]
+    assert [h["text"] for h in headings] == ["Formation"]
+
+
+def test_a_section_name_set_in_the_body_style_is_no_heading(tmp_path):
+    assert read(tmp_path, body() + text("F1", 10, 50, 100, "Education"))["headings"] == []
+
+
+def test_a_bold_section_name_at_the_body_size_is_a_heading(tmp_path):
+    assert [h["text"] for h in read(tmp_path, body() + text("F2", 10, 50, 100, "Education"))["headings"]] == ["Education"]
+
+
+def test_the_text_colour_is_the_one_most_characters_have_and_the_accent_the_strongest_other(tmp_path):
+    colors = read(tmp_path, cv_with_headings())["colors"]
+    assert colors["text"] == "#000000" and colors["accent"] == "#1a3380"
+    assert colors["palette"][0]["color"] == "#000000" and colors["palette"][0]["chars"] > colors["palette"][1]["chars"]
+
+
+def test_a_cv_in_black_and_grey_has_no_accent(tmp_path):
+    content = body() + text("F1", 10, 50, 100, "Grey words in the foot of the page", "0.4 0.4 0.4")
+    assert read(tmp_path, content)["colors"]["accent"] is None
+
+
+def test_a_coloured_shape_counts_towards_the_accent(tmp_path):
+    content = body() + "0.9 0.3 0.1 rg 400 400 150 150 re f\n"
+    assert read(tmp_path, content)["colors"]["accent"] == "#e64d1a"
