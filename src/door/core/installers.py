@@ -5,7 +5,7 @@ OS family and `plan_install(tool, platform)` returns the exact argv that
 would install a tool there — nothing here executes anything. `door doctor --fix`
 (`_setup_core`) shows the plan, asks, runs it, and re-checks with `doctor`.
 
-Tools (keys match `door.core.doctor` check names via `TOOL_FOR_CHECK`):
+Tools (a `door.core.doctor` check names its tool in `tool`):
 
     latex       Tectonic everywhere: one ~60 MB binary from its official
                 installer into ~/.local/bin, no sudo; it fetches the LaTeX
@@ -32,7 +32,6 @@ from pathlib import Path
 from door.core import chromium
 
 INSTALLABLE = ("latex", "claude", "chromium")
-TOOL_FOR_CHECK = {"latex": "latex", "claude CLI": "claude", "chromium": "chromium"}
 
 def _downloaded_then_run(download: str, shell: str) -> str:
     """A POSIX shell line that downloads an install script, then runs it.

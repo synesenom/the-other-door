@@ -41,11 +41,16 @@ HISTORY_RUNS = 10           # how many recent run records the average spans
 DEV_MODULES = ("pytest", "responses", "genbadge")
 
 _CHROMIUM_FIX = "./door doctor --fix   (downloads the pinned Chromium headless shell, no sudo)"
+_NO_START_FIX = "run the shell by hand with --version to see why; it was found, so setup does not reinstall it"
 _LATEX_FIX = "./door doctor --fix   (installs Tectonic, no sudo)"
 
-def _check(name: str, ok: bool, detail: str, fix: str | None = None, *, required: bool = True) -> dict:
+def _check(name: str, ok: bool, detail: str, fix: str | None = None, *, required: bool = True,
+           tool: str | None = None, installable: bool = True) -> dict:
+    """`tool` names the installer a check is about (`installers.INSTALLABLE`); `installable` is whether
+    `doctor --fix` can put it right (a found tool that will not start is not)."""
     status = "ok" if ok else ("missing" if required else "warn")
-    return {"name": name, "status": status, "required": required, "detail": detail, "fix": None if ok else fix}
+    check = {"name": name, "status": status, "required": required, "detail": detail, "fix": None if ok else fix}
+    return {**check, "tool": tool, "installable": installable} if tool else check
 
 
 def check_python(version_info=None) -> dict:
@@ -91,11 +96,11 @@ def check_latex(which=shutil.which, home: Path | None = None) -> dict:
 
     tectonic = find_tectonic(which=which, home=home)
     if tectonic:
-        return _check("latex", True, f"tectonic: {tectonic}")
+        return _check("latex", True, f"tectonic: {tectonic}", tool="latex")
     found = which("xelatex")
     if found:
-        return _check("latex", True, f"xelatex: {found}")
-    return _check("latex", False, "no tectonic or xelatex found — needed by compile/prepare", _LATEX_FIX)
+        return _check("latex", True, f"xelatex: {found}", tool="latex")
+    return _check("latex", False, "no tectonic or xelatex found — needed by compile/prepare", _LATEX_FIX, tool="latex")
 
 
 def check_chromium(find=None, run=subprocess.run) -> dict:
@@ -106,21 +111,22 @@ def check_chromium(find=None, run=subprocess.run) -> dict:
     """
     path = (find or chromium.find_chromium)()
     if not path:
-        return _check("chromium", False, "no Chromium headless shell found — it prints CVs", _CHROMIUM_FIX, required=False)
+        return _check("chromium", False, "no Chromium headless shell found — it prints CVs", _CHROMIUM_FIX, required=False, tool="chromium")
     try:
         proc = run([path, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
                    stdin=subprocess.DEVNULL)
     except (OSError, subprocess.SubprocessError) as exc:
-        return _check("chromium", False, f"{path} did not start: {exc}", _CHROMIUM_FIX, required=False)
+        return _check("chromium", False, f"{path} did not start: {exc}", _NO_START_FIX, required=False, tool="chromium", installable=False)
     output = f"{proc.stdout or ''}\n{proc.stderr or ''}"
     if proc.returncode != 0:
         libs = sorted(set(re.findall(r"(lib[\w.+-]+\.so[\w.]*): cannot open", output)))
         if libs:
             return _check("chromium", False, f"{path} needs system libraries: {', '.join(libs)}",
                           "install them with your package manager (for example `sudo apt install libnss3 libgbm1 libxkbcommon0 libasound2`)",
-                          required=False)
-        return _check("chromium", False, f"{path} did not start (exit {proc.returncode})", _CHROMIUM_FIX, required=False)
-    return _check("chromium", True, f"chromium: {path}")
+                          required=False, tool="chromium", installable=False)
+        return _check("chromium", False, f"{path} did not start (exit {proc.returncode})", _NO_START_FIX,
+                      required=False, tool="chromium", installable=False)
+    return _check("chromium", True, f"chromium: {path}", tool="chromium")
 
 
 def check_claude_cli(which=shutil.which, home: Path | None = None) -> dict:
@@ -128,7 +134,7 @@ def check_claude_cli(which=shutil.which, home: Path | None = None) -> dict:
     check = _check(
         "claude CLI", bool(found),
         f"claude: {found}" if found else "no `claude` on PATH or in ~/.local/bin — needed by match/prepare/revise",
-        "./door doctor --fix   (installs the claude CLI, no sudo)",
+        "./door doctor --fix   (installs the claude CLI, no sudo)", tool="claude",
     )
     return {**check, "details": {"path": str(found)}} if found else check
 

@@ -289,7 +289,7 @@ def _setup_core(
         ValueError: `install` names an unknown tool.
     """
     from door.core import doctor
-    from door.core.installers import INSTALLABLE, TOOL_FOR_CHECK, plan_install
+    from door.core.installers import INSTALLABLE, plan_install
 
     profile_dir = profile_dir if profile_dir is not None else workspace.PROFILE_DIR
     jobs_dir = jobs_dir if jobs_dir is not None else workspace.JOBS_DIR
@@ -380,22 +380,8 @@ def _setup_fix_pass(yes: bool) -> dict:
 
 
 def _tools_to_install(checks: list[dict], skipped: frozenset[str] = frozenset()) -> list[str]:
-    """The tools a missing-tool check names. Chromium counts only when no shell is found: one that is
-    found but will not start lacks system libraries, which the check's fix names and nothing here installs."""
-    from door.core import chromium
-    from door.core.installers import TOOL_FOR_CHECK
-
-    tools = []
-    for c in checks:
-        tool = TOOL_FOR_CHECK.get(c["name"])
-        if tool is None or tool in skipped or c["status"] == "ok":
-            continue
-        if tool == "chromium" and chromium.find_chromium() is not None:
-            continue
-        if tool != "chromium" and c["status"] != "missing":
-            continue
-        tools.append(tool)
-    return tools
+    """The tools whose check is not ok and which `doctor --fix` can install."""
+    return [c["tool"] for c in checks if c.get("tool") and c.get("installable") and c["status"] != "ok" and c["tool"] not in skipped]
 
 
 _TOOL_LABELS = {"latex": "Tectonic (LaTeX)", "chromium": "Chromium (CV printing)", "claude": "claude CLI"}
@@ -428,10 +414,9 @@ def _fix(yes: bool, no_tex: bool, no_chromium: bool, no_claude: bool, fix_scrape
     from rich.text import Text
 
     from door.core import doctor
-    from door.core.installers import TOOL_FOR_CHECK
 
     report = doctor.run_checks(workspace.PROFILE_DIR, workspace.JOBS_DIR)
-    status = {TOOL_FOR_CHECK[c["name"]]: c["status"] for c in report["checks"] if c["name"] in TOOL_FOR_CHECK}
+    status = {c["tool"]: c["status"] for c in report["checks"] if c.get("tool")}
     skipped = frozenset(t for t, flag in (("latex", no_tex), ("chromium", no_chromium), ("claude", no_claude)) if flag)
     wanted = _tools_to_install(report["checks"], skipped)
     tools = [t for t in _TOOL_LABELS if t in wanted]
@@ -440,12 +425,11 @@ def _fix(yes: bool, no_tex: bool, no_chromium: bool, no_claude: bool, fix_scrape
     common._section(console, "Tools")
     for tool, label in _TOOL_LABELS.items():
         state = ("already installed" if status.get(tool) == "ok" else "skipped" if tool in skipped
-                 else "to install" if tool in tools else "found, needs libraries")
+                 else "to install" if tool in tools else "found, not installed by --fix")
         if state != "to install" or not yes:  # with --yes, what gets installed shows as its progress line
             glyph = _progress.CHECK if state == "already installed" else "·"
             click.echo(f"  {glyph} {label:<22}{click.style(state, dim=True)}")
 
-    tools_run = set(tools)
     if tools and (yes or _prompts.confirm("install", f"Install {len(tools)} missing tool{'s' * (len(tools) > 1)}?", default=True)):
         plan = _setup_core(install=tools, report=report)["plan"]
         if any(argv[:1] == ["sudo"] for step in plan for argv in step["commands"]) and sys.stdin.isatty():
@@ -471,9 +455,9 @@ def _fix(yes: bool, no_tex: bool, no_chromium: bool, no_claude: bool, fix_scrape
         common._mark_line(err, "fail", Text(f"Missing: {c['name']} — {c['fix']}"))
     if login:
         common._mark_line(console, "warn", Text(f"claude: {login['detail']} — {login['fix']}"))
-    libs = next((c for c in report["checks"] if c["name"] == "chromium" and c["status"] != "ok" and "chromium" not in tools_run), None)
-    if libs and not no_chromium:
-        common._mark_line(console, "warn", Text(f"chromium: {libs['detail']} — {libs['fix']}"))
+    for c in report["checks"]:
+        if c.get("tool") and not c["installable"] and c["status"] != "ok" and c["tool"] not in skipped:
+            common._mark_line(console, "warn", Text(f"{c['name']}: {c['detail']} — {c['fix']}"))
     if missing or not mcp_ok:
         sys.exit(1)
     if todo:

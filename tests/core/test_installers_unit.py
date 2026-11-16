@@ -209,9 +209,8 @@ def test_no_plan_uses_sudo(tool, platform):
 def test_each_tool_names_a_check_doctor_runs(tmp_path):
     from door.core import doctor
 
-    names = {c["name"] for c in doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", which=_which())["checks"]}
-    assert set(installers.TOOL_FOR_CHECK) <= names
-    assert set(installers.TOOL_FOR_CHECK.values()) == {"latex", "claude", "chromium"}
+    checks = doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", which=_which())["checks"]
+    assert {c["tool"] for c in checks if c.get("tool")} == set(installers.INSTALLABLE)
 
 
 def _mcp_repo(tmp_path, command):

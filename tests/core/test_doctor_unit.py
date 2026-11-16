@@ -51,6 +51,20 @@ def test_check_latex_missing_points_at_doctor_fix(tmp_path):
     check = doctor.check_latex(which=_which(), home=tmp_path)
     assert check["status"] == "missing" and check["required"] is True
     assert check["fix"].startswith("./door doctor --fix")
+    assert check["tool"] == "latex" and check["installable"] is True
+
+
+def test_a_found_chromium_that_does_not_start_is_never_installable():
+    err = "error while loading shared libraries: libnss3.so: cannot open shared object file"
+    for check in (doctor.check_chromium(find=lambda: "/x/c", run=_ran(stderr=err, code=127)),
+                  doctor.check_chromium(find=lambda: "/x/c", run=_ran(code=1))):
+        assert check["status"] == "warn" and check["installable"] is False
+        assert "doctor --fix" not in check["fix"]
+
+
+def test_latex_and_claude_checks_name_their_tool():
+    assert doctor.check_latex(which=lambda n: None, home=Path("/nonexistent"))["tool"] == "latex"
+    assert doctor.check_claude_cli(which=lambda n: None, home=Path("/nonexistent"))["tool"] == "claude"
 
 
 def test_check_latex_finds_tectonic_in_local_bin_off_path(tmp_path):
@@ -77,6 +91,7 @@ def test_check_chromium_ok_names_the_path():
 def test_check_chromium_missing_is_a_warning_with_the_fix():
     check = doctor.check_chromium(find=lambda: None)
     assert check["status"] == "warn" and check["required"] is False
+    assert check["tool"] == "chromium" and check["installable"] is True
     assert check["fix"].startswith("./door doctor --fix")
 
 

@@ -21,16 +21,20 @@ from profile_utils import write_config
 from cli_utils import result_text
 
 
-def _check(name, status, required=True, fix=None):
-    return {"name": name, "status": status, "required": required, "detail": f"{name} detail", "fix": fix}
+_TOOLS = {"latex": "latex", "chromium": "chromium", "claude CLI": "claude"}
 
 
-def _report(*, latex="ok", claude="ok", profile="ok", chromium="ok"):
+def _check(name, status, required=True, fix=None, installable=True):
+    check = {"name": name, "status": status, "required": required, "detail": f"{name} detail", "fix": fix}
+    return {**check, "tool": _TOOLS[name], "installable": installable} if name in _TOOLS else check
+
+
+def _report(*, latex="ok", claude="ok", profile="ok", chromium="ok", chromium_installable=True):
     checks = [
         _check("python", "ok"),
         _check("profile", profile, fix="./door init"),
         _check("latex", latex, fix="apt-get install texlive-xetex"),
-        _check("chromium", chromium, required=False, fix="./door doctor --fix"),
+        _check("chromium", chromium, required=False, fix="./door doctor --fix", installable=chromium_installable),
         _check("claude CLI", claude, fix="./door doctor --fix"),
     ]
     return {"ok": all(c["status"] != "missing" for c in checks), "checks": checks, "last_run": None, "last_scrape": []}
@@ -234,14 +238,11 @@ def test_setup_core_default_installs_a_missing_chromium_too(env, monkeypatch):
 
 
 def test_a_found_shell_that_lacks_libraries_is_not_offered_an_install(env, monkeypatch, prompts):
-    from door.core import chromium
-
-    monkeypatch.setattr(chromium, "find_chromium", lambda home=None: "/x/chrome-headless-shell")
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn", chromium_installable=False)))
     assert setup_cmd._setup_core()["plan"] == []
     result = CliRunner().invoke(cli, ["doctor", "--fix"])
     assert prompts.order == [] and env.ran == []
-    assert "needs libraries" in result.output
+    assert "not installed by --fix" in result.output
     assert "chromium detail" in result.output
 
 
