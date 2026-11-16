@@ -227,6 +227,32 @@ def test_setup_cli_installs_a_missing_chromium_when_asked(env, monkeypatch, prom
     assert result.exit_code == 0, result_text(result)
 
 
+def test_setup_core_default_installs_a_missing_chromium_too(env, monkeypatch):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
+    result = setup_cmd._setup_core()
+    assert [p["tool"] for p in result["plan"]] == ["chromium"]
+
+
+def test_a_found_shell_that_lacks_libraries_is_not_offered_an_install(env, monkeypatch, prompts):
+    from door.core import chromium
+
+    monkeypatch.setattr(chromium, "find_chromium", lambda home=None: "/x/chrome-headless-shell")
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
+    assert setup_cmd._setup_core()["plan"] == []
+    result = CliRunner().invoke(cli, ["doctor", "--fix"])
+    assert prompts.order == [] and env.ran == []
+    assert "needs libraries" in result.output
+    assert "chromium detail" in result.output
+
+
+def test_setup_cli_no_chromium_skips_it(env, monkeypatch):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
+    result = CliRunner().invoke(cli, ["doctor", "--fix", "--yes", "--no-chromium"])
+    assert env.ran == []
+    assert "skipped" in result.output
+    assert result.exit_code == 0, result_text(result)
+
+
 def test_setup_cli_declined_chromium_installs_nothing(env, monkeypatch, prompts):
     monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
     prompts.answers.update(install=False)
@@ -523,7 +549,7 @@ def test_progress_spinner_is_yellow(monkeypatch, capsys):
 
 
 def test_doctor_install_flags_need_fix(cli_env):
-    for flag in ("--yes", "--no-tex", "--no-claude"):
+    for flag in ("--yes", "--no-tex", "--no-chromium", "--no-claude"):
         result = CliRunner().invoke(cli, ["doctor", flag])
         assert result.exit_code == 2, flag
         assert "only go with --fix" in result_text(result)

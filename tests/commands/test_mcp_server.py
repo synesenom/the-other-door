@@ -446,6 +446,7 @@ _ALIASES = {
     ("jobs add", "source"): {"path", "text"},  # a file argument, or pasted text
     ("doctor", "fix"): {"install", "fix_scrapers"},  # `--fix` is the `setup` tool
     ("doctor", "no_tex"): {"install"},
+    ("doctor", "no_chromium"): {"install"},
     ("doctor", "no_claude"): {"install"},
     ("init", "show"): set(),  # `--show` is the no-argument `show_profile` tool
     ("cv stories add", "from_text"): set(),  # the shell drafts, asks for the gaps and confirms: the tool is `draft_stories` + `save_story`
