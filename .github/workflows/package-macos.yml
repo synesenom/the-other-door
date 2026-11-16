@@ -63,9 +63,7 @@ jobs:
 
       # The updater's .zip is only the release's (release.yml)
       - name: Package the .dmg
-        env:
-          DOOR_DMG_ONLY: "1"
-        run: npm run package
+        run: npm run package -- --mac dmg
 
       - name: Install it like a user
         run: |

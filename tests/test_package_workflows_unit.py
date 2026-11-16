@@ -16,13 +16,13 @@ def _steps(name):
 
 
 def test_the_mac_package_check_builds_the_dmg_only():
-    package = [s for s in _steps("package-macos.yml") if s.get("run") == "npm run package"]
-    assert package and all(s.get("env", {}).get("DOOR_DMG_ONLY") == "1" for s in package)
+    package = [s for s in _steps("package-macos.yml") if str(s.get("run", "")).startswith("npm run package")]
+    assert package and all(s["run"] == "npm run package -- --mac dmg" for s in package)
 
 
 def test_the_release_still_builds_the_updater_zip():
-    text = (WORKFLOWS / "release.yml").read_text(encoding="utf-8")
-    assert "DOOR_DMG_ONLY" not in text
+    builds = [str(s.get("run", "")) for s in _steps("release.yml") if "electron-builder" in str(s.get("run", ""))]
+    assert builds and not any("--mac" in run for run in builds)
 
 
 def test_the_release_runs_the_unit_tests_off_linux():
