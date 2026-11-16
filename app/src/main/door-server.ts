@@ -93,7 +93,7 @@ export const APP_ID = 'dev.door.app'
  * installed into it) on the bundled `src/`, from `<resources>/door` (where `.claude/agents` and
  * `profile.example` sit beside `src`, as in a checkout). Nothing is written inside the app: the data
  * is `home` (the user's data folder, or DOOR_HOME), Python writes no bytecode and reads no user
- * site-packages. PATH starts with where claude's own installer puts it; Chromium is found through DOOR_BIN, not PATH.
+ * site-packages. PATH starts with where claude's own installer puts it.
  */
 export function resolvePackagedSpawn(opts: { resourcesPath: string; home: string; platform: string; env: Env }): SpawnSpec {
   const { resourcesPath, home, platform, env } = opts
