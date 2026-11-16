@@ -424,3 +424,18 @@ def test_main_prints_a_test_page(fake, tmp_path, monkeypatch):
 
     monkeypatch.setattr(html_pdf, "print_html", boom)
     assert html_pdf.main(["--out", str(out)]) == 1
+
+
+def test_an_asset_given_as_files_serves_only_those_files(fake, tmp_path):
+    icons = tmp_path / "tpl" / "icons"
+    icons.mkdir(parents=True)
+    (icons / "p.svg").write_bytes(b"phone")
+    (icons / "other.svg").write_bytes(b"not listed")
+    (tmp_path / "tpl" / "secret.txt").write_bytes(b"outside")
+    fake.probe_paths = ["/icons/p.svg", "/icons/other.svg", "/icons/../secret.txt", "/icons/%2e%2e/secret.txt",
+                        "/icons", "/icons/", "/icons/sub/p.svg"]
+    _print(fake, tmp_path, assets={"icons": [icons / "p.svg"]})
+    assert fake.statuses["/icons/p.svg"] == 200 and fake.bodies["/icons/p.svg"] == b"phone"
+    for blocked in ("/icons/other.svg", "/icons/../secret.txt", "/icons/%2e%2e/secret.txt", "/icons", "/icons/",
+                    "/icons/sub/p.svg"):
+        assert fake.statuses[blocked] == 404, blocked

@@ -24,6 +24,7 @@ import sys
 import tempfile
 import threading
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -40,14 +41,19 @@ class PrintError(Exception):
 class _Handler(http.server.BaseHTTPRequestHandler):
     root: Path
     page: bytes = b""
-    assets: dict[str, Path] = {}
+    assets: dict[str, Path | dict[str, Path]] = {}
 
     def _target(self, path: str) -> tuple[Path, Path] | None:
-        """``(file, folder it must stay inside)`` for a path: under an asset name, in that asset folder; else in the
-        page's folder. None where no file can be meant (a bare asset name)."""
+        """``(file, folder it must stay inside)`` for a path: under an asset name, in that asset folder (or, for an
+        asset given as files, the one of those files of that exact name); else in the page's folder. None where no file
+        can be meant (a bare asset name)."""
         first, _, rest = path.lstrip("/").partition("/")
         if first in self.assets:
-            return (self.assets[first] / rest, self.assets[first]) if rest else None
+            asset = self.assets[first]
+            if isinstance(asset, dict):
+                file = asset.get(rest)
+                return (file, file.parent) if file else None
+            return (asset / rest, asset) if rest else None
         return self.root / path.lstrip("/"), self.root
 
     def do_GET(self) -> None:  # noqa: N802 - http.server's name
@@ -80,8 +86,13 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def _serve(folder: Path, page: bytes, assets: dict[str, Path] | None = None) -> http.server.ThreadingHTTPServer:
-    resolved = {name: Path(path).resolve() for name, path in (assets or {}).items()}
+def _serve(folder: Path, page: bytes, assets: dict[str, Path | Sequence[Path]] | None = None) -> http.server.ThreadingHTTPServer:
+    resolved: dict[str, Path | dict[str, Path]] = {}
+    for name, path in (assets or {}).items():
+        if isinstance(path, (str, Path)):
+            resolved[name] = Path(path).resolve()
+        else:
+            resolved[name] = {Path(f).name: Path(f).resolve() for f in path}
     handler = type("Handler", (_Handler,), {"root": Path(folder).resolve(), "page": page, "assets": resolved})
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
@@ -157,11 +168,12 @@ def _refused_sandbox(profile: Path) -> bool:
 
 
 def print_html(folder: Path, html: str, out_pdf: Path, *,
-               assets: dict[str, Path] | None = None, timeout: float = 60.0, launcher=_launch) -> None:
+               assets: dict[str, Path | Sequence[Path]] | None = None, timeout: float = 60.0, launcher=_launch) -> None:
     """Print `html` (served from memory as `/index.html`, with the folder's files beside it) to `out_pdf`.
 
     `assets` maps one URL segment to a folder outside the page's (``{"fonts": Path}`` serves ``/fonts/x.ttf`` from it):
-    a shared asset such as the fonts is served, not copied into the job's folder, and only files inside it.
+    a shared asset such as the fonts is served, not copied into the job's folder, and only files inside it. A list of
+    files instead of a folder (``{"icons": [Path, ...]}``) serves just those files, by their names.
     """
     exe = chromium.find_chromium()
     if exe is None:
