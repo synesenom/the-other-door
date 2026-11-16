@@ -519,3 +519,16 @@ def test_a_picture_with_a_blank_margin_is_a_rect_photo_the_size_of_what_is_seen(
     assert style["photo"]["shape"] == "rect"
     x0, y0, x1, y1 = style["photo"]["bbox"]
     assert 458 <= x0 <= 462 and 518 <= x1 <= 522 and abs((y1 - y0) - 60) < 4
+
+
+def test_letter_spaced_capitals_are_read_as_the_word(tmp_path):
+    # every letter its own object with a gap that is sometimes over a fifth of the size (a Courier glyph is 6 pt wide)
+    content, x = "", 50.0
+    for letter, step in zip("EXPERIENCE", [7.0, 8.4, 7.0, 8.4, 7.0, 8.4, 7.0, 8.4, 7.0, 0]):
+        content += text("F4", 11, x, 700, letter)
+        x += step
+    assert run_of(read(tmp_path, content + body()), "E")["text"] == "EXPERIENCE"
+
+
+def test_a_sentence_of_short_words_keeps_its_spaces(tmp_path):
+    assert run_of(read(tmp_path, text("F1", 10, 50, 700, "I AM IN IT") + body()), "AM")["text"] == "I AM IN IT"

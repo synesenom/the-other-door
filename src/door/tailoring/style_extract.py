@@ -21,7 +21,7 @@ from door import i18n
 from door.tailoring import pdf_render, style_trace
 
 VERSION = 1
-_INTERNAL = {"baseline", "lead", "trail"}  # what the analysis keeps on a run and the result does not
+_INTERNAL = {"baseline", "lead", "trail", "parts", "gaps"}  # what the analysis keeps on a run and the result does not
 
 _WEIGHTS = [  # longest names first: "extrabold" holds "bold"
     ("extrablack", 950), ("ultrablack", 950), ("extralight", 200), ("ultralight", 200), ("extrabold", 800),
@@ -111,7 +111,8 @@ def _text_runs(page, number: int, height: float) -> tuple[list[dict], int]:
 
 def merge_runs(runs: list[dict]) -> list[dict]:
     """Chromium and Skia write one text object per glyph or word: join those on one line with the same font,
-    size, colour and style whose gap is under a word space (a gap over a fifth of the size becomes a space)."""
+    size, colour and style whose gap is under a word space (a gap over a fifth of the size becomes a space).
+    Capitals set with letter spacing come out as glyph objects each a gap apart: `_respaced` reads them as words."""
     out: list[dict] = []
     for run in sorted(runs, key=lambda r: (r["page"], r["baseline"], r["bbox"][0])):
         last = out[-1] if out else None
@@ -122,9 +123,25 @@ def merge_runs(runs: list[dict]) -> list[dict]:
                 last.update(text=last["text"] + space + run["text"], trail=run["trail"],
                             bbox=[last["bbox"][0], min(last["bbox"][1], run["bbox"][1]), run["bbox"][2],
                                   max(last["bbox"][3], run["bbox"][3])])
+                last["parts"].append(run["text"])
+                last["gaps"].append(gap)
                 continue
-        out.append(dict(run))
+        out.append({**run, "parts": [run["text"]], "gaps": []})
+    for run in out:
+        run["text"] = _respaced(run)
     return out
+
+
+def _respaced(run: dict) -> str:
+    """The text of a run made of glyph objects of one or two characters (four or more, or two single letters), in
+    capitals, with gaps that average at least 0.15 of the size: letter-spaced, so a space only where the gap is
+    well over the others."""
+    parts, gaps = run["parts"], run["gaps"]
+    if not (len(parts) >= 4 or (len(parts) == 2 and all(len(p) == 1 for p in parts))) or not run["text"].isupper() or sum(len(p) <= 2 for p in parts) < 0.7 * len(parts) \
+            or sum(gaps) / len(gaps) < 0.15 * run["size"]:
+        return run["text"]
+    median = sorted(gaps)[len(gaps) // 2]
+    return parts[0] + "".join((" " if g > max(2 * median, 0.45 * run["size"]) else "") + p for g, p in zip(gaps, parts[1:]))
 
 
 def _same_style(a: dict, b: dict) -> bool:
