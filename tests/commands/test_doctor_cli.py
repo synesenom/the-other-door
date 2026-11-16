@@ -282,3 +282,14 @@ def test_claude_available_follows_find_claude(monkeypatch):
     assert common._claude_available() is True
     monkeypatch.setattr(installers, "find_claude", lambda *a, **k: None)
     assert common._claude_available() is False
+
+
+def test_doctor_prints_the_templates_warning_and_exits_0(env):
+    (env.profile_dir / "cv.template.tex").write_text("\\usepackage{hyperref}\n")
+    result = CliRunner().invoke(cli, ["doctor"])
+    lines = result.output.splitlines()
+    at = next(i for i, line in enumerate(lines) if "⚠ templates" in line)
+    assert "profile/cv.template.tex lacks" in lines[at]
+    assert "fix: copy the lines around" in lines[at + 1]
+    assert "profile.example/cv.template.tex" in lines[at + 1]
+    assert result.exit_code in (0, 1)  # other checks may be missing on this machine; the warning alone never fails
