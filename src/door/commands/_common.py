@@ -99,7 +99,7 @@ def _cv_conventions(posting: dict, config: dict) -> i18n.CvConventions:
 
 
 # The sha256 of each earlier profile.example/cv.md that a user may still hold a copy of (#189). Add the hash of the
-# old file whenever the example changes (tests/commands/test_example_cv_guard_cli.py checks the git history).
+# old file whenever the example changes (tests/commands/test_example_cv_guard_cli.py pins the current one and fails when it changes).
 _PAST_EXAMPLE_CV_SHA256 = frozenset({
     "7fa9feb82a3175b413ac20c255161e87539097264fd6c98bebfffe72dd8ef66a",  # before the tagline and LinkedIn/GitHub (#189)
 })

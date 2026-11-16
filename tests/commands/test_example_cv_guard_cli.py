@@ -97,19 +97,14 @@ def test_one_byte_off_either_version_is_not_the_example(example_cv):
         assert not common._cv_is_example({}, example_cv.profile_dir)
 
 
-def test_every_past_example_is_in_the_list():
-    """Add the old hash to `_PAST_EXAMPLE_CV_SHA256` whenever profile.example/cv.md changes."""
+# The pin: profile.example/cv.md as shipped. Users may hold copies of earlier versions, which must still count as the example.
+_EXAMPLE_CV_SHA256 = "fbe0d0a554259fb73087abace07ababebd0c62604860deb938908cc77bb4572c"
+
+
+def test_the_example_cv_is_pinned_so_its_old_versions_are_kept():
     import hashlib
-    import subprocess
 
-    from door.commands import _common as common
-    from paths import REPO_ROOT
-
-    log = subprocess.run(["git", "log", "--format=%H", "--", "profile.example/cv.md"], cwd=REPO_ROOT,
-                         capture_output=True, text=True)
-    if log.returncode != 0 or not log.stdout.split():
-        pytest.skip("no git history here")
-    for commit in log.stdout.split()[1:]:  # the newest is the current one, recognised by bytes
-        shown = subprocess.run(["git", "show", f"{commit}:profile.example/cv.md"], cwd=REPO_ROOT, capture_output=True)
-        if shown.returncode == 0:
-            assert hashlib.sha256(shown.stdout).hexdigest() in common._PAST_EXAMPLE_CV_SHA256, commit
+    digest = hashlib.sha256((workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_bytes()).hexdigest()
+    assert digest == _EXAMPLE_CV_SHA256, (
+        "the example changed: add its old sha256 to _common._PAST_EXAMPLE_CV_SHA256 and update this pin "
+        f"(old {_EXAMPLE_CV_SHA256}, now {digest})")
