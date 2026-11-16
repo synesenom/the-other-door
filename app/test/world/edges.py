@@ -364,6 +364,21 @@ phone.pair = _phone_pair
 phone.remove = _phone_remove
 
 
+# --------------------------------------------------------------------------- detached door processes
+# The CV style build (`python -m door cv style build`, started by the server with a PYTHONPATH of its own) is a process
+# of its own: the world's hook rides along on its PYTHONPATH, so it too reads the world, and its stand-ins, not the outside.
+_spawn_detached = phone.spawn_detached
+
+
+def _spawn_detached_in_world(argv, *, log, env=None, hidden_console=False):
+    if env is not None and list(argv[1:3]) == ["-m", "door"]:
+        env = {**env, "PYTHONPATH": os.pathsep.join(p for p in (env.get("PYTHONPATH"), str(Path(__file__).resolve().parent / "hook")) if p)}
+    return _spawn_detached(argv, log=log, env=env, hidden_console=hidden_console)
+
+
+phone.spawn_detached = _spawn_detached_in_world
+
+
 # --------------------------------------------------------------------------- the printer: no Chromium
 if world().get("printer", True):  # the install test prints with the app's own Chromium (world.json `printer: false`)
     import print_standin
