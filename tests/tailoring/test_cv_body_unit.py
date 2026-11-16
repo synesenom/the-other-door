@@ -114,16 +114,16 @@ def test_nothing_in_is_nothing_out_and_the_result_is_the_same_each_time():
 
 def test_the_columns_place_its_sections_like_a_tailored_body():
     out = cv_body.body(EXAMPLE, "en")
-    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills", "languages", "certifications"]), "en")
+    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills", "languages", "certifications"]))
     main, side = placed.split('<div class="side">')
     assert html_doc.headings(main) == ["Profile", "Work Experience", "Education"]
     assert html_doc.headings(side) == ["Skills", "Certifications", "Languages"]
     assert placed.startswith('<header class="cv-header">')
 
 
-def test_french_headings_are_placed_by_the_ads_language():
+def test_headings_are_placed_in_any_supported_language():
     out = cv_body.body("# A\n\n## Expérience\n\n### R | O — 2020\n\n## Compétences\n\nPython\n", "fr")
-    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills"]), "fr")
+    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills"]))
     assert html_doc.headings(placed.split('<div class="side">')[1]) == ["Compétences"]
 
 

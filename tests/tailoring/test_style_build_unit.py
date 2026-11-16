@@ -1,6 +1,7 @@
 """The CV style builder's pure parts (#149): the stylist agent, its reply, the icons, fonts and manifest it is given,
 the stress variants and the guard on what is written. The whole loop is in test_style_build.py."""
 
+import types
 import re
 
 import pytest
@@ -101,6 +102,34 @@ def test_the_side_column_holds_the_known_sections_whose_headings_are_in_the_side
 
 def test_no_side_band_means_one_column():
     assert style_build._side_kinds(_style([{"x0": 30, "x1": 500, "kind": "main"}], [("Skills", 31)])) == []
+
+
+_SIDE = [{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}]
+
+
+def test_a_side_band_of_unknown_headings_falls_back_to_the_kinds_the_cv_has():
+    style = _style(_SIDE, [("Logiciels", 395), ("Savoir-être", 400), ("EXPERIENCE", 31)])
+    cv_md = "# A\n\n## Expérience\n\n## Langues\n\n## Compétences\n\n## Loisirs\n"
+    assert style_build._side_kinds(style, cv_md) == ["skills", "languages", "interests"]
+    assert style_build._manifest_data(style, [], {}, cv_md)["columns"] == {"side": ["skills", "languages", "interests"]}
+
+
+def test_the_fallback_without_any_of_those_in_the_cv_is_skills_and_languages():
+    style = _style(_SIDE, [("Logiciels", 395)])
+    assert style_build._side_kinds(style, "# A\n\n## Expérience\n") == ["skills", "languages"]
+
+
+def test_the_fallback_does_not_apply_without_a_side_band():
+    assert style_build._side_kinds(_style([{"x0": 30, "x1": 500, "kind": "main"}], [("X", 31)]), "## Skills\n") == []
+
+
+def test_the_stylist_is_told_the_original_page_size():
+    style = _style(_SIDE, [("Skills", 400)])
+    style["page"] = {"size": [612.0, 792.0]}
+    session = types.SimpleNamespace(style=style, images=[1], manifest=templates.Manifest(max_pages=1))
+    assert "US Letter" in style_build._files_text(session, "", {})
+    style["page"]["size"] = [595.3, 841.9]
+    assert "A4" in style_build._files_text(session, "", {})
 
 
 def test_the_manifest_has_the_fonts_icons_columns_and_the_original_page_count_within_the_template_limits():

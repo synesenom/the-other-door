@@ -97,7 +97,7 @@ def page(body: str, template: str, folder: Path, *, photo: Path | None, columns:
         ValueError: the template cannot hold the body.
     """
     built, name = _with_photo(body, template, folder, photo)
-    placed = _place_columns(built, columns, language)
+    placed = _place_columns(built, columns)
     return _wrap(template, typography.apply(placed, language), language), placed, name
 
 
@@ -122,11 +122,12 @@ def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Pat
 _H2 = re.compile(r"(?=<h2[\s>])")
 
 
-def _place_columns(body: str, columns: templates.Columns | None, language: str) -> str:
+def _place_columns(body: str, columns: templates.Columns | None) -> str:
     """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` (the
     notes, the photo, the header) as it is, then `<div class="main">` and `<div class="side">`, each section in the
     order the body has it. A section goes to the side when its heading is, whole and without case, a title of one of
-    the template's ``columns.side`` kinds in the ad's language or English; any other goes to the main column. `body`
+    the template's ``columns.side`` kinds in any supported language (a CV's headings are in its own language, whatever
+    the ad's, #227); any other goes to the main column. `body`
     itself when the template has no side column."""
     if columns is None or not columns.side:
         return body
@@ -134,18 +135,17 @@ def _place_columns(body: str, columns: templates.Columns | None, language: str) 
     main, side = [], []
     for section in sections:
         heading = (html_doc.headings(section) or [""])[0]
-        (side if i18n.cv_section_kind(heading, columns.side, (language, "en")) else main).append(section)
+        (side if i18n.cv_section_kind(heading, columns.side) else main).append(section)
     return f'{first}<div class="main">{"".join(main)}</div><div class="side">{"".join(side)}</div>'
 
 
 def placed_cv(body: str, config: dict, posting: dict) -> str:
-    """The CV `body` as its printed page reads it (`_place_columns` by the resolved CV template's manifest and the ad's
-    language); `body` itself when the template has no side column or cannot be read."""
+    """The CV `body` as its printed page reads it (`_place_columns` by the resolved CV template's manifest); `body` itself when the template has no side column or cannot be read."""
     try:
         columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns
     except (OSError, ValueError):
         columns = None
-    return _place_columns(body, columns, _language(posting))
+    return _place_columns(body, columns)
 
 
 def _wrap(template: str, body: str, language: str) -> str:

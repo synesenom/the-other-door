@@ -124,9 +124,15 @@ def write_icons(icons: list[dict], folder: Path) -> tuple[dict[str, str], list[d
     return files, dropped
 
 
-def _side_kinds(style: dict) -> list[str]:
+_FALLBACK_SIDE = ("skills", "languages", "interests")
+_CV_HEADING = re.compile(r"^##[ \t]+(.+?)[ \t]*$", re.M)
+
+
+def _side_kinds(style: dict, cv_md: str = "") -> list[str]:
     """The section kinds of the side column: those whose headings in the original sit in its side band, in reading
-    order (a heading no section kind names stays in the main column). Empty for a CV with no side band."""
+    order (a heading no section kind names stays in the main column). When it has a side band but none of its headings
+    names a kind, the kinds of skills, languages and interests that `cv_md` has (skills and languages when it has none
+    of them). Empty for a CV with no side band."""
     bands = [b for b in style["columns"]["bands"] if b["kind"] == "side"]
     kinds: list[str] = []
     for heading in style["headings"]:
@@ -135,15 +141,18 @@ def _side_kinds(style: dict) -> list[str]:
             kind = i18n.cv_section_kind(heading["text"], templates.SECTION_KINDS)
             if kind and kind not in kinds:
                 kinds.append(kind)
+    if not kinds and bands:
+        own = {i18n.cv_section_kind(h, _FALLBACK_SIDE) for h in _CV_HEADING.findall(cv_md)}
+        kinds = [k for k in _FALLBACK_SIDE if k in own] or ["skills", "languages"]
     return kinds
 
 
-def _manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str]) -> dict:
+def _manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str], cv_md: str = "") -> dict:
     """The `template.json` of a build: its fonts and icons, the side column's kinds and the page limit (the original's
     page count within the 1 to 3 a template may name)."""
     data: dict = {"version": 1, "fonts": list(font_files), "icons": dict(icon_files),
                   "max_pages": min(templates.MAX_PAGES, max(1, style.get("page_count", 1)))}
-    if side := _side_kinds(style):
+    if side := _side_kinds(style, cv_md):
         data["columns"] = {"side": side}
     return data
 
@@ -310,6 +319,15 @@ _REPLY_LETTER = "Reply with one line and the whole letter template in one ```let
 _LIMIT = 12  # problems one message to the stylist names
 
 
+def _page_size(style: dict) -> str:
+    """The original's page size in words: A4 or US Letter, else the points."""
+    width, height = ((style.get("page") or {}).get("size") or [0, 0])
+    for name, (w, h) in (("A4", (595.3, 841.9)), ("US Letter", (612.0, 792.0))):
+        if abs(width - w) <= 3 and abs(height - h) <= 3:
+            return name
+    return f"{width:g} x {height:g} pt"
+
+
 def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
     pages = len(s.images)
     icons = ", ".join(f"{kind} -> /icons/{name}" for kind, name in icon_files.items()) or "none"
@@ -320,7 +338,8 @@ def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
         f"Your last template, when there is one, is cv.template.html and the print of the last one that printed is "
         f"render_page_1.png and on (render_page_N.png for the other pages).\n"
         f"Fonts (use only these; the @font-face rules are in fonts.css):\n{notes or '- none: use generic families'}\n"
-        f"Icons you may draw, by kind: {icons}.\nSide column sections: {columns}. Page limit: {s.manifest.max_pages}."
+        f"Icons you may draw, by kind: {icons}.\nSide column sections: {columns}. Page limit: {s.manifest.max_pages}. "
+        f"Page size: {_page_size(s.style)}, set it with @page size."
     )
 
 
@@ -503,7 +522,8 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
     result["fonts"] = [{k: e[k] for k in ("family", "source", "reason", "faked", "resolved")} for e in plan]
     _write(work / "fonts.css", _font_face_css(plan))
     icon_files, result["dropped_icons"] = write_icons(style["icons"], work / "icons")
-    data = _manifest_data(style, list(dict.fromkeys(f["name"] for e in plan for f in e["files"])), icon_files)
+    cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
+    data = _manifest_data(style, list(dict.fromkeys(f["name"] for e in plan for f in e["files"])), icon_files, cv_md)
     _write(work / templates.MANIFEST_FILE, json.dumps(data, indent=1))
     s = _Session(style, pdf, work, templates.Manifest(**data), run, profile_dir)
     try:

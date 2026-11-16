@@ -53,7 +53,7 @@ def test_a_good_template_builds_and_is_written_whole(tmp_path):
 
 
 def test_a_template_that_fails_the_stress_renders_even_after_the_extra_round_is_failed_and_writes_nothing(tmp_path):
-    stylist = Stylist(cv_round(BIG), cv_only(BIG), cv_only(BIG), cv_only(BIG), letter_round())
+    stylist = Stylist(cv_round(BIG), *[cv_only(BIG)] * 7, letter_round())  # up to the cap of rounds, then the extra one
     result, profile = _build(tmp_path, "html-word-two-column", stylist)
     assert result["state"] == "failed"
     assert any("fewer" in p and "pages" in p for p in result["problems"])
