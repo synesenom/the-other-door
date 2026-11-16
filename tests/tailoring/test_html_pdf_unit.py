@@ -216,11 +216,10 @@ def test_the_server_is_loopback_serves_the_page_and_only_files_under_the_folder(
         assert b"outside" not in fake.bodies[blocked]
 
 
-def test_the_page_is_written_and_navigated_under_the_entry_name(fake, tmp_path):
-    folder, _ = _print(fake, tmp_path, html="<p>the cv</p>", entry="cv.html")
-    assert (folder / "cv.html").read_text(encoding="utf-8") == "<p>the cv</p>"
-    assert not (folder / "index.html").exists()
-    assert fake.navigated.endswith("/cv.html") and b"the cv" in fake.bodies["/cv.html"]
+def test_the_page_is_served_from_memory_and_nothing_is_written_into_the_folder(fake, tmp_path):
+    folder, _ = _print(fake, tmp_path, html="<p>the cv</p>")
+    assert list(folder.iterdir()) == []
+    assert fake.navigated.endswith("/index.html") and b"the cv" in fake.bodies["/index.html"]
 
 
 def test_an_asset_root_is_served_under_its_name_and_only_inside_it(fake, tmp_path):

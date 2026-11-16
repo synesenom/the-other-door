@@ -10,7 +10,8 @@ from __future__ import annotations
 import re
 from html.parser import HTMLParser
 
-_TOKENS = re.compile(r"<<(?:photo|date|company|title)>>")
+from door.tailoring import html_guard
+
 _BLOCKS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "br"})
 # What is not the candidate's claims: the contact details, the recipient's address, the date, the sign-off.
 _NOT_CLAIMS_CLASSES = frozenset({"recipient", "date", "closing"})
@@ -80,7 +81,7 @@ class _Reader(HTMLParser):
 
 def _read(body: str) -> _Reader:
     reader = _Reader()
-    reader.feed(_TOKENS.sub("", body))
+    reader.feed(html_guard.TOKENS.sub("", body))
     reader.close()
     return reader
 

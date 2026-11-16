@@ -68,7 +68,6 @@ def test_a_body_is_wrapped_in_the_template_and_printed_to_a_pdf(world):
     assert letter == {"file": "cover_letter.html", "status": "skipped"}
     html = world.print.calls[0]["html"]
     assert html.startswith('<html lang="en">') and "<h2>Experience</h2>" in html and "<<body>>" not in html
-    assert world.print.calls[0]["entry"] != "cv.html"
     assert (world.out / "cv.pdf").is_file()
 
 

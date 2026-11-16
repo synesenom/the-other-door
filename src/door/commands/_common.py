@@ -507,13 +507,14 @@ def _format_elapsed(elapsed_s: float) -> str:
 
 
 def _load_json_tolerant(path: Path) -> dict:
-    """Load a JSON object from `path`, tolerating a missing or corrupt file."""
+    """Load a JSON object from `path`, tolerating a missing, corrupt or non-object file (``{}``)."""
     if not path.exists():
         return {}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return {}
+    return data if isinstance(data, dict) else {}
 
 
 # Rich rendering shared by `show`, `list` and `status`.

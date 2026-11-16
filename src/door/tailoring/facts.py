@@ -123,7 +123,6 @@ def extract_claims(body: str, file: str) -> list[dict]:
 
 # --- skills, tools, certifications and degrees --------------------------------
 
-_SENTINEL = html_doc.SECTION
 _PAREN_RE = re.compile(r"\([^)]*\)")
 _SPLIT_RE = re.compile(r"[,;•|]")
 _SKILL_MAX_WORDS = 4
@@ -249,8 +248,8 @@ def extract_term_claims(text: str, file: str) -> list[dict]:
     claims: list[dict] = []
     section = "other"
     for line in text.splitlines():
-        if line.startswith(_SENTINEL):
-            section = _section_kind(line[len(_SENTINEL):])
+        if line.startswith(html_doc.SECTION):
+            section = _section_kind(line[len(html_doc.SECTION):])
             continue
         if not line.strip():
             continue

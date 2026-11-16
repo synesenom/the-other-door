@@ -423,7 +423,7 @@ def _materials(output_dir: Path) -> dict | None:
 
 def _readability(output_dir: Path) -> list[dict] | None:
     """The ATS read-back of both PDFs in `output_dir`, or None when either cannot be read."""
-    name = compile_cmd._raw_config().get("name")
+    name = common._load_json_tolerant(workspace.PROFILE_DIR / "config.json").get("name")
     found: list[dict] = []
     try:
         for material in _MATERIALS:

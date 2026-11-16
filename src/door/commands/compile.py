@@ -6,7 +6,6 @@ template (the head, the CSS, the fonts, the page) and prints it with the pinned 
 PDF is read back as an ATS would, and its pages rendered to PNGs. The file on disk stays the body, unwrapped.
 """
 
-import json
 import re
 import shutil
 from datetime import date
@@ -28,21 +27,12 @@ _PLACEHOLDERS = {"<<company>>": "company", "<<title>>": "title"}
 _DATE_TOKEN = "<<date>>"
 
 
-def _posting(output_dir: Path) -> dict | None:
-    try:
-        posting = json.loads((output_dir / "posting.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    return posting if isinstance(posting, dict) else None
-
-
-def _language(output_dir: Path) -> str:
+def _language(posting: dict) -> str:
     """The code of the ad's language (the tailor writes in it), English when the posting is untagged or has none."""
-    posting = _posting(output_dir) or {}
     return i18n.language_code(str(posting.get("language") or "")) or "en"
 
 
-def _fill_placeholders(body: str, output_dir: Path) -> str:
+def _fill_placeholders(body: str, posting: dict, output_dir: Path) -> str:
     """`body` with each `_PLACEHOLDERS` token replaced by the posting's field, escaped, and `<<date>>` by today's date
     in the ad's language.
 
@@ -51,14 +41,13 @@ def _fill_placeholders(body: str, output_dir: Path) -> str:
     """
     used = [token for token in _PLACEHOLDERS if token in body]
     if used:
-        posting = _posting(output_dir)
-        if posting is None:
+        if not posting:
             raise ValueError(f"{', '.join(used)} need posting.json in {output_dir}")
         for token in used:
             value = str(posting.get(_PLACEHOLDERS[token]) or "")
             body = body.replace(token, utils._escape_html(utils._normalize_text_for_ats(value)))
     if _DATE_TOKEN in body:
-        body = body.replace(_DATE_TOKEN, i18n.format_date(date.today(), _language(output_dir)))
+        body = body.replace(_DATE_TOKEN, i18n.format_date(date.today(), _language(posting)))
     return body
 
 
@@ -73,13 +62,9 @@ _PHOTO_FILES = {"jpeg": "photo.jpg", "png": "photo.png"}
 _PHOTO_HTML = '<img class="photo" src="%s" alt="">'
 
 
-def _profile_photo(posting_path: Path, config: dict) -> Path | None:
+def _profile_photo(posting: dict, config: dict) -> Path | None:
     """The profile's photo (`config` is the raw config: a photo needs no valid profile around it), when the job's
     country lets a CV carry one and the file is a usable picture."""
-    try:
-        posting = json.loads(posting_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
     if not isinstance(config.get("photo"), str) or common._cv_conventions(posting, config).photo == "no":
         return None
     path = Path(config["photo"])
@@ -87,12 +72,12 @@ def _profile_photo(posting_path: Path, config: dict) -> Path | None:
     return path if photo_mod.problem(path) is None else None
 
 
-def _with_photo(body: str, template: str, output_dir: Path, config: dict) -> tuple[str, str | None]:
+def _with_photo(body: str, template: str, output_dir: Path, posting: dict, config: dict) -> tuple[str, str | None]:
     """`body` with `<<photo>>` swapped for the photo image (the first one; any other for nothing) and the name of the
     photo copied into `output_dir`, else with every one removed and ``None``."""
     if _PHOTO_TOKEN not in body:
         return body, None
-    source = _profile_photo(output_dir / "posting.json", config) if _PHOTO_CLASS.search(_COMMENTS.sub("", template)) else None
+    source = _profile_photo(posting, config) if _PHOTO_CLASS.search(_COMMENTS.sub("", template)) else None
     if source is None:
         return body.replace(_PHOTO_TOKEN, ""), None
     name = _PHOTO_FILES[photo_mod.kind(source.read_bytes()[:16])]
@@ -110,14 +95,6 @@ def _fonts_dir() -> Path:
     return workspace.PROFILE_EXAMPLE_DIR / "fonts"
 
 
-def _raw_config() -> dict:
-    try:
-        config = json.loads((workspace.PROFILE_DIR / "config.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return config if isinstance(config, dict) else {}
-
-
 def _wrap(template: str, body: str, language: str) -> str:
     """`template` with its language and `body` in place.
 
@@ -131,8 +108,7 @@ def _wrap(template: str, body: str, language: str) -> str:
 
 def _print(html: str, output_dir: Path, name: str, entry: dict) -> None:
     """Print `html` to `output_dir/<name>.pdf`; the outcome goes in ``entry`` (``status`` ``compiled`` with ``pdf``, or
-    ``error`` with ``stderr``). The page is written under a name of its own and removed again: the body on disk is
-    not it.
+    ``error`` with ``stderr``). The page is served from memory: the body on disk is not it.
 
     Raises:
         MissingToolError: no Chromium is installed.
@@ -142,14 +118,11 @@ def _print(html: str, output_dir: Path, name: str, entry: dict) -> None:
 
         raise common.MissingToolError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
     pdf = output_dir / f"{name}.pdf"
-    page = f"{name}.print.html"
     try:
-        html_pdf.print_html(output_dir, html, pdf, entry=page, assets={"fonts": _fonts_dir()})
+        html_pdf.print_html(output_dir, html, pdf, assets={"fonts": _fonts_dir()})
     except html_pdf.PrintError as exc:
         entry.update(status="error", stderr=str(exc))
         return
-    finally:
-        (output_dir / page).unlink(missing_ok=True)
     entry.update(status="compiled", pdf=str(pdf))
     entry.pop("stderr", None)
 
@@ -202,7 +175,9 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
 
     results = []
     photos: list[str] = []
-    config = _raw_config()
+    config = common._load_json_tolerant(workspace.PROFILE_DIR / "config.json")
+    posting = common._load_json_tolerant(output_dir / "posting.json")
+    language = _language(posting)
     for file, key in _FILES.items():
         path = output_dir / file
         if not path.exists():
@@ -212,7 +187,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
         entry = {"file": file}
         text = path.read_text(encoding="utf-8", errors="replace")
         try:
-            body = _fill_placeholders(text, output_dir)
+            body = _fill_placeholders(text, posting, output_dir)
         except ValueError as exc:
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
@@ -230,8 +205,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             entry.update(status="error", stderr=f"could not read the template: {exc}")
             results.append(entry)
             continue
-        language = _language(output_dir)
-        built, photo_name = _with_photo(body, template, output_dir, config)
+        built, photo_name = _with_photo(body, template, output_dir, posting, config)
         if photo_name:
             entry["photo"] = photo_name
             photos.append(photo_name)

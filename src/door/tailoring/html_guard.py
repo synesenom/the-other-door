@@ -22,7 +22,7 @@ VOID = frozenset({"br"})
 # What the template's CSS styles; `photo` is written by `compile` after the guard, never by the model.
 CLASSES = frozenset({"cv-header", "contact", "entry", "letter-header", "recipient", "date", "closing", "signoff"})
 NOTES = ("Keywords", "Tailoring")
-_TOKENS = re.compile(r"<<(?:photo|date|company|title)>>")
+TOKENS = re.compile(r"<<(?:photo|date|company|title)>>")
 _OPENER = re.compile(r"<[A-Za-z/!?]")
 _NOTE = re.compile(r"\s*(?:" + "|".join(NOTES) + r"):[^<>]*", re.S)
 _LINK = re.compile(r"(?:https://[^\s/]|mailto:[^\s]|#[^\s]*$)", re.I)
@@ -87,7 +87,7 @@ def unsafe(body: str) -> list[str]:
 
     The `<<photo>>`, `<<date>>`, `<<company>>` and `<<title>>` tokens are left out first: `compile` fills them.
     """
-    text = _TOKENS.sub("", body)
+    text = TOKENS.sub("", body)
     parser = _Collector()
     parser.feed(text)
     parser.close()
