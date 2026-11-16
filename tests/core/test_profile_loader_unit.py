@@ -260,7 +260,7 @@ def test_load_config_missing_file_raises_file_not_found(tmp_path):
 
 
 def test_load_config_does_not_require_template_files(tmp_path):
-    """Batch commands (scrape/match/run/list) never read the LaTeX
+    """Batch commands (scrape/match/run/list) never read the HTML
     templates, so a missing one must not stop them (#137 review)."""
     cfg = _valid_config(tmp_path / "tpl", cv_template=str(tmp_path / "gone.html"))
     path = tmp_path / "config.json"

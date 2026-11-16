@@ -299,7 +299,7 @@ describe('Materials', () => {
       expect(screen.getByLabelText('Anything to change?')).toHaveValue('warmer')
     })
 
-    it('says the PDF was not rebuilt when LaTeX failed, and keeps the old pages', async () => {
+    it('says the PDF was not rebuilt when the print failed, and keeps the old pages', async () => {
       mockDoor({
         show: posting(),
         revise: { outcome: 'revised', job_id: 'jobindex.1', file: 'x', compile: [{ file: 'cover_letter.html', status: 'error', stderr: 'boom' }] },

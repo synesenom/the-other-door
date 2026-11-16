@@ -9,7 +9,7 @@ export default defineConfig({
   globalSetup: './e2e-install/setup.ts',
   globalTeardown: './e2e-install/teardown.ts',
   workers: 1,
-  // the first Prepare downloads Tectonic's LaTeX packages: minutes on a slow line
+  // the first run and Prepare on a slow runner: minutes
   timeout: 15 * 60_000,
   expect: { timeout: 30_000 },
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'install-report/html' }]],

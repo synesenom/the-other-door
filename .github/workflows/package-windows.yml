@@ -1,6 +1,6 @@
 name: Package (Windows)
 
-# The packaged app on Windows: build the bundle (Python, door, Tectonic) and the NSIS installer, install it
+# The packaged app on Windows: build the bundle (Python, door, Chromium) and the NSIS installer, install it
 # silently for this user (no admin), smoke-test the installed app and run the install test on that same install (#168),
 # then uninstall silently: the app goes, the
 # data folder (%APPDATA%\The other door) stays. Runs on pull requests that change what goes into the app, and by hand (Actions → Package (Windows) → Run workflow); the installer is
@@ -109,7 +109,7 @@ jobs:
         run: npm run test:package
 
       # The install test (#639, #18) on that same install (#168: DOOR_INSTALLED_APP, no second install): set-up,
-      # the first run and Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
+      # the first run and Prepare, quit and reopened.
       - name: The install test
         run: |
           $env:DOOR_INSTALLED_APP = $env:DOOR_PACKAGED_APP

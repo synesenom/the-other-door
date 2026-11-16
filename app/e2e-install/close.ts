@@ -68,7 +68,7 @@ export function createTracker(): { track(app: Closable): void; closeAll(options?
 
 /**
  * The command that kills whatever still runs from the install folder before the uninstaller removes it: a server the
- * app's quit left running (its `before-quit` does not wait for it), Tectonic under it, an app no test closed (a crashed
+ * app's quit left running (its `before-quit` does not wait for it), Chromium under it, an app no test closed (a crashed
  * worker, a timeout). On Windows by executable path; elsewhere by command line (`pkill -f`, a regex).
  */
 export function sweepCommand(platform: string, folder: string): string[] {

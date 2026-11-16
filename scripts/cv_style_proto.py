@@ -4,11 +4,12 @@ Does a model rebuild the look of a CV PDF as HTML/CSS + SVG, from the style read
 its page, close enough to be recognisable? Per made-up CV (scripts/cv_style_proto/cvs.py): print the original,
 read its style with pypdfium2, let the model write rebuild.html, print that with Chromium, compare element by
 element (matched text) and by blurred image, feed the differences back, at most 5 rounds; then stress renders
-(shorter, longer, an extra section, French) and a side by side: original | rebuild with its own text | the
-shipped default look with the same text. Output goes to thoughts/research/154-proto/ (gitignored).
+(shorter, longer, an extra section, French) and a side by side: original | rebuild with its own text. Finished PDFs
+(scripts/cv_style_proto/pdfs/) go in with --pdf. Output goes to thoughts/research/154-proto/ (gitignored).
 
     DOOR_HOME=$TMPDIR/proto-home poetry run python scripts/cv_style_proto.py --cv 1
-    DOOR_HOME=$TMPDIR/proto-home poetry run python scripts/cv_style_proto.py --cv 2-8 --stress
+    DOOR_HOME=$TMPDIR/proto-home poetry run python scripts/cv_style_proto.py --cv 2-4 --stress
+    DOOR_HOME=$TMPDIR/proto-home poetry run python scripts/cv_style_proto.py --pdf scripts/cv_style_proto/pdfs/latex-classic.pdf
     poetry run python scripts/cv_style_proto.py --report
 
 Model calls go through door.core.claude_cli (the plan, never an API key); DOOR_HOME keeps their usage log
@@ -274,7 +275,7 @@ def markdown_table(rows: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
-# ---------- the live parts: Chromium, Tectonic, the model ----------
+# ---------- the live parts: Chromium, the model ----------
 
 def _run(argv: list[str], **kw) -> None:
     result = subprocess.run(argv, capture_output=True, text=True, **kw)
@@ -286,26 +287,16 @@ def chromium(html: Path, out: Path) -> None:
     _run(["node", str(RENDER_MJS), str(html), str(out)])
 
 
-def tectonic(tex: Path) -> Path:
-    from door.core import installers
-    _run([installers.find_tectonic() or "tectonic", "--keep-logs", tex.name], cwd=tex.parent)
-    return tex.with_suffix(".pdf")
-
-
 def pages_png(pdf: Path, out_dir: Path) -> list[Image.Image]:
     from door.tailoring import pdf_render
     return [Image.open(p).convert("RGB") for p in pdf_render.render_pdf_pages(pdf, out_dir)]
 
 
 def make_original(n: int, work: Path, record: dict | None = None) -> Path:
-    design, kind, text = cvs.source(n, record)
+    text = cvs.source(n, record)
     work.mkdir(parents=True, exist_ok=True)
-    if kind == "html":
-        (work / "original.html").write_text(text, encoding="utf-8")
-        chromium(work / "original.html", work / "original.pdf")
-    else:
-        (work / "original.tex").write_text(text, encoding="utf-8")
-        tectonic(work / "original.tex")
+    (work / "original.html").write_text(text, encoding="utf-8")
+    chromium(work / "original.html", work / "original.pdf")
     return work / "original.pdf"
 
 
@@ -403,22 +394,15 @@ def stress(n: int, work: Path, best_html: str, base_pages: int) -> dict:
     return {"variants": results, "cost": cost, "holds": all(v["holds"] for v in results.values())}
 
 
-def default_render(n: int, work: Path) -> Image.Image:
-    tex = work / "default.tex"
-    tex.write_text(cvs.to_default_tex(cvs.record(n)), encoding="utf-8")
-    pdf = tectonic(tex)
-    return pages_png(pdf, work)[0]
-
-
-def finish(work: Path, original: Path, head: dict, stress_cv: int, with_stress: bool, extra: list) -> dict:
-    """Rebuild, stress, then save the side-by-side (original | rebuild | extra panels) and record.json."""
+def finish(work: Path, original: Path, head: dict, stress_cv: int, with_stress: bool) -> dict:
+    """Rebuild, stress, then save the side-by-side (original | rebuild) and record.json."""
     summary = {**head, **rebuild(work, original)}
     if with_stress and (work / "best.html").exists():
         # the stress renders are the test's overhead, not what a user pays: their cost stays in summary["stress"]
         summary["stress"] = stress(stress_cv, work, (work / "best.html").read_text(encoding="utf-8"), pages_of(original))
     orig_img = Image.open(work / "original_page_1.png")
     render = work / "render_page_1.png"
-    side_by_side([orig_img, Image.open(render) if render.exists() else orig_img, *extra]).save(work / "side_by_side.png")
+    side_by_side([orig_img, Image.open(render) if render.exists() else orig_img]).save(work / "side_by_side.png")
     (work / "record.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     return summary
 
@@ -427,7 +411,7 @@ def run_cv(n: int, with_stress: bool) -> dict:
     design = cvs.DESIGNS[n - 1][0]
     work = OUT / f"cv{n}-{design}"
     original = make_original(n, work)
-    return finish(work, original, {"cv": n, "design": design}, n, with_stress, [default_render(n, work)])
+    return finish(work, original, {"cv": n, "design": design}, n, with_stress)
 
 
 def pdf_work_dir(pdf: Path) -> Path:
@@ -441,7 +425,7 @@ def run_pdf(pdf: Path, with_stress: bool) -> dict:
     work.mkdir(parents=True, exist_ok=True)
     original = work / "original.pdf"
     shutil.copyfile(pdf, original)
-    return finish(work, original, {"cv": pdf.name, "design": work.name}, 1, with_stress, [])
+    return finish(work, original, {"cv": pdf.name, "design": work.name}, 1, with_stress)
 
 
 def parse_cvs(text: str) -> list[int]:
@@ -465,7 +449,7 @@ def report() -> str:
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--cv", help="a CV number or range, 1-8")
+    ap.add_argument("--cv", help="a CV number or range, 1-4")
     ap.add_argument("--pdf", type=Path, help="rebuild this finished PDF as one more CV")
     ap.add_argument("--stress", action="store_true", help="also run the stress renders")
     ap.add_argument("--report", action="store_true")

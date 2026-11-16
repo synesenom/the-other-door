@@ -1549,7 +1549,7 @@ def doctor(probe: bool = False, quick: bool = False) -> dict:
 def setup(
     install: list[str] | None = None, yes: bool = False, fix_scrapers: list[str] | None = None, probe: bool = False
 ) -> dict:
-    """Install missing prerequisites (TeX, Chromium, the `claude` CLI).
+    """Install missing prerequisites (Chromium, the `claude` CLI).
 
     Call it first WITHOUT `yes`: nothing runs, and ``plan`` lists the exact
     command(s) per tool. Show them to the user, then call again with
@@ -1559,7 +1559,7 @@ def setup(
     `init_profile`. Same logic as `./door doctor --fix`.
 
     Args:
-        install: Tools to install: "latex", "chromium", "claude". Omit
+        install: Tools to install: "chromium", "claude". Omit
             for every tool `doctor` reports missing.
         yes: The user approved the plan — run it.
         probe: Probe each configured site live (as `doctor` with

@@ -4,7 +4,7 @@
 // the launch, this patches the main process's child_process.spawn to run the test world's boot.py
 // (test/world/boot.py: door's own server with the job boards, the network and Drive answered from the world)
 // instead of `-m door.mcp_server` — on the same bundled Python, with the same arguments' cwd and environment
-// the app built (the bundled door on PYTHONPATH, the bundled Tectonic first on PATH) — and stops the server
+// the app built (the bundled door on PYTHONPATH, DOOR_BIN the bundled bin folder) — and stops the server
 // the app had already started. The app's next call starts it again, through the patch.
 import type { ElectronApplication } from '@playwright/test'
 

@@ -23,7 +23,7 @@ import { CHECK_EVERY_MS, checkEvery, createUpdateManager, doorSignedOf, updateMo
 import { windowBackground } from './window-look'
 
 // From a checkout the repo is one level above app/; a packaged app carries Python, The other door's src/ and
-// Tectonic in its resources (#223) and keeps the data in the user's data folder.
+// Chromium in its resources (#223) and keeps the data in the user's data folder.
 const packaged = app.isPackaged
 const repoRoot = packaged ? process.resourcesPath : resolve(app.getAppPath(), '..')
 // `npm run dev:demo`: made-up data in app/.demo/, never your real profile/, jobs/ or Drive.

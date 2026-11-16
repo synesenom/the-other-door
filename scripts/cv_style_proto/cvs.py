@@ -1,4 +1,4 @@
-"""Eight made-up CVs for the style prototype (#154): one structured record each, drawn in a different design.
+"""Four made-up CVs for the style prototype (#154): one structured record each, drawn in a different HTML design.
 
 Everything here is invented (fake names, example.com); no real person's data. A record is
 ``{name, title, contact{phone,email,web,location}, summary, experience[{role,company,dates,bullets}],
@@ -8,10 +8,7 @@ education[{degree,school,dates}], skills[], languages[], extra_sections[{heading
 from __future__ import annotations
 
 import html
-from pathlib import Path
 
-
-REPO = Path(__file__).resolve().parents[2]
 
 _PEOPLE = [
     ("Mira Valdis", "Data Engineer", "Copenhagen"), ("Jonas Brekke", "Product Designer", "Aarhus"),
@@ -34,7 +31,7 @@ _SKILLS = ["Python", "SQL", "Docker", "Git", "Project planning", "Data analysis"
 
 
 def record(n: int) -> dict:
-    """The made-up CV number *n* (1-8)."""
+    """The made-up CV number *n* (1-4)."""
     name, title, city = _PEOPLE[(n - 1) % len(_PEOPLE)]
     slug = name.lower().replace(" ", ".")
     jobs = [
@@ -61,126 +58,8 @@ def e(text: str) -> str:
     return html.escape(str(text), quote=False)
 
 
-def tex(text: str) -> str:
-    """*text* with LaTeX's special characters escaped (this prototype's own copy: door writes HTML now)."""
-    text = text.replace("\\", "\x00B\x00")
-    for char, escaped in (("&", r"\&"), ("%", r"\%"), ("$", r"\$"), ("#", r"\#"), ("_", r"\_"), ("{", r"\{"),
-                          ("}", r"\}"), ("~", r"\~{}"), ("^", r"\^{}")):
-        text = text.replace(char, escaped)
-    return text.replace("\x00B\x00", r"\textbackslash{}")
-
-
 def _sections(r: dict) -> list[tuple[str, list[str]]]:
     return [(x["heading"], x["items"]) for x in r["extra_sections"]]
-
-
-# ---------- default look: the shipped template's macros, the same text ----------
-
-def to_default_tex(r: dict) -> str:
-    template = (Path(__file__).resolve().parent / "default.template.tex").read_text(encoding="utf-8")
-    template = template.replace("<<fonts>>", str(REPO / "profile.example" / "fonts"))
-    c = r["contact"]
-    body = [f"\\cvheader{{{tex(r['name'])}}}{{{tex(c['phone'])}}}{{{tex(c['email'])}}}{{{tex(c['web'])}}}"
-            f"{{{tex(c['location'])}}}", "\\section{Profile}", tex(r["summary"]), "\\section{Work experience}"]
-    for job in r["experience"]:
-        items = "".join(f"\\item {tex(b)}\n" for b in job["bullets"])
-        body.append(f"\\workexperience{{{tex(job['role'])} | {tex(job['company'])} --- {tex(job['dates'])}}}"
-                    f"{{\\begin{{simplelist}}\n{items}\\end{{simplelist}}}}")
-    body.append("\\section{Education}")
-    body += [f"\\textbf{{{tex(x['degree'])}}}, {tex(x['school'])} ({tex(x['dates'])})\\par" for x in r["education"]]
-    body += ["\\section{Skills}", tex(", ".join(r["skills"])) + "\\par", "\\section{Languages}",
-             tex(", ".join(r["languages"])) + "\\par"]
-    for heading, items in _sections(r):
-        body += [f"\\section{{{tex(heading)}}}", tex("; ".join(items)) + "\\par"]
-    head, _, _ = template.rpartition("\\end{document}")  # the last one: a comment names it too
-    return head + "\n".join(body) + "\n\\end{document}\n"
-
-
-# ---------- LaTeX designs ----------
-
-def _latex(preamble: str, body: str) -> str:
-    return ("\\documentclass[10pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n"
-            "\\usepackage{xcolor}\n\\usepackage{enumitem}\n\\usepackage{hyperref}\n"
-            + preamble + "\n\\pagestyle{empty}\\setlength{\\parindent}{0pt}\n\\begin{document}\n" + body
-            + "\n\\end{document}\n")
-
-
-def _jobs_tex(r, head, bullet="\\textbullet"):
-    out = []
-    for j in r["experience"]:
-        items = "".join(f"\\item {tex(b)}\n" for b in j["bullets"])
-        out.append(head(j) + f"\n\\begin{{itemize}}[leftmargin=1.2em,noitemsep,topsep=2pt,label={bullet}]\n"
-                   f"{items}\\end{{itemize}}")
-    return "\n".join(out)
-
-
-def latex_altacv(r: dict) -> str:
-    c = r["contact"]
-    pre = ("\\usepackage[margin=1.6cm]{geometry}\\usepackage{tgheros}\\renewcommand\\familydefault{\\sfdefault}\n"
-           "\\definecolor{accent}{HTML}{0B7285}\\definecolor{muted}{HTML}{5C6770}\n"
-           "\\newcommand{\\cvsec}[1]{\\par\\vspace{8pt}{\\color{accent}\\large\\bfseries\\MakeUppercase{#1}}\\\\[-3pt]"
-           "{\\color{accent}\\rule{\\linewidth}{1pt}}\\vspace{3pt}\\par}")
-    left = ("\\cvsec{Experience}\n" + _jobs_tex(r, lambda j: f"\\textbf{{{tex(j['role'])}}}\\hfill{{\\color{{muted}}"
-            f"{tex(j['dates'])}}}\\\\{{\\color{{accent}}{tex(j['company'])}}}") + "\n\\cvsec{Education}\n"
-            + "\n".join(f"\\textbf{{{tex(x['degree'])}}}\\\\{tex(x['school'])}, {tex(x['dates'])}\\\\[3pt]" for x in r["education"]))
-    right = ("\\cvsec{Contact}\n" + "\\\\\n".join(tex(v) for v in c.values()) + "\n\\cvsec{Skills}\n"
-             + "\\\\\n".join(tex(s) for s in r["skills"]) + "\n\\cvsec{Languages}\n" + "\\\\\n".join(tex(s) for s in r["languages"]))
-    for h, items in _sections(r):
-        left += f"\n\\cvsec{{{tex(h)}}}\n" + tex("; ".join(items))
-    body = (f"{{\\color{{accent}}\\Huge\\bfseries {tex(r['name'])}}}\\\\[2pt]{{\\large\\color{{muted}}{tex(r['title'])}}}\\par\n"
-            f"\\vspace{{6pt}}{tex(r['summary'])}\\par\n"
-            f"\\begin{{minipage}}[t]{{0.64\\textwidth}}{left}\\end{{minipage}}\\hfill\n"
-            f"\\begin{{minipage}}[t]{{0.30\\textwidth}}{right}\\end{{minipage}}")
-    return _latex(pre, body)
-
-
-def latex_classic(r: dict) -> str:
-    c = r["contact"]
-    pre = ("\\usepackage[margin=2.2cm]{geometry}\\usepackage{mathpazo}\n"
-           "\\newcommand{\\cvsec}[1]{\\par\\vspace{10pt}{\\scshape\\large #1}\\\\[-4pt]\\rule{\\linewidth}{0.4pt}\\par\\vspace{2pt}}")
-    jobs = _jobs_tex(r, lambda j: f"\\textbf{{{tex(j['role'])}}}, \\textit{{{tex(j['company'])}}}\\hfill {tex(j['dates'])}")
-    body = (f"\\begin{{center}}{{\\Huge\\scshape {tex(r['name'])}}}\\\\[4pt]{tex(c['phone'])} $\\cdot$ {tex(c['email'])}"
-            f" $\\cdot$ {tex(c['location'])}\\end{{center}}\n\\cvsec{{Profile}}\n{tex(r['summary'])}\n\\cvsec{{Experience}}\n{jobs}\n"
-            "\\cvsec{Education}\n" + "\\\\\n".join(f"\\textbf{{{tex(x['degree'])}}}, {tex(x['school'])}\\hfill {tex(x['dates'])}" for x in r["education"])
-            + "\n\\cvsec{Skills}\n" + tex(", ".join(r["skills"])) + "\n\\cvsec{Languages}\n" + tex(", ".join(r["languages"])))
-    for h, items in _sections(r):
-        body += f"\n\\cvsec{{{tex(h)}}}\n" + tex("; ".join(items))
-    return _latex(pre, body)
-
-
-def latex_two_column(r: dict) -> str:
-    c = r["contact"]
-    pre = ("\\usepackage[margin=1.5cm]{geometry}\\usepackage{lmodern}\\definecolor{rule}{HTML}{8B1E3F}\n"
-           "\\newcommand{\\cvsec}[1]{\\par\\vspace{6pt}{\\bfseries\\color{rule}#1}\\par\\vspace{1pt}\\hrule\\vspace{3pt}}")
-    jobs = _jobs_tex(r, lambda j: f"\\textbf{{{tex(j['role'])}}}\\\\{tex(j['company'])} ({tex(j['dates'])})", "--")
-    left = "\\cvsec{Profile}\n" + tex(r["summary"]) + "\n\\cvsec{Experience}\n" + jobs
-    right = ("\\cvsec{Contact}\n" + "\\\\\n".join(tex(v) for v in c.values()) + "\n\\cvsec{Education}\n"
-             + "\\\\[3pt]\n".join(f"\\textbf{{{tex(x['degree'])}}}\\\\{tex(x['school'])}" for x in r["education"])
-             + "\n\\cvsec{Skills}\n" + "\\\\\n".join(tex(s) for s in r["skills"]))
-    for h, items in _sections(r):
-        left += f"\n\\cvsec{{{tex(h)}}}\n" + tex("; ".join(items))
-    body = (f"{{\\Huge\\bfseries {tex(r['name'])}}}\\hfill{{\\large\\color{{rule}} {tex(r['title'])}}}\\par\\vspace{{4pt}}\\hrule\n"
-            f"\\begin{{minipage}}[t]{{0.66\\textwidth}}{left}\\end{{minipage}}\\hfill\n"
-            f"\\begin{{minipage}}[t]{{0.29\\textwidth}}{right}\\end{{minipage}}")
-    return _latex(pre, body)
-
-
-def latex_sidebar(r: dict) -> str:
-    c = r["contact"]
-    pre = ("\\usepackage[margin=0cm,top=1.2cm,bottom=1.2cm]{geometry}\\usepackage{helvet}\\renewcommand\\familydefault{\\sfdefault}\n"
-           "\\definecolor{side}{HTML}{22313F}\\definecolor{hi}{HTML}{F2A65A}\n"
-           "\\newcommand{\\cvsec}[1]{\\par\\vspace{8pt}{\\bfseries\\color{hi}\\MakeUppercase{#1}}\\par}")
-    side = ("\\colorbox{side}{\\parbox[t][26cm][t]{5.6cm}{\\color{white}\\vspace{8pt}\\hspace{4pt}\\parbox{4.8cm}{"
-            f"{{\\Large\\bfseries {tex(r['name'])}}}\\par\n{tex(r['title'])}\\par\n\\cvsec{{Contact}}\n"
-            + "\\\\\n".join(tex(v) for v in c.values()) + "\n\\cvsec{Skills}\n" + "\\\\\n".join(tex(s) for s in r["skills"])
-            + "\n\\cvsec{Languages}\n" + "\\\\\n".join(tex(s) for s in r["languages"]) + "}}}")
-    main = ("{\\bfseries\\large Profile}\\par\n" + tex(r["summary"]) + "\n\\vspace{8pt}{\\bfseries\\large Experience}\\par\n"
-            + _jobs_tex(r, lambda j: f"\\textbf{{{tex(j['role'])}}}, {tex(j['company'])}\\hfill{{\\small {tex(j['dates'])}}}")
-            + "\n\\vspace{8pt}{\\bfseries\\large Education}\\par\n"
-            + "\\\\\n".join(f"{tex(x['degree'])}, {tex(x['school'])} ({tex(x['dates'])})" for x in r["education"]))
-    for h, items in _sections(r):
-        main += f"\n\\vspace{{8pt}}{{\\bfseries\\large {tex(h)}}}\\par\n" + tex("; ".join(items))
-    return _latex(pre, f"\\noindent{side}\\hspace{{0.8cm}}\\begin{{minipage}}[t]{{12.2cm}}\\vspace{{0pt}}{main}\\end{{minipage}}")
 
 
 # ---------- HTML designs (printed by Chromium; macOS system fonts, noted in the write-up) ----------
@@ -269,14 +148,11 @@ def html_banner_timeline(r: dict) -> str:
 
 
 DESIGNS = [
-    ("latex-altacv", "latex", latex_altacv), ("latex-classic", "latex", latex_classic),
-    ("latex-two-column", "latex", latex_two_column), ("latex-sidebar", "latex", latex_sidebar),
-    ("html-word-two-column", "html", html_word_two_column), ("html-canva-icons", "html", html_canva_icons),
-    ("html-plain-single", "html", html_plain_single), ("html-banner-timeline", "html", html_banner_timeline),
+    ("html-word-two-column", html_word_two_column), ("html-canva-icons", html_canva_icons),
+    ("html-plain-single", html_plain_single), ("html-banner-timeline", html_banner_timeline),
 ]
 
 
-def source(n: int, r: dict | None = None) -> tuple[str, str, str]:
-    """(design id, kind, source text) of CV number *n*, from its own record unless *r* is given."""
-    design, kind, fn = DESIGNS[n - 1]
-    return design, kind, fn(r or record(n))
+def source(n: int, r: dict | None = None) -> str:
+    """The HTML of CV number *n*, from its own record unless *r* is given."""
+    return DESIGNS[n - 1][1](r or record(n))

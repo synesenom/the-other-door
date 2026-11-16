@@ -1,6 +1,6 @@
 name: Package (Linux)
 
-# The packaged app on Linux: build the bundle (Python, door, Tectonic), the AppImage and the .deb, then
+# The packaged app on Linux: build the bundle (Python, door, Chromium), the AppImage and the .deb, then
 # smoke-test both as installed: the AppImage extracted and run, the .deb installed with apt and removed again
 # (the data folder must stay). Runs on pull requests that change what goes into the app, and by hand
 # (Actions → Package (Linux) → Run workflow); the packages are kept on the run's page for 14 days. The packages are
@@ -38,7 +38,7 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      # The Python runtime, Tectonic and the wheels, keyed by what pins them.
+      # The Python runtime, Chromium and the wheels, keyed by what pins them.
       # The same key as seed-caches.yml, which keeps it on main (#80)
       - name: Restore the bundle's downloads
         uses: actions/cache@v6
@@ -102,7 +102,7 @@ jobs:
           DOOR_PACKAGED_APP="$RUNNER_TEMP/appimage/squashfs-root/the-other-door" xvfb-run -a npm run test:package
 
       # The install test (#639, #18): the package installed the user's way, then set-up, the first run and
-      # Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
+      # Prepare, quit and reopened.
       # An AppImage needs FUSE 2, which Ubuntu 24.04 no longer ships (docs/manual-app.md says so to users).
       - name: The install test (AppImage)
         run: |

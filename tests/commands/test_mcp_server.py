@@ -445,7 +445,6 @@ _SURFACE_ONLY = {"quiet", "ctx"}
 _ALIASES = {
     ("jobs add", "source"): {"path", "text"},  # a file argument, or pasted text
     ("doctor", "fix"): {"install", "fix_scrapers"},  # `--fix` is the `setup` tool
-    ("doctor", "no_tex"): {"install"},
     ("doctor", "no_chromium"): {"install"},
     ("doctor", "no_claude"): {"install"},
     ("init", "show"): set(),  # `--show` is the no-argument `show_profile` tool

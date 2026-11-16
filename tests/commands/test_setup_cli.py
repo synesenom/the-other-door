@@ -1,5 +1,5 @@
-"""`door setup` / the `setup` tool (issue #141), and Tectonic support in
-`compile` and `doctor`. Package-manager commands never execute: the doctor
+"""`door setup` / the `setup` tool (issue #141), and the Chromium and
+claude installs `doctor --fix` runs. Package-manager commands never execute: the doctor
 checks and `subprocess.run` are faked and only the planned argv is asserted.
 """
 
@@ -20,7 +20,7 @@ from profile_utils import write_config
 from cli_utils import result_text
 
 
-_TOOLS = {"latex": "latex", "chromium": "chromium", "claude CLI": "claude"}
+_TOOLS = {"chromium": "chromium", "claude CLI": "claude"}
 
 
 def _check(name, status, required=True, fix=None, installable=True):
@@ -28,11 +28,10 @@ def _check(name, status, required=True, fix=None, installable=True):
     return {**check, "tool": _TOOLS[name], "installable": installable} if name in _TOOLS else check
 
 
-def _report(*, latex="ok", claude="ok", profile="ok", chromium="ok", chromium_installable=True):
+def _report(*, claude="ok", profile="ok", chromium="ok", chromium_installable=True):
     checks = [
         _check("python", "ok"),
         _check("profile", profile, fix="./door init"),
-        _check("latex", latex, fix="apt-get install texlive-xetex"),
         _check("chromium", chromium, required=False, fix="./door doctor --fix", installable=chromium_installable),
         _check("claude CLI", claude, fix="./door doctor --fix"),
     ]
@@ -72,8 +71,8 @@ def env(tmp_path, monkeypatch):
     real_plan = installers.plan_install
 
     def plan(tool, platform, **kw):  # keep the real ~/.local/bin out of these CLI tests
-        if tool == "latex" and platform != "other":
-            return {"tool": "latex", "commands": [LATEX_ARGV], "hint": None, "note": None}
+        if tool == "chromium" and platform != "other":
+            return {"tool": "chromium", "commands": [CHROMIUM_ARGV], "hint": None, "note": None}
         return real_plan(tool, platform, **kw)
 
     monkeypatch.setattr(installers, "plan_install", plan)
@@ -81,8 +80,7 @@ def env(tmp_path, monkeypatch):
     return types.SimpleNamespace(profile_dir=profile_dir, jobs_dir=jobs_dir, ran=ran)
 
 
-LATEX_ARGV = ["sh", "-c", "<tectonic>"]  # see the `env` fixture: plan_install's latex step is stubbed
-LATEX_ARGV_N = LATEX_ARGV
+CHROMIUM_ARGV = ["python", "-m", "door.core.chromium", "--dest", "<root>"]  # the `env` fixture stubs plan_install's chromium step
 CLAUDE_ARGV = ["sh", "-c", "s=\"$(curl -fsSL https://claude.ai/install.sh)\" && printf '%s\\n' \"$s\" | bash -s stable"]
 
 
@@ -91,22 +89,22 @@ CLAUDE_ARGV = ["sh", "-c", "s=\"$(curl -fsSL https://claude.ai/install.sh)\" && 
 # --------------------------------------------------------------------------- #
 
 def test_setup_core_without_yes_only_plans(env, monkeypatch):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing", claude="missing")))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing", claude="missing")))
     result = setup_cmd._setup_core()
     assert result["outcome"] == "needs_confirmation"
     assert result["platform"] == "debian"
     assert [(p["tool"], p["commands"]) for p in result["plan"]] == [
-        ("latex", [LATEX_ARGV_N]),
+        ("chromium", [CHROMIUM_ARGV]),
         ("claude", [CLAUDE_ARGV]),
     ]
     assert env.ran == []
 
 
 def test_setup_core_with_yes_runs_exactly_the_plan_and_rechecks(env, monkeypatch):
-    checks = Sequence(_report(latex="missing", claude="missing"), _report())
+    checks = Sequence(_report(chromium="missing", claude="missing"), _report())
     monkeypatch.setattr(doctor, "run_checks", checks)
     result = setup_cmd._setup_core(yes=True)
-    assert env.ran == [LATEX_ARGV_N, CLAUDE_ARGV]
+    assert env.ran == [CHROMIUM_ARGV, CLAUDE_ARGV]
     assert result["outcome"] == "ok"
     assert [r["ok"] for r in result["results"]] == [True, True]
     assert checks.calls == 2
@@ -120,10 +118,10 @@ def test_setup_core_skips_satisfied_tools(env, monkeypatch):
 
 
 def test_setup_core_install_list_limits_the_steps(env, monkeypatch):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing", claude="missing")))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing", claude="missing")))
     result = setup_cmd._setup_core(install=["claude"], yes=True)
     assert env.ran == [CLAUDE_ARGV]
-    assert result["outcome"] == "incomplete"  # latex still missing
+    assert result["outcome"] == "incomplete"  # chromium still missing
 
 
 def test_setup_core_with_an_explicit_install_list_checks_quickly(env, monkeypatch):
@@ -174,7 +172,7 @@ def test_setup_core_stops_a_tool_at_its_first_failing_command(env, monkeypatch):
 
 
 def test_setup_core_missing_package_manager_is_a_result_not_a_crash(env, monkeypatch):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing")))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing")))
 
     def no_binary(argv, **kwargs):
         raise FileNotFoundError(argv[0])
@@ -182,14 +180,14 @@ def test_setup_core_missing_package_manager_is_a_result_not_a_crash(env, monkeyp
     monkeypatch.setattr(subprocess, "run", no_binary)
     result = setup_cmd._setup_core(yes=True)
     assert result["results"][0]["ok"] is False
-    assert "`sh` not found" in result["results"][0]["error"]
+    assert "`python` not found" in result["results"][0]["error"]
 
 
 def test_setup_core_hint_when_no_route(env, monkeypatch):
     monkeypatch.setattr(setup_cmd, "_detect_platform", lambda: "other")
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing")))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing")))
     plan = setup_cmd._setup_core()["plan"]
-    assert plan[0]["commands"] == [] and "tectonic" in plan[0]["hint"].lower()
+    assert plan[0]["commands"] == [] and "chromium" in plan[0]["hint"].lower()
 
 
 def test_setup_core_todo_lists_what_needs_a_human(env, monkeypatch):
@@ -202,11 +200,11 @@ def test_setup_core_todo_lists_what_needs_a_human(env, monkeypatch):
 
 
 def test_setup_tool_never_prompts_and_uses_sudo_n(env, monkeypatch):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing"), _report()))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing"), _report()))
     assert server.setup()["outcome"] == "needs_confirmation"
     assert env.ran == []
-    assert server.setup(install=["latex"], yes=True)["outcome"] == "ok"
-    assert env.ran == [LATEX_ARGV_N]
+    assert server.setup(install=["chromium"], yes=True)["outcome"] == "ok"
+    assert env.ran == [CHROMIUM_ARGV]
 
 
 # --------------------------------------------------------------------------- #
@@ -214,19 +212,16 @@ def test_setup_tool_never_prompts_and_uses_sudo_n(env, monkeypatch):
 # --------------------------------------------------------------------------- #
 
 def test_setup_cli_lists_every_tool_and_asks_once(env, monkeypatch, prompts):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing"), _report()))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing"), _report()))
     result = CliRunner().invoke(cli, ["doctor", "--fix"])
     assert prompts.order == ["install"]
     assert prompts.asked["install"]["default"] is True
     out = result.output
-    assert out.index("Tectonic") < out.index("claude CLI")
+    assert out.index("Chromium (CV printing)") < out.index("claude CLI")
     assert "already installed" in out
-    assert env.ran == [LATEX_ARGV]
-    assert "✓ Tectonic" in out
+    assert env.ran == [CHROMIUM_ARGV]
+    assert "✓ Chromium (CV printing)" in out
     assert result.exit_code == 0, result_text(result)
-
-
-CHROMIUM_ARGV = ["python", "-m", "door.core.chromium", "--dest", "<root>"]
 
 
 def test_setup_cli_installs_a_missing_chromium_when_asked(env, monkeypatch, prompts):
@@ -276,7 +271,7 @@ def test_setup_cli_declined_chromium_installs_nothing(env, monkeypatch, prompts)
 
 
 def test_setup_cli_declined_installs_nothing(env, monkeypatch, prompts):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing")))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing")))
     prompts.answers.update(install=False)
     result = CliRunner().invoke(cli, ["doctor", "--fix"])
     assert env.ran == []
@@ -284,10 +279,10 @@ def test_setup_cli_declined_installs_nothing(env, monkeypatch, prompts):
 
 
 def test_setup_cli_yes_never_asks(env, monkeypatch, prompts):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing", claude="missing"), _report()))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing", claude="missing"), _report()))
     result = CliRunner().invoke(cli, ["doctor", "--fix", "--yes"])
     assert prompts.order == []
-    assert env.ran == [LATEX_ARGV, CLAUDE_ARGV]
+    assert env.ran == [CHROMIUM_ARGV, CLAUDE_ARGV]
     assert result.exit_code == 0, result_text(result)
 
 
@@ -304,15 +299,15 @@ def test_setup_cli_reports_a_failed_install(env, monkeypatch):
         return subprocess.CompletedProcess(argv, 1, "", "network down")
 
     monkeypatch.setattr(subprocess, "run", failing)
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing"), _report(latex="missing")))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing"), _report(chromium="missing")))
     result = CliRunner().invoke(cli, ["doctor", "--fix", "--yes"])
-    assert "✗ Tectonic" in result.output and "network down" in result_text(result)
+    assert "✗ Chromium (CV printing)" in result.output and "network down" in result_text(result)
     assert result.exit_code == 1
 
 
-def test_setup_cli_no_tex_and_no_claude(env, monkeypatch):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing", claude="missing")))
-    result = CliRunner().invoke(cli, ["doctor", "--fix", "--yes", "--no-tex", "--no-claude"])
+def test_setup_cli_no_chromium_and_no_claude(env, monkeypatch):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing", claude="missing")))
+    result = CliRunner().invoke(cli, ["doctor", "--fix", "--yes", "--no-chromium", "--no-claude"])
     assert env.ran == []
     assert result.exit_code == 1
 
@@ -360,16 +355,6 @@ def test_setup_cli_does_not_probe_the_sites_unless_asked(env, monkeypatch):
     monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: probes.append(k.get("probe_sites")) or real())
     CliRunner().invoke(cli, ["doctor", "--fix", "--yes"])
     assert not any(probes)
-
-
-# --------------------------------------------------------------------------- #
-# Tectonic
-# --------------------------------------------------------------------------- #
-
-def test_doctor_accepts_tectonic():
-    check = doctor.check_latex(which=lambda name: "/usr/bin/tectonic" if name == "tectonic" else None)
-    assert check["status"] == "ok"
-    assert "tectonic" in check["detail"]
 
 
 # --------------------------------------------------------------------------- #
@@ -489,9 +474,9 @@ def test_setup_cli_prints_fallback_commands_and_failures(env, monkeypatch):
 
 
 def test_setup_cli_output_is_sectioned(env, monkeypatch):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing"), _report()))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing"), _report()))
     out = CliRunner().invoke(cli, ["doctor", "--fix", "--yes"]).output
-    assert out.index("Tools") < out.index("Tectonic") < out.index("MCP server") < out.index("Next")
+    assert out.index("Tools") < out.index("Chromium (CV printing)") < out.index("MCP server") < out.index("Next")
     assert "/onboard" in out[out.index("Next"):]
 
 
@@ -510,10 +495,10 @@ def test_setup_cli_says_setup_complete_when_nothing_is_left(env, monkeypatch, tm
 
 
 def test_setup_cli_names_what_is_missing_on_stderr(env, monkeypatch, prompts):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing")))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing")))
     prompts.answers.update(install=False)
     result = CliRunner().invoke(cli, ["doctor", "--fix"])
-    assert "✗ Missing: latex — apt-get install texlive-xetex" in result_text(result)
+    assert "✗ Missing: chromium — ./door doctor --fix" in result_text(result)
     assert result.exit_code == 1
 
 
@@ -537,9 +522,9 @@ def test_setup_cli_marks_each_scraper_fix_outcome(env, monkeypatch):
 
 
 def test_setup_cli_colours_the_marks_on_a_terminal(env, monkeypatch):
-    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(latex="missing"), _report()))
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing"), _report()))
     out = CliRunner().invoke(cli, ["doctor", "--fix", "--yes"], color=True).output
-    assert "\x1b[32m✓\x1b[0m Tectonic" in out          # installed: green
+    assert "\x1b[32m✓\x1b[0m Chromium (CV printing)" in out          # installed: green
     assert "\x1b[32m✓\x1b[0m claude CLI" in out        # already there: green too
     plain = CliRunner().invoke(cli, ["doctor", "--fix", "--yes"]).output
     assert "\x1b[" not in plain
@@ -554,7 +539,7 @@ def test_progress_spinner_is_yellow(monkeypatch, capsys):
 
 
 def test_doctor_install_flags_need_fix(cli_env):
-    for flag in ("--yes", "--no-tex", "--no-chromium", "--no-claude"):
+    for flag in ("--yes", "--no-chromium", "--no-claude"):
         result = CliRunner().invoke(cli, ["doctor", flag])
         assert result.exit_code == 2, flag
         assert "only go with --fix" in result_text(result)
@@ -595,10 +580,9 @@ def _stand_in_curl(tmp_path, monkeypatch, body: str):
     monkeypatch.setenv("HOME", str(tmp_path))
 
 
-@pytest.mark.parametrize("tool", ["claude", "latex"])
-def test_an_installer_that_cannot_be_downloaded_fails_with_curls_error(tool, tmp_path, monkeypatch):
+def test_an_installer_that_cannot_be_downloaded_fails_with_curls_error(tmp_path, monkeypatch):
     _stand_in_curl(tmp_path, monkeypatch, 'echo "curl: (7) Failed to connect" >&2; exit 7')
-    step = installers.plan_install(tool, "macos", which=lambda n: "/usr/bin/curl" if n == "curl" else None, home=tmp_path)
+    step = installers.plan_install("claude", "macos", which=lambda n: "/usr/bin/curl" if n == "curl" else None, home=tmp_path)
     result = setup_cmd._install_step(step)
     assert result["ok"] is False
     assert "Failed to connect" in result["error"]

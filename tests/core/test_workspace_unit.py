@@ -109,7 +109,7 @@ def test_mcp_config_entry_names_this_interpreter(reloaded, tmp_path):
 
 
 def test_mcp_config_entry_carries_the_bundled_bin(reloaded, tmp_path, monkeypatch):
-    # The tailor's own MCP server must find the bundled Tectonic too (#223).
+    # The tailor's own MCP server must find the bundled Chromium too (#223).
     monkeypatch.setenv("DOOR_BIN", "/bundle/bin")
     assert reloaded(tmp_path).mcp_config_entry()["mcpServers"]["door"]["env"]["DOOR_BIN"] == "/bundle/bin"
     monkeypatch.delenv("DOOR_BIN")

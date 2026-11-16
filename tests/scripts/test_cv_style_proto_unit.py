@@ -154,15 +154,10 @@ def test_markdown_table_has_a_row_per_cv():
     assert len(table.strip().splitlines()) == 4
 
 
-def test_the_eight_made_up_cvs_use_example_addresses_only():
-    for n in range(1, 9):
+def test_the_made_up_cvs_use_example_addresses_only():
+    for n in range(1, 5):
         email = proto.cvs.record(n)["contact"]["email"]
         assert re.fullmatch(r"[\w.]+@example\.com", email)
-
-
-def test_the_default_look_fills_the_templates_macros():
-    tex = proto.cvs.to_default_tex(proto.cvs.record(1))
-    assert "\\cvheader{" in tex and "\\workexperience{" in tex and "<<fonts>>" not in tex
 
 
 def test_a_given_pdf_is_rebuilt_as_its_own_cv_named_after_the_file(tmp_path, monkeypatch):
@@ -213,7 +208,7 @@ def test_the_cost_judged_is_the_builds_and_the_stress_renders_cost_apart(tmp_pat
     monkeypatch.setattr(proto, "rebuild", lambda work, original: {"rounds": 2, "cost": 1.2})
     monkeypatch.setattr(proto, "stress", lambda n, work, html, pages: {"holds": True, "cost": 0.8})
     monkeypatch.setattr(proto, "pages_of", lambda pdf: 1)
-    summary = proto.finish(tmp_path, tmp_path / "original.pdf", {"design": "d"}, 1, True, [])
+    summary = proto.finish(tmp_path, tmp_path / "original.pdf", {"design": "d"}, 1, True)
     assert summary["cost"] == 1.2 and summary["stress"]["cost"] == 0.8
 
 

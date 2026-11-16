@@ -155,5 +155,5 @@ def test_asks_once_before_installing_anything(tmp_path):
 
 
 def test_passes_its_other_flags_on(tmp_path):
-    proc, calls = _run(tmp_path, python312=True, args=("--yes", "--no-tex"))
-    assert f"poetry -C {REPO_ROOT} run python -m door doctor --fix --yes --no-tex" in calls
+    proc, calls = _run(tmp_path, python312=True, args=("--yes", "--no-claude"))
+    assert f"poetry -C {REPO_ROOT} run python -m door doctor --fix --yes --no-claude" in calls

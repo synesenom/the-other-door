@@ -35,9 +35,9 @@ def env(tmp_path, monkeypatch):
 def _fake_checks(ok: bool):
     checks = [
         {"name": "python", "status": "ok", "required": True, "detail": "Python 3.12.3", "fix": None},
-        {"name": "latex", "status": "ok" if ok else "missing", "required": True,
-         "detail": "xelatex: /usr/bin/xelatex" if ok else "no xelatex on PATH",
-         "fix": None if ok else "sudo apt-get install -y texlive-xetex"},
+        {"name": "chromium", "status": "ok" if ok else "missing", "required": True,
+         "detail": "chromium: /usr/bin/chromium" if ok else "no chromium found",
+         "fix": None if ok else "./door doctor --fix"},
         {"name": "dev dependencies", "status": "warn", "required": False, "detail": "missing: pytest",
          "fix": "poetry install"},
     ]
@@ -81,8 +81,8 @@ def test_doctor_command_exit_0_with_warnings(env, monkeypatch):
 def test_doctor_fix_line_sits_under_its_check(env, monkeypatch):
     monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: _fake_checks(False))
     lines = CliRunner().invoke(cli, ["doctor"]).output.splitlines()
-    at = next(i for i, line in enumerate(lines) if "✗ latex" in line)
-    assert "fix: sudo apt-get install -y texlive-xetex" in lines[at + 1]
+    at = next(i for i, line in enumerate(lines) if "✗ chromium" in line)
+    assert "fix: ./door doctor --fix" in lines[at + 1]
     assert lines[at + 1].index("fix:") > lines[at].index("✗")  # indented under the mark
 
 
@@ -219,9 +219,9 @@ def test_doctor_command_exit_1_when_required_missing(env, monkeypatch):
     monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: _fake_checks(False))
     result = CliRunner().invoke(cli, ["doctor"])
     assert result.exit_code == 1
-    assert "✗ latex" in result.output
-    assert "fix: sudo apt-get install -y texlive-xetex" in result.output
-    assert "✗ Missing: latex." in result_text(result)
+    assert "✗ chromium" in result.output
+    assert "fix: ./door doctor --fix" in result.output
+    assert "✗ Missing: chromium." in result_text(result)
     assert "All required prerequisites" not in result_text(result)
 
 
@@ -230,7 +230,7 @@ def test_doctor_real_checks_run_offline(env, monkeypatch):
     monkeypatch.setattr(doctor, "default_probe", lambda *a, **k: (_ for _ in ()).throw(AssertionError("network")))
     result = setup_cmd._doctor_core()
     names = {c["name"] for c in result["checks"]}
-    assert {"python", "profile", "latex", "claude CLI", "mcp server"} <= names
+    assert {"python", "profile", "chromium", "claude CLI", "mcp server"} <= names
 
 
 # --------------------------------------------------------------------------- #

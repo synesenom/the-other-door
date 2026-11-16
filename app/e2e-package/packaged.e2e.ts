@@ -53,8 +53,6 @@ test('the packaged app serves Matches from its bundle and writes nothing inside 
     expect(info.home).toBe(fixture.home)
     const doctor = (await page.evaluate(() => window.door.call('doctor'))) as { ok: boolean; data: { checks: { name: string; status: string; detail: string }[] } }
     const checks = Object.fromEntries(doctor.data.checks.map((c) => [c.name, c]))
-    expect(checks['latex']!.status).toBe('ok')
-    expect(checks['latex']!.detail).toContain(join(resources, 'bin'))
     expect(checks['dev dependencies']).toBeUndefined()
     // the full check (no quick): the bundled Chromium starts and prints a page (#176)
     expect(checks['chromium']?.status, JSON.stringify(checks['chromium'])).toBe('ok')

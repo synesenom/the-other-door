@@ -45,7 +45,6 @@ _CHROMIUM_FIX = "./door doctor --fix   (downloads the pinned Chromium headless s
 _PRINT_TIMEOUT = 30  # seconds Chromium gets to print the test page
 _NO_PRINT_FIX = "run `python -m door.tailoring.html_pdf --out test.pdf` with door's Python (in a checkout: `poetry run python -m ...` from the repository with PYTHONPATH=src) to see the error"
 _NO_START_FIX = "run the shell by hand with --version to see why; it was found, so setup does not reinstall it"
-_LATEX_FIX = "./door doctor --fix   (installs Tectonic, no sudo)"
 
 def _check(name: str, ok: bool, detail: str, fix: str | None = None, *, required: bool = True,
            tool: str | None = None, installable: bool = True) -> dict:
@@ -92,18 +91,6 @@ def check_profile(profile_dir: Path) -> dict:
     except companies.CompaniesError as exc:
         return _check("profile", False, "; ".join(str(exc).splitlines()), f"fix {_data_file(Path(profile_dir) / 'companies.json', 'profile/companies.json')}")
     return _check("profile", True, f"{path} is valid" + (f"; {len(employers)} employers" if employers else ""))
-
-
-def check_latex(which=shutil.which, home: Path | None = None) -> dict:
-    from door.core.installers import find_tectonic
-
-    tectonic = find_tectonic(which=which, home=home)
-    if tectonic:
-        return _check("latex", True, f"tectonic: {tectonic}", tool="latex", required=False)
-    found = which("xelatex")
-    if found:
-        return _check("latex", True, f"xelatex: {found}", tool="latex", required=False)
-    return _check("latex", False, "no tectonic or xelatex found — nothing prints with it any more", _LATEX_FIX, tool="latex", required=False)
 
 
 def check_chromium(find=None, run=subprocess.run, quick: bool = False) -> dict:
@@ -647,7 +634,6 @@ def run_checks(
     checks = [
         check_python(),
         check_profile(profile_dir),
-        check_latex(which=which),
         check_chromium(run=run, quick=quick),
         check_claude_cli(which=which),
         check_claude_login(installers.find_claude(which), run=run, env=claude_cli.env(profile_dir=profile_dir)),
