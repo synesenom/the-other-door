@@ -62,7 +62,7 @@ function inline(text: string, gaps: Gaps | null): ReactNode[] {
   return out
 }
 
-type Block = { kind: 'h'; level: number; text: string } | { kind: 'p'; text: string } | { kind: 'ul' | 'ol'; items: string[] }
+type Block = { kind: 'h'; level: number; text: string } | { kind: 'p'; text: string; quote?: boolean } | { kind: 'ul' | 'ol'; items: string[] }
 
 function blocks(text: string): Block[] {
   const out: Block[] = []
@@ -76,12 +76,16 @@ function blocks(text: string): Block[] {
   for (const raw of text.split('\n')) {
     const line = raw.trim()
     const heading = /^(#{1,6})\s+(.*)$/.exec(line)
+    const quote = /^>\s?(.*)$/.exec(line)
     const bullet = /^[-*+]\s+(.*)$/.exec(line)
     const numbered = /^\d+[.)]\s+(.*)$/.exec(line)
     if (!line) flush()
     else if (heading) {
       flush()
       out.push({ kind: 'h', level: heading[1]!.length, text: heading[2]! })
+    } else if (quote) {
+      flush()
+      out.push({ kind: 'p', text: quote[1]!, quote: true })
     } else if (bullet || numbered) {
       const kind = bullet ? 'ul' : 'ol'
       if (para.length) flush()
@@ -118,7 +122,7 @@ export function Markdown({ text, className, onGap, marked }: { text: string; cla
             </Tag>
           )
         }
-        if (b.kind === 'p') return <p key={i} className={isMarked(b.text)}>{inline(b.text, gaps)}</p>
+        if (b.kind === 'p') return <p key={i} className={[b.quote && 'muted', isMarked(b.text)].filter(Boolean).join(' ') || undefined}>{inline(b.text, gaps)}</p>
         const List = b.kind
         return (
           <List key={i}>

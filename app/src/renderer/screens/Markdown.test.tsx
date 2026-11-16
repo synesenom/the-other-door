@@ -20,6 +20,15 @@ describe('Markdown', () => {
     expect(container.querySelector('code')!.textContent).toBe('code')
   })
 
+  it('shows a > line (the CV tagline) as a muted paragraph without its marker', () => {
+    const { container } = render(<Markdown text={'# Ada\n\n> Analyst | Engines\n\nPlain text\n'} />)
+    const ps = container.querySelectorAll('p')
+    expect(ps).toHaveLength(2)
+    expect(ps[0]!.textContent).toBe('Analyst | Engines')
+    expect(ps[0]!).toHaveClass('muted')
+    expect(ps[1]!).not.toHaveClass('muted')
+  })
+
   describe('with onGap', () => {
     const marks = () => screen.getAllByRole('button', { name: 'to fill in' })
 
