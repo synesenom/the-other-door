@@ -775,7 +775,7 @@ describe('door:call refuses what names a local file', () => {
   })
 })
 
-describe('the CV style build (#150)', () => {
+describe('the CV style build', () => {
   const real = { demo: false }
 
   it('a picked CV file goes to build_style by token: the tool gets the real path', async () => {

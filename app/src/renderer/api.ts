@@ -84,6 +84,8 @@ export interface StatusSummary {
   plan?: PlanBlock | null
   /** Each stage's pass rate of the decided ones; `application`: the applications with an outcome that led to an interview. */
   pass_rates?: Record<string, PassRate>
+  /** The CV style build: `ready` once `profile/style/` holds a template. */
+  style?: { state: 'none' | 'building' | 'ready' | 'failed' }
   /** The application pass rate of the better-scored and the near-minimum half (#90); null until each has enough outcomes. */
   pass_rates_by_score?: ScoreBands | null
 }

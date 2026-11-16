@@ -397,7 +397,7 @@ describe('Review, the example story', () => {
   })
 })
 
-describe('Review, the CV style tick (#150)', () => {
+describe('Review, the CV style tick', () => {
   const styled: Partial<WizardState> = {
     ...answers,
     files: [{ token: 'f1', name: 'cv.pdf', size: 1 }],

@@ -35,7 +35,7 @@ export const CHANNELS = {
   /** The CV photo (photo-file.ts): a picture chosen in main, then saved by its token. */
   pickPhoto: 'door:pick-photo',
   savePhoto: 'door:save-photo',
-  /** The CV style build (#150): a CV file the wizard read, by its token. */
+  /** The CV style build: a CV file the wizard read, by its token. */
   buildStyle: 'door:build-style',
   /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
   claudeLoginStart: 'door:claude-login-start',

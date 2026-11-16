@@ -594,6 +594,52 @@ describe('App, the first-launch gate', () => {
       expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
     })
 
+    it('a CV style that is ready is said, and opens Profile on the CV', async () => {
+      gated(profile(), { status_summary: summary({ style: { state: 'ready' } }) })
+      render(<App />)
+      await screen.findByRole('heading', { name: 'Matches' })
+      await userEvent.click(await lines().findByRole('button', { name: 'Your CV style is ready to compare' }))
+      expect(await screen.findByLabelText('Your CV (Markdown)')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
+    })
+
+    it('a CV style being built is not said; the summary is read again every 30 s until it is ready', async () => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+      try {
+        let state = 'building'
+        const { call } = gated(profile(), { status_summary: () => summary({ style: { state } }) })
+        render(<App />)
+        await screen.findByRole('heading', { name: 'Matches' })
+        const reads = () => call.mock.calls.filter((c) => c[0] === 'status_summary').length
+        await waitFor(() => expect(reads()).toBeGreaterThan(0))
+        expect(lines().queryByText('Your CV style is ready to compare')).toBeNull()
+        const before = reads()
+        state = 'ready'
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(30_000)
+        })
+        await waitFor(() => expect(reads()).toBeGreaterThan(before))
+        expect(await lines().findByRole('button', { name: 'Your CV style is ready to compare' })).toBeInTheDocument()
+        const after = reads()
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(120_000)
+        })
+        expect(reads()).toBe(after)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('on the phone a ready CV style is not said', async () => {
+      const { info, call } = gated(profile(), { status_summary: summary({ style: { state: 'ready' } }) })
+      info.mockResolvedValue({ demo: false, remote: true })
+      render(<App />)
+      await screen.findByRole('heading', { name: 'Matches' })
+      await waitFor(() => expect(call.mock.calls.map((c) => c[0])).toContain('status_summary'))
+      await act(() => new Promise((r) => setTimeout(r, 50)))
+      expect(screen.queryByText('Your CV style is ready to compare')).toBeNull()
+    })
+
     it('the example CV has no line: a run refuses it and says why', async () => {
       gated(profile({ cv: cvState({ exists: true, is_example: true }) }))
       render(<App />)

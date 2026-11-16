@@ -445,7 +445,7 @@ describe('discoveryOff, the sources a first run could remind about', () => {
   })
 })
 
-describe('the CV style tick (#150)', () => {
+describe('the CV style tick', () => {
   const file = (token: string) => ({ token, name: `${token}.pdf`, size: 1 })
   const drafted = (sources: { style?: boolean; kind?: 'file' | 'url' }[], files = ['a', 'b']) =>
     wizardReducer(
