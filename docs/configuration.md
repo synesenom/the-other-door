@@ -8,7 +8,7 @@ there is nothing to keep in sync by hand. They ship with the code (`profile.exam
 Figtree and Young Serif, under the SIL Open Font License) and are not copied into `profile/`, so a release that
 changes them never breaks your profile. To restyle the PDFs, put your own `cv.template.tex` and/or
 `cover-letter.template.tex` in `profile/` (copy the shipped one and edit it; a `profile/fonts/` folder replaces the
-shipped fonts) or name a file in `cv_template` / `cover_letter_template`: yours wins. Your own copy does not get later fixes to the shipped template; `./door doctor` lists the ones it lacks and where to copy them from. Keep the `babel` line (English
+shipped fonts) or name a file in `cv_template` / `cover_letter_template`: yours wins, and earlier materials pick it up on their next revise. Your own copy does not get later fixes to the shipped template; `./door doctor` lists the ones it lacks and where to copy them from. Keep the `babel` line (English
 first, French available), which a French application relies on, and the fonts line that loads from `<<fonts>>/`
 (`compile` puts the fonts folder there).
 

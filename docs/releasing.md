@@ -118,5 +118,7 @@ public repo and that it opens there once the release is published.
 
 ## 5. Publish
 
+When a shipped template changed, say in the release notes that earlier materials pick it up on the next `revise` (or a new `prepare`).
+
 Publish the draft. Then open the README's link and an installed older app's Settings → Version once:
 both should show the new version.

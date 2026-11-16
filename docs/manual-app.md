@@ -306,7 +306,7 @@ width. Save saves that copy.
 Beside the pages, **Anything to change?** takes an instruction in your own words, for the
 document the switch shows (the letter first). **Revise** sends it to Claude,
 which takes up to a few minutes; the pages dim and the buttons wait. Then the pages are
-rebuilt and shown, and a line says so.
+rebuilt and shown, and a line says so. Revise also brings the document's layout up to your current template, so earlier materials pick up a template change on their next Revise.
 
 - **Undo last change** puts back the version before the last revision. It goes one step back
   only. With nothing to undo it says "Nothing to undo."
