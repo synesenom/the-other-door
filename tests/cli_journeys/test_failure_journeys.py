@@ -5,6 +5,8 @@ import pytest
 
 from cli_world import build_world
 
+pytestmark = pytest.mark.cli_journeys
+
 AD = "vestvind-senior-ds-forecasting"   # not yet prepared on a fresh world
 WORDS = "vestvind"
 

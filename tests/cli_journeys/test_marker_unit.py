@@ -1,4 +1,4 @@
-"""Only the tests under tests/cli_journeys/ carry the `cli_journeys` marker, which the default run deselects (#180)."""
+"""Only the journeys carry the `cli_journeys` marker, which the default run deselects: a test elsewhere is never marked (#180)."""
 
 import subprocess
 import sys
