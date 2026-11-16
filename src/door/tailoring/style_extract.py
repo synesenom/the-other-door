@@ -128,6 +128,42 @@ def _same_style(a: dict, b: dict) -> bool:
     return all(a[k] == b[k] for k in keys)
 
 
+# ---------- nothing to copy ----------
+
+_NOT_PDF = {".docx", ".doc", ".odt", ".rtf", ".txt", ".md", ".html", ".htm"}
+_LINKEDIN_HEADINGS = {"contact", "top skills", "languages", "certifications", "summary", "experience", "education"}
+_PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
+_MIN_CHARS = 50
+
+
+def not_pdf(path) -> dict | None:
+    """The verdict for a file that is not a PDF (a Word file, plain text: no layout to copy), by its suffix;
+    None for a PDF, which `extract` judges by what is in it. Called where the file is taken in."""
+    suffix = Path(path).suffix.lower()
+    if suffix not in _NOT_PDF:
+        return None
+    return {"copyable": False, "reason": "not_pdf", "detail": f"a {suffix[1:]} file has no layout to copy"}
+
+
+def style_verdict(pages: list[dict]) -> dict:
+    """Whether there is a style to copy: a scan (under 50 visible characters: no text layer, or an invisible OCR
+    layer) or a LinkedIn export (at least three of its section headings as lines of their own and a `Page N of M`
+    line on every page; English only) has not. Anything else, a plain single-font CV included, is copyable."""
+    chars = sum(len(r["text"].replace(" ", "")) for p in pages for r in p["runs"])
+    if chars < _MIN_CHARS:
+        return _verdict(False, "scan", f"{chars} visible characters: no text layer to read")
+    lines = [{r["text"].casefold().strip() for r in p["runs"]} for p in pages]
+    headings = set().union(*lines) & _LINKEDIN_HEADINGS
+    footers = all(any(_PAGE_FOOTER.fullmatch(t) for t in page) for page in lines)
+    if len(headings) >= 3 and footers:
+        return _verdict(False, "linkedin", "the sections and page footers of a LinkedIn export, which has no design")
+    return _verdict(True, "ok", "")
+
+
+def _verdict(copyable: bool, reason: str, detail: str) -> dict:
+    return {"copyable": copyable, "reason": reason, "detail": detail}
+
+
 # ---------- the whole read ----------
 
 def _fonts_used(runs: list[dict]) -> list[dict]:
@@ -145,16 +181,17 @@ def extract(pdf_path: Path) -> dict:
     file and pypdfium2's PdfiumError for one that is not a PDF."""
     doc = pdf_render._open(pdf_path)
     try:
-        runs: list[dict] = []
-        size = None
+        pages = []
         for number, page in enumerate(doc, 1):
             width, height = page.get_size()
-            size = size or [round(width, 1), round(height, 1)]
-            page_runs, _ = _text_runs(page, number, height)
-            runs += merge_runs(page_runs)
-        return {"version": VERSION, "producer": doc.get_metadata_value("Producer"),
-                "creator": doc.get_metadata_value("Creator"), "page_count": len(doc),
-                "page": {"size": size}, "fonts": _fonts_used(runs),
+            runs, _ = _text_runs(page, number, height)
+            pages.append({"size": [round(width, 1), round(height, 1)], "runs": merge_runs(runs)})
+        head = {"version": VERSION, "verdict": style_verdict(pages), "producer": doc.get_metadata_value("Producer"),
+                "creator": doc.get_metadata_value("Creator"), "page_count": len(doc)}
+        if not head["verdict"]["copyable"]:
+            return head
+        runs = [r for p in pages for r in p["runs"]]
+        return {**head, "page": {"size": pages[0]["size"]}, "fonts": _fonts_used(runs),
                 "runs": [{k: v for k, v in r.items() if k != "baseline"} for r in runs]}
     finally:
         doc.close()

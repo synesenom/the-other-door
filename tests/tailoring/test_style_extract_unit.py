@@ -76,7 +76,7 @@ def test_words_written_one_by_one_join_into_a_run_and_a_far_gap_does_not(tmp_pat
 
 
 def test_invisible_text_is_not_a_run(tmp_path):
-    content = "BT /F1 12 Tf 3 Tr 50 700 Td (ocr layer) Tj ET\n" + body()
+    content = "BT /F1 12 Tf 3 Tr 50 700 Td (ocr layer) Tj 0 Tr ET\n" + body()
     assert not [r for r in read(tmp_path, content)["runs"] if "ocr" in r["text"]]
 
 
@@ -84,3 +84,73 @@ def test_the_producer_and_creator_are_reported(tmp_path):
     style = read(tmp_path, body(), producer="Test Maker")
     assert style["producer"] == "Test Maker" and style["creator"] == ""
     assert style["version"] == 1
+
+
+# ---------- nothing to copy ----------
+
+def page_image(w=595, h=842):
+    return {"Im1": (2, 2, bytes([200, 200, 200] * 4))}, f"q {w} 0 0 {h} 0 0 cm /Im1 Do Q\n"
+
+
+def read_pages(tmp_path, pages, **kwargs):
+    path = tmp_path / "cv.pdf"
+    path.write_bytes(raw_pdf(pages, **kwargs))
+    return style_extract.extract(path)
+
+
+def test_a_scan_has_nothing_to_copy(tmp_path):
+    images, draw = page_image()
+    style = read_pages(tmp_path, draw, images=images)
+    assert style["verdict"]["copyable"] is False and style["verdict"]["reason"] == "scan"
+    # only the verdict and what is known of the file
+    assert set(style) == {"version", "verdict", "producer", "creator", "page_count"}
+
+
+def test_a_page_with_a_few_characters_is_a_scan_too(tmp_path):
+    style = read(tmp_path, text("F1", 10, 50, 700, "Page 1"))
+    assert style["verdict"] == {"copyable": False, "reason": "scan", "detail": style["verdict"]["detail"]}
+
+
+def test_an_ocr_layer_over_a_page_image_is_a_scan(tmp_path):
+    images, draw = page_image()
+    ocr = "".join(f"BT /F1 10 Tf 3 Tr 50 {700 - 12 * i} Td (invisible recognised line number {i}) Tj ET\n" for i in range(20))
+    style = read_pages(tmp_path, draw + ocr, images=images)
+    assert style["verdict"]["reason"] == "scan"
+
+
+def test_a_cv_with_text_and_one_font_is_copyable(tmp_path):
+    style = read(tmp_path, body())
+    assert style["verdict"] == {"copyable": True, "reason": "ok", "detail": ""}
+
+
+def _linkedin_page(n, headings):
+    out = "".join(text("F1", 12, 50, 760 - 40 * i, h) for i, h in enumerate(headings))
+    out += "".join(text("F1", 10, 50, 600 - 12 * i, f"Some line {i} of this person's page") for i in range(8))
+    return out + text("F1", 9, 260, 30, f"Page {n} of 2")
+
+
+def test_a_linkedin_export_is_recognised_by_its_headings_and_page_footers(tmp_path):
+    pages = [_linkedin_page(1, ["Contact", "Top Skills", "Languages"]), _linkedin_page(2, ["Summary", "Experience", "Education"])]
+    verdict = read_pages(tmp_path, pages)["verdict"]
+    assert verdict["copyable"] is False and verdict["reason"] == "linkedin"
+
+
+def test_the_headings_without_the_page_footers_are_a_cv(tmp_path):
+    pages = [_linkedin_page(1, ["Contact", "Top Skills", "Languages"])]
+    pages = [p.replace("Page 1 of 2", "") for p in pages]
+    assert read_pages(tmp_path, pages)["verdict"]["copyable"] is True
+
+
+def test_the_footers_with_too_few_of_the_headings_are_a_cv(tmp_path):
+    pages = [_linkedin_page(1, ["Summary", "Experience"]), _linkedin_page(2, ["Skills"])]
+    assert read_pages(tmp_path, pages)["verdict"]["copyable"] is True
+
+
+@pytest.mark.parametrize("name", ["cv.docx", "cv.txt", "cv.md", "CV.HTML", "cv.rtf", "cv.odt"])
+def test_a_file_that_is_not_a_pdf_has_no_layout(name):
+    verdict = style_extract.not_pdf(name)
+    assert verdict["copyable"] is False and verdict["reason"] == "not_pdf" and name.rsplit(".")[-1].lower() in verdict["detail"]
+
+
+def test_a_pdf_name_is_left_to_extract():
+    assert style_extract.not_pdf("cv.pdf") is None and style_extract.not_pdf("CV.PDF") is None
