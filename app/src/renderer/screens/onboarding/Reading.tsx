@@ -118,10 +118,9 @@ export function Reading({ state, dispatch, onDone, onBack }: Props) {
       return finish()
     }
     try {
-      const tokens = state.files.map((f) => f.token)
-      const r = await draftCv({ files: tokens, urls: state.urls })
+      const r = await draftCv({ files: state.files.map((f) => f.token), urls: state.urls })
       if (left.current) return
-      dispatch({ type: 'draftDone', markdown: r.markdown, sources: r.sources ?? [], urls: state.urls, tokens })
+      dispatch({ type: 'draftDone', markdown: r.markdown, sources: r.sources ?? [], urls: state.urls })
       const story = withStory ? exampleStory() : Promise.resolve()
       await understand(r.markdown)
       if (withStory && !left.current) setPhase('story')

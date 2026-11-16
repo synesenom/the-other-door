@@ -92,7 +92,7 @@ describe('saveProfile', () => {
       filled({
         cvText: '# Ada\n',
         files: [{ token: 'f1', name: 'cv.pdf', size: 1 }],
-        cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: true }], tokens: ['f1'] },
+        cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: true, token: 'f1' }] },
         ...over,
       })
 
@@ -115,7 +115,7 @@ describe('saveProfile', () => {
 
     it('a tick with no file that has a style starts nothing', async () => {
       const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
-      await saveProfile(styled({ style: true, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false }], tokens: ['f1'] } }))
+      await saveProfile(styled({ style: true, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false, token: 'f1' }] } }))
       expect(h.buildStyle).not.toHaveBeenCalled()
     })
 

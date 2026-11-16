@@ -180,6 +180,17 @@ function offeredName(name: unknown, which: string): string {
   return /\.pdf$/i.test(plain) ? plain : `${plain}.pdf`
 }
 
+/** The draft's file sources come back in the order the files were sent: each gets the token it was sent under
+ * (the window never sees a path), so the window can name a file it drafted from. */
+function withTokens(data: unknown, tokens: string[]): unknown {
+  if (!isPlainObject(data) || !Array.isArray(data['sources'])) return data
+  let at = 0
+  const sources = data['sources'].map((s: unknown) =>
+    isPlainObject(s) && s['kind'] === 'file' && at < tokens.length ? { ...s, token: tokens[at++] } : s,
+  )
+  return { ...data, sources }
+}
+
 export function registerIpc(
   ipcMain: IpcMainLike,
   server: ServerLike,
@@ -344,7 +355,7 @@ export function registerIpc(
     }
     try {
       const data = await server.call('draft_cv', { sources: [...paths, ...urls] }, { timeout: TOOL_TIMEOUTS['draft_cv'] })
-      return { ok: true, data }
+      return { ok: true, data: withTokens(data, files) }
     } catch (e) {
       return failureEnvelope(e)
     }

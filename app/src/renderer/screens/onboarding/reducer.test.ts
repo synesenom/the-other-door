@@ -334,12 +334,12 @@ describe('canRunFirst', () => {
 })
 
 describe('the draft', () => {
-  const done = { type: 'draftDone' as const, markdown: '# Ada\n', sources: [], tokens: [] }
+  const done = { type: 'draftDone' as const, markdown: '# Ada\n', sources: [] }
 
   it('puts the markdown in the CV text and keeps what it learned', () => {
     const s = wizardReducer(fresh(), { ...done, urls: [] })
     expect(s.cvText).toBe('# Ada\n')
-    expect(s.cvDraft).toEqual({ sources: [], tokens: [] })
+    expect(s.cvDraft).toEqual({ sources: [] })
   })
 
   it('adds the public pages to enrichSources once, never LinkedIn', () => {
@@ -447,10 +447,11 @@ describe('discoveryOff, the sources a first run could remind about', () => {
 
 describe('the CV style tick', () => {
   const file = (token: string) => ({ token, name: `${token}.pdf`, size: 1 })
-  const drafted = (sources: { style?: boolean; kind?: 'file' | 'url' }[], files = ['a', 'b']) =>
+  // the draft as the main process answers it: each file source carries the token it was sent under
+  const drafted = (sources: { style?: boolean; token?: string }[], files = ['a', 'b']) =>
     wizardReducer(
       { ...fresh(), files: files.map(file) },
-      { type: 'draftDone', markdown: '# Ada\n', urls: [], tokens: files.filter((t) => t !== 'none'), sources: sources.map((s, i) => ({ source: `s${i}`, kind: s.kind ?? 'file', ...(s.style === undefined ? {} : { style: s.style }) })) },
+      { type: 'draftDone', markdown: '# Ada\n', urls: [], sources: sources.map((s, i) => ({ source: `s${i}`, kind: 'file' as const, token: s.token ?? files[i], ...(s.style === undefined ? {} : { style: s.style }) })) },
     )
 
   it('is off by default and toggled by the review', () => {
@@ -477,9 +478,5 @@ describe('the CV style tick', () => {
     // Back, drop the styled one, add another; the re-read failed, so the draft is still the old one
     const swapped = wizardReducer(wizardReducer(s, { type: 'dropFile', token: 'a' }), { type: 'addFiles', files: [file('c')] })
     expect(styleSource(swapped)).toBeNull()
-  })
-
-  it('pages do not shift which file is meant', () => {
-    expect(styleSource(drafted([{ kind: 'url' }, { style: true }], ['a']))).toBe('a')
   })
 })

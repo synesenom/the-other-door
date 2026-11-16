@@ -150,11 +150,10 @@ const ANSWERED: Partial<WizardState> = {
   cvText: CV,
   cvDraft: {
     sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }],
-    tokens: [],
   },
 }
 
-const STYLED_DRAFT = { sources: [{ source: 'jane-doe-cv.pdf', kind: 'file' as const, chars: 5400, style: true }], tokens: ['preview-1'] }
+const STYLED_DRAFT = { sources: [{ source: 'jane-doe-cv.pdf', kind: 'file' as const, chars: 5400, style: true, token: 'preview-1' }] }
 
 export const SCENES: readonly Scene[] = [
   { id: 'guide', group: 'Visual guide', title: 'Buttons, fields, marks, type and colours', guide: true },

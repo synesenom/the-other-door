@@ -678,6 +678,18 @@ describe('the CV draft channels', () => {
     expect(server.call).toHaveBeenCalledWith('draft_cv', { sources: ['/Users/ada/cv.pdf', 'https://example.com/ada'] }, expect.objectContaining({ timeout: expect.any(Number) }))
   })
 
+  it('tells each file source its token, in order, and leaves the pages without one', async () => {
+    const { invoke } = setup(async () => ({
+      markdown: '# Ada',
+      sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: true }, { source: 'https://example.com/ada', kind: 'url' }],
+    }))
+    const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: ['https://example.com/ada'] })
+    expect(r).toEqual({
+      ok: true,
+      data: { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: true, token: 'tok1' }, { source: 'https://example.com/ada', kind: 'url' }] },
+    })
+  })
+
   it('refuses an unknown token without calling the server', async () => {
     const { invoke, server } = setup()
     const r = await invoke(CHANNELS.draftCv, { files: ['guess'], urls: [] })
