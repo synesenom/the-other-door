@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('door', {
   pickPhoto: () => ipcRenderer.invoke('door:pick-photo'),
   savePhoto: (token: string) => ipcRenderer.invoke('door:save-photo', token),
   buildStyle: (token: string) => ipcRenderer.invoke('door:build-style', token),
+  chooseStyleFile: () => ipcRenderer.invoke('door:choose-style-file'),
   // Signing in to Claude: the main process runs claude and opens only the page claude printed.
   claudeLogin: {
     start: (email?: string) => ipcRenderer.invoke('door:claude-login-start', email),

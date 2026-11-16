@@ -3,6 +3,7 @@
 // error fields do not survive an IPC rejection.
 import type { ArchiveFiles } from './archive-files'
 import type { PhotoFile } from './photo-file'
+import type { StyleFile } from './style-file'
 import type { ProblemLog } from './problem-log'
 import type { ClaudeLogin, LoginState } from './claude-login'
 import { copyFile } from 'node:fs/promises'
@@ -37,6 +38,8 @@ export const CHANNELS = {
   savePhoto: 'door:save-photo',
   /** The CV style build: a CV file the wizard read, by its token. */
   buildStyle: 'door:build-style',
+  /** A CV chosen from Profile → CV to build a style from: the dialog and the build both run in main (style-file.ts). */
+  chooseStyleFile: 'door:choose-style-file',
   /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
   claudeLoginStart: 'door:claude-login-start',
   claudeLoginCode: 'door:claude-login-code',
@@ -120,6 +123,9 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   ask: 240_000,
   // draft_stories: one sonnet call (300 s on the server), no progress.
   draft_stories: 360_000,
+  // show_style prints up to four pages cold; use_style with rerender prints each prepared application again.
+  show_style: 180_000,
+  use_style: 600_000,
 }
 
 // The demo and the onboarding sandbox run on made-up data: none of it may reach the user's Drive.
@@ -213,6 +219,8 @@ export function registerIpc(
     archiveFiles?: Pick<ArchiveFiles, 'exportTarget' | 'pick' | 'take' | 'reportTarget'>
     /** The CV photo's file (photo-file.ts). */
     photoFile?: Pick<PhotoFile, 'pick' | 'take'>
+    /** The CV a style is built from (style-file.ts). */
+    styleFile?: Pick<StyleFile, 'choose' | 'remember'>
     /** The problem log (problem-log.ts): what the window was refused. */
     problemLog?: ProblemLog
     /** The update check (updates.ts). */
@@ -355,6 +363,7 @@ export function registerIpc(
     }
     try {
       const data = await server.call('draft_cv', { sources: [...paths, ...urls] }, { timeout: TOOL_TIMEOUTS['draft_cv'] })
+      await rememberStyleSource(data)
       return { ok: true, data: withTokens(data, files) }
     } catch (e) {
       return failureEnvelope(e)
@@ -368,6 +377,26 @@ export function registerIpc(
     if (!path) return { ok: false, error: 'Choose the picture again.' }
     try {
       return { ok: true, data: await server.call('save_photo', { path }) }
+    } catch (e) {
+      return failureEnvelope(e)
+    }
+  })
+
+  // The first file the draft read that has a style to copy: Profile → CV's dialog opens there. Never on made-up data.
+  const rememberStyleSource = async (data: unknown): Promise<void> => {
+    if (deps.info?.demo || !deps.styleFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
+    const source = data['sources'].find((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && s['style'] === true)
+    if (isPlainObject(source) && typeof source['source'] === 'string') await deps.styleFile.remember(source['source'])
+  }
+
+  // A style built from a CV chosen in Profile → CV: the dialog and the build both here; the window names no path.
+  ipcMain.handle(CHANNELS.chooseStyleFile, async (): Promise<Envelope> => {
+    if (deps.info?.demo || !deps.styleFile) return { ok: false, error: 'A style cannot be built from made-up data.' }
+    const chosen = await deps.styleFile.choose()
+    if ('canceled' in chosen) return { ok: true, data: { canceled: true } }
+    if ('error' in chosen) return { ok: false, error: chosen.error }
+    try {
+      return { ok: true, data: await server.call('build_style', { file: chosen.path }) }
     } catch (e) {
       return failureEnvelope(e)
     }
