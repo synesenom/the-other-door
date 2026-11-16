@@ -280,11 +280,12 @@ def candidates(env: dict[str, str] | None = None) -> list[Candidate]:
     """Chromium (Playwright from app/node_modules), WeasyPrint (WEASYPRINT) and Typst (TYPST) at the places given."""
     env = os.environ if env is None else env
     node_ok = bool(shutil.which("node")) and (REPO / "app" / "node_modules" / "playwright").exists()
+    # the size is the headless shell's own folder, not the whole cache of Playwright's browsers
     cache = Path(env.get("CHROMIUM_DIR", Path.home() / "Library" / "Caches" / "ms-playwright"))
     chromium = Candidate(
         "chromium", node_ok, proto.chromium,
         lambda folder, html, out: _run(["node", SOURCES / "render_sealed.mjs", folder, html, out]), "html",
-        cache if cache.exists() else None)
+        next(iter(sorted(cache.glob("chromium_headless_shell-*"))), None) if cache.exists() else None)
     weasy = Path(env.get("WEASYPRINT", "weasyprint"))
     weasy_ok = bool(shutil.which(str(weasy)))
     weasy_exe = Path(shutil.which(str(weasy)) or weasy)

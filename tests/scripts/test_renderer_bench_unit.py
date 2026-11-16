@@ -166,6 +166,19 @@ def test_gates_lists_who_passes_and_why_the_others_are_out():
 
 # ---------- the table and the size ----------
 
+def test_hyphen_cell_counts_the_words_read_back_split():
+    assert bench.hyphen_cell({"hyphens": True, "split_words": ["or-ganisations", "a-b"]}) == "yes, 2 words read back split"
+    assert bench.hyphen_cell({"hyphens": True, "split_words": []}) == "yes, words read back whole"
+    assert bench.hyphen_cell({"hyphens": False}) == "no"
+
+
+def test_chromium_install_size_is_the_headless_shell_folder(tmp_path):
+    (tmp_path / "chromium-1254").mkdir()
+    (tmp_path / "chromium_headless_shell-1254").mkdir()
+    chromium = next(c for c in bench.candidates({"CHROMIUM_DIR": str(tmp_path)}) if c.name == "chromium")
+    assert chromium.install_path == tmp_path / "chromium_headless_shell-1254"
+
+
 def test_bench_table_has_a_row_per_candidate_and_marks_what_was_not_installed():
     rows = [{**_row("typst"), "cold": 0.4, "warm": 0.2, "french": [], "hyphens": True, "readability": [[], []]},
             {"candidate": "weasyprint", "installed": False}]

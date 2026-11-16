@@ -22,7 +22,7 @@ await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch();
 try {
-  const page = await browser.newPage({ viewport: { width: 794, height: 1123 } });
+  const page = await browser.newPage({ viewport: { width: 794, height: 1123 }, javaScriptEnabled: false });
   await page.route("**/*", (route) => (route.request().url().startsWith(origin + "/") ? route.continue() : route.abort()));
   await page.goto(`${origin}/${path.basename(html)}`);
   await page.waitForLoadState("networkidle");
