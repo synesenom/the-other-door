@@ -158,11 +158,13 @@ def _cv_conventions_text(posting_path: Path) -> str:
         manifest = None
     if manifest and manifest.max_pages:
         max_pages = min(max_pages, manifest.max_pages)
+    side = f" The template puts the sections {', '.join(manifest.columns.side)} in a narrow side column: keep each short." \
+        if manifest and manifest.columns and manifest.columns.side else ""
     return (
         f"CV conventions for this job's country ({country.code if country else 'no country file'}): "
         f"photo: {cv.photo}; the profile has a photo: {'yes' if has_photo else 'no'}; "
         f"{'a date of birth is usual there' if cv.date_of_birth else 'no date of birth is expected there'}, but never add a date of birth: keep one only if cv.md already has it; "
-        f"at most {max_pages} pages; a full date is written {cv.date_format}."
+        f"at most {max_pages} pages; a full date is written {cv.date_format}.{side}"
     )
 
 
