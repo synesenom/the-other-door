@@ -3,7 +3,8 @@ name: Package (Linux)
 # The packaged app on Linux: build the bundle (Python, door, Tectonic), the AppImage and the .deb, then
 # smoke-test both as installed: the AppImage extracted and run, the .deb installed with apt and removed again
 # (the data folder must stay). Runs on pull requests that change what goes into the app, and by hand
-# (Actions → Package (Linux) → Run workflow); the packages are kept on the run's page for 14 days. About 10–15 minutes on ubuntu-latest.
+# (Actions → Package (Linux) → Run workflow); the packages are kept on the run's page for 14 days. The packages are
+# built once; the AppImage and the .deb are then tested side by side (#168).
 on:
   pull_request:
     paths:
@@ -21,7 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
@@ -57,6 +58,41 @@ jobs:
       - name: Package the AppImage and the .deb
         run: npm run package
 
+      - name: Keep the packages for 14 days
+        uses: actions/upload-artifact@v7
+        with:
+          name: the-other-door-linux
+          path: |
+            app/dist/*.AppImage
+            app/dist/*.deb
+          retention-days: 14
+          if-no-files-found: error
+
+  appimage:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install the app's packages
+        run: npm ci
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: the-other-door-linux
+          path: app/dist
+
       - name: Smoke-test the AppImage
         run: |
           chmod +x dist/The-other-door-*-Linux.AppImage
@@ -64,6 +100,49 @@ jobs:
           "$GITHUB_WORKSPACE"/app/dist/The-other-door-*-Linux.AppImage --appimage-extract >/dev/null
           cd "$GITHUB_WORKSPACE/app"
           DOOR_PACKAGED_APP="$RUNNER_TEMP/appimage/squashfs-root/the-other-door" xvfb-run -a npm run test:package
+
+      # The install test (#639, #18): the package installed the user's way, then set-up, the first run and
+      # Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
+      # An AppImage needs FUSE 2, which Ubuntu 24.04 no longer ships (docs/manual-app.md says so to users).
+      - name: The install test (AppImage)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libfuse2t64
+          DOOR_INSTALLER="$(ls dist/The-other-door-*-Linux.AppImage)" xvfb-run -a npm run test:install
+
+      - name: Keep the install test's report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: install-report-linux-appimage
+          path: app/install-report
+          retention-days: 14
+          if-no-files-found: ignore
+
+  deb:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install the app's packages
+        run: npm ci
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: the-other-door-linux
+          path: app/dist
 
       - name: Install the .deb and smoke-test it
         run: |
@@ -78,14 +157,7 @@ jobs:
           test ! -e "/opt/The other door"
           test "$(cat ~/".config/The other door/profile/marker")" = kept
 
-      # The install test (#639, #18): each package installed the user's way, then set-up, the first run and
-      # Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
-      # An AppImage needs FUSE 2, which Ubuntu 24.04 no longer ships (docs/manual-app.md says so to users).
-      - name: The install test (AppImage)
-        run: |
-          sudo apt-get install -y -qq libfuse2t64
-          DOOR_INSTALLER="$(ls dist/The-other-door-*-Linux.AppImage)" xvfb-run -a npm run test:install
-
+      # The install test (#639, #18), on the .deb installed again through apt
       - name: The install test (.deb)
         run: DOOR_INSTALLER="$(ls dist/the-other-door-*.deb)" DOOR_INSTALLER_KIND=deb xvfb-run -a npm run test:install
 
@@ -93,18 +165,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: install-report-linux
+          name: install-report-linux-deb
           path: app/install-report
-          retention-days: 14
-          if-no-files-found: ignore
-
-      - name: Keep the packages for 14 days
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: the-other-door-linux
-          path: |
-            app/dist/*.AppImage
-            app/dist/*.deb
           retention-days: 14
           if-no-files-found: ignore

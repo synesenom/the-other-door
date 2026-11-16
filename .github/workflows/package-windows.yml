@@ -1,7 +1,8 @@
 name: Package (Windows)
 
 # The packaged app on Windows: build the bundle (Python, door, Tectonic) and the NSIS installer, install it
-# silently for this user (no admin), smoke-test the installed app, then uninstall silently: the app goes, the
+# silently for this user (no admin), smoke-test the installed app and run the install test on that same install (#168),
+# then uninstall silently: the app goes, the
 # data folder (%APPDATA%\The other door) stays. Runs on pull requests that change what goes into the app, and by hand (Actions → Package (Windows) → Run workflow); the installer is
 # kept on the run's page for 14 days. The installer is built
 # once; the x64 and the ARM install tests then run side by side, about 10 minutes in all.
@@ -107,24 +108,27 @@ jobs:
       - name: Smoke-test the installed app
         run: npm run test:package
 
+      # The install test (#639, #18) on that same install (#168: DOOR_INSTALLED_APP, no second install): set-up,
+      # the first run and Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
+      - name: The install test
+        run: |
+          $env:DOOR_INSTALLED_APP = $env:DOOR_PACKAGED_APP
+          $env:DEBUG = "pw:browser"   # the app's own output in the log
+          npm run test:install
+
       - name: Uninstall silently; the data stays
         run: |
           $data = Join-Path $env:APPDATA 'The other door\profile'
           New-Item -ItemType Directory -Force -Path $data | Out-Null
           'kept' | Set-Content (Join-Path $data 'marker')
+          # what still runs from the install folder holds it (#111): a server the app's quit did not wait for
+          Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith("$env:DOOR_INSTALL_DIR\", 'OrdinalIgnoreCase') } | Stop-Process -Force -ErrorAction SilentlyContinue
           $uninstaller = Get-ChildItem $env:DOOR_INSTALL_DIR -Filter 'Uninstall*.exe' | Select-Object -First 1
           Start-Process -Wait -FilePath $uninstaller.FullName -ArgumentList '/S'
-          Start-Sleep -Seconds 10
-          if (Test-Path $env:DOOR_PACKAGED_APP) { throw 'the app is still installed' }
+          # the uninstaller hands over to a temporary copy and returns at once
+          for ($i = 0; $i -lt 30 -and (Test-Path $env:DOOR_INSTALL_DIR); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path $env:DOOR_INSTALL_DIR) { throw "the uninstaller left $env:DOOR_INSTALL_DIR behind" }
           if ((Get-Content (Join-Path $data 'marker')) -ne 'kept') { throw 'the data folder was removed' }
-
-      # The install test (#639, #18): the installer run the user's way into a throwaway folder, then set-up, the
-      # first run and Prepare (the bundled Tectonic's first LaTeX download), quit and reopened.
-      - name: The install test
-        run: |
-          $env:DOOR_INSTALLER = (Get-ChildItem dist\The-other-door-*-Windows.exe | Select-Object -First 1).FullName
-          $env:DEBUG = "pw:browser"   # the app's own output in the log
-          npm run test:install
 
       - name: Keep the install test's report
         if: failure()
@@ -154,7 +158,18 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
+      # npm ci takes over 2 minutes on this runner, cache or not: unpacking 497 packages on its disk, not the
+      # install scripts (under a second) nor Defender (#167). One restore of node_modules takes seconds; seed-caches.yml
+      # keeps it on main.
+      - name: Restore the app's packages
+        id: modules
+        uses: actions/cache@v6
+        with:
+          path: app/node_modules
+          key: node-modules-windows-arm64-${{ hashFiles('app/package-lock.json') }}
+
       - name: Install the app's packages
+        if: steps.modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - uses: actions/download-artifact@v8
