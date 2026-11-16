@@ -174,6 +174,14 @@ def test_a_file_that_is_not_a_pdf_fails_without_asking_the_model(world, tmp_path
 
 # ---------- the stress renders ----------
 
+def test_the_photo_stress_render_places_the_photo_whatever_a_country_s_cv_rule_says(world, monkeypatch):
+    from door import i18n
+    from door.commands import _common
+    monkeypatch.setattr(_common, "_cv_conventions", lambda posting, config: i18n.CvConventions(photo="no"))
+    world.build("html-word-two-column", Stylist(*GOOD))
+    html = next(p["html"] for p in world.prints if p["folder"].name == "photo")
+    assert '<img class="photo"' in html
+
 def test_the_stress_renders_print_the_cv_short_long_with_a_section_in_french_and_with_a_photo(world):
     world.build("html-word-two-column", Stylist(*GOOD))
     stress = [p for p in world.prints if p["folder"].parent.name == "stress"]
@@ -309,6 +317,18 @@ def test_a_rebuild_replaces_the_earlier_style_whole(world):
     (world.style / "stale.txt").write_text("old")
     assert world.build("html-word-two-column", Stylist(*GOOD))["state"] == "ready"
     assert not (world.style / "stale.txt").exists() and not (world.profile / ".style.old").exists()
+
+
+def test_a_build_sweeps_the_old_staging_folders_a_killed_publish_left(world):
+    import os
+    import time
+    old, fresh = world.profile / ".style.x.part", world.profile / ".style.y.part"
+    old.mkdir()
+    fresh.mkdir()
+    long_ago = time.time() - 10 * 24 * 3600
+    os.utime(old, (long_ago, long_ago))
+    assert world.build("html-word-two-column", Stylist(*GOOD))["state"] == "ready"
+    assert not old.exists() and fresh.is_dir()
 
 
 def test_a_failed_rebuild_leaves_the_earlier_style_alone(world):

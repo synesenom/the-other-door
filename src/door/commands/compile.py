@@ -72,18 +72,33 @@ def _profile_photo(posting: dict, config: dict) -> Path | None:
     return path if photo_mod.problem(path) is None else None
 
 
-def _with_photo(body: str, template: str, output_dir: Path, posting: dict, config: dict) -> tuple[str, str | None]:
-    """`body` with `<<photo>>` swapped for the photo image (the first one; any other for nothing) and the name of the
-    photo copied into `output_dir`, else with every one removed and ``None``."""
+def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) -> tuple[str, str | None]:
+    """`body` with `<<photo>>` swapped for the image of `photo` (the first token; any other for nothing) and the name
+    of the copy put into `output_dir`, else with every one removed and ``None`` (no photo, or a template that does
+    not style `.photo`)."""
     if _PHOTO_TOKEN not in body:
         return body, None
-    source = _profile_photo(posting, config) if _PHOTO_CLASS.search(_COMMENTS.sub("", template)) else None
+    source = photo if _PHOTO_CLASS.search(_COMMENTS.sub("", template)) else None
     if source is None:
         return body.replace(_PHOTO_TOKEN, ""), None
     name = _PHOTO_FILES[photo_mod.kind(source.read_bytes()[:16])]
     shutil.copyfile(source, output_dir / name)
     first, _, rest = body.partition(_PHOTO_TOKEN)
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
+
+
+def page(body: str, template: str, folder: Path, *, photo: Path | None, columns: templates.Columns | None,
+         language: str) -> tuple[str, str, str | None]:
+    """The page `compile` prints for a body: the photo placed (copied into `folder`), the two columns, the language's
+    typography, wrapped in `template`. Returns the page, the body as placed and the photo's file name (None when it
+    was not placed).
+
+    Raises:
+        ValueError: the template cannot hold the body.
+    """
+    built, name = _with_photo(body, template, folder, photo)
+    placed = _place_columns(built, columns, language)
+    return _wrap(template, typography.apply(placed, language), language), placed, name
 
 
 _H2 = re.compile(r"(?=<h2[\s>])")
@@ -233,19 +248,18 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
-        built, photo_name = _with_photo(body, template, output_dir, posting, config)
         columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
-        placed = _place_columns(built, columns, language)
-        if photo_name:
-            entry["photo"] = photo_name
-            photos.append(photo_name)
         try:
-            page = _wrap(template, typography.apply(placed, language), language)
+            built, placed, photo_name = page(body, template, output_dir, photo=_profile_photo(posting, config),
+                                             columns=columns, language=language)
         except ValueError as exc:
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
-        _print(page, output_dir, Path(file).stem, entry, assets)
+        if photo_name:
+            entry["photo"] = photo_name
+            photos.append(photo_name)
+        _print(built, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
             _read_back(entry, Path(entry["pdf"]), placed, config, cv=file == "cv.html")
         results.append(entry)

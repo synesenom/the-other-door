@@ -22,9 +22,8 @@ from pypdfium2 import PdfiumError
 
 from door import i18n
 from door.commands import compile as compile_cmd
-from door.core import claude_cli, fonts, progress as progress_mod, templates, workspace
-from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract,
-                            typography)
+from door.core import chromium, claude_cli, fonts, progress as progress_mod, templates, workspace
+from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract)
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
@@ -203,7 +202,6 @@ def _stress_variants(cv_md: str) -> dict[str, dict]:
 TIMEOUT_S = 900  # one stylist call
 _CV_FILE, _LETTER_FILE = templates.FILES["cv_template"], templates.FILES["cover_letter_template"]
 _NAME = re.compile(r"^#\s+(.+)$", re.M)
-_STRESS_PHOTO = {"location": "Copenhagen"}  # a country whose CVs may carry a photo: the photo variant places it
 _SAMPLE_LETTER = """<header class="letter-header"><h1>Jane Doe</h1>
 <p class="contact"><span class="phone">+45 1234 5678</span><span class="email"><a href="mailto:jane@example.com">jane@example.com</a></span><span class="location">Aarhus</span></p></header>
 <div class="recipient"><p>Hiring team</p><p>Example Company</p><p>Copenhagen</p></div>
@@ -295,11 +293,10 @@ def _render(s: "_Session", template: str, body: str, lang: str, folder: Path, na
         ValueError: the manifest names a file that is not there.
     """
     folder.mkdir(parents=True, exist_ok=True)
-    config = {"photo": str(photo)} if photo else {}
-    built, picture = compile_cmd._with_photo(body, template, folder, _STRESS_PHOTO, config)
-    placed = built if letter else compile_cmd._place_columns(built, s.manifest.columns, lang)
+    html, placed, picture = compile_cmd.page(body, template, folder, photo=photo, language=lang,
+                                             columns=None if letter else s.manifest.columns)
     pdf = folder / f"{name}.pdf"
-    html_pdf.print_html(folder, compile_cmd._wrap(template, typography.apply(placed, lang), lang), pdf,
+    html_pdf.print_html(folder, html, pdf,
                         assets=templates.assets(s.work / _CV_FILE))
     return pdf, placed, picture
 
@@ -475,6 +472,7 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
         OSError: the files could not be written or moved.
     """
     profile_dir.mkdir(parents=True, exist_ok=True)
+    chromium.sweep_stale_parts(profile_dir)
     dest, old = profile_dir / "style", profile_dir / ".style.old"
     staging = Path(tempfile.mkdtemp(prefix=".style.", suffix=".part", dir=profile_dir))
     try:
