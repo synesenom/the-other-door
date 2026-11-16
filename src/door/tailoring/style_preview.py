@@ -1,0 +1,168 @@
+"""Previews of a CV and a letter in a style (#207, epic #144): the user's own `cv.md` and one sample letter, printed in
+the rebuilt template (`profile/style/`, "like") and in the default one ("default"), with no model and nothing copied
+from the uploaded PDF.
+
+`show(home, profile_dir, config)` makes what is stale and returns the page images. A set lives in
+`HOME/.style/preview/<default|like>/` (`cv.pdf`, `letter.pdf`, `cv_page_N.png`, `letter_page_N.png`, `meta.json`) and is
+made again only when its key, in `meta.json`, differs: the sha256 of the CV, the photo, the style's templates and
+manifest, and the CV's language. It is written staged beside the others and moved in whole. A set that cannot be
+printed (no Chromium) is left out.
+
+The CV is `cv_body.body(cv.md, language)` with the photo as a prepare places it (the profile's rule, `_profile_photo`);
+the letter is `sample_letter`, in English. `print_body` is the one place a body is placed in a template and printed,
+shared with the style build's own renders.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import html
+import json
+import shutil
+from pathlib import Path
+
+from door import i18n
+from door.commands import _common as common
+from door.commands import compile as compile_cmd
+from door.core import templates, workspace
+from door.tailoring import cv_body, html_pdf, pdf_render
+
+_SAMPLE_DATE = "1 January 2026"
+_FICTION = ('<header class="letter-header"><h1>Jane Doe</h1>\n<p class="contact"><span class="phone">+45 1234 5678</span>'
+            '<span class="email"><a href="mailto:jane@example.com">jane@example.com</a></span><span class="location">Aarhus</span></p></header>')
+_LETTER = """{header}
+<div class="recipient"><p>Hiring team</p><p>Example Company</p><p>Copenhagen</p></div>
+<p class="date"><<date>></p>
+<p>Dear hiring team, this is a sample letter that shows how your cover letters will look in this style. It holds a few short paragraphs, as a real letter does.</p>
+<p>A second paragraph is here to show the spacing between paragraphs and how the lines break across the page. The words are filler and say nothing about you.</p>
+<p>Thank you for your time. Your own letters are written for each job you prepare.</p>
+<div class="closing"><p class="signoff">Kind regards,</p><p>{name}</p></div>"""
+STYLES = ("default", "like")
+_PHOTOS = ("photo.jpg", "photo.png")
+_VERSION = "1"
+
+
+def sample_letter(cv_md: str | None = None) -> str:
+    """The sample letter, its date filled: the header and signature are the name and contact details in `cv_md`, or a
+    fictional person's when there is none. The paragraphs are fixed English that claim nothing about anyone."""
+    header, name = cv_body.letter_header(cv_md) if cv_md else ("", "")
+    return _LETTER.format(header=header or _FICTION, name=html.escape(name or "Jane Doe", quote=False)).replace("<<date>>", _SAMPLE_DATE)
+
+
+def print_body(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,
+               columns: templates.Columns | None = None, photo: Path | None = None) -> tuple[Path, str, str | None]:
+    """`body` placed in `template` (its text) as `compile` places it (the photo, the `columns`, the language's
+    typography) and printed to `folder/<name>.pdf` with the pinned Chromium, the fonts and icons that the template
+    file `assets_of` names served. Returns the pdf, the body as placed and the photo's file name in `folder` (None when
+    it was not placed).
+
+    Raises:
+        html_pdf.PrintError: the print failed.
+        ValueError: the template or its manifest cannot be used.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    html_text, placed, picture = compile_cmd.page(body, template, folder, photo=photo, language=lang, columns=columns)
+    pdf = folder / f"{name}.pdf"
+    html_pdf.print_html(folder, html_text, pdf, assets=templates.assets(assets_of))
+    return pdf, placed, picture
+
+
+def _cv_text(profile_dir: Path, config: dict) -> str:
+    path = common._cv_path(config, profile_dir)
+    return (path if path.is_file() else workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_text(encoding="utf-8")
+
+
+def _language(cv_md: str) -> str:
+    return i18n.language_code(i18n.detect_language(cv_md) or "") or "en"
+
+
+def _sha(*parts: bytes) -> str:
+    digest = hashlib.sha256()
+    for part in parts:
+        digest.update(hashlib.sha256(part).digest())
+    return digest.hexdigest()
+
+
+def _bytes(path: Path | None) -> bytes:
+    try:
+        return path.read_bytes() if path else b""
+    except OSError:
+        return b""
+
+
+def _paths(style: str, profile_dir: Path) -> tuple[Path, Path]:
+    """The CV template and the letter template of `style`."""
+    if style == "like":
+        folder = Path(profile_dir) / "style"
+        return folder / templates.FILES["cv_template"], folder / templates.FILES["cover_letter_template"]
+    return (templates.resolve("cv_template", {}, profile_dir), templates.resolve("cover_letter_template", {}, profile_dir))
+
+
+def _key(cv_md: str, lang: str, photo: Path | None, cv_template: Path, letter_template: Path) -> str:
+    return _sha(_VERSION.encode(), cv_md.encode(), lang.encode(), _bytes(photo), _bytes(cv_template), _bytes(letter_template),
+                _bytes(cv_template.parent / templates.MANIFEST_FILE))
+
+
+def _fresh(folder: Path, key: str) -> bool:
+    try:
+        meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return meta.get("key") == key and all((folder / name).is_file() for name in meta.get("images", [])) and bool(meta.get("images"))
+
+
+def _make(stage: Path, cv_md: str, lang: str, photo: Path | None, cv_template: Path, letter_template: Path) -> list[str]:
+    """Print the CV and the letter into `stage` and the pages of both to images; the file names of the images."""
+    stage.mkdir(parents=True)
+    columns = (templates.manifest(cv_template) or templates.Manifest()).columns
+    pdf, _, picture = print_body(cv_body.body(cv_md, lang), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv",
+                                 columns=columns, photo=photo)
+    images = [p.name for p in pdf_render.render_pdf_pages(pdf, stage)]
+    # the letter is printed with the CV template's fonts and icons, as `style_build` checks it
+    letter = print_body(sample_letter(cv_md), letter_template.read_text(encoding="utf-8"), cv_template, "en", stage, "letter")
+    images += [p.name for p in pdf_render.render_pdf_pages(letter[0], stage)]
+    for name in (picture, *_PHOTOS):
+        if name:
+            (stage / name).unlink(missing_ok=True)
+    return images
+
+
+def _move_in(stage: Path, dest: Path) -> None:
+    old = dest.with_name(f".{dest.name}.old")
+    shutil.rmtree(old, ignore_errors=True)
+    if dest.exists():
+        dest.rename(old)
+    stage.rename(dest)
+    shutil.rmtree(old, ignore_errors=True)
+
+
+def show(home: Path, profile_dir: Path, config: dict) -> dict:
+    """The previews, made again where stale: ``{"styles": {"default": {"cv": [png], "letter": [png]}, "like": {...}}}``
+    (absolute paths, page order). `like` is there only when `profile/style/cv.template.html` exists; a set that could
+    not be printed is left out. Nothing is raised for a print that fails."""
+    root = Path(home) / ".style" / "preview"
+    cv_md = _cv_text(Path(profile_dir), config)
+    lang = _language(cv_md)
+    photo = compile_cmd._profile_photo({}, config)
+    out: dict[str, dict] = {}
+    for style in STYLES:
+        folder = root / style
+        cv_template, letter_template = _paths(style, Path(profile_dir))
+        if style == "like" and not cv_template.is_file():
+            shutil.rmtree(folder, ignore_errors=True)
+            continue
+        key = _key(cv_md, lang, photo, cv_template, letter_template)
+        if not _fresh(folder, key):
+            stage = root / f".{style}.staging"
+            shutil.rmtree(stage, ignore_errors=True)
+            try:
+                images = _make(stage, cv_md, lang, photo, cv_template, letter_template)
+                (stage / "meta.json").write_text(json.dumps({"key": key, "images": images}), encoding="utf-8")
+                _move_in(stage, folder)
+            except (html_pdf.PrintError, ValueError, OSError):
+                continue
+            finally:
+                shutil.rmtree(stage, ignore_errors=True)
+        images = json.loads((folder / "meta.json").read_text(encoding="utf-8"))["images"]
+        out[style] = {kind: [str(folder / n) for n in images if n.startswith(f"{kind}_page_")] for kind in ("cv", "letter")}
+    return {"styles": out}

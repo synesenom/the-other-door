@@ -21,9 +21,8 @@ from PIL import Image
 from pypdfium2 import PdfiumError
 
 from door import i18n
-from door.commands import compile as compile_cmd
 from door.core import chromium, claude_cli, fonts, progress as progress_mod, templates, workspace
-from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract)
+from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_preview)
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
@@ -202,15 +201,6 @@ def _stress_variants(cv_md: str) -> dict[str, dict]:
 TIMEOUT_S = 900  # one stylist call
 _CV_FILE, _LETTER_FILE = templates.FILES["cv_template"], templates.FILES["cover_letter_template"]
 _NAME = re.compile(r"^#\s+(.+)$", re.M)
-_SAMPLE_LETTER = """<header class="letter-header"><h1>Jane Doe</h1>
-<p class="contact"><span class="phone">+45 1234 5678</span><span class="email"><a href="mailto:jane@example.com">jane@example.com</a></span><span class="location">Aarhus</span></p></header>
-<div class="recipient"><p>Hiring team</p><p>Example Company</p><p>Copenhagen</p></div>
-<p class="date"><<date>></p>
-<p>Dear hiring team, I am writing to apply for the role you advertise. My eight years of work on data platforms taught me to plan in small steps and to keep the people who use a system informed of what changes and when.</p>
-<p>At my last employer I led a team of four through a migration that ran without a single hour of downtime, and I cut a nightly job from three hours to twenty-five minutes. I would bring the same habits to your team.</p>
-<p>Thank you for your time. I would be glad to tell you more in an interview.</p>
-<div class="closing"><p class="signoff">Kind regards,</p><p>Jane Doe</p></div>"""
-_SAMPLE_DATE = "1 January 2026"
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
 _CSS_COMMENT = re.compile(r"/\*.*?\*/", re.S)
 _TITLE = re.compile(r"<title>.*?</title>", re.S | re.I)
@@ -292,13 +282,8 @@ def _render(s: "_Session", template: str, body: str, lang: str, folder: Path, na
         html_pdf.PrintError: the print failed.
         ValueError: the manifest names a file that is not there.
     """
-    folder.mkdir(parents=True, exist_ok=True)
-    html, placed, picture = compile_cmd.page(body, template, folder, photo=photo, language=lang,
-                                             columns=None if letter else s.manifest.columns)
-    pdf = folder / f"{name}.pdf"
-    html_pdf.print_html(folder, html, pdf,
-                        assets=templates.assets(s.work / _CV_FILE))
-    return pdf, placed, picture
+    return style_preview.print_body(body, template, s.work / _CV_FILE, lang, folder, name, photo=photo,
+                                    columns=None if letter else s.manifest.columns)
 
 
 class _Session:
@@ -434,7 +419,7 @@ def _letter(s: _Session, template: str) -> tuple[str | None, list[str]]:
     files = (f"Write the cover letter template that matches the CV template. Files here: cv.template.html (the CV template "
              f"you wrote: its fonts, colours, margins and header), default.{_LETTER_FILE} (the default letter template: its "
              f"building blocks and structure), template.json, fonts.css. Read the first two with the Read tool.")
-    body = _SAMPLE_LETTER.replace("<<date>>", _SAMPLE_DATE)
+    body = style_preview.sample_letter()
     feedback, problems = None, []
     for _ in range(2):
         progress_mod.report("building the letter template", stage="style")
