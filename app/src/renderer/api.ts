@@ -239,6 +239,8 @@ export interface Materials {
   keywords: string[]
   tailoring: string[]
   page_counts: { cv: number; cover_letter: number }
+  /** The CV's page limit as the profile and template stand now: the stricter of the job country's convention and the template's. */
+  cv_max_pages: number
   cover_letter_words: number | null
   rendered: boolean
   /** Both HTML bodies are there; false for a job prepared with LaTeX (an older version), which only Prepare again changes. */

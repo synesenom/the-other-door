@@ -15,6 +15,7 @@ const materials = (over: Record<string, unknown> = {}) => ({
   keywords: ['SQL', 'dashboards'],
   tailoring: ['Led with the BI project', 'Cut the retail job'],
   page_counts: { cv: 2, cover_letter: 1 },
+  cv_max_pages: 2,
   cover_letter_words: 310,
   rendered: false,
   revisable: true,
@@ -84,6 +85,13 @@ describe('Materials', () => {
     expect(within(figure()).getByRole('note')).toHaveTextContent('(limit is 1)')
     await pick('CV')
     expect(within(figure()).getByRole('note')).toHaveTextContent('(limit is 2)')
+  })
+
+  it('names the CV page limit in force, not a fixed 2', async () => {
+    mockDoor({ show: posting({ materials: materials({ cv_max_pages: 1 }) }) })
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cv" />)
+    await screen.findByRole('heading', { name: 'Ready to send' })
+    expect(within(figure()).getByRole('note')).toHaveTextContent('(limit is 1)')
   })
 
   it.each([200, 400])('flags a letter of %i words', async (words) => {

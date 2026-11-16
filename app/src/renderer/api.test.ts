@@ -111,6 +111,7 @@ const materials = (over: Partial<Materials> = {}): Materials => ({
   keywords: ['sql'],
   tailoring: [],
   page_counts: { cv: 2, cover_letter: 1 },
+  cv_max_pages: 2,
   cover_letter_words: 310,
   rendered: false,
   revisable: true,

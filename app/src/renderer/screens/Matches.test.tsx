@@ -661,7 +661,7 @@ describe('Matches', () => {
       pngs: { cv: ['/abs/jobs/output/jobindex.1/cv_page_1.png'], cover_letter: ['/abs/jobs/output/jobindex.1/cover_letter_page_1.png'] },
       keywords: [],
       tailoring: [],
-      page_counts: { cv: 1, cover_letter: 1 },
+      page_counts: { cv: 1, cover_letter: 1 }, cv_max_pages: 2,
       cover_letter_words: 300,
       rendered: false,
       revisable: true,
