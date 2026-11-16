@@ -540,8 +540,8 @@ def test_cv_section_titles_cover_english_and_danish():
 
 
 @pytest.mark.parametrize("code", ["en", "da", "fr", "hu", "sv"])
-@pytest.mark.parametrize("kind", ["languages", "interests"])
-def test_every_supported_language_names_the_languages_and_interests_sections(code, kind):
+@pytest.mark.parametrize("kind", ["skills", "education", "certifications", "languages", "interests"])
+def test_every_supported_language_names_every_cv_section(code, kind):
     assert i18n.cv_section(kind, (code,)) != []
 
 
