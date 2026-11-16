@@ -28,6 +28,12 @@ class _Reader(HTMLParser):
         self._cur: dict[str, list[str]] = {}
         self._skip: tuple[str, int] | None = None   # (tag, nesting) of the element being left out of the claims
 
+    def _emit(self, text: str, *, claim: bool = True) -> None:
+        """Text into `out`, and into `claims` unless it is not the candidate's."""
+        self.out.append(text)
+        if claim:
+            self.claims.append(text)
+
     def handle_starttag(self, tag, attrs):
         classes = set(dict(attrs).get("class", "").split())
         if self._skip is not None:
@@ -36,26 +42,21 @@ class _Reader(HTMLParser):
         elif tag == "header" or classes & _NOT_CLAIMS_CLASSES:
             self._skip = (tag, 1)
         if tag in _BLOCKS:
-            self.out.append("\n")
-            self.claims.append("\n")
+            self._emit("\n")
         elif tag == "span":  # the template sets the details apart; as text they are words apart
-            self.out.append(" ")
-            self.claims.append(" ")
+            self._emit(" ")
         if tag in ("h2", "h3"):
             self._cur[tag] = []
 
     def handle_startendtag(self, tag, attrs):
         if tag in _BLOCKS:
-            self.out.append("\n")
-            self.claims.append("\n")
+            self._emit("\n")
 
     def handle_endtag(self, tag):
         if tag in _BLOCKS:
-            self.out.append("\n")
-            self.claims.append("\n")
+            self._emit("\n")
         elif tag == "span":
-            self.out.append(" ")
-            self.claims.append(" ")
+            self._emit(" ")
         for name, found in (("h2", self.headings), ("h3", self.h3s)):
             if tag == name and name in self._cur:
                 heading = " ".join("".join(self._cur.pop(name)).split())
@@ -69,11 +70,9 @@ class _Reader(HTMLParser):
 
     def handle_data(self, data):
         data = re.sub(r"\s+", " ", data.replace("\xa0", " "))
-        self.out.append(data)
         for parts in self._cur.values():
             parts.append(data)
-        if self._skip is None and "h2" not in self._cur:
-            self.claims.append(data)
+        self._emit(data, claim=self._skip is None and "h2" not in self._cur)
 
     def handle_comment(self, data):
         self.comments.append(data)

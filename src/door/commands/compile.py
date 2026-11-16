@@ -73,10 +73,10 @@ _PHOTO_FILES = {"jpeg": "photo.jpg", "png": "photo.png"}
 _PHOTO_HTML = '<img class="photo" src="%s" alt="">'
 
 
-def _profile_photo(posting_path: Path) -> Path | None:
-    """The profile's photo, when the job's country lets a CV carry one and the file is a usable picture."""
-    try:  # the raw config: a photo needs no valid profile around it
-        config = json.loads((workspace.PROFILE_DIR / "config.json").read_text(encoding="utf-8"))
+def _profile_photo(posting_path: Path, config: dict) -> Path | None:
+    """The profile's photo (`config` is the raw config: a photo needs no valid profile around it), when the job's
+    country lets a CV carry one and the file is a usable picture."""
+    try:
         posting = json.loads(posting_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
@@ -87,12 +87,12 @@ def _profile_photo(posting_path: Path) -> Path | None:
     return path if photo_mod.problem(path) is None else None
 
 
-def _with_photo(body: str, template: str, output_dir: Path) -> tuple[str, str | None]:
+def _with_photo(body: str, template: str, output_dir: Path, config: dict) -> tuple[str, str | None]:
     """`body` with `<<photo>>` swapped for the photo image (the first one; any other for nothing) and the name of the
     photo copied into `output_dir`, else with every one removed and ``None``."""
     if _PHOTO_TOKEN not in body:
         return body, None
-    source = _profile_photo(output_dir / "posting.json") if _PHOTO_CLASS.search(_COMMENTS.sub("", template)) else None
+    source = _profile_photo(output_dir / "posting.json", config) if _PHOTO_CLASS.search(_COMMENTS.sub("", template)) else None
     if source is None:
         return body.replace(_PHOTO_TOKEN, ""), None
     name = _PHOTO_FILES[photo_mod.kind(source.read_bytes()[:16])]
@@ -154,19 +154,10 @@ def _print(html: str, output_dir: Path, name: str, entry: dict) -> None:
     entry.pop("stderr", None)
 
 
-def _profile_name() -> str | None:
-    """The candidate's name from the raw config (the read-back needs no valid profile)."""
-    try:
-        name = json.loads((workspace.PROFILE_DIR / "config.json").read_text(encoding="utf-8")).get("name")
-    except (OSError, ValueError, AttributeError):
-        return None
-    return name if isinstance(name, str) else None
-
-
-def _read_back(entry: dict, pdf: Path, body: str) -> None:
+def _read_back(entry: dict, pdf: Path, body: str, config: dict) -> None:
     """Set ``entry["readable"]`` from the compiled PDF; a failing check is a ``warning``, never a failed compile."""
     try:
-        entry["readable"] = readability.check_pdf(pdf, body, _profile_name())
+        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"))
     except Exception as exc:  # the check must never fail a compile
         entry["readable"] = None
         entry["warning"] = f"could not read the PDF back: {exc}"
@@ -240,7 +231,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             results.append(entry)
             continue
         language = _language(output_dir)
-        built, photo_name = _with_photo(body, template, output_dir)
+        built, photo_name = _with_photo(body, template, output_dir, config)
         if photo_name:
             entry["photo"] = photo_name
             photos.append(photo_name)
@@ -252,7 +243,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             continue
         _print(page, output_dir, Path(file).stem, entry)
         if entry.get("status") == "compiled":
-            _read_back(entry, Path(entry["pdf"]), body)
+            _read_back(entry, Path(entry["pdf"]), body, config)
         results.append(entry)
 
     for name in _PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use

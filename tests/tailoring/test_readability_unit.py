@@ -79,18 +79,6 @@ def test_a_narrow_no_break_space_reads_as_a_space():
     assert found == []
 
 
-def test_html_entities_in_a_heading_are_the_text():
-    body = "<h2>Skills &amp; Tools</h2><h2>Profile</h2>"
-    assert readability.headings_from_html(body) == ["Skills & Tools", "Profile"]
-
-
-def test_headings_and_keywords_from_html():
-    body = "<!-- Keywords: Python, Airflow -->\n<h2>Profile</h2><h2>Skills &amp; Tools</h2>"
-    assert readability.headings_from_html(body) == ["Profile", "Skills & Tools"]
-    assert readability.keywords_from_html(body) == ["Python", "Airflow"]
-    assert readability.keywords_from_html("nothing") == []
-
-
 def _make_pdf(path, pages):
     return make_pdf(path, pages)
 
@@ -115,6 +103,11 @@ def test_check_pdf_reads_back(tmp_path):
     body = "<!-- Keywords: Kubernetes -->"
     found = readability.check_pdf(pdf, body, NAME)
     assert [p["kind"] for p in found] == ["missing"] and "Kubernetes" in found[0]["detail"]
+
+
+def test_check_pdf_takes_a_name_that_is_not_text_as_no_name(tmp_path):
+    pdf = _make_pdf(tmp_path / "cv.pdf", ["Jane Doe  a long enough line of text for the page"])
+    assert readability.check_pdf(pdf, "<p>x</p>", 42) == readability.check_pdf(pdf, "<p>x</p>", None)
 
 
 def test_fixable_keeps_only_what_the_tailor_can_fix():

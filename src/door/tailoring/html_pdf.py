@@ -41,25 +41,25 @@ class _Handler(http.server.BaseHTTPRequestHandler):
     root: Path
     assets: dict[str, Path] = {}
 
-    def _target(self, path: str) -> Path:
-        """The file a path names: under an asset name, inside that asset folder; else inside the page's folder."""
+    def _target(self, path: str) -> tuple[Path, Path] | None:
+        """``(file, folder it must stay inside)`` for a path: under an asset name, in that asset folder; else in the
+        page's folder. None where no file can be meant (a bare asset name)."""
         first, _, rest = path.lstrip("/").partition("/")
         if first in self.assets:
-            base = self.assets[first]
-            return (base / rest).resolve() if rest else base / "\0"
-        return (self.root / path.lstrip("/")).resolve()
+            return (self.assets[first] / rest, self.assets[first]) if rest else None
+        return self.root / path.lstrip("/"), self.root
 
     def do_GET(self) -> None:  # noqa: N802 - http.server's name
-        path = unquote(urlsplit(self.path).path)
-        first = path.lstrip("/").partition("/")[0]
-        base = self.assets.get(first, self.root)
+        target = None
         try:
-            target = self._target(path)
-            inside = target.is_relative_to(base)
-            found = inside and target.is_file()
+            where = self._target(unquote(urlsplit(self.path).path))
+            if where:
+                resolved = where[0].resolve()
+                if resolved.is_relative_to(where[1]) and resolved.is_file():
+                    target = resolved
         except (OSError, ValueError):
-            found = False
-        if not found:
+            pass
+        if target is None:
             self.send_error(404)
             return
         data = target.read_bytes()

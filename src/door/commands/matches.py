@@ -395,7 +395,7 @@ def _materials(output_dir: Path) -> dict | None:
     tailoring: list[str] = []
     if cv_html.is_file():
         cv_body = cv_html.read_text(encoding="utf-8")
-        keywords = readability.keywords_from_html(cv_body)
+        keywords = html_doc.keywords(cv_body)
         tailoring = [n.strip() for n in (html_doc.note(cv_body, "Tailoring") or "").split(";") if n.strip()]
 
     letter_html = output_dir / "cover_letter.html"
@@ -423,7 +423,7 @@ def _materials(output_dir: Path) -> dict | None:
 
 def _readability(output_dir: Path) -> list[dict] | None:
     """The ATS read-back of both PDFs in `output_dir`, or None when either cannot be read."""
-    name = compile_cmd._profile_name()
+    name = compile_cmd._raw_config().get("name")
     found: list[dict] = []
     try:
         for material in _MATERIALS:

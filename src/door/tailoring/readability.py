@@ -19,16 +19,6 @@ def normalise(text: str) -> str:
     return " ".join(text.split())
 
 
-def headings_from_html(body: str) -> list[str]:
-    """The `<h2>` section headings of a CV body, in order."""
-    return html_doc.headings(body)
-
-
-def keywords_from_html(body: str) -> list[str]:
-    """The keywords of the body's `Keywords` comment, or []."""
-    return html_doc.keywords(body)
-
-
 def problems(text: str, *, name: str | None, headings: list[str], keywords: list[str], pages: int = 1) -> list[dict]:
     """What would not survive an ATS reading `text` (a PDF's extracted text), as ``[{kind, detail}]``.
 
@@ -88,7 +78,8 @@ def extract(pdf: Path) -> tuple[str, int]:
     return "\n".join(texts), len(texts)
 
 
-def check_pdf(pdf: Path, body: str, name: str | None) -> list[dict]:
-    """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from."""
+def check_pdf(pdf: Path, body: str, name: object) -> list[dict]:
+    """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
+    the raw config's value, used when it is a string)."""
     text, pages = extract(pdf)
-    return problems(text, name=name, headings=headings_from_html(body), keywords=keywords_from_html(body), pages=pages)
+    return problems(text, name=name if isinstance(name, str) else None, headings=html_doc.headings(body), keywords=html_doc.keywords(body), pages=pages)
