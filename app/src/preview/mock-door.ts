@@ -43,6 +43,8 @@ function listFor(args: Record<string, unknown>): List {
  * at prepare's 150 DPI), picked by the file name the fixture asks for. */
 const PAGES: Record<string, string> = { cv_page_1: cvPage1, cv_page_2: cvPage2, cover_letter_page_1: letterPage1 }
 const pageUrl = (_jobId: string, pngPath: string): string => PAGES[pngPath.split('/').pop()!.replace(/\.png$/, '')] ?? cvPage1
+const stylePageUrl = (_style: string, pngPath: string): string =>
+  pngPath.includes('letter') ? letterPage1 : (PAGES[pngPath.split('/').pop()!.replace(/\.png$/, '')] ?? cvPage1)
 
 
 // What a page shows and the CV lacks, as the preview's enrich proposes it.
@@ -70,6 +72,10 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   let signedIn = !scene.claudeSignedOut && !scene.claudeNotInstalled
   const loginListeners = new Set<(s: { state: 'done' }) => void>()
   // Google Drive as the scene starts it: connect_drive, sync_data and disconnect_drive change it.
+  // Profile → CV's Style, as the server would keep it: `use_style` and a build change it.
+  const styled = scene.style ?? {}
+  const style = { in_use: styled.in_use ?? 'default', like: Boolean(styled.like), candidate: Boolean(styled.candidate), building: Boolean(styled.building), two_column: Boolean(styled.two_column) }
+  const styleSet = (version: string, two_column = false) => ({ cv: ['cv_page_1.png', 'cv_page_2.png'], letter: ['letter_page_1.png'], version, two_column })
   const ACCOUNT = 'jane.doe@example.com'
   const start = scene.drive ?? 'off'
   let drive = {
@@ -155,12 +161,22 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         return {
           ...fixtures.status_summary,
           drive,
-          ...(scene.styleReady ? { style: { state: 'ready' } } : {}),
+          style: { state: style.building ? 'building' : style.candidate || scene.styleReady ? 'ready' : 'none' },
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
           ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {}, pass_rates_by_score: null } : {}),
           // the plan's window nearly full: the sidebar's foot says so
           ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, five_hour: { used: 0.9, resets_at: new Date(Date.now() + 90 * 60_000).toISOString() }, room: { find: 1, prepare: 2 } } } : {}),
         }
+      case 'show_style':
+        return { styles: { default: styleSet('d'), ...(style.like ? { like: styleSet('l', style.two_column) } : {}) }, in_use: style.in_use, candidate: style.candidate }
+      case 'use_style': {
+        const pick = String(args['style'] ?? 'like')
+        if (pick === 'like') style.in_use = 'like'
+        else if (pick === 'default') style.in_use = 'default'
+        style.candidate = false
+        const prepared = styled.prepared ?? 0
+        return { in_use: style.in_use, prepared, ...(args['rerender'] ? { rerendered: Array.from({ length: prepared }, (_, i) => `job.${i}`), failed: [] } : {}) }
+      }
       case 'doctor':
         if (!installed) return { ok: false, checks: [{ name: 'claude CLI', status: 'missing', required: true, detail: 'no claude found' }] }
         return doctorReport(signedIn ? 'ok' : 'out')
@@ -299,7 +315,16 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
     buildStyle: async () => ({ ok: true, data: { started: true } }),
-    chooseStyleFile: async () => ({ ok: true, data: { started: true } }),
+    chooseStyleFile: async () => {
+      // a build that ends, a little later, with a style to compare
+      style.building = true
+      setTimeout(() => {
+        style.building = false
+        style.like = true
+        style.candidate = true
+      }, 6_000)
+      return { ok: true, data: { started: true } }
+    },
     claudeLogin: {
       start: async () => {
         // A moment for the "Starting the sign-in" line, then signed in, with no browser.
@@ -323,6 +348,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       return { demo: false, home: '/demo' }
     },
     pageUrl,
+    stylePageUrl,
     exportData: async () => ({ ok: false, canceled: true }),
     pickArchive: async () => ({ canceled: true }),
     importData: async () => ({ ok: false, error: 'Nothing is imported in the preview.' }),

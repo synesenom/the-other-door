@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useEffect, useId, useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react'
 import { named } from './AppName'
 import { call, errorText } from '../api'
 import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
@@ -54,7 +54,7 @@ function Chips({ label, help, errors, values, onChange }: { label: string; help?
 /** Where Profile opens: the CV or the Stories, or a section of the details scrolled into view. */
 export type ProfileStart = { view: 'cv' | 'stories' } | { section: string }
 
-export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDraft: () => void; start?: ProfileStart }) {
+export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => void; onDraft: () => void; start?: ProfileStart; style?: ComponentProps<typeof CvEditor>['style'] }) {
   // Details (config.json), the CV (cv.md) or the Stories (story_bank.md); the details' unsaved changes stay while the CV is shown.
   const [view, setView] = useState<'details' | 'cv' | 'stories'>(start && 'view' in start ? start.view : 'details')
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -212,7 +212,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
     return (
       <Wrap aside={aside}>
         {switcher}
-        <CvEditor onDraft={onDraft} onSaved={onSaved} unsaved={cvUnsaved} onUnsaved={setCvUnsaved} />
+        <CvEditor onDraft={onDraft} onSaved={onSaved} unsaved={cvUnsaved} onUnsaved={setCvUnsaved} style={style} />
       </Wrap>
     )
   }

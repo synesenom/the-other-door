@@ -257,3 +257,24 @@ describe('CvEditor, the profile unreadable', () => {
     expect(screen.queryByLabelText('Your CV (Markdown)')).toBeNull()
   })
 })
+
+describe('CvEditor, the Style', () => {
+  const styled = { show_style: { styles: { default: { cv: ['/h/cv_page_1.png'], letter: ['/h/letter_page_1.png'], version: 'v1', two_column: false } }, in_use: 'default', candidate: false } }
+
+  it('is above the CV, and its previews are read again after a save', async () => {
+    const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: null }, ...styled })
+    render(<CvEditor onDraft={vi.fn()} onSaved={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
+    await screen.findByRole('img', { name: /The other door's/ })
+    const row = screen.getByText('Style')
+    expect(row.compareDocumentPosition(screen.getByText('Your CV')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    h.call.mockClear()
+    await userEvent.type(editor(), '- SQL{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('show_style', {}))
+  })
+
+  it('is not there without the app telling it how the build stands', async () => {
+    await open()
+    expect(screen.queryByText('Style')).toBeNull()
+  })
+})

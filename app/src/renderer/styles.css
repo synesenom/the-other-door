@@ -655,3 +655,17 @@ details[open] > summary::before { transform: rotate(90deg); }
   .step-item-running .step-item-mark { animation: none; }
   .primary, .secondary, .quiet, .pill, .nav-item, .switch-track, .switch-thumb { transition: none; }
 }
+
+/* Profile → CV's Style: the sheets side by side, each a button that opens the full pages. The sheet keeps its size
+   while the previews are made, so the row does not move. */
+.dialog-wide { width: min(720px, calc(100vw - var(--space-8))); }
+.style-row { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+.style-cards { display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start; }
+.style-card { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; width: 160px; }
+.style-thumb { display: block; width: 160px; padding: 0; background: none; border: 1px solid var(--color-border); border-radius: var(--radius-s); overflow: hidden; cursor: pointer; }
+.style-thumb .paper { border-radius: 0; }
+.style-sheet { width: 160px; aspect-ratio: 1 / 1.414; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
+.style-caption { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
+.style-mark { color: var(--color-accent); }
+.style-rerender { display: flex; }
+@media (hover: hover) { .style-thumb:hover { border-color: var(--color-ink); } }

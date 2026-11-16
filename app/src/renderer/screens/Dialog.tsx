@@ -7,12 +7,14 @@ interface Props {
   children: ReactNode
   /** A CSS selector inside the dialog for the control that takes focus first; else the first control. */
   initialFocus?: string
+  /** A document to read: wide enough for a page. */
+  wide?: boolean
 }
 
 const FOCUSABLE = 'button:not([disabled]), textarea, [href], input, select, [tabindex]:not([tabindex="-1"])'
 
 /** The shared modal: a scrim, a titled panel, focus kept inside, Escape to leave. */
-export function Dialog({ title, onClose, children, initialFocus }: Props) {
+export function Dialog({ title, onClose, children, initialFocus, wide }: Props) {
   const dialog = useRef<HTMLDivElement>(null)
   const titleId = useId()
 
@@ -46,7 +48,7 @@ export function Dialog({ title, onClose, children, initialFocus }: Props) {
 
   return (
     <div className="scrim">
-      <div ref={dialog} className="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} onKeyDown={onKeyDown}>
+      <div ref={dialog} className={wide ? 'dialog dialog-wide' : 'dialog'} role="dialog" aria-modal="true" aria-labelledby={titleId} onKeyDown={onKeyDown}>
         <h2 id={titleId} className="display-s">
           {title}
         </h2>

@@ -40,6 +40,9 @@ export interface Scene {
   drive?: 'off' | 'connected' | 'failed' | 'conflict'
   /** A CV style build that is ready: the sidebar's foot says so. */
   styleReady?: boolean
+  /** Profile → CV's Style: which style is in use, whether one built from a CV is kept (`like`), whether it waits to
+   * be chosen (`candidate`), a build running, how many prepared CVs a switch could print again. Default: The other door's, no build. */
+  style?: { in_use?: 'default' | 'like'; like?: boolean; candidate?: boolean; two_column?: boolean; building?: boolean; prepared?: number }
 }
 
 export const SAMPLE_RUN: RunRecord = {
@@ -167,6 +170,12 @@ export const SCENES: readonly Scene[] = [
   { id: 'sent', group: 'Applications', title: 'What you sent', open: { screen: 'materials', jobId: 'jobindex.demo-7', inPlay: true } },
   { id: 'profile', group: 'Profile', title: 'Profile form', start: { destination: 'Profile' } },
   { id: 'profile-cv', group: 'Profile', title: 'CV', start: { destination: 'Profile', cv: true } },
+  { id: 'profile-cv-style-loading', group: 'Profile', title: 'CV, the previews being made', start: { destination: 'Profile', cv: true }, hold: 'show_style' },
+  { id: 'profile-cv-style-building', group: 'Profile', title: 'CV, a style being built', start: { destination: 'Profile', cv: true }, style: { building: true } },
+  { id: 'profile-cv-style-candidate', group: 'Profile', title: 'CV, a built style to compare (Use this style, then Re-render)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 2 } },
+  { id: 'profile-cv-style-earlier', group: 'Profile', title: 'CV, a new style while an earlier one is in use', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, candidate: true, prepared: 2 } },
+  { id: 'profile-cv-style-inuse', group: 'Profile', title: 'CV, a style of your own in use', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, prepared: 1 } },
+  { id: 'profile-cv-style-two-column', group: 'Profile', title: 'CV, a two-column style', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, two_column: true } },
   { id: 'profile-stories', group: 'Profile', title: 'Stories', start: { destination: 'Profile', stories: true } },
   { id: 'settings', group: 'Settings', title: 'Settings', start: { destination: 'Settings' } },
   { id: 'analytics', group: 'Analytics', title: 'Analytics: applications, Claude usage and the market', start: { destination: 'Analytics' } },
