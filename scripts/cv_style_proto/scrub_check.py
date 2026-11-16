@@ -1,9 +1,11 @@
-"""The two sides of scrub_pdf.py: the original's words, and the check that none is left and nothing moved.
+"""The two sides of scrub_pdf.py: the original's words (and its numbers of two digits or more), and the check
+that none is left and nothing moved.
 
 usage: scrub_check.py words <original.pdf> > words.json
        scrub_check.py check <original.pdf> <scrubbed.pdf> <words.json>
-check prints how far icons (FontAwesome) and text runs moved, every original word still found in the text
-or in the decompressed streams, links and metadata left, and writes <scrubbed>-pdfium.png to look at.
+check prints how far icons (FontAwesome) and text runs moved, every original word or number still found in the
+text, every word in the decompressed streams (PDF names, fonts and CMaps left out), links and metadata left,
+and writes <scrubbed>-pdfium.png to look at.
 Run with the project's environment (pypdfium2): `PYTHONPATH=src poetry run python -I scripts/cv_style_proto/scrub_check.py ...`
 """
 from __future__ import annotations
@@ -18,12 +20,27 @@ import pypdfium2 as pdfium
 import pypdfium2.raw as raw
 
 WORD = r"[^\W\d_]{3,}"
+TOKEN = WORD + r"|\d{2,}"
 
 
 def words(path: str) -> list[str]:
     pdf = pdfium.PdfDocument(path)
     text = "\n".join(p.get_textpage().get_text_range() for p in pdf)
-    return sorted({w.lower() for w in re.findall(WORD, text)})
+    return sorted({w.lower() for w in re.findall(TOKEN, text)})
+
+
+def numbers_left(banned: set[str], text: str) -> list[str]:
+    """The original's numbers found inside a number of the scrubbed text."""
+    found = re.findall(r"\d+", text)
+    return sorted(b for b in banned if b.isdigit() and any(b in n for n in found))
+
+
+def searchable(blob: bytes) -> bytes | None:
+    """A PDF's bytes as the CV's words could be left in them: lower case, its /Names left out, an escaped letter
+    (\\351, or a raw byte above 127) kept in its word; None for a font program or a CMap, whose words are their own."""
+    if blob.startswith((b"%!", b"\x00\x01\x00\x00", b"true", b"OTTO", b"/CIDInit")):
+        return None
+    return re.sub(rb"\\[0-7]{1,3}|[\x80-\xff]", b"x", re.sub(rb"/[^\s/<>\[\]()]+", b" ", blob)).lower()
 
 
 def starts(pdf: pdfium.PdfDocument, icon: bool) -> list[tuple[float, float]]:
@@ -55,18 +72,18 @@ def check(original: str, scrubbed: str, words_json: str) -> None:
     print("text runs moved at most:", shift(starts(a, False), starts(b, False)))
     text = "\n".join(p.get_textpage().get_text_range() for p in b).lower()
     print("original words in the text:", sorted(set(re.findall(WORD, text)) & banned))
+    print("original numbers in the text:", numbers_left(banned, text))
     data = open(scrubbed, "rb").read()
     blobs = [data]
     for m in re.finditer(rb"stream\r?\n(.*?)\r?\nendstream", data, re.S):
         try:
-            blob = zlib.decompress(m.group(1))
+            blobs.append(zlib.decompress(m.group(1)))
         except zlib.error:
             continue
-        if not blob.startswith(b"%!"):  # font programs and CMaps: their own words, not the CV's
-            blobs.append(blob)
+    blobs = [x for x in map(searchable, blobs) if x is not None]
     print("original words (4+ letters) in the bytes:",
-          sorted(w for w in banned if len(w) >= 4
-                 and any(re.search(rb"\b" + re.escape(w.encode()) + rb"\b", x.lower()) for x in blobs)))
+          sorted(w for w in banned if len(w) >= 4 and not w.isdigit()
+                 and any(re.search(rb"\b" + re.escape(w.encode()) + rb"\b", x) for x in blobs)))
     print("links:", sum(raw.FPDFPage_GetAnnotCount(p.raw) for p in b),
           "| metadata:", {k: v for k, v in b.get_metadata_dict().items() if v})
     b[0].render(scale=150 / 72).to_pil().save(scrubbed.removesuffix(".pdf") + "-pdfium.png")
