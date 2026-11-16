@@ -12,7 +12,7 @@ You are working through an epic issue of The other door. The epic's number is th
 - every sub-issue of the epic (and of its sub-epics), including those added while working, is **implemented**: closed as completed, closed as not planned, or has an open pull request that closes it with every check green and no merge conflict;
 - the epic's body has no unchecked `- [ ]` box.
 
-Merging is the maintainer's: never merge, approve or enable auto-merge. Run the loop below until done, or until only the maintainer can move things on (Step 7). Do not stop after one sub-issue to report or ask whether to go on.
+Merging is the maintainer's: never merge, approve or enable auto-merge. Run the loop below until done. **Never stop before then**, except to ask a question the `decider` returned CANNOT DECIDE on (Step 7). Do not stop after one sub-issue to report or ask whether to go on. Something else only the maintainer can give (a merge, a permission the harness asks for, a hint for a `failed` sub-issue) blocks that one item, never the loop: ask for it in one line and go on with every other sub-issue. When the maintainer says something is merged or granted, re-read the epic at once and start what it unblocked, in the same turn.
 
 **Never stop to report.** A sub-issue's PR opened, a step of `/dev-resolve` done, an agent returned, a decision taken, an issue filed: none ends the run. Go on to the next step or sub-issue in the same turn; the progress line (Step 6) is one line printed on the way, not a stopping point. While background agents or checks run, end the turn without a summary or a question and pick up the moment they finish. The only stops are Step 7 (only the maintainer can move things on), a CANNOT DECIDE, and a permission the harness must ask for. The report is Step 8, once, at the end.
 
@@ -86,7 +86,7 @@ When nothing is left to start and PRs still have checks running, wait for them i
 
 ## Step 7: When only the maintainer can move things on
 
-When everything left is a merge to wait for, a `blocked: question`, a `failed` sub-issue or a PR the maintainer closed: ask the questions together with AskUserQuestion (for a failed one: try again with their hint, or leave it). Act on the answers and go back to the loop. If what is left is only merges, stop and report (Step 8): merging is theirs, and `/dev-epic <N>` continues afterwards.
+Stop and wait only for a `blocked: question` (the `decider`'s CANNOT DECIDE): ask the questions together with AskUserQuestion, act on the answers and go back to the loop. A `failed` sub-issue, a PR the maintainer closed or a permission to wait for is asked about in the same message, but never stops work on the other sub-issues. Open PRs waiting for a merge count as implemented (see **Done**); when they are all that is left, the epic is done: report (Step 8).
 
 ---
 
