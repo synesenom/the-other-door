@@ -263,12 +263,13 @@ describe('chromiumSigningChecks', () => {
 })
 
 describe('machOFiles', () => {
-  it('picks executables and dylibs through the whole tree, nothing else', () => {
+  it('picks the Mach-O files through the whole tree by their first bytes, nothing else', () => {
     const dir = mkdtempSync(join(tmpdir(), 'macho-'))
     mkdirSync(join(dir, 'sub'))
-    writeFileSync(join(dir, 'shell'), 'x', { mode: 0o755 })
-    writeFileSync(join(dir, 'sub', 'libx.dylib'), 'x', { mode: 0o644 })
-    writeFileSync(join(dir, 'icudtl.dat'), 'x', { mode: 0o644 })
+    writeFileSync(join(dir, 'shell'), Buffer.from([0xcf, 0xfa, 0xed, 0xfe, 7, 0, 0, 1]))   // 64-bit Mach-O
+    writeFileSync(join(dir, 'sub', 'libx.dylib'), Buffer.from([0xca, 0xfe, 0xba, 0xbe, 0, 0, 0, 2]))   // universal
+    writeFileSync(join(dir, 'icudtl.dat'), 'data')
+    writeFileSync(join(dir, 'run.sh'), '#!/bin/sh\n', { mode: 0o755 })
     expect(machOFiles(dir)).toEqual([join(dir, 'shell'), join(dir, 'sub', 'libx.dylib')])
   })
 })
