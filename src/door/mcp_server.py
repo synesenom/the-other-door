@@ -1338,7 +1338,8 @@ def draft_cv(sources: list[str], write: bool = False, model: str | None = None) 
     Returns:
         ``{"draft_path" | "cv_path" + "backup", "written", "sources",
         "provenance": [{"source", "contributed"}], "todos", "markdown"}``
-        (``markdown`` is the draft text).
+        (``markdown`` is the draft text; each file in ``sources`` has
+        ``style``, whether its look can be copied by ``build_style``).
     """
     for source in sources:
         if not common._is_url(source):

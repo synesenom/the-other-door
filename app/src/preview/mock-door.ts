@@ -155,6 +155,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         return {
           ...fixtures.status_summary,
           drive,
+          ...(scene.styleReady ? { style: { state: 'ready' } } : {}),
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
           ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {}, pass_rates_by_score: null } : {}),
           // the plan's window nearly full: the sidebar's foot says so
@@ -297,6 +298,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
+    buildStyle: async () => ({ ok: true, data: { started: true } }),
     claudeLogin: {
       start: async () => {
         // A moment for the "Starting the sign-in" line, then signed in, with no browser.

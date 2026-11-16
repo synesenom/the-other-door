@@ -13,6 +13,16 @@ const calm: ProblemInput = {
   recurring: false,
 }
 
+describe('problems, the CV style', () => {
+  it('a style that is ready is said last, opening Profile on the CV; nothing for the other states', () => {
+    expect(problems({ ...calm, recurring: true, style: 'ready' })).toEqual([
+      { key: 'report', text: 'Something keeps going wrong. Send a report', target: 'settings-report' },
+      { key: 'style', text: 'Your CV style is ready to compare', target: 'profile-cv' },
+    ])
+    for (const style of ['none', 'building', 'failed', null, undefined] as const) expect(problems({ ...calm, style })).toEqual([])
+  })
+})
+
 describe('problems', () => {
   it('nothing wrong: nothing said, and a Drive that is simply off is not a problem', () => {
     expect(problems(calm)).toEqual([])

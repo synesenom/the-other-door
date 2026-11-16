@@ -8,7 +8,7 @@ import { todoOffsets } from '../todos'
 import { Spinner } from '../Spinner'
 import { ChipInput, CityField, FieldLabel, Frame, TextField } from './parts'
 import { saveProfile } from './save'
-import { discoveryFor, hasOwnCv, ownTitles, photoPolicy, reviewProblem, stillUnfound, todoCount } from './reducer'
+import { discoveryFor, hasOwnCv, ownTitles, photoPolicy, reviewProblem, stillUnfound, styleSource, todoCount } from './reducer'
 import type { Action, Remote, ReviewSection, ShowProfile, WizardState } from './reducer'
 import { Switch } from '../Switch'
 import { PhotoField, photoHelp } from '../PhotoField'
@@ -131,10 +131,12 @@ interface Props {
   dispatch: Dispatch<Action>
   onSaved: (profile: ShowProfile) => void
   onBack?: () => void
+  /** The onboarding sandbox: nothing real is built. */
+  sandbox?: boolean
 }
 
 /** One review with everything inferred, editable in place. Only Save writes. */
-export function Review({ state, profile, dispatch, onSaved, onBack }: Props) {
+export function Review({ state, profile, dispatch, onSaved, onBack, sandbox = false }: Props) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [legalOpen, setLegalOpen] = useState(false)
@@ -305,6 +307,18 @@ export function Review({ state, profile, dispatch, onSaved, onBack }: Props) {
           </ul>
         )}
       </Folded>
+
+      {!sandbox && styleSource(state) && (
+        <Part title="Your CV's style">
+          <div className="field onb-field">
+            <label className="choice">
+              <input type="checkbox" checked={state.style} onChange={(e) => dispatch({ type: 'style', on: e.target.checked })} />
+              <span>Make my tailored CVs look like the CV I uploaded</span>
+            </label>
+            <p className="small muted">Takes 5–10 minutes in the background.</p>
+          </div>
+        </Part>
+      )}
 
       {state.story && (
         <Part

@@ -57,3 +57,25 @@ def test_a_continuous_clock_goes_on_across_processes(tmp_path):
     second = run()
     assert second > first
     assert (tmp_path / "clock-start.txt").exists()
+
+
+def test_a_door_process_the_server_starts_detached_gets_the_hook(tmp_path):
+    """The CV style build is `python -m door ...` started detached by the server with its own PYTHONPATH: the world's hook rides along (#150)."""
+    (tmp_path / "world.json").write_text(json.dumps({"now": "2026-03-02T09:00:00+00:00", "boards": {}, "feeds": {}}))
+    code = """
+import json, subprocess, sys
+sys.path.insert(0, %r)
+import edges
+from pathlib import Path
+from door.core import phone
+seen = []
+subprocess.Popen = lambda argv, **kw: seen.append([argv, kw["env"]])
+phone.spawn_detached([sys.executable, "-m", "door", "cv", "style", "build", "x.pdf"], log=Path(%r), env={"PYTHONPATH": "/the/src", "DOOR_WORLD": %r})
+phone.spawn_detached([sys.executable, "-c", "pass"], log=Path(%r), env={"PYTHONPATH": "/the/src"})
+print(json.dumps([e["PYTHONPATH"] for _, e in seen]))
+""" % (str(WORLD_DIR), str(tmp_path / "a.log"), str(tmp_path), str(tmp_path / "b.log"))
+    env = {**os.environ, "DOOR_WORLD": str(tmp_path), "PYTHONPATH": str(SRC_DIR)}
+    out = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True)
+    door, other = json.loads(out.stdout.strip().splitlines()[-1])
+    assert door.split(os.pathsep) == ["/the/src", str(WORLD_DIR / "hook")]
+    assert other == "/the/src"

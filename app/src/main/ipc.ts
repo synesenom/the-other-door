@@ -35,6 +35,8 @@ export const CHANNELS = {
   /** The CV photo (photo-file.ts): a picture chosen in main, then saved by its token. */
   pickPhoto: 'door:pick-photo',
   savePhoto: 'door:save-photo',
+  /** The CV style build: a CV file the wizard read, by its token. */
+  buildStyle: 'door:build-style',
   /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
   claudeLoginStart: 'door:claude-login-start',
   claudeLoginCode: 'door:claude-login-code',
@@ -176,6 +178,17 @@ function offeredName(name: unknown, which: string): string {
   const plain = typeof name === 'string' ? basename(name.replace(/\\/g, '/')).replace(/[\x00-\x1f]/g, '').trim() : ''
   if (!plain || plain.startsWith('.')) return `${which}.pdf`
   return /\.pdf$/i.test(plain) ? plain : `${plain}.pdf`
+}
+
+/** The draft's file sources come back in the order the files were sent: each gets the token it was sent under
+ * (the window never sees a path), so the window can name a file it drafted from. */
+function withTokens(data: unknown, tokens: string[]): unknown {
+  if (!isPlainObject(data) || !Array.isArray(data['sources'])) return data
+  let at = 0
+  const sources = data['sources'].map((s: unknown) =>
+    isPlainObject(s) && s['kind'] === 'file' && at < tokens.length ? { ...s, token: tokens[at++] } : s,
+  )
+  return { ...data, sources }
 }
 
 export function registerIpc(
@@ -342,7 +355,7 @@ export function registerIpc(
     }
     try {
       const data = await server.call('draft_cv', { sources: [...paths, ...urls] }, { timeout: TOOL_TIMEOUTS['draft_cv'] })
-      return { ok: true, data }
+      return { ok: true, data: withTokens(data, files) }
     } catch (e) {
       return failureEnvelope(e)
     }
@@ -355,6 +368,19 @@ export function registerIpc(
     if (!path) return { ok: false, error: 'Choose the picture again.' }
     try {
       return { ok: true, data: await server.call('save_photo', { path }) }
+    } catch (e) {
+      return failureEnvelope(e)
+    }
+  })
+
+  // The CV style build: the CV file the wizard read, by its token (the window never names a path); not on made-up data.
+  ipcMain.handle(CHANNELS.buildStyle, async (_event, token: unknown): Promise<Envelope> => {
+    if (deps.info?.demo) return { ok: false, error: 'A style cannot be built from made-up data.' }
+    if (typeof token !== 'string' || !deps.cvSources) return { ok: false, error: 'Choose the file again.' }
+    const resolved = await deps.cvSources.resolve([token])
+    if (!resolved.ok) return resolved
+    try {
+      return { ok: true, data: await server.call('build_style', { file: resolved.paths[0] }) }
     } catch (e) {
       return failureEnvelope(e)
     }
