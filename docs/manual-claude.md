@@ -14,9 +14,9 @@ PDF export, your website or online portfolio), drafts `profile/cv.md` from them,
 job titles and search terms, and asks only for what it could not find, plus one optional question: what
 matters to you in an employer or a job and what you rule out, in your own words. Say "change what matters to me"
 later and `init_profile` saves the new text in `other` (`{"preferences": ...}`); it applies from the next run. Everything comes together in
-one review, written only after you confirm; then the first search starts. Each step is a tool
+one review, written only after you confirm; then the first search starts. On a first set-up with a PDF that has a look to copy, the review has one more line, off by default: "Make my tailored CVs look like the CV I uploaded?". Say yes and `build_style` runs after the profile is saved, in the background, beside the first search; nothing waits for it. When it is ready, the start of a later conversation says so, shows the first page in each style and asks which to keep (`show_style`, then `use_style`); see [Your CV's style](how-it-works.md#your-cvs-style). Each step is a tool
 (`draft_cv`, `infer_basics`, `suggest_titles`, `keywords`, `preview_matches`, `init_profile`, `save_cv`,
-`find_jobs`), so you can also ask for any one of them on its own: "here's my old CV, draft the new
+`find_jobs`, and `build_style` for the style line), so you can also ask for any one of them on its own: "here's my old CV, draft the new
 one", "what titles should I look for?", "expand my search keywords".
 
 Later, `/expand` adds to the CV what your public pages evidence (the `enrich` tool) — see
@@ -48,6 +48,7 @@ Things you can say:
 - "Tighten the letter's second paragraph." → `revise`; "undo that" → `revise` with `undo`.
 - "Mark Trustpilot applied." → `set_status` (Claude asks how you sent it — easy apply, the company's site, a referral, or they came to you — unless you said); "I applied to Trustpilot on the 3rd" → the same with `at`, so the history keeps when it happened; "Pleo never answered after the interview" → `set_status` `ghosted`. The first time an application is marked sent, the materials are copied to `jobs/output/<id>/sent/`; if its ad is not on disk or is only a snippet, Claude says so.
 - "I have a technical interview with Trustpilot on Friday" → `set_status` `interview:technical`, one call per round; "they turned me down" → `rejected` (it ends the last round). The interview statuses are `interview:screening` (pre-screening, HR), `interview:impression` (first non-technical interview), `interview:assessment` (personality/cognitive test) and `interview:technical`; when you don't say which, Claude asks with the four as options. "How do my interviews go?" → `status_summary`'s `interviews`: each kind, passed / rejected / ghosted / withdrawn / pending; "what are my pass rates?" → its `pass_rates`: for the application (did it lead to an interview) and each kind of interview, the decided rounds passed, the rate and its one-sigma Wilson interval (`low`, `high`).
+- "Is my style ready?" / the start of a session with a built style waiting → `status_summary`'s `style` is `ready`: Claude says so, `show_style` gives the first page in each style (The other door's, and the one built from your CV, with a note when it has two columns), and you pick with `use_style` (`default`, `like`, or `current` to keep the one in use); jobs already prepared are printed again with `rerender` only when you say so. "Use my CV's style" with nothing built yet → give the PDF (inside the data folder) and `build_style` starts a build in the background.
 - "I'm done." → `mark_reviewed`, so next time "new" means new since now.
 - "Set me up." → asks for your details, then `init_profile`; `doctor` to confirm.
 - "Here's my old CV, draft the new one." → `draft_cv` with the file (put it in *The other door*'s folder first: the tools that take a file refuse one outside it) and any public pages;

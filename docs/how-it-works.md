@@ -138,6 +138,38 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    source to cite, or a call that fails, leaves no estimate and says nothing; the prepare is never failed by it.
    `show` (the app's posting and Ready to send) reads the saved estimate and never asks; `find` never estimates.
 
+## Your CV's style
+
+By default the tailored CV and letter are printed in The other door's own template. A style build makes
+the printed CV look like a CV you already have: you give a PDF of it (the desktop app's first-launch
+tick, `init`'s review line, `/onboard`'s review line, `cv style build`, or "use my CV's style" in a
+conversation) and a build runs in the background, beside whatever else you are doing.
+
+What a build does, in order: it reads the PDF on this computer, with no network and no model (its fonts,
+colours, margins, columns, headings, rules, photo and icons); it fetches the free look-alike of each font from
+Google's open font collection (pinned and checked by hash; no CV data is sent); then the stylist agent (Sonnet,
+usage feature `style`, shown as "Building a CV template") writes an HTML and CSS template round by round. Each
+draft is printed with the pinned Chromium and compared with your PDF page by page, and it is stress-tested on
+shorter, longer, French and with-photo variants of `cv.md`. Only a template that passes is kept, in
+`profile/style.next/`; a build that fails writes nothing and says nothing in the app. A two-column result may be read
+less well by some application systems.
+
+Nothing changes until you choose. The default stays in use until you compare the two (`cv style show`, a
+conversation, or the app's Profile, CV) and pick one with `cv style use` or in the app; `jobs summary` and a
+review session say when a style is ready. Jobs already prepared are printed again in the style you chose only
+when you ask.
+
+Cost: a one-off, 5-10 minutes, about $0.50-1.50 at API prices. That is an estimate from `claude`'s price table,
+not a bill: your plan is not charged per call (see [What Claude's work costs](#what-claudes-work-costs)). It draws
+on the same plan window as a find that runs beside it, and it is not measured yet. Later prepares cost what they did
+before: the template is just another input file.
+
+Privacy: the PDF is read on this computer. The stylist is shown page images of it and the text read from it,
+through `claude -p` on your plan, like every other call that reads `cv.md`; nothing else leaves. The copy of the
+PDF used by a build, its work folder and its printed previews live under `.style/` in the data folder and are not
+exported or synced; `profile/style/source.pdf` and `profile/style.next/source.pdf` are part of the profile, so
+`data export` and Google Drive carry them like the rest of `profile/`.
+
 ## The ad is untrusted input
 
 Before a model reads an ad, a deterministic offline gate (`matching/integrity.py`) cleans it. It strips

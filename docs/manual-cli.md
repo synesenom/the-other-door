@@ -45,6 +45,11 @@ Set up as in [Getting started](../README.md#getting-started) (`./scripts/setup.s
    (Denmark, France, Hungary, Sweden: optional), the review also asks once for a photo, the path of a
    JPEG or PNG (Enter skips it); it is checked, stripped of its camera and location data, scaled to CV size and
    kept as `profile/photo.jpg`. A CV carries it only for a job in a country that allows one.
+   On a first set-up, when a PDF you gave has a look to copy (not a scan or a LinkedIn export), the review has one more
+   line, "CV style", off by default: say yes and a build of your CV's look starts in the background after the profile
+   is saved (5-10 minutes, beside the first search). `init` ends with where to look: `./door jobs summary` says when it is
+   ready, `./door cv style show` compares it with the default and `./door cv style use` chooses. A re-run of `init` never
+   asks; `cv style build FILE` is the way then.
 
 Run `init` again to go through it with your answers filled in. Later, `./door cv enrich https://your-portfolio.example`
 adds what your public pages evidence to the CV.
