@@ -5,10 +5,7 @@ from __future__ import annotations
 import base64
 import http.client
 import os
-import shutil
 import socket
-import subprocess
-import sys
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -153,7 +150,6 @@ def test_only_the_loopback_origin_is_continued_every_other_url_is_failed(fake, t
 
 
 def test_a_url_on_the_loopback_origin_is_continued(fake, tmp_path, monkeypatch):
-    seen = {}
     real = fake._script
 
     def script(conn):
@@ -255,6 +251,7 @@ def test_no_sandbox_only_as_root_on_linux_or_when_asked(system, euid, env, expec
 
 def test_main_prints_a_test_page(fake, tmp_path, monkeypatch):
     seen = {}
+
 
     def fake_print(folder, html, out, **kw):
         seen["html"] = html
