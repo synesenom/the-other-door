@@ -38,9 +38,15 @@ def numbers_left(banned: set[str], text: str) -> list[str]:
 def searchable(blob: bytes) -> bytes | None:
     """A PDF's bytes as the CV's words could be left in them: lower case, its /Names left out, an escaped letter
     (\\351, or a raw byte above 127) kept in its word; None for a font program or a CMap, whose words are their own."""
-    if blob.startswith((b"%!", b"\x00\x01\x00\x00", b"true", b"OTTO", b"/CIDInit")):
+    if blob.startswith((b"%!", b"\x00\x01\x00\x00", b"true", b"OTTO", b"\x01\x00", b"/CIDInit")):
         return None
     return re.sub(rb"\\[0-7]{1,3}|[\x80-\xff]", b"x", re.sub(rb"/[^\s/<>\[\]()]+", b" ", blob)).lower()
+
+
+def structure_left(blobs: list[bytes]) -> list[str]:
+    """What a tagged PDF keeps of the CV's text outside its content: the structure tree, /ActualText and /Alt."""
+    return sorted(m for m, pat in (("/StructTreeRoot", rb"/StructTreeRoot"), ("/ActualText", rb"/ActualText"),
+                                   ("/Alt", rb"/Alt\b")) if any(re.search(pat, b) for b in blobs))
 
 
 def starts(pdf: pdfium.PdfDocument, icon: bool) -> list[tuple[float, float]]:
@@ -60,8 +66,9 @@ def starts(pdf: pdfium.PdfDocument, icon: bool) -> list[tuple[float, float]]:
 
 
 def shift(a: list, b: list) -> str:
-    if len(a) != len(b):
-        return f"count changed {len(a)} -> {len(b)}"
+    if len(a) != len(b):  # glyph-wise text (Skia) joins words into runs: each must start where a glyph did
+        far = max((min(max(abs(x - y) for x, y in zip(p, q)) for q in a) for p in b), default=0.0) if a else 0.0
+        return f"count changed {len(a)} -> {len(b)}, each new run starts at most %.3f pt from an original one" % far
     return "%.3f pt" % max((max(abs(x - y) for x, y in zip(p, q)) for p, q in zip(a, b)), default=0.0)
 
 
@@ -80,7 +87,9 @@ def check(original: str, scrubbed: str, words_json: str) -> None:
             blobs.append(zlib.decompress(m.group(1)))
         except zlib.error:
             continue
-    blobs = [x for x in map(searchable, blobs) if x is not None]
+    blobs = [b for b in blobs if searchable(b) is not None]  # not a font program or a CMap
+    print("structure left (tags, /ActualText, /Alt):", structure_left(blobs))
+    blobs = [searchable(b) for b in blobs]
     print("original words (4+ letters) in the bytes:",
           sorted(w for w in banned if len(w) >= 4 and not w.isdigit()
                  and any(re.search(rb"\b" + re.escape(w.encode()) + rb"\b", x) for x in blobs)))
