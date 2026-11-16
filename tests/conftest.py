@@ -76,6 +76,21 @@ def _no_real_claude_lookup(monkeypatch, tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_chromium_lookup(request, monkeypatch, tmp_path_factory):
+    """A test never finds the developer's Chromium shell (`$DOOR_BIN`, `~/.local/share/door`), so
+    `doctor` starts none: the lookup reads an empty home unless a test passes its own `home` or
+    patches `find_chromium` itself."""
+    from door.core import chromium
+
+    if request.node.get_closest_marker("live"):
+        return
+    monkeypatch.delenv("DOOR_BIN", raising=False)
+    real = chromium.find_chromium
+    empty_home = tmp_path_factory.mktemp("nochromium")
+    monkeypatch.setattr(chromium, "find_chromium", lambda home=None: real(home if home is not None else empty_home))
+
+
+@pytest.fixture(autouse=True)
 def _no_real_network(request, monkeypatch):
     """No offline test may reach the network: a request nobody mocked (a red test, a forgotten
     fake) fails at once instead of falling through to a real site. `responses` replaces this

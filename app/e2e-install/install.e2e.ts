@@ -96,6 +96,9 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(checks['latex']!.status).toBe('ok')
   expect(checks['latex']!.detail).toContain(join(resources, 'bin'))
   expect(checks['dev dependencies']).toBeUndefined()
+  // the bundled Chromium headless shell that prints CVs (#165), found in the bundle
+  expect(checks['chromium']?.status, JSON.stringify(checks['chromium'])).toBe('ok')
+  expect(checks['chromium']!.detail).toContain(join(resources, 'bin', 'chromium'))
   // the world's stand-in claude, found and signed in: else the wizard opens on Connect
   const claude = JSON.stringify([checks['claude CLI'], checks['claude login']])
   expect(checks['claude CLI']?.status, claude).toBe('ok')
@@ -161,6 +164,12 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(output).toHaveLength(1)
   for (const f of ['cv.tex', 'cover_letter.tex', 'cv.pdf', 'cover_letter.pdf']) expect(world.exists(`jobs/output/${output[0]}/${f}`), f).toBe(true)
   expect(world.claudeCalls('tailor')).toHaveLength(1)
+
+  // the bundled Chromium prints a page with the installed interpreter, as the server would (#165; win64's shell on Windows on ARM too)
+  const printed = join(world.scratch, 'chromium-print.pdf')
+  execFileSync(spawned.command, ['-s', '-m', 'door.tailoring.html_pdf', '--out', printed], { env: { ...process.env, ...spawned.env }, encoding: 'utf8', timeout: 120_000 })
+  expect(statSync(printed).size, 'chromium printed an empty PDF').toBeGreaterThan(1000)
+  expect(readFileSync(printed).subarray(0, 4).toString()).toBe('%PDF')
 
   // nothing went wrong that the log saw, and the app wrote nothing inside itself
   expect(errors(world.home)).toEqual([])

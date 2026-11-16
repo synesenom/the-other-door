@@ -61,11 +61,12 @@ def _check_kind(check: dict) -> str:
 
 @click.command()
 @click.option("--probe", "probe", is_flag=True, default=False, help="Also probe each configured site live for a scraper that no longer fits it (slow). With --fix, offer to repair a drifted one.")
-@click.option("--fix", "fix", is_flag=True, default=False, help="Install what is missing (Tectonic, the claude CLI), then check the MCP server starts.")
+@click.option("--fix", "fix", is_flag=True, default=False, help="Install what is missing (Tectonic, Chromium, the claude CLI), then check the MCP server starts.")
 @click.option("--yes", is_flag=True, default=False, help="With --fix: install without asking.")
 @click.option("--no-tex", "no_tex", is_flag=True, default=False, help="With --fix: don't install a TeX engine.")
+@click.option("--no-chromium", "no_chromium", is_flag=True, default=False, help="With --fix: don't download the Chromium headless shell.")
 @click.option("--no-claude", "no_claude", is_flag=True, default=False, help="With --fix: don't install the claude CLI.")
-def doctor(probe: bool, fix: bool, yes: bool, no_tex: bool, no_claude: bool):
+def doctor(probe: bool, fix: bool, yes: bool, no_tex: bool, no_chromium: bool, no_claude: bool):
     """Check prerequisites (Python, profile, LaTeX, `claude`, the MCP server); --fix installs what is missing.
 
     Prints a "Prerequisites" section, one ✓/⚠/✗ line per check with the fix
@@ -75,7 +76,7 @@ def doctor(probe: bool, fix: bool, yes: bool, no_tex: bool, no_claude: bool):
     the scraper reads, ⚠ a wall or an unreachable site; the raw response is
     saved under jobs/drift/<site>/. Exit 1 only if a required tool is missing.
 
-    With --fix: lists Tectonic (LaTeX) and the claude CLI
+    With --fix: lists Tectonic (LaTeX), Chromium (CV printing) and the claude CLI
     with what is already there, asks once (--yes skips the question),
     installs the rest with one progress line each, and ends with a live
     handshake with the MCP server Claude Code will start
@@ -87,11 +88,11 @@ def doctor(probe: bool, fix: bool, yes: bool, no_tex: bool, no_claude: bool):
     every required tool is in place and the MCP server answers.
     """
     if not fix:
-        if yes or no_tex or no_claude:
-            raise click.UsageError("--yes, --no-tex and --no-claude only go with --fix.")
+        if yes or no_tex or no_chromium or no_claude:
+            raise click.UsageError("--yes, --no-tex, --no-chromium and --no-claude only go with --fix.")
         _check(probe)
         return
-    _fix(yes, no_tex, no_claude, fix_scrapers=probe)
+    _fix(yes, no_tex, no_chromium, no_claude, fix_scrapers=probe)
 
 
 def _err_console():
@@ -256,8 +257,8 @@ def _setup_core(
     the conversation uses `init_profile`.
 
     Args:
-        install: Tools to install ("latex", "claude"); None
-            means every tool whose required check fails.
+        install: Tools to install ("latex", "chromium", "claude"); None
+            means every tool `doctor` reports missing (Chromium: no shell found).
         yes: The user approved the plan — run it.
         skip_profile: Don't count a missing profile against ``outcome``.
         interactive: A person is at the terminal: `sudo` may prompt and the
@@ -288,7 +289,7 @@ def _setup_core(
         ValueError: `install` names an unknown tool.
     """
     from door.core import doctor
-    from door.core.installers import INSTALLABLE, TOOL_FOR_CHECK, plan_install
+    from door.core.installers import INSTALLABLE, plan_install
 
     profile_dir = profile_dir if profile_dir is not None else workspace.PROFILE_DIR
     jobs_dir = jobs_dir if jobs_dir is not None else workspace.JOBS_DIR
@@ -301,10 +302,7 @@ def _setup_core(
         if c["name"].startswith("scraper: ") and c["status"] in ("drift", "warn") and c.get("fixable")
     ]
     if install is None:
-        tools = [
-            TOOL_FOR_CHECK[c["name"]] for c in before["checks"]
-            if c["name"] in TOOL_FOR_CHECK and c["status"] == "missing"
-        ]
+        tools = _tools_to_install(before["checks"])
     else:
         unknown = [t for t in install if t not in INSTALLABLE]
         if unknown:
@@ -381,7 +379,12 @@ def _setup_fix_pass(yes: bool) -> dict:
     return report
 
 
-_TOOL_LABELS = {"latex": "Tectonic (LaTeX)", "claude": "claude CLI"}
+def _tools_to_install(checks: list[dict], skipped: frozenset[str] = frozenset()) -> list[str]:
+    """The tools whose check is not ok and which `doctor --fix` can install."""
+    return [c["tool"] for c in checks if c.get("tool") and c.get("installable") and c["status"] != "ok" and c["tool"] not in skipped]
+
+
+_TOOL_LABELS = {"latex": "Tectonic (LaTeX)", "chromium": "Chromium (CV printing)", "claude": "claude CLI"}
 
 
 def _register_mcp_server(platform: str) -> tuple[bool, str | None]:
@@ -406,22 +409,23 @@ def _register_mcp_server(platform: str) -> tuple[bool, str | None]:
     return check["status"] == "ok", None if check["status"] == "ok" else f"{check['detail']} — {check['fix']}"
 
 
-def _fix(yes: bool, no_tex: bool, no_claude: bool, fix_scrapers: bool) -> None:
+def _fix(yes: bool, no_tex: bool, no_chromium: bool, no_claude: bool, fix_scrapers: bool) -> None:
     """`doctor --fix`: install what is missing, check the MCP server, optionally fix drifted scrapers."""
     from rich.text import Text
 
     from door.core import doctor
-    from door.core.installers import TOOL_FOR_CHECK
 
     report = doctor.run_checks(workspace.PROFILE_DIR, workspace.JOBS_DIR)
-    status = {TOOL_FOR_CHECK[c["name"]]: c["status"] for c in report["checks"] if c["name"] in TOOL_FOR_CHECK}
-    skipped = {t for t, flag in (("latex", no_tex), ("claude", no_claude)) if flag}
-    tools = [t for t in _TOOL_LABELS if status.get(t) not in (None, "ok") and t not in skipped]
+    status = {c["tool"]: c["status"] for c in report["checks"] if c.get("tool")}
+    skipped = frozenset(t for t, flag in (("latex", no_tex), ("chromium", no_chromium), ("claude", no_claude)) if flag)
+    wanted = _tools_to_install(report["checks"], skipped)
+    tools = [t for t in _TOOL_LABELS if t in wanted]
 
     console = common._console()
     common._section(console, "Tools")
     for tool, label in _TOOL_LABELS.items():
-        state = "already installed" if status.get(tool) == "ok" else ("skipped" if tool in skipped else "to install")
+        state = ("already installed" if status.get(tool) == "ok" else "skipped" if tool in skipped
+                 else "to install" if tool in tools else "found, not installed by --fix")
         if state != "to install" or not yes:  # with --yes, what gets installed shows as its progress line
             glyph = _progress.CHECK if state == "already installed" else "·"
             click.echo(f"  {glyph} {label:<22}{click.style(state, dim=True)}")
@@ -451,6 +455,9 @@ def _fix(yes: bool, no_tex: bool, no_claude: bool, fix_scrapers: bool) -> None:
         common._mark_line(err, "fail", Text(f"Missing: {c['name']} — {c['fix']}"))
     if login:
         common._mark_line(console, "warn", Text(f"claude: {login['detail']} — {login['fix']}"))
+    for c in report["checks"]:
+        if c.get("tool") and not c["installable"] and c["status"] != "ok" and c["tool"] not in skipped:
+            common._mark_line(console, "warn", Text(f"{c['name']}: {c['detail']} — {c['fix']}"))
     if missing or not mcp_ok:
         sys.exit(1)
     if todo:

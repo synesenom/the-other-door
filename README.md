@@ -33,7 +33,7 @@ claude auth login           # sign in with your Pro/Max account
 
 The script asks once, then installs whatever is missing, one line and a checkmark each:
 Python 3.12, Poetry, the Python packages, [Tectonic](https://tectonic-typesetting.github.io)
-(a small TeX engine for the PDFs, no sudo), and the `claude` CLI. It
+(a small TeX engine for the PDFs, no sudo), the Chromium headless shell that prints CVs (about 100 MB, no sudo), and the `claude` CLI. It
 ends by checking that Claude Code can start *The other door*'s MCP server. Re-run it any time to
 repair an install; `--yes` skips the question.
 
