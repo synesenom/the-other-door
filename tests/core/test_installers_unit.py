@@ -84,6 +84,31 @@ def test_plan_latex_on_an_unknown_os_is_a_hint(tmp_path):
     assert "tectonic" in plan["hint"].lower()
 
 
+@pytest.mark.parametrize("platform", ["macos", "debian", "fedora", "arch", "linux", "windows"])
+def test_plan_chromium_runs_the_pinned_installer_module(platform, tmp_path, monkeypatch):
+    import sys
+
+    from door.core import chromium
+
+    monkeypatch.setattr(chromium, "platform_key", lambda *a, **k: "linux64")
+    plan = plan_install("chromium", platform, which=_which(), home=tmp_path)
+    assert plan["commands"] == [[sys.executable, "-m", "door.core.chromium", "--dest", str(chromium.chromium_root(tmp_path))]]
+    assert str(chromium.chromium_root(tmp_path)) in plan["note"]
+    assert plan["hint"] is None
+    assert ("libnss3" in plan["note"]) == (platform not in ("macos", "windows"))
+
+
+def test_plan_chromium_where_no_shell_is_pinned_is_a_hint(tmp_path, monkeypatch):
+    from door.core import chromium
+
+    monkeypatch.setattr(chromium, "platform_key", lambda *a, **k: None)
+    plan = plan_install("chromium", "debian", which=_which(), home=tmp_path)
+    assert plan["commands"] == []
+    assert plan["hint"]
+    other = plan_install("chromium", "other", which=_which(), home=tmp_path)
+    assert other["commands"] == [] and other["hint"]
+
+
 def test_find_tectonic_prefers_path(tmp_path):
     assert find_tectonic(which=_which("tectonic"), home=tmp_path) == "/usr/bin/tectonic"
 
@@ -174,7 +199,7 @@ def test_plan_unknown_tool():
         plan_install("emacs", "debian", which=_which())
 
 
-@pytest.mark.parametrize("tool", ["latex", "claude"])
+@pytest.mark.parametrize("tool", ["latex", "claude", "chromium"])
 @pytest.mark.parametrize("platform", ["macos", "debian", "fedora", "windows"])
 def test_no_plan_uses_sudo(tool, platform):
     plan = plan_install(tool, platform, which=_which("curl", "npm", "brew"))
@@ -186,7 +211,7 @@ def test_each_tool_names_a_check_doctor_runs(tmp_path):
 
     names = {c["name"] for c in doctor.run_checks(tmp_path / "profile", tmp_path / "jobs", which=_which())["checks"]}
     assert set(installers.TOOL_FOR_CHECK) <= names
-    assert set(installers.TOOL_FOR_CHECK.values()) == {"latex", "claude"}
+    assert set(installers.TOOL_FOR_CHECK.values()) == {"latex", "claude", "chromium"}
 
 
 def _mcp_repo(tmp_path, command):

@@ -10,6 +10,9 @@ Tools (keys match `door.core.doctor` check names via `TOOL_FOR_CHECK`):
     latex       Tectonic everywhere: one ~60 MB binary from its official
                 installer into ~/.local/bin, no sudo; it fetches the LaTeX
                 packages a document needs on first use
+    chromium    the pinned Chromium headless shell that prints CVs (#165): `python -m
+                door.core.chromium` downloads it, checks its sha256 and unpacks it into a
+                per-user folder, no sudo
     claude      the `claude` CLI via Anthropic's native installer into
                 ~/.local/bin, no sudo, no Node, updates itself (npm only when
                 curl is missing and npm is present)
@@ -23,10 +26,13 @@ from __future__ import annotations
 import platform as _platform
 import os
 import shutil
+import sys
 from pathlib import Path
 
-INSTALLABLE = ("latex", "claude")
-TOOL_FOR_CHECK = {"latex": "latex", "claude CLI": "claude"}
+from door.core import chromium
+
+INSTALLABLE = ("latex", "claude", "chromium")
+TOOL_FOR_CHECK = {"latex": "latex", "claude CLI": "claude", "chromium": "chromium"}
 
 def _downloaded_then_run(download: str, shell: str) -> str:
     """A POSIX shell line that downloads an install script, then runs it.
@@ -171,6 +177,17 @@ def plan_install(tool: str, platform: str, *, which=shutil.which, home: Path | N
                 f"install curl, then re-run ./door doctor --fix — or follow {_CLAUDE_DOCS}"
                 if platform in _UNIX else f"install the claude CLI: {_CLAUDE_DOCS}"
             )
+
+    elif tool == "chromium":
+        root = chromium.chromium_root(home)
+        if platform not in (*_UNIX, "windows") or chromium.platform_key() is None:
+            hint = "no Chromium headless shell is pinned for this machine"
+        else:
+            commands = [[sys.executable, "-m", "door.core.chromium", "--dest", str(root)]]
+            note = f"Chromium is in {root} (about 200 MB)."
+            if platform in _UNIX and platform != "macos":
+                note += (" On Linux it needs system libraries (libnss3, libgbm1, libxkbcommon0, libasound2 ...); "
+                         "`./door doctor` names any that are missing.")
 
     return {
         "tool": tool,

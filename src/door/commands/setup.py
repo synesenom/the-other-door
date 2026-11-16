@@ -61,7 +61,7 @@ def _check_kind(check: dict) -> str:
 
 @click.command()
 @click.option("--probe", "probe", is_flag=True, default=False, help="Also probe each configured site live for a scraper that no longer fits it (slow). With --fix, offer to repair a drifted one.")
-@click.option("--fix", "fix", is_flag=True, default=False, help="Install what is missing (Tectonic, the claude CLI), then check the MCP server starts.")
+@click.option("--fix", "fix", is_flag=True, default=False, help="Install what is missing (Tectonic, Chromium, the claude CLI), then check the MCP server starts.")
 @click.option("--yes", is_flag=True, default=False, help="With --fix: install without asking.")
 @click.option("--no-tex", "no_tex", is_flag=True, default=False, help="With --fix: don't install a TeX engine.")
 @click.option("--no-claude", "no_claude", is_flag=True, default=False, help="With --fix: don't install the claude CLI.")
@@ -75,7 +75,7 @@ def doctor(probe: bool, fix: bool, yes: bool, no_tex: bool, no_claude: bool):
     the scraper reads, ⚠ a wall or an unreachable site; the raw response is
     saved under jobs/drift/<site>/. Exit 1 only if a required tool is missing.
 
-    With --fix: lists Tectonic (LaTeX) and the claude CLI
+    With --fix: lists Tectonic (LaTeX), Chromium (CV printing) and the claude CLI
     with what is already there, asks once (--yes skips the question),
     installs the rest with one progress line each, and ends with a live
     handshake with the MCP server Claude Code will start
@@ -381,7 +381,7 @@ def _setup_fix_pass(yes: bool) -> dict:
     return report
 
 
-_TOOL_LABELS = {"latex": "Tectonic (LaTeX)", "claude": "claude CLI"}
+_TOOL_LABELS = {"latex": "Tectonic (LaTeX)", "chromium": "Chromium (CV printing)", "claude": "claude CLI"}
 
 
 def _register_mcp_server(platform: str) -> tuple[bool, str | None]:

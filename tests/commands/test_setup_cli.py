@@ -25,11 +25,12 @@ def _check(name, status, required=True, fix=None):
     return {"name": name, "status": status, "required": required, "detail": f"{name} detail", "fix": fix}
 
 
-def _report(*, latex="ok", claude="ok", profile="ok"):
+def _report(*, latex="ok", claude="ok", profile="ok", chromium="ok"):
     checks = [
         _check("python", "ok"),
         _check("profile", profile, fix="./door init"),
         _check("latex", latex, fix="apt-get install texlive-xetex"),
+        _check("chromium", chromium, required=False, fix="./door doctor --fix"),
         _check("claude CLI", claude, fix="./door doctor --fix"),
     ]
     return {"ok": all(c["status"] != "missing" for c in checks), "checks": checks, "last_run": None, "last_scrape": []}
@@ -205,6 +206,32 @@ def test_setup_cli_lists_every_tool_and_asks_once(env, monkeypatch, prompts):
     assert env.ran == [LATEX_ARGV]
     assert "✓ Tectonic" in out
     assert result.exit_code == 0, result_text(result)
+
+
+CHROMIUM_ARGV = ["python", "-m", "door.core.chromium", "--dest", "<root>"]
+
+
+def test_setup_cli_installs_a_missing_chromium_when_asked(env, monkeypatch, prompts):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn"), _report()))
+    real = installers.plan_install
+
+    def plan(tool, platform, **kw):
+        if tool == "chromium":
+            return {"tool": "chromium", "commands": [CHROMIUM_ARGV], "hint": None, "note": None}
+        return real(tool, platform, **kw)
+
+    monkeypatch.setattr(installers, "plan_install", plan)
+    result = CliRunner().invoke(cli, ["doctor", "--fix"])
+    assert "Chromium (CV printing)" in result.output
+    assert env.ran == [CHROMIUM_ARGV]
+    assert result.exit_code == 0, result_text(result)
+
+
+def test_setup_cli_declined_chromium_installs_nothing(env, monkeypatch, prompts):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="warn")))
+    prompts.answers.update(install=False)
+    result = CliRunner().invoke(cli, ["doctor", "--fix"])
+    assert env.ran == []
 
 
 def test_setup_cli_declined_installs_nothing(env, monkeypatch, prompts):

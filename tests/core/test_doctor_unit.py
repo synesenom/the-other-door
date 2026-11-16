@@ -62,6 +62,42 @@ def test_check_latex_finds_tectonic_in_local_bin_off_path(tmp_path):
     assert str(binary) in check["detail"]
 
 
+def _ran(stdout="", stderr="", code=0):
+    import subprocess
+
+    return lambda argv, **kw: subprocess.CompletedProcess(argv, code, stdout, stderr)
+
+
+def test_check_chromium_ok_names_the_path():
+    check = doctor.check_chromium(find=lambda: "/x/chrome-headless-shell", run=_ran("Google Chrome 157.0\n"))
+    assert check["name"] == "chromium" and check["status"] == "ok"
+    assert "/x/chrome-headless-shell" in check["detail"]
+
+
+def test_check_chromium_missing_is_a_warning_with_the_fix():
+    check = doctor.check_chromium(find=lambda: None)
+    assert check["status"] == "warn" and check["required"] is False
+    assert check["fix"].startswith("./door doctor --fix")
+
+
+def test_check_chromium_names_missing_linux_libraries_and_installs_nothing():
+    err = "chrome-headless-shell: error while loading shared libraries: libnss3.so: cannot open shared object file"
+    check = doctor.check_chromium(find=lambda: "/x/c", run=_ran(stderr=err, code=127))
+    assert check["status"] == "warn"
+    assert "libnss3" in check["detail"]
+    assert "sudo" not in (check["fix"] or "") or "apt" in check["fix"]
+
+
+def test_check_chromium_that_will_not_start_is_a_warning():
+    def hang(argv, **kw):
+        import subprocess
+
+        raise subprocess.TimeoutExpired(argv, 10)
+
+    check = doctor.check_chromium(find=lambda: "/x/c", run=hang)
+    assert check["status"] == "warn"
+
+
 def test_check_claude_cli():
     assert doctor.check_claude_cli(which=_which("claude"))["status"] == "ok"
     missing = doctor.check_claude_cli(which=_which(), home=Path("/nonexistent-home"))
