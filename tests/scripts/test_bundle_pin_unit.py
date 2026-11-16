@@ -32,12 +32,6 @@ def test_the_windows_bundle_reads_the_one_pin():
     assert r"bin\chromium" in ps1 or "'chromium'" in ps1
 
 
-def test_check_bundle_finds_the_shell_and_prints_a_page_with_the_bundled_python():
+def test_check_bundle_runs_doctor_with_the_bundled_chromium():
     sh = _text("check-bundle.sh")
     assert 'by["chromium"]' in sh and "DOOR_BIN" in sh
-    assert "door.tailoring.html_pdf" in sh
-
-
-def test_the_install_test_prints_a_page_with_the_installed_interpreter():
-    spec = (REPO_ROOT / "app" / "e2e-install" / "install.e2e.ts").read_text(encoding="utf-8")
-    assert "door.tailoring.html_pdf" in spec

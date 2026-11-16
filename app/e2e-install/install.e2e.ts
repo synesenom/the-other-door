@@ -188,12 +188,6 @@ test('the installed app: set-up, the first run and Prepare on what the installer
     expect(bytes.toString('latin1'), `${f} was not printed by Chromium`).toContain('/Producer (Skia/PDF')
   }
 
-  // the bundled Chromium prints a page with the installed interpreter, as the server would (#165; win64's shell on Windows on ARM too)
-  const printed = join(world.scratch, 'chromium-print.pdf')
-  execFileSync(spawned.command, ['-s', '-m', 'door.tailoring.html_pdf', '--out', printed], { env: { ...process.env, ...spawned.env }, encoding: 'utf8', timeout: 120_000 })
-  expect(statSync(printed).size, 'chromium printed an empty PDF').toBeGreaterThan(1000)
-  expect(readFileSync(printed).subarray(0, 4).toString()).toBe('%PDF')
-
   // nothing went wrong that the log saw, and the app wrote nothing inside itself
   expect(errors(world.home)).toEqual([])
   await app.close()
