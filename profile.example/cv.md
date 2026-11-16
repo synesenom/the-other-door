@@ -1,6 +1,8 @@
 # Jane Doe
 
-**Phone:** +45 00 00 00 00 | **Email:** jane.doe@example.com | **Web:** janedoe.example.com | **Location:** Copenhagen
+> Financial Controller | Group Reporting & Process Improvement
+
+**Phone:** +45 00 00 00 00 | **Email:** jane.doe@example.com | **Web:** janedoe.example.com | **LinkedIn:** https://www.linkedin.com/in/janedoe | **GitHub:** https://github.com/janedoe | **Location:** Copenhagen
 
 ## Profile
 

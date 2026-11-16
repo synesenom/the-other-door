@@ -169,7 +169,7 @@ def test_the_draft_rules_say_the_tagline_and_links_are_written_only_when_a_sourc
 
 
 def test_the_example_cv_has_a_tagline_under_the_name_and_parses(env, monkeypatch):
-    _no_model(monkeypatch)
+    _answer(monkeypatch)  # its Danish language line is read by the model
     text = (REPO_ROOT / "profile.example" / "cv.md").read_text(encoding="utf-8")
     lines = text.splitlines()
     assert lines[0] == "# Jane Doe" and lines[2].startswith("> ")

@@ -71,3 +71,45 @@ def test_no_cv_at_all_is_not_the_example(example_cv):
 
     (example_cv.profile_dir / "cv.md").unlink()
     assert not common._cv_is_example({}, example_cv.profile_dir)
+
+
+# --- an older copy of the example is still the example (#189) -----------------------------------------------
+
+def test_the_example_as_it_was_before_the_header_extras_is_still_the_example(example_cv):
+    from paths import TESTS_DIR
+    from door.commands import _common as common
+
+    saved = (TESTS_DIR / "commands" / "fixtures" / "example_cv_before_189.md").read_bytes()
+    assert saved != (workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_bytes()  # the example did change
+    (example_cv.profile_dir / "cv.md").write_bytes(saved)
+    assert common._cv_is_example({}, example_cv.profile_dir)
+    with pytest.raises(ConfigError, match="example"):
+        match_cmd._match_core(jobs_dir=example_cv.jobs_dir, profile_dir=example_cv.profile_dir)
+
+
+def test_one_byte_off_either_version_is_not_the_example(example_cv):
+    from paths import TESTS_DIR
+    from door.commands import _common as common
+
+    saved = (TESTS_DIR / "commands" / "fixtures" / "example_cv_before_189.md").read_bytes()
+    for text in (saved + b" ", (workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_bytes() + b" "):
+        (example_cv.profile_dir / "cv.md").write_bytes(text)
+        assert not common._cv_is_example({}, example_cv.profile_dir)
+
+
+def test_every_past_example_is_in_the_list():
+    """Add the old hash to `_PAST_EXAMPLE_CV_SHA256` whenever profile.example/cv.md changes."""
+    import hashlib
+    import subprocess
+
+    from door.commands import _common as common
+    from paths import REPO_ROOT
+
+    log = subprocess.run(["git", "log", "--format=%H", "--", "profile.example/cv.md"], cwd=REPO_ROOT,
+                         capture_output=True, text=True)
+    if log.returncode != 0 or not log.stdout.split():
+        pytest.skip("no git history here")
+    for commit in log.stdout.split()[1:]:  # the newest is the current one, recognised by bytes
+        shown = subprocess.run(["git", "show", f"{commit}:profile.example/cv.md"], cwd=REPO_ROOT, capture_output=True)
+        if shown.returncode == 0:
+            assert hashlib.sha256(shown.stdout).hexdigest() in common._PAST_EXAMPLE_CV_SHA256, commit

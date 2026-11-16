@@ -2,6 +2,7 @@
 decorator, the `claude` CLI guard, small time/JSON utilities and shared defaults.
 """
 
+import hashlib
 import json
 import re
 import shutil
@@ -97,10 +98,20 @@ def _cv_conventions(posting: dict, config: dict) -> i18n.CvConventions:
     return country.cv if country else i18n.CvConventions()
 
 
+# The sha256 of each earlier profile.example/cv.md that a user may still hold a copy of (#189). Add the hash of the
+# old file whenever the example changes (tests/commands/test_example_cv_guard_cli.py checks the git history).
+_PAST_EXAMPLE_CV_SHA256 = frozenset({
+    "7fa9feb82a3175b413ac20c255161e87539097264fd6c98bebfffe72dd8ef66a",  # before the tagline and LinkedIn/GitHub (#189)
+})
+
+
 def _cv_is_example(config: dict, profile_dir: Path) -> bool:
-    """Whether the profile's CV is still, byte for byte, profile.example/'s."""
+    """Whether the profile's CV is still, byte for byte, profile.example/'s or one of its earlier versions."""
     path, example = _cv_path(config, profile_dir), workspace.PROFILE_EXAMPLE_DIR / "cv.md"
-    return path.is_file() and example.is_file() and path.read_bytes() == example.read_bytes()
+    if not (path.is_file() and example.is_file()):
+        return False
+    data = path.read_bytes()
+    return data == example.read_bytes() or hashlib.sha256(data).hexdigest() in _PAST_EXAMPLE_CV_SHA256
 
 
 EXAMPLE_CV_MESSAGE = "Your CV is still the example (Jane Doe's). Add your own CV first."

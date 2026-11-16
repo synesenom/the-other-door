@@ -56,8 +56,8 @@ p + p { margin-top: 3pt; }
 .contact span + span::before { content: "\00B7"; margin: 0 0.5em; }
 .cv-header .tagline { margin-top: 2pt; font-size: 11pt; color: var(--muted); }
 /* To draw an icon by kind, give the template a template.json {"version": 1, "icons": {"phone": "phone.svg"}} and an
-   icons/ folder, and use e.g. .contact .phone::before { content: ""; display: inline-block; width: 0.9em; height: 0.9em;
-   margin-right: 0.3em; background: url(/icons/phone.svg) center / contain no-repeat; }  (this template draws none) */
+   icons/ folder, and set a background image on the kind's ::before, e.g. .contact .phone::before, whose image is the
+   file served as /icons/phone.svg. (This template draws none.) */
 
 /* with a photo: the details one per line beside it, so the name and the details are about as tall as the photo */
 .cv-header:has(.photo) { display: grid; grid-template-columns: 1fr 2.2cm; column-gap: 0.6cm; align-items: start; }
