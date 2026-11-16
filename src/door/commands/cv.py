@@ -372,4 +372,4 @@ def _infer_basics_core(
 
 @click.group("cv")
 def cv_group():
-    """Your CV over time: `cv enrich` adds what your public pages show, `cv gaps` plans what to learn, `cv titles` suggests titles to look for, `cv stories` keeps the story bank the tailor draws on."""
+    """Your CV over time: `cv enrich` adds what your public pages show, `cv gaps` plans what to learn, `cv titles` suggests titles to look for, `cv stories` keeps the story bank the tailor draws on, `cv style` builds a template from the look of a CV PDF of yours."""

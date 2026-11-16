@@ -1,0 +1,175 @@
+"""`cv style build FILE`: build a CV template from the style of a CV PDF (#205, epic #144; the builder is
+`tailoring/style_build.py`, #149).
+
+Two cores. `_build_core` is the build itself, in the foreground (the command, with progress). `_start_core` is what the
+`build_style` tool calls: it takes the file in (intake, a copy at `HOME/.style/source.pdf`), ends a build already
+running, starts `python -m door cv style build <copy>` as a process of its own (`core/phone.py`'s way, so it outlives
+the server or the app that asked) and returns at once. Its state is `HOME/.style/run.json` (`pid`, `state`
+building|ready|failed, `started_at`, `result`), its folder `HOME/.style/work` and its log `HOME/.style/build.log`;
+`status` reads them for `status_summary`'s `style` block. A build writes only `profile/style/` and never takes the
+ledger lock, so it runs beside a `find`.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+import click
+from pypdfium2 import PdfiumError
+
+from door.commands import _common as common
+from door.commands import _progress
+from door.core import phone, workspace
+from door.tailoring import style_build, style_extract
+
+TEMPLATE = "cv.template.html"
+
+
+def _style_dir(home: Path) -> Path:
+    return Path(home) / ".style"
+
+
+def _defaults() -> dict:
+    return {"spawn": phone.spawn_detached, "is_alive": phone.is_alive, "kill": phone.kill_tree}
+
+
+def _read(home: Path) -> dict | None:
+    try:
+        run = json.loads((_style_dir(home) / "run.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return run if isinstance(run, dict) else None
+
+
+def _write(home: Path, run: dict) -> None:
+    path = _style_dir(home) / "run.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(run, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+def _intake(path: Path) -> None:
+    """Raise ValueError, in words, when there is no style to copy from the file at `path`."""
+    if not path.is_file():
+        raise ValueError(f"{path} is not a file")
+    if refused := style_extract.not_pdf(path):
+        raise ValueError(refused["detail"])
+    try:
+        verdict = style_extract.extract(path)["verdict"]
+    except (PdfiumError, OSError) as exc:
+        raise ValueError(f"{path.name} could not be read as a PDF ({exc})") from exc
+    if not verdict["copyable"]:
+        raise ValueError(verdict["detail"] or f"no style to copy ({verdict['reason']})")
+
+
+def _end_running(home: Path, deps: dict, *, own_pid: int | None = None) -> None:
+    """End a build that is still going (its process group), unless it is this process."""
+    run = _read(home)
+    if run and run.get("state") == "building" and run.get("pid") not in (None, own_pid) and deps["is_alive"](run["pid"]):
+        deps["kill"](run["pid"])
+
+
+def _build_core(file: str, *, progress=None, home: Path | None = None, profile_dir: Path | None = None, **deps) -> dict:
+    """Build a CV template from the PDF at `file` here and now, recording the build in `HOME/.style/run.json`.
+
+    Returns `style_build.build`'s result. Raises ValueError (intake: nothing is written) or whatever the builder
+    raises, after recording the build as failed."""
+    d = {**_defaults(), **deps}
+    home = Path(home or workspace.HOME)
+    pdf = Path(file).expanduser()
+    _intake(pdf)
+    _end_running(home, d, own_pid=os.getpid())
+    run = {"pid": os.getpid(), "state": "building", "started_at": _now()}
+    _write(home, run)
+    try:
+        result = style_build.build(
+            pdf, work_dir=_style_dir(home) / "work", profile_dir=profile_dir or workspace.PROFILE_DIR, progress=progress)
+    except BaseException as exc:
+        _write(home, {**run, "state": "failed", "result": {"problems": [f"{type(exc).__name__}: {exc}"]}})
+        raise
+    _write(home, {**run, "state": result["state"], "result": result})
+    return result
+
+
+def _start_core(file: str, *, home: Path | None = None, **deps) -> dict:
+    """Start a build of the PDF at `file` in a process of its own and return ``{"started": True}`` at once.
+
+    Raises ValueError, in words, when the file has no style to copy: nothing starts and the style in use is untouched."""
+    d = {**_defaults(), **deps}
+    home = Path(home or workspace.HOME)
+    pdf = Path(file).expanduser()
+    _intake(pdf)
+    _end_running(home, d)
+    folder = _style_dir(home)
+    folder.mkdir(parents=True, exist_ok=True)
+    copy = folder / "source.pdf"
+    shutil.copyfile(pdf, copy)
+    env = {**os.environ, "DOOR_HOME": str(home), "PYTHONPATH": str(workspace.REPO_ROOT / "src")}
+    process = d["spawn"]([sys.executable, "-m", "door", "cv", "style", "build", str(copy)], log=folder / "build.log", env=env)
+    _write(home, {"pid": process.pid, "state": "building", "started_at": _now()})
+    return {"started": True}
+
+
+def status(home: Path, profile_dir: Path, *, is_alive=None) -> dict:
+    """`status_summary`'s `style` block: ``{"state": "building" | "failed" | "ready" | "none", ...}``.
+
+    building: the build's process lives. failed: the last build failed (``problems`` say why) or its process died before
+    it finished. ready: `profile/style/cv.template.html` exists (``fonts`` and ``dropped_icons`` of the last build's
+    result when it was that one's). none: nothing built."""
+    is_alive = is_alive or phone.is_alive
+    run = _read(home) or {}
+    state = run.get("state")
+    if state == "building":
+        if is_alive(run.get("pid") or 0):
+            return {"state": "building", "started_at": run.get("started_at")}
+        return {"state": "failed", "problems": ["the build stopped before it finished"]}
+    if state == "failed":
+        return {"state": "failed", "problems": (run.get("result") or {}).get("problems") or []}
+    if (Path(profile_dir) / "style" / TEMPLATE).is_file():
+        out = {"state": "ready"}
+        if state == "ready":
+            result = run.get("result") or {}
+            out.update({k: result[k] for k in ("fonts", "dropped_icons") if k in result})
+        return out
+    return {"state": "none"}
+
+
+@click.group("style")
+def style_group():
+    """Build a CV template from the look of a CV PDF of yours."""
+
+
+@style_group.command("build")
+@click.argument("file", type=click.Path(dir_okay=False))
+def build_style(file):
+    """Build a template from FILE's look (a CV as a PDF): fonts, colours, layout, in a few minutes of the model's time.
+
+    Runs here and now; the `build_style` tool starts the same thing in the background. The result is written to
+    profile/style/ only when it passes; nothing uses it until it is chosen."""
+    interactive = common._stdout_is_tty()
+    try:
+        with _progress.live_progress(enabled=interactive) as reporter:
+            result = _build_core(file, progress=reporter)
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+    for font in result["fonts"]:
+        if font.get("source") == "none":
+            click.echo(f"No free font for {font['family']}: {font['reason']}")
+        elif font.get("faked"):
+            click.echo(f"{font['family']}: no file for some of its faces; they are not used")
+    for icon in result["dropped_icons"]:
+        click.echo(f"Icon left out ({icon['near'] or 'unlabelled'}): {icon['reason']}")
+    if result["state"] != "ready":
+        for problem in result["problems"] or ["the build failed"]:
+            click.echo(f"Error: {problem}", err=True)
+        sys.exit(1)
+    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style/.")
