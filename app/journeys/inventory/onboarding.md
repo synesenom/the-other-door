@@ -38,7 +38,7 @@ Decided by `doctor` (called once on mount, `call('doctor')` with no args; on any
 - `claudeReady = !missing && connected`. A failed `doctor` call ⇒ not missing, not connected ⇒ **sign-in variant** shown. — not tested: a failed doctor call needs the server to fail at start; a doctor tool fault would also break the shell's checks — the signed-out variant itself is covered
 - A `claude login` check of status `warn` (doctor could not read `claude auth status --json`: non-JSON output or no `loggedIn` key) ⇒ not connected ⇒ Connect shown even if actually signed in. — not tested: the stand-in claude always prints JSON with loggedIn
 
-Also on mount (not in the sandbox): if a `latex` check has status ≠ `ok`, `call('setup', {install:['latex'], yes:true})` once, quietly, errors ignored. **Hazard for a non-sandbox e2e (e.g. Set up again on a `buildHome` app): it would really install Tectonic.** — not tested: the world has the stand-in tectonic on PATH, so latex is ok and nothing installs (by design: never run a real installer)
+Also on mount (not in the sandbox): if a `chromium` check has status ≠ `ok`, `call('setup', {install:['chromium'], yes:true})` once, quietly, errors ignored. **Hazard for a non-sandbox e2e (e.g. Set up again on a `buildHome` app): it would really install Tectonic.** — not tested: the world has the stand-in tectonic on PATH, so latex is ok and nothing installs (by design: never run a real installer)
 
 ### 1a. Claude missing variant
 - `heading 1 "Connect Claude"`; lead "The other door works through Claude, on your Pro or Max plan. Claude is not on this computer yet." — unit: `app/src/renderer/screens/onboarding/Connect.test.tsx`

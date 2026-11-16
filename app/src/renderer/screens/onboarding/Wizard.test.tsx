@@ -127,9 +127,9 @@ describe('Wizard', () => {
     expect(screen.getByText('cv.pdf')).toBeInTheDocument()
   })
 
-  it('installs a missing LaTeX quietly, once, and not in the sandbox', async () => {
+  it('installs a missing Chromium quietly, once, and not in the sandbox', async () => {
     const h = setup({ doctor: doctorReport('ok', false), setup: { outcome: 'ok' } })
-    await waitFor(() => expect(h.call).toHaveBeenCalledWith('setup', { install: ['latex'], yes: true }))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('setup', { install: ['chromium'], yes: true }))
     expect(screen.queryByRole('dialog')).toBeNull()
     cleanup()
     const sandboxed = setup({ doctor: doctorReport('ok', false), setup: { outcome: 'ok' } }, { sandbox: true })
