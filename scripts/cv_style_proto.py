@@ -23,6 +23,7 @@ import ctypes
 import importlib.util
 import json
 import re
+import shutil
 import statistics
 import subprocess
 import sys
@@ -424,6 +425,29 @@ def run_cv(n: int, with_stress: bool) -> dict:
     return summary
 
 
+def pdf_work_dir(pdf: Path) -> Path:
+    return OUT / f"pdf-{pdf.stem}"
+
+
+def run_pdf(pdf: Path, with_stress: bool) -> dict:
+    """A finished PDF as the original (a real layout with made-up text). It has no record, so the stress
+    renders swap in CV 1's made-up record and the side-by-side has two panels: original | rebuild."""
+    work = pdf_work_dir(pdf)
+    work.mkdir(parents=True, exist_ok=True)
+    original = work / "original.pdf"
+    shutil.copyfile(pdf, original)
+    result = rebuild(0, work, original)
+    summary = {"cv": pdf.name, "design": work.name, **result}
+    if with_stress and (work / "best.html").exists():
+        summary["stress"] = stress(1, work, (work / "best.html").read_text(encoding="utf-8"), pages_of(original))
+        summary["cost"] += summary["stress"]["cost"]
+    orig_img = Image.open(work / "original_page_1.png")
+    render = work / "render_page_1.png"
+    side_by_side([orig_img, Image.open(render) if render.exists() else orig_img]).save(work / "side_by_side.png")
+    (work / "record.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    return summary
+
+
 def parse_cvs(text: str) -> list[int]:
     lo, _, hi = text.partition("-")
     return list(range(int(lo), int(hi or lo) + 1))
@@ -433,7 +457,7 @@ def report() -> str:
     """The table of every CV done so far; `recognisable` is judged by eye and read from judgement.json."""
     judged = json.loads((OUT / "judgement.json").read_text()) if (OUT / "judgement.json").exists() else {}
     rows = []
-    for rec in sorted(OUT.glob("cv*/record.json")):
+    for rec in sorted([*OUT.glob("cv*/record.json"), *OUT.glob("pdf-*/record.json")]):
         data = json.loads(rec.read_text())
         rows.append(record_row(data["design"], rounds=data["rounds"], minutes=data["minutes"], cost=data["cost"],
                                score=data["score"], recognisable=judged.get(data["design"], False),
@@ -446,6 +470,7 @@ def report() -> str:
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--cv", help="a CV number or range, 1-8")
+    ap.add_argument("--pdf", type=Path, help="rebuild this finished PDF as one more CV")
     ap.add_argument("--stress", action="store_true", help="also run the stress renders")
     ap.add_argument("--report", action="store_true")
     args = ap.parse_args(argv)
@@ -453,6 +478,8 @@ def main(argv: list[str] | None = None) -> None:
     if args.cv:
         for n in parse_cvs(args.cv):
             print(json.dumps({k: v for k, v in run_cv(n, args.stress).items() if k != "history"}, indent=2))
+    if args.pdf:
+        print(json.dumps({k: v for k, v in run_pdf(args.pdf, args.stress).items() if k != "history"}, indent=2))
     if args.report:
         print(report())
 
