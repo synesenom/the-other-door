@@ -321,18 +321,50 @@ def test_no_chromium_names_doctor_fix(tmp_path, monkeypatch):
         html_pdf.print_html(tmp_path, "<p/>", tmp_path / "o.pdf")
 
 
-@pytest.mark.parametrize("system,euid,env,expected", [
-    ("Linux", 0, {}, True),
-    ("Linux", 1000, {}, False),
-    ("Linux", 1000, {"DOOR_CHROMIUM_NO_SANDBOX": "1"}, True),
-    ("Darwin", 0, {}, False),
-    ("Windows", None, {}, False),
+@pytest.mark.parametrize("system,euid,expected", [
+    ("Linux", 0, True),
+    ("Linux", 1000, False),
+    ("Darwin", 0, False),
+    ("Windows", None, False),
 ])
-def test_no_sandbox_only_as_root_on_linux_or_when_asked(system, euid, env, expected):
-    args = html_pdf._browser_args("/x/chrome", "/tmp/p", system=system, euid=euid, env=env)
+def test_no_sandbox_only_as_root_on_linux(system, euid, expected):
+    args = html_pdf._browser_args("/x/chrome", "/tmp/p", system=system, euid=euid)
     assert ("--no-sandbox" in args) is expected
     assert "--remote-debugging-port=0" in args and "--user-data-dir=/tmp/p" in args
     assert args[0] == "/x/chrome"
+
+
+def _dies_once(fake, said):
+    """A launcher whose first browser writes *said* to its log and exits; the next is the fake browser."""
+    calls = []
+    dead = type("P", (), {"poll": lambda self: 1, "pid": 2})()
+
+    def launcher(args):
+        calls.append(args)
+        if len(calls) == 1:
+            profile = next(a.split("=", 1)[1] for a in args if a.startswith("--user-data-dir="))
+            (pathlib.Path(profile) / html_pdf.STDERR_LOG).write_text(said)
+            return dead
+        return fake.launcher(args)
+    return launcher, calls
+
+
+def test_a_linux_that_refuses_the_sandbox_prints_without_it(fake, tmp_path, monkeypatch):
+    monkeypatch.setattr(html_pdf, "_browser_args", lambda exe, profile, *, no_sandbox=False: (
+        [exe, f"--user-data-dir={profile}"] + (["--no-sandbox"] if no_sandbox else [])))
+    launcher, calls = _dies_once(fake, "[FATAL:zygote_host_impl_linux.cc:144] No usable sandbox! If you are running on Ubuntu 23.10+\n")
+    folder = tmp_path / "work"
+    folder.mkdir()
+    html_pdf.print_html(folder, "<p>hi</p>", tmp_path / "out.pdf", launcher=launcher)
+    assert (tmp_path / "out.pdf").read_bytes() == PDF
+    assert ["--no-sandbox" in a for a in calls] == [False, True]
+
+
+def test_another_early_exit_is_not_retried(fake, tmp_path):
+    launcher, calls = _dies_once(fake, "error while loading shared libraries: libnss3.so\n")
+    with pytest.raises(PrintError, match="libnss3"):
+        html_pdf.print_html(tmp_path, "<p/>", tmp_path / "o.pdf", launcher=launcher, timeout=5)
+    assert len(calls) == 1
 
 
 def test_main_prints_a_test_page(fake, tmp_path, monkeypatch):

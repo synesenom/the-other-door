@@ -65,15 +65,17 @@ def _serve(folder: Path) -> http.server.ThreadingHTTPServer:
     return server
 
 
-def _browser_args(exe: str, profile: str, *, system: str | None = None, euid: int | None = None, env=None) -> list[str]:
+def _browser_args(exe: str, profile: str, *, system: str | None = None, euid: int | None = None,
+                  no_sandbox: bool = False) -> list[str]:
     system = system if system is not None else _platform.system()
-    env = os.environ if env is None else env
     if euid is None and hasattr(os, "geteuid"):
         euid = os.geteuid()
     args = [exe, "--headless", "--remote-debugging-port=0", f"--user-data-dir={profile}", "--disable-gpu",
             "--no-first-run", "--no-default-browser-check", "about:blank"]
-    if (system == "Linux" and euid == 0) or env.get("DOOR_CHROMIUM_NO_SANDBOX") == "1":
-        args.insert(1, "--no-sandbox")  # a root or container process cannot use the sandbox; JS is off and only local files are served
+    if no_sandbox or (system == "Linux" and euid == 0):
+        # root cannot use the sandbox, and Ubuntu 23.10+ refuses it to everyone else (print_html retries without it);
+        # JavaScript is off and nothing but the folder's own files is served
+        args.insert(1, "--no-sandbox")
     return args
 
 
@@ -122,6 +124,14 @@ def _wait_port(proc, profile: Path, deadline: float) -> tuple[int, str]:
     raise PrintError("Chromium did not finish starting in time")
 
 
+def _refused_sandbox(profile: Path) -> bool:
+    """Chromium aborted because the OS gives it no sandbox (Ubuntu 23.10+ restricts user namespaces)."""
+    try:
+        return "No usable sandbox" in (profile / STDERR_LOG).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+
+
 def print_html(folder: Path, html: str, out_pdf: Path, *, timeout: float = 60.0, launcher=_launch) -> None:
     """Print `html` (written as `folder/index.html`, with the folder's other files beside it) to `out_pdf`."""
     exe = chromium.find_chromium()
@@ -141,7 +151,13 @@ def print_html(folder: Path, html: str, out_pdf: Path, *, timeout: float = 60.0,
     conn = None
     try:
         proc = launcher(_browser_args(exe, str(profile)))
-        port, path = _wait_port(proc, profile, deadline)
+        try:
+            port, path = _wait_port(proc, profile, deadline)
+        except PrintError:
+            if not _refused_sandbox(profile):
+                raise
+            proc = launcher(_browser_args(exe, str(profile), no_sandbox=True))
+            port, path = _wait_port(proc, profile, deadline)
         conn = cdp.Cdp.connect(f"ws://127.0.0.1:{port}{path}", timeout=left())
         target = conn.send("Target.createTarget", {"url": "about:blank"}, timeout=left())["targetId"]
         sid = conn.send("Target.attachToTarget", {"targetId": target, "flatten": True}, timeout=left())["sessionId"]
