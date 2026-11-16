@@ -24,6 +24,7 @@ from door.core import workspace
 import door.mcp_server as server
 from profile_utils import write_config
 from cli_utils import result_text
+import compile_utils
 
 NOW = datetime.now(timezone.utc)
 
@@ -138,10 +139,10 @@ def test_show_prepare_compile_accept_names(env, monkeypatch):
     out = env.jobs_dir / "output" / "jobindex-top"
     out.mkdir(parents=True)
     for name in prepare_cmd._TAILOR_OUTPUTS:
-        (out / name).write_text("x")
+        (out / name).write_text("<p>x</p>")
     assert prepare_cmd._prepare_core("trustpilot", jobs_dir=env.jobs_dir)["job_id"] == "jobindex-top"
 
-    monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, "", ""))
+    compile_utils.install(monkeypatch)
     assert compile_cmd._compile_core("trustpilot", jobs_dir=env.jobs_dir)["job_id"] == "jobindex-top"
 
 

@@ -16,7 +16,7 @@ def world(tmp_path, monkeypatch):
     out = jobs / "output" / "job-abc"
     out.mkdir(parents=True)
     (profile / "cv.md").write_text("### Dev | Acme - 2019\n- Team of 12\n", encoding="utf-8")
-    (out / "cv.html").write_text("\\begin{document}\n\\item Cut churn by 40\\%\n", encoding="utf-8")
+    (out / "cv.html").write_text("<ul><li>Cut churn by 40%</li></ul>\n", encoding="utf-8")
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile)
     monkeypatch.setattr(workspace, "JOBS_DIR", jobs)
     return profile, jobs, out

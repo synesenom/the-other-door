@@ -219,7 +219,7 @@ def _show_on_a_terminal(cli_env, monkeypatch, lines: int = 40):
 def _prepared(cli_env, job_id="job-abc"):
     out = cli_env.jobs_dir / "output" / job_id
     out.mkdir(parents=True, exist_ok=True)
-    (out / "cv.html").write_text("% Keywords: Python, SQL\n")
+    (out / "cv.html").write_text("<!-- Keywords: Python, SQL -->\n")
     for name in ("cv.pdf", "cover_letter.pdf"):
         (out / name).write_bytes(b"%PDF")
     for name in ("cv_page_1.png", "cover_letter_page_1.png"):
@@ -328,9 +328,9 @@ def test_show_core_names_the_site_in_words(cli_env):
 # --------------------------------------------------------------------------- #
 # the facts check (issue #325)
 # --------------------------------------------------------------------------- #
-def _with_cv(cli_env, cv_tex, cv_md="Cut churn by 38%."):
+def _with_cv(cli_env, cv_html, cv_md="Cut churn by 38%."):
     _prepared(cli_env)
-    (cli_env.jobs_dir / "output" / "job-abc" / "cv.html").write_text(cv_tex)
+    (cli_env.jobs_dir / "output" / "job-abc" / "cv.html").write_text(cv_html)
     if cv_md is not None:
         (cli_env.profile_dir / "cv.md").write_text(cv_md)
 
@@ -339,7 +339,7 @@ def test_show_lists_a_figure_not_in_cv_md_with_its_context(cli_env, one_page):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, r"\item Cut churn by 97\% at scale")
+    _with_cv(cli_env, "<ul><li>Cut churn by 97% at scale</li></ul>")
 
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert [c["value"] for c in materials["unsupported"]] == ["97%"]
@@ -359,7 +359,7 @@ def test_show_lists_an_invented_skill_like_the_other_kinds(cli_env, one_page):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, "\\section{Skills}\nPython, Terraform\n", cv_md="Cut churn by 38%. Python.")
+    _with_cv(cli_env, "<h2>Skills</h2>\n<p>Python, Terraform</p>\n", cv_md="Cut churn by 38%. Python.")
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert [(c["kind"], c["value"]) for c in materials["unsupported"]] == [("skill", "Terraform")]
     buf = StringIO()
@@ -374,7 +374,7 @@ def test_show_clean_materials_say_all_found(cli_env, one_page):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, r"\item Cut churn by 38\%")
+    _with_cv(cli_env, "<ul><li>Cut churn by 38%</li></ul>")
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert materials["unsupported"] == []
     buf = StringIO()
@@ -388,7 +388,7 @@ def test_show_without_cv_md_is_not_checked_and_does_not_crash(cli_env, one_page)
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, r"\item Cut churn by 97\%", cv_md=None)
+    _with_cv(cli_env, "<ul><li>Cut churn by 97%</li></ul>", cv_md=None)
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert materials["unsupported"] is None
     buf = StringIO()
@@ -400,7 +400,7 @@ def test_show_falls_back_to_the_stored_check_when_cv_md_is_gone(cli_env, one_pag
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, r"\item Cut churn by 97\%")
+    _with_cv(cli_env, "<ul><li>Cut churn by 97%</li></ul>")
     out = cli_env.jobs_dir / "output" / "job-abc"
     (out / "facts.json").write_text(json.dumps({"checked_at": "x", "unsupported": [
         {"kind": "number", "value": "97%", "context": "c", "file": "cv"}]}))
@@ -556,7 +556,7 @@ def test_show_lists_what_an_ats_would_not_read_back(cli_env, one_page):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, "% Keywords: Python, Kubernetes\n\\section{Experience}\n")
+    _with_cv(cli_env, "<!-- Keywords: Python, Kubernetes -->\n<h2>Experience</h2>\n")
     _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     details = [p["detail"] for p in materials["readability"]]
@@ -570,7 +570,7 @@ def test_show_clean_read_back_says_it_reads_cleanly(cli_env, one_page):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, "% Keywords: Python\n")
+    _with_cv(cli_env, "<!-- Keywords: Python -->\n")
     _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert materials["readability"] == []
@@ -604,7 +604,7 @@ def test_show_carries_and_prints_the_reason_of_a_kept_item(cli_env, one_page):
     from door.tailoring import facts
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, r"\item Cut churn by 97\% at scale")
+    _with_cv(cli_env, "<ul><li>Cut churn by 97% at scale</li></ul>")
     out = cli_env.jobs_dir / "output" / "job-abc"
     facts.check(out, cli_env.profile_dir, keep=[{"kind": "number", "value": "97%", "file": "cv", "reason": "the ad says so"}])
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]

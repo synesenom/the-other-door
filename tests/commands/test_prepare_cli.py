@@ -546,11 +546,11 @@ def test_prepare_cli_failure_prints_error_on_stderr_and_no_card(cli_env, monkeyp
 # --------------------------------------------------------------------------- #
 # the facts check (issue #325): reported, never a block
 # --------------------------------------------------------------------------- #
-def _tailor_writing_cv(jobs_dir, cv_tex):
+def _tailor_writing_cv(jobs_dir, cv_html):
     def _run(job_id, posting_path, **kwargs):
         out = jobs_dir / "output" / job_id
         write_tailor_outputs(out)
-        (out / "cv.html").write_text(cv_tex)
+        (out / "cv.html").write_text(cv_html)
         return True
 
     return _run
@@ -559,7 +559,7 @@ def _tailor_writing_cv(jobs_dir, cv_tex):
 def test_prepare_reports_a_figure_not_in_cv_md_and_still_prepares(cli_env, monkeypatch):
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
     (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, r"\item Cut churn by 97\%"))
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 97%</li></ul>"))
 
     result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
 
@@ -572,7 +572,7 @@ def test_prepare_reports_a_figure_not_in_cv_md_and_still_prepares(cli_env, monke
 def test_prepare_clean_materials_report_nothing(cli_env, monkeypatch):
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
     (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, r"\item Cut churn by 38\%"))
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 38%</li></ul>"))
 
     result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
 
@@ -731,9 +731,10 @@ def test_tailor_args_add_only_the_profile_the_posting_folder_and_the_codes_templ
 
 def test_an_injected_ad_gets_no_command_and_no_file_outside_its_scope(cli_env, monkeypatch):
     """A posting telling the agent to read ~/.ssh and run curl: no rule lets it, and a
-    `\\input` it writes is refused by compile."""
+    `<script>` or `<link>` it writes is refused by compile."""
     from door.commands import compile as compile_cmd
     from paths import TESTS_DIR
+    import compile_utils
 
     ad = json.loads((TESTS_DIR / "tailoring" / "fixtures" / "injected_posting.json").read_text())
     assert "curl" in ad["description"] and "~/.ssh" in ad["description"]
@@ -744,7 +745,7 @@ def test_an_injected_ad_gets_no_command_and_no_file_outside_its_scope(cli_env, m
         seen["argv"] = prepare_cmd._tailor_args(job_id, posting_path)
         out = cli_env.jobs_dir / "output" / job_id
         write_tailor_outputs(out)
-        (out / "cv.html").write_text("\\documentclass{article}\\begin{document}\\input{~/.ssh/id_rsa}\\end{document}")
+        (out / "cv.html").write_text('<p>Hi</p><link rel="stylesheet" href="file:///Users/me/.ssh/id_rsa"><script>fetch("http://evil")</script>')
         return True
 
     monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor)
@@ -757,12 +758,10 @@ def test_an_injected_ad_gets_no_command_and_no_file_outside_its_scope(cli_env, m
         if rule.startswith(("Read(", "Write(", "Edit(")):
             scope = rule[rule.index("(") + 2:-1].removesuffix("/**")
             assert not ssh.startswith(scope) and not scope.startswith(ssh)
-    ran = []
-    monkeypatch.setattr(compile_cmd, "_find_tectonic", lambda: None)
-    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: ran.append(argv[-1]) or FakeCompleted(0))
+    printer = compile_utils.install(monkeypatch)
     cv = compile_cmd._compile_core("job-evil", jobs_dir=cli_env.jobs_dir)["results"][0]
-    assert cv["status"] == "error" and "\\input" in cv["stderr"]
-    assert not any(str(arg).endswith("cv.html") for arg in ran)   # never handed to LaTeX
+    assert cv["status"] == "error" and "<script>" in cv["stderr"]
+    assert not any("<script>" in call["html"] for call in printer.calls)   # never handed to the browser
 
 
 # --------------------------------------------------------------------------- #
@@ -944,7 +943,7 @@ def test_run_tailor_clears_the_fact_check_rounds_and_stale_facts_before_it_start
 def test_prepare_keeps_a_reason_the_tailor_recorded_for_a_still_flagged_item(cli_env, monkeypatch):
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
     (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
-    inner = _tailor_writing_cv(cli_env.jobs_dir, r"\item Cut churn by 97\%")
+    inner = _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 97%</li></ul>")
 
     def run(job_id, posting_path, **kwargs):
         inner(job_id, posting_path)

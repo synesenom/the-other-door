@@ -615,7 +615,7 @@ def test_status_summary_reads_the_postings_once(cli_env, monkeypatch):
 # --------------------------------------------------------------------------- #
 # the facts check on a sent status (issue #325)
 # --------------------------------------------------------------------------- #
-def _invented(cli_env, cv=r"\item Cut churn by 97\%"):
+def _invented(cli_env, cv="<ul><li>Cut churn by 97%</li></ul>"):
     from door.commands import status as status_cmd  # noqa: F401
 
     _write_materials(cli_env.jobs_dir, "job-1", cv=cv)
@@ -636,7 +636,7 @@ def test_sending_with_a_figure_not_in_cv_md_warns(cli_env, status):
 def test_the_warning_counts_claims_and_names_skills(cli_env):
     from door.commands import status as status_cmd
 
-    _invented(cli_env, cv="\\section{Skills}\nTerraform\n")
+    _invented(cli_env, cv="<h2>Skills</h2>\n<p>Terraform</p>\n")
     warning = status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)["warning"]
     assert warning.startswith("1 claim(s) in the sent materials are not in your cv.md: Terraform")
 
@@ -653,7 +653,7 @@ def test_the_figure_warning_joins_the_short_ad_warning(cli_env):
 def test_clean_materials_add_no_figure_warning(cli_env):
     from door.commands import status as status_cmd
 
-    _invented(cli_env, cv=r"\item Cut churn by 38\%")
+    _invented(cli_env, cv="<ul><li>Cut churn by 38%</li></ul>")
     assert "warning" not in status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)
 
 
@@ -667,7 +667,7 @@ def test_no_figure_warning_before_sending(cli_env):
 def test_no_cv_md_means_no_figure_warning(cli_env):
     from door.commands import status as status_cmd
 
-    _write_materials(cli_env.jobs_dir, "job-1", cv=r"\item Cut churn by 97\%")
+    _write_materials(cli_env.jobs_dir, "job-1", cv="<ul><li>Cut churn by 97%</li></ul>")
     assert "warning" not in status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)
 
 
