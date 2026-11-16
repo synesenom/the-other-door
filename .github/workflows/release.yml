@@ -82,7 +82,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/.bundle-cache
-          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'src/door/core/chromium_pin.json', 'poetry.lock') }}
 
       - run: npm ci
 

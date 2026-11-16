@@ -3,7 +3,7 @@ name: Seed caches
 # Keeps the package workflows' caches warm on main (#80). Those workflows run only on pull requests (#45), and a
 # cache a pull request saves is scoped to that pull request: only caches saved on main are shared. This saves the
 # npm cache (setup-node) on every runner the package and release workflows use, and the bundle's downloads
-# (app/.bundle-cache: the Python runtime, Tectonic, the pip wheels) on the four that build a bundle, and Poetry's
+# (app/.bundle-cache: the Python runtime, Tectonic, Chromium, the pip wheels) on the four that build a bundle, and Poetry's
 # cache that tests.yml and app.yml restore. It builds no installer and runs no test. Runs when a lock file changes
 # on main, twice a week so a cache unused for 7 days is not evicted (a run that finds the cache only restores it),
 # and by hand from main (run from another branch, it saves into that branch's scope, which pull requests cannot
@@ -18,6 +18,7 @@ on:
       - "app/package-lock.json"
       - "poetry.lock"
       - "app/scripts/bundle.lock.json"
+      - "src/door/core/chromium_pin.json"
       - "app/scripts/bundle-python.*"
       - ".github/workflows/seed-caches.yml"
   schedule:
@@ -62,7 +63,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/.bundle-cache
-          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'poetry.lock') }}
+          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'src/door/core/chromium_pin.json', 'poetry.lock') }}
 
       - name: Install the app's packages
         run: npm ci
