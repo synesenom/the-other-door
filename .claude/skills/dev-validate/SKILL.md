@@ -1,6 +1,6 @@
 ---
 name: dev-validate
-description: Validate that the current implementation resolves a GitHub issue. Invoked with /dev-validate <issue_number>.
+description: Run the suite and check TDD compliance for the current implementation of a GitHub issue. Invoked with /dev-validate <issue_number>.
 ---
 
 You are validating whether the current implementation resolves a GitHub issue. The issue number is passed as the argument.
@@ -26,4 +26,4 @@ You are validating whether the current implementation resolves a GitHub issue. T
 
 5. **Report** to the user: the PASS / FAIL verdict and one-sentence justification from the report. Full details are at `thoughts/validate/<issue_number>.md`.
 
-6. **If FAIL** — describe what is still missing and offer to run `/dev-implement` again to address the gaps.
+6. **If FAIL** — name the failing tests or TDD gaps and offer to run `/dev-implement` again to fix them.
