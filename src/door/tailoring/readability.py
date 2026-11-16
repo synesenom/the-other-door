@@ -6,33 +6,27 @@ import re
 import unicodedata
 from pathlib import Path
 
-# The `% Keywords: a, b` line the tailor writes into cv.tex (shared with `matches._materials`).
-KEYWORDS_RE = re.compile(r"^\s*%\s*Keywords:\s*(.+?)\s*$", re.MULTILINE)
+from door.tailoring import html_doc
+
 MIN_CHARS_PER_PAGE = 30
-_SECTION_RE = re.compile(r"\\section\*?\s*\{((?:[^{}]|\{[^{}]*\})*)\}")
-_COMMAND_RE = re.compile(r"\\[A-Za-z@]+\*?")
-_ESCAPES = re.compile(r"\\([&%$#_{}])")
 _PRIVATE_USE = re.compile("[\ue000-\uf8ff]")
 
 
 def normalise(text: str) -> str:
-    """`text` as comparable words: LaTeX commands and braces dropped, escapes undone, compatibility forms
-    (ligatures) folded, case folded, whitespace collapsed."""
-    text = _ESCAPES.sub(r"\1", text)
-    text = _COMMAND_RE.sub(" ", text).replace("{", " ").replace("}", " ").replace("~", " ")
+    """`text` as comparable words: compatibility forms (ligatures) folded, case folded, whitespace collapsed (a
+    no-break space, `\u202f` among them, is whitespace)."""
     text = unicodedata.normalize("NFKC", text).casefold()
     return " ".join(text.split())
 
 
-def headings_from_tex(tex: str) -> list[str]:
-    """The `\\section{...}` titles of a LaTeX source, in order."""
-    return [m.group(1).strip() for m in _SECTION_RE.finditer(tex) if m.group(1).strip()]
+def headings_from_html(body: str) -> list[str]:
+    """The `<h2>` section headings of a CV body, in order."""
+    return html_doc.headings(body)
 
 
-def keywords_from_tex(tex: str) -> list[str]:
-    """The keywords of the `% Keywords:` line, or []."""
-    match = KEYWORDS_RE.search(tex)
-    return [k.strip() for k in match.group(1).split(",") if k.strip()] if match else []
+def keywords_from_html(body: str) -> list[str]:
+    """The keywords of the body's `Keywords` comment, or []."""
+    return html_doc.keywords(body)
 
 
 def problems(text: str, *, name: str | None, headings: list[str], keywords: list[str], pages: int = 1) -> list[dict]:
@@ -94,7 +88,7 @@ def extract(pdf: Path) -> tuple[str, int]:
     return "\n".join(texts), len(texts)
 
 
-def check_pdf(pdf: Path, tex: str, name: str | None) -> list[dict]:
-    """`problems` for `pdf`, with the headings and keywords taken from its LaTeX source `tex`."""
+def check_pdf(pdf: Path, body: str, name: str | None) -> list[dict]:
+    """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from."""
     text, pages = extract(pdf)
-    return problems(text, name=name, headings=headings_from_tex(tex), keywords=keywords_from_tex(tex), pages=pages)
+    return problems(text, name=name, headings=headings_from_html(body), keywords=keywords_from_html(body), pages=pages)

@@ -6,7 +6,7 @@ from door.tailoring import readability
 from pdf_utils import make_pdf
 
 NAME = "Jane Doe"
-HEADINGS = ["Profile", "Experience", "Skills \\& Tools"]
+HEADINGS = ["Profile", "Experience", "Skills & Tools"]
 GOOD = (
     "Jane Doe\nSenior data engineer with many years of building pipelines.\n"
     "Profile\nI build data platforms in Python and SQL.\n"
@@ -59,7 +59,7 @@ def test_empty_page_text():
 
 def test_normalisation_accents_case_whitespace():
     text = "Jane  DOE\nProfile\n" + "x" * 40 + "\nEXPÉRIENCE\nwork\nSkills   &  Tools\nPython\n"
-    found = readability.problems(text, name=NAME, headings=["Profile", "Expérience", "Skills \\& Tools"], keywords=["python"])
+    found = readability.problems(text, name=NAME, headings=["Profile", "Expérience", "Skills & Tools"], keywords=["python"])
     assert found == []
 
 
@@ -73,11 +73,22 @@ def test_no_headings_skips_heading_and_order_checks():
     assert readability.problems(letter, name=NAME, headings=[], keywords=[]) == []
 
 
-def test_headings_and_keywords_from_tex():
-    tex = "% Keywords: Python, Airflow\n\\section{Profile}\n\\section*{Skills \\& Tools}\n"
-    assert readability.headings_from_tex(tex) == ["Profile", "Skills \\& Tools"]
-    assert readability.keywords_from_tex(tex) == ["Python", "Airflow"]
-    assert readability.keywords_from_tex("nothing") == []
+def test_a_narrow_no_break_space_reads_as_a_space():
+    text = "Jane Doe\nProfile\nCompétences\u202f: Python et SQL pour toutes les équipes\nSkills & Tools\nPython\n"
+    found = readability.problems(text, name=NAME, headings=[], keywords=["Compétences : Python"])
+    assert found == []
+
+
+def test_html_entities_in_a_heading_are_the_text():
+    body = "<h2>Skills &amp; Tools</h2><h2>Profile</h2>"
+    assert readability.headings_from_html(body) == ["Skills & Tools", "Profile"]
+
+
+def test_headings_and_keywords_from_html():
+    body = "<!-- Keywords: Python, Airflow -->\n<h2>Profile</h2><h2>Skills &amp; Tools</h2>"
+    assert readability.headings_from_html(body) == ["Profile", "Skills & Tools"]
+    assert readability.keywords_from_html(body) == ["Python", "Airflow"]
+    assert readability.keywords_from_html("nothing") == []
 
 
 def _make_pdf(path, pages):
@@ -101,8 +112,8 @@ def test_extract_raises_on_missing_and_corrupt(tmp_path):
 
 def test_check_pdf_reads_back(tmp_path):
     pdf = _make_pdf(tmp_path / "cv.pdf", ["Jane Doe  a long enough line of text for the page"])
-    tex = "% Keywords: Kubernetes\n"
-    found = readability.check_pdf(pdf, tex, NAME)
+    body = "<!-- Keywords: Kubernetes -->"
+    found = readability.check_pdf(pdf, body, NAME)
     assert [p["kind"] for p in found] == ["missing"] and "Kubernetes" in found[0]["detail"]
 
 

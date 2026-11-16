@@ -826,16 +826,3 @@ def test_doctor_rechecks_the_data_versions_instead_of_reading_the_start_up_answe
         run=_auth(""), probe=_NO_PROBE,
     )
     assert result["data"] == refusal
-
-
-def test_run_checks_includes_the_templates_check_for_an_own_template(tmp_path):
-    profile_dir = tmp_path / "profile"
-    profile_dir.mkdir()
-    write_config(profile_dir, {"role_targets": ["x"], "location": "Copenhagen", "linkedin_discovery": False})
-    (profile_dir / "cv.template.tex").write_text("\\usepackage{hyperref}\n")
-    result = doctor.run_checks(
-        profile_dir, tmp_path / "jobs", which=_which("xelatex", "claude"), find_spec=lambda name: object(),
-        now=NOW, run=_auth(json.dumps({"loggedIn": True, "authMethod": "oauth_token"})), probe=_NO_PROBE,
-    )
-    check = next(c for c in result["checks"] if c["name"] == "templates")
-    assert check["status"] == "warn" and not check["required"]

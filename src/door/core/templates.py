@@ -1,8 +1,9 @@
-"""Where the LaTeX templates are read from (#56).
+"""Where the HTML templates are read from (#56, #146).
 
-`cv.template.tex` and `cover-letter.template.tex` (and the `fonts/` they load) ship with the code in `profile.example/`,
-so a release that changes the tailor's macros never breaks a profile that holds an older copy. A user who wants their own
-styling keeps a file of that name in `profile/` (or names one in `config.json`); it wins.
+`cv.template.html` and `cover-letter.template.html` (and the `fonts/` they load) ship with the code in `profile.example/`,
+so a release that changes the building blocks never breaks a profile that holds an older copy. A user who wants their own
+styling keeps a file of that name in `profile/` (or names one in `config.json`); it wins. A file that is not `.html`
+(an old LaTeX template) is never read: a browser cannot print it.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ from pathlib import Path
 from door.core import workspace
 
 # The config key of each template and the file it defaults to.
-FILES = {"cv_template": "cv.template.tex", "cover_letter_template": "cover-letter.template.tex"}
+FILES = {"cv_template": "cv.template.html", "cover_letter_template": "cover-letter.template.html"}
 
 
 def resolve(key: str, config: dict | None = None, profile_dir: Path | None = None, example_dir: Path | None = None) -> Path:
@@ -23,7 +24,7 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
     """
     name = FILES[key]
     named = (config or {}).get(key)
-    if named:
+    if named and str(named).lower().endswith(".html"):
         path = Path(named)
         path = path if path.is_absolute() else workspace.HOME / path
         if path.is_file():
@@ -32,20 +33,3 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
     if own.is_file():
         return own
     return Path(example_dir if example_dir is not None else workspace.PROFILE_EXAMPLE_DIR) / name
-
-
-# Fixes made to the shipped templates that a user's own copy only gets by hand (#156): `has` is a string the fixed
-# template contains, `when` one that makes the fix relevant to a copy, `what` the words the user reads.
-FIXES = [
-    {"template": "cv_template", "has": "\\newcommand*{\\cv@photo}", "when": "\\cv@photo",
-     "what": "the contact details on one line when there is no photo", "issue": 142},
-    {"template": "cv_template", "has": "\\hyper@linkurl", "when": "hyperref",
-     "what": "no French space before the colon in a link's text", "issue": 143},
-    {"template": "cover_letter_template", "has": "\\hyper@linkurl", "when": "hyperref",
-     "what": "no French space before the colon in a link's text", "issue": 143},
-]
-
-
-def missing_fixes(key: str, text: str) -> list[dict]:
-    """The `FIXES` of template ``key`` that apply to ``text`` (a user's copy) and are not in it."""
-    return [f for f in FIXES if f["template"] == key and f["when"] in text and f["has"] not in text]

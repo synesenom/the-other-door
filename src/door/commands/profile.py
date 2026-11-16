@@ -25,7 +25,7 @@ from door.core import sites
 # The LaTeX templates and fonts come from the code (`door.core.templates`), never copied (#56).
 _NOT_COPIED = {
     Path("config.json"), Path("story_bank.md"), Path("companies.json"), Path("cv.md"),
-    Path("cv.template.tex"), Path("cover-letter.template.tex"),
+    Path("cv.template.html"), Path("cover-letter.template.html"),
 }
 _NOT_COPIED_DIRS = {Path("fonts")}
 

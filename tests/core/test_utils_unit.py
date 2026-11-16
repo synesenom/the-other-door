@@ -1,26 +1,23 @@
-"""Unit tests for utils.py helpers: _escape_latex, _normalize_text_for_ats, and _validate_job_id."""
+"""Unit tests for utils.py helpers: _escape_html, _normalize_text_for_ats, and _validate_job_id."""
 
 import pytest
 
-from door.core.utils import _escape_latex, _normalize_text_for_ats, _validate_job_id
+from door.core.utils import _escape_html, _normalize_text_for_ats, _validate_job_id
 
 
 # --------------------------------------------------------------------------- #
-# _escape_latex
+# _escape_html
 # --------------------------------------------------------------------------- #
 
-class TestEscapeLatex:
+class TestEscapeHtml:
     def test_clean_string_unchanged(self):
-        assert _escape_latex("Hello World") == "Hello World"
+        assert _escape_html("Hello World") == "Hello World"
 
-    def test_backslash_not_double_escaped(self):
-        # If backslash is replaced first, subsequent substitutions for other
-        # chars should not re-escape the newly introduced backslashes.
-        assert _escape_latex("\\&") == r"\textbackslash{}\&"
+    def test_markup_and_quotes_become_text(self):
+        assert _escape_html("R&D <Lead> \"x\" 'y'") == "R&amp;D &lt;Lead&gt; &quot;x&quot; &#x27;y&#x27;"
 
-    def test_all_special_chars(self):
-        result = _escape_latex(r"& % $ # _ { } ~ ^ \ ")
-        assert result == r"\& \% \$ \# \_ \{ \} \~{} \^{} \textbackslash{} "
+    def test_it_is_not_escaped_twice_by_itself(self):
+        assert _escape_html("&amp;") == "&amp;amp;"
 
 
 # --------------------------------------------------------------------------- #

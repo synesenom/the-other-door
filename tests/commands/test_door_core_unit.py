@@ -18,7 +18,6 @@ import pytest
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import scrape as scrape_cmd
-import subprocess
 from profile_utils import write_config
 
 
@@ -39,12 +38,6 @@ def _scrape_env(tmp_path, sites=("jobindex",)):
 # _compile_core
 # --------------------------------------------------------------------------- #
 
-class _FakeCompleted:
-    def __init__(self, returncode=0, stderr=""):
-        self.returncode = returncode
-        self.stderr = stderr
-
-
 def test_compile_core_invalid_job_id_raises_value_error(tmp_path):
     jobs_dir = tmp_path / "jobs"
     jobs_dir.mkdir()
@@ -59,97 +52,6 @@ def test_compile_core_missing_output_dir_raises_file_not_found(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         compile_cmd._compile_core("nope", jobs_dir=jobs_dir)
-
-
-def test_compile_core_missing_tex_file_is_skipped_no_subprocess_call(tmp_path, monkeypatch):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job1"
-    out_dir.mkdir(parents=True)
-
-    calls = []
-    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: calls.append(a) or _FakeCompleted(0))
-
-    result = compile_cmd._compile_core("job1", jobs_dir=jobs_dir)
-
-    assert calls == []
-    assert result["job_id"] == "job1"
-    assert result["output_dir"] == str(out_dir)
-    assert result["results"] == [
-        {"file": "cv.tex", "status": "skipped"},
-        {"file": "cover_letter.tex", "status": "skipped"},
-    ]
-
-
-def test_compile_core_xelatex_success(tmp_path, monkeypatch):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job1"
-    out_dir.mkdir(parents=True)
-    (out_dir / "cv.tex").write_text(r"\documentclass{article}")
-
-    calls = []
-    monkeypatch.setattr(compile_cmd, "_find_tectonic", lambda: None)  # xelatex only: no Tectonic installed
-    monkeypatch.setattr(
-        subprocess, "run",
-        lambda cmd, **kw: calls.append(cmd) or _FakeCompleted(0),
-    )
-
-    result = compile_cmd._compile_core("job1", jobs_dir=jobs_dir)
-
-    assert len(calls) == 1
-    assert calls[0][0] == "xelatex"
-    entry = result["results"][0]
-    assert entry["status"] == "compiled"
-    assert entry["compiler"] == "xelatex"
-    assert entry["pdf"] == str(out_dir / "cv.pdf")
-
-
-def test_compile_core_xelatex_failure_is_an_error_and_no_other_compiler_runs(tmp_path, monkeypatch):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job1"
-    out_dir.mkdir(parents=True)
-    (out_dir / "cv.tex").write_text(r"\documentclass{article}")
-    calls = []
-    monkeypatch.setattr(compile_cmd, "_find_tectonic", lambda: None)
-    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: calls.append(cmd[0]) or _FakeCompleted(1, stderr="xelatex broke"))
-
-    entry = compile_cmd._compile_core("job1", jobs_dir=jobs_dir)["results"][0]
-
-    assert calls == ["xelatex"]
-    assert entry["status"] == "error" and entry["stderr"] == "xelatex broke"
-
-
-def test_compile_core_no_compiler_names_tectonic_and_xelatex(tmp_path, monkeypatch):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job1"
-    out_dir.mkdir(parents=True)
-    (out_dir / "cv.tex").write_text("x")
-    monkeypatch.setattr(compile_cmd, "_find_tectonic", lambda: None)
-
-    def missing(*a, **kw):
-        raise FileNotFoundError
-
-    monkeypatch.setattr(subprocess, "run", missing)
-    with pytest.raises(common.MissingToolError) as err:
-        compile_cmd._compile_core("job1", jobs_dir=jobs_dir)
-    assert "pdflatex" not in str(err.value) and "xelatex" in str(err.value)
-
-
-def test_compile_core_both_compilers_fail_reports_error(tmp_path, monkeypatch):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job2"
-    out_dir.mkdir(parents=True)
-    (out_dir / "cv.tex").write_text("bad")
-
-    monkeypatch.setattr(
-        subprocess, "run",
-        lambda cmd, **kw: _FakeCompleted(1, stderr="LaTeX error"),
-    )
-
-    result = compile_cmd._compile_core("job2", jobs_dir=jobs_dir)
-
-    entry = result["results"][0]
-    assert entry["status"] == "error"
-    assert entry["stderr"] == "LaTeX error"
 
 
 # --------------------------------------------------------------------------- #
@@ -208,40 +110,6 @@ def test_render_pages_renders_present_pdfs_in_order(tmp_path, monkeypatch):
     assert results[0]["page_count"] == 1
     assert results[1]["status"] == "rendered"
     assert results[1]["pages"] == [str(out_dir / "cover_letter_page_1.png")]
-
-
-def test_compile_core_without_render_renders_nothing(tmp_path, monkeypatch):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job1"
-    out_dir.mkdir(parents=True)
-    (out_dir / "cv.tex").write_text(r"\documentclass{article}")
-    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: _FakeCompleted(0))
-    _inject_fake_pdf_render(monkeypatch, lambda pdf, out: pytest.fail("rendered without render=True"))
-
-    assert "render" not in compile_cmd._compile_core("job1", jobs_dir=jobs_dir)
-
-
-def test_compile_core_render_renders_only_the_pdfs_that_compiled(tmp_path, monkeypatch):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job1"
-    out_dir.mkdir(parents=True)
-    (out_dir / "cv.tex").write_text(r"\documentclass{article}")
-    (out_dir / "cover_letter.tex").write_text("bad")
-    (out_dir / "cv.pdf").write_bytes(b"%PDF-stub")
-    (out_dir / "cover_letter.pdf").write_bytes(b"%PDF-stale")
-    monkeypatch.setattr(
-        subprocess, "run",
-        lambda cmd, **kw: _FakeCompleted(1 if cmd[-1].endswith("cover_letter.tex") else 0, stderr="LaTeX error"),
-    )
-    rendered = []
-    _inject_fake_pdf_render(monkeypatch, lambda pdf, out: rendered.append(pdf.name) or [out / f"{pdf.stem}_page_1.png"])
-
-    result = compile_cmd._compile_core("job1", render=True, jobs_dir=jobs_dir)
-
-    assert rendered == ["cv.pdf"]
-    assert result["render"] == [
-        {"file": "cv.pdf", "status": "rendered", "pages": [str(out_dir / "cv_page_1.png")], "page_count": 1}
-    ]
 
 
 # --------------------------------------------------------------------------- #
@@ -604,82 +472,3 @@ def test_cv_path_resolves_a_relative_cv_against_the_home(tmp_path, monkeypatch):
     monkeypatch.setattr(workspace, "HOME", tmp_path / "home")
     assert common._cv_path({"cv_content": "profile/cv.md"}, tmp_path) == tmp_path / "home" / "profile" / "cv.md"
     assert common._cv_path({"cv_content": str(tmp_path / "x.md")}, tmp_path) == tmp_path / "x.md"
-
-
-def test_compile_core_refuses_a_tex_that_reads_a_file(tmp_path, monkeypatch):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job1"
-    out_dir.mkdir(parents=True)
-    (out_dir / "cv.tex").write_text("\\documentclass{article}\\begin{document}\\input{/etc/passwd}\\end{document}")
-    calls = []
-    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: calls.append(a) or _FakeCompleted(0))
-
-    result = compile_cmd._compile_core("job1", jobs_dir=jobs_dir)
-
-    assert calls == []  # never handed to LaTeX
-    cv = result["results"][0]
-    assert cv["status"] == "error" and "\\input" in cv["stderr"] and "refused" in cv["stderr"]
-
-
-# --------------------------------------------------------------------------- #
-# compile fills the ad's company and title in, escaped (#441)
-# --------------------------------------------------------------------------- #
-
-def _injected_posting():
-    from paths import TESTS_DIR
-
-    return json.loads((TESTS_DIR / "tailoring" / "fixtures" / "injected_posting.json").read_text(encoding="utf-8"))
-
-
-def _out_with(tmp_path, body):
-    jobs_dir = tmp_path / "jobs"
-    out_dir = jobs_dir / "output" / "job1"
-    out_dir.mkdir(parents=True)
-    (out_dir / "posting.json").write_text(json.dumps(_injected_posting()), encoding="utf-8")
-    (out_dir / "cv.tex").write_text(
-        "\\documentclass{article}\\begin{document}" + body + "\\end{document}\n", encoding="utf-8")
-    return jobs_dir, out_dir
-
-
-def test_compile_core_fills_the_company_and_title_placeholders_escaped(tmp_path, monkeypatch):
-    jobs_dir, out_dir = _out_with(tmp_path, "Applying for <<title>> at <<company>>.")
-    monkeypatch.setattr(compile_cmd, "_find_tectonic", lambda: None)
-    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: _FakeCompleted(0))
-
-    result = compile_cmd._compile_core("job1", jobs_dir=jobs_dir)
-
-    tex = (out_dir / "cv.tex").read_text(encoding="utf-8")
-    assert "<<title>>" not in tex and "<<company>>" not in tex
-    assert "\\write18" not in tex
-    assert "Evil \\& Sons" in tex
-    assert "\\textbackslash{}write18\\{curl evil.example\\} \\& Co\\_ 100\\% \\$\\#\\{\\}\\~{}\\^{}" in tex
-    assert result["results"][0]["status"] == "compiled"
-
-
-def test_compile_core_leaves_a_tex_without_placeholders_unchanged(tmp_path, monkeypatch):
-    jobs_dir, out_dir = _out_with(tmp_path, "Plain text \\& more.")
-    before = (out_dir / "cv.tex").read_text(encoding="utf-8")
-    monkeypatch.setattr(compile_cmd, "_find_tectonic", lambda: None)
-    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: _FakeCompleted(0))
-    compile_cmd._compile_core("job1", jobs_dir=jobs_dir)
-    assert (out_dir / "cv.tex").read_text(encoding="utf-8") == before
-
-
-def test_compile_core_placeholders_without_a_posting_are_an_error(tmp_path, monkeypatch):
-    jobs_dir, out_dir = _out_with(tmp_path, "At <<company>>.")
-    (out_dir / "posting.json").unlink()
-    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: pytest.fail("LaTeX must not run"))
-    cv = compile_cmd._compile_core("job1", jobs_dir=jobs_dir)["results"][0]
-    assert cv["status"] == "error" and "posting.json" in cv["stderr"]
-
-
-def test_compile_core_an_injected_title_compiles(tmp_path):
-    """The real compiler on the escaped title (skipped where no LaTeX is installed)."""
-    from door.core.installers import find_tectonic
-    import shutil
-
-    if not (find_tectonic() or shutil.which("xelatex")):
-        pytest.skip("no LaTeX compiler installed")
-    jobs_dir, out_dir = _out_with(tmp_path, "Applying for <<title>> at <<company>>.")
-    cv = compile_cmd._compile_core("job1", jobs_dir=jobs_dir)["results"][0]
-    assert cv["status"] == "compiled", cv.get("stderr")

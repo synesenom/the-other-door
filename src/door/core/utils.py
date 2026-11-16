@@ -1,5 +1,6 @@
 """Shared utility helpers for The other door."""
 
+import html
 import json
 import os
 import re
@@ -7,42 +8,10 @@ import threading
 from pathlib import Path
 
 
-def _escape_latex(text: str) -> str:
-    """Escape LaTeX special characters in untrusted text.
-
-    Converts the ten LaTeX special characters so the text can be safely
-    interpolated into a .tex document without triggering LaTeX commands.
-
-    The ten characters and their replacements:
-        \\  ->  \\textbackslash{}   (must be first to avoid double-escaping)
-        &   ->  \\&
-        %   ->  \\%
-        $   ->  \\$
-        #   ->  \\#
-        _   ->  \\_
-        {   ->  \\{
-        }   ->  \\}
-        ~   ->  \\~{}
-        ^   ->  \\^{}
-    """
-    # Use a sentinel to avoid double-escaping: first swap backslashes for a
-    # placeholder that contains no other special characters, escape all other
-    # special characters, then replace the placeholder with \textbackslash{}.
-    # The sentinel must be a string that cannot appear in normal text and does
-    # not contain any of the special characters being escaped.
-    _BACKSLASH_SENTINEL = "\x00BSLASH\x00"
-    text = text.replace("\\", _BACKSLASH_SENTINEL)
-    text = text.replace("&", r"\&")
-    text = text.replace("%", r"\%")
-    text = text.replace("$", r"\$")
-    text = text.replace("#", r"\#")
-    text = text.replace("_", r"\_")
-    text = text.replace("{", r"\{")
-    text = text.replace("}", r"\}")
-    text = text.replace("~", r"\~{}")
-    text = text.replace("^", r"\^{}")
-    text = text.replace(_BACKSLASH_SENTINEL, r"\textbackslash{}")
-    return text
+def _escape_html(text: str) -> str:
+    """Escape untrusted text (a posting's title or company) so it is plain text inside an HTML body: `&`, `<`, `>` and
+    both quotes become character references."""
+    return html.escape(text, quote=True)
 
 
 def _normalize_text_for_ats(text: str) -> str:
@@ -51,7 +20,7 @@ def _normalize_text_for_ats(text: str) -> str:
     LLMs frequently emit fancy typographic characters that confuse applicant
     tracking systems when they extract plain text from PDFs.  This helper
     replaces each such character with its ASCII equivalent (or removes it)
-    before the text is fed to ``_escape_latex``.
+    before the text is fed to ``_escape_html``.
 
     Character classes handled (in order):
     1. Ligatures: ﬀ→ff, ﬁ→fi, ﬂ→fl, ﬃ→ffi, ﬄ→ffl
@@ -61,8 +30,7 @@ def _normalize_text_for_ats(text: str) -> str:
     5. Smart single quotes / apostrophes (U+2018, U+2019) → "'"
     6. Zero-width chars (U+200B, U+200C, U+200D, U+FEFF) → removed
 
-    Must be called **before** ``_escape_latex`` so that the ASCII replacements
-    introduced here are not re-escaped by LaTeX escaping.
+    Must be called **before** ``_escape_html``.
     """
     # 1. Ligatures
     text = text.replace("ﬀ", "ff")

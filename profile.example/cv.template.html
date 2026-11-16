@@ -1,0 +1,67 @@
+<!doctype html>
+<!--
+  CV template: the page, its fonts and its look. The tailor agent writes only the body (cv.html: headings, entries,
+  lists, links) from profile/cv.md and profile/config.json, in the building blocks below, and `compile` puts it in
+  the <body> (the line with the body token) and the ad's language in <html lang> (its lang token). Restyle every
+  generated CV by changing the CSS; keep those two tokens, the class names and `.photo` (a template without it
+  prints no photo).
+
+  The fonts are served from the profile's fonts/ folder, or the code's own, as /fonts/<file>. They must be TrueType
+  (.ttf): Chromium writes a CFF (.otf) font into a PDF as text no reader can extract.
+
+  Building blocks (the tailor's vocabulary):
+    <header class="cv-header"><<photo>><h1>Name</h1><p class="contact"><span>detail</span>...</p></header>
+    <h2>Section</h2>
+    <div class="entry"><h3>Role | Company - dates</h3><ul><li>...</li></ul></div>
+    <p>, <ul><li>, <strong>, <em>, <a href="https://...">, <br>
+-->
+<html lang="<<lang>>">
+<head>
+<meta charset="utf-8">
+<title>CV</title>
+<style>
+@font-face { font-family: Figtree; font-weight: 400; font-style: normal; src: url(/fonts/Figtree-Regular.ttf) format("truetype"); }
+@font-face { font-family: Figtree; font-weight: 400; font-style: italic; src: url(/fonts/Figtree-Italic.ttf) format("truetype"); }
+@font-face { font-family: Figtree; font-weight: 600; font-style: normal; src: url(/fonts/Figtree-SemiBold.ttf) format("truetype"); }
+@font-face { font-family: Figtree; font-weight: 600; font-style: italic; src: url(/fonts/Figtree-SemiBoldItalic.ttf) format("truetype"); }
+@font-face { font-family: "Young Serif"; font-weight: 400; font-style: normal; src: url(/fonts/YoungSerif-Regular.ttf) format("truetype"); }
+
+@page { size: A4; margin: 2.2cm 2.4cm 2cm 2.4cm; }
+
+/* the app's colours: ink for the text, a muted ink for the details, a hairline, and one blue for the links */
+:root { --ink: #1E1A16; --muted: #6B6157; --hairline: #D6C7A8; --accent: #2F55C8; }
+
+html { font-synthesis: none; hyphens: manual; }
+body { margin: 0; font: 10pt/1.35 Figtree, sans-serif; color: var(--ink); orphans: 2; widows: 2; }
+p, ul, ol, h1, h2, h3 { margin: 0; }
+a { color: var(--accent); text-decoration: none; }
+strong { font-weight: 600; }
+
+h1, h2 { font-family: "Young Serif", serif; font-weight: 400; }
+h1 { font-size: 28pt; line-height: 32pt; }
+h2 { font-size: 15pt; line-height: 18pt; margin: 10pt 0 2pt; break-after: avoid; }
+h3 { font-size: 10pt; font-weight: 600; margin: 8pt 0 0; break-after: avoid; }
+.entry { break-inside: avoid; }
+ul, ol { padding-left: 1.1em; margin-top: 2pt; }
+li::marker { color: var(--muted); }
+li { break-inside: avoid; }
+p + p { margin-top: 3pt; }
+
+/* the name and the contact line; the details run on one line, apart by a middle dot (#142) */
+.cv-header { padding-bottom: 8pt; border-bottom: 0.6pt solid var(--hairline); margin-bottom: 4pt; }
+.contact { margin-top: 8pt; font-size: 9pt; color: var(--muted); }
+.contact span + span::before { content: "\00B7"; margin: 0 0.5em; }
+
+/* with a photo: the details one per line beside it, so the name and the details are about as tall as the photo */
+.cv-header:has(.photo) { display: grid; grid-template-columns: 1fr 2.2cm; column-gap: 0.6cm; align-items: start; }
+.cv-header:has(.photo) h1 { grid-column: 1; grid-row: 1; }
+.cv-header:has(.photo) .contact { grid-column: 1; grid-row: 2; }
+.cv-header:has(.photo) .contact span { display: block; }
+.cv-header:has(.photo) .contact span + span::before { content: none; }
+.cv-header .photo { grid-column: 2; grid-row: 1 / span 2; width: 2.2cm; height: 2.2cm; object-fit: cover; display: block; }
+</style>
+</head>
+<body>
+<<body>>
+</body>
+</html>
