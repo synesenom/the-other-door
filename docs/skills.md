@@ -9,13 +9,13 @@ scripted, multi-step **skills** you invoke with a slash command. Skills live in
 
 | Skill | What it does |
 |-------|--------------|
-| `/onboard` | Onboarding in a conversation, after `./scripts/setup.sh` has installed everything: takes your sources (CV, LinkedIn PDF, public pages), drafts `profile/cv.md`, infers your details, job titles and search terms, asks only for what it could not find, shows it all in one review, and writes `profile/config.json` and `profile/cv.md` only after you confirm. Offers to connect Google Drive first, so the profile follows you across computers. Then starts the first search. Installs nothing itself. Safe to re-run. |
+| `/onboard` | Onboarding in a conversation, after `./scripts/setup.sh` has installed everything: takes your sources (CV, LinkedIn PDF, public pages), drafts `profile/cv.md`, infers your details, job titles and search terms, asks only for what it could not find, shows it all in one review, and writes `profile/config.json` and `profile/cv.md` only after you confirm. Offers to connect Google Drive first, so the profile follows you across computers. On a first set-up with a PDF CV that has a look to copy, the review has one line, off unless you change it, to make your tailored CVs look like that CV (built in the background; the pick comes later, in a review session). Then starts the first search. Installs nothing itself. Safe to re-run. |
 | `/expand [url ...]` | Fetches public URLs (portfolio sites, publication lists, GitHub repos, course syllabi), proposes additions to `profile/cv.md`, and writes only after you confirm. URLs can be passed as arguments or listed under `enrich_sources` in `profile/config.json`. The work is the `enrich` tool's (two calls: propose, then apply the numbers you picked); `cv enrich` in a shell does the same, and the desktop app's "Add from a page" (Profile, CV). |
 
 Setup is split in two: `./scripts/setup.sh` (and the `doctor --fix` [command](manual-cli.md) it ends
 with) installs everything and asks nothing about you; `/onboard` reads your sources, asks what
 they did not say, and installs nothing. Its tools are the ones behind `init`'s wizard in a shell (`draft_cv`,
-`infer_basics`, `suggest_titles`, `keywords`, `init_profile`, `save_cv`, `save_photo`, `find_jobs`), so `./door init` does the same onboarding in a
+`infer_basics`, `suggest_titles`, `keywords`, `init_profile`, `save_cv`, `save_photo`, `find_jobs`, and `build_style` when you turn on the style line), so `./door init` does the same onboarding in a
 terminal — see [*The other door* from the terminal](manual-cli.md#walkthrough). The desktop app's
 first-launch wizard is the third twin of `/onboard` and `init`: the same three parts and the same
 rules, behind the same tools — see [the app](manual-app.md#first-launch).

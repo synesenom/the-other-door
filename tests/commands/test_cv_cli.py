@@ -191,3 +191,14 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
     sources = [str(styled), str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane"]
     result = cv_cmd._draft_cv_core(sources, profile_dir=env.profile_dir)
     assert [s.get("style") for s in result["sources"]] == [True, False, False, None]
+
+
+def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch):
+    """`style` says the file has a look to copy; whether this machine can print is another question."""
+    from door.commands import _common as common
+
+    _answer(monkeypatch)
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
+    assert result["sources"][0]["style"] is True

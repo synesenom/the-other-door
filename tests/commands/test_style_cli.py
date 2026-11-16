@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import json
 import os
+import re
 import shutil
 import signal
 import sys
@@ -17,9 +18,10 @@ from click.testing import CliRunner
 
 from door import mcp_server
 from door.cli import cli
+from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
-from door.core import lock, phone, workspace
+from door.core import chromium, doctor, lock, phone, workspace
 from door.tailoring import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR
@@ -103,6 +105,21 @@ def test_a_file_that_is_not_a_pdf_is_refused_in_words_and_nothing_starts(home, w
     with pytest.raises(ValueError, match="no layout to copy"):
         style_cmd._start_core(str(docx))
     assert world.spawned == [] and not (home / ".style").exists()
+
+
+def test_start_refuses_in_words_without_a_chromium_and_starts_nothing(home, world, cv_pdf, monkeypatch):
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    with pytest.raises(ValueError, match=re.escape(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")):
+        style_cmd._start_core(str(cv_pdf))
+    assert world.spawned == [] and not (home / ".style").exists()
+
+
+def test_the_build_command_refuses_without_a_chromium_before_any_model_round(home, cv_pdf, monkeypatch):
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    monkeypatch.setattr(style_cmd.style_build, "build", lambda *a, **k: pytest.fail("a round ran without Chromium"))
+    result = CliRunner().invoke(cli, ["cv", "style", "build", str(cv_pdf)])
+    assert result.exit_code != 0
+    assert f"no Chromium to print with: {doctor._CHROMIUM_FIX}" in result_text(result)
 
 
 def test_a_scan_is_refused_with_the_verdict_and_leaves_the_existing_style_and_state_alone(home, world, cli_env):
@@ -285,8 +302,13 @@ def test_a_build_that_was_replaced_does_not_write_over_the_newer_one(home, cv_pd
     assert _run(home)["state"] == "building" and _run(home)["pid"] == os.getpid() + 1
 
 
-def test_a_start_whose_process_refuses_the_file_is_recorded_failed_and_the_log_says_why(home, tmp_path):
-    # the real process, no stand-ins: the copy is not a PDF, so the child leaves at once
+def test_a_start_whose_process_refuses_the_file_is_recorded_failed_and_the_log_says_why(home, tmp_path, monkeypatch):
+    # the real process, no stand-ins but a file where the child looks for Chromium: the copy is not a PDF, so it leaves at once
+    key = chromium.platform_key()
+    shell = tmp_path / "bin" / "chromium" / f"chrome-headless-shell-{key}" / chromium.exe_name(key)
+    shell.parent.mkdir(parents=True)
+    shell.write_bytes(b"")
+    monkeypatch.setenv("DOOR_BIN", str(tmp_path / "bin"))
     copy = home / ".style" / "source.pdf"
     copy.parent.mkdir()
     copy.write_bytes(b"not a pdf")
