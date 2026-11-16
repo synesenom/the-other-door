@@ -5,9 +5,8 @@ import re
 
 import pytest
 
-from door.core import fonts, templates
+from door.core import templates
 from door.tailoring import html_guard, style_build
-from paths import REPO_ROOT
 
 
 def test_the_stylist_agent_is_sonnet_with_only_the_read_tool():
