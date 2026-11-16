@@ -106,6 +106,7 @@ jobs:
       # An AppImage needs FUSE 2, which Ubuntu 24.04 no longer ships (docs/manual-app.md says so to users).
       - name: The install test (AppImage)
         run: |
+          sudo apt-get update -qq
           sudo apt-get install -y -qq libfuse2t64
           DOOR_INSTALLER="$(ls dist/The-other-door-*-Linux.AppImage)" xvfb-run -a npm run test:install
 

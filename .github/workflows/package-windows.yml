@@ -1,7 +1,8 @@
 name: Package (Windows)
 
 # The packaged app on Windows: build the bundle (Python, door, Tectonic) and the NSIS installer, install it
-# silently for this user (no admin), smoke-test the installed app, then uninstall silently: the app goes, the
+# silently for this user (no admin), smoke-test the installed app and run the install test on that same install (#168),
+# then uninstall silently: the app goes, the
 # data folder (%APPDATA%\The other door) stays. Runs on pull requests that change what goes into the app, and by hand (Actions → Package (Windows) → Run workflow); the installer is
 # kept on the run's page for 14 days. The installer is built
 # once; the x64 and the ARM install tests then run side by side, about 10 minutes in all.
@@ -121,7 +122,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $data | Out-Null
           'kept' | Set-Content (Join-Path $data 'marker')
           # what still runs from the install folder holds it (#111): a server the app's quit did not wait for
-          Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith($env:DOOR_INSTALL_DIR) } | Stop-Process -Force -ErrorAction SilentlyContinue
+          Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith("$env:DOOR_INSTALL_DIR\", 'OrdinalIgnoreCase') } | Stop-Process -Force -ErrorAction SilentlyContinue
           $uninstaller = Get-ChildItem $env:DOOR_INSTALL_DIR -Filter 'Uninstall*.exe' | Select-Object -First 1
           Start-Process -Wait -FilePath $uninstaller.FullName -ArgumentList '/S'
           # the uninstaller hands over to a temporary copy and returns at once
@@ -158,13 +159,14 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       # npm ci takes over 2 minutes on this runner, cache or not: unpacking 497 packages on its disk, not the
-      # install scripts (under a second) nor Defender (#167). One restore of node_modules takes seconds.
+      # install scripts (under a second) nor Defender (#167). One restore of node_modules takes seconds; seed-caches.yml
+      # keeps it on main.
       - name: Restore the app's packages
         id: modules
         uses: actions/cache@v6
         with:
           path: app/node_modules
-          key: node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('app/package-lock.json') }}
+          key: node-modules-windows-arm64-${{ hashFiles('app/package-lock.json') }}
 
       - name: Install the app's packages
         if: steps.modules.outputs.cache-hit != 'true'
