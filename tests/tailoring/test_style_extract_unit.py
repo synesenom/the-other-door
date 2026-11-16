@@ -417,3 +417,65 @@ def test_an_image_too_small_or_too_long_is_no_photo(tmp_path, w, h):
 def test_an_image_on_a_later_page_is_no_photo(tmp_path):
     style = read_pages(tmp_path, [body(), image_at(400, 600, 90, 120) + body()], images=RED)
     assert style["photo"] is None
+
+
+# ---------- icons ----------
+
+def star(cx, cy, r, color="1 0 0"):
+    import math
+
+    pts = [(cx + (r if i % 2 == 0 else r * 0.4) * math.sin(i * math.pi / 5), cy + (r if i % 2 == 0 else r * 0.4) * math.cos(i * math.pi / 5))
+           for i in range(10)]
+    return f"{color} rg {pts[0][0]:.2f} {pts[0][1]:.2f} m " + " ".join(f"{x:.2f} {y:.2f} l" for x, y in pts[1:]) + " f\n"
+
+
+def test_a_small_vector_drawing_is_an_icon_next_to_its_text(tmp_path):
+    style = read(tmp_path, star(60, 703, 5) + text("F1", 10, 70, 700, "name@example.com") + body())
+    (icon,) = style["icons"]
+    assert icon["source"] == "vector" and icon["page"] == 1 and icon["color"] == "#ff0000" and icon["fill_rule"] == "evenodd"
+    assert icon["near"] == {"text": "name@example.com", "side": "right"}
+    assert icon["d"].startswith("M") and 8 <= float(icon["viewBox"].split()[2]) <= 11
+    # the drawing's box in page points, from the top left: about 10 wide around x 60, near y 139
+    x0, y0, x1, y1 = icon["bbox"]
+    assert 54 <= x0 <= 56 and 64 <= x1 <= 66 and 134 <= y0 <= 139 and 140 <= y1 <= 150
+
+
+def test_a_lone_icon_after_the_text_has_it_on_its_left(tmp_path):
+    style = read(tmp_path, text("F1", 10, 300, 700, "Phone") + star(335, 703, 5) + body())
+    assert style["icons"][0]["near"]["side"] == "left" and style["icons"][0]["near"]["text"] == "Phone"
+
+
+def test_rules_dots_and_boxes_are_no_icons(tmp_path):
+    drawing = "0 0 0 rg 60 700 200 1 re f\n0.9 0.9 0.9 rg 300 500 40 30 re f\n"
+    assert read(tmp_path, drawing + body())["icons"] == []
+
+
+def test_drawings_that_touch_are_one_icon(tmp_path):
+    # a house: a roof and a wall painted as two paths that share an edge
+    roof = "0 0 1 rg 50 700 m 60 710 l 70 700 l f\n"
+    wall = "0 0 1 rg 52 691 m 68 691 l 68 700 l 60 702 l 52 700 l f\n"
+    assert len(read(tmp_path, roof + wall + body())["icons"]) == 1
+
+
+def test_a_large_drawing_is_not_an_icon(tmp_path):
+    assert read(tmp_path, star(300, 400, 60) + body())["icons"] == []
+
+
+def test_a_run_in_an_icon_font_is_an_icon_run_left_out_of_the_layout(tmp_path):
+    content = text("FA", 10, 400, 700, "A") + text("F1", 10, 420, 700, "name@example.com") + body()
+    style = read(tmp_path, content, fonts={"FA": "FontAwesome"})
+    run = run_of(style, "A")
+    assert run["icon"] is True and run_of(style, "name@")["icon"] is False
+    assert {f["family"] for f in style["fonts"]} >= {"FontAwesome"}
+
+
+def test_a_small_picture_that_is_no_photo_is_an_icon(tmp_path):
+    style = read(tmp_path, image_at(400, 700, 16, 16) + text("F1", 10, 420, 704, "Copenhagen") + body(), images=RED)
+    (icon,) = style["icons"]
+    assert icon["source"] == "image" and icon["near"]["text"] == "Copenhagen" and icon["color"] == "#ff0000"
+
+
+def test_a_bullet_in_a_symbol_font_is_no_icon(tmp_path):
+    content = text("SY", 10, 50, 700, "\xb7") + text("F1", 10, 62, 700, "First point of the list") + body()
+    style = read(tmp_path, content, fonts={"SY": "Symbol"})
+    assert style["icons"] == []

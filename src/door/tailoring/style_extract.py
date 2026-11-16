@@ -18,7 +18,7 @@ from pathlib import Path
 import pypdfium2.raw as raw
 
 from door import i18n
-from door.tailoring import pdf_render
+from door.tailoring import pdf_render, style_trace
 
 VERSION = 1
 
@@ -160,6 +160,18 @@ def _axis_aligned(points: list[tuple[float, float]]) -> bool:
     return all(abs(a[0] - b[0]) < 0.05 or abs(a[1] - b[1]) < 0.05 for a, b in zip(points, points[1:] + points[:1]))
 
 
+def _round(segs, width: float, height: float) -> bool:
+    """Whether the points a path passes through lie on a circle around the middle of its box."""
+    on_curve, bezier = [], 0
+    for kind, x, y, _ in segs:
+        bezier = bezier + 1 if kind == raw.FPDF_SEGMENT_BEZIERTO else 0
+        if kind != raw.FPDF_SEGMENT_BEZIERTO or bezier % 3 == 0:
+            on_curve.append((x, y))
+    cx, cy = (min(x for x, _ in on_curve) + max(x for x, _ in on_curve)) / 2, (min(y for _, y in on_curve) + max(y for _, y in on_curve)) / 2
+    radii = [math.hypot(x - cx, y - cy) for x, y in on_curve]
+    return min(radii) > 0 and max(radii) / min(radii) <= 1.2
+
+
 def _shape_kind(segs, width: float, height: float, fill, stroke_width: float, stroked: bool, dash) -> tuple[str, bool] | None:
     """(kind, rounded) of a path from its geometry, or None for anything else (an icon candidate)."""
     curves = sum(t == raw.FPDF_SEGMENT_BEZIERTO for t, *_ in segs)
@@ -172,7 +184,8 @@ def _shape_kind(segs, width: float, height: float, fill, stroke_width: float, st
     if fill and not curves and min(width, height) <= _RULE_MAX and max(width, height) >= _RULE_MIN_LENGTH \
             and _axis_aligned(points):
         return "rule", False
-    if fill and width <= _DOT_MAX and height <= _DOT_MAX and abs(width - height) <= 1 and (curves or len(points) >= 8):
+    if fill and width <= _DOT_MAX and height <= _DOT_MAX and abs(width - height) <= 1 and (curves >= 8 or len(points) >= 8) \
+            and _round(segs, width, height):
         return "dot", False
     if not curves and 4 <= len(points) <= 5 and _axis_aligned(points[:4]):
         return "box", False
@@ -550,6 +563,106 @@ def _verdict(copyable: bool, reason: str, detail: str) -> dict:
     return {"copyable": copyable, "reason": reason, "detail": detail}
 
 
+# ---------- icons ----------
+
+_ICON_FONT = re.compile(r"awesome|icon|symbol|material|glyph|fontello|ionicons|dingbats|wingdings", re.I)
+_BULLETS = set("\u2022\u00b7\u2023\u25e6\u25aa\u25cf\u25cb\u25a0\u25a1\u2013\u2219-*")
+_ICON_SIZE = 24.0  # points: a drawing larger than this is not an icon
+_SCALE = 10.0  # pixels per point an icon is traced at
+
+
+def _glyph_only(text: str) -> bool:
+    """Only control characters, private use or dingbats: what an icon font's glyphs read as."""
+    return all(c < " " or "\ue000" <= c <= "\uf8ff" or "\u2700" <= c <= "\u27bf" for c in text)
+
+
+def mark_icon_runs(runs: list[dict]) -> None:
+    """Set `icon` on the runs that are glyphs of an icon font (FontAwesome and the like): a font named like one, a
+    run of only private-use or control characters, or a font whose runs are all a character or two of symbols.
+    A bullet is no icon."""
+    short = {}
+    for run in runs:
+        short[run["font"]] = short.get(run["font"], True) and len(run["text"]) <= 2 and not run["text"].isalnum()
+    for run in runs:
+        if all(c in _BULLETS for c in run["text"]):
+            continue
+        run["icon"] = bool(_ICON_FONT.search(run["font"]) or _glyph_only(run["text"]) or short[run["font"]])
+
+
+def _touching(a: list[float], b: list[float]) -> bool:
+    return a[0] <= b[2] + 1 and b[0] <= a[2] + 1 and a[1] <= b[3] + 1 and b[1] <= a[3] + 1
+
+
+def _vector_icons(shapes: list[dict]) -> list[tuple[list[float], str]]:
+    """Small drawings that are no rule, dot or box (four segments or more), those that touch put together: each
+    as (box, colour)."""
+    groups: list[dict] = []
+    for shape in shapes:
+        x0, y0, x1, y1 = shape["bbox"]
+        if shape["kind"] or len(shape["segments"]) < 4 or x1 - x0 > _ICON_SIZE or y1 - y0 > _ICON_SIZE:
+            continue
+        near = [g for g in groups if _touching(g["bbox"], shape["bbox"])]
+        merged = {"bbox": shape["bbox"], "color": shape["fill"] or shape["stroke"]}
+        for g in near:
+            groups.remove(g)
+            merged["bbox"] = [min(merged["bbox"][0], g["bbox"][0]), min(merged["bbox"][1], g["bbox"][1]),
+                              max(merged["bbox"][2], g["bbox"][2]), max(merged["bbox"][3], g["bbox"][3])]
+        groups.append(merged)
+    return [(g["bbox"], g["color"]) for g in groups
+            if g["bbox"][2] - g["bbox"][0] <= _ICON_SIZE and g["bbox"][3] - g["bbox"][1] <= _ICON_SIZE]
+
+
+def _near(box: list[float], runs: list[dict]) -> dict | None:
+    """The text an icon belongs to: the nearest run on its line, to its right first, else to its left."""
+    mid = (box[1] + box[3]) / 2
+    line = [r for r in runs if not r["icon"] and not r["rotated"] and r["bbox"][1] - 0.5 * r["size"] <= mid <= r["bbox"][3] + 0.5 * r["size"]]
+    right = sorted((r for r in line if r["bbox"][0] >= box[2] - 1), key=lambda r: r["bbox"][0] - box[2])
+    left = sorted((r for r in line if r["bbox"][2] <= box[0] + 1), key=lambda r: box[0] - r["bbox"][2])
+    for side, found in (("right", right), ("left", left)):
+        if found:
+            return {"text": found[0]["text"], "side": side}
+    return None
+
+
+def _ink_color(image) -> str:
+    ground = image.getpixel((0, 0))
+    best = max(((_distance(image.getpixel((x, y)), ground), (x, y)) for x in range(image.width) for y in range(image.height)))
+    return "#%02x%02x%02x" % image.getpixel(best[1])
+
+
+def _icon(page, number: int, box: list[float], color: str | None, source: str, font: str | None, runs: list[dict]) -> dict | None:
+    image, shown = render_box(page, box, _SCALE, pad=1.0)
+    scale = image.width / (shown[2] - shown[0])
+    traced = style_trace.trace(image, scale, color or "#000000")
+    if not traced:
+        return None
+    if color is None:
+        traced["fill"] = _ink_color(image.crop(tuple(traced["bbox"])))
+    px = traced.pop("bbox")
+    bbox = [round(shown[0] + px[0] / scale, 1), round(shown[1] + px[1] / scale, 1),
+            round(shown[0] + px[2] / scale, 1), round(shown[1] + px[3] / scale, 1)]
+    return {"page": number, "bbox": bbox, "source": source, "font": font, "color": traced.pop("fill"), "viewBox": traced["viewBox"],
+            "d": traced["d"], "fill_rule": traced["fill_rule"], "near": _near(bbox, runs)}
+
+
+def find_icons(doc, pages: list[dict]) -> list[dict]:
+    """Icons as SVG paths: glyphs of icon fonts, small drawings and small pictures, each traced from a large
+    render of its box (`style_trace`), with the text it is next to."""
+    icons = []
+    for number, (page, data) in enumerate(zip(doc, pages), 1):
+        found = [(r["bbox"], r["color"], "font", r["font"]) for r in data["runs"] if r["icon"]]
+        found += [(box, color, "vector", None) for box, color in _vector_icons([s for s in data["shapes"] if s["segments"]])]
+        for image in data["images"]:
+            w, h = image["bbox"][2] - image["bbox"][0], image["bbox"][3] - image["bbox"][1]
+            if image["bbox"] != (data["photo"] or {}).get("bbox") and 3 <= min(w, h) and max(w, h) <= 48 and 0.5 <= w / h <= 2:
+                found.append((image["bbox"], None, "image", None))
+        for box, color, source, font in found:
+            icon = _icon(page, number, box, color, source, font, data["runs"])
+            if icon:
+                icons.append(icon)
+    return sorted(icons, key=lambda i: (i["page"], i["bbox"][1], i["bbox"][0]))
+
+
 # ---------- the whole read ----------
 
 def _fonts_used(runs: list[dict]) -> list[dict]:
@@ -562,25 +675,32 @@ def _fonts_used(runs: list[dict]) -> list[dict]:
     return sorted(fonts.values(), key=lambda f: -f["chars"])
 
 
+def _read_pages(doc) -> list[dict]:
+    """Per page: size, merged text runs, drawn shapes (the page background taken out), images and the photo."""
+    pages = []
+    for number, page in enumerate(doc, 1):
+        width, height = page.get_size()
+        runs, _ = _text_runs(page, number, height)
+        size = [round(width, 1), round(height, 1)]
+        background, shapes = _page_background(_read_shapes(page, number, height), size)
+        images = _read_images(page, number, height)
+        photo = find_photo(page, images, size, background) if number == 1 else None
+        pages.append({"size": size, "runs": merge_runs(runs), "shapes": shapes, "background": background,
+                      "images": images, "photo": photo})
+    return pages
+
+
 def extract(pdf_path: Path) -> dict:
     """The style of the CV in *pdf_path* (see the module's docstring). Raises FileNotFoundError for a missing
     file and pypdfium2's PdfiumError for one that is not a PDF."""
     doc = pdf_render._open(pdf_path)
     try:
-        pages = []
-        for number, page in enumerate(doc, 1):
-            width, height = page.get_size()
-            runs, _ = _text_runs(page, number, height)
-            size = [round(width, 1), round(height, 1)]
-            background, shapes = _page_background(_read_shapes(page, number, height), size)
-            images = _read_images(page, number, height)
-            photo = find_photo(page, images, size, background) if number == 1 else None
-            pages.append({"size": size, "runs": merge_runs(runs), "shapes": shapes, "background": background,
-                          "images": images, "photo": photo})
+        pages = _read_pages(doc)
         head = {"version": VERSION, "verdict": style_verdict(pages), "producer": doc.get_metadata_value("Producer"),
                 "creator": doc.get_metadata_value("Creator"), "page_count": len(doc)}
         if not head["verdict"]["copyable"]:
             return head
+        mark_icon_runs([r for p in pages for r in p["runs"]])
         runs = [r for p in pages for r in p["runs"]]
         shapes = [s for p in pages for s in p["shapes"] if s["kind"]]
         page = {"size": pages[0]["size"], "background": pages[0]["background"], "margins": margins(pages),
@@ -590,8 +710,9 @@ def extract(pdf_path: Path) -> dict:
         headings = find_headings(runs, shapes, columns["bands"], name)
         return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
                 "columns": columns, "headings": headings, "heading_style": heading_style(headings),
-                "photo": pages[0]["photo"], "background_images": sum(background_images(p["images"], p["size"]) for p in pages),
                 "runs": [{k: v for k, v in r.items() if k != "baseline"} for r in runs],
-                "shapes": [{k: v for k, v in s.items() if k != "segments"} for s in shapes]}
+                "shapes": [{k: v for k, v in s.items() if k != "segments"} for s in shapes],
+                "icons": find_icons(doc, pages), "photo": pages[0]["photo"],
+                "background_images": sum(background_images(p["images"], p["size"]) for p in pages)}
     finally:
         doc.close()
