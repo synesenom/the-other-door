@@ -211,3 +211,51 @@ def test_main_exit_codes(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(chromium, "install", boom)
     assert chromium.main(["--dest", str(tmp_path / "d")]) == 1
     assert "no network" in capsys.readouterr().err
+
+
+def test_install_removes_the_other_versions_folders_and_leaves_the_rest(tmp_path, pinned):
+    data = _zip("linux64")
+    if pinned(data) != "linux64":
+        pytest.skip("fake zip is the linux one")
+    root = tmp_path / "door"
+    old = root / "chromium-0.0.1.1"
+    old.mkdir(parents=True)
+    (old / "junk").write_text("x")
+    other = root / "keep-me"
+    other.mkdir()
+    bundled = tmp_path / "bin" / "chromium"
+    bundled.mkdir(parents=True)
+    chromium.install(root / "chromium-1.2.3.4", fetch=lambda url, to: to.write_bytes(data))
+    assert not old.exists()
+    assert other.exists() and bundled.exists()
+    assert (root / "chromium-1.2.3.4" / "chrome-headless-shell-linux64").is_dir()
+
+
+def test_a_failed_install_keeps_the_older_folders(tmp_path, pinned):
+    pinned(b"x")
+    root = tmp_path / "door"
+    old = root / "chromium-0.0.1.1"
+    old.mkdir(parents=True)
+    with pytest.raises(chromium.ChromiumError):
+        chromium.install(root / "chromium-1.2.3.4", fetch=lambda url, to: to.write_bytes(b"bad"))
+    assert old.exists()
+
+
+def test_two_installs_racing_end_with_one_complete_folder(tmp_path, pinned):
+    data = _zip("linux64")
+    if pinned(data) != "linux64":
+        pytest.skip("fake zip is the linux one")
+    dest = tmp_path / "door" / "chromium-1.2.3.4"
+    calls = []
+
+    def fetch(url, to):
+        calls.append(to)
+        to.write_bytes(data)
+        if len(calls) == 1:   # a second install runs through the whole of the first's download
+            chromium.install(dest, fetch=fetch)
+
+    chromium.install(dest, fetch=fetch)
+    assert len(calls) == 2 and calls[0] != calls[1]
+    exe = dest / "chrome-headless-shell-linux64" / "chrome-headless-shell"
+    assert exe.read_text() == "binary"
+    assert [p.name for p in dest.iterdir()] == ["chrome-headless-shell-linux64"]
