@@ -1,7 +1,10 @@
 """scripts/cv_style_proto.py: the pure parts of the CV style builder prototype (#154)."""
 
 import importlib.util
+import json
 import re
+
+import pytest
 
 from PIL import Image
 
@@ -165,9 +168,57 @@ def test_the_default_look_fills_the_templates_macros():
 def test_a_given_pdf_is_rebuilt_as_its_own_cv_named_after_the_file(tmp_path, monkeypatch):
     pdf = tmp_path / "scrubbed-altacv-icons-fr.pdf"
     pdf.write_bytes(_PDF)
+    monkeypatch.setenv("DOOR_HOME", str(tmp_path / "home"))
     seen = []
     monkeypatch.setattr(proto, "run_pdf", lambda path, with_stress: seen.append((path, with_stress)) or {"cv": path.stem})
     monkeypatch.setattr(proto, "OUT", tmp_path / "out")
     proto.main(["--pdf", str(pdf), "--stress"])
     assert seen == [(pdf, True)]
     assert proto.pdf_work_dir(pdf) == tmp_path / "out" / "pdf-scrubbed-altacv-icons-fr"
+
+
+def test_a_range_of_cvs_is_every_number_in_it():
+    assert proto.parse_cvs("3") == [3]
+    assert proto.parse_cvs("2-4") == [2, 3, 4]
+
+
+def test_recognisable_is_judged_against_the_rows_given_not_a_fixed_eight():
+    nine = lambda yes: [_row(recognisable=i < yes) for i in range(9)]  # noqa: E731
+    assert proto.verdict(nine(5))["go"] is False  # 5 of 9 is under 5 in 8
+    assert proto.verdict(nine(6))["go"] is True
+
+
+def _record(folder, design, cost, stress_cost):
+    folder.mkdir(parents=True)
+    (folder / "record.json").write_text(json.dumps({
+        "design": design, "rounds": 3, "minutes": 1.0, "cost": cost, "score": 0.9,
+        "stress": {"holds": True, "cost": stress_cost}}))
+
+
+def test_the_report_has_every_record_and_an_unjudged_design_is_not_recognisable(tmp_path, monkeypatch):
+    monkeypatch.setattr(proto, "OUT", tmp_path)
+    _record(tmp_path / "cv1-made-up", "made-up", 1.0, 0.5)
+    _record(tmp_path / "pdf-real", "pdf-real", 1.5, 0.9)
+    (tmp_path / "judgement.json").write_text(json.dumps({"made-up": True}))
+    lines = proto.report().splitlines()
+    assert any(line.startswith("| made-up |") and "| yes |" in line for line in lines)
+    real = next(line for line in lines if line.startswith("| pdf-real |"))
+    assert "| 1.5 |" in real and "| no |" in real  # the build's cost, not the stress renders'
+
+
+def test_the_cost_judged_is_the_builds_and_the_stress_renders_cost_apart(tmp_path, monkeypatch):
+    for name in ("original_page_1.png", "render_page_1.png"):
+        Image.new("RGB", (10, 10), "white").save(tmp_path / name)
+    (tmp_path / "best.html").write_text("<p>x</p>")
+    monkeypatch.setattr(proto, "rebuild", lambda work, original: {"rounds": 2, "cost": 1.2})
+    monkeypatch.setattr(proto, "stress", lambda n, work, html, pages: {"holds": True, "cost": 0.8})
+    monkeypatch.setattr(proto, "pages_of", lambda pdf: 1)
+    summary = proto.finish(tmp_path, tmp_path / "original.pdf", {"design": "d"}, 1, True, [])
+    assert summary["cost"] == 1.2 and summary["stress"]["cost"] == 0.8
+
+
+def test_a_live_run_refuses_to_log_into_the_real_data_folder(monkeypatch):
+    monkeypatch.delenv("DOOR_HOME", raising=False)
+    monkeypatch.setattr(proto, "run_cv", lambda n, s: pytest.fail("ran without DOOR_HOME"))
+    with pytest.raises(SystemExit, match="DOOR_HOME"):
+        proto.main(["--cv", "1"])

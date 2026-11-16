@@ -22,6 +22,7 @@ import copy
 import ctypes
 import importlib.util
 import json
+import os
 import re
 import shutil
 import statistics
@@ -253,11 +254,11 @@ def record_row(cv: str, *, rounds: int, minutes: float, cost: float, score: floa
 
 
 def verdict(rows: list[dict]) -> dict:
-    """#154's rule: go when at least 5 of 8 are recognisable, the medians are within 5 rounds, 10 minutes and
+    """#154's rule: go when at least 5 in 8 rows are recognisable, the medians are within 5 rounds, 10 minutes and
     $2.50 and the stress renders hold; `failed` names each threshold missed."""
     failed = []
-    if sum(r["recognisable"] for r in rows) < GO["recognisable"]:
-        failed.append(f"fewer than {GO['recognisable']} of {GO['of']} recognisable")
+    if sum(r["recognisable"] for r in rows) * GO["of"] < GO["recognisable"] * len(rows):
+        failed.append(f"fewer than {GO['recognisable']} in {GO['of']} recognisable")
     for key, label in (("rounds", "rounds"), ("minutes", "minutes"), ("cost", "cost")):
         if statistics.median(r[key] for r in rows) > GO[key]:
             failed.append(f"median {label} above {GO[key]}")
@@ -413,8 +414,8 @@ def finish(work: Path, original: Path, head: dict, stress_cv: int, with_stress: 
     """Rebuild, stress, then save the side-by-side (original | rebuild | extra panels) and record.json."""
     summary = {**head, **rebuild(work, original)}
     if with_stress and (work / "best.html").exists():
+        # the stress renders are the test's overhead, not what a user pays: their cost stays in summary["stress"]
         summary["stress"] = stress(stress_cv, work, (work / "best.html").read_text(encoding="utf-8"), pages_of(original))
-        summary["cost"] += summary["stress"]["cost"]
     orig_img = Image.open(work / "original_page_1.png")
     render = work / "render_page_1.png"
     side_by_side([orig_img, Image.open(render) if render.exists() else orig_img, *extra]).save(work / "side_by_side.png")
@@ -469,6 +470,8 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--stress", action="store_true", help="also run the stress renders")
     ap.add_argument("--report", action="store_true")
     args = ap.parse_args(argv)
+    if (args.cv or args.pdf) and not os.environ.get("DOOR_HOME"):
+        raise SystemExit("set DOOR_HOME to a scratch folder: the model calls' usage would go into the real jobs/usage.jsonl")
     OUT.mkdir(parents=True, exist_ok=True)
     if args.cv:
         for n in parse_cvs(args.cv):
