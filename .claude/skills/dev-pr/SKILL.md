@@ -9,7 +9,7 @@ You are preparing and opening a pull request for The other door. Follow all step
 
 Two optional arguments, which `/dev-resolve` passes on:
 
-- `base=<branch>`: the branch this one was built on (a sibling's, when it depends on one). The PR still targets `main`, but everything below that reads the change uses `origin/<base>` (shown as `<FROM>`; `origin/main` without it), so the dependency's commits are not described as this change's. The body adds `Depends on #<pr>`, the sibling's open PR (`mcp__github__list_pull_requests`, `head: synesenom:<base>`, `state: open`).
+- `base=<branch>`: the branch this one was built on (in an epic, the previous sub-issue's). The PR still targets `main`, but everything below that reads the change uses `origin/<base>` (shown as `<FROM>`; `origin/main` without it), so the dependency's commits are not described as this change's. The body adds `Depends on #<pr>`, the open PR of that branch, when it has one (`mcp__github__list_pull_requests`, `head: synesenom:<base>`, `state: open`).
 - `epic=<number>`: the body adds `Part of #<epic>`, and the run stops after Step 6: the caller watches.
 
 ---

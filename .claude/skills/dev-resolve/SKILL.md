@@ -7,7 +7,7 @@ You are the issue resolution orchestrator for The other door. The issue number i
 
 Two optional arguments, which `/dev-epic` passes for each sub-issue:
 
-- `base=<branch>`: the branch the change builds on (a sibling's, when the issue depends on one); default the default branch. The issue's branch starts from it (`issue-implementer`'s step 0, given `base_branch`).
+- `base=<branch>`: the branch the change builds on (in an epic, the previous sub-issue's); default the default branch. The issue's branch starts from it (`issue-implementer`'s step 0, given `base_branch`).
 - `epic=<number>`: the epic the issue belongs to; `/dev-pr` says what changes.
 
 **Decision policy**: make all decisions autonomously without pausing for user input. If anything is ambiguous, pick the simplest reasonable interpretation, document the choice, and proceed.
