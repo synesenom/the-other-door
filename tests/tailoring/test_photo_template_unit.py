@@ -1,5 +1,5 @@
 """The example CV template's photo slot and header (#605, #142, #146): the CSS a printed photo needs is there. What
-prints is pinned on the real Chromium in `test_template_print_live.py`."""
+prints is pinned on the real Chromium in `test_template_print.py`."""
 
 import re
 

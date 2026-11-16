@@ -1,5 +1,5 @@
 """`prepare` on a saved French ad (#389, #146): the tailor is patched to write a faithful French CV and letter as HTML
-bodies, printed through a stand-in for Chromium (the real one is pinned in `test_template_print_live.py`); the facts
+bodies, printed through a stand-in for Chromium (the real one is pinned in `test_template_print.py`); the facts
 check finds nothing to report."""
 
 import json
