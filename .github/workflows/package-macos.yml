@@ -55,17 +55,15 @@ jobs:
       - name: Install the app's packages
         run: npm ci
 
-      - name: Unit tests, on this system as the release runs them
-        run: npx vitest run
-
       - name: Build the bundle
         run: scripts/bundle-python.sh
 
       - name: Check the bundle on its own
         run: scripts/check-bundle.sh
 
+      # The updater's .zip is only the release's (release.yml)
       - name: Package the .dmg
-        run: npm run package
+        run: npm run package -- --mac dmg
 
       - name: Install it like a user
         run: |

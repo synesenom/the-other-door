@@ -3,7 +3,8 @@ name: Package (Windows)
 # The packaged app on Windows: build the bundle (Python, door, Tectonic) and the NSIS installer, install it
 # silently for this user (no admin), smoke-test the installed app, then uninstall silently: the app goes, the
 # data folder (%APPDATA%\The other door) stays. Runs on pull requests that change what goes into the app, and by hand (Actions → Package (Windows) → Run workflow); the installer is
-# kept on the run's page for 14 days. About 15–20 minutes on windows-latest.
+# kept on the run's page for 14 days. The installer is built
+# once; the x64 and the ARM install tests then run side by side, about 10 minutes in all.
 on:
   pull_request:
     paths:
@@ -21,7 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows:
+  # Build the installer once; the x64 and ARM install tests then run side by side (#136).
+  build:
     runs-on: windows-latest
     timeout-minutes: 60
     defaults:
@@ -48,14 +50,48 @@ jobs:
       - name: Install the app's packages
         run: npm ci
 
-      - name: Unit tests, on this system as the release runs them
-        run: npx vitest run
-
       - name: Build the bundle
         run: ./scripts/bundle-python.ps1
 
       - name: Package the installer
         run: npm run package
+
+      - name: Keep the installer for 14 days
+        uses: actions/upload-artifact@v7
+        with:
+          name: the-other-door-windows
+          path: app/dist/*.exe
+          retention-days: 14
+          if-no-files-found: error
+
+  windows:
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install the app's packages
+        run: npm ci
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: the-other-door-windows
+          path: app/dist
+
+      - name: Unit tests, on this system as the release runs them
+        run: npx vitest run
 
       - name: Install it silently, for this user
         run: |
@@ -99,18 +135,9 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-      - name: Keep the installer for 14 days
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: the-other-door-windows
-          path: app/dist/*.exe
-          retention-days: 14
-          if-no-files-found: ignore
-
   # Windows on ARM (a Surface Pro 11): the x64 installer, emulated, as such a user installs it (#18).
   windows-arm:
-    needs: windows
+    needs: build
     runs-on: windows-11-arm
     timeout-minutes: 60
     defaults:
