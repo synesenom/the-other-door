@@ -1,7 +1,7 @@
-"""CI: was setup fine, given that it ran with --no-claude --no-tex? (cli-journeys.yml)
+"""CI: was setup fine, given that it ran with --no-claude --no-tex --no-chromium? (cli-journeys.yml)
 
-setup ends 1 when it leaves a tool missing, and those two flags leave latex and the claude CLI missing on
-purpose (the world's stand-ins take their place). Anything else missing, or an MCP server that does not
+setup ends 1 when it leaves a tool missing, and those flags leave latex, Chromium and the claude CLI missing on
+purpose (the world's stand-ins take their place: its print stand-in replaces Chromium). Anything else missing, or an MCP server that does not
 answer, is a real failure. Exits 1 then, naming it.
 """
 
@@ -9,7 +9,7 @@ import sys
 
 from door.core import doctor, workspace
 
-SKIPPED = {"latex", "claude CLI", "claude login", "profile"}
+SKIPPED = {"latex", "chromium", "claude CLI", "claude login", "profile"}
 
 report = doctor.run_checks(workspace.PROFILE_DIR, workspace.JOBS_DIR)
 bad = [f"{c['name']}: {c['status']}" for c in report["checks"]
