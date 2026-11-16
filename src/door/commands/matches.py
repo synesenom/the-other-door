@@ -406,6 +406,7 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
     if unsupported is None:
         unsupported = facts_mod.load(output_dir)
 
+    config = common._load_config_or_defaults(workspace.PROFILE_DIR)
     return {
         "output_dir": str(output_dir),
         "readability": _readability(output_dir),
@@ -414,12 +415,12 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
         "keywords": keywords,
         "tailoring": tailoring,
         "page_counts": {name: pdf_render.get_page_count(path) for name, path in pdfs.items()},
-        "cv_max_pages": common._cv_max_pages(posting, common._load_config_or_defaults(workspace.PROFILE_DIR)),
+        "cv_max_pages": common._cv_max_pages(posting, config),
         "cover_letter_words": words,
         "rendered": rendered,
         "revisable": cv_html.is_file() and letter_html.is_file(),
         "unsupported": unsupported,
-        "file_names": _file_names(common._load_config_or_defaults(workspace.PROFILE_DIR).get("name")),
+        "file_names": _file_names(config.get("name")),
     }
 
 
