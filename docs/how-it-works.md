@@ -121,11 +121,11 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    (precision over recall), but every item of the Skills section is. A `TODO` left in a document is always flagged:
    it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing. Company forms (`ApS`, `GmbH`, `Ltd`, `S.A.S.`) are never read as skills.
    The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json`, which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
-   `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `\section` heading
-   on a line of its own and in order, the `% Keywords:` and no garbled or empty text. What does not read back is
+   `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `<h2>` heading
+   on a line of its own and in order, the `Keywords` note and no garbled or empty text. What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);
    reported, never a block.
-   Chromium prints HTML pages to PDF without a TeX engine (`door.tailoring.html_pdf`, #165): one pinned headless shell, installed by `doctor --fix` or carried by the desktop app, driven over the DevTools protocol on a fresh profile. JavaScript is off, the page is served from loopback over one folder and every other request, `file:` and other hosts included, is refused. `prepare` does not use it yet.
+   Chromium prints HTML pages to PDF without a TeX engine (`door.tailoring.html_pdf`, #165): one pinned headless shell, installed by `doctor --fix` or carried by the desktop app, driven over the DevTools protocol on a fresh profile. JavaScript is off, the page is served from loopback over one folder and every other request, `file:` and other hosts included, is refused.
    When the tailor is done, `prepare` reads both PDFs back this way itself. If the name, a heading or a keyword
    is missing it runs the tailor once more, in a fresh session, told which problems and that the files exist; the
    retry counts in the plan estimate. What still does not read back is `readability` in `prepare`'s answer, with a

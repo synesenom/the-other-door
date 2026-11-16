@@ -147,7 +147,7 @@ before opening it, Windows SmartScreen warns once.
 | `npm run record:gif` | re-record the README's `docs/demo/app.gif`: the built app on the demo's made-up data in a temp folder (never `app/.demo`), driven by `demo-record/app.record.ts` (Playwright; the stand-in claude, light theme by emulation, a drawn cursor), its screencast frames turned into the GIF by `scripts/demo/app_gif.py` (Pillow, from Poetry). Not a test; CI never runs it. |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | vitest unit tests: no Python, no network (what CI runs) |
-| `npm run test:integration` | the real Python server on a generated `DOOR_HOME` (`test/home-fixture.ts`; `buildHome({ prepared: 'jobindex.123' })` adds a finished prepare from `test/fixtures/prepared/`: a 2-page CV, a 1-page letter, their page images and `.tex`) with isolated `HOME` and a stand-in `claude` first on `PATH` (it fails and leaves `claude-was-called` in the scratch folder, so a test never reaches your real one); skips with a message when there is no `.venv` or `DOOR_PYTHON` |
+| `npm run test:integration` | the real Python server on a generated `DOOR_HOME` (`test/home-fixture.ts`; `buildHome({ prepared: 'jobindex.123' })` adds a finished prepare from `test/fixtures/prepared/`: a 2-page CV, a 1-page letter, their page images and `.html` bodies) with isolated `HOME` and a stand-in `claude` first on `PATH` (it fails and leaves `claude-was-called` in the scratch folder, so a test never reaches your real one); skips with a message when there is no `.venv` or `DOOR_PYTHON` |
 | `npm run test:e2e` | builds, then the Playwright smoke tests (`e2e/`) drive the built app in the two modes the journeys never start, the demo's simulated run and the onboarding sandbox, against the real server on a temp `DOOR_HOME` (Python as above; skips with a message without it). CI runs it under `xvfb-run` |
 | `npm run test:journeys` | builds, then every journey (`journeys/`): each user action in the built app against the real server in a test world (`test/world/`), the screen and the data checked after each (`journeys/README.md`). CI runs all of them on each PR and on main, split over four runners and retried once: a journey that passes only on its retry is reported flaky, not failed (#121) |
 | `npm run test:journeys:core` | builds, then only the journeys tagged `@core` (the main paths): the quick local check before a push |
@@ -230,6 +230,6 @@ renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-serv
   `src/door/commands/matches.py` and `status.py`. A renamed field is not caught by
   `tools.json`.
 - Matches and Applications are live, with Prepare, Ready to send, Revise and Undo. A real
-  Prepare and a real Revise need the `claude` command line and a LaTeX compiler, so no test runs
+  Prepare and a real Revise need the `claude` command line and Chromium, so no test runs
   them (vitest covers their states with a mocked bridge); try them by hand. A real `find_jobs` run is never started by a test (it reads
   the network and calls `claude`); the demo's simulated run and the run board are what the tests cover.

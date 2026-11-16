@@ -502,7 +502,7 @@ Reached through:
 
 **`show`** (Posting, Materials, ImportDialog, notices):
 - Posting fields: `id, title, title_en, company, location, url, apply_url, description, score, score_reason, posted_at, source_name, language, language_requirement ('required'|'advantage'|'none'|null), matching_skills[], missing_skills[], status`.
-- `materials`: null, or `{output_dir, pngs: {cv[], cover_letter[]}, page_counts: {cv, cover_letter}, cover_letter_words (null when there is no .tex), sent, file_names: {cv, cover_letter}}`.
+- `materials`: null, or `{output_dir, pngs: {cv[], cover_letter[]}, page_counts: {cv, cover_letter}, cover_letter_words (null when there is no .html), sent, file_names: {cv, cover_letter}}`.
 - Not read: `pdfs`, `keywords`, `tailoring`, `rendered`, `unsupported`, `history`, `source`.
 - ImportDialog reads only title, company and location.
 - Notices read title, company and status (inPlay).
