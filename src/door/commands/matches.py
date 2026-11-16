@@ -357,7 +357,7 @@ def _file_names(name: str | None) -> dict[str, str]:
     return {"cv": f"{prefix}CV.pdf", "cover_letter": f"{prefix}Cover letter.pdf"}
 
 
-def _materials(output_dir: Path, posting: dict | None = None) -> dict | None:
+def _materials(output_dir: Path, posting: dict) -> dict | None:
     """Everything needed to judge a posting's prepared materials, or None
     until both PDFs are in `output_dir`.
 
@@ -365,7 +365,7 @@ def _materials(output_dir: Path, posting: dict | None = None) -> dict | None:
     the ``Keywords`` and ``Tailoring`` comments the tailor writes into
     ``cv.html`` (what it emphasised; what it cut, kept or condensed; empty for a job prepared before the HTML bodies), page
     counts and the cover letter's word count.
-    ``cv_max_pages`` is the page limit the CV was made to (`common._cv_max_pages`, for ``posting`` when given).
+    ``cv_max_pages`` is the CV's page limit as the profile and template stand now (`common._cv_max_pages` for ``posting``).
 
     Returns:
         ``{"output_dir", "pdfs": {"cv", "cover_letter"}, "pngs": {"cv":
@@ -414,7 +414,7 @@ def _materials(output_dir: Path, posting: dict | None = None) -> dict | None:
         "keywords": keywords,
         "tailoring": tailoring,
         "page_counts": {name: pdf_render.get_page_count(path) for name, path in pdfs.items()},
-        "cv_max_pages": common._cv_max_pages(posting or {}, common._load_config_or_defaults(workspace.PROFILE_DIR)),
+        "cv_max_pages": common._cv_max_pages(posting, common._load_config_or_defaults(workspace.PROFILE_DIR)),
         "cover_letter_words": words,
         "rendered": rendered,
         "revisable": cv_html.is_file() and letter_html.is_file(),

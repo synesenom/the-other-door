@@ -349,7 +349,7 @@ Reached through:
     - **btn "Letter · N words"** (`cover_letter_words`), or **"Letter · N page(s)"** when the words are null (no cover_letter.html). — unit: `app/src/renderer/screens/Materials.test.tsx`
   - Pages: `img` alt **"CV, page i"** / **"Letter, page i"**, for `pngs[doc].slice(0, page_counts[doc])`. Stale extra PNGs are hidden. The src is `door-file://output/<id>/[sent/]<png>?v=<version>`; the version bumps after each revise to beat the cache. — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded; ✓ Revise changes the letter, … (new pages after a revise)
   - **note** (figcaption) limit text:
-    - CV with more than 2 pages: "(limit is 2)" — unit: `app/src/renderer/screens/Materials.test.tsx`
+    - CV over `cv_max_pages`: "(limit is N)" — unit: `app/src/renderer/screens/Materials.test.tsx`
     - Letter with more than 1 page: "(limit is 1)" — unit: `app/src/renderer/screens/Materials.test.tsx`
     - Otherwise, a letter outside 250–350 words: "(aim for 250–350)" (en dash) — unit: `app/src/renderer/screens/Materials.test.tsx`
     - Within limits: none — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded
@@ -503,7 +503,7 @@ Reached through:
 
 **`show`** (Posting, Materials, ImportDialog, notices):
 - Posting fields: `id, title, title_en, company, location, url, apply_url, description, score, score_reason, posted_at, source_name, language, language_requirement ('required'|'advantage'|'none'|null), matching_skills[], missing_skills[], status`.
-- `materials`: null, or `{output_dir, pngs: {cv[], cover_letter[]}, page_counts: {cv, cover_letter}, cover_letter_words (null when there is no .html), revisable (both HTML bodies there), sent, file_names: {cv, cover_letter}}`.
+- `materials`: null, or `{output_dir, pngs: {cv[], cover_letter[]}, page_counts: {cv, cover_letter}, cv_max_pages, cover_letter_words (null when there is no .html), revisable (both HTML bodies there), sent, file_names: {cv, cover_letter}}`.
 - Not read: `pdfs`, `keywords`, `tailoring`, `rendered`, `unsupported`, `history`, `source`.
 - ImportDialog reads only title, company and location.
 - Notices read title, company and status (inPlay).

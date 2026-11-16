@@ -282,7 +282,7 @@ column comes under the pages.
 - Under that, a line marked with the warning triangle names the numbers, employers, skills,
   certifications or degrees of the CV and letter that your `cv.md` and story bank do not back
   ("Not in your CV: 87%, Nordwind. Check them before you send it."). A claim the tailor kept as true shows its reason in brackets after the name. Revise can take them out.
-- A CV is meant to be within the page limit it was made for (the stricter of the job country's convention, usually 2, and your template's own), a letter 1 page and 250 to 350 words. When one is over,
+- A CV is meant to be within its page limit, as your profile and template stand now (the stricter of the job country's convention, usually 2, and your template's own), a letter 1 page and 250 to 350 words. When one is over,
   a note under the page says so in words ("(limit is 2)", "(aim for 250–350)").
 - **Save CV** or **Save letter** under the page saves the document shown, named for you
   ("Jane Doe - CV.pdf", "Jane Doe - Cover letter.pdf": what an employer sees when you upload

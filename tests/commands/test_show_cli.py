@@ -405,7 +405,7 @@ def test_show_falls_back_to_the_stored_check_when_cv_md_is_gone(cli_env, one_pag
     (out / "facts.json").write_text(json.dumps({"checked_at": "x", "unsupported": [
         {"kind": "number", "value": "97%", "context": "c", "file": "cv"}]}))
     (cli_env.profile_dir / "cv.md").unlink(missing_ok=True)
-    assert matches_cmd._materials(out)["unsupported"][0]["value"] == "97%"
+    assert matches_cmd._materials(out, {})["unsupported"][0]["value"] == "97%"
 
 
 @pytest.mark.parametrize(

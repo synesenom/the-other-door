@@ -87,7 +87,7 @@ describe('Materials', () => {
     expect(within(figure()).getByRole('note')).toHaveTextContent('(limit is 2)')
   })
 
-  it('names the page limit the CV was made for, not a fixed 2', async () => {
+  it('names the CV page limit in force, not a fixed 2', async () => {
     mockDoor({ show: posting({ materials: materials({ cv_max_pages: 1 }) }) })
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cv" />)
     await screen.findByRole('heading', { name: 'Ready to send' })
