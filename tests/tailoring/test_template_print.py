@@ -341,3 +341,12 @@ def test_the_default_template_keeps_one_column_in_the_bodys_order(tmp_path, monk
     assert results["cv.html"]["readable"] == []
     lines = _lines(out / "cv.pdf")
     assert lines.index("Skills") < lines.index("Education") < lines.index("Languages"), lines
+
+
+def test_a_two_column_template_with_a_line_that_cannot_wrap_reports_overflow(tmp_path, monkeypatch):
+    template = FIXTURES / "overflow_template" / "cv.template.html"  # the side column's lines never wrap
+    cv = _TWO_COLUMNS.replace("<p>IFRS, SQL</p>", "<ul><li>" + "Consolidation and reporting under IFRS, " * 6 + "</li></ul>")
+    out, results = _setup(tmp_path, monkeypatch, cv=cv, letter=_LETTER, extra={"cv_template": str(template)})
+    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
+    found = results["cv.html"]["readable"]
+    assert [p["kind"] for p in found if p["kind"] == "overflow"] == ["overflow"], found

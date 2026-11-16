@@ -146,8 +146,8 @@ def test_layout_char_outside_the_content_box_is_overflow(box):
     assert "page 2" in found[0]["detail"] and "trim" in found[0]["detail"] and "invent" in found[0]["detail"]
 
 
-def test_layout_two_points_of_slack_is_not_overflow():
-    assert readability.layout_problems([page((54.5, 54.5, 70, 710))], margins=M, two_column=False) == []
+def test_layout_half_a_point_of_slack_is_not_overflow():
+    assert readability.layout_problems([page((55.6, 55.6, 70, 710))], margins=M, two_column=False) == []
 
 
 def test_layout_without_margins_checks_the_page_box():

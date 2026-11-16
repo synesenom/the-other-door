@@ -1259,3 +1259,32 @@ def test_cv_max_pages_is_the_stricter_of_the_templates_and_the_countrys(cli_env,
     (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
     config = common._load_config_or_defaults(cli_env.profile_dir)
     assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == expected
+
+
+_OVERFLOW = {"file": "cv", "kind": "overflow", "detail": "text on page 2 runs past the page margin; trim the lowest-value items"}
+_SPARSE = {"file": "cv", "kind": "sparse", "detail": "the last page (2) is almost empty"}
+
+
+def test_an_overflow_gets_one_retry_with_its_detail_in_the_prompt(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_OVERFLOW], [])
+    result = _go(prep)
+    assert len(calls) == 2 and "trim the lowest-value items" in calls[1]["feedback"]
+    assert result["readability"] == [] and "warning" not in result
+
+
+def test_an_overflow_that_stays_is_in_readability_and_the_warning(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_OVERFLOW], [_OVERFLOW])
+    result = _go(prep)
+    assert len(calls) == 2 and result["readability"] == [_OVERFLOW] and result["warning"]
+
+
+def test_a_sparse_last_page_is_reported_and_not_retried(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_SPARSE])
+    result = _go(prep)
+    assert len(calls) == 1 and result["readability"] == [_SPARSE]

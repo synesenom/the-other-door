@@ -147,11 +147,26 @@ def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) ->
     entry.pop("stderr", None)
 
 
-def _read_back(entry: dict, pdf: Path, body: str, config: dict) -> None:
-    """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from (a CV's sections as
-    placed); a failing check is a ``warning``, never a failed compile."""
+def _geometry(template: str, columns: templates.Columns | None) -> dict:
+    """The page geometry a CV is checked against (`readability.check_pdf`'s keywords): the template's page margins and
+    whether it has a side column."""
+    return {"margins": templates.page_margins(template), "two_column": bool(columns and columns.side)}
+
+
+def cv_geometry(config: dict) -> dict:
+    """`_geometry` of the resolved CV template; no layout check (an empty dict) when it cannot be read."""
     try:
-        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"))
+        path = templates.resolve("cv_template", config)
+        return _geometry(path.read_text(encoding="utf-8"), (templates.manifest(path) or templates.Manifest()).columns)
+    except (OSError, UnicodeError, ValueError):
+        return {}
+
+
+def _read_back(entry: dict, pdf: Path, body: str, config: dict, geometry: dict | None = None) -> None:
+    """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from (a CV's sections as
+    placed); `geometry` (a CV's) adds the layout check; a failing check is a ``warning``, never a failed compile."""
+    try:
+        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"), **(geometry or {}))
     except Exception as exc:  # the check must never fail a compile
         entry["readable"] = None
         entry["warning"] = f"could not read the PDF back: {exc}"
@@ -247,7 +262,8 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             continue
         _print(page, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
-            _read_back(entry, Path(entry["pdf"]), placed, config)
+            _read_back(entry, Path(entry["pdf"]), placed, config,
+                       _geometry(template, columns) if file == "cv.html" else None)
         results.append(entry)
 
     for name in _PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use

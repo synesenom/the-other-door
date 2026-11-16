@@ -80,7 +80,8 @@ def extract(pdf: Path) -> tuple[str, int]:
 
 Box = tuple[float, float, float, float]
 Margins = tuple[float, float, float, float]  # top, right, bottom, left, in points
-_SLACK = 2.0  # points a character may stand past the content box before it counts (hinting, rounding)
+_SLACK = 0.5  # points a character may stand past the content box before it counts (rounding of glyph boxes); Chromium
+# clips what runs past the page or its margin, so a glyph straddling the edge is all of the overflow a PDF keeps
 SPARSE_SHARE = 0.2  # a last page with less ink than this share of the content height is sparse
 
 

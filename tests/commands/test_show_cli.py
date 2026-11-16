@@ -701,3 +701,16 @@ def test_the_card_says_when_the_cv_is_over_its_limit(cli_env):
             {**base, "page_counts": {"cv": cv_pages, "cover_letter": 1}, "cv_max_pages": limit}, Console(file=buf, width=100))
         texts.append(buf.getvalue())
     assert "(limit 1)" in texts[0] and "limit" not in texts[1]
+
+
+def test_show_checks_the_cv_geometry_against_the_template_margins_and_not_the_letter(cli_env, one_page):
+    """Text below the template's bottom margin is `overflow` in the CV; the letter has no geometry check."""
+    from door.commands import matches as matches_cmd
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
+    (cli_env.profile_dir / "cv.template.html").write_text(
+        "<html><head><style>@page { margin: 0 0 790pt 0; }</style></head><body><<body>></body></html>")
+    _with_cv(cli_env, "<!-- Keywords: Python -->\n")
+    _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
+    found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
+    assert [(p["file"], p["kind"]) for p in found] == [("cv", "overflow")]
