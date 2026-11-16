@@ -673,3 +673,10 @@ def test_text_that_is_all_rotated_has_no_columns(tmp_path):
 
 def test_a_drawing_that_shows_nothing_on_the_page_is_no_icon(tmp_path):
     assert read(tmp_path, star(60, 703, 5, color="1 1 1") + body())["icons"] == []
+
+
+def test_an_icon_font_used_once_for_a_bullet_stays_an_icon_font():
+    runs = [{"font": "FontAwesome", "family": "FontAwesome", "weight": 400, "italic": False, "serif": False,
+             "fixed": False, "embedded": True, "type3": False, "text": t, "icon": icon}
+            for t, icon in (("[", True), ("Ó", True), ("○", False))]
+    assert style_extract._fonts_used(runs)[0]["icon"] is True
