@@ -790,3 +790,15 @@ def test_status_summary_shows_no_advice_when_the_bands_do_not_separate(cli_env):
 
     assert "below 90%" in text
     assert "consider raising it" not in " ".join(text.split())
+
+
+def test_jobs_summary_says_a_style_is_ready_only_when_one_is(cli_env):
+    cli_env.jobs_dir.mkdir(parents=True, exist_ok=True)
+    quiet = result_text(CliRunner().invoke(cli, ["jobs", "summary"]))
+    assert "A style built from your CV is ready" not in quiet
+    candidate = cli_env.profile_dir / "style.next"
+    candidate.mkdir(parents=True)
+    (candidate / "cv.template.html").write_text("<html></html>")
+    text = result_text(CliRunner().invoke(cli, ["jobs", "summary"]))
+    assert "A style built from your CV is ready" in text
+    assert "./door cv style show" in text and "./door cv style use" in text

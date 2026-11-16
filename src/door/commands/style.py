@@ -161,7 +161,10 @@ def _spawn(home: Path, copy: Path) -> None:
 def _start_core(file: str, *, home: Path | None = None) -> dict:
     """Start a build of the PDF at `file` in a process of its own and return ``{"started": True}`` at once.
 
-    Raises ValueError, in words, when the file has no style to copy: nothing starts and the style in use is untouched."""
+    Raises ValueError, in words, when the file has no style to copy or there is no Chromium to print with: nothing starts and
+    the style in use is untouched."""
+    if not common._chromium_available():
+        raise ValueError("no Chromium to print with: run ./door doctor --fix")
     home = Path(home or workspace.HOME)
     pdf = Path(file).expanduser()
     _intake(pdf)

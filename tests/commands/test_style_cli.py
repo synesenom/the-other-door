@@ -17,6 +17,7 @@ from click.testing import CliRunner
 
 from door import mcp_server
 from door.cli import cli
+from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
 from door.core import lock, phone, workspace
@@ -102,6 +103,13 @@ def test_a_file_that_is_not_a_pdf_is_refused_in_words_and_nothing_starts(home, w
     docx.write_bytes(b"x")
     with pytest.raises(ValueError, match="no layout to copy"):
         style_cmd._start_core(str(docx))
+    assert world.spawned == [] and not (home / ".style").exists()
+
+
+def test_start_refuses_in_words_without_a_chromium_and_starts_nothing(home, world, cv_pdf, monkeypatch):
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    with pytest.raises(ValueError, match="no Chromium to print with: run ./door doctor --fix"):
+        style_cmd._start_core(str(cv_pdf))
     assert world.spawned == [] and not (home / ".style").exists()
 
 
