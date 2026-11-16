@@ -5,13 +5,13 @@ its page, close enough to be recognisable? Per made-up CV (scripts/cv_style_prot
 read its style with pypdfium2, let the model write rebuild.html, print that with Chromium, compare element by
 element (matched text) and by blurred image, feed the differences back, at most 5 rounds; then stress renders
 (shorter, longer, an extra section, French) and a side by side: original | rebuild with its own text. Finished PDFs
-(scripts/cv_style_proto/pdfs/: latex-*.pdf made up; scrubbed-*.pdf real CVs scrubbed into French by
+(tests/tailoring/fixtures/styles/: latex-*.pdf made up; scrubbed-*.pdf real CVs scrubbed into French by
 cv_style_proto/scrub_pdf.py, a pdfTeX AltaCV and an Apple Pages one with a photo column) go in with --pdf.
 Output goes to thoughts/research/154-proto/ (gitignored).
 
     DOOR_HOME=$TMPDIR/proto-home poetry run python scripts/cv_style_proto.py --cv 1
     DOOR_HOME=$TMPDIR/proto-home poetry run python scripts/cv_style_proto.py --cv 2-4 --stress
-    DOOR_HOME=$TMPDIR/proto-home poetry run python scripts/cv_style_proto.py --pdf scripts/cv_style_proto/pdfs/latex-classic.pdf
+    DOOR_HOME=$TMPDIR/proto-home poetry run python scripts/cv_style_proto.py --pdf tests/tailoring/fixtures/styles/latex-classic.pdf
     poetry run python scripts/cv_style_proto.py --report
 
 Model calls go through door.core.claude_cli (the plan, never an API key); DOOR_HOME keeps their usage log
