@@ -37,7 +37,9 @@ def _head_word(text: str) -> str:
     return re.match(r"[^\s\[]*", text.strip()).group(0)
 
 
-class _Collector(HTMLParser):
+class _Reader(HTMLParser):
+    """What `_Collector` and `_TemplateReader` share: every event counted, what is outside the vocabulary in `found`."""
+
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.found: list[str] = []
@@ -46,6 +48,16 @@ class _Collector(HTMLParser):
     def _flag(self, what: str) -> None:
         self.found.append(what)
 
+    def handle_pi(self, data):
+        self.events += 1
+        self._flag(f"<?{_head_word(data)}>")
+
+    def unknown_decl(self, data):
+        self.events += 1
+        self._flag(f"<![{_head_word(data)}[")
+
+
+class _Collector(_Reader):
     def _start(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.events += 1
         if tag not in TAGS:
@@ -81,14 +93,6 @@ class _Collector(HTMLParser):
     def handle_decl(self, decl):
         self.events += 1
         self._flag(f"<!{_head_word(decl)}>")
-
-    def handle_pi(self, data):
-        self.events += 1
-        self._flag(f"<?{_head_word(data)}>")
-
-    def unknown_decl(self, data):
-        self.events += 1
-        self._flag(f"<![{_head_word(data)}[")
 
 
 def unsafe(body: str) -> list[str]:
@@ -144,11 +148,9 @@ _BODY_MARK = "\x01"  # stands for <<body>> while the template is read: it must l
 _TOKEN_STANDINS = {"body": _BODY_MARK, "lang": "en"}  # the template's two tokens, and what each is read as
 
 
-class _TemplateReader(HTMLParser):
+class _TemplateReader(_Reader):
     def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.found: list[str] = []
-        self.events = 0
+        super().__init__()
         self.css: list[str] = []
         self.comments: list[str] = []
         self.text: list[str] = []
@@ -201,14 +203,6 @@ class _TemplateReader(HTMLParser):
         self.events += 1
         if decl.strip().lower() != "doctype html":
             self.found.append(f"<!{_head_word(decl)}>")
-
-    def handle_pi(self, data):
-        self.events += 1
-        self.found.append(f"<?{_head_word(data)}>")
-
-    def unknown_decl(self, data):
-        self.events += 1
-        self.found.append(f"<![{_head_word(data)}[")
 
 
 def _css_problems(css: str, manifest) -> list[str]:
