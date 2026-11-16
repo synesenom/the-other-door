@@ -105,13 +105,20 @@ _PAST_EXAMPLE_CV_SHA256 = frozenset({
 })
 
 
-def _cv_is_example(config: dict, profile_dir: Path) -> bool:
-    """Whether the profile's CV is still, byte for byte, profile.example/'s or one of its earlier versions."""
-    path, example = _cv_path(config, profile_dir), workspace.PROFILE_EXAMPLE_DIR / "cv.md"
-    if not (path.is_file() and example.is_file()):
+def _is_example_cv(path: Path, example: Path | None = None) -> bool:
+    """Whether the CV at `path` is, byte for byte, the example (`example`, else profile.example/'s) or one of its
+    earlier versions: the one check every reader of a CV makes (#189)."""
+    example = workspace.PROFILE_EXAMPLE_DIR / "cv.md" if example is None else example
+    try:
+        data = Path(path).read_bytes()
+    except OSError:
         return False
-    data = path.read_bytes()
-    return data == example.read_bytes() or hashlib.sha256(data).hexdigest() in _PAST_EXAMPLE_CV_SHA256
+    return (example.is_file() and data == example.read_bytes()) or hashlib.sha256(data).hexdigest() in _PAST_EXAMPLE_CV_SHA256
+
+
+def _cv_is_example(config: dict, profile_dir: Path) -> bool:
+    """Whether the profile's CV is still the example (`_is_example_cv`)."""
+    return _is_example_cv(_cv_path(config, profile_dir))
 
 
 EXAMPLE_CV_MESSAGE = "Your CV is still the example (Jane Doe's). Add your own CV first."

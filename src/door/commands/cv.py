@@ -108,8 +108,7 @@ def _onboarding_cv_text(profile_dir: Path, config: dict) -> str | None:
     if not path.is_file():
         return None
     text = path.read_text(encoding="utf-8")
-    example = workspace.PROFILE_EXAMPLE_DIR / "cv.md"
-    if not text.strip() or (example.is_file() and text == example.read_text(encoding="utf-8")):
+    if not text.strip() or common._is_example_cv(path):
         return None
     return text.strip()
 

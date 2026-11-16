@@ -13,8 +13,9 @@ from html.parser import HTMLParser
 from door.tailoring import html_guard
 
 _BLOCKS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "br"})
-# What is not the candidate's claims: the contact details, the recipient's address, the date, the sign-off.
-_NOT_CLAIMS_CLASSES = frozenset({"recipient", "date", "closing"})
+# What is not the candidate's claims: the name (h1), the contact details, the recipient's address, the date, the
+# sign-off. A header's tagline is (#189).
+_NOT_CLAIMS_CLASSES = frozenset({"contact", "recipient", "date", "closing"})
 SECTION = "\x00SECTION "
 
 
@@ -27,7 +28,6 @@ class _Reader(HTMLParser):
         self.h3s: list[str] = []
         self.comments: list[str] = []
         self._cur: dict[str, list[str]] = {}
-        self._tagline = False   # inside `p.tagline`: the candidate's words even in the header, which is otherwise left out
         self._skip: tuple[str, int] | None = None   # (tag, nesting) of the element being left out of the claims
 
     def _emit(self, text: str, *, claim: bool = True) -> None:
@@ -41,10 +41,8 @@ class _Reader(HTMLParser):
         if self._skip is not None:
             if tag == self._skip[0] and tag != "br":
                 self._skip = (tag, self._skip[1] + 1)
-        elif tag == "header" or classes & _NOT_CLAIMS_CLASSES:
+        elif tag == "h1" or classes & _NOT_CLAIMS_CLASSES:
             self._skip = (tag, 1)
-        if tag == "p" and "tagline" in classes:
-            self._tagline = True
         if tag in _BLOCKS:
             self._emit("\n")
         elif tag == "span":  # the template sets the details apart; as text they are words apart
@@ -57,8 +55,6 @@ class _Reader(HTMLParser):
             self._emit("\n")
 
     def handle_endtag(self, tag):
-        if tag == "p":
-            self._tagline = False
         if tag in _BLOCKS:
             self._emit("\n")
         elif tag == "span":
@@ -78,7 +74,7 @@ class _Reader(HTMLParser):
         data = re.sub(r"\s+", " ", data.replace("\xa0", " "))
         for parts in self._cur.values():
             parts.append(data)
-        self._emit(data, claim=(self._skip is None or self._tagline) and "h2" not in self._cur)
+        self._emit(data, claim=self._skip is None and "h2" not in self._cur)
 
     def handle_comment(self, data):
         self.comments.append(data)

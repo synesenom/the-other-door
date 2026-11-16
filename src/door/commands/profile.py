@@ -797,11 +797,11 @@ def _review_step(answers: dict) -> None:
 def _first_run_step() -> None:
     """A first `find` (search the boards and score, no discovery or feeds), once profile/cv.md is no
     longer the example."""
+    from door.commands import _common as common
     from door.commands import find as find_cmd
 
     cv_path = workspace.PROFILE_DIR / "cv.md"
-    example_cv = workspace.PROFILE_EXAMPLE_DIR / "cv.md"
-    if not cv_path.exists() or (example_cv.exists() and cv_path.read_text(encoding="utf-8") == example_cv.read_text(encoding="utf-8")):
+    if not cv_path.exists() or common._is_example_cv(cv_path):
         click.echo("No first run: profile/cv.md is still the example. Give your sources (`./door init`), then `./door find`.")
         return
     click.get_current_context().invoke(
@@ -1006,6 +1006,9 @@ def _show_profile_core(profile_dir: Path | None = None, example_dir: Path | None
 
     cv_path = locate("cv_content")
     cv = _file_state(cv_path, example_dir / cv_path.name)
+    from door.commands import _common as common
+
+    cv["is_example"] = cv["exists"] and common._is_example_cv(cv_path, example_dir / "cv.md")
     text = None
     if cv["exists"]:
         try:

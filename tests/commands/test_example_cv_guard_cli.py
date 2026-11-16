@@ -108,3 +108,27 @@ def test_the_example_cv_is_pinned_so_its_old_versions_are_kept():
     assert digest == _EXAMPLE_CV_SHA256, (
         "the example changed: add its old sha256 to _common._PAST_EXAMPLE_CV_SHA256 and update this pin "
         f"(old {_EXAMPLE_CV_SHA256}, now {digest})")
+
+
+@pytest.fixture
+def old_example(example_cv):
+    from paths import TESTS_DIR
+
+    saved = (TESTS_DIR / "commands" / "fixtures" / "example_cv_before_189.md").read_bytes()
+    (example_cv.profile_dir / "cv.md").write_bytes(saved)
+    return example_cv
+
+
+def test_every_reader_takes_an_old_copy_of_the_example_for_the_example(old_example, monkeypatch, capsys):
+    from door.commands import cv as cv_cmd
+    from door.commands import profile as profile_cmd
+    from door.commands import setup as setup_cmd
+
+    home = old_example.profile_dir
+    monkeypatch.setattr(workspace, "PROFILE_DIR", home)
+    assert profile_cmd._show_profile_core(home)["cv"]["is_example"]
+    assert cv_cmd._onboarding_cv_text(home, {}) is None
+    report = {"checks": [{"name": "profile", "status": "ok"}]}
+    assert any("profile/cv.md" in line for line in setup_cmd._setup_todo(report, home, workspace.PROFILE_EXAMPLE_DIR, False))
+    profile_cmd._first_run_step()
+    assert "still the example" in capsys.readouterr().out
