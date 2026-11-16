@@ -29,6 +29,7 @@ from door.core import chromium
 
 INSTALLABLE = ("claude", "chromium")
 
+
 def _downloaded_then_run(download: str, shell: str) -> str:
     """A POSIX shell line that downloads an install script, then runs it.
 

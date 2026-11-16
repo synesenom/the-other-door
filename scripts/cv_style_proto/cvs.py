@@ -153,7 +153,6 @@ DESIGNS = [
 ]
 
 
-def source(n: int, r: dict | None = None) -> tuple[str, str]:
-    """(design id, HTML) of CV number *n*, from its own record unless *r* is given."""
-    design, fn = DESIGNS[n - 1]
-    return design, fn(r or record(n))
+def source(n: int, r: dict | None = None) -> str:
+    """The HTML of CV number *n*, from its own record unless *r* is given."""
+    return DESIGNS[n - 1][1](r or record(n))

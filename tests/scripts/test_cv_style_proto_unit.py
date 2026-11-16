@@ -208,7 +208,7 @@ def test_the_cost_judged_is_the_builds_and_the_stress_renders_cost_apart(tmp_pat
     monkeypatch.setattr(proto, "rebuild", lambda work, original: {"rounds": 2, "cost": 1.2})
     monkeypatch.setattr(proto, "stress", lambda n, work, html, pages: {"holds": True, "cost": 0.8})
     monkeypatch.setattr(proto, "pages_of", lambda pdf: 1)
-    summary = proto.finish(tmp_path, tmp_path / "original.pdf", {"design": "d"}, 1, True, [])
+    summary = proto.finish(tmp_path, tmp_path / "original.pdf", {"design": "d"}, 1, True)
     assert summary["cost"] == 1.2 and summary["stress"]["cost"] == 0.8
 
 

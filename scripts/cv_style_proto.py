@@ -293,7 +293,7 @@ def pages_png(pdf: Path, out_dir: Path) -> list[Image.Image]:
 
 
 def make_original(n: int, work: Path, record: dict | None = None) -> Path:
-    _, text = cvs.source(n, record)
+    text = cvs.source(n, record)
     work.mkdir(parents=True, exist_ok=True)
     (work / "original.html").write_text(text, encoding="utf-8")
     chromium(work / "original.html", work / "original.pdf")
@@ -394,15 +394,15 @@ def stress(n: int, work: Path, best_html: str, base_pages: int) -> dict:
     return {"variants": results, "cost": cost, "holds": all(v["holds"] for v in results.values())}
 
 
-def finish(work: Path, original: Path, head: dict, stress_cv: int, with_stress: bool, extra: list) -> dict:
-    """Rebuild, stress, then save the side-by-side (original | rebuild | extra panels) and record.json."""
+def finish(work: Path, original: Path, head: dict, stress_cv: int, with_stress: bool) -> dict:
+    """Rebuild, stress, then save the side-by-side (original | rebuild) and record.json."""
     summary = {**head, **rebuild(work, original)}
     if with_stress and (work / "best.html").exists():
         # the stress renders are the test's overhead, not what a user pays: their cost stays in summary["stress"]
         summary["stress"] = stress(stress_cv, work, (work / "best.html").read_text(encoding="utf-8"), pages_of(original))
     orig_img = Image.open(work / "original_page_1.png")
     render = work / "render_page_1.png"
-    side_by_side([orig_img, Image.open(render) if render.exists() else orig_img, *extra]).save(work / "side_by_side.png")
+    side_by_side([orig_img, Image.open(render) if render.exists() else orig_img]).save(work / "side_by_side.png")
     (work / "record.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     return summary
 
@@ -411,7 +411,7 @@ def run_cv(n: int, with_stress: bool) -> dict:
     design = cvs.DESIGNS[n - 1][0]
     work = OUT / f"cv{n}-{design}"
     original = make_original(n, work)
-    return finish(work, original, {"cv": n, "design": design}, n, with_stress, [])
+    return finish(work, original, {"cv": n, "design": design}, n, with_stress)
 
 
 def pdf_work_dir(pdf: Path) -> Path:
@@ -425,7 +425,7 @@ def run_pdf(pdf: Path, with_stress: bool) -> dict:
     work.mkdir(parents=True, exist_ok=True)
     original = work / "original.pdf"
     shutil.copyfile(pdf, original)
-    return finish(work, original, {"cv": pdf.name, "design": work.name}, 1, with_stress, [])
+    return finish(work, original, {"cv": pdf.name, "design": work.name}, 1, with_stress)
 
 
 def parse_cvs(text: str) -> list[int]:
