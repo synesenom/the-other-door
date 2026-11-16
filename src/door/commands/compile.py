@@ -147,26 +147,24 @@ def _print(html: str, output_dir: Path, name: str, entry: dict, assets: dict) ->
     entry.pop("stderr", None)
 
 
-def _geometry(template: str, columns: templates.Columns | None) -> dict:
-    """The page geometry a CV is checked against (`readability.check_pdf`'s keywords): the template's page margins and
-    whether it has a side column."""
-    return {"margins": templates.page_margins(template), "two_column": bool(columns and columns.side)}
+def _two_column(columns: templates.Columns | None) -> bool:
+    """Whether a CV template has a side column: what `readability.check_pdf` needs to check a CV's layout."""
+    return bool(columns and columns.side)
 
 
-def cv_geometry(config: dict) -> dict:
-    """`_geometry` of the resolved CV template; no layout check (an empty dict) when it cannot be read."""
+def cv_two_column(config: dict) -> bool:
+    """`_two_column` of the resolved CV template (False when its manifest cannot be read)."""
     try:
-        path = templates.resolve("cv_template", config)
-        return _geometry(path.read_text(encoding="utf-8"), (templates.manifest(path) or templates.Manifest()).columns)
-    except (OSError, UnicodeError, ValueError):
-        return {}
+        return _two_column((templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns)
+    except (OSError, ValueError):
+        return False
 
 
-def _read_back(entry: dict, pdf: Path, body: str, config: dict, geometry: dict | None = None) -> None:
+def _read_back(entry: dict, pdf: Path, body: str, config: dict, two_column: bool | None = None) -> None:
     """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from (a CV's sections as
-    placed); `geometry` (a CV's) adds the layout check; a failing check is a ``warning``, never a failed compile."""
+    placed); `two_column` (a CV's) adds the layout check; a failing check is a ``warning``, never a failed compile."""
     try:
-        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"), **(geometry or {}))
+        entry["readable"] = readability.check_pdf(pdf, body, config.get("name"), two_column=two_column)
     except Exception as exc:  # the check must never fail a compile
         entry["readable"] = None
         entry["warning"] = f"could not read the PDF back: {exc}"
@@ -263,7 +261,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
         _print(page, output_dir, Path(file).stem, entry, assets)
         if entry.get("status") == "compiled":
             _read_back(entry, Path(entry["pdf"]), placed, config,
-                       _geometry(template, columns) if file == "cv.html" else None)
+                       _two_column(columns) if file == "cv.html" else None)
         results.append(entry)
 
     for name in _PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use

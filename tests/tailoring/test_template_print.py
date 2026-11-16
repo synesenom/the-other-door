@@ -104,7 +104,7 @@ def test_the_fonts_are_the_templates_own_truetype_ones_never_nameless_type_3_tex
 
 def test_the_example_cv_reads_back_with_every_heading_on_its_own_line_and_in_order(example):
     out, results, cv = example
-    assert readability.check_pdf(out / "cv.pdf", cv, "Jane Doe") == []
+    assert readability.check_pdf(out / "cv.pdf", cv, "Jane Doe", two_column=False) == []
     assert results["cv.html"]["readable"] == []
     assert results["cover_letter.html"]["readable"] == []
 
@@ -178,7 +178,7 @@ def test_a_french_cv_and_letter_get_french_typography_date_and_links_untouched(t
     assert _gap(out / "cv.pdf", "donn\u00e9es", ":") > 1.8 and _gap(out / "cv.pdf", "r\u00e9sultats", "!") > 1.8
     cv_text = pdf_render.page_texts(out / "cv.pdf")[0]
     assert "arXiv:2408.10754" in cv_text and _gap(out / "cv.pdf", "arXiv", ":") < 1.5
-    assert readability.check_pdf(out / "cv.pdf", cv, None) == []
+    assert readability.check_pdf(out / "cv.pdf", cv, None, two_column=False) == []
 
 
 def test_the_same_text_in_english_keeps_its_plain_spaces(tmp_path, monkeypatch):
@@ -343,10 +343,11 @@ def test_the_default_template_keeps_one_column_in_the_bodys_order(tmp_path, monk
     assert lines.index("Skills") < lines.index("Education") < lines.index("Languages"), lines
 
 
-def test_a_two_column_template_with_a_line_that_cannot_wrap_reports_overflow(tmp_path, monkeypatch):
+def test_a_two_column_template_with_a_line_that_cannot_wrap_reports_the_cut_words_as_overflow(tmp_path, monkeypatch):
     template = FIXTURES / "overflow_template" / "cv.template.html"  # the side column's lines never wrap
     cv = _TWO_COLUMNS.replace("<p>IFRS, SQL</p>", "<ul><li>" + "Consolidation and reporting under IFRS, " * 6 + "</li></ul>")
     out, results = _setup(tmp_path, monkeypatch, cv=cv, letter=_LETTER, extra={"cv_template": str(template)})
     assert results["cv.html"]["status"] == "compiled", results["cv.html"]
     found = results["cv.html"]["readable"]
-    assert [p["kind"] for p in found if p["kind"] == "overflow"] == ["overflow"], found
+    assert [p["kind"] for p in found] == ["overflow"], found
+    assert "IFRS" in found[0]["detail"] or "reporting" in found[0]["detail"], found

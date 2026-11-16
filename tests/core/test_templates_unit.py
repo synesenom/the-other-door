@@ -90,25 +90,3 @@ def test_the_shipped_templates_are_pinned():
                                 .replace("\r\n", "\n").encode()).hexdigest()
         assert digest == SHIPPED_HASHES[key], f"{name} changed: if that is meant, update its hash (now {digest})"
 
-
-# ---- page margins (#152) ----
-
-@pytest.mark.parametrize("css,expected", [
-    ("@page { size: A4; margin: 2cm; }", (56.69, 56.69, 56.69, 56.69)),
-    ("@page{margin:10mm 20mm}", (28.35, 56.69, 28.35, 56.69)),
-    ("@page { margin: 1in 2in 3in }", (72, 144, 216, 144)),
-    ("@page { margin: 10pt 20pt 30pt 40pt }", (10, 20, 30, 40)),
-    ("@page { margin: 96px }", (72, 72, 72, 72)),
-    ("/* @page { margin: 1cm } */ @page { margin: 0 }", (0, 0, 0, 0)),
-    ("body { margin: 1cm }", (0, 0, 0, 0)),
-    ("@page { margin: auto }", (0, 0, 0, 0)),
-    ("@page { margin: 2rem }", (0, 0, 0, 0)),
-])
-def test_page_margins_parse_the_page_rule(css, expected):
-    assert templates.page_margins(f"<style>{css}</style>") == pytest.approx(expected, abs=0.01)
-
-
-def test_page_margins_of_the_shipped_cv_template():
-    text = (workspace.PROFILE_EXAMPLE_DIR / "cv.template.html").read_text(encoding="utf-8")
-    top, right, bottom, left = templates.page_margins(text)
-    assert (top, right, bottom, left) == pytest.approx((62.36, 68.03, 56.69, 68.03), abs=0.01)

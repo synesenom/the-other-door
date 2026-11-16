@@ -703,14 +703,14 @@ def test_the_card_says_when_the_cv_is_over_its_limit(cli_env):
     assert "(limit 1)" in texts[0] and "limit" not in texts[1]
 
 
-def test_show_checks_the_cv_geometry_against_the_template_margins_and_not_the_letter(cli_env, one_page):
-    """Text below the template's bottom margin is `overflow` in the CV; the letter has no geometry check."""
+def test_show_reports_words_of_the_cv_missing_from_its_pdf_and_not_the_letters(cli_env, one_page):
+    """A CV word that never reached the PDF is `overflow` (cut off the page); the letter gets no such check."""
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    (cli_env.profile_dir / "cv.template.html").write_text(
-        "<html><head><style>@page { margin: 0 0 790pt 0; }</style></head><body><<body>></body></html>")
-    _with_cv(cli_env, "<!-- Keywords: Python -->\n")
+    _with_cv(cli_env, "<!-- Keywords: Python -->\n<p>Jane Doe, Python developer zzzcutword</p>")
+    (cli_env.jobs_dir / "output" / "job-abc" / "cover_letter.html").write_text("<p>zzzcutletterword</p>")
     _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
     found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
     assert [(p["file"], p["kind"]) for p in found] == [("cv", "overflow")]
+    assert "zzzcutword" in found[0]["detail"]

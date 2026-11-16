@@ -25,7 +25,7 @@ _ASCII = [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 
           500, 500, 500, 334, 260, 334, 584]
 _OTHER = {"æ": 889, "ø": 611, "å": 556, "Æ": 1000, "Ø": 778, "Å": 667}  # anything else counts as 556
 WIDTH, HEIGHT = 595, 842
-LEFT, RIGHT, TOP, BOTTOM = 72, 523, 64, 780  # the text box, in points from the page's top-left: inside the shipped template's margins
+LEFT, RIGHT, TOP, BOTTOM = 64, 531, 64, 790  # the text box, in points from the page's top-left
 
 
 def text_width(text, size):

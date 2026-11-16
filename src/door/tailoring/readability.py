@@ -79,49 +79,53 @@ def extract(pdf: Path) -> tuple[str, int]:
 
 
 Box = tuple[float, float, float, float]
-Margins = tuple[float, float, float, float]  # top, right, bottom, left, in points
-_SLACK = 0.5  # points a character may stand past the content box before it counts (rounding of glyph boxes); Chromium
-# clips what runs past the page or its margin, so a glyph straddling the edge is all of the overflow a PDF keeps
-SPARSE_SHARE = 0.2  # a last page with less ink than this share of the content height is sparse
+SPARSE_SHARE = 0.2  # a last page with less ink than this share of the page height is sparse
+MISSING_NAMED = 5  # how many absent words an `overflow` detail names
 
 
-def layout_problems(pages: list[tuple[float, float, list[Box]]], *, margins: Margins, two_column: bool) -> list[dict]:
-    """What the page geometry of a CV shows: `pages` is ``[(width, height, [char box (l, b, r, t)])]`` (points, origin
-    bottom-left, `pdf_render.page_boxes`), `margins` the template's ``@page`` margins (top, right, bottom, left).
-
-    ``overflow``: a character past the left or right margin, below the bottom margin or off the page (once, naming
-    the first page), told to the tailor as a cut to make; ``sparse``: the last of several pages of a `two_column` CV
-    holds ink under a fifth of the content height (reported only).
-    """
-    top, right, bottom, left = margins
-    found: list[dict] = []
-    for number, (width, height, boxes) in enumerate(pages, 1):
-        if any(l < left - _SLACK or r > width - right + _SLACK or b < bottom - _SLACK or t > height + _SLACK
-               for l, b, r, t in boxes):
-            found.append({"kind": "overflow", "detail": (
-                f"text on page {number} runs past the page margin; trim the lowest-value items so it fits, "
-                "never invent anything")})
-            break
-    if two_column and len(pages) > 1:
-        _, height, boxes = pages[-1]
-        content = height - top - bottom
-        if boxes and content > 0:
-            ink = max(t for *_, t in boxes) - min(b for _, b, _, _ in boxes)
-            if ink < SPARSE_SHARE * content:
-                found.append({"kind": "sparse", "detail": f"the last page ({len(pages)}) is almost empty"})
-    return found
+def squash(text: str) -> str:
+    """`text` as letters and digits only (`normalise` first): what is left to compare when a PDF breaks a line or a word."""
+    return "".join(c for c in normalise(text) if c.isalnum())
 
 
-def check_pdf(pdf: Path, body: str, name: object, *, margins: Margins | None = None, two_column: bool = False) -> list[dict]:
+def overflow_problems(pdf_text: str, body: str) -> list[dict]:
+    """``overflow``: words of the CV's HTML `body` (`html_doc.text`) that never reached the PDF's text, because Chromium cuts
+    what runs past a page or its margin. Each word, squashed, must occur in the squashed `pdf_text` (unordered, no
+    counts); one problem naming the first few that do not, told to the tailor as a cut to make."""
+    flat = squash(pdf_text)
+    absent = [w for w in html_doc.text(body).split() if (key := squash(w)) and key not in flat]
+    if not absent:
+        return []
+    named = ", ".join(absent[:MISSING_NAMED])
+    return [{"kind": "overflow", "detail": (
+        f"text of the CV did not reach the PDF (it runs off the page; first missing: {named}); trim the "
+        "lowest-value items so it fits, never invent anything")}]
+
+
+def layout_problems(pages: list[tuple[float, float, list[Box]]], *, two_column: bool) -> list[dict]:
+    """``sparse``: the last of several pages of a `two_column` CV holds ink under a fifth of the page height (reported
+    only). `pages` is ``[(width, height, [char box (l, b, r, t)])]``, `pdf_render.page_boxes`."""
+    if not two_column or len(pages) < 2:
+        return []
+    _, height, boxes = pages[-1]
+    if boxes and max(t for *_, t in boxes) - min(b for _, b, _, _ in boxes) < SPARSE_SHARE * height:
+        return [{"kind": "sparse", "detail": f"the last page ({len(pages)}) is almost empty"}]
+    return []
+
+
+def check_pdf(pdf: Path, body: str, name: object, *, two_column: bool | None = None) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
-    the raw config's value, used when it is a string). With `margins` (a CV: the template's page margins) the page
-    geometry is checked too (`layout_problems`); without, it is not (a letter)."""
+    the raw config's value, used when it is a string). A CV passes `two_column` (whether its template has a side
+    column): it is also checked for words lost off the page (`overflow_problems`, unless no text could be read) and a
+    sparse last page (`layout_problems`); the letter passes None and gets neither."""
     from door.tailoring import pdf_render
 
     text, pages = extract(pdf)
     found = problems(text, name=name if isinstance(name, str) else None,
                      headings=html_doc.headings(body),
                      keywords=html_doc.keywords(body), pages=pages)
-    if margins is not None:
-        found += layout_problems(pdf_render.page_boxes(pdf), margins=margins, two_column=two_column)
+    if two_column is not None:
+        if not {"empty", "garbled"} & {p["kind"] for p in found}:
+            found += overflow_problems(text, body)
+        found += layout_problems(pdf_render.page_boxes(pdf), two_column=two_column)
     return found
