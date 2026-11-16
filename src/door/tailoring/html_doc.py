@@ -12,38 +12,68 @@ from html.parser import HTMLParser
 
 _TOKENS = re.compile(r"<<(?:photo|date|company|title)>>")
 _BLOCKS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "br"})
+# What is not the candidate's claims: the contact details, the recipient's address, the date, the sign-off.
+_NOT_CLAIMS_CLASSES = frozenset({"recipient", "date", "closing"})
+SECTION = "\x00SECTION "
 
 
 class _Reader(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.out: list[str] = []
+        self.claims: list[str] = []   # `out` without what is not a claim, an h2 as a section marker
         self.headings: list[str] = []
+        self.h3s: list[str] = []
         self.comments: list[str] = []
-        self._h2: list[str] | None = None
+        self._cur: dict[str, list[str]] = {}
+        self._skip: tuple[str, int] | None = None   # (tag, nesting) of the element being left out of the claims
 
     def handle_starttag(self, tag, attrs):
+        classes = set(dict(attrs).get("class", "").split())
+        if self._skip is not None:
+            if tag == self._skip[0] and tag != "br":
+                self._skip = (tag, self._skip[1] + 1)
+        elif tag == "header" or classes & _NOT_CLAIMS_CLASSES:
+            self._skip = (tag, 1)
         if tag in _BLOCKS:
             self.out.append("\n")
-        if tag == "h2":
-            self._h2 = []
+            self.claims.append("\n")
+        elif tag == "span":  # the template sets the details apart; as text they are words apart
+            self.out.append(" ")
+            self.claims.append(" ")
+        if tag in ("h2", "h3"):
+            self._cur[tag] = []
 
-    handle_startendtag = handle_starttag
+    def handle_startendtag(self, tag, attrs):
+        if tag in _BLOCKS:
+            self.out.append("\n")
+            self.claims.append("\n")
 
     def handle_endtag(self, tag):
         if tag in _BLOCKS:
             self.out.append("\n")
-        if tag == "h2" and self._h2 is not None:
-            heading = " ".join("".join(self._h2).split())
-            if heading:
-                self.headings.append(heading)
-            self._h2 = None
+            self.claims.append("\n")
+        elif tag == "span":
+            self.out.append(" ")
+            self.claims.append(" ")
+        for name, found in (("h2", self.headings), ("h3", self.h3s)):
+            if tag == name and name in self._cur:
+                heading = " ".join("".join(self._cur.pop(name)).split())
+                if heading:
+                    found.append(heading)
+                    if name == "h2" and self._skip is None:
+                        self.claims.append(f"\n{SECTION}{heading}\n")
+        if self._skip is not None and tag == self._skip[0]:
+            depth = self._skip[1] - 1
+            self._skip = (tag, depth) if depth else None
 
     def handle_data(self, data):
-        data = data.replace("\xa0", " ")
+        data = re.sub(r"\s+", " ", data.replace("\xa0", " "))
         self.out.append(data)
-        if self._h2 is not None:
-            self._h2.append(data)
+        for parts in self._cur.values():
+            parts.append(data)
+        if self._skip is None and "h2" not in self._cur:
+            self.claims.append(data)
 
     def handle_comment(self, data):
         self.comments.append(data)
@@ -81,6 +111,18 @@ def text(body: str) -> str:
     paragraph, a heading, a list item, a `<br>`) on a line of its own."""
     lines = ("".join(_read(body).out)).splitlines()
     return "\n".join(" ".join(line.split()) for line in lines if line.strip())
+
+
+def claim_text(body: str) -> str:
+    """The text of `body` that holds the candidate's claims, for the facts check: `text` without the header (the
+    contact details), the recipient, the date and the closing, each `<h2>` a ``SECTION <heading>`` line of its own."""
+    lines = ("".join(_read(body).claims)).splitlines()
+    return "\n".join(line if line.startswith(SECTION) else " ".join(line.split()) for line in lines if line.strip())
+
+
+def h3s(body: str) -> list[str]:
+    """The `<h3>` texts of `body` (a CV's entry headings: ``Role | Company - dates``), in order."""
+    return _read(body).h3s
 
 
 def word_count(body: str) -> int:

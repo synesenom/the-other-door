@@ -16,8 +16,8 @@ def example(tmp_path):
     out, prof = tmp_path / "out", tmp_path / "profile"
     out.mkdir(), prof.mkdir()
     shutil.copy(REPO_ROOT / "profile.example" / "cv.md", prof / "cv.md")
-    shutil.copy(FIXTURES / "example_cv.tex", out / "cv.tex")
-    shutil.copy(FIXTURES / "example_cover_letter.tex", out / "cover_letter.tex")
+    shutil.copy(FIXTURES / "example_cv.html", out / "cv.html")
+    shutil.copy(FIXTURES / "example_cover_letter.html", out / "cover_letter.html")
     shutil.copy(FIXTURES / "example_posting.json", out / "posting.json")
     return out, prof
 
@@ -39,17 +39,17 @@ def test_demo_stub_materials_are_clean(tmp_path):
     shutil.copy(REPO_ROOT / "profile.example" / "cv.md", prof / "cv.md")
     out = tmp_path / "out"
     out.mkdir()
-    (out / "cv.tex").write_text(shim._CV_TEX)
-    (out / "cover_letter.tex").write_text(shim._LETTER_TEX % shim._LETTER_BODY)
+    (out / "cv.html").write_text(shim._CV_HTML)
+    (out / "cover_letter.html").write_text(shim._LETTER_HTML % shim._LETTER_BODY)
     assert facts.check(out, prof, write=False, current_year=2026) == []
 
 
 def test_an_invented_skill_and_certification_are_the_only_findings(example):
     out, prof = example
-    cv = (out / "cv.tex").read_text()
+    cv = (out / "cv.html").read_text()
     cv = cv.replace("Power BI,\nMicrosoft", "Power BI, Terraform,\nMicrosoft")
-    cv = cv.replace("\\item SAP S/4HANA Finance --- 2022", "\\item SAP S/4HANA Finance --- 2022\n\\item PMP Project Management Professional")
-    (out / "cv.tex").write_text(cv)
+    cv = cv.replace("<li>SAP S/4HANA Finance &mdash; 2022</li>", "<li>SAP S/4HANA Finance &mdash; 2022</li>\n<li>PMP Project Management Professional</li>")
+    (out / "cv.html").write_text(cv)
     found = facts.check(out, prof, write=False, current_year=2026)
     assert [(c["kind"], c["value"]) for c in found] == [
         ("skill", "Terraform"), ("certification", "PMP Project Management Professional")]

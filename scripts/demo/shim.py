@@ -148,20 +148,15 @@ def _fake_score_postings(postings, *, on_result=None, **kwargs):
     return results, []
 
 
-_CV_TEX = r"""% Keywords: budgeting and forecasting, team leadership, IFRS, Power BI, stakeholder communication
-% Tailoring: led with building the Acme Corp controlling function; kept the IFRS 15 thesis; condensed the Example Retail role to one line
-\documentclass{article}
-\begin{document}
-Jane Doe -- Senior Financial Controller
-\end{document}
+_CV_HTML = """<!-- Keywords: budgeting and forecasting, team leadership, IFRS, Power BI, stakeholder communication -->
+<!-- Tailoring: led with building the Acme Corp controlling function; kept the IFRS 15 thesis; condensed the Example Retail role to one line -->
+<header class="cv-header"><h1>Jane Doe</h1></header>
+<h2>Profile</h2>
+<p>Jane Doe -- Senior Financial Controller</p>
 """
 
-_LETTER_TEX = r"""\documentclass{letter}
-\begin{document}
-Dear hiring team,
-
-%s
-\end{document}
+_LETTER_HTML = """<p>Dear hiring team,</p>
+<p>%s</p>
 """
 
 _LETTER_BODY = (
@@ -200,8 +195,8 @@ def _fake_run_tailor(job_id: str, posting_path: Path, timeout_s=None) -> bool:
     out = workspace.JOBS_DIR / "output" / job_id
     out.mkdir(parents=True, exist_ok=True)
     (out / "posting.json").write_text(posting_path.read_text())
-    (out / "cv.tex").write_text(_CV_TEX)
-    (out / "cover_letter.tex").write_text(_LETTER_TEX % _LETTER_BODY)
+    (out / "cv.html").write_text(_CV_HTML)
+    (out / "cover_letter.html").write_text(_LETTER_HTML % _LETTER_BODY)
     _pdf(out / "cv.pdf", ["Jane Doe\nSenior Financial Controller\n\n" + _LETTER_BODY, _LETTER_BODY])
     _pdf(out / "cover_letter.pdf", ["Dear hiring team,\n\n" + _LETTER_BODY])
     return True

@@ -40,3 +40,27 @@ def test_each_block_is_a_line_of_its_own():
 
 def test_word_count_counts_the_words_of_the_text_only():
     assert html_doc.word_count("<!-- Keywords: a b c --><p>Dear <strong>team</strong>, I'd like 2 roles.</p>") == 6
+
+
+CLAIMS = """<header class="cv-header"><h1>Jane 5500</h1><p class="contact"><span>+45 12 34 56 78</span></p></header>
+<h2>Experience</h2><div class="entry"><h3>Dev | Acme A/S &mdash; 2019</h3><ul><li>Cut churn by 40%.</li></ul></div>
+<h2>Skills</h2><p>Python, SQL</p>
+<div class="recipient"><p>Hiring 9000</p></div><p class="date">16 November 2026</p>
+<div class="closing"><p class="signoff">Regards</p><p>Jane</p></div>"""
+
+
+def test_claim_text_leaves_out_the_header_the_recipient_the_date_and_the_closing():
+    text = html_doc.claim_text(CLAIMS)
+    assert "5500" not in text and "+45" not in text and "9000" not in text and "November" not in text
+    assert "Regards" not in text
+    assert "Cut churn by 40%." in text and "Python, SQL" in text
+
+
+def test_claim_text_marks_each_section_heading_on_its_own_line():
+    lines = html_doc.claim_text(CLAIMS).splitlines()
+    assert lines[0] == "\x00SECTION Experience"
+    assert "\x00SECTION Skills" in lines
+
+
+def test_h3_texts_are_the_entry_headings():
+    assert html_doc.h3s(CLAIMS) == ["Dev | Acme A/S \u2014 2019"]
