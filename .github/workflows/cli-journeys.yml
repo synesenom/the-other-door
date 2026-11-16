@@ -2,8 +2,8 @@ name: CLI journeys
 
 # The real ./door (door.cmd on Windows) end to end in the test world (#33, tests/cli_journeys/): after
 # setup.sh / setup.ps1 on a fresh checkout, `init`, `find`, `jobs show`, `jobs prepare` and `jobs status`
-# against the stand-in claude and tectonic of app/test/world. This replaces the manual fresh-clone check.
-# setup runs with --no-claude --no-tex --no-chromium: the stand-ins take the place of the first two, and nothing here prints a CV with a browser, so no network install.
+# against the stand-in claude and print of app/test/world. This replaces the manual fresh-clone check.
+# setup runs with --no-claude --no-tex --no-chromium: the world's stand-ins take the place of claude and Chromium (its print stand-in), so no network install.
 on:
   pull_request:
     paths:
