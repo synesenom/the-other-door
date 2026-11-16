@@ -179,12 +179,13 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(output).toHaveLength(1)
   for (const f of ['cv.html', 'cover_letter.html', 'cv.pdf', 'cover_letter.pdf']) expect(world.exists(`jobs/output/${output[0]}/${f}`), f).toBe(true)
   expect(world.claudeCalls('tailor')).toHaveLength(1)
-  // real PDFs, not the world's stand-ins: the header and at least one page object (#176)
+  // real PDFs, not the world's stand-ins: Chromium's Skia producer, the header and at least one page object (#176)
   for (const f of ['cv.pdf', 'cover_letter.pdf']) {
     const bytes = readFileSync(join(world.home, 'jobs', 'output', output[0]!, f))
     expect(bytes.subarray(0, 4).toString(), `${f} is no PDF`).toBe('%PDF')
     expect(bytes.length, `${f} is empty`).toBeGreaterThan(1000)
     expect(bytes.toString('latin1'), `${f} has no page`).toMatch(/\/Type\s*\/Page\b/)
+    expect(bytes.toString('latin1'), `${f} was not printed by Chromium`).toContain('/Producer (Skia/PDF')
   }
 
   // the bundled Chromium prints a page with the installed interpreter, as the server would (#165; win64's shell on Windows on ARM too)

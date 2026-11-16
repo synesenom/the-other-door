@@ -94,6 +94,8 @@ def doctor(probe: bool, quick: bool, fix: bool, yes: bool, no_tex: bool, no_chro
             raise click.UsageError("--yes, --no-tex, --no-chromium and --no-claude only go with --fix.")
         _check(probe, quick)
         return
+    if quick:
+        raise click.UsageError("--quick does not go with --fix.")
     _fix(yes, no_tex, no_chromium, no_claude, fix_scrapers=probe)
 
 
@@ -159,7 +161,7 @@ def _check(probe: bool, quick: bool) -> None:
 
     from door.core import progress
 
-    with _progress.live_progress(probe and common._stdout_is_tty()) as live:
+    with _progress.live_progress((probe or not quick) and common._stdout_is_tty()) as live:
         with progress.activate(live):
             result = _doctor_core(workspace.PROFILE_DIR, workspace.JOBS_DIR, probe=probe, quick=quick)
 
@@ -298,7 +300,7 @@ def _setup_core(
     platform = _detect_platform()
 
     probe_sites = probe_sites or bool(fix_scrapers)
-    before = report if report is not None else doctor.run_checks(profile_dir, jobs_dir, probe_sites=probe_sites)
+    before = report if report is not None else doctor.run_checks(profile_dir, jobs_dir, probe_sites=probe_sites, quick=install is not None)
     offered = [
         {"site": c["name"].split(": ", 1)[1], "check": c} for c in before["checks"]
         if c["name"].startswith("scraper: ") and c["status"] in ("drift", "warn") and c.get("fixable")
@@ -319,7 +321,7 @@ def _setup_core(
     for step in plan:
         result["results"].append(_install_step(step, interactive))
 
-    after = doctor.run_checks(profile_dir, jobs_dir) if plan else before
+    after = doctor.run_checks(profile_dir, jobs_dir, quick=install is not None) if plan else before
     missing = [c for c in after["checks"] if c["status"] == "missing" and not (skip_profile and c["name"] == "profile")]
     result.update(
         outcome="incomplete" if missing else "ok",

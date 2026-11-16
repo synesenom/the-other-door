@@ -43,6 +43,7 @@ DEV_MODULES = ("pytest", "responses", "genbadge")
 
 _CHROMIUM_FIX = "./door doctor --fix   (downloads the pinned Chromium headless shell, no sudo)"
 _PRINT_TIMEOUT = 30  # seconds Chromium gets to print the test page
+_NO_PRINT_FIX = "run `python -m door.tailoring.html_pdf --out test.pdf` with door's Python (in a checkout: `poetry run python -m ...` from the repository with PYTHONPATH=src) to see the error"
 _NO_START_FIX = "run the shell by hand with --version to see why; it was found, so setup does not reinstall it"
 _LATEX_FIX = "./door doctor --fix   (installs Tectonic, no sudo)"
 
@@ -137,17 +138,18 @@ def check_chromium(find=None, run=subprocess.run, quick: bool = False) -> dict:
 
 def _check_print(path: str, run) -> dict:
     """The print half of `check_chromium`: `html_pdf`'s test page through a subprocess, ok only for a PDF."""
-    from door.core import workspace
+    from door.core import progress, workspace
 
+    progress.report("printing a test page with Chromium…", site="chromium", stage="probe")
     env = {**os.environ, "PYTHONPATH": os.pathsep.join(
         p for p in (str(workspace.REPO_ROOT / "src"), os.environ.get("PYTHONPATH", "")) if p)}
     with tempfile.TemporaryDirectory(prefix="door-doctor-") as folder:
         out = Path(folder) / "test.pdf"
         argv = [sys.executable, "-m", "door.tailoring.html_pdf", "--out", str(out), "--timeout", str(_PRINT_TIMEOUT)]
         detail = None
-        try:
+        try:  # the outer margin lets print_html kill Chromium's process tree first
             proc = run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                       timeout=_PRINT_TIMEOUT + 5, stdin=subprocess.DEVNULL, env=env)
+                       timeout=_PRINT_TIMEOUT + 25, stdin=subprocess.DEVNULL, env=env)
         except subprocess.TimeoutExpired:
             detail = f"{path} did not finish in {_PRINT_TIMEOUT} s printing a page"
         except (OSError, subprocess.SubprocessError) as exc:
@@ -157,7 +159,7 @@ def _check_print(path: str, run) -> dict:
                 lines = [ln for ln in (proc.stderr or "").splitlines() if ln.startswith("print:")]
                 detail = f"{path} could not print a page: {lines[-1] if lines else f'exit {proc.returncode}'}"
         if detail:
-            return _check("chromium", False, detail, _NO_START_FIX, tool="chromium", installable=False)
+            return _check("chromium", False, detail, _NO_PRINT_FIX, tool="chromium", installable=False)
     return _check("chromium", True, f"chromium: {path} (printed a page)", tool="chromium")
 
 

@@ -32,7 +32,7 @@ Narrow window (< 900 px, `(max-width: 899px)`): only `.onb` padding changes (`--
 
 ## 1. Step: Connect Claude (only when Claude is missing or signed out)
 
-Decided by `doctor` (called once on mount, `call('doctor')` with no args; on any failure the wizard uses `{ok:false, checks:[]}`):
+Decided by `doctor` (called once on mount, `call('doctor', {quick: true})`, which skips the test print; on any failure the wizard uses `{ok:false, checks:[]}`):
 - `claudeMissing`: a check named `claude CLI` with status ≠ `ok`. — unit: `app/src/renderer/screens/onboarding/Connect.test.tsx`
 - `claudeLogin(..).connected`: check `claude login` with status `ok` and `details.loggedIn !== false`. — ✓ a first launch signed out opens on Connect Claude, before the three steps, with nothing written
 - `claudeReady = !missing && connected`. A failed `doctor` call ⇒ not missing, not connected ⇒ **sign-in variant** shown. — not tested: a failed doctor call needs the server to fail at start; a doctor tool fault would also break the shell's checks — the signed-out variant itself is covered

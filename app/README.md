@@ -71,7 +71,7 @@ After the bundle (above), on the system you are packaging for:
 
 ```sh
 npm run package:dir     # an unpacked app in dist/ (dist/mac/The other door.app, dist/linux-unpacked, dist/win-unpacked)
-npm run test:package    # its smoke test: the bundled server serves Matches, doctor finds the bundled Tectonic,
+npm run test:package    # its smoke test: the bundled server serves Matches, doctor finds the bundled Tectonic, the bundled Chromium prints a page,
                         # nothing is written inside the app (DOOR_PACKAGED_APP=<executable> for an installed one)
 npm run package         # the installer: dist/the-other-door-<version>-mac-<arch>.dmg/.zip, The-other-door-<version>-Windows.exe, The-other-door-<version>-Linux.AppImage, the-other-door-<version>-linux-<arch>.deb
 ```
@@ -96,7 +96,7 @@ npm run test:install    # about two minutes, plus the first LaTeX download
 `e2e-install/setup.ts` installs it the user's way into a throwaway folder (macOS: the `.dmg` mounted and the app
 copied out; Windows: the NSIS installer with `/S /D=`, except in CI's x64 job, which runs it on its own default per-user install through `DOOR_INSTALLED_APP` (#168); Linux: the AppImage made executable, or with
 `DOOR_INSTALLER_KIND=deb` the `.deb` through `sudo apt-get`, into `/opt`), prints its signature (`codesign`/`spctl`,
-`Get-AuthenticodeSignature`; reported, not judged, while the builds are unsigned) and `teardown.ts` uninstalls it
+`Get-AuthenticodeSignature`; reported, not judged, while the builds are unsigned; on macOS the Mach-O signatures of the bundled Chromium are judged here) and `teardown.ts` uninstalls it
 (`DOOR_INSTALL_KEEP=1` keeps it; a failed uninstall command, an install folder the NSIS uninstaller left behind on
 Windows, or after the `.deb`'s `apt-get remove` its `/opt` folder, `/usr/bin` link or launcher left behind, fails the run). `install.e2e.ts` then launches the installed app with a throwaway `DOOR_HOME`,
 HOME and Chromium folder and the journeys' test world (`test/world/`): a CV in, the review saved, the first run to

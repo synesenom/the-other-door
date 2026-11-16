@@ -149,7 +149,7 @@ def test_check_chromium_prints_a_page_unless_quick():
     assert check["status"] == "ok" and "/x/c" in check["detail"]
     argv, kw = run.calls[1]
     assert argv[1:3] == ["-m", "door.tailoring.html_pdf"] and argv[argv.index("--timeout") + 1] == "30"
-    assert 30 < kw["timeout"] <= 45
+    assert kw["timeout"] == doctor._PRINT_TIMEOUT + 25
     assert "src" in kw["env"]["PYTHONPATH"]
 
     quick = _printing()
@@ -161,6 +161,7 @@ def test_check_chromium_that_cannot_print_names_why():
     check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(pdf=None, code=1, stderr="x\nprint: boom\n"))
     assert check["status"] == "missing" and check["required"] is True and check["installable"] is False
     assert "print: boom" in check["detail"] and "doctor --fix" not in check["fix"]
+    assert "door.tailoring.html_pdf" in check["fix"] and check["fix"] != doctor._NO_START_FIX
     check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(pdf=b"not a pdf"))
     assert check["status"] == "missing"
 
@@ -168,6 +169,21 @@ def test_check_chromium_that_cannot_print_names_why():
 def test_check_chromium_print_that_hangs_says_so():
     check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(hang=True))
     assert check["status"] == "missing" and "did not finish in 30 s" in check["detail"]
+
+
+def test_check_chromium_print_that_cannot_be_run_or_leaves_no_pdf_says_why():
+    import subprocess
+
+    def broken(argv, **kw):
+        if argv[0] == "/x/c":
+            return subprocess.CompletedProcess(argv, 0, "Chrome 1\n", "")
+        raise OSError("no interpreter")
+
+    check = doctor.check_chromium(find=lambda: "/x/c", run=broken)
+    assert check["status"] == "missing" and "could not print a page: no interpreter" in check["detail"]
+
+    check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(pdf=None, code=0))
+    assert check["status"] == "missing" and check["detail"].endswith("could not print a page: exit 0")
 
 
 def test_check_claude_cli():
