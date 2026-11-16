@@ -43,7 +43,7 @@ CV:
 <!-- Tailoring: what you cut, kept or condensed; each note separated by semicolons -->
 <header class="cv-header"><<photo>><h1>Name</h1>
 <p class="tagline">tagline</p>
-<p class="contact"><span class="phone">phone</span><span class="email"><a href="mailto:email">email</a></span><span class="web"><a href="https://web">web</a></span><span class="linkedin"><a href="https://linkedin">LinkedIn</a></span><span class="github"><a href="https://github">GitHub</a></span><span class="location">location</span></p></header>
+<p class="contact"><span class="phone">phone</span><span class="email"><a href="mailto:email">email</a></span><span class="web"><a href="https://web">web</a></span><span class="linkedin"><a href="https://address">address</a></span><span class="github"><a href="https://github.com/name">github.com/name</a></span><span class="location">location</span></p></header>
 <h2>Section</h2>
 <p>text</p>
 <div class="entry"><h3>Role | Company - dates</h3>
@@ -61,7 +61,7 @@ Letter:
 <div class="closing"><p class="signoff">Kind regards,</p><p>Name</p></div>
 ```
 
-- One `<span>` per contact detail, and none for a detail `cv.md` does not give (never an empty one). Each span carries the class of its kind: `phone`, `email`, `web`, `location`, `linkedin` or `github` (LinkedIn and GitHub are links, `<a href="https://...">`), in the CV's header and the letter's. The template sets them on one line, or one per line beside the photo, and may draw an icon by kind: you never write an icon, an image or SVG.
+- One `<span>` per contact detail, and none for a detail `cv.md` does not give (never an empty one). Each span carries the class of its kind: `phone`, `email`, `web`, `location`, `linkedin` or `github` (LinkedIn and GitHub are links, `<a href="https://...">`, whose text is the address without the scheme, `www.` and a trailing slash, as `cv.md` gives it: `github.com/janedoe`); any other detail (a date of birth, a second link) is a plain `<span>`, in the CV's header and the letter's. The template sets them on one line, or one per line beside the photo, and may draw an icon by kind: you never write an icon, an image or SVG.
 - The CV header has `<p class="tagline">` right after the `<h1>` only when `cv.md` has a tagline (the `> ...` line under the name): copy it, translated into the posting's language when that differs, never reworded to add a claim; no tagline in `cv.md`, none in the header. The letter has no tagline.
 - `<h2>` is a section title, `<h3>` an entry's title line (`Role | Company - dates`: the ` | ` and the company are how the facts check finds the employer; keep that form for a degree or any entry too), `<ul><li>` bullets, `<strong>` a name or label, `<em>` emphasis. Skills and languages are a `<p>` of comma-separated items, or a `<ul>`.
 - Spacing is the template's: write no blank paragraphs, no `<br>` to make space (a `<br>` only ends a line inside a paragraph).

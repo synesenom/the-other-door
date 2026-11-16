@@ -428,10 +428,9 @@ def test_a_header_with_a_tagline_and_kinds_compiles_and_the_file_stays_as_writte
     assert 'class="tagline"' in world.print.calls[0]["html"]
 
 
-def test_a_body_without_the_new_classes_prints_exactly_as_before(world):
-    body = ('<header class="cv-header"><h1>Jane Doe</h1><p class="contact"><span>+45 1</span></p></header>'
+def test_a_plain_span_for_any_other_detail_passes_beside_the_kinded_ones(world):
+    body = ('<header class="cv-header"><h1>Jane Doe</h1><p class="contact"><span class="phone">+45 1</span>'
+            '<span>Born 1 May 1990</span><span><a href="https://example.com/jane">Portfolio</a></span></p></header>'
             "<h2>Experience</h2>")
     world.make(cv=body)
-    _compile(world)
-    assert (world.out / "cv.html").read_text(encoding="utf-8") == body
-    assert body in world.print.calls[0]["html"]
+    assert _compile(world)["results"][0]["status"] == "compiled"

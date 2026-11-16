@@ -203,8 +203,8 @@ _KINDS = ('<header class="cv-header"><<photo>><h1>Jane Doe</h1><p class="tagline
           '<p class="contact"><span class="phone">+45 00 00 00 00</span>'
           '<span class="email"><a href="mailto:jane.doe@example.com">jane.doe@example.com</a></span>'
           '<span class="web"><a href="https://janedoe.example.com">janedoe.example.com</a></span>'
-          '<span class="linkedin"><a href="https://www.linkedin.com/in/janedoe">LinkedIn</a></span>'
-          '<span class="github"><a href="https://github.com/janedoe">GitHub</a></span>'
+          '<span class="linkedin"><a href="https://www.linkedin.com/in/janedoe">linkedin.com/in/janedoe</a></span>'
+          '<span class="github"><a href="https://github.com/janedoe">github.com/janedoe</a></span>'
           '<span class="location">Copenhagen</span></p></header>'
           "<h2>Profile</h2><p>Jane Doe is a financial controller with a long record in group reporting.</p>")
 _PLAIN = _KINDS.replace(' class="phone"', "").replace(' class="email"', "").replace(' class="web"', "") \
@@ -220,8 +220,11 @@ def test_a_tagline_and_the_kind_classed_details_print_and_read_back(tmp_path, mo
     assert results["cv.html"]["readable"] == [] and results["cover_letter.html"]["readable"] == []
     lines = _lines(out / "cv.pdf")
     assert "Financial Controller | Group Reporting" in lines, lines
-    assert any(line.startswith("+45 00 00 00 00 · jane.doe@example.com") and "LinkedIn · GitHub · Copenhagen" in line
-               for line in lines), lines
+    # the six details are too long for one line at 9pt: it breaks between two of them, the dot ending the first line
+    start = next(i for i, line in enumerate(lines) if line.startswith("+45 00 00 00 00 · jane.doe@example.com"))
+    details = " ".join(lines[start:start + 2])
+    assert "linkedin.com/in/janedoe · github.com/janedoe · Copenhagen" in details, lines
+    assert lines[start].endswith("·") and not lines[start + 1].startswith("·"), lines
     assert lines.index("Financial Controller | Group Reporting") == lines.index("Jane Doe") + 1
 
 

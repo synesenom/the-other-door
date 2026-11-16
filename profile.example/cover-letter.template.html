@@ -9,7 +9,7 @@
 
   Building blocks (the tailor's vocabulary):
     <header class="letter-header"><h1>Name</h1><p class="contact"><span class="phone">detail</span>...</p></header>
-    Each contact span has its kind as a class: phone, email, web, location, linkedin or github.
+    Each contact span has its kind as a class: phone, email, web, location, linkedin or github; any other detail is a plain <span>.
     <div class="recipient"><p>Recipient</p><p>Company</p><p>City</p></div>
     <p class="date"><<date>></p>
     <p>a paragraph</p>
@@ -39,7 +39,8 @@ h1 { font-family: "Young Serif", serif; font-weight: 400; font-size: 28pt; line-
 
 .letter-header { padding-bottom: 8pt; border-bottom: 0.6pt solid var(--hairline); margin-bottom: 1.2cm; }
 .contact { margin-top: 8pt; font-size: 9pt; color: var(--muted); }
-.contact span + span::before { content: "\00B7"; margin: 0 0.5em; }
+.contact span { display: inline-block; white-space: nowrap; margin-right: 0.5em; }
+.contact span:not(:last-child)::after { content: "\00B7"; margin-left: 0.5em; }
 
 .recipient { margin-bottom: 0.6cm; }
 .date { color: var(--muted); margin-bottom: 0.8cm; }
