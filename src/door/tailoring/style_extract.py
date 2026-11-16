@@ -21,6 +21,7 @@ from door import i18n
 from door.tailoring import pdf_render, style_trace
 
 VERSION = 1
+_INTERNAL = {"baseline", "lead", "trail"}  # what the analysis keeps on a run and the result does not
 
 _WEIGHTS = [  # longest names first: "extrabold" holds "bold"
     ("extrablack", 950), ("ultrablack", 950), ("extralight", 200), ("ultralight", 200), ("extrabold", 800),
@@ -93,14 +94,16 @@ def _text_runs(page, number: int, height: float) -> tuple[list[dict], int]:
                 invisible += 1
                 continue
             obj.textpage = textpage
-            text = obj.extract().strip()
+            raw_text = obj.extract()
+            text = raw_text.strip()
             if not text:
                 continue
             m = obj.get_matrix()
             size = round(obj.get_font_size() * math.hypot(m.c, m.d), 1)
             runs.append({"page": number, "text": text, "bbox": _bbox(obj, height), "size": size,
                          "color": _rgb(raw.FPDFPageObj_GetFillColor, obj), "rotated": abs(m.b) > abs(m.a),
-                         "baseline": round(height - m.f, 1), "icon": False, **_font_facts(obj.get_font())})
+                         "baseline": round(height - m.f, 1), "icon": False,
+                         "lead": raw_text[:1].isspace(), "trail": raw_text[-1:].isspace(), **_font_facts(obj.get_font())})
     finally:
         textpage.close()
     return runs, invisible
@@ -115,8 +118,8 @@ def merge_runs(runs: list[dict]) -> list[dict]:
         if last and _same_style(last, run) and abs(run["baseline"] - last["baseline"]) <= 0.3 * run["size"]:
             gap = run["bbox"][0] - last["bbox"][2]
             if -0.3 * run["size"] <= gap <= 0.6 * run["size"]:
-                space = " " if gap > 0.2 * run["size"] and not run["text"].startswith(" ") else ""
-                last.update(text=last["text"] + space + run["text"],
+                space = " " if gap > 0.2 * run["size"] or last["trail"] or run["lead"] else ""
+                last.update(text=last["text"] + space + run["text"], trail=run["trail"],
                             bbox=[last["bbox"][0], min(last["bbox"][1], run["bbox"][1]), run["bbox"][2],
                                   max(last["bbox"][3], run["bbox"][3])])
                 continue
@@ -264,17 +267,31 @@ def render_box(page, bbox: list[float], scale: float, pad: float = 0.0):
     return image, [x0, y0, x1, y1]
 
 
-def _is_round(page, bbox: list[float], background: str | None) -> bool:
-    """Whether a picture is cut to a circle: the corners of its box show what is around it, the middle does not."""
+def _seen(page, bbox: list[float], background: str | None) -> tuple[list[float], str]:
+    """What a picture shows of its box: the box of the pixels that differ from what is around it (a picture often
+    has a blank margin), and its `shape`: `circle` when the corners of that box show the ground and the middle of
+    each side does not, else `rect`."""
     image, shown = render_box(page, bbox, 2.0, pad=3.0)
     scale = image.width / (shown[2] - shown[0])
-    inner = [round((bbox[0] - shown[0]) * scale), round((bbox[1] - shown[1]) * scale),
-             round((bbox[2] - shown[0]) * scale) - 1, round((bbox[3] - shown[1]) * scale) - 1]
     around = image.getpixel((0, 0)) if bbox[0] - shown[0] >= 2 and bbox[1] - shown[1] >= 2 else _hex_rgb(background or "#ffffff")
-    corners = [image.getpixel((inner[0] + 1, inner[1] + 1)), image.getpixel((inner[2] - 1, inner[1] + 1)),
-               image.getpixel((inner[0] + 1, inner[3] - 1)), image.getpixel((inner[2] - 1, inner[3] - 1))]
-    middle = image.getpixel(((inner[0] + inner[2]) // 2, (inner[1] + inner[3]) // 2))
-    return all(_distance(c, around) <= 12 for c in corners) and _distance(middle, around) > 40
+    px = image.load()
+    xs, ys = [], []
+    for y in range(image.height):
+        for x in range(image.width):
+            if _distance(px[x, y], around) > 12:
+                xs.append(x)
+                ys.append(y)
+    if not xs:
+        return bbox, "rect"
+    ink = [min(xs), min(ys), max(xs), max(ys)]
+    box = [round(max(bbox[0], shown[0] + ink[0] / scale), 1), round(max(bbox[1], shown[1] + ink[1] / scale), 1),
+           round(min(bbox[2], shown[0] + (ink[2] + 1) / scale), 1), round(min(bbox[3], shown[1] + (ink[3] + 1) / scale), 1)]
+    mx, my = (ink[0] + ink[2]) // 2, (ink[1] + ink[3]) // 2
+    corners = [(ink[0] + 1, ink[1] + 1), (ink[2] - 1, ink[1] + 1), (ink[0] + 1, ink[3] - 1), (ink[2] - 1, ink[3] - 1)]
+    sides = [(mx, ink[1] + 1), (mx, ink[3] - 1), (ink[0] + 1, my), (ink[2] - 1, my)]
+    round_ = (all(_distance(px[c], around) <= 12 for c in corners) and all(_distance(px[c], around) > 40 for c in sides)
+              and _distance(px[mx, my], around) > 40)
+    return box, "circle" if round_ else "rect"
 
 
 def _hex_rgb(color: str) -> tuple[int, int, int]:
@@ -295,8 +312,8 @@ def find_photo(page, images: list[dict], size: list[float], background: str | No
             best = (w * h, image)
     if not best:
         return None
-    box = best[1]["bbox"]
-    return {"page": 1, "bbox": box, "shape": "circle" if _is_round(page, box, background) else "rect"}
+    box, shape = _seen(page, best[1]["bbox"], background)
+    return {"page": 1, "bbox": box, "shape": shape}
 
 
 def background_images(images: list[dict], size: list[float]) -> int:
@@ -347,24 +364,47 @@ def line_groups(runs: list[dict]) -> list[list[dict]]:
     return [sorted(line, key=lambda r: r["bbox"][0]) for line in lines]
 
 
-def _gaps(runs: list[dict], body: float) -> list[tuple[int, int]]:
-    """The x ranges inside the text where (almost) no run is: at most 5% of the busiest x (and one run, so a banner
-    over both columns does not close it) and at least 14 pt or two body sizes wide."""
+def _joined(line: list[dict]) -> str:
+    """The text of a line's runs, a space where one run ended or began with one or they are a word apart."""
+    out = line[0]["text"]
+    for prev, run in zip(line, line[1:]):
+        out += (" " if prev["trail"] or run["lead"] or run["bbox"][0] - prev["bbox"][2] > 0.2 * run["size"] else "") + run["text"]
+    return out
+
+
+def _percentile(values: list[float], q: float) -> float:
+    ordered = sorted(values)
+    return ordered[min(int(q * len(ordered)), len(ordered) - 1)]
+
+
+def _gaps(runs: list[dict], body: float) -> list[tuple[float, float]]:
+    """The empty strips between stacks of text: a place where at most 30% of the busiest x is covered and the runs
+    either side of it (at least four each) leave 8 pt or 0.8 body sizes between them, with no more runs across it
+    than a third of those on its two sides (a header over both columns does not close it). Each as the clear
+    space itself, from the right edge of the runs to its left to the left edge of those to its right."""
     lo, hi = int(min(r["bbox"][0] for r in runs)), int(max(r["bbox"][2] for r in runs)) + 1
     cover = [0] * (hi - lo + 1)
     for run in runs:
         for x in range(int(run["bbox"][0]) - lo, int(run["bbox"][2]) - lo + 1):
             cover[x] += 1
-    limit = max(1, 0.05 * max(cover))
-    gaps, start = [], None
+    limit = max(1, 0.3 * max(cover))
+    found, start = [], None
     for x, n in enumerate(cover + [limit + 1]):
         if n <= limit and start is None:
             start = x
         elif n > limit and start is not None:
-            if x - start >= max(14, 2 * body) and start > 0 and x <= len(cover) - 1:
-                gaps.append((lo + start, lo + x))
+            a, b = lo + start, lo + x
             start = None
-    return gaps
+            mid = (a + b) / 2
+            left = [r for r in runs if r["bbox"][2] <= b and r["bbox"][0] < mid]
+            right = [r for r in runs if r["bbox"][0] >= a and r["bbox"][2] > mid]
+            across = [r for r in runs if r["bbox"][0] < a and r["bbox"][2] > b]
+            if len(left) < 4 or len(right) < 4 or len(across) > (len(left) + len(right)) / 3:
+                continue
+            clear = (_percentile([r["bbox"][2] for r in left], 0.9), _percentile([r["bbox"][0] for r in right], 0.1))
+            if clear[1] - clear[0] >= max(8.0, 0.8 * body):
+                found.append(clear)
+    return found
 
 
 def _stacked(lines: list[list[dict]], body: float) -> int:
@@ -382,28 +422,24 @@ def column_bands(pages: list[dict]) -> dict:
     (the dates down the right of a single column, or a note in the margin, are no column) and a twelfth of the
     lines. One band is `only`; with more, the narrowest, if under 40% of the text's width or on a coloured box, is
     the `side`, the others `main`. `background` is the fill of a box covering most of the page's height."""
-    runs = [r for p in pages for r in p["runs"] if not r["rotated"] and not r["icon"]]
+    runs = [r for p in pages for r in p["runs"] if not r["rotated"] and not r["icon"]
+            and not (len(r["text"]) <= 1 or all(c in _BULLETS for c in r["text"]))]
     if not runs:
         return {"count": 0, "bands": []}
     body = body_size(runs)
-    edges = [int(min(r["bbox"][0] for r in runs)) - 1] + [x for g in _gaps(runs, body) for x in g] \
-        + [int(max(r["bbox"][2] for r in runs)) + 2]
-    intervals = [(edges[i], edges[i + 1]) for i in range(0, len(edges), 2)]
-
-    def band_of(x: float) -> int | None:
-        return next((i for i, (lo, hi) in enumerate(intervals) if lo <= x <= hi), None)
-
-    members: list[list[dict]] = [[] for _ in intervals]
-    for run in runs:  # a run across a gap is a banner: no band's
-        first, last = band_of(run["bbox"][0]), band_of(run["bbox"][2])
-        if first is not None and first == last:
-            members[first].append(run)
+    gaps = sorted(_gaps(runs, body))
+    members: list[list[dict]] = [[] for _ in range(len(gaps) + 1)]
+    for run in runs:
+        if any(run["bbox"][0] < a and run["bbox"][2] > b for a, b in gaps):
+            continue  # a run across a gap is a banner: no band's
+        members[sum(run["bbox"][0] >= (a + b) / 2 for a, b in gaps)].append(run)
     total = sum(len(line_groups(m)) for m in members) or 1
     bands = []
     for member in members:
         lines = line_groups(member)
         if member and _stacked(lines, body) >= 4 and len(lines) >= total / 12:
-            bands.append({"x0": round(min(r["bbox"][0] for r in member), 1), "x1": round(max(r["bbox"][2] for r in member), 1),
+            bands.append({"x0": round(_percentile([r["bbox"][0] for r in member], 0.05), 1),
+                          "x1": round(_percentile([r["bbox"][2] for r in member], 0.95), 1),
                           "lines": len(lines)})
     if not bands:
         bands = [{"x0": round(min(r["bbox"][0] for r in runs), 1), "x1": round(max(r["bbox"][2] for r in runs), 1),
@@ -435,13 +471,39 @@ def _case(text: str) -> str:
     return "upper" if text.isupper() else "title" if text.istitle() else "as_written"
 
 
+def _line_units(runs: list[dict]) -> list[dict]:
+    """The lines whose runs share a font family, weight and colour, each as one piece of text: small capitals are
+    written as a large letter then smaller ones, so a heading or a name is often several runs. `size` is the
+    largest of them, `mixed` whether they differ."""
+    units = []
+    pieces = []
+    for line in line_groups([r for r in runs if not r["rotated"] and not r["icon"]]):
+        piece = [line[0]]
+        for run in line[1:]:  # a gap wider than a word or two starts another piece: a column's, or a date's
+            if run["bbox"][0] - piece[-1]["bbox"][2] > 1.2 * run["size"]:
+                pieces.append(piece)
+                piece = []
+            piece.append(run)
+        pieces.append(piece)
+    for line in pieces:
+        if len({(r["family"], r["weight"], r["color"]) for r in line}) != 1:
+            continue
+        first = line[0]
+        units.append({"page": first["page"], "text": _joined(line), "size": max(r["size"] for r in line),
+                      "mixed": len({r["size"] for r in line}) > 1, "color": first["color"], "weight": first["weight"],
+                      "family": first["family"],
+                      "bbox": [min(r["bbox"][0] for r in line), min(r["bbox"][1] for r in line),
+                               max(r["bbox"][2] for r in line), max(r["bbox"][3] for r in line)]})
+    return units
+
+
 def find_name(runs: list[dict]) -> dict | None:
-    """The largest text of the first page: the candidate's name."""
-    first = [r for r in runs if r["page"] == 1 and not r["rotated"] and not r["icon"]]
-    if not first:
+    """The largest text of the first page, the whole line of it: the candidate's name."""
+    units = [u for u in _line_units(runs) if u["page"] == 1]
+    if not units:
         return None
-    run = max(first, key=lambda r: (r["size"], -r["bbox"][1]))
-    return {k: run[k] for k in ("text", "size", "color", "family")}
+    unit = max(units, key=lambda u: (u["size"], -u["bbox"][1]))
+    return {k: unit[k] for k in ("text", "size", "color", "family")}
 
 
 def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | None:
@@ -462,30 +524,41 @@ def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | 
 
 
 def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name: dict | None) -> list[dict]:
-    """The section headings: a short line alone on its baseline, not set like the body text, that is a known
-    section name (any supported language) or larger than the body and styled like at least two other short lines."""
+    """The section headings: a short line in one style, not set like the body text (another size, weight or family,
+    or in small capitals), that is a known section name (any supported language) or one of a group of three or more
+    lines in one style that is coloured and larger than the body (or, with no such group, the largest)."""
     body = body_size([r for r in runs if not r["rotated"]])
     chars: dict[tuple, int] = {}
     for r in runs:
         chars[(r["family"], r["size"], r["weight"])] = chars.get((r["family"], r["size"], r["weight"]), 0) + len(r["text"])
     body_style = max(chars, key=chars.get) if chars else None
-    singles = [line[0] for line in line_groups([r for r in runs if not r["rotated"] and not r["icon"]]) if len(line) == 1]
-    short = [r for r in singles if len(r["text"].split()) <= 6 and not (name and r["text"] == name["text"] and r["size"] == name["size"])
-             and (r["family"], r["size"], r["weight"]) != body_style]
-    shared: dict[tuple, int] = {}
-    for r in short:
-        key = (r["family"], r["size"], r["color"], r["weight"])
-        shared[key] = shared.get(key, 0) + 1
+    short = [u for u in _line_units(runs) if len(u["text"].split()) <= 6
+             and not (name and u["text"] == name["text"] and u["size"] == name["size"])
+             and (u["mixed"] or (u["family"], u["size"], u["weight"]) != body_style)]
+
+    def key(u: dict) -> tuple:
+        return (u["family"], u["size"], u["color"], u["weight"], u["mixed"])
+
+    known = {id(u) for u in short if i18n.cv_section_kind(u["text"], _SECTION_KINDS) is not None}
+    text_color = max({r["color"] for r in runs}, key=lambda c: sum(len(r["text"]) for r in runs if r["color"] == c))
+    groups: dict[tuple, list[dict]] = {}
+    for u in short:
+        groups.setdefault(key(u), []).append(u)
+    # a group of three or more like lines is headings when it holds a section name or is coloured and larger than the
+    # body; with neither anywhere, the largest group is (the entry titles of a CV are in a group of their own)
+    styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body}
+    chosen = [k for k, g in styled.items() if any(id(u) in known for u in g)
+              or (k[2] != text_color and _chromatic(k[2]) and k[1] > body)]
+    if not chosen and styled:
+        chosen = [max(styled, key=lambda k: k[1])]
     found = []
-    for r in short:
-        known = i18n.cv_section_kind(r["text"], _SECTION_KINDS) is not None
-        styled = r["size"] >= body and shared[(r["family"], r["size"], r["color"], r["weight"])] >= 3
-        if known or styled:
-            mid = (r["bbox"][0] + r["bbox"][2]) / 2
+    for u in short:
+        if id(u) in known or key(u) in chosen:
+            mid = (u["bbox"][0] + u["bbox"][2]) / 2
             band = next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
-            found.append({"page": r["page"], "text": r["text"], "bbox": r["bbox"], "size": r["size"], "color": r["color"],
-                          "weight": r["weight"], "family": r["family"], "case": _case(r["text"]),
-                          "rule": _rule_under(r, shapes, band)})
+            found.append({"page": u["page"], "text": u["text"], "bbox": u["bbox"], "size": u["size"], "color": u["color"],
+                          "weight": u["weight"], "family": u["family"], "case": _case(u["text"]),
+                          "rule": _rule_under(u, shapes, band)})
     return found
 
 
@@ -710,7 +783,7 @@ def extract(pdf_path: Path) -> dict:
         headings = find_headings(runs, shapes, columns["bands"], name)
         return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
                 "columns": columns, "headings": headings, "heading_style": heading_style(headings),
-                "runs": [{k: v for k, v in r.items() if k != "baseline"} for r in runs],
+                "runs": [{k: v for k, v in r.items() if k not in _INTERNAL} for r in runs],
                 "shapes": [{k: v for k, v in s.items() if k != "segments"} for s in shapes],
                 "icons": find_icons(doc, pages), "photo": pages[0]["photo"],
                 "background_images": sum(background_images(p["images"], p["size"]) for p in pages)}

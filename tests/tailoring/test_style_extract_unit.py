@@ -479,3 +479,43 @@ def test_a_bullet_in_a_symbol_font_is_no_icon(tmp_path):
     content = text("SY", 10, 50, 700, "\xb7") + text("F1", 10, 62, 700, "First point of the list") + body()
     style = read(tmp_path, content, fonts={"SY": "Symbol"})
     assert style["icons"] == []
+
+
+# ---------- what the corpus showed ----------
+
+def test_columns_ten_points_apart_under_a_full_width_header_are_two_columns(tmp_path):
+    header = "".join(text("F1", 10, 40, 800 - 14 * i, "A header line that runs across the whole width of the page, " * 2) for i in range(8))
+    columns = read(tmp_path, header + stack(40, 650, 30, "Left column words here") + stack(300, 650, 24, "Right col text"))["columns"]
+    assert columns["count"] == 2 and [b["kind"] for b in columns["bands"]] == ["main", "side"]
+
+
+def test_a_bullet_set_apart_from_its_text_does_not_split_a_column(tmp_path):
+    content = "".join(text("F1", 10, 50, 780 - 14 * i, "\x95") + text("F1", 10, 62, 780 - 14 * i, f"A bullet point with a line of text {i}")
+                      for i in range(30))
+    assert read(tmp_path, content)["columns"]["count"] == 1
+
+
+def small_caps(x, y, first, rest, color="0 0 0"):
+    """a heading in small capitals: the first letter large, the rest small (two runs, two sizes)"""
+    return text("F1", 12, x, y, first, color) + text("F1", 9.6, x + 8.5, y, rest, color)
+
+
+def test_a_small_caps_line_is_one_heading_and_the_name_is_the_whole_line(tmp_path):
+    content = text("F1", 24, 50, 790, "J") + text("F1", 19, 66, 790, "ONAS") + text("F1", 24, 120, 790, "B") + text("F1", 19, 136, 790, "REKKE")
+    for i, (a, b) in enumerate([("E", "XPERIENCE"), ("P", "ROJECTS"), ("V", "OLUNTEERING")]):
+        content += small_caps(50, 700 - 90 * i, a, b) + stack(50, 680 - 90 * i, 4, "A line of the body text")
+    style = read(tmp_path, content)
+    assert style["name"]["size"] == 24.0 and style["name"]["text"].replace(" ", "") == "JONASBREKKE"
+    assert [h["text"].replace(" ", "") for h in style["headings"]] == ["EXPERIENCE", "PROJECTS", "VOLUNTEERING"]
+    assert style["headings"][0]["size"] == 12.0
+
+
+def test_a_picture_with_a_blank_margin_is_a_rect_photo_the_size_of_what_is_seen(tmp_path):
+    # 4 x 4 pixels, the middle 2 x 2 red: drawn 120 pt wide, so the picture seen is the middle 60 pt
+    rows = [[(255, 255, 255)] * 4, [(255, 255, 255), (255, 0, 0), (255, 0, 0), (255, 255, 255)],
+            [(255, 255, 255), (255, 0, 0), (255, 0, 0), (255, 255, 255)], [(255, 255, 255)] * 4]
+    data = bytes(c for row in rows for px in row for c in px)
+    style = read(tmp_path, image_at(430, 650, 120, 120) + body(), images={"Im1": (4, 4, data)})
+    assert style["photo"]["shape"] == "rect"
+    x0, y0, x1, y1 = style["photo"]["bbox"]
+    assert 458 <= x0 <= 462 and 518 <= x1 <= 522 and abs((y1 - y0) - 60) < 4
