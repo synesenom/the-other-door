@@ -2,8 +2,8 @@
 # Builds what a packaged app carries (#223) for this computer's system and processor, into app/resources/:
 #   python/   python-build-standalone 3.12 with The other door's locked packages installed into it (by hash, wheels only)
 #   door/   src/, .claude/agents/{tailor,reviewer,matcher}.md and profile.example/, as in a checkout
-#   bin/      Tectonic
-# Pinned in scripts/bundle.lock.json; downloads are cached in app/.bundle-cache/ (DOOR_BUNDLE_CACHE).
+#   bin/      Tectonic, and chromium/ (the Chromium headless shell that prints CVs, #165)
+# Pinned in scripts/bundle.lock.json (Chromium: src/door/core/chromium_pin.json, the pin `doctor --fix` installs from too); downloads are cached in app/.bundle-cache/ (DOOR_BUNDLE_CACHE).
 # No cross-building: run it on each system. Windows: bundle-python.ps1 (#355). Then: scripts/check-bundle.sh.
 set -euo pipefail
 
@@ -14,13 +14,15 @@ CACHE="${DOOR_BUNDLE_CACHE:-$APP/.bundle-cache}"
 LOCK="$APP/scripts/bundle.lock.json"
 
 case "$(uname -s)-$(uname -m)" in
-  Darwin-arm64) PY_TRIPLE=aarch64-apple-darwin; TT_TRIPLE=aarch64-apple-darwin ;;
-  Darwin-x86_64) PY_TRIPLE=x86_64-apple-darwin; TT_TRIPLE=x86_64-apple-darwin ;;
-  Linux-x86_64) PY_TRIPLE=x86_64-unknown-linux-gnu; TT_TRIPLE=x86_64-unknown-linux-musl ;;
+  Darwin-arm64) PY_TRIPLE=aarch64-apple-darwin; TT_TRIPLE=aarch64-apple-darwin; CR_KEY=mac-arm64 ;;
+  Darwin-x86_64) PY_TRIPLE=x86_64-apple-darwin; TT_TRIPLE=x86_64-apple-darwin; CR_KEY=mac-x64 ;;
+  Linux-x86_64) PY_TRIPLE=x86_64-unknown-linux-gnu; TT_TRIPLE=x86_64-unknown-linux-musl; CR_KEY=linux64 ;;
   *) echo "bundle-python.sh: $(uname -s) $(uname -m) is not supported (x64 Linux, macOS)" >&2; exit 2 ;;
 esac
 
 field() { node -e "const l=require(process.argv[1]);const v=process.argv[2].split('.').reduce((o,k)=>o[k],l);process.stdout.write(String(v))" "$LOCK" "$1"; }
+# pinfield PATH: a value of the Chromium pin (src/door/core/chromium_pin.json)
+pinfield() { node -e "const l=require(process.argv[1]);const v=process.argv[2].split('.').reduce((o,k)=>o[k],l);process.stdout.write(String(v))" "$REPO/src/door/core/chromium_pin.json" "$1"; }
 sha256() { if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
 
 # fetch URL SHA256: sets FETCHED to the cached file, downloaded once and checked every time
@@ -67,6 +69,14 @@ tt_url="$(field tectonic.url)"; tt_url="${tt_url//\{version\}/$TT_VERSION}"; tt_
 fetch "$tt_url" "$(field "tectonic.sha256.$TT_TRIPLE")"
 tar -xzf "$FETCHED" -C "$OUT/bin"
 chmod +x "$OUT/bin/tectonic"
+
+# 4b. the Chromium headless shell, unpacked as bin/chromium/chrome-headless-shell-<key>/ (what core/chromium.find_chromium reads)
+CR_VERSION="$(pinfield version)"
+cr_url="$(pinfield url)"; cr_url="${cr_url//\{version\}/$CR_VERSION}"; cr_url="${cr_url//\{key\}/$CR_KEY}"
+fetch "$cr_url" "$(pinfield "platforms.$CR_KEY.sha256")"
+mkdir -p "$OUT/bin/chromium"
+unzip -q "$FETCHED" -d "$OUT/bin/chromium"
+chmod +x "$OUT/bin/chromium/chrome-headless-shell-$CR_KEY/chrome-headless-shell"
 
 # 5. trim what a server never runs, then compile once (the app runs with PYTHONDONTWRITEBYTECODE)
 STDLIB="$OUT/python/lib/python${PY_VERSION%.*}"
