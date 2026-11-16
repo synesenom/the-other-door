@@ -10,6 +10,8 @@ from __future__ import annotations
 import html
 from pathlib import Path
 
+from door.core import utils
+
 REPO = Path(__file__).resolve().parents[2]
 
 _PEOPLE = [
@@ -60,13 +62,7 @@ def e(text: str) -> str:
     return html.escape(str(text), quote=False)
 
 
-_TEX_SPECIAL = {"&": r"\&", "%": r"\%", "$": r"\$", "#": r"\#", "_": r"\_", "{": r"\{", "}": r"\}",
-                "~": r"\textasciitilde{}", "^": r"\textasciicircum{}", "\\": r"\textbackslash{}"}
-
-
-def tex(text: str) -> str:
-    """*text* with LaTeX's special characters escaped."""
-    return "".join(_TEX_SPECIAL.get(c, c) for c in str(text))
+tex = utils._escape_latex  # *text* with LaTeX's special characters escaped
 
 
 def _sections(r: dict) -> list[tuple[str, list[str]]]:
