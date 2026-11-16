@@ -33,7 +33,9 @@ _RULES = (
     "the other sources only add to it — month-level dates, roles it leaves out, years and "
     "venues of publications, named projects, a portfolio link. Use only what the sources say; "
     "never invent content — write `TODO` for anything missing (phone, education dates) "
-    "and list those under `todos`. Fill the template's Skills section with the skills the sources "
+    "and list those under `todos`. The header holds a tagline as `> ...` under the name and `**LinkedIn:**` and "
+    "`**GitHub:**` parts on the contact line: write each only when a source gives it (the source's own headline, "
+    "its profile links), never invent one, and never a `TODO` for them: leave them out. Fill the template's Skills section with the skills the sources "
     "show, also those that appear only in job descriptions; if they show none, leave the section "
     "out: never a `TODO` for skills. Under `provenance`, say what each source besides the "
     "backbone contributed. Answer with the JSON only."
@@ -273,9 +275,16 @@ def _header_name(text: str) -> str | None:
     return None
 
 
+def _without_tagline(text: str) -> str:
+    """`text` without the tagline: the `> …` line(s) of the header, above the first `## ` section (its `|` and any
+    words in it are not contact parts)."""
+    head, sep, rest = text.partition("\n## ")
+    return "\n".join(line for line in head.splitlines() if not line.startswith(">")) + sep + rest
+
+
 def _header_location(text: str) -> str | None:
     """What the CV's `**Location:** …` part says (the template's header keeps its parts on one line, split by `|`)."""
-    for part in re.split(r"[|\n]", text):
+    for part in re.split(r"[|\n]", _without_tagline(text)):
         match = _LOCATION_RE.match(part.strip())
         if match:
             return _usable(match.group(1).strip(" *"))
@@ -328,7 +337,7 @@ def _infer_basics_core(
         return {**result, "missing": ["name", "email", "location"]}
 
     name = _header_name(text)
-    found_email = _EMAIL_RE.search(text)
+    found_email = _EMAIL_RE.search(_without_tagline(text))
     email = found_email.group(0) if found_email else None
     place = _header_location(text)
     location = i18n.known_city(place) if place else None
