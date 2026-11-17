@@ -1,6 +1,6 @@
 ---
 name: dev-epic
-description: Churn through an epic issue in one run — resolve its sub-issues one after another, each in its own pull request branched from the previous one's, so the PRs build on each other and are kept green, file what is found on the way into other epics, and tick the epic's checkboxes, until every sub-issue is implemented and every box is checked. Invoked with /dev-epic <epic_issue_number>.
+description: Churn through an epic issue in one run — resolve its sub-issues one after another on one epic branch (each in its own pull request into that branch, merged once green), file what is found on the way into other epics, tick the epic's checkboxes, then open one pull request from the epic branch into main with a plain summary and screenshots or a GIF of anything a user sees. Invoked with /dev-epic <epic_issue_number>.
 ---
 
 You are working through an epic issue of The other door. The epic's number is the argument. **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
@@ -12,19 +12,32 @@ You are working through an epic issue of The other door. The epic's number is th
 - every sub-issue of the epic (and of its sub-epics), including those added while working, is **implemented**: closed as completed, closed as not planned, or has an open pull request that closes it with every check green and no merge conflict;
 - the epic's body has no unchecked `- [ ]` box.
 
-Merging is the maintainer's: never merge, approve or enable auto-merge. Run the loop below until done. **Never stop before then**, except to ask a question the `decider` returned CANNOT DECIDE on (Step 7). Do not stop after one sub-issue to report or ask whether to go on. Something else only the maintainer can give (a merge, a permission the harness asks for, a hint for a `failed` sub-issue) blocks that one item, never the loop: ask for it in one line and go on with every other sub-issue. When the maintainer says something is merged or granted, re-read the epic at once and start what it unblocked, in the same turn.
+Merging into `main` is the maintainer's: never merge, approve or enable auto-merge on a PR that targets `main`. The one exception is a sub-issue's PR into the epic branch (below): once its checks are green and its review findings are dealt with, merge it (squash) without asking. Run the loop below until done. **Never stop before then**, except to ask a question the `decider` returned CANNOT DECIDE on (Step 7). Do not stop after one sub-issue to report or ask whether to go on. Something else only the maintainer can give (a permission the harness asks for, a hint for a `failed` sub-issue) blocks that one item, never the loop: ask for it in one line and go on with every other sub-issue. When the maintainer says something is granted, re-read the epic at once and start what it unblocked, in the same turn.
 
-**Never stop to report.** A sub-issue's PR opened, a step of `/dev-resolve` done, an agent returned, a decision taken, an issue filed: none ends the run. Go on to the next step or sub-issue in the same turn; the progress line (Step 6) is one line printed on the way, not a stopping point. While background agents or checks run, end the turn without a summary or a question and pick up the moment they finish. The only stops are Step 7 (only the maintainer can move things on), a CANNOT DECIDE, and a permission the harness must ask for. The report is Step 8, once, at the end.
+**Never stop to report.** A sub-issue's PR opened or merged, a step of `/dev-resolve` done, an agent returned, a decision taken, an issue filed: none ends the run. Go on to the next step or sub-issue in the same turn; the progress line (Step 6) is one line printed on the way, not a stopping point. While background agents or checks run, end the turn without a summary or a question and pick up the moment they finish. The only stops are Step 7 (only the maintainer can move things on), a CANNOT DECIDE, and a permission the harness must ask for. The report is Step 8, once, at the end.
 
-State lives in `thoughts/epic/<N>.md` (the chain, in order; per sub-issue its branch, PR, state, notes; the open questions), so a later `/dev-epic <N>` picks up where this one stopped. Write it after every step that changes something.
+State lives in `thoughts/epic/<N>.md` (the epic branch; per sub-issue its branch, PR, state, notes; the open questions), so a later `/dev-epic <N>` picks up where this one stopped. Write it after every step that changes something.
 
-**The chain.** The PRs build on each other: each sub-issue's branch starts from the previous sub-issue's branch, the first one from `main`. The chain is the ordered list of those branches whose PRs are still open; its **tip** is the last one (or `main` when the chain is empty, at the start or once everything is merged). Each PR still targets `main`, and `/dev-pr` describes only its own commits and says `Depends on #<previous pr>`. The maintainer merges them in chain order. Never rebase or force-push a chain branch: changes move up the chain by merges.
+**The epic branch.** `epic/<N>-<slug>` (`<slug>` two to five words from the epic's title), made from `main` and pushed at the start (or found again from the state file or `git ls-remote --heads origin 'epic/<N>-*'`). Every sub-issue's branch starts from the epic branch's current tip and its PR targets the epic branch (`/dev-resolve <sub> epic=<N> base=<epic branch> target=<epic branch>`). A green sub-PR is squash-merged into the epic branch by you; the next sub-issue starts from the new tip. So the epic branch is always the sum of what is done, and it is the only branch that ever becomes a PR into `main` (Step 8). Never rebase or force-push it. `main` moving is handled by merging `origin/main` into the epic branch (Step 3).
+
+**A fixed branch.** When the session's own instructions fix the branch to push to (a cloud session), that branch is the epic branch, and there are no sub-PRs: `/dev-resolve <sub> epic=<N>` commits on it (no `base`, no `target`), pushes it, and the epic branch's PR is opened at the end (Step 8).
 
 ---
 
 ## The loop
 
-Repeat Steps 1–6 until done; then Step 8.
+Step 0 once, then repeat Steps 1–6 until done; then Step 8.
+
+### Step 0: The epic must be planned
+
+An epic is worked only from a plan made by `/dev-plan-epic`: its body has the line `Planned by /dev-plan-epic`, with `**Done when**`, `## Plan` (the riskiest assumption, its spike and go/no-go, and **Not doing**) and its boxes in the planned order. If the line is missing, run `/dev-plan-epic <N>` first (it re-plans the epic: keeps, changes, drops and adds sub-issues, and asks the one filing confirmation) and go on only once the body carries the mark. Do not make up a plan here, and do not work an unplanned epic's boxes as they stand.
+
+The plan binds the run:
+
+- **Order**: the plan's order is the order of the sub-issues (Step 4's rule that a dependency goes first still holds).
+- **Spike first**: when the plan has a riskiest assumption, its spike is the first sub-issue. When that sub-issue's result is a no-go (the plan's numbers), stop the epic at once: comment the result and the plan's "if no-go" line on the epic, mark the rest `blocked: plan`, and ask the maintainer in one line. Do not build on a failed premise.
+- **Not doing**: an item on that list is never built, however a sub-issue's review or a box suggests it; a finding that wants it is filed into another epic (Step 4), not done here.
+- **A plan that proves wrong while working** (a sub-issue shows an assumption false, a step needs a model where the plan chose code, or the reverse): stop and run `/dev-plan-epic <N>` again with what was found, rather than adding sub-issues one by one. This is the case the plan exists for.
 
 ### Step 1: Read the epic
 
@@ -36,7 +49,7 @@ Run in parallel:
 
 For each open sub-issue, find its pull request: `mcp__github__issue_read` (`method: get`) on it gives `closed_by_pull_requests`; when that is missing or empty, fall back to `gh api -X GET search/issues -f q='repo:synesenom/the-other-door is:pr is:open "Closes #<sub>"'` before treating it as PR-less. Read its checks (`mcp__github__pull_request_read`, `method: get_check_runs`) and whether it is mergeable (`method: get`).
 
-Rebuild the chain from GitHub too, not only from the state file (it may be missing, in a new session): the open PRs that say `Part of #<N>`, ordered by their `Depends on #` lines, the first one with none.
+Rebuild the state from GitHub too, not only from the state file (it may be missing, in a new session): the epic branch, the open PRs into it that say `Part of #<N>`, and the PRs already merged into it (a sub-issue whose PR was merged into the epic branch is implemented, though GitHub keeps it open until the epic branch reaches `main`).
 
 Read GitHub again on every pass: the counts are never remembered. If the epic is closed, go to Step 8.
 
@@ -44,65 +57,74 @@ Read GitHub again on every pass: the counts are never remembered. If the epic is
 
 Read the body's checkboxes. Each unchecked box must map to a sub-issue: by a `#<sub>` on its line, or by its words matching a sub-issue's title. A box that maps to none is work no issue tracks: file it with `/dev-file-issue epic=<N>` (a title from the box, a body that quotes the box): it attaches the issue here and adds ` (#<sub>)` to that box's line. A box that is not work (a note, a question already answered in the comments) goes to the `decider`: tick it with a one-line comment on the epic saying why, or file it.
 
-### Step 3: Keep the chain green
+### Step 3: Keep the epic branch and its PRs green
 
-Look after the chain's PRs as `/dev-pr` Step 7 and CLAUDE.md "Pull requests" say: a failing check is read, fixed test-first on its own branch, pushed; a review comment is addressed, or recorded as a question when it needs the maintainer. A conflict with `main`, or `main` moving, is never fixed in the middle: merge `origin/main` into the bottom branch, then carry it up. PR events that arrive while you work are handled here on the next pass.
+Look after the open sub-PRs as `/dev-pr` Step 7 and CLAUDE.md "Pull requests" say: a failing check is read, fixed test-first on its own branch, pushed; a review comment is addressed, or recorded as a question when it needs the maintainer. When a sub-PR is green, mergeable and its review findings are dealt with, squash-merge it into the epic branch (`mcp__github__merge_pull_request`, `merge_method: squash`) and delete its branch; its sub-issue is now implemented.
 
-**Carry every change up the chain.** After pushing to a chain branch, merge it into the next one, push, and so on to the tip, running the tests the merge touches at each step: `git fetch origin && git switch <next> && git merge origin/<prev> --no-edit && git push`. A conflict is resolved keeping both sides' intent, as in `/dev-pr` Step 2.
+**`main` moved:** `git fetch origin && git switch <epic branch> && git merge origin/main --no-edit`, resolve conflicts keeping both sides' intent as in `/dev-pr` Step 2, run the tests the conflicting files touch, push. Open sub-PRs then merge the epic branch in the same way (`git merge origin/<epic branch>`), so they stay mergeable. Do this when the epic's PR into `main` reports a conflict, and once before Step 8.
 
-**A chain PR merged:** it and every chain PR below it are now in `main`. Drop them from the chain; a PR below it that is still open is included already: close it with a comment naming the merged PR, and close its sub-issue as completed. Then merge `origin/main` into the new bottom branch, update its body's `Depends on` (`mcp__github__update_pull_request`; none when it is now first), and carry it up.
-
-**A chain PR closed without merging:** the branches above still hold its commits. Read why (its comments). Revert its own commits on the next branch (`git revert --no-edit origin/<branch below>..origin/<closed branch>`; `origin/main` when it was the bottom), carry that up, drop it from the chain and point the next PR's `Depends on` at the PR below it. If the maintainer closed it on purpose, record that as a question and leave the sub-issue; otherwise it goes back to the queue and is resolved again on the tip.
+**A sub-PR closed without merging:** read why (its comments). If the maintainer closed it on purpose, record that as a question and leave the sub-issue; otherwise it goes back to the queue and is resolved again from the epic branch's tip.
 
 ### Step 4: The next sub-issue
 
 Pick the first open sub-issue, in GitHub's order, that has no PR yet and is not blocked:
 
-- **Order**: a sub-issue that depends on one later in GitHub's order waits until that one is in the chain (pick the dependency first): the chain only builds upward.
+- **Order**: a sub-issue that depends on one later in GitHub's order waits until that one is merged into the epic branch (pick the dependency first).
 - **Blocked** means it needs a decision the `decider` could not take (record the question, mark it `blocked: question`), or it depends on a sub-issue that is `failed` or `blocked`. Go on with the next.
 - **A sub-issue that is itself an epic** (it has sub-issues): work its sub-issues the same way, depth first.
 
 If none is left to pick, go to Step 6.
 
-A branch the session's own instructions fix (a cloud session's single branch) wins over the one `/dev-resolve` would make: then the epic's PRs go out one at a time, the next only once the last is merged, and Step 7 applies while waiting.
-
-Run `/dev-resolve <sub> epic=<N> base=<tip>` (`base=main` when the chain is empty; in the fixed-branch case above, no `base`: it stays on that branch) and follow it to the end: it makes the branch from the tip, implements, validates, runs the review (CLAUDE.md "Review") and opens the PR, and returns without watching it; the loop's Step 3 watches it.
+Run `/dev-resolve <sub> epic=<N> base=<epic branch> target=<epic branch>` and follow it to the end: it makes the branch from the epic branch's tip, implements, validates, runs the review (CLAUDE.md "Review") and opens the PR into the epic branch, and returns without watching it; the loop's Step 3 watches it and merges it.
 
 The issues its review filed (its report's Review line) went through `/dev-file-issue` into other epics, never this one: the epic's scope stays fixed while it is worked, so its queue does not grow. Name them in the final report.
 
-On a PR, its branch becomes the chain's new tip. If `/dev-resolve` ends in FAIL, record its diagnosis, comment it on the sub-issue, mark it `failed`, and go on: its branch does not join the chain, and the next sub-issue builds on the same tip.
+If `/dev-resolve` ends in FAIL, record its diagnosis, comment it on the sub-issue, mark it `failed`, and go on: nothing of it is merged, and the next sub-issue builds on the same tip. Keep each sub-issue's review lines (what the reviewers found and how each ended) and, for a change to the app's screens, what a user sees: Step 8 uses them.
 
 ### Step 5: Tick the boxes
 
-Tick a box (`- [ ]` → `- [x]`, adding ` — #<pr>`) only when its sub-issue is implemented, or with ` — not planned` when it was closed as not planned. Edit with `mcp__github__issue_write` (`method: update`), changing only those boxes: re-read the body first and keep every other character, since the maintainer may have edited it. Untick a box whose PR went red or was closed unmerged.
+Tick a box (`- [ ]` → `- [x]`, adding ` — #<pr>`) only when its sub-issue's PR is merged into the epic branch, or with ` — not planned` when it was closed as not planned. Edit with `mcp__github__issue_write` (`method: update`), changing only those boxes: re-read the body first and keep every other character, since the maintainer may have edited it. Untick a box whose PR was closed unmerged.
 
 ### Step 6: Print the progress line, go round
 
 One line per pass: `Epic #<N>: <done>/<total> sub-issues, <checked>/<total> boxes — next: <what>`. Then back to Step 1.
 
-When nothing is left to start and PRs still have checks running, wait for them instead of re-reading GitHub in a tight loop: one background command per PR (`gh pr checks <pr> --watch`), and go on when they finish.
+When nothing is left to start and sub-PRs still have checks running, wait for them instead of re-reading GitHub in a tight loop: one background command per PR (`gh pr checks <pr> --watch`), and go on when they finish.
 
 ---
 
 ## Step 7: When only the maintainer can move things on
 
-Stop and wait only for a `blocked: question` (the `decider`'s CANNOT DECIDE): ask the questions together with AskUserQuestion, act on the answers and go back to the loop. A `failed` sub-issue, a PR the maintainer closed or a permission to wait for is asked about in the same message, but never stops work on the other sub-issues. Open PRs waiting for a merge count as implemented (see **Done**); when they are all that is left, the epic is done: report (Step 8).
+Stop and wait only for a `blocked: question` (the `decider`'s CANNOT DECIDE): ask the questions together with AskUserQuestion, act on the answers and go back to the loop. A `failed` sub-issue, a PR the maintainer closed or a permission to wait for is asked about in the same message, but never stops work on the other sub-issues.
 
 ---
 
-## Step 8: Final report
+## Step 8: The epic's pull request and the final report
+
+Reached when every sub-issue is merged into the epic branch, closed, `failed` or `blocked`, and every box is ticked or explained.
+
+1. **Bring `main` in** (Step 3) and run the offline suite once on the epic branch (`./scripts/run-test.sh`, and `--app` when `app/` changed). Fix what fails test-first, on the epic branch.
+2. **Show what changed.** When the epic's diff against `main` touches what a user sees (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`, `docs/design/`, or the CLI's printed output):
+   - **Screenshots**: render each changed screen in the preview (`npm run dev:preview` in `app/`, `?scene=…&state=…&theme=…`; the pages the design-reviewer used), with Playwright at `deviceScaleFactor: 2`, one image per screen and state that is new or changed, light and dark where the colours changed. Put a before shot (from `main`) beside it when something was changed, not added.
+   - **GIF**: for a flow (several steps, something that moves), record it with the repo's recorders (`npm run record:gif`, `record:phone-gif`, a tape under `scripts/demo/` for the CLI) or a Playwright video turned into a GIF with `scripts/demo/app_gif.py`.
+   - Write them to the scratchpad, never into the epic branch (nothing of them reaches `main`). Push them to the branch `epic-media/<N>` (made from `main` for the first push; only these files; `<N>/<name>.png`) and refer to them in the PR body as `![what it shows](https://github.com/synesenom/the-other-door/blob/epic-media/<N>/<N>/<name>.png?raw=true)`. When the session cannot push that branch (a fixed branch), send the files with `SendUserFile` and name them in the body instead.
+   - Nothing a user sees: say "Nothing a user sees." and skip.
+3. **Open the PR** `<epic branch>` → `main` with `/dev-pr epic=<N> final=true` (it uses the epic's commits as its own; `/dev-pr` Step 4's body, then):
+   - `## Summary` first, for a person with no context: one plain sentence for the epic's goal, then one line per implemented sub-issue ("#12 — what a user can now do or what was fixed"), in a user's words, no code names.
+   - `## What it looks like`: the images and GIFs from step 2.
+   - `Closes #<sub>` for every implemented sub-issue and `Closes #<N>`, so merging closes them (GitHub only closes on a merge into `main`).
+   Subscribe to it and keep it green as in Step 3 (checks, conflicts with `main`).
+4. **Report:**
 
 ```
-Epic #<N> — <title>
-| Sub-issue | Title | PR | Checks | Mergeable | State |
-|-----------|-------|----|--------|-----------|-------|
-| #12       | ...   | #40 | green | yes | PR open (chain 1) |
-|   ↳ #15   | ...   | #41 | green | yes | PR open (chain 2) |
-...
+Epic #<N> — <title>   Branch: <epic branch>   PR: #<pr> → main (checks: green|running|red, mergeable: yes|no)
+| Sub-issue | Title | Sub-PR (merged into the branch) | State |
+|-----------|-------|----|-------|
+| #12       | ...   | #40 | merged |
 Sub-issues: <done>/<total> implemented   Filed for its boxes: #.., #..
 Epic boxes: <checked>/<total> checked    Unchecked: <list, or none>
 Filed outside the epic: #.., #..
-Left for you: <PRs to merge, in chain order, bottom first; questions; or nothing>
+Left for you: merge #<pr> (review it as one diff; the sub-PRs are the per-issue history); questions; or nothing
 ```
 
-Then at most 10 short bullets (CLAUDE.md "Reporting back"): what was done, each review finding and which way it went.
+Then the summary in the PR's words (at most 10 short bullets, CLAUDE.md "Reporting back": what was added, each review finding and which way it went), the link to the PR, and the media (inline links, or the files sent).
