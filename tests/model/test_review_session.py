@@ -16,7 +16,7 @@ from door.core import tracker
 
 from conftest import home, run_skill
 
-pytestmark = pytest.mark.skills
+pytestmark = pytest.mark.model
 
 UNASKED = ("find_jobs", "prepare", "import_posting", "set_status", "revise")
 NOW = datetime(2026, 10, 26, 9, tzinfo=timezone.utc)   # the world's clock (`NOW` in app/test/world/build.ts)
