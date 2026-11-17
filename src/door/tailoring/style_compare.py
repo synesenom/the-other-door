@@ -16,7 +16,7 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageFilter
 
-from door.tailoring import pdf_render, readability, style_trace
+from door.tailoring import pdf_render, readability, style_icons, style_trace
 
 CAP = 7  # rounds
 WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
@@ -157,7 +157,10 @@ def _icon_pairs(original: list[dict], render: list[dict]) -> tuple[list[dict], i
 
 
 def _texts(style: dict) -> list[dict]:
-    return [r for r in style["runs"] if not r.get("icon")]
+    """The text runs compared: not an icon's glyph, nor level dots drawn with the icon font, which the stylist is not
+    shown either (`style_icons.is_glyph`, as `style_build.original_text`)."""
+    fonts = style_icons.icon_fonts(style["runs"])
+    return [r for r in style["runs"] if not style_icons.is_glyph(r, fonts)]
 
 
 def _photo(original: dict | None, render: dict | None) -> dict | None:
