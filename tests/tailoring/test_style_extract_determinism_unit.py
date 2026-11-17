@@ -34,7 +34,7 @@ def test_a_tie_goes_to_the_main_column_headings_over_a_side_band_s():
 
 def test_the_text_colour_tie_goes_to_the_colour_met_first_under_every_seed():
     code = ("from door.tailoring import style_extract as s;"
-            "print(s.text_color([{'color': '#222222', 'text': 'ab'}, {'color': '#e8625a', 'text': 'cd'}]))")
+            "print(s.colors([{'color': '#222222', 'text': 'ab'}, {'color': '#e8625a', 'text': 'cd'}], [])['text'])")
     outs = set()
     for seed in ("0", "1", "2", "3", "4", "5"):
         env = {**os.environ, "PYTHONHASHSEED": seed, "PYTHONPATH": str(REPO_ROOT / "src")}

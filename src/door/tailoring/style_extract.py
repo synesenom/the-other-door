@@ -573,7 +573,7 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
         return (u["family"], u["size"], u["color"], u["weight"], u["mixed"], u["italic"])
 
     known = {id(u) for u in short if i18n.cv_section_kind(u["text"], _SECTION_KINDS) is not None}
-    body_color = text_color(runs)
+    body_color = colors(runs, [])["text"]
     groups: dict[tuple, list[dict]] = {}
     for u in short:
         groups.setdefault(key(u), []).append(u)
@@ -593,11 +593,6 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
                           "weight": u["weight"], "family": u["family"], "italic": u["italic"], "case": _case(u["text"]),
                           "rule": _rule_under(u, shapes, band), "band": band["kind"] if band else None})
     return found
-
-
-def text_color(runs: list[dict]) -> str:
-    """The colour most characters are set in; a tie goes to the colour met first, never a hash order."""
-    return max(dict.fromkeys(r["color"] for r in runs), key=lambda c: sum(len(r["text"]) for r in runs if r["color"] == c))
 
 
 def heading_style(headings: list[dict]) -> dict | None:
