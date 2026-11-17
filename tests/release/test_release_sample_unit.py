@@ -16,7 +16,7 @@ import pydantic
 import pytest
 
 from door.core import companies, models, profile_loader, stored, tracker
-from release_gate_utils import releases
+from release_gate_utils import DEFAULT, releases
 
 # Fields and files that exist in the current code but not in the newest saved release, as `<Model>.<field>` or the
 # inventory pattern. Emptied when a release is saved (docs/releasing.md).
@@ -27,6 +27,8 @@ NEW_SINCE_RELEASE: set[str] = {
     "profile/style/**",
     # the candidate a build leaves, waiting to be chosen (#151)
     "profile/style.next/**",
+    # the fact check's round counter: v0.2.0 wrote it, but its saved sample was made without it (#140)
+    "jobs/output/*/.facts_rounds",
 }
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).
@@ -124,5 +126,8 @@ def test_every_data_file_the_inventory_names_is_in_the_sample():
 
 
 def test_the_sample_holds_nothing_the_inventory_does_not_name():
-    sample_files = [p.relative_to(NEWEST).as_posix() for p in NEWEST.rglob("*") if p.is_file() and p.name != "expected.json"]
-    assert [f for f in sample_files if stored.named(f) is None] == []
+    """The release's own sample and its `default/` variant (#141)."""
+    for sample in (s for s in (NEWEST, NEWEST / DEFAULT) if s.is_dir()):
+        files = [p.relative_to(sample).as_posix() for p in sample.rglob("*") if p.is_file() and p.name != "expected.json"]
+        files = [f for f in files if not f.startswith(f"{DEFAULT}/")]
+        assert [f for f in files if stored.named(f) is None] == [], sample

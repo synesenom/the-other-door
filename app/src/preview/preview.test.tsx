@@ -266,6 +266,23 @@ describe('scenes', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
+  it('profile-cv-style-refused says a choice that failed in the error box', async () => {
+    mount('profile-cv-style-refused')
+    await pressInOrder(sceneById('profile-cv-style-refused')!.press!)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your choice could not be saved. Try again.')
+    expect(alert).toHaveClass('error')
+  })
+
+  it('profile-cv-forget-failed says a page that could not be forgotten in the error box', async () => {
+    mount('profile-cv-forget-failed')
+    await pressInOrder(sceneById('profile-cv-forget-failed')!.press!)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your pages could not be saved. Try again.')
+    expect(alert).toHaveClass('error')
+    expect(screen.getByRole('button', { name: 'Forget https://janedoe.example/portfolio' })).toBeInTheDocument()
+  })
+
   it('profile-cv-style-earlier can keep the style in use', async () => {
     mount('profile-cv-style-earlier')
     await userEvent.click(await screen.findByRole('button', { name: 'Keep my current style' }))

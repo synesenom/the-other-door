@@ -292,6 +292,12 @@ def test_icons_found_in_the_cv_are_written_by_kind_and_the_others_named(world):
     assert {"email", "phone"} <= set(manifest.icons)
     assert all((world.style / "icons" / name).is_file() for name in manifest.icons.values())
     assert result["dropped_icons"] and all(set(d) == {"near", "reason"} for d in result["dropped_icons"])
+    # the stylist (and the published style.json) sees only the icons it may draw, each with its file (#248)
+    for folder in (world.work, world.style):
+        icons = json.loads((folder / "style.json").read_text())["icons"]
+        assert icons and all(icon["file"] in manifest.icons.values() for icon in icons)
+        dropped = {d["near"] for d in result["dropped_icons"]}
+        assert not [i for i in icons if ((i.get("near") or {}).get("text") or "")[:30] in dropped]
 
 
 def test_an_icon_beside_a_place_name_is_a_location_icon(world):

@@ -7,6 +7,10 @@ network, no `claude`. The data is made up: a config with every `Profile` key set
 status, a story bank, postings in every state, an application ledger with every status and interview rounds, a
 prepared job's output, and a run record. Nothing here may name a real person; addresses are `example.com`.
 
+With `DOOR_SAMPLE=default` the profile is the default one instead (#141): the example config's keys only, no template
+in `profile/` and no built style, so `cv_template` and `cover_letter_template` are null and the templates come from
+the code, as most users have it; `jobs/` is the same.
+
 Written for v0.2.0's API (an older tag cannot run it: it imports `migrations` and sets `preferences`); a later release whose API moved needs this script to follow it, and the next call of
 `save_release_data.py` fails loudly (a missing name) rather than saving something that is not the release's.
 """
@@ -29,6 +33,7 @@ from door.core import workspace  # noqa: E402
 
 assert workspace.HOME == HOME, f"the release reads {workspace.HOME}, not DOOR_HOME={HOME}"
 
+from door.commands import check_facts as check_facts_cmd  # noqa: E402
 from door.commands import find as find_cmd  # noqa: E402
 from door.commands import profile as profile_cmd  # noqa: E402
 from door.commands import stories as stories_cmd  # noqa: E402
@@ -46,6 +51,7 @@ for _hook in ("pre_acquire_hook", "post_release_hook"):  # never a Google Drive:
         setattr(lock, _hook, lambda *args, **kwargs: None)
 
 PROFILE, JOBS = workspace.PROFILE_DIR, workspace.JOBS_DIR
+DEFAULT = os.environ.get("DOOR_SAMPLE") == "default"  # the default profile's variant (#141)
 
 
 def at(days_ago: int, hour: int = 9) -> datetime:
@@ -145,24 +151,33 @@ FIELDS = {
 
 
 def make_profile() -> None:
-    missing = set(Profile.model_fields) - set(FIELDS)
-    assert not missing, f"this release has Profile keys the sample does not set: {sorted(missing)}"
+    """Every `Profile` key set and the user's own templates in profile/; with DEFAULT the example config's keys only, with
+    the sample's name and contact: no template key, no template in profile/ (#141)."""
     from PIL import Image
 
+    if not DEFAULT:
+        missing = set(Profile.model_fields) - set(FIELDS)
+        assert not missing, f"this release has Profile keys the sample does not set: {sorted(missing)}"
     picture = HOME / "picture.png"
     Image.new("RGB", (300, 400), (180, 120, 90)).save(picture)
-    profile_cmd._init_core({}, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    contact = {"name": "Alex Example", "email": "alex.example@example.com"} if DEFAULT else {}
+    profile_cmd._init_core(contact, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
     profile_cmd._save_cv_core(CV)
     profile_cmd._save_photo_core(str(picture))
     picture.unlink()
-    # The templates come from the code since v0.2.0: the keys name the user's own, so the sample keeps a changed copy.
-    for name in ("cv.template.html", "cover-letter.template.html"):
-        own = (workspace.PROFILE_EXAMPLE_DIR / name).read_text(encoding="utf-8") + "<!-- the user's own styling -->\n"
-        (PROFILE / name).write_text(own, encoding="utf-8")
-    profile_cmd._init_core(FIELDS, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    if not DEFAULT:
+        # The templates come from the code since v0.2.0: the keys name the user's own, so the sample keeps a changed copy.
+        for name in ("cv.template.html", "cover-letter.template.html"):
+            own = (workspace.PROFILE_EXAMPLE_DIR / name).read_text(encoding="utf-8") + "<!-- the user's own styling -->\n"
+            (PROFILE / name).write_text(own, encoding="utf-8")
+        profile_cmd._init_core(FIELDS, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
     (PROFILE / "story_bank.md").unlink(missing_ok=True)
     for index, story in enumerate(STORIES):
         stories_cmd._save_story_core(*story, replace_example=index == 0, profile_dir=PROFILE)
+    if DEFAULT:
+        config = json.loads((PROFILE / "config.json").read_text(encoding="utf-8"))
+        assert not {"cv_template", "cover_letter_template"} & set(config), "the default profile sets no template key"
+        assert not list(PROFILE.glob("*.template.*")), "the default profile has no template in profile/"
 
 
 def make_style() -> None:
@@ -324,7 +339,7 @@ def make_output() -> None:
         (folder / "stories.json").write_text(json.dumps([]), encoding="utf-8")
         flagged = facts_mod.check(folder, PROFILE, write=False) or []
         keep = [{**item, "reason": "the team size is from the interview notes, not the CV"} for item in flagged]
-        facts_mod.check(folder, PROFILE, keep=keep)
+        check_facts_cmd._check_facts_core(job_id, keep=keep, jobs_dir=JOBS)  # as the tailor runs it: leaves .facts_rounds
         if sent:
             (folder / "cv.html.bak").write_bytes((folder / "cv.html").read_bytes())  # the version before a revise
             (folder / "photo.jpg").write_bytes((PROFILE / "photo.jpg").read_bytes())
@@ -384,7 +399,8 @@ def make_run_record() -> None:
 
 def main() -> None:
     make_profile()
-    make_style()
+    if not DEFAULT:
+        make_style()
     make_companies()
     # A release's own writes go through `ledger_lock`, which stamps a new jobs/ with its data version first; the sample
     # writes the stores directly, so it stamps the folder as the lock would.

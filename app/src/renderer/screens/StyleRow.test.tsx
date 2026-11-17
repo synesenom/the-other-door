@@ -75,7 +75,9 @@ describe('StyleRow, no style of your own yet', () => {
     expect(h.onChanged).not.toHaveBeenCalled()
     h.chooseStyleFile.mockResolvedValueOnce({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
     await userEvent.click(screen.getByRole('button', { name: 'Use the style of my CV…' }))
-    expect((await screen.findByRole('alert')).textContent).toContain('this PDF is a scan')
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('this PDF is a scan')
+    expect(alert.className).toBe('error') // no field's: the box with the ✕
   })
 
   it('has no way to build on made-up data', async () => {
@@ -119,6 +121,15 @@ describe('StyleRow, a style built and waiting', () => {
     expect(await screen.findByRole('button', { name: 'Print 2 prepared CVs again' })).toBeTruthy()
     expect(calls[0]).toEqual({ style: 'like' })
     expect(h.onChanged).toHaveBeenCalled()
+  })
+
+  it('a choice that fails is said in the error box', async () => {
+    await open({ ...waiting, use_style: () => { throw { message: 'config.json is not writable' } } }, { state: 'ready' })
+    await ready()
+    await userEvent.click(screen.getByRole('button', { name: 'Use this style' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('config.json is not writable')
+    expect(alert.className).toBe('error')
   })
 
   it("keeps The other door's: use_style default", async () => {
@@ -209,6 +220,28 @@ describe('StyleRow, the prepared CVs after a switch', () => {
     expect(await screen.findByText('2 printed again.')).toBeTruthy()
     expect(h.call).toHaveBeenCalledWith('use_style', { style: 'like', rerender: true })
     expect(screen.queryByRole('button', { name: /Print .* again/ })).toBeNull()
+  })
+
+  it('a print that fails is said in the error box, and the offer stays to try again', async () => {
+    let fail = true
+    const h = await open({
+      show_style: both({ candidate: true }),
+      use_style: (a: Record<string, unknown>) => {
+        if (!a['rerender']) return { in_use: 'like', prepared: 2 }
+        if (fail) throw { message: 'The print stopped. Try again.' }
+        return { in_use: 'like', prepared: 2, rerendered: ['a.1', 'a.2'], failed: [] }
+      },
+    }, { state: 'ready' })
+    await ready()
+    await userEvent.click(screen.getByRole('button', { name: 'Use this style' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert.className).toBe('error')
+    fail = false
+    await userEvent.click(screen.getByRole('button', { name: 'Print 2 prepared CVs again' }))
+    expect(await screen.findByText('2 printed again.')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(h.call).toHaveBeenCalledWith('use_style', { style: 'like', rerender: true })
   })
 
   it('says it is busy while it prints', async () => {

@@ -69,7 +69,7 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("jobs/linkedin_discovery.json", LEDGER, "the LinkedIn discovery state an older version kept (copied to jobs/discovery/ on load)"),
     Stored("jobs/skill_aliases.json", LEDGER, "door.core.skill_aliases: {variant: canonical | null}"),
     Stored("jobs/salary.json", LEDGER, "door.core.salary"),
-    Stored("jobs/agents.json", TRANSIENT, "the tailor agent definition prepare hands to claude -p"),
+    Stored("jobs/.tailor/**", TRANSIENT, "door.commands.prepare: the posting copy the tailor reads (posting.json) and the agent definitions handed to claude -p (agents.json), one folder per job", "removed when the tailor ends"),
     Stored("jobs/.data_version", LEDGER, "door.core.migrations: `<major>.<n>`, the jobs folder's data version"),
     Stored("jobs/.upgrading", TRANSIENT, "door.core.migrations: the backup's path while an upgrade runs; left out of export"),
     # --- jobs/ records ---
@@ -89,6 +89,7 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("jobs/output/*/*.png", GENERATED, "page images compile renders for the tailor"),
     Stored("jobs/output/*/photo.*", GENERATED, "the profile's photo, copied beside the page for the printed CV"),
     Stored("jobs/output/*/facts.json", GENERATED, "door.tailoring.facts: what cv.md and the story bank do not back"),
+    Stored("jobs/output/*/.facts_rounds", GENERATED, "door.commands.check_facts: the fact check rounds used in this prepare run, a number", "cleared when a fresh tailor run starts"),
     Stored("jobs/output/*/stories.json", GENERATED, "the stories the tailor wrote, until prepare adds them to the story bank"),
     Stored("jobs/output/*/sent/**", GENERATED, "the materials as sent, with their sha256 in the ledger"),
     Stored("jobs/output/*/*.json", GENERATED, "other notes the tailor or prepare leaves for the job"),
