@@ -90,15 +90,24 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
 def page(body: str, template: str, folder: Path, *, photo: Path | None, columns: templates.Columns | None,
          language: str) -> tuple[str, str, str | None]:
     """The page `compile` prints for a body: the photo placed (copied into `folder`), the two columns, the language's
-    typography, wrapped in `template`. Returns the page, the body as placed and the photo's file name (None when it
-    was not placed).
+    typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
+    the body as placed and the photo's file name (None when it was not placed).
 
     Raises:
         ValueError: the template cannot hold the body.
     """
     built, name = _with_photo(body, template, folder, photo)
     placed = _place_columns(built, columns)
-    return _wrap(template, typography.apply(placed, language), language), placed, name
+    return _wrap(template, _glue_separators(typography.apply(placed, language)), language), placed, name
+
+
+_SEP_SPACE = re.compile(r'(<span class="sep">) ')
+
+
+def _glue_separators(body: str) -> str:
+    """`body` with the space that opens an entry heading's separator (`<span class="sep"> | </span>`) a no-break one:
+    a heading too long for its line breaks after the separator, never before it (#246)."""
+    return _SEP_SPACE.sub("\\1&#160;", body)
 
 
 def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,

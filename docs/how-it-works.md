@@ -13,7 +13,8 @@
    written in, a reviewer agent critiques them, and they are printed to PDF with a headless Chromium. A French ad gets French
    section names, the letter's place and date line, "Objet :" and "Madame, Monsieur,", and French
    typography (`compile` sets a narrow no-break space before `: ; ! ?` and inside « », never inside a link or an
-   identifier, and the page's language and the letter's date). The job country's CV conventions (`[cv]` in `src/door/i18n/country/<cc>.toml`: photo, date of
+   identifier, and the page's language and the letter's date; a no-break space before an entry heading's ` | `
+   separator, so a line never starts with it). The job country's CV conventions (`[cv]` in `src/door/i18n/country/<cc>.toml`: photo, date of
    birth, page limit, date format) go to the tailor with the job; the photo you added is copied beside the
    page by `compile` (never written by the model) only where they allow one, and the first sent status keeps
    it with the materials in `sent/` and records its sha256.
@@ -153,7 +154,8 @@ usage feature `style`, shown as "Building a CV template") writes an HTML and CSS
 draft is printed with the pinned Chromium and compared with your PDF page by page; when no draft comes close to
 your PDF's look, the build fails rather than offer a style unlike your CV (when the fonts could not be
 downloaded, it says so: try again later). The closest one is stress-tested on
-variants of `cv.md` (`photo`: with a photo; `fewer`: one entry a section; `long_title`: a very long job title; `extra_section`: one more section; `french`: a French paragraph first). Only a template that passes is kept, in
+variants of `cv.md` (`photo`: with a photo; `fewer`: one entry a section; `long_title`: a very long job title; `extra_section`: one more section; `french`: a French paragraph first); printed without a photo, a variant must draw nothing in the photo's place, and
+so must the letter. Only a template that passes is kept, in
 `profile/style.next/`; a build that fails writes nothing and says nothing in the app. A two-column result may be read
 less well by some application systems.
 

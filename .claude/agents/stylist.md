@@ -26,7 +26,7 @@ The task names the files in the current folder; open them with the Read tool:
 One page of HTML with `<<lang>>` in `<html lang>` and `<<body>>` once, on a line of its own in `<body>`. Everything else is CSS around that body: you write no text, no script, no `<link>`, no `<img>`, no SVG, no `@import`, no `on*` attribute, no `content:` with letters or digits in it. Fonts and icons are loaded only as `url(/fonts/<file>)` and `url(/icons/<file>)` of the files named; use an icon as a `background` or a `mask` on a contact span's `::before` by its kind. Put the CSS in one `<style>` in `<head>`. Keep, as the shipped template does:
 
 - `@page { size: <the page size the task names>; margin: ... }` set from the CV's margins; `html { font-synthesis: none; hyphens: manual; }`;
-- a `.photo` rule (the CV's photo, if any, is an `<img class="photo">` placed in the header; the rule sizes and crops it);
+- a `.photo` rule (the CV's photo, if any, is an `<img class="photo">` placed in the header; the rule sizes and crops it). The photo's place is that `img` alone: no background, border, frame or box drawn for it on another element or a `::before`, so a CV with no photo prints nothing there (the builder prints one with no photo and refuses a box where the original's photo is);
 - a first HTML comment listing the building blocks and every class below (the tailor reads it to write the body).
 
 The body is written later by another agent in these building blocks only; style them all:
@@ -73,7 +73,7 @@ The task gives the measured differences between the original and your last print
 
 ## The letter
 
-When the task asks for the matching cover letter template, it gives the final CV template and the default letter template (`cover-letter.template.html`, its building blocks and its comment). Write the letter template in the same look: the same `@font-face` rules and fonts, colours, margins, header and contact line (`.letter-header` for `.cv-header`), the default's structure for the recipient, date, paragraphs and closing, no `.photo`, one page. Reply with one line and one block, nothing after it:
+When the task asks for the matching cover letter template, it gives the final CV template and the default letter template (`cover-letter.template.html`, its building blocks and its comment). Write the letter template in the same look: the same `@font-face` rules and fonts, colours, margins, header and contact line (`.letter-header` for `.cv-header`), the default's structure for the recipient, date, paragraphs and closing, no `.photo` and nothing drawn in the CV photo's place (no box, disc or frame where it was: the letter is printed and checked for one), one page. Reply with one line and one block, nothing after it:
 
 ```letter
 the whole letter template page

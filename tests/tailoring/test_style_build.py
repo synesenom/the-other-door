@@ -107,3 +107,18 @@ def test_a_print_with_the_side_column_on_the_wrong_side_is_found_whatever_its_he
                                             columns=templates.Columns(side=["skills", "languages"]))
     problems = style_build.column_problems(style, style_extract.extract(pdf), placed)
     assert any('"Skills"' in p for p in problems) and any('"Languages"' in p for p in problems), problems
+
+
+
+@pytest.mark.parametrize("css", ["border-radius: 50%; background: #ccc", "border-radius: 12pt; background: #ccc",
+                                 "border-radius: 50%; border: 3pt solid #999", "background: #ccc"])
+def test_a_box_drawn_where_the_photo_is_is_found_whatever_its_corners(tmp_path, css):
+    """#246: a round or rounded box prints as a path of many segments (no kind); it is found all the same."""
+    body = ('<header class="cv-header"><h1>Ada Lovelace</h1></header><h2>Education</h2><p>'
+            + "Studied things at a university in a city. " * 30 + "</p>")
+    template = ('<!DOCTYPE html><html lang="<<lang>>"><head><meta charset="utf-8"><style>@page { size: A4; margin: 0 } '
+                'body { margin: 40pt } .photo { width: 1pt } .cv-header::before { content: ""; display: block; '
+                "width: 98pt; height: 98pt; " + css + " }</style></head><body><<body>></body></html>")
+    pdf = compile_cmd.print_page(body, template, EXAMPLE / "cv.template.html", "en", tmp_path, "r")[0]
+    style = {"photo": {"page": 1, "bbox": [40.0, 40.0, 138.0, 138.0], "shape": "rect"}}
+    assert style_build.photo_box_problems(style, style_extract.painted(pdf))

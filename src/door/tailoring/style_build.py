@@ -311,6 +311,40 @@ def body_column_problems(style: dict, body: str, columns: templates.Columns | No
     return found
 
 
+def photo_box_problems(style: dict, painted: list[dict]) -> list[str]:
+    """A box a print with no photo (`painted`, `style_extract.painted` of it) draws where the original's photo is
+    (#246): a path on its page, of any kind (a disc or a rounded box too), that covers half the photo's box or more,
+    is no more than twice its size (a side band's background is far larger) and shows: a stroke, or a fill unlike
+    the page's background and the fill of any larger path under it. `compile` places `<img class="photo">` only when
+    there is a photo, so anything drawn there without it is the template's own and prints on every CV (or letter).
+    `[]` when the original has no photo or nothing shows there."""
+    photo = style.get("photo")
+    if not photo or len(painted) < photo["page"]:
+        return []
+    page = painted[photo["page"] - 1]
+    x0, y0, x1, y1 = photo["bbox"]
+    area = (x1 - x0) * (y1 - y0)
+
+    def size(box):
+        return (box[2] - box[0]) * (box[3] - box[1])
+
+    def under(path):  # the fills a path stands on: the page's and those of larger paths around it
+        a, b, c, d = path["bbox"]
+        return {page["background"] or "#ffffff"} | {
+            o["fill"] for o in page["paths"] if o["fill"] and size(o["bbox"]) > size(path["bbox"])
+            and o["bbox"][0] <= a and o["bbox"][1] <= b and o["bbox"][2] >= c and o["bbox"][3] >= d}
+
+    for path in page["paths"]:
+        a, b, c, d = path["bbox"]
+        if size(path["bbox"]) > 2 * area or not (path.get("stroke") or (path.get("fill") and path["fill"] not in under(path))):
+            continue
+        if max(0, min(c, x1) - max(a, x0)) * max(0, min(d, y1) - max(b, y0)) >= area / 2:
+            return [f"with no photo, the page still draws a box at x {a:.0f}-{c:.0f} pt, y {b:.0f}-{d:.0f} pt, where the "
+                    f"original's photo is: the photo's place is the img.photo alone (size it in .photo; no background, "
+                    f"border or shape drawn for it on another element)"]
+    return []
+
+
 # ---------- the stress variants ----------
 
 _LONG_ROLE = "Senior Principal Engineering Manager for Distributed Data Platforms and Cross-Functional Delivery Programmes"
@@ -571,7 +605,8 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
 def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     """The failures of the template printed with the variants of `cv_md` (`_stress_variants`), through the same placing,
     photo and typography steps `compile` takes, no model: a print that fails, text lost off the page (`readability`'s
-    checks, a last page nearly empty excepted), a section in the other column's place (`column_problems`), a photo not placed, too many pages (the compact variant must fit the
+    checks, a last page nearly empty excepted), a section in the other column's place (`column_problems`), a box drawn where the original's photo is in a print with
+    no photo (`photo_box_problems`), a photo not placed, too many pages (the compact variant must fit the
     manifest's `max_pages`, the rest `templates.MAX_PAGES`)."""
     name = (_NAME.search(cv_md) or [None, None])[1]
     picture = s.work / "stress-photo.jpg"
@@ -584,7 +619,8 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
                 columns=s.manifest.columns, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
-            found += column_problems(s.style, style_extract.extract(pdf), placed)
+            found += column_problems(s.style, style_extract.extract(pdf), placed) + (
+                [] if v["photo"] else photo_box_problems(s.style, style_extract.painted(pdf)))
             pages = pdf_render.get_page_count(pdf)
         except (html_pdf.PrintError, ValueError) as exc:
             failures.append(f"{variant}: printing failed: {exc}")
@@ -618,6 +654,7 @@ def _letter(s: _Session, template: str, cv_md: str) -> tuple[str | None, list[st
             try:
                 pdf = compile_cmd.print_page(body, candidate, s.work / _CV_FILE, "en", s.work / "letter", "letter")[0]
                 problems = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, body, None)]
+                problems += photo_box_problems(s.style, style_extract.painted(pdf))
                 if (pages := pdf_render.get_page_count(pdf)) != 1:
                     problems.append(f"the sample letter prints on {pages} pages, it must be one")
             except (html_pdf.PrintError, ValueError) as exc:

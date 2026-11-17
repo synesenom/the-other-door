@@ -275,6 +275,54 @@ def test_the_stylist_is_told_on_which_side_the_side_column_is_and_that_div_main_
     assert "on the left" in text and "div.main first" in text
 
 
+# ---------- the photo's place with no photo (#246) ----------
+
+_PHOTO = {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shape": "rect"}
+
+
+def _shape(bbox, fill="#b0b0b0", stroke=None, kind="box"):
+    return {"kind": kind, "bbox": bbox, "fill": fill, "stroke": stroke}
+
+
+def _pages(*paths, background=None, page=1):
+    """`style_extract.painted` of a print: `paths` on page `page`, the other pages blank."""
+    return [{"background": background, "paths": list(paths) if n == page else []} for n in range(1, max(page, 1) + 1)]
+
+
+def test_a_print_with_no_photo_that_draws_a_box_where_the_original_s_photo_is_is_named():
+    problems = style_build.photo_box_problems({"photo": _PHOTO}, _pages(_shape([36, 160, 132, 296])))
+    assert len(problems) == 1 and "img.photo" in problems[0] and "x 36-132" in problems[0]
+
+
+def test_a_frame_drawn_round_the_photo_s_place_is_named_too():
+    assert style_build.photo_box_problems({"photo": _PHOTO}, _pages(_shape([33, 157, 135, 299], fill=None, stroke="#888888")))
+
+
+def test_a_disc_or_a_rounded_box_a_path_of_no_kind_is_named_too():
+    assert style_build.photo_box_problems({"photo": _PHOTO}, _pages(_shape([36, 160, 132, 296], kind=None)))
+
+
+def test_a_side_band_a_rule_or_a_box_elsewhere_is_not_the_photo_s_box():
+    paths = [_shape([0, 0, 143, 842], fill="#eeeeee"),  # a side band's background, far larger than the photo
+             _shape([35, 300, 133, 301]),  # a rule under the photo's place
+             _shape([200, 160, 298, 298])]  # a box beside it
+    assert style_build.photo_box_problems({"photo": _PHOTO}, _pages(*paths)) == []
+    assert style_build.photo_box_problems({"photo": _PHOTO}, _pages(_shape([36, 160, 132, 296]), page=2)) == []
+
+
+def test_a_box_filled_with_the_colour_under_it_draws_nothing_to_see():
+    page = _shape([36, 160, 132, 296], fill="#ffffff")
+    assert style_build.photo_box_problems({"photo": _PHOTO}, _pages(page, background="#ffffff")) == []
+    band = [_shape([0, 0, 180, 842], fill="#20304a"), _shape([36, 160, 132, 296], fill="#20304a")]
+    assert style_build.photo_box_problems({"photo": _PHOTO}, _pages(*band)) == []
+    framed = _shape([36, 160, 132, 296], fill="#ffffff", stroke="#888888")  # its frame shows
+    assert style_build.photo_box_problems({"photo": _PHOTO}, _pages(framed, background="#ffffff"))
+
+
+def test_an_original_with_no_photo_has_no_photo_box_problem():
+    assert style_build.photo_box_problems({"photo": None}, _pages(_shape([36, 160, 132, 296]))) == []
+
+
 def _run(text, bbox, page=1, size=10.0):
     return {"page": page, "text": text, "bbox": bbox, "size": size}
 
