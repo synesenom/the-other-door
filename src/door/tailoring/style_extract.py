@@ -458,7 +458,8 @@ def column_bands(pages: list[dict], shapes: list[dict]) -> dict:
     """The column bands of the text: stacks of lines apart by a gap. A band needs four lines that stand together
     (the dates down the right of a single column, or a note in the margin, are no column) and a twelfth of the
     lines. One band is `only`; with more, the narrowest, if under 40% of the text's width or on a coloured box, is
-    the `side`, the others `main`. `background` is the fill of a box covering most of the page's height."""
+    the `side`, the others `main`. Two bands where neither qualifies: the one with more whole-line section-kind
+    titles is the side, the right one on a tie. `background` is the fill of a box covering most of the page's height."""
     runs = [r for p in pages for r in p["runs"] if not r["rotated"] and not r["icon"]
             and not (len(r["text"]) <= 1 or style_icons.only_bullets(r["text"]))]
     if not runs:
@@ -472,9 +473,11 @@ def column_bands(pages: list[dict], shapes: list[dict]) -> dict:
         members[sum(run["bbox"][0] >= (a + b) / 2 for a, b in gaps)].append(run)
     total = sum(len(line_groups(m)) for m in members) or 1
     bands = []
+    kept: list[list[dict]] = []
     for member in members:
         lines = line_groups(member)
         if member and _stacked(lines, body) >= 4 and len(lines) >= total / 12:
+            kept.append(member)
             bands.append({"x0": round(_percentile([r["bbox"][0] for r in member], 0.05), 1),
                           "x1": round(_percentile([r["bbox"][2] for r in member], 0.95), 1),
                           "lines": len(lines)})
@@ -495,6 +498,9 @@ def column_bands(pages: list[dict], shapes: list[dict]) -> dict:
         band["background"] = box["fill"] if box else None
         side = band is narrowest and len(bands) > 1 and (band["x1"] - band["x0"] < 0.4 * width or box)
         band["kind"] = "only" if len(bands) == 1 else "side" if side else "main"
+    if len(bands) == 2 and all(b["kind"] == "main" for b in bands):
+        titles = [sum(_is_section_title(u["text"]) for u in _line_units(m)) for m in kept]
+        bands[0 if titles[0] > titles[1] else 1]["kind"] = "side"
     return {"count": len(bands), "bands": [{k: b[k] for k in ("x0", "x1", "kind", "background", "lines")} for b in bands]}
 
 
@@ -528,6 +534,10 @@ def _line_units(runs: list[dict]) -> list[dict]:
                       "bbox": [min(r["bbox"][0] for r in line), min(r["bbox"][1] for r in line),
                                max(r["bbox"][2] for r in line), max(r["bbox"][3] for r in line)]})
     return units
+
+
+def _is_section_title(text: str) -> bool:
+    return i18n.cv_section_kind(text, _SECTION_KINDS) is not None
 
 
 def find_name(runs: list[dict]) -> dict | None:
@@ -572,7 +582,7 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
     def key(u: dict) -> tuple:
         return (u["family"], u["size"], u["color"], u["weight"], u["mixed"], u["italic"])
 
-    known = {id(u) for u in short if i18n.cv_section_kind(u["text"], _SECTION_KINDS) is not None}
+    known = {id(u) for u in short if _is_section_title(u["text"])}
     body_color = colors(runs, [])["text"]
     groups: dict[tuple, list[dict]] = {}
     for u in short:

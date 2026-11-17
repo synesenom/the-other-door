@@ -607,3 +607,10 @@ def test_a_round_whose_sample_print_reads_letters_apart_is_not_kept_and_the_next
     assert result["rounds"] == 2 and len(result["scores"]) == 1  # the spaced round is not one to keep
     second = stylist.calls[1]["input"]
     assert "letters apart" in second and '"P r o f i l e"' in second and "letter-spacing" in second
+
+
+def test_a_cv_with_two_equal_columns_is_rebuilt_with_a_side_column(world):
+    assert style_build._has_side(style_build.style_extract.extract(STYLES / "html-equal-columns.pdf"))
+    assert world.build("html-equal-columns", Stylist(*GOOD))["state"] == "ready"
+    manifest = templates.manifest(world.style / "cv.template.html")
+    assert manifest.columns.side and manifest.columns.headings

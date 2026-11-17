@@ -61,6 +61,8 @@ def test_the_accent_colour_is_found_within_a_few_steps_a_channel(styles, stem):
 def test_the_columns_icons_photo_and_heading_case(styles, stem):
     style, expected = styles[stem], EXPECTED[stem]
     assert style["columns"]["count"] == expected["columns"]
+    sides = [i for i, b in enumerate(style["columns"]["bands"]) if b["kind"] == "side"]
+    assert {None: [], "left": [0], "right": [1]}[expected["side"]] == sides
     icons = expected["icons"]
     low, high = icons if isinstance(icons, list) else (icons, icons)
     assert low <= len(style["icons"]) <= high
