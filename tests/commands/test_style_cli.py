@@ -20,7 +20,7 @@ from door.cli import cli
 from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, lock, phone, workspace
+from door.core import chromium, claude_cli, lock, phone, workspace
 from door.tailoring import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR
@@ -146,6 +146,31 @@ def test_a_scan_and_a_linkedin_export_are_named_in_whole_sentences(home, world):
     assert mcp_server.build_style(str(STYLES / "html-three-columns.pdf")) == {
         "error": "html-three-columns.pdf has three or more columns, which the template model cannot place."}
     assert world.spawned == []
+
+
+def test_a_cv_whose_structure_could_not_be_read_is_refused_in_words_and_nothing_starts(home, world, monkeypatch):
+    from door.tailoring import style_structure
+
+    def broken(text):
+        raise claude_cli.ClaudeError("claude -p timed out after 60s")
+
+    monkeypatch.setattr(style_structure, "_ask", broken)
+    assert mcp_server.build_style(str(STYLES / "html-word-two-column.pdf")) == {
+        "error": "could not read the CV's structure: claude -p timed out after 60s"}
+    assert world.spawned == []
+
+
+def test_the_intake_leaves_the_structure_cached_so_the_build_makes_no_second_call(home, world, monkeypatch):
+    from door.tailoring import style_structure
+    from style_structure_utils import fake_ask
+
+    monkeypatch.setattr(style_structure, "_cache_dir", lambda: home / ".style" / "structure")
+    asked = []
+    monkeypatch.setattr(style_structure, "_ask", lambda text: asked.append(text) or fake_ask(text))
+    mcp_server.build_style(str(STYLES / "html-word-two-column.pdf"))
+    assert len(asked) == 1 and len(list((home / ".style" / "structure").glob("*.json"))) == 1
+    style_structure.structure_for(STYLES / "html-word-two-column.pdf")  # what the detached build reads
+    assert len(asked) == 1
 
 
 def test_a_file_that_is_gone_is_named_not_its_path(home, world, tmp_path):

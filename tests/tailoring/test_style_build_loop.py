@@ -219,6 +219,30 @@ def test_a_cv_with_no_style_to_copy_fails_in_words_without_asking_the_model(worl
     assert result["state"] == "failed" and result["problems"] == [words] and stylist.calls == []
 
 
+def test_a_structure_the_model_could_not_read_fails_the_build_in_words_and_writes_nothing(world, monkeypatch):
+    from door.tailoring import style_structure
+
+    def broken(text):
+        raise claude_cli.ClaudeError("claude -p timed out after 60s")
+
+    monkeypatch.setattr(style_structure, "_ask", broken)
+    stylist = Stylist("unused")
+    result = world.build("html-word-two-column", stylist)
+    assert result["state"] == "failed" and stylist.calls == []
+    assert result["problems"] == ["could not read the CV's structure: claude -p timed out after 60s"]
+    assert not world.style.exists() and not world.work.exists()
+
+
+def test_a_build_asks_the_model_for_the_structure_once(world, monkeypatch):
+    from door.tailoring import style_structure
+    from style_structure_utils import fake_ask
+
+    asked = []
+    monkeypatch.setattr(style_structure, "_ask", lambda text: asked.append(text) or fake_ask(text))
+    world.build("html-word-two-column", Stylist(*GOOD))
+    assert len(asked) == 1  # the round prints are read with no structure: no model, no second call
+
+
 def test_a_file_that_is_not_a_pdf_fails_without_asking_the_model(world, tmp_path):
     word = tmp_path / "cv.docx"
     word.write_bytes(b"PK")

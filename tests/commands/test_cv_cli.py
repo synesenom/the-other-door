@@ -296,6 +296,26 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
     assert [s.get("style") for s in result["sources"]] == [True, False, False, None, False]
 
 
+def test_a_linkedin_export_has_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
+    _answer(monkeypatch)
+    linkedin = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "linkedin-like.pdf"
+    result = cv_cmd._draft_cv_core([str(linkedin)], profile_dir=env.profile_dir)
+    assert [s["style"] for s in result["sources"]] == [False] and result["sources"][0]["chars"] > 0
+
+
+def test_a_failed_structure_call_means_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
+    from door.tailoring import style_structure
+
+    def broken(text):
+        raise claude_cli.ClaudeError("claude -p timed out after 60s")
+
+    _answer(monkeypatch)
+    monkeypatch.setattr(style_structure, "_ask", broken)
+    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
+    assert [s["style"] for s in result["sources"]] == [False] and result["sources"][0]["chars"] > 0
+
+
 def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
     """Its text (the icon boxes) is one extract (#298: a style extract is the slow part); its style verdict is the
     structure's (`style_structure`), which makes no second extract."""
