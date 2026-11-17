@@ -4,11 +4,12 @@
 A caller opens a `staging` folder (a unique `.part` folder inside its destination, removed afterwards, the ones a
 killed install left swept first), `download`s its pinned files into it, each checked against its sha256, and then
 does its own steps (unpack, extract, chmod) and moves the result in. A failure leaves the destination as it was.
-`http_get` is the one network call, the one place a test replaces.
+`http_get` is the one network call, looked up when `download` runs: the one place a test replaces.
 """
 
 from __future__ import annotations
 
+import glob
 import hashlib
 import shutil
 import tempfile
@@ -35,10 +36,11 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def sweep_stale_parts(dest: Path) -> None:
-    """Remove the staging folders a killed install left in `dest`, never one still in use."""
+def _sweep_stale_parts(dest: Path, prefix: str) -> None:
+    """Remove the `prefix` staging folders a killed install left in `dest`, never one still in use, and never
+    another tool's (cloudflared's `dest` is the shared ~/.local/bin)."""
     cutoff = time.time() - STALE_PART_SECONDS
-    for part in Path(dest).glob("*.part"):
+    for part in Path(dest).glob(f"{glob.escape(prefix)}*.part"):
         if part.is_dir() and part.stat().st_mtime < cutoff:
             shutil.rmtree(part, ignore_errors=True)
 
@@ -46,10 +48,11 @@ def sweep_stale_parts(dest: Path) -> None:
 @contextmanager
 def staging(dest: Path, prefix: str) -> Iterator[Path]:
     """A staging folder unique to this process inside `dest` (made if missing), so two installs never share a
-    half-written file; removed when the block ends, whatever happened."""
+    half-written file; removed when the block ends, whatever happened. The ones of `prefix` a killed install
+    left are swept first."""
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
-    sweep_stale_parts(dest)
+    _sweep_stale_parts(dest, prefix)
     folder = Path(tempfile.mkdtemp(prefix=prefix, suffix=".part", dir=dest))
     try:
         yield folder
@@ -57,15 +60,14 @@ def staging(dest: Path, prefix: str) -> Iterator[Path]:
         shutil.rmtree(folder, ignore_errors=True)
 
 
-def download(items, folder: Path, fetch=None) -> None:
+def download(items, folder: Path) -> None:
     """Fetch each `(url, name, sha256)` of `items` to `folder / name` and check it against its pin.
 
     Raises:
         ChecksumError: a file does not match its pin.
         OSError: a download failed.
     """
-    get = fetch or http_get
     for url, name, digest in items:
-        get(url, Path(folder) / name)
+        http_get(url, Path(folder) / name)
         if sha256(Path(folder) / name) != digest:
             raise ChecksumError(f"{name} does not match the pinned checksum; nothing was written")

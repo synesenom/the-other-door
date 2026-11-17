@@ -202,7 +202,7 @@ def plan(fonts: list[dict], measured: dict | None = None, *, data: dict | None =
 
 # ---------- fetch ----------
 
-def fetch(plan: list[dict], dest: Path, *, fetch=None) -> list[Path]:
+def fetch(plan: list[dict], dest: Path) -> list[Path]:
     """Download what `plan` names into `dest` (the font files and each family's licence beside them) and return the
     font files. A file there with the pinned hash is left alone; every download is checked against the pin before
     anything is moved in, so a bad one leaves `dest` as it was.
@@ -220,7 +220,7 @@ def fetch(plan: list[dict], dest: Path, *, fetch=None) -> list[Path]:
     if missing:
         try:
             with pinned.staging(dest, ".fonts.") as staging:
-                pinned.download(missing, staging, fetch)
+                pinned.download(missing, staging)
                 for _, name, _ in missing:
                     (staging / name).replace(dest / name)
         except (OSError, pinned.ChecksumError) as exc:

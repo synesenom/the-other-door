@@ -89,7 +89,7 @@ def _remove_other_versions(dest: Path) -> None:
             shutil.rmtree(other, ignore_errors=True)
 
 
-def install(dest: Path, fetch=None) -> None:
+def install(dest: Path) -> None:
     """Download the pinned zip, check its sha256 and unpack it into `dest` (a no-op when there)."""
     key = platform_key()
     if key is None:
@@ -102,7 +102,7 @@ def install(dest: Path, fetch=None) -> None:
     try:
         with pinned.staging(dest, f"{folder.name}.") as staging:
             part = staging / "chromium.zip"
-            pinned.download([(download_url(key), part.name, pin()["platforms"][key]["sha256"])], staging, fetch)
+            pinned.download([(download_url(key), part.name, pin()["platforms"][key]["sha256"])], staging)
             with zipfile.ZipFile(part) as z:
                 for name in z.namelist():
                     target = (staging / name).resolve()

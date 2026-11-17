@@ -36,31 +36,36 @@ def test_a_staging_folder_is_removed_when_the_step_fails(tmp_path):
     assert list(tmp_path.iterdir()) == []
 
 
-def test_staging_sweeps_a_stale_part_folder_and_keeps_a_fresh_one(tmp_path):
-    stale, fresh = tmp_path / "a.part", tmp_path / "b.part"
-    for p in (stale, fresh):
-        p.mkdir()
-    old = time.time() - 2 * pinned.STALE_PART_SECONDS
-    os.utime(stale, (old, old))
+def _aged(path, seconds):
+    path.mkdir()
+    old = time.time() - seconds
+    os.utime(path, (old, old))
+    return path
+
+
+def test_staging_sweeps_its_own_stale_part_folders_and_keeps_a_fresh_one(tmp_path):
+    stale = _aged(tmp_path / "x.a.part", 2 * pinned.STALE_PART_SECONDS)
+    fresh = _aged(tmp_path / "x.b.part", 0)
     with pinned.staging(tmp_path, "x."):
         assert not stale.exists() and fresh.exists()
 
 
-def test_download_fetches_each_item_into_the_staging_folder_checked(tmp_path):
+def test_staging_leaves_another_tools_stale_part_folder_alone(tmp_path):
+    """A shared destination (cloudflared's ~/.local/bin) may hold another tool's `.part` folder."""
+    foreign = _aged(tmp_path / "other.a.part", 2 * pinned.STALE_PART_SECONDS)
+    with pinned.staging(tmp_path, "x."):
+        pass
+    assert foreign.exists()
+
+
+def test_download_fetches_each_item_into_the_folder_checked(tmp_path, monkeypatch):
     files = {"https://h/a": b"A", "https://h/b": b"B"}
-    pinned.download([(url, url[-1], _sha(data)) for url, data in files.items()], tmp_path,
-                    fetch=lambda url, to: to.write_bytes(files[url]))
+    monkeypatch.setattr(pinned, "http_get", lambda url, to: to.write_bytes(files[url]))
+    pinned.download([(url, url[-1], _sha(data)) for url, data in files.items()], tmp_path)
     assert (tmp_path / "a").read_bytes() == b"A" and (tmp_path / "b").read_bytes() == b"B"
 
 
-def test_download_refuses_a_file_that_does_not_match_its_pin(tmp_path):
+def test_download_refuses_a_file_that_does_not_match_its_pin(tmp_path, monkeypatch):
+    monkeypatch.setattr(pinned, "http_get", lambda url, to: to.write_bytes(b"A"))
     with pytest.raises(pinned.ChecksumError, match="b does not match the pinned checksum"):
-        pinned.download([("https://h/a", "a", _sha(b"A")), ("https://h/b", "b", _sha(b"B"))], tmp_path,
-                        fetch=lambda url, to: to.write_bytes(b"A"))
-
-
-def test_download_uses_http_get_by_default_the_one_place_tests_patch(tmp_path, monkeypatch):
-    urls = []
-    monkeypatch.setattr(pinned, "http_get", lambda url, to: (urls.append(url), to.write_bytes(b"A")))
-    pinned.download([("https://h/a", "a", _sha(b"A"))], tmp_path)
-    assert urls == ["https://h/a"]
+        pinned.download([("https://h/a", "a", _sha(b"A")), ("https://h/b", "b", _sha(b"B"))], tmp_path)

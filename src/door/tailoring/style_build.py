@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 import re
 import shutil
-import tempfile
 from pathlib import Path
 
 from PIL import Image
@@ -702,10 +701,7 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
     Raises:
         OSError: the files could not be written or moved.
     """
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    pinned.sweep_stale_parts(profile_dir)
-    staging = Path(tempfile.mkdtemp(prefix=".style.", suffix=".part", dir=profile_dir))
-    try:
+    with pinned.staging(profile_dir, ".style.") as staging:
         _write(staging / _CV_FILE, cv)
         _write(staging / _LETTER_FILE, letter)
         _write(staging / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
@@ -715,8 +711,6 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
             if (work / folder).is_dir():
                 shutil.copytree(work / folder, staging / folder, ignore=shutil.ignore_patterns("*.part"))
         move_in(staging, profile_dir, templates.CANDIDATE)
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
 
 
 def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap: int, result: dict) -> None:

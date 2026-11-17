@@ -125,7 +125,7 @@ def _arch(machine: str) -> str:
     return "arm64" if machine.lower() in ("arm64", "aarch64") else "x86_64"
 
 
-def install_cloudflared(dest: Path | None = None, *, fetch=None, platform: str | None = None, machine: str | None = None,
+def install_cloudflared(dest: Path | None = None, *, platform: str | None = None, machine: str | None = None,
                         pins: dict = CLOUDFLARED) -> Path:
     """Download the pinned cloudflared for this system, check its digest, put it in `dest` (~/.local/bin)."""
     import platform as platform_mod
@@ -140,7 +140,7 @@ def install_cloudflared(dest: Path | None = None, *, fetch=None, platform: str |
     dest = Path(dest or _bin_dir())
     target = dest / ("cloudflared.exe" if system == "windows" else "cloudflared")
     with pinned.staging(dest, ".cloudflared.") as staging:
-        pinned.download([(url, asset, digest)], staging, fetch)
+        pinned.download([(url, asset, digest)], staging)
         staged = staging / target.name
         if asset.endswith(".tgz"):
             with tarfile.open(staging / asset, mode="r:gz") as tar:

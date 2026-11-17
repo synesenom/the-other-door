@@ -10,6 +10,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from door.core import pairing, phone
+from door.core import pinned as pinned_mod
 
 
 class Proc:
@@ -216,7 +217,7 @@ def test_status_lists_the_phones_and_the_connection(tmp_path):
     assert s["web_built"] is False
 
 
-def test_cloudflared_is_installed_from_its_pinned_release_and_checked(tmp_path):
+def test_cloudflared_is_installed_from_its_pinned_release_and_checked(tmp_path, monkeypatch):
     payload = b"\x7fELF fake cloudflared"
     asset = phone.CLOUDFLARED["linux-x86_64"]
 
@@ -224,16 +225,17 @@ def test_cloudflared_is_installed_from_its_pinned_release_and_checked(tmp_path):
         assert url.endswith(asset[0]) and phone.CLOUDFLARED_VERSION in url
         to.write_bytes(payload)
 
+    monkeypatch.setattr(pinned_mod, "http_get", fetch)
     with pytest.raises(ValueError, match="checksum"):
-        phone.install_cloudflared(tmp_path, fetch=fetch, platform="linux", machine="x86_64")
+        phone.install_cloudflared(tmp_path, platform="linux", machine="x86_64")
     assert list(tmp_path.iterdir()) == []   # no binary, no staging folder
     pinned = {"linux-x86_64": (asset[0], hashlib.sha256(payload).hexdigest())}
-    path = phone.install_cloudflared(tmp_path, fetch=fetch, platform="linux", machine="x86_64", pins=pinned)
+    path = phone.install_cloudflared(tmp_path, platform="linux", machine="x86_64", pins=pinned)
     assert path.read_bytes() == payload and path.stat().st_mode & 0o111
     assert [p.name for p in tmp_path.iterdir()] == ["cloudflared"]
 
 
-def test_a_macos_cloudflared_comes_out_of_its_archive(tmp_path):
+def test_a_macos_cloudflared_comes_out_of_its_archive(tmp_path, monkeypatch):
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
         data = b"macho"
@@ -243,8 +245,8 @@ def test_a_macos_cloudflared_comes_out_of_its_archive(tmp_path):
     blob = buf.getvalue()
 
     pinned = {"darwin-arm64": ("cloudflared-darwin-arm64.tgz", hashlib.sha256(blob).hexdigest())}
-    path = phone.install_cloudflared(tmp_path, fetch=lambda url, to: to.write_bytes(blob), platform="darwin",
-                                     machine="arm64", pins=pinned)
+    monkeypatch.setattr(pinned_mod, "http_get", lambda url, to: to.write_bytes(blob))
+    path = phone.install_cloudflared(tmp_path, platform="darwin", machine="arm64", pins=pinned)
     assert path.read_bytes() == b"macho"
     assert [p.name for p in tmp_path.iterdir()] == ["cloudflared"]
 
