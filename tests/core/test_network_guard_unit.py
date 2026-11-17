@@ -1,5 +1,5 @@
 """The offline suite's network guard (`tests/conftest.py` `_no_real_network`, #239): a download through `urllib`
-(the pinned Chromium, the CV fonts: `chromium.http_get`) fails at once, as a `requests` call does, instead of
+(the pinned Chromium, the CV fonts: `pinned.http_get`) fails at once, as a `requests` call does, instead of
 reaching the network. Loopback stays open: a test's own local server is no network."""
 
 import threading
@@ -8,12 +8,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from door.core import chromium
+from door.core import pinned
 
 
 def test_a_urllib_download_is_refused(tmp_path):
     with pytest.raises(AssertionError, match="offline test tried to reach the network"):
-        chromium.http_get("https://example.com/chrome.zip", tmp_path / "chrome.zip")
+        pinned.http_get("https://example.com/chrome.zip", tmp_path / "chrome.zip")
     assert not (tmp_path / "chrome.zip").exists()
 
 
