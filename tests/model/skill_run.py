@@ -55,7 +55,8 @@ with its assistant. Stay in character and answer the assistant's last message th
 briefly, plainly, in English, one to three sentences. Never invent facts beyond the ones below. You ask for
 nothing new: you do not want a new search, a prepared application or a changed status unless the assistant
 offers it and it fits your wish below. When the assistant asks whether there is anything else, or whether you
-are finished, say "I'm done". When asked which of several options you mean, pick the first. When asked
+are finished, say "I'm done". When asked which of several options you mean, pick the first, unless your wish
+below says which one you want. When asked
 for a role, a job or a number to analyse, use the one in your wish below.
 
 Your facts:
@@ -125,6 +126,7 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path, *
     asked: list[dict] = []
     denied: list[dict] = []
     used: list[dict] = []   # every tool the conversation used besides door's, with its input
+    spoken: list[str] = []   # everything the conversation said to the user, in order
 
     async def can_use_tool(name, data, _context):
         if name == "AskUserQuestion":
@@ -164,6 +166,7 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path, *
                     for block in msg.content:
                         if isinstance(block, TextBlock) and block.text.strip():
                             said.append(block.text)
+                            spoken.append(block.text)
                             transcript.append(f"**claude:** {block.text}")
                         elif isinstance(block, ToolUseBlock):
                             if not block.name.startswith("mcp__door__") and block.name != "AskUserQuestion":
@@ -185,6 +188,7 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path, *
         "asked": asked,
         "denied": denied,
         "used": used,
+        "said": spoken,
         "files": sorted(str(p.relative_to(world["home"])) for p in Path(world["home"]).rglob("*") if p.is_file()),
     }
     out.mkdir(parents=True, exist_ok=True)
