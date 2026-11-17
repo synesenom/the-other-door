@@ -221,9 +221,17 @@ def styled(word: str, case: str) -> str:
 
 def pick(font: Font, target: float, case: str, banned: set[str], letters: int) -> str:
     """A French word (or two run together) in this case whose width is closest to the original's; too wide counts
-    three times as much as too narrow, since a wider word eats the space after it."""
+    three times as much as too narrow, since a wider word eats the space after it. A one-letter word stays one
+    letter, of the width nearest its own: "à", "a", "y" or a letter of the font in its case, else in the other (a
+    narrow "I" becomes an "l", not "Il", "A" or "J", which would run into the word after it)."""
     pool = [styled(w, case) for w in FRENCH if w not in banned and font.can_write(styled(w, case), [False] * len(w))]
-    if letters <= 2:
+    if letters == 1:
+        own = [ch for ch in font.code_for_char if ch.isalpha() and ch.lower() not in banned]
+        pool = [w for w in pool if len(w) == 1] + [ch for ch in own if ch.islower() == (case == "lower")]
+        if not any(abs(font.word_width(w, [False]) - target) <= 0.25 * target for w in pool):
+            pool += [ch for ch in own if ch.islower() != (case == "lower")]
+        pool = sorted(set(pool))
+    elif letters == 2:
         short = [w for w in pool if len(w) <= 2]
         pool = short or pool
     if not pool:
@@ -231,6 +239,8 @@ def pick(font: Font, target: float, case: str, banned: set[str], letters: int) -
     off = lambda w: 3 * (w - target) if w > target else target - w  # noqa: E731
     width = {w: font.word_width(w, [False] * len(w)) for w in pool}
     best = sorted(pool, key=lambda w: off(width[w]))[:2]
+    if letters == 1:  # among letters, one far off the best is no choice
+        best = [w for w in best if off(width[w]) <= off(width[best[0]]) + 0.1 * target]
     word = rng.choice(best)
     if abs(width[word] - target) > 0.08 * target and letters > 6:
         tail_case = "upper" if case == "upper" else "lower"
@@ -295,9 +305,9 @@ def scrub_op(font: Font, items: list, banned: set[str]) -> list:
     so words start where they did. A number becomes as many other digits, none of the original's numbers in it."""
     first_of, in_word = {}, set()
     for word in runs(items, font.char_of):
-        pattern = [font.char_of[items[i][j]].isupper() for i, j in word]
+        original = "".join(font.char_of[items[i][j]] for i, j in word)
         target = sum(font.width(items[i][j]) for i, j in word)
-        fr = pick(font, target, case_of(pattern), banned, len(word))
+        fr = pick(font, target, case_of([ch.isupper() for ch in original]), banned | {original.lower()}, len(word))
         first_of[word[0]] = bytes(font.code_for_char[ch] for ch in fr)
         in_word.update(word)
     digit_code = {DIGIT_NAMES.index(font.digit_of[c]): c for c in font.code_for_digit}
@@ -455,8 +465,9 @@ def rewrite_content(ops: list, fonts: dict, banned: set[str]) -> list:
         run = [int.from_bytes(x.data, "big") for x in stream[i:j]]
         data = g.data
         if k == "char_of":
-            pattern = [f.char_of[c].isupper() for c in run]
-            word = pick(f, (end - g.x) * 1000 / g.size, case_of(pattern), banned, len(run))
+            original = "".join(f.char_of[c] for c in run)
+            word = pick(f, (end - g.x) * 1000 / g.size, case_of([ch.isupper() for ch in original]),
+                        banned | {original.lower()}, len(run))
             data = b"".join(f.code_for_char[ch].to_bytes(f.code_len, "big") for ch in word) or data
         elif k == "digit_of" and f.code_for_digit:
             digit_code = {DIGIT_NAMES.index(f.digit_of[c]): c for c in f.code_for_digit}
