@@ -130,8 +130,7 @@ _CV_HEADING = re.compile(r"^##[ \t]+(.+?)[ \t]*$", re.M)
 
 def _side_headings(style: dict) -> list[str]:
     """The texts of the original's headings that sit in a side band, in reading order, known to a section kind or not."""
-    bands = style["columns"]["bands"]
-    return [h["text"] for h in style["headings"] if (b := _band_of(h["bbox"], bands)) and b["kind"] == "side"]
+    return [h["text"] for h in style["headings"] if h["band"] == "side"]
 
 
 def _side_kinds(style: dict, cv_md: str) -> list[str]:

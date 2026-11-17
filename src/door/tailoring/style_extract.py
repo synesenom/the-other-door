@@ -573,7 +573,7 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
         return (u["family"], u["size"], u["color"], u["weight"], u["mixed"], u["italic"])
 
     known = {id(u) for u in short if i18n.cv_section_kind(u["text"], _SECTION_KINDS) is not None}
-    text_color = max({r["color"] for r in runs}, key=lambda c: sum(len(r["text"]) for r in runs if r["color"] == c))
+    body_color = colors(runs, [])["text"]
     groups: dict[tuple, list[dict]] = {}
     for u in short:
         groups.setdefault(key(u), []).append(u)
@@ -581,7 +581,7 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
     # body; with neither anywhere, the largest group is (the entry titles of a CV are in a group of their own)
     styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body}
     chosen = [k for k, g in styled.items() if any(id(u) in known for u in g)
-              or (k[2] != text_color and _chromatic(k[2]) and k[1] > body)]
+              or (k[2] != body_color and _chromatic(k[2]) and k[1] > body)]
     if not chosen and styled:
         chosen = [max(styled, key=lambda k: k[1])]
     found = []
@@ -591,16 +591,21 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
             band = next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
             found.append({"page": u["page"], "text": u["text"], "bbox": u["bbox"], "size": u["size"], "color": u["color"],
                           "weight": u["weight"], "family": u["family"], "italic": u["italic"], "case": _case(u["text"]),
-                          "rule": _rule_under(u, shapes, band)})
+                          "rule": _rule_under(u, shapes, band), "band": band["kind"] if band else None})
     return found
 
 
 def heading_style(headings: list[dict]) -> dict | None:
-    """What most headings share: size, colour, weight, family, case, italic and (if most have one) their rule."""
+    """What most headings share: size, colour, weight, family, case, italic and (if most have one) their rule; on a tie
+    the main column's look over a side band's."""
     if not headings:
         return None
     keys = ("size", "color", "weight", "family", "case", "italic")
-    best = max({tuple(h[k] for k in keys) for h in headings}, key=lambda t: sum(tuple(h[k] for k in keys) == t for h in headings))
+    styles = [tuple(h[k] for k in keys) for h in headings]
+    # on a tie the style with more headings outside a side band wins (a band's headings are set for its background),
+    # then the style met first in reading order, never a hash order
+    best = max(dict.fromkeys(styles), key=lambda t: (styles.count(t),
+                                                     sum(s == t and h["band"] != "side" for s, h in zip(styles, headings))))
     same = [h for h in headings if tuple(h[k] for k in keys) == best]
     ruled = [h["rule"] for h in same if h["rule"]]
     rule = None
@@ -608,7 +613,7 @@ def heading_style(headings: list[dict]) -> dict | None:
         def sig(r: dict) -> tuple:
             return (r["color"], r["width"], r["gap"], r["span"])
 
-        top = max(ruled, key=lambda r: sum(sig(o) == sig(r) for o in ruled))
+        top = max(ruled, key=lambda r: sum(sig(o) == sig(r) for o in ruled))  # a tie: the first rule met
         rule = {k: top[k] for k in ("color", "width", "gap", "span")}
     return {**dict(zip(keys, best)), "rule": rule}
 

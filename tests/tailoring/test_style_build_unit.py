@@ -92,7 +92,9 @@ def test_icon_files_are_accepted_by_the_manifest(tmp_path):
 
 def _style(bands, headings, pages=1):
     return {"page_count": pages, "columns": {"count": len(bands), "bands": bands},
-            "headings": [{"text": t, "bbox": [x, 100, x + 50, 110]} for t, x in headings]}
+            "headings": [{"text": t, "bbox": [x, 100, x + 50, 110],
+                          "band": next((b["kind"] for b in bands if b["x0"] - 2 <= x + 25 <= b["x1"] + 2), None)}
+                         for t, x in headings]}
 
 
 def test_the_side_column_holds_the_known_sections_whose_headings_are_in_the_side_band():
