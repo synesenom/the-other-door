@@ -621,12 +621,12 @@ def test_a_bullet_and_a_letter_or_digit_are_not_icons_whatever_their_font():
     assert [r["icon"] for r in runs] == [False, False, False]
 
 
-def test_level_dots_and_bullets_drawn_with_an_icon_font_are_no_stray_glyphs():
+def test_level_dots_and_bullets_drawn_with_an_icon_font_are_no_icons():
     # the draft keeps them (`●●●○○` is 3 of 5, #313); the icon font's other glyphs read back as stray characters
     runs = [run("FontAwesome", "○ ○ ○"), run("FontAwesome", "○"), run("FontAwesome", "½"), run("FontAwesome", "\x11"),
             run("Body-Regular", "Words"), run("Body-Regular", "•")]
     style_extract.style_icons.mark_icon_runs(runs)
-    assert [style_extract.style_icons.stray_glyph(r) for r in runs] == [False, False, True, True, False, False]
+    assert [r["icon"] for r in runs] == [False, False, True, True, False, False]
 
 
 def dots(text_, color, x0, x1, y=100):
