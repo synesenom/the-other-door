@@ -181,10 +181,12 @@ describe('Add a page', () => {
     expect(call.mock.calls.some((c) => c[0] === 'init_profile')).toBe(false)
   })
 
-  it('a read that fails says why', async () => {
+  it('a read that fails says why, in the error box: it is no field\'s', async () => {
     await open({ enrich: () => { throw { message: 'claude is not signed in' } } })
     await readPage()
-    expect(await screen.findByRole('alert')).toHaveTextContent('claude is not signed in')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('claude is not signed in')
+    expect(alert).toHaveClass('error')
   })
 
   it('nothing new is said so', async () => {
@@ -219,6 +221,8 @@ describe("errors that are no field's", () => {
     expect(alert).toHaveTextContent('profile/ is not writable')
     expect(alert).toHaveClass('error')
     expect(alert).not.toHaveClass('field-error')
+    // in the sticky Save bar, on its own line: seen from wherever Save was pressed
+    expect(alert.closest('.profile-save')).not.toBeNull()
   })
 
   it('a page that cannot be forgotten is said in the error box', async () => {

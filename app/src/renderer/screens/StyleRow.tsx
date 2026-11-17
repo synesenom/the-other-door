@@ -19,7 +19,7 @@ interface Shown {
 }
 type Doc = 'cv' | 'letter'
 /** After a switch: the prepared CVs the new style could be printed on, asked about, being printed, or done. */
-type Rerender = { kind: 'offer'; prepared: number; style: Which } | { kind: 'busy'; style: Which } | { kind: 'done'; printed: number; failed: number; style: Which }
+type Rerender = { kind: 'offer'; prepared: number; style: Which } | { kind: 'busy'; prepared: number; style: Which } | { kind: 'done'; printed: number; failed: number; style: Which }
 
 const NAMES: Record<Which, string> = { like: 'Like your CV', default: "The other door's" }
 const pages = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`
@@ -114,13 +114,14 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
       setBusy(false)
     }
   }
-  const printAgain = async (style: Which) => {
-    setRerender({ kind: 'busy', style })
+  const printAgain = async (style: Which, prepared: number) => {
+    setError(null)
+    setRerender({ kind: 'busy', prepared, style })
     try {
       const r = await call<{ rerendered?: string[]; failed?: string[] }>('use_style', { style, rerender: true })
       setRerender({ kind: 'done', printed: r.rerendered?.length ?? 0, failed: r.failed?.length ?? 0, style })
     } catch (e) {
-      setRerender(null)
+      setRerender({ kind: 'offer', prepared, style }) // the offer stays, to try again
       setError(errorText(e))
     }
   }
@@ -210,7 +211,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
           </div>
           {rerender?.kind === 'offer' && (
             <div className="style-rerender">
-              <button type="button" className="secondary" onClick={() => void printAgain(rerender.style)}>
+              <button type="button" className="secondary" onClick={() => void printAgain(rerender.style, rerender.prepared)}>
                 {`Print ${noun(rerender.prepared)} again`}
               </button>
             </div>
@@ -222,7 +223,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
                 {`${rerender.printed} printed again.`}
               </p>
               {rerender.failed > 0 && (
-                <button type="button" className="secondary" onClick={() => void printAgain(rerender.style)}>
+                <button type="button" className="secondary" onClick={() => void printAgain(rerender.style, rerender.printed + rerender.failed)}>
                   Try again
                 </button>
               )}

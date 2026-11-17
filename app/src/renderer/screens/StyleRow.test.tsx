@@ -222,6 +222,28 @@ describe('StyleRow, the prepared CVs after a switch', () => {
     expect(screen.queryByRole('button', { name: /Print .* again/ })).toBeNull()
   })
 
+  it('a print that fails is said in the error box, and the offer stays to try again', async () => {
+    let fail = true
+    const h = await open({
+      show_style: both({ candidate: true }),
+      use_style: (a: Record<string, unknown>) => {
+        if (!a['rerender']) return { in_use: 'like', prepared: 2 }
+        if (fail) throw { message: 'The print stopped. Try again.' }
+        return { in_use: 'like', prepared: 2, rerendered: ['a.1', 'a.2'], failed: [] }
+      },
+    }, { state: 'ready' })
+    await ready()
+    await userEvent.click(screen.getByRole('button', { name: 'Use this style' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert.className).toBe('error')
+    fail = false
+    await userEvent.click(screen.getByRole('button', { name: 'Print 2 prepared CVs again' }))
+    expect(await screen.findByText('2 printed again.')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(h.call).toHaveBeenCalledWith('use_style', { style: 'like', rerender: true })
+  })
+
   it('says it is busy while it prints', async () => {
     let finish: (v: unknown) => void = () => undefined
     mockDoor({
