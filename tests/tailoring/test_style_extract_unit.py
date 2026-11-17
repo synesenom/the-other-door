@@ -629,6 +629,40 @@ def test_level_dots_and_bullets_drawn_with_an_icon_font_are_no_stray_glyphs():
     assert [style_extract.style_icons.stray_glyph(r) for r in runs] == [False, False, True, True, False, False]
 
 
+def dots(text_, color, x0, x1, y=100):
+    return run("FontAwesome", text_, color=color, page=1, size=8, bbox=[x0, y, x1, y + 8])
+
+
+STYLE = {"colors": {"text": "#444444", "accent": "#3a1800"}, "page": {"background": None}, "columns": {"bands": []}}
+
+
+def test_level_rows_fill_the_accent_or_text_colour_and_leave_other_rows():
+    rows = style_extract.style_icons.level_rows([dots("○ ○ ○", "#3a1800", 0, 20), dots("○ ○", "#c7c7c7", 22, 36)], STYLE)
+    assert rows == [(1, [0, 100, 36, 108], "●●●○○")]
+
+
+def test_a_row_of_the_filled_colour_is_all_filled_once_the_cv_has_a_two_colour_row():
+    runs = [dots("○ ○ ○", "#3a1800", 0, 20), dots("○ ○", "#c7c7c7", 22, 36), dots("○ ○ ○", "#3a1800", 0, 20, y=120),
+            dots("○ ○", "#c7c7c7", 0, 14, y=140)]
+    rows = style_extract.style_icons.level_rows(runs, STYLE)
+    assert (1, [0, 120, 20, 128], "●●●") in rows and len(rows) == 2
+    assert style_extract.style_icons.level_rows(runs[2:3], STYLE) == []
+
+
+def test_on_a_dark_band_the_lighter_dots_are_filled_when_neither_colour_is_the_cvs():
+    style = {**STYLE, "colors": {"text": "#ff0000", "accent": None},
+             "columns": {"bands": [{"x0": 0, "x1": 50, "background": "#222222"}]}}
+    rows = style_extract.style_icons.level_rows([dots("○ ○", "#ffffff", 0, 14), dots("○", "#555555", 16, 24)], style)
+    assert rows[0][2] == "●●○"
+
+
+def test_a_gap_wider_than_the_font_or_another_line_splits_a_row_and_three_colours_are_no_level():
+    level_rows = style_extract.style_icons.level_rows
+    assert level_rows([dots("○", "#3a1800", 0, 8), dots("○", "#c7c7c7", 40, 48)], STYLE) == []
+    assert level_rows([dots("○", "#3a1800", 0, 8), dots("○", "#c7c7c7", 9, 17, y=103)], STYLE) == []
+    assert level_rows([dots("○", "#3a1800", 0, 8), dots("○", "#c7c7c7", 9, 17), dots("○", "#888888", 18, 26)], STYLE) == []
+
+
 def test_a_small_photo_with_a_blank_border_is_not_also_an_icon(tmp_path):
     rows = [[(255, 255, 255)] * 4] + [[(255, 255, 255), (255, 0, 0), (255, 0, 0), (255, 255, 255)]] * 2 + [[(255, 255, 255)] * 4]
     data = bytes(c for row in rows for px in row for c in px)

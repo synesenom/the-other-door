@@ -1,8 +1,9 @@
 """PDF reading and rendering helpers for The other door (pypdfium2, Apache-2.0/BSD).
 
 - ``get_page_count(pdf_path)`` — return the number of pages in a PDF.
-- ``page_texts(pdf_path, leave_out=())`` — the text of each page, one ``\\n`` per line break (``clean_text``),
-  without the characters inside the boxes of ``leave_out`` (an icon font's glyphs).
+- ``page_texts(pdf_path, rewrite=())`` — the text of each page, one ``\\n`` per line break (``clean_text``), with
+  the characters inside a box of ``rewrite`` replaced by its text (``""``: an icon font's glyphs left out; ``●●○``: a
+  row of level dots).
 - ``render_pdf_pages(pdf_path, output_dir)`` — render each page to a PNG image.
 
 All raise ``FileNotFoundError`` when the PDF does not exist; a file that is not a readable PDF
@@ -59,10 +60,10 @@ def get_page_count(pdf_path: Path) -> int:
         doc.close()
 
 
-def page_texts(pdf_path: Path, leave_out: list[tuple[int, list[float]]] = ()) -> list[str]:
-    """The text of every page of *pdf_path*, in reading order, lines separated by ``\\n``, without the characters
-    whose centre is in a box of *leave_out*: ``(page, [x0, y0, x1, y1])``, the page 1-based, the box in points from
-    the top left (`style_extract`'s runs).
+def page_texts(pdf_path: Path, rewrite: list[tuple[int, list[float], str]] = ()) -> list[str]:
+    """The text of every page of *pdf_path*, in reading order, lines separated by ``\\n``, with the characters whose
+    centre is in a box of *rewrite*, ``(page, [x0, y0, x1, y1], text)``, the page 1-based, the box in points from the
+    top left (`style_extract`'s runs), replaced by *text* where the first of them stood (``""``: left out).
 
     Raises:
         FileNotFoundError: If *pdf_path* does not exist.
@@ -73,12 +74,26 @@ def page_texts(pdf_path: Path, leave_out: list[tuple[int, list[float]]] = ()) ->
         for number, page in enumerate(doc, 1):
             textpage = page.get_textpage()
             text = textpage.get_text_range()
-            if boxes := [box for on, box in leave_out if on == number]:
-                text = "".join(c for i, c in enumerate(text) if not _in_boxes(textpage, i, page.get_height(), boxes))
-            texts.append(clean_text(text))
+            texts.append(clean_text(_edited(textpage, text, page.get_height(), number, rewrite)))
         return texts
     finally:
         doc.close()
+
+
+def _edited(textpage, text: str, height: float, number: int, rewrite) -> str:
+    """*text* of one page with the characters in each `rewrite` box said by its text."""
+    boxes = [(box, said) for on, box, said in rewrite if on == number]
+    if not boxes:
+        return text
+    out, put = [], set()
+    for i, c in enumerate(text):
+        hit = next((n for n, (box, _) in enumerate(boxes) if _in_boxes(textpage, i, height, [box])), None)
+        if hit is None:
+            out.append(c)
+        elif hit not in put:
+            out.append(boxes[hit][1])
+            put.add(hit)
+    return "".join(out)
 
 
 def _in_boxes(textpage, index: int, height: float, boxes: list[list[float]]) -> bool:
