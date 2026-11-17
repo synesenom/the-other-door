@@ -26,7 +26,18 @@ State lives in `thoughts/epic/<N>.md` (the epic branch; per sub-issue its branch
 
 ## The loop
 
-Repeat Steps 1–6 until done; then Step 8.
+Step 0 once, then repeat Steps 1–6 until done; then Step 8.
+
+### Step 0: The epic must be planned
+
+An epic is worked only from a plan made by `/dev-plan-epic`: its body has the line `Planned by /dev-plan-epic`, with `**Done when**`, `## Plan` (the riskiest assumption, its spike and go/no-go, and **Not doing**) and its boxes in the planned order. If the line is missing, run `/dev-plan-epic <N>` first (it re-plans the epic: keeps, changes, drops and adds sub-issues, and asks the one filing confirmation) and go on only once the body carries the mark. Do not make up a plan here, and do not work an unplanned epic's boxes as they stand.
+
+The plan binds the run:
+
+- **Order**: the plan's order is the order of the sub-issues (Step 4's rule that a dependency goes first still holds).
+- **Spike first**: when the plan has a riskiest assumption, its spike is the first sub-issue. When that sub-issue's result is a no-go (the plan's numbers), stop the epic at once: comment the result and the plan's "if no-go" line on the epic, mark the rest `blocked: plan`, and ask the maintainer in one line. Do not build on a failed premise.
+- **Not doing**: an item on that list is never built, however a sub-issue's review or a box suggests it; a finding that wants it is filed into another epic (Step 4), not done here.
+- **A plan that proves wrong while working** (a sub-issue shows an assumption false, a step needs a model where the plan chose code, or the reverse): stop and run `/dev-plan-epic <N>` again with what was found, rather than adding sub-issues one by one. This is the case the plan exists for.
 
 ### Step 1: Read the epic
 
