@@ -43,6 +43,8 @@ export interface Scene {
   /** Profile → CV's Style: which style is in use, whether one built from a CV is kept (`like`), whether it waits to
    * be chosen (`candidate`), a build running, how many prepared CVs a switch could print again, how many of them fail the first time they are printed again. Default: The other door's, no build. */
   style?: { in_use?: 'default' | 'like'; like?: boolean; candidate?: boolean; two_column?: boolean; building?: boolean; prepared?: number; failing?: number }
+  /** Tools that fail here, each with the words it fails with: an error the user sees. */
+  fails?: Record<string, string>
   /** Buttons the preview presses, in order, once the screen has loaded (`pressInOrder`): a state only an action reaches. */
   press?: string[]
 }
@@ -177,6 +179,8 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-cv-style-candidate', group: 'Profile', title: 'CV, a built style to compare (Use this style, then Print again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 2 } },
   { id: 'profile-cv-style-earlier', group: 'Profile', title: 'CV, a new style while an earlier one is in use', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, candidate: true, prepared: 2 } },
   { id: 'profile-cv-style-printed', group: 'Profile', title: 'CV, the prepared CVs printed again, one failed (Try again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 3, failing: 1 }, press: ['Use this style', 'Print 3 prepared CVs again'] },
+  { id: 'profile-cv-style-refused', group: 'Profile', title: 'CV, choosing a style failed (the error box)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true }, fails: { use_style: 'Your choice could not be saved. Try again.' }, press: ['Use this style'] },
+  { id: 'profile-cv-forget-failed', group: 'Profile', title: 'CV, a page that could not be forgotten (the error box)', start: { destination: 'Profile', cv: true }, fails: { init_profile: 'Your pages could not be saved. Try again.' }, press: ['Forget https://janedoe.example/portfolio'] },
   { id: 'profile-cv-style-inuse', group: 'Profile', title: 'CV, a style of your own in use', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, prepared: 1 } },
   { id: 'profile-cv-style-two-column', group: 'Profile', title: 'CV, a two-column style', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, two_column: true } },
   { id: 'profile-stories', group: 'Profile', title: 'Stories', start: { destination: 'Profile', stories: true } },
