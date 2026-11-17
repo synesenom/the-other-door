@@ -259,7 +259,7 @@ def _prepared(jobs_dir: Path) -> list[str]:
             if ledger.get_status(job) == "prepared" and (jobs_dir / "output" / job / "cv.html").is_file()]
 
 
-def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
+def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
     """Choose the CV style: ``like`` (the one built from the user's CV: the candidate moves into `profile/style/`
     and both template keys point at it), ``default`` (both keys cleared, only where they point into `profile/style/`)
     or ``current`` (what is in use stays). Any pick ends the candidate: it is deleted when a built style is already
@@ -334,7 +334,7 @@ def build_style(file):
     """Build a template from FILE's look (a CV as a PDF): fonts, colours, layout, in a few minutes of the model's time.
 
     Runs here and now; the `build_style` tool starts the same thing in the background. The result is written to
-    profile/style.next/ only when it passes; nothing uses it until `cv style use` chooses it."""
+    profile/style.next/ only when it passes; nothing uses it until `cv style use like` chooses it."""
     interactive = common._stdout_is_tty()
     try:
         with _progress.live_progress(enabled=interactive) as reporter:
@@ -355,17 +355,17 @@ def build_style(file):
         sys.exit(1)
     if result["font_error"]:
         click.echo(f"The fonts could not be downloaded ({result['font_error']}): only the fonts The other door ships stand in.")
-    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style.next/; `cv style use` chooses it.")
+    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style.next/; `cv style use like` chooses it.")
 
 
 _USE_WORDS = {"like": "Your own style is in use: the one built from your CV.", "default": "The other door's style is in use."}
 
 
 @style_group.command("use")
-@click.argument("style", type=click.Choice(["like", "default", "current"]), default="like")
+@click.argument("style", type=click.Choice(["like", "default", "current"]))
 @click.option("--rerender", is_flag=True, help="Print the prepared applications again in the style in use (no model).")
 def use_style(style, rerender):
-    """Choose the CV style: like (the one built from your CV, the default), default (The other door's) or current (keep
+    """Choose the CV style: like (the one built from your CV), default (The other door's) or current (keep
     what you use now and drop the one just built).
 
     Applications already prepared keep their old look unless --rerender prints them again; sent ones never change."""
