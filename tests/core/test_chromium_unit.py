@@ -12,6 +12,15 @@ from pathlib import Path
 import pytest
 
 from door.core import chromium
+from door.core import pinned as pinned_mod
+
+
+def _install(dest, fetch):
+    """`chromium.install` with the download replaced at its one place, `pinned.http_get`."""
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(pinned_mod, "http_get", fetch)
+        chromium.install(dest)
+
 
 KEYS = ("mac-arm64", "mac-x64", "linux64", "win64")
 
@@ -120,7 +129,7 @@ def test_install_unpacks_a_matching_zip(tmp_path, pinned):
     if key != "linux64":
         pytest.skip("fake zip is the linux one")
     urls = []
-    chromium.install(tmp_path / "dest", fetch=lambda url, to: (urls.append(url), to.write_bytes(data)))
+    _install(tmp_path / "dest", lambda url, to: (urls.append(url), to.write_bytes(data)))
     exe = tmp_path / "dest" / "chrome-headless-shell-linux64" / "chrome-headless-shell"
     assert exe.read_text() == "binary"
     assert exe.stat().st_mode & stat.S_IXUSR
@@ -133,7 +142,7 @@ def test_install_refuses_a_wrong_checksum_and_leaves_nothing(tmp_path, pinned):
     if key != "linux64":
         pytest.skip("fake zip is the linux one")
     with pytest.raises(chromium.ChromiumError, match="checksum"):
-        chromium.install(tmp_path / "dest", fetch=lambda url, to: to.write_bytes(b"tampered"))
+        _install(tmp_path / "dest", lambda url, to: to.write_bytes(b"tampered"))
     assert not (tmp_path / "dest").exists() or not list((tmp_path / "dest").iterdir())
 
 
@@ -143,7 +152,7 @@ def test_install_refuses_an_entry_that_escapes(tmp_path, pinned):
     if key != "linux64":
         pytest.skip("fake zip is the linux one")
     with pytest.raises(chromium.ChromiumError, match="outside"):
-        chromium.install(tmp_path / "dest", fetch=lambda url, to: to.write_bytes(data))
+        _install(tmp_path / "dest", lambda url, to: to.write_bytes(data))
     assert not (tmp_path / "evil.txt").exists()
     assert not (tmp_path / "dest" / "chrome-headless-shell-linux64").exists()
 
@@ -157,7 +166,7 @@ def test_install_refuses_an_archive_without_the_shell(tmp_path, pinned):
     if key != "linux64":
         pytest.skip("fake zip is the linux one")
     with pytest.raises(chromium.ChromiumError, match="no headless shell"):
-        chromium.install(tmp_path / "dest", fetch=lambda url, to: to.write_bytes(data))
+        _install(tmp_path / "dest", lambda url, to: to.write_bytes(data))
     assert not list((tmp_path / "dest").glob("*.part"))
 
 
@@ -165,7 +174,7 @@ def test_install_turns_a_bad_zip_into_a_chromium_error(tmp_path, pinned):
     data = b"this is not a zip"
     pinned(data)
     with pytest.raises(chromium.ChromiumError):
-        chromium.install(tmp_path / "dest", fetch=lambda url, to: to.write_bytes(data))
+        _install(tmp_path / "dest", lambda url, to: to.write_bytes(data))
 
 
 def test_install_turns_a_failed_download_into_a_chromium_error(tmp_path, pinned):
@@ -175,7 +184,7 @@ def test_install_turns_a_failed_download_into_a_chromium_error(tmp_path, pinned)
         raise OSError("connection reset")
 
     with pytest.raises(chromium.ChromiumError, match="connection reset"):
-        chromium.install(tmp_path / "dest", fetch=fetch)
+        _install(tmp_path / "dest", fetch)
     assert not list((tmp_path / "dest").glob("*.part"))
 
 
@@ -190,15 +199,15 @@ def test_install_twice_downloads_once(tmp_path, pinned):
         calls.append(url)
         to.write_bytes(data)
 
-    chromium.install(tmp_path / "dest", fetch=fetch)
-    chromium.install(tmp_path / "dest", fetch=fetch)
+    _install(tmp_path / "dest", fetch)
+    _install(tmp_path / "dest", fetch)
     assert len(calls) == 1
 
 
 def test_install_without_a_pinned_platform(tmp_path, monkeypatch):
     monkeypatch.setattr(chromium, "platform_key", lambda *a, **k: None)
     with pytest.raises(chromium.ChromiumError, match="no Chromium"):
-        chromium.install(tmp_path / "dest", fetch=lambda url, to: None)
+        _install(tmp_path / "dest", lambda url, to: None)
 
 
 def test_main_exit_codes(tmp_path, monkeypatch, capsys):
@@ -225,7 +234,7 @@ def test_install_removes_the_other_versions_folders_and_leaves_the_rest(tmp_path
     other.mkdir()
     bundled = tmp_path / "bin" / "chromium"
     bundled.mkdir(parents=True)
-    chromium.install(root / "chromium-1.2.3.4", fetch=lambda url, to: to.write_bytes(data))
+    _install(root / "chromium-1.2.3.4", lambda url, to: to.write_bytes(data))
     assert not old.exists()
     assert other.exists() and bundled.exists()
     assert (root / "chromium-1.2.3.4" / "chrome-headless-shell-linux64").is_dir()
@@ -237,7 +246,7 @@ def test_a_failed_install_keeps_the_older_folders(tmp_path, pinned):
     old = root / "chromium-0.0.1.1"
     old.mkdir(parents=True)
     with pytest.raises(chromium.ChromiumError):
-        chromium.install(root / "chromium-1.2.3.4", fetch=lambda url, to: to.write_bytes(b"bad"))
+        _install(root / "chromium-1.2.3.4", lambda url, to: to.write_bytes(b"bad"))
     assert old.exists()
 
 
@@ -252,9 +261,9 @@ def test_two_installs_racing_end_with_one_complete_folder(tmp_path, pinned):
         calls.append(to)
         to.write_bytes(data)
         if len(calls) == 1:   # a second install runs through the whole of the first's download
-            chromium.install(dest, fetch=fetch)
+            _install(dest, fetch)
 
-    chromium.install(dest, fetch=fetch)
+    _install(dest, fetch)
     assert len(calls) == 2 and calls[0] != calls[1]
     exe = dest / "chrome-headless-shell-linux64" / "chrome-headless-shell"
     assert exe.read_text() == "binary"
@@ -267,7 +276,7 @@ def test_install_into_a_folder_not_named_by_version_removes_no_sibling(tmp_path,
         pytest.skip("fake zip is the linux one")
     sibling = tmp_path / "chromium-0.0.1.1"
     sibling.mkdir()
-    chromium.install(tmp_path / "chromium", fetch=lambda url, to: to.write_bytes(data))
+    _install(tmp_path / "chromium", lambda url, to: to.write_bytes(data))
     assert sibling.exists()
 
 
@@ -281,7 +290,7 @@ def test_a_rename_that_fails_with_no_other_install_done_is_an_error(tmp_path, pi
 
     monkeypatch.setattr(Path, "rename", refuse)
     with pytest.raises(chromium.ChromiumError):
-        chromium.install(tmp_path / "chromium-1.2.3.4", fetch=lambda url, to: to.write_bytes(data))
+        _install(tmp_path / "chromium-1.2.3.4", lambda url, to: to.write_bytes(data))
 
 
 def test_an_install_already_there_still_removes_the_older_versions(tmp_path, pinned):
@@ -289,10 +298,10 @@ def test_an_install_already_there_still_removes_the_older_versions(tmp_path, pin
     if pinned(data) != "linux64":
         pytest.skip("fake zip is the linux one")
     dest = tmp_path / "chromium-1.2.3.4"
-    chromium.install(dest, fetch=lambda url, to: to.write_bytes(data))
+    _install(dest, lambda url, to: to.write_bytes(data))
     old = tmp_path / "chromium-0.0.1.1"
     old.mkdir()
-    chromium.install(dest, fetch=lambda url, to: pytest.fail("no download"))
+    _install(dest, lambda url, to: pytest.fail("no download"))
     assert not old.exists()
 
 
@@ -311,6 +320,6 @@ def test_install_sweeps_a_stale_part_folder_a_killed_install_left_and_keeps_a_fr
     old = time.time() - 2 * 3600
     os.utime(stale, (old, old))
     seen = []
-    chromium.install(dest, fetch=lambda url, to: (seen.append(fresh.exists()), to.write_bytes(data)))
+    _install(dest, lambda url, to: (seen.append(fresh.exists()), to.write_bytes(data)))
     assert not stale.exists()
     assert seen == [True]

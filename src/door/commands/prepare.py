@@ -284,10 +284,11 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None,
     return True
 
 
-def _read_back(output_dir: Path) -> list[dict] | None:
-    """The ATS read-back of the two PDFs (`matches._readability`), or None when it could not be made."""
+def _read_back(output_dir: Path, posting: dict, config: dict) -> list[dict] | None:
+    """The ATS read-back of the two PDFs (`matches._readability`), the CV held to `common._cv_max_pages` for
+    `posting`, or None when it could not be made."""
     try:
-        return matches_cmd._readability(output_dir)
+        return matches_cmd._readability(output_dir, max_pages=common._cv_max_pages(posting, config))
     except Exception:  # noqa: BLE001 - the check never fails a prepare
         return None
 
@@ -296,8 +297,9 @@ _TRIM = "; trim the lowest-value items so it fits, never invent anything"
 
 
 def _feedback_text(found: list[dict]) -> str:
-    """The fixable problems as one line each, ``file: detail``, for the retry's prompt (text cut off: what to do)."""
-    return "\n".join(f"- {p['file']}: {p['detail']}{_TRIM if p['kind'] == 'overflow' else ''}" for p in found)
+    """The fixable problems as one line each, ``file: detail``, for the retry's prompt (text cut off or a CV over its
+    page limit: what to do)."""
+    return "\n".join(f"- {p['file']}: {p['detail']}{_TRIM if p['kind'] in ('overflow', 'pages') else ''}" for p in found)
 
 
 def _step(message: str, outcome: str | None = None) -> None:
@@ -362,7 +364,7 @@ def _prepare_core(
         "output_dir", "files": [name, ...], "regenerated_incomplete",
         "error"?, "missing"?, "unsupported"?, "stories"?, "salary"?, "readability"?, "warning"?}`` — ``readability`` (a prepared job only) is
         the ATS read-back of both PDFs, ``[{file, kind, detail}]`` (None when it could not be made), taken after
-        one more tailor run for the ``missing`` and ``overflow`` kinds (`readability.FIXABLE`) when there were any, and
+        one more tailor run for the ``missing``, ``overflow`` and ``pages`` kinds (`readability.FIXABLE`) when there were any, and
         ``warning`` says so when problems remain; neither can fail the prepare; ``salary`` (a prepared
         job only) is `_estimate_salary`'s estimate or None; ``stories`` is
         `_add_stories`'s count of the CARL stories added to the story bank; ``files`` lists the material files present
@@ -399,6 +401,7 @@ def _prepare_core(
     if posting_path is None:
         raise LookupError(f"no posting found for job_id {job_id!r}")
 
+    stored: dict = {}
     try:  # a posting stored before the gate is cleaned on disk before the tailor reads the file
         stored = json.loads(posting_path.read_text(encoding="utf-8"))
         if integrity.ensure(stored):
@@ -459,7 +462,7 @@ def _prepare_core(
             if not _tailor_outputs_missing(output_dir):
                 # Read both PDFs back like an ATS; one more run for what the tailor can fix, never a failure.
                 _step("reading the PDFs back like an ATS")
-                readback = _read_back(output_dir)
+                readback = _read_back(output_dir, stored, config)
                 fixable = readability.fixable(readback or [])
                 if fixable:
                     try:
@@ -467,7 +470,7 @@ def _prepare_core(
                     except TailorError:
                         retry_failed = True
                     else:
-                        readback = _read_back(output_dir)
+                        readback = _read_back(output_dir, stored, config)
     except TailorError as exc:
         _step("tailoring failed", "failed")
         return {
