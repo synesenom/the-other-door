@@ -6,7 +6,7 @@ edges replaced; its own model calls go to the stand-in `claude.py`), so nothing 
 nothing touches the user's own data. The user is a second, small model playing the persona: it answers
 each plain-text question and each AskUserQuestion from the persona's facts and wishes.
 
-    python tests/skills/skill_run.py <world.json> "/onboard" [--model sonnet] [--max-turns 12] [--out DIR]
+    python tests/model/skill_run.py <world.json> "/onboard" [--model sonnet] [--max-turns 12] [--out DIR]
         [--stop-after TOOL] [--persona-kind onboarding|onboarded] [--facts-note "what the user wants"]
 
 <world.json> is what `npx tsx app/test/world/make-world.ts <persona>` prints (`--empty` for a user with no data
