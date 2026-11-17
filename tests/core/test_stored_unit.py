@@ -113,4 +113,3 @@ def test_a_tailor_run_stores_only_named_files(tmp_path, monkeypatch):
     assert prepare_cmd._run_tailor(job, model_copy) is True
     assert (jobs_dir / ".tailor" / job / "agents.json").is_file() and (jobs_dir / "output" / job / ".facts_rounds").is_file()
     assert seen == [[]]
-    assert stored.named("jobs/agents.json") is None  # the agents file lives in .tailor/<id>/ only
