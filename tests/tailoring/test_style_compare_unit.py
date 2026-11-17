@@ -11,7 +11,8 @@ STYLES = TESTS_DIR / "tailoring" / "fixtures" / "styles"
 
 
 def run(text, x=50.0, y=100.0, size=10.0, color="#000000", icon=False, page=1):
-    return {"text": text, "bbox": [x, y, x + 5 * len(text), y + size], "size": size, "color": color, "icon": icon, "page": page}
+    return {"text": text, "bbox": [x, y, x + 5 * len(text), y + size], "size": size, "color": color, "icon": icon, "page": page,
+            "font": "Icons" if icon else "Lato"}
 
 
 def icon(x, y, near=None, size=9.0, color="#ffffff", page=1):
@@ -442,3 +443,11 @@ def test_a_photo_the_render_lacks_or_places_elsewhere_is_named_in_the_feedback()
     near = style_compare.match(original, {**style([run("A")]), "photo": {**photo, "bbox": [36.0, 160.0, 134.0, 298.0]}})
     assert "photo" not in style_compare.feedback(near, score=0.9)
     assert style_compare.match(style([run("A")]), style([run("A")]))["photo"] is None
+
+
+def test_level_dots_drawn_with_the_icon_font_are_not_compared_as_text():
+    # the stylist is not shown them either (style_build.original_text, style_icons.is_glyph): one meaning (#315)
+    style = {"runs": [{"font": "FontAwesome", "text": "", "icon": True},
+                      {"font": "FontAwesome", "text": "○ ○ ○", "icon": False},
+                      {"font": "Lato", "text": "○ Hello", "icon": False}]}
+    assert [r["text"] for r in style_compare._texts(style)] == ["○ Hello"]

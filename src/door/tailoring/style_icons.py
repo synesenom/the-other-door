@@ -36,12 +36,12 @@ def glyph_only(text: str) -> bool:
 def mark_icon_runs(runs: list[dict]) -> None:
     """Set `icon` on every run: true for the glyphs of an icon font (FontAwesome and the like): a font named like
     one, a run of only private-use, control or dingbat characters, or a font whose runs are all a character or two
-    of symbols. A bullet is no icon."""
+    of symbols. A run of bullets (and spaces between them) is no icon."""
     short: dict[str, bool] = {}
     for run in runs:
         short[run["font"]] = short.get(run["font"], True) and len(run["text"]) <= 2 and not run["text"].isalnum()
     for run in runs:
-        run["icon"] = not all(c in BULLETS for c in run["text"]) and bool(
+        run["icon"] = not only_bullets(run["text"]) and bool(
             icon_font(run["font"]) or glyph_only(run["text"]) or short[run["font"]])
 
 
@@ -61,13 +61,6 @@ def is_glyph(run: dict, fonts: set[str]) -> bool:
     return run["icon"] or (run["font"] in fonts and only_bullets(run["text"]))
 
 
-def stray_glyph(run: dict) -> bool:
-    """Whether `run` reads back in a PDF's text as stray characters a draft of the CV leaves out: an icon's glyph
-    (`icon`), not level dots or bullets, which say something (`●●●○○` is 3 of 5; a list), even drawn with the icon
-    font (#313)."""
-    return run["icon"] and not only_bullets(run["text"])
-
-
 def _luminance(color: str) -> float:
     r, g, b = style_trace.channels(color)
     return 0.299 * r + 0.587 * g + 0.114 * b
@@ -81,9 +74,9 @@ def _background(run: dict, style: dict) -> str:
 
 
 def draft_edits(runs: list[dict], style: dict) -> list[tuple[int, list[float], str]]:
-    """What a draft of the CV changes in a PDF's text, as (page, box, text) for `pdf_render.page_texts`: each stray
-    glyph left out (`stray_glyph`, text `""`) and each row of level dots in its colours said (`level_rows`)."""
-    return [(r["page"], r["bbox"], "") for r in runs if stray_glyph(r)] + level_rows(runs, style)
+    """What a draft of the CV changes in a PDF's text, as (page, box, text) for `pdf_render.page_texts`: each icon
+    left out (`icon`, text `""`) and each row of level dots in its colours said (`level_rows`)."""
+    return [(r["page"], r["bbox"], "") for r in runs if r["icon"]] + level_rows(runs, style)
 
 
 def level_rows(runs: list[dict], style: dict) -> list[tuple[int, list[float], str]]:

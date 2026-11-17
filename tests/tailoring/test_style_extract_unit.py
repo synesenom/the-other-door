@@ -621,12 +621,12 @@ def test_a_bullet_and_a_letter_or_digit_are_not_icons_whatever_their_font():
     assert [r["icon"] for r in runs] == [False, False, False]
 
 
-def test_level_dots_and_bullets_drawn_with_an_icon_font_are_no_stray_glyphs():
+def test_level_dots_and_bullets_drawn_with_an_icon_font_are_no_icons():
     # the draft keeps them (`●●●○○` is 3 of 5, #313); the icon font's other glyphs read back as stray characters
     runs = [run("FontAwesome", "○ ○ ○"), run("FontAwesome", "○"), run("FontAwesome", "½"), run("FontAwesome", "\x11"),
             run("Body-Regular", "Words"), run("Body-Regular", "•")]
     style_extract.style_icons.mark_icon_runs(runs)
-    assert [style_extract.style_icons.stray_glyph(r) for r in runs] == [False, False, True, True, False, False]
+    assert [r["icon"] for r in runs] == [False, False, True, True, False, False]
 
 
 def dots(text_, color, x0, x1, y=100):
@@ -738,3 +738,12 @@ def test_an_icon_font_used_once_for_a_bullet_stays_an_icon_font():
              "fixed": False, "embedded": True, "type3": False, "text": t, "icon": icon}
             for t, icon in (("[", True), ("Ó", True), ("○", False))]
     assert style_extract._fonts_used(runs)[0]["icon"] is True
+
+
+def test_spaced_level_dots_do_not_widen_a_column_band():
+    # '○ ○ ○ ○' in the icon font is no icon (#315) but is still no column text: the side band ends at its words
+    from tests.paths import TESTS_DIR
+
+    style = style_extract.extract(TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf")
+    side = next(b for b in style["columns"]["bands"] if b["kind"] == "side")
+    assert side["x1"] == 541.9
