@@ -3,8 +3,9 @@
 `build(pdf_path, ...)` reads the style of a CV PDF (`style_extract`), fetches the free fonts for it (`fonts`), writes its
 icons as SVG files, and runs the stylist agent (`.claude/agents/stylist.md`) round by round: the agent writes a template
 page, the builder checks it (`html_guard.template_problems`), prints a sample body in it with the pinned Chromium, reads
-the print back and compares it with the original (`style_compare`) until the loop's rule says stop. The best round is
-then stress-rendered with `profile/cv.md` made shorter, longer, French and with a photo (no model: `cv_body`), one more
+the print back and compares it with the original (`style_compare`) until the loop's rule says stop. A best round that scored under
+`style_compare.FLOOR` does not look like the CV: the build fails there. Otherwise it is
+stress-rendered with `profile/cv.md` made shorter, longer, French and with a photo (no model: `cv_body`), one more
 round when that fails, and a second call writes the matching letter template. Only a build that passes is written, whole,
 to `profile/style.next/`, the candidate; a failed one writes nothing there.
 """
@@ -728,6 +729,10 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
         raise _Stop(f"no sample body of the stylist's was accepted in {s.rounds} rounds: {feedback}")
     if template is None:
         raise _Stop(f"no template of the stylist's was kept in {s.rounds} rounds: {feedback}")
+    if (best := max(result["scores"])) < style_compare.FLOOR:
+        cause = f"the fonts could not be downloaded ({result['font_error']}): try again later; " if result["font_error"] else ""
+        raise _Stop(f"{cause}the rebuild did not come close to your CV's look in {s.rounds} rounds: its best print "
+                    f"scored {best:.2f}, at least {style_compare.FLOOR} is needed")
     template = _clean(template, "cv")
     cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
     if failures := _stress(s, template, cv_md):

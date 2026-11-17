@@ -25,7 +25,7 @@ test('a CV with a style to copy: tick, Save, the search starts at once, the buil
   await expect(chosen(page).getByText('my-cv.pdf', { exact: true })).toBeVisible()
   await readToReview(page)
   await expect(styleBox(page)).not.toBeChecked()
-  await expect(page.getByText('Takes 5–10 minutes in the background.')).toBeVisible()
+  await expect(page.getByText('Takes 2–5 minutes in the background.')).toBeVisible()
   expect(world.toolCalls('build_style')).toEqual([])
 
   await styleBox(page).check()

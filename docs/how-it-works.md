@@ -150,7 +150,9 @@ What a build does, in order: it reads the PDF on this computer, with no network 
 colours, margins, columns, headings, rules, photo and icons); it fetches the free look-alike of each font from
 Google's open font collection (pinned and checked by hash; no CV data is sent); then the stylist agent (Sonnet,
 usage feature `style`, shown as "Building a CV template") writes an HTML and CSS template round by round. Each
-draft is printed with the pinned Chromium and compared with your PDF page by page, and it is stress-tested on
+draft is printed with the pinned Chromium and compared with your PDF page by page; when no draft comes close to
+your PDF's look, the build fails rather than offer a style unlike your CV (when the fonts could not be
+downloaded, it says so: try again later). The closest one is stress-tested on
 variants of `cv.md` (`photo`: with a photo; `fewer`: one entry a section; `long_title`: a very long job title; `extra_section`: one more section; `french`: a French paragraph first). Only a template that passes is kept, in
 `profile/style.next/`; a build that fails writes nothing and says nothing in the app. A two-column result may be read
 less well by some application systems.

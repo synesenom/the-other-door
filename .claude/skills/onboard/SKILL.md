@@ -156,7 +156,7 @@ One review, everything in one place, before anything is written:
 8. **CV style** (a first set-up only, never after a pull from Drive, and only when a file in `draft_cv`'s `sources`
    has `style` true; use the first such file): one line of the review,
    not a question of its own, off by default: "CV style: The other door's. Make my tailored CVs look like the CV I
-   uploaded? (takes 5–10 minutes in the background)". The user changes it like any other line; keep that file
+   uploaded? (takes 2–5 minutes in the background)". The user changes it like any other line; keep that file
    for step 4.
 
 Items 5 and 6 read `mcp__door__show_profile` with the location as `location`: its `options.cities` then holds
@@ -195,7 +195,7 @@ Start the first run right away, without asking: `mcp__door__find_jobs` with `ski
 is still the example, say so instead and ask for a CV. Report how many postings it wrote and the top matches,
 or its error.
 If a style build was started, say in one line that it is building in the background and will be offered at the start
-of a later conversation. Never wait for it, check on it or call `show_style`/`use_style` here.
+of a later conversation if it comes out like your CV. Never wait for it, check on it or call `show_style`/`use_style` here.
 
 Then tell the user how to use The other door from now on: say "get me today's jobs" in a conversation (the
 `find_jobs` tool — it only fetches postings published since the last scrape), then "what's new?".

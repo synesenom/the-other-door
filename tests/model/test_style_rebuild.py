@@ -4,10 +4,11 @@ Not in the offline suite or CI (marker `model`): `./scripts/run-test.sh --model`
 `style_build.build` as the app's build runs it: the real model, the real pinned Chromium, the fonts fetched from
 google/fonts. The cases: every CV of the style corpus that has a style to copy (the real, scrubbed ones and the made-up
 designs; a new one is picked up from expected.json), each with the example CV as the user's, and the edges: the fonts
-unreachable, a user's CV far shorter or far longer than the one whose look is copied. A ready style is then chosen and
-previewed, as the app does, and that print is read back: its columns, and what an ATS reads of it. Every check is on
-behaviour, never on the model's HTML. A CV with nothing to copy (a scan, a LinkedIn export) stops before the model and
-is tested offline (`tests/tailoring/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
+unreachable, a user's CV far shorter or far longer than the one whose look is copied. A build whose best round stays
+under `style_compare.FLOOR` fails and writes nothing; a ready one's style is then chosen and previewed, as the app does,
+and that print is read back: its columns, and what an ATS reads of it. Every check is on behaviour, never on the model's
+HTML. A CV with nothing to copy (a scan, a LinkedIn export) stops before the model and is tested offline
+(`tests/tailoring/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
 
 A case a known issue still breaks is an `xfail` naming it: the release gate stays green, and a pass shows as XPASS.
 """
@@ -28,12 +29,11 @@ from style_build_utils import EXAMPLE, STYLES
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
 from door.core import chromium, fonts, workspace
-from door.tailoring import cv_body, readability, style_build, style_extract
+from door.tailoring import cv_body, readability, style_build, style_compare, style_extract
 
 pytestmark = [pytest.mark.model, pytest.mark.real_chromium]
 
 EXPECTED = json.loads((STYLES / "expected.json").read_text(encoding="utf-8"))
-FLOOR = 0.5  # the best round's blurred score: Sonnet's median was 0.94 in #206, a broken one (far off, or pages too long) under 0.2
 EXAMPLE_CV = (EXAMPLE / "cv.md").read_text(encoding="utf-8")
 
 SHORT_CV = """# Sam Example
@@ -152,20 +152,20 @@ def chosen(builds):
     return choose
 
 
-@pytest.mark.parametrize("name", CASES)
+def _known(names):
+    """`names` as parameters, a case a known issue breaks an xfail naming it."""
+    return [pytest.param(n, marks=pytest.mark.xfail(reason=f"known: {KNOWN[n]}", strict=False)) if n in KNOWN else n
+            for n in names]
+
+
+# a build under the floor fails (#241): a case a known issue keeps from looking like its original is not ready either
+@pytest.mark.parametrize("name", _known(n for n in CASES if CASES[n].fonts_fetch is None))
 def test_the_build_is_ready(builds, name):
     result, _ = builds(name)
-    assert result["state"] == "ready", result["problems"]
+    assert result["state"] == "ready", (result["problems"], result["scores"])
 
 
 # fonts-unreachable is left out: with no free font to print with, it is not meant to look like the original
-@pytest.mark.parametrize("name", [pytest.param(n, marks=pytest.mark.xfail(reason=f"known: {KNOWN[n]}", strict=False))
-                                  if n in KNOWN else n for n in CASES if CASES[n].fonts_fetch is None])
-def test_the_best_round_looks_like_the_original(builds, name):
-    result, _ = builds(name)
-    assert result["scores"] and max(result["scores"]) >= FLOOR, result["scores"]
-
-
 @pytest.mark.parametrize("name", [n for n in CASES if CASES[n].fonts_fetch is None])
 def test_the_cvs_main_font_has_a_free_stand_in(builds, name):
     result, _ = builds(name)
@@ -175,10 +175,13 @@ def test_the_cvs_main_font_has_a_free_stand_in(builds, name):
     assert entry and entry["source"] != "none", result["fonts"]
 
 
-def test_with_the_fonts_unreachable_the_build_is_still_ready_and_says_why(builds):
+def test_with_the_fonts_unreachable_the_build_says_why_and_is_ready_only_when_it_reaches_the_floor(builds):
     result, _ = builds("fonts-unreachable")
-    assert result["state"] == "ready", result["problems"]
     assert "unreachable" in (result["font_error"] or "")
+    if result["scores"] and max(result["scores"]) >= style_compare.FLOOR:
+        assert result["state"] == "ready", result["problems"]
+    else:
+        assert result["state"] == "failed" and result["problems"][0].startswith("the fonts could not be downloaded")
 
 
 @pytest.mark.parametrize("name", CASES)
