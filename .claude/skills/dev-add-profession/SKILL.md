@@ -108,9 +108,7 @@ A failure goes back to that source's builder once, as in step 3.
 
 ## Step 6: Issues for the gaps
 
-For each door gap in `plan.md` (title matching, locality, seniority words, naming, a platform refused):
-1. search the open issues (`mcp__github__search_issues`) for it;
-2. add the profession's example to a matching issue, or file a new one with `/dev-file-issue`.
+For each door gap in `plan.md` (title matching, locality, seniority words, naming, a platform refused), file it with `/dev-file-issue` (on a matching open issue it adds the profession's example there instead).
 
 Each issue gets the concrete failing input and the expected result, ready for a failing test. Note each issue number in `plan.md`. Don't fix them here: this skill adds sources.
 
