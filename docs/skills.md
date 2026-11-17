@@ -51,9 +51,13 @@ GitHub-issue workflow and are prefixed `dev-` to stay out of the way of the user
 The skills are tested end to end, locally and before a release (`./scripts/run-test.sh --skills`, never
 in CI): the real model runs `/onboard`, `/expand` and a review session against a test world,
 a second small model plays the user, and the checks are on behaviour only (which tools, in which order,
-what was written and when), never on wording. They need a signed-in `claude`, `claude-agent-sdk` and
-`npm ci` in `app/`; they use the plan's quota. Run them before a release and when a skill (or CLAUDE.md's
-review-session rules) changes.
+what was written and when), never on wording. The same run rebuilds the CV style of every CV in the style
+corpus and its edge cases with the real stylist agent (`tests/skills/test_style_build_model.py`, about 2-4
+minutes a CV): each build ready, close to its original, its fonts found, and the chosen style printing the
+user's CV in the original's columns, read back whole by an ATS; a case a known issue still breaks is an
+`xfail` naming it. They need a signed-in `claude`, `claude-agent-sdk`, `npm ci` in `app/`, the pinned
+Chromium and google/fonts reachable; they use the plan's quota. Run them before a release and when a skill,
+CLAUDE.md's review-session rules, the stylist agent or the style build code changes.
 
 ## Agents
 

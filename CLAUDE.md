@@ -335,7 +335,7 @@ poetry install   # runtime + dev deps (pytest, pytest-cov, pytest-xdist, respons
 
 ./scripts/run-test.sh           # offline suite + coverage + regenerate badge
 ./scripts/run-test.sh --live    # opt-in smoke tests against real sites
-./scripts/run-test.sh --skills  # the skills (/onboard, /expand) and a review session run by the real model on your plan, before a release
+./scripts/run-test.sh --skills  # the skills (/onboard, /expand) a review session and the CV style rebuild (every style corpus CV) run by the real model on your plan, before a release
 ./scripts/run-test.sh --cli-journeys  # the real ./door in the app's test world (init, find, jobs show/prepare/status; needs Node and npm ci in app/; CI: cli-journeys.yml, Linux and Windows)
 ./scripts/run-test.sh --app     # the desktop app's tests as CI runs them (typecheck, unit, e2e, every journey, phone)
 ./scripts/run-test.sh --release # before a release: offline suite, app with every journey, CLI journeys, skills, and the
@@ -349,10 +349,7 @@ for the tools' own model calls), with a small model playing the persona (`tests/
 also runs one skill by hand and writes its transcript). They check behaviour only: the tools and their order,
 what was written and when. `tests/skills/test_skill_contract_unit.py` (offline) checks that every tool a skill
 or agent names exists, with the parameters it passes. `tests/skills/test_style_build_model.py` (#238, same marker) runs the
-CV style rebuild with the real stylist, the pinned Chromium and the fonts fetched, on every CV of the style corpus (the
-scrubbed real ones and the made-up designs, read from its `expected.json`) and the edges (fonts unreachable, a user's CV
-far shorter or longer than the original, a CV with nothing to copy): each build ready, its score over a floor, its
-files and columns, the chosen style previewed; it needs a signed-in `claude` and the pinned Chromium (`DOOR_BIN`).
+CV style rebuild with the real stylist on every style corpus CV and its edges; it needs a signed-in `claude` and the pinned Chromium.
 
 The offline suite runs in parallel (`pytest -n auto`, pytest-xdist, in `run-test.sh` and CI;
 `-n 0` runs it serially, and live runs stay serial), so a test must not share a fixed path,
