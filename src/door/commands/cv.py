@@ -82,7 +82,7 @@ def _extract_text(path: Path, style: dict | None = None) -> str:
         from door.tailoring import pdf_render, style_extract
 
         style = style or style_extract.extract(path)
-        runs = style.get("runs", [])  # none for a scan or a LinkedIn export
+        runs = style.get("runs", [])  # none for a scan or a LinkedIn export (a three-column CV keeps them)
         return "\n".join(pdf_render.page_texts(path, rewrite=style_icons.draft_edits(runs, style))).strip()
     if suffix == ".docx":
         return _docx_text(path)

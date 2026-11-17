@@ -782,3 +782,22 @@ def test_spaced_level_dots_do_not_widen_a_column_band():
     style = style_extract.extract(TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf")
     side = next(b for b in style["columns"]["bands"] if b["kind"] == "side")
     assert side["x1"] == 541.9
+
+
+# ---------- layouts the template model cannot place (#318) ----------
+
+def three_columns(tmp_path):
+    return read(tmp_path, titled(40, ["Skills", "Languages"]) + titled(300, ["Experience"]) + titled(560, ["Education"]),
+                size=(900, 800))
+
+
+def test_three_columns_have_no_place_in_the_template_model(tmp_path):
+    style = three_columns(tmp_path)
+    assert style["verdict"]["copyable"] is False and style["verdict"]["reason"] == "layout"
+    assert style["verdict"]["detail"] == "has three or more columns, which the template model cannot place."
+    assert style["columns"]["count"] == 3
+
+
+def test_a_three_column_cv_keeps_its_text_and_colours_for_the_draft(tmp_path):
+    style = three_columns(tmp_path)
+    assert len(style["runs"]) > 20 and style["colors"] and style["headings"] and style["fonts"]

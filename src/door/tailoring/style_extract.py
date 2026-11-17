@@ -2,8 +2,8 @@
 shapes, icons as SVG paths, the photo. Pure and offline: pypdfium2 and Pillow, nothing written, no network.
 
 `extract(pdf_path)` returns one dict (schema version 1, points, the origin at the top left, colours `#rrggbb`):
-`verdict` first (`style_verdict` says when there is nothing to copy: a scan or a LinkedIn export; the other
-keys are then left out), then `runs` (one per piece of text on a line), `fonts`, `page` (size, margins, bleed,
+`verdict` first (`style_verdict` says when there is nothing to copy: a scan or a LinkedIn export; `layout_verdict`
+a page of three columns, which the template cannot place, with every other key still there), then `runs` (one per piece of text on a line), `fonts`, `page` (size, margins, bleed,
 background), `colors` (text, accent), `name`, `columns` (bands), `headings` and `heading_style`, `shapes`, `icons`
 (SVG paths next to the text they belong to), `photo`. Fonts are only described (family, weight, italic, serif, fixed); looking
 them up is another step. Icons are `style_icons`'s, traced by `style_trace`.
@@ -681,6 +681,14 @@ def _verdict(copyable: bool, reason: str, detail: str) -> dict:
     return {"copyable": copyable, "reason": reason, "detail": detail}
 
 
+def layout_verdict(columns: dict) -> dict | None:
+    """The `layout` verdict (#318) for a page the template's header, main and side bands cannot place: three or
+    more columns, which a rebuilt page would merge or drop."""
+    if len(columns["bands"]) >= 3:
+        return _verdict(False, "layout", "has three or more columns, which the template model cannot place.")
+    return None
+
+
 # ---------- the whole read ----------
 
 def _fonts_used(runs: list[dict]) -> list[dict]:
@@ -746,7 +754,7 @@ def extract(pdf_path: Path) -> dict:
         columns = column_bands(pages, shapes)
         name = find_name(runs)
         headings = find_headings(runs, shapes, columns["bands"], name)
-        return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
+        return {**head, "verdict": layout_verdict(columns) or head["verdict"], "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
                 "columns": columns, "headings": headings, "heading_style": heading_style(headings),
                 "runs": [{k: v for k, v in r.items() if k not in _INTERNAL} for r in runs], "shapes": shapes,
                 "icons": style_icons.find_icons(doc, pages), "photo": pages[0]["photo"]}

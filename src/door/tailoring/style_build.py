@@ -526,7 +526,7 @@ class _Session:
         pdf, placed, _ = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
                                                 columns=self.manifest.columns, photo=self.photo)
         render = style_extract.extract(pdf)
-        if not render["verdict"]["copyable"]:
+        if not render["verdict"]["copyable"] and render["verdict"]["reason"] != "layout":  # a render of three columns is judged by `column_problems`
             raise _Stop("the print has no text to read back")
         diffs = style_compare.match(self.style, render)
         score = style_compare.pages_score(self.images, style_compare.page_images(pdf, self.work))

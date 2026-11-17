@@ -290,9 +290,10 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
     """The wizard offers the style build only for a file that has a style to copy (#150)."""
     _answer(monkeypatch)
     styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
-    sources = [str(styled), str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane"]
+    three = styled.with_name("html-three-columns.pdf")
+    sources = [str(styled), str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane", str(three)]
     result = cv_cmd._draft_cv_core(sources, profile_dir=env.profile_dir)
-    assert [s.get("style") for s in result["sources"]] == [True, False, False, None]
+    assert [s.get("style") for s in result["sources"]] == [True, False, False, None, False]
 
 
 def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
@@ -386,3 +387,13 @@ def test_extract_text_of_a_pdf_with_icons_keeps_its_lines(name):
 def test_extract_text_of_a_pdf_with_no_icon_glyphs_is_pdfiums_text(pdf):
     # a scan, a LinkedIn export and a CV with no icon font: the text as pdfium gives it, in its order
     assert cv_cmd._extract_text(pdf) == _pdfium_text(pdf)
+
+
+def test_the_draft_text_of_a_refused_three_column_cv_still_drops_its_icons(monkeypatch):
+    """`style_extract` keeps the runs of a layout refusal, so `draft_edits` is given them (#318)."""
+    from door.tailoring import style_icons
+
+    given = []
+    monkeypatch.setattr(style_icons, "draft_edits", lambda runs, style: given.append(runs) or {})
+    text = cv_cmd._extract_text(REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "html-three-columns.pdf")
+    assert len(given[0]) > 20 and "Experience" in text
