@@ -183,30 +183,36 @@ def page(boxes, size=(200, 280)):
     return image
 
 
+def score(a, b):
+    """`pages_score` of one page each."""
+    return style_compare.pages_score([a], [b])
+
+
 def test_the_same_image_scores_one_and_a_blank_page_scores_zero():
     a = page([(20, 20, 120, 40), (20, 80, 60, 200)])
-    assert style_compare.blurred_score(a, a) == pytest.approx(1.0)
-    assert style_compare.blurred_score(a, page([])) == pytest.approx(0.0, abs=0.02)
+    assert score(a, a) == pytest.approx(1.0)
+    assert score(a, page([])) == pytest.approx(0.0, abs=0.02)
 
 
 def test_a_rebuild_with_more_ink_than_the_original_does_not_floor_at_zero():
     a = page([(20, 20, 60, 40)])
     full = page([(0, 0, 200, 280)])
     wrong = page([(20, 20, 120, 200)])
-    assert style_compare.blurred_score(a, wrong) > 0.0
-    assert style_compare.blurred_score(a, wrong) < style_compare.blurred_score(a, page([(22, 20, 62, 40)]))
-    assert style_compare.blurred_score(a, full) >= 0.0
+    assert score(a, wrong) > 0.0
+    assert score(a, wrong) < score(a, page([(22, 20, 62, 40)]))
+    assert score(a, full) >= 0.0
 
 
 def test_a_small_shift_scores_better_than_a_large_one():
     a = page([(20, 20, 120, 40)])
-    near = style_compare.blurred_score(a, page([(22, 20, 122, 40)]))
-    far = style_compare.blurred_score(a, page([(20, 120, 120, 140)]))
+    near = score(a, page([(22, 20, 122, 40)]))
+    far = score(a, page([(20, 120, 120, 140)]))  # 100 pixels down: beyond the vertical reach of a 280-pixel page
     assert 1.0 > near > far
 
 
 def test_images_of_other_sizes_are_compared_on_their_common_part():
-    assert style_compare.blurred_score(page([(20, 20, 60, 40)]), page([(20, 20, 60, 40)], size=(200, 300))) == pytest.approx(1.0)
+    assert score(page([(20, 20, 60, 40)]), page([(20, 20, 60, 40)], size=(200, 300))) == pytest.approx(1.0)
+    assert score(page([(20, 20, 60, 40)], size=(240, 280)), page([(20, 20, 60, 40)])) == pytest.approx(1.0)
 
 
 def lines(count, top=20, step=20, size=(200, 280)):

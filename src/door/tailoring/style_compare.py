@@ -3,8 +3,8 @@
 Both sides are `style_extract.extract` results (`runs` and `icons`, points, origin top left). `match` pairs the text
 runs by their normalised text (the nearest run of the same text when there are several) and the icons by the text
 they sit beside, then by position, and says how each pair differs: `dx`, `dy` (the render's box minus the original's),
-`d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `blurred_score` and `pages_score` (each
-original page at its best vertical shift) say how alike the page images look, `feedback` is what the next round tells the
+`d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `pages_score` (grey, blurred, each
+original page at its best vertical shift) says how alike the page images look, `feedback` is what the next round tells the
 model, and `should_stop` / `best_round` are the loop's stopping rule: stop at `CAP` rounds, when every matched element
 is within `WITHIN_PT` points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `GOOD`); the best round is kept.
 """
@@ -20,7 +20,7 @@ from door.tailoring import pdf_render, readability, style_trace
 
 CAP = 7  # rounds
 WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
-# a round that adds less than this over the best before it is not worth another: half of the old 0.005, as `blurred_score`
+# a round that adds less than this over the best before it is not worth another: half of the old 0.005, as the blurred score
 # (which weighs the difference against the ink) roughly halves what a round gains, so the same sensitivity
 MIN_GAIN = 0.0025
 # the small-gain rule applies only once the best round scored this, a good rebuild (0.88-0.99 in #238's real runs): below
@@ -219,21 +219,15 @@ def _ink(image: Image.Image) -> int:
 
 
 def _alike(x: Image.Image, y: Image.Image) -> float:
-    """`blurred_score` of two grey blurred images of one size."""
+    """How alike two grey blurred images of one size look, 0 to 1 (the blur makes a shift of a pixel cost little): the
+    mean squared difference against the ink of the two together (on a mostly white page a plain difference is near 0
+    for any rebuild; a rebuild further off than a blank page still scores above 0)."""
     pixels = x.width * x.height
     if not pixels:
         return 1.0
     mse = _sum_squares(ImageChops.difference(x, y)) / pixels / 255**2
     ink = (_ink(x) + _ink(y)) / pixels / 255**2
     return 1 - mse / max(ink, 0.005)
-
-
-def blurred_score(a: Image.Image, b: Image.Image) -> float:
-    """How alike two page images look, 0 to 1: both grey and blurred (a shift of a pixel costs little), over their
-    common part, the mean squared difference against the ink of the two pages together (on a mostly white page a plain
-    difference is near 0 for any rebuild; a rebuild further off than a blank page still scores above 0)."""
-    size = (min(a.width, b.width), min(a.height, b.height))
-    return _alike(*(im.convert("L").crop((0, 0, *size)).filter(ImageFilter.GaussianBlur(BLUR_RADIUS)) for im in (a, b)))
 
 
 def _best_shift(page: Image.Image, strip: Image.Image, top: int, reach: int) -> int:
@@ -253,7 +247,7 @@ def _best_shift(page: Image.Image, strip: Image.Image, top: int, reach: int) -> 
 
 
 def pages_score(original: list[Image.Image], render: list[Image.Image]) -> float:
-    """How alike two documents look, 0 to 1: the mean `blurred_score` of the original's pages, each against the
+    """How alike two documents look, 0 to 1: the mean blurred score (`_alike`) of the original's pages, each against the
     render's pages laid end to end at the vertical shift (up to `SHIFT_REACH` of a page) where it matches best, so
     that a rebuild a few lines too long is not scored as if every line after the first break were wrong (#244). An
     original page with nothing under it scores 0. What the render holds outside those windows counts as pages scoring
