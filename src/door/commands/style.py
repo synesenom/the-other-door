@@ -334,7 +334,7 @@ def build_style(file):
     """Build a template from FILE's look (a CV as a PDF): fonts, colours, layout, in a few minutes of the model's time.
 
     Runs here and now; the `build_style` tool starts the same thing in the background. The result is written to
-    profile/style.next/ only when it passes; nothing uses it until `cv style use` chooses it."""
+    profile/style.next/ only when it passes; nothing uses it until `cv style use like` chooses it."""
     interactive = common._stdout_is_tty()
     try:
         with _progress.live_progress(enabled=interactive) as reporter:
@@ -355,7 +355,7 @@ def build_style(file):
         sys.exit(1)
     if result["font_error"]:
         click.echo(f"The fonts could not be downloaded ({result['font_error']}): only the fonts The other door ships stand in.")
-    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style.next/; `cv style use` chooses it.")
+    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style.next/; `cv style use like` chooses it.")
 
 
 _USE_WORDS = {"like": "Your own style is in use: the one built from your CV.", "default": "The other door's style is in use."}

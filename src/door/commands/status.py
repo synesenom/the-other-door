@@ -574,7 +574,7 @@ def _print_pipeline_status() -> None:
     if result["style"]["state"] == "ready":
         common._section(console, "CV style")
         console.print(Padding(Text(
-            "A style built from your CV is ready: `./door cv style show` to compare, `./door cv style use` to choose."), (0, 2)))
+            "A style built from your CV is ready: `./door cv style show` to compare, `./door cv style use like` to choose it."), (0, 2)))
 
     if result["drive"]["connected"]:
         common._section(console, "Google Drive")
