@@ -67,6 +67,9 @@ def test_the_columns_icons_photo_and_heading_case(styles, stem):
     low, high = icons if isinstance(icons, list) else (icons, icons)
     assert low <= len(style["icons"]) <= high
     assert (style["photo"] is not None) == expected["photo"]
+    if "photo_shape" in expected:
+        assert style["photo"]["shape"] == expected["photo_shape"]
+        assert all(abs(a - b) <= 2 for a, b in zip(style["photo"]["bbox"], expected["photo_bbox"]))
     assert style["heading_style"]["case"] == expected["heading_case"]
 
 

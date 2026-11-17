@@ -448,6 +448,53 @@ def test_an_image_clipped_to_a_circle_is_a_round_photo(tmp_path):
     assert read(tmp_path, clip + body(), images=RED)["photo"]["shape"] == "circle"
 
 
+def clipped_image(x, y, w, h, radius):
+    """the picture clipped to a box with corners of *radius* (half the side: a circle), top left corner (x, y + h)"""
+    r, k = radius, 0.5523 * radius
+    x1, y1 = x + w, y + h
+    path = (f"{x + r} {y} m {x1 - r} {y} l {x1 - r + k} {y} {x1} {y + r - k} {x1} {y + r} c {x1} {y1 - r} l "
+            f"{x1} {y1 - r + k} {x1 - r + k} {y1} {x1 - r} {y1} c {x + r} {y1} l {x + r - k} {y1} {x} {y1 - r + k} {x} {y1 - r} c "
+            f"{x} {y + r} l {x} {y + r - k} {x + r - k} {y} {x + r} {y} c h W n\n")
+    return f"q {path}{w} 0 0 {h} {x} {y} cm /Im1 Do Q\n"
+
+
+@pytest.mark.parametrize("side", [48, 64, 86, 100, 140])
+def test_a_round_photo_of_any_size_is_a_circle(tmp_path, side):
+    style = read(tmp_path, clipped_image(450, 650, side, side, side / 2) + body(), images=RED)
+    assert style["photo"]["shape"] == "circle"
+    x0, y0, x1, y1 = style["photo"]["bbox"]
+    assert abs((x1 - x0) - side) < 2 and abs((y1 - y0) - side) < 2
+
+
+@pytest.mark.parametrize("side,fraction", [(64, 0), (86, 0.06), (86, 0.15), (100, 0.24), (140, 0.24), (48, 0.15)])
+def test_a_square_or_rounded_photo_is_a_rect_whatever_its_corner_radius_up_to_a_quarter(tmp_path, side, fraction):
+    style = read(tmp_path, clipped_image(450, 650, side, side, side * fraction) + body(), images=RED)
+    assert style["photo"]["shape"] == "rect"
+
+
+def test_an_oval_photo_is_a_rect_for_the_stylist_has_only_a_circle_to_draw(tmp_path):
+    assert read(tmp_path, clipped_image(450, 650, 70, 100, 35) + body(), images=RED)["photo"]["shape"] == "rect"
+
+
+def test_a_square_picture_with_a_light_backdrop_and_a_dark_oval_is_a_rect_photo(tmp_path):
+    # 40 x 40 pixels of white with a dark ellipse 28 wide and 34 tall: what is seen is taller than wide
+    rows = []
+    for yy in range(40):
+        for xx in range(40):
+            inside = ((xx - 19.5) / 14) ** 2 + ((yy - 19.5) / 17) ** 2 <= 1
+            rows.append((60, 40, 30) if inside else (255, 255, 255))
+    data = bytes(c for px in rows for c in px)
+    style = read(tmp_path, image_at(440, 650, 100, 100) + body(), images={"Im1": (40, 40, data)})
+    assert style["photo"]["shape"] == "rect"
+
+
+def test_a_header_photo_at_the_top_right_is_found_with_its_box(tmp_path):
+    style = read(tmp_path, clipped_image(470, 720, 86, 86, 43) + body(), images=RED, size=(595, 842))
+    assert style["photo"]["page"] == 1 and style["photo"]["shape"] == "circle"
+    x0, y0, x1, y1 = style["photo"]["bbox"]
+    assert abs(x0 - 470) < 2 and abs(y0 - (842 - 806)) < 2 and x1 > 550
+
+
 def test_a_page_sized_image_is_a_background_not_a_photo(tmp_path):
     style = read(tmp_path, image_at(0, 0, 595, 842) + body(), images=RED)
     assert style["photo"] is None and style["icons"] == []

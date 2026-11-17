@@ -331,12 +331,28 @@ def _seen(page, bbox: list[float], background: str | None) -> tuple[list[float],
     ink = [min(xs), min(ys), max(xs), max(ys)]
     box = [round(max(bbox[0], shown[0] + ink[0] / scale), 1), round(max(bbox[1], shown[1] + ink[1] / scale), 1),
            round(min(bbox[2], shown[0] + (ink[2] + 1) / scale), 1), round(min(bbox[3], shown[1] + (ink[3] + 1) / scale), 1)]
-    mx, my = (ink[0] + ink[2]) // 2, (ink[1] + ink[3]) // 2
-    corners = [(ink[0] + 1, ink[1] + 1), (ink[2] - 1, ink[1] + 1), (ink[0] + 1, ink[3] - 1), (ink[2] - 1, ink[3] - 1)]
-    sides = [(mx, ink[1] + 1), (mx, ink[3] - 1), (ink[0] + 1, my), (ink[2] - 1, my)]
-    round_ = (all(style_trace.distance(px[c], around) <= 12 for c in corners) and all(style_trace.distance(px[c], around) > 40 for c in sides)
-              and style_trace.distance(px[mx, my], around) > 40)
+    w, h = ink[2] - ink[0] + 1, ink[3] - ink[1] + 1
+    round_ = (_ROUND_ASPECT[0] <= w / h <= _ROUND_ASPECT[1]
+              and corner_clearance(lambda x, y: style_trace.distance(px[x, y], around) > 12, ink) >= _ROUND_CLEARANCE)
     return box, "circle" if round_ else "rect"
+
+
+# A circle inscribed in its box leaves 1 - 1/sqrt(2) = 0.29 of the half-diagonal clear at each corner; a rounded
+# corner of radius r on a side s leaves 0.59 r / s (0.09 at r = 15%, 0.14 at 24%, 0.23 at 40%), a square none.
+_ROUND_CLEARANCE = 0.2
+_ROUND_ASPECT = (0.85, 1 / 0.85)
+
+
+def corner_clearance(inked, box: list[int]) -> float:
+    """The part of the half-diagonal of *box* (x0, y0, x1, y1 in pixels) that is clear of ink at its least clear
+    corner: `inked(x, y)` is walked from each corner towards the middle."""
+    half = min(box[2] - box[0] + 1, box[3] - box[1] + 1) / 2
+    least = 1.0
+    for cx, dx in ((box[0], 1), (box[2], -1)):
+        for cy, dy in ((box[1], 1), (box[3], -1)):
+            clear = next((i for i in range(int(half)) if inked(cx + dx * i, cy + dy * i)), half)
+            least = min(least, clear / half)
+    return least
 
 
 def find_photo(page, images: list[dict], size: list[float], background: str | None) -> tuple[dict, list[float]] | None:

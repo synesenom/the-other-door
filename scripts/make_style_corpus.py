@@ -18,7 +18,7 @@ import tempfile
 from html import escape
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
@@ -174,6 +174,32 @@ def html_plain_single(r: dict) -> str:
     return _html(css, body)
 
 
+def made_up_photo() -> Image.Image:
+    """A generated head-and-shoulders stand-in (no real face): a warm ground, a round head, dark shoulders."""
+    image = Image.new("RGB", (240, 240), (196, 150, 118))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((80, 40, 160, 140), fill=(233, 196, 164))
+    draw.ellipse((20, 150, 220, 330), fill=(52, 70, 104))
+    return image
+
+
+def html_header_photo(r: dict, round_: bool) -> str:
+    """One column with the picture at the right of the header, round (moderncv casual) or square (Awesome-CV)."""
+    c = r["contact"]
+    shape = "border-radius:50%" if round_ else "border-radius:0"
+    css = ("body{font:10.5pt Calibri,'Helvetica Neue',Arial,sans-serif;color:#222;padding:40px 48px}h1{font-size:26pt;margin:0;color:#7A2E1F}"
+           ".head{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #7A2E1F;padding-bottom:12px}"
+           f".photo{{width:86pt;height:86pt;object-fit:cover;{shape}}}"
+           "h2{font-size:12pt;color:#7A2E1F;margin:14px 0 6px;text-transform:uppercase}"
+           ".row{display:flex;justify-content:space-between}.co{color:#555;font-style:italic}ul{margin:4px 0 8px;padding-left:18px}.dates{color:#555}")
+    body = (f"<div class='head'><div><h1>{e(r['name'])}</h1><div>{e(r['title'])}</div>"
+            f"<div>{e(' | '.join(c.values()))}</div></div><img class='photo' src='photo.jpg' alt=''></div>"
+            f"<h2>Profile</h2><p>{e(r['summary'])}</p><h2>Experience</h2>{_jobs_html(r)}<h2>Education</h2>"
+            + "".join(f"<div><b>{e(x['degree'])}</b>, {e(x['school'])} <span class='dates'>{e(x['dates'])}</span></div>" for x in r["education"])
+            + f"<h2>Skills</h2><p>{e(', '.join(r['skills']))}</p>")
+    return _html(css, body)
+
+
 DESIGNS = [
     ("html-word-two-column", html_word_two_column), ("html-canva-icons", html_canva_icons),
     ("html-plain-single", html_plain_single),
@@ -225,15 +251,18 @@ def scan_pdf(image: Image.Image, out: Path) -> None:
 
 
 def build(out: Path, printer=html_pdf.print_html) -> None:
-    """Write the corpus PDFs into *out*: the four HTML designs, the LinkedIn-like export and the scan."""
+    """Write the corpus PDFs into *out*: the HTML designs, the LinkedIn-like export and the scan."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     fonts = [FONT_DIR / name for _, name, _, _ in _FACES]
     pages = [("html-word-two-column", source(1)), ("html-canva-icons", source(2)),
              ("html-plain-single", source(3)), ("linkedin-like", linkedin_html(record(4))),
              ("html-equal-columns", html_equal_columns(record(5))),
-             ("html-three-columns", html_three_columns(record(5)))]
+             ("html-three-columns", html_three_columns(record(5))),
+             ("html-header-photo-round", html_header_photo(record(1), True)),
+             ("html-header-photo-square", html_header_photo(record(2), False))]
     with tempfile.TemporaryDirectory() as folder:
+        made_up_photo().save(Path(folder) / "photo.jpg")
         for stem, html in pages:
             printer(Path(folder), with_fonts(html), out / f"{stem}.pdf", assets={"fonts": fonts})
     plain = out / "html-plain-single.pdf"
