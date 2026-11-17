@@ -25,7 +25,7 @@ The task names the files in the current folder; open them with the Read tool:
 
 One page of HTML with `<<lang>>` in `<html lang>` and `<<body>>` once, on a line of its own in `<body>`. Everything else is CSS around that body: you write no text, no script, no `<link>`, no `<img>`, no SVG, no `@import`, no `on*` attribute, no `content:` with letters or digits in it. Fonts and icons are loaded only as `url(/fonts/<file>)` and `url(/icons/<file>)` of the files named; use an icon as a `background` or a `mask` on a contact span's `::before` by its kind. Put the CSS in one `<style>` in `<head>`. Keep, as the shipped template does:
 
-- `@page { size: A4; margin: ... }` set from the CV's margins; `html { font-synthesis: none; hyphens: manual; }`;
+- `@page { size: <the page size the task names>; margin: ... }` set from the CV's margins; `html { font-synthesis: none; hyphens: manual; }`;
 - a `.photo` rule (the CV's photo, if any, is an `<img class="photo">` placed in the header; the rule sizes and crops it);
 - a first HTML comment listing the building blocks and every class below (the tailor reads it to write the body).
 
@@ -42,7 +42,7 @@ The body is written later by another agent in these building blocks only; style 
 
 Classes: cv-header, contact, tagline, phone, email, web, location, linkedin, github, entry, role, org, dates, place, sep, level, level-1, level-2, level-3, level-4, level-5.
 
-Columns: when `template.json` has `columns.side`, a body comes as the header, then `<div class="main">` and `<div class="side">` holding the sections (the side one the kinds listed), in that order. Place them with CSS (a flex row or grid; reverse the order for a left side column; give the side column its background, full height, with a background on `html`/`body` or a grid area that fills the page). A header, name or photo that sits inside a coloured side column in the original needs a CSS grid on `body` (the header, `.main`, `.side` as areas). Without `columns`, no `.main` or `.side`.
+Columns: when `template.json` has `columns.side`, a body comes as the header, then `<div class="main">` and `<div class="side">` holding the sections (the side one the kinds listed), in that order. Place them with CSS (a flex row or grid; reverse the order for a left side column; give the side column its background, full height, with a background on `html`/`body` or a grid area that fills the page). A header, name or photo that sits inside a coloured side column in the original needs a CSS grid on `body` (the header, `.main`, `.side` as areas). The code, not you, wraps a body into `.main` and `.side` (and `compile` does the same for a real CV): your sample body holds only the building blocks (header, sections, entries), never a `<div>` with a class; the template's CSS styles `.main` and `.side`. Without `columns`, no `.main` or `.side`.
 
 Match the original where you can measure it: font families and weights (only the given ones), sizes in `pt`, colours, margins, the space between lines and sections, heading case (`text-transform`), the rule under headings, the accent colour, list bullets, the contact line. Nothing in the body may print outside the page: long lines wrap, entries do not break across pages (`break-inside: avoid`), headings stay with what follows.
 

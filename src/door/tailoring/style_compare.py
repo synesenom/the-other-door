@@ -6,7 +6,7 @@ they sit beside, then by position, and says how each pair differs: `dx`, `dy` (t
 `d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `blurred_score` and `pages_score`
 say how alike the page images look, `feedback` is what the next round tells the model, and `should_stop` /
 `best_round` are the loop's stopping rule: stop at `CAP` rounds, when every matched element is within `WITHIN_PT`
-points, or when the last round gained under `MIN_GAIN` over the best before it; the best round is kept.
+points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `MIN_SCORE`); the best round is kept.
 """
 
 from __future__ import annotations
@@ -20,7 +20,10 @@ from door.tailoring import pdf_render, readability, style_trace
 
 CAP = 7  # rounds
 WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
-MIN_GAIN = 0.005  # a round that adds less than this over the best before it is not worth another
+# a round that adds less than this over the best before it is not worth another: half of the old 0.005, as `blurred_score`
+# (which weighs the difference against the ink) roughly halves what a round gains, so the same sensitivity
+MIN_GAIN = 0.0025
+MIN_SCORE = 0.2  # the small-gain rule applies only once the best round scored this: below it the rebuild is still far off
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 _FEEDBACK_LIMIT = 12
 MIN_PART = 5  # characters: a shorter text is not paired by being part of another ("2019" is in many runs)
@@ -196,16 +199,16 @@ def _sum_squares(image: Image.Image) -> int:
 
 def blurred_score(a: Image.Image, b: Image.Image) -> float:
     """How alike two page images look, 0 to 1: both grey and blurred (a shift of a pixel costs little), over their
-    common part, the mean squared difference against what a blank page would differ by (on a mostly white page a plain
-    difference is near 0 for any rebuild)."""
+    common part, the mean squared difference against the ink of the two pages together (on a mostly white page a plain
+    difference is near 0 for any rebuild; a rebuild further off than a blank page still scores above 0)."""
     size = (min(a.width, b.width), min(a.height, b.height))
     x, y = (im.convert("L").crop((0, 0, *size)).filter(ImageFilter.GaussianBlur(BLUR_RADIUS)) for im in (a, b))
     pixels = size[0] * size[1]
     if not pixels:
         return 1.0
     mse = _sum_squares(ImageChops.difference(x, y)) / pixels / 255**2
-    blank = _sum_squares(ImageChops.invert(x)) / pixels / 255**2  # the ink the original has
-    return min(1.0, max(0.0, 1 - mse / max(blank, 0.005)))
+    ink = (_sum_squares(ImageChops.invert(x)) + _sum_squares(ImageChops.invert(y))) / pixels / 255**2
+    return 1 - mse / max(ink, 0.005)
 
 
 def pages_score(original: list[Image.Image], render: list[Image.Image]) -> float:
@@ -230,12 +233,12 @@ def page_images(pdf_path: Path, folder: Path) -> list[Image.Image]:
 def should_stop(scores: list[float], worst_offset: float, cap: int = CAP) -> bool:
     """Whether the rebuild loop is done after the rounds with these blurred `scores`, the last round's matched elements
     being `worst_offset` points off at most: at `cap` rounds, when that is within `WITHIN_PT`, or when the last round
-    gained less than `MIN_GAIN` over the best round before it."""
+    gained less than `MIN_GAIN` over the best round before it, once the best round has reached `MIN_SCORE`."""
     if not scores:
         return False
     if len(scores) >= cap or worst_offset <= WITHIN_PT:
         return True
-    return len(scores) > 1 and scores[-1] - max(scores[:-1]) < MIN_GAIN
+    return len(scores) > 1 and max(scores) >= MIN_SCORE and scores[-1] - max(scores[:-1]) < MIN_GAIN
 
 
 def best_round(scores: list[float]) -> int:

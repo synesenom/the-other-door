@@ -1,6 +1,7 @@
 """The CV style builder's pure parts (#149): the stylist agent, its reply, the icons, fonts and manifest it is given,
 the stress variants and the guard on what is written. The whole loop is in test_style_build.py."""
 
+import types
 import re
 
 import pytest
@@ -96,21 +97,55 @@ def _style(bands, headings, pages=1):
 def test_the_side_column_holds_the_known_sections_whose_headings_are_in_the_side_band():
     style = _style([{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}],
                    [("PROFILE", 31), ("CONTACT", 395), ("COMPÉTENCES", 395), ("Languages", 400), ("EXPERIENCE", 31)])
-    assert style_build._side_kinds(style) == ["skills", "languages"]
+    assert style_build._side_kinds(style, "") == ["skills", "languages"]
 
 
 def test_no_side_band_means_one_column():
-    assert style_build._side_kinds(_style([{"x0": 30, "x1": 500, "kind": "main"}], [("Skills", 31)])) == []
+    assert style_build._side_kinds(_style([{"x0": 30, "x1": 500, "kind": "main"}], [("Skills", 31)]), "") == []
+
+
+_SIDE = [{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}]
+
+
+def test_a_side_band_of_unknown_headings_falls_back_to_the_kinds_the_cv_has():
+    style = _style(_SIDE, [("Logiciels", 395), ("Savoir-être", 400), ("EXPERIENCE", 31)])
+    cv_md = "# A\n\n## Expérience\n\n## Langues\n\n## Compétences\n\n## Loisirs\n"
+    assert style_build._side_kinds(style, cv_md) == ["skills", "languages", "interests"]
+    assert style_build._manifest_data(style, [], {}, cv_md)["columns"] == {
+        "side": ["skills", "languages", "interests"], "headings": ["Logiciels", "Savoir-être"]}
+
+
+def test_a_side_band_whose_kinds_the_cv_lacks_is_still_a_column_by_its_headings():
+    style = _style(_SIDE, [("Logiciels", 395), ("EXPERIENCE", 31)])
+    assert style_build._manifest_data(style, [], {}, "# A\n\n## Expérience\n")["columns"] == {"side": [], "headings": ["Logiciels"]}
+
+
+def test_the_fallback_without_any_of_those_in_the_cv_is_one_column():
+    style = _style(_SIDE, [("Logiciels", 395)])
+    assert style_build._side_kinds(style, "# A\n\n## Expérience\n") == []
+
+
+def test_the_fallback_does_not_apply_without_a_side_band():
+    assert style_build._side_kinds(_style([{"x0": 30, "x1": 500, "kind": "main"}], [("X", 31)]), "## Skills\n") == []
+
+
+def test_the_stylist_is_told_the_original_page_size():
+    style = _style(_SIDE, [("Skills", 400)])
+    style["page"] = {"size": [612.0, 792.0]}
+    session = types.SimpleNamespace(style=style, images=[1], manifest=templates.Manifest(max_pages=1))
+    assert "US Letter" in style_build._files_text(session, "", {})
+    style["page"]["size"] = [595.3, 841.9]
+    assert "A4" in style_build._files_text(session, "", {})
 
 
 def test_the_manifest_has_the_fonts_icons_columns_and_the_original_page_count_within_the_template_limits():
     style = _style([{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}], [("Skills", 400)], pages=5)
-    manifest = style_build._manifest_data(style, ["A.ttf"], {"email": "email.svg"})
+    manifest = style_build._manifest_data(style, ["A.ttf"], {"email": "email.svg"}, "")
     assert manifest == {"version": 1, "fonts": ["A.ttf"], "icons": {"email": "email.svg"}, "max_pages": 3,
-                        "columns": {"side": ["skills"]}}
+                        "columns": {"side": ["skills"], "headings": ["Skills"]}}
     assert templates.Manifest(**manifest)
-    assert style_build._manifest_data(_style([], [], pages=1), [], {})["max_pages"] == 1
-    assert "columns" not in style_build._manifest_data(_style([], [], pages=1), [], {})
+    assert style_build._manifest_data(_style([], [], pages=1), [], {}, "")["max_pages"] == 1
+    assert "columns" not in style_build._manifest_data(_style([], [], pages=1), [], {}, "")
 
 
 # ---------- the stress variants ----------
@@ -155,3 +190,21 @@ def test_the_stress_variants_of_a_cv_with_no_entries_are_still_all_there():
     variants = style_build._stress_variants("# Jane Doe\n\n## Profile\n\nA text.\n")
     assert variants["fewer"]["md"] == variants["photo"]["md"]
     assert variants["long_title"]["md"] != variants["photo"]["md"]
+
+
+def test_the_side_headings_are_every_heading_in_a_side_band_known_or_not():
+    style = _style(_SIDE, [("Logiciels", 395), ("COMPÉTENCES", 400), ("EXPERIENCE", 31)])
+    assert style_build._side_headings(style) == ["Logiciels", "COMPÉTENCES"]
+
+
+@pytest.mark.parametrize("size, words", [([595.3, 841.9], "A4"), ([612, 792], "US Letter"), ([500, 700], "500 x 700 pt")])
+def test_the_page_size_is_a_name_or_the_points(size, words):
+    assert style_build._page_size({"page": {"size": size}}) == words
+
+
+def test_the_stylist_is_told_which_headings_go_to_the_side_and_that_the_code_wraps_them():
+    manifest = templates.Manifest(max_pages=1, columns={"side": [], "headings": ["Logiciels", "Atouts"]})
+    session = types.SimpleNamespace(style=_style(_SIDE, []), images=[1], manifest=manifest)
+    text = style_build._files_text(session, "", {})
+    assert "Logiciels" in text and "Atouts" in text
+    assert "no div" in text and "wraps" in text
