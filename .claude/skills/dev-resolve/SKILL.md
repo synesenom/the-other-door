@@ -5,10 +5,11 @@ description: Fully resolve a GitHub issue — assess complexity, optionally rese
 
 You are the issue resolution orchestrator for The other door. The issue number is passed as the argument. Follow all steps in order without skipping.
 
-Two optional arguments, which `/dev-epic` passes for each sub-issue:
+Three optional arguments, which `/dev-epic` passes for each sub-issue:
 
-- `base=<branch>`: the branch the change builds on (in an epic, the previous sub-issue's); default the default branch. The issue's branch starts from it (`issue-implementer`'s step 0, given `base_branch`).
+- `base=<branch>`: the branch the change builds on (in an epic, its epic branch); default the default branch. The issue's branch starts from it (`issue-implementer`'s step 0, given `base_branch`).
 - `epic=<number>`: the epic the issue belongs to; `/dev-pr` says what changes.
+- `target=<branch>`: the branch the PR goes into (in an epic, the epic branch); default `main`.
 
 **Decision policy**: make all decisions autonomously without pausing for user input. If anything is ambiguous, pick the simplest reasonable interpretation, document the choice, and proceed.
 
@@ -136,7 +137,7 @@ On **PASS** only (on FAIL go to Step 6). Run the reviewers CLAUDE.md "Review" na
 
 ## Step 5: Open the pull request
 
-On **PASS**, open the PR without asking: run `/dev-pr` and follow it (branch name check, merge `main`, push, a body in its format built from the research, plan and validation reports and the review, so the release notes can use it). The body's Changes say each review finding and how it ended. A suite failure the validator showed also fails on a clean `main` goes in the body's test plan, said plainly. Pass on `base` and `epic` (`/dev-pr base=<base> epic=<epic>`), when given.
+On **PASS**, open the PR without asking: run `/dev-pr` and follow it (branch name check, merge `main`, push, a body in its format built from the research, plan and validation reports and the review, so the release notes can use it). The body's Changes say each review finding and how it ended. A suite failure the validator showed also fails on a clean `main` goes in the body's test plan, said plainly. Pass on `base`, `epic` and `target` (`/dev-pr base=<base> epic=<epic> target=<target>`), when given.
 
 On **FAIL** after two attempts, do not open a PR: the branch stays local, and Step 6 says why.
 

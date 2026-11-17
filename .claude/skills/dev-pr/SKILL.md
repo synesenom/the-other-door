@@ -7,10 +7,12 @@ You are preparing and opening a pull request for The other door. Follow all step
 
 **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
 
-Two optional arguments, which `/dev-resolve` passes on:
+Optional arguments, which `/dev-resolve` and `/dev-epic` pass on:
 
-- `base=<branch>`: the branch this one was built on (in an epic, the previous sub-issue's). The PR still targets `main`, but everything below that reads the change uses `origin/<base>` (shown as `<FROM>`; `origin/main` without it), so the dependency's commits are not described as this change's. The body adds `Depends on #<pr>`, the open PR of that branch, when it has one (`mcp__github__list_pull_requests`, `head: synesenom:<base>`, `state: open`).
+- `base=<branch>`: the branch this one was built on (in an epic, its epic branch). Everything below that reads the change uses `origin/<base>` (shown as `<FROM>`; `origin/main` without it), so the base's commits are not described as this change's.
+- `target=<branch>`: the branch the PR goes into (default `main`; in an epic, the epic branch). Step 2 merges `origin/<target>` instead of `origin/main`, and the body is for a reviewer of that branch, not a release note: it may leave out `## For users` when it has nothing a user would notice on its own.
 - `epic=<number>`: the body adds `Part of #<epic>`, and the run stops after Step 6: the caller watches.
+- `final=true` (with `epic`; the PR is the epic branch into `main`): the base is `main`, `<FROM>` is `origin/main`, the body gets `Closes` lines, the `## Summary` and the `## What it looks like` that `/dev-epic` Step 8 names, and the run goes on to Step 7: the epic PR is watched here.
 
 ---
 
@@ -40,8 +42,8 @@ Dependabot's `dependabot/...` branches and the skills' own (`feat/country-<cc>`,
 ## Step 2: Merge latest main
 
 ```bash
-git fetch origin main
-git merge origin/main --no-edit
+git fetch origin <target>   # main without `target`
+git merge origin/<target> --no-edit
 ```
 
 If the merge produces conflicts, resolve them keeping both sides' intent, run the tests the conflicting files touch, and commit the merge. Ask the user only if a conflict needs a decision the `decider` agent cannot make (CLAUDE.md "Decisions").
@@ -74,7 +76,7 @@ From these, draft:
   ```
   **Type**: feat | fix | change | docs | internal
   Closes #<N>   (one line per issue; leave out if none)
-  Part of #<epic> / Depends on #<pr>   (only with `epic` / `base`)
+  Part of #<epic>   (only with `epic`)
 
   ## For users
   <What someone using The other door will notice, in their words and with no code names: what they can now do, what works differently, what stopped going wrong, what was removed. One to four bullets, each one sentence a release note can take as is. For internal work: "Nothing a user would notice.">
@@ -99,7 +101,7 @@ From these, draft:
 
 Call `mcp__github__create_pull_request` with:
 - `owner: synesenom`, `repo: the-other-door`
-- `head: <BRANCH>`, `base: main`
+- `head: <BRANCH>`, `base: <target>` (`main` without `target`)
 - `title` and `body` from Step 4
 
 Record the PR number from the response.

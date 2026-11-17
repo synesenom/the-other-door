@@ -8,7 +8,7 @@ Automated job hunting pipeline: scrape job boards → score against a candidate 
 
 When summarising what you just did, use at most 10 short bullet points: what happened, no details. Go into details only when asked.
 
-A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implemented (`/dev-epic`: every sub-issue implemented, every box checked). The only reason to stop and wait for the user is a decision the `decider` returned CANNOT DECIDE on. Finishing a step, an agent returning, an issue filed, a merge or a permission to wait for are not reasons to stop: go straight on to the next step. Anything else only the user can give (a permission the harness asks for, a merge, a FAIL after two attempts) blocks that one item, never the run: ask for it in one line and go on with every other item. After the user merges or grants something, re-read what it unblocked and start it in the same turn.
+A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implemented (`/dev-epic`: every sub-issue implemented, every box checked). The only reason to stop and wait for the user is a decision the `decider` returned CANNOT DECIDE on. Finishing a step, an agent returning, an issue filed, a merge or a permission to wait for are not reasons to stop: go straight on to the next step. Anything else only the user can give (a permission the harness asks for, a merge into `main`, a FAIL after two attempts) blocks that one item, never the run: ask for it in one line and go on with every other item. After the user merges or grants something, re-read what it unblocked and start it in the same turn.
 
 ## Decisions
 
@@ -29,6 +29,8 @@ Then, once their findings are dealt with, spawn `integration-reviewer` (`.claude
 Each reports its findings with evidence. Every finding, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) through `/dev-file-issue`, which makes it a sub-issue of an epic, whose number you give. The summary names each finding and which way it went; none is only mentioned. A finding you judge not real: say why in one line.
 
 ## Pull requests
+
+Merging into `main` is the user's. The one exception is `/dev-epic`: a sub-issue's PR into its own epic branch (`epic/<N>-<slug>`) is squash-merged by Claude once its checks are green and its review findings are dealt with; the epic branch's PR into `main` is the user's to merge.
 
 A PR you open (by `/dev-pr` or any other way) is yours until it is green: watch it and fix what breaks, without being asked.
 
