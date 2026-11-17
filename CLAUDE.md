@@ -213,11 +213,13 @@ and helps decide. Unless the user asks for something else:
    Its `style` block `state` `ready` means a style built from the user's CV waits: say so and call `show_style` in the same turn, not offering it first, `Read` the first CV
    page of `styles.default.cv` and of `styles.like.cv` and give both paths with a sentence on the difference (and, when
    `two_column` is true for one, "Some application systems read two-column CVs less well."), then ask with
-   `AskUserQuestion`, neither option recommended, "Keep The other door's" then "Use the style of my CV" (plus "Keep my
-   current style" only when `in_use` is `like` and there is a `candidate`), and call `use_style` with the pick ("Keep The other
-   door's" is `default`, "Use the style of my CV" `like`, "Keep my current style" `current`); when the pick was not `current` and its answer has `prepared` above 0, offer `rerender`. Any other `state` (`building`, `failed`,
-   `none`): do not mention the CV style at all, not even that a build is running or failed (it is not one of the failures
-   above). "Use my CV's style" at any time: with a candidate the same pick, otherwise ask for the PDF (inside the data
+   `AskUserQuestion`, neither option recommended, "Keep The other door's" (or "Use The other door's" when `in_use` is
+   `like`) then "Use the style of my CV" (plus "Keep my current style" only when `in_use` is `like` and there is a
+   `candidate`), and call `use_style` with the pick ("Keep/Use The other door's" is `default`, "Use the style of my CV"
+   `like`, "Keep my current style" `current`); when the pick was not `current` and its answer has `prepared` above 0,
+   offer `rerender`. Any other `state` (`building`, `failed`, `none`): unasked, do not mention the CV style at all, not
+   even that a build is running or failed (it is not one of the failures above); asked ("is my style ready?"), say in
+   one line that it is still being built, that the build failed (its `problems`), or that none was built. "Use my CV's style" at any time: with a candidate the same pick, otherwise ask for the PDF (inside the data
    folder) and call `build_style` with it, its error in one line.
 2. Then `list_matches(new_only=True)` (or plain `list_matches` if nothing is new, or the
    user wants everything). Present postings by title and company (with `title_en` next to
