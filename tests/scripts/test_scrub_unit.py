@@ -326,3 +326,30 @@ def test_runs_joined_into_words_are_judged_by_where_they_start_among_the_origina
     assert scrub_check.shift([(0.0, 5.0), (3.0, 5.0), (6.0, 5.0)], [(3.0, 5.0)]) == \
         "count changed 3 -> 1, each new run starts at most 0.000 pt from an original one"
     assert scrub_check.shift([(0.0, 5.0)], [(0.0, 5.5)]) == "0.500 pt"
+
+
+# ----------------------------------------------------------------------------- the colours go too
+@pytest.mark.parametrize("colour", [(0.157, 0.494, 1.0), (0.0, 0.0, 0.502), (0.847, 0.027, 0.0), (1.0, 0.816, 0.0)])
+@pytest.mark.parametrize("turn", [120, 180, 240])
+def test_a_colour_turns_round_the_wheel_keeping_how_light_it_looks(colour, turn):
+    """Its contrast with the page stays: a blue heading never turns into a pale yellow one."""
+    import colorsys
+    turned = scrub.turn_colour(colour, turn)
+    h0, _, _ = colorsys.rgb_to_hls(*colour)
+    h1, _, _ = colorsys.rgb_to_hls(*turned)
+    assert abs(((h1 - h0) * 360) % 360 - turn) < 3
+    assert abs(scrub.luminance(turned) - scrub.luminance(colour)) < 0.01
+
+
+@pytest.mark.parametrize("grey", [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (0.267, 0.267, 0.267), (0.285, 0.288, 0.288)])
+def test_a_grey_black_or_white_stays(grey):
+    assert scrub.turn_colour(grey, 120) == grey
+
+
+def test_every_rgb_fill_and_stroke_is_turned_and_nothing_else():
+    ops = [([0.0, 0.0, 0.502], "rg"), ([0.0, 0.0, 0.502], "RG"), ([0.211, 0.49, 0.636], "sc"), ([0.211, 0.49, 0.636], "SCN"),
+           ([0.5], "sc"), ([0.4], "g"), ([1, 0, 0, 1, 10, 20], "cm"), ([0.0, 0.0, 0.0], "rg")]
+    out = scrub.recolour_ops(ops, 90)
+    assert [o for _, o in out] == [o for _, o in ops]
+    assert all(out[i][0] != ops[i][0] for i in range(4))
+    assert out[4:] == ops[4:]
