@@ -161,9 +161,11 @@ conversation, or the app's Profile, CV) and pick one with `cv style use` or in t
 review session say when a style is ready. Jobs already prepared are printed again in the style you chose only
 when you ask.
 
-Cost: a one-off, 5-10 minutes, about $0.50-1.50 at API prices. That is an estimate from `claude`'s price table,
-not a bill: your plan is not charged per call (see [What Claude's work costs](#what-claudes-work-costs)). It draws
-on the same plan window as a find that runs beside it, and it is not measured yet. Later prepares cost what they did
+Cost: a one-off, 2-5 minutes, about $0.25-1.50 at API prices: a stylist call costs $0.03-0.15, a build that goes
+well makes four or five of them (about $0.35, 2 minutes), one whose drafts do not come close makes nine (all seven
+rounds, one more for the stress renders and the letter). That is an estimate from `claude`'s price table, not a
+bill: your plan is not charged per call (see [What Claude's work costs](#what-claudes-work-costs)). It draws on the
+same plan window as a find that runs beside it. Later prepares cost what they did
 before: the template is just another input file.
 
 Privacy: the PDF is read on this computer. The stylist is shown page images of it and the text read from it,

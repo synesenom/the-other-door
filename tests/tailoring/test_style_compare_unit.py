@@ -241,6 +241,7 @@ def test_a_flat_or_worse_round_does_not_stop_a_build_whose_best_is_below_a_good_
 def test_once_the_best_is_a_good_rebuild_a_flat_or_worse_round_stops_it():
     assert style_compare.should_stop([0.539, 0.724, 0.91, 0.502], 9.0)  # html-word-two-column
     assert style_compare.should_stop([0.92, 0.985, 0.985], 9.0)  # latex-sidebar
+    assert style_compare.should_stop([style_compare.GOOD, style_compare.GOOD], 9.0)  # a best exactly at GOOD is good
 
 
 def test_it_stops_at_the_cap_whatever_the_gain():
