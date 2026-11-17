@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 import re
 import shutil
-import tempfile
 from pathlib import Path
 
 from PIL import Image
@@ -24,7 +23,7 @@ from pypdfium2 import PdfiumError
 from door import i18n
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
-from door.core import chromium, claude_cli, fonts, progress as progress_mod, templates, workspace
+from door.core import claude_cli, fonts, pinned, progress as progress_mod, templates, workspace
 from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_icons, style_preview)
 
 STYLIST = "stylist"
@@ -720,10 +719,7 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, cv: str, letter: str) -> 
     Raises:
         OSError: the files could not be written or moved.
     """
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    chromium.sweep_stale_parts(profile_dir)
-    staging = Path(tempfile.mkdtemp(prefix=".style.", suffix=".part", dir=profile_dir))
-    try:
+    with pinned.staging(profile_dir, ".style.") as staging:
         _write(staging / _CV_FILE, cv)
         _write(staging / _LETTER_FILE, letter)
         for name in ("style.json", templates.MANIFEST_FILE):
@@ -733,8 +729,6 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, cv: str, letter: str) -> 
             if (work / folder).is_dir():
                 shutil.copytree(work / folder, staging / folder, ignore=shutil.ignore_patterns("*.part"))
         move_in(staging, profile_dir, templates.CANDIDATE)
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
 
 
 def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap: int, result: dict) -> None:
