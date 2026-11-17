@@ -280,6 +280,7 @@ describe('scenes', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Your pages could not be saved. Try again.')
     expect(alert).toHaveClass('error')
+    expect(screen.getByRole('button', { name: 'Forget https://janedoe.example/portfolio' })).toBeInTheDocument()
   })
 
   it('profile-cv-style-earlier can keep the style in use', async () => {

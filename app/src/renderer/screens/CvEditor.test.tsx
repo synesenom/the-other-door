@@ -121,6 +121,7 @@ describe('Add a page', () => {
     const answers: Record<string, unknown>[] = []
     let applied = false
     const { call } = await open({
+      init_profile: {},
       show_profile: () => profile({ text: applied ? ADDED : CV }),
       enrich: (args: Record<string, unknown>) => {
         answers.push(args)
@@ -232,6 +233,8 @@ describe("errors that are no field's", () => {
     expect(alert).toHaveTextContent('config.json is not writable')
     expect(alert).toHaveClass('error')
     expect(alert).not.toHaveClass('field-error')
+    // the saved list still holds it: the chip comes back
+    expect(screen.getByRole('button', { name: 'Forget https://ada.dev' })).toBeInTheDocument()
   })
 })
 
@@ -239,7 +242,7 @@ describe('the pages read before', () => {
   const pages = () => screen.getByRole('list', { name: 'Pages your CV is read from' })
 
   it('are chips above the CV, each forgotten by its ×, saved at once', async () => {
-    const { call } = await open({}, {}, ['https://ada.dev', 'https://github.com/ada'])
+    const { call } = await open({ init_profile: {} }, {}, ['https://ada.dev', 'https://github.com/ada'])
     expect(pages()).toHaveTextContent(/ada\.dev.*github\.com\/ada/)
     await userEvent.click(screen.getByRole('button', { name: 'Forget https://ada.dev' }))
     expect(call).toHaveBeenCalledWith('init_profile', { other: { enrich_sources: ['https://github.com/ada'] } })

@@ -296,11 +296,13 @@ export function CvEditor({
   if (loadError) return <p role="alert" className="error">{named(loadError)}</p>
   if (!profile) return <Spinner message="Reading your CV…" />
   const keepPages = async (next: string[]) => {
+    const before = pages
     setPages(next)
     setPagesError(null)
     try {
       await call('init_profile', { other: { enrich_sources: next } })
     } catch (e) {
+      setPages(before) // not saved: the list shown is the one saved
       setPagesError(errorText(e))
     }
   }
