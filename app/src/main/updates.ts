@@ -114,7 +114,7 @@ export function createUpdateManager(opts: {
   fetch: FetchLike
   log: (message: string) => void
   onState?: (result: UpdateResult) => void
-  /** Awaited before the app quits to install (the phone server is stopped there, #77); a rejection never stops the install. */
+  /** Awaited before the app quits to install (the phone server and a CV style build are stopped there, #77, #215); a rejection never stops the install. */
   beforeInstall?: () => Promise<void>
   timeoutMs?: number
 }) {

@@ -152,6 +152,7 @@ session, where `./scripts/setup.sh` is the install.
 | `doctor --fix [--probe]` | `setup` | the install plan and `needs_confirmation`; with `yes=True` the per-tool results, `doctor` after, and what's left to do. `probe=True` probes the sites so `fixes` can offer a drifted scraper; `fix_scrapers=[site]` (with `yes`) repairs one on a branch and opens a PR |
 | — ("I'm done") | `mark_reviewed` | the new review timestamp (and the previous one) |
 | — (the desktop app's) | `mark_seen` | the job opened, no longer new |
+| — (the desktop app's) | `stop_style_build` | `{"stopped": true}` once a running CV style build has ended (it then reads `failed` in `status_summary`'s `style`; the style in use is untouched), `false` when none was running. The app calls it before an update installs |
 | `companies [list] [--status …] [--found-via …]` | `list_companies` | the employers (`name`, `feed`, `status`, `reason`, `found_via`, `evidence`, dates) and the `counts` per status |
 | `companies add NAME_OR_URL ... [--dry-run] [--no-probe]` | `add_company` | per input: the `status` (followed, unfollowable, unresolved), the platform and entry or the `reason`, the `evidence` or the slugs tried, and whether it is `new`; nothing written with `dry_run=True` |
 | `companies remove NAME ...` | `remove_company` | the employers `removed` and the names `not_found` |
@@ -165,7 +166,7 @@ session, where `./scripts/setup.sh` is the install.
 | `data report [PATH]` | `report_problem` | the report's path, the names in it and its size ("something is broken, make a report") |
 
 The tools marked — have no command: `revise` and `mark_reviewed` are things you say to
-Claude, `mark_seen` is the desktop app opening a posting, `preview_matches` is what a wizard shows while you check your answers, `compile` and `check_facts` are the tailor agent's (`revise` recompiles on its own, so a `.html`
+Claude, `mark_seen` is the desktop app opening a posting, `stop_style_build` is the desktop app before an update installs, `preview_matches` is what a wizard shows while you check your answers, `compile` and `check_facts` are the tailor agent's (`revise` recompiles on its own, so a `.html`
 never changes without its PDF).
 
 Every tool that takes a `job_id` also accepts words from the job's company and title

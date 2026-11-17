@@ -1711,6 +1711,15 @@
     }
   },
   {
+    "name": "stop_style_build",
+    "description": "Stop the CV style build that is running (``build_style``) and wait until its process is gone; it then reads as\n    ``failed`` in `status_summary`'s ``style`` block. The style in use and a style waiting to be chosen are left alone.\n    The desktop app calls it before an update installs.\n\n    Returns:\n        ``{\"stopped\": True}``, or ``{\"stopped\": False}`` when no build was running.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "title": "stop_style_buildArguments"
+    }
+  },
+  {
     "name": "suggest_titles",
     "description": "Suggest job titles from the CV and the career progression. \"What titles should I look for?\"\n\n    One `claude -p` call (Haiku by default) reads `profile/cv.draft.md` (while onboarding) or `profile/cv.md`:\n    the latest title, the progression across roles, titles next to the user's field, a seniority that fits. Works\n    before profile/config.json exists. Show them with their reasons, let the user pick and add, save the picks as\n    `role_targets` with `init_profile`, then call `keywords` on them. The same call as `./door cv titles`.\n\n    Args:\n        titles: Titles the user already named: always listed and recommended.\n        hint: What they are looking for, in their own words.\n        languages: The job-ad languages (`[\"Danish\"]`). Omit for profile/config.json's `languages`.\n        model: Claude model to ask (default: haiku).\n\n    Returns:\n        ``{\"titles\": [{\"title\", \"reason\", \"recommended\"}]}``, plus ``\"warning\"`` when the model failed or\n        answered nothing (then only the given `titles` are listed): ask for the titles in free text.\n    ",
     "inputSchema": {
