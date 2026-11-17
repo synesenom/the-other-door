@@ -156,7 +156,7 @@ One review, everything in one place, before anything is written:
 8. **CV style** (a first set-up only, never after a pull from Drive, and only when a file in `draft_cv`'s `sources`
    has `style` true; use the first such file): one line of the review,
    not a question of its own, off by default: "CV style: The other door's. Make my tailored CVs look like the CV I
-   uploaded? (takes 5-10 minutes in the background)". The user changes it like any other line; keep that file
+   uploaded? (takes 5–10 minutes in the background)". The user changes it like any other line; keep that file
    for step 4.
 
 Items 5 and 6 read `mcp__door__show_profile` with the location as `location`: its `options.cities` then holds
