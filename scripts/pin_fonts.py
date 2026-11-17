@@ -213,26 +213,25 @@ def write(pin: dict, out: Path) -> None:
     out.write_text(text + "\n", encoding="utf-8")
 
 
-def tables_for(families: dict) -> dict:
-    """`aliases` and `lookalikes`: each name to its target, for the targets that are pinned."""
-    return {name: dict(sorted({a: target for target, keys in table.items() if target in families for a in keys}.items()))
-            for name, table in (("aliases", ALIASES), ("lookalikes", LOOKALIKES))}
-
-
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", type=Path, default=Path("/tmp/door-fonts-cache"))
-    ap.add_argument("--only", nargs="*", help="pin just these families into the existing pin; the others stay as they are")
-    ap.add_argument("--tables-only", action="store_true",
-                    help="pin nothing; rewrite `aliases` and `lookalikes` from the families already pinned")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--only", nargs="+", metavar="FAMILY",
+                      help="pin just these families into the existing pin; the others stay as they are")
+    mode.add_argument("--tables-only", action="store_true",
+                      help="pin nothing; rewrite `aliases` and `lookalikes` from the families already pinned")
     ap.add_argument("--out", type=Path, default=OUT)
     args = ap.parse_args(argv)
-    partial = args.tables_only or bool(args.only)
+    known = {name for name, _, _ in FAMILIES}
+    unknown = [n for n in args.only or [] if n not in known]
+    if unknown:
+        ap.error(f"not in FAMILIES: {', '.join(unknown)}")
+    partial = args.tables_only or args.only is not None
     families = dict(json.loads(args.out.read_text(encoding="utf-8"))["families"]) if partial else {}
+    to_pin = [] if args.tables_only else [f for f in FAMILIES if args.only is None or f[0] in args.only]
     skipped = {}
-    for name, klass, folders in FAMILIES:
-        if args.tables_only or (args.only and name not in args.only):
-            continue
+    for name, klass, folders in to_pin:
         pinned, why = pin_family(name, klass, folders, args.cache)
         if pinned:
             families[name] = pinned
@@ -240,7 +239,9 @@ def main(argv=None) -> int:
         else:
             skipped[name] = why
             print(f"skipped {name}: {why}")
-    tables = tables_for(families)
+    # `aliases` and `lookalikes`: each name to its target, for the targets that are pinned.
+    tables = {name: dict(sorted({a: target for target, keys in table.items() if target in families for a in keys}.items()))
+              for name, table in (("aliases", ALIASES), ("lookalikes", LOOKALIKES))}
     write({"version": 1, "url": RAW, "families": dict(sorted(families.items())), **tables}, args.out)
     print(f"{len(families)} families, {len(tables['aliases'])} aliases, {len(tables['lookalikes'])} look-alikes; skipped: {', '.join(skipped) or 'none'}")
     return 0
