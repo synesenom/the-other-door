@@ -102,7 +102,7 @@ def _no_real_network(request, monkeypatch):
     """No offline test may reach the network: a request nobody mocked (a red test, a forgotten
     fake) fails at once instead of falling through to a real site. `responses` replaces this
     while a test mocks HTTP; `live` and `model` tests opt out. `urllib` too (#239: the Chromium
-    and font downloads, `chromium.http_get`), but for loopback: a test's own local server."""
+    and font downloads, `pinned.http_get`), but for loopback: a test's own local server."""
     if request.node.get_closest_marker("live") or request.node.get_closest_marker("model"):
         return
     import urllib.parse
