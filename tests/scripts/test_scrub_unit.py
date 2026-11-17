@@ -233,6 +233,14 @@ def test_a_skia_text_block_has_each_word_replaced_and_each_starting_where_it_did
     assert [op for op, _ in new if op == "Tm"] == ["Tm"]
 
 
+def test_a_one_letter_word_of_a_skia_block_never_comes_back_as_itself():
+    font = _type0_font()  # every letter as wide: the original letter would fit best
+    ops = _skia_ops(font, "a b")
+    for _ in range(20):
+        words = [t for _, t in _starts(font, scrub.rewrite_content(ops, {"/F1": font}, set()))]
+        assert len(words) == 2 and words[0] != "a" and words[1] != "b"
+
+
 def test_a_word_text_block_of_tj_arrays_with_real_spaces_is_laid_out_the_same_way():
     font = _type0_font()
     code = lambda s: b"".join(({" ": 40}.get(ch) or "abcdefghijklmnopqrstuvwxyz".index(ch) + 1).to_bytes(2, "big") for ch in s)  # noqa: E731
