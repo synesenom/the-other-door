@@ -47,6 +47,13 @@ def is_glyph(run: dict, fonts: set[str]) -> bool:
     return run["icon"] or (run["font"] in fonts and all(c in BULLETS or c.isspace() for c in run["text"]))
 
 
+def stray_glyph(run: dict) -> bool:
+    """Whether `run` reads back in a PDF's text as stray characters a draft of the CV leaves out: an icon's glyph
+    (`icon`), not level dots or bullets, which say something (`●●●○○` is 3 of 5; a list), even drawn with the icon
+    font (#313)."""
+    return run["icon"] and not all(c in BULLETS or c.isspace() for c in run["text"])
+
+
 def _touching(a: list[float], b: list[float]) -> bool:
     return a[0] <= b[2] + 1 and b[0] <= a[2] + 1 and a[1] <= b[3] + 1 and b[1] <= a[3] + 1
 
