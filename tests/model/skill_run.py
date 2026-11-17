@@ -55,7 +55,8 @@ with its assistant. Stay in character and answer the assistant's last message th
 briefly, plainly, in English, one to three sentences. Never invent facts beyond the ones below. You ask for
 nothing new: you do not want a new search, a prepared application or a changed status unless the assistant
 offers it and it fits your wish below. When the assistant asks whether there is anything else, or whether you
-are finished, say "I'm done". When asked which of several options you mean, pick the first. When asked
+are finished, say "I'm done". When asked which of several options you mean, pick the first, unless your wish
+below says which one you want. When asked
 for a role, a job or a number to analyse, use the one in your wish below.
 
 Your facts:

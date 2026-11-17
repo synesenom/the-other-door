@@ -192,8 +192,7 @@ def _quiet_state(state: str, stack: ExitStack):
     return seed
 
 
-STYLE_NOTE = ("When the assistant has shown you the jobs, say you are done; ask for nothing to be run, prepared or "
-              "changed. ")
+STYLE_NOTE = "When the assistant has shown you the jobs, say you are done; ask for nothing to be run or prepared. "
 
 
 @pytest.fixture(scope="module")
@@ -201,7 +200,8 @@ def style_like(tmp_path_factory):
     return run_skill(tmp_path_factory, "review-style-like", "Let's go through my jobs.", max_turns=8, seed=_ready,
                      stop_after_tool="mark_reviewed", persona_kind="onboarded",
                      facts_note=STYLE_NOTE + "If the assistant asks which CV style to use, you want the style of your "
-                                "own CV. If it offers to print your prepared applications again, say no, not now.")
+                                "own CV: pick \"Use the style of my CV\" (or the option that says the same), never "
+                                "The other door's. If it offers to print your prepared applications again, say no, not now.")
 
 
 @pytest.fixture(scope="module")
@@ -209,7 +209,8 @@ def style_current(tmp_path_factory):
     return run_skill(tmp_path_factory, "review-style-current", "Let's go through my jobs.", max_turns=8,
                      seed=_ready_with_one_in_use, stop_after_tool="mark_reviewed", persona_kind="onboarded",
                      facts_note=STYLE_NOTE + "If the assistant asks which CV style to use, you want to keep the style "
-                                "you use now, unchanged.")
+                                "you use now, unchanged: pick \"Keep my current style\" (or the option that "
+                                "says the same), never The other door's and never the new one.")
 
 
 @pytest.fixture(scope="module", params=["building", "failed"])
