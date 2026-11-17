@@ -65,14 +65,15 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def _look(path: Path) -> None:
-    """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print)."""
+def _look(path: Path, style: dict | None = None) -> None:
+    """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print).
+    `style` is the file's `style_extract.extract`, when the caller has already read it (#298)."""
     if not path.is_file():
         raise ValueError(f"{path.name} could not be found.")
     if refused := style_extract.not_pdf(path):
         raise ValueError(f"{path.name} {refused['detail']}")
     try:
-        verdict = style_extract.extract(path)["verdict"]
+        verdict = (style or style_extract.extract(path))["verdict"]
     except (PdfiumError, OSError) as exc:
         raise ValueError(f"{path.name} is not a PDF The other door can read.") from exc
     if not verdict["copyable"]:
