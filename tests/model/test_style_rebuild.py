@@ -1,6 +1,6 @@
 """The CV style rebuild (#149) with the real stylist agent on the local claude's plan (#238).
 
-Not in the offline suite or CI (marker `skills`): `./scripts/run-test.sh --skills`, before a release. Each case is one
+Not in the offline suite or CI (marker `model`): `./scripts/run-test.sh --model`, before a release. Each case is one
 `style_build.build` as the app's build runs it: the real model, the real pinned Chromium, the fonts fetched from
 google/fonts. The cases: every CV of the style corpus that has a style to copy (the real, scrubbed ones and the made-up
 designs; a new one is picked up from expected.json), each with the example CV as the user's, and the edges: the fonts
@@ -30,7 +30,7 @@ from door.commands import style as style_cmd
 from door.core import chromium, fonts, workspace
 from door.tailoring import cv_body, readability, style_build, style_extract
 
-pytestmark = [pytest.mark.skills, pytest.mark.real_chromium]
+pytestmark = [pytest.mark.model, pytest.mark.real_chromium]
 
 EXPECTED = json.loads((STYLES / "expected.json").read_text(encoding="utf-8"))
 FLOOR = 0.5  # the best round's blurred score: Sonnet's median was 0.94 in #206, a broken rebuild scores near 0

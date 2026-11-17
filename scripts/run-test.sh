@@ -15,10 +15,11 @@
 #                            Serial (they pace requests per host) and not run
 #                            under coverage; the badge is left as-is.
 #
-#   ./scripts/run-test.sh --skills   The skills (/onboard, /expand), a review session and the CV style rebuild run by the real model on
+#   ./scripts/run-test.sh --model    The tests run by the real model on
 #                            the plan your `claude` is signed in to (no API key),
-#                            against the app's test world: nothing leaves the
-#                            computer. Run before a release (/dev-release does).
+#                            (the skills /onboard and /expand and a review session
+#                            against the app's test world, the CV style rebuild on
+#                            the style corpus): nothing else leaves the computer. Run before a release (/dev-release does).
 #                            Serial; several minutes and some plan usage each.
 #
 #   ./scripts/run-test.sh --cli-journeys   The real ./door in the app's test world (init,
@@ -34,7 +35,7 @@
 #                            the other, with a line each at the end: the offline
 #                            suite, the release gate (every earlier release's saved
 #                            data, tests/data_versions/, opens and reads back as it
-#                            did), the app's tests with every journey, the CLI journeys, the skills,
+#                            did), the app's tests with every journey, the CLI journeys, the real-model tests,
 #                            and the install test when DOOR_INSTALLER names an
 #                            installer (docs/releasing.md). Not the live smoke
 #                            tests: a site's bad day does not block a release.
@@ -95,7 +96,7 @@ if [[ "${1:-}" == "--release" ]]; then
     step "release gate (earlier releases' data)" poetry run pytest -m release -n 0 -q -p no:cacheprovider tests/release
     step "app (every journey)" app_tests
     step "cli journeys" cli_journeys -q
-    step "skills (real model)" poetry run pytest -m skills -n 0 -q -p no:cacheprovider tests/skills
+    step "real model" poetry run pytest -m model -n 0 -q -p no:cacheprovider tests/model
     if [[ -n "${DOOR_INSTALLER:-}" ]]; then
         step "install test ($(basename "$DOOR_INSTALLER"))" bash -c "cd app && npm run test:install"
     else
@@ -106,9 +107,9 @@ if [[ "${1:-}" == "--release" ]]; then
     exit "$failed"
 fi
 
-if [[ "${1:-}" == "--skills" ]]; then
+if [[ "${1:-}" == "--model" ]]; then
     shift
-    exec poetry run pytest -m skills -n 0 -p no:cacheprovider tests/skills "$@"
+    exec poetry run pytest -m model -n 0 -p no:cacheprovider tests/model "$@"
 fi
 
 # Without the dev group, `poetry run pytest` falls through to a system pytest

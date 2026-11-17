@@ -48,11 +48,11 @@ GitHub-issue workflow and are prefixed `dev-` to stay out of the way of the user
 | `/dev-add-country <country>` | Add a whole country: research its job boards and their terms (you pick which to build), write its data files and the scrapers test-first, document the country, run the new live smoke tests, and validate it with two fake profiles in sandboxes (`scripts/country_smoke.py`, built on `scripts/sandbox.py`): one reading only English, one English plus the local language, since where someone lives doesn't decide which ad languages they want. State and every agent's report in `thoughts/country/<cc>/`, which the validator also checks the run against. |
 | `/dev-add-profession <titles> <country>` | Make *The other door* work for one profession, given as one or more job titles (`"Reward Partner, C&B Specialist" dk`), in one country (the country needs its data file: `/dev-add-country` first): research the titles it is advertised under, what *The other door* finds today, and where its jobs are posted (boards, profession and union job banks, the ATS platforms of its employers, discovery sources) with each source's terms; you pick what to build; the sources are built test-first with live smoke tests that search for the profession, documented in the Sources by profession table, its *The other door* gaps filed as issues, and the result checked with a fake profile of the profession in a sandbox against the research baseline. State and reports in `thoughts/profession/<cc>-<slug>/`. |
 
-The skills are tested end to end, locally and before a release (`./scripts/run-test.sh --skills`, never
+The skills are tested end to end, locally and before a release (`./scripts/run-test.sh --model`, never
 in CI): the real model runs `/onboard`, `/expand` and a review session against a test world,
 a second small model plays the user, and the checks are on behaviour only (which tools, in which order,
 what was written and when), never on wording. The same run rebuilds the CV style of every CV in the style
-corpus and its edge cases with the real stylist agent (`tests/skills/test_style_build_model.py`, about 2-4
+corpus and its edge cases with the real stylist agent (`tests/model/test_style_rebuild.py`, about 2-4
 minutes a CV): each build ready, close to its original, its fonts found, and the chosen style printing the
 user's CV in the original's columns, read back whole by an ATS; a case a known issue still breaks is an
 `xfail` naming it. They need a signed-in `claude`, `claude-agent-sdk`, `npm ci` in `app/`, the pinned
