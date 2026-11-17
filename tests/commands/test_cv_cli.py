@@ -387,3 +387,13 @@ def test_extract_text_of_a_pdf_with_icons_keeps_its_lines(name):
 def test_extract_text_of_a_pdf_with_no_icon_glyphs_is_pdfiums_text(pdf):
     # a scan, a LinkedIn export and a CV with no icon font: the text as pdfium gives it, in its order
     assert cv_cmd._extract_text(pdf) == _pdfium_text(pdf)
+
+
+def test_the_draft_text_of_a_refused_three_column_cv_still_drops_its_icons(monkeypatch):
+    """`style_extract` keeps the runs of a layout refusal, so `draft_edits` is given them (#318)."""
+    from door.tailoring import style_icons
+
+    given = []
+    monkeypatch.setattr(style_icons, "draft_edits", lambda runs, style: given.append(runs) or {})
+    text = cv_cmd._extract_text(REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "html-three-columns.pdf")
+    assert len(given[0]) > 20 and "Experience" in text

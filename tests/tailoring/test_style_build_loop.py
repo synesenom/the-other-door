@@ -617,9 +617,12 @@ def test_a_cv_with_two_equal_columns_is_rebuilt_with_a_side_column(world):
     assert manifest.columns.side and manifest.columns.headings
 
 
-def test_a_print_of_three_columns_is_judged_not_stopped_as_having_no_text(world):
+def test_a_print_of_three_columns_is_judged_not_stopped_as_having_no_text(world, monkeypatch):
     """The layout refusal is for the uploaded CV only: a render is read, and `column_problems` judges it (#318)."""
+    seen = []
+    judge = style_build.column_problems
+    monkeypatch.setattr(style_build, "column_problems", lambda style, render, placed: seen.append(render) or judge(style, render, placed))
     world.print_as = lambda folder: STYLES / "html-three-columns.pdf"
     result = world.build("html-word-two-column", Stylist(*GOOD), cap=2)
     assert not any("no text to read back" in p for p in result["problems"])
-    assert result["rounds"] == 2 or result["state"] == "ready"
+    assert seen and seen[0]["columns"]["count"] == 3
