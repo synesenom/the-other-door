@@ -229,11 +229,10 @@ def _by_band(runs: list[dict], bands: list[dict]) -> dict[int, list[dict]]:
 
 
 def _segments(line: list[dict], icon_fonts: set[str]) -> list[list[dict]]:
-    """A line's runs cut at its icons, the icons left out: an icon font's glyph reads back as a stray character. A run
-    of bullets only in one of `icon_fonts` (a level dot drawn with the icon font) is one too."""
+    """A line's runs cut at its icons (`style_icons.is_glyph`), the icons left out."""
     out: list[list[dict]] = [[]]
     for run in line:
-        if run["icon"] or (run["font"] in icon_fonts and all(c in style_icons.BULLETS or c.isspace() for c in run["text"])):
+        if style_icons.is_glyph(run, icon_fonts):
             out.append([])
         else:
             out[-1].append(run)
@@ -249,7 +248,7 @@ def original_text(style: dict, pdf: Path) -> str:
     Each line is read again from the page within its box: `style_extract`'s runs no longer say where a word ends, and
     only the PDF's own text tells a drop cap (``A`` + ``TROTTOIR``) from two words."""
     bands = style["columns"]["bands"] if _has_side(style) else []
-    icon_fonts = {r["font"] for r in style["runs"] if r["icon"]}
+    icon_fonts = style_icons.icon_fonts(style["runs"])
     out: list[str] = []
     doc = pdf_render.open_pdf(pdf)
     try:

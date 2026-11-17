@@ -65,7 +65,8 @@ _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
 def _extract_text(path: Path) -> str:
-    """The text of a PDF (pypdfium2), a DOCX (its paragraphs) or a Markdown/text file.
+    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266), a DOCX (its paragraphs) or a Markdown/text
+    file.
 
     Raises:
         FileNotFoundError: no such file.
@@ -77,9 +78,12 @@ def _extract_text(path: Path) -> str:
     if not path.is_file():
         raise FileNotFoundError(f"{path}: no such file")
     if suffix == ".pdf":
-        from door.tailoring import pdf_render
+        from door.tailoring import pdf_render, style_extract, style_icons
 
-        return "\n".join(pdf_render.page_texts(path)).strip()
+        runs = style_extract.extract(path).get("runs", [])  # none for a scan or a LinkedIn export
+        fonts = style_icons.icon_fonts(runs)
+        icons = [(r["page"], r["bbox"]) for r in runs if style_icons.is_glyph(r, fonts)]
+        return "\n".join(pdf_render.page_texts(path, leave_out=icons)).strip()
     if suffix == ".docx":
         with zipfile.ZipFile(path) as zf:
             root = ElementTree.fromstring(zf.read("word/document.xml"))
