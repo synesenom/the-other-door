@@ -44,8 +44,9 @@ scientist in Copenhagen with a full history; `lea`, a management controller in L
 sustainability analyst in Göteborg with a Swedish CV) and 38 full job ads in English, Danish, French,
 Hungarian and Swedish. Mette's world has a job in every column of the Applications board (`FULL_LEDGER`),
 prepared and sent materials compiled through door's own compile, three ads a job board returns on the next
-run, and a past run; lea, bence and asa each have one ad in their own language a board returns on the first
-run (the CLI journeys' CVs in each language, #135).
+run, and a past run; lea, bence and asa each have an ad in their own language a board returns on the first
+run (the CLI journeys' CVs in each language, #135), and bence a second one, so his Matches are not empty once
+the install test has prepared the first.
 
 ## Writing a journey
 
