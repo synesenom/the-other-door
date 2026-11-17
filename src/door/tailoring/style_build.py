@@ -476,7 +476,7 @@ def _photo_stand_in(style: dict, images: list, work: Path) -> Path | None:
     the original (#262: a photo box printed empty, or not at all, cost the score though the template held its place);
     None when the original has no photo."""
     photo = style.get("photo")
-    if not photo or len(images) < photo["page"]:
+    if not photo:
         return None
     page = images[photo["page"] - 1]
     scale = page.width / style["page"]["size"][0]

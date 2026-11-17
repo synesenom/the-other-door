@@ -573,3 +573,14 @@ def test_the_sample_of_a_cv_with_a_photo_is_printed_with_the_originals_photo_and
         assert abs(im.width / im.height - (133 - 35) / (297 - 159)) < 0.05
     stress = [p for p in world.prints if "stress" in p["folder"].parts and p["folder"].name != "photo"]
     assert stress and not [p for p in stress if '<img class="photo"' in p["html"]]  # a print with no photo stays one
+
+
+def test_the_sample_of_a_cv_without_a_photo_needs_no_photo_token(world):
+    """#262: only a CV with a photo asks for `<<photo>>`: html-word-two-column has none, so a body without it is kept in
+    round one and printed with no photo."""
+    no_photo = SAMPLE_BODY.replace("<<photo>>", "")
+    result = world.build("html-word-two-column", Stylist(cv_round(body=no_photo), letter_round()))
+    assert result["state"] == "ready" and result["rounds"] == 1
+    assert not (world.work / "original-photo.png").exists()
+    samples = [p for p in world.prints if p["folder"] == world.work]
+    assert samples and not [p for p in samples if '<img class="photo"' in p["html"]]

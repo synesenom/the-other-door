@@ -158,15 +158,16 @@ def _texts(style: dict) -> list[dict]:
 
 
 def _photo(original: dict | None, render: dict | None) -> dict | None:
-    """How the render's photo differs from the original's: None when the original has none, ``{missing, bbox, page}``
-    when the render has none, else the shift of its box and of its width and height (points)."""
+    """How the render's photo differs from the original's: None when the original has none, else ``{page, bbox, shift}``
+    with the original's page and box and the shift of the render's box, width and height in points (``(dx, dy, dw,
+    dh)``), None when the render has no photo."""
     if not original:
         return None
-    if not render:
-        return {"missing": True, "bbox": original["bbox"], "page": original["page"]}
-    (a0, a1, a2, a3), (b0, b1, b2, b3) = original["bbox"], render["bbox"]
-    return {"dx": round(b0 - a0, 1), "dy": round(b1 - a1, 1), "dw": round((b2 - b0) - (a2 - a0), 1),
-            "dh": round((b3 - b1) - (a3 - a1), 1)}
+    shift = None
+    if render:
+        (a0, a1, a2, a3), (b0, b1, b2, b3) = original["bbox"], render["bbox"]
+        shift = (round(b0 - a0, 1), round(b1 - a1, 1), round((b2 - b0) - (a2 - a0), 1), round((b3 - b1) - (a3 - a1), 1))
+    return {"page": original["page"], "bbox": original["bbox"], "shift": shift}
 
 
 def match(original: dict, render: dict) -> dict:
@@ -211,13 +212,14 @@ def feedback(diffs: dict, score: float) -> str:
         lines.append(f"Fix this first: your rebuild runs to {runs_to}, the original has {original_pages}: {how} until it "
                      f"has {original_pages}, like the original's.")
     if photo := diffs.get("photo"):
-        if photo.get("missing"):
+        if photo["shift"] is None:
             x0, y0, x1, y1 = photo["bbox"]
             lines.append(f"The original's photo is a box at x {x0:.0f}-{x1:.0f}, y {y0:.0f}-{y1:.0f} pt on page "
                          f"{photo['page']}: your print has none there (it is printed with the original's photo: "
                          f"<<photo>> first in the header, and .photo sized and placed there).")
-        elif max(map(abs, photo.values())) > _OFF_SHIFT:
-            lines.append(f"- photo: x {photo['dx']:+}, y {photo['dy']:+}, width {photo['dw']:+}, height {photo['dh']:+} (points)")
+        elif max(map(abs, photo["shift"])) > _OFF_SHIFT:
+            dx, dy, dw, dh = photo["shift"]
+            lines.append(f"- photo: x {dx:+}, y {dy:+}, width {dw:+}, height {dh:+} (points)")
     worst = sorted((p for p in (*diffs["runs"], *diffs["icons"]) if _off(p)), key=lambda p: -_weight(p))
     for p in worst[:_FEEDBACK_LIMIT]:
         what = f"'{p['text'][:40]}'" if "text" in p else f"icon beside '{(p['near'] or '?')[:40]}'"

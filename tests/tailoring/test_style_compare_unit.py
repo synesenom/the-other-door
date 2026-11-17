@@ -409,11 +409,11 @@ def test_a_photo_the_render_lacks_or_places_elsewhere_is_named_in_the_feedback()
     photo = {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shape": "rect"}
     original = {**style([run("A")]), "photo": photo}
     none = style_compare.match(original, {**style([run("A")]), "photo": None})
-    assert none["photo"] == {"missing": True, "bbox": [35.0, 159.0, 133.0, 297.0], "page": 1}
+    assert none["photo"] == {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shift": None}
     text = style_compare.feedback(none, score=0.4)
     assert "photo" in text and "x 35-133" in text and "y 159-297" in text
     off = style_compare.match(original, {**style([run("A")]), "photo": {**photo, "bbox": [45.0, 159.0, 120.0, 260.0]}})
-    assert off["photo"] == {"dx": 10.0, "dy": 0.0, "dw": -23.0, "dh": -37.0}
+    assert off["photo"] == {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shift": (10.0, 0.0, -23.0, -37.0)}
     assert "photo: x +10.0, y +0.0, width -23.0, height -37.0" in style_compare.feedback(off, score=0.4)
     near = style_compare.match(original, {**style([run("A")]), "photo": {**photo, "bbox": [36.0, 160.0, 134.0, 298.0]}})
     assert "photo" not in style_compare.feedback(near, score=0.9)
