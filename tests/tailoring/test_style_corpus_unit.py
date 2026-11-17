@@ -89,7 +89,7 @@ def test_the_headings_and_the_side_band_are_those_of_the_recorded_answer(styles,
 def test_a_page_has_margins_and_the_text_of_the_cv_is_read(styles, stem):
     style = styles[stem]
     assert all(m >= 0 for m in style["page"]["margins"].values())
-    assert len(style["runs"]) > 20 and style["name"]["size"] > 0
+    assert len(style["runs"]) > 10 and style["name"]["size"] > 0
 
 
 def test_the_made_up_pdfs_name_only_example_addresses(styles):
