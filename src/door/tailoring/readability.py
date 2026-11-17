@@ -19,12 +19,16 @@ def normalise(text: str) -> str:
     return " ".join(text.split())
 
 
-def problems(text: str, *, name: str | None, headings: list[str], keywords: list[str], pages: int = 1) -> list[dict]:
+def problems(text: str, *, name: str | None, headings: list[str], keywords: list[str], pages: int = 1,
+             side: list[str] = ()) -> list[dict]:
     """What would not survive an ATS reading `text` (a PDF's extracted text), as ``[{kind, detail}]``.
 
     Kinds: ``empty`` (under `MIN_CHARS_PER_PAGE` characters a page), ``garbled`` (replacement or private-use
     glyphs), ``missing`` (the name, a heading or a keyword absent), ``glued`` (a heading present but not on its
     own line), ``order`` (headings out of the order the source has them). No ``headings``: no heading checks.
+    `side` are the headings of a side column: a reader may take that column before or after the main one and
+    set its headings on a line of the main text, so they are checked for ``missing`` and for their order among
+    themselves, never for ``glued`` or against the main headings.
     """
     found: list[dict] = []
     if len("".join(text.split())) < MIN_CHARS_PER_PAGE * max(pages, 1):
@@ -35,21 +39,22 @@ def problems(text: str, *, name: str | None, headings: list[str], keywords: list
     if name and normalise(name) not in flat:
         found.append({"kind": "missing", "detail": f"your name ({name}) is not in the text"})
     lines = [normalise(line) for line in text.splitlines()]
-    positions: list[tuple[str, int]] = []
-    for heading in headings:
-        wanted = normalise(heading)
-        if not wanted:
-            continue
-        if wanted in lines:
-            positions.append((heading, lines.index(wanted)))
-        elif wanted in flat:
-            found.append({"kind": "glued", "detail": f"heading \"{heading}\" is not on a line of its own"})
-        else:
-            found.append({"kind": "missing", "detail": f"heading \"{heading}\" is not in the text"})
-    for (_, before), (later, after) in zip(positions, positions[1:]):
-        if after < before:
-            found.append({"kind": "order", "detail": f"heading \"{later}\" reads before an earlier section"})
-            break
+    for column, glue in ((headings, True), (list(side), False)):
+        positions: list[tuple[str, int]] = []
+        for heading in column:
+            wanted = normalise(heading)
+            if not wanted:
+                continue
+            if wanted in lines:
+                positions.append((heading, lines.index(wanted)))
+            elif wanted not in flat:
+                found.append({"kind": "missing", "detail": f"heading \"{heading}\" is not in the text"})
+            elif glue:
+                found.append({"kind": "glued", "detail": f"heading \"{heading}\" is not on a line of its own"})
+        for (_, before), (later, after) in zip(positions, positions[1:]):
+            if after < before:
+                found.append({"kind": "order", "detail": f"heading \"{later}\" reads before an earlier section"})
+                break
     for keyword in keywords:
         if normalise(keyword) and normalise(keyword) not in flat:
             found.append({"kind": "missing", "detail": f"keyword \"{keyword}\" is not in the text"})
@@ -119,8 +124,10 @@ def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False) -> list[d
     from door.tailoring import pdf_render
 
     text, pages = extract(pdf)
+    cut = body.find('<div class="side"')
+    main, side = (body, "") if cut < 0 else (body[:cut], body[cut:])
     found = problems(text, name=name if isinstance(name, str) else None,
-                     headings=html_doc.headings(body),
+                     headings=html_doc.headings(main), side=html_doc.headings(side),
                      keywords=html_doc.keywords(body), pages=pages)
     if cv:
         if not {"empty", "garbled"} & {p["kind"] for p in found}:
