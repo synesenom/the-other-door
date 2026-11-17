@@ -36,12 +36,12 @@ def _box(pdf, page, first, last):
     return [min(b[0] for b in part), height - max(b[3] for b in part), max(b[2] for b in part), height - min(b[1] for b in part)]
 
 
-def test_a_box_is_rewritten_where_its_first_character_stood_with_leave_out_and_other_pages_and_boxes(tmp_path):
+def test_a_box_is_rewritten_where_its_first_character_stood_with_a_left_out_box_and_other_pages_and_boxes(tmp_path):
     from tests.pdf_utils import make_pdf
 
     pdf = make_pdf(tmp_path / "a.pdf", ["AAAA BBBB CCCC", "XXXX YYYY"])
     # printed characters (no spaces): AAAA = 0-3, BBBB = 4-7, CCCC = 8-11
-    one = pdf_render.page_texts(pdf, leave_out=[(1, _box(pdf, 0, 8, 11))], rewrite=[(1, _box(pdf, 0, 0, 3), "1")])
+    one = pdf_render.page_texts(pdf, rewrite=[(1, _box(pdf, 0, 8, 11), ""), (1, _box(pdf, 0, 0, 3), "1")])
     assert one[0].split() == ["1", "BBBB"] and one[1].split() == ["XXXX", "YYYY"]
     two = pdf_render.page_texts(pdf, rewrite=[(1, _box(pdf, 0, 0, 3), "1"), (1, _box(pdf, 0, 8, 11), "3")])
     assert two[0].split() == ["1", "BBBB", "3"]

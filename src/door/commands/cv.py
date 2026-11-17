@@ -83,8 +83,7 @@ def _extract_text(path: Path, style: dict | None = None) -> str:
 
         style = style or style_extract.extract(path)
         runs = style.get("runs", [])  # none for a scan or a LinkedIn export
-        icons = [(r["page"], r["bbox"]) for r in runs if style_icons.stray_glyph(r)]
-        return "\n".join(pdf_render.page_texts(path, leave_out=icons, rewrite=style_icons.level_rows(runs, style))).strip()
+        return "\n".join(pdf_render.page_texts(path, rewrite=style_icons.draft_edits(runs, style))).strip()
     if suffix == ".docx":
         return _docx_text(path)
     return _decode_text_file(path.read_bytes()).strip()

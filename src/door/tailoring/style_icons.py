@@ -69,7 +69,7 @@ def stray_glyph(run: dict) -> bool:
 
 
 def _luminance(color: str) -> float:
-    r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
+    r, g, b = style_trace.channels(color)
     return 0.299 * r + 0.587 * g + 0.114 * b
 
 
@@ -78,6 +78,12 @@ def _background(run: dict, style: dict) -> str:
     x = (run["bbox"][0] + run["bbox"][2]) / 2
     band = next((b for b in style.get("columns", {}).get("bands", []) if b["x0"] <= x <= b["x1"] and b["background"]), None)
     return (band or {}).get("background") or style.get("page", {}).get("background") or "#ffffff"
+
+
+def draft_edits(runs: list[dict], style: dict) -> list[tuple[int, list[float], str]]:
+    """What a draft of the CV changes in a PDF's text, as (page, box, text) for `pdf_render.page_texts`: each stray
+    glyph left out (`stray_glyph`, text `""`) and each row of level dots in its colours said (`level_rows`)."""
+    return [(r["page"], r["bbox"], "") for r in runs if stray_glyph(r)] + level_rows(runs, style)
 
 
 def level_rows(runs: list[dict], style: dict) -> list[tuple[int, list[float], str]]:
