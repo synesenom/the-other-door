@@ -271,7 +271,7 @@ Claude Code skills — user-facing (`docs/skills.md` lists them all):
 ```
 
 Developer skills are prefixed `dev-` (`/dev-research`, `/dev-plan`, `/dev-implement`,
-`/dev-validate`, `/dev-resolve`, `/dev-epic`, `/dev-pr`, `/dev-file-issue`, `/dev-release`, `/dev-add-scraper`, `/dev-add-country`, `/dev-add-profession`) and documented in
+`/dev-validate`, `/dev-resolve`, `/dev-plan-epic`, `/dev-epic`, `/dev-pr`, `/dev-file-issue`, `/dev-release`, `/dev-add-scraper`, `/dev-add-country`, `/dev-add-profession`) and documented in
 `docs/skills.md` (under "Developer skills"), never in README.
 
 ## Testing
