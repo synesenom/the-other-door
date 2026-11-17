@@ -202,3 +202,43 @@ def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch
     styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
     result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
     assert result["sources"][0]["style"] is True
+
+
+STYLES = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles"
+
+
+def _icon_glyphs(pdf):
+    """The characters the icon-font runs of `pdf` read back as (a level dot in the icon font among them)."""
+    from door.tailoring import style_extract
+
+    runs = style_extract.extract(pdf)["runs"]
+    icon_fonts = {r["font"] for r in runs if r["icon"]}
+    return {c for r in runs if r["font"] in icon_fonts for c in r["text"] if not c.isspace()}
+
+
+@pytest.mark.parametrize("name", ["scrubbed-pages-header-en", "scrubbed-altacv-icons-fr"])
+def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs(name):
+    # an icon-font glyph reads back as a stray character ("!", "Ó", "½"): the model would copy it into cv.md, and
+    # infer_basics read a location as "½ Ours, Tortue" (#266)
+    glyphs = _icon_glyphs(STYLES / f"{name}.pdf")
+    text = cv_cmd._extract_text(STYLES / f"{name}.pdf")
+    assert glyphs and not glyphs & set(text)
+    assert "(+89) 079788144 Ours, Tortue" in " ".join(text.split()) or name != "scrubbed-altacv-icons-fr"
+    assert "promenade." in text.split() or name != "scrubbed-pages-header-en"
+
+
+@pytest.mark.parametrize("pdf", sorted(STYLES.glob("*.pdf")), ids=lambda p: p.stem)
+def test_extract_text_of_a_pdf_keeps_every_other_word_in_its_order(pdf):
+    from door.tailoring import pdf_render
+
+    # pdfium's own reading order, line for line: only the icons' characters go
+    whole = "\n".join(pdf_render.page_texts(pdf)).strip()
+    text = cv_cmd._extract_text(pdf)
+    try:
+        glyphs = _icon_glyphs(pdf)
+    except KeyError:  # a scan or a LinkedIn export: no style read, the text as pdfium gives it
+        assert text == whole
+        return
+    kept = [w for w in ("".join(c for c in w if c not in glyphs) for w in whole.split()) if w]
+    assert text.split() == kept
+    assert len(text.splitlines()) == len(whole.splitlines())

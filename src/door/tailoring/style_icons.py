@@ -36,6 +36,17 @@ def mark_icon_runs(runs: list[dict]) -> None:
             _ICON_FONT.search(run["font"]) or _glyph_only(run["text"]) or short[run["font"]])
 
 
+def icon_fonts(runs: list[dict]) -> set[str]:
+    """The fonts of the runs `mark_icon_runs` marked icons."""
+    return {r["font"] for r in runs if r["icon"]}
+
+
+def is_glyph(run: dict, fonts: set[str]) -> bool:
+    """Whether `run` draws an icon, whose glyph reads back as a stray character: one marked `icon`, or a run of
+    bullets only in one of `fonts` (`icon_fonts`; a level dot drawn with the icon font)."""
+    return run["icon"] or (run["font"] in fonts and all(c in BULLETS or c.isspace() for c in run["text"]))
+
+
 def _touching(a: list[float], b: list[float]) -> bool:
     return a[0] <= b[2] + 1 and b[0] <= a[2] + 1 and a[1] <= b[3] + 1 and b[1] <= a[3] + 1
 
