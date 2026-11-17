@@ -11,6 +11,9 @@ from paths import REPO_ROOT, TESTS_DIR
 STYLES = TESTS_DIR / "tailoring" / "fixtures" / "styles"
 EXAMPLE = REPO_ROOT / "profile.example"
 BIG = "body { font-size: 30pt !important; }"  # makes the compact stress variant run over the page limit
+# the shipped template is one column: the canned stylist places a corpus CV's side column on the right, as
+# html-word-two-column has it (a print with its side sections under the main ones is refused, #242)
+COLUMNS = "body { display: grid; grid-template-columns: 1fr 34%; column-gap: 1.2em; } body > .cv-header { grid-column: 1 / -1; }"
 SAMPLE_BODY = cv_body.body((EXAMPLE / "cv.md").read_text(encoding="utf-8"))
 
 
@@ -43,7 +46,7 @@ def reply(template, body=None):
 
 
 def _cv(cwd, extra, edit):
-    return edit(adapt("cv.template.html", (cwd / "fonts.css").read_text(), extra))
+    return edit(adapt("cv.template.html", (cwd / "fonts.css").read_text(), COLUMNS + "\n" + extra))
 
 
 def cv_round(extra="", body=SAMPLE_BODY, edit=lambda t: t):

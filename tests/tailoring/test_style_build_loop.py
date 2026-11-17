@@ -27,6 +27,7 @@ class World:
         self.checked = {"cv": 0, "letter": 0}
         self.problems = {"cv": lambda n: [], "letter": lambda n: []}
         self.print_error: str | None = None
+        self.print_as = lambda folder: None  # the PDF a print in `folder` gives instead of the original's
         monkeypatch.setattr(html_pdf, "print_html", self._print)
         monkeypatch.setattr(readability, "check_pdf", self._check)
 
@@ -34,7 +35,7 @@ class World:
         self.prints.append({"html": html, "folder": folder, "assets": assets})
         if self.print_error:
             raise html_pdf.PrintError(self.print_error)
-        shutil.copyfile(self.pdf, out_pdf)
+        shutil.copyfile(self.print_as(folder) or self.pdf, out_pdf)
 
     def _check(self, pdf, body, name=None, cv=False):
         kind = "cv" if cv else "letter"
@@ -411,3 +412,42 @@ def test_a_side_band_of_unknown_headings_is_a_column_in_the_template_and_in_the_
     printed = world.prints[0]["html"]
     main, side_html = printed.split('<div class="side">')
     assert all(h in side_html for h in side[:2]) and "Parcours" in main and "Parcours" not in side_html
+
+
+# ---------- the columns (#242) ----------
+
+SWAPPED = STYLES / "html-word-two-column.pdf"  # its side column is on the right, latex-sidebar's on the left
+
+
+def test_a_round_whose_print_puts_the_columns_in_the_wrong_place_is_not_kept_and_the_next_is_told_where(world):
+    samples = [SWAPPED]
+    world.print_as = lambda folder: samples.pop(0) if folder == world.work and samples else None
+    stylist = Stylist(cv_round(), cv_only(), letter_round())
+    result = world.build("latex-sidebar", stylist)
+    assert result["state"] == "ready", result["problems"]
+    assert result["rounds"] == 2 and len(result["scores"]) == 1  # the swapped round is not one to keep
+    second = stylist.calls[1]["input"]
+    assert "columns in the wrong place" in second and '"Skills"' in second and "side column, on the left" in second
+
+
+def test_a_template_whose_stress_prints_put_the_columns_in_the_wrong_place_fails_the_stress_renders(world):
+    world.print_as = lambda folder: SWAPPED if "stress" in folder.parts else None
+    stylist = Stylist(cv_round(), cv_only(), letter_round())
+    result = world.build("latex-sidebar", stylist)
+    assert "Printed with other texts" in stylist.calls[1]["input"] and "column's section" in stylist.calls[1]["input"]
+    assert result["state"] == "failed" and "side column" in result["problems"][0]
+
+
+def test_the_stylist_reads_the_text_of_a_two_column_cv_column_by_column(world):
+    world.build("latex-sidebar", Stylist(*GOOD))
+    assert "[page 1, side column, on the left]" in (world.work / "text.txt").read_text()
+
+
+def test_a_sample_body_that_puts_text_under_the_other_column_s_heading_is_asked_for_again(world):
+    line = "<p>Nid Couleur Jardin Silence: UNE&amp;FRUIT 4888, Feuillage Cabane Aquarelle Dimanche</p>"
+    bad = '<header class="cv-header"><h1>A B</h1></header><h2>LEUNE YAUTOMNE</h2><p>x</p><h2>AFONTAINE ANUIT</h2>' + line
+    stylist = Stylist(cv_round(body=bad), cv_round(), letter_round())
+    world.build("scrubbed-pages-sidebar-fr", stylist)
+    second = stylist.calls[1]["input"]
+    assert "other column" in second and "Nid Couleur Jardin Silence" in second and "```body" in second
+    assert world.prints and "Nid Couleur" not in world.prints[0]["html"]  # the refused body was never printed

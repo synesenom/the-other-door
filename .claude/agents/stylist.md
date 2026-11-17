@@ -42,7 +42,14 @@ The body is written later by another agent in these building blocks only; style 
 
 Classes: cv-header, contact, tagline, phone, email, web, location, linkedin, github, entry, role, org, dates, place, sep, level, level-1, level-2, level-3, level-4, level-5.
 
-Columns: when `template.json` has `columns.side`, a body comes as the header, then `<div class="main">` and `<div class="side">` holding the sections (the side one the kinds listed), in that order. Place them with CSS (a flex row or grid; reverse the order for a left side column; give the side column its background, full height, with a background on `html`/`body` or a grid area that fills the page). A header, name or photo that sits inside a coloured side column in the original needs a CSS grid on `body` (the header, `.main`, `.side` as areas). The code, not you, wraps a body into `.main` and `.side` (and `compile` does the same for a real CV): your sample body holds only the building blocks (header, sections, entries), never a `<div>` with a class; the template's CSS styles `.main` and `.side`. Without `columns`, no `.main` or `.side`.
+Columns: when `template.json` has `columns.side`, a body comes as the header, then `<div class="main">` and `<div class="side">` holding the sections (the side one the kinds listed), in that order. The task says on which side each column is in the original and at which x. Place them with CSS (a flex row or grid; give the side column its background, full height, with a background on `html`/`body` or a grid area that fills the page). For a side column on the left, the side comes first on the page although it comes second in the body:
+
+```
+body { display: grid; grid-template-columns: 150pt 1fr; grid-template-areas: "head head" "side main"; }
+.cv-header { grid-area: head; } .side { grid-area: side; } .main { grid-area: main; }
+```
+
+No `position: absolute` for a column: it takes the column out of the page's flow, and a long CV then prints over itself instead of going on to the next page. The builder reads back where each section heading prints: a round whose side sections print in the main column's place (or the other way round) is not kept. A header, name or photo that sits inside a coloured side column in the original needs a CSS grid on `body` (the header, `.main`, `.side` as areas). The code, not you, wraps a body into `.main` and `.side` (and `compile` does the same for a real CV): your sample body holds only the building blocks (header, sections, entries), never a `<div>` with a class; the template's CSS styles `.main` and `.side`. Without `columns`, no `.main` or `.side`.
 
 Match the original where you can measure it: font families and weights (only the given ones), sizes in `pt`, colours, margins, the space between lines and sections, heading case (`text-transform`), the rule under headings, the accent colour, list bullets, the contact line. Nothing in the body may print outside the page: long lines wrap, entries do not break across pages (`break-inside: avoid`), headings stay with what follows.
 
@@ -58,7 +65,7 @@ the whole template page
 a sample body
 ```
 
-The sample body is the CV's own text from `text.txt`, written in the building blocks above (headings as `<h2>`, entries as `<div class="entry">` with their `<h3>` in the role/org/dates/place/sep spans, bullets, the contact details with their kind class, the name in `<h1>`, `<<photo>>` first in the header when the CV has a photo). Every word of `text.txt`, nothing added. The builder prints it in your template and compares it with the original; the body is fixed after this round.
+The sample body is the CV's own text from `text.txt`, written in the building blocks above (headings as `<h2>`, entries as `<div class="entry">` with their `<h3>` in the role/org/dates/place/sep spans, bullets, the contact details with their kind class, the name in `<h1>`, `<<photo>>` first in the header when the CV has a photo). Every word of `text.txt`, nothing added. For a CV with a side column, `text.txt` gives each page's text in parts (`[page 2, main column, on the right]`): a section of a column goes on in the same column on the next page, so text at the top of page 2's main column belongs to the last main-column section of page 1, never to a side section; a body that puts a line under the other column's heading is refused. The builder prints it in your template and compares it with the original; the body is fixed after this round.
 
 ## Later rounds
 
