@@ -15,6 +15,16 @@ on:
       - "poetry.lock"
       - ".claude/agents/**"
       - ".github/workflows/package-linux.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "app/**"
+      - "profile.example/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".claude/agents/**"
+      - ".github/workflows/package-linux.yml"
   workflow_dispatch:
 
 concurrency:

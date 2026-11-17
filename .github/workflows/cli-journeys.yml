@@ -24,6 +24,8 @@ on:
       - "pyproject.toml"
       - "poetry.lock"
       - ".github/workflows/cli-journeys.yml"
+  push:
+    branches: [main]
   workflow_dispatch:
 
 # A newer push to the same pull request cancels the run it makes pointless
@@ -37,7 +39,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Windows and macOS run on main and by hand; a pull request runs Linux only (they cost 2x and 10x).
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest"]' || '["ubuntu-latest","windows-latest","macos-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
