@@ -488,6 +488,20 @@ def _clean(template: str, kind: str) -> str:
     return _TITLE.sub(f"<title>{_TITLES[kind]}</title>", text)
 
 
+def _photo_stand_in(style: dict, images: list, work: Path) -> Path | None:
+    """The original's photo cut from its page image, as `work/original-photo.png`, for the sample prints compared with
+    the original (#262: a photo box printed empty, or not at all, cost the score though the template held its place);
+    None when the original has no photo."""
+    photo = style.get("photo")
+    if not photo:
+        return None
+    page = images[photo["page"] - 1]
+    scale = page.width / style["page"]["size"][0]
+    path = work / "original-photo.png"
+    page.crop(tuple(round(v * scale) for v in photo["bbox"])).save(path, "PNG")
+    return path
+
+
 class _Session:
     """One build's state: the original's style and page images, the folder it works in, the manifest and the model seam."""
 
@@ -495,6 +509,7 @@ class _Session:
         self.style, self.work, self.manifest, self.run, self.profile_dir = style, work, manifest, run, profile_dir
         self.images = style_compare.page_images(pdf, work)  # also leaves original_page_N.png beside the files it reads
         self.rounds = 0
+        self.photo = _photo_stand_in(style, self.images, work)
 
     def ask(self, task: str, *, count: bool = True) -> str:
         """One stylist call; the letter's (`count` False) are not rounds of the CV template."""
@@ -502,14 +517,15 @@ class _Session:
         return _ask(self.run, task, self.work, self.profile_dir)
 
     def sample(self, template: str, body: str) -> tuple[dict, float, float, list[str]]:
-        """The sample `body` printed in `template`, read back and compared with the original: the diffs, the blurred
-        score, the worst offset in points and the sections printed in the other column's place (`column_problems`).
+        """The sample `body` printed in `template` (with the original's own photo when it has one: `_photo_stand_in`),
+        read back and compared with the original: the diffs, the blurred score, the worst offset in points and the
+        sections printed in the other column's place (`column_problems`).
 
         Raises:
             _Stop: the print has no text to read back.
         """
         pdf, placed, _ = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
-                                                columns=self.manifest.columns)
+                                                columns=self.manifest.columns, photo=self.photo)
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
@@ -593,6 +609,9 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
             elif bad := body_column_problems(s.style, sample, s.manifest.columns):
                 feedback = ("Your sample body puts text under a heading of the other column (text.txt gives each page's "
                             "text column by column: a section goes on in its own column on the next page):\n" + _list(bad))
+            elif s.photo and "<<photo>>" not in sample:
+                feedback = ("Your sample body has no <<photo>>: the original has a photo, so the token goes first in "
+                            "the header (the print puts the original's photo there).")
             else:
                 body = sample
                 _write(s.work / "sample_body.html", body)

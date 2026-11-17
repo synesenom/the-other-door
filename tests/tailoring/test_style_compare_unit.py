@@ -424,3 +424,21 @@ def test_a_compatibility_form_in_one_render_pairs_with_its_plain_letters_in_the_
     render = style([run("Ｓｋｉｌｌｓ 2021", x=50, y=103)])  # full-width letters, as some PDFs encode them
     result = style_compare.match(original, render)
     assert [p["dy"] for p in result["runs"]] == [3.0]
+
+
+# ---------- the photo (#262) ----------
+
+def test_a_photo_the_render_lacks_or_places_elsewhere_is_named_in_the_feedback():
+    """scrubbed-pages-sidebar-fr's grey box is its photo: a rebuild that prints none there is told where it goes."""
+    photo = {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shape": "rect"}
+    original = {**style([run("A")]), "photo": photo}
+    none = style_compare.match(original, {**style([run("A")]), "photo": None})
+    assert none["photo"] == {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shift": None}
+    text = style_compare.feedback(none, score=0.4)
+    assert "photo" in text and "x 35-133" in text and "y 159-297" in text
+    off = style_compare.match(original, {**style([run("A")]), "photo": {**photo, "bbox": [45.0, 159.0, 120.0, 260.0]}})
+    assert off["photo"] == {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shift": (10.0, 0.0, -23.0, -37.0)}
+    assert "photo: x +10.0, y +0.0, width -23.0, height -37.0" in style_compare.feedback(off, score=0.4)
+    near = style_compare.match(original, {**style([run("A")]), "photo": {**photo, "bbox": [36.0, 160.0, 134.0, 298.0]}})
+    assert "photo" not in style_compare.feedback(near, score=0.9)
+    assert style_compare.match(style([run("A")]), style([run("A")]))["photo"] is None

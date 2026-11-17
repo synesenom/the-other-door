@@ -84,7 +84,7 @@ CASES = {
 }
 
 # the cases a known issue keeps from looking like their original
-KNOWN = {"scrubbed-pages-sidebar-fr": "#242"}  # columns in place, best 0.477 in a real run: the look, not the layout
+KNOWN: dict[str, str] = {}  # scrubbed-pages-sidebar-fr came off with #262: best 0.745 in a real run, its photo in place
 
 
 def _ready() -> str | None:
