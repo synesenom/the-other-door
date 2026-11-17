@@ -6,9 +6,9 @@ markdown that `draft_cv` and `init` write. Nothing is translated, tailored or dr
 and only `https:`, `mailto:` and `#` links are kept.
 
 - `# Name` is the header's `<h1>`, a `> line` its tagline, the lines before the first `##` its contact details
-  (`**Label:** value` or a plain `Label: value`, split on `|`, the label in any supported language; a detail with no
-  known label is a plain `<span>`, an `@` one is an email), written with a kind class in the template's order (phone,
-  email, web, linkedin, github, location). The `<<photo>>` token comes first in the header, as the tailor writes it;
+  (`**Label:** value`, a plain `Label: value` and the other forms `_details` reads, split on `|`, the label in any
+  supported language; a detail with no known label is a plain `<span>`, an `@` one is an email), written with a kind
+  class in the template's order (phone, email, web, linkedin, github, location). The `<<photo>>` token comes first in the header, as the tailor writes it;
   `compile` swaps it. `header(cv_md)` is the same header as data, which `infer_basics` reads too (#208).
 - `## Heading` is an `<h2>`, whatever it says (a heading the columns do not know stays in the main column).
 - `### Role | Org — dates | Place` is an `<div class="entry">` whose `<h3>` has the parts in `role`, `org`, `dates` and
@@ -81,17 +81,18 @@ def _detail(kind: str | None, value: str) -> str:
 
 def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
     """The contact parts of `lines` (split on `|`): the values of the labelled ones by kind, and the parts with no
-    known label whole. A label is `**Label:**` or a plain `Label:` that `i18n.contact_kind` knows; an empty value is
-    dropped."""
+    known label whole. A label is one `i18n.contact_kind` knows, followed by a colon or a spaced dash, bold or not, the
+    bold around the label or around the whole part, after any leading symbols: `**Location:** X`, `Location: X`,
+    `**Location: X**`, `\ud83d\udccd Location: X`, `Location - X`. An empty value is dropped."""
     found: dict[str, list[str]] = {}
     other: list[str] = []
     for line in lines:
         for part in line.split("|"):
             part = part.strip()
-            label = re.match(r"^(?:\*\*(.+?)\*\*\s*:?|([^:*]+?)\s*:)\s*(.*)$", part)
-            kind = i18n.contact_kind((label.group(1) or label.group(2)).strip(" :\u00a0\u202f")) if label else None
+            label = re.match(r"^(.+?)\s*(?::|\s[-\u2013\u2014]\s)\s*(.*)$", re.sub(r"^\W+", "", part.replace("**", "")))
+            kind = i18n.contact_kind(label.group(1)) if label else None
             if kind:
-                if value := label.group(3).strip(" :"):
+                if value := label.group(2).strip(" :"):
                     found.setdefault(kind, []).append(value)
             elif part:
                 other.append(part)
@@ -99,11 +100,11 @@ def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
 
 
 def header(cv_md: str) -> dict:
-    """The CV's header as data: ``{"name", "tagline", "details", "other"}``, `details` the contact values by kind (read
-    in every supported language's labels) and `other` the parts with no known label; what `infer_basics` reads."""
-    name, tagline, preamble = _header_parts(cv_md)
+    """The CV's header as data: ``{"name", "details", "other"}``, `details` the contact values by kind (read in every
+    supported language's labels) and `other` the parts with no known label; what `infer_basics` reads."""
+    name, _, preamble = _header_parts(cv_md)
     details, other = _details(preamble)
-    return {"name": name, "tagline": tagline, "details": details, "other": other}
+    return {"name": name, "details": details, "other": other}
 
 
 def _contact(lines: list[str]) -> str:

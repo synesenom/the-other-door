@@ -323,15 +323,18 @@ def _infer_basics_core(
     if not text:
         return {**result, "missing": ["name", "email", "location"]}
 
-    # The header (`cv_body.header`, its labels in every supported language), the tagline left out.
+    # The header (`cv_body.header`, its labels in every supported language), then for an email the whole text but
+    # the tagline.
     head = cv_body.header(text)
     name = _usable(head["name"])
-    found_email = _EMAIL_RE.search(" | ".join([*head["details"].get("email", []), *head["other"]]))
-    email = found_email.group(0) if found_email else None
+    untagged = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(">"))
+    email = next((m.group(0) for s in [*head["details"].get("email", []), *head["other"], untagged] if (m := _EMAIL_RE.search(s))), None)
     place = _usable(next(iter(head["details"].get("location", [])), None))
     location = i18n.known_city(place) if place else None
-    # A place naming a known country but no known city says too little to search; another place is one The other door does not cover.
-    unsupported = place if place and not location and not i18n.country_for_location(place) else None
+    # A place naming a covered country but no known city says too little to search; one naming a place abroad is one
+    # The other door does not cover; anything else (a street address) is left to the model.
+    abroad = place and not location and not i18n.country_for_location(place) and i18n.compile_words(i18n.foreign_places()).search(place)
+    unsupported = place if abroad else None
 
     if _needs_the_model(text, name, email, location or unsupported):
         try:
