@@ -348,7 +348,11 @@ against the app's test world (`app/test/world/make-world.ts`: `boot.py`'s server
 for the tools' own model calls), with a small model playing the persona (`tests/skills/skill_run.py`, which
 also runs one skill by hand and writes its transcript). They check behaviour only: the tools and their order,
 what was written and when. `tests/skills/test_skill_contract_unit.py` (offline) checks that every tool a skill
-or agent names exists, with the parameters it passes.
+or agent names exists, with the parameters it passes. `tests/skills/test_style_build_model.py` (#238, same marker) runs the
+CV style rebuild with the real stylist, the pinned Chromium and the fonts fetched, on every CV of the style corpus (the
+scrubbed real ones and the made-up designs, read from its `expected.json`) and the edges (fonts unreachable, a user's CV
+far shorter or longer than the original, a CV with nothing to copy): each build ready, its score over a floor, its
+files and columns, the chosen style previewed; it needs a signed-in `claude` and the pinned Chromium (`DOOR_BIN`).
 
 The offline suite runs in parallel (`pytest -n auto`, pytest-xdist, in `run-test.sh` and CI;
 `-n 0` runs it serially, and live runs stay serial), so a test must not share a fixed path,
