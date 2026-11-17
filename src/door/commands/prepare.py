@@ -443,9 +443,7 @@ def _prepare_core(
         return {**result, "error": f"the `claude` CLI is not installed — {common._CLAUDE_FIX}; status left unchanged."}
 
     if not common._chromium_available():
-        from door.core import doctor
-
-        return {**result, "error": f"no Chromium to print the CV with — {doctor._CHROMIUM_FIX}; status left unchanged."}
+        return {**result, "error": str(common.NoChromium())}
 
     label = common._job_label(job_id, jobs_dir)
     progress_mod.report(f"tailoring {label}", stage="prepare")
@@ -631,5 +629,7 @@ def prepare(job_id: str | None, force: bool, timeout_min: float):
         return
     if result["outcome"] not in ("prepared", "skipped"):
         click.echo(f"Error: {result['error']}", err=True)
+        if result["error"] == str(common.NoChromium()):
+            click.echo(common.INSTALL_HINT, err=True)
         sys.exit(1)
     _render_prepared(result, interactive=interactive)

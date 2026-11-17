@@ -287,6 +287,15 @@ class MissingToolError(FileNotFoundError):
     """
 
 
+class NoChromium(MissingToolError, ValueError):
+    """No Chromium to print with. Its words are the app's (no command, #273, #296); a command adds `INSTALL_HINT`."""
+
+    def __init__(self):
+        super().__init__("The browser that prints your CVs is not installed yet.")
+
+
+INSTALL_HINT = "Run `./door doctor --fix` to install the browser that prints pages."
+
 _CLAUDE_FIX = "run ./door doctor --fix"
 
 

@@ -79,21 +79,11 @@ def _look(path: Path) -> None:
         raise ValueError(f"{path.name} {verdict['detail']}")
 
 
-class NoChromium(ValueError):
-    """No Chromium to print with. Its words are the app's (no command, #273); a command adds `INSTALL_HINT`."""
-
-    def __init__(self):
-        super().__init__("The browser that prints your CVs is not installed yet, so no style can be built.")
-
-
-INSTALL_HINT = "Run `./door doctor --fix` to install the browser that prints pages."
-
-
 def _intake(path: Path) -> None:
     """Raise ValueError, in words, when a build of the file at `path` cannot start: no Chromium to print with
-    (`NoChromium`), or no style."""
+    (`common.NoChromium`), or no style."""
     if not common._chromium_available():
-        raise NoChromium
+        raise common.NoChromium
     _look(path)
 
 
@@ -352,8 +342,8 @@ def build_style(file):
             result = _build_core(file, progress=reporter)
     except ValueError as exc:
         click.echo(f"Error: {exc}", err=True)
-        if isinstance(exc, NoChromium):
-            click.echo(INSTALL_HINT, err=True)
+        if isinstance(exc, common.NoChromium):
+            click.echo(common.INSTALL_HINT, err=True)
         sys.exit(1)
     for font in result["fonts"]:
         if font.get("source") == "none":
@@ -405,7 +395,7 @@ def show_style():
     Made again only when your CV, photo or style changed; no model is used."""
     styles = _show_core()["styles"]
     if not styles:
-        click.echo(f"Nothing could be printed. {INSTALL_HINT}")
+        click.echo(f"Nothing could be printed. {common.INSTALL_HINT}")
         return
     for name, sets in styles.items():
         click.echo(f"{'Like your CV' if name == 'like' else 'The default'}:")

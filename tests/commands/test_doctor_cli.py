@@ -243,14 +243,20 @@ def test_compile_without_chromium_is_a_one_line_error_from_the_tool(env, monkeyp
     (out / "cv.html").write_text("<p>x</p>")
 
     monkeypatch.setattr(chromium_mod, "find_chromium", lambda home=None: None)
-    with pytest.raises(common.MissingToolError, match="no Chromium"):
+    with pytest.raises(common.NoChromium):
         compile_cmd._compile_core("jobindex-acme-ds", jobs_dir=env.jobs_dir)
 
+    # `revise` in the app reaches this through compile (#296): words, no shell command
     monkeypatch.setattr(workspace, "JOBS_DIR", env.jobs_dir)
     error = server.compile("jobindex-acme-ds")["error"]
-    assert "no Chromium" in error
-    assert "door doctor --fix" in error
-    assert "None" not in error  # the hint must not depend on what this machine has installed
+    assert error == str(common.NoChromium())
+    assert "./door" not in error and "doctor" not in error
+
+
+def test_no_chromium_is_a_missing_tool_and_a_value_error():
+    assert isinstance(common.NoChromium(), common.MissingToolError)
+    assert isinstance(common.NoChromium(), ValueError)
+    assert "./door doctor --fix" in common.INSTALL_HINT
 
 
 def _posting(env, job_id="jobindex-acme-ds"):
@@ -286,7 +292,18 @@ def test_prepare_without_chromium_fails_before_tailoring(env, monkeypatch):
 
     result = prepare_cmd._prepare_core("jobindex-acme-ds", jobs_dir=env.jobs_dir)
     assert result["outcome"] == "failed"
-    assert "Chromium" in result["error"] and "./door doctor --fix" in result["error"]
+    # the app's Posting shows this error as it comes (#296): words, no shell command
+    assert result["error"] == str(common.NoChromium())
+    assert "./door" not in result["error"]
+
+
+def test_the_prepare_command_without_chromium_names_the_fix(env, monkeypatch):
+    _posting(env)
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("tailored without a Chromium to print with"))
+    out = CliRunner().invoke(cli, ["jobs", "prepare", "jobindex-acme-ds"])
+    assert out.exit_code == 1
+    assert str(common.NoChromium()) in result_text(out) and common.INSTALL_HINT in result_text(out)
 
 
 def test_prepare_top_match_without_claude_fails_before_selecting(env, monkeypatch):

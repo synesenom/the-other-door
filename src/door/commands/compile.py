@@ -208,7 +208,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
     Raises:
         ValueError: `job_id` is not a valid slug.
         FileNotFoundError: `jobs_dir/output/<job_id>/` does not exist.
-        MissingToolError: no Chromium is installed (the message carries the install command).
+        NoChromium: no Chromium is installed (in words; a command adds `common.INSTALL_HINT`).
     """
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
@@ -253,9 +253,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             results.append(entry)
             continue
         if chromium.find_chromium() is None:
-            from door.core import doctor
-
-            raise common.MissingToolError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
+            raise common.NoChromium
         try:
             columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
             pdf, placed, photo_name = print_page(body, template, template_path, language, output_dir, Path(file).stem,

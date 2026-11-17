@@ -22,6 +22,7 @@ from paths import REPO_ROOT
 # init (issue #74)
 # --------------------------------------------------------------------------- #
 
+from door.commands import _common as common
 from door.commands import profile as profile_cmd
 
 # The "Other…" choice of the location list.
@@ -1365,11 +1366,9 @@ def test_ticking_the_style_builds_it_once_after_the_profile_is_saved_and_before_
 
 
 def test_a_build_refused_for_want_of_chromium_names_the_command_that_installs_it(init_env, prompts, wizard_calls, monkeypatch, style_started):
-    from door.commands import style as style_cmd
-
     _no_first_run(monkeypatch)
     wizard_calls.sources = _STYLED
-    style_started.error = style_cmd.NoChromium()
+    style_started.error = common.NoChromium()
     prompts.answers.update(_JANE, review=iter(["style", "save"]))
     result = _invoke()
     assert "is not installed yet" in result.output and "./door doctor --fix" in result.output

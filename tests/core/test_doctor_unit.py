@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from door.commands import _common as common
 from door.core import doctor, workspace
 from profile_utils import write_config
 
@@ -80,7 +81,7 @@ def test_check_chromium_missing_is_required_and_names_the_fix():
     check = doctor.check_chromium(find=lambda: None)
     assert check["status"] == "missing" and check["required"] is True
     assert check["tool"] == "chromium" and check["installable"] is True
-    assert check["fix"].startswith("./door doctor --fix")
+    assert check["fix"] == common.INSTALL_HINT  # the command written once (#296)
 
 
 def test_check_chromium_names_missing_linux_libraries_and_installs_nothing():

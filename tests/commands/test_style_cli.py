@@ -109,7 +109,7 @@ def test_a_file_that_is_not_a_pdf_is_refused_in_words_and_nothing_starts(home, w
 
 def test_start_refuses_in_words_without_a_chromium_and_starts_nothing(home, world, cv_pdf, monkeypatch):
     monkeypatch.setattr(common, "_chromium_available", lambda: False)
-    with pytest.raises(style_cmd.NoChromium):
+    with pytest.raises(common.NoChromium):
         style_cmd._start_core(str(cv_pdf))
     assert world.spawned == [] and not (home / ".style").exists()
 
@@ -118,7 +118,7 @@ def test_the_tool_says_a_missing_chromium_in_words_with_no_shell_command(home, w
     # the app's Profile → CV shows this error as it comes (#273): no command, no tool name
     monkeypatch.setattr(common, "_chromium_available", lambda: False)
     error = mcp_server.build_style(str(cv_pdf))["error"]
-    assert error == "The browser that prints your CVs is not installed yet, so no style can be built."
+    assert error == str(common.NoChromium())
     assert "./door" not in error and "doctor" not in error
 
 
@@ -127,8 +127,8 @@ def test_the_build_command_refuses_without_a_chromium_before_any_model_round_and
     monkeypatch.setattr(style_cmd.style_build, "build", lambda *a, **k: pytest.fail("a round ran without Chromium"))
     result = CliRunner().invoke(cli, ["cv", "style", "build", str(cv_pdf)])
     assert result.exit_code != 0
-    assert "is not installed yet" in result_text(result)
-    assert "./door doctor --fix" in result_text(result)
+    assert str(common.NoChromium()) in result_text(result)
+    assert common.INSTALL_HINT in result_text(result)
 
 
 def test_a_pdf_that_cannot_be_read_is_named_in_words_without_the_library_message(home, world, tmp_path):
