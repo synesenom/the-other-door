@@ -155,6 +155,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   const newCount = () => fixtures.list_matches.matches.filter((m) => m.is_new && !seen.has(m.id)).length
   /** Answers for `state === 'ok'`, and the base the other states change. */
   const answer = (tool: string, args: Record<string, unknown>): unknown => {
+    const fails = scene.fails?.[tool]
+    if (fails) throw new Error(fails)
     switch (tool) {
       case 'show_profile':
         return profile()

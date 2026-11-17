@@ -23,14 +23,17 @@ WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
 # a round that adds less than this over the best before it is not worth another: half of the old 0.005, as the blurred score
 # (which weighs the difference against the ink) roughly halves what a round gains, so the same sensitivity
 MIN_GAIN = 0.0025
-# the small-gain rule applies only once the best round scored this, a good rebuild (0.88-0.99 in #238's real runs): below
-# it a flat or worse round goes on to the cap with the feedback (a broken first draft scored 0.31 then 0.01, #243)
-GOOD = 0.8
-# a build whose best round scored under this is failed, nothing written (#241): on the page score, rebuilds that looked
-# like their CV scored 0.54-0.99 in real runs and broken ones 0.10-0.49 (columns swapped: 0.487). Re-scored with the
-# strokes (#250), 64 saved renders: every original against itself 1.0, the rebuilds above GOOD stay above it (0.81-0.99)
-# but one whose lines drift a few points beside a side band (0.98 to 0.77), squashed main columns 0.17-0.26 (were 0.46-0.49, their page 1 0.97)
-FLOOR = 0.5
+# the small-gain rule applies only once the best round scored this, a good rebuild: below it a flat or worse round goes on
+# to the cap with the feedback (a broken first draft scored 0.31 then 0.01, #243). Re-scored with the strokes (#250), 64
+# saved renders: good rebuilds 0.77-0.99 (the lowest, latex-sidebar, its lines a few points off beside its band: 0.768),
+# rounds with something visibly left to fix 0.75 (a page too long: 0.748; serif sizes off: 0.745, 0.754) and broken ones
+# 0.12-0.68; just under the lowest good one (tests/tailoring/fixtures/style_renders pins it)
+GOOD = 0.76
+# a build whose best round scored under this is failed, nothing written (#241). With the strokes (#250): every original
+# against itself 1.0, main columns squashed beside a matching band 0.17-0.26 (were 0.46-0.49, their page 1 0.97) and
+# one narrowed into the band 0.518 (was 0.976), which the old 0.5 let through; the weakest rebuilds that still look
+# like their CV 0.58-0.68
+FLOOR = 0.55
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 SHIFT_REACH = 0.15  # of a page's height: how far `pages_score` looks up and down for where an original page sits
 # the render's first page beyond the original's count holding this share of an original page's ink or less is a few

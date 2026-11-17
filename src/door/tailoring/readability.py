@@ -62,8 +62,8 @@ def problems(text: str, *, name: str | None, headings: list[str], keywords: list
 
 
 # The kinds a second tailor run can fix by rewriting the text (the name, a heading or a keyword absent, or text that
-# ran off the page, which a shorter CV cures); the others are reported and not retried.
-FIXABLE = {"missing", "overflow"}
+# ran off the page or a CV over its page limit, which a shorter CV cures); the others are reported and not retried.
+FIXABLE = {"missing", "overflow", "pages"}
 
 
 def fixable(found: list[dict]) -> list[dict]:
@@ -115,12 +115,20 @@ def layout_problems(pages: list[tuple[float, float, list[Box]]], *, two_column: 
     return []
 
 
-def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False) -> list[dict]:
+def page_problems(pages: int, max_pages: int | None) -> list[dict]:
+    """``pages``: a CV of more pages than `max_pages` (`common._cv_max_pages`, the stricter of the country's and the
+    template's), the limit named so the tailor's retry knows what to cut to (#194). No limit: nothing."""
+    if max_pages is None or pages <= max_pages:
+        return []
+    return [{"kind": "pages", "detail": f"{pages} pages, over the limit of {max_pages} page{'s' if max_pages > 1 else ''}"}]
+
+
+def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, max_pages: int | None = None) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
     the raw config's value, used when it is a string). A `cv` is also checked for words lost off the page
-    (`overflow_problems`, unless no text could be read) and, when `body` is placed in columns (the `side` div
-    `compile._place_columns` adds only for a template with a side column), for a sparse last page
-    (`layout_problems`); a letter gets neither."""
+    (`overflow_problems`, unless no text could be read), for more pages than `max_pages` (`page_problems`) and,
+    when `body` is placed in columns (the `side` div `compile._place_columns` adds only for a template with a side
+    column), for a sparse last page (`layout_problems`); a letter gets none of these."""
     from door.tailoring import pdf_render
 
     text, pages = extract(pdf)
@@ -132,5 +140,6 @@ def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False) -> list[d
     if cv:
         if not {"empty", "garbled"} & {p["kind"] for p in found}:
             found += overflow_problems(text, body)
+        found += page_problems(pages, max_pages)
         found += layout_problems(pdf_render.page_boxes(pdf), two_column=cols is not None)
     return found

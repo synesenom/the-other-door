@@ -896,8 +896,8 @@ async def prepare(
     A prepared job also gets its salary estimate (`salary_estimate`, one Haiku web
     search, reused while under 90 days old; skipped when the plan is close to its limit):
     mention the range as an estimate with its sources; say nothing when it is null.
-    It reads both PDFs back like an ATS and, when the name, a heading or a keyword is missing, or text of the CV runs off the page (`overflow`), runs the
-    tailor once more with those problems; what remains is in `readability` (`[{file, kind, detail}]`, `[]`
+    It reads both PDFs back like an ATS and, when the name, a heading or a keyword is missing, text of the CV runs off the page (`overflow`) or the CV has more pages than
+    its limit (`pages`), runs the tailor once more with those problems; what remains is in `readability` (`[{file, kind, detail}]`, `[]`
     clean, null not checked) with a `warning`: tell the user and offer `revise`. It never fails a prepare.
 
     Args:
@@ -1498,7 +1498,7 @@ async def show_style() -> dict:
 
 @mcp.tool()
 @_tool_errors
-async def use_style(style: str = "like", rerender: bool = False) -> dict:
+async def use_style(style: str, rerender: bool = False) -> dict:
     """Choose the CV style: the one built from the user's own CV (``like``: the candidate a build leaves moves in, and
     both template keys point at it), The other door's (``default``) or ``current`` (keep what is in use and drop the
     candidate). Identical to `./door cv style use`. Any pick ends the candidate. Applications already prepared keep their
@@ -1506,7 +1506,7 @@ async def use_style(style: str = "like", rerender: bool = False) -> dict:
     no plan usage; sent ones never change).
 
     Args:
-        style: ``like``, ``default`` or ``current``.
+        style: ``like``, ``default`` or ``current``; required, so a call without it chooses nothing.
         rerender: Print the prepared applications again in the style in use.
 
     Returns:

@@ -8,7 +8,7 @@ import pypdfium2 as pdfium
 import pypdfium2.raw as raw
 import pytest
 
-from door.core import chromium, fonts
+from door.core import chromium, fonts, pinned
 from door.tailoring.html_pdf import PrintError, print_html
 from live_utils import not_reached
 
@@ -36,7 +36,7 @@ def test_a_family_is_fetched_from_the_pin_and_matches_its_checksum(tmp_path):
         if "checksum" in str(exc):
             raise
         not_reached("raw.githubusercontent.com", str(exc))
-    assert path.name == "YoungSerif-Regular.ttf" and fonts._sha256(path) == plan[0]["files"][0]["sha256"]
+    assert path.name == "YoungSerif-Regular.ttf" and pinned.sha256(path) == plan[0]["files"][0]["sha256"]
     assert (tmp_path / "YoungSerif-OFL.txt").is_file()
 
 

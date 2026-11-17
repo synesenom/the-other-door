@@ -787,7 +787,7 @@ def _save_answers(answers: dict) -> bool:
             click.echo(f"The CV style was not started: {exc}", err=True)
         else:
             click.echo(f"Your CV style is building in the background ({_STYLE_WAIT}). `./door jobs summary` says when it is ready; "
-                       "`./door cv style show` compares, `./door cv style use` chooses.")
+                       "`./door cv style show` compares, `./door cv style use like` chooses it.")
     return True
 
 

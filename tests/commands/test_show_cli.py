@@ -716,6 +716,34 @@ def test_show_reports_words_of_the_cv_missing_from_its_pdf_and_not_the_letters(c
     assert "zzzcutword" in found[0]["detail"]
 
 
+def test_show_says_a_cv_over_its_page_limit_in_readability(cli_env):
+    """#194: what is left over the limit after prepare's retry shows with the other read-back problems."""
+    from pdf_utils import make_pdf
+    from door.commands import matches as matches_cmd
+
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", location="Aarhus, Denmark")
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text('{"max_pages": 1}')
+    _with_cv(cli_env, "<!-- Keywords: Python -->\n<p>Jane Doe, Python developer</p>")
+    _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
+    out = cli_env.jobs_dir / "output" / "job-abc"
+    make_pdf(out / "cv.pdf", ["Jane Doe, Python developer with plenty of text to be readable"] * 2)
+    found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
+    assert found == [{"file": "cv", "kind": "pages", "detail": "2 pages, over the limit of 1 page"}]
+
+
+def test_the_card_says_the_page_limit_once_on_the_cv_row_not_under_read_by_an_ats(cli_env):
+    base = {"keywords": [], "tailoring": [], "cover_letter_words": 300, "file_names": {},
+            "pdfs": {"cv": "cv.pdf", "cover_letter": "l.pdf"}, "pngs": {"cv": [], "cover_letter": []},
+            "page_counts": {"cv": 2, "cover_letter": 1}, "cv_max_pages": 1}
+    pages = {"file": "cv", "kind": "pages", "detail": "2 pages, over the limit of 1 page"}
+    missing = {"file": "cv", "kind": "missing", "detail": 'keyword "Kubernetes" is not in the text'}
+    text = _rendered({**base, "readability": [pages]})
+    assert "(limit 1)" in text and "over the limit" not in text and "text reads cleanly" in text
+    text = _rendered({**base, "readability": [pages, missing]})
+    assert "Kubernetes" in text and "over the limit" not in text
+
+
 def test_show_passes_a_two_column_manifest_to_the_cv_check(cli_env, one_page, monkeypatch):
     from door.commands import matches as matches_cmd
     from door.tailoring import pdf_render

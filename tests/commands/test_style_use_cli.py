@@ -273,10 +273,17 @@ def test_an_interrupted_end_of_a_candidate_never_leaves_it_to_be_chosen(home, cl
 # ----------------------------------------------------------------------------- command and tool
 def test_the_command_says_which_style_is_in_use(home, cli_env, compiled):
     _folder(cli_env, "style.next")
-    result = CliRunner().invoke(cli, ["cv", "style", "use"])
+    result = CliRunner().invoke(cli, ["cv", "style", "use", "like"])
     assert result.exit_code == 0 and "Your own style is in use" in result_text(result)
     result = CliRunner().invoke(cli, ["cv", "style", "use", "default"])
     assert result.exit_code == 0 and "The other door's style is in use" in result_text(result)
+
+
+def test_the_command_without_a_style_chooses_nothing(home, cli_env):
+    _folder(cli_env, "style.next", "new")
+    result = CliRunner().invoke(cli, ["cv", "style", "use"])
+    assert result.exit_code != 0
+    assert (cli_env.profile_dir / "style.next" / "mark.txt").read_text() == "new" and _keys(cli_env) == (None, None)
 
 
 def test_the_command_exits_non_zero_when_nothing_is_built(home, cli_env):
@@ -299,3 +306,21 @@ def test_the_tool_is_a_writing_tool_the_phone_does_not_get_and_answers_in_words(
     _folder(cli_env, "style.next")
     assert asyncio.run(mcp_server.use_style("like", rerender=False))["in_use"] == "like"
     assert "error" in asyncio.run(mcp_server.use_style("sideways"))
+
+
+@pytest.mark.parametrize("arguments", [{}, {"choice": "current"}])
+def test_the_tool_without_a_style_refuses_and_changes_nothing(home, cli_env, arguments):
+    """#252: a misnamed argument was dropped and the default ``like`` applied, against the user's pick."""
+    from mcp.shared.memory import create_connected_server_and_client_session as session
+
+    _folder(cli_env, "style.next", "new")
+
+    async def call():
+        async with session(mcp_server.mcp._mcp_server) as client:
+            return await client.call_tool("use_style", arguments)
+
+    answer = asyncio.run(call())
+    text = answer.content[0].text
+    assert answer.isError or "error" in json.loads(text), text
+    assert (cli_env.profile_dir / "style.next" / "mark.txt").read_text() == "new" and _keys(cli_env) == (None, None)
+    assert not (cli_env.profile_dir / "style").exists()
