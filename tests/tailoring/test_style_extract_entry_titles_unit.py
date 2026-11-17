@@ -34,6 +34,8 @@ def _cv(lang, upper=False, dates="below", hsize=10, tsize=10, entries=(2, 2, 1, 
             if dates == "column":
                 t("F1", 10, 50, y, "2019 - 2022")
                 t("F2", tsize, 130, y, title)
+            elif dates == "own":
+                t("F2", tsize, 50, y, title + " 2019-2022")
             elif dates == "same":
                 t("F2", tsize, 50, y, title)
                 t("F1", 10, 400, y, "05/2019 - 2022")
@@ -57,7 +59,7 @@ def _headings(tmp_path, **kw):
 
 @pytest.mark.parametrize("lang", list(LANG))
 @pytest.mark.parametrize("upper", [False, True])
-@pytest.mark.parametrize("dates", ["same", "column"])
+@pytest.mark.parametrize("dates", ["same", "column", "own"])
 @pytest.mark.parametrize("tsize", [12, 14])
 def test_dated_titles_set_larger_than_the_headings_are_not_the_headings(tmp_path, lang, upper, dates, tsize):
     want = [h.upper() if upper else h for h in LANG[lang][0]]
@@ -85,8 +87,10 @@ def test_headings_only_group_is_kept(tmp_path):
 def _plain(layout, gap, heads=("Berufserfahrung", "Ausbildung", "Kenntnisse", "Ehrenamt"), hfont="F2", line=None):
     """Bold headings, each with two blocks below it in the body font; `layout` says how a block starts."""
     ops, y = ["BT 0 g /F2 18 Tf 50 810 Td (Max Mustermann) Tj ET"], 770
-    for h in heads:
-        ops.append(f"BT 0 g /{hfont} 10 Tf 50 {y} Td ({h}) Tj ET")
+    for i, h in enumerate(heads):
+        ops.append(f"BT 0 g /{hfont} 11 Tf 50 {y} Td ({h}) Tj ET")
+        if i < 3:  # an undated group of fewer lines than the headings: what the fallback takes if they count as dated
+            ops.append(f"BT 0 g /F3 10 Tf 300 {y + 8} Td (Schwerpunkt Cloud) Tj ET")
         y -= gap
         for _ in range(2):
             if layout == "date_first":
@@ -130,10 +134,12 @@ def test_a_date_line_above_a_bold_title_keeps_the_headings(tmp_path, gap):
 HEADS = ["Berufserfahrung", "Ausbildung", "Kenntnisse", "Ehrenamt"]
 
 
-def _heads(tmp_path, heads, side=None, color="0 g", size=10, rightdate=None):
+def _heads(tmp_path, heads, side=None, color="0 g", size=11, rightdate=None, label=False):  # headings 11pt: larger than the 10pt label
     ops, y = ["BT 0 g /F2 18 Tf 50 810 Td (Max Mustermann) Tj ET"], 770
     for i, h in enumerate(heads):
         ops.append(f"BT {color} /F2 {size} Tf 50 {y} Td ({h}) Tj ET")
+        if i < 3 and label:  # an undated group of fewer lines than the headings
+            ops.append(f"BT 0 g /F3 10 Tf 160 {y + 8} Td (Schwerpunkt Cloud) Tj ET")
         if side:  # a side column: its first line is on the heading's baseline, then more lines under it
             ops.append(f"BT 0 g /F1 9 Tf 420 {y} Td ({side.format(i=i)}) Tj ET")
             for k in range(1, 5):
@@ -147,7 +153,7 @@ def _heads(tmp_path, heads, side=None, color="0 g", size=10, rightdate=None):
 
 
 def test_a_year_in_a_side_column_on_a_heading_baseline_keeps_the_heading(tmp_path):
-    assert _heads(tmp_path, HEADS, side="Zertifikat AWS 201{i}") == HEADS
+    assert _heads(tmp_path, HEADS, side="Zertifikat AWS 201{i}", label=True) == HEADS
 
 
 def test_headings_some_with_a_year_are_all_kept(tmp_path):
@@ -168,3 +174,17 @@ def test_a_right_aligned_date_on_every_heading_row_keeps_them_when_coloured_and_
 def test_all_dated_headings_with_no_other_group_are_still_the_headings(tmp_path, rightdate):
     heads = ["Berufserfahrung 2015-2024", "Ausbildung 2010-2015", "Projekte 2020", "Ehrenamt seit 2018"]
     assert _heads(tmp_path, heads if rightdate is None else HEADS, rightdate=rightdate) == (heads if rightdate is None else HEADS)
+
+
+def test_a_larger_all_dated_group_does_not_lose_to_a_group_of_more_lines(tmp_path):
+    # 4 bold headings, each with a small year note at the right of its row (so all dated), and one Times line per
+    # section: the largest group stays the headings unless an undated group has fewer lines
+    ops, y = ["BT 0 g /F2 18 Tf 50 810 Td (Max Mustermann) Tj ET"], 770
+    for i, h in enumerate(HEADS):
+        ops.append(f"BT 0 g /F2 11 Tf 50 {y} Td ({h}) Tj ET")
+        ops.append(f"BT 0 g /F1 8 Tf 480 {y} Td (seit 201{i}) Tj ET")
+        for k in range(3):
+            font, text = ("F3", "Schwerpunkt Cloud") if k == 0 else ("F1", "- Entwicklung und Betrieb von Diensten in der Cloud")
+            ops.append(f"BT 0 g /{font} 10 Tf 60 {y - 16 - 13 * k} Td ({text}) Tj ET")
+        y -= 70
+    assert _got(tmp_path, raw_pdf("\n".join(ops))) == HEADS
