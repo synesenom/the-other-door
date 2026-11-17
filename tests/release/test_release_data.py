@@ -12,7 +12,7 @@ from door import version
 from door.core import migrations
 from door.core.migrations import Step
 import release_gate_utils as gate
-from release_gate_utils import check, check_refused, is_older_major, open_release, release_data, releases, sample_major
+from release_gate_utils import check, check_refused, is_older_major, open_release, release_data, releases, sample_major, samples
 
 pytestmark = pytest.mark.release
 
@@ -24,10 +24,11 @@ def test_there_is_a_saved_release():
     assert SAMPLES, "tests/data_versions/ holds no release: scripts/save_release_data.py X.Y.Z saves one"
 
 
-@pytest.mark.parametrize("sample", SAMPLES, ids=lambda p: p.name)
+@pytest.mark.parametrize("sample", samples(), ids=lambda p: p.relative_to(gate.SAMPLES_DIR).as_posix())
 def test_a_saved_release_upgrades_and_reads_back_equal(sample, tmp_path, monkeypatch):
+    """Each release's own sample, and its `default/` variant (the default profile: templates from the code, #141)."""
     found = check(sample, tmp_path / "home", monkeypatch)
-    assert not found, f"{sample.name}'s data reads back differently:\n" + "\n".join(found)
+    assert not found, f"{sample.relative_to(gate.SAMPLES_DIR)}'s data reads back differently:\n" + "\n".join(found)
 
 
 def test_every_read_change_covers_a_difference_of_its_own_release(tmp_path, monkeypatch):

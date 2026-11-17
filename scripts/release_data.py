@@ -27,13 +27,17 @@ CODE_OWNED_KEYS = {"show_profile": ("options",), "status_summary": ("drive",)}
 _TIME = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([+-]\d{2}:?\d{2}|Z)?")
 
 
-def normalise(value, home: Path):
-    """*value* with the data folder's path as ``<home>`` and every time of day as ``<time>``.
+def normalise(value, home: Path, code: Path | None = None):
+    """*value* with the data folder's path as ``<home>``, the code's folder (*code*: where the code-owned templates are
+    read from, #141) as ``<code>``, and every time of day as ``<time>``.
 
     A time is volatile (a "last run" read against now, a clock in a message) and the saved ones are fake; the key
     must still be there and still hold a time.
     """
-    homes = sorted({str(home), str(Path(home).resolve())}, key=len, reverse=True)
+    labels = {str(p): "<home>" for p in (Path(home), Path(home).resolve())}
+    if code is not None:
+        labels.update({str(p): "<code>" for p in (Path(code), Path(code).resolve()) if str(p) not in labels})
+    homes = sorted(labels, key=len, reverse=True)  # the longest first: a data folder inside the code's stays <home>
 
     def walk(item):
         if isinstance(item, dict):
@@ -42,7 +46,7 @@ def normalise(value, home: Path):
             return [walk(sub) for sub in item]
         if isinstance(item, str):
             for prefix in homes:
-                item = item.replace(prefix, "<home>")
+                item = item.replace(prefix, labels[prefix])
             return _TIME.sub("<time>", item)
         return item
 
@@ -70,7 +74,7 @@ def snapshot(home: Path) -> dict:
     for key in CODE_OWNED_KEYS["status_summary"]:
         summary.pop(key, None)
     out["status_summary"] = summary
-    return normalise(json.loads(json.dumps(out, default=str)), home)
+    return normalise(json.loads(json.dumps(out, default=str)), home, code=workspace.PROFILE_EXAMPLE_DIR.parent)
 
 
 def _walk(expected, actual, path: str, found: list[str]) -> None:
