@@ -14,7 +14,6 @@ A case a known issue still breaks is an `xfail` naming it: the release gate stay
 
 import json
 import shutil
-import subprocess
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -23,7 +22,8 @@ from typing import NamedTuple
 
 import pytest
 
-from paths import REPO_ROOT, TESTS_DIR
+from conftest import claude_ready
+from style_build_utils import EXAMPLE, STYLES
 
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
@@ -32,10 +32,9 @@ from door.tailoring import cv_body, readability, style_build, style_extract
 
 pytestmark = [pytest.mark.skills, pytest.mark.real_chromium]
 
-STYLES = TESTS_DIR / "tailoring" / "fixtures" / "styles"
 EXPECTED = json.loads((STYLES / "expected.json").read_text(encoding="utf-8"))
 FLOOR = 0.5  # the best round's blurred score: Sonnet's median was 0.94 in #206, a broken rebuild scores near 0
-EXAMPLE_CV = (REPO_ROOT / "profile.example" / "cv.md").read_text(encoding="utf-8")
+EXAMPLE_CV = (EXAMPLE / "cv.md").read_text(encoding="utf-8")
 
 SHORT_CV = """# Sam Example
 
@@ -91,11 +90,8 @@ KNOWN = {"html-canva-icons": "#242 #243", "scrubbed-pages-sidebar-fr": "#242", "
 
 def _ready() -> str | None:
     """Why a real build cannot happen here, or None."""
-    if not shutil.which("claude"):
-        return "no claude on PATH"
-    status = subprocess.run(["claude", "auth", "status", "--json"], capture_output=True, text=True)
-    if status.returncode != 0 or not json.loads(status.stdout or "{}").get("loggedIn"):
-        return "claude is not signed in (claude auth login)"
+    if reason := claude_ready():
+        return reason
     if chromium.find_chromium() is None:
         return "no pinned Chromium (./door doctor --fix)"
     try:
@@ -142,7 +138,7 @@ def chosen(builds):
             pytest.skip(f"not built: {result['problems']}")
         if name not in done:
             profile = home / "profile"
-            shutil.copyfile(REPO_ROOT / "profile.example" / "config.json", profile / "config.json")
+            shutil.copyfile(EXAMPLE / "config.json", profile / "config.json")
             with pytest.MonkeyPatch.context() as patch:
                 patch.setattr(workspace, "HOME", home)
                 assert style_cmd._use_core("like", profile_dir=profile)["in_use"] == "like"
