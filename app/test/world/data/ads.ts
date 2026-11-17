@@ -1,7 +1,7 @@
 // The job ads of the test world. Every employer, contact person and address is invented;
 // links use .example hosts only.
 
-export type Site = 'jobindex' | 'thehub' | 'jobbank' | 'greenhouse' | 'lever' | 'francetravail' | 'manual'
+export type Site = 'jobindex' | 'thehub' | 'jobbank' | 'greenhouse' | 'lever' | 'francetravail' | 'workable' | 'arbetsformedlingen' | 'manual'
 
 export interface Ad {
   key: string
@@ -1118,6 +1118,7 @@ Pour postuler, envoyez votre CV et une lettre de motivation via France Travail e
     reason: 'Son poste actuel chez Rhodanis Mécanique (deux usines, budget, coûts standards, reporting Power BI) correspond presque point par point à la fiche ; elle maîtrise aussi SAP CO.',
     matching: ['contrôle de gestion industriel', 'coûts standards', 'budget et reprévisions', 'SAP CO', 'Power BI'],
     missing: [],
+    fresh: true,
   },
   {
     key: 'laiterie-monts-controleur-usine',
@@ -1313,7 +1314,7 @@ Apply via our careers page.`,
   {
     key: 'pannon-energia-backend-go',
     persona: 'bence',
-    site: 'manual',
+    site: 'workable',
     title: 'Backend fejlesztő (Go)',
     titleEn: 'Backend Developer (Go)',
     company: 'Pannon Energia Zrt.',
@@ -1357,6 +1358,7 @@ Jelentkezés önéletrajzzal a karrieroldalunkon, jelentkezési határidő: 2026
     reason: 'His Go, PostgreSQL and Kafka work and the billing-monolith split at Duna Payments fit the billing microservices well; energy retail is a new domain.',
     matching: ['Go', 'PostgreSQL', 'Kafka', 'Kubernetes', 'Terraform', 'AWS'],
     missing: ['energy domain'],
+    fresh: true,
   },
 
   // ---------------------------------------------------------------- jonas
@@ -1506,5 +1508,46 @@ We offer a hybrid workplace by Kalvebod Brygge, a pension of 12%, and a team tha
     reason: 'Her production forecasting for energy trading and team leadership match the role closely; the probabilistic forecasting is exactly her PhD work.',
     matching: ['time-series forecasting', 'Python', 'SQL', 'MLOps', 'probabilistic forecasting'],
     missing: ['people management at scale'],
+  },
+  // ---------------------------------------------------------------- asa
+  {
+    key: 'gota-alv-hallbarhetsanalytiker',
+    persona: 'asa',
+    site: 'arbetsformedlingen',
+    title: 'Hållbarhetsanalytiker till Göta Älv Energi',
+    titleEn: 'Sustainability analyst at Göta Älv Energi',
+    company: 'Göta Älv Energi AB',
+    location: 'Göteborg',
+    language: 'sv',
+    description: `Göta Älv Energi AB producerar fjärrvärme, el och fjärrkyla till 90 000 hushåll och företag i Göteborgsregionen. Vi ska vara fossilfria till 2030, och för att nå dit behöver vi veta exakt var våra utsläpp uppstår och vad varje åtgärd ger.
+
+Nu söker vi en hållbarhetsanalytiker till vår hållbarhetsavdelning på Hisingen. Du blir en av fyra i teamet och arbetar nära ekonomi, inköp och produktion.
+
+Dina arbetsuppgifter
+
+- Ansvara för bolagets klimatbokslut enligt GHG-protokollet, scope 1–3.
+- Bygga och förvalta uppföljningen av utsläpp och energi i Power BI.
+- Ta fram underlag till hållbarhetsrapporten enligt CSRD tillsammans med ekonomiavdelningen.
+- Göra livscykelanalyser av nya anläggningar och bränslen.
+- Förklara resultaten för ledningsgruppen och för våra ägare.
+
+Vi söker dig som
+
+- Har en civilingenjörsexamen eller motsvarande inom miljö, energi eller hållbarhet.
+- Har minst tre års erfarenhet av klimatredovisning eller miljörapportering.
+- Är van vid Power BI och Excel; Python eller SQL är meriterande.
+- Uttrycker dig väl på svenska och engelska, i tal och skrift.
+
+Vi erbjuder
+
+Tillsvidareanställning med sex månaders provanställning, flexibla arbetstider och möjlighet att arbeta hemifrån två dagar i veckan. Friskvårdsbidrag på 5 000 kr per år och kollektivavtal.
+
+Sista ansökningsdag är den 30 november. Frågor besvaras av rekryterande chef Märta Öberg på 031-000 00 00. Vi tar inte emot ansökningar via e-post.`,
+    postedDaysAgo: 2,
+    score: 0.86,
+    reason: 'Hennes klimatbokslut och Power BI-uppföljning på Älvstrand Fastigheter motsvarar nästan exakt tjänsten; CSRD-arbetet är en fördel.',
+    matching: ['klimatredovisning', 'GHG-protokollet', 'Power BI', 'CSRD', 'livscykelanalys'],
+    missing: [],
+    fresh: true,
   },
 ]

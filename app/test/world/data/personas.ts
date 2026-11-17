@@ -315,7 +315,7 @@ Backend engineer with seven years of experience building payment and logistics s
 - Replaced nightly batch exports to partners with a webhook service, cutting delivery-status delays from hours to seconds.
 - Wrote the team's PostgreSQL migration guidelines after a schema change locked the shipments table in production.
 
-### Junior Developer | Pixelgyár Software — 2017 - 2019
+### Junior Developer | Pixelgyár Szoftverfejlesztő Kft. — 2017 - 2019
 
 - Developed REST services in Java and Kotlin for e-commerce clients.
 - Built product-catalogue import jobs and integrations with Hungarian payment providers.
@@ -323,7 +323,7 @@ Backend engineer with seven years of experience building payment and logistics s
 ## Projects
 
 - **pgwatch-lite** — a small open-source Go tool that reports slow PostgreSQL queries and missing indexes (600 stars).
-- Speaker at a Budapest Go meetup: "Idempotent consumers in practice" (2024).
+- Speaker at the Go meetup at Műhely Budapest: "Idempotent consumers in practice" (2024).
 
 ## Education
 
@@ -386,7 +386,7 @@ Backend Engineer    —    Fuvar Logistics Kft.             Sep 2019 – Dec 202
      mentoring 2 juniors
 
 
-Junior Developer   —   Pixelgyár Software              Jul 2017 – Aug 2019
+Junior Developer   —   Pixelgyár Szoftverfejlesztő Kft.   Jul 2017 – Aug 2019
      REST services ,  Java + Kotlin ,  e-commerce
 
 
@@ -401,6 +401,8 @@ Docker   Kubernetes   Terraform   AWS   OpenTelemetry   Prometheus   Grafana
 
 
 Languages:    Hungarian (native) ,   English (fluent)
+
+Talks:  "Idempotent consumers in practice"  -  Go meetup at Műhely Budapest  (2024)
 
 Hobbies:  cycling,  board games
 `
@@ -482,6 +484,91 @@ Skills:   Python  ,  MATLAB ,  QGIS ,  AutoCAD (basic)  ,  water chemistry ,  la
 Languages :  Danish ,  English
 
 Other: volunteer at the local rowing club, driving licence B
+`
+
+const ASA_CV = `# Åsa Söderlund
+
+**Telefon:** +46 70 000 00 00 | **Email:** asa.soderlund@example.com | **Location:** Göteborg
+
+## Profil
+
+Hållbarhetsanalytiker med fem års erfarenhet av klimatredovisning och miljödata inom energi och fastigheter. Van att räkna utsläpp enligt GHG-protokollet, bygga uppföljning i Power BI och förklara resultaten för ledningsgrupper.
+
+## Erfarenhet
+
+### Hållbarhetsanalytiker | Älvstrand Fastigheter AB — 2022 - nu
+
+- Ansvarar för bolagets klimatbokslut (scope 1–3) för 140 fastigheter.
+- Byggde en energiuppföljning i Power BI som används av alla förvaltare.
+- Tog fram underlaget till bolagets första gröna obligation på 500 Mkr.
+- Samordnar hållbarhetsrapporten enligt CSRD med ekonomi och juridik.
+
+### Miljöhandläggare | Västkustens Värmeverk AB — 2020 - 2022
+
+- Följde upp utsläpp till luft och vatten för tre kraftvärmeverk.
+- Skrev miljörapporter till länsstyrelsen och svarade på tillsynsfrågor.
+- Införde en gemensam databas för mätdata i stället för tolv Excel-filer.
+
+## Utbildning
+
+### Civilingenjör i miljö- och vattenteknik | Göta Tekniska Högskola — 2020
+
+Examensarbete om livscykelanalys av fjärrvärme.
+
+## Kompetenser
+
+Klimatredovisning, GHG-protokollet, livscykelanalys, CSRD, Power BI, Excel, Python (pandas), SQL, miljörapportering, projektledning.
+
+## Språk
+
+- **Svenska** — modersmål
+- **Engelska** — flytande
+`
+
+const ASA_STORIES = `## Klimatbokslut för 140 fastigheter på Älvstrand Fastigheter
+
+**Context**: Bolaget hade inget klimatbokslut och banken ville ha ett inför en grön obligation. Ta fram scope 1–3 för hela beståndet på ett halvår.
+**Action**: Samlade energi- och inköpsdata från förvaltarna, byggde beräkningen enligt GHG-protokollet och lät en revisor granska den.
+**Result**: Klimatbokslutet blev klart i tid och obligationen på 500 Mkr kunde ges ut.
+**Learning**: Förvaltarnas data blev bättre när de själva fick se resultatet i Power BI.
+`
+
+const ASA_RAW = `CV
+
+ÅSA SÖDERLUND
+asa.soderlund@example.com      +46 70 000 00 00
+Göteborg
+
+
+Hållbarhetsanalytiker  –  5 års erfarenhet
+
+
+ERFARENHET
+
+2022 – nu        Älvstrand Fastigheter AB        Hållbarhetsanalytiker
+   •  klimatbokslut scope 1–3 ,  140 fastigheter
+   •  energiuppföljning i Power BI för förvaltarna
+   •  underlag för grön obligation  (500 Mkr)
+   •  hållbarhetsrapport enligt CSRD
+
+2020 – 2022      Västkustens Värmeverk AB        Miljöhandläggare
+   •  utsläpp till luft och vatten ,  tre kraftvärmeverk
+   •  miljörapporter till länsstyrelsen
+   •  en databas för mätdata i stället för tolv Excel-filer
+
+
+UTBILDNING
+2020    Civilingenjör i miljö- och vattenteknik   –   Göta Tekniska Högskola
+        examensarbete :  livscykelanalys av fjärrvärme
+
+
+KOMPETENSER
+Klimatredovisning   GHG-protokollet   livscykelanalys   CSRD
+Power BI    Excel    Python (pandas)    SQL
+
+
+SPRÅK
+Svenska : modersmål       Engelska : flytande
 `
 
 export const PERSONAS: Record<string, Persona> = {
@@ -577,5 +664,20 @@ export const PERSONAS: Record<string, Persona> = {
     cv: JONAS_CV,
     storyBank: JONAS_STORIES,
     rawSource: JONAS_RAW,
+  },
+  asa: {
+    key: 'asa',
+    name: 'Åsa Söderlund',
+    email: 'asa.soderlund@example.com',
+    phone: '+46 70 000 00 00',
+    city: 'Göteborg',
+    country: 'se',
+    languages: ['English', 'Swedish'],
+    roleTargets: ['Hållbarhetsanalytiker', 'Miljöstrateg', 'Sustainability Analyst'],
+    searchKeywords: ['hållbarhetsanalytiker', 'miljöstrateg', 'hållbarhetsspecialist', 'miljöanalytiker', 'sustainability analyst'],
+    topicTerms: ['hållbarhet*', 'miljö*', 'klimat*', 'sustainability'],
+    cv: ASA_CV,
+    storyBank: ASA_STORIES,
+    rawSource: ASA_RAW,
   },
 }

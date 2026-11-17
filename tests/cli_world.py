@@ -1,6 +1,6 @@
 """Shared by the CLI journeys (tests/cli_journeys/): CLI journeys (#33, layer 2): the real `./door` (`door.cmd` on Windows) in the app's test world.
 
-Not in the default offline suite (marker `cli_journeys`): CI runs them on Linux and Windows after
+Not in the default offline suite (marker `cli_journeys`): CI runs them on Linux, Windows and macOS after
 `setup.sh` / `setup.ps1` on a fresh checkout (.github/workflows/cli-journeys.yml), and
 `./scripts/run-test.sh --cli-journeys` runs them here. The world is built by `app/test/world/make-world.ts`
 (needs Node and `npm ci` in `app/`); `DOOR_PYTHON` names the Poetry interpreter its stand-in `claude` and

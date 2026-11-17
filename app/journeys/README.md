@@ -38,12 +38,14 @@ Faults are read again before every call, so a test breaks a thing at the moment 
 (`world.clearFaults()`) to check the app recovers. `world.calls()` / `toolCalls(name)` / `claudeCalls(kind)`
 say what the app asked for (e.g. "no model call before Save").
 
-The data (`test/world/data/`) is fiction written to look real: four people (`mette`, a senior data
+The data (`test/world/data/`) is fiction written to look real: five people (`mette`, a senior data
 scientist in Copenhagen with a full history; `lea`, a management controller in Lyon with a French CV;
-`bence`, a backend engineer in Budapest; `jonas`, a new graduate in Aarhus whose CV has gaps) and 37
-full job ads in English, Danish, French and Hungarian. Mette's world has a job in every column of
-the Applications board (`FULL_LEDGER`), prepared and sent materials compiled through door's own compile,
-three ads a job board returns on the next run, and a past run.
+`bence`, a backend engineer in Budapest; `jonas`, a new graduate in Aarhus whose CV has gaps; `asa`, a
+sustainability analyst in Göteborg with a Swedish CV) and 38 full job ads in English, Danish, French,
+Hungarian and Swedish. Mette's world has a job in every column of the Applications board (`FULL_LEDGER`),
+prepared and sent materials compiled through door's own compile, three ads a job board returns on the next
+run, and a past run; lea, bence and asa each have one ad in their own language a board returns on the first
+run (the CLI journeys' CVs in each language, #135).
 
 ## Writing a journey
 

@@ -1,7 +1,8 @@
 """Small PDFs for tests, and what a test reads back from a PDF, with pypdfium2 (no other PDF library).
 
 `make_pdf(path, pages)` writes one A4 page per string, each line of it (split on newlines) set in
-Helvetica from the top-left margin down; an empty string is a blank page.
+Helvetica from the top-left margin down; an empty string is a blank page. `font=` sets it in a TrueType
+file instead, embedded, for text Helvetica's standard encoding cannot hold (ő, ű, ○).
 """
 
 from __future__ import annotations
@@ -15,10 +16,15 @@ import pypdfium2.raw as raw
 _WIDTH, _HEIGHT, _MARGIN = 595, 842, 72
 
 
-def make_pdf(path: Path, pages: list[str], size: float = 11.0) -> Path:
+def make_pdf(path: Path, pages: list[str], size: float = 11.0, font: Path | None = None) -> Path:
     """Write `pages` (one string per page) to `path` as a real, text-bearing PDF."""
     pdf = pdfium.PdfDocument.new()
-    font = raw.FPDFText_LoadStandardFont(pdf, b"Helvetica")
+    if font is None:
+        font = raw.FPDFText_LoadStandardFont(pdf, b"Helvetica")
+    else:
+        data = Path(font).read_bytes()
+        font_data = (ctypes.c_uint8 * len(data)).from_buffer_copy(data)   # kept alive until the save
+        font = raw.FPDFText_LoadFont(pdf, font_data, len(data), raw.FPDF_FONT_TRUETYPE, 1)
     try:
         for text in pages:
             page = pdf.new_page(_WIDTH, _HEIGHT)
