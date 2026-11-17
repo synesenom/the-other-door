@@ -759,20 +759,20 @@ def layout_verdict(columns: dict) -> dict | None:
 # ---------- the whole read ----------
 
 def _fonts_used(runs: list[dict]) -> list[dict]:
-    fonts: dict[str, dict] = {}
+    """Each font of the runs with its use. A font is an icon font when every run of it is an icon, a bullet or a
+    separator (a level dot drawn from an icon font is no reason to fetch it) and it is named like an icon font or
+    has a real icon run."""
     keys = ("font", "family", "weight", "italic", "serif", "fixed", "embedded", "type3")
+    by_font: dict[str, list[dict]] = {}
     for run in runs:
-        entry = fonts.setdefault(run["font"], {**{k: run[k] for k in keys}, "icon": True,
-                                                       "real": style_icons.icon_font(run["font"]), "runs": 0,
-                                                       "chars": 0})
-        # a bullet or separator drawn from an icon font (the rating's empty dot) is no reason to fetch that font
-        entry["icon"] = entry["icon"] and (run["icon"] or style_icons.only_separators(run["text"]))
-        entry["real"] = entry["real"] or run["icon"]
-        entry["runs"] += 1
-        entry["chars"] += sum(not c.isspace() for c in run["text"])
-    for entry in fonts.values():
-        entry["icon"] = entry["icon"] and entry.pop("real")  # an icon font is named like one or draws a real icon
-    return sorted(fonts.values(), key=lambda f: -f["chars"])
+        by_font.setdefault(run["font"], []).append(run)
+    fonts = []
+    for name, its in by_font.items():
+        icon = (all(r["icon"] or style_icons.only_separators(r["text"]) for r in its)
+                and (style_icons.icon_font(name) or any(r["icon"] for r in its)))
+        fonts.append({**{k: its[0][k] for k in keys}, "icon": icon, "runs": len(its),
+                      "chars": sum(not c.isspace() for r in its for c in r["text"])})
+    return sorted(fonts, key=lambda f: -f["chars"])
 
 
 def _read_pages(doc) -> list[dict]:

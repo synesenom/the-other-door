@@ -66,7 +66,7 @@ def only_separators(text: str) -> bool:
 def is_glyph(run: dict, fonts: set[str]) -> bool:
     """Whether `run` draws an icon, whose glyph reads back as a stray character: one marked `icon`, or a run of
     bullets only in one of `fonts` (`icon_fonts`; a level dot drawn with the icon font)."""
-    return run["icon"] or (run["font"] in fonts and only_separators(run["text"]))
+    return run["icon"] or (run["font"] in fonts and only_bullets(run["text"]))
 
 
 def _luminance(color: str) -> float:

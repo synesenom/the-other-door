@@ -4,7 +4,7 @@ import pytest
 
 from pdf_utils import raw_pdf
 
-from door.tailoring import style_extract
+from door.tailoring import style_build, style_compare, style_extract
 
 
 def read(tmp_path, content, **kwargs):
@@ -865,6 +865,45 @@ def test_separator_runs_are_no_icons_and_stay_in_the_text(tmp_path):
     seps = [r for r in style["runs"] if r["text"] in ("|", "/")]
     assert seps and not any(r["icon"] for r in seps)
     assert not any(f["icon"] for f in style["fonts"])
+
+
+def test_a_font_entry_has_exactly_its_known_keys():
+    [entry] = style_extract._fonts_used([font_run("Body", "Words", False)])
+    assert set(entry) == {"font", "family", "weight", "italic", "serif", "fixed", "embedded", "type3", "icon",
+                          "runs", "chars"}
+
+
+def test_a_long_separator_run_does_not_unmark_an_icon_in_its_font():
+    runs = [run("Odd-Regular", "@"), run("Odd-Regular", " | "), run("Odd-Regular", " / ")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [True, False, False]
+
+
+def test_a_font_with_an_icon_and_a_separator_is_an_icon_font_and_a_separator_font_is_not():
+    fonts = style_extract._fonts_used([font_run("Odd", "@", True), font_run("Odd", "|", False),
+                                       font_run("Sep", "|", False), font_run("Sep", "/", False)])
+    assert {f["font"]: f["icon"] for f in fonts} == {"Odd": True, "Sep": False}
+
+
+def test_a_separator_beside_an_icon_in_one_font_is_text_to_every_reader(tmp_path):
+    content = (text("F6", 10, 50, 740, "@") + text("F1", 10, 62, 740, "Python") + text("F6", 10, 110, 740, "|")
+               + text("F1", 10, 125, 740, "Rust") + body())
+    style = read(tmp_path, content, fonts={"F6": "SomeFont"})
+    bar = run_of(style, "|")
+    assert not bar["icon"] and run_of(style, "@")["icon"]
+    boxes = [box for _, box, _ in style_extract.style_icons.draft_edits(style["runs"], style)]
+    assert boxes == [run_of(style, "@")["bbox"]]
+    assert "|" in style_build.original_text(style, tmp_path / "cv.pdf")
+    assert any("|" in r["text"] for r in style_compare._texts(style))
+    assert not any("@" in r["text"] for r in style_compare._texts(style))
+
+
+def test_the_original_text_keeps_the_separators_of_a_separator_font(tmp_path):
+    content = (text("F1", 10, 50, 740, "Python") + text("F6", 10, 110, 740, "|") + text("F1", 10, 125, 740, "Rust")
+               + body())
+    style = read(tmp_path, content, fonts={"F6": "SomeFont"})
+    assert "|" in style_build.original_text(style, tmp_path / "cv.pdf")
+    assert any(r["text"] == "|" for r in style_compare._texts(style))
 
 
 def test_spaced_level_dots_do_not_widen_a_column_band():
