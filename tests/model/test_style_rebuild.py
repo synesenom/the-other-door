@@ -5,9 +5,10 @@ Not in the offline suite or CI (marker `model`): `./scripts/run-test.sh --model`
 google/fonts. The cases: every CV of the style corpus that has a style to copy (the real, scrubbed ones and the made-up
 designs; a new one is picked up from expected.json), each with the example CV as the user's, and the edges: the fonts
 unreachable, a user's CV far shorter or far longer than the one whose look is copied. A build whose best round stays
-under `style_compare.FLOOR` fails and writes nothing; a ready one's style is then chosen and previewed, as the app does, and that print is read back: its columns, and what an ATS reads of it. Every check is on
-behaviour, never on the model's HTML. A CV with nothing to copy (a scan, a LinkedIn export) stops before the model and
-is tested offline (`tests/tailoring/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
+under `style_compare.FLOOR` fails and writes nothing; a ready one's style is then chosen and previewed, as the app does,
+and that print is read back: its columns, and what an ATS reads of it. Every check is on behaviour, never on the model's
+HTML. A CV with nothing to copy (a scan, a LinkedIn export) stops before the model and is tested offline
+(`tests/tailoring/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
 
 A case a known issue still breaks is an `xfail` naming it: the release gate stays green, and a pass shows as XPASS.
 """
@@ -83,8 +84,7 @@ CASES = {
 }
 
 # the cases a known issue keeps from looking like their original
-KNOWN = {"html-canva-icons": "#242", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242",
-         "scrubbed-pages-header-en": "#244"}
+KNOWN = {"html-canva-icons": "#242", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242"}
 
 
 def _ready() -> str | None:
