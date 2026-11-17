@@ -9,7 +9,7 @@ from door.commands import compile as compile_cmd
 from door.core import claude_cli, workspace
 from door.matching import integrity
 from door.tailoring import facts as facts_mod
-from door.tailoring import html_doc, html_guard
+from door.render import html_doc, html_guard
 
 
 _MATERIALS = ("cv", "cover_letter")

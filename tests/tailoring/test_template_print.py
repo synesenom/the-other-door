@@ -17,7 +17,7 @@ from PIL import Image
 from door import i18n
 from door.commands import compile as compile_cmd
 from door.core import chromium, workspace
-from door.tailoring import pdf_render, readability
+from door.render import pdf_render, readability
 from paths import REPO_ROOT, TESTS_DIR
 from pdf_utils import font_names, image_count, page_count
 

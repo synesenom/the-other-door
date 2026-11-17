@@ -234,7 +234,7 @@ Other data-driven variants:
 
 ### 4.5 The Style (StyleRow.tsx, above "Your CV")
 
-Sources: `StyleRow.tsx`, `PageStack.tsx`, `style-file.ts` (main), `commands/style.py` (`_use_core`, `status`, `_show_core`), `tailoring/style_preview.py`. `show_style` answers `{styles: {default, like?}, in_use, candidate}`; `use_style(style: like|default|current, rerender)` answers `{in_use, prepared, rerendered?, failed?}`. Shown only in the app window (the phone has no Profile), and the build actions are not offered on made-up data.
+Sources: `StyleRow.tsx`, `PageStack.tsx`, `style-file.ts` (main), `commands/style.py` (`_use_core`, `status`, `_show_core`), `style/style_preview.py`. `show_style` answers `{styles: {default, like?}, in_use, candidate}`; `use_style(style: like|default|current, rerender)` answers `{in_use, prepared, rerendered?, failed?}`. Shown only in the app window (the phone has no Profile), and the build actions are not offered on made-up data.
 
 | State | What is on screen | Controls |
 |---|---|---|

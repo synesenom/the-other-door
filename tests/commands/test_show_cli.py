@@ -228,7 +228,7 @@ def _prepared(cli_env, job_id="job-abc"):
 
 @pytest.fixture
 def one_page(monkeypatch):
-    import door.tailoring.pdf_render as pdf_render
+    import door.render.pdf_render as pdf_render
 
     monkeypatch.setattr(pdf_render, "get_page_count", lambda path: 1)
 
@@ -746,7 +746,7 @@ def test_the_card_says_the_page_limit_once_on_the_cv_row_not_under_read_by_an_at
 
 def test_show_passes_a_two_column_manifest_to_the_cv_check(cli_env, one_page, monkeypatch):
     from door.commands import matches as matches_cmd
-    from door.tailoring import pdf_render
+    from door.render import pdf_render
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
     (cli_env.profile_dir / "cv.template.html").write_text("<html><body><<body>></body></html>")

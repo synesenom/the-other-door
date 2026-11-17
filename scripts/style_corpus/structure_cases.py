@@ -1,7 +1,7 @@
 """Made-up CVs whose structure a rule gets wrong (#343, epic #342), written by hand as PDFs: entry titles set in the
 headings' own style, headings in capitals in the body font, headings with a year, a CV of three columns, a designed
 CV with a "Page N of M" footer. `CASES` is name to ``(pdf bytes, headings, columns)``; `scripts/make_style_corpus.py`
-writes each into `tests/tailoring/fixtures/styles/`, where `structure/<name>.json` is the model's recorded answer
+writes each into `tests/style/fixtures/styles/`, where `structure/<name>.json` is the model's recorded answer
 for it. Everything is made up: fake names, `example.com` addresses."""
 
 import sys

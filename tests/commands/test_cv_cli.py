@@ -125,7 +125,7 @@ ICON_FONTS = ["FontAwesome", "Font Awesome 6 Free Solid", "Symbol", "Wingdings 2
 @pytest.mark.parametrize("font", ICON_FONTS)
 def test_the_pdf_and_docx_readers_leave_out_the_same_icon_fonts(tmp_path, font):
     # one rule (`style_icons.icon_font`) for both: a PDF's run in the font is an icon, a DOCX's run is left out
-    from door.tailoring import style_icons
+    from door.style import style_icons
 
     runs = [{"font": font, "text": "Abc"}, {"font": "Calibri", "text": "Abc"}]
     style_icons.mark_icon_runs(runs)
@@ -299,7 +299,7 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
     (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
     """The wizard offers the style build only for a file that has a style to copy (#150)."""
     _answer(monkeypatch)
-    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
     three = styled.with_name("html-three-columns.pdf")
     sources = [str(styled), str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane", str(three)]
     result = cv_cmd._draft_cv_core(sources, profile_dir=env.profile_dir)
@@ -307,14 +307,14 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
 
 
 def test_a_draft_with_a_profile_offers_no_style_and_makes_no_structure_call(env, monkeypatch):
-    from door.tailoring import style_structure
+    from door.style import style_structure
 
     def never(text, feature="style"):
         raise AssertionError("the structure call is for a first set-up only")
 
     _answer(monkeypatch)
     monkeypatch.setattr(style_structure, "_ask", never)
-    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
     result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
     assert [s["style"] for s in result["sources"]] == [False]
 
@@ -322,21 +322,21 @@ def test_a_draft_with_a_profile_offers_no_style_and_makes_no_structure_call(env,
 def test_a_linkedin_export_has_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
     (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
     _answer(monkeypatch)
-    linkedin = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "linkedin-like.pdf"
+    linkedin = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "linkedin-like.pdf"
     result = cv_cmd._draft_cv_core([str(linkedin)], profile_dir=env.profile_dir)
     assert [s["style"] for s in result["sources"]] == [False] and result["sources"][0]["chars"] > 0
 
 
 def test_a_failed_structure_call_means_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
     (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
-    from door.tailoring import style_structure
+    from door.style import style_structure
 
     def broken(text, feature="style"):
         raise claude_cli.ClaudeError("claude -p timed out after 60s")
 
     _answer(monkeypatch)
     monkeypatch.setattr(style_structure, "_ask", broken)
-    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
     result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
     assert [s["style"] for s in result["sources"]] == [False] and result["sources"][0]["chars"] > 0
 
@@ -345,7 +345,7 @@ def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
     (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
     """Its text (the icon boxes) is one extract (#298: a style extract is the slow part); its style verdict is the
     structure's (`style_structure`), which makes no second extract."""
-    from door.tailoring import style_extract
+    from door.style import style_extract
 
     _answer(monkeypatch)
     read, extract = [], style_extract.extract
@@ -363,17 +363,17 @@ def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch
 
     _answer(monkeypatch)
     monkeypatch.setattr(common, "_chromium_available", lambda: False)
-    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
     result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
     assert result["sources"][0]["style"] is True
 
 
-STYLES = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles"
+STYLES = REPO_ROOT / "tests" / "style" / "fixtures" / "styles"
 ICONS = ["scrubbed-pages-header-en", "scrubbed-altacv-icons-fr"]
 
 
 def _pdfium_text(pdf):
-    from door.tailoring import pdf_render
+    from door.render import pdf_render
 
     return "\n".join(pdf_render.page_texts(pdf)).strip()
 
@@ -439,22 +439,22 @@ def test_extract_text_of_a_pdf_with_no_icon_glyphs_is_pdfiums_text(pdf):
 
 def test_the_draft_text_of_a_refused_three_column_cv_still_drops_its_icons(monkeypatch):
     """`style_extract` keeps the runs of a layout refusal, so `draft_edits` is given them (#318)."""
-    from door.tailoring import style_icons
+    from door.style import style_icons
 
     given = []
     monkeypatch.setattr(style_icons, "draft_edits", lambda runs, style: given.append(runs) or {})
-    text = cv_cmd._extract_text(REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "html-three-columns.pdf")
+    text = cv_cmd._extract_text(REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "html-three-columns.pdf")
     assert len(given[0]) > 20 and "Experience" in text
 
 
 def test_the_structure_call_of_a_draft_is_billed_to_the_draft(env, monkeypatch):
     (env.profile_dir / "config.json").unlink()  # a first set-up
-    from door.tailoring import style_structure
+    from door.style import style_structure
     from style_structure_utils import fake_ask
 
     _answer(monkeypatch)
     features = []
     monkeypatch.setattr(style_structure, "_ask", lambda text, feature="style": features.append(feature) or fake_ask(text))
-    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
     cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
     assert features == ["draft_cv"]

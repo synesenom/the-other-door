@@ -253,7 +253,7 @@ export interface Materials {
   file_names: { cv: string; cover_letter: string }
   /** The numbers, employers, skills… of the CV and letter that cv.md and the story bank do not back; null when not checked. */
   unsupported?: { kind: string; value: string; context: string; file: string; reason?: string }[] | null
-  /** What an ATS would not read back from the PDFs (`show`'s readability, `tailoring/readability.py`); null when not checked. */
+  /** What an ATS would not read back from the PDFs (`show`'s readability, `render/readability.py`); null when not checked. */
   readability?: { file: string; kind: string; detail: string }[] | null
 }
 

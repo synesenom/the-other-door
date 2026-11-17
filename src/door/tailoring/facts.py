@@ -19,7 +19,7 @@ from pathlib import Path
 from door import i18n
 from door.core import skill_aliases, workspace
 from door.matching import integrity
-from door.tailoring import html_doc
+from door.render import html_doc
 
 FACTS_FILE = "facts.json"
 

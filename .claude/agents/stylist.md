@@ -1,6 +1,6 @@
 ---
 name: stylist
-description: Rebuilds the look of an uploaded CV as a CV template and a matching cover letter template. Not for direct use — do not invoke it from a conversation; the CV style builder (`door.tailoring.style_build`) runs this agent headlessly, round by round, and checks and prints what it writes.
+description: Rebuilds the look of an uploaded CV as a CV template and a matching cover letter template. Not for direct use — do not invoke it from a conversation; the CV style builder (`door.style.style_build`) runs this agent headlessly, round by round, and checks and prints what it writes.
 model: sonnet
 tools:
   - Read

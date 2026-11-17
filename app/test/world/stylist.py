@@ -1,6 +1,6 @@
 """What the stand-in `claude` answers the stylist agent (#205): the shipped default template with the fonts the builder
 gave (`fonts.css`, in the call's folder) in place of its own, and the example CV as the sample body, in the fenced
-blocks `door.tailoring.style_build.blocks` reads. A call with `default.cover-letter.template.html` beside it is the
+blocks `door.style.style_build.blocks` reads. A call with `default.cover-letter.template.html` beside it is the
 letter's, and gets the letter block. Run as `python stylist.py <the call's folder>`; needs `door` importable."""
 
 import re
@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from door.core import workspace
-from door.tailoring import cv_body
+from door.style import cv_body
 
 folder = Path(sys.argv[1])
 example = workspace.PROFILE_EXAMPLE_DIR

@@ -40,7 +40,7 @@ def _no_structure_model(request, tmp_path, monkeypatch):
     """The model's reading of a CV's structure (#343) is `style_structure`'s one call: in a test a plain rule answers it
     (`tests/style_structure_utils.fake_ask`) and its cache is a temp folder. The module of its own tests fakes
     `claude_cli.ask` and the data folder underneath instead, and a model test asks the real one."""
-    from door.tailoring import style_structure
+    from door.style import style_structure
     from style_structure_utils import fake_ask
 
     if request.module.__name__.endswith("test_style_structure_unit") or request.node.get_closest_marker("model"):

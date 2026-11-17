@@ -11,7 +11,7 @@ from compile_utils import install
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.core import chromium, workspace
-from door.tailoring import readability
+from door.render import readability
 from paths import TESTS_DIR
 
 NB = " "

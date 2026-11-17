@@ -9,7 +9,7 @@ import pytest
 
 from door.commands import compile as compile_cmd
 from door.core import chromium, workspace
-from door.tailoring import html_pdf, pdf_render
+from door.render import html_pdf, pdf_render
 from paths import REPO_ROOT
 
 WORLD_DIR = REPO_ROOT / "app" / "test" / "world"
@@ -58,7 +58,7 @@ def test_worldfail_is_a_print_error(standin, tmp_path):
 
 
 def test_a_style_build_s_sample_print_is_the_original_cv_so_the_world_s_rebuild_looks_like_it(standin, tmp_path):
-    original = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    original = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
     (tmp_path / "original.pdf").write_bytes(original.read_bytes())
     render = _print(standin, tmp_path, "<body><p>the stylist's template</p></body>", "render")
     assert render.read_bytes() == original.read_bytes()

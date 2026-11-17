@@ -21,11 +21,11 @@ from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
 from door.core import chromium, claude_cli, lock, phone, workspace
-from door.tailoring import style_build, style_preview
+from door.style import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR
 
-STYLES = TESTS_DIR / "tailoring" / "fixtures" / "styles"
+STYLES = TESTS_DIR / "style" / "fixtures" / "styles"
 READY = {"state": "ready", "rounds": 2, "scores": [0.8, 0.9], "fonts": [{"family": "Lato", "source": "pin"}],
          "dropped_icons": [{"near": "x", "reason": "none"}], "font_error": None, "problems": []}
 
@@ -149,7 +149,7 @@ def test_a_scan_and_a_linkedin_export_are_named_in_whole_sentences(home, world):
 
 
 def test_a_cv_whose_structure_could_not_be_read_is_refused_in_words_and_nothing_starts(home, world, monkeypatch):
-    from door.tailoring import style_structure
+    from door.style import style_structure
 
     def broken(text, feature="style"):
         raise claude_cli.ClaudeError("claude -p timed out after 60s")
@@ -161,7 +161,7 @@ def test_a_cv_whose_structure_could_not_be_read_is_refused_in_words_and_nothing_
 
 
 def test_the_intake_leaves_the_structure_cached_so_the_build_makes_no_second_call(home, world, monkeypatch):
-    from door.tailoring import style_structure
+    from door.style import style_structure
     from style_structure_utils import fake_ask
 
     monkeypatch.setattr(style_structure, "_cache_dir", lambda: home / ".style" / "structure")

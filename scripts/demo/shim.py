@@ -34,7 +34,7 @@ from door.commands import salary as salary_cmd  # noqa: E402
 from door.core import discovery_sources, drive, lock, sites, workspace  # noqa: E402
 from door.core.models import JobPosting, make_job_id  # noqa: E402
 from door.matching import scorer  # noqa: E402
-from door.tailoring import readability  # noqa: E402
+from door.render import readability  # noqa: E402
 from door.scrapers import report  # noqa: E402
 
 # Pauses that make the live output readable at recording speed.

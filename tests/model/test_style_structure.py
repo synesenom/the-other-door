@@ -15,11 +15,11 @@ import pytest
 from conftest import claude_ready
 from paths import TESTS_DIR
 
-from door.tailoring import style_extract, style_structure
+from door.style import style_extract, style_structure
 
 pytestmark = pytest.mark.model
 
-STYLES = TESTS_DIR / "tailoring" / "fixtures" / "styles"
+STYLES = TESTS_DIR / "style" / "fixtures" / "styles"
 EXPECTED = json.loads((STYLES / "expected.json").read_text(encoding="utf-8"))
 CASES = sorted(stem for stem in EXPECTED if stem != "scan")
 RERUNS = ("latex-sidebar", "de-titles-same-style", "de-caps-headings-in-body-font", "html-equal-columns")

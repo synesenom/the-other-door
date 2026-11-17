@@ -1,4 +1,4 @@
-"""Record the model's reading of each style corpus CV (#343): `tests/tailoring/fixtures/styles/structure/<name>.json`,
+"""Record the model's reading of each style corpus CV (#343): `tests/style/fixtures/styles/structure/<name>.json`,
 the answers the offline tests read as if the model had given them (`tests/style_structure_utils.recorded`).
 
 Asks the real model on the local claude's plan (`style_structure._ask`, one call per CV, Haiku) and writes the raw
@@ -18,9 +18,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from door.tailoring import style_extract, style_structure  # noqa: E402
+from door.style import style_extract, style_structure  # noqa: E402
 
-STYLES = REPO / "tests" / "tailoring" / "fixtures" / "styles"
+STYLES = REPO / "tests" / "style" / "fixtures" / "styles"
 OUT = STYLES / "structure"
 
 

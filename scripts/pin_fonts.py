@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Write `src/door/core/fonts_pin.json`: the free font families The other door can fetch for a CV (#199).
+"""Write `src/door/style/fonts_pin.json`: the free font families The other door can fetch for a CV (#199).
 
 A developer tool, not run in CI, and the only place that decides which families are pinned (`FAMILIES`: add one
 there). For each family it finds the newest google/fonts commit whose folder still holds static TrueType files and
 a licence, downloads them, hashes them (sha256) and measures the regular face with Pillow (x-height,
-the width of an `l`, and the advance of 63 characters, in em fractions of 1000) so that `door.core.fonts.plan` can
+the width of an `l`, and the advance of 63 characters, in em fractions of 1000) so that `door.style.fonts.plan` can
 pick the nearest family to a CV's own font without a font file at hand. Static only: variable files print as
 nameless Type 3 text, and making statics would need a modified font. A family that was never static, or whose
 folder has no licence file, is left out and named. Needs `gh` (signed in) and the network; Pillow is a dependency.
@@ -30,10 +30,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from door.core import fonts  # noqa: E402
-from door.tailoring import style_extract  # noqa: E402
+from door.style import fonts  # noqa: E402
+from door.style import style_extract  # noqa: E402
 
-OUT = ROOT / "src" / "door" / "core" / "fonts_pin.json"
+OUT = ROOT / "src" / "door" / "style" / "fonts_pin.json"
 REPO = "google/fonts"
 RAW = "https://raw.githubusercontent.com/google/fonts/{commit}/{dir}/{name}"
 LICENCES = ("OFL.txt", "LICENSE.txt")

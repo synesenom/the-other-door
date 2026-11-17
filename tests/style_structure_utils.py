@@ -1,6 +1,6 @@
 """The model's reading of a CV's structure (#343), for tests: no test reaches a model.
 
-`recorded(name)` is an answer recorded for a style corpus case (`tests/tailoring/fixtures/styles/structure/<name>.json`,
+`recorded(name)` is an answer recorded for a style corpus case (`tests/style/fixtures/styles/structure/<name>.json`,
 ids and kinds only; `scripts/record_structure.py` records them again) and `fake_ask(text)` the stand-in the autouse
 fixture of `tests/conftest.py` puts where `style_structure` asks: it reads the same input the model gets and answers by
 a plain rule (the name is the largest text of the first page, the headings are the lines of at most six words set
@@ -14,7 +14,7 @@ import json
 
 from paths import TESTS_DIR
 
-RECORDED = TESTS_DIR / "tailoring" / "fixtures" / "styles" / "structure"
+RECORDED = TESTS_DIR / "style" / "fixtures" / "styles" / "structure"
 
 
 @functools.cache
@@ -34,7 +34,7 @@ def recorded(name: str) -> dict:
 def _corpus() -> tuple[dict[str, dict], set[str]]:
     """The recorded answers by the model input of the PDF they were recorded for, and the inputs of the corpus PDFs
     that have none (a scan has no input to answer)."""
-    from door.tailoring import style_extract, style_structure
+    from door.style import style_extract, style_structure
 
     answers, unrecorded = {}, set()
     for pdf in sorted(RECORDED.parent.glob("*.pdf")):
@@ -59,7 +59,7 @@ def fake_ask(text: str, feature: str = "style") -> dict:
 
 def structure_of(pdf, answer: dict) -> dict:
     """`answer` held to `style_structure.check` over the PDF's own lines."""
-    from door.tailoring import style_extract, style_structure
+    from door.style import style_extract, style_structure
 
     pages = style_extract.read_pages(pdf)
     return style_structure.check(answer, style_structure.rows(pages)[1], pages)
@@ -67,6 +67,6 @@ def structure_of(pdf, answer: dict) -> dict:
 
 def extract_with(pdf, answer: dict) -> dict:
     """`style_extract.extract` of the PDF given the structure `answer` makes (a recorded answer, say)."""
-    from door.tailoring import style_extract
+    from door.style import style_extract
 
     return style_extract.extract(pdf, structure=structure_of(pdf, answer))

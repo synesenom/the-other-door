@@ -1,5 +1,5 @@
 """`cv style build FILE`: build a CV template from the style of a CV PDF (#205, epic #144; the builder is
-`tailoring/style_build.py`, #149).
+`style/style_build.py`, #149).
 
 Two cores. `_build_core` is the build itself, in the foreground (the command, with progress). `_start_core` is what the
 `build_style` tool calls: it takes the file in (intake, a copy at `HOME/.style/source.pdf`), ends a build already
@@ -39,7 +39,7 @@ from pypdfium2 import PdfiumError
 from door.commands import _common as common
 from door.commands import _progress
 from door.core import lock, phone, templates, tracker, workspace
-from door.tailoring import style_build, style_extract, style_preview, style_structure
+from door.style import style_build, style_extract, style_preview, style_structure
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
 PENDING_SECONDS = 30  # a started build that has not yet taken its lock still reads as building this long

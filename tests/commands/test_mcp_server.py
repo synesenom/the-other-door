@@ -737,7 +737,7 @@ def test_set_status_records_the_event_on_the_date_given(cli_env):
 
 def test_show_with_open_opens_both_prepared_pdfs(cli_env, monkeypatch):
     from door.commands import matches as matches_cmd
-    import door.tailoring.pdf_render as pdf_render
+    import door.render.pdf_render as pdf_render
 
     _posting_on_disk(cli_env.jobs_dir)
     out = cli_env.jobs_dir / "output" / "jobindex-top"

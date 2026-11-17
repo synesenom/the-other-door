@@ -1,8 +1,8 @@
 """HTML body → PDF for a prepared application (#146): the `compile` tool the tailor agent calls and `revise` reuses; there is no command.
 
-The tailor writes `cv.html` / `cover_letter.html`, a body fragment in the closed vocabulary of `tailoring/html_guard`.
+The tailor writes `cv.html` / `cover_letter.html`, a body fragment in the closed vocabulary of `render/html_guard`.
 `compile` fills its tokens, guards it, gives it its photo and its language's typography, wraps it in the resolved
-template (the head, the CSS, the fonts, the page) and prints it with the pinned Chromium (`tailoring/html_pdf`). Each
+template (the head, the CSS, the fonts, the page) and prints it with the pinned Chromium (`render/html_pdf`). Each
 PDF is read back as an ATS would, and its pages rendered to PNGs. The file on disk stays the body, unwrapped.
 """
 
@@ -16,7 +16,7 @@ from door.commands import _common as common
 from door.core import chromium, templates
 from door.core import photo as photo_mod
 from door.core import utils, workspace
-from door.tailoring import html_doc, html_guard, html_pdf, readability, typography
+from door.render import html_doc, html_guard, html_pdf, readability, typography
 
 _FILES = {"cv.html": "cv_template", "cover_letter.html": "cover_letter_template"}
 
@@ -289,7 +289,7 @@ def _render_pages(output_dir: Path, pdf_names=("cv.pdf", "cover_letter.pdf")) ->
         agent's 2-page CV / 1-page cover letter checks read; a missing PDF
         is ``skipped``.
     """
-    from door.tailoring.pdf_render import render_pdf_pages
+    from door.render.pdf_render import render_pdf_pages
 
     results = []
     for pdf_name in pdf_names:

@@ -126,7 +126,7 @@ def test_check_chromium_prints_a_page_unless_quick():
     check = doctor.check_chromium(find=lambda: "/x/c", run=run)
     assert check["status"] == "ok" and "/x/c" in check["detail"]
     argv, kw = run.calls[1]
-    assert argv[1:3] == ["-m", "door.tailoring.html_pdf"] and argv[argv.index("--timeout") + 1] == "30"
+    assert argv[1:3] == ["-m", "door.render.html_pdf"] and argv[argv.index("--timeout") + 1] == "30"
     assert kw["timeout"] == doctor._PRINT_TIMEOUT + 25
     assert "src" in kw["env"]["PYTHONPATH"]
 
@@ -139,7 +139,7 @@ def test_check_chromium_that_cannot_print_names_why():
     check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(pdf=None, code=1, stderr="x\nprint: boom\n"))
     assert check["status"] == "missing" and check["required"] is True and check["installable"] is False
     assert "print: boom" in check["detail"] and "doctor --fix" not in check["fix"]
-    assert "door.tailoring.html_pdf" in check["fix"] and check["fix"] != doctor._NO_START_FIX
+    assert "door.render.html_pdf" in check["fix"] and check["fix"] != doctor._NO_START_FIX
     check = doctor.check_chromium(find=lambda: "/x/c", run=_printing(pdf=b"not a pdf"))
     assert check["status"] == "missing"
 

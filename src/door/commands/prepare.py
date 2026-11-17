@@ -22,7 +22,7 @@ from door.core.profile_loader import ConfigError
 from door.core import utils
 from door.matching import integrity, language
 from door.tailoring import facts as facts_mod
-from door.tailoring import readability
+from door.render import readability
 
 
 _TAILOR_OUTPUTS = ("posting.json", "cv.html", "cover_letter.html", "cv.pdf", "cover_letter.pdf")

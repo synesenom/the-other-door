@@ -1,7 +1,7 @@
-"""Build the made-up CVs of the style corpus (#148): tests/tailoring/fixtures/styles/*.pdf that no real tool wrote.
+"""Build the made-up CVs of the style corpus (#148): tests/style/fixtures/styles/*.pdf that no real tool wrote.
 
 Three HTML designs (a Word-like two columns, a Canva-like coloured sidebar with
-icons, a plain single column) plus a LinkedIn-like export (record 4) are printed by the pinned Chromium (`door.tailoring.html_pdf`),
+icons, a plain single column) plus a LinkedIn-like export (record 4) are printed by the pinned Chromium (`door.render.html_pdf`),
 set in the fonts of `profile.example/fonts` only (Figtree, Young Serif) so that nothing depends on the fonts of the
 computer that runs this; the scan is the plain one rendered to a grey picture. Everything is made up: fake names,
 `example.com` addresses. Not run in CI: the PDFs are committed, and `expected.json` beside them is what the
@@ -24,11 +24,11 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO))  # scripts.style_corpus.structure_cases, which writes its PDFs with tests/pdf_utils
 
-from door.tailoring import html_pdf, pdf_render  # noqa: E402
+from door.render import html_pdf, pdf_render  # noqa: E402
 from scripts.style_corpus import structure_cases  # noqa: E402
 
 FONT_DIR = REPO / "profile.example" / "fonts"
-OUT = REPO / "tests" / "tailoring" / "fixtures" / "styles"
+OUT = REPO / "tests" / "style" / "fixtures" / "styles"
 _FACES = [("Figtree", "Figtree-Regular.ttf", 400, "normal"), ("Figtree", "Figtree-Italic.ttf", 400, "italic"),
           ("Figtree", "Figtree-SemiBold.ttf", 600, "normal"), ("Figtree", "Figtree-SemiBoldItalic.ttf", 600, "italic"),
           ("Young Serif", "YoungSerif-Regular.ttf", 400, "normal")]

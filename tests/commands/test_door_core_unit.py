@@ -59,12 +59,12 @@ def test_compile_core_missing_output_dir_raises_file_not_found(tmp_path):
 # --------------------------------------------------------------------------- #
 
 def _inject_fake_pdf_render(monkeypatch, fake_render):
-    pdf_render_mod = types.ModuleType("door.tailoring.pdf_render")
+    pdf_render_mod = types.ModuleType("door.render.pdf_render")
     pdf_render_mod.render_pdf_pages = fake_render
     tailoring_pkg = types.ModuleType("tailoring")
     tailoring_pkg.pdf_render = pdf_render_mod
     monkeypatch.setitem(sys.modules, "tailoring", tailoring_pkg)
-    monkeypatch.setitem(sys.modules, "door.tailoring.pdf_render", pdf_render_mod)
+    monkeypatch.setitem(sys.modules, "door.render.pdf_render", pdf_render_mod)
 
 
 def test_render_pages_missing_pdfs_are_skipped(tmp_path, monkeypatch):

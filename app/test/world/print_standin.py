@@ -161,7 +161,7 @@ def render(blocks: list[tuple[str, str]], out_pdf: Path) -> None:
 
 def print_html(folder, html, out_pdf, *, assets=None, timeout=60.0, launcher=None) -> None:
     """`html_pdf.print_html`, in the world: the page's text laid out in a PDF, or a failure for `worldfail`."""
-    from door.tailoring import html_pdf
+    from door.render import html_pdf
 
     if "worldfail" in html:
         raise html_pdf.PrintError("Chromium could not print the page: worldfail")
@@ -175,7 +175,7 @@ def print_html(folder, html, out_pdf, *, assets=None, timeout=60.0, launcher=Non
 def install() -> None:
     """Put the stand-in where door's print and Chromium lookup are."""
     from door.core import chromium
-    from door.tailoring import html_pdf
+    from door.render import html_pdf
 
     html_pdf.print_html = print_html
     chromium.find_chromium = lambda home=None: shutil.which("chrome-headless-shell") or sys.executable
