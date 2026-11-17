@@ -213,7 +213,25 @@ def sparse_third_column():
     return raw_pdf("\n".join(ops))
 
 
+def europass_right():
+    """A label column at the right (the section names, bold, in English) and the content at the left, one to three
+    lines an entry, no side band of its own."""
+    en = "- Built and ran cloud services for the finance team"
+    ops = []; t(ops, "F2", 18, 50, 810, "Anna Smith"); t(ops, "F1", 10, 50, 792, "anna@example.com | +44 7700 900123")
+    y = 750
+    for h, lines in [("Work experience", ["Head of Data, Northbank 2019-2024", en, en, "Analyst, Firm Ltd 2015-2019", en]),
+                     ("Education", ["MSc Statistics, University of Leeds 2013-2015", "BSc Mathematics, University of Leeds 2010-2013"]),
+                     ("Skills", ["Python, SQL, R, Tableau"]),
+                     ("Languages", ["English: native", "French: B2"])]:
+        t(ops, "F2", 10, 440, y, h, "0.1 0.3 0.6 rg")
+        for ln in lines:
+            t(ops, "F1", 10, 50, y, ln); y -= 13
+        y -= 22
+    return raw_pdf("\n".join(ops))
+
+
 CASES.update({
+    "en-europass-right-label-column": (europass_right(), ["Work experience", "Education", "Skills", "Languages"], None),
     "de-europass-label-column": (europass(), ["Berufserfahrung", "Ausbildung", "Kenntnisse", "Sprachen"], None),
     "de-sparse-third-column": (sparse_third_column(), ["Berufserfahrung", "Projekte", "Ausbildung", "Kontakt", "Sprachen"], None),
 })

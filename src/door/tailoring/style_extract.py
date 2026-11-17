@@ -630,8 +630,10 @@ def _structure_bands(structure: dict, runs: list[dict], shapes: list[dict], heig
     else:
         sx0, sx1 = structure["side_range"]
         side = [r for r in runs if r["bbox"][0] >= sx0 - 2 and r["bbox"][2] <= sx1 + 2]
-        main = [r for r in runs if r["bbox"][0] >= sx1 - 2 or r["bbox"][2] <= sx0 + 2]
-        parts = [("side", side), ("main", [r for r in main if r not in side])]
+        left = [r for r in runs if r["bbox"][2] <= sx0 + 2 and r not in side]
+        right = [r for r in runs if r["bbox"][0] >= sx1 - 2 and r not in side]
+        # the main band must not enclose the side one: a stray note beyond it (`check` refuses real text there) is left out
+        parts = [("side", side), ("main", left if len(left) >= len(right) else right)]
     bands = []
     for kind, members in parts:
         if not members:

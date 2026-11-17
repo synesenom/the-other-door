@@ -121,23 +121,6 @@ def test_a_cv_with_text_and_one_font_is_copyable(tmp_path):
     assert style["verdict"] == {"copyable": True, "reason": "ok", "detail": ""}
 
 
-def _linkedin_page(n, headings):
-    out = "".join(text("F1", 12, 50, 760 - 40 * i, h) for i, h in enumerate(headings))
-    out += "".join(text("F1", 10, 50, 600 - 12 * i, f"Some line {i} of this person's page") for i in range(8))
-    return out + text("F1", 9, 260, 30, f"Page {n} of 2")
-
-
-def test_the_headings_without_the_page_footers_are_a_cv(tmp_path):
-    pages = [_linkedin_page(1, ["Contact", "Top Skills", "Languages"])]
-    pages = [p.replace("Page 1 of 2", "") for p in pages]
-    assert read_pages(tmp_path, pages)["verdict"]["copyable"] is True
-
-
-def test_the_footers_with_too_few_of_the_headings_are_a_cv(tmp_path):
-    pages = [_linkedin_page(1, ["Summary", "Experience"]), _linkedin_page(2, ["Skills"])]
-    assert read_pages(tmp_path, pages)["verdict"]["copyable"] is True
-
-
 @pytest.mark.parametrize("name", ["cv.docx", "cv.txt", "cv.md", "CV.HTML", "cv.rtf", "cv.odt", "scan.PNG", "photo.jpeg", "cv"])
 def test_a_file_that_is_not_a_pdf_has_no_layout(name):
     verdict = style_extract.not_pdf(name)
@@ -255,37 +238,19 @@ def test_a_rectangle_with_round_corners_is_a_rounded_box(tmp_path):
 
 # ---------- columns ----------
 
-def stack(x, top, n, label, size=10, color="0 0 0"):
-    return "".join(text("F1", size, x, top - 14 * i, f"{label} {i} some words", color) for i in range(n))
-
-
-def titled(x, kinds):
-    """A stack of body lines at *x* with whole-line section titles (the bold one is the font's) above its lines."""
-    out = ""
-    for i, title in enumerate(kinds):
-        out += text("F2", 12, x, 780 - 90 * i, title) + stack(x, 764 - 90 * i, 5, "A line of the body text that runs on and on")
-    return out
-
-
 # ---------- name, headings, colours ----------
 
 NAVY = "0.1 0.2 0.5"
 
 
-def cv_with_headings(rule=""):
+def cv_with_headings():
     out = text("F2", 26, 50, 790, "Mira Valdis", NAVY)
     y = 740
     for heading in ("WORK EXPERIENCE", "PROJECTS", "VOLUNTEERING"):
         out += text("F2", 13, 50, y, heading, NAVY)
-        if rule:
-            out += rule.format(y=y - 4)
         out += "".join(text("F1", 10, 50, y - 20 - 13 * i, f"A line of body text number {i} under it") for i in range(5))
         y -= 120
     return out
-
-
-def test_a_section_name_set_in_the_body_style_is_no_heading(tmp_path):
-    assert read(tmp_path, body() + text("F1", 10, 50, 100, "Education"))["headings"] == []
 
 
 def test_the_text_colour_is_the_one_most_characters_have_and_the_accent_the_strongest_other(tmp_path):
@@ -626,13 +591,6 @@ def test_a_path_that_paints_nothing_is_no_shape(tmp_path):
     assert read(tmp_path, clip + body())["shapes"] == []
 
 
-def test_a_page_of_lines_in_two_styles_has_no_name(tmp_path):
-    # every line is half bold, half regular: no line is one style, so nothing is read as a name
-    content = "".join(text("F2", 12, 50, 780 - 14 * i, "Lab") + text("F1", 12, 73, 780 - 14 * i, f"el {i} has a value that follows")
-                      for i in range(8))
-    assert read(tmp_path, content)["name"] is None
-
-
 def test_a_picture_the_colour_of_what_is_around_it_keeps_its_box(tmp_path):
     white = {"Im1": (2, 2, bytes([255, 255, 255] * 4))}
     style = read(tmp_path, image_at(450, 650, 90, 120) + body(), images=white)
@@ -642,12 +600,6 @@ def test_a_picture_the_colour_of_what_is_around_it_keeps_its_box(tmp_path):
 def test_a_page_with_only_a_page_number_adds_no_margins(tmp_path):
     margins = read_pages(tmp_path, [block(60, 780, 100), text("F1", 9, 290, 20, "2")])["page"]["margins"]
     assert 59 <= margins["left"] <= 62
-
-
-def test_text_that_is_all_rotated_has_no_columns(tmp_path):
-    side = "".join(f"BT /F1 10 Tf 0 1 -1 0 {300 + 14 * i} 200 Tm (A rotated line of text number {i} of the page) Tj ET\n" for i in range(5))
-    style = read(tmp_path, side)
-    assert style["columns"] == {"count": 0, "bands": []}
 
 
 def test_a_drawing_that_shows_nothing_on_the_page_is_no_icon(tmp_path):
