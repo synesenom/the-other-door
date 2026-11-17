@@ -6,7 +6,7 @@ they sit beside, then by position, and says how each pair differs: `dx`, `dy` (t
 `d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `blurred_score` and `pages_score` (each
 original page at its best vertical shift) say how alike the page images look, `feedback` is what the next round tells the
 model, and `should_stop` / `best_round` are the loop's stopping rule: stop at `CAP` rounds, when every matched element
-is within `WITHIN_PT` points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `MIN_SCORE`); the best round is kept.
+is within `WITHIN_PT` points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `GOOD`); the best round is kept.
 """
 
 from __future__ import annotations
@@ -23,7 +23,9 @@ WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
 # a round that adds less than this over the best before it is not worth another: half of the old 0.005, as `blurred_score`
 # (which weighs the difference against the ink) roughly halves what a round gains, so the same sensitivity
 MIN_GAIN = 0.0025
-MIN_SCORE = 0.2  # the small-gain rule applies only once the best round scored this: below it the rebuild is still far off
+# the small-gain rule applies only once the best round scored this, a good rebuild (0.88-0.99 in #238's real runs): below
+# it a flat or worse round goes on to the cap with the feedback (a broken first draft scored 0.31 then 0.01, #243)
+GOOD = 0.8
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 SHIFT_REACH = 0.15  # of a page's height: how far `pages_score` looks up and down for where an original page sits
 # the render's first page beyond the original's count holding this share of an original page's ink or less is a few
@@ -296,12 +298,12 @@ def page_images(pdf_path: Path, folder: Path) -> list[Image.Image]:
 def should_stop(scores: list[float], worst_offset: float, cap: int = CAP) -> bool:
     """Whether the rebuild loop is done after the rounds with these blurred `scores`, the last round's matched elements
     being `worst_offset` points off at most: at `cap` rounds, when that is within `WITHIN_PT`, or when the last round
-    gained less than `MIN_GAIN` over the best round before it, once the best round has reached `MIN_SCORE`."""
+    gained less than `MIN_GAIN` over the best round before it, once the best round has reached `GOOD`."""
     if not scores:
         return False
     if len(scores) >= cap or worst_offset <= WITHIN_PT:
         return True
-    return len(scores) > 1 and max(scores) >= MIN_SCORE and scores[-1] - max(scores[:-1]) < MIN_GAIN
+    return len(scores) > 1 and max(scores) >= GOOD and scores[-1] - max(scores[:-1]) < MIN_GAIN
 
 
 def best_round(scores: list[float]) -> int:

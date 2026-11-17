@@ -236,12 +236,15 @@ def test_a_rebuild_a_few_lines_too_long_scores_close_to_the_original():
     assert style_compare.pages_score(original, render) > 0.75
 
 
-def test_a_rebuild_far_too_long_stays_below_the_small_gain_floor():
-    """Twice the original's pages or more, each with a few lines: not a few lines over, so each extra page costs a whole
-    one and the loop's small-gain stop does not end it early."""
+def test_a_rebuild_far_too_long_scores_low():
+    """Three times the original's pages, each with a few lines: not a few lines over, so each extra page costs a whole
+    one. It stays far below a good rebuild (the loop's small-gain stop does not end it, it goes on) and below the 0.55
+    a build needs to be kept (#241)."""
     original = [lines(12), lines(12)]
     render = [lines(4), lines(4)] + [lines(4)] * 4
-    assert style_compare.pages_score(original, render) < style_compare.MIN_SCORE
+    score = style_compare.pages_score(original, render)
+    assert score < 0.3 < style_compare.GOOD
+    assert not style_compare.should_stop([score, score], 9.0)
 
 
 def test_an_original_page_taller_than_the_renders_is_compared_with_white_below_not_black():
@@ -276,8 +279,23 @@ def test_it_stops_when_the_last_round_gained_under_a_quarter_percent_over_the_be
 def test_a_small_gain_does_not_stop_a_build_whose_best_score_is_still_low():
     assert not style_compare.should_stop([0.0, 0.0], 9.0)
     assert not style_compare.should_stop([0.10, 0.10], 9.0)
-    assert style_compare.should_stop([0.30, 0.30], 9.0)
     assert style_compare.should_stop([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 9.0)
+
+
+@pytest.mark.parametrize("scores", [
+    [0.486, 0.486],  # html-canva-icons (#243): flat, its columns swapped
+    [0.306, 0.007],  # latex-sidebar with a long CV: a worse round after a poor first draft (scores 0.985 when it goes well)
+    [0.375, 0.389, 0.234],  # scrubbed-pages-header-en
+    [0.501, 0.754, 0.463],  # latex-classic: good, not yet as good as a rebuild that goes well
+])
+def test_a_flat_or_worse_round_does_not_stop_a_build_whose_best_is_below_a_good_rebuild(scores):
+    assert max(scores) < style_compare.GOOD
+    assert not style_compare.should_stop(scores, 9.0)
+
+
+def test_once_the_best_is_a_good_rebuild_a_flat_or_worse_round_stops_it():
+    assert style_compare.should_stop([0.539, 0.724, 0.91, 0.502], 9.0)  # html-word-two-column
+    assert style_compare.should_stop([0.92, 0.985, 0.985], 9.0)  # latex-sidebar
 
 
 def test_it_stops_at_the_cap_whatever_the_gain():
