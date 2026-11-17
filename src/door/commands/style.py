@@ -5,7 +5,7 @@ Two cores. `_build_core` is the build itself, in the foreground (the command, wi
 `build_style` tool calls: it takes the file in (intake, a copy at `HOME/.style/source.pdf`), ends a build already
 running, starts `python -m door cv style build <copy>` as a process of its own (`core/phone.py`'s way, so it outlives
 the server or the app that asked) and returns at once. Its state is `HOME/.style/run.json` (`pid`, `state`
-building|ready|failed, `started_at`, `result`), its folder `HOME/.style/work` and its log `HOME/.style/build.log`.
+building|ready|failed, `started_at`, `result`; the start's pending record names the process it `spawned`), its folder `HOME/.style/work` and its log `HOME/.style/build.log`.
 Both the starter and the build write run.json, on purpose: the starter's `building` (no pid yet) covers the gap until
 the build takes its lock and writes its own. A build is alive while it holds the OS lock `HOME/.style/build.lock`
 (dropped by the OS when it dies, so a record left by a crash or a reboot, or a pid since reused, never reads as a build
@@ -114,13 +114,23 @@ def _end_running(home: Path) -> dict | None:
 def _stop_core(*, home: Path | None = None) -> dict:
     """End the build that is running, wait for it to let go of its lock (its process is gone, no file of the install
     stays held: the app calls this before an update installs, #215) and record it failed. The style in use and a
-    waiting candidate are left alone. Returns ``{"stopped": bool}``, False when no build was running."""
+    waiting candidate are left alone. A build started a moment ago that has not taken its lock yet (still reading the
+    file) is ended by the pid its start recorded (`spawned`). A build that finished meanwhile keeps its ``ready``.
+
+    Returns ``{"stopped": bool}``, False when no build was running. Raises ValueError, in words, when the build does
+    not let go of its lock within `LOCK_WAIT` seconds; its record is then left as it was."""
     home = Path(home or workspace.HOME)
     run = _end_running(home)
     if run is None:
-        return {"stopped": False}
+        run = _read(home)
+        if not (run and run["state"] == "building" and "pid" not in run and "spawned" in run
+                and _age(run["started_at"]) < PENDING_SECONDS):
+            return {"stopped": False}
+        phone.kill_tree(run["spawned"])
     with _building(home):
-        _write(home, {**run, "state": "failed", "result": {"problems": ["the build was stopped"]}})
+        now = _read(home) or {}
+        if now == run or now.get("state") == "failed":  # not over a result written meanwhile
+            _write(home, {**run, "state": "failed", "result": {"problems": ["the build was stopped"]}})
     return {"stopped": True}
 
 
@@ -176,10 +186,13 @@ def _build_core(file: str, *, progress=None, home: Path | None = None, profile_d
 
 def _spawn(home: Path, copy: Path) -> None:
     folder = _style_dir(home)
-    _write(home, {"state": "building", "started_at": _now()})
+    pending = {"state": "building", "started_at": _now()}
+    _write(home, pending)
     env = {**os.environ, "DOOR_HOME": str(home), "PYTHONPATH": str(workspace.REPO_ROOT / "src")}
-    phone.spawn_detached([sys.executable, "-m", "door", "cv", "style", "build", str(copy)],
-                         log=folder / "build.log", env=env, hidden_console=True)
+    process = phone.spawn_detached([sys.executable, "-m", "door", "cv", "style", "build", str(copy)],
+                                   log=folder / "build.log", env=env, hidden_console=True)
+    if _read(home) == pending:  # the build has not written its own yet: `_stop_core` can end it before it does
+        _write(home, {**pending, "spawned": process.pid})
 
 
 def _start_core(file: str, *, home: Path | None = None) -> dict:

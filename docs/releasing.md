@@ -85,7 +85,9 @@ On each, download the installer from the draft release and check, in order:
    this version is out. With the draft published, a Windows or AppImage install (and a signed mac one) of the old
    version downloads it by itself and offers "Restart to update to X"; an unsigned mac one shows the Download link.
    With the phone server running on the old version, "Restart to update" stops it first (a Tailscale one
-   answers the phone again from the new version, a quick tunnel is off until set up again).
+   answers the phone again from the new version, a quick tunnel is off until set up again). With a CV style build
+   running (Profile → CV → "Use the style of my CV…"), "Restart to update" ends it and the update installs; the
+   style in use is unchanged.
 
 Anything that fails is fixed on `main` and released as a new version (the next patch number); a draft is
 never rebuilt under the same tag. Delete the failed draft and its tag.

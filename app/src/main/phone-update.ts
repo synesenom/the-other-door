@@ -47,8 +47,9 @@ export async function stopPhoneForUpdate(deps: PhoneUpdateDeps): Promise<void> {
   }
 }
 
-// The server waits for the build to let go of its lock (up to 20 s, `style.LOCK_WAIT`): longer than the phone's stop.
-const STYLE_STOP_TIMEOUT_MS = 30_000
+// The server's worst case: ending the build (Windows' taskkill, up to 15 s) then waiting for its lock (`style.LOCK_WAIT`,
+// 20 s). Longer than the phone's stop.
+const STYLE_STOP_TIMEOUT_MS = 45_000
 
 export async function stopStyleBuildForUpdate(deps: PhoneUpdateDeps): Promise<void> {
   const ms = deps.timeoutMs ?? STYLE_STOP_TIMEOUT_MS

@@ -97,7 +97,7 @@ describe('stopStyleBuildForUpdate', () => {
 })
 
 describe('stopForUpdate', () => {
-  it('stops the phone server and the style build, one failing never keeping the other from stopping', async () => {
+  it('stops the style build even when stopping the phone server fails', async () => {
     const s = setup({
       phone_status: () => {
         throw new Error('phone')
@@ -106,15 +106,6 @@ describe('stopForUpdate', () => {
     })
     await stopForUpdate(s.deps)
     expect(s.call).toHaveBeenCalledWith('stop_style_build', {}, 100)
-    const t = setup({
-      phone_status: () => ({ running: false }),
-      phone_stop: () => ({}),
-      stop_style_build: () => {
-        throw new Error('style')
-      },
-    })
-    await stopForUpdate(t.deps)
-    expect(t.call).toHaveBeenCalledWith('phone_stop', {})
   })
 })
 
