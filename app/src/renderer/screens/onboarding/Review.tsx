@@ -315,7 +315,7 @@ export function Review({ state, profile, dispatch, onSaved, onBack, sandbox = fa
               <input type="checkbox" checked={state.style} onChange={(e) => dispatch({ type: 'style', on: e.target.checked })} />
               <span>Make my tailored CVs look like the CV I uploaded</span>
             </label>
-            <p className="small muted">Takes 5–10 minutes in the background.</p>
+            <p className="small muted">Takes 2–5 minutes in the background.</p>
           </div>
         </Part>
       )}

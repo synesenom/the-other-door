@@ -54,7 +54,7 @@ describe('StyleRow, no style of your own yet', () => {
     const img = await ready()
     expect(img.getAttribute('src')).toBe('door-file://style/default/cv_page_1.png?v=d1')
     expect(screen.getByText('In use')).toBeTruthy()
-    expect(screen.getByText(/Make your tailored CVs look like a CV of yours\. Takes 5–10 minutes in the background\./)).toBeTruthy()
+    expect(screen.getByText(/Make your tailored CVs look like a CV of yours\. Takes 2–5 minutes in the background\./)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Use the style of my CV…' }).className).toBe('secondary')
   })
 
