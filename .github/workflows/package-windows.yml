@@ -3,11 +3,25 @@ name: Package (Windows)
 # The packaged app on Windows: build the bundle (Python, door, Chromium) and the NSIS installer, install it
 # silently for this user (no admin), smoke-test the installed app and run the install test on that same install (#168),
 # then uninstall silently: the app goes, the
-# data folder (%APPDATA%\The other door) stays. Runs on pull requests that change what goes into the app, and by hand (Actions → Package (Windows) → Run workflow); the installer is
+# data folder (%APPDATA%\The other door) stays. Runs on pull requests that change the packaging itself, on main for any change to what goes into the app, and by hand (Actions → Package (Windows) → Run workflow); the installer is
 # kept on the run's page for 14 days. The installer is built
 # once; the x64 and the ARM install tests then run side by side, about 10 minutes in all.
 on:
   pull_request:
+    paths:
+      - "app/scripts/**"
+      - "app/electron-builder.config.cjs"
+      - "app/package.json"
+      - "app/package-lock.json"
+      - "app/src/main/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - "src/door/core/chromium_pin.json"
+      - "src/door/core/fonts_pin.json"
+      - ".github/workflows/package-windows.yml"
+  # Everything else is checked once it is on main, not on every pull request (slow, and macOS and Windows minutes cost 10x and 2x).
+  push:
+    branches: [main]
     paths:
       - "src/**"
       - "app/**"
