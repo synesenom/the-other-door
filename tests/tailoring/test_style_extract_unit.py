@@ -508,15 +508,50 @@ def test_icon_font_leaves_a_text_font_alone(name):
     assert not style_extract.style_icons.icon_font(name)
 
 
-def test_glyph_only_is_private_use_control_or_dingbats():
-    assert style_extract.style_icons.glyph_only("\uf095\u2706")
-    assert not style_extract.style_icons.glyph_only("\uf095 Phone")
+def test_glyph_only_is_pictographs_and_private_use_with_the_pieces_of_an_emoji_sequence():
+    glyph = style_extract.style_icons.glyph_only
+    icons = ["\uf095\u2706", "\u260e", "\u2709", "\u2706", "\U0001f4de", "\u260e\ufe0f", "\u2709\ufe0f",
+             "\U0001f468\u200d\U0001f4bb", "\U0001f44d\U0001f3fd", "\uf095 \uf096", "\uf095  "]
+    text_ = ["\uf095 Phone", "", "  ", "&+\u00bb\u203a\u2192@$\u20ac\u00a9\u2122\u2116\u00d7=", "\u2502", "\u25b8", "\u25c6",
+             "\u25ba", "\u25b2", "\u2302", "\u2605\u2605\u2605\u2605\u2606", "\ufe0f"]
+    assert all(glyph(t) for t in icons)
+    assert not any(glyph(t) for t in text_)
 
 
-def test_a_font_whose_runs_are_all_a_symbol_or_two_is_an_icon_font():
-    runs = [run("Odd-Regular", "@"), run("Odd-Regular", "→"), run("Body-Regular", "Words"), run("Body-Regular", "A")]
+@pytest.mark.parametrize("mark", ["&", "+", "\u00bb", "@"])
+def test_an_in_line_mark_in_its_own_display_font_is_text_not_an_icon(mark, tmp_path):
+    content = (text("F1", 10, 50, 740, "Cheese") + text("F6", 10, 100, 740, mark) + text("F1", 10, 115, 740, "Wine")
+               + body())
+    style = read(tmp_path, content, fonts={"F6": "Display-Bold"})
+    assert style["icons"] == []
+    kept = run_of(style, mark)
+    assert not kept["icon"]
+    assert not any(f["icon"] for f in style["fonts"])
+    assert style_extract.style_icons.draft_edits(style["runs"], style) == []
+    assert mark in style_build.original_text(style, tmp_path / "cv.pdf")
+    assert any(r["text"] == mark for r in style_compare._texts(style))
+
+
+@pytest.mark.parametrize("font", ["FontAwesome5Free-Solid", "MaterialIcons-Regular", "Wingdings", "Symbol"])
+def test_every_glyph_of_a_font_named_like_an_icon_font_is_an_icon(font):
+    runs = [run(font, glyph) for glyph in ["A", "b", "\u2192", "@", "("]]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert all(r["icon"] for r in runs)
+
+
+
+def test_private_use_and_pictographs_are_icons_in_a_text_font_and_an_arrow_in_a_text_font_is_text():
+    runs = [run("Body-Regular", "\uf095"), run("Body-Regular", "\u260e"), run("Body-Regular", "\u2192"),
+            run("Body-Regular", "&")]
     style_extract.style_icons.mark_icon_runs(runs)
     assert [r["icon"] for r in runs] == [True, True, False, False]
+
+
+def test_box_drawing_geometric_bullets_and_rating_stars_in_a_text_or_display_font_are_text():
+    runs = [run(f, t) for f in ("Body-Regular", "Display-Bold") for t in ("\u2502", "\u25b8", "\u25c6", "\u25ba", "\u2605\u2605\u2605\u2605\u2606")]
+    runs += [run("Body-Regular", t) for t in ("\u260e", "\u2709", "\u2706", "\U0001f600", "\uf095", "\u260e\ufe0f")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [False] * 10 + [True] * 6
 
 
 def test_a_bullet_and_a_letter_or_digit_are_not_icons_whatever_their_font():
@@ -628,7 +663,7 @@ def test_a_font_of_separators_only_is_no_icon_font(seps):
 
 
 def test_a_font_of_separators_and_one_real_icon_marks_only_the_icon():
-    runs = [run("Odd-Regular", "@"), run("Odd-Regular", "|"), run("Odd-Regular", "/")]
+    runs = [run("Odd-Regular", "\uf095"), run("Odd-Regular", "|"), run("Odd-Regular", "/")]
     style_extract.style_icons.mark_icon_runs(runs)
     assert [r["icon"] for r in runs] == [True, False, False]
 
@@ -659,29 +694,11 @@ def test_a_font_entry_has_exactly_its_known_keys():
                           "runs", "chars"}
 
 
-def test_a_long_separator_run_does_not_unmark_an_icon_in_its_font():
-    runs = [run("Odd-Regular", "@"), run("Odd-Regular", " | "), run("Odd-Regular", " / ")]
-    style_extract.style_icons.mark_icon_runs(runs)
-    assert [r["icon"] for r in runs] == [True, False, False]
-
-
-def test_a_font_with_an_icon_and_a_separator_is_an_icon_font_and_a_separator_font_is_not():
-    fonts = style_extract._fonts_used([font_run("Odd", "@", True), font_run("Odd", "|", False),
-                                       font_run("Sep", "|", False), font_run("Sep", "/", False)])
-    assert {f["font"]: f["icon"] for f in fonts} == {"Odd": True, "Sep": False}
-
-
-def test_a_separator_beside_an_icon_in_one_font_is_text_to_every_reader(tmp_path):
-    content = (text("F6", 10, 50, 740, "@") + text("F1", 10, 62, 740, "Python") + text("F6", 10, 110, 740, "|")
-               + text("F1", 10, 125, 740, "Rust") + body())
-    style = read(tmp_path, content, fonts={"F6": "SomeFont"})
-    bar = run_of(style, "|")
-    assert not bar["icon"] and run_of(style, "@")["icon"]
-    boxes = [box for _, box, _ in style_extract.style_icons.draft_edits(style["runs"], style)]
-    assert boxes == [run_of(style, "@")["bbox"]]
-    assert "|" in style_build.original_text(style, tmp_path / "cv.pdf")
-    assert any("|" in r["text"] for r in style_compare._texts(style))
-    assert not any("@" in r["text"] for r in style_compare._texts(style))
+def test_a_font_with_text_marks_in_it_is_no_icon_font_but_one_of_icons_and_bullets_is():
+    fonts = style_extract._fonts_used([font_run("Odd", "\uf095", True), font_run("Odd", "|", False),
+                                       font_run("Sep", "|", False), font_run("Sep", "/", False),
+                                       font_run("Dots", "\uf095", True), font_run("Dots", "•", False)])
+    assert {f["font"]: f["icon"] for f in fonts} == {"Odd": False, "Sep": False, "Dots": True}
 
 
 def test_the_original_text_keeps_the_separators_of_a_separator_font(tmp_path):
@@ -693,3 +710,18 @@ def test_the_original_text_keeps_the_separators_of_a_separator_font(tmp_path):
 
 
 # ---------- layouts the template model cannot place (#318) ----------
+
+
+def test_a_text_font_that_draws_one_pictograph_keeps_its_bullets_as_text():
+    runs = [run("Calibri", "☎"), run("Calibri", "+45 12 34 56 78"), run("Calibri", "•"), run("Calibri", "Python")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    fonts = style_extract.style_icons.icon_fonts(runs)
+    assert fonts == set() and not style_extract.style_icons.is_glyph(runs[2], fonts)
+    assert style_extract.style_icons.is_glyph(runs[0], fonts)
+
+
+def test_a_level_dot_drawn_with_an_icon_font_is_a_glyph():
+    runs = [run("FontAwesome", ""), run("FontAwesome", "●")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    fonts = style_extract.style_icons.icon_fonts(runs)
+    assert fonts == {"FontAwesome"} and style_extract.style_icons.is_glyph(runs[1], fonts)
