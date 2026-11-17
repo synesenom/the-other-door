@@ -103,7 +103,8 @@ class Columns(BaseModel):
 class Manifest(BaseModel):
     """`template.json`: ``fonts`` (TrueType files in `fonts/` beside it), ``icons`` (kind to an SVG in `icons/`),
     ``max_pages`` (the template's own limit, 1 to 3), ``columns`` (absent: one column) and ``running_header`` (what
-    every page after the first repeats at its top left, of `HEADER_KINDS`, in that order; empty: none, #249)."""
+    every page after the first repeats at its top, of `HEADER_KINDS`: the first at the left, the rest at the right;
+    empty: none, #249)."""
 
     model_config = ConfigDict(extra="forbid")
     version: Literal[1] = 1
