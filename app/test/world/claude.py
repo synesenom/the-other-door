@@ -7,7 +7,7 @@ process boundary. Run as `python claude.py <world dir> <claude's own arguments>`
 - `-p` calls are told apart by the words of their system prompt (or, for `revise`, of stdin) and
   answered from `world.json`: scores and English titles by the ad's title and company, the
   onboarding and CV answers from `answers`, the stylist (a CV style build, #205) by the shipped template with the
-  builder's fonts, the tailor by writing the .html bodies and running door's
+  builder's fonts, the CV's structure (#343) by a plain rule (`structure.py`), the tailor by writing the .html bodies and running door's
   own `compile` (whose print is the stand-in of print_standin.py). Every envelope carries a fixed
   `total_cost_usd` per kind (`COST_USD`), so the usage log has something to weigh; a failed call none.
 - `faults.json`'s `claude` map makes one kind of call fail (`{"fail": "message"}`), wait first
@@ -49,7 +49,7 @@ def arg(name: str) -> str | None:
 
 # What each kind of answer costs at API prices (`total_cost_usd`, #67): fixed, round figures, so
 # `status_summary`'s `cost` and Analytics' Claude usage read the same in every run.
-COST_USD = {"score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "stylist": 0.30}
+COST_USD = {"structure": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "stylist": 0.30}
 OTHER_COST_USD = 0.03
 
 
@@ -114,6 +114,7 @@ KINDS = [
     ("market", "You group skill names"),
     ("ask", "You answer one question about the user's job search"),
     ("careers", "You find the official careers page"),
+    ("structure", "You read the structure of a CV"),
 ]
 kind = arg("--agent") if arg("--agent") in ("tailor", "stylist") else next((k for k, words in KINDS if words in TEXT), "unknown")
 # what door sent, so a journey can check its characters (#135): the tailor's prompt is its `-p` argument
@@ -199,6 +200,17 @@ elif kind == "tailor":
         sys.stderr.write(compiled.stderr)
         sys.exit(1)
     envelope("Tailored the CV and the cover letter.")
+elif kind == "structure":
+    import subprocess
+
+    read = subprocess.run(
+        [os.environ.get("DOOR_WORLD_PYTHON", sys.executable), str(Path(__file__).resolve().parent / "structure.py")],
+        input=STDIN, capture_output=True, text=True,
+    )
+    if read.returncode != 0:
+        sys.stderr.write(read.stderr)
+        sys.exit(1)
+    envelope(said.get("answer") or json.loads(read.stdout))
 elif kind == "stylist":
     import subprocess
 
