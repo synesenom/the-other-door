@@ -244,7 +244,7 @@ def test_a_rebuild_a_few_lines_too_long_scores_close_to_the_original():
 
 def test_a_rebuild_far_too_long_scores_low():
     """Three times the original's pages, each with a few lines: not a few lines over, so each extra page costs a whole
-    one. It stays far below a good rebuild (the loop's small-gain stop does not end it, it goes on) and below the 0.55
+    one. It stays far below a good rebuild (the loop's small-gain stop does not end it, it goes on) and below the floor
     a build needs to be kept (#241)."""
     original = [lines(12), lines(12)]
     render = [lines(4), lines(4)] + [lines(4)] * 4

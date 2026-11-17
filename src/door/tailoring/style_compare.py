@@ -26,9 +26,9 @@ MIN_GAIN = 0.0025
 # the small-gain rule applies only once the best round scored this, a good rebuild (0.88-0.99 in #238's real runs): below
 # it a flat or worse round goes on to the cap with the feedback (a broken first draft scored 0.31 then 0.01, #243)
 GOOD = 0.8
-# a build whose best round scored under this is failed, nothing written (#241): the middle of the gap between the
-# rebuilds that looked like their CV (0.63-0.99 in #238's real runs) and the broken ones (0.15-0.49)
-FLOOR = 0.55
+# a build whose best round scored under this is failed, nothing written (#241): on the page score, rebuilds that looked
+# like their CV scored 0.54-0.99 in real runs and broken ones 0.10-0.49 (columns swapped: 0.487)
+FLOOR = 0.5
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 SHIFT_REACH = 0.15  # of a page's height: how far `pages_score` looks up and down for where an original page sits
 # the render's first page beyond the original's count holding this share of an original page's ink or less is a few
