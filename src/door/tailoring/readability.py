@@ -20,7 +20,7 @@ def normalise(text: str) -> str:
 
 
 def problems(text: str, *, name: str | None, headings: list[str], keywords: list[str], pages: int = 1,
-             side: list[str] = ()) -> list[dict]:
+             side: list[str] | tuple[str, ...] = ()) -> list[dict]:
     """What would not survive an ATS reading `text` (a PDF's extracted text), as ``[{kind, detail}]``.
 
     Kinds: ``empty`` (under `MIN_CHARS_PER_PAGE` characters a page), ``garbled`` (replacement or private-use
@@ -39,7 +39,7 @@ def problems(text: str, *, name: str | None, headings: list[str], keywords: list
     if name and normalise(name) not in flat:
         found.append({"kind": "missing", "detail": f"your name ({name}) is not in the text"})
     lines = [normalise(line) for line in text.splitlines()]
-    for column, glue in ((headings, True), (list(side), False)):
+    for column, glue in ((headings, True), (side, False)):
         positions: list[tuple[str, int]] = []
         for heading in column:
             wanted = normalise(heading)
