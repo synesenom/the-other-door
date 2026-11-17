@@ -9,7 +9,10 @@ pick the nearest family to a CV's own font without a font file at hand. Static o
 nameless Type 3 text, and making statics would need a modified font. A family that was never static, or whose
 folder has no licence file, is left out and named. Needs `gh` (signed in) and the network; Pillow is a dependency.
 
-    poetry run python scripts/pin_fonts.py [--cache DIR] [--only "Lato" ...]
+    poetry run python scripts/pin_fonts.py [--cache DIR] [--only "Lato" ... | --tables-only]
+
+No option pins every family afresh at google/fonts' current commits. `--only` pins the named families and keeps every
+other entry as it is; `--tables-only` rewrites just `aliases` and `lookalikes`.
 """
 
 from __future__ import annotations
@@ -210,15 +213,25 @@ def write(pin: dict, out: Path) -> None:
     out.write_text(text + "\n", encoding="utf-8")
 
 
+def tables_for(families: dict) -> dict:
+    """`aliases` and `lookalikes`: each name to its target, for the targets that are pinned."""
+    return {name: dict(sorted({a: target for target, keys in table.items() if target in families for a in keys}.items()))
+            for name, table in (("aliases", ALIASES), ("lookalikes", LOOKALIKES))}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", type=Path, default=Path("/tmp/door-fonts-cache"))
-    ap.add_argument("--only", nargs="*")
+    ap.add_argument("--only", nargs="*", help="pin just these families into the existing pin; the others stay as they are")
+    ap.add_argument("--tables-only", action="store_true",
+                    help="pin nothing; rewrite `aliases` and `lookalikes` from the families already pinned")
     ap.add_argument("--out", type=Path, default=OUT)
     args = ap.parse_args(argv)
-    families, skipped = {}, {}
+    partial = args.tables_only or bool(args.only)
+    families = dict(json.loads(args.out.read_text(encoding="utf-8"))["families"]) if partial else {}
+    skipped = {}
     for name, klass, folders in FAMILIES:
-        if args.only and name not in args.only:
+        if args.tables_only or (args.only and name not in args.only):
             continue
         pinned, why = pin_family(name, klass, folders, args.cache)
         if pinned:
@@ -227,10 +240,8 @@ def main(argv=None) -> int:
         else:
             skipped[name] = why
             print(f"skipped {name}: {why}")
-    tables = {name: {a: target for target, keys in table.items() if target in families for a in keys}
-              for name, table in (("aliases", ALIASES), ("lookalikes", LOOKALIKES))}
-    write({"version": 1, "url": RAW, "families": dict(sorted(families.items())),
-           **{name: dict(sorted(t.items())) for name, t in tables.items()}}, args.out)
+    tables = tables_for(families)
+    write({"version": 1, "url": RAW, "families": dict(sorted(families.items())), **tables}, args.out)
     print(f"{len(families)} families, {len(tables['aliases'])} aliases, {len(tables['lookalikes'])} look-alikes; skipped: {', '.join(skipped) or 'none'}")
     return 0
 

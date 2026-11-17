@@ -42,3 +42,46 @@ def test_the_pins_alias_and_look_alike_tables_are_what_the_script_writes():
     for name, table in (("aliases", pin_fonts.ALIASES), ("lookalikes", pin_fonts.LOOKALIKES)):
         want = {a: target for target, keys in table.items() if target in pin["families"] for a in keys}
         assert pin[name] == dict(sorted(want.items())), name
+
+
+def _run_with_existing(tmp_path, monkeypatch, argv):
+    import json
+    out = tmp_path / "pin.json"
+    existing = fonts.pin()
+    pin_fonts.write(existing, out)
+    before = out.read_bytes()
+    seen = []
+
+    def fake(name, klass, folders, cache):
+        seen.append(name)
+        return {**existing["families"][name], "commit": "f" * 40}, None
+
+    monkeypatch.setattr(pin_fonts, "pin_family", fake)
+    assert pin_fonts.main([*argv, "--out", str(out)]) == 0
+    return existing, before, out, seen, json.loads(out.read_text())
+
+
+def test_only_re_pins_the_named_family_and_leaves_every_other_one_byte_for_byte(tmp_path, monkeypatch):
+    existing, before, out, seen, now = _run_with_existing(tmp_path, monkeypatch, ["--only", "Lato"])
+    assert seen == ["Lato"]
+    assert now["families"]["Lato"]["commit"] == "f" * 40
+    assert {k: v for k, v in now["families"].items() if k != "Lato"} == \
+        {k: v for k, v in existing["families"].items() if k != "Lato"}
+    assert now["aliases"] == existing["aliases"] and now["lookalikes"] == existing["lookalikes"]
+
+
+def test_tables_only_pins_nothing_and_changes_nothing_when_the_tables_are_current(tmp_path, monkeypatch):
+    _, before, out, seen, _ = _run_with_existing(tmp_path, monkeypatch, ["--tables-only"])
+    assert seen == [] and out.read_bytes() == before
+
+
+def test_tables_only_rewrites_just_the_tables(tmp_path, monkeypatch):
+    import json
+    out = tmp_path / "pin.json"
+    stale = {**fonts.pin(), "aliases": {}, "lookalikes": {}}
+    pin_fonts.write(stale, out)
+    monkeypatch.setattr(pin_fonts, "pin_family", lambda *a: (_ for _ in ()).throw(AssertionError("pinned")))
+    pin_fonts.main(["--tables-only", "--out", str(out)])
+    now = json.loads(out.read_text())
+    assert now["families"] == stale["families"]
+    assert now["aliases"] == fonts.pin()["aliases"] and now["lookalikes"] == fonts.pin()["lookalikes"]
