@@ -49,7 +49,7 @@ def test_building_the_corpus_prints_each_html_design_and_makes_the_scan(tmp_path
 
     corpus.build(tmp_path, printer=printer)
     assert [n for n, _ in printed] == ["html-word-two-column.pdf", "html-canva-icons.pdf", "html-plain-single.pdf", "linkedin-like.pdf",
-                                           "html-equal-columns.pdf"]
+                                           "html-equal-columns.pdf", "html-europass.pdf", "html-three-columns.pdf"]
     assert all(set(fonts) <= FONTS for _, fonts in printed)
     assert (tmp_path / "scan.pdf").exists()
 
@@ -67,3 +67,20 @@ def test_the_equal_columns_design_has_two_flex_one_columns_with_the_side_kinds_o
     heads = lambda part: re.findall(r"<h2>([^<]+)</h2>", part)
     assert heads(left) == ["About me", "Contact", "Skills", "Education", "Languages"] and heads(right) == ["Experience"]
     assert set(re.findall(r"@([\w.-]+\.\w+)", html)) == {"example.com"}
+
+
+def test_the_europass_design_has_a_label_column_of_titles_and_dates_and_a_wide_column_of_entries():
+    html = corpus.html_europass(corpus.record(5))
+    assert "grid-template-columns:110pt 1fr" in html
+    labels = re.findall(r"<div class='lab'>([^<]+)</div>", html)
+    assert labels == ["PERSONAL INFORMATION", "WORK EXPERIENCE", "EDUCATION", "SKILLS"]
+    assert set(re.findall(r"@([\w.-]+\.\w+)", html)) == {"example.com"}
+
+
+def test_the_three_columns_design_has_the_section_titles_in_all_three():
+    html = corpus.html_three_columns(corpus.record(5))
+    columns = re.search(r"class='cols'>(.*)</div></div>$", html.split("<body>")[1].split("</body>")[0], re.S).group(1)
+    parts = re.split(r"</div><div[^>]*>(?=<h2>)", columns)
+    heads = [re.findall(r"<h2>([^<]+)</h2>", part) for part in parts]
+    assert heads == [["Contact", "Skills", "Languages", "Interests"], ["Experience"],
+                     ["Education", "Projects", "Certifications"]]

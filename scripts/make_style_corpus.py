@@ -119,6 +119,43 @@ def html_equal_columns(r: dict) -> str:
     return _html(css, f"<h1>{e(r['name'])}</h1><div>{e(r['title'])}</div><div class='cols'><div class='left'>{left}</div><div class='right'>{right}</div></div>")
 
 
+def html_europass(r: dict) -> str:
+    """A Europass-like page: a narrow label column down the left holds every section title and the dates, the
+    entries are in a wide column at the right."""
+    c = r["contact"]
+    css = ("body{font:10.5pt Calibri,'Helvetica Neue',Arial,sans-serif;color:#222;padding:40px}h1{font-size:24pt;margin:0}"
+           ".row{display:grid;grid-template-columns:110pt 1fr;gap:16pt;margin:10pt 0}.lab{font-weight:bold;color:#0b4f8a}"
+           ".dates{color:#555}ul{margin:2pt 0;padding-left:16px}")
+    rows = (f"<div class='row'><div class='lab'>PERSONAL INFORMATION</div><div><b>{e(r['name'])}</b>"
+            f"{''.join(f'<div>{e(v)}</div>' for v in c.values())}</div></div>"
+            "<div class='row'><div class='lab'>WORK EXPERIENCE</div><div></div></div>")
+    rows += "".join(
+        f"<div class='row'><div class='dates'>{e(j['dates'])}</div><div><b>{e(j['role'])}</b><div>{e(j['company'])}</div>"
+        f"<ul>{''.join(f'<li>{e(b)}</li>' for b in j['bullets'])}</ul></div></div>" for j in r["experience"])
+    rows += "<div class='row'><div class='lab'>EDUCATION</div><div></div></div>"
+    rows += "".join(f"<div class='row'><div class='dates'>{e(x['dates'])}</div><div><b>{e(x['degree'])}</b>"
+                    f"<div>{e(x['school'])}</div></div></div>" for x in r["education"])
+    rows += f"<div class='row'><div class='lab'>SKILLS</div><div>{e(', '.join(r['skills']))}</div></div>"
+    return _html(css, rows)
+
+
+def html_three_columns(r: dict) -> str:
+    """Three columns: contact, skills, languages and interests at the left, the experience in the middle, the
+    education, projects and certifications at the right."""
+    css = ("body{font:10pt Calibri,'Helvetica Neue',Arial,sans-serif;color:#222;padding:36px}h1{font-size:24pt;margin:0}"
+           "h2{font-size:11pt;color:#a33;border-bottom:1px solid #a33}.cols{display:flex;gap:22px}.cols>div{flex:1}"
+           ".mid{flex:1.4!important}ul{padding-left:14px}.row{display:flex;justify-content:space-between}.co{color:#555}")
+    lines = lambda items: "".join(f"<div>{e(i)}</div>" for i in items)  # noqa: E731
+    left = (f"<h2>Contact</h2>{lines(r['contact'].values())}<h2>Skills</h2>{lines(r['skills'])}"
+            f"<h2>Languages</h2>{lines(r['languages'])}<h2>Interests</h2>{lines(['Chess', 'Hiking', 'Baking', 'Cycling', 'Reading'])}")
+    mid = f"<h2>Experience</h2>{_jobs_html(r)}"
+    right = ("<h2>Education</h2>"
+             + "".join(f"<div><b>{e(x['degree'])}</b><div>{e(x['school'])}</div><div>{e(x['dates'])}</div></div>" for x in r["education"])
+             + f"<h2>Projects</h2>{lines(f'Project {i}: a small tool for steady plans' for i in range(6))}"
+             f"<h2>Certifications</h2>{lines(f'Certificate {i}, Example Institute' for i in range(4))}")
+    return _html(css, f"<h1>{e(r['name'])}</h1><div class='cols'><div>{left}</div><div class='mid'>{mid}</div><div>{right}</div></div>")
+
+
 _ICONS = {"phone": "M2 4h6l2 5-3 2a14 14 0 0 0 6 6l2-3 5 2v6a3 3 0 0 1-3 3A20 20 0 0 1 2 7a3 3 0 0 1 0-3z",
           "email": "M2 4h20v16H2zM2 5l10 8 10-8", "web": "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2c4 4 4 16 0 20",
           "location": "M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zM12 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"}
@@ -214,7 +251,8 @@ def build(out: Path, printer=html_pdf.print_html) -> None:
     fonts = [FONT_DIR / name for _, name, _, _ in _FACES]
     pages = [("html-word-two-column", source(1)), ("html-canva-icons", source(2)),
              ("html-plain-single", source(3)), ("linkedin-like", linkedin_html(record(4))),
-             ("html-equal-columns", html_equal_columns(record(5)))]
+             ("html-equal-columns", html_equal_columns(record(5))),
+             ("html-europass", html_europass(record(5))), ("html-three-columns", html_three_columns(record(5)))]
     with tempfile.TemporaryDirectory() as folder:
         for stem, html in pages:
             printer(Path(folder), with_fonts(html), out / f"{stem}.pdf", assets={"fonts": fonts})

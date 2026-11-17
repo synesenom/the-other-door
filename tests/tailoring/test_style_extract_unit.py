@@ -782,3 +782,44 @@ def test_spaced_level_dots_do_not_widen_a_column_band():
     style = style_extract.extract(TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf")
     side = next(b for b in style["columns"]["bands"] if b["kind"] == "side")
     assert side["x1"] == 541.9
+
+
+# ---------- layouts the template model cannot place (#318) ----------
+
+def label_rows(titles, with_entries=True):
+    """A Europass-like page: each section's title in a narrow label column at the left, dates under it, the entries
+    in a wide column at the right (*titles* none in the wide one)."""
+    out = ""
+    for i, title in enumerate(titles):
+        top = 780 - 130 * i
+        out += text("F2", 12, 40, top, title) + stack(40, top - 16, 2, "2020 -")
+        if with_entries:
+            out += stack(200, top, 6, "An entry of the section with words that run on")
+    return out
+
+
+def test_a_label_column_holding_all_the_section_titles_has_no_place_in_the_template_model(tmp_path):
+    style = read(tmp_path, label_rows(["Skills", "Education", "Languages"]))
+    verdict = style["verdict"]
+    assert verdict["copyable"] is False and verdict["reason"] == "layout"
+    assert verdict["detail"].startswith("has a label column down the left, as a Europass CV does")
+    assert "runs" not in style and style["columns"]["count"] == 2
+
+
+def test_three_columns_have_no_place_in_the_template_model(tmp_path):
+    style = read(tmp_path, titled(40, ["Skills", "Languages"]) + titled(300, ["Experience"]) + titled(560, ["Education"]),
+                 size=(900, 800))
+    assert style["verdict"]["copyable"] is False and style["verdict"]["reason"] == "layout"
+    assert style["verdict"]["detail"] == "has three columns, which the template model cannot place."
+    assert style["columns"]["count"] == 3
+
+
+def test_a_sidebar_cv_with_its_section_titles_in_both_columns_is_copyable(tmp_path):
+    style = read(tmp_path, titled(40, ["Skills", "Education", "Languages"]) + titled(300, ["Experience", "Projects"]))
+    assert style["verdict"]["copyable"] is True and style["columns"]["count"] == 2
+
+
+def test_an_ordinary_sidebar_with_the_section_titles_in_the_side_only_stays_copyable(tmp_path):
+    side = titled(40, ["Skills", "Education"])
+    main = text("F2", 12, 300, 780, "Experience") + stack(300, 764, 12, "A line of the main text that runs on and on")
+    assert read(tmp_path, side + main)["verdict"]["copyable"] is True

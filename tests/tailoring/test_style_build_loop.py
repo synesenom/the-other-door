@@ -210,6 +210,8 @@ def test_a_model_error_is_a_failed_result_not_an_exception(world):
 @pytest.mark.parametrize("pdf, words", [
     ("scan", "scan.pdf looks like a scan: there is no text in it to copy the style from."),
     ("linkedin-like", "linkedin-like.pdf is a LinkedIn export, which has no design of its own to copy."),
+    ("html-europass", "html-europass.pdf has a label column down the left, as a Europass CV does, which the template model cannot place."),
+    ("html-three-columns", "html-three-columns.pdf has three columns, which the template model cannot place."),
 ])
 def test_a_cv_with_no_style_to_copy_fails_in_words_without_asking_the_model(world, pdf, words):
     stylist = Stylist("unused")
