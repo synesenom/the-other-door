@@ -70,20 +70,13 @@ def _look(path: Path) -> None:
     if not path.is_file():
         raise ValueError(f"{path.name} could not be found.")
     if refused := style_extract.not_pdf(path):
-        raise ValueError(refused["detail"])
+        raise ValueError(f"{path.name} {refused['detail']}")
     try:
         verdict = style_extract.extract(path)["verdict"]
     except (PdfiumError, OSError) as exc:
         raise ValueError(f"{path.name} is not a PDF The other door can read.") from exc
     if not verdict["copyable"]:
-        raise ValueError(f"{path.name} {_NOTHING_TO_COPY[verdict['reason']]}")
-
-
-# What a file `style_extract.style_verdict` finds no style in is, after its name (the app shows it as it comes, #273).
-_NOTHING_TO_COPY = {
-    "scan": "looks like a scan: there is no text in it to copy the style from.",
-    "linkedin": "is a LinkedIn export, which has no design of its own to copy.",
-}
+        raise ValueError(f"{path.name} {verdict['detail']}")
 
 
 class NoChromium(ValueError):

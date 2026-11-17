@@ -271,7 +271,7 @@ def test_the_tool_starts_a_build_and_says_so(home, cv_pdf, monkeypatch, world):
 def test_the_tool_answers_intake_in_words(home, tmp_path):
     docx = tmp_path / "cv.docx"
     docx.write_bytes(b"x")
-    assert "no layout to copy" in mcp_server.build_style(str(docx))["error"]
+    assert mcp_server.build_style(str(docx)) == {"error": "cv.docx is not a PDF, so it has no layout to copy."}
 
 
 # ----------------------------------------------------------------------------- ending a build

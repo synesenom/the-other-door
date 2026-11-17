@@ -641,11 +641,12 @@ def colors(runs: list[dict], shapes: list[dict]) -> dict:
 
 def not_pdf(path) -> dict | None:
     """The verdict for a file that is not a PDF (a Word file, plain text, a picture: no layout to copy), by its
-    suffix; None for a PDF, which `extract` judges by what is in it. Called where the file is taken in."""
+    suffix; None for a PDF, which `extract` judges by what is in it. Called where the file is taken in. A refusal's
+    `detail` is the user's sentence after the file's name (`<name> <detail>`, #273)."""
     suffix = Path(path).suffix.lower()
     if suffix == ".pdf":
         return None
-    return {"copyable": False, "reason": "not_pdf", "detail": f"a {suffix[1:] or 'file'} has no layout to copy"}
+    return {"copyable": False, "reason": "not_pdf", "detail": "is not a PDF, so it has no layout to copy."}
 
 
 def style_verdict(pages: list[dict]) -> dict:
@@ -654,12 +655,12 @@ def style_verdict(pages: list[dict]) -> dict:
     line on every page; English only) has not. Anything else, a plain single-font CV included, is copyable."""
     chars = sum(len(r["text"].replace(" ", "")) for p in pages for r in p["runs"])
     if chars < _MIN_CHARS:
-        return _verdict(False, "scan", f"{chars} visible characters: no text layer to read")
+        return _verdict(False, "scan", "looks like a scan: there is no text in it to copy the style from.")
     lines = [{r["text"].casefold().strip() for r in p["runs"]} for p in pages]
     headings = set().union(*lines) & _LINKEDIN_HEADINGS
     footers = all(any(_PAGE_FOOTER.fullmatch(t) for t in page) for page in lines)
     if len(headings) >= 3 and footers:
-        return _verdict(False, "linkedin", "the sections and page footers of a LinkedIn export, which has no design")
+        return _verdict(False, "linkedin", "is a LinkedIn export, which has no design of its own to copy.")
     return _verdict(True, "ok", "")
 
 

@@ -734,10 +734,10 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, cv: str, letter: str) -> 
 def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap: int, result: dict) -> None:
     refused = style_extract.not_pdf(pdf_path)
     if refused:
-        raise _Stop(refused["detail"])
+        raise _Stop(f"{pdf_path.name} {refused['detail']}")
     style = style_extract.extract(pdf_path)
     if not style["verdict"]["copyable"]:
-        raise _Stop(style["verdict"]["detail"] or f"no style to copy ({style['verdict']['reason']})")
+        raise _Stop(f"{pdf_path.name} {style['verdict']['detail']}")
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
     pdf = work / "original.pdf"
