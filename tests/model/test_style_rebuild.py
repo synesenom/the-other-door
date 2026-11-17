@@ -7,7 +7,7 @@ designs; a new one is picked up from expected.json), each with the example CV as
 unreachable, a user's CV far shorter or far longer than the one whose look is copied. A ready style is then chosen and
 previewed, as the app does, and that print is read back: its columns, and what an ATS reads of it. Every check is on
 behaviour, never on the model's HTML. A CV with nothing to copy (a scan, a LinkedIn export) stops before the model and
-is tested offline (`tests/tailoring/test_style_build_loop.py`). A build takes 2-4 minutes.
+is tested offline (`tests/tailoring/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
 
 A case a known issue still breaks is an `xfail` naming it: the release gate stays green, and a pass shows as XPASS.
 """
@@ -84,7 +84,7 @@ CASES = {
 }
 
 # the cases a known issue keeps from looking like their original
-KNOWN = {"html-canva-icons": "#242 #243", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242",
+KNOWN = {"html-canva-icons": "#242", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242",
          "scrubbed-pages-header-en": "#244"}
 
 
