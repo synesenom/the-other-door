@@ -112,3 +112,11 @@ def test_columns_reads_a_placed_cv_back_in_its_parts():
     assert html_doc.columns(placed) == ('<header class="cv-header"><h1>A</h1></header>', "<h2>Experience</h2><p>e</p>",
                                         "<h2>Skills</h2><p>s</p>")
     assert html_doc.columns(body) is None
+
+
+def test_details_are_the_name_and_each_contact_detail_by_its_kind():
+    body = ('<header class="cv-header"><<photo>><h1>Jane &amp; Doe</h1><p class="tagline">Analyst</p>'
+            '<p class="contact"><span class="phone">+45 1234</span><span class="email"><a href="mailto:j@x.dk">j@x.dk'
+            '</a></span><span>Other</span><span class="web">jane.example</span></p></header><h2>Work</h2><p>x</p>')
+    assert html_doc.details(body) == {"name": "Jane & Doe", "phone": "+45 1234", "email": "j@x.dk", "web": "jane.example"}
+    assert html_doc.details("<h2>Work</h2><p>x</p>") == {}

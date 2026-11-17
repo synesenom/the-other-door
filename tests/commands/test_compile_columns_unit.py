@@ -3,6 +3,7 @@ that go in a narrow column; the CV body is wrapped as the header, then `div.main
 `cv.md` gives; the file on disk and the letter are never split."""
 
 import json
+import re
 
 import pytest
 
@@ -246,3 +247,33 @@ def test_a_heading_inside_the_header_stays_in_the_header_and_the_columns_start_a
     head, rest = placed.split("</header>", 1)
     assert "<h2>Contact</h2>" in head and '<div class="main">' not in head
     assert rest == '<div class="main"><h2>Experience</h2><p>e</p></div><div class="side"><h2>Skills</h2><p>s</p></div>'
+
+
+# ---------- a running header (#249) ----------
+
+_HEADER_BODY = ('<header class="cv-header"><h1>Jane "J" Doe</h1><p class="contact"><span class="email">j@x.dk</span>'
+                '<span class="web">jane.example</span></p></header><h2>Work</h2><p>x</p>')
+_PLAIN = '<html lang="<<lang>>"><head><style>.photo { width: 2cm }</style></head><body><<body>></body></html>'
+
+
+def _page(body, running_header):
+    return compile_cmd.page(body, _PLAIN, None, photo=None, columns=None, language="en", running_header=running_header)
+
+
+def test_a_running_header_puts_the_bodys_name_and_details_atop_every_page_after_the_first():
+    html, placed, _ = _page(_HEADER_BODY, ["name", "web"])
+    assert '@top-left { content: "Jane \\"J\\" Doe"; }' in html and '@top-right { content: "jane.example"; }' in html
+    assert re.search(r"@page :first \{[^{]*@top-left \{ content: none; \} @top-right \{ content: none; \}", html)
+    assert "@top" not in placed  # what the checks read is the body alone
+
+
+def test_the_details_after_the_first_share_the_right_and_a_missing_one_is_left_out():
+    html = _page(_HEADER_BODY, ["name", "phone", "email", "web"])[0]
+    assert '@top-right { content: "j@x.dk \u00b7 jane.example"; }' in html
+    assert "@top" not in _page("<h2>Work</h2><p>x</p>", ["name", "web"])[0]
+
+
+def test_no_running_header_adds_nothing_and_text_cannot_end_the_style():
+    assert "@top" not in _page(_HEADER_BODY, [])[0]
+    html = _page(_HEADER_BODY.replace('Jane "J" Doe', "Jane &lt;/style&gt;&lt;b&gt;"), ["name"])[0]
+    assert "</style><b>" not in html and '"Jane \\3c /style\\3e \\3c b\\3e "' in html

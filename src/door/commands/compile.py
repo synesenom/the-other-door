@@ -88,17 +88,41 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
 
 
 def page(body: str, template: str, folder: Path, *, photo: Path | None, columns: templates.Columns | None,
-         language: str) -> tuple[str, str, str | None]:
+         language: str, running_header: list[str] = ()) -> tuple[str, str, str | None]:
     """The page `compile` prints for a body: the photo placed (copied into `folder`), the two columns, the language's
-    typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
-    the body as placed and the photo's file name (None when it was not placed).
+    typography, each entry heading's separator kept to the text before it, the running header (`_running_header`),
+    wrapped in `template`. Returns the page, the body as placed and the photo's file name (None when it was not placed).
 
     Raises:
         ValueError: the template cannot hold the body.
     """
     built, name = _with_photo(body, template, folder, photo)
     placed = _place_columns(built, columns)
-    return _wrap(template, _glue_separators(typography.apply(placed, language)), language), placed, name
+    printed = _running_header(placed, running_header) + _glue_separators(typography.apply(placed, language))
+    return _wrap(template, printed, language), placed, name
+
+
+def _css_string(text: str) -> str:
+    """`text` as a CSS string: a quote or a backslash escaped, and `<` and `>` too, so it cannot end the `<style>`."""
+    escaped = text.replace("\\", "\\\\").replace('"', '\\"').replace("<", "\\3c ").replace(">", "\\3e ")
+    return f'"{escaped}"'
+
+
+def _running_header(body: str, kinds: list[str]) -> str:
+    """The `<style>` that prints the body's details of `kinds` (a manifest's ``running_header``) at the top of every
+    page after the first (#249): the first at the top left, the others at the top right with a dot between them. The
+    template styles the `@top-left` and `@top-right` margin boxes; the text is the body's (the guard keeps a
+    template's own `content` free of letters). A margin box is no part of the body: the checks read the body as
+    placed. "" when there is no running header or none of its details is in the body."""
+    found = html_doc.details(body)
+    left = found.get(kinds[0]) if kinds else None
+    right = " \u00b7 ".join(found[k] for k in kinds[1:] if k in found)
+    boxes = [(box, text) for box, text in (("top-left", left), ("top-right", right)) if text]
+    if not boxes:
+        return ""
+    later = " ".join(f"@{box} {{ content: {_css_string(text)}; }}" for box, text in boxes)
+    first = " ".join(f"@{box} {{ content: none; }}" for box, _ in boxes)
+    return f"<style>@page {{ {later} }} @page :first {{ {first} }}</style>"
 
 
 _SEP_SPACE = re.compile(r'(<span class="sep">) ')
@@ -111,7 +135,8 @@ def _glue_separators(body: str) -> str:
 
 
 def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,
-               columns: templates.Columns | None = None, photo: Path | None = None) -> tuple[Path, str, str | None]:
+               columns: templates.Columns | None = None, photo: Path | None = None,
+               running_header: list[str] = ()) -> tuple[Path, str, str | None]:
     """`body` placed in `template` (its text) by `page` and printed to `folder/<name>.pdf` with the pinned Chromium,
     the fonts and icons that the template file `assets_of` names served. Returns the pdf, the body as placed and the
     photo's file name in `folder` (None when it was not placed).
@@ -122,7 +147,8 @@ def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Pat
     """
     folder.mkdir(parents=True, exist_ok=True)
     assets = templates.assets(assets_of)
-    html_text, placed, picture = page(body, template, folder, photo=photo, language=lang, columns=columns)
+    html_text, placed, picture = page(body, template, folder, photo=photo, language=lang, columns=columns,
+                                      running_header=running_header)
     pdf = folder / f"{name}.pdf"
     html_pdf.print_html(folder, html_text, pdf, assets=assets)
     return pdf, placed, picture
@@ -257,9 +283,10 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
 
             raise common.MissingToolError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
         try:
-            columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
+            manifest = (templates.manifest(template_path) or templates.Manifest()) if file == "cv.html" else templates.Manifest()
             pdf, placed, photo_name = print_page(body, template, template_path, language, output_dir, Path(file).stem,
-                                                 columns=columns, photo=_profile_photo(posting, config))
+                                                 columns=manifest.columns, photo=_profile_photo(posting, config),
+                                                 running_header=manifest.running_header)
         except (ValueError, html_pdf.PrintError) as exc:
             entry.update(status="error", stderr=str(exc))
             results.append(entry)

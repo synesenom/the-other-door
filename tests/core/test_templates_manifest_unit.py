@@ -65,3 +65,12 @@ def test_an_icon_kind_is_a_contact_kind_the_guard_lets_through_or_the_entry_date
     from door.tailoring import html_guard
 
     assert set(templates.ICON_KINDS) - {"date"} <= html_guard.CLASSES  # a kind the tailor may write is one a template may draw
+
+
+def test_a_running_header_names_what_later_pages_repeat_at_their_top(tmp_path):
+    """#249: the name and the contact kinds, in the order they print (the first at the top left, the rest at the right)."""
+    assert templates.manifest(_write(tmp_path, {})).running_header == []
+    assert templates.manifest(_write(tmp_path, {"running_header": ["name", "web"]})).running_header == ["name", "web"]
+    for wrong in (["fax"], ["name", "name"], "name"):
+        with pytest.raises(ValueError):
+            templates.manifest(_write(tmp_path, {"running_header": wrong}))

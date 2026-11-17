@@ -680,3 +680,32 @@ def test_an_icon_font_used_once_for_a_bullet_stays_an_icon_font():
              "fixed": False, "embedded": True, "type3": False, "text": t, "icon": icon}
             for t, icon in (("[", True), ("Ó", True), ("○", False))]
     assert style_extract._fonts_used(runs)[0]["icon"] is True
+
+
+def _line(text, page, y, size=10.0, x=72.0):
+    return {"text": text, "page": page, "bbox": [x, y, x + 5 * len(text), y + size], "size": size, "color": "#000000",
+            "family": "Sans", "icon": False}
+
+
+def _pages(count):
+    """Runs of `count` pages of body lines under a name on page 1."""
+    return [_line("Jane Doe", 1, 50, 16)] + [_line(f"line {p}.{i} of the body", p, 90 + 14 * i)
+                                             for p in range(1, count + 1) for i in range(30)]
+
+
+def test_a_line_repeated_at_the_top_of_every_later_page_is_a_running_header():
+    runs = _pages(3) + [_line("Jane Doe  jane.example", p, 40, 8.0) for p in (2, 3)]
+    found = style_extract.running_header(runs)
+    assert found["text"] == "Jane Doe  jane.example" and found["size"] == 8.0 and found["bbox"][1] == 40
+
+
+def test_no_running_header_on_one_page_on_later_pages_starting_with_the_body_or_on_tops_that_differ():
+    assert style_extract.running_header(_pages(1)) is None
+    assert style_extract.running_header(_pages(2)) is None  # page 2 starts with a body line close to the next
+    runs = _pages(3) + [_line("Header A", 2, 40, 8), _line("Header B", 3, 40, 8)]
+    assert style_extract.running_header(runs) is None
+
+
+def test_a_page_number_in_the_running_header_does_not_make_it_differ():
+    runs = _pages(3) + [_line("Jane Doe page 2", 2, 40, 8), _line("Jane Doe page 3", 3, 40, 8)]
+    assert style_extract.running_header(runs)["text"] == "Jane Doe page 2"

@@ -363,3 +363,22 @@ def test_an_entry_heading_never_starts_a_line_with_its_separator(tmp_path, width
     pdf = compile_cmd.print_page(body, template, REPO_ROOT / "profile.example" / "cv.template.html", "en", tmp_path, "cv")[0]
     lines = [line.strip() for line in pdf_render.page_texts(pdf)[0].splitlines() if line.strip()]
     assert len(lines) > 1 and not [line for line in lines if line[0] in "|-"], lines
+
+
+def test_a_running_header_prints_atop_every_page_after_the_first_and_the_checks_read_the_cv_whole(tmp_path):
+    """#249: a template.json `running_header` puts the CV's name and site at the top of page 2 on, not of page 1, and
+    the ATS checks `prepare` runs find nothing wrong (the margin boxes are not the body)."""
+    template = REPO_ROOT / "profile.example" / "cv.template.html"
+    entries = "".join(f'<div class="entry"><h3>Analyst {n} | Example Co - 20{n:02d}</h3><ul>'
+                      + "<li>Prepared the monthly report and the board pack for the finance team.</li>" * 4
+                      + "</ul></div>" for n in range(12))
+    body = ('<header class="cv-header"><<photo>><h1>Jane Doe</h1><p class="contact"><span class="email">'
+            '<a href="mailto:jane@example.com">jane@example.com</a></span><span class="web">jane.example</span></p>'
+            f"</header><h2>Experience</h2>{entries}<h2>Education</h2><p>MSc, Example University</p>")
+    pdf, placed, _ = compile_cmd.print_page(body, template.read_text(encoding="utf-8"), template, "en", tmp_path, "cv",
+                                            running_header=["name", "web"])
+    pages = [[line.strip() for line in text.splitlines() if line.strip()] for text in pdf_render.page_texts(pdf)]
+    assert len(pages) >= 2
+    assert pages[0][0] == "Jane Doe"  # the name alone: no header on page 1
+    assert all(page[0] == "Jane Doe jane.example" for page in pages[1:]), [p[:3] for p in pages]
+    assert [p for p in readability.check_pdf(pdf, placed, "Jane Doe", cv=True) if p["kind"] != "sparse"] == []

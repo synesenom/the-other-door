@@ -151,15 +151,43 @@ def _side_kinds(style: dict, cv_md: str) -> list[str]:
     return kinds
 
 
+_HEADER_PARTS = re.compile(r"\s*[|\u00b7\u2022,]\s*|\s{2,}")
+
+
+def header_kinds(text: str) -> list[str]:
+    """What a running header's `text` repeats, as `templates.HEADER_KINDS` in its order (#249): ``name`` when it
+    starts with words of no contact kind, then the kind of each detail (`icon_kind` of a part between separators, else
+    of each of its words); a page number or other words after the name are not repeated."""
+    kinds: list[str] = []
+    for part in filter(None, _HEADER_PARTS.split(text.strip())):
+        for piece in [part] if icon_kind(part) else part.split():
+            kind = icon_kind(piece)
+            if kind is None and not kinds:
+                kind = "name"
+            if kind in templates.HEADER_KINDS and kind not in kinds:
+                kinds.append(kind)
+    return kinds
+
+
 def _manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str], cv_md: str) -> dict:
-    """The `template.json` of a build: its fonts and icons, the side column's kinds and the page limit (the original's
-    page count within the 1 to 3 a template may name)."""
+    """The `template.json` of a build: its fonts and icons, the side column's kinds, the page limit (the original's
+    page count within the 1 to 3 a template may name) and what a running header repeats (`header_kinds`)."""
     data: dict = {"version": 1, "fonts": list(font_files), "icons": dict(icon_files),
                   "max_pages": min(templates.MAX_PAGES, max(1, style.get("page_count", 1)))}
     side, headings = _side_kinds(style, cv_md), _side_headings(style)
     if side or headings:
         data["columns"] = {"side": side, "headings": headings}
+    if (header := style.get("running_header")) and (kinds := header_kinds(header["text"])):
+        data["running_header"] = kinds
     return data
+
+
+def _without_header(text: str, header: dict | None) -> str:
+    """The original's `text` for the stylist without the lines that are its running `header` (`compile` prints that
+    from the CV's own details: it is not part of the body)."""
+    if not header:
+        return text
+    return "".join(line for line in text.splitlines(keepends=True) if line.strip() != header["text"].strip())
 
 
 # ---------- the columns: where the original has them, and where a print puts them (#242) ----------
@@ -492,7 +520,7 @@ class _Session:
             _Stop: the print has no text to read back.
         """
         pdf, placed, _ = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
-                                                columns=self.manifest.columns)
+                                                columns=self.manifest.columns, running_header=self.manifest.running_header)
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
@@ -543,8 +571,23 @@ def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
         f"render_page_1.png and on (render_page_N.png for the other pages).\n"
         f"Fonts (use only these; the @font-face rules are in fonts.css):\n{notes or '- none: use generic families'}\n"
         f"Icons you may draw, by kind: {icons}.\nSide column: {columns}. Page limit: {s.manifest.max_pages}. "
-        f"Page size: {_page_size(s.style)}, set it with @page size."
+        f"Page size: {_page_size(s.style)}, set it with @page size.{_header_text(s)}"
     )
+
+
+def _header_text(s: _Session) -> str:
+    """What the task says of the original's running header, or ""."""
+    kinds = s.manifest.running_header
+    header = s.style.get("running_header")
+    if not kinds or not header:
+        return ""
+    right = " and ".join(kinds[1:])
+    return (f"\nRunning header: every page after the first repeats '{header['text']}' at its top "
+            f"({header.get('size', '?')} pt). The code prints the CV's {kinds[0]} in the @top-left margin box"
+            + (f" and its {right} in the @top-right one" if right else "") + " of each page after the first: style "
+            "them in @page { @top-left { ... } @top-right { ... } } (font, size, colour, alignment; no content, the "
+            "code writes it), and keep that line not in the sample body.")
+
 
 
 def _list(items: list[str]) -> str:
@@ -617,7 +660,8 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
         try:
             pdf, placed, photo = compile_cmd.print_page(
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
-                columns=s.manifest.columns, photo=picture if v["photo"] else None)
+                columns=s.manifest.columns, photo=picture if v["photo"] else None,
+                running_header=s.manifest.running_header)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
             found += column_problems(s.style, style_extract.extract(pdf), placed) + (
                 [] if v["photo"] else photo_box_problems(s.style, style_extract.painted(pdf)))
@@ -731,7 +775,8 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
     pdf = work / "original.pdf"
     shutil.copyfile(pdf_path, pdf)
     progress_mod.report("reading the CV's style", stage="style")
-    _write(work / "text.txt", column_text(style, pdf) or "\n".join(pdf_render.page_texts(pdf)))
+    _write(work / "text.txt", _without_header(column_text(style, pdf) or "\n".join(pdf_render.page_texts(pdf)),
+                                              style.get("running_header")))
     _write(work / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
     progress_mod.report("fetching the fonts", stage="style")
     plan, result["font_error"] = _get_fonts(pdf, style, work / "fonts", fonts_fetch)

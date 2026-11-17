@@ -554,3 +554,16 @@ def test_a_sample_body_refused_in_every_round_fails_the_build_naming_the_body(wo
     assert result["state"] == "failed" and not world.prints
     assert "no sample body of the stylist's was accepted in 2 rounds" in result["problems"][0]
     assert "other column" in result["problems"][0]
+
+
+def test_a_cv_with_a_running_header_gets_one_printed_on_its_cv_prints_and_kept_out_of_the_text_to_copy(world):
+    """#249: scrubbed-pages-header-en repeats its name and site atop page 2: the template.json says so, every CV print
+    has the margin boxes, the letter's none, and the stylist's text.txt leaves the repeated line out."""
+    world.print_as = lambda folder: STYLES / "html-plain-single.pdf" if folder.name == "letter" else None  # one page
+    result = world.build("scrubbed-pages-header-en", Stylist(*GOOD))
+    assert result["state"] == "ready", result["problems"]
+    assert json.loads((world.style / "template.json").read_text())["running_header"] == ["name", "web"]
+    assert "Vent Rivage parfumerie.ours" not in (world.work / "text.txt").read_text()
+    cv_prints = [p for p in world.prints if p["folder"] == world.work or "stress" in p["folder"].parts]
+    assert cv_prints and all("@top-left" in p["html"] for p in cv_prints)
+    assert not [p for p in world.prints if p["folder"].name == "letter" and "@top-left" in p["html"]]

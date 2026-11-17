@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from html.parser import HTMLParser
 
+from door import i18n
 from door.tailoring import html_guard
 
 _BLOCKS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "br"})
@@ -140,3 +141,40 @@ def h3s(body: str) -> list[str]:
 def word_count(body: str) -> int:
     """The words of the text of `body` (a run of letters or digits, an apostrophe inside it kept)."""
     return len(re.findall(r"\w+(?:['’]\w+)*", text(body)))
+
+
+class _Details(HTMLParser):
+    """The text of the `<h1>` and of each `<span>` whose class is a contact kind."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.found: dict[str, list[str]] = {}
+        self._open: list[tuple[str, str | None]] = []  # (tag, the kind it collects for)
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("br", "img"):
+            return
+        kinds = [c for c in (dict(attrs).get("class") or "").split() if c in i18n.CONTACT_KINDS]
+        kind = "name" if tag == "h1" else (kinds[0] if tag == "span" and kinds else None)
+        if kind:
+            self.found.setdefault(kind, [])
+        self._open.append((tag, kind))
+
+    def handle_endtag(self, tag):
+        while self._open:
+            if self._open.pop()[0] == tag:
+                break
+
+    def handle_data(self, data):
+        for _, kind in self._open:
+            if kind:
+                self.found[kind].append(data)
+
+
+def details(body: str) -> dict[str, str]:
+    """The name (``name``, the `<h1>`) and the contact details by their kind (``phone``, ``email``, ...: a `<span>` of
+    that class) of a CV `body`, whitespace collapsed; a kind the body lacks or leaves empty is left out."""
+    reader = _Details()
+    reader.feed(html_guard.TOKENS.sub("", body))
+    reader.close()
+    return {k: " ".join("".join(v).split()) for k, v in reader.found.items() if "".join(v).strip()}

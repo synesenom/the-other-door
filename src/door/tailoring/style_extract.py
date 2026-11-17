@@ -5,7 +5,7 @@ shapes, icons as SVG paths, the photo. Pure and offline: pypdfium2 and Pillow, n
 `verdict` first (`style_verdict` says when there is nothing to copy: a scan or a LinkedIn export; the other
 keys are then left out), then `runs` (one per piece of text on a line), `fonts`, `page` (size, margins, bleed,
 background), `colors` (text, accent), `name`, `columns` (bands), `headings` and `heading_style`, `shapes`, `icons`
-(SVG paths next to the text they belong to), `photo`. Fonts are only described (family, weight, italic, serif, fixed); looking
+(SVG paths next to the text they belong to), `photo`, `running_header` (the line repeated atop every later page). Fonts are only described (family, weight, italic, serif, fixed); looking
 them up is another step. Icons are `style_icons`'s, traced by `style_trace`.
 """
 
@@ -22,6 +22,7 @@ from door import i18n
 from door.tailoring import pdf_render, style_icons, style_trace
 
 VERSION = 1
+_SAME_LINE = 2.0  # points: runs whose tops are this close are on one line
 _INTERNAL = {"baseline", "lead", "trail", "parts", "gaps"}  # what the analysis keeps on a run and the result does not
 
 # fonts
@@ -530,6 +531,43 @@ def _line_units(runs: list[dict]) -> list[dict]:
     return units
 
 
+def _top_line(runs: list[dict]) -> tuple[list[dict], float]:
+    """The runs of a page's first line (tops within `_SAME_LINE` points of the highest) and the gap, in points, from
+    that line's foot to the next line's top (infinite when it is the only line)."""
+    top = min(r["bbox"][1] for r in runs)
+    line = sorted((r for r in runs if r["bbox"][1] - top <= _SAME_LINE), key=lambda r: r["bbox"][0])
+    foot = max(r["bbox"][3] for r in line)
+    below = [r["bbox"][1] for r in runs if r not in line]
+    return line, (min(below) - foot if below else math.inf)
+
+
+def running_header(runs: list[dict]) -> dict | None:
+    """The line a CV repeats at the top of every page after the first (#249: the name and a contact detail, often a
+    page number): ``{text, bbox, size, color, family}`` of page 2's, else None. Each of those pages' first line holds
+    the same text (digits aside), no larger than the body's text, and stands apart from the next line by at least its
+    own height."""
+    texts = [r for r in runs if not r.get("icon")]
+    later = sorted({r.get("page", 1) for r in texts} - {1})
+    if not later:
+        return None
+    body = sorted(r["size"] for r in texts)[len(texts) // 2]
+    lines = []
+    for number in later:
+        line, gap = _top_line([r for r in texts if r.get("page", 1) == number])
+        height = max(r["bbox"][3] for r in line) - min(r["bbox"][1] for r in line)
+        if gap < height or max(r["size"] for r in line) > body:
+            return None
+        lines.append(line)
+    words = [" ".join(r["text"].strip() for r in line) for line in lines]
+    if len({re.sub(r"\d+", "", w) for w in words}) > 1:
+        return None
+    first = lines[0]
+    box = [min(r["bbox"][0] for r in first), min(r["bbox"][1] for r in first),
+           max(r["bbox"][2] for r in first), max(r["bbox"][3] for r in first)]
+    return {"text": words[0], "bbox": box, "size": max(r["size"] for r in first), "color": first[0]["color"],
+            "family": first[0]["family"]}
+
+
 def find_name(runs: list[dict]) -> dict | None:
     """The largest text of the first page, the whole line of it: the candidate's name."""
     units = [u for u in _line_units(runs) if u["page"] == 1]
@@ -735,6 +773,6 @@ def extract(pdf_path: Path) -> dict:
         return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
                 "columns": columns, "headings": headings, "heading_style": heading_style(headings),
                 "runs": [{k: v for k, v in r.items() if k not in _INTERNAL} for r in runs], "shapes": shapes,
-                "icons": style_icons.find_icons(doc, pages), "photo": pages[0]["photo"]}
+                "icons": style_icons.find_icons(doc, pages), "photo": pages[0]["photo"], "running_header": running_header(runs)}
     finally:
         doc.close()
