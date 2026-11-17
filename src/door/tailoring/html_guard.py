@@ -128,6 +128,8 @@ _CSS_URL = re.compile(r"url\(\s*(?:\"([^\"]*)\"|'([^']*)'|([^)\"'\s]*))\s*\)", r
 _CSS_LOADERS = re.compile(r"@import|url\(|attr\(|image-set\(|(?<![\w-])image\(|cross-fade\(|element\(|paint\(|(?<![\w-])src\(|"
                           r"expression\(|-moz-binding|behavior\s*:", re.I)
 _CSS_CONTENT = re.compile(r"(?<![\w-])content\s*:([^;}]*)", re.I)
+# what a `content:` string may print: a list bullet or a separator, never text or a glyph standing for an icon (#248)
+_CONTENT_MARKS = frozenset("•·–—|/.,●○")  # the same marks .claude/agents/stylist.md names
 _CSS_ESCAPE = re.compile(r"\\(?:([0-9a-fA-F]{1,6})\s?|\r?\n|(.))", re.S)
 
 
@@ -216,8 +218,10 @@ def _css_problems(css: str, manifest) -> list[str]:
         if not ((folder == "/fonts" and name in fonts) or (folder == "/icons" and name in icons)):
             found.append(f"url({target[:60]}) (only /fonts/ and /icons/ files template.json names)")
     for m in _CSS_CONTENT.finditer(css):  # text a rule bakes into the page is not the CV's: it would print on every one
-        if any(c.isalnum() for string in _CSS_STRING.findall(m.group(1)) for c in _unescape_css(string[1:-1])):
-            found.append("a letter or digit in content: (text belongs in the CV)")
+        if any(not (c.isspace() or c in _CONTENT_MARKS) for string in _CSS_STRING.findall(m.group(1))
+               for c in _unescape_css(string[1:-1])):
+            found.append(f"content: may hold only spaces, bullets and separators ({''.join(sorted(_CONTENT_MARKS))}): text "
+                         "belongs in the CV, an icon in an /icons/ file (#248)")
     stripped = _CSS_URL.sub("", _CSS_STRING.sub('""', css))
     for m in _CSS_LOADERS.finditer(stripped):
         word = m.group(0).lower()
