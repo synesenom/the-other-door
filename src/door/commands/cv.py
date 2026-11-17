@@ -64,9 +64,9 @@ _SCHEMA = {
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
-def _extract_text(path: Path) -> str:
-    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266), a DOCX (its paragraphs, symbol-font runs
-    left out, #297) or a Markdown/text file.
+def _extract_text(path: Path, style: dict | None = None) -> str:
+    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266, by `style`, its `style_extract.extract`,
+    read here when not given), a DOCX (its paragraphs, symbol-font runs left out, #297) or a Markdown/text file.
 
     Raises:
         FileNotFoundError: no such file.
@@ -80,7 +80,7 @@ def _extract_text(path: Path) -> str:
     if suffix == ".pdf":
         from door.tailoring import pdf_render, style_extract, style_icons
 
-        runs = style_extract.extract(path).get("runs", [])  # none for a scan or a LinkedIn export
+        runs = (style or style_extract.extract(path)).get("runs", [])  # none for a scan or a LinkedIn export
         fonts = style_icons.icon_fonts(runs)
         icons = [(r["page"], r["bbox"]) for r in runs if style_icons.is_glyph(r, fonts)]
         return "\n".join(pdf_render.page_texts(path, leave_out=icons)).strip()
@@ -196,10 +196,21 @@ def _skills_line_without_todo(line: str) -> str | None:
     return left if re.sub(r"^[\s*_-]*", "", left) and not left.rstrip("*_ ").endswith(":") else None
 
 
-def _has_style(path: Path) -> bool:
-    """Whether the file at `path` has a CV style to copy (`style._look` passes); false on any failure (#150)."""
+def _pdf_style(path: Path) -> dict | None:
+    """A PDF source's `style_extract.extract`, read once for its text and its style verdict (#298); None for
+    another file or a missing one (`_extract_text` says which)."""
+    if path.suffix.lower() != ".pdf" or not path.is_file():
+        return None
+    from door.tailoring import style_extract
+
+    return style_extract.extract(path)
+
+
+def _has_style(path: Path, style: dict | None = None) -> bool:
+    """Whether the file at `path` (of extract `style`, when read) has a CV style to copy (`style._look` passes);
+    false on any failure (#150)."""
     try:
-        style_cmd._look(path)
+        style_cmd._look(path, style)
     except ValueError:  # an unreadable file simply offers no style
         return False
     return True
@@ -245,8 +256,10 @@ def _draft_cv_core(
             described.append({"source": source, "kind": "url"})
             urls.append(source)
         else:
-            text = _extract_text(Path(source))
-            described.append({"source": source, "kind": "file", "chars": len(text), "style": _has_style(Path(source))})
+            path = Path(source)
+            style = _pdf_style(path)
+            text = _extract_text(path, style)
+            described.append({"source": source, "kind": "file", "chars": len(text), "style": _has_style(path, style)})
             parts.append(f"Source file {source}:\n<<<\n{text}\n>>>")
 
     template = workspace.PROFILE_EXAMPLE_DIR / "cv.md"

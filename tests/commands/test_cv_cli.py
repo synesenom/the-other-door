@@ -245,6 +245,19 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
     assert [s.get("style") for s in result["sources"]] == [True, False, False, None]
 
 
+def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
+    """Its text (the icon boxes) and its style verdict read one extract (#298): a style extract is the slow part."""
+    from door.tailoring import style_extract
+
+    _answer(monkeypatch)
+    read, extract = [], style_extract.extract
+    monkeypatch.setattr(style_extract, "extract", lambda path: read.append(path) or extract(path))
+    pdfs = [STYLES / "latex-classic.pdf", STYLES / "scrubbed-altacv-icons-fr.pdf", env.tmp / "old-cv.pdf"]
+    result = cv_cmd._draft_cv_core([*map(str, pdfs), str(env.tmp / "old-cv.docx")], profile_dir=env.profile_dir)
+    assert sorted(map(str, read)) == sorted(map(str, pdfs))
+    assert [s["style"] for s in result["sources"]] == [True, True, False, False]
+
+
 def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch):
     """`style` says the file has a look to copy; whether this machine can print is another question."""
     from door.commands import _common as common
