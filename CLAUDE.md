@@ -215,8 +215,9 @@ and helps decide. Unless the user asks for something else:
    `two_column` is true for one, "Some application systems read two-column CVs less well."), then ask with
    `AskUserQuestion`, neither option recommended, "Keep The other door's" then "Use the style of my CV" (plus "Keep my
    current style" only when `in_use` is `like` and there is a `candidate`), and call `use_style` with the pick (`default`,
-   `like` or `current`); when the pick was not `current` and its answer has `prepared` above 0, offer `rerender`. `building`, `failed` and `none`: say
-   nothing. "Use my CV's style" at any time: with a candidate the same pick, otherwise ask for the PDF (inside the data
+   `like` or `current`); when the pick was not `current` and its answer has `prepared` above 0, offer `rerender`. Any other `state` (`building`, `failed`,
+   `none`): do not mention the CV style at all, not even that a build is running or failed (it is not one of the failures
+   above). "Use my CV's style" at any time: with a candidate the same pick, otherwise ask for the PDF (inside the data
    folder) and call `build_style` with it, its error in one line.
 2. Then `list_matches(new_only=True)` (or plain `list_matches` if nothing is new, or the
    user wants everything). Present postings by title and company (with `title_en` next to
