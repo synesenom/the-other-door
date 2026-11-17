@@ -82,13 +82,3 @@ def test_the_made_up_pdfs_name_only_example_addresses(styles):
         for run in styles[stem]["runs"]:
             for domain in re.findall(r"@([\w.-]+\.\w+)", run["text"]):
                 assert domain == "example.com", f"{stem}: {run['text']}"
-
-
-@pytest.mark.parametrize("stem", _copyable())
-def test_a_running_header_is_found_only_where_later_pages_repeat_one(styles, stem):
-    """#249: scrubbed-pages-header-en repeats a line (the name and a site) at the top of page 2; no other CV does."""
-    found = styles[stem]["running_header"]
-    if stem == "scrubbed-pages-header-en":
-        assert found["text"] == "Vent Rivage parfumerie.ours" and found["size"] == 9.0
-    else:
-        assert found is None

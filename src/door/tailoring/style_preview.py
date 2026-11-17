@@ -103,9 +103,9 @@ def _fresh(folder: Path, key: str) -> list[str] | None:
 
 def _make(stage: Path, cv_md: str, lang: str, photo: Path | None, cv_template: Path, letter_template: Path) -> list[str]:
     """Print the CV and the letter into `stage` and the pages of both to images; the file names of the images."""
-    manifest = templates.manifest(cv_template) or templates.Manifest()
+    columns = (templates.manifest(cv_template) or templates.Manifest()).columns
     pdf, _, picture = compile_cmd.print_page(cv_body.body(cv_md, lang), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv",
-                                 columns=manifest.columns, photo=photo, running_header=manifest.running_header)
+                                 columns=columns, photo=photo)
     images = [p.name for p in pdf_render.render_pdf_pages(pdf, stage)]
     # the letter is printed with the CV template's fonts and icons, as `style_build` checks it
     letter = compile_cmd.print_page(sample_letter(cv_md), letter_template.read_text(encoding="utf-8"), cv_template, "en", stage, "letter")

@@ -362,35 +362,3 @@ def test_a_line_the_pdf_prints_with_a_ligature_is_found_in_the_body_spelt_out():
             "<h2>Skills</h2><p>Python</p>")
     problems = style_build.body_column_problems(style, body, templates.Columns(side=["skills"]))
     assert len(problems) == 1 and "side column of the original" in problems[0]
-
-
-# ---------- a running header (#249) ----------
-
-@pytest.mark.parametrize("text, kinds", [
-    ("Vent Rivage parfumerie.ours", ["name", "web"]),
-    ("Jane Doe | jane@example.com | +45 12 34 56 78", ["name", "email", "phone"]),
-    ("Jane Doe page 2", ["name"]),
-    ("jane@example.com", ["email"]),
-])
-def test_the_manifest_repeats_the_name_and_the_contact_kinds_the_originals_running_header_holds(text, kinds):
-    style = _style([], [], pages=2)
-    style["running_header"] = {"text": text}
-    assert style_build._manifest_data(style, [], {}, "")["running_header"] == kinds
-    assert "running_header" not in style_build._manifest_data(_style([], [], pages=2), [], {}, "")
-
-
-def test_the_stylist_is_told_of_a_running_header_how_to_style_it_and_to_leave_it_out_of_the_body():
-    style = _style([], [], pages=2)
-    style["running_header"] = {"text": "Vent Rivage parfumerie.ours", "size": 9.0}
-    session = types.SimpleNamespace(style=style, images=[1, 2], manifest=templates.Manifest(running_header=["name", "web"]))
-    text = style_build._files_text(session, "", {})
-    assert "Vent Rivage parfumerie.ours" in text and "@top-left" in text and "@top-right" in text
-    assert "not in the sample body" in text
-    plain = types.SimpleNamespace(style=_style([], [], pages=2), images=[1, 2], manifest=templates.Manifest())
-    assert "@top-left" not in style_build._files_text(plain, "", {})
-
-
-def test_the_text_for_the_stylist_leaves_out_the_running_header_it_repeats():
-    text = "Clair Genou\nCerise\nbody\nVent Rivage parfumerie.ours\nParfumerie\n"
-    assert style_build._without_header(text, {"text": "Vent Rivage parfumerie.ours"}) == "Clair Genou\nCerise\nbody\nParfumerie\n"
-    assert style_build._without_header(text, None) == text

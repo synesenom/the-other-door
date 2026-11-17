@@ -70,8 +70,6 @@ def in_use(profile_dir: Path, config: dict) -> str:
 MANIFEST_FILE = "template.json"
 MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
 ICON_KINDS = (*i18n.CONTACT_KINDS, "date")
-# What a running header may repeat (#249): the name and the contact details, by the class the body gives each.
-HEADER_KINDS = ("name", *i18n.CONTACT_KINDS)
 # The section kinds a column can hold: the CV sections `i18n` names.
 SECTION_KINDS = tuple(i18n.CvSections.model_fields)
 
@@ -102,9 +100,7 @@ class Columns(BaseModel):
 
 class Manifest(BaseModel):
     """`template.json`: ``fonts`` (TrueType files in `fonts/` beside it), ``icons`` (kind to an SVG in `icons/`),
-    ``max_pages`` (the template's own limit, 1 to 3), ``columns`` (absent: one column) and ``running_header`` (what
-    every page after the first repeats at its top, of `HEADER_KINDS`: the first at the left, the rest at the right;
-    empty: none, #249)."""
+    ``max_pages`` (the template's own limit, 1 to 3) and ``columns`` (absent: one column)."""
 
     model_config = ConfigDict(extra="forbid")
     version: Literal[1] = 1
@@ -112,17 +108,6 @@ class Manifest(BaseModel):
     icons: dict[str, str] = {}
     max_pages: int | None = Field(default=None, ge=1, le=MAX_PAGES)
     columns: Columns | None = None
-    running_header: list[str] = []
-
-    @field_validator("running_header")
-    @classmethod
-    def _header(cls, v: list[str]) -> list[str]:
-        for kind in v:
-            if kind not in HEADER_KINDS:
-                raise ValueError(f"{kind!r} is not a running header's kind ({', '.join(HEADER_KINDS)})")
-        if len(set(v)) != len(v):
-            raise ValueError("a running header names each kind once")
-        return v
 
     @field_validator("fonts")
     @classmethod
