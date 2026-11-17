@@ -242,7 +242,7 @@ def test_compile_without_chromium_is_a_one_line_error_from_the_tool(env, monkeyp
     out.mkdir(parents=True)
     (out / "cv.html").write_text("<p>x</p>")
 
-    monkeypatch.setattr(chromium_mod, "find_chromium", lambda home=None: None)
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
     with pytest.raises(common.NoChromium):
         compile_cmd._compile_core("jobindex-acme-ds", jobs_dir=env.jobs_dir)
 

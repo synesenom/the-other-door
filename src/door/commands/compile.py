@@ -252,7 +252,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             entry.update(status="error", stderr=f"could not read the template: {exc}")
             results.append(entry)
             continue
-        if chromium.find_chromium() is None:
+        if not common._chromium_available():
             raise common.NoChromium
         try:
             columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
