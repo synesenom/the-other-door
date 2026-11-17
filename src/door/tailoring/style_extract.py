@@ -762,11 +762,16 @@ def _fonts_used(runs: list[dict]) -> list[dict]:
     fonts: dict[str, dict] = {}
     keys = ("font", "family", "weight", "italic", "serif", "fixed", "embedded", "type3")
     for run in runs:
-        entry = fonts.setdefault(run["font"], {**{k: run[k] for k in keys}, "icon": True, "runs": 0, "chars": 0})
-        # a bullet drawn from an icon font (the rating's empty dot) is no reason to fetch that font
-        entry["icon"] = entry["icon"] and (run["icon"] or style_icons.only_bullets(run["text"]))
+        entry = fonts.setdefault(run["font"], {**{k: run[k] for k in keys}, "icon": True,
+                                                       "real": style_icons.icon_font(run["font"]), "runs": 0,
+                                                       "chars": 0})
+        # a bullet or separator drawn from an icon font (the rating's empty dot) is no reason to fetch that font
+        entry["icon"] = entry["icon"] and (run["icon"] or style_icons.only_separators(run["text"]))
+        entry["real"] = entry["real"] or run["icon"]
         entry["runs"] += 1
         entry["chars"] += sum(not c.isspace() for c in run["text"])
+    for entry in fonts.values():
+        entry["icon"] = entry["icon"] and entry.pop("real")  # an icon font is named like one or draws a real icon
     return sorted(fonts.values(), key=lambda f: -f["chars"])
 
 

@@ -12,6 +12,8 @@ from door.tailoring import pdf_render, style_trace
 FILL_RULE = "evenodd"
 # what a bullet of a list is set as: no icon, and no column of its own
 BULLETS = set("•·‣◦▪●○■□–∙-*")
+# what sits between two items of a line (a skills list, a contact line): a font of only these is a text font
+SEPARATORS = BULLETS | set("|¦/\\,.;:—―~")
 
 # the fonts whose letters are pictures, matched on the name in lowercase letters and digits: icon fonts, the
 # symbol fonts (a phone or an envelope set in Wingdings reads back as a stray "(") and TeX's symbol fonts
@@ -36,12 +38,13 @@ def glyph_only(text: str) -> bool:
 def mark_icon_runs(runs: list[dict]) -> None:
     """Set `icon` on every run: true for the glyphs of an icon font (FontAwesome and the like): a font named like
     one, a run of only private-use, control or dingbat characters, or a font whose runs are all a character or two
-    of symbols. A run of bullets (and spaces between them) is no icon."""
+    of symbols. A run of bullets or separators (and spaces between them) is no icon, and counts for no font."""
     short: dict[str, bool] = {}
     for run in runs:
-        short[run["font"]] = short.get(run["font"], True) and len(run["text"]) <= 2 and not run["text"].isalnum()
+        if not only_separators(run["text"]):
+            short[run["font"]] = short.get(run["font"], True) and len(run["text"]) <= 2 and not run["text"].isalnum()
     for run in runs:
-        run["icon"] = not only_bullets(run["text"]) and bool(
+        run["icon"] = not only_separators(run["text"]) and bool(
             icon_font(run["font"]) or glyph_only(run["text"]) or short[run["font"]])
 
 
@@ -55,10 +58,15 @@ def only_bullets(text: str) -> bool:
     return all(c in BULLETS or c.isspace() for c in text)
 
 
+def only_separators(text: str) -> bool:
+    """Only bullets, separators and spaces: the marks between the items of a line."""
+    return all(c in SEPARATORS or c.isspace() for c in text)
+
+
 def is_glyph(run: dict, fonts: set[str]) -> bool:
     """Whether `run` draws an icon, whose glyph reads back as a stray character: one marked `icon`, or a run of
     bullets only in one of `fonts` (`icon_fonts`; a level dot drawn with the icon font)."""
-    return run["icon"] or (run["font"] in fonts and only_bullets(run["text"]))
+    return run["icon"] or (run["font"] in fonts and only_separators(run["text"]))
 
 
 def _luminance(color: str) -> float:

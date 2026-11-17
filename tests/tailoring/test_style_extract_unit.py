@@ -827,6 +827,46 @@ def test_an_icon_font_used_once_for_a_bullet_stays_an_icon_font():
     assert style_extract._fonts_used(runs)[0]["icon"] is True
 
 
+def font_run(font, text_, icon):
+    return {"font": font, "family": font, "weight": 400, "italic": False, "serif": False, "fixed": False,
+            "embedded": True, "type3": False, "text": text_, "icon": icon}
+
+
+@pytest.mark.parametrize("seps", [["|", "/", ",", ";"], ["·", "–", "/", "•", ","], ["|", "—", ".", ":"]])
+def test_a_font_of_separators_only_is_no_icon_font(seps):
+    runs = [run("Sep-Regular", t) for t in seps]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [False] * len(seps)
+    assert all(not f["icon"] for f in style_extract._fonts_used([font_run("Sep-Regular", t, r["icon"])
+                                                                 for t, r in zip(seps, runs)]))
+
+
+def test_a_font_of_separators_and_one_real_icon_marks_only_the_icon():
+    runs = [run("Odd-Regular", "@"), run("Odd-Regular", "|"), run("Odd-Regular", "/")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [True, False, False]
+
+
+def test_icon_fonts_stay_icons_beside_the_separator_rule():
+    runs = [run("FontAwesome", "A"), run("FontAwesome", "b"), run("Neutral-Regular", "\uf095"), run("Wingdings", "(")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert all(r["icon"] for r in runs)
+
+
+def test_a_font_of_bullets_only_is_no_icon_font():
+    assert style_extract._fonts_used([font_run("Dots", "·", False)])[0]["icon"] is False
+
+
+def test_separator_runs_are_no_icons_and_stay_in_the_text(tmp_path):
+    content = (text("F1", 10, 50, 740, "Python") + text("F6", 10, 110, 740, "|") + text("F1", 10, 125, 740, "Rust")
+               + text("F6", 10, 160, 740, "/") + text("F1", 10, 175, 740, "Go") + body())
+    style = read(tmp_path, content, fonts={"F6": "SomeFont"})
+    assert style["icons"] == []
+    seps = [r for r in style["runs"] if r["text"] in ("|", "/")]
+    assert seps and not any(r["icon"] for r in seps)
+    assert not any(f["icon"] for f in style["fonts"])
+
+
 def test_spaced_level_dots_do_not_widen_a_column_band():
     # '○ ○ ○ ○' in the icon font is no icon (#315) but is still no column text: the side band ends at its words
     from tests.paths import TESTS_DIR
