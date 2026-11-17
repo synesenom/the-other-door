@@ -3,8 +3,8 @@
 Both sides are `style_extract.extract` results (`runs` and `icons`, points, origin top left). `match` pairs the text
 runs by their normalised text (the nearest run of the same text when there are several) and the icons by the text
 they sit beside, then by position, and says how each pair differs: `dx`, `dy` (the render's box minus the original's),
-`d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `pages_score` (grey, blurred, each
-original page at its best vertical shift) says how alike the page images look, `feedback` is what the next round tells the
+`d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `pages_score` (grey and its text
+strokes, blurred, each original page at its best vertical shift) says how alike the page images look, `feedback` is what the next round tells the
 model, and `should_stop` / `best_round` are the loop's stopping rule: stop at `CAP` rounds, when every matched element
 is within `WITHIN_PT` points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `GOOD`); the best round is kept, and a build whose best is under `FLOOR` is failed.
 """
@@ -23,17 +23,25 @@ WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
 # a round that adds less than this over the best before it is not worth another: half of the old 0.005, as the blurred score
 # (which weighs the difference against the ink) roughly halves what a round gains, so the same sensitivity
 MIN_GAIN = 0.0025
-# the small-gain rule applies only once the best round scored this, a good rebuild (0.88-0.99 in #238's real runs): below
-# it a flat or worse round goes on to the cap with the feedback (a broken first draft scored 0.31 then 0.01, #243)
-GOOD = 0.8
-# a build whose best round scored under this is failed, nothing written (#241): on the page score, rebuilds that looked
-# like their CV scored 0.54-0.99 in real runs and broken ones 0.10-0.49 (columns swapped: 0.487)
-FLOOR = 0.5
+# the small-gain rule applies only once the best round scored this, a good rebuild: below it a flat or worse round goes on
+# to the cap with the feedback (a broken first draft scored 0.31 then 0.01, #243). Re-scored with the strokes (#250), 64
+# saved renders: good rebuilds 0.77-0.99 (the lowest, latex-sidebar, its lines a few points off beside its band: 0.768),
+# rounds with something visibly left to fix 0.75 (a page too long: 0.748; serif sizes off: 0.745, 0.754) and broken ones
+# 0.12-0.68; just under the lowest good one (tests/tailoring/fixtures/style_renders pins it)
+GOOD = 0.76
+# a build whose best round scored under this is failed, nothing written (#241). With the strokes (#250): every original
+# against itself 1.0, main columns squashed beside a matching band 0.17-0.26 (were 0.46-0.49, their page 1 0.97) and
+# one narrowed into the band 0.518 (was 0.976), which the old 0.5 let through; the weakest rebuilds that still look
+# like their CV 0.58-0.68
+FLOOR = 0.55
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 SHIFT_REACH = 0.15  # of a page's height: how far `pages_score` looks up and down for where an original page sits
 # the render's first page beyond the original's count holding this share of an original page's ink or less is a few
 # lines over and costs that share; any other page beyond the count costs a whole page
 OVERFLOW_SHARE = 0.25
+# `_alike`'s least ink for `_strokes`: thin marks hold a tenth of the ink of the fills or less (a real page's strokes
+# 0.013-0.025, a page of a few short lines 0.001)
+_STROKES_FLOOR = 0.0005
 _SEARCH_SCALE = 4  # the shift is searched on images this many times smaller
 _FEEDBACK_LIMIT = 12
 MIN_PART = 5  # characters: a shorter text is not paired by being part of another ("2019" is in many runs)
@@ -217,11 +225,20 @@ def _grey(image: Image.Image, width: int) -> Image.Image:
     return image.convert("L").crop((0, 0, width, image.height)).filter(ImageFilter.GaussianBlur(BLUR_RADIUS))
 
 
+def _strokes(image: Image.Image, width: int) -> Image.Image:
+    """Where the page's thin marks are, whatever their colour, dark on white and blurred like `_grey`: each pixel's local
+    contrast (the largest minus the smallest grey of its 3x3 neighbours), so text and rules count and the inside of a
+    filled area does not (#250: a big coloured band that matches must not hide a main column laid out otherwise)."""
+    grey = image.convert("L").crop((0, 0, width, image.height))
+    contrast = ImageChops.subtract(grey.filter(ImageFilter.MaxFilter(3)), grey.filter(ImageFilter.MinFilter(3)))
+    return ImageChops.invert(contrast).filter(ImageFilter.GaussianBlur(BLUR_RADIUS))
+
+
 def _ink(image: Image.Image) -> int:
     return _sum_squares(ImageChops.invert(image))
 
 
-def _alike(x: Image.Image, y: Image.Image) -> float:
+def _alike(x: Image.Image, y: Image.Image, floor: float = 0.005) -> float:
     """How alike two grey blurred images of one size look, 0 to 1 (the blur makes a shift of a pixel cost little): the
     mean squared difference against the ink of the two together (on a mostly white page a plain difference is near 0
     for any rebuild; a rebuild further off than a blank page still scores above 0)."""
@@ -230,7 +247,7 @@ def _alike(x: Image.Image, y: Image.Image) -> float:
         return 1.0
     mse = _sum_squares(ImageChops.difference(x, y)) / pixels / 255**2
     ink = (_ink(x) + _ink(y)) / pixels / 255**2
-    return 1 - mse / max(ink, 0.005)
+    return 1 - mse / max(ink, floor)
 
 
 def _best_shift(page: Image.Image, strip: Image.Image, top: int, reach: int) -> int:
@@ -250,9 +267,11 @@ def _best_shift(page: Image.Image, strip: Image.Image, top: int, reach: int) -> 
 
 
 def pages_score(original: list[Image.Image], render: list[Image.Image]) -> float:
-    """How alike two documents look, 0 to 1: the mean blurred score (`_alike`) of the original's pages, each against the
-    render's pages laid end to end at the vertical shift (up to `SHIFT_REACH` of a page) where it matches best, so
-    that a rebuild a few lines too long is not scored as if every line after the first break were wrong (#244). An
+    """How alike two documents look, 0 to 1: the mean score of the original's pages, each against the render's pages
+    laid end to end at the vertical shift (up to `SHIFT_REACH` of a page) where it matches best, so that a rebuild a few
+    lines too long is not scored as if every line after the first break were wrong (#244). A page's score is the mean
+    of two blurred scores (`_alike`): of the grey page (its fills and colours) and of its `_strokes` (where its text and
+    rules are, so a matching band does not hide a squashed or moved text column, #250). An
     original page with nothing under it scores 0. What the render holds outside those windows counts as pages scoring
     0: on each of the original's count of pages, the share of the original's mean page its ink makes (at most one); a
     page beyond that count costs a whole page, but for the first one when it holds `OVERFLOW_SHARE` of a page or less
@@ -264,14 +283,18 @@ def pages_score(original: list[Image.Image], render: list[Image.Image]) -> float
     step = render[0].height
     pad = max(page.height for page in pages)  # white above and below: room to shift into, and for a taller page
     strip = Image.new("L", (width, step * len(render) + 2 * pad), 255)
+    marks = strip.copy()  # the same, of the render's `_strokes`
     for i, im in enumerate(render):
         strip.paste(_grey(im, width).crop((0, 0, width, step)), (0, pad + i * step))
+        marks.paste(_strokes(im, width).crop((0, 0, width, step)), (0, pad + i * step))
     left = strip.copy()  # the render with every window compared painted white: what no original page was compared with
     scores = []
-    for i, page in enumerate(pages):
+    for i, (image, page) in enumerate(zip(original, pages)):
         row = _best_shift(page, strip, pad + i * step, round(SHIFT_REACH * step))
-        scores.append(_alike(page, strip.crop((0, row, width, row + page.height))))
-        left.paste(255, (0, row, width, row + page.height))
+        window = (0, row, width, row + page.height)
+        fill, text = _alike(page, strip.crop(window)), _alike(_strokes(image, width), marks.crop(window), _STROKES_FLOOR)
+        scores.append((fill + text) / 2)
+        left.paste(255, window)
     page_ink = sum(map(_ink, pages)) / len(pages) or 1
     extra = 0.0
     for i in range(len(render)):
