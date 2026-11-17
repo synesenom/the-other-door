@@ -412,9 +412,7 @@ def structured(tmp_path, content, **kw):
     return path, pages, rows
 
 
-def test_extract_without_a_structure_reads_no_name_headings_or_columns_and_never_runs_the_rules(tmp_path, monkeypatch):
-    for fn in ("find_headings", "column_bands", "_entry_titles", "layout_verdict", "find_name"):
-        monkeypatch.setattr(style_extract, fn, lambda *a, **k: pytest.fail("a rule ran"))
+def test_extract_without_a_structure_reads_no_name_headings_or_columns(tmp_path):
     style = style_extract.extract(pdf_of(tmp_path, one_column()))
     assert style["name"] is None and style["headings"] == [] and style["heading_style"] is None
     assert style["columns"] == {"count": 0, "bands": []} and style["verdict"]["copyable"] and style["runs"]
@@ -474,14 +472,30 @@ def test_a_linkedin_export_has_only_the_verdict(tmp_path):
     assert style["verdict"]["reason"] == "linkedin" and "runs" not in style
 
 
-# ---------- who calls the rules ----------
+def lines(x, y, n, label):
+    return "".join(put("F1", 10, x, y - 13 * i, f"{label} {i}") for i in range(n))
 
-def test_no_production_module_but_style_extract_calls_the_heading_and_column_rules():
-    """The rules are kept only until #344 deletes them: nothing but their own module may use them."""
-    from paths import REPO_ROOT
 
-    names = ("find_headings", "column_bands", "_entry_titles", "layout_verdict", "find_name", "style_verdict")
-    for file in (REPO_ROOT / "src" / "door").rglob("*.py"):
-        if file.name != "style_extract.py":
-            text = file.read_text(encoding="utf-8")
-            assert not any(n in text for n in names), f"{file.name} uses a rule"
+def three_strips(right_rows):
+    out = put("F2", 20, 40, 800, "Max Mustermann")
+    out += put("F2", 13, 40, 740, "Experience") + lines(40, 722, 6, "Main line")
+    out += put("F2", 13, 250, 740, "Skills") + lines(250, 722, 6, "Side line")
+    return out + lines(420, 722, right_rows, "Note")
+
+
+def test_text_wholly_on_both_sides_of_the_side_range_is_a_third_column(tmp_path):
+    pages, rows, _ = read(pdf_of(tmp_path, three_strips(4)))
+    a = answer(rows, heads=("Experience", "Skills"), layout={"columns": "two", "side_x0": 248, "side_x1": 300})
+    s = style_structure.check(a, rows, pages)
+    assert s["columns"] == "three" and s["side_range"] is None
+    assert style_extract.structure_verdict(s)["reason"] == "layout"
+
+
+def test_a_sidebar_with_one_stray_row_beyond_it_stays_two_columns(tmp_path):
+    out = put("F2", 20, 40, 800, "Max Mustermann")
+    out += put("F2", 13, 40, 740, "Experience") + lines(40, 722, 6, "Main line")
+    out += put("F2", 13, 400, 740, "Skills") + lines(400, 722, 6, "Side line") + put("F1", 8, 560, 30, "2")
+    pages, rows, _ = read(pdf_of(tmp_path, out))
+    a = answer(rows, heads=("Experience", "Skills"), layout={"columns": "two", "side_x0": 398, "side_x1": 460})
+    s = style_structure.check(a, rows, pages)
+    assert s["columns"] == "two"

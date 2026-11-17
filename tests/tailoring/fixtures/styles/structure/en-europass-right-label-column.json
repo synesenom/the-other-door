@@ -1,0 +1,31 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "one"
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 4,
+   "kind": "experience"
+  },
+  {
+   "id": 10,
+   "kind": "education"
+  },
+  {
+   "id": 13,
+   "kind": "skills"
+  },
+  {
+   "id": 15,
+   "kind": "languages"
+  }
+ ],
+ "entry_titles": [
+  3,
+  7,
+  9,
+  11
+ ]
+}

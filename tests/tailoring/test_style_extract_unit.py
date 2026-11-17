@@ -3,7 +3,6 @@
 import pytest
 
 from pdf_utils import raw_pdf
-from style_rules_utils import rules_extract
 
 from door.tailoring import style_build, style_compare, style_extract
 
@@ -11,7 +10,7 @@ from door.tailoring import style_build, style_compare, style_extract
 def read(tmp_path, content, **kwargs):
     path = tmp_path / "cv.pdf"
     path.write_bytes(raw_pdf(content, **kwargs))
-    return rules_extract(path)
+    return style_extract.extract(path)
 
 
 def text(font, size, x, y, s, color="0 0 0"):
@@ -95,7 +94,7 @@ def page_image(w=595, h=842):
 def read_pages(tmp_path, pages, **kwargs):
     path = tmp_path / "cv.pdf"
     path.write_bytes(raw_pdf(pages, **kwargs))
-    return rules_extract(path)
+    return style_extract.extract(path)
 
 
 def test_a_scan_has_nothing_to_copy(tmp_path):
@@ -120,29 +119,6 @@ def test_an_ocr_layer_over_a_page_image_is_a_scan(tmp_path):
 def test_a_cv_with_text_and_one_font_is_copyable(tmp_path):
     style = read(tmp_path, body())
     assert style["verdict"] == {"copyable": True, "reason": "ok", "detail": ""}
-
-
-def _linkedin_page(n, headings):
-    out = "".join(text("F1", 12, 50, 760 - 40 * i, h) for i, h in enumerate(headings))
-    out += "".join(text("F1", 10, 50, 600 - 12 * i, f"Some line {i} of this person's page") for i in range(8))
-    return out + text("F1", 9, 260, 30, f"Page {n} of 2")
-
-
-def test_a_linkedin_export_is_recognised_by_its_headings_and_page_footers(tmp_path):
-    pages = [_linkedin_page(1, ["Contact", "Top Skills", "Languages"]), _linkedin_page(2, ["Summary", "Experience", "Education"])]
-    verdict = read_pages(tmp_path, pages)["verdict"]
-    assert verdict["copyable"] is False and verdict["reason"] == "linkedin"
-
-
-def test_the_headings_without_the_page_footers_are_a_cv(tmp_path):
-    pages = [_linkedin_page(1, ["Contact", "Top Skills", "Languages"])]
-    pages = [p.replace("Page 1 of 2", "") for p in pages]
-    assert read_pages(tmp_path, pages)["verdict"]["copyable"] is True
-
-
-def test_the_footers_with_too_few_of_the_headings_are_a_cv(tmp_path):
-    pages = [_linkedin_page(1, ["Summary", "Experience"]), _linkedin_page(2, ["Skills"])]
-    assert read_pages(tmp_path, pages)["verdict"]["copyable"] is True
 
 
 @pytest.mark.parametrize("name", ["cv.docx", "cv.txt", "cv.md", "CV.HTML", "cv.rtf", "cv.odt", "scan.PNG", "photo.jpeg", "cv"])
@@ -262,152 +238,19 @@ def test_a_rectangle_with_round_corners_is_a_rounded_box(tmp_path):
 
 # ---------- columns ----------
 
-def stack(x, top, n, label, size=10, color="0 0 0"):
-    return "".join(text("F1", size, x, top - 14 * i, f"{label} {i} some words", color) for i in range(n))
-
-
-def test_two_stacks_of_lines_are_a_main_column_and_a_side_column(tmp_path):
-    columns = read(tmp_path, stack(40, 780, 30, "Side") + stack(200, 780, 40, "The main text goes on and on"))["columns"]
-    assert columns["count"] == 2
-    side, main = columns["bands"]
-    assert (side["kind"], main["kind"]) == ("side", "main") and side["x1"] < 200 <= main["x0"]
-    assert side["lines"] == 30 and main["lines"] == 40 and side["background"] is None
-
-
-def titled(x, kinds):
-    """A stack of body lines at *x* with whole-line section titles (the bold one is the font's) above its lines."""
-    out = ""
-    for i, title in enumerate(kinds):
-        out += text("F2", 12, x, 780 - 90 * i, title) + stack(x, 764 - 90 * i, 5, "A line of the body text that runs on and on")
-    return out
-
-
-def equal_kinds(tmp_path, left, right):
-    columns = read(tmp_path, titled(40, left) + titled(300, right))["columns"]
-    assert columns["count"] == 2
-    return [b["kind"] for b in columns["bands"]]
-
-
-def test_equal_columns_with_more_section_titles_on_the_left_have_it_as_the_side(tmp_path):
-    assert equal_kinds(tmp_path, ["Skills", "Education", "Languages"], ["Profile", "Experience"]) == ["side", "main"]
-
-
-def test_equal_columns_with_more_section_titles_on_the_right_have_it_as_the_side(tmp_path):
-    assert equal_kinds(tmp_path, ["Profile", "Experience"], ["Skills", "Education", "Languages"]) == ["main", "side"]
-
-
-def test_only_side_kind_titles_are_counted_for_the_side_of_equal_columns(tmp_path):
-    assert equal_kinds(tmp_path, ["Profile", "Experience", "Projects"], ["Skills"]) == ["main", "side"]
-    assert equal_kinds(tmp_path, ["Skills"], ["Profile", "Experience", "Projects"]) == ["side", "main"]
-
-
-def test_equal_columns_with_no_section_titles_have_the_right_one_as_the_side(tmp_path):
-    assert equal_kinds(tmp_path, ["Alpha", "Beta"], ["Gamma", "Delta"]) == ["main", "side"]
-
-
-def test_equal_columns_with_as_many_section_titles_each_have_the_right_one_as_the_side(tmp_path):
-    assert equal_kinds(tmp_path, ["Skills", "Education"], ["Languages", "Interests"]) == ["main", "side"]
-
-
-def test_one_stack_is_one_column(tmp_path):
-    columns = read(tmp_path, stack(60, 780, 40, "The one column of text"))["columns"]
-    assert columns["count"] == 1 and columns["bands"][0]["kind"] == "only"
-
-
-def test_a_banner_over_both_columns_does_not_join_them(tmp_path):
-    banner = text("F2", 24, 40, 810, "A Name Over Both Columns Of The Page Here")
-    columns = read(tmp_path, banner + stack(40, 770, 30, "Side") + stack(260, 770, 30, "Main text body of words"))["columns"]
-    assert columns["count"] == 2
-
-
-def test_dates_on_the_right_of_a_single_column_are_not_a_column(tmp_path):
-    content = ""
-    for job in range(8):
-        top = 780 - job * 90
-        content += text("F2", 11, 50, top, f"Role number {job}, Company") + text("F1", 10, 470, top, "2019 - 2021")
-        content += stack(60, top - 14, 4, "Did something useful")
-    assert read(tmp_path, content)["columns"]["count"] == 1
-
-
-def test_a_note_in_the_margin_is_not_a_column(tmp_path):
-    columns = read(tmp_path, stack(50, 780, 40, "The one column of text") + text("F1", 8, 500, 400, "a note"))["columns"]
-    assert columns["count"] == 1
-
-
-def test_a_sidebar_on_a_coloured_box_has_its_background(tmp_path):
-    drawing = "0.1 0.2 0.4 rg 0 0 170 842 re f\n"
-    columns = read(tmp_path, drawing + stack(20, 780, 30, "Side", color="1 1 1") + stack(200, 780, 40, "Main text of the page"))["columns"]
-    side, main = columns["bands"]
-    assert side["kind"] == "side" and side["background"] == "#1a3366" and main["background"] is None
-
-
 # ---------- name, headings, colours ----------
 
 NAVY = "0.1 0.2 0.5"
 
 
-def cv_with_headings(rule=""):
+def cv_with_headings():
     out = text("F2", 26, 50, 790, "Mira Valdis", NAVY)
     y = 740
     for heading in ("WORK EXPERIENCE", "PROJECTS", "VOLUNTEERING"):
         out += text("F2", 13, 50, y, heading, NAVY)
-        if rule:
-            out += rule.format(y=y - 4)
         out += "".join(text("F1", 10, 50, y - 20 - 13 * i, f"A line of body text number {i} under it") for i in range(5))
         y -= 120
     return out
-
-
-def test_the_name_is_the_largest_line_of_the_first_page(tmp_path):
-    name = read(tmp_path, cv_with_headings())["name"]
-    assert name["text"] == "Mira Valdis" and name["size"] == 26.0 and name["color"] == "#1a3380" and name["family"] == "Helvetica"
-
-
-def test_headings_share_a_style_larger_than_the_body(tmp_path):
-    style = read(tmp_path, cv_with_headings())
-    assert [h["text"] for h in style["headings"]] == ["WORK EXPERIENCE", "PROJECTS", "VOLUNTEERING"]
-    first = style["headings"][0]
-    assert (first["size"], first["color"], first["weight"], first["case"], first["italic"]) == (13.0, "#1a3380", 700, "upper", False)
-    assert first["rule"] is None
-    assert style["heading_style"] == {"size": 13.0, "color": "#1a3380", "weight": 700, "family": "Helvetica",
-                                      "case": "upper", "italic": False, "rule": None}
-
-
-def test_a_rule_just_under_a_heading_belongs_to_it(tmp_path):
-    style = read(tmp_path, cv_with_headings("0.1 0.2 0.5 rg 50 {y} 90 1 re f\n"))
-    rule = style["headings"][0]["rule"]
-    assert rule["color"] == "#1a3380" and rule["width"] == 1.0 and rule["span"] == "text" and 1 <= rule["gap"] <= 8
-    assert rule["x0"] == 50.0 and rule["x1"] == 140.0 and style["heading_style"]["rule"]["span"] == "text"
-
-
-def test_a_rule_across_the_column_is_a_column_wide_rule(tmp_path):
-    style = read(tmp_path, cv_with_headings("0.5 0.5 0.5 RG 0.5 w 50 {y} m 540 {y} l S\n"))
-    assert style["headings"][0]["rule"]["span"] == "column"
-
-
-def test_the_case_of_a_heading_is_upper_title_or_as_written(tmp_path):
-    content = text("F2", 26, 50, 790, "Mira Valdis")
-    for i, heading in enumerate(["Work Experience", "Core Projects", "Volunteer Work"]):
-        content += text("F2", 13, 50, 740 - 80 * i, heading) + text("F1", 10, 50, 720 - 80 * i, "A line of the body text here")
-    assert {h["case"] for h in read(tmp_path, content)["headings"]} == {"title"}
-    content = text("F2", 26, 50, 790, "Mira Valdis")
-    for i, heading in enumerate(["Work experience", "Core projects", "Volunteer work"]):
-        content += text("F2", 13, 50, 740 - 80 * i, heading) + text("F1", 10, 50, 720 - 80 * i, "A line of the body text here")
-    assert {h["case"] for h in read(tmp_path, content)["headings"]} == {"as_written"}
-
-
-def test_a_known_section_name_is_a_heading_even_alone_and_in_another_language(tmp_path):
-    content = body() + text("F2", 10, 50, 100, "Formation") + text("F1", 10, 50, 86, "A school and a year of study")
-    headings = read(tmp_path, content)["headings"]
-    assert [h["text"] for h in headings] == ["Formation"]
-
-
-def test_a_section_name_set_in_the_body_style_is_no_heading(tmp_path):
-    assert read(tmp_path, body() + text("F1", 10, 50, 100, "Education"))["headings"] == []
-
-
-def test_a_bold_section_name_at_the_body_size_is_a_heading(tmp_path):
-    assert [h["text"] for h in read(tmp_path, body() + text("F2", 10, 50, 100, "Education"))["headings"]] == ["Education"]
 
 
 def test_the_text_colour_is_the_one_most_characters_have_and_the_accent_the_strongest_other(tmp_path):
@@ -580,33 +423,6 @@ def test_a_bullet_in_a_symbol_font_is_no_icon(tmp_path):
 
 # ---------- what the corpus showed ----------
 
-def test_columns_ten_points_apart_under_a_full_width_header_are_two_columns(tmp_path):
-    header = "".join(text("F1", 10, 40, 800 - 14 * i, "A header line that runs across the whole width of the page, " * 2) for i in range(8))
-    columns = read(tmp_path, header + stack(40, 650, 30, "Left column words here") + stack(300, 650, 24, "Right col text"))["columns"]
-    assert columns["count"] == 2 and [b["kind"] for b in columns["bands"]] == ["main", "side"]
-
-
-def test_a_bullet_set_apart_from_its_text_does_not_split_a_column(tmp_path):
-    content = "".join(text("F1", 10, 50, 780 - 14 * i, "\x95") + text("F1", 10, 62, 780 - 14 * i, f"A bullet point with a line of text {i}")
-                      for i in range(30))
-    assert read(tmp_path, content)["columns"]["count"] == 1
-
-
-def small_caps(x, y, first, rest, color="0 0 0"):
-    """a heading in small capitals: the first letter large, the rest small (two runs, two sizes)"""
-    return text("F1", 12, x, y, first, color) + text("F1", 9.6, x + 8.5, y, rest, color)
-
-
-def test_a_small_caps_line_is_one_heading_and_the_name_is_the_whole_line(tmp_path):
-    content = text("F1", 24, 50, 790, "J") + text("F1", 19, 66, 790, "ONAS") + text("F1", 24, 120, 790, "B") + text("F1", 19, 136, 790, "REKKE")
-    for i, (a, b) in enumerate([("E", "XPERIENCE"), ("P", "ROJECTS"), ("V", "OLUNTEERING")]):
-        content += small_caps(50, 700 - 90 * i, a, b) + stack(50, 680 - 90 * i, 4, "A line of the body text")
-    style = read(tmp_path, content)
-    assert style["name"]["size"] == 24.0 and style["name"]["text"].replace(" ", "") == "JONASBREKKE"
-    assert [h["text"].replace(" ", "") for h in style["headings"]] == ["EXPERIENCE", "PROJECTS", "VOLUNTEERING"]
-    assert style["headings"][0]["size"] == 12.0
-
-
 def test_a_picture_with_a_blank_margin_is_a_rect_photo_the_size_of_what_is_seen(tmp_path):
     # 4 x 4 pixels, the middle 2 x 2 red: drawn 120 pt wide, so the picture seen is the middle 60 pt
     rows = [[(255, 255, 255)] * 4, [(255, 255, 255), (255, 0, 0), (255, 0, 0), (255, 255, 255)],
@@ -758,18 +574,6 @@ def test_a_small_photo_with_a_blank_border_is_not_also_an_icon(tmp_path):
     assert style["photo"] is not None and style["icons"] == []
 
 
-def italic_headings(font):
-    content = text("F2", 26, 50, 790, "Mira Valdis")
-    for i, heading in enumerate(["WORK EXPERIENCE", "PROJECTS", "VOLUNTEERING"]):
-        content += text(font, 13, 50, 740 - 90 * i, heading) + stack(50, 720 - 90 * i, 4, "A line of the body text")
-    return content
-
-
-def test_headings_and_their_style_say_when_they_are_italic(tmp_path):
-    style = read(tmp_path, italic_headings("F5"))
-    assert all(h["italic"] is True for h in style["headings"]) and style["heading_style"]["italic"] is True
-
-
 # ---------- review: branches the corpus does not reach ----------
 
 def test_a_circle_bigger_than_a_dot_is_a_rounded_box(tmp_path):
@@ -787,19 +591,6 @@ def test_a_path_that_paints_nothing_is_no_shape(tmp_path):
     assert read(tmp_path, clip + body())["shapes"] == []
 
 
-def test_text_that_is_not_stacked_anywhere_is_still_one_only_column(tmp_path):
-    scattered = "".join(text("F1", 10, 60 + 50 * i, 700 - 150 * i, "One long line of the CV that stands on its own " * 2) for i in range(4))
-    columns = read(tmp_path, scattered)["columns"]
-    assert columns["count"] == 1 and columns["bands"][0]["kind"] == "only"
-
-
-def test_a_page_of_lines_in_two_styles_has_no_name(tmp_path):
-    # every line is half bold, half regular: no line is one style, so nothing is read as a name
-    content = "".join(text("F2", 12, 50, 780 - 14 * i, "Lab") + text("F1", 12, 73, 780 - 14 * i, f"el {i} has a value that follows")
-                      for i in range(8))
-    assert read(tmp_path, content)["name"] is None
-
-
 def test_a_picture_the_colour_of_what_is_around_it_keeps_its_box(tmp_path):
     white = {"Im1": (2, 2, bytes([255, 255, 255] * 4))}
     style = read(tmp_path, image_at(450, 650, 90, 120) + body(), images=white)
@@ -809,12 +600,6 @@ def test_a_picture_the_colour_of_what_is_around_it_keeps_its_box(tmp_path):
 def test_a_page_with_only_a_page_number_adds_no_margins(tmp_path):
     margins = read_pages(tmp_path, [block(60, 780, 100), text("F1", 9, 290, 20, "2")])["page"]["margins"]
     assert 59 <= margins["left"] <= 62
-
-
-def test_text_that_is_all_rotated_has_no_columns(tmp_path):
-    side = "".join(f"BT /F1 10 Tf 0 1 -1 0 {300 + 14 * i} 200 Tm (A rotated line of text number {i} of the page) Tj ET\n" for i in range(5))
-    style = read(tmp_path, side)
-    assert style["columns"] == {"count": 0, "bands": []}
 
 
 def test_a_drawing_that_shows_nothing_on_the_page_is_no_icon(tmp_path):
@@ -907,29 +692,4 @@ def test_the_original_text_keeps_the_separators_of_a_separator_font(tmp_path):
     assert any(r["text"] == "|" for r in style_compare._texts(style))
 
 
-def test_spaced_level_dots_do_not_widen_a_column_band():
-    # '○ ○ ○ ○' in the icon font is no icon (#315) but is still no column text: the side band ends at its words
-    from tests.paths import TESTS_DIR
-
-    style = rules_extract(TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf")
-    side = next(b for b in style["columns"]["bands"] if b["kind"] == "side")
-    assert side["x1"] == 541.9
-
-
 # ---------- layouts the template model cannot place (#318) ----------
-
-def three_columns(tmp_path):
-    return read(tmp_path, titled(40, ["Skills", "Languages"]) + titled(300, ["Experience"]) + titled(560, ["Education"]),
-                size=(900, 800))
-
-
-def test_three_columns_have_no_place_in_the_template_model(tmp_path):
-    style = three_columns(tmp_path)
-    assert style["verdict"]["copyable"] is False and style["verdict"]["reason"] == "layout"
-    assert style["verdict"]["detail"] == "has three or more columns, which the template model cannot place."
-    assert style["columns"]["count"] == 3
-
-
-def test_a_three_column_cv_keeps_its_text_and_colours_for_the_draft(tmp_path):
-    style = three_columns(tmp_path)
-    assert len(style["runs"]) > 20 and style["colors"] and style["headings"] and style["fonts"]

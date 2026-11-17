@@ -19,7 +19,6 @@ from pathlib import Path
 
 import pypdfium2.raw as raw
 
-from door import i18n
 from door.tailoring import pdf_render, style_icons, style_trace
 
 VERSION = 1
@@ -43,11 +42,7 @@ _FLAG_FIXED, _FLAG_SERIF, _FLAG_ITALIC, _FLAG_FORCE_BOLD = 0x1, 0x2, 0x40, 0x400
 # shapes
 _RULE_MAX, _RULE_MIN_LENGTH, _DOT_MAX = 3.5, 20.0, 10.0
 
-# headings
-_SECTION_KINDS = tuple(i18n.CvSections.model_fields)
-
 # nothing to copy
-_LINKEDIN_HEADINGS = {"contact", "top skills", "languages", "certifications", "summary", "experience", "education"}
 PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
 _MIN_CHARS = 50
 
@@ -420,15 +415,7 @@ def margins(pages: list[dict]) -> dict:
     return {**found, "bottom": found["bottom"] if out["bottom"] else found["top"]}
 
 
-# ---------- columns ----------
-
-def body_size(runs: list[dict]) -> float:
-    """The font size most characters are set in."""
-    chars: dict[float, int] = {}
-    for run in runs:
-        chars[run["size"]] = chars.get(run["size"], 0) + len(run["text"])
-    return max(chars, key=chars.get) if chars else 10.0
-
+# ---------- lines ----------
 
 def line_groups(runs: list[dict]) -> list[list[dict]]:
     """The runs as lines: those of a page whose baselines are within 0.3 of their size, left to right."""
@@ -449,161 +436,10 @@ def joined(line: list[dict]) -> str:
     return out
 
 
-def _percentile(values: list[float], q: float) -> float:
-    ordered = sorted(values)
-    return ordered[min(int(q * len(ordered)), len(ordered) - 1)]
-
-
-def _gaps(runs: list[dict], body: float) -> list[tuple[float, float]]:
-    """The empty strips between stacks of text: a place where at most 30% of the busiest x is covered and the runs
-    either side of it (at least four each) leave 8 pt or 0.8 body sizes between them, with no more runs across it
-    than a third of those on its two sides (a header over both columns does not close it). Each as the clear
-    space itself, from the right edge of the runs to its left to the left edge of those to its right."""
-    lo, hi = int(min(r["bbox"][0] for r in runs)), int(max(r["bbox"][2] for r in runs)) + 1
-    cover = [0] * (hi - lo + 1)
-    for run in runs:
-        for x in range(int(run["bbox"][0]) - lo, int(run["bbox"][2]) - lo + 1):
-            cover[x] += 1
-    limit = max(1, 0.3 * max(cover))
-    found, start = [], None
-    for x, n in enumerate(cover + [limit + 1]):
-        if n <= limit and start is None:
-            start = x
-        elif n > limit and start is not None:
-            a, b = lo + start, lo + x
-            start = None
-            mid = (a + b) / 2
-            left = [r for r in runs if r["bbox"][2] <= b and r["bbox"][0] < mid]
-            right = [r for r in runs if r["bbox"][0] >= a and r["bbox"][2] > mid]
-            across = [r for r in runs if r["bbox"][0] < a and r["bbox"][2] > b]
-            if len(left) < 4 or len(right) < 4 or len(across) > (len(left) + len(right)) / 3:
-                continue
-            clear = (_percentile([r["bbox"][2] for r in left], 0.9), _percentile([r["bbox"][0] for r in right], 0.1))
-            if clear[1] - clear[0] >= max(8.0, 0.8 * body):
-                found.append(clear)
-    return found
-
-
-def _stacked(lines: list[list[dict]], body: float) -> int:
-    """How many lines have another line within two and a half body sizes below or above on the page."""
-    count = 0
-    for i, line in enumerate(lines):
-        near = [o for j in (i - 1, i + 1) if 0 <= j < len(lines) for o in [lines[j]]
-                if o[0]["page"] == line[0]["page"] and abs(o[0]["baseline"] - line[0]["baseline"]) <= 2.5 * body]
-        count += bool(near)
-    return count
-
-
-def column_bands(pages: list[dict], shapes: list[dict]) -> dict:
-    """The column bands of the text: stacks of lines apart by a gap. A band needs four lines that stand together
-    (the dates down the right of a single column, or a note in the margin, are no column) and a twelfth of the
-    lines. One band is `only`; with more, the narrowest, if under 40% of the text's width or on a coloured box, is
-    the `side`, the others `main`. Two bands where neither qualifies: the one with more whole-line section-kind
-    titles is the side, the right one on a tie. `background` is the fill of a box covering most of the page's height."""
-    runs = [r for p in pages for r in p["runs"] if not r["rotated"] and not r["icon"]
-            and not (len(r["text"]) <= 1 or style_icons.only_bullets(r["text"]))]
-    if not runs:
-        return {"count": 0, "bands": []}
-    body = body_size(runs)
-    gaps = sorted(_gaps(runs, body))
-    members: list[list[dict]] = [[] for _ in range(len(gaps) + 1)]
-    for run in runs:
-        if any(run["bbox"][0] < a and run["bbox"][2] > b for a, b in gaps):
-            continue  # a run across a gap is a banner: no band's
-        members[sum(run["bbox"][0] >= (a + b) / 2 for a, b in gaps)].append(run)
-    total = sum(len(line_groups(m)) for m in members) or 1
-    bands = []
-    for member in members:
-        lines = line_groups(member)
-        if member and _stacked(lines, body) >= 4 and len(lines) >= total / 12:
-            bands.append({"x0": round(_percentile([r["bbox"][0] for r in member], 0.05), 1),
-                          "x1": round(_percentile([r["bbox"][2] for r in member], 0.95), 1),
-                          "lines": len(lines),
-                          "titles": sum(_is_section_title(u["text"]) for u in _line_units(member))})
-    if not bands:
-        bands = [{"x0": round(min(r["bbox"][0] for r in runs), 1), "x1": round(max(r["bbox"][2] for r in runs), 1),
-                  "lines": len(line_groups(runs))}]
-    height = pages[0]["size"][1]
-    boxes = [s for s in shapes if s["kind"] == "box" and s["fill"] and s["bbox"][3] - s["bbox"][1] >= 0.8 * height]
-
-    def box_under(band: dict) -> dict | None:
-        mid = (band["x0"] + band["x1"]) / 2
-        return next((b for b in boxes if b["bbox"][0] - 1 <= mid <= b["bbox"][2] + 1), None)
-
-    width = max(b["x1"] for b in bands) - min(b["x0"] for b in bands)
-    narrowest = min(bands, key=lambda b: b["x1"] - b["x0"])
-    for band in bands:
-        box = box_under(band)
-        band["background"] = box["fill"] if box else None
-        side = band is narrowest and len(bands) > 1 and (band["x1"] - band["x0"] < 0.4 * width or box)
-        band["kind"] = "only" if len(bands) == 1 else "side" if side else "main"
-    if len(bands) == 2 and all(b["kind"] == "main" for b in bands):
-        bands[0 if bands[0]["titles"] > bands[1]["titles"] else 1]["kind"] = "side"
-    return {"count": len(bands), "bands": [{k: b[k] for k in ("x0", "x1", "kind", "background", "lines")} for b in bands]}
-
-
 # ---------- name, headings, colours ----------
 
 def _case(text: str) -> str:
     return "upper" if text.isupper() else "title" if text.istitle() else "as_written"
-
-
-def _line_units(runs: list[dict]) -> list[dict]:
-    """The lines whose runs share a font family, weight and colour, each as one piece of text: small capitals are
-    written as a large letter then smaller ones, so a heading or a name is often several runs. `size` is the
-    largest of them, `mixed` whether they differ."""
-    units = []
-    pieces = []
-    for line in line_groups([r for r in runs if not r["rotated"] and not r["icon"]]):
-        piece = [line[0]]
-        for run in line[1:]:  # a gap wider than a word or two starts another piece: a column's, or a date's
-            if run["bbox"][0] - piece[-1]["bbox"][2] > 1.2 * run["size"]:
-                pieces.append(piece)
-                piece = []
-            piece.append(run)
-        pieces.append(piece)
-    for line in pieces:
-        if len({(r["family"], r["weight"], r["color"], r["italic"]) for r in line}) != 1:
-            continue
-        first = line[0]
-        units.append({"page": first["page"], "text": joined(line), "size": max(r["size"] for r in line),
-                      "mixed": len({r["size"] for r in line}) > 1, "color": first["color"], "weight": first["weight"],
-                      "family": first["family"], "italic": first["italic"],
-                      "bbox": [min(r["bbox"][0] for r in line), min(r["bbox"][1] for r in line),
-                               max(r["bbox"][2] for r in line), max(r["bbox"][3] for r in line)]})
-    return units
-
-
-_YEAR = re.compile(r"\b(19|20)\d\d\b")
-
-
-def _band_at(u: dict, bands: list[dict]) -> dict | None:
-    mid = (u["bbox"][0] + u["bbox"][2]) / 2
-    return next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
-
-
-def _entry_titles(members: list[dict], units: list[dict], bands: list[dict]) -> set[int]:
-    """The `id`s of the members that head a dated entry: a year in the member's own text, or in a unit on its baseline
-    in its own column band or in none (a date column, or a date at the right of a band's text). A line under a member is not read: a heading has
-    text under it too. A title dated on the line below or above it, with no year ("heute") or a two-digit one ("'19",
-    "Jan 19") is not told from a heading."""
-    return {id(u) for u in members
-            if _YEAR.search(u["text"]) or any(
-                v is not u and v["page"] == u["page"] and abs(v["bbox"][3] - u["bbox"][3]) <= 0.3 * u["size"]
-                and _band_at(v, bands) in (None, _band_at(u, bands)) and _YEAR.search(v["text"]) for v in units)}
-
-
-def _is_section_title(text: str) -> bool:
-    return i18n.cv_section_kind(text, _SECTION_KINDS) is not None
-
-
-def find_name(runs: list[dict]) -> dict | None:
-    """The largest text of the first page, the whole line of it: the candidate's name."""
-    units = [u for u in _line_units(runs) if u["page"] == 1]
-    if not units:
-        return None
-    unit = max(units, key=lambda u: (u["size"], -u["bbox"][1]))
-    return {k: unit[k] for k in ("text", "size", "color", "family")}
 
 
 def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | None:
@@ -621,54 +457,6 @@ def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | 
             return {"color": shape["fill"] or shape["stroke"], "width": shape["width"], "gap": round(max(gap, 0), 1),
                     "x0": sx0, "x1": sx1, "span": "column" if wide else "text"}
     return None
-
-
-def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name: dict | None) -> list[dict]:
-    """The section headings: a short line in one style, not set like the body text (another size, weight or family,
-    or in small capitals), that is a known section name (any supported language) or one of a group of three or more
-    lines in one style that is coloured and larger than the body (or, with no such group, the largest, passing over a
-    group whose every line is dated, `_entry_titles`, only for an undated group of fewer lines: entries outnumber
-    sections).
-    Entry titles in exactly the headings' style are returned with them."""
-    body = body_size([r for r in runs if not r["rotated"]])
-    chars: dict[tuple, int] = {}
-    for r in runs:
-        chars[(r["family"], r["size"], r["weight"])] = chars.get((r["family"], r["size"], r["weight"]), 0) + len(r["text"])
-    body_style = max(chars, key=chars.get) if chars else None
-    all_units = _line_units(runs)
-    short = [u for u in all_units if len(u["text"].split()) <= 6
-             and not (name and u["text"] == name["text"] and u["size"] == name["size"])
-             and (u["mixed"] or (u["family"], u["size"], u["weight"]) != body_style)]
-
-    def key(u: dict) -> tuple:
-        return (u["family"], u["size"], u["color"], u["weight"], u["mixed"], u["italic"])
-
-    known = {id(u) for u in short if _is_section_title(u["text"])}
-    body_color = colors(runs, [])["text"]
-    groups: dict[tuple, list[dict]] = {}
-    for u in short:
-        groups.setdefault(key(u), []).append(u)
-    # a group of three or more like lines is headings when it holds a section name or is coloured and larger than the
-    # body; with neither anywhere, the largest group is (the entry titles of a CV are in a group of their own)
-    styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body}
-    chosen = [k for k, g in styled.items() if any(id(u) in known for u in g)
-              or (k[2] != body_color and _chromatic(k[2]) and k[1] > body)]
-    if not chosen and styled:
-        # the largest group; dated entry titles in a style of their own give way to an undated group of fewer lines
-        # (entries outnumber sections), else it stays
-        top = max(styled, key=lambda k: k[1])
-        fewer = [k for k, g in styled.items() if len(g) < len(styled[top])
-                 and len(_entry_titles(g, all_units, bands)) < len(g)]
-        dated = len(_entry_titles(styled[top], all_units, bands)) == len(styled[top])
-        chosen = [max(fewer, key=lambda k: k[1]) if dated and fewer else top]
-    found = []
-    for u in short:
-        if id(u) in known or key(u) in chosen:
-            band = _band_at(u, bands)
-            found.append({"page": u["page"], "text": u["text"], "bbox": u["bbox"], "size": u["size"], "color": u["color"],
-                          "weight": u["weight"], "family": u["family"], "italic": u["italic"], "case": _case(u["text"]),
-                          "rule": _rule_under(u, shapes, band), "band": band["kind"] if band else None})
-    return found
 
 
 def heading_style(headings: list[dict]) -> dict | None:
@@ -749,30 +537,8 @@ def structure_verdict(structure: dict) -> dict:
     return _verdict(True, "ok", "")
 
 
-def style_verdict(pages: list[dict]) -> dict:
-    """Whether there is a style to copy: a scan (`scan_verdict`) or a LinkedIn export (at least three of its section
-    headings as lines of their own and a `Page N of M` line on every page; English only) has not. Anything else, a
-    plain single-font CV included, is copyable."""
-    if not (verdict := scan_verdict(pages))["copyable"]:
-        return verdict
-    lines = [{r["text"].casefold().strip() for r in p["runs"]} for p in pages]
-    headings = set().union(*lines) & _LINKEDIN_HEADINGS
-    footers = all(any(PAGE_FOOTER.fullmatch(t) for t in page) for page in lines)
-    if len(headings) >= 3 and footers:
-        return _verdict(False, "linkedin", "is a LinkedIn export, which has no design of its own to copy.")
-    return _verdict(True, "ok", "")
-
-
 def _verdict(copyable: bool, reason: str, detail: str) -> dict:
     return {"copyable": copyable, "reason": reason, "detail": detail}
-
-
-def layout_verdict(columns: dict) -> dict | None:
-    """The `layout` verdict (#318) for a page the template's header, main and side bands cannot place: three or
-    more columns, which a rebuilt page would merge or drop."""
-    if len(columns["bands"]) >= 3:
-        return _verdict(False, "layout", "has three or more columns, which the template model cannot place.")
-    return None
 
 
 # ---------- the whole read ----------
@@ -864,8 +630,10 @@ def _structure_bands(structure: dict, runs: list[dict], shapes: list[dict], heig
     else:
         sx0, sx1 = structure["side_range"]
         side = [r for r in runs if r["bbox"][0] >= sx0 - 2 and r["bbox"][2] <= sx1 + 2]
-        main = [r for r in runs if r["bbox"][0] >= sx1 - 2 or r["bbox"][2] <= sx0 + 2]
-        parts = [("side", side), ("main", [r for r in main if r not in side])]
+        left = [r for r in runs if r["bbox"][2] <= sx0 + 2 and r not in side]
+        right = [r for r in runs if r["bbox"][0] >= sx1 - 2 and r not in side]
+        # the main band must not enclose the side one: a stray note beyond it (`check` refuses real text there) is left out
+        parts = [("side", side), ("main", left if len(left) >= len(right) else right)]
     bands = []
     for kind, members in parts:
         if not members:
@@ -879,7 +647,7 @@ def _structure_bands(structure: dict, runs: list[dict], shapes: list[dict], heig
 
 
 def _structure_headings(structure: dict, shapes: list[dict], bands: list[dict]) -> list[dict]:
-    """The headings of the structure as `find_headings` returned them (plus their `kind`): the band of a heading is the
+    """The headings of the structure (each with its `kind`): the band of a heading is the
     one of its column (worked out from its x), none for one across both."""
     found = []
     for h in structure["headings"]:

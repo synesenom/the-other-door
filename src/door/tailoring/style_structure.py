@@ -25,6 +25,7 @@ KINDS = ["experience", "education", "skills", "languages", "certifications", "in
          "projects", "other"]
 _MAX_HEADING_WORDS = 6
 _MAX_HEADING_STYLES = 2
+_STRAY = 2  # rows at the far side of a side column that are still no column
 _SIDE_SHARE = 0.6  # a side column is narrower than this share of the text's width
 _NEAR = 2.0  # pt of slack where a box is compared with a column
 _CONTINUES = 1.6  # a heading's next line is its second line within this many sizes below
@@ -161,6 +162,15 @@ def _side_range(layout: dict, rows_list: list[dict], size: list[float]) -> tuple
     return float(min(r["x0"] for r in inside)), float(max(r["x1"] for r in inside))
 
 
+def _text_both_sides(rows_list: list[dict], side: tuple[float, float]) -> bool:
+    """Whether text stands wholly left and wholly right of `side`, more than `_STRAY` rows each: then the side range is
+    the middle of three columns, not a sidebar (one stray page number or note at its far side is no column). Rows that
+    overlap the range are not counted."""
+    left = sum(1 for r in rows_list if r["x1"] <= side[0] + _NEAR)
+    right = sum(1 for r in rows_list if r["x0"] >= side[1] - _NEAR)
+    return left > _STRAY and right > _STRAY
+
+
 def _column_of(row: dict, side: tuple[float, float] | None) -> str:
     """`side` when the row stands inside the side range, `across` when it spans into it from the main column, else
     `main`."""
@@ -226,6 +236,8 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
         raise _fail("the layout is missing")
     columns = {"one": "one", "two": "two", "three_or_more": "three"}[layout["columns"]]
     side = _side_range(layout, rows_list, pages[0]["size"]) if columns == "two" else None
+    if side is not None and _text_both_sides(rows_list, side):
+        columns, side = "three", None
     footers = all(any(style_extract.PAGE_FOOTER.fullmatch(r["text"].strip()) for r in rows_list if r["page"] == n)
                   for n in range(1, len(pages) + 1))
     body = _body_style(rows_list)
