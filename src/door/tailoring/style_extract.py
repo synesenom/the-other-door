@@ -544,16 +544,16 @@ def _verdict(copyable: bool, reason: str, detail: str) -> dict:
 # ---------- the whole read ----------
 
 def _fonts_used(runs: list[dict]) -> list[dict]:
-    """Each font of the runs with its use. A font is an icon font when every run of it is an icon, a bullet or a
-    separator (a level dot drawn from an icon font is no reason to fetch it) and it is named like an icon font or
-    has a real icon run."""
+    """Each font of the runs with its use. A font is an icon font when every run of it is an icon or a bullet (a level
+    dot drawn from an icon font is no reason to fetch it) and it is named like an icon font or has a real icon
+    run."""
     keys = ("font", "family", "weight", "italic", "serif", "fixed", "embedded", "type3")
     by_font: dict[str, list[dict]] = {}
     for run in runs:
         by_font.setdefault(run["font"], []).append(run)
     fonts = []
     for name, its in by_font.items():
-        icon = (all(r["icon"] or style_icons.only_separators(r["text"]) for r in its)
+        icon = (all(r["icon"] or style_icons.only_bullets(r["text"]) for r in its)
                 and (style_icons.icon_font(name) or any(r["icon"] for r in its)))
         fonts.append({**{k: its[0][k] for k in keys}, "icon": icon, "runs": len(its),
                       "chars": sum(not c.isspace() for r in its for c in r["text"])})

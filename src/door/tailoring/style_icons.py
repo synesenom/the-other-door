@@ -5,15 +5,14 @@ traced from a large render of its box (`style_trace`) and placed next to the tex
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from door.tailoring import pdf_render, style_trace
 
 # every icon's `fill_rule`: the traced path has its holes as loops of their own
 FILL_RULE = "evenodd"
 # what a bullet of a list is set as: no icon, and no column of its own
-BULLETS = set("•·‣◦▪●○■□–∙-*")
-# what sits between two items of a line (a skills list, a contact line): a font of only these is a text font
-SEPARATORS = BULLETS | set("|¦/\\,.;:—―~")
+BULLETS = set("•·‣◦▪●○■□–∙-*★☆")
 
 # the fonts whose letters are pictures, matched on the name in lowercase letters and digits: icon fonts, the
 # symbol fonts (a phone or an envelope set in Wingdings reads back as a stray "(") and TeX's symbol fonts
@@ -30,37 +29,49 @@ def icon_font(name: str) -> bool:
     return bool(_ICON_FONT.search(re.sub(r"[^a-z0-9]", "", name.lower())))
 
 
+def _pictographic(c: str) -> bool:
+    """A symbol (category So) set aside for pictures: Miscellaneous Symbols and Dingbats (U+2600-27BF) and the emoji and
+    pictograph planes from U+1F000. Technical marks, box drawing, block elements, geometric shapes (U+2300-25FF) and
+    U+2B00-2BFF are text marks, and so are the rating stars, which are level marks like level dots."""
+    return (unicodedata.category(c) == "So" and c not in BULLETS
+            and ("\u2600" <= c <= "\u27bf" or c >= "\U0001f000"))
+
+
+# what an emoji sequence has beside its pictographs: variation selectors, the joiner, skin-tone modifiers
+_SEQUENCE = set("\u200d\ufe0e\ufe0f") | {chr(c) for c in range(0x1F3FB, 0x1F400)}
+
+
 def glyph_only(text: str) -> bool:
-    """Only control characters, private use or dingbats: what an icon font's glyphs read as."""
-    return all(c < " " or "" <= c <= "" or "✀" <= c <= "➿" for c in text)
+    """At least one private-use, control or pictographic character, and nothing else but spaces, control characters and the
+    pieces of an emoji sequence: what an icon font's glyphs read as. Letters, digits, punctuation, maths, arrows,
+    currency, box drawing, geometric bullets and rating stars are ordinary text characters, whatever their font."""
+    return (any(unicodedata.category(c) in ("Cc", "Co") and not c.isspace() or _pictographic(c) for c in text)
+            and all(unicodedata.category(c) in ("Cc", "Co") or c.isspace() or c in _SEQUENCE or _pictographic(c)
+                    for c in text))
 
 
 def mark_icon_runs(runs: list[dict]) -> None:
     """Set `icon` on every run: true for the glyphs of an icon font (FontAwesome and the like): a font named like
-    one, a run of only private-use, control or dingbat characters, or a font whose runs are all a character or two
-    of symbols. A run of bullets or separators (and spaces between them) is no icon, and counts for no font."""
-    short: dict[str, bool] = {}
+    one, or a run of only private-use, control or pictographic characters. A run of bullets (and spaces) is no
+    icon."""
     for run in runs:
-        if not only_separators(run["text"]):
-            short[run["font"]] = short.get(run["font"], True) and len(run["text"]) <= 2 and not run["text"].isalnum()
-    for run in runs:
-        run["icon"] = not only_separators(run["text"]) and bool(
-            icon_font(run["font"]) or glyph_only(run["text"]) or short[run["font"]])
+        run["icon"] = not only_bullets(run["text"]) and bool(icon_font(run["font"]) or glyph_only(run["text"]))
 
 
 def icon_fonts(runs: list[dict]) -> set[str]:
-    """The fonts of the runs `mark_icon_runs` marked icons."""
-    return {r["font"] for r in runs if r["icon"]}
+    """The fonts whose bullets are glyphs (`is_glyph`): every run of the font is an icon or bullets, one at least a
+    real icon (marked by `mark_icon_runs`). A text font that draws one pictograph is none, so its bullets stay text; a
+    symbol font of bullets only is none either, its dots being text."""
+    by_font: dict[str, list[dict]] = {}
+    for run in runs:
+        by_font.setdefault(run["font"], []).append(run)
+    return {name for name, its in by_font.items()
+            if all(r["icon"] or only_bullets(r["text"]) for r in its) and any(r["icon"] for r in its)}
 
 
 def only_bullets(text: str) -> bool:
     """Only bullet characters and spaces: a run of level dots or list bullets."""
     return all(c in BULLETS or c.isspace() for c in text)
-
-
-def only_separators(text: str) -> bool:
-    """Only bullets, separators and spaces: the marks between the items of a line."""
-    return all(c in SEPARATORS or c.isspace() for c in text)
 
 
 def is_glyph(run: dict, fonts: set[str]) -> bool:

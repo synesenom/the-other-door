@@ -91,7 +91,7 @@ def _extract_text(path: Path) -> str:
 
 def _docx_text(path: Path) -> str:
     """A DOCX's paragraphs, leaving out its icons, which read back as a stray "(" or "*" (#297): a run of only
-    private-use or dingbat characters, or one set in an icon or symbol font (`style_icons.icon_font`, as a PDF's) (its own
+    private-use, control or pictographic characters, or one set in an icon or symbol font (`style_icons.icon_font`, as a PDF's) (its own
     font, else its character style's, else its paragraph style's or the default one's, each style through the
     ones it is based on)."""
     with zipfile.ZipFile(path) as zf:

@@ -142,6 +142,15 @@ def test_extract_text_of_a_docx_leaves_out_a_run_of_only_icon_glyphs_whatever_it
     assert cv_cmd._extract_text(path) == "+45 1234 5678 Copenhagen"
 
 
+def test_extract_text_of_a_docx_keeps_box_drawing_geometric_bullets_and_rating_stars(tmp_path):
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [(None, [_run("Python "), _run("\u2502", font="Calibri"), _run(" Rust \u25b8 Go \u2605\u2605\u2605\u2605\u2606")])], [])
+    assert cv_cmd._extract_text(path) == "Python \u2502 Rust \u25b8 Go \u2605\u2605\u2605\u2605\u2606"
+    icons = tmp_path / "icons.docx"
+    _styled_docx(icons, [(None, [_run("\u260e\ufe0f"), _run("\u2709"), _run("\U0001f4de"), _run(" Copenhagen")])], [])
+    assert cv_cmd._extract_text(icons) == "Copenhagen"
+
+
 def test_extract_text_of_a_docx_reads_a_paragraph_without_a_style_in_the_default_one(tmp_path):
     path = tmp_path / "cv.docx"
     _styled_docx(path, [(None, [_run("(")]), ("Body", [_run("Jane Doe")])], [
