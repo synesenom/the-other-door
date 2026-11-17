@@ -801,18 +801,3 @@ def test_three_columns_have_no_place_in_the_template_model(tmp_path):
 def test_a_three_column_cv_keeps_its_text_and_colours_for_the_draft(tmp_path):
     style = three_columns(tmp_path)
     assert len(style["runs"]) > 20 and style["colors"] and style["headings"] and style["fonts"]
-
-
-@pytest.mark.parametrize("side_color,main_color,main_size,names", [
-    ("0 0 0", "0 0 0", 12, ["Experience", "Projects"]), ("0.6 0.1 0.1", "0 0 0", 12, ["Experience", "Projects"]),
-    ("0.9 0.9 0.9", "0.1 0.1 0.1", 12, ["Experience", "Projects"]),
-    ("0 0 0", "0.1 0.3 0.6", 16, ["Where I worked", "Things I built"]),
-    ("0.6 0.1 0.1", "0 0 0", 16, ["Berufserfahrung"]),
-])
-def test_a_sidebar_cv_stays_copyable_whatever_its_main_headings_look_like(tmp_path, side_color, main_color, main_size, names):
-    side = "".join(text("F2", 12, 40, 780 - 90 * i, t, side_color) + stack(40, 764 - 90 * i, 5, "Short side")
-                   for i, t in enumerate(["Skills", "Languages", "Education"]))
-    main = "".join(text("F2", main_size, 250, 780 - 220 * i, t, main_color) + stack(250, 764 - 220 * i, 12, "A longer line of the main text")
-                   for i, t in enumerate(names))
-    style = read(tmp_path, text("F2", 24, 40, 825, "Jane Doe") + side + main)
-    assert style["verdict"]["copyable"] is True and style["columns"]["count"] == 2

@@ -683,8 +683,7 @@ def _verdict(copyable: bool, reason: str, detail: str) -> dict:
 
 def layout_verdict(columns: dict) -> dict | None:
     """The `layout` verdict (#318) for a page the template's header, main and side bands cannot place: three or
-    more columns, which a rebuilt page would merge or drop. (A Europass CV's label column has no sure mark apart
-    from a sidebar's: the rows its labels share with the entries are as many as a sidebar CV's.)"""
+    more columns, which a rebuilt page would merge or drop."""
     if len(columns["bands"]) >= 3:
         return _verdict(False, "layout", "has three or more columns, which the template model cannot place.")
     return None
