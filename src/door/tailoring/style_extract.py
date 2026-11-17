@@ -625,8 +625,8 @@ def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | 
 def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name: dict | None) -> list[dict]:
     """The section headings: a short line in one style, not set like the body text (another size, weight or family,
     or in small capitals), that is a known section name (any supported language) or one of a group of three or more
-    lines in one style that is coloured and larger than the body (or, with no such group, the largest one that is not
-    all dated: `_entry_titles` are lines with a year on their own line, and a group of nothing else is the entries').
+    lines in one style that is coloured and larger than the body (or, with no such group, the largest, passing over a group whose every line is
+    dated, `_entry_titles`, when another is not: that group is the entries').
     Entry titles in exactly the headings' style are returned with them."""
     body = body_size([r for r in runs if not r["rotated"]])
     chars: dict[tuple, int] = {}
@@ -651,9 +651,9 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
     styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body}
     chosen = [k for k, g in styled.items() if any(id(u) in known for u in g)
               or (k[2] != body_color and _chromatic(k[2]) and k[1] > body)]
-    if not chosen:  # the entry titles are a group of their own, all dated: not the headings
+    if not chosen and styled:  # entry titles in a style of their own, all dated, give way to an undated group
         undated = [k for k, g in styled.items() if len(_entry_titles(g, all_units, bands)) < len(g)]
-        chosen = [max(undated, key=lambda k: k[1])] if undated else []
+        chosen = [max(undated or styled, key=lambda k: k[1])]
     found = []
     for u in short:
         if id(u) in known or key(u) in chosen:

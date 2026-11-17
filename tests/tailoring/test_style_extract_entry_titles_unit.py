@@ -162,3 +162,9 @@ def test_all_dated_headings_in_a_coloured_larger_style_are_kept(tmp_path):
 
 def test_a_right_aligned_date_on_every_heading_row_keeps_them_when_coloured_and_larger(tmp_path):
     assert _heads(tmp_path, HEADS, color="0.1 0.3 0.7 rg", size=13, rightdate="2015 - 2024") == HEADS
+
+
+@pytest.mark.parametrize("rightdate", [None, "2015 - 2024"])
+def test_all_dated_headings_with_no_other_group_are_still_the_headings(tmp_path, rightdate):
+    heads = ["Berufserfahrung 2015-2024", "Ausbildung 2010-2015", "Projekte 2020", "Ehrenamt seit 2018"]
+    assert _heads(tmp_path, heads if rightdate is None else HEADS, rightdate=rightdate) == (heads if rightdate is None else HEADS)
