@@ -27,8 +27,9 @@ MIN_GAIN = 0.0025
 # it a flat or worse round goes on to the cap with the feedback (a broken first draft scored 0.31 then 0.01, #243)
 GOOD = 0.8
 # a build whose best round scored under this is failed, nothing written (#241): in #238's real runs the rebuilds that
-# looked like their CV scored 0.63-0.99 and the broken ones (columns swapped or stacked, pages lost) 0.15-0.49
-FLOOR = 0.5
+# looked like their CV scored 0.63-0.99 and the broken ones (columns swapped or stacked, pages lost) 0.15-0.49; the
+# middle of that gap, with room on both sides (#244's score lifts the broken ones to 0.25-0.49, and the good ones too)
+FLOOR = 0.55
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 _FEEDBACK_LIMIT = 12
 MIN_PART = 5  # characters: a shorter text is not paired by being part of another ("2019" is in many runs)
