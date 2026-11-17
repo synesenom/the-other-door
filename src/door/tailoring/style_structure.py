@@ -300,7 +300,8 @@ def _ask(text: str, feature: str = "style") -> dict:
 def structure_for(pdf_path, feature: str = "style") -> dict | None:
     """The checked structure (`check`) of the CV in `pdf_path`: the cached answer for its sha256 when there is one for
     this `PROMPT_VERSION` and these rows, else one Haiku call (`_ask`, billed under `feature`) whose answer is checked and
-    then cached. None for a scan (nothing to read: no call). A cached answer is checked again on every read; one that no
+    then cached; an answer that does not hold is asked once more (the model's answers vary from run to run). None for a
+    scan (nothing to read: no call). A cached answer is checked again on every read; one that no
     longer holds is dropped and asked once again.
 
     Raises:
@@ -320,11 +321,17 @@ def structure_for(pdf_path, feature: str = "style") -> dict | None:
         except StructureError:
             file.unlink(missing_ok=True)
     try:
-        try:
-            answer = _ask(text, feature)
-        except claude_cli.ClaudeError as exc:
-            raise StructureError.unreached(exc) from None
-        structure = check(answer, listed, pages)
+        for attempt in (1, 2):  # the model's answers vary: one that does not hold is asked once more
+            try:
+                answer = _ask(text, feature)
+            except claude_cli.ClaudeError as exc:
+                raise StructureError.unreached(exc) from None
+            try:
+                structure = check(answer, listed, pages)
+                break
+            except StructureError:
+                if attempt == 2:
+                    raise
     except StructureError as exc:
         problem_log.failure("cv structure", exc.detail)
         raise

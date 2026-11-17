@@ -302,6 +302,20 @@ def test_a_broken_answer_is_an_error_in_words_and_is_never_cached(tmp_path, ask)
     assert not (workspace.HOME / ".style" / "structure").exists() or not list((workspace.HOME / ".style" / "structure").iterdir())
 
 
+def test_an_answer_that_does_not_hold_is_asked_once_more_and_the_second_kept(tmp_path, ask):
+    answers = iter([lambda text: {**good(text), "name": 9999}, good])  # the model's answers vary run to run
+    asks = ask(lambda text: next(answers)(text))
+    assert style_structure.structure_for(pdf_of(tmp_path, one_column()))["name"]["text"] == "Max Mustermann"
+    assert len(asks.calls) == 2
+
+
+def test_two_answers_that_do_not_hold_are_refused_after_the_second(tmp_path, ask):
+    asks = ask(lambda text: {**good(text), "name": 9999})
+    with pytest.raises(StructureError):
+        style_structure.structure_for(pdf_of(tmp_path, one_column()))
+    assert len(asks.calls) == 2
+
+
 def test_a_failed_call_is_an_error_in_plain_words_with_no_fallback_and_no_internal_text(tmp_path, ask):
     ask(claude_cli.ClaudeError("claude -p timed out after 60s"))
     with pytest.raises(StructureError) as failed:
