@@ -65,8 +65,8 @@ _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
 def _extract_text(path: Path) -> str:
-    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266), a DOCX (its paragraphs) or a Markdown/text
-    file.
+    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266), a DOCX (its paragraphs, symbol-font runs
+    left out, #297) or a Markdown/text file.
 
     Raises:
         FileNotFoundError: no such file.
@@ -85,11 +85,52 @@ def _extract_text(path: Path) -> str:
         icons = [(r["page"], r["bbox"]) for r in runs if style_icons.is_glyph(r, fonts)]
         return "\n".join(pdf_render.page_texts(path, leave_out=icons)).strip()
     if suffix == ".docx":
-        with zipfile.ZipFile(path) as zf:
-            root = ElementTree.fromstring(zf.read("word/document.xml"))
-        paragraphs = ["".join(t.text or "" for t in p.iter(f"{_W}t")) for p in root.iter(f"{_W}p")]
-        return "\n".join(p for p in paragraphs if p.strip()).strip()
+        return _docx_text(path)
     return _decode_text_file(path.read_bytes()).strip()
+
+
+# a font whose letters are pictures: a phone or an envelope set in one reads back as a stray "(" or "*" (#297)
+_SYMBOL_FONT = re.compile(r"^(symbol|wingdings|webdings|zapf ?dingbats|marlett)", re.I)
+
+
+def _docx_text(path: Path) -> str:
+    """A DOCX's paragraphs, leaving out the runs set in a symbol font (their own, else their character style's,
+    else their paragraph style's, each style with the ones it is based on)."""
+    with zipfile.ZipFile(path) as zf:
+        root = ElementTree.fromstring(zf.read("word/document.xml"))
+        styles = ElementTree.fromstring(zf.read("word/styles.xml") if "word/styles.xml" in zf.namelist() else "<styles/>")
+    based = {s.get(f"{_W}styleId"): (_font(s), _val(s, f"{_W}basedOn")) for s in styles.iter(f"{_W}style")}
+
+    def styled(style_id: str | None) -> str | None:
+        seen = set()
+        while style_id in based and style_id not in seen:
+            seen.add(style_id)
+            font, style_id = based[style_id]
+            if font:
+                return font
+        return None
+
+    paragraphs = []
+    for p in root.iter(f"{_W}p"):
+        texts = []
+        for run in p.iter(f"{_W}r"):
+            font = _font(run) or styled(_val(run, f"{_W}rPr/{_W}rStyle")) or styled(_val(p, f"{_W}pPr/{_W}pStyle"))
+            if not (font and _SYMBOL_FONT.match(font)):
+                texts.extend(t.text or "" for t in run.findall(f"{_W}t"))
+        paragraphs.append("".join(texts))
+    return "\n".join(p for p in paragraphs if p.strip()).strip()
+
+
+def _val(element, path: str) -> str | None:
+    """The `w:val` of `element`'s child at `path`, or None."""
+    found = element.find(path)
+    return found.get(f"{_W}val") if found is not None else None
+
+
+def _font(element) -> str | None:
+    """The font a run or a style names in its own `w:rPr/w:rFonts` (its ASCII one, else its high-ANSI one)."""
+    fonts = element.find(f"{_W}rPr/{_W}rFonts")
+    return fonts.get(f"{_W}ascii") or fonts.get(f"{_W}hAnsi") if fonts is not None else None
 
 
 _BOMS = ((b"\xef\xbb\xbf", "utf-8-sig"), (b"\xff\xfe", "utf-16"), (b"\xfe\xff", "utf-16"))
