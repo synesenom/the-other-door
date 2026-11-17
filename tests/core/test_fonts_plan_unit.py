@@ -314,3 +314,9 @@ def test_a_pin_with_only_some_families_never_names_one_it_lacks():
     plan = fonts.plan([font("Aptos-Regular", "Aptos"), font("Calibri-Regular", "Calibri"),
                        font("CenturyGothic", "Century Gothic")], data=data)
     assert [(p["family"], p["resolved"]) for p in plan] == [("Aptos", None), ("Calibri", None), ("Century Gothic", None)]
+
+
+@pytest.mark.parametrize("name", ["Alato", "Aarimo"])
+def test_a_name_that_only_starts_with_a_lowercase_a_is_not_read_as_adobes_prefix(name):
+    [p] = fonts.plan([font(name + "-Regular", name)])
+    assert p["source"] == "none"

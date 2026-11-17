@@ -58,7 +58,7 @@ _MARKERS = re.compile(r"(mt|ps|ltstd|ltpro|lt|std|pro|display)$")
 def _candidates(family: str) -> list[str]:
     """The pin's spellings of a family name, the name as written first, then with the PostScript `MT`/`PS`, a foundry
     or edition marker (`LT`, `Std`, `Pro`, `Display`) and a style after a hyphen taken off, then those without Adobe's
-    `Adobe` or `A` prefix (`AGaramondPro`). Not `Narrow`: that is another width."""
+    `Adobe` or `A` prefix (`AGaramondPro`: a capital A before another capital). Not `Narrow`: that is another width."""
     out = [key(family)]
     stem = key(family.split("-")[0])
     while stem:
@@ -67,7 +67,7 @@ def _candidates(family: str) -> list[str]:
         if stem == out[-1]:
             break
     stem = re.sub(r"^adobe", "", out[-1])
-    out += [stem, stem[1:] if stem.startswith("a") else ""]
+    out += [stem, stem[1:] if re.match(r"A[A-Z]", family) else ""]
     return [c for c in dict.fromkeys(out) if c]
 
 
