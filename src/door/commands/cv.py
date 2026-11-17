@@ -19,7 +19,7 @@ import click
 from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
-from door.core import claude_cli, fonts, migrations, workspace
+from door.core import claude_cli, migrations, workspace
 from door.tailoring import cv_body, style_icons
 
 _DEFAULT_MODEL = "sonnet"
@@ -91,7 +91,7 @@ def _extract_text(path: Path) -> str:
 
 def _docx_text(path: Path) -> str:
     """A DOCX's paragraphs, leaving out its icons, which read back as a stray "(" or "*" (#297): a run of only
-    private-use or dingbat characters, or one set in a symbol or icon font as a PDF's fonts are judged (its own
+    private-use or dingbat characters, or one set in an icon or symbol font (`style_icons.icon_font`, as a PDF's) (its own
     font, else its character style's, else its paragraph style's or the default one's, each style through the
     ones it is based on)."""
     with zipfile.ZipFile(path) as zf:
@@ -117,15 +117,10 @@ def _docx_text(path: Path) -> str:
             text = "".join(t.text or "" for t in run.findall(f"{_W}t"))
             font = (_font(run) or styled(_val(run, f"{_W}rPr/{_W}rStyle"))
                     or styled(_val(p, f"{_W}pPr/{_W}pStyle") or default))
-            if not (text and style_icons._glyph_only(text)) and not (font and _icon_font(font)):
+            if not (text and style_icons.glyph_only(text)) and not (font and style_icons.icon_font(font)):
                 texts.append(text)
         paragraphs.append("".join(texts))
     return "\n".join(p for p in paragraphs if p.strip()).strip()
-
-
-def _icon_font(font: str) -> bool:
-    """Whether `font` draws pictures for letters: an icon font or a symbol font, as a PDF's are judged."""
-    return bool(style_icons._ICON_FONT.search(font) or fonts._SYMBOL.match(fonts.key(font)))
 
 
 def _val(element, path: str) -> str | None:
