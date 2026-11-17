@@ -35,11 +35,12 @@ def build(frames_dir: Path, out: Path, width: int = WIDTH) -> None:
             continue
         images.append(img)
         durations.append(ms)
-    # one palette from a sample of the frames, so colours do not flicker from frame to frame
+    # one palette from a sample of the frames, so colours do not flicker from frame to frame; octree, not median
+    # cut: median cut spends every entry on the window's many greys and folds a small green or blue into one
     sample = Image.new("RGB", (width, images[0].height * 4))
     for k, img in enumerate(images[:: max(1, len(images) // 4)][:4]):
         sample.paste(img, (0, k * images[0].height))
-    palette = sample.quantize(colors=255, method=Image.Quantize.MEDIANCUT)
+    palette = sample.quantize(colors=255, method=Image.Quantize.FASTOCTREE)
     frames = [img.quantize(palette=palette, dither=Image.Dither.NONE) for img in images]
     durations[-1] += HOLD_LAST_MS
     frames[0].save(out, save_all=True, append_images=frames[1:], duration=durations, loop=0, optimize=True, disposal=1)
