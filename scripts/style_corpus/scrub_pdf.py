@@ -4,8 +4,14 @@ icons, rules, colours and positions stay as they are.
 
 Made for pdfTeX PDFs (words placed by kerns, no space glyphs) and Quartz ones (Apple Pages: subset TrueType
 fonts in MacRoman, real space glyphs; a glyph of width 0 is not in the subset, so no word is written with it);
-a Word or Canva PDF (Type0 fonts, Identity-H) needs changes first. Every image becomes a flat grey box of its
+and Word, Google Docs and Canva ones (Type0 fonts, Identity-H, and Skia's Type3 fallback fonts, glyphs placed one by one or in
+TJ arrays: each word is laid out again from where it started, see rewrite_content), whose tagged structure (StructTreeRoot,
+ActualText, Alt) goes too. Every image becomes a flat grey box of its
 size (a photo, a logo); links, outlines, forms, XMP and the document info but its Creator and Producer go.
+Two paths are kept on purpose, with no real pdfTeX or Quartz original left to re-verify a merged one: the
+simple-font path (scrub_op) breaks words at a TJ kern under 0.15 em, which fits pdfTeX's justified glue
+(0.22-0.33 em: below the 0.3 em gap the other path ends a word at, so it would join words), and the Type0/Type3 path
+(rewrite_content) lays each per-glyph layout out again, which a simple font's TJ arrays do not need.
 Needs pikepdf, which is not a project dependency: run it from its own venv (`python -m venv v && v/bin/pip install pikepdf`).
 
 usage: scrub_pdf.py <in.pdf> <out.pdf> <words.json>   (words.json from `scrub_check.py words <in.pdf>`, plus the
@@ -17,9 +23,11 @@ from __future__ import annotations
 
 import json
 import random
+import re
 import sys
 import unicodedata
 import zlib
+from typing import NamedTuple
 
 FRENCH = """
 à a ô y au de du la le les un une et ou en il on ni si sa se ce ne
@@ -119,9 +127,18 @@ class Font:
     (code_for_char: in the font's CharSet when it has one, else of a width above 0, as a subset font gives the
     glyphs it left out)."""
 
-    def __init__(self, names: dict[int, str], widths: list[float], first: int = 0, charset: set[str] | None = None):
-        self.width = lambda c: widths[c - first] if 0 <= c - first < len(widths) else 0.0
-        have = (lambda c, n: n in charset) if charset is not None else (lambda c, n: self.width(c) > 0)
+    def __init__(self, names: dict[int, str], widths, first: int = 0, charset: set[str] | None = None,
+                 code_len: int = 1, codes: set[int] | None = None):
+        """*widths*: a list from code *first*, or a function of the code; *code_len* the bytes of a code; *codes*
+        the codes of a Type0 font's subset (its /W)."""
+        self.code_len = code_len
+        self.width = widths if callable(widths) else lambda c: widths[c - first] if 0 <= c - first < len(widths) else 0.0
+        if charset is not None:
+            have = lambda c, n: n in charset  # noqa: E731
+        elif codes is not None:
+            have = lambda c, n: c in codes  # noqa: E731
+        else:
+            have = lambda c, n: self.width(c) > 0  # noqa: E731
         self.char_of = {c: glyph_char(n) for c, n in names.items() if glyph_char(n)}
         self.digit_of = {c: n for c, n in names.items() if n in DIGIT_NAMES}
         self.space_codes = {c for c, n in names.items() if n == "space"}
@@ -130,9 +147,42 @@ class Font:
         self.code_for_digit = [c for c, n in names.items() if n in DIGIT_NAMES and have(c, n)]
 
     @classmethod
+    def from_unicode(cls, chars: dict[int, str], width, code_len: int, codes: set[int] | None = None) -> "Font":
+        """A font known by what its ToUnicode says each code is (Type0, Type3). A value of several letters is a
+        ligature: read as an f, never written."""
+        names, extra = {}, {}
+        for c, u in chars.items():
+            if u in (" ", "\u00a0"):
+                names[c] = "space"
+            elif len(u) == 1 and "0" <= u <= "9":
+                names[c] = DIGIT_NAMES[int(u)]
+            elif len(u) > 1 and u.isalpha():
+                names[c] = "ff"
+            elif len(u) == 1 and glyph_name(u) and glyph_char(glyph_name(u)):
+                names[c] = glyph_name(u)
+            elif len(u) == 1 and u.isalpha() and unicodedata.name(u, "").startswith("LATIN"):
+                extra[c] = u  # ő, ř, ł...: a letter of a word, read as one (replaced with it), never written
+        font = cls(names, width, code_len=code_len, codes=codes)
+        font.char_of.update(extra)
+        return font
+
+    def kind(self, code: int) -> str | None:
+        return "char_of" if code in self.char_of else "digit_of" if code in self.digit_of else None
+
+    @classmethod
     def from_pdf(cls, font) -> "Font":
         import pikepdf
 
+        if font.get("/Subtype") in ("/Type0", "/Type3"):
+            chars = parse_tounicode(font.ToUnicode.read_bytes().decode("latin-1")) if "/ToUnicode" in font else {}
+            if font.Subtype == "/Type3":
+                first, scale = int(font.get("/FirstChar", 0)), float(font.FontMatrix[0]) * 1000
+                widths = [float(w) * scale for w in font.get("/Widths", [])]
+                return cls.from_unicode(chars, lambda c: widths[c - first] if 0 <= c - first < len(widths) else 0.0, 1)
+            desc = font.DescendantFonts[0]
+            w = parse_w([[float(y) for y in x] if isinstance(x, pikepdf.Array) else float(x) for x in desc.get("/W", [])])
+            dw = float(desc.get("/DW", 1000))
+            return cls.from_unicode(chars, lambda c: w.get(c, dw), 2, set(w))
         enc = font.get("/Encoding")
         base = str(enc) if isinstance(enc, pikepdf.Name) else (
             str(enc.get("/BaseEncoding")) if isinstance(enc, pikepdf.Dictionary) and "/BaseEncoding" in enc else None)
@@ -294,6 +344,146 @@ def scrub_op(font: Font, items: list, banned: set[str]) -> list:
     return tidy, owed
 
 
+def _hex_chars(h: str) -> str:
+    return bytes.fromhex(h).decode("utf-16-be", "replace")
+
+
+def parse_tounicode(cmap: str) -> dict[int, str]:
+    """A ToUnicode CMap's code to text: bfchar pairs, bfrange with a start or an array of values."""
+    found: dict[int, str] = {}
+    for block in re.findall(r"beginbfchar(.*?)endbfchar", cmap, re.S):
+        for src, dst in re.findall(r"<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]*)>", block):
+            found[int(src, 16)] = _hex_chars(dst)
+    for block in re.findall(r"beginbfrange(.*?)endbfrange", cmap, re.S):
+        for lo, hi, dst in re.findall(r"<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(<[0-9A-Fa-f]*>|\[[^\]]*\])", block):
+            if dst.startswith("["):
+                values = [_hex_chars(v) for v in re.findall(r"<([0-9A-Fa-f]*)>", dst)]
+            else:
+                start = _hex_chars(dst[1:-1])
+                values = [start[:-1] + chr(ord(start[-1]) + k) for k in range(int(hi, 16) - int(lo, 16) + 1)]
+            found.update({int(lo, 16) + k: v for k, v in enumerate(values)})
+    return found
+
+
+def parse_w(array: list) -> dict[int, float]:
+    """A CIDFont's /W as code to width: `c [w1 w2 ...]` and `c1 c2 w`."""
+    found, i = {}, 0
+    while i < len(array):
+        if isinstance(array[i + 1], list):
+            found.update({int(array[i]) + k: float(w) for k, w in enumerate(array[i + 1])})
+            i += 2
+        else:
+            found.update({c: float(array[i + 2]) for c in range(int(array[i]), int(array[i + 1]) + 1)})
+            i += 3
+    return found
+
+
+class Glyph(NamedTuple):
+    """Text drawn in one font and size from (x, y) of the text matrix *tm*; *data* is one code, or a replaced word's."""
+    tm: tuple | None
+    font: str
+    size: float
+    x: float
+    y: float
+    data: bytes
+
+
+WORD_GAP = 0.3  # of the font size: a wider gap between two glyphs ends a word
+
+
+def glyphs_of(ops: list, fonts: dict) -> list:
+    """A page's operators with every text block read into Glyphs at their positions in the text matrix's space
+    (one per code, whether set by Tj or inside a TJ); every other operator stays, Tf, Tm and Td go (the writer
+    puts them back). Tc, Tw, Tz, TL, Ts, TD, T*, ' and " are refused: nothing here would move for them."""
+    out, text = [], False
+    tm, font, size, lx, ly, x = None, None, 1.0, 0.0, 0.0, 0.0
+    for op, operands in ops:
+        if op == "BT":
+            tm, lx, ly, x, text = None, 0.0, 0.0, 0.0, True
+        elif op == "ET":
+            text = False
+        if not text or op in ("BT", "ET"):
+            out.append((op, operands))
+        elif op == "Tf":
+            font, size = str(operands[0]), float(operands[1])
+        elif op == "Tm":
+            tm, lx, ly, x = tuple(float(v) for v in operands), 0.0, 0.0, 0.0
+        elif op == "Td":
+            lx, ly = lx + float(operands[0]), ly + float(operands[1])
+            x = lx
+        elif op in ("Tj", "TJ"):
+            f = fonts[font]
+            for item in [operands[0]] if op == "Tj" else operands[0]:
+                if not isinstance(item, bytes):
+                    x -= float(item) * size / 1000
+                    continue
+                for k in range(0, len(item), f.code_len):
+                    data = item[k:k + f.code_len]
+                    out.append(Glyph(tm, font, size, x, ly, data))
+                    x += f.width(int.from_bytes(data, "big")) * size / 1000
+        elif op in ("Tc", "Tw", "Tz", "TL", "Ts", "TD", "T*", "'", '"'):
+            raise SystemExit(f"unhandled text operator {op}")
+        else:
+            out.append((op, operands))
+    return out
+
+
+def rewrite_content(ops: list, fonts: dict, banned: set[str]) -> list:
+    """The page's operators with each word (a run of letters, or of digits, in one font, size and line, no gap
+    over WORD_GAP of the size between them) of a text block replaced as scrub_op does, written as one Tj at the
+    glyph where the word started, so every word and every glyph outside a word keeps its absolute start."""
+    stream, runs_out = glyphs_of(ops, fonts), []
+    i = 0
+    while i < len(stream):
+        g = stream[i]
+        if not isinstance(g, Glyph):
+            runs_out.append(g)
+            i += 1
+            continue
+        f = fonts[g.font]
+        kind = lambda glyph: f.kind(int.from_bytes(glyph.data, "big"))  # noqa: E731
+        k, j, end = kind(g), i + 1, g.x + f.width(int.from_bytes(g.data, "big")) * g.size / 1000
+        if k:
+            while (j < len(stream) and isinstance(stream[j], Glyph) and kind(stream[j]) == k
+                   and stream[j][:2] == g[:2] and stream[j][2] == g.size and stream[j].y == g.y
+                   and stream[j].x - end <= WORD_GAP * g.size):
+                end = stream[j].x + f.width(int.from_bytes(stream[j].data, "big")) * g.size / 1000
+                j += 1
+        run = [int.from_bytes(x.data, "big") for x in stream[i:j]]
+        data = g.data
+        if k == "char_of":
+            pattern = [f.char_of[c].isupper() for c in run]
+            word = pick(f, (end - g.x) * 1000 / g.size, case_of(pattern), banned, len(run))
+            data = b"".join(f.code_for_char[ch].to_bytes(f.code_len, "big") for ch in word) or data
+        elif k == "digit_of" and f.code_for_digit:
+            digit_code = {DIGIT_NAMES.index(f.digit_of[c]): c for c in f.code_for_digit}
+            data = b"".join(digit_code[int(d)].to_bytes(f.code_len, "big") for d in new_number(len(run), sorted(digit_code), banned))
+        runs_out.append(g._replace(data=data))
+        i = j
+    return _written(runs_out)
+
+
+def _written(stream: list) -> list:
+    """Glyphs back as operators: Tf and Tm when they change, a Td from the last Td's place to each start, one Tj."""
+    unset = object()
+    out, tm, font, size, px, py = [], unset, None, None, 0.0, 0.0
+    for g in stream:
+        if not isinstance(g, Glyph):
+            out.append(g)
+            if g[0] == "BT":  # a new block starts from the identity matrix
+                tm, px, py = unset, 0.0, 0.0
+            continue
+        if (g.font, g.size) != (font, size):
+            font, size = g.font, g.size
+            out.append(("Tf", [font, size]))
+        if g.tm != tm:
+            tm, px, py = g.tm, 0.0, 0.0
+            out.append(("Tm", list(tm or (1.0, 0, 0, 1.0, 0, 0))))
+        out += [("Td", [round(g.x - px, 4), round(g.y - py, 4)]), ("Tj", [g.data])]
+        px, py = g.x, g.y
+    return out
+
+
 def grey_images(resources) -> int:
     """Every image of these resources (and of their forms) becomes a flat grey box of its size: a photo of the
     person or an employer's logo would name them. Returns how many."""
@@ -314,6 +504,72 @@ def grey_images(resources) -> int:
     return count
 
 
+def wide_ops(page, fonts: dict, banned: set[str]) -> list:
+    """A page's (or form's) content as pikepdf operators: rewrite_content over its plain operands. Marked content
+    keeps only its /MCID: /ActualText and /Alt are the CV's text again."""
+    import pikepdf
+
+    ops = []
+    for operands, op in pikepdf.parse_content_stream(page):
+        o = str(op)
+        if o == "BI" or not isinstance(op, pikepdf.Operator):
+            raise SystemExit(f"unhandled operator {o}")
+        if o == "BDC" and len(operands) == 2 and isinstance(operands[1], pikepdf.Dictionary):
+            operands = [operands[0], pikepdf.Dictionary({k: v for k, v in operands[1].items() if k == "/MCID"})]
+        elif o == "Tj":
+            operands = [bytes(operands[0])]
+        elif o == "TJ":
+            operands = [[bytes(x) if isinstance(x, pikepdf.String) else float(x) for x in operands[0]]]
+        elif o in ("Tf", "Tm", "Td"):
+            operands = [str(operands[0]), *map(float, operands[1:])] if o == "Tf" else [float(x) for x in operands]
+        ops.append((o, list(operands)))
+
+    def back(x):
+        if isinstance(x, bytes):
+            return pikepdf.String(x)
+        if isinstance(x, list):
+            return pikepdf.Array([back(y) for y in x])
+        return pikepdf.Name(x) if isinstance(x, str) else x
+
+    return [([back(x) for x in operands], pikepdf.Operator(o)) for o, operands in rewrite_content(ops, fonts, banned)]
+
+
+def fonts_of(resources, wide: bool) -> dict:
+    fonts = {}
+    for name, f in (resources.get("/Font") or {}).items():
+        if "fontawesome" in str(f.get("/BaseFont", "")).lower() and not wide:
+            continue
+        if f.get("/Subtype") not in ("/Type1", "/TrueType", "/MMType1", "/Type0", "/Type3"):
+            raise SystemExit(f"unhandled font {f.get('/Subtype')} {f.get('/BaseFont')}")
+        fonts[name] = Font.from_pdf(f)
+    return fonts
+
+
+def scrub_resources(resources, banned: set[str], seen: set | None = None) -> None:
+    """Named marked-content property lists keep only their /MCID, and the text of each form XObject (recursively,
+    with the form's own fonts, else these) is rewritten as the page's is."""
+    import pikepdf
+
+    seen = set() if seen is None else seen
+    for _, props in (resources.get("/Properties") or {}).items():
+        for key in [k for k in props.keys() if k != "/MCID"]:
+            del props[key]
+    for _, x in (resources.get("/XObject") or {}).items():
+        if x.get("/Subtype") != "/Form" or x.objgen in seen:
+            continue
+        seen.add(x.objgen)
+        res = x.get("/Resources", resources)
+        data = pikepdf.unparse_content_stream(wide_ops(x, fonts_of(res, True), banned))
+        x.write(data)
+        scrub_resources(res, banned, seen)
+
+
+def _drop_page_keys(page) -> None:
+    for key in ("/Annots", "/PieceInfo", "/Metadata", "/Thumb", "/StructParents"):
+        if key in page:
+            del page[key]
+
+
 def main(src: str, dst: str, words_json: str) -> None:
     import pikepdf
 
@@ -321,14 +577,14 @@ def main(src: str, dst: str, words_json: str) -> None:
     pdf = pikepdf.open(src)
     images = 0
     for page in pdf.pages:
-        fonts = {}
-        for name, f in page.Resources.get("/Font", {}).items():
-            if "fontawesome" in str(f.get("/BaseFont", "")).lower():
-                continue
-            if f.get("/Subtype") not in ("/Type1", "/TrueType", "/MMType1"):
-                raise SystemExit(f"unhandled font {f.get('/Subtype')} {f.get('/BaseFont')}")
-            fonts[name] = Font.from_pdf(f)
+        wide = any(f.get("/Subtype") in ("/Type0", "/Type3") for _, f in page.Resources.get("/Font", {}).items())
+        fonts = fonts_of(page.Resources, wide)
         images += grey_images(page.Resources)
+        if wide:
+            page.Contents = pdf.make_stream(pikepdf.unparse_content_stream(wide_ops(page, fonts, banned)))
+            scrub_resources(page.Resources, banned)
+            _drop_page_keys(page)
+            continue
         cur, size, new_ops, carry_pt = None, 1.0, [], 0.0
         for operands, op in pikepdf.parse_content_stream(page):
             o = str(op)
@@ -354,10 +610,8 @@ def main(src: str, dst: str, words_json: str) -> None:
                 carry_pt = 0.0
             new_ops.append((operands, op))
         page.Contents = pdf.make_stream(pikepdf.unparse_content_stream(new_ops))
-        for key in ("/Annots", "/PieceInfo", "/Metadata", "/Thumb"):
-            if key in page:
-                del page[key]
-    for key in ("/Outlines", "/Names", "/Metadata", "/PageLabels", "/AcroForm", "/OpenAction", "/Threads", "/PieceInfo"):
+        _drop_page_keys(page)
+    for key in ("/StructTreeRoot", "/MarkInfo", "/Lang", "/Outlines", "/Names", "/Metadata", "/PageLabels", "/AcroForm", "/OpenAction", "/Threads", "/PieceInfo"):
         if key in pdf.Root:
             del pdf.Root[key]
     for obj in pdf.objects:  # XMP left on a font, an image or a form

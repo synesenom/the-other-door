@@ -105,3 +105,224 @@ def test_the_bytes_searched_for_left_words_leave_out_pdf_names_and_font_programs
 
 def test_an_original_number_left_is_found_inside_a_longer_one_not_across_a_break():
     assert scrub_check.numbers_left({"2016", "45", "word"}, "call 1-452 or 20 16") == ["45"]
+
+
+# --- Type0 (Word, Skia) and Type3 fonts ---
+
+CMAP = b"""/CIDInit /ProcSet findresource begin 12 dict begin begincmap
+1 begincodespacerange <0000> <FFFF> endcodespacerange
+2 beginbfchar
+<0003> <0020>
+<0010> <00E9>
+endbfchar
+2 beginbfrange
+<0020> <0022> <0061>
+<0030> <0031> [<0066> <00660069>]
+endbfrange
+endcmap end end"""
+
+
+def test_a_tounicode_cmap_maps_codes_by_char_by_range_and_by_array_with_multi_char_values_kept():
+    got = scrub.parse_tounicode(CMAP.decode())
+    assert got == {3: " ", 0x10: "é", 0x20: "a", 0x21: "b", 0x22: "c", 0x30: "f", 0x31: "fi"}
+
+
+def test_a_w_array_reads_both_forms():
+    assert scrub.parse_w([3, [500.0, 600.0], 10, 12, 700.0]) == {3: 500.0, 4: 600.0, 10: 700.0, 11: 700.0, 12: 700.0}
+
+
+LETTERS = "abcdefghijklmnopqrstuvwxyz"
+
+
+def _type0_font(missing=""):
+    """A two-byte font as Word or Skia write it: codes 1-26 the letters, 27-36 the digits, 40 the space; the codes
+    not in /W (the letters of `missing`) are not in the subset."""
+    chars = {i + 1: ch for i, ch in enumerate(LETTERS)} | {27 + d: str(d) for d in range(10)} | {40: " ", 50: "ﬁ"}
+    chars[50] = "fi"
+    width = {c: 250.0 if c == 40 else 500.0 for c in chars}
+    codes = {c for c, ch in chars.items() if ch not in missing}
+    return scrub.Font.from_unicode(chars, lambda c: width.get(c, 1000.0), 2, codes)
+
+
+def test_a_two_byte_font_writes_two_byte_codes_of_the_letters_in_its_subset_and_never_a_ligature():
+    font = _type0_font(missing="e")
+    assert font.code_len == 2
+    assert "e" not in font.code_for_char and font.code_for_char["a"] == 1 and font.space_codes == {40}
+    assert font.char_of[50] == "f" and 50 not in font.code_for_char.values()  # a ligature is read, never written
+    assert font.digit_of[27] == "zero" and font.width(1) == 500.0 and font.width(999) == 1000.0
+
+
+def _skia_ops(font, text, size=10.0, y=100.0):
+    """One glyph per Tj, an absolute-looking Td before each, as Skia writes them."""
+    code = {"abcdefghijklmnopqrstuvwxyz"[i]: i + 1 for i in range(26)} | {str(d): 27 + d for d in range(10)} | {" ": 40, ",": 99}
+    ops, x = [("BT", []), ("Tf", ["/F1", size]), ("Tm", [1.0, 0.0, 0.0, -1.0, 40.0, y])], 0.0
+    for k, ch in enumerate(text):
+        if k:
+            ops.append(("Td", [font.width(code[text[k - 1]]) * size / 1000, 0.0]))
+        ops.append(("Tj", [code[ch].to_bytes(2, "big")]))
+    return ops + [("ET", [])]
+
+
+def _starts(font, ops):
+    """(x, text) of each word of the page, the space glyphs between them."""
+    out, word = [], None
+    for g in scrub.glyphs_of(ops, {"/F1": font}):
+        if not isinstance(g, scrub.Glyph):
+            continue
+        for i in range(0, len(g.data), 2):
+            c = int.from_bytes(g.data[i:i + 2], "big")
+            if c in font.space_codes:
+                word = None
+                continue
+            ch = str(scrub.DIGIT_NAMES.index(font.digit_of[c])) if c in font.digit_of else font.char_of.get(c, ",")
+            if word is None:
+                word = [round(g.x, 3), ""]
+                out.append(word)
+            word[1] += ch
+    return [tuple(w) for w in out]
+
+
+def test_a_skia_text_block_has_each_word_replaced_and_each_starting_where_it_did():
+    font = _type0_font()
+    ops = _skia_ops(font, "plain words, made 2024 here")
+    banned = {"plain", "words", "made", "here", "2024"}
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned)
+    before, after = _starts(font, ops), _starts(font, new)
+    assert [x for x, _ in after] == [x for x, _ in before]
+    said = " ".join(t for _, t in after)
+    assert not banned & set(said.replace(",", " ").split())
+    assert re.search(r"\d{4}", said) and "2024" not in said and "," in said
+    assert [op for op, _ in new if op == "Tm"] == ["Tm"]
+
+
+def test_a_word_text_block_of_tj_arrays_with_real_spaces_is_laid_out_the_same_way():
+    font = _type0_font()
+    code = lambda s: b"".join(({" ": 40}.get(ch) or "abcdefghijklmnopqrstuvwxyz".index(ch) + 1).to_bytes(2, "big") for ch in s)  # noqa: E731
+    ops = [("BT", []), ("Tf", ["/F1", 11.0]), ("Td", [72.0, 700.0]),
+           ("TJ", [[code("plain"), -20.0, code("words"), code(" "), code("here")]]), ("ET", [])]
+    new = scrub.rewrite_content(ops, {"/F1": font}, {"plain", "words", "here"})
+    said = " ".join(t for _, t in _starts(font, new))
+    assert not {"plain", "words", "here"} & set(said.split())
+    assert [x for x, _ in _starts(font, new)] == [x for x, _ in _starts(font, ops)]
+
+
+def test_text_in_a_font_with_no_codes_to_unicode_is_left_alone_and_other_operators_stay_in_place():
+    font = scrub.Font.from_unicode({}, lambda c: 500.0, 1)
+    ops = [("q", []), ("BT", []), ("Tf", ["/F1", 10.0]), ("rg", [1.0, 0.0, 0.0]), ("Tj", [b"\x01"]), ("ET", []), ("Q", [])]
+    new = scrub.rewrite_content(ops, {"/F1": font}, set())
+    assert [op for op, _ in new if op not in ("Tf", "Td", "Tm")] == ["q", "BT", "rg", "Tj", "ET", "Q"]
+    assert [x for op, x in new if op == "Tj"] == [[b"\x01"]]
+
+
+def test_a_letter_beyond_french_is_part_of_its_word_and_goes_with_it():
+    chars = {i + 1: ch for i, ch in enumerate(LETTERS)} | {60: "ő", 61: "Ő", 40: " "}
+    font = scrub.Font.from_unicode(chars, lambda c: 500.0, 2)
+    assert font.char_of[60] == "ő" and font.char_of[61] == "Ő" and 60 not in font.code_for_char.values()
+    code = lambda cs: b"".join(c.to_bytes(2, "big") for c in cs)  # noqa: E731
+    ops = [("BT", []), ("Tf", ["/F1", 10.0]), ("Td", [10.0, 10.0]),
+           ("Tj", [code([19, 26, 60, 11, 5])]), ("ET", [])]  # s z ő k e
+    new = scrub.rewrite_content(ops, {"/F1": font}, {"szőke"})
+    text = "".join(font.char_of[int.from_bytes(d[i:i + 2], "big")] for op, args in new if op == "Tj" for d in args for i in range(0, len(d), 2))
+    assert text and "ő" not in text and text != "szőke"  # one word replaced whole, not "Se", "ő", "kk"
+
+
+def test_a_cff_font_program_and_the_structure_of_a_tagged_pdf_are_told_apart_in_the_check():
+    assert scrub_check.searchable(b"\x01\x00\x04\x01 cff data") is None
+    left = scrub_check.structure_left([b"<</Type /StructTreeRoot>>", b"/P <</ActualText (x) /Alt (y)>>", b"/Alternate /DeviceRGB"])
+    assert left == ["/ActualText", "/Alt", "/StructTreeRoot"]
+
+
+# --- whole PDFs (pikepdf, which only the scrubber's own venv has) ---
+
+def _word_like_pdf(path):
+    """A tagged PDF with a fontless Type0 font as Word writes one: hex codes in TJ arrays, a ToUnicode, an Author."""
+    pikepdf = pytest.importorskip("pikepdf")
+    pdf = pikepdf.new()
+    cmap = ("1 begincodespacerange <0000> <FFFF> endcodespacerange\\n"
+            "1 beginbfrange\\n<0001> <001A> <0061>\\nendbfrange\\n1 beginbfchar\\n<0028> <0020>\\nendbfchar")
+    desc = pikepdf.Dictionary(Type=pikepdf.Name.Font, Subtype=pikepdf.Name.CIDFontType2, BaseFont=pikepdf.Name("/AAAAAA+Test"),
+                              CIDSystemInfo=pikepdf.Dictionary(Registry=pikepdf.String("Adobe"), Ordering=pikepdf.String("Identity"), Supplement=0),
+                              DW=500, W=pikepdf.Array([1, 26, 500, 40, pikepdf.Array([250])]))
+    font = pdf.make_indirect(pikepdf.Dictionary(
+        Type=pikepdf.Name.Font, Subtype=pikepdf.Name.Type0, BaseFont=pikepdf.Name("/AAAAAA+Test"), Encoding=pikepdf.Name("/Identity-H"),
+        DescendantFonts=pikepdf.Array([pdf.make_indirect(desc)]), ToUnicode=pdf.make_stream(cmap.encode())))
+    codes = lambda s: "".join("%04X" % (0x28 if ch == " " else ord(ch) - 96) for ch in s)  # noqa: E731
+    content = (f"/P <</MCID 0 /ActualText (zebra) /Alt (zebra)>> BDC BT /F1 11 Tf 72 700 Td "
+               f"[<{codes('zebra')}> -10 <{codes('yacht')}> <{codes(' ')}> <{codes('quilt')}>] TJ ET EMC")
+    page = pdf.add_blank_page(page_size=(300, 800))
+    page.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=font))
+    page.Contents = pdf.make_stream(content.encode())
+    pdf.Root.StructTreeRoot = pdf.make_indirect(pikepdf.Dictionary(Type=pikepdf.Name.StructTreeRoot))
+    pdf.Root.MarkInfo, pdf.Root.Lang = pikepdf.Dictionary(Marked=True), pikepdf.String("en")
+    pdf.docinfo["/Author"] = "Zebra Yacht"
+    pdf.save(path)
+
+
+def test_a_word_like_pdf_loses_its_words_its_structure_and_its_author(tmp_path):
+    pikepdf = pytest.importorskip("pikepdf")
+    src, dst, words = tmp_path / "in.pdf", tmp_path / "out.pdf", tmp_path / "w.json"
+    _word_like_pdf(src)
+    words.write_text('["zebra", "yacht", "quilt"]')
+    scrub.main(str(src), str(dst), str(words))
+    pdf = pikepdf.open(dst)
+    assert not {"/StructTreeRoot", "/MarkInfo", "/Lang"} & set(pdf.Root.keys()) and "/Author" not in (pdf.trailer.get("/Info") or {})
+    ops = [(str(op), operands) for operands, op in pikepdf.parse_content_stream(pdf.pages[0])]
+    bdc = [operands[1] for op, operands in ops if op == "BDC"][0]
+    assert list(bdc.keys()) == ["/MCID"]  # /ActualText and /Alt gone
+    font = scrub.Font.from_pdf(pdf.pages[0].Resources.Font.F1)
+    text = "".join(font.char_of.get(int.from_bytes(bytes(o)[k:k + 2], "big"), " ")
+                   for op, operands in ops if op == "Tj" for o in operands for k in range(0, len(bytes(o)), 2))
+    assert text and not {"zebra", "yacht", "quilt"} & set(text.split())
+
+
+def test_a_word_like_pdf_loses_links_form_text_and_named_marked_content_properties_too(tmp_path):
+    pikepdf = pytest.importorskip("pikepdf")
+    src, dst, words = tmp_path / "in.pdf", tmp_path / "out.pdf", tmp_path / "w.json"
+    _word_like_pdf(src)
+    pdf = pikepdf.open(src, allow_overwriting_input=True)
+    page = pdf.pages[0]
+    link = pikepdf.Dictionary(Type=pikepdf.Name.Annot, Subtype=pikepdf.Name.Link, Rect=[0, 0, 10, 10],
+                              A=pikepdf.Dictionary(S=pikepdf.Name.URI, URI=pikepdf.String("mailto:zebra@example.com")))
+    page.Annots = pikepdf.Array([pdf.make_indirect(link)])
+    page.StructParents = 0
+    page.Resources.Properties = pikepdf.Dictionary(P0=pikepdf.Dictionary(MCID=1, ActualText=pikepdf.String("zebra secret")))
+    code = "".join("%04X" % (ord(ch) - 96) for ch in "quilt")
+    form = pdf.make_stream(f"BT /F1 11 Tf 72 600 Td <{code}> Tj ET".encode())
+    form.Type, form.Subtype, form.BBox = pikepdf.Name.XObject, pikepdf.Name.Form, [0, 0, 300, 800]
+    form.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=page.Resources.Font.F1))
+    page.Resources.XObject = pikepdf.Dictionary(X0=form)
+    page.Contents = pdf.make_stream(page.Contents.read_bytes() + b" /Span /P0 BDC EMC /X0 Do")
+    pdf.save(src)
+    words.write_text('["zebra", "yacht", "quilt"]')
+    scrub.main(str(src), str(dst), str(words))
+    result = pikepdf.open(dst)
+    out = result.pages[0]
+    assert "/Annots" not in out and "/StructParents" not in out
+    assert list(out.Resources.Properties.P0.keys()) == ["/MCID"]
+    font = scrub.Font.from_pdf(out.Resources.Font.F1)
+    codes = [int.from_bytes(bytes(o)[k:k + 2], "big") for operands, op in pikepdf.parse_content_stream(out.Resources.XObject.X0)
+             if str(op) == "Tj" for o in operands for k in range(0, len(bytes(o)), 2)]
+    assert codes and "quilt" != "".join(font.char_of.get(c, " ") for c in codes)
+
+
+STYLES = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles"
+
+
+@pytest.mark.parametrize("name", ["html-word-two-column.pdf", "html-canva-icons.pdf"])
+def test_a_skia_pdf_keeps_its_layout_and_loses_the_words_it_had(tmp_path, name):
+    pytest.importorskip("pikepdf")
+    pdfium = pytest.importorskip("pypdfium2")
+    src, dst, words = STYLES / name, tmp_path / "out.pdf", tmp_path / "w.json"
+    text = "\n".join(p.get_textpage().get_text_range() for p in pdfium.PdfDocument(str(src)))
+    original = sorted({w.lower() for w in re.findall(scrub_check.WORD, text)})
+    words.write_text(__import__("json").dumps(original))
+    scrub.main(str(src), str(dst), str(words))
+    after = "\n".join(p.get_textpage().get_text_range() for p in pdfium.PdfDocument(str(dst))).lower()
+    assert len(original) > 10 and not set(original) & set(re.findall(scrub_check.WORD, after))
+    assert len(pdfium.PdfDocument(str(dst))) == len(pdfium.PdfDocument(str(src)))
+
+
+def test_runs_joined_into_words_are_judged_by_where_they_start_among_the_original_starts():
+    assert scrub_check.shift([(0.0, 5.0), (3.0, 5.0), (6.0, 5.0)], [(3.0, 5.0)]) == \
+        "count changed 3 -> 1, each new run starts at most 0.000 pt from an original one"
+    assert scrub_check.shift([(0.0, 5.0)], [(0.0, 5.5)]) == "0.500 pt"
