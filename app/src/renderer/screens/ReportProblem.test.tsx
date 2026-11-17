@@ -36,5 +36,6 @@ describe('Report a problem', () => {
     reportProblem.mockResolvedValueOnce({ ok: false, error: 'r.zip is there already. A report never replaces a file, so nothing was written: choose another name.' })
     await userEvent.click(screen.getByRole('button', { name: 'Save logs…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('r.zip is there already.')
+    expect(screen.getByRole('alert')).toHaveClass('error')
   })
 })

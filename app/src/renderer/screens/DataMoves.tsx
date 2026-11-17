@@ -101,7 +101,7 @@ export function DataMoves({ home, onImported }: { home?: string; onImported: () 
         </ul>
       )}
       {error && (
-        <p role="alert" className="field-error">
+        <p role="alert" className="error">
           {named(error)}
         </p>
       )}

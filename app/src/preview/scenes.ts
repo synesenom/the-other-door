@@ -43,7 +43,7 @@ export interface Scene {
   /** Profile → CV's Style: which style is in use, whether one built from a CV is kept (`like`), whether it waits to
    * be chosen (`candidate`), a build running, how many prepared CVs a switch could print again, how many of them fail the first time they are printed again. Default: The other door's, no build. */
   style?: { in_use?: 'default' | 'like'; like?: boolean; candidate?: boolean; two_column?: boolean; building?: boolean; prepared?: number; failing?: number }
-  /** Tools that fail here, each with the words it fails with: an error the user sees. */
+  /** Tools (or `window.door` calls: `exportData`, `reportProblem`) that fail here, each with the words it fails with: an error the user sees. */
   fails?: Record<string, string>
   /** Buttons the preview presses, in order, once the screen has loaded (`pressInOrder`): a state only an action reaches. */
   press?: string[]
@@ -166,6 +166,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'guide', group: 'Visual guide', title: 'Buttons, fields, marks, type and colours', guide: true },
   { id: 'splash', group: 'Start', title: 'Splash', hold: 'show_profile' },
   { id: 'matches', group: 'Matches', title: 'Matches' },
+  { id: 'matches-add-job-failed', group: 'Matches', title: 'Add a job, an import that failed (type a link, Import: the error box)', fails: { import_posting: 'That page needs a sign-in. Paste the ad text instead.' }, press: ['Add a job'] },
   { id: 'matches-style-ready', group: 'Matches', title: 'Matches, a CV style is ready to compare (sidebar foot)', styleReady: true },
   { id: 'posting', group: 'Matches', title: 'Posting', open: { screen: 'posting', jobId: 'jobindex.demo-1', inPlay: false } },
   { id: 'applications', group: 'Applications', title: 'Applications board', start: { destination: 'Applications' } },
@@ -184,7 +185,10 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-cv-style-inuse', group: 'Profile', title: 'CV, a style of your own in use', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, prepared: 1 } },
   { id: 'profile-cv-style-two-column', group: 'Profile', title: 'CV, a two-column style', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, two_column: true } },
   { id: 'profile-stories', group: 'Profile', title: 'Stories', start: { destination: 'Profile', stories: true } },
+  { id: 'profile-stories-unread', group: 'Profile', title: 'Stories, a story bank that could not be read (the error box)', start: { destination: 'Profile', stories: true }, fails: { list_stories: 'Your story bank could not be read. Try again later.' } },
+  { id: 'profile-stories-failed', group: 'Profile', title: 'Stories, a story that could not be saved (the error box)', start: { destination: 'Profile', stories: true }, fails: { save_story: 'Your story could not be saved. Try again.' }, press: ['Edit', 'Save'] },
   { id: 'settings', group: 'Settings', title: 'Settings', start: { destination: 'Settings' } },
+  { id: 'settings-data-failed', group: 'Settings', title: 'Settings, an export and a report refused (the error box)', start: { destination: 'Settings' }, fails: { exportData: 'door-data.tar.gz is there already. Choose another name.', reportProblem: 'report.zip is there already. A report never replaces a file, so nothing was written: choose another name.' }, press: ['Export…', 'Save logs…'] },
   { id: 'analytics', group: 'Analytics', title: 'Analytics: applications, Claude usage and the market', start: { destination: 'Analytics' } },
   { id: 'settings-signed-out', group: 'Settings', title: 'Settings, Claude signed out', start: { destination: 'Settings' }, claudeSignedOut: true },
   { id: 'settings-drive', group: 'Settings', title: 'Google Drive: Connect (it syncs at once), Disconnect', start: { destination: 'Settings' }, drive: 'off', slow: { connect_drive: 2_500, sync_data: 1_500 } },

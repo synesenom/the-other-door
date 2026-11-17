@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { mockDoor as baseDoor } from '../testing'
 import { Analytics, usd } from './Analytics'
@@ -105,6 +105,21 @@ describe('Analytics', () => {
     expect(await screen.findByRole('listitem', { name: 'SQL, in your CV' })).toBeInTheDocument()
     expect(call.mock.calls.filter((c) => c[0] === 'market')).toEqual([['market', { save: false }]])
     expect(screen.getAllByText('Market')).toHaveLength(2) // the heading and its entry beside the sections
+  })
+
+  it('a market that could not be counted is left out, heading and entry beside the sections', async () => {
+    mockDoor({
+      status_summary: summary({ cost: COST }),
+      market: () => {
+        throw new Error('the server stopped')
+      },
+    })
+    render(<Analytics />)
+    await screen.findByText('≈ $2.10')
+    await waitFor(() => expect(screen.queryByText(/Counting the ads/)).toBeNull())
+    expect(screen.queryByText('Market')).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getAllByText('Claude usage')).toHaveLength(2)
   })
 
   it('without the interview rate the Market is still the last section', async () => {

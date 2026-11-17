@@ -112,7 +112,90 @@ describe('Stories', () => {
     await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit' }))
     await fill(user, { Title: 'Ran the migration' })
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('already in the bank')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('already in the bank')
+    expect(alert).toHaveClass('error')
     expect(screen.getByLabelText('Title')).toHaveValue('Ran the migration')
+  })
+
+  it('a draft that failed is said in the error box over the list, to try again', async () => {
+    const user = userEvent.setup()
+    show({
+      draft_stories: () => {
+        throw new Error('Claude did not answer. Try again.')
+      },
+    })
+    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.type(screen.getByLabelText('What did you do?'), 'Something.')
+    await user.click(screen.getByRole('button', { name: 'Draft it' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Claude did not answer. Try again.')
+    expect(alert).toHaveClass('error')
+    expect(screen.getByRole('button', { name: 'Write a story' })).toBeInTheDocument()
+  })
+
+  it('a bank that could not be read says so in the error box: it is all the part shows', async () => {
+    show({
+      list_stories: () => {
+        throw new Error('Your story bank could not be read.')
+      },
+    })
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your story bank could not be read.')
+    expect(alert).toHaveClass('error')
+  })
+
+  it('a re-read that fails after a save keeps the stories shown and says nothing', async () => {
+    const user = userEvent.setup()
+    let reads = 0
+    show({
+      list_stories: () => {
+        reads += 1
+        if (reads > 1) throw new Error('the server stopped')
+        return BANK
+      },
+    })
+    await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByText('Saved Cut build time.')).toBeInTheDocument()
+    await waitFor(() => expect(reads).toBe(2))
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByRole('listitem', { name: 'Ran the migration' })).toBeInTheDocument()
+  })
+
+  it('a removal that failed is said in the error box over the list', async () => {
+    const user = userEvent.setup()
+    show({
+      remove_story: () => {
+        throw new Error('Your story could not be removed. Try again.')
+      },
+    })
+    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your story could not be removed. Try again.')
+    expect(alert).toHaveClass('error')
+    expect(screen.getByRole('list', { name: 'Your stories' })).toBeInTheDocument()
+  })
+
+  it('kept drafts that failed to save say how many were saved, in the error box on the drafts', async () => {
+    const user = userEvent.setup()
+    let saves = 0
+    show({
+      draft_stories: { outcome: 'proposed', stories: [story('One'), story('Two')] },
+      save_story: () => {
+        saves += 1
+        if (saves > 1) throw new Error('Your story could not be saved.')
+        return { outcome: 'added' }
+      },
+    })
+    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.type(screen.getByLabelText('What did you do?'), 'Two things.')
+    await user.click(screen.getByRole('button', { name: 'Draft it' }))
+    await user.click(await screen.findByRole('button', { name: 'Save 2 stories' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your story could not be saved. (1 saved before it)')
+    expect(alert).toHaveClass('error')
+    expect(screen.getByRole('region', { name: 'Drafted stories' })).toBeInTheDocument()
   })
 })

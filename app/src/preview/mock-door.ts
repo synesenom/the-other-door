@@ -354,10 +354,10 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       return { demo: false, home: '/demo' }
     },
     pageUrl,
-    exportData: async () => ({ ok: false, canceled: true }),
+    exportData: async () => (scene.fails?.exportData ? { ok: false, error: scene.fails.exportData } : { ok: false, canceled: true }),
     pickArchive: async () => ({ canceled: true }),
     importData: async () => ({ ok: false, error: 'Nothing is imported in the preview.' }),
-    reportProblem: async () => ({ ok: false, canceled: true }),
+    reportProblem: async () => (scene.fails?.reportProblem ? { ok: false, error: scene.fails.reportProblem } : { ok: false, canceled: true }),
     showHome: done,
     checkUpdate: async () => ({ enabled: false as const }),
     installUpdate: async () => ({ ok: false }),

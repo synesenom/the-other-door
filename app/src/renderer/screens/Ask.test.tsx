@@ -47,6 +47,7 @@ describe('Ask', () => {
     })
     await userEvent.type(field(), 'q{Enter}')
     expect(await screen.findByRole('alert')).toHaveTextContent('timed out')
+    expect(screen.getByRole('alert')).toHaveClass('error')
   })
 
   it('while it looks, a second question waits: the field and the button are off', async () => {
