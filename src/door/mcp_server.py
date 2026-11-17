@@ -1449,19 +1449,22 @@ def save_photo(path: str) -> dict:
 
 @mcp.tool()
 @_tool_errors
-def build_style(file: str) -> dict:
+async def build_style(file: str) -> dict:
     """Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.
-    Identical to `./door cv style build`, which waits for it. Takes a few minutes of the model's time; this call returns
-    at once, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or ``failed``. A build already
-    going is replaced. The result waits in profile/style.next/ and is written only when it passes; nothing uses it until it is chosen (``use_style``).
+    Identical to `./door cv style build`, which waits for it. The call first reads the CV's structure with one short
+    model call (a few seconds, up to a minute when Claude is slow; made once per file), then returns: the build itself
+    takes a few minutes of the model's time, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or
+    ``failed``. A build already going is replaced. The result waits in profile/style.next/ and is written only when it
+    passes; nothing uses it until it is chosen (``use_style``).
 
     Args:
         file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).
 
     Returns:
-        ``{"started": True}``, or ``{"error": <why nothing started: no Chromium to print with, or no style to copy (not a PDF, a scan, a LinkedIn export, a CV of three columns)>}``.
+        ``{"started": True}``, or ``{"error": <why nothing started: no Chromium to print with, no style to copy (not a PDF, a scan, a LinkedIn export, a CV of three columns), or the CV's structure could not be read (Claude could not be reached, or its answer did not hold)>}``.
     """
-    return style_cmd._start_core(str(path_scope.check(file)))
+    # On a thread: the intake's one model call can take a minute, and the other calls must not wait for it.
+    return await asyncio.to_thread(style_cmd._start_core, str(path_scope.check(file)))
 
 
 @mcp.tool()

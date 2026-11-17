@@ -97,7 +97,7 @@ test('a CV whose structure the model could not read is refused in words and no b
   await expect(sheet(page, "The other door's, first page")).toBeVisible({ timeout: 90_000 })
   await os.nextOpen([scratchFile(world, 'my-cv.pdf', readFileSync(STYLED_PDF))])
   await page.getByRole('button', { name: 'Use the style of my CV…' }).click()
-  await expect(page.getByRole('alert')).toContainText("could not read the CV's structure")
+  await expect(page.getByRole('alert')).toContainText('Claude could not be reached')
   await expect(page.getByText('Building your style…')).toHaveCount(0)
   expect(exists(world, 'profile/style.next/cv.template.html')).toBe(false)
 })

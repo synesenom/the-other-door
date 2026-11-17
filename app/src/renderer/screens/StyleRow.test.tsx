@@ -66,6 +66,18 @@ describe('StyleRow, no style of your own yet', () => {
     expect(h.chooseStyleFile).toHaveBeenCalled()
   })
 
+  it('says it is reading the CV while the file is taken in, then the build line takes over', async () => {
+    const h = await open({})
+    await ready()
+    let finish: (v: unknown) => void = () => {}
+    h.chooseStyleFile.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
+    await userEvent.click(screen.getByRole('button', { name: 'Use the style of my CV…' }))
+    expect(await screen.findByText("Reading your CV's look…")).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Use the style of/ })).toBeNull()
+    finish({ ok: true, data: { started: true } })
+    await waitFor(() => expect(screen.queryByText("Reading your CV's look…")).toBeNull())
+  })
+
   it('does nothing when the dialog is cancelled, and names a refusal the user can act on', async () => {
     const h = await open({})
     await ready()

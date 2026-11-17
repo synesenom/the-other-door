@@ -800,7 +800,7 @@ describe('the CV style build', () => {
     const { invoke, server, cvSources } = setup(async () => ({ started: true }), undefined, false, real)
     expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: true, data: { started: true } })
     expect(cvSources.resolve).toHaveBeenCalledWith(['tok1'])
-    expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/cv.pdf' })
+    expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/cv.pdf' }, { timeout: 120_000 })
   })
 
   it('a refusal by the tool reaches the window as the reason', async () => {
@@ -834,7 +834,7 @@ describe('choosing a CV to copy the style of', () => {
     const { invoke, server, styleFile } = setup(async () => ({ started: true }), undefined, false, real)
     expect(await invoke(CHANNELS.chooseStyleFile)).toEqual({ ok: true, data: { started: true } })
     expect(styleFile.choose).toHaveBeenCalled()
-    expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/my cv.pdf' })
+    expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/my cv.pdf' }, { timeout: 120_000 })
   })
 
   it('a cancelled dialog starts nothing', async () => {
