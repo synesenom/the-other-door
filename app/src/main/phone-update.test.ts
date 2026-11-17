@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { quitStep, restorePhoneAfterUpdate, stopPhoneForUpdate } from './phone-update'
+import { quitStep, restorePhoneAfterUpdate, stopForUpdate, stopPhoneForUpdate, stopStyleBuildForUpdate } from './phone-update'
 
 function setup(calls: Record<string, (args: any) => unknown>, marker = false) {
   const files = new Set<string>(marker ? ['/m'] : [])
@@ -70,6 +70,54 @@ describe('stopPhoneForUpdate', () => {
   })
 })
 
+describe('stopStyleBuildForUpdate', () => {
+  it('stops a running CV style build, waiting as long as its timeout', async () => {
+    const s = setup({ stop_style_build: () => ({ stopped: true }) })
+    await stopStyleBuildForUpdate(s.deps)
+    expect(s.call).toHaveBeenCalledWith('stop_style_build', {}, 100)
+    expect(s.log).not.toHaveBeenCalled()
+  })
+  it('logs a failing call and resolves', async () => {
+    const s = setup({
+      stop_style_build: () => {
+        throw new Error('boom')
+      },
+    })
+    await stopStyleBuildForUpdate(s.deps)
+    expect(s.log).toHaveBeenCalledWith(expect.stringContaining('boom'))
+  })
+  it('gives up on a call that hangs', async () => {
+    vi.useFakeTimers()
+    const s = setup({ stop_style_build: () => new Promise(() => undefined) })
+    const p = stopStyleBuildForUpdate(s.deps)
+    await vi.advanceTimersByTimeAsync(150)
+    await p
+    expect(s.log).toHaveBeenCalled()
+  })
+})
+
+describe('stopForUpdate', () => {
+  it('stops the phone server and the style build, one failing never keeping the other from stopping', async () => {
+    const s = setup({
+      phone_status: () => {
+        throw new Error('phone')
+      },
+      stop_style_build: () => ({ stopped: true }),
+    })
+    await stopForUpdate(s.deps)
+    expect(s.call).toHaveBeenCalledWith('stop_style_build', {}, 100)
+    const t = setup({
+      phone_status: () => ({ running: false }),
+      phone_stop: () => ({}),
+      stop_style_build: () => {
+        throw new Error('style')
+      },
+    })
+    await stopForUpdate(t.deps)
+    expect(t.call).toHaveBeenCalledWith('phone_stop', {})
+  })
+})
+
 describe('restorePhoneAfterUpdate', () => {
   it('starts Tailscale again and removes the marker', async () => {
     const s = setup({ phone_start: () => ({ running: true }) }, true)
@@ -116,12 +164,12 @@ describe('restorePhoneAfterUpdate', () => {
 
 describe('quitStep', () => {
   it('lets a quit with no downloaded update proceed', () => {
-    expect(quitStep({ installsOnQuit: false, phoneStopped: false })).toBe('proceed')
+    expect(quitStep({ installsOnQuit: false, stopped: false })).toBe('proceed')
   })
-  it('stops the phone first when the quit installs an update', () => {
-    expect(quitStep({ installsOnQuit: true, phoneStopped: false })).toBe('stop-then-quit')
+  it('stops the phone server and a style build first when the quit installs an update', () => {
+    expect(quitStep({ installsOnQuit: true, stopped: false })).toBe('stop-then-quit')
   })
-  it('proceeds once the phone is stopped, so quitting again does not loop', () => {
-    expect(quitStep({ installsOnQuit: true, phoneStopped: true })).toBe('proceed')
+  it('proceeds once they are stopped, so quitting again does not loop', () => {
+    expect(quitStep({ installsOnQuit: true, stopped: true })).toBe('proceed')
   })
 })

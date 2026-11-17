@@ -14,7 +14,8 @@ and never takes the ledger lock, so it runs beside a `find`.
 
 A build writes the candidate, `profile/style.next/`, never `profile/style/`. The style in use is the two template keys
 (`cv_template`, `cover_letter_template`) pointing into `profile/style/`; `_use_core` (`use_style`, `cv style use`)
-changes them and moves a candidate in or ends it (#151).
+changes them and moves a candidate in or ends it (#151). `_stop_core` (`stop_style_build`) ends a running build, as the
+app does before an update installs (#215).
 """
 
 from __future__ import annotations
@@ -100,11 +101,27 @@ def _building(home: Path):
         raise ValueError("a build of a CV style is still running") from None
 
 
-def _end_running(home: Path) -> None:
-    """End the build that is running (its process group), unless it is this process or its launcher."""
+def _end_running(home: Path) -> dict | None:
+    """End the build that is running (its process group), unless it is this process or its launcher; its record, or
+    None when there was none to end."""
     run = _read(home)
     if run and run["state"] == "building" and run.get("pid") not in (None, os.getpid(), os.getppid()) and lock.held(_lock_path(home)):
         phone.kill_tree(run["pid"])
+        return run
+    return None
+
+
+def _stop_core(*, home: Path | None = None) -> dict:
+    """End the build that is running, wait for it to let go of its lock (its process is gone, no file of the install
+    stays held: the app calls this before an update installs, #215) and record it failed. The style in use and a
+    waiting candidate are left alone. Returns ``{"stopped": bool}``, False when no build was running."""
+    home = Path(home or workspace.HOME)
+    run = _end_running(home)
+    if run is None:
+        return {"stopped": False}
+    with _building(home):
+        _write(home, {**run, "state": "failed", "result": {"problems": ["the build was stopped"]}})
+    return {"stopped": True}
 
 
 def _fail_pending(home: Path, exc: Exception) -> None:

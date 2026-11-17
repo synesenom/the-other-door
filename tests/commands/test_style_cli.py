@@ -321,6 +321,48 @@ def test_a_start_whose_process_refuses_the_file_is_recorded_failed_and_the_log_s
     assert style_cmd.status(home, home / "profile")["state"] == "failed"
 
 
+# ----------------------------------------------------------------------------- stopping a build (#215)
+def test_stop_ends_the_running_build_waits_for_it_and_records_it_failed(home, cli_env, world):
+    _state(home, pid=4242, state="building", started_at=_now())
+    world.hold(home)
+    assert style_cmd._stop_core() == {"stopped": True}
+    assert world.killed == [4242] and lock.held(style_cmd._lock_path(home)) is False
+    assert _run(home)["state"] == "failed" and _run(home)["result"]["problems"] == ["the build was stopped"]
+    assert style_cmd.status(home, cli_env.profile_dir) == {"state": "failed", "problems": ["the build was stopped"]}
+
+
+def test_stop_leaves_the_style_in_use_and_a_waiting_candidate_alone(home, cli_env, world):
+    _template(cli_env, "style")
+    _template(cli_env)
+    _state(home, pid=4242, state="building", started_at=_now())
+    world.hold(home)
+    style_cmd._stop_core()
+    assert (cli_env.profile_dir / "style" / "cv.template.html").read_text() == "x"
+    assert (cli_env.profile_dir / "style.next" / "cv.template.html").read_text() == "x"
+
+
+@pytest.mark.parametrize("run", [None, {"pid": 4242, "state": "ready", "started_at": "t"}])
+def test_stop_with_no_build_running_ends_nothing_and_changes_nothing(home, world, run):
+    if run:
+        _state(home, **run)
+        world.hold(home)  # a reused pid: a finished build is not ended
+    assert style_cmd._stop_core() == {"stopped": False}
+    assert world.killed == [] and (not run or _run(home) == run)
+
+
+def test_a_stale_building_record_is_not_stopped(home, world):
+    _state(home, pid=4242, state="building", started_at=_now(-3600))  # nothing holds the lock
+    assert style_cmd._stop_core() == {"stopped": False} and world.killed == []
+
+
+def test_the_stop_tool_is_a_writing_tool_the_phone_does_not_get(home, world):
+    from door import serve_policy
+    assert "stop_style_build" in mcp_server.WRITING_TOOLS and "stop_style_build" not in serve_policy.PHONE_TOOLS
+    _state(home, pid=4242, state="building", started_at=_now())
+    world.hold(home)
+    assert asyncio.run(mcp_server.stop_style_build()) == {"stopped": True} and world.killed == [4242]
+
+
 # ----------------------------------------------------------------------------- the status block
 def _state(home, **run):
     (home / ".style").mkdir(exist_ok=True)

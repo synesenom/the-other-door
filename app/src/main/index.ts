@@ -13,7 +13,7 @@ import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
 import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
-import { quitStep, restorePhoneAfterUpdate, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
+import { quitStep, restorePhoneAfterUpdate, stopForUpdate, type PhoneUpdateDeps } from './phone-update'
 import { createProblemLog } from './problem-log'
 import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest, resolveStylePreviewRequest } from './protocol'
 import { createPhotoFile } from './photo-file'
@@ -57,8 +57,8 @@ try {
   // no package.json to read: not signed
 }
 const mode = updatesAllowed(process.env) ? updateMode({ platform: process.platform, packaged, simulated, doorSigned, appImage: Boolean(process.env['APPIMAGE']) }) : 'none'
-// The detached phone server is stopped before an update installs (phone-update.ts, #77).
-let phoneStopped = false
+// The detached phone server and a CV style build are stopped before an update installs (phone-update.ts, #77, #215).
+let stoppedForUpdate = false
 const phoneDeps = (): PhoneUpdateDeps => ({
   call: (tool, args, timeout) => server.call(tool, args ?? {}, timeout ? { timeout } : {}),
   markerPath: join(app.getPath('userData'), 'phone-restart.marker'),
@@ -67,8 +67,8 @@ const phoneDeps = (): PhoneUpdateDeps => ({
 })
 const updates = createUpdateManager({
   beforeInstall: async () => {
-    phoneStopped = true
-    await stopPhoneForUpdate(phoneDeps())
+    stoppedForUpdate = true
+    await stopForUpdate(phoneDeps())
   },
   mode: mode,
   current: app.getVersion(),
@@ -264,11 +264,11 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', (event) => {
-  // Quitting installs a downloaded update: stop the phone server first, once, then quit again.
-  if (quitStep({ installsOnQuit: updates.willInstallOnQuit(), phoneStopped }) === 'stop-then-quit') {
+  // Quitting installs a downloaded update: stop the phone server and a style build first, once, then quit again.
+  if (quitStep({ installsOnQuit: updates.willInstallOnQuit(), stopped: stoppedForUpdate }) === 'stop-then-quit') {
     event.preventDefault()
-    phoneStopped = true
-    void stopPhoneForUpdate(phoneDeps()).finally(() => app.quit())
+    stoppedForUpdate = true
+    void stopForUpdate(phoneDeps()).finally(() => app.quit())
     return
   }
   board.stop()
