@@ -239,7 +239,7 @@ def test_the_shipped_templates_pass_with_the_fonts_they_serve():
 
 
 def test_the_icons_a_fixture_template_draws_are_the_ones_its_manifest_lists():
-    folder = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "icon_template"
+    folder = REPO_ROOT / "tests" / "render" / "fixtures" / "icon_template"
     text = (folder / "cv.template.html").read_text(encoding="utf-8")
     assert not [p for p in html_guard.template_problems(text, templates.manifest(folder / "cv.template.html"), "cv") if "url(" in p]
     assert [p for p in html_guard.template_problems(text, None, "cv") if "url(" in p]

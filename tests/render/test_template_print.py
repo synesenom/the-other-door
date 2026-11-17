@@ -28,7 +28,8 @@ pytestmark = [  # `real_chromium`: the offline suite otherwise hides the develop
                        reason="no Chromium headless shell installed"),
 ]
 
-FIXTURES = TESTS_DIR / "tailoring" / "fixtures"
+FIXTURES = TESTS_DIR / "tailoring" / "fixtures"  # example CV and letter, french: shared with the facts and prepare tests
+TEMPLATES = TESTS_DIR / "render" / "fixtures"
 NB = " "
 
 
@@ -260,7 +261,7 @@ def _colours(pdf_path):
 
 
 def test_a_template_with_icons_draws_them_beside_the_details_it_names(tmp_path, monkeypatch):
-    template = FIXTURES / "icon_template" / "cv.template.html"
+    template = TEMPLATES / "icon_template" / "cv.template.html"
     out, results = _setup(tmp_path, monkeypatch, cv=_KINDS, letter=_LETTER, extra={"cv_template": str(template)})
     assert results["cv.html"]["status"] == "compiled", results["cv.html"]
     red, green = _colours(out / "cv.pdf")
@@ -273,7 +274,7 @@ def test_the_same_template_without_its_manifest_draws_no_icon(tmp_path, monkeypa
 
     copy = tmp_path / "tpl"
     copy.mkdir()
-    shutil.copy(FIXTURES / "icon_template" / "cv.template.html", copy)  # no template.json, no icons/
+    shutil.copy(TEMPLATES / "icon_template" / "cv.template.html", copy)  # no template.json, no icons/
     out, results = _setup(tmp_path / "job", monkeypatch, cv=_KINDS, letter=_LETTER,
                           extra={"cv_template": str(copy / "cv.template.html")})
     assert results["cv.html"]["status"] == "compiled", results["cv.html"]
@@ -325,7 +326,7 @@ _TWO_COLUMNS = (_HEADER + '<h2>Experience</h2><div class="entry"><h3>Controller 
 
 
 def test_a_two_column_template_prints_every_heading_on_a_line_and_the_side_after_the_main(tmp_path, monkeypatch):
-    template = FIXTURES / "columns_template" / "cv.template.html"
+    template = TEMPLATES / "columns_template" / "cv.template.html"
     out, results = _setup(tmp_path, monkeypatch, cv=_TWO_COLUMNS, letter=_LETTER, extra={"cv_template": str(template)})
     assert results["cv.html"]["status"] == "compiled", results["cv.html"]
     assert results["cv.html"]["readable"] == []
@@ -344,7 +345,7 @@ def test_the_default_template_keeps_one_column_in_the_bodys_order(tmp_path, monk
 
 
 def test_a_two_column_template_with_a_line_that_cannot_wrap_reports_the_cut_words_as_overflow(tmp_path, monkeypatch):
-    template = FIXTURES / "overflow_template" / "cv.template.html"  # the side column's lines never wrap
+    template = TEMPLATES / "overflow_template" / "cv.template.html"  # the side column's lines never wrap
     cv = _TWO_COLUMNS.replace("<p>IFRS, SQL</p>", "<ul><li>" + "Consolidation and reporting under IFRS, " * 6 + "</li></ul>")
     out, results = _setup(tmp_path, monkeypatch, cv=cv, letter=_LETTER, extra={"cv_template": str(template)})
     assert results["cv.html"]["status"] == "compiled", results["cv.html"]
