@@ -56,11 +56,7 @@ def _source(world: World, kind: str) -> Path:
     return path
 
 
-def _model_input(world: World, call: str) -> list[str]:
-    return [c["input"] for c in world.calls() if c.get("kind") == "claude" and c.get("call") == call]
-
-
-def _init_find_show_prepare(world: World, persona: str, monkeypatch) -> None:
+def _init_find_show_prepare(world: World, persona: str) -> None:
     """init from the persona's CV file, the first run it starts, then `jobs show` and `jobs prepare` of the fresh ad:
     every character of the CV and of the ad kept on the way to the model, the disk and the printed PDFs."""
     kind, words, kept = CASES[persona]
@@ -72,7 +68,7 @@ def _init_find_show_prepare(world: World, persona: str, monkeypatch) -> None:
     assert f"Wrote {Path('profile/config.json')}." in out
     assert "[1/5] search" in out and "[5/5] match" in out, out   # the first run it starts
 
-    drafted = _model_input(world, "draft")
+    drafted = world.claude_inputs("draft")
     assert drafted, world.claude_kinds()
     for text in kept:
         assert text in drafted[0], (text, drafted[0][:2000])
@@ -81,10 +77,10 @@ def _init_find_show_prepare(world: World, persona: str, monkeypatch) -> None:
     cv = (world.home / "profile" / "cv.md").read_text(encoding="utf-8")
     assert cv == world.persona["cv"]
     for call in ("basics", "titles"):   # the other reading steps read the draft whole
-        assert cv.strip() in _model_input(world, call)[0], call
+        assert cv.strip() in world.claude_inputs(call)[0], call
     config = world.read("profile/config.json")
     assert config["name"] == world.persona["name"] and config["location"] == world.persona["city"]
-    assert all(title in _model_input(world, "keywords")[0] for title in config["role_targets"])
+    assert all(title in world.claude_inputs("keywords")[0] for title in config["role_targets"])
 
     ad = next(a for a in world.jobs.values() if words in (a["title"] + " " + a["company"]).lower())
     posting = next((world.home / "jobs" / "postings").glob(f"*/*/{ad['id']}.json"))
@@ -93,7 +89,7 @@ def _init_find_show_prepare(world: World, persona: str, monkeypatch) -> None:
     boards = json.loads((world.dir / "world.json").read_text(encoding="utf-8"))["boards"]
     sent = next(p for b in boards.values() for p in b["postings"] if p["id"] == ad["id"])
     assert stored["description"] == sent["description"]
-    scored = [text for text in _model_input(world, "score") if stored["title"] in text]
+    scored = [text for text in world.claude_inputs("score") if stored["title"] in text]
     assert scored and world.persona["name"] in scored[0]
     assert stored.get("score") is not None, stored
 
@@ -104,16 +100,13 @@ def _init_find_show_prepare(world: World, persona: str, monkeypatch) -> None:
     code, out, err = world.door("jobs", "prepare", words)
     assert code == 0, f"{out}\n{err}"
     folder = world.home / "jobs" / "output" / ad["id"]
-    assert ad["id"] in _model_input(world, "tailor")[-1]
+    assert ad["id"] in world.claude_inputs("tailor")[-1]
     handed = json.loads((folder / "posting.json").read_text(encoding="utf-8"))   # the posting the tailor read
     assert (handed["title"], handed["description"]) == (stored["title"], stored["description"])
-    from door.commands import matches
-    from door.core import workspace
-    from door.tailoring import pdf_render
 
-    assert world.persona["name"] in pdf_render.page_texts(folder / "cv.pdf")[0]
-    monkeypatch.setattr(workspace, "PROFILE_DIR", world.home / "profile")
-    assert matches._readability(folder) == []
+    code, out, err = world.door("jobs", "show", words)   # the printed PDFs read back: name, headings, keywords, all the text
+    assert code == 0, f"{out}\n{err}"
+    assert any("Read by an ATS" in line and "text reads cleanly" in line for line in out.splitlines()), out
 
 
 @pytest.fixture(scope="module")
@@ -121,8 +114,8 @@ def world():
     return build_world("mette", empty=True)
 
 
-def test_init_then_the_first_find(world, monkeypatch):
-    _init_find_show_prepare(world, "mette", monkeypatch)
+def test_init_then_the_first_find(world):
+    _init_find_show_prepare(world, "mette")
     config = world.read("profile/config.json")
     assert config["email"] == world.persona["email"]
     assert world.persona["cv"] != (REPO_ROOT / "profile.example" / "cv.md").read_text(encoding="utf-8")
@@ -145,5 +138,5 @@ def test_init_by_flags_asks_nothing(world):
 
 
 @pytest.mark.parametrize("persona", ["lea", "bence", "asa"])
-def test_a_cv_in_its_own_language_through_init_the_first_run_and_prepare(persona, monkeypatch):
-    _init_find_show_prepare(build_world(persona, empty=True), persona, monkeypatch)
+def test_a_cv_in_its_own_language_through_init_the_first_run_and_prepare(persona):
+    _init_find_show_prepare(build_world(persona, empty=True), persona)

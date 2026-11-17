@@ -88,6 +88,10 @@ class World:
     def claude_kinds(self) -> list[str]:
         return [c["call"] for c in self.calls() if c.get("kind") == "claude"]
 
+    def claude_inputs(self, call: str) -> list[str]:
+        """What each `claude` call of one kind was given (the TS world's `claudeCalls(kind)`)."""
+        return [c["input"] for c in self.calls() if c.get("kind") == "claude" and c.get("call") == call]
+
     def read(self, relative: str):
         return json.loads((self.home / relative).read_text(encoding="utf-8"))
 
