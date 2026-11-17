@@ -1309,7 +1309,7 @@ def style_started(monkeypatch):
         calls.events.append("style")
         calls.seen.append({name: (workspace.PROFILE_DIR / name).exists() for name in ("config.json", "cv.md", "photo.jpg")})
         if calls.error:
-            raise ValueError(calls.error)
+            raise calls.error if isinstance(calls.error, Exception) else ValueError(calls.error)
         return {"started": True}
 
     monkeypatch.setattr(style_cmd, "_start_core", start)
@@ -1364,12 +1364,23 @@ def test_ticking_the_style_builds_it_once_after_the_profile_is_saved_and_before_
     assert "./door cv style show" in result.output and "./door cv style use" in result.output
 
 
+def test_a_build_refused_for_want_of_chromium_names_the_command_that_installs_it(init_env, prompts, wizard_calls, monkeypatch, style_started):
+    from door.commands import style as style_cmd
+
+    _no_first_run(monkeypatch)
+    wizard_calls.sources = _STYLED
+    style_started.error = style_cmd.NoChromium()
+    prompts.answers.update(_JANE, review=iter(["style", "save"]))
+    result = _invoke()
+    assert "is not installed yet" in result.output and "./door doctor --fix" in result.output
+
+
 def test_a_refused_build_is_one_line_and_the_save_still_succeeds(init_env, prompts, wizard_calls, monkeypatch, style_started):
     _no_first_run(monkeypatch)
     wizard_calls.sources = _STYLED
-    style_started.error = "no Chromium to print with: run ./door doctor --fix"
+    style_started.error = "broken.pdf is not a PDF The other door can read."
     prompts.answers.update(_JANE, review=iter(["style", "save"]))
     result = _invoke()
-    assert result.output.count("no Chromium to print with") == 1
+    assert result.output.count("is not a PDF The other door can read") == 1
     assert "building in the background" not in result.output
     assert (init_env.profile_dir / "cv.md").read_text() == _CV
