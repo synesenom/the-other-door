@@ -84,7 +84,7 @@ CASES = {
 }
 
 # the cases a known issue keeps from looking like their original
-KNOWN = {"html-canva-icons": "#242", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242"}
+KNOWN = {"scrubbed-pages-sidebar-fr": "#242"}  # columns in place, best 0.477 in a real run: the look, not the layout
 
 
 def _ready() -> str | None:
