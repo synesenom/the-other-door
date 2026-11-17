@@ -112,3 +112,16 @@ def test_a_ticked_style_builds_once_with_that_file_after_the_profile_is_saved_an
     assert Path(next(c for c in result["calls"] if c["tool"] == "build_style")["args"]["file"]).name == "persona-cv.pdf"
     assert not {"show_style", "use_style"} & set(tools), tools
 
+
+
+@pytest.fixture(scope="module")
+def styled_no(tmp_path_factory):
+    return run_skill(tmp_path_factory, "onboard-style-no", "/onboard", empty=True, max_turns=16, seed=_with_a_pdf_cv,
+                     facts_note="You keep The other door's look for your tailored CVs; you do not want them to look like your CV file.")
+
+
+def test_a_style_left_off_builds_nothing(styled_no):
+    _, result = styled_no
+    tools = _order(result)
+    assert "find_jobs" in tools, tools
+    assert not {"build_style", "show_style", "use_style"} & set(tools), tools
