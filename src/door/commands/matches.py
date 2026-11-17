@@ -425,7 +425,7 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
     }
 
 
-def _readability(output_dir: Path, max_pages: int | None = None) -> list[dict] | None:
+def _readability(output_dir: Path, max_pages: int) -> list[dict] | None:
     """The ATS read-back of both PDFs in `output_dir` (the CV held to `max_pages`), or None when either cannot be
     read."""
     config = common._load_json_tolerant(workspace.PROFILE_DIR / "config.json")
@@ -679,6 +679,8 @@ def _render_materials(materials: dict, console=None) -> None:
                 for c in unsupported))
     if "readability" in materials:
         found = materials["readability"]
+        if found:  # the CV row already says the page limit
+            found = [p for p in found if p["kind"] != "pages"]
         if found is None:
             grid.add_row("Read by an ATS", Text("(not checked: a PDF could not be read)", style="dim"))
         elif not found:
