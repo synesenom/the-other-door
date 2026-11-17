@@ -414,6 +414,17 @@ def test_revise_without_chromium_says_so_in_words_before_the_model_and_leaves_th
     assert revise_env.calls.claude == [] and revise_env.calls.compile == []
 
 
+def test_undo_without_chromium_leaves_the_file_and_its_backup(revise_env, monkeypatch):
+    revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", jobs_dir=revise_env.jobs_dir)
+    revised, backup = (revise_env.out / "cover_letter.html").read_text(), (revise_env.out / "cover_letter.html.bak").read_text()
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    with pytest.raises(common.NoChromium):
+        revise_cmd._revise_core("jobindex-top", "cover_letter", undo=True, jobs_dir=revise_env.jobs_dir)
+    assert (revise_env.out / "cover_letter.html").read_text() == revised
+    assert (revise_env.out / "cover_letter.html.bak").read_text() == backup
+    assert revise_env.calls.compile == ["jobindex-top"]
+
+
 def test_revise_calls_claude_print_mode_without_tools_and_sends_context_on_stdin(revise_env):
     revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten paragraph two", jobs_dir=revise_env.jobs_dir)
     argv, kwargs = revise_env.calls.claude[0]

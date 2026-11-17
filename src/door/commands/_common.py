@@ -280,21 +280,8 @@ def _pick_job() -> str | None:
 
 
 
-class MissingToolError(FileNotFoundError):
-    """A required external tool (Chromium, `claude`) is not installed.
-
-    The message carries the one-line fix; `doctor` lists them all (#138).
-    """
-
-
-class NoChromium(MissingToolError, ValueError):
-    """No Chromium to print with. Its words are the app's (no command, #273, #296); a command adds `INSTALL_HINT`."""
-
-    def __init__(self):
-        super().__init__("The browser that prints your CVs is not installed yet.")
-
-
-INSTALL_HINT = "Run `./door doctor --fix` to install the browser that prints pages."
+NoChromium = chromium.NoChromium
+INSTALL_HINT = chromium.INSTALL_HINT
 
 _CLAUDE_FIX = "run ./door doctor --fix"
 

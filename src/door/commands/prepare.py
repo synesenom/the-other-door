@@ -629,7 +629,7 @@ def prepare(job_id: str | None, force: bool, timeout_min: float):
         return
     if result["outcome"] not in ("prepared", "skipped"):
         click.echo(f"Error: {result['error']}", err=True)
-        if result["error"] == str(common.NoChromium()):
+        if not common._chromium_available():
             click.echo(common.INSTALL_HINT, err=True)
         sys.exit(1)
     _render_prepared(result, interactive=interactive)

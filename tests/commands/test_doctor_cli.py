@@ -253,12 +253,6 @@ def test_compile_without_chromium_is_a_one_line_error_from_the_tool(env, monkeyp
     assert "./door" not in error and "doctor" not in error
 
 
-def test_no_chromium_is_a_missing_tool_and_a_value_error():
-    assert isinstance(common.NoChromium(), common.MissingToolError)
-    assert isinstance(common.NoChromium(), ValueError)
-    assert "./door doctor --fix" in common.INSTALL_HINT
-
-
 def _posting(env, job_id="jobindex-acme-ds"):
     from datetime import datetime, timezone
 
@@ -303,7 +297,7 @@ def test_the_prepare_command_without_chromium_names_the_fix(env, monkeypatch):
     monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("tailored without a Chromium to print with"))
     out = CliRunner().invoke(cli, ["jobs", "prepare", "jobindex-acme-ds"])
     assert out.exit_code == 1
-    assert str(common.NoChromium()) in result_text(out) and common.INSTALL_HINT in result_text(out)
+    assert str(common.NoChromium()) in result_text(out) and chromium_mod.INSTALL_HINT in result_text(out)
 
 
 def test_prepare_top_match_without_claude_fails_before_selecting(env, monkeypatch):

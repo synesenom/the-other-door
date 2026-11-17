@@ -128,7 +128,7 @@ def test_the_build_command_refuses_without_a_chromium_before_any_model_round_and
     result = CliRunner().invoke(cli, ["cv", "style", "build", str(cv_pdf)])
     assert result.exit_code != 0
     assert str(common.NoChromium()) in result_text(result)
-    assert common.INSTALL_HINT in result_text(result)
+    assert chromium.INSTALL_HINT in result_text(result)
 
 
 def test_a_pdf_that_cannot_be_read_is_named_in_words_without_the_library_message(home, world, tmp_path):

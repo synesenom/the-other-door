@@ -28,7 +28,6 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.commands import _common as common
 from door.core import chromium, claude_cli, companies, discovery_sources, installers, migrations, runs, sites
 from door.core.sites import FEED_SITES
 from door.scrapers import PROBE_TIMEOUT_S, ProbeResult  # noqa: F401 - re-exported
@@ -103,7 +102,7 @@ def check_chromium(find=None, run=subprocess.run, quick: bool = False) -> dict:
     """
     path = (find or chromium.find_chromium)()
     if not path:
-        return _check("chromium", False, "no Chromium headless shell found — it prints CVs", common.INSTALL_HINT,
+        return _check("chromium", False, "no Chromium headless shell found — it prints CVs", chromium.INSTALL_HINT,
                       tool="chromium")
     try:
         proc = run([path, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
