@@ -1,4 +1,4 @@
-// Builds a test world for a process outside the journeys (the skill journeys, tests/skills/) and prints
+// Builds a test world for a process outside the journeys (the skill journeys, tests/model/) and prints
 // what it needs as JSON: `npx tsx test/world/make-world.ts <persona> [--empty]`. The persona's own CV, as
 // they would hand it over, is in the data folder as `sources/<persona>-cv.md`, where a user copies it first
 // (a tool reads no local path outside the data folder or the checkout).

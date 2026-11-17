@@ -335,20 +335,21 @@ poetry install   # runtime + dev deps (pytest, pytest-cov, pytest-xdist, respons
 
 ./scripts/run-test.sh           # offline suite + coverage + regenerate badge
 ./scripts/run-test.sh --live    # opt-in smoke tests against real sites
-./scripts/run-test.sh --skills  # the skills (/onboard, /expand) and a review session run by the real model on your plan, before a release
+./scripts/run-test.sh --model   # the tests run by the real model on your plan, before a release: the skills (/onboard, /expand), a review session, the CV style rebuild (every style corpus CV)
 ./scripts/run-test.sh --cli-journeys  # the real ./door in the app's test world (init, find, jobs show/prepare/status; needs Node and npm ci in app/; CI: cli-journeys.yml, Linux and Windows)
 ./scripts/run-test.sh --app     # the desktop app's tests as CI runs them (typecheck, unit, e2e, every journey, phone)
-./scripts/run-test.sh --release # before a release: offline suite, app with every journey, CLI journeys, skills, and the
+./scripts/run-test.sh --release # before a release: offline suite, app with every journey, CLI journeys, real-model tests, and the
                                 # install test when DOOR_INSTALLER names an installer; a PASS/FAIL line each
 ```
 
-The skill tests (`tests/skills/`, marker `skills`, never in CI) run a Claude Code skill with the real
+The real-model tests (`tests/model/`, marker `model`, never in CI) run a Claude Code skill with the real
 model through the Agent SDK (`claude-agent-sdk`, on the plan `claude` is signed in to, the API key cleared)
 against the app's test world (`app/test/world/make-world.ts`: `boot.py`'s server, the stand-in `claude.py`
-for the tools' own model calls), with a small model playing the persona (`tests/skills/skill_run.py`, which
+for the tools' own model calls), with a small model playing the persona (`tests/model/skill_run.py`, which
 also runs one skill by hand and writes its transcript). They check behaviour only: the tools and their order,
-what was written and when. `tests/skills/test_skill_contract_unit.py` (offline) checks that every tool a skill
-or agent names exists, with the parameters it passes.
+what was written and when. `tests/model/test_skill_contract_unit.py` (offline) checks that every tool a skill
+or agent names exists, with the parameters it passes. `tests/model/test_style_rebuild.py` (#238) runs the
+CV style rebuild with the real stylist on every style corpus CV and its edges; it needs a signed-in `claude` and the pinned Chromium.
 
 The offline suite runs in parallel (`pytest -n auto`, pytest-xdist, in `run-test.sh` and CI;
 `-n 0` runs it serially, and live runs stay serial), so a test must not share a fixed path,

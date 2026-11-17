@@ -1,6 +1,6 @@
 """/expand, run by the real model on the local plan against the app's test world (#33).
 
-Marker `skills`, never CI (`./scripts/run-test.sh --skills`). Two runs of mette's world: one where she
+Marker `skills`, never CI (`./scripts/run-test.sh --model`). Two runs of mette's world: one where she
 takes the proposals, one where she wants none. Checks are on behaviour: the tools and their order, and
 that `profile/cv.md` changes only after the confirmation.
 """
@@ -9,7 +9,7 @@ import pytest
 
 from conftest import home, run_skill
 
-pytestmark = pytest.mark.skills
+pytestmark = pytest.mark.model
 
 PROMPT = "/expand https://github.example/mkl https://mkl.example/talks"
 

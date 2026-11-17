@@ -1,6 +1,6 @@
 """/onboard, run by the real model on the local plan against the app's test world (#33).
 
-Not in the offline suite or CI (marker `skills`): `./scripts/run-test.sh --skills`, before a release. The
+Not in the offline suite or CI (marker `model`): `./scripts/run-test.sh --model`, before a release. The
 conversation is real; the server is the test world's (boot.py), its own model calls the stand-in claude;
 the user is a small model playing the persona (`skill_run.py`). Every check is on behaviour: which tools,
 in which order, what was written and when, never on the model's wording.
@@ -14,7 +14,7 @@ import pytest
 from conftest import home as _home_of
 from conftest import run_skill
 
-pytestmark = pytest.mark.skills
+pytestmark = pytest.mark.model
 
 DISCOVERY_KEYS = ("linkedin_discovery", "profession_discovery", "jobbsafari_discovery", "hellowork_discovery")
 
