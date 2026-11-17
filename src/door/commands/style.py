@@ -101,14 +101,26 @@ def _building(home: Path):
         raise ValueError("a build of a CV style is still running") from None
 
 
+def _pending(run: dict) -> bool:
+    """Whether a `building` record is a start's, made a moment ago, whose build has not written its own yet."""
+    return "pid" not in run and _age(run["started_at"]) < PENDING_SECONDS
+
+
 def _end_running(home: Path) -> dict | None:
-    """End the build that is running (its process group), unless it is this process or its launcher; its record, or
-    None when there was none to end."""
+    """End the build that is running (its process group): the one holding the lock, or one started a moment ago that is
+    still reading its file, by the pid its start recorded (`spawned`); never this process or its launcher. Its record,
+    or None when there was none to end."""
     run = _read(home)
-    if run and run["state"] == "building" and run.get("pid") not in (None, os.getpid(), os.getppid()) and lock.held(_lock_path(home)):
+    if not (run and run["state"] == "building"):
+        return None
+    own = (None, os.getpid(), os.getppid())
+    if run.get("pid") not in own and lock.held(_lock_path(home)):
         phone.kill_tree(run["pid"])
-        return run
-    return None
+    elif _pending(run) and run.get("spawned") not in own:
+        phone.kill_tree(run["spawned"])
+    else:
+        return None
+    return run
 
 
 def _stop_core(*, home: Path | None = None) -> dict:
@@ -122,11 +134,7 @@ def _stop_core(*, home: Path | None = None) -> dict:
     home = Path(home or workspace.HOME)
     run = _end_running(home)
     if run is None:
-        run = _read(home)
-        if not (run and run["state"] == "building" and "pid" not in run and "spawned" in run
-                and _age(run["started_at"]) < PENDING_SECONDS):
-            return {"stopped": False}
-        phone.kill_tree(run["spawned"])
+        return {"stopped": False}
     with _building(home):
         now = _read(home) or {}
         if now == run or now.get("state") == "failed":  # not over a result written meanwhile
@@ -226,7 +234,7 @@ def status(home: Path, profile_dir: Path) -> dict:
     run = _read(home) or {}
     state = run.get("state")
     if state == "building":
-        if lock.held(_lock_path(home)) or ("pid" not in run and _age(run["started_at"]) < PENDING_SECONDS):
+        if lock.held(_lock_path(home)) or _pending(run):
             return {"state": "building", "started_at": run["started_at"]}
         return {"state": "failed", "problems": ["the build stopped before it finished"]}
     if templates.liked(Path(profile_dir)).name == templates.CANDIDATE:

@@ -356,6 +356,20 @@ def test_a_start_names_the_process_it_spawned_in_its_pending_record(home, cv_pdf
     assert run["spawned"] == 777 and run["state"] == "building" and "pid" not in run
 
 
+def test_a_second_start_within_moments_ends_the_first_child_during_its_intake(home, cv_pdf, world):
+    style_cmd._start_core(str(cv_pdf))
+    style_cmd._start_core(str(cv_pdf))
+    assert world.killed == [777] and len(world.spawned) == 2
+
+
+def test_a_childs_own_build_never_ends_itself_or_its_launcher_from_its_pending_record(home, cv_pdf, monkeypatch, world):
+    monkeypatch.setattr(style_build, "build", lambda *a, **k: dict(READY))
+    for own in (os.getpid(), os.getppid()):
+        _state(home, state="building", started_at=_now(), spawned=own)
+        style_cmd._build_core(str(cv_pdf))
+    assert world.killed == []
+
+
 def test_stop_ends_a_build_just_started_that_has_not_taken_its_lock_yet(home, cli_env, world):
     _state(home, state="building", started_at=_now(), spawned=4343)
     assert style_cmd._stop_core() == {"stopped": True}
