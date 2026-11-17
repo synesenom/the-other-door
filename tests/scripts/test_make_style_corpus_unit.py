@@ -65,5 +65,5 @@ def test_the_equal_columns_design_has_two_flex_one_columns_with_the_side_kinds_o
     assert re.findall(r"\.(left|right)\{flex:1\}", html) == ["left", "right"]
     left, right = re.search(r"class='left'>(.*)</div><div class='right'>(.*)</div></div>", html, re.S).groups()
     heads = lambda part: re.findall(r"<h2>([^<]+)</h2>", part)
-    assert heads(left) == ["Contact", "Skills", "Education", "Languages"] and heads(right) == ["Profile", "Experience"]
+    assert heads(left) == ["About me", "Contact", "Skills", "Education", "Languages"] and heads(right) == ["Experience"]
     assert set(re.findall(r"@([\w.-]+\.\w+)", html)) == {"example.com"}

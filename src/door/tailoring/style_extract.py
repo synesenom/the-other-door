@@ -473,14 +473,13 @@ def column_bands(pages: list[dict], shapes: list[dict]) -> dict:
         members[sum(run["bbox"][0] >= (a + b) / 2 for a, b in gaps)].append(run)
     total = sum(len(line_groups(m)) for m in members) or 1
     bands = []
-    kept: list[list[dict]] = []
     for member in members:
         lines = line_groups(member)
         if member and _stacked(lines, body) >= 4 and len(lines) >= total / 12:
-            kept.append(member)
             bands.append({"x0": round(_percentile([r["bbox"][0] for r in member], 0.05), 1),
                           "x1": round(_percentile([r["bbox"][2] for r in member], 0.95), 1),
-                          "lines": len(lines)})
+                          "lines": len(lines),
+                          "titles": sum(_is_section_title(u["text"]) for u in _line_units(member))})
     if not bands:
         bands = [{"x0": round(min(r["bbox"][0] for r in runs), 1), "x1": round(max(r["bbox"][2] for r in runs), 1),
                   "lines": len(line_groups(runs))}]
@@ -499,8 +498,7 @@ def column_bands(pages: list[dict], shapes: list[dict]) -> dict:
         side = band is narrowest and len(bands) > 1 and (band["x1"] - band["x0"] < 0.4 * width or box)
         band["kind"] = "only" if len(bands) == 1 else "side" if side else "main"
     if len(bands) == 2 and all(b["kind"] == "main" for b in bands):
-        titles = [sum(_is_section_title(u["text"]) for u in _line_units(m)) for m in kept]
-        bands[0 if titles[0] > titles[1] else 1]["kind"] = "side"
+        bands[0 if bands[0]["titles"] > bands[1]["titles"] else 1]["kind"] = "side"
     return {"count": len(bands), "bands": [{k: b[k] for k in ("x0", "x1", "kind", "background", "lines")} for b in bands]}
 
 

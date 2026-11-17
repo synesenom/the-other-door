@@ -111,11 +111,11 @@ def html_equal_columns(r: dict) -> str:
            "h2{font-size:12pt;color:#2E5E4E;border-bottom:1.5px solid #2E5E4E;margin:14px 0 6px;text-transform:uppercase}"
            ".cols{display:flex;gap:28px}.left{flex:1}.right{flex:1}.row{display:flex;justify-content:space-between}"
            ".co{color:#555;font-style:italic}ul{margin:4px 0 8px;padding-left:18px}.dates{color:#555}")
-    left = (f"<h2>Contact</h2>{''.join(f'<div>{e(v)}</div>' for v in c.values())}<h2>Skills</h2>"
-            f"{''.join(f'<div>{e(s)}, used most days for several years</div>' for s in r['skills'])}<h2>Education</h2>"
+    left = (f"<h2>About me</h2><p>{e(r['summary'])} I write things down, ask early when a plan is unclear and enjoy teaching colleagues what I have learned.</p><h2>Contact</h2>{''.join(f'<div>{e(v)}</div>' for v in c.values())}<h2>Skills</h2>"
+            f"{''.join(f'<div>{e(s)}</div>' for s in r['skills'])}<h2>Education</h2>"
             + "".join(f"<div><b>{e(x['degree'])}</b>, {e(x['school'])} <span class='dates'>{e(x['dates'])}</span></div>" for x in r["education"])
-            + f"<h2>Languages</h2>{''.join(f'<div>{e(s)}, spoken and written at work</div>' for s in r['languages'])}")
-    right = f"<h2>Profile</h2><p>{e(r['summary'])}</p><h2>Experience</h2>{_jobs_html(r)}"
+            + f"<h2>Languages</h2>{''.join(f'<div>{e(s)}</div>' for s in r['languages'])}")
+    right = f"<h2>Experience</h2>{_jobs_html(r)}"
     return _html(css, f"<h1>{e(r['name'])}</h1><div>{e(r['title'])}</div><div class='cols'><div class='left'>{left}</div><div class='right'>{right}</div></div>")
 
 

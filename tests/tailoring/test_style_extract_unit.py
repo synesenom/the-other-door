@@ -295,6 +295,11 @@ def test_equal_columns_with_more_section_titles_on_the_right_have_it_as_the_side
     assert equal_kinds(tmp_path, ["Profile", "Experience"], ["Skills", "Education", "Languages"]) == ["main", "side"]
 
 
+def test_only_side_kind_titles_are_counted_for_the_side_of_equal_columns(tmp_path):
+    assert equal_kinds(tmp_path, ["Profile", "Experience", "Projects"], ["Skills"]) == ["main", "side"]
+    assert equal_kinds(tmp_path, ["Skills"], ["Profile", "Experience", "Projects"]) == ["side", "main"]
+
+
 def test_equal_columns_with_no_section_titles_have_the_right_one_as_the_side(tmp_path):
     assert equal_kinds(tmp_path, ["Alpha", "Beta"], ["Gamma", "Delta"]) == ["main", "side"]
 
