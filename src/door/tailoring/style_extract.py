@@ -600,7 +600,8 @@ def heading_style(headings: list[dict]) -> dict | None:
     if not headings:
         return None
     keys = ("size", "color", "weight", "family", "case", "italic")
-    best = max({tuple(h[k] for k in keys) for h in headings}, key=lambda t: sum(tuple(h[k] for k in keys) == t for h in headings))
+    # an ordered set: on a tie the style met first (reading order of the found headings) wins, never a hash order
+    best = max(dict.fromkeys(tuple(h[k] for k in keys) for h in headings), key=lambda t: sum(tuple(h[k] for k in keys) == t for h in headings))
     same = [h for h in headings if tuple(h[k] for k in keys) == best]
     ruled = [h["rule"] for h in same if h["rule"]]
     rule = None
@@ -608,7 +609,7 @@ def heading_style(headings: list[dict]) -> dict | None:
         def sig(r: dict) -> tuple:
             return (r["color"], r["width"], r["gap"], r["span"])
 
-        top = max(ruled, key=lambda r: sum(sig(o) == sig(r) for o in ruled))
+        top = max(ruled, key=lambda r: sum(sig(o) == sig(r) for o in ruled))  # a tie: the first rule met
         rule = {k: top[k] for k in ("color", "width", "gap", "span")}
     return {**dict(zip(keys, best)), "rule": rule}
 
