@@ -266,6 +266,14 @@ describe('scenes', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
+  it('profile-cv-style-refused says a choice that failed in the error box', async () => {
+    mount('profile-cv-style-refused')
+    await pressInOrder(sceneById('profile-cv-style-refused')!.press!)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('profile/config.json could not be written')
+    expect(alert).toHaveClass('error')
+  })
+
   it('profile-cv-style-earlier can keep the style in use', async () => {
     mount('profile-cv-style-earlier')
     await userEvent.click(await screen.findByRole('button', { name: 'Keep my current style' }))

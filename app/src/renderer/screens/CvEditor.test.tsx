@@ -210,6 +210,27 @@ describe('Add a page', () => {
   })
 })
 
+describe("errors that are no field's", () => {
+  it('a Save that fails is said in the error box', async () => {
+    await open({ save_cv: () => { throw { message: 'profile/ is not writable' } } })
+    await userEvent.type(editor(), 'x')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('profile/ is not writable')
+    expect(alert).toHaveClass('error')
+    expect(alert).not.toHaveClass('field-error')
+  })
+
+  it('a page that cannot be forgotten is said in the error box', async () => {
+    await open({ init_profile: () => { throw { message: 'config.json is not writable' } } }, {}, ['https://ada.dev'])
+    await userEvent.click(screen.getByRole('button', { name: 'Forget https://ada.dev' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('config.json is not writable')
+    expect(alert).toHaveClass('error')
+    expect(alert).not.toHaveClass('field-error')
+  })
+})
+
 describe('the pages read before', () => {
   const pages = () => screen.getByRole('list', { name: 'Pages your CV is read from' })
 

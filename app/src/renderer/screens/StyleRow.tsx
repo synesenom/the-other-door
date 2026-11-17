@@ -229,7 +229,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
             </div>
           )}
           {error && (
-            <p role="alert" className="field-error">
+            <p role="alert" className="error">
               {named(error)}
             </p>
           )}

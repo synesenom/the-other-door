@@ -351,7 +351,7 @@ export function CvEditor({
       </div>
       {dirty && <p className="small muted">Save or undo your changes before adding from a page.</p>}
       {pagesError && (
-        <p role="alert" className="field-error">
+        <p role="alert" className="error">
           {named(pagesError)}
         </p>
       )}
@@ -408,6 +408,12 @@ export function CvEditor({
       ) : (
         <Markdown text={text} className="cv-preview" onGap={goToGap} marked={added ?? undefined} />
       )}
+      {/* no field's error: the box, above the bar so the bar keeps its one line */}
+      {error && (
+        <p role="alert" className="error">
+          {named(error)}
+        </p>
+      )}
       <div className="profile-save">
         {/* always there, so Save does not move when the first change makes Undo possible */}
         <button type="button" className="quiet" disabled={!dirty || saving} onClick={() => setText(saved)}>
@@ -417,11 +423,6 @@ export function CvEditor({
           Save
         </button>
         {saving ? <Spinner message="Saving…" /> : message ? <p className="small">{message}</p> : dirty ? <p className="small muted">Unsaved changes</p> : null}
-        {error && (
-          <p role="alert" className="field-error">
-            {named(error)}
-          </p>
-        )}
       </div>
     </div>
   )

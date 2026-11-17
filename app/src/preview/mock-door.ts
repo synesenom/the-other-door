@@ -171,6 +171,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       case 'show_style':
         return { styles: { default: styleSet('d'), ...(style.like ? { like: styleSet('l', style.two_column) } : {}) }, in_use: style.in_use, candidate: style.candidate }
       case 'use_style': {
+        if (styled.refused) throw new Error(styled.refused)
         const pick = String(args['style'] ?? 'like')
         if (pick === 'like') style.in_use = 'like'
         else if (pick === 'default') style.in_use = 'default'
