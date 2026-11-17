@@ -112,7 +112,36 @@ describe('Stories', () => {
     await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit' }))
     await fill(user, { Title: 'Ran the migration' })
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('already in the bank')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('already in the bank')
+    expect(alert).toHaveClass('error')
     expect(screen.getByLabelText('Title')).toHaveValue('Ran the migration')
+  })
+
+  it('a draft that failed is said in the error box over the list, to try again', async () => {
+    const user = userEvent.setup()
+    show({
+      draft_stories: () => {
+        throw new Error('Claude did not answer. Try again.')
+      },
+    })
+    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.type(screen.getByLabelText('What did you do?'), 'Something.')
+    await user.click(screen.getByRole('button', { name: 'Draft it' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Claude did not answer. Try again.')
+    expect(alert).toHaveClass('error')
+    expect(screen.getByRole('button', { name: 'Write a story' })).toBeInTheDocument()
+  })
+
+  it('a bank that could not be read is said nowhere: nothing the user can fix (principle 9)', async () => {
+    show({
+      list_stories: () => {
+        throw new Error('the server stopped')
+      },
+    })
+    await waitFor(() => expect(screen.queryByText('Reading your story bank…')).toBeNull())
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(document.body).not.toHaveTextContent('the server stopped')
   })
 })

@@ -42,7 +42,7 @@ export function ReportProblem({ onSaved }: { onSaved?: () => void } = {}) {
       {busy && <Spinner message="Saving…" />}
       {saved && <p className="small">{`Saved as ${saved}. Send it to ${REPORT_TO}.`}</p>}
       {error && (
-        <p role="alert" className="field-error">
+        <p role="alert" className="error">
           {named(error)}
         </p>
       )}

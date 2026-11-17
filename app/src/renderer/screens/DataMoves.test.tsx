@@ -30,6 +30,7 @@ describe('Your data', () => {
     exportData.mockResolvedValueOnce({ ok: false, error: 'x.tar.gz is there already' })
     await userEvent.click(screen.getByRole('button', { name: 'Export…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('there already')
+    expect(screen.getByRole('alert')).toHaveClass('error')
   })
 
   it('Import names the file and what it replaces, and imports only after the yes', async () => {
@@ -63,10 +64,12 @@ describe('Your data', () => {
     pickArchive.mockResolvedValueOnce({ error: 'Choose an export, a .tar.gz file.' })
     await userEvent.click(screen.getByRole('button', { name: 'Import…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Choose an export')
+    expect(screen.getByRole('alert')).toHaveClass('error')
     pickArchive.mockResolvedValueOnce({ token: 't2', name: 'a.tar.gz' })
     importData.mockResolvedValueOnce({ ok: false, error: 'a run is in progress' })
     await userEvent.click(screen.getByRole('button', { name: 'Import…' }))
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Import' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('a run is in progress')
+    expect(screen.getByRole('alert')).toHaveClass('error')
   })
 })

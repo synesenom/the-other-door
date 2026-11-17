@@ -161,11 +161,13 @@ export function Stories() {
     }
   }
 
-  if (error && !bank) return <p role="alert" className="field-error">{named(error)}</p>
+  // a bank that could not be read is nothing the user can fix: said nowhere (docs/design/README.md, principle 9)
+  if (error && !bank) return null
   if (!bank) return <Spinner message="Reading your story bank…" />
 
+  // a draft, a save or a removal that failed: the error box, not a field's line; the user can try again
   const errorLine = error && (
-    <p role="alert" className="field-error">
+    <p role="alert" className="error">
       {named(error)}
     </p>
   )

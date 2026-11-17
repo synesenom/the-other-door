@@ -111,7 +111,9 @@ describe('ImportDialog', () => {
     })
     await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/1')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('paste the text instead')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('paste the text instead')
+    expect(alert).toHaveClass('error')
     expect(screen.queryByRole('button', { name: 'Import again anyway' })).toBeNull()
   })
 

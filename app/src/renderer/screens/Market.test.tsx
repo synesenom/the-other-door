@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { mockDoor } from '../testing'
 import { Market } from './Market'
@@ -44,9 +44,11 @@ describe('Market', () => {
     expect(call.mock.calls.map((c) => c[0])).toEqual(['market'])
   })
 
-  it('a failed report says why', async () => {
+  it('a failed count is said nowhere: nothing the user can fix (principle 9)', async () => {
     show({ market: () => { throw { message: 'companies.json: invalid JSON' } } })
-    expect(await screen.findByRole('alert')).toHaveTextContent('companies.json: invalid JSON')
+    await waitFor(() => expect(screen.queryByText(/Counting the ads/)).toBeNull())
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(document.body).not.toHaveTextContent('invalid JSON')
   })
 
   it('with no ads read it says when the market shows', async () => {
