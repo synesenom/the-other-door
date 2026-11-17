@@ -157,15 +157,29 @@ def _texts(style: dict) -> list[dict]:
     return [r for r in style["runs"] if not r.get("icon")]
 
 
+def _photo(original: dict | None, render: dict | None) -> dict | None:
+    """How the render's photo differs from the original's: None when the original has none, ``{missing, bbox, page}``
+    when the render has none, else the shift of its box and of its width and height (points)."""
+    if not original:
+        return None
+    if not render:
+        return {"missing": True, "bbox": original["bbox"], "page": original["page"]}
+    (a0, a1, a2, a3), (b0, b1, b2, b3) = original["bbox"], render["bbox"]
+    return {"dx": round(b0 - a0, 1), "dy": round(b1 - a1, 1), "dw": round((b2 - b0) - (a2 - a0), 1),
+            "dh": round((b3 - b1) - (a3 - a1), 1)}
+
+
 def match(original: dict, render: dict) -> dict:
     """How `render` differs from `original` (both `style_extract.extract` results): `runs` (a pair per matched text:
     `text`, `dx`, `dy`, `d_size`, `d_color`, the two colours, `split` when the render cut the text elsewhere),
     `missing` and `extra` (texts only one side has), `icons` (a pair per matched icon: `near`, the same numbers),
-    `icons_missing` and `icons_extra` (counts), `pages` (the two page counts, None where one is not known)."""
+    `icons_missing` and `icons_extra` (counts), `pages` (the two page counts, None where one is not known) and `photo`
+    (`_photo`: the original's photo missing from the render or its box's shift, #262)."""
     runs, missing, extra = _text_pairs(_texts(original), _texts(render))
     icons, icons_missing, icons_extra = _icon_pairs(original.get("icons", []), render.get("icons", []))
     return {"runs": runs, "missing": missing, "extra": extra, "icons": icons, "icons_missing": icons_missing,
-            "icons_extra": icons_extra, "pages": (original.get("page_count"), render.get("page_count"))}
+            "icons_extra": icons_extra, "pages": (original.get("page_count"), render.get("page_count")),
+            "photo": _photo(original.get("photo"), render.get("photo"))}
 
 
 def worst_offset_pt(diffs: dict) -> float:
@@ -187,7 +201,8 @@ def _off(p: dict) -> bool:
 
 def feedback(diffs: dict, score: float) -> str:
     """What the next round tells the model: the blurred score, a page count unlike the original's (every line after a
-    break shifts with it, so it comes first), the elements that differ most (worst first), and what only one side has."""
+    break shifts with it, so it comes first), the photo missing or off, the elements that differ most (worst first),
+    and what only one side has."""
     lines = [f"Blurred similarity to the original: {score:.2f} (1.00 = identical)."]
     original_pages, render_pages = diffs["pages"]
     if isinstance(original_pages, int) and isinstance(render_pages, int) and original_pages != render_pages:
@@ -195,6 +210,14 @@ def feedback(diffs: dict, score: float) -> str:
         runs_to = "1 page" if render_pages == 1 else f"{render_pages} pages"
         lines.append(f"Fix this first: your rebuild runs to {runs_to}, the original has {original_pages}: {how} until it "
                      f"has {original_pages}, like the original's.")
+    if photo := diffs.get("photo"):
+        if photo.get("missing"):
+            x0, y0, x1, y1 = photo["bbox"]
+            lines.append(f"The original's photo is a box at x {x0:.0f}-{x1:.0f}, y {y0:.0f}-{y1:.0f} pt on page "
+                         f"{photo['page']}: your print has none there (it is printed with the original's photo: "
+                         f"<<photo>> first in the header, and .photo sized and placed there).")
+        elif max(map(abs, photo.values())) > _OFF_SHIFT:
+            lines.append(f"- photo: x {photo['dx']:+}, y {photo['dy']:+}, width {photo['dw']:+}, height {photo['dh']:+} (points)")
     worst = sorted((p for p in (*diffs["runs"], *diffs["icons"]) if _off(p)), key=lambda p: -_weight(p))
     for p in worst[:_FEEDBACK_LIMIT]:
         what = f"'{p['text'][:40]}'" if "text" in p else f"icon beside '{(p['near'] or '?')[:40]}'"

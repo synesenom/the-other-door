@@ -9,6 +9,7 @@ import shutil
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_raw
 import pytest
+from PIL import Image
 
 from door.core import claude_cli, fonts, templates
 from door.tailoring import html_guard, html_pdf, readability, style_build, style_compare
@@ -452,7 +453,7 @@ def test_a_swap_that_was_interrupted_puts_the_style_in_use_back_too(world):
 def test_a_side_band_of_unknown_headings_is_a_column_in_the_template_and_in_the_printed_sample(world):
     heads = [h["text"] for h in style_build.style_extract.extract(STYLES / "scrubbed-pages-sidebar-fr.pdf")["headings"]]
     side = [h for h in heads if h not in ("YENFANCE ATIROIR", "LEUNE YAUTOMNE", "YDIMANCHE")]
-    body = ("<header class=\"cv-header\"><h1>A B</h1></header><h2>Parcours</h2><p>x</p>"
+    body = ("<header class=\"cv-header\"><<photo>><h1>A B</h1></header><h2>Parcours</h2><p>x</p>"
             + "".join(f"<h2>{h}</h2><p>y</p>" for h in side[:2]))
     world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(body=body), letter_round()))  # its two page original fails the letter
     assert json.loads((world.work / "template.json").read_text())["columns"]["side"]
@@ -567,3 +568,21 @@ def test_a_cv_with_a_running_header_gets_one_printed_on_its_cv_prints_and_kept_o
     cv_prints = [p for p in world.prints if p["folder"] == world.work or "stress" in p["folder"].parts]
     assert cv_prints and all("@top-left" in p["html"] for p in cv_prints)
     assert not [p for p in world.prints if p["folder"].name == "letter" and "@top-left" in p["html"]]
+
+
+def test_the_sample_of_a_cv_with_a_photo_is_printed_with_the_originals_photo_and_needs_its_token(world):
+    """#262: scrubbed-pages-sidebar-fr has a photo (a grey box): the round's print, compared with the original, places
+    the original's own photo (cut from its page), so the box is not counted as a difference the stylist cannot fix; a
+    sample body with no `<<photo>>` is asked for again."""
+    world.print_as = lambda folder: STYLES / "html-plain-single.pdf" if folder.name == "letter" else None  # one page
+    no_photo = SAMPLE_BODY.replace("<<photo>>", "")
+    stylist = Stylist(cv_round(body=no_photo), cv_round(), letter_round())
+    world.build("scrubbed-pages-sidebar-fr", stylist)
+    assert "<<photo>>" in stylist.calls[1]["input"] and "photo" in stylist.calls[1]["input"]
+    samples = [p for p in world.prints if p["folder"] == world.work]
+    assert samples and all('<img class="photo"' in p["html"] for p in samples)
+    stand_in = world.work / "original-photo.png"
+    with Image.open(stand_in) as im:
+        assert abs(im.width / im.height - (133 - 35) / (297 - 159)) < 0.05
+    stress = [p for p in world.prints if "stress" in p["folder"].parts and p["folder"].name != "photo"]
+    assert stress and not [p for p in stress if '<img class="photo"' in p["html"]]  # a print with no photo stays one
