@@ -327,8 +327,34 @@ def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs():
 
 def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs_in_the_contact_line():
     text = cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf")
-    assert not set("[Ó½○") & set(text)
+    assert not set("[Ó½¯\x11") & set(text)
     assert "(+89) 079788144 Ours, Tortue (paysage a couteau) bougie-nuageux" in " ".join(text.split())
+
+
+# a level written as dots is information (3 of 5) and a bullet is list structure: neither is an icon, even drawn
+# with the icon font (#313: the French CV's level dots are FontAwesome's)
+def test_extract_text_of_a_pdf_keeps_level_dots_and_bullets_drawn_with_the_icon_font():
+    text = cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf")
+    assert "Matinée ○ ○ ○ ○ ○" in text
+    assert text.count("○") == _pdfium_text(STYLES / "scrubbed-altacv-icons-fr.pdf").count("○")
+    assert "•" in text
+
+
+def test_extract_text_of_a_pdf_keeps_dots_and_bullets_in_a_font_of_their_own_and_drops_its_glyphs(tmp_path):
+    from pdf_utils import raw_pdf
+
+    # ZapfDingbats: ( is a plane, l a black circle, 4 a check mark
+    content = """BT /F1 11 Tf 50 760 Td (Jane Doe) Tj ET
+BT /F6 9 Tf 50 740 Td (\\() Tj ET BT /F1 11 Tf 64 740 Td (+45 1234 5678) Tj ET
+BT /F6 9 Tf 50 720 Td (l) Tj ET BT /F1 11 Tf 64 720 Td (Led the team) Tj ET
+BT /F1 11 Tf 50 700 Td (Python) Tj ET BT /F6 9 Tf 120 700 Td (l l l) Tj ET
+BT /F6 9 Tf 50 680 Td (4) Tj ET BT /F1 11 Tf 64 680 Td (Certified) Tj ET
+BT /F1 11 Tf 50 660 Td (Data engineer building pipelines in Copenhagen since 2019.) Tj ET"""
+    pdf = tmp_path / "cv.pdf"
+    pdf.write_bytes(raw_pdf(content, fonts={"F6": "ZapfDingbats"}))
+    lines = [" ".join(line.split()) for line in cv_cmd._extract_text(pdf).splitlines()]
+    assert lines == ["Jane Doe", "+45 1234 5678", "● Led the team", "Python ● ● ●", "Certified",
+                     "Data engineer building pipelines in Copenhagen since 2019."]
 
 
 @pytest.mark.parametrize("name", ICONS)
