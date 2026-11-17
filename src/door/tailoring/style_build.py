@@ -25,7 +25,7 @@ from door import i18n
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.core import chromium, claude_cli, fonts, progress as progress_mod, templates, workspace
-from door.tailoring import (cv_body, font_measure, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_preview)
+from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_preview)
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
@@ -131,9 +131,8 @@ _CV_HEADING = re.compile(r"^##[ \t]+(.+?)[ \t]*$", re.M)
 
 def _side_headings(style: dict) -> list[str]:
     """The texts of the original's headings that sit in a side band, in reading order, known to a section kind or not."""
-    bands = [b for b in style["columns"]["bands"] if b["kind"] == "side"]
-    return [h["text"] for h in style["headings"]
-            if any(b["x0"] - 2 <= (h["bbox"][0] + h["bbox"][2]) / 2 <= b["x1"] + 2 for b in bands)]
+    bands = style["columns"]["bands"]
+    return [h["text"] for h in style["headings"] if (b := _band_of(h["bbox"], bands)) and b["kind"] == "side"]
 
 
 def _side_kinds(style: dict, cv_md: str) -> list[str]:
@@ -161,6 +160,155 @@ def _manifest_data(style: dict, font_files: list[str], icon_files: dict[str, str
     if side or headings:
         data["columns"] = {"side": side, "headings": headings}
     return data
+
+
+# ---------- the columns: where the original has them, and where a print puts them (#242) ----------
+
+_ACROSS = "across the page"
+_MIN_LINE = 20  # characters: a shorter line of the original (a date, a word) is not looked for in the sample body
+
+
+def _has_side(style: dict) -> bool:
+    """Whether the original has a side band (else it is one column)."""
+    return any(b["kind"] == "side" for b in style["columns"]["bands"])
+
+
+def _where(band: dict, bands: list[dict]) -> str:
+    """`band` in words: its kind and where it is among the bands (on the left, on the right, in the middle)."""
+    others = [b for b in bands if b is not band]
+    place = ("on the left" if all(band["x0"] < b["x0"] for b in others) else
+             "on the right" if all(band["x0"] > b["x0"] for b in others) else "in the middle")
+    return f'{"side" if band["kind"] == "side" else "main"} column, {place}'
+
+
+def _band_of(bbox: list[float], bands: list[dict]) -> dict | None:
+    """The band a box stands in: the one its centre is in or nearest to; None when it spans two bands."""
+    if sum(1 for b in bands if bbox[0] < b["x1"] - 2 and bbox[2] > b["x0"] + 2) > 1:
+        return None
+    centre = (bbox[0] + bbox[2]) / 2
+    return min(bands, key=lambda b: max(b["x0"] - centre, centre - b["x1"], 0))
+
+
+def _line_runs(runs: list[dict]) -> list[list[dict]]:
+    """`runs` as lines, top to bottom, each left to right: runs whose vertical centres are within half their size.
+    (`style_extract.line_groups` needs the baselines its result no longer carries.)"""
+    lines: list[list[dict]] = []
+    for run in sorted(runs, key=lambda r: ((r["bbox"][1] + r["bbox"][3]) / 2, r["bbox"][0])):
+        centre = (run["bbox"][1] + run["bbox"][3]) / 2
+        if lines and abs(centre - (lines[-1][0]["bbox"][1] + lines[-1][0]["bbox"][3]) / 2) <= run["size"] / 2:
+            lines[-1].append(run)
+        else:
+            lines.append([run])
+    return [sorted(line, key=lambda r: r["bbox"][0]) for line in lines]
+
+
+def _pieces(line: list[dict]) -> list[list[dict]]:
+    """A line's runs cut where two are more than a letter's size apart: the texts of two columns that share a line
+    are two pieces, a drop cap or letter-spaced word one."""
+    out = [[line[0]]]
+    for prev, run in zip(line, line[1:]):
+        if run["bbox"][0] - prev["bbox"][2] > run["size"]:
+            out.append([run])
+        else:
+            out[-1].append(run)
+    return out
+
+
+def _box(line: list[dict]) -> list[float]:
+    return [min(r["bbox"][0] for r in line), min(r["bbox"][1] for r in line),
+            max(r["bbox"][2] for r in line), max(r["bbox"][3] for r in line)]
+
+
+def _by_band(runs: list[dict], bands: list[dict]) -> dict[int, list[dict]]:
+    """`runs` by the index in `bands` of the band each stands in, -1 for one across two bands."""
+    groups: dict[int, list[dict]] = {}
+    for run in runs:
+        band = _band_of(run["bbox"], bands)
+        groups.setdefault(-1 if band is None else bands.index(band), []).append(run)
+    return groups
+
+
+def column_text(style: dict, pdf: Path) -> str | None:
+    """The text of the original `pdf` for the stylist (`text.txt`) on a CV with a side band: each page's lines across
+    the page, then each column's from left to right, under a ``[page N, side column, on the left]`` label, so a section
+    that goes on in its column on the next page is not read as part of the other column's. None for one column.
+
+    Each line is read again from the page within its box: `style_extract`'s runs no longer say where a word ends, and
+    only the PDF's own text tells a drop cap (``A`` + ``TROTTOIR``) from two words."""
+    if not _has_side(style):
+        return None
+    bands = style["columns"]["bands"]
+    out: list[str] = []
+    doc = pdf_render.open_pdf(pdf)
+    try:
+        for number, page in enumerate(doc, 1):
+            height, textpage = page.get_height(), page.get_textpage()
+            groups = _by_band([r for r in style["runs"] if r["page"] == number], bands)
+            for index in [-1, *range(len(bands))]:
+                lines = []
+                for line in _line_runs(groups.get(index, [])):
+                    x0, y0, x1, y1 = _box(line)
+                    text = textpage.get_text_bounded(left=x0 - 1, bottom=height - y1, right=x1 + 1, top=height - y0)
+                    if text.strip():
+                        lines.append(" ".join(text.split()))
+                if lines:
+                    out += [f"[page {number}, {_ACROSS if index < 0 else _where(bands[index], bands)}]", *lines]
+    finally:
+        doc.close()
+    return "\n".join(out)
+
+
+def column_problems(style: dict, render: dict, placed: str) -> list[str]:
+    """Where the print (`render`, `style_extract` of it) of the body `placed` (as `compile._place_columns` wrapped it)
+    puts its columns against the original's (`style`): each section heading of `div.side` printed nearer a main band
+    of the original or across two bands, and each of `div.main` nearer a side band or across two, with where it
+    printed and where its column is. A heading is found as a piece of a printed line (`_pieces`: its runs joined,
+    `readability.squash`d), so a drop cap or wide letter-spacing does not hide it. `[]` when the original has one column, the body no side, or each heading is in
+    its column's place; a heading the print does not show is left out."""
+    cols = html_doc.columns(placed)
+    if cols is None or not _has_side(style):
+        return []
+    bands = style["columns"]["bands"]
+    runs = render.get("runs", [])
+    lines = [(readability.squash("".join(r["text"] for r in piece)), _box(piece))
+             for page in sorted({r["page"] for r in runs})
+             for line in _line_runs([r for r in runs if r["page"] == page])
+             for piece in _pieces(line)]
+    found: list[str] = []
+    for kind, part in (("main", cols[1]), ("side", cols[2])):
+        for heading in html_doc.headings(part):
+            boxes = [box for text, box in lines if text == readability.squash(heading)]
+            homes = [_band_of(box, bands) for box in boxes]
+            if not boxes or any(h is not None and (h["kind"] == "side") == (kind == "side") for h in homes):
+                continue
+            own = next(b for b in bands if (b["kind"] == "side") == (kind == "side"))
+            box = boxes[0]
+            where = "across both columns" if homes[0] is None else "in the place of the original's other column"
+            found.append(f'the {kind} column\'s section "{heading}" printed at x {box[0]:.0f}-{box[2]:.0f} pt, {where}; '
+                         f'the original\'s {_where(own, bands)} is at x {own["x0"]:.0f}-{own["x1"]:.0f} pt')
+    return found
+
+
+def body_column_problems(style: dict, body: str, columns: templates.Columns | None) -> list[str]:
+    """What the sample `body`, placed in `columns`, puts in the other column than the original has it: each line of
+    the original (of `_MIN_LINE` characters or more) found in the body's side column that the original has in a main
+    band, or in its main column that it has in a side band. `[]` without a side band or a side column."""
+    cols = html_doc.columns(compile_cmd._place_columns(body, columns))
+    if cols is None or not _has_side(style):
+        return []
+    texts = {"main": readability.normalise(html_doc.text(cols[1])), "side": readability.normalise(html_doc.text(cols[2]))}
+    bands = style["columns"]["bands"]
+    found: list[str] = []
+    for run in style["runs"]:
+        band = _band_of(run["bbox"], bands)
+        line = readability.normalise(run["text"])
+        if band is None or len(line) < _MIN_LINE:
+            continue
+        own, other = ("side", "main") if band["kind"] == "side" else ("main", "side")
+        if line in texts[other] and line not in texts[own]:
+            found.append(f'"{run["text"].strip()[:60]}" is in the {own} column of the original (page {run["page"]}), '
+                         f'but your body puts it under a heading of the {other} column')
+    return found
 
 
 # ---------- the stress variants ----------
@@ -302,20 +450,21 @@ class _Session:
         self.rounds += count
         return _ask(self.run, task, self.work, self.profile_dir)
 
-    def sample(self, template: str, body: str) -> tuple[dict, float, float]:
+    def sample(self, template: str, body: str) -> tuple[dict, float, float, list[str]]:
         """The sample `body` printed in `template`, read back and compared with the original: the diffs, the blurred
-        score and the worst offset in points.
+        score, the worst offset in points and the sections printed in the other column's place (`column_problems`).
 
         Raises:
             _Stop: the print has no text to read back.
         """
-        pdf = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns)[0]
+        pdf, placed, _ = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
+                                                columns=self.manifest.columns)
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
         diffs = style_compare.match(self.style, render)
         score = style_compare.pages_score(self.images, style_compare.page_images(pdf, self.work))
-        return diffs, score, style_compare.worst_offset_pt(diffs)
+        return diffs, score, style_compare.worst_offset_pt(diffs), column_problems(self.style, render, placed)
 
 
 _REPLY_FIRST = ("Reply with one line on what you see (layout, colours), then the ```template block and the ```body block, "
@@ -348,7 +497,10 @@ def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
             parts.append("the sections headed " + ", ".join(cols.headings))
         columns = (
             " and ".join(parts) + " (the code wraps the sections into div.main and div.side and your CSS styles them; "
-            "the sample body is plain sections with no div, no class on a div)"
+            "the sample body is plain sections with no div, no class on a div). The page has div.main first, then "
+            "div.side; in the original, " + ", ".join(f'the {_where(b, s.style["columns"]["bands"])} is at x '
+                                                       f'{b["x0"]:.0f}-{b["x1"]:.0f} pt' for b in s.style["columns"]["bands"])
+            + ": place each there with CSS"
         )
     return (
         f"Rebuild the look of the CV in this folder as a template. Files here: original_page_1.png to original_page_{pages}.png "
@@ -367,8 +519,9 @@ def _list(items: list[str]) -> str:
 
 def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, list[float], str | None]:
     """The comparison rounds: the stylist writes a template (and, in the first round that has one, the sample body),
-    the guard reads it, it is printed and compared. Returns the best template (None when none ever printed), the
-    sample body, the blurred scores of the rounds that printed and the last feedback."""
+    the guard reads it, it is printed and compared. A round whose print puts a section in the other column's place
+    (`column_problems`) is not kept. Returns the best template (None when none was kept), the sample body, the blurred
+    scores of the rounds kept and the last feedback."""
     template = body = feedback = None
     kept: list[str] = []
     scores: list[float] = []
@@ -386,6 +539,9 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
                 feedback = "Your reply had no ```body block: the sample body in one fenced block named body."
             elif bad := html_guard.unsafe(sample):
                 feedback = "The guard refused your sample body (it may hold only the building blocks):\n" + _list(bad)
+            elif bad := body_column_problems(s.style, sample, s.manifest.columns):
+                feedback = ("Your sample body puts text under a heading of the other column (text.txt gives each page's "
+                            "text column by column: a section goes on in its own column on the next page):\n" + _list(bad))
             else:
                 body = sample
                 _write(s.work / "sample_body.html", body)
@@ -396,9 +552,13 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
             feedback = "The guard refused your template, so it was not printed. Fix these:\n" + _list(problems)
             continue
         try:
-            diffs, score, worst = s.sample(template, body)
+            diffs, score, worst, misplaced = s.sample(template, body)
         except (html_pdf.PrintError, _Stop, ValueError) as exc:
             feedback = f"Printing your template failed: {exc}"
+            continue
+        if misplaced:
+            feedback = ("Your template prints the columns in the wrong place, so this round is not kept:\n"
+                        + _list(misplaced) + "\n\n" + style_compare.feedback(diffs, score))
             continue
         kept.append(template)
         scores.append(score)
@@ -411,7 +571,7 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
 def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     """The failures of the template printed with the variants of `cv_md` (`_stress_variants`), through the same placing,
     photo and typography steps `compile` takes, no model: a print that fails, text lost off the page (`readability`'s
-    checks, a last page nearly empty excepted), a photo not placed, too many pages (the compact variant must fit the
+    checks, a last page nearly empty excepted), a section in the other column's place (`column_problems`), a photo not placed, too many pages (the compact variant must fit the
     manifest's `max_pages`, the rest `templates.MAX_PAGES`)."""
     name = (_NAME.search(cv_md) or [None, None])[1]
     picture = s.work / "stress-photo.jpg"
@@ -424,6 +584,7 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
                 columns=s.manifest.columns, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
+            found += column_problems(s.style, style_extract.extract(pdf), placed)
             pages = pdf_render.get_page_count(pdf)
         except (html_pdf.PrintError, ValueError) as exc:
             failures.append(f"{variant}: printing failed: {exc}")
@@ -533,7 +694,7 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
     pdf = work / "original.pdf"
     shutil.copyfile(pdf_path, pdf)
     progress_mod.report("reading the CV's style", stage="style")
-    _write(work / "text.txt", "\n".join(pdf_render.page_texts(pdf)))
+    _write(work / "text.txt", column_text(style, pdf) or "\n".join(pdf_render.page_texts(pdf)))
     _write(work / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
     progress_mod.report("fetching the fonts", stage="style")
     plan, result["font_error"] = _get_fonts(pdf, style, work / "fonts", fonts_fetch)
@@ -553,9 +714,11 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
 def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path, style: dict, profile_dir: Path, cap: int,
             result: dict) -> None:
     files = _files_text(s, _font_notes(plan), icon_files)
-    template, _, result["scores"], feedback = _draft(s, files, cap)
+    template, body, result["scores"], feedback = _draft(s, files, cap)
+    if body is None:
+        raise _Stop(f"no sample body of the stylist's was accepted in {s.rounds} rounds: {feedback}")
     if template is None:
-        raise _Stop(f"no template of the stylist's passed the guard and printed in {s.rounds} rounds: {feedback}")
+        raise _Stop(f"no template of the stylist's was kept in {s.rounds} rounds: {feedback}")
     if (best := max(result["scores"])) < style_compare.FLOOR:
         cause = f"the fonts could not be downloaded ({result['font_error']}): try again later; " if result["font_error"] else ""
         raise _Stop(f"{cause}the rebuild did not come close to your CV's look in {s.rounds} rounds: its best print "
@@ -589,7 +752,7 @@ def build(pdf_path, *, work_dir, profile_dir=None, run=None, fonts_fetch=None, p
 
     Returns ``{"state": "ready" | "failed", "rounds", "scores", "fonts": [{family, source, reason, faked, resolved}],
     "dropped_icons": [{near, reason}], "font_error", "problems": [str]}``: ``scores`` the blurred score of each
-    comparison round that printed (1 is the original's own page), ``font_error`` why the fonts were not fetched (only
+    comparison round kept (1 is the original's own page), ``font_error`` why the fonts were not fetched (only
     the fonts the code ships stood in), ``problems`` why it failed. A model, print or file error is a failed result,
     not an exception.
     """

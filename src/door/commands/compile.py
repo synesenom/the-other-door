@@ -123,21 +123,24 @@ _H2 = re.compile(r"(?=<h2[\s>])")
 
 
 def _place_columns(body: str, columns: templates.Columns | None) -> str:
-    """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` (the
-    notes, the photo, the header) as it is, then `<div class="main">` and `<div class="side">`, each section in the
-    order the body has it. A section goes to the side when its heading is, whole and without case, a title of one of
+    """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` after
+    the header (the notes, the photo, the whole header: an `<h2>` inside it is the header's, #242) as it is, then
+    `<div class="main">` and `<div class="side">` (`html_doc.columns` reads them back), each section in the order the
+    body has it. A section goes to the side when its heading is, whole and without case, a title of one of
     the template's ``columns.side`` kinds in any supported language (a CV's headings are in its own language, whatever
     the ad's, #227), or is, whole and without case, one of its ``columns.headings``; any other goes to the main column.
     `body` itself when the template has no side column."""
     if columns is None or not (columns.side or columns.headings):
         return body
-    first, *sections = _H2.split(body)
+    cut = body.find("</header>") + len("</header>") if "</header>" in body else 0
+    first, *sections = _H2.split(body[cut:])
+    first = body[:cut] + first
     main, side = [], []
     for section in sections:
         heading = (html_doc.headings(section) or [""])[0]
         named = heading.casefold() in {h.casefold() for h in columns.headings}
         (side if named or i18n.cv_section_kind(heading, columns.side) else main).append(section)
-    return f'{first}<div class="main">{"".join(main)}</div><div class="side">{"".join(side)}</div>'
+    return f'{first}{html_doc.MAIN}{"".join(main)}</div>{html_doc.SIDE}{"".join(side)}</div>'
 
 
 def placed_cv(body: str, config: dict) -> str:

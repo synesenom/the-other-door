@@ -7,7 +7,8 @@ import re
 import pytest
 
 from door.core import claude_cli, templates
-from door.tailoring import html_guard, style_build
+from door.tailoring import html_guard, style_build, style_extract
+from style_build_utils import STYLES
 
 
 def test_the_stylist_agent_is_sonnet_with_only_the_read_tool():
@@ -208,3 +209,108 @@ def test_the_stylist_is_told_which_headings_go_to_the_side_and_that_the_code_wra
     text = style_build._files_text(session, "", {})
     assert "Logiciels" in text and "Atouts" in text
     assert "no div" in text and "wraps" in text
+
+
+# ---------- the columns (#242) ----------
+
+def _extract(name):
+    return style_extract.extract(STYLES / f"{name}.pdf")
+
+
+def _placed(main, side):
+    return ('<header class="cv-header"><h1>A B</h1></header><div class="main">'
+            + "".join(f"<h2>{h}</h2><p>x</p>" for h in main) + '</div><div class="side">'
+            + "".join(f"<h2>{h}</h2><p>y</p>" for h in side) + "</div>")
+
+
+def test_a_print_with_the_columns_where_the_original_has_them_has_no_column_problem():
+    style = _extract("latex-sidebar")
+    assert style_build.column_problems(style, style, _placed(["Education"], ["Skills", "Languages"])) == []
+
+
+def test_a_print_with_the_columns_swapped_names_where_each_printed_and_where_it_belongs():
+    # latex-sidebar has its side column on the left; html-word-two-column prints the same headings with it on the right
+    problems = style_build.column_problems(_extract("latex-sidebar"), _extract("html-word-two-column"),
+                                           _placed(["Education"], ["Skills", "Languages"]))
+    side = [p for p in problems if "Skills" in p or "Languages" in p]
+    assert len(side) == 2 and all("side column" in p and "on the left" in p for p in side)
+    assert any("Education" in p and "main column" in p and "on the right" in p for p in problems)
+
+
+def test_a_body_with_no_side_column_or_an_original_with_none_has_no_column_problem():
+    one = _extract("latex-classic")
+    assert style_build.column_problems(_extract("latex-sidebar"), _extract("html-word-two-column"), "<h2>Skills</h2><p>x</p>") == []
+    assert style_build.column_problems(one, one, _placed(["Education"], ["Skills"])) == []
+
+
+def test_the_text_of_a_two_column_cv_is_given_column_by_column_on_each_page():
+    text = style_build.column_text(_extract("scrubbed-pages-sidebar-fr"), STYLES / "scrubbed-pages-sidebar-fr.pdf")
+    labels = [line for line in text.splitlines() if line.startswith("[page 1")]
+    assert labels == ["[page 1, across the page]", "[page 1, side column, on the left]", "[page 1, main column, on the right]"]
+    page2_side, page2_main = text.split("[page 2, side column, on the left]")[1].split("[page 2, main column, on the right]")
+    assert "Nid Couleur Jardin Silence" in page2_main and "Nid Couleur Jardin Silence" not in page2_side
+    assert "Jardin cou Parfumerie" in page2_side
+    assert "ATROTTOIR ALOIN" in text.splitlines()  # a heading's larger first letter stays in its word
+
+
+def test_the_text_of_a_one_column_cv_is_none():
+    assert style_build.column_text(_extract("latex-classic"), STYLES / "latex-classic.pdf") is None
+
+
+def test_a_sample_body_that_puts_text_of_the_originals_main_column_under_a_side_heading_is_named():
+    style = _extract("scrubbed-pages-sidebar-fr")
+    columns = templates.Columns(side=[], headings=["AFONTAINE ANUIT"])
+    line = "<p>Nid Couleur Jardin Silence: UNE&amp;FRUIT 4888, Feuillage Cabane Aquarelle Dimanche</p>"
+    good = "<h2>LEUNE YAUTOMNE</h2>" + line + "<h2>AFONTAINE ANUIT</h2><p>y</p>"
+    bad = "<h2>LEUNE YAUTOMNE</h2><p>x</p><h2>AFONTAINE ANUIT</h2>" + line
+    assert style_build.body_column_problems(style, good, columns) == []
+    problems = style_build.body_column_problems(style, bad, columns)
+    assert len(problems) == 1 and "Nid Couleur Jardin Silence" in problems[0] and "main column" in problems[0]
+
+
+def test_the_stylist_is_told_on_which_side_the_side_column_is_and_that_div_main_comes_first():
+    manifest = templates.Manifest(max_pages=1, columns={"side": ["skills"], "headings": []})
+    session = types.SimpleNamespace(style=_extract("latex-sidebar"), images=[1], manifest=manifest)
+    text = style_build._files_text(session, "", {})
+    assert "on the left" in text and "div.main first" in text
+
+
+def _run(text, bbox, page=1, size=10.0):
+    return {"page": page, "text": text, "bbox": bbox, "size": size}
+
+
+def test_a_heading_printed_in_pieces_is_still_found_where_it_printed():
+    # a drop cap (`S` + `kills`) and wide letter-spacing (`L a n g`...) print a heading as several runs on one line
+    style = _extract("latex-sidebar")  # side column on the left, x 7-129
+    render = {"runs": [_run("S", [400, 100, 408, 112], size=14), _run("kills", [408, 102, 440, 112]),
+                       *[_run(c, [400 + 8 * i, 200, 406 + 8 * i, 210]) for i, c in enumerate("Languages")]]}
+    problems = style_build.column_problems(style, render, _placed([], ["Skills", "Languages"]))
+    assert len(problems) == 2 and all("other column" in p for p in problems)
+
+
+def test_a_heading_printed_across_both_columns_is_named_as_such():
+    style = _extract("latex-sidebar")
+    render = {"runs": [_run("Skills", [60, 100, 300, 112])]}  # from the side band into the main one
+    assert style_build._band_of([60, 100, 300, 112], style["columns"]["bands"]) is None
+    problems = style_build.column_problems(style, render, _placed([], ["Skills"]))
+    assert len(problems) == 1 and "across both columns" in problems[0]
+
+
+def test_a_band_between_two_others_is_in_the_middle():
+    bands = [{"x0": 10, "x1": 100, "kind": "side"}, {"x0": 120, "x1": 400, "kind": "main"}, {"x0": 420, "x1": 580, "kind": "side"}]
+    assert [style_build._where(b, bands) for b in bands] == [
+        "side column, on the left", "main column, in the middle", "side column, on the right"]
+
+
+def test_a_print_with_no_text_read_back_has_no_column_problem():
+    assert style_build.column_problems(_extract("latex-sidebar"), {}, _placed(["Education"], ["Skills"])) == []
+
+
+def test_a_line_the_pdf_prints_with_a_ligature_is_found_in_the_body_spelt_out():
+    bands = [{"x0": 20, "x1": 160, "kind": "side"}, {"x0": 180, "x1": 575, "kind": "main"}]
+    style = {"columns": {"bands": bands},
+             "runs": [{"page": 1, "text": "Certi\ufb01ed scienti\ufb01c of\ufb01cer", "bbox": [30, 100, 150, 110], "size": 9.0}]}
+    body = ('<header class="cv-header"><h1>A B</h1></header><h2>Experience</h2><p>Certified scientific officer</p>'
+            "<h2>Skills</h2><p>Python</p>")
+    problems = style_build.body_column_problems(style, body, templates.Columns(side=["skills"]))
+    assert len(problems) == 1 and "side column of the original" in problems[0]

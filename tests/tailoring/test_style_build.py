@@ -11,7 +11,7 @@ import pytest
 
 from door.commands import compile as compile_cmd
 from door.core import chromium, templates, workspace
-from door.tailoring import cv_body, html_guard, style_build, style_compare, style_preview
+from door.tailoring import cv_body, html_guard, style_build, style_compare, style_extract, style_preview
 from pdf_utils import font_names, path_count
 from style_build_utils import BIG, EXAMPLE, STYLES, Stylist, cv_only, cv_round, fake_fonts, letter_round
 
@@ -91,3 +91,19 @@ def test_a_built_style_is_what_compile_prints_a_tailored_application_in(tmp_path
     for pdf in ("cv.pdf", "cover_letter.pdf"):
         assert font_names(out / pdf) == {"Figtree-Regular"}  # the built fonts (the stand-in download's file), not a fallback
     assert path_count(out / "cv.pdf") > 0  # the icon the template draws from /icons/email.svg
+
+
+
+@pytest.mark.parametrize("extra", ["", "h2::first-letter { font-size: 140%; }", "h2 { letter-spacing: 0.3em; }"])
+def test_a_print_with_the_side_column_on_the_wrong_side_is_found_whatever_its_headings_look_like(tmp_path, extra):
+    """#242: a drop cap or wide letter-spacing prints a heading in pieces; the check still finds it."""
+    style = style_extract.extract(STYLES / "latex-sidebar.pdf")  # side column on the left
+    body = ('<header class="cv-header"><h1>Ada Lovelace</h1></header><h2>Education</h2><p>' + "Studied things. " * 8
+            + "</p><h2>Skills</h2><p>Python, SQL</p><h2>Languages</h2><p>English</p>")
+    template = ('<!DOCTYPE html><html lang="<<lang>>"><head><meta charset="utf-8"><style>@page { size: A4; margin: 0 } '
+                "body { margin: 40pt; display: grid; grid-template-columns: 1fr 150pt; font-family: serif } "
+                ".cv-header { grid-column: 1 / -1 } .photo { width: 1pt } " + extra + "</style></head><body><<body>></body></html>")
+    pdf, placed, _ = compile_cmd.print_page(body, template, EXAMPLE / "cv.template.html", "en", tmp_path, "r",
+                                            columns=templates.Columns(side=["skills", "languages"]))
+    problems = style_build.column_problems(style, style_extract.extract(pdf), placed)
+    assert any('"Skills"' in p for p in problems) and any('"Languages"' in p for p in problems), problems

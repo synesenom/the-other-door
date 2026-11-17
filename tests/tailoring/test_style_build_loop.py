@@ -27,7 +27,7 @@ class World:
         self.checked = {"cv": 0, "letter": 0}
         self.problems = {"cv": lambda n: [], "letter": lambda n: []}
         self.print_error: str | None = None
-        self.rebuilt: str | None = None  # the corpus PDF a sample print gives instead of the original: a rebuild unlike it
+        self.print_as = lambda folder: None  # the PDF a print in `folder` gives instead of the original's
         monkeypatch.setattr(html_pdf, "print_html", self._print)
         monkeypatch.setattr(readability, "check_pdf", self._check)
 
@@ -35,8 +35,7 @@ class World:
         self.prints.append({"html": html, "folder": folder, "assets": assets})
         if self.print_error:
             raise html_pdf.PrintError(self.print_error)
-        unlike = self.rebuilt and out_pdf.name == "render.pdf"
-        shutil.copyfile(STYLES / f"{self.rebuilt}.pdf" if unlike else self.pdf, out_pdf)
+        shutil.copyfile(self.print_as(folder) or self.pdf, out_pdf)
 
     def _check(self, pdf, body, name=None, cv=False):
         kind = "cv" if cv else "letter"
@@ -117,9 +116,10 @@ def test_a_print_that_fails_is_told_to_the_next_round(world):
 
 
 def test_a_rebuild_that_never_comes_near_the_cv_s_look_is_failed_and_writes_nothing(world):
-    world.rebuilt = "latex-classic"  # every sample print looks like another CV
+    # every sample print looks like another CV (one-column originals both: the columns are not what is unlike)
+    world.print_as = lambda folder: STYLES / "latex-classic.pdf" if folder == world.work else None
     stylist = Stylist(cv_round(), cv_only())
-    result = world.build("html-word-two-column", stylist, cap=3)
+    result = world.build("html-plain-single", stylist, cap=3)
     assert result["state"] == "failed" and len(result["scores"]) == 3
     assert max(result["scores"]) < style_compare.FLOOR
     assert "did not come close to your CV's look" in result["problems"][0]
@@ -153,8 +153,8 @@ def test_a_build_with_no_fonts_under_the_floor_says_the_fonts_could_not_be_downl
     def broken(plan, dest):
         raise fonts.FontsError("google/fonts unreachable")
 
-    world.rebuilt = "latex-classic"
-    result = world.build("html-word-two-column", Stylist(cv_round(), cv_only()), fonts_fetch=broken, cap=2)
+    world.print_as = lambda folder: STYLES / "latex-classic.pdf" if folder == world.work else None
+    result = world.build("html-plain-single", Stylist(cv_round(), cv_only()), fonts_fetch=broken, cap=2)
     assert result["state"] == "failed" and result["font_error"] == "google/fonts unreachable"
     assert result["problems"][0].startswith("the fonts could not be downloaded (google/fonts unreachable): try again later")
     assert list(world.profile.iterdir()) == []
@@ -457,3 +457,60 @@ def test_a_side_band_of_unknown_headings_is_a_column_in_the_template_and_in_the_
     printed = world.prints[0]["html"]
     main, side_html = printed.split('<div class="side">')
     assert all(h in side_html for h in side[:2]) and "Parcours" in main and "Parcours" not in side_html
+
+
+# ---------- the columns (#242) ----------
+
+SWAPPED = STYLES / "html-word-two-column.pdf"  # its side column is on the right, latex-sidebar's on the left
+
+
+def test_a_round_whose_print_puts_the_columns_in_the_wrong_place_is_not_kept_and_the_next_is_told_where(world):
+    samples = [SWAPPED]
+    world.print_as = lambda folder: samples.pop(0) if folder == world.work and samples else None
+    stylist = Stylist(cv_round(), cv_only(), letter_round())
+    result = world.build("latex-sidebar", stylist)
+    assert result["state"] == "ready", result["problems"]
+    assert result["rounds"] == 2 and len(result["scores"]) == 1  # the swapped round is not one to keep
+    second = stylist.calls[1]["input"]
+    assert "columns in the wrong place" in second and '"Skills"' in second and "side column, on the left" in second
+
+
+def test_a_template_whose_stress_prints_put_the_columns_in_the_wrong_place_fails_the_stress_renders(world):
+    world.print_as = lambda folder: SWAPPED if "stress" in folder.parts else None
+    stylist = Stylist(cv_round(), cv_only(), letter_round())
+    result = world.build("latex-sidebar", stylist)
+    assert "Printed with other texts" in stylist.calls[1]["input"] and "column's section" in stylist.calls[1]["input"]
+    assert result["state"] == "failed" and "side column" in result["problems"][0]
+
+
+def test_the_stylist_reads_the_text_of_a_two_column_cv_column_by_column(world):
+    world.build("latex-sidebar", Stylist(*GOOD))
+    assert "[page 1, side column, on the left]" in (world.work / "text.txt").read_text()
+
+
+def test_a_sample_body_that_puts_text_under_the_other_column_s_heading_is_asked_for_again(world):
+    line = "<p>Nid Couleur Jardin Silence: UNE&amp;FRUIT 4888, Feuillage Cabane Aquarelle Dimanche</p>"
+    bad = '<header class="cv-header"><h1>A B</h1></header><h2>LEUNE YAUTOMNE</h2><p>x</p><h2>AFONTAINE ANUIT</h2>' + line
+    stylist = Stylist(cv_round(body=bad), cv_round(), letter_round())
+    world.build("scrubbed-pages-sidebar-fr", stylist)
+    second = stylist.calls[1]["input"]
+    assert "other column" in second and "Nid Couleur Jardin Silence" in second and "```body" in second
+    assert world.prints and "Nid Couleur" not in world.prints[0]["html"]  # the refused body was never printed
+
+
+
+def test_a_build_whose_every_round_prints_the_columns_in_the_wrong_place_fails_and_says_why(world):
+    world.print_as = lambda folder: SWAPPED if folder == world.work else None
+    result = world.build("latex-sidebar", Stylist(cv_round(), cv_only(), letter_round()), cap=2)
+    assert result["state"] == "failed" and result["scores"] == []
+    assert "no template of the stylist's was kept in 2 rounds" in result["problems"][0]
+    assert "columns in the wrong place" in result["problems"][0]
+
+
+def test_a_sample_body_refused_in_every_round_fails_the_build_naming_the_body(world):
+    line = "<p>Nid Couleur Jardin Silence: UNE&amp;FRUIT 4888, Feuillage Cabane Aquarelle Dimanche</p>"
+    bad = '<header class="cv-header"><h1>A B</h1></header><h2>LEUNE YAUTOMNE</h2><p>x</p><h2>AFONTAINE ANUIT</h2>' + line
+    result = world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(body=bad)), cap=2)
+    assert result["state"] == "failed" and not world.prints
+    assert "no sample body of the stylist's was accepted in 2 rounds" in result["problems"][0]
+    assert "other column" in result["problems"][0]
