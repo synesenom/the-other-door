@@ -1,7 +1,7 @@
 """Headings vs entry titles (#320): bold body-size entry titles share the headings' style, in any language."""
 import pytest
 
-from door.tailoring import style_extract as se
+from style_rules_utils import rules_extract
 from tests.pdf_utils import raw_pdf
 
 LANG = {
@@ -54,7 +54,7 @@ def _cv(lang, upper=False, dates="below", hsize=10, tsize=10, entries=(2, 2, 1, 
 def _headings(tmp_path, **kw):
     path = tmp_path / "cv.pdf"
     path.write_bytes(_cv(**kw))
-    return [h["text"] for h in se.extract(path)["headings"]]
+    return [h["text"] for h in rules_extract(path)["headings"]]
 
 
 @pytest.mark.parametrize("lang", list(LANG))
@@ -81,7 +81,7 @@ def test_headings_only_group_is_kept(tmp_path):
         y -= 60
     path = tmp_path / "cv.pdf"
     path.write_bytes(raw_pdf("\n".join(ops)))
-    assert [h["text"] for h in se.extract(path)["headings"]] == heads
+    assert [h["text"] for h in rules_extract(path)["headings"]] == heads
 
 
 def _plain(layout, gap, heads=("Berufserfahrung", "Ausbildung", "Kenntnisse", "Ehrenamt"), hfont="F2", line=None):
@@ -110,7 +110,7 @@ def _plain(layout, gap, heads=("Berufserfahrung", "Ausbildung", "Kenntnisse", "E
 def _got(tmp_path, pdf):
     path = tmp_path / "x.pdf"
     path.write_bytes(pdf)
-    return [h["text"] for h in se.extract(path)["headings"]]
+    return [h["text"] for h in rules_extract(path)["headings"]]
 
 
 @pytest.mark.parametrize("gap", [10, 12, 14, 18, 22])

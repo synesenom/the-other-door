@@ -1,0 +1,75 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "one",
+  "side": "none"
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 4,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 7,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 23,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 30,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 38,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 40,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 50,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 55,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 63,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 65,
+   "kind": "other",
+   "column": "main"
+  }
+ ],
+ "entry_titles": [
+  8,
+  14,
+  17,
+  20,
+  24,
+  27,
+  41,
+  43,
+  46,
+  51,
+  56,
+  59,
+  61
+ ]
+}

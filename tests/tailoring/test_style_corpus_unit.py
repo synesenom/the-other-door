@@ -8,6 +8,7 @@ import re
 import pytest
 
 from paths import TESTS_DIR
+from style_structure_utils import extract_with, recorded
 
 from door.tailoring import style_extract
 
@@ -18,7 +19,10 @@ STEMS = sorted(EXPECTED)
 
 @pytest.fixture(scope="module")
 def styles():
-    return {stem: style_extract.extract(STYLES / f"{stem}.pdf") for stem in STEMS}
+    """Each PDF read with the structure the model gave it (`tests/tailoring/fixtures/styles/structure/`, recorded); a scan has
+    none (no model call)."""
+    return {stem: extract_with(STYLES / f"{stem}.pdf", recorded(stem)) if (STYLES / "structure" / f"{stem}.json").is_file()
+            else style_extract.extract(STYLES / f"{stem}.pdf") for stem in STEMS}
 
 
 def test_every_pdf_of_the_corpus_has_its_expectations_and_the_other_way_round():
@@ -71,6 +75,14 @@ def test_the_columns_icons_photo_and_heading_case(styles, stem):
         assert style["photo"]["shape"] == expected["photo_shape"]
         assert all(abs(a - b) <= 2 for a, b in zip(style["photo"]["bbox"], expected["photo_bbox"]))
     assert style["heading_style"]["case"] == expected["heading_case"]
+
+
+@pytest.mark.parametrize("stem", _copyable())
+def test_the_headings_and_the_side_band_are_those_of_the_recorded_answer(styles, stem):
+    style, expected = styles[stem], EXPECTED[stem]
+    assert sorted(h["text"] for h in style["headings"]) == expected["headings"]
+    side = [b for b in style["columns"]["bands"] if b["kind"] == "side"]
+    assert [[b["x0"], b["x1"]] for b in side] == ([expected["side_x"]] if "side_x" in expected else [])
 
 
 @pytest.mark.parametrize("stem", _copyable())

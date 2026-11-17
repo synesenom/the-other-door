@@ -297,12 +297,13 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
 
 
 def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
-    """Its text (the icon boxes) and its style verdict read one extract (#298): a style extract is the slow part."""
+    """Its text (the icon boxes) is one extract (#298: a style extract is the slow part); its style verdict is the
+    structure's (`style_structure`), which makes no second extract."""
     from door.tailoring import style_extract
 
     _answer(monkeypatch)
     read, extract = [], style_extract.extract
-    monkeypatch.setattr(style_extract, "extract", lambda path: read.append(path) or extract(path))
+    monkeypatch.setattr(style_extract, "extract", lambda path, structure=None: read.append(path) or extract(path, structure))
     pdfs = [STYLES / "latex-classic.pdf", STYLES / "scrubbed-altacv-icons-fr.pdf", env.tmp / "old-cv.pdf"]
     result = cv_cmd._draft_cv_core([*map(str, pdfs), str(env.tmp / "old-cv.docx")], profile_dir=env.profile_dir)
     assert sorted(map(str, read)) == sorted(map(str, pdfs))

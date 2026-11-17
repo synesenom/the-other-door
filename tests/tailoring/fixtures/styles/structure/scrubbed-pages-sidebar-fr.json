@@ -1,0 +1,65 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "two",
+  "side": "left",
+  "side_x0": 32,
+  "side_x1": 145
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 3,
+   "kind": "summary",
+   "column": "main"
+  },
+  {
+   "id": 7,
+   "kind": "experience",
+   "column": "main"
+  },
+  {
+   "id": 157,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 13,
+   "kind": "other",
+   "column": "side"
+  },
+  {
+   "id": 32,
+   "kind": "other",
+   "column": "side"
+  },
+  {
+   "id": 50,
+   "kind": "other",
+   "column": "side"
+  },
+  {
+   "id": 75,
+   "kind": "other",
+   "column": "side"
+  },
+  {
+   "id": 110,
+   "kind": "other",
+   "column": "side"
+  }
+ ],
+ "entry_titles": [
+  8,
+  19,
+  41,
+  58,
+  89,
+  101,
+  119,
+  147,
+  158,
+  160,
+  161
+ ]
+}

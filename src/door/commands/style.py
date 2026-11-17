@@ -37,7 +37,7 @@ from pypdfium2 import PdfiumError
 from door.commands import _common as common
 from door.commands import _progress
 from door.core import lock, phone, templates, tracker, workspace
-from door.tailoring import style_build, style_extract, style_preview
+from door.tailoring import style_build, style_extract, style_preview, style_structure
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
 PENDING_SECONDS = 30  # a started build that has not yet taken its lock still reads as building this long
@@ -65,15 +65,16 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def _look(path: Path, style: dict | None = None) -> None:
-    """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print).
-    `style` is the file's `style_extract.extract`, when the caller has already read it (#298)."""
+def _look(path: Path) -> None:
+    """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print): a
+    scan, a LinkedIn export, three columns, or a CV whose structure could not be read (`style_structure`: the one
+    model call per original, cached by the file, so the build that follows makes none)."""
     if not path.is_file():
         raise ValueError(f"{path.name} could not be found.")
     if refused := style_extract.not_pdf(path):
         raise ValueError(f"{path.name} {refused['detail']}")
     try:
-        verdict = (style or style_extract.extract(path))["verdict"]
+        verdict = style_extract.structure_verdict(style_structure.structure_for(path))
     except (PdfiumError, OSError) as exc:
         raise ValueError(f"{path.name} is not a PDF The other door can read.") from exc
     if not verdict["copyable"]:

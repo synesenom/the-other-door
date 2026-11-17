@@ -3,6 +3,7 @@
 import pytest
 
 from pdf_utils import raw_pdf
+from style_rules_utils import rules_extract
 
 from door.tailoring import style_build, style_compare, style_extract
 
@@ -10,7 +11,7 @@ from door.tailoring import style_build, style_compare, style_extract
 def read(tmp_path, content, **kwargs):
     path = tmp_path / "cv.pdf"
     path.write_bytes(raw_pdf(content, **kwargs))
-    return style_extract.extract(path)
+    return rules_extract(path)
 
 
 def text(font, size, x, y, s, color="0 0 0"):
@@ -94,7 +95,7 @@ def page_image(w=595, h=842):
 def read_pages(tmp_path, pages, **kwargs):
     path = tmp_path / "cv.pdf"
     path.write_bytes(raw_pdf(pages, **kwargs))
-    return style_extract.extract(path)
+    return rules_extract(path)
 
 
 def test_a_scan_has_nothing_to_copy(tmp_path):
@@ -910,7 +911,7 @@ def test_spaced_level_dots_do_not_widen_a_column_band():
     # '○ ○ ○ ○' in the icon font is no icon (#315) but is still no column text: the side band ends at its words
     from tests.paths import TESTS_DIR
 
-    style = style_extract.extract(TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf")
+    style = rules_extract(TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf")
     side = next(b for b in style["columns"]["bands"] if b["kind"] == "side")
     assert side["x1"] == 541.9
 

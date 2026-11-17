@@ -1,0 +1,44 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "one",
+  "side": "none"
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 3,
+   "kind": "experience",
+   "column": "main"
+  },
+  {
+   "id": 19,
+   "kind": "education",
+   "column": "main"
+  },
+  {
+   "id": 36,
+   "kind": "languages",
+   "column": "main"
+  },
+  {
+   "id": 52,
+   "kind": "certifications",
+   "column": "main"
+  }
+ ],
+ "entry_titles": [
+  4,
+  9,
+  14,
+  20,
+  25,
+  30,
+  37,
+  42,
+  47,
+  53,
+  58,
+  63
+ ]
+}

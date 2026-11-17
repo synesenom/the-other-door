@@ -6,9 +6,11 @@ import re
 
 import pytest
 
+from door import i18n
 from door.core import claude_cli, templates
-from door.tailoring import html_guard, pdf_render, style_build, style_extract
+from door.tailoring import html_guard, pdf_render, style_build
 from style_build_utils import STYLES
+from style_structure_utils import extract_with, recorded
 
 
 def test_the_stylist_agent_is_sonnet_with_only_the_read_tool():
@@ -92,7 +94,7 @@ def test_icon_files_are_accepted_by_the_manifest(tmp_path):
 
 def _style(bands, headings, pages=1):
     return {"page_count": pages, "columns": {"count": len(bands), "bands": bands},
-            "headings": [{"text": t, "bbox": [x, 100, x + 50, 110],
+            "headings": [{"text": t, "bbox": [x, 100, x + 50, 110], "kind": i18n.cv_section_kind(t, templates.SECTION_KINDS) or "other",
                           "band": next((b["kind"] for b in bands if b["x0"] - 2 <= x + 25 <= b["x1"] + 2), None)}
                          for t, x in headings]}
 
@@ -216,7 +218,7 @@ def test_the_stylist_is_told_which_headings_go_to_the_side_and_that_the_code_wra
 # ---------- the columns (#242) ----------
 
 def _extract(name):
-    return style_extract.extract(STYLES / f"{name}.pdf")
+    return extract_with(STYLES / f"{name}.pdf", recorded(name))
 
 
 def _placed(main, side):

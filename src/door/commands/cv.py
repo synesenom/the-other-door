@@ -199,7 +199,7 @@ def _skills_line_without_todo(line: str) -> str | None:
 
 
 def _pdf_style(path: Path) -> dict | None:
-    """A PDF source's `style_extract.extract`, read once for its text and its style verdict (#298); None for
+    """A PDF source's `style_extract.extract` (no structure: its text and icons, no model), read once for its text; None for
     another file or a missing one (`_extract_text` says which)."""
     if path.suffix.lower() != ".pdf" or not path.is_file():
         return None
@@ -208,12 +208,12 @@ def _pdf_style(path: Path) -> dict | None:
     return style_extract.extract(path)
 
 
-def _has_style(path: Path, style: dict | None) -> bool:
-    """Whether the file at `path` (`style`: its `_pdf_style`) has a CV style to copy (`style._look` passes);
-    false on any failure (#150)."""
+def _has_style(path: Path) -> bool:
+    """Whether the file at `path` has a CV style to copy (`style._look` passes, which reads the CV's structure with
+    the one model call the build then reuses); false on any failure, a failed call too (#150)."""
     try:
-        style_cmd._look(path, style)
-    except ValueError:  # an unreadable file simply offers no style
+        style_cmd._look(path)
+    except ValueError:  # an unreadable file, or a structure that could not be read, simply offers no style
         return False
     return True
 
@@ -261,7 +261,7 @@ def _draft_cv_core(
             path = Path(source)
             style = _pdf_style(path)
             text = _extract_text(path, style)
-            described.append({"source": source, "kind": "file", "chars": len(text), "style": _has_style(path, style)})
+            described.append({"source": source, "kind": "file", "chars": len(text), "style": _has_style(path)})
             parts.append(f"Source file {source}:\n<<<\n{text}\n>>>")
 
     template = workspace.PROFILE_EXAMPLE_DIR / "cv.md"

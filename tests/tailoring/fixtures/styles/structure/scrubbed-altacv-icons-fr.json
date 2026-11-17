@@ -1,0 +1,49 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "two",
+  "side": "right",
+  "side_x0": 350,
+  "side_x1": 545
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 7,
+   "kind": "summary",
+   "column": "across"
+  },
+  {
+   "id": 13,
+   "kind": "other",
+   "column": "main"
+  },
+  {
+   "id": 14,
+   "kind": "other",
+   "column": "side"
+  },
+  {
+   "id": 37,
+   "kind": "other",
+   "column": "side"
+  },
+  {
+   "id": 81,
+   "kind": "other",
+   "column": "side"
+  },
+  {
+   "id": 97,
+   "kind": "other",
+   "column": "side"
+  }
+ ],
+ "entry_titles": [
+  17,
+  21,
+  31,
+  48,
+  87
+ ]
+}

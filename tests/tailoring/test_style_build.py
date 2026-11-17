@@ -14,6 +14,7 @@ from door.core import chromium, templates, workspace
 from door.tailoring import cv_body, html_guard, style_build, style_compare, style_extract, style_preview
 from pdf_utils import font_names, path_count
 from style_build_utils import BIG, EXAMPLE, STYLES, Stylist, cv_only, cv_round, fake_fonts, letter_round
+from style_structure_utils import extract_with, recorded
 
 pytestmark = [
     pytest.mark.real_chromium,
@@ -97,7 +98,7 @@ def test_a_built_style_is_what_compile_prints_a_tailored_application_in(tmp_path
 @pytest.mark.parametrize("extra", ["", "h2::first-letter { font-size: 140%; }", "h2 { letter-spacing: 0.3em; }"])
 def test_a_print_with_the_side_column_on_the_wrong_side_is_found_whatever_its_headings_look_like(tmp_path, extra):
     """#242: a drop cap or wide letter-spacing prints a heading in pieces; the check still finds it."""
-    style = style_extract.extract(STYLES / "latex-sidebar.pdf")  # side column on the left
+    style = extract_with(STYLES / "latex-sidebar.pdf", recorded("latex-sidebar"))  # side column on the left
     body = ('<header class="cv-header"><h1>Ada Lovelace</h1></header><h2>Education</h2><p>' + "Studied things. " * 8
             + "</p><h2>Skills</h2><p>Python, SQL</p><h2>Languages</h2><p>English</p>")
     template = ('<!DOCTYPE html><html lang="<<lang>>"><head><meta charset="utf-8"><style>@page { size: A4; margin: 0 } '

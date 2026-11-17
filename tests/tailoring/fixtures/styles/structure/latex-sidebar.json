@@ -1,0 +1,49 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "two",
+  "side": "left",
+  "side_x0": 7,
+  "side_x1": 129
+ },
+ "name": 2,
+ "headings": [
+  {
+   "id": 1,
+   "kind": "summary",
+   "column": "main"
+  },
+  {
+   "id": 6,
+   "kind": "experience",
+   "column": "main"
+  },
+  {
+   "id": 7,
+   "kind": "contact",
+   "column": "side"
+  },
+  {
+   "id": 18,
+   "kind": "skills",
+   "column": "side"
+  },
+  {
+   "id": 37,
+   "kind": "languages",
+   "column": "side"
+  },
+  {
+   "id": 43,
+   "kind": "education",
+   "column": "main"
+  }
+ ],
+ "entry_titles": [
+  8,
+  19,
+  32,
+  44,
+  45
+ ]
+}
