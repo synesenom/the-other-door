@@ -301,6 +301,30 @@ def test_a_real_cvs_main_column_squashed_beside_its_band_scores_well_below_itsel
     assert score(original, squashed) < style_compare.GOOD
 
 
+
+RENDERS = TESTS_DIR / "tailoring" / "fixtures" / "style_renders"  # grey pages of real rounds of made-up corpus CVs
+
+
+def _pages(name):
+    return [Image.open(p) for p in sorted(RENDERS.glob(f"{name}_*.png"))]
+
+
+@pytest.mark.parametrize("cv, render", [
+    ("html-canva-icons", "good"),  # a round that looks like its CV (0.965)
+    ("latex-sidebar", "good"),  # the lowest good rebuild of the re-scored runs: its lines drift a few points (0.768)
+])
+def test_a_saved_good_rebuild_scores_at_least_good(cv, render):
+    assert style_compare.pages_score(_pages(f"{cv}.original"), _pages(f"{cv}.{render}")) >= style_compare.GOOD
+
+
+@pytest.mark.parametrize("cv, render", [
+    ("html-canva-icons", "squashed"),  # the main column squeezed under the band, two pages (0.245)
+    ("html-canva-icons", "squashed-narrow"),  # the band right, the main text in a narrow column inside it (0.518)
+])
+def test_a_saved_squashed_rebuild_scores_at_most_the_floor(cv, render):
+    assert style_compare.pages_score(_pages(f"{cv}.original"), _pages(f"{cv}.{render}")) <= style_compare.FLOOR
+
+
 # ---------- when to stop ----------
 
 def test_it_goes_on_while_the_rounds_gain_and_the_offsets_are_large():
