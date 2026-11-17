@@ -326,3 +326,58 @@ def test_runs_joined_into_words_are_judged_by_where_they_start_among_the_origina
     assert scrub_check.shift([(0.0, 5.0), (3.0, 5.0), (6.0, 5.0)], [(3.0, 5.0)]) == \
         "count changed 3 -> 1, each new run starts at most 0.000 pt from an original one"
     assert scrub_check.shift([(0.0, 5.0)], [(0.0, 5.5)]) == "0.500 pt"
+
+
+# ----------------------------------------------------------------------------- the colours go too
+@pytest.mark.parametrize("colour", [(0.2, 0.4, 0.9), (0.1, 0.1, 0.45), (0.8, 0.1, 0.05), (0.95, 0.85, 0.1)])
+@pytest.mark.parametrize("turn", [120, 180, 240])
+def test_a_colour_turns_round_the_wheel_keeping_how_light_it_looks(colour, turn):
+    """Its contrast with the page stays: a blue heading never turns into a pale yellow one."""
+    import colorsys
+    turned = scrub.turn_colour(colour, turn)
+    h0, _, _ = colorsys.rgb_to_hls(*colour)
+    h1, _, _ = colorsys.rgb_to_hls(*turned)
+    assert abs(((h1 - h0) * 360) % 360 - turn) < 3
+    assert abs(scrub.luminance(turned) - scrub.luminance(colour)) < 0.01
+
+
+@pytest.mark.parametrize("grey", [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (0.3, 0.3, 0.3), (0.3, 0.302, 0.301)])
+def test_a_grey_black_or_white_stays(grey):
+    assert scrub.turn_colour(grey, 120) == grey
+
+
+def test_a_grey_with_a_tint_turns_too():
+    tinted = (0.5, 0.53, 0.54)
+    assert scrub.turn_colour(tinted, 120) != tinted
+
+
+def test_every_rgb_fill_and_stroke_is_turned_and_nothing_else():
+    ops = [([0.1, 0.1, 0.45], "rg"), ([0.1, 0.1, 0.45], "RG"), ([0.2, 0.5, 0.6], "sc"), ([0.2, 0.5, 0.6], "SCN"),
+           ([0.5], "sc"), ([0.4], "g"), ([1, 0, 0, 1, 10, 20], "cm"), ([0.0, 0.0, 0.0], "rg")]
+    out = scrub.recolour_ops(ops, 90)
+    assert [o for _, o in out] == [o for _, o in ops]
+    assert all(out[i][0] != ops[i][0] for i in range(4))
+    assert out[4:] == ops[4:]
+
+
+def test_a_colour_it_cannot_turn_is_counted():
+    """CMYK, a shading, a pattern's colour: left as they are, so the scrub says how many to look at."""
+    ops = [([0.1, 0.1, 0.45], "rg"), ([0, 0.5, 1, 0], "k"), ([0, 0.5, 1, 0], "K"), (["/Sh1"], "sh"),
+           ([0.1, 0.2, 0.3, "/P1"], "scn"), (["/P1"], "scn"), ([0.4], "g")]
+    assert scrub.colours_left(ops) == 5
+
+
+def test_a_whole_pdf_has_its_page_and_form_colours_turned():
+    pikepdf = pytest.importorskip("pikepdf")
+    pdf = pikepdf.new()
+    form = pdf.make_stream(b"0.8 0.1 0.05 rg 0 0 5 5 re f", Type=pikepdf.Name.XObject, Subtype=pikepdf.Name.Form,
+                           BBox=[0, 0, 10, 10])
+    pdf.add_blank_page()
+    page = pdf.pages[0]
+    page.Resources = pikepdf.Dictionary(XObject=pikepdf.Dictionary(F1=form))
+    page.Contents = pdf.make_stream(b"0.1 0.1 0.45 RG 0.3 g /F1 Do")
+    assert scrub.recolour(pdf, 180) == 0
+    colours = [(str(op), [float(x) for x in o]) for obj in (page, form) for o, op in pikepdf.parse_content_stream(obj)
+               if str(op) in ("rg", "RG", "g")]
+    assert [c for c, _ in colours] == ["RG", "g", "rg"]
+    assert colours[0][1] != [0.1, 0.1, 0.45] and colours[1][1] == [0.3] and colours[2][1] != [0.8, 0.1, 0.05]

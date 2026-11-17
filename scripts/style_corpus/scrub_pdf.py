@@ -7,7 +7,8 @@ fonts in MacRoman, real space glyphs; a glyph of width 0 is not in the subset, s
 and Word, Google Docs and Canva ones (Type0 fonts, Identity-H, and Skia's Type3 fallback fonts, glyphs placed one by one or in
 TJ arrays: each word is laid out again from where it started, see rewrite_content), whose tagged structure (StructTreeRoot,
 ActualText, Alt) goes too. Every image becomes a flat grey box of its
-size (a photo, a logo); links, outlines, forms, XMP and the document info but its Creator and Producer go.
+size (a photo, a logo). Every colour turns round the colour wheel by one random angle, greys kept (turn_colour).
+Links, outlines, forms, XMP and the document info but its Creator and Producer go.
 Two paths are kept on purpose, with no real pdfTeX or Quartz original left to re-verify a merged one: the
 simple-font path (scrub_op) breaks words at a TJ kern under 0.15 em, which fits pdfTeX's justified glue
 (0.22-0.33 em: below the 0.3 em gap the other path ends a word at, so it would join words), and the Type0/Type3 path
@@ -21,12 +22,14 @@ Never commit the original or words.json: they hold the person's text.
 """
 from __future__ import annotations
 
+import colorsys
 import json
 import random
 import re
 import sys
 import unicodedata
 import zlib
+from numbers import Number
 from typing import NamedTuple
 
 FRENCH = """
@@ -484,6 +487,68 @@ def _written(stream: list) -> list:
     return out
 
 
+COLOUR_OPS = ("rg", "RG", "sc", "SC", "scn", "SCN")
+
+
+def luminance(rgb: tuple) -> float:
+    """How light a colour looks (WCAG relative luminance), what its contrast with the page is worked out from."""
+    lin = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+
+def turn_colour(rgb: tuple, turn: float) -> tuple:
+    """An RGB colour turned `turn` degrees round the colour wheel, its saturation and how light it looks kept: the
+    CV's own colours go, its contrast and which colour is its accent stay. A grey (black and white too) stays."""
+    if max(rgb) - min(rgb) < 0.01:
+        return rgb
+    h, _, s = colorsys.rgb_to_hls(*rgb)
+    h, target, low, high = (h + turn / 360) % 1, luminance(rgb), 0.0, 1.0
+    for _ in range(30):
+        mid = (low + high) / 2
+        low, high = (mid, high) if luminance(colorsys.hls_to_rgb(h, mid, s)) < target else (low, mid)
+    return tuple(round(c, 3) for c in colorsys.hls_to_rgb(h, (low + high) / 2, s))
+
+
+def recolour_ops(ops: list, turn: float) -> list:
+    """Content operators with each three-number fill or stroke colour turned (turn_colour); everything else kept."""
+    return [(list(turn_colour(tuple(float(x) for x in operands), turn)), op)
+            if str(op) in COLOUR_OPS and len(operands) == 3
+            else (operands, op) for operands, op in ops]
+
+
+def colours_left(ops: list) -> int:
+    """The colours recolour_ops leaves as they are: CMYK (k, K, four numbers), a shading painted (sh), a pattern's."""
+    return sum(1 for operands, op in ops
+               if str(op) in ("k", "K", "sh") or (str(op) in COLOUR_OPS and len(operands) != 3
+                                                  and not (len(operands) == 1 and isinstance(operands[0], Number))))
+
+
+def recolour(pdf, turn: float) -> int:
+    """Every page's and form's colours turned by the same angle (recolour_ops); returns colours_left over them."""
+    import pikepdf
+
+    left = 0
+
+    def redo(obj):
+        nonlocal left
+        ops = list(pikepdf.parse_content_stream(obj))
+        left += colours_left(ops)
+        return pikepdf.unparse_content_stream(recolour_ops(ops, turn))
+
+    seen = set()
+    for page in pdf.pages:
+        page.Contents = pdf.make_stream(redo(page))
+        stack = [page.Resources]
+        while stack:
+            for _, x in (stack.pop().get("/XObject") or {}).items():
+                if x.get("/Subtype") == "/Form" and x.objgen not in seen:
+                    seen.add(x.objgen)
+                    x.write(redo(x))
+                    if "/Resources" in x:
+                        stack.append(x.Resources)
+    return left
+
+
 def grey_images(resources) -> int:
     """Every image of these resources (and of their forms) becomes a flat grey box of its size: a photo of the
     person or an employer's logo would name them. Returns how many."""
@@ -622,9 +687,10 @@ def main(src: str, dst: str, words_json: str) -> None:
         del pdf.trailer["/Info"]
         if info:
             pdf.trailer["/Info"] = pdf.make_indirect(pikepdf.Dictionary(info))
+    left = recolour(pdf, random.SystemRandom().uniform(120, 240))  # never written down
     pdf.remove_unreferenced_resources()
     pdf.save(dst, compress_streams=True)
-    print("done:", images, "image(s) greyed")
+    print("done:", images, "image(s) greyed,", left, "colour(s) not turned (CMYK, shading, pattern: look at them)")
 
 
 if __name__ == "__main__":

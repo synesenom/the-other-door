@@ -17,6 +17,7 @@ CASES = [
     ("latex-sidebar", "Nimbus Sans L", "standin", "Arimo"),
     ("html-plain-single", "Figtree", "nearest", "sans"),        # variable on google/fonts: never pinned
     ("scrubbed-pages-sidebar-fr", "Optima", "nearest", "sans"),  # Apple's, not free
+    ("scrubbed-pages-header-en", "AvenirNext", "nearest", "sans"),  # Apple's, not free
     ("latex-classic", "URW Palladio L", "nearest", "serif"),
     ("latex-two-column", "LMRoman10", "nearest", "serif"),
     ("latex-two-column", "LMRoman12", "none", "Tinos"),         # one short run: nothing to measure
