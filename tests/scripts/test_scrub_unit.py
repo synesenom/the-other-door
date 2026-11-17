@@ -75,6 +75,44 @@ def test_a_word_a_little_too_wide_loses_to_a_narrower_one_so_it_does_not_run_int
         assert len(word) == 4
 
 
+def _narrow_font(narrow="ILiltf"):
+    """A MacRoman font where these letters are narrow (280), the space 250 and every other letter wide (700)."""
+    names = scrub.encoding_names("/MacRomanEncoding")
+    narrow = set(narrow)
+    widths = [280.0 if names.get(c) in narrow else 250.0 if c == 32 else 0.0 if c < 65 else 700.0 for c in range(32, 256)]
+    return scrub.Font(names, widths, first=32)
+
+
+@pytest.mark.parametrize("case", ["lower", "title", "upper"])
+def test_a_one_letter_word_becomes_one_letter_even_when_two_narrow_ones_fit_its_width_better(case):
+    for _ in range(20):  # "Il" (560) is nearer a narrow "I" (280) than "A" or "y" (700) is
+        assert len(scrub.pick(_narrow_font(), 280.0, case, banned=set(), letters=1)) == 1
+
+
+def test_a_narrow_one_letter_word_becomes_another_narrow_letter_so_it_does_not_run_into_the_next_word():
+    font = _narrow_font()
+    for _ in range(20):
+        items, _ = scrub.scrub_op(font, [b"I see"], banned={"see"})
+        text = b"".join(x for x in items if isinstance(x, bytes)).decode("mac_roman")
+        first = text.split(" ")[0]
+        assert first == "L"  # as narrow as "I", and not the original letter
+
+
+def test_a_narrow_capital_no_other_capital_is_as_narrow_as_becomes_a_narrow_small_letter():
+    font = _narrow_font("Iil")  # as Avenir: I 260, J 492, i and l 250
+    for _ in range(20):
+        assert scrub.pick(font, 280.0, "upper", banned={"i"}, letters=1) == "l"
+
+
+def test_a_one_letter_word_no_french_one_letter_word_can_write_is_one_of_the_fonts_own_letters():
+    names = scrub.encoding_names("/MacRomanEncoding")
+    have = set("Ilnu")  # no a, y or à in the subset, but "il", "un", "nu" are
+    widths = [500.0 if names.get(c) in have else 0.0 for c in range(32, 256)]
+    font = scrub.Font(names, widths, first=32)
+    word = scrub.pick(font, 500.0, "title", banned=set(), letters=1)
+    assert len(word) == 1 and word in have
+
+
 def test_a_word_no_french_word_fits_is_made_of_the_fonts_own_letters_not_dropped():
     names = scrub.encoding_names("/MacRomanEncoding")
     have = set("QXZ")
