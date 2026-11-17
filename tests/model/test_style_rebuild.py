@@ -33,7 +33,7 @@ from door.tailoring import cv_body, readability, style_build, style_extract
 pytestmark = [pytest.mark.model, pytest.mark.real_chromium]
 
 EXPECTED = json.loads((STYLES / "expected.json").read_text(encoding="utf-8"))
-FLOOR = 0.5  # the best round's blurred score: Sonnet's median was 0.94 in #206, a broken rebuild scores near 0
+FLOOR = 0.5  # the best round's blurred score: Sonnet's median was 0.94 in #206, a broken one (far off, or pages too long) under 0.2
 EXAMPLE_CV = (EXAMPLE / "cv.md").read_text(encoding="utf-8")
 
 SHORT_CV = """# Sam Example

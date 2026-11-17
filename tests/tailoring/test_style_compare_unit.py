@@ -164,6 +164,8 @@ def test_feedback_names_a_page_count_unlike_the_originals_first():
     assert "1 page" in style_compare.feedback(style_compare.match(original, shorter), score=0.4).splitlines()[1]
     same = style_compare.feedback(style_compare.match(original, {**original}), score=1.0)
     assert "pages" not in same
+    unknown = style_compare.match(style([run("A")]), longer)  # an original with no page count says nothing of pages
+    assert unknown["pages"] == (None, 3) and "page" not in style_compare.feedback(unknown, score=0.4).splitlines()[1]
 
 
 def test_feedback_of_a_perfect_render_is_the_score_alone():
@@ -232,6 +234,19 @@ def test_a_rebuild_a_few_lines_too_long_scores_close_to_the_original():
     original = [lines(12), lines(12)]
     render = [lines(12, top=60), lines(12, top=20), lines(2)]  # page 2 starts with page 1's last two lines
     assert style_compare.pages_score(original, render) > 0.75
+
+
+def test_a_rebuild_far_too_long_stays_below_the_small_gain_floor():
+    """Twice the original's pages or more, each with a few lines: not a few lines over, so each extra page costs a whole
+    one and the loop's small-gain stop does not end it early."""
+    original = [lines(12), lines(12)]
+    render = [lines(4), lines(4)] + [lines(4)] * 4
+    assert style_compare.pages_score(original, render) < style_compare.MIN_SCORE
+
+
+def test_an_original_page_taller_than_the_renders_is_compared_with_white_below_not_black():
+    tall = lines(12, size=(200, 400))
+    assert style_compare.pages_score([tall], [lines(12)]) > 0.9
 
 
 def test_a_shift_does_not_make_another_layout_look_alike():
