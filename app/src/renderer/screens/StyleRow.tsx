@@ -194,7 +194,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
           <div className="style-below">
             {earlier && <p className="small muted">Your earlier style is in use.</p>}
             {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
-            {!hasLike && !building && canBuild && <p className="small muted">Make your tailored CVs look like a CV of yours. Takes 5–10 minutes in the background.</p>}
+            {!hasLike && !building && canBuild && <p className="small muted">Make your tailored CVs look like a CV of yours. Takes 2–5 minutes in the background.</p>}
             {building ? (
               <Spinner message="Building your style…" />
             ) : (

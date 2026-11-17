@@ -1326,7 +1326,7 @@ def test_the_review_offers_the_style_off_only_for_a_styled_file_on_a_fresh_set_u
     prompts.answers.update(_JANE)
     result = _invoke()
     assert prompts.order == ["cv_sources", "preferences", "titles_pick", "titles_add", "discovery_pick", "photo", "review"]
-    assert _STYLE_LINE in result.output and "5-10 minutes" in result.output.replace("–", "-")
+    assert _STYLE_LINE in result.output and "2-5 minutes" in result.output.replace("–", "-")
     assert ("Change the CV style", "style") in prompts.asked["review"]["choices"]
     assert style_started.files == []
 
