@@ -20,6 +20,7 @@ from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
 from door.core import claude_cli, migrations, workspace
+from door.tailoring import cv_body
 
 _DEFAULT_MODEL = "sonnet"
 _DRAFT_NAME = "cv.draft.md"
@@ -241,7 +242,6 @@ def _draft_cv_core(
 _BASICS_MODEL = "haiku"
 _DEFAULT_REMOTE = "hybrid"
 _EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-_LOCATION_RE = re.compile(r"^\W*location\W+(.+)$", re.IGNORECASE)
 # A level at which someone works in a language; a language at any other level stays out of `languages`.
 _WORKING_LEVELS = {"native", "fluent", "working"}
 
@@ -276,29 +276,6 @@ def _usable(value) -> str | None:
     """`value` as text, or `None` when it is empty or still a `TODO` of the draft."""
     text = " ".join(str(value or "").split())
     return text if text and "TODO" not in text else None
-
-
-def _header_name(text: str) -> str | None:
-    for line in text.splitlines():
-        if line.startswith("# "):
-            return _usable(line[2:])
-    return None
-
-
-def _without_tagline(text: str) -> str:
-    """`text` without the tagline: the `> …` line(s) of the header, above the first `## ` section (its `|` and any
-    words in it are not contact parts)."""
-    head, sep, rest = text.partition("\n## ")
-    return "\n".join(line for line in head.splitlines() if not line.startswith(">")) + sep + rest
-
-
-def _header_location(text: str) -> str | None:
-    """What the CV's `**Location:** …` part says (the template's header keeps its parts on one line, split by `|`)."""
-    for part in re.split(r"[|\n]", _without_tagline(text)):
-        match = _LOCATION_RE.match(part.strip())
-        if match:
-            return _usable(match.group(1).strip(" *"))
-    return None
 
 
 def _needs_the_model(text: str, name, email, location) -> bool:
@@ -346,13 +323,18 @@ def _infer_basics_core(
     if not text:
         return {**result, "missing": ["name", "email", "location"]}
 
-    name = _header_name(text)
-    found_email = _EMAIL_RE.search(_without_tagline(text))
-    email = found_email.group(0) if found_email else None
-    place = _header_location(text)
+    # The header (`cv_body.header`, its labels in every supported language), then for an email the whole text but
+    # the tagline.
+    head = cv_body.header(text)
+    name = _usable(head["name"])
+    untagged = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(">"))
+    email = next((m.group(0) for s in [*head["details"].get("email", []), *head["other"], untagged] if (m := _EMAIL_RE.search(s))), None)
+    place = _usable(next(iter(head["details"].get("location", [])), None))
     location = i18n.known_city(place) if place else None
-    # A place naming a known country but no known city says too little to search; another place is one The other door does not cover.
-    unsupported = place if place and not location and not i18n.country_for_location(place) else None
+    # A place naming a covered country but no known city says too little to search; one naming a place abroad is one
+    # The other door does not cover; anything else (a street address) is left to the model.
+    abroad = place and not location and not i18n.country_for_location(place) and i18n.compile_words(i18n.foreign_places()).search(place)
+    unsupported = place if abroad else None
 
     if _needs_the_model(text, name, email, location or unsupported):
         try:
