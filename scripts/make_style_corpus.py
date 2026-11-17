@@ -34,6 +34,7 @@ _FACES = [("Figtree", "Figtree-Regular.ttf", 400, "normal"), ("Figtree", "Figtre
 _PEOPLE = [
     ("Mira Valdis", "Data Engineer", "Copenhagen"), ("Jonas Brekke", "Product Designer", "Aarhus"),
     ("Lena Ortiz", "Backend Developer", "Odense"), ("Tomas Reyes", "Project Manager", "Malmo"),
+    ("Ines Kovacs", "Test Engineer", "Aalborg"),
 ]
 _COMPANIES = ["Northwind Labs", "Bluebird Systems", "Kestrel Analytics", "Fjord Software", "Linden Works",
               "Harbor Digital", "Quill & Co", "Maple Robotics", "Tidewater Data", "Ember Studio"]
@@ -50,7 +51,7 @@ _SKILLS = ["Python", "SQL", "Docker", "Git", "Project planning", "Data analysis"
 
 
 def record(n: int) -> dict:
-    """The made-up CV number *n* (1-4)."""
+    """The made-up CV number *n* (1-5)."""
     name, title, city = _PEOPLE[n - 1]
     slug = name.lower().replace(" ", ".")
     jobs = [
@@ -101,6 +102,21 @@ def html_word_two_column(r: dict) -> str:
     main = (f"<h2>Profile</h2><p>{e(r['summary'])}</p><h2>Experience</h2>{_jobs_html(r)}<h2>Education</h2>"
             + "".join(f"<div><b>{e(x['degree'])}</b>, {e(x['school'])} <span class='dates'>{e(x['dates'])}</span></div>" for x in r["education"]))
     return _html(css, f"<h1>{e(r['name'])}</h1><div>{e(r['title'])}</div><div class='cols'><div class='main'>{main}</div><div class='side'>{side}</div></div>")
+
+
+def html_equal_columns(r: dict) -> str:
+    """Two columns of the same width, the skills, education and languages in the left one."""
+    c = r["contact"]
+    css = ("body{font:10.5pt Calibri,'Helvetica Neue',Arial,sans-serif;color:#222;padding:40px}h1{font-size:26pt;margin:0;color:#2E5E4E}"
+           "h2{font-size:12pt;color:#2E5E4E;border-bottom:1.5px solid #2E5E4E;margin:14px 0 6px;text-transform:uppercase}"
+           ".cols{display:flex;gap:28px}.left{flex:1}.right{flex:1}.row{display:flex;justify-content:space-between}"
+           ".co{color:#555;font-style:italic}ul{margin:4px 0 8px;padding-left:18px}.dates{color:#555}")
+    left = (f"<h2>About me</h2><p>{e(r['summary'])} I write things down, ask early when a plan is unclear and enjoy teaching colleagues what I have learned.</p><h2>Contact</h2>{''.join(f'<div>{e(v)}</div>' for v in c.values())}<h2>Skills</h2>"
+            f"{''.join(f'<div>{e(s)}</div>' for s in r['skills'])}<h2>Education</h2>"
+            + "".join(f"<div><b>{e(x['degree'])}</b>, {e(x['school'])} <span class='dates'>{e(x['dates'])}</span></div>" for x in r["education"])
+            + f"<h2>Languages</h2>{''.join(f'<div>{e(s)}</div>' for s in r['languages'])}")
+    right = f"<h2>Experience</h2>{_jobs_html(r)}"
+    return _html(css, f"<h1>{e(r['name'])}</h1><div>{e(r['title'])}</div><div class='cols'><div class='left'>{left}</div><div class='right'>{right}</div></div>")
 
 
 _ICONS = {"phone": "M2 4h6l2 5-3 2a14 14 0 0 0 6 6l2-3 5 2v6a3 3 0 0 1-3 3A20 20 0 0 1 2 7a3 3 0 0 1 0-3z",
@@ -192,12 +208,13 @@ def scan_pdf(image: Image.Image, out: Path) -> None:
 
 
 def build(out: Path, printer=html_pdf.print_html) -> None:
-    """Write the corpus PDFs into *out*: the three HTML designs, the LinkedIn-like export and the scan."""
+    """Write the corpus PDFs into *out*: the four HTML designs, the LinkedIn-like export and the scan."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     fonts = [FONT_DIR / name for _, name, _, _ in _FACES]
     pages = [("html-word-two-column", source(1)), ("html-canva-icons", source(2)),
-             ("html-plain-single", source(3)), ("linkedin-like", linkedin_html(record(4)))]
+             ("html-plain-single", source(3)), ("linkedin-like", linkedin_html(record(4))),
+             ("html-equal-columns", html_equal_columns(record(5)))]
     with tempfile.TemporaryDirectory() as folder:
         for stem, html in pages:
             printer(Path(folder), with_fonts(html), out / f"{stem}.pdf", assets={"fonts": fonts})

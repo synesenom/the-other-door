@@ -273,6 +273,41 @@ def test_two_stacks_of_lines_are_a_main_column_and_a_side_column(tmp_path):
     assert side["lines"] == 30 and main["lines"] == 40 and side["background"] is None
 
 
+def titled(x, kinds):
+    """A stack of body lines at *x* with whole-line section titles (the bold one is the font's) above its lines."""
+    out = ""
+    for i, title in enumerate(kinds):
+        out += text("F2", 12, x, 780 - 90 * i, title) + stack(x, 764 - 90 * i, 5, "A line of the body text that runs on and on")
+    return out
+
+
+def equal_kinds(tmp_path, left, right):
+    columns = read(tmp_path, titled(40, left) + titled(300, right))["columns"]
+    assert columns["count"] == 2
+    return [b["kind"] for b in columns["bands"]]
+
+
+def test_equal_columns_with_more_section_titles_on_the_left_have_it_as_the_side(tmp_path):
+    assert equal_kinds(tmp_path, ["Skills", "Education", "Languages"], ["Profile", "Experience"]) == ["side", "main"]
+
+
+def test_equal_columns_with_more_section_titles_on_the_right_have_it_as_the_side(tmp_path):
+    assert equal_kinds(tmp_path, ["Profile", "Experience"], ["Skills", "Education", "Languages"]) == ["main", "side"]
+
+
+def test_only_side_kind_titles_are_counted_for_the_side_of_equal_columns(tmp_path):
+    assert equal_kinds(tmp_path, ["Profile", "Experience", "Projects"], ["Skills"]) == ["main", "side"]
+    assert equal_kinds(tmp_path, ["Skills"], ["Profile", "Experience", "Projects"]) == ["side", "main"]
+
+
+def test_equal_columns_with_no_section_titles_have_the_right_one_as_the_side(tmp_path):
+    assert equal_kinds(tmp_path, ["Alpha", "Beta"], ["Gamma", "Delta"]) == ["main", "side"]
+
+
+def test_equal_columns_with_as_many_section_titles_each_have_the_right_one_as_the_side(tmp_path):
+    assert equal_kinds(tmp_path, ["Skills", "Education"], ["Languages", "Interests"]) == ["main", "side"]
+
+
 def test_one_stack_is_one_column(tmp_path):
     columns = read(tmp_path, stack(60, 780, 40, "The one column of text"))["columns"]
     assert columns["count"] == 1 and columns["bands"][0]["kind"] == "only"

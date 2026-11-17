@@ -239,6 +239,14 @@ def test_a_print_with_the_columns_swapped_names_where_each_printed_and_where_it_
     assert any("Education" in p and "main column" in p and "on the right" in p for p in problems)
 
 
+def test_a_print_with_the_side_on_the_right_of_a_cv_with_equal_columns_names_the_misplaced_headings():
+    # html-equal-columns has its side (skills, education, languages) in the left column of two of the same width
+    problems = style_build.column_problems(_extract("html-equal-columns"), _extract("html-word-two-column"),
+                                           _placed(["Experience"], ["Skills", "Languages"]))
+    side = [p for p in problems if "Skills" in p or "Languages" in p]
+    assert len(side) == 2 and all("side column" in p and "on the left" in p for p in side)
+
+
 def test_a_body_with_no_side_column_or_an_original_with_none_has_no_column_problem():
     one = _extract("latex-classic")
     assert style_build.column_problems(_extract("latex-sidebar"), _extract("html-word-two-column"), "<h2>Skills</h2><p>x</p>") == []

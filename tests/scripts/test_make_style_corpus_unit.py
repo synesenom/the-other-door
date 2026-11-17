@@ -48,12 +48,22 @@ def test_building_the_corpus_prints_each_html_design_and_makes_the_scan(tmp_path
         make_pdf(out_pdf, ["Printed " * 12])
 
     corpus.build(tmp_path, printer=printer)
-    assert [n for n, _ in printed] == ["html-word-two-column.pdf", "html-canva-icons.pdf", "html-plain-single.pdf", "linkedin-like.pdf"]
+    assert [n for n, _ in printed] == ["html-word-two-column.pdf", "html-canva-icons.pdf", "html-plain-single.pdf", "linkedin-like.pdf",
+                                           "html-equal-columns.pdf"]
     assert all(set(fonts) <= FONTS for _, fonts in printed)
     assert (tmp_path / "scan.pdf").exists()
 
 
 def test_the_made_up_cvs_use_example_addresses_only():
-    for n in (1, 2, 3, 4):
+    for n in (1, 2, 3, 4, 5):
         c = corpus.record(n)["contact"]
         assert c["email"].endswith("@example.com") and c["web"].startswith("example.com/")
+
+
+def test_the_equal_columns_design_has_two_flex_one_columns_with_the_side_kinds_on_the_left():
+    html = corpus.html_equal_columns(corpus.record(5))
+    assert re.findall(r"\.(left|right)\{flex:1\}", html) == ["left", "right"]
+    left, right = re.search(r"class='left'>(.*)</div><div class='right'>(.*)</div></div>", html, re.S).groups()
+    heads = lambda part: re.findall(r"<h2>([^<]+)</h2>", part)
+    assert heads(left) == ["About me", "Contact", "Skills", "Education", "Languages"] and heads(right) == ["Experience"]
+    assert set(re.findall(r"@([\w.-]+\.\w+)", html)) == {"example.com"}
