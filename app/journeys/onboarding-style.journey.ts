@@ -9,7 +9,7 @@ import type { Page } from '@playwright/test'
 // A short CV: the stand-in print sets it on one page, as the build's stress renders need.
 test.use({ worldOptions: { empty: true, persona: 'jonas' } })
 
-const STYLED_PDF = resolve(__dirname, '..', '..', 'tests', 'tailoring', 'fixtures', 'styles', 'latex-classic.pdf')
+const STYLED_PDF = resolve(__dirname, '..', '..', 'tests', 'style', 'fixtures', 'styles', 'latex-classic.pdf')
 const finding = (page: Page) => page.getByRole('heading', { name: 'Finding jobs', level: 1 })
 const styleBox = (page: Page) => page.getByRole('checkbox', { name: 'Make my tailored CVs look like the CV I uploaded', exact: true })
 /** Jonas's CV names no city: the review asks for it before Save. */
