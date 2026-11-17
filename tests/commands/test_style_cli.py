@@ -10,7 +10,6 @@ import re
 import shutil
 import signal
 import sys
-import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -347,10 +346,11 @@ def test_a_start_whose_process_refuses_the_file_is_recorded_failed_and_the_log_s
     copy = home / ".style" / "source.pdf"
     copy.parent.mkdir()
     copy.write_bytes(b"not a pdf")
+    started = []
+    spawn = phone.spawn_detached
+    monkeypatch.setattr(phone, "spawn_detached", lambda *a, **k: started.append(spawn(*a, **k)) or started[-1])
     style_cmd._spawn(home, copy)
-    deadline = time.monotonic() + 90
-    while _run(home)["state"] == "building" and time.monotonic() < deadline:
-        time.sleep(0.3)
+    started[0].wait(timeout=90)  # its error reaches the log after it records the failure (#274)
     assert _run(home)["state"] == "failed"
     assert "is not a PDF The other door can read" in (home / ".style" / "build.log").read_text()
     assert style_cmd.status(home, home / "profile")["state"] == "failed"
