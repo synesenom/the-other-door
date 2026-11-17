@@ -75,15 +75,16 @@ def _run(text, font=None, style=None):
 
 
 def _styled_docx(path, paragraphs, styles):
-    """A DOCX of `paragraphs` ((paragraph style or None, runs)) and `styles` ((id, type, based on, font))."""
+    """A DOCX of `paragraphs` ((paragraph style or None, runs)) and `styles` ((id, type, based on, font[, default]))."""
     body = "".join(
         f"<w:p>{f'<w:pPr><w:pStyle w:val=\"{pstyle}\"/></w:pPr>' if pstyle else ''}{''.join(runs)}</w:p>"
         for pstyle, runs in paragraphs
     )
     defs = "".join(
-        f'<w:style w:type="{kind}" w:styleId="{sid}">' + (f'<w:basedOn w:val="{base}"/>' if base else "")
+        f'<w:style w:type="{kind}" w:styleId="{sid}"{' w:default="1"' if default else ""}>'
+        + (f'<w:basedOn w:val="{base}"/>' if base else "")
         + (f'<w:rPr><w:rFonts w:ascii="{font}" w:hAnsi="{font}"/></w:rPr>' if font else "") + "</w:style>"
-        for sid, kind, base, font in styles
+        for sid, kind, base, font, *default in styles
     )
     with zipfile.ZipFile(path, "w") as zf:
         zf.writestr("word/document.xml", f'<?xml version="1.0" encoding="UTF-8"?><w:document {_NS}><w:body>{body}</w:body></w:document>')
@@ -115,6 +116,46 @@ def test_extract_text_of_a_docx_leaves_out_runs_in_a_symbol_font(tmp_path):
 def test_extract_text_of_a_docx_keeps_a_run_whose_own_font_overrides_a_symbol_style(tmp_path):
     path = tmp_path / "cv.docx"
     _styled_docx(path, [("Icons", [_run("Jane Doe", font="Arial")])], [("Icons", "paragraph", None, "Wingdings")])
+    assert cv_cmd._extract_text(path) == "Jane Doe"
+
+
+@pytest.mark.parametrize("font", ["FontAwesome", "Font Awesome 6 Free Solid", "MT Extra", "Webdings", "Zapf Dingbats"])
+def test_extract_text_of_a_docx_leaves_out_runs_in_the_icon_fonts_a_pdf_leaves_out(tmp_path, font):
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [(None, [_run("A", font=font), _run("+45 1234 5678")])], [])
+    assert cv_cmd._extract_text(path) == "+45 1234 5678"
+
+
+def test_extract_text_of_a_docx_leaves_out_a_run_of_only_icon_glyphs_whatever_its_font(tmp_path):
+    # a font from the theme or the document defaults is not read: the glyphs themselves tell (#297)
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [(None, [_run("\uf095"), _run(" +45 1234 5678 "), _run("\u2706", font="Calibri"), _run("Copenhagen")])], [])
+    assert cv_cmd._extract_text(path) == "+45 1234 5678 Copenhagen"
+
+
+def test_extract_text_of_a_docx_reads_a_paragraph_without_a_style_in_the_default_one(tmp_path):
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [(None, [_run("(")]), ("Body", [_run("Jane Doe")])], [
+        ("Icons", "paragraph", None, "Wingdings", True),
+        ("Body", "paragraph", None, "Calibri"),
+    ])
+    assert cv_cmd._extract_text(path) == "Jane Doe"
+
+
+def test_extract_text_of_a_docx_leaves_out_a_run_naming_a_symbol_font_for_high_ansi_only(tmp_path):
+    path = tmp_path / "cv.docx"
+    icon = '<w:r><w:rPr><w:rFonts w:hAnsi="Wingdings"/></w:rPr><w:t>(</w:t></w:r>'
+    _styled_docx(path, [(None, [icon, _run(" Jane Doe")])], [])
+    assert cv_cmd._extract_text(path) == "Jane Doe"
+
+
+def test_extract_text_of_a_docx_reads_a_style_based_on_itself(tmp_path):
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [("Loop", [_run("Jane Doe", style="Ring")])], [
+        ("Loop", "paragraph", "Loop", None),
+        ("Ring", "character", "Round", None),
+        ("Round", "character", "Ring", None),
+    ])
     assert cv_cmd._extract_text(path) == "Jane Doe"
 
 

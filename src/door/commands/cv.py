@@ -19,8 +19,8 @@ import click
 from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
-from door.core import claude_cli, migrations, workspace
-from door.tailoring import cv_body
+from door.core import claude_cli, fonts, migrations, workspace
+from door.tailoring import cv_body, style_icons
 
 _DEFAULT_MODEL = "sonnet"
 _DRAFT_NAME = "cv.draft.md"
@@ -78,28 +78,28 @@ def _extract_text(path: Path, style: dict | None = None) -> str:
     if not path.is_file():
         raise FileNotFoundError(f"{path}: no such file")
     if suffix == ".pdf":
-        from door.tailoring import pdf_render, style_extract, style_icons
+        from door.tailoring import pdf_render, style_extract
 
         runs = (style or style_extract.extract(path)).get("runs", [])  # none for a scan or a LinkedIn export
-        fonts = style_icons.icon_fonts(runs)
-        icons = [(r["page"], r["bbox"]) for r in runs if style_icons.is_glyph(r, fonts)]
+        marked = style_icons.icon_fonts(runs)
+        icons = [(r["page"], r["bbox"]) for r in runs if style_icons.is_glyph(r, marked)]
         return "\n".join(pdf_render.page_texts(path, leave_out=icons)).strip()
     if suffix == ".docx":
         return _docx_text(path)
     return _decode_text_file(path.read_bytes()).strip()
 
 
-# a font whose letters are pictures: a phone or an envelope set in one reads back as a stray "(" or "*" (#297)
-_SYMBOL_FONT = re.compile(r"^(symbol|wingdings|webdings|zapf ?dingbats|marlett)", re.I)
-
-
 def _docx_text(path: Path) -> str:
-    """A DOCX's paragraphs, leaving out the runs set in a symbol font (their own, else their character style's,
-    else their paragraph style's, each style with the ones it is based on)."""
+    """A DOCX's paragraphs, leaving out its icons, which read back as a stray "(" or "*" (#297): a run of only
+    private-use or dingbat characters, or one set in a symbol or icon font as a PDF's fonts are judged (its own
+    font, else its character style's, else its paragraph style's or the default one's, each style through the
+    ones it is based on)."""
     with zipfile.ZipFile(path) as zf:
         root = ElementTree.fromstring(zf.read("word/document.xml"))
         styles = ElementTree.fromstring(zf.read("word/styles.xml") if "word/styles.xml" in zf.namelist() else "<styles/>")
     based = {s.get(f"{_W}styleId"): (_font(s), _val(s, f"{_W}basedOn")) for s in styles.iter(f"{_W}style")}
+    default = next((s.get(f"{_W}styleId") for s in styles.iter(f"{_W}style")
+                    if s.get(f"{_W}type") == "paragraph" and s.get(f"{_W}default") in ("1", "true")), None)
 
     def styled(style_id: str | None) -> str | None:
         seen = set()
@@ -114,11 +114,18 @@ def _docx_text(path: Path) -> str:
     for p in root.iter(f"{_W}p"):
         texts = []
         for run in p.iter(f"{_W}r"):
-            font = _font(run) or styled(_val(run, f"{_W}rPr/{_W}rStyle")) or styled(_val(p, f"{_W}pPr/{_W}pStyle"))
-            if not (font and _SYMBOL_FONT.match(font)):
-                texts.extend(t.text or "" for t in run.findall(f"{_W}t"))
+            text = "".join(t.text or "" for t in run.findall(f"{_W}t"))
+            font = (_font(run) or styled(_val(run, f"{_W}rPr/{_W}rStyle"))
+                    or styled(_val(p, f"{_W}pPr/{_W}pStyle") or default))
+            if not (text and style_icons._glyph_only(text)) and not (font and _icon_font(font)):
+                texts.append(text)
         paragraphs.append("".join(texts))
     return "\n".join(p for p in paragraphs if p.strip()).strip()
+
+
+def _icon_font(font: str) -> bool:
+    """Whether `font` draws pictures for letters: an icon font or a symbol font, as a PDF's are judged."""
+    return bool(style_icons._ICON_FONT.search(font) or fonts._SYMBOL.match(fonts.key(font)))
 
 
 def _val(element, path: str) -> str | None:
@@ -206,8 +213,8 @@ def _pdf_style(path: Path) -> dict | None:
     return style_extract.extract(path)
 
 
-def _has_style(path: Path, style: dict | None = None) -> bool:
-    """Whether the file at `path` (of extract `style`, when read) has a CV style to copy (`style._look` passes);
+def _has_style(path: Path, style: dict | None) -> bool:
+    """Whether the file at `path` (`style`: its `_pdf_style`) has a CV style to copy (`style._look` passes);
     false on any failure (#150)."""
     try:
         style_cmd._look(path, style)
