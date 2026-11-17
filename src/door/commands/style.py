@@ -315,6 +315,8 @@ def build_style(file):
         for problem in result["problems"] or ["the build failed"]:
             click.echo(f"Error: {problem}", err=True)
         sys.exit(1)
+    if result["font_error"]:
+        click.echo(f"The fonts could not be downloaded ({result['font_error']}): only the fonts The other door ships stand in.")
     click.echo(f"The template is ready after {result['rounds']} rounds: profile/style.next/; `cv style use` chooses it.")
 
 

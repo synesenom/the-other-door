@@ -127,6 +127,39 @@ def test_a_rebuild_that_never_comes_near_the_cv_s_look_is_failed_and_writes_noth
     assert list(world.profile.iterdir()) == []
 
 
+def _scores(monkeypatch, *scores):
+    """The sample prints' blurred scores, one a round in this order, each far from the original's elements (the print
+    itself is the original's PDF, which would stop the loop at once)."""
+    it = iter(scores)
+    monkeypatch.setattr(style_compare, "pages_score", lambda original, render: next(it))
+    monkeypatch.setattr(style_compare, "worst_offset_pt", lambda diffs: 9.0)
+
+
+def test_a_best_round_exactly_at_the_floor_is_ready(world, monkeypatch):
+    _scores(monkeypatch, style_compare.FLOOR, style_compare.FLOOR - 0.1)
+    result = world.build("html-word-two-column", Stylist(cv_round(), cv_only(), letter_round()), cap=2)
+    assert result["state"] == "ready", result["problems"]
+
+
+def test_low_rounds_then_one_that_clears_the_floor_is_ready_with_that_round_s_template(world, monkeypatch):
+    _scores(monkeypatch, 0.2, 0.3, 0.7)
+    third = cv_only(edit=lambda t: t.replace("</head>", "<meta name=\"round\" content=\"third\"></head>"))
+    result = world.build("html-word-two-column", Stylist(cv_round(), cv_only(), third, letter_round()), cap=3)
+    assert result["state"] == "ready" and result["scores"] == [0.2, 0.3, 0.7]
+    assert 'content="third"' in (world.style / "cv.template.html").read_text()
+
+
+def test_a_build_with_no_fonts_under_the_floor_says_the_fonts_could_not_be_downloaded(world):
+    def broken(plan, dest):
+        raise fonts.FontsError("google/fonts unreachable")
+
+    world.rebuilt = "latex-classic"
+    result = world.build("html-word-two-column", Stylist(cv_round(), cv_only()), fonts_fetch=broken, cap=2)
+    assert result["state"] == "failed" and result["font_error"] == "google/fonts unreachable"
+    assert result["problems"][0].startswith("the fonts could not be downloaded (google/fonts unreachable): try again later")
+    assert list(world.profile.iterdir()) == []
+
+
 def test_a_template_that_fails_the_stress_renders_gets_one_more_round_told_what_failed(world):
     world.problems["cv"] = lambda n: _problem() if n <= 5 else []  # every variant of the first stress run
     stylist = Stylist(cv_round(), cv_only(), letter_round())

@@ -557,8 +557,9 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
     if template is None:
         raise _Stop(f"no template of the stylist's passed the guard and printed in {s.rounds} rounds: {feedback}")
     if (best := max(result["scores"])) < style_compare.FLOOR:
-        raise _Stop(f"the rebuild did not come close to your CV's look in {s.rounds} rounds: its best print scored "
-                    f"{best:.2f}, at least {style_compare.FLOOR} is needed")
+        cause = f"the fonts could not be downloaded ({result['font_error']}): try again later; " if result["font_error"] else ""
+        raise _Stop(f"{cause}the rebuild did not come close to your CV's look in {s.rounds} rounds: its best print "
+                    f"scored {best:.2f}, at least {style_compare.FLOOR} is needed")
     template = _clean(template, "cv")
     cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
     if failures := _stress(s, template, cv_md):
