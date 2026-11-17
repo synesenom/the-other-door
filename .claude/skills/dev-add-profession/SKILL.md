@@ -11,7 +11,7 @@ You are the profession orchestrator for The other door. The arguments are the jo
 /dev-add-profession nurse dk
 ```
 
-The titles are the person's role targets: what they would apply for, in any language. One title is fine; several say where the profession's edges are (a reward partner who would also take a C&B specialist job). You run the agents below in order and keep the state between them in `thoughts/profession/<cc>-<slug>/` (gitignored; `<slug>` is the profession in lower-case ASCII with hyphens), so a stopped run picks up where it left off. Every agent's report is saved there too, so the run can be checked afterwards without its conversation: the validator reads them. `docs/adding-a-site.md` is the reference for what a source needs; epic #426 is why this skill exists.
+The titles are the person's role targets: what they would apply for, in any language. One title is fine; several say where the profession's edges are (a reward partner who would also take a C&B specialist job). You run the agents below in order and keep the state between them in `thoughts/profession/<cc>-<slug>/` (gitignored; `<slug>` is the profession in lower-case ASCII with hyphens), so a stopped run picks up where it left off. Every agent's report is saved there too, so the run can be checked afterwards without its conversation: the validator reads them. `docs/adding-a-site.md` is the reference for what a source needs.
 
 **A profession is not a board.** door reaches a job three ways:
 - a **board** searched by keyword (a `Site` with `board=True`, like Jobindex);
@@ -66,7 +66,7 @@ Write the choice to `thoughts/profession/<cc>-<slug>/plan.md`:
 1. the question exactly as asked (its text, and each option's label and description), then the answer;
 2. the sources in build order, each with its kind, module name and country code (`any` for a worldwide one);
 3. the profession's fake profile from the report (role targets: the given titles; search keywords and topic terms per language; `remote`; the city), and its on-topic and off-topic titles;
-4. the report's non-build recommendations: employers to follow by careers URL, door gaps to file as issues with `/dev-file-issue`.
+4. the report's non-build recommendations: employers to follow by careers URL, door gaps to file as issues.
 
 If nothing was picked, go to step 5 with the profile and the gaps alone (the profession row and the issues are still worth having).
 
@@ -110,7 +110,7 @@ A failure goes back to that source's builder once, as in step 3.
 
 For each door gap in `plan.md` (title matching, locality, seniority words, naming, a platform refused):
 1. search the open issues (`mcp__github__search_issues`) for it;
-2. add the profession's example to a matching issue, or open a new one under epic #426 (`parent_issue_number`).
+2. add the profession's example to a matching issue, or file a new one with `/dev-file-issue`.
 
 Each issue gets the concrete failing input and the expected result, ready for a failing test. Note each issue number in `plan.md`. Don't fix them here: this skill adds sources.
 

@@ -1,6 +1,6 @@
 ---
 name: dev-epic
-description: Churn through an epic issue in one run — resolve its sub-issues one after another, each in its own pull request branched from the previous one's, so the PRs build on each other and are kept green, file what is found on the way as new sub-issues, and tick the epic's checkboxes, until every sub-issue is implemented and every box is checked. Invoked with /dev-epic <epic_issue_number>.
+description: Churn through an epic issue in one run — resolve its sub-issues one after another, each in its own pull request branched from the previous one's, so the PRs build on each other and are kept green, file what is found on the way into other epics, and tick the epic's checkboxes, until every sub-issue is implemented and every box is checked. Invoked with /dev-epic <epic_issue_number>.
 ---
 
 You are working through an epic issue of The other door. The epic's number is the argument. **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
@@ -42,7 +42,7 @@ Read GitHub again on every pass: the counts are never remembered. If the epic is
 
 ### Step 2: Every box has a sub-issue
 
-Read the body's checkboxes. Each unchecked box must map to a sub-issue: by a `#<sub>` on its line, or by its words matching a sub-issue's title. A box that maps to none is work no issue tracks: file it with `/dev-file-issue` (a title from the box, a body that quotes the box), attached to this epic, and add ` (#<sub>)` to the box's line in the epic body instead of a new box. A box that is not work (a note, a question already answered in the comments) goes to the `decider`: tick it with a one-line comment on the epic saying why, or file it.
+Read the body's checkboxes. Each unchecked box must map to a sub-issue: by a `#<sub>` on its line, or by its words matching a sub-issue's title. A box that maps to none is work no issue tracks: file it with `/dev-file-issue epic=<N>` (a title from the box, a body that quotes the box): it attaches the issue here and adds ` (#<sub>)` to that box's line. A box that is not work (a note, a question already answered in the comments) goes to the `decider`: tick it with a one-line comment on the epic saying why, or file it.
 
 ### Step 3: Keep the chain green
 
@@ -99,7 +99,7 @@ Epic #<N> — <title>
 | #12       | ...   | #40 | green | yes | PR open (chain 1) |
 |   ↳ #15   | ...   | #41 | green | yes | PR open (chain 2) |
 ...
-Sub-issues: <done>/<total> implemented   Added on the way: #.., #..
+Sub-issues: <done>/<total> implemented   Filed for its boxes: #.., #..
 Epic boxes: <checked>/<total> checked    Unchecked: <list, or none>
 Filed outside the epic: #.., #..
 Left for you: <PRs to merge, in chain order, bottom first; questions; or nothing>
