@@ -73,10 +73,19 @@ def _luminance(color: str) -> float:
     return 0.299 * r + 0.587 * g + 0.114 * b
 
 
-def level_rows(runs: list[dict]) -> list[tuple[int, list[float], str]]:
-    """The rows of level dots whose level is in their colour, not their shape (#314): on a line, bullet-only runs
-    of two colours (`○ ○ ○ ○` dark, `○` pale), as (page, box, text) with the text `●●●●○`: the darker colour is
-    filled. Dots of one colour say nothing by it and are left out."""
+def _background(run: dict, style: dict) -> str:
+    """The fill behind *run*: its column band's, else its page's (`style["page"]`), else white."""
+    x = (run["bbox"][0] + run["bbox"][2]) / 2
+    band = next((b for b in style.get("columns", {}).get("bands", []) if b["x0"] <= x <= b["x1"] and b["background"]), None)
+    return (band or {}).get("background") or style.get("page", {}).get("background") or "#ffffff"
+
+
+def level_rows(runs: list[dict], style: dict) -> list[tuple[int, list[float], str]]:
+    """The rows of level dots whose level is in their colour, not their shape (#314), as (page, box, text) with the
+    text `●●●●○`. On a line, bullet-only runs of two colours (`○ ○ ○ ○` dark, `○` pale) are one row: the filled
+    colour is the one the CV uses for its accent or text (`style["colors"]`), else, when neither or both match, the
+    one farther in lightness from the band it sits on. Once a CV has such a row, a row of one colour of the same
+    glyph in its filled colour is all filled; any other row, and a row of three colours, is left as it is."""
     dots = [r for r in runs if r["text"].strip() and only_bullets(r["text"]) and r["color"]]
     rows: list[list[dict]] = []
     for r in sorted(dots, key=lambda r: (r["page"], r["bbox"][0])):
@@ -89,17 +98,32 @@ def level_rows(runs: list[dict]) -> list[tuple[int, list[float], str]]:
                 break
         else:
             rows.append([r])
-    found = []
+    used = {c for c in (style.get("colors", {}).get("accent"), style.get("colors", {}).get("text")) if c}
+    filled_by_glyph: dict[frozenset, str] = {}
+    two = []
     for row in rows:
         colors = {r["color"] for r in row}
-        if len(colors) != 2:
-            continue
-        filled = min(colors, key=_luminance)
-        text = "".join("●" if r["color"] == filled else "○" for r in row for c in r["text"] if not c.isspace())
-        box = [min(r["bbox"][0] for r in row), min(r["bbox"][1] for r in row),
-               max(r["bbox"][2] for r in row), max(r["bbox"][3] for r in row)]
-        found.append((row[0]["page"], box, text))
+        if len(colors) == 2:
+            mine = colors & used
+            bg = _luminance(_background(row[0], style))
+            filled = next(iter(mine)) if len(mine) == 1 else max(colors, key=lambda c: abs(_luminance(c) - bg))
+            filled_by_glyph[_glyphs(row)] = filled
+            two.append((row, filled))
+    found = [(row[0]["page"], _box(row), "".join("●" if r["color"] == filled else "○" for r in row for c in r["text"] if not c.isspace()))
+             for row, filled in two]
+    for row in rows:
+        if len({r["color"] for r in row}) == 1 and filled_by_glyph.get(_glyphs(row)) == row[0]["color"]:
+            found.append((row[0]["page"], _box(row), "●" * sum(not c.isspace() for r in row for c in r["text"])))
     return found
+
+
+def _glyphs(row: list[dict]) -> frozenset:
+    return frozenset(c for r in row for c in r["text"] if not c.isspace())
+
+
+def _box(row: list[dict]) -> list[float]:
+    return [min(r["bbox"][0] for r in row), min(r["bbox"][1] for r in row),
+            max(r["bbox"][2] for r in row), max(r["bbox"][3] for r in row)]
 
 
 def _touching(a: list[float], b: list[float]) -> bool:

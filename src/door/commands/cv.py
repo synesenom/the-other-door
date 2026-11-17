@@ -65,7 +65,7 @@ _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
 def _extract_text(path: Path, style: dict | None = None) -> str:
-    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266, but not its level dots and bullets, #313, a level shown by the dots' colour said as `●●●●○`, #314,
+    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266, but not its level dots and bullets, #313,
     by `style`, its `style_extract.extract`, read here when not given), a DOCX (its paragraphs, symbol-font runs left
     out, #297) or a Markdown/text file.
 
@@ -81,9 +81,10 @@ def _extract_text(path: Path, style: dict | None = None) -> str:
     if suffix == ".pdf":
         from door.tailoring import pdf_render, style_extract
 
-        runs = (style or style_extract.extract(path)).get("runs", [])  # none for a scan or a LinkedIn export
+        style = style or style_extract.extract(path)
+        runs = style.get("runs", [])  # none for a scan or a LinkedIn export
         icons = [(r["page"], r["bbox"]) for r in runs if style_icons.stray_glyph(r)]
-        return "\n".join(pdf_render.page_texts(path, leave_out=icons, rewrite=style_icons.level_rows(runs))).strip()
+        return "\n".join(pdf_render.page_texts(path, leave_out=icons, rewrite=style_icons.level_rows(runs, style))).strip()
     if suffix == ".docx":
         return _docx_text(path)
     return _decode_text_file(path.read_bytes()).strip()

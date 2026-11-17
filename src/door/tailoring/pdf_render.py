@@ -1,8 +1,9 @@
 """PDF reading and rendering helpers for The other door (pypdfium2, Apache-2.0/BSD).
 
 - ``get_page_count(pdf_path)`` — return the number of pages in a PDF.
-- ``page_texts(pdf_path, leave_out=())`` — the text of each page, one ``\\n`` per line break (``clean_text``),
-  without the characters inside the boxes of ``leave_out`` (an icon font's glyphs).
+- ``page_texts(pdf_path, leave_out=(), rewrite=())`` — the text of each page, one ``\\n`` per line break
+  (``clean_text``), without the characters inside the boxes of ``leave_out`` (an icon font's glyphs) and with
+  those inside a box of ``rewrite`` replaced by its text (a row of level dots).
 - ``render_pdf_pages(pdf_path, output_dir)`` — render each page to a PNG image.
 
 All raise ``FileNotFoundError`` when the PDF does not exist; a file that is not a readable PDF
