@@ -516,10 +516,11 @@ class _Session:
         self.rounds += count
         return _ask(self.run, task, self.work, self.profile_dir)
 
-    def sample(self, template: str, body: str) -> tuple[dict, float, float, list[str]]:
+    def sample(self, template: str, body: str) -> tuple[dict, float, float, list[str], list[str]]:
         """The sample `body` printed in `template` (with the original's own photo when it has one: `_photo_stand_in`),
-        read back and compared with the original: the diffs, the blurred score, the worst offset in points and the
-        sections printed in the other column's place (`column_problems`).
+        read back and compared with the original: the diffs, the blurred score, the worst offset in points, the
+        sections printed in the other column's place (`column_problems`) and the words read back as letters apart
+        (`readability.spaced_problems`, #267).
 
         Raises:
             _Stop: the print has no text to read back.
@@ -531,7 +532,8 @@ class _Session:
             raise _Stop("the print has no text to read back")
         diffs = style_compare.match(self.style, render)
         score = style_compare.pages_score(self.images, style_compare.page_images(pdf, self.work))
-        return diffs, score, style_compare.worst_offset_pt(diffs), column_problems(self.style, render, placed)
+        spaced = [p["detail"] for p in readability.spaced_problems(readability.extract(pdf)[0], placed)]
+        return diffs, score, style_compare.worst_offset_pt(diffs), column_problems(self.style, render, placed), spaced
 
 
 _REPLY_FIRST = ("Reply with one line on what you see (layout, colours), then the ```template block and the ```body block, "
@@ -622,13 +624,19 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
             feedback = "The guard refused your template, so it was not printed. Fix these:\n" + _list(problems)
             continue
         try:
-            diffs, score, worst, misplaced = s.sample(template, body)
+            diffs, score, worst, misplaced, spaced = s.sample(template, body)
         except (html_pdf.PrintError, _Stop, ValueError) as exc:
             feedback = f"Printing your template failed: {exc}"
             continue
         if misplaced:
             feedback = ("Your template prints the columns in the wrong place, so this round is not kept:\n"
                         + _list(misplaced) + "\n\n" + style_compare.feedback(diffs, score))
+            continue
+        if spaced:
+            feedback = ("Your template prints letters apart, so this round is not kept: a reader takes them as single "
+                        "letters. Their letter-spacing is too wide for their size (a parent's spacing inherited by smaller "
+                        "text, or a justified line spread per character):\n" + _list(spaced) + "\n\n"
+                        + style_compare.feedback(diffs, score))
             continue
         kept.append(template)
         scores.append(score)

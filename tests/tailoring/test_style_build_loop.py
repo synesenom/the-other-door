@@ -590,3 +590,16 @@ def test_the_sample_of_a_cv_without_a_photo_needs_no_photo_token(world):
     assert not (world.work / "original-photo.png").exists()
     samples = [p for p in world.prints if p["folder"] == world.work]
     assert samples and not [p for p in samples if '<img class="photo"' in p["html"]]
+
+
+# ---------- letters printed apart (#267) ----------
+
+def test_a_round_whose_sample_print_reads_letters_apart_is_not_kept_and_the_next_is_told_why(world, monkeypatch):
+    spaced = [[{"kind": "spaced", "detail": 'letters printed apart: "P r o f i l e"'}]]
+    monkeypatch.setattr(readability, "spaced_problems", lambda text, body: spaced.pop(0) if spaced else [])
+    stylist = Stylist(cv_round(), cv_only(), letter_round())
+    result = world.build("latex-sidebar", stylist)
+    assert result["state"] == "ready", result["problems"]
+    assert result["rounds"] == 2 and len(result["scores"]) == 1  # the spaced round is not one to keep
+    second = stylist.calls[1]["input"]
+    assert "letters apart" in second and '"P r o f i l e"' in second and "letter-spacing" in second

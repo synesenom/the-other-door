@@ -104,6 +104,43 @@ def overflow_problems(pdf_text: str, body: str) -> list[dict]:
     return [{"kind": "overflow", "detail": f"text cut off: {', '.join(absent[:MISSING_NAMED])}"}]
 
 
+SPACED_RUN = 4  # single letters in a row that are a word printed apart, not initials, articles or a short list
+SPACED_SHOWN = 20  # letters of a run a `spaced` detail shows
+
+
+def spaced_problems(pdf_text: str, body: str) -> list[dict]:
+    """``spaced``: words the PDF's text reads as single letters apart (#267), `SPACED_RUN` or more in a row, across lines
+    too ("P r o f i l e", or a letter a line), which is how pdfium reads text printed with letter-spacing too wide for
+    its size (an inherited fixed length on smaller text) or a justified line spread per character. A run the HTML
+    `body` itself writes apart is the author's. One problem naming the first few runs."""
+    literal = normalise(html_doc.text(body)) if body else ""
+    runs: list[str] = []
+
+    def flush(run: list[str]) -> None:
+        shown = " ".join(run)
+        if len(run) >= SPACED_RUN and normalise(shown) not in literal and shown not in runs:
+            runs.append(shown)
+        run.clear()
+
+    column: list[str] = []  # lines of one letter each, one after the other
+    for line in [*pdf_text.splitlines(), ""]:
+        tokens = line.split()
+        if len(tokens) == 1 and len(tokens[0]) == 1 and tokens[0].isalpha():
+            column.append(tokens[0])
+            continue
+        flush(column)
+        run: list[str] = []
+        for token in [*tokens, ""]:
+            if len(token) == 1 and token.isalpha():
+                run.append(token)
+            else:
+                flush(run)
+    if not runs:
+        return []
+    named = [f'"{r[:2 * SPACED_SHOWN - 1]}{"…" if len(r) > 2 * SPACED_SHOWN - 1 else ""}"' for r in runs[:MISSING_NAMED]]
+    return [{"kind": "spaced", "detail": f"letters printed apart: {', '.join(named)}"}]
+
+
 def layout_problems(pages: list[tuple[float, float, list[Box]]], *, two_column: bool) -> list[dict]:
     """``sparse``: the last of several pages of a `two_column` CV holds no ink or under a fifth of the page height
     (reported only). `pages` is ``[(width, height, [char box (l, b, r, t)])]``, `pdf_render.page_boxes`."""
@@ -125,7 +162,8 @@ def page_problems(pages: int, max_pages: int | None) -> list[dict]:
 
 def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, max_pages: int | None = None) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
-    the raw config's value, used when it is a string). A `cv` is also checked for words lost off the page
+    the raw config's value, used when it is a string), and for words read as letters apart (`spaced_problems`, unless
+    no text could be read). A `cv` is also checked for words lost off the page
     (`overflow_problems`, unless no text could be read), for more pages than `max_pages` (`page_problems`) and,
     when `body` is placed in columns (the `side` div `compile._place_columns` adds only for a template with a side
     column), for a sparse last page (`layout_problems`); a letter gets none of these."""
@@ -137,8 +175,11 @@ def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, max_pages
     found = problems(text, name=name if isinstance(name, str) else None,
                      headings=html_doc.headings(main), side=html_doc.headings(side),
                      keywords=html_doc.keywords(body), pages=pages)
+    readable = not {"empty", "garbled"} & {p["kind"] for p in found}
+    if readable:
+        found += spaced_problems(text, body)
     if cv:
-        if not {"empty", "garbled"} & {p["kind"] for p in found}:
+        if readable:
             found += overflow_problems(text, body)
         found += page_problems(pages, max_pages)
         found += layout_problems(pdf_render.page_boxes(pdf), two_column=cols is not None)
