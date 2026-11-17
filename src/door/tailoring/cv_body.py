@@ -6,9 +6,10 @@ markdown that `draft_cv` and `init` write. Nothing is translated, tailored or dr
 and only `https:`, `mailto:` and `#` links are kept.
 
 - `# Name` is the header's `<h1>`, a `> line` its tagline, the lines before the first `##` its contact details
-  (`**Label:** value`, split on `|`; a detail with no known label is a plain `<span>`, an `@` one is an email), written
-  with a kind class in the template's order (phone, email, web, linkedin, github, location). The `<<photo>>` token comes
-  first in the header, as the tailor writes it; `compile` swaps it.
+  (`**Label:** value` or a plain `Label: value`, split on `|`, the label in any supported language; a detail with no
+  known label is a plain `<span>`, an `@` one is an email), written with a kind class in the template's order (phone,
+  email, web, linkedin, github, location). The `<<photo>>` token comes first in the header, as the tailor writes it;
+  `compile` swaps it. `header(cv_md)` is the same header as data, which `infer_basics` reads too (#208).
 - `## Heading` is an `<h2>`, whatever it says (a heading the columns do not know stays in the main column).
 - `### Role | Org — dates | Place` is an `<div class="entry">` whose `<h3>` has the parts in `role`, `org`, `dates` and
   `place` spans with `sep` spans between (` | `, ` - `, ` | `): a heading with no ` | ` is a role alone, and the dates
@@ -78,27 +79,36 @@ def _detail(kind: str | None, value: str) -> str:
     return f"<span{cls}>{_inline(value)}</span>"
 
 
-def _contact(lines: list[str]) -> str:
+def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
+    """The contact parts of `lines` (split on `|`): the values of the labelled ones by kind, and the parts with no
+    known label whole. A label is `**Label:**` or a plain `Label:` that `i18n.contact_kind` knows; an empty value is
+    dropped."""
     found: dict[str, list[str]] = {}
     other: list[str] = []
     for line in lines:
         for part in line.split("|"):
             part = part.strip()
-            if not part:
-                continue
-            label = re.match(r"^\*\*(.+?)\*\*\s*:?\s*(.*)$", part)
-            kind = None
-            value = part
-            if label:
-                name = label.group(1).strip(" :  ").casefold()
-                value = label.group(2).strip(" :") or ""
-                kind = i18n.contact_kind(name)
-                if kind is None:
-                    value = part  # an unknown label: keep it with its text
-                elif not value:
-                    continue
-            (found.setdefault(kind, []) if kind else other).append(_detail(kind, value))
-    spans = [s for kind in i18n.CONTACT_KINDS for s in found.get(kind, [])] + other
+            label = re.match(r"^(?:\*\*(.+?)\*\*\s*:?|([^:*]+?)\s*:)\s*(.*)$", part)
+            kind = i18n.contact_kind((label.group(1) or label.group(2)).strip(" :\u00a0\u202f")) if label else None
+            if kind:
+                if value := label.group(3).strip(" :"):
+                    found.setdefault(kind, []).append(value)
+            elif part:
+                other.append(part)
+    return found, other
+
+
+def header(cv_md: str) -> dict:
+    """The CV's header as data: ``{"name", "tagline", "details", "other"}``, `details` the contact values by kind (read
+    in every supported language's labels) and `other` the parts with no known label; what `infer_basics` reads."""
+    name, tagline, preamble = _header_parts(cv_md)
+    details, other = _details(preamble)
+    return {"name": name, "tagline": tagline, "details": details, "other": other}
+
+
+def _contact(lines: list[str]) -> str:
+    found, other = _details(lines)
+    spans = [_detail(kind, v) for kind in i18n.CONTACT_KINDS for v in found.get(kind, [])] + [_detail(None, p) for p in other]
     return f'<p class="contact">{"".join(spans)}</p>' if spans else ""
 
 

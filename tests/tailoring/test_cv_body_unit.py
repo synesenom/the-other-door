@@ -191,3 +191,21 @@ def test_letter_header_is_the_name_and_contact_of_the_cv_in_the_letter_header_sh
 
 def test_letter_header_of_a_cv_with_no_name_is_empty():
     assert cv_body.letter_header("## Experience\n\n- x\n") == ("", "")
+
+
+# --- the header as data (#208): what `infer_basics` reads ----------------------------------------------------------
+
+
+def test_header_is_the_name_tagline_and_details_by_kind():
+    md = ("# Jane Doe\n\n> Analyst | Reporting\n\n**Téléphone :** +33 1 | **Lieu :** Lyon, France | x@y.example | "
+          "Born 1990\n\n## Expérience\n\n- **Location:** not the header\n")
+    assert cv_body.header(md) == {
+        "name": "Jane Doe", "tagline": "Analyst | Reporting",
+        "details": {"phone": ["+33 1"], "location": ["Lyon, France"]}, "other": ["x@y.example", "Born 1990"],
+    }
+
+
+def test_a_known_label_without_bold_is_still_its_kind():
+    assert cv_body.header("# A\n\nLocation: Aarhus | Note: hi\n")["details"] == {"location": ["Aarhus"]}
+    out = cv_body.body("# A\n\nSted: Aarhus | Note: hi\n", "da")
+    assert '<span class="location">Aarhus</span><span>Note: hi</span>' in out
