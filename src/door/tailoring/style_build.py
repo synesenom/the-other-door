@@ -23,7 +23,7 @@ from pypdfium2 import PdfiumError
 from door import i18n
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
-from door.core import claude_cli, fonts, pinned, progress as progress_mod, templates, workspace
+from door.core import claude_cli, fonts, pinned, progress as progress_mod, templates, utils, workspace
 from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_icons, style_preview, style_structure)
 
 STYLIST = "stylist"
@@ -744,7 +744,7 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, cv: str, letter: str) -> 
     Raises:
         OSError: the files could not be written or moved.
     """
-    with pinned.staging(profile_dir, ".style.") as staging:
+    with utils.staging(profile_dir, ".style.") as staging:
         _write(staging / _CV_FILE, cv)
         _write(staging / _LETTER_FILE, letter)
         for name in ("style.json", templates.MANIFEST_FILE):
