@@ -1498,7 +1498,7 @@ async def show_style() -> dict:
 
 @mcp.tool()
 @_tool_errors
-async def use_style(style: str = "like", rerender: bool = False) -> dict:
+async def use_style(style: str, rerender: bool = False) -> dict:
     """Choose the CV style: the one built from the user's own CV (``like``: the candidate a build leaves moves in, and
     both template keys point at it), The other door's (``default``) or ``current`` (keep what is in use and drop the
     candidate). Identical to `./door cv style use`. Any pick ends the candidate. Applications already prepared keep their
@@ -1506,7 +1506,7 @@ async def use_style(style: str = "like", rerender: bool = False) -> dict:
     no plan usage; sent ones never change).
 
     Args:
-        style: ``like``, ``default`` or ``current``.
+        style: ``like``, ``default`` or ``current``; required, so a call without it chooses nothing.
         rerender: Print the prepared applications again in the style in use.
 
     Returns:

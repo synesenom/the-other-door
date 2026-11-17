@@ -259,7 +259,7 @@ def _prepared(jobs_dir: Path) -> list[str]:
             if ledger.get_status(job) == "prepared" and (jobs_dir / "output" / job / "cv.html").is_file()]
 
 
-def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
+def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
     """Choose the CV style: ``like`` (the one built from the user's CV: the candidate moves into `profile/style/`
     and both template keys point at it), ``default`` (both keys cleared, only where they point into `profile/style/`)
     or ``current`` (what is in use stays). Any pick ends the candidate: it is deleted when a built style is already
@@ -362,10 +362,10 @@ _USE_WORDS = {"like": "Your own style is in use: the one built from your CV.", "
 
 
 @style_group.command("use")
-@click.argument("style", type=click.Choice(["like", "default", "current"]), default="like")
+@click.argument("style", type=click.Choice(["like", "default", "current"]))
 @click.option("--rerender", is_flag=True, help="Print the prepared applications again in the style in use (no model).")
 def use_style(style, rerender):
-    """Choose the CV style: like (the one built from your CV, the default), default (The other door's) or current (keep
+    """Choose the CV style: like (the one built from your CV), default (The other door's) or current (keep
     what you use now and drop the one just built).
 
     Applications already prepared keep their old look unless --rerender prints them again; sent ones never change."""

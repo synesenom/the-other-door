@@ -1822,12 +1822,11 @@
   },
   {
     "name": "use_style",
-    "description": "Choose the CV style: the one built from the user's own CV (``like``: the candidate a build leaves moves in, and\n    both template keys point at it), The other door's (``default``) or ``current`` (keep what is in use and drop the\n    candidate). Identical to `./door cv style use`. Any pick ends the candidate. Applications already prepared keep their\n    old look unless ``rerender`` is true: those prepared and not sent are printed again in the style in use (no model,\n    no plan usage; sent ones never change).\n\n    Args:\n        style: ``like``, ``default`` or ``current``.\n        rerender: Print the prepared applications again in the style in use.\n\n    Returns:\n        ``{\"in_use\": \"like\" | \"default\", \"prepared\": <how many are prepared and not sent>}`` and, with ``rerender``,\n        ``\"rerendered\"`` and ``\"failed\"`` (job ids); or ``{\"error\": ...}`` (``like`` with no style built).\n    ",
+    "description": "Choose the CV style: the one built from the user's own CV (``like``: the candidate a build leaves moves in, and\n    both template keys point at it), The other door's (``default``) or ``current`` (keep what is in use and drop the\n    candidate). Identical to `./door cv style use`. Any pick ends the candidate. Applications already prepared keep their\n    old look unless ``rerender`` is true: those prepared and not sent are printed again in the style in use (no model,\n    no plan usage; sent ones never change).\n\n    Args:\n        style: ``like``, ``default`` or ``current``; required, so a call without it chooses nothing.\n        rerender: Print the prepared applications again in the style in use.\n\n    Returns:\n        ``{\"in_use\": \"like\" | \"default\", \"prepared\": <how many are prepared and not sent>}`` and, with ``rerender``,\n        ``\"rerendered\"`` and ``\"failed\"`` (job ids); or ``{\"error\": ...}`` (``like`` with no style built).\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
         "style": {
-          "default": "like",
           "title": "Style",
           "type": "string"
         },
@@ -1837,6 +1836,9 @@
           "type": "boolean"
         }
       },
+      "required": [
+        "style"
+      ],
       "title": "use_styleArguments"
     }
   },
