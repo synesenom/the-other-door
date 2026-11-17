@@ -304,3 +304,13 @@ def test_a_band_between_two_others_is_in_the_middle():
 
 def test_a_print_with_no_text_read_back_has_no_column_problem():
     assert style_build.column_problems(_extract("latex-sidebar"), {}, _placed(["Education"], ["Skills"])) == []
+
+
+def test_a_line_the_pdf_prints_with_a_ligature_is_found_in_the_body_spelt_out():
+    bands = [{"x0": 20, "x1": 160, "kind": "side"}, {"x0": 180, "x1": 575, "kind": "main"}]
+    style = {"columns": {"bands": bands},
+             "runs": [{"page": 1, "text": "Certi\ufb01ed scienti\ufb01c of\ufb01cer", "bbox": [30, 100, 150, 110], "size": 9.0}]}
+    body = ('<header class="cv-header"><h1>A B</h1></header><h2>Experience</h2><p>Certified scientific officer</p>'
+            "<h2>Skills</h2><p>Python</p>")
+    problems = style_build.body_column_problems(style, body, templates.Columns(side=["skills"]))
+    assert len(problems) == 1 and "side column of the original" in problems[0]
