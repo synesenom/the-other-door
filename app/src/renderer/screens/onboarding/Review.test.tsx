@@ -409,7 +409,7 @@ describe('Review, the CV style tick', () => {
     setup(styled)
     expect(box()).not.toBeNull()
     expect(box()).not.toBeChecked()
-    expect(screen.getByText('Takes 5–10 minutes in the background.')).toBeInTheDocument()
+    expect(screen.getByText('Takes 2–5 minutes in the background.')).toBeInTheDocument()
   })
 
   it('holds the tick until Save, which starts the build from the file', async () => {
