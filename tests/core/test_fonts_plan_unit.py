@@ -80,6 +80,14 @@ def test_a_look_alike_is_taken_but_not_said_to_have_the_same_widths(data):
     assert "same widths" not in p["reason"] and "looks alike" in p["reason"] and "may differ" in p["reason"]
 
 
+def test_a_look_alike_comes_after_the_measured_nearest(data):
+    f = font("CenturyGothic", "Century Gothic")
+    [p] = one([f], data, _measure("CenturyGothic", per_char=0.49))       # Arimo and Carlito are within 6%
+    assert p["source"] == "nearest" and p["resolved"] != "Narrow"
+    [p] = one([f], data, _measure("CenturyGothic", per_char=0.8))         # nothing is: the look-alike, not the default
+    assert (p["source"], p["resolved"]) == ("lookalike", "Narrow")
+
+
 def test_an_icon_font_is_not_fetched_and_a_font_with_no_family_is_left_out(data):
     plan = one([font("FontAwesome", "FontAwesome", icon=True), font("", "", type3=True), font("Lato-Regular", "Lato")], data)
     assert [p["family"] for p in plan] == ["Lato"]
@@ -267,3 +275,48 @@ def test_a_staging_folder_a_killed_fetch_left_is_swept_and_a_fresh_one_kept(data
     os.utime(old, (0, 0))
     _fetch(one([font("Lato-Regular", "Lato")], data), tmp_path, _fake_fetch())
     assert not old.exists() and fresh.exists()
+
+
+REAL_LOOKALIKES = {"Aptos": "Arimo", "Segoe UI": "Open Sans", "Helvetica Neue": "Arimo", "HelveticaNeue": "Arimo",
+                   "Verdana": "Work Sans", "Garamond": "EB Garamond", "Palatino": "Spectral",
+                   "Palatino Linotype": "Spectral", "Book Antiqua": "Spectral", "Optima": "Asap",
+                   "Avenir": "Lato", "Avenir Next": "Lato",
+                   "AdobeGaramondPro": "EB Garamond", "AGaramondPro-Regular": "EB Garamond",
+                   "AvenirNextLTPro-Regular": "Lato", "Avenir Next LT Pro": "Lato",
+                   "HelveticaNeueLTStd-Roman": "Arimo", "AptosDisplay": "Arimo", "Aptos Display": "Arimo"}
+
+
+@pytest.mark.parametrize("name,family", sorted(REAL_LOOKALIKES.items()))
+def test_the_real_pin_gives_each_unmeasured_commercial_font_a_look_alike(name, family):
+    serif = family in ("EB Garamond", "Spectral")
+    [p] = fonts.plan([font(name.replace(" ", "") + "-Regular", name, serif=serif)])
+    assert (p["source"], p["resolved"]) == ("lookalike", family)
+    assert "same widths" not in p["reason"] and "may differ" in p["reason"]
+
+
+def test_on_the_real_pin_a_measured_font_near_a_pinned_family_is_nearest_not_the_look_alike():
+    pin = fonts.pin()
+    adv = pin["families"]["Lato"]["metrics"]["advance"]
+    per = sum(adv) / len(adv) / 1000
+    [p] = fonts.plan([font("Verdana-Regular", "Verdana")], _measure("Verdana-Regular", per_char=per + fonts.BEARING / 6))
+    assert p["source"] == "nearest"
+
+
+def test_on_the_real_pin_a_measured_font_far_from_every_family_gets_the_look_alike_not_the_default():
+    [p] = fonts.plan([font("Verdana-Regular", "Verdana")], _measure("Verdana-Regular", per_char=1.5))
+    assert (p["source"], p["resolved"]) == ("lookalike", "Work Sans")
+
+
+def test_a_pin_with_only_some_families_never_names_one_it_lacks():
+    # the offline fallback of style_build: only the families the code ships
+    data = fonts.pin()
+    data["families"] = {n: f for n, f in data["families"].items() if n in ("Figtree", "Young Serif")}
+    plan = fonts.plan([font("Aptos-Regular", "Aptos"), font("Calibri-Regular", "Calibri"),
+                       font("CenturyGothic", "Century Gothic")], data=data)
+    assert [(p["family"], p["resolved"]) for p in plan] == [("Aptos", None), ("Calibri", None), ("Century Gothic", None)]
+
+
+@pytest.mark.parametrize("name", ["Alato", "Aarimo"])
+def test_a_name_that_only_starts_with_a_lowercase_a_is_not_read_as_adobes_prefix(name):
+    [p] = fonts.plan([font(name + "-Regular", name)])
+    assert p["source"] == "none"

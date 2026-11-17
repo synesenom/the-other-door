@@ -4441,8 +4441,19 @@
   "timesnewromanpsmt": "Tinos"
  },
  "lookalikes": {
+  "aptos": "Arimo",
+  "avenir": "Lato",
+  "avenirnext": "Lato",
   "baskerville": "Libre Baskerville",
+  "bookantiqua": "Spectral",
   "centurygothic": "Questrial",
-  "franklingothic": "Libre Franklin"
+  "franklingothic": "Libre Franklin",
+  "garamond": "EB Garamond",
+  "helveticaneue": "Arimo",
+  "optima": "Asap",
+  "palatino": "Spectral",
+  "palatinolinotype": "Spectral",
+  "segoeui": "Open Sans",
+  "verdana": "Work Sans"
  }
 }

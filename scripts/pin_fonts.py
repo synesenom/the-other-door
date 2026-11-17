@@ -82,9 +82,16 @@ ALIASES = {
 }
 # A free family that only looks like the font: its line widths may differ.
 LOOKALIKES = {
+    "Arimo": ["helveticaneue", "aptos"],
+    "Asap": ["optima"],
+    "EB Garamond": ["garamond"],
+    "Lato": ["avenir", "avenirnext"],
     "Libre Baskerville": ["baskerville"],
     "Libre Franklin": ["franklingothic"],
+    "Open Sans": ["segoeui"],
     "Questrial": ["centurygothic"],
+    "Spectral": ["palatino", "palatinolinotype", "bookantiqua"],
+    "Work Sans": ["verdana"],
 }
 
 

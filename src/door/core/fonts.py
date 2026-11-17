@@ -5,8 +5,8 @@ still static, with the sha256 of every file and of its licence, so a file is fet
 partly written. Static only: Chromium prints a variable font as nameless Type 3 text. `plan` is pure: the pin, the
 fonts `style_extract` found and, if there are any, their measurements (`tailoring.font_measure`); it picks per
 family, in this order, the family of the same name, a metric-compatible stand-in (Calibri to Carlito, Arial to
-Arimo, ...; `aliases`), a free look-alike whose widths may differ (`lookalikes`), the nearest pinned family of the same class by measured width, x-height and stem, else the class
-default with `source: "none"`. Icon fonts are skipped (#148 traces their glyphs); a symbol font gets nothing.
+Arimo, ...; `aliases`), the nearest pinned family of the same class by measured width, x-height and stem (within `MAX_WIDTH_ERROR`), a free look-alike
+whose widths may differ (`lookalikes`), else the class default with `source: "none"`. Icon fonts are skipped (#148 traces their glyphs); a symbol font gets nothing.
 The embedded subset in a PDF is only measured, never shipped.
 """
 
@@ -52,18 +52,42 @@ ALTERNATIVES = 2
 _SYMBOL = re.compile(r"^(cm(sy|mi|ex|bsy)|msam|msbm|symbol|wingdings|webdings|zapfdingbats|mtextra)", re.I)
 
 
+_MARKERS = re.compile(r"(mt|ps|ltstd|ltpro|lt|std|pro|display)$")
+
+
+def _candidates(family: str) -> list[str]:
+    """The pin's spellings of a family name, the name as written first, then with the PostScript `MT`/`PS`, a foundry
+    or edition marker (`LT`, `Std`, `Pro`, `Display`) and a style after a hyphen taken off, then those without Adobe's
+    `Adobe` or `A` prefix (`AGaramondPro`: a capital A before another capital). Not `Narrow`: that is another width."""
+    out = [key(family)]
+    stem = key(family.split("-")[0])
+    while stem:
+        out.append(stem)
+        stem = _MARKERS.sub("", stem)
+        if stem == out[-1]:
+            break
+    stem = re.sub(r"^adobe", "", out[-1])
+    out += [stem, stem[1:] if re.match(r"A[A-Z]", family) else ""]
+    return [c for c in dict.fromkeys(out) if c]
+
+
 def _lookup(family: str, data: dict) -> tuple[str, str] | None:
     """(source, pinned family) for a font family named as a CV writes it: the pin's own name, else the stand-in
-    its aliases or look-alikes give, trying the name without a trailing PostScript `MT`/`PS` too."""
-    k = key(family)
+    its aliases give; a stand-in the pin does not hold (the shipped fonts alone) is none."""
     names = {key(n): n for n in data["families"]}
-    for candidate in dict.fromkeys((k, re.sub(r"(mt|ps)+$", "", k))):
+    for candidate in _candidates(family):
         if candidate in names:
             return "name", names[candidate]
-        if candidate in data["aliases"]:
+        if data["aliases"].get(candidate) in data["families"]:
             return "standin", data["aliases"][candidate]
-        if candidate in data["lookalikes"]:
-            return "lookalike", data["lookalikes"][candidate]
+    return None
+
+
+def _lookalike(family: str, data: dict) -> str | None:
+    """The free look-alike for a font family named as a CV writes it, if the pin holds it."""
+    for candidate in _candidates(family):
+        if data["lookalikes"].get(candidate) in data["families"]:
+            return data["lookalikes"][candidate]
     return None
 
 
@@ -166,13 +190,17 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
     if found:
         source, resolved = found
         reason = {"name": f"{family}: the pinned {resolved}",
-                  "standin": f"{family}: {resolved} has the same widths and is free",
-                  "lookalike": f"{family}: {resolved} looks alike and is free; line widths may differ"}[source]
+                  "standin": f"{family}: {resolved} has the same widths and is free"}[source]
         return _entry(family, source, resolved, reason, uses, data)
     klass = _class_of(group)
     default = CLASS_DEFAULT[klass] if CLASS_DEFAULT[klass] in data["families"] else None
+    like = _lookalike(family, data)
+    like_entry = like and _entry(family, "lookalike", like,
+                                 f"{family}: {like} looks alike and is free; line widths may differ", uses, data)
     own = _own_measure(group, measured or {})
     if own is None:
+        if like:
+            return like_entry
         return _entry(family, "none", default,
                       f"{family}: no free copy, and no measurement of it to compare; {default or 'nothing'} stands in", uses, data)
     ranked = _rank(klass, own, uses, data)
@@ -181,6 +209,8 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
         return _entry(family, "nearest", best["family"],
                       f"{family}: no free copy; nearest is {best['family']} (width within {best['error']:.1%})",
                       uses, data, ranked[1:1 + ALTERNATIVES])
+    if like:
+        return like_entry
     near = f"nearest {ranked[0]['family']}, width off by {ranked[0]['error']:.0%}" if ranked else "no family of its kind"
     return _entry(family, "none", default, f"{family}: no free copy is close enough ({near}); {default or 'nothing'} stands in",
                   uses, data, ranked[:ALTERNATIVES])

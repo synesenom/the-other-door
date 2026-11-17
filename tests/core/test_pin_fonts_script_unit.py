@@ -35,3 +35,10 @@ def test_every_alias_the_script_writes_is_in_normal_form_and_a_listed_family():
         for target, names in table.items():
             assert target in listed
             assert all(n == fonts.key(n) for n in names)
+
+
+def test_the_pins_alias_and_look_alike_tables_are_what_the_script_writes():
+    pin = fonts.pin()
+    for name, table in (("aliases", pin_fonts.ALIASES), ("lookalikes", pin_fonts.LOOKALIKES)):
+        want = {a: target for target, keys in table.items() if target in pin["families"] for a in keys}
+        assert pin[name] == dict(sorted(want.items())), name
