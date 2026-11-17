@@ -577,27 +577,15 @@ _YEAR = re.compile(r"\b(19|20)\d\d\b")
 
 
 def _entry_titles(members: list[dict], units: list[dict]) -> set[int]:
-    """The `id`s of the members that head a dated entry: a year in the member's own text, in a unit on its baseline (a
-    date column) or in the line directly under it. A date column under a heading belongs to the entry on its own
-    baseline, not to the heading above. An entry title with no year near it (a project, an undated degree) is not
-    told from a heading, nor is a date with no year ("heute")."""
-    def baseline(v: dict, u: dict) -> bool:
-        return abs(v["bbox"][3] - u["bbox"][3]) <= 0.3 * u["size"]
-
-    def sibling(v: dict, u: dict) -> bool:
-        return any(m is not u and baseline(v, m) for m in members if m["page"] == v["page"])
-
-    def under(v: dict, u: dict) -> bool:
-        return (0 <= v["bbox"][1] - u["bbox"][3] <= 0.8 * u["size"]
-                and min(v["bbox"][2], u["bbox"][2]) > max(v["bbox"][0], u["bbox"][0]))
-
-    out = set()
-    for u in members:
-        near = (v for v in units if v is not u and v["page"] == u["page"]
-                and (baseline(v, u) or (not sibling(v, u) and under(v, u))))
-        if _YEAR.search(u["text"]) or any(_YEAR.search(v["text"]) for v in near):
-            out.add(id(u))
-    return out
+    """The `id`s of the members that head a dated entry: a year in the member's own text, or in a unit on its baseline
+    (a date column or a date at the right). A line under a member is not read: a heading has text under it too, and
+    a year there (prose, "2019 - 2022  Senior Developer") says nothing about the member. So an entry title with its
+    date on the line below or above it, with no year at all (a project, "heute") or a two-digit one ("'19",
+    "Jan 19") is not told from a heading."""
+    return {id(u) for u in members
+            if _YEAR.search(u["text"]) or any(
+                v is not u and v["page"] == u["page"] and abs(v["bbox"][3] - u["bbox"][3]) <= 0.3 * u["size"]
+                and _YEAR.search(v["text"]) for v in units)}
 
 
 def _is_section_title(text: str) -> bool:
@@ -633,13 +621,16 @@ def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | 
 def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name: dict | None) -> list[dict]:
     """The section headings: a short line in one style, not set like the body text (another size, weight or family,
     or in small capitals), that is a known section name (any supported language) or one of a group of three or more
-    lines in one style that is coloured and larger than the body (or, with no such group, the largest)."""
+    lines in one style that is coloured and larger than the body (or, with no such group, the largest). Entry titles
+    dated on their own line (`_entry_titles`) are left out of such a group, and a group of nothing else is no
+    headings; a known section name always is one."""
     body = body_size([r for r in runs if not r["rotated"]])
     chars: dict[tuple, int] = {}
     for r in runs:
         chars[(r["family"], r["size"], r["weight"])] = chars.get((r["family"], r["size"], r["weight"]), 0) + len(r["text"])
     body_style = max(chars, key=chars.get) if chars else None
-    short = [u for u in _line_units(runs) if len(u["text"].split()) <= 6
+    all_units = _line_units(runs)
+    short = [u for u in all_units if len(u["text"].split()) <= 6
              and not (name and u["text"] == name["text"] and u["size"] == name["size"])
              and (u["mixed"] or (u["family"], u["size"], u["weight"]) != body_style)]
 
@@ -653,9 +644,8 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
         groups.setdefault(key(u), []).append(u)
     # a group of three or more like lines is headings when it holds a section name or is coloured and larger than the
     # body; with neither anywhere, the largest group is (the entry titles of a CV are in a group of their own)
-    all_units = _line_units(runs)
-    # the dated entry titles that share a heading's style are not headings (a known section name always is)
-    titles = {k: _entry_titles(g, all_units) - known for k, g in groups.items()}
+    # the dated entry titles that share a heading's style are not headings
+    titles = {k: _entry_titles(g, all_units) for k, g in groups.items()}
     styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body and len(titles[k]) < len(g)}
     chosen = [k for k, g in styled.items() if any(id(u) in known for u in g)
               or (k[2] != body_color and _chromatic(k[2]) and k[1] > body)]
