@@ -101,15 +101,28 @@ def _no_real_chromium_lookup(request, monkeypatch, tmp_path_factory):
 def _no_real_network(request, monkeypatch):
     """No offline test may reach the network: a request nobody mocked (a red test, a forgotten
     fake) fails at once instead of falling through to a real site. `responses` replaces this
-    while a test mocks HTTP; `live` tests opt out."""
-    if request.node.get_closest_marker("live"):
+    while a test mocks HTTP; `live` and `model` tests opt out. `urllib` too (#239: the Chromium
+    and font downloads, `pinned.http_get`), but for loopback: a test's own local server."""
+    if request.node.get_closest_marker("live") or request.node.get_closest_marker("model"):
         return
+    import urllib.parse
+    import urllib.request
+
     import requests.adapters
 
     def refuse(self, request, **kwargs):
         raise AssertionError(f"offline test tried to reach the network: {request.method} {request.url}")
 
     monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", refuse)
+    real_open = urllib.request.OpenerDirector.open
+
+    def refuse_urllib(self, url, *args, **kwargs):
+        full = url if isinstance(url, str) else url.full_url
+        if urllib.parse.urlsplit(full).hostname not in ("localhost", "127.0.0.1", "::1"):
+            raise AssertionError(f"offline test tried to reach the network: {full}")
+        return real_open(self, url, *args, **kwargs)
+
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open", refuse_urllib)
 
 
 _REAL_BOARDS_FOR_LOCATION = sites.boards_for_location

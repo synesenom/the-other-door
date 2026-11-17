@@ -112,7 +112,7 @@ def test_check_pdf_takes_a_name_that_is_not_text_as_no_name(tmp_path):
 
 def test_fixable_keeps_only_what_the_tailor_can_fix():
     found = [{"kind": "missing", "detail": "a"}, {"kind": "glued", "detail": "b"}, {"kind": "empty", "detail": "c"}]
-    assert readability.FIXABLE == {"missing", "overflow"}
+    assert readability.FIXABLE == {"missing", "overflow", "pages"}
     assert readability.fixable(found) == [{"kind": "missing", "detail": "a"}]
     assert readability.fixable([]) == []
 
@@ -265,3 +265,18 @@ def test_check_pdf_splits_main_and_side(tmp_path):
     body = ('<h1>Jane Doe</h1><div class="main"><h2>Profile</h2><p>x</p><h2>Experience</h2><p>y</p></div>'
             '<div class="side"><h2>Skills &amp; Tools</h2><p>z</p></div>')
     assert readability.check_pdf(pdf, body, NAME) == []
+
+
+def test_a_cv_over_its_page_limit_is_a_fixable_problem_that_names_the_limit(tmp_path):
+    """#194: more pages than `cv_max_pages` is retried like a missing heading; the detail tells the tailor the limit."""
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD, GOOD])
+    over = [p for p in readability.check_pdf(pdf, "<p>Jane Doe</p>", NAME, cv=True, max_pages=1) if p["kind"] == "pages"]
+    assert over == [{"kind": "pages", "detail": "2 pages, over the limit of 1 page"}]
+    assert readability.fixable(over) == over
+
+
+def test_a_cv_within_its_limit_or_a_letter_or_no_limit_has_no_pages_problem(tmp_path):
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD, GOOD])
+    assert "pages" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe</p>", NAME, cv=True, max_pages=2))
+    assert "pages" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe</p>", NAME, max_pages=1))
+    assert "pages" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe</p>", NAME, cv=True))

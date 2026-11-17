@@ -521,6 +521,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 .profile-chips > * { margin: 0; }
 .profile-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) 0; background: var(--color-ground); }
 .profile-save > p { margin: 0; }
+.profile-save > .error { flex-basis: 100%; }
 /* a page that ends with its sticky save bar ends at the bar: no room to scroll below it */
 .settings:has(> .profile-save:last-child) { padding-bottom: 0; }
 /* In Profile an error is a sentence under its field. */

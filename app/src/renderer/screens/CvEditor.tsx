@@ -97,7 +97,7 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
     }
   }
   const errorLine = error && (
-    <p role="alert" className="field-error">
+    <p role="alert" className="error">
       {named(error)}
     </p>
   )
@@ -296,11 +296,13 @@ export function CvEditor({
   if (loadError) return <p role="alert" className="error">{named(loadError)}</p>
   if (!profile) return <Spinner message="Reading your CV…" />
   const keepPages = async (next: string[]) => {
+    const before = pages
     setPages(next)
     setPagesError(null)
     try {
       await call('init_profile', { other: { enrich_sources: next } })
     } catch (e) {
+      setPages(before) // not saved: the list shown is the one saved
       setPagesError(errorText(e))
     }
   }
@@ -351,7 +353,7 @@ export function CvEditor({
       </div>
       {dirty && <p className="small muted">Save or undo your changes before adding from a page.</p>}
       {pagesError && (
-        <p role="alert" className="field-error">
+        <p role="alert" className="error">
           {named(pagesError)}
         </p>
       )}
@@ -417,8 +419,9 @@ export function CvEditor({
           Save
         </button>
         {saving ? <Spinner message="Saving…" /> : message ? <p className="small">{message}</p> : dirty ? <p className="small muted">Unsaved changes</p> : null}
+        {/* no field's error: the box, in the bar on a line of its own, so it is seen from wherever Save was pressed */}
         {error && (
-          <p role="alert" className="field-error">
+          <p role="alert" className="error">
             {named(error)}
           </p>
         )}
