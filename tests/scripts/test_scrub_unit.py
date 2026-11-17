@@ -47,7 +47,7 @@ def _laid(font, ops, name="/F1"):
         x = g.x
         for b in g.data:
             ch = font.char_of.get(b) or (str(scrub.DIGIT_NAMES.index(font.digit_of[b])) if b in font.digit_of else chr(b))
-            end = x + font.width(b) * g.size / 1000 + g.tc
+            end = x + scrub.advance(font, g.size, g.tc, g.tw, bytes([b]))
             out.append((round(x, 3), ch, end))
             x = end
     return out
@@ -106,6 +106,79 @@ def test_punctuation_right_after_a_word_moves_with_the_word_s_end_and_the_next_w
     comma = next(x for x, ch, _ in laid if ch == ",")
     assert comma == pytest.approx(72.0 + 10.0)  # right after the new word, not where the original's end left it
     assert _words(font, new)[1][0] == pytest.approx(_words(font, ops)[1][0])
+
+
+@pytest.mark.parametrize("token", [b"xx.xx", b"xx-xx", b"(xx)", b"xx@xx;xx"])
+def test_a_token_of_words_and_marks_stays_one_token_with_no_gap_inside(token):
+    names = scrub.encoding_names("/MacRomanEncoding")
+    widths = [900.0 if names.get(c) == "x" else 250.0 if c in (32, 44) else 500.0 for c in range(32, 256)]
+    font = scrub.Font(names, widths, first=32)  # each "xx" (1800) becomes a word of 1000: the rest follows it
+    ops = _block(("Tj", [token + b" ab"]))
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned={"xx", "ab"})
+    laid = _laid(font, new)
+    inside = laid[:[ch for _, ch, _ in laid].index(" ")]
+    assert all(x == pytest.approx(end) for (_, _, end), (x, _, _) in zip(inside, inside[1:]))  # read as one token
+    assert _words(font, new)[-1][0] == pytest.approx(_words(font, ops)[-1][0])  # the next word stays
+
+
+def test_a_mark_set_in_a_block_of_its_own_still_follows_its_word():
+    names = scrub.encoding_names("/MacRomanEncoding")
+    widths = [900.0 if names.get(c) == "x" else 500.0 for c in range(32, 256)]
+    font = scrub.Font(names, widths, first=32)  # Quartz starts a new block (and Tm) where the colour or link changes
+    block = lambda x, text: [("BT", []), ("Tf", ["/F1", 10.0]), ("Tm", [1.0, 0.0, 0.0, 1.0, x, 700.0]),  # noqa: E731
+                             ("Tj", [text]), ("ET", [])]
+    ops = block(72.0, b"xx") + [("rg", [1.0, 0.0, 0.0])] + block(90.0, b"]")
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned={"xx"})
+    glyphs = [g for g in scrub.glyphs_of(new, {"/F1": font}) if isinstance(g, scrub.Glyph)]
+    word = [g for g in glyphs if g.tm[4] == 72.0]
+    word_end = 72.0 + word[-1].x + scrub.advance(font, 10.0, 0.0, 0.0, word[-1].data)
+    assert word_end < 90.0 and glyphs[-1].tm[4] + glyphs[-1].x == pytest.approx(word_end)
+
+
+def _at(font, ops):
+    """(x, y) of each glyph as glyphs_of places it."""
+    return [(round(g.x, 3), round(g.y, 3)) for g in scrub.glyphs_of(ops, {"/F1": font}) if isinstance(g, scrub.Glyph)]
+
+
+def test_t_star_moves_to_the_next_line_by_the_leading_tl_sets():
+    ops = _block(("TL", [12.0]), ("Tj", [b"a"]), ("T*", []), ("Tj", [b"b"]))
+    assert _at(_quartz_font(), ops) == [(72.0, 700.0), (72.0, 688.0)]
+
+
+def test_td_with_a_capital_moves_like_td_and_sets_the_leading():
+    ops = _block(("TD", [0.0, -14.0]), ("Tj", [b"b"]), ("T*", []), ("Tj", [b"c"]))
+    assert _at(_quartz_font(), ops) == [(72.0, 686.0), (72.0, 672.0)]
+
+
+def test_word_spacing_widens_the_space_code_only():
+    ops = _block(("Tw", [3.0]), ("Tj", [b"a b"]))
+    assert _at(_quartz_font(), ops) == [(72.0, 700.0), (77.0, 700.0), (82.5, 700.0)]
+
+
+def test_word_spacing_does_not_widen_a_two_byte_font_s_code_32():
+    font = _type0_font()
+    ops = _block(("Tw", [3.0]), ("Tj", [(32).to_bytes(2, "big") + (1).to_bytes(2, "big")]))
+    assert [x for x, _ in _at(font, ops)] == [72.0, 77.0]
+
+
+def test_a_quote_moves_to_the_next_line_and_shows_its_string():
+    ops = _block(("TL", [12.0]), ("'", [b"b"]))
+    assert _at(_quartz_font(), ops) == [(72.0, 688.0)]
+
+
+def test_a_double_quote_sets_word_and_character_spacing_then_moves_to_the_next_line():
+    ops = _block(("TL", [12.0]), ('"', [2.0, 1.0, b"a b"]))
+    assert _at(_quartz_font(), ops) == [(72.0, 688.0), (78.0, 688.0), (83.5, 688.0)]
+
+
+def test_lines_set_by_t_star_and_quotes_keep_their_words_where_they_were():
+    font = _quartz_font()
+    ops = _block(("TL", [12.0]), ("Tw", [3.0]), ("Tj", [b"plain word"]), ("'", [b"here now"]), ('"', [1.0, 0.5, b"made up"]))
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned={"plain", "word", "here", "now", "made"})
+    lines = lambda o: sorted({y for _, y in _at(font, o)})  # noqa: E731
+    assert lines(new) == lines(ops) == [676.0, 688.0, 700.0]
+    assert [w for _, w in _words(font, new)] != [w for _, w in _words(font, ops)]
+    assert [w[0] for w in _words(font, new)] == pytest.approx([w[0] for w in _words(font, ops)])
 
 
 def test_letter_spaced_text_keeps_its_spacing_and_its_words_their_starts():

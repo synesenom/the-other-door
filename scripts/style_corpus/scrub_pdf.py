@@ -3,12 +3,11 @@ width, never one of the original, and every number other digits with none of the
 icons, rules, colours and positions stay as they are.
 
 Made for pdfTeX PDFs (words placed by kerns, no space glyphs), Quartz ones (Apple Pages: subset TrueType fonts in
-MacRoman, real space glyphs, character spacing; a glyph of width 0 is not in the subset, so no word is written with
+MacRoman, real space glyphs; a glyph of width 0 is not in the subset, so no word is written with
 it), and Word, Google Docs and Canva ones (Type0 fonts, Identity-H, and Skia's Type3 fallback fonts, glyphs placed one
 by one or in TJ arrays), whose tagged structure (StructTreeRoot, ActualText, Alt) goes too. One path for all of them,
-the page's and every form's text alike (rewrite_content): each word (no gap over 0.15 em inside it, under pdfTeX's
-justified glue) is laid out again from where it started, each line written back as one TJ. Every image becomes a flat
-grey box of its size (a photo, a logo). Every colour turns round the colour wheel by one random angle, greys kept
+the page's and every form's text alike (rewrite_content). Every image becomes a flat grey box of its size (a photo, a
+logo). Every colour turns round the colour wheel by one random angle, greys kept
 (turn_colour). Links, outlines, forms, XMP and the document info but its Creator and Producer go.
 Needs pikepdf, which is not a project dependency: run it from its own venv (`python -m venv v && v/bin/pip install pikepdf`).
 
@@ -313,8 +312,8 @@ def parse_w(array: list) -> dict[int, float]:
 
 
 class Glyph(NamedTuple):
-    """Text drawn in one font and size from (x, y) of the text matrix *tm*, with the character spacing *tc* after each
-    glyph; *data* is one code, or a replaced word's."""
+    """Text drawn in one font and size from (x, y) of the text matrix *tm*, with the character and word spacing in
+    force; *data* is one code, or a replaced word's."""
     tm: tuple | None
     font: str
     size: float
@@ -322,63 +321,80 @@ class Glyph(NamedTuple):
     y: float
     data: bytes
     tc: float = 0.0
+    tw: float = 0.0
 
 
 WORD_GAP = 0.15  # of the font size: a wider gap between two glyphs ends a word (pdfTeX's glue is 0.22-0.33)
 
 
+def advance(f: Font, size: float, tc: float, tw: float, data: bytes) -> float:
+    """How far these codes move the pen: each glyph's width, the character spacing after each, and the word spacing
+    after a single-byte code 32."""
+    codes = [int.from_bytes(data[k:k + f.code_len], "big") for k in range(0, len(data), f.code_len)]
+    return sum(f.width(c) * size / 1000 + tc + (tw if c == 32 and f.code_len == 1 else 0.0) for c in codes)
+
+
 def glyphs_of(ops: list, fonts: dict) -> list:
     """A page's operators with every text block read into Glyphs at their positions in the text matrix's space
-    (one per code, whether set by Tj or inside a TJ); every other operator stays, Tf, Tm and Td go (the writer
-    puts them back). Tc stays where it was set and, with the font and size, is followed through q and Q; Tw, Tz,
-    TL, Ts, TD, T*, ' and " are refused: nothing here would move for them."""
+    (one per code); the operators that only place text (Tf, Tm, Td, TD, T*, ' and ") go, the writer puts the glyphs
+    back; the rest stay where they were. Tz and Ts are refused: nothing here would move for them."""
     out, text, saved = [], False, []
-    tm, font, size, lx, ly, x, tc = None, None, 1.0, 0.0, 0.0, 0.0, 0.0
+    tm, font, size, lx, ly, x, tc, tw, tl = None, None, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     for op, operands in ops:
         if op == "q":
-            saved.append((tc, font, size))
+            saved.append((tc, tw, tl, font, size))
         elif op == "Q":
-            tc, font, size = saved.pop() if saved else (0.0, None, 1.0)
+            tc, tw, tl, font, size = saved.pop() if saved else (0.0, 0.0, 0.0, None, 1.0)
         elif op == "Tc":
             tc = float(operands[0])
+        elif op == "Tw":
+            tw = float(operands[0])
+        elif op == "TL":
+            tl = float(operands[0])
         if op == "BT":
             tm, lx, ly, x, text = None, 0.0, 0.0, 0.0, True
         elif op == "ET":
             text = False
         if not text or op in ("BT", "ET"):
             out.append((op, operands))
-        elif op == "Tf":
+            continue
+        if op == '"':
+            tw, tc = float(operands[0]), float(operands[1])
+            out += [("Tw", [tw]), ("Tc", [tc])]
+        if op == "TD":
+            tl = -float(operands[1])
+        if op == "Tf":
             font, size = str(operands[0]), float(operands[1])
         elif op == "Tm":
             tm, lx, ly, x = tuple(float(v) for v in operands), 0.0, 0.0, 0.0
-        elif op == "Td":
-            lx, ly = lx + float(operands[0]), ly + float(operands[1])
+        elif op in ("Td", "TD", "T*", "'", '"'):
+            dx, dy = (float(operands[0]), float(operands[1])) if op in ("Td", "TD") else (0.0, -tl)
+            lx, ly = lx + dx, ly + dy
             x = lx
-        elif op in ("Tj", "TJ"):
+        elif op in ("Tz", "Ts"):
+            raise SystemExit(f"unhandled text operator {op}")
+        elif op not in ("Tj", "TJ"):
+            out.append((op, operands))
+        if op in ("Tj", "TJ", "'", '"'):
             f = fonts[font]
-            for item in [operands[0]] if op == "Tj" else operands[0]:
+            for item in operands[0] if op == "TJ" else [operands[-1]]:
                 if not isinstance(item, bytes):
                     x -= float(item) * size / 1000
                     continue
                 for k in range(0, len(item), f.code_len):
                     data = item[k:k + f.code_len]
-                    out.append(Glyph(tm, font, size, x, ly, data, tc))
-                    x += f.width(int.from_bytes(data, "big")) * size / 1000 + tc
-        elif op in ("Tw", "Tz", "TL", "Ts", "TD", "T*", "'", '"'):
-            raise SystemExit(f"unhandled text operator {op}")
-        else:
-            out.append((op, operands))
+                    out.append(Glyph(tm, font, size, x, ly, data, tc, tw))
+                    x += advance(f, size, tc, tw, data)
     return out
 
 
 def rewrite_content(ops: list, fonts: dict, banned: set[str]) -> list:
-    """The page's operators with each word (a run of letters, or of digits, in one font, size and line, no gap
-    over WORD_GAP of the size between them) of a text block replaced, written from the glyph where the word started
-    (_written), so every word keeps its absolute start. A word becomes a French word of about its width (pick), a number
-    as many other digits with none of the original's numbers inside them; the marks right after it (a comma, a
-    bracket: no space or gap between) move with its end, every other glyph stays where it was."""
+    """The page's operators with each word of its text replaced: a run of letters, or of digits, in one font drawn one
+    after the other (follows), by a French word of about its width (pick), or as many other digits with none of the
+    original's numbers inside them. The rest of a token (the marks and words joined to it: an email, a URL, a bracket
+    set in a block of its own) moves with the new word's end; the next token starts where it did."""
     stream, runs_out = glyphs_of(ops, fonts), []
-    i = 0
+    i, shift, prev, prev_end = 0, 0.0, None, 0.0  # shift: in page space
     while i < len(stream):
         g = stream[i]
         if not isinstance(g, Glyph):
@@ -386,15 +402,14 @@ def rewrite_content(ops: list, fonts: dict, banned: set[str]) -> list:
             i += 1
             continue
         f = fonts[g.font]
+        width = lambda glyph: advance(f, g.size, g.tc, g.tw, glyph.data)  # noqa: E731
         kind = lambda glyph: f.kind(int.from_bytes(glyph.data, "big"))  # noqa: E731
-        advance = lambda glyph: f.width(int.from_bytes(glyph.data, "big")) * g.size / 1000 + g.tc  # noqa: E731
-        k, j, end = kind(g), i + 1, g.x + advance(g)
-        if k:
-            while (j < len(stream) and isinstance(stream[j], Glyph) and kind(stream[j]) == k
-                   and stream[j][:3] == g[:3] and stream[j].y == g.y and stream[j].tc == g.tc
-                   and stream[j].x - end <= WORD_GAP * g.size):
-                end = stream[j].x + advance(stream[j])
-                j += 1
+        if int.from_bytes(g.data, "big") in f.space_codes or prev is None or not follows(prev, g, prev_end):
+            shift = 0.0
+        k, j, end = kind(g), i + 1, g.x + width(g)
+        while k and j < len(stream) and follows(g, stream[j], end) and stream[j][:3] == g[:3] and kind(stream[j]) == k:
+            end = stream[j].x + width(stream[j])
+            j += 1
         run = [int.from_bytes(x.data, "big") for x in stream[i:j]]
         data = g.data
         if k == "char_of":
@@ -405,31 +420,39 @@ def rewrite_content(ops: list, fonts: dict, banned: set[str]) -> list:
         elif k == "digit_of" and f.code_for_digit:
             digit_code = {DIGIT_NAMES.index(f.digit_of[c]): c for c in f.code_for_digit}
             data = b"".join(digit_code[int(d)].to_bytes(f.code_len, "big") for d in new_number(len(run), sorted(digit_code), banned))
-        runs_out.append(g._replace(data=data))
-        if k:
-            codes = range(0, len(data), f.code_len)
-            shift = g.x + sum(advance(g._replace(data=data[c:c + f.code_len])) for c in codes) - end
-            while (j < len(stream) and isinstance(stream[j], Glyph) and not kind(stream[j]) and stream[j][:3] == g[:3]
-                   and stream[j].y == g.y and int.from_bytes(stream[j].data, "big") not in f.space_codes
-                   and stream[j].x - end <= WORD_GAP * g.size):
-                end = stream[j].x + advance(stream[j])
-                runs_out.append(stream[j]._replace(x=stream[j].x + shift))
-                j += 1
-        i = j
+        scale = (g.tm or (1.0,))[0]
+        runs_out.append(g._replace(x=g.x + shift / scale, data=data))
+        shift += (width(g._replace(data=data)) - (end - g.x)) * scale
+        i, prev, prev_end = j, stream[j - 1], end
     return _written(runs_out, fonts)
 
 
+def _on_page(g: Glyph, x: float) -> tuple[float, float]:
+    """Where a point at *x* on *g*'s line lies on the page (its text matrix applied)."""
+    a, b, c, d, e, f = g.tm or (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    return a * x + c * g.y + e, b * x + d * g.y + f
+
+
+def follows(a: Glyph, b, end: float) -> bool:
+    """Whether glyph *b* is drawn right after glyph *a* (which ends at *end*), in whatever block: on the same line of
+    the page, with no gap over WORD_GAP of a's size between them."""
+    if not isinstance(b, Glyph):
+        return False
+    (ax, ay), (bx, by) = _on_page(a, end), _on_page(b, b.x)
+    size = a.size * (a.tm or (1.0,))[0]
+    return abs(by - ay) < 0.1 * size and -0.1 * size <= bx - ax <= WORD_GAP * size
+
+
 def _written(stream: list, fonts: dict) -> list:
-    """Glyphs back as operators: Tf and Tm when they change and at each block's first glyph (a Q before it may have
-    dropped the font), a Td to the first glyph of each line, and the line as one TJ whose kerns put every other glyph
-    where it started (a reader finds pdfTeX's word breaks in those kerns, not in gaps between separate Tj's)."""
+    """Glyphs back as operators: Tf and Tm at each block's first glyph and when they change, a Td to each line, the
+    line as one TJ whose kerns put each glyph at its x (a reader finds pdfTeX's word breaks in those kerns)."""
     unset = object()
     out, tm, font, size, px, py, end = [], unset, None, None, 0.0, 0.0, None
     for g in stream:
         if not isinstance(g, Glyph):
             out.append(g)
             end = None
-            if g[0] == "BT":  # a new block starts from the identity matrix
+            if g[0] == "BT":  # a new block starts from the identity matrix, and a Q before it may have dropped the font
                 tm, font, px, py = unset, None, 0.0, 0.0
             continue
         if (g.font, g.size) != (font, size):
@@ -449,9 +472,7 @@ def _written(stream: list, fonts: dict) -> list:
             line[-1] += g.data
         else:
             line.append(g.data)
-        f = fonts[g.font]
-        end = g.x + sum(f.width(int.from_bytes(g.data[k:k + f.code_len], "big")) * g.size / 1000 + g.tc
-                        for k in range(0, len(g.data), f.code_len))
+        end = g.x + advance(fonts[g.font], g.size, g.tc, g.tw, g.data)
     return [("Tj", [args[0][0]]) if op == "TJ" and len(args[0]) == 1 else (op, args) for op, args in out]
 
 
@@ -549,11 +570,13 @@ def page_ops(page, fonts: dict, banned: set[str]) -> list:
             raise SystemExit(f"unhandled operator {o}")
         if o == "BDC" and len(operands) == 2 and isinstance(operands[1], pikepdf.Dictionary):
             operands = [operands[0], pikepdf.Dictionary({k: v for k, v in operands[1].items() if k == "/MCID"})]
-        elif o == "Tj":
+        elif o in ("Tj", "'"):
             operands = [bytes(operands[0])]
+        elif o == '"':
+            operands = [float(operands[0]), float(operands[1]), bytes(operands[2])]
         elif o == "TJ":
             operands = [[bytes(x) if isinstance(x, pikepdf.String) else float(x) for x in operands[0]]]
-        elif o in ("Tf", "Tm", "Td"):
+        elif o in ("Tf", "Tm", "Td", "TD", "Tc", "Tw", "TL"):
             operands = [str(operands[0]), *map(float, operands[1:])] if o == "Tf" else [float(x) for x in operands]
         ops.append((o, list(operands)))
 
