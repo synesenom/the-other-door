@@ -1043,7 +1043,7 @@ def _script_readability(monkeypatch, *answers):
 
     seen = list(answers)
 
-    def _read(output_dir):
+    def _read(output_dir, max_pages=None):
         value = seen.pop(0) if len(seen) > 1 else seen[0]
         if isinstance(value, Exception):
             raise value
@@ -1283,6 +1283,43 @@ def test_an_overflow_that_stays_is_in_readability_and_the_warning(prep, monkeypa
     _script_readability(monkeypatch, [_OVERFLOW], [_OVERFLOW])
     result = _go(prep)
     assert len(calls) == 2 and result["readability"] == [_OVERFLOW] and result["warning"]
+
+
+_PAGES = {"file": "cv", "kind": "pages", "detail": "2 pages, over the limit of 1 page"}
+
+
+def test_a_cv_over_its_page_limit_gets_one_retry_that_names_the_limit(prep, monkeypatch):
+    """#194: the tailor's one retry is told the limit and to trim, never invent."""
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_PAGES], [])
+    result = _go(prep)
+    feedback = calls[1]["feedback"]
+    assert len(calls) == 2 and "over the limit of 1 page" in feedback
+    assert "trim the lowest-value items so it fits, never invent anything" in feedback
+    assert result["readability"] == [] and "warning" not in result
+
+
+def test_a_cv_still_over_its_limit_after_the_retry_is_in_readability_and_not_retried_again(prep, monkeypatch):
+    calls = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
+    _script_readability(monkeypatch, [_PAGES], [_PAGES])
+    result = _go(prep)
+    assert len(calls) == 2 and result["readability"] == [_PAGES] and result["warning"]
+
+
+@pytest.mark.parametrize("template_pages, expected", [(1, 1), (None, 2)])
+def test_the_read_back_checks_the_cv_against_the_stricter_page_limit(prep, monkeypatch, template_pages, expected):
+    from door.commands import matches as matches_cmd
+
+    write_list_posting(prep.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9, location="Aarhus, Denmark")
+    (prep.profile_dir / "cv.template.html").write_text("<<body>>")
+    (prep.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
+    limits = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, []))
+    monkeypatch.setattr(matches_cmd, "_readability", lambda output_dir, max_pages=None: limits.append(max_pages) or [])
+    _go(prep)
+    assert limits == [expected]
 
 
 def test_a_sparse_last_page_is_reported_and_not_retried(prep, monkeypatch):

@@ -28,7 +28,6 @@ runs `upgrade_all` right after the swap. Google Drive keeps the two versions on 
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -42,7 +41,7 @@ from typing import Callable
 
 from door import version as app_version
 from door.core import lock as lock_mod
-from door.core import problem_log, usage, workspace
+from door.core import pinned, problem_log, usage, workspace
 
 VERSION_FILE = ".data_version"
 BACKUP_PREFIX = "upgrade-"
@@ -157,12 +156,8 @@ _TEMPLATE_KEYS = {
 }
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def _remove_if_shipped(path: Path, digest: str) -> None:
-    if path.is_file() and _sha256(path) == digest:
+    if path.is_file() and pinned.sha256(path) == digest:
         path.unlink()
 
 

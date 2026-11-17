@@ -128,10 +128,12 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    cuts what runs past the page, so a word of the CV that is missing from the PDF's text (`overflow`) means something
    was cut off; and, for a template with a side column, a nearly empty last page (`sparse`). What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);
-   reported, never a block.
+   reported, never a block. `show`'s `materials.readability` and `prepare`'s read-back also hold the CV to its page
+   limit (`pages`: more pages than the stricter of the country's and the template's), which `compile`'s `readable`
+   does not (the tailor counts its pages itself); `jobs show` says it once, as "(limit N)" on the CV row.
    Chromium prints HTML pages to PDF without a TeX engine (`door.tailoring.html_pdf`, #165): one pinned headless shell, installed by `doctor --fix` or carried by the desktop app, driven over the DevTools protocol on a fresh profile. JavaScript is off, the page is served from loopback over one folder and every other request, `file:` and other hosts included, is refused.
    When the tailor is done, `prepare` reads both PDFs back this way itself. If the name, a heading or a keyword
-   is missing, or text of the CV runs off the page, it runs the tailor once more, in a fresh session, told which problems and that the files exist; the
+   is missing, text of the CV runs off the page or the CV has more pages than its limit, it runs the tailor once more, in a fresh session, told which problems and that the files exist; the
    retry counts in the plan estimate. What still does not read back is `readability` in `prepare`'s answer, with a
    `warning`; the other kinds (glued, order, empty, garbled, sparse) are listed without a retry. The prepare stays `prepared`.
    Once the job is prepared, `prepare` also estimates its salary: one Haiku call with a web search (`jobs salary`'s,

@@ -1,5 +1,5 @@
 """`fonts.plan` (#199): which pinned family stands in for each font a CV names, on a small made-up pin so every rule
-is pinned on its own; and `fonts.fetch`, with the download injected."""
+is pinned on its own; and `fonts.fetch`, with `pinned.http_get` replaced."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import hashlib
 
 import pytest
 
-from door.core import fonts
+from door.core import fonts, pinned
 
 
 def _sha(data: bytes) -> str:
@@ -194,6 +194,13 @@ def test_one_entry_per_family_in_order_of_use(data):
 
 # ---------- fetch ----------
 
+def _fetch(plan, dest, get):
+    """`fonts.fetch` with the download replaced at its one place, `pinned.http_get`."""
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(pinned, "http_get", get)
+        return fonts.fetch(plan, dest)
+
+
 def _fake_fetch(calls=None, corrupt=None):
     def fetch(url, to):
         if calls is not None:
@@ -207,7 +214,7 @@ def _fake_fetch(calls=None, corrupt=None):
 
 def test_fetch_writes_each_file_and_the_licence_beside_it_checked_against_the_pin(data, tmp_path):
     plan = one([font("Lato-Regular", "Lato"), font("Lato-Bold", "Lato", weight=700)], data)
-    paths = fonts.fetch(plan, tmp_path / "fonts", fetch=_fake_fetch())
+    paths = _fetch(plan, tmp_path / "fonts", _fake_fetch())
     assert sorted(p.name for p in paths) == ["Lato-400.ttf", "Lato-700.ttf"]
     assert (tmp_path / "fonts" / "Lato-400.ttf").read_bytes() == FILES["Lato-400.ttf"]
     assert (tmp_path / "fonts" / "Lato-OFL.txt").read_bytes() == FILES["Lato/OFL.txt"]
@@ -216,24 +223,24 @@ def test_fetch_writes_each_file_and_the_licence_beside_it_checked_against_the_pi
 
 def test_a_file_already_there_with_the_pinned_hash_is_not_fetched_again(data, tmp_path):
     plan = one([font("Lato-Regular", "Lato")], data)
-    fonts.fetch(plan, tmp_path, fetch=_fake_fetch())
+    _fetch(plan, tmp_path, _fake_fetch())
     calls = []
-    paths = fonts.fetch(plan, tmp_path, fetch=_fake_fetch(calls))
+    paths = _fetch(plan, tmp_path, _fake_fetch(calls))
     assert calls == [] and [p.name for p in paths] == ["Lato-400.ttf"]
 
 
 def test_a_changed_file_is_fetched_again(data, tmp_path):
     plan = one([font("Lato-Regular", "Lato")], data)
-    fonts.fetch(plan, tmp_path, fetch=_fake_fetch())
+    _fetch(plan, tmp_path, _fake_fetch())
     (tmp_path / "Lato-400.ttf").write_bytes(b"edited")
-    fonts.fetch(plan, tmp_path, fetch=_fake_fetch())
+    _fetch(plan, tmp_path, _fake_fetch())
     assert (tmp_path / "Lato-400.ttf").read_bytes() == FILES["Lato-400.ttf"]
 
 
 def test_a_download_that_does_not_match_the_pin_writes_nothing(data, tmp_path):
     plan = one([font("Lato-Regular", "Lato"), font("Lato-Bold", "Lato", weight=700)], data)
     with pytest.raises(fonts.FontsError, match="checksum"):
-        fonts.fetch(plan, tmp_path / "fonts", fetch=_fake_fetch(corrupt="Lato-700.ttf"))
+        _fetch(plan, tmp_path / "fonts", _fake_fetch(corrupt="Lato-700.ttf"))
     assert list((tmp_path / "fonts").iterdir()) == []   # not the good file, not a staging folder
 
 
@@ -243,14 +250,14 @@ def test_a_failing_download_is_a_fonts_error_and_leaves_no_partial_file(data, tm
         raise OSError("connection reset")
     plan = one([font("Lato-Regular", "Lato")], data)
     with pytest.raises(fonts.FontsError, match="connection reset"):
-        fonts.fetch(plan, tmp_path, fetch=broken)
+        _fetch(plan, tmp_path, broken)
     assert list(tmp_path.iterdir()) == []
 
 
 def test_a_plan_with_nothing_to_fetch_makes_no_request(data, tmp_path):
     plan = one([font("CMSY10", "Computer Modern", serif=True)], data)
     calls = []
-    assert fonts.fetch(plan, tmp_path / "x", fetch=_fake_fetch(calls)) == [] and calls == []
+    assert _fetch(plan, tmp_path / "x", _fake_fetch(calls)) == [] and calls == []
 
 
 def test_a_staging_folder_a_killed_fetch_left_is_swept_and_a_fresh_one_kept(data, tmp_path):
@@ -258,5 +265,5 @@ def test_a_staging_folder_a_killed_fetch_left_is_swept_and_a_fresh_one_kept(data
     old, fresh = tmp_path / ".fonts.old.part", tmp_path / ".fonts.new.part"
     old.mkdir(), fresh.mkdir()
     os.utime(old, (0, 0))
-    fonts.fetch(one([font("Lato-Regular", "Lato")], data), tmp_path, fetch=_fake_fetch())
+    _fetch(one([font("Lato-Regular", "Lato")], data), tmp_path, _fake_fetch())
     assert not old.exists() and fresh.exists()
