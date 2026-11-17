@@ -686,7 +686,7 @@ def _edit(choice: str, answers: dict) -> None:
         click.edit(filename=answers["draft_path"])
 
 
-_STYLE_WAIT = "5–10 minutes"
+_STYLE_WAIT = "2–5 minutes"
 
 
 def _style_line(answers: dict) -> str:

@@ -222,6 +222,7 @@ CONVERSATION_ONLY_TOOLS = (
     "preview_matches",  # onboarding's first look; `init` calls the core itself
     # the phone server, for the desktop app's "Set up your phone" and Claude Code (#444, #424)
     "phone_status", "phone_start", "phone_stop", "pair_phone", "unpair_phone",
+    "stop_style_build",  # the desktop app before an update installs (#215); `cv style build` runs in the foreground
 )
 
 # Commands with no tool: `serve` runs this server over HTTP and manages who may call it (#302); a tool
@@ -238,7 +239,7 @@ READ_ONLY_TOOLS = frozenset({
 WRITING_TOOLS = frozenset({
     "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
     "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
-    "remove_company", "merge_companies", "build_style", "show_style", "use_style", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
+    "remove_company", "merge_companies", "build_style", "show_style", "use_style", "stop_style_build", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
 })
 
@@ -1461,6 +1462,20 @@ def build_style(file: str) -> dict:
         ``{"started": True}``, or ``{"error": <why nothing started: no Chromium to print with, or no style to copy (not a PDF, a scan, a LinkedIn export)>}``.
     """
     return style_cmd._start_core(str(path_scope.check(file)))
+
+
+@mcp.tool()
+@_tool_errors
+async def stop_style_build() -> dict:
+    """Stop the CV style build that is running (``build_style``) and wait until its process is gone; it then reads as
+    ``failed`` in `status_summary`'s ``style`` block. The style in use and a style waiting to be chosen are left alone.
+    The desktop app calls it before an update installs.
+
+    Returns:
+        ``{"stopped": True}``, or ``{"stopped": False}`` when no build was running.
+    """
+    # On a thread: it waits for the build to let go of its lock, and the other calls must not wait for it.
+    return await asyncio.to_thread(style_cmd._stop_core)
 
 
 @mcp.tool()
