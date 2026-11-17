@@ -17,8 +17,6 @@ from __future__ import annotations
 import re
 from html.parser import HTMLParser
 
-from door.tailoring import style_icons
-
 TAGS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "span", "strong", "em", "a", "br"})
 VOID = frozenset({"br"})
 # What the template's CSS styles; `photo`, `main` and `side` are written by `compile` after the guard, never by the model.
@@ -131,7 +129,7 @@ _CSS_LOADERS = re.compile(r"@import|url\(|attr\(|image-set\(|(?<![\w-])image\(|c
                           r"expression\(|-moz-binding|behavior\s*:", re.I)
 _CSS_CONTENT = re.compile(r"(?<![\w-])content\s*:([^;}]*)", re.I)
 # what a `content:` string may print: a list bullet or a separator, never text or a glyph standing for an icon (#248)
-_CONTENT_MARKS = frozenset(style_icons.BULLETS | set("—|/.,"))
+_CONTENT_MARKS = frozenset("•·–—|/.,●○")  # the same marks .claude/agents/stylist.md names
 _CSS_ESCAPE = re.compile(r"\\(?:([0-9a-fA-F]{1,6})\s?|\r?\n|(.))", re.S)
 
 
