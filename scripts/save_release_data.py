@@ -1,13 +1,14 @@
 """Save a release's own data and what it read back, as the sample of the release gate (#57).
 
-    poetry run python scripts/save_release_data.py X.Y.Z [--default-only]
+    poetry run python scripts/save_release_data.py X.Y.Z
 
 Checks out the tag `vX.Y.Z` in a throwaway git worktree and runs, with that tag's `src/` on PYTHONPATH and a
 temporary home as `DOOR_HOME`, `release_data_generate.py` (the tag's own code writes a small `profile/` and `jobs/` of
 made-up data) and then `release_data.py snapshot` (the tag's own tools read it back). `profile/`, `jobs/` and
 `expected.json` are copied to `tests/data_versions/X.Y.Z/`, and the same again with the default profile
 (`DOOR_SAMPLE=default`: no template in `profile/`, both template keys null, #141) to `tests/data_versions/X.Y.Z/default/`;
-the worktree is removed. `--default-only` adds the default variant to a release saved without it. The gate
+the worktree is removed. Each variant is saved only when it is missing (no `expected.json`, written last), so a rerun
+after a save that failed half way saves what is not there; a release with both is refused. The gate
 (`tests/release/test_release_data.py`) opens each saved folder with the current code and compares.
 
 No network, no `claude`: the generator writes through the release's stores and cores. `HOME`, `XDG_CONFIG_HOME` and
@@ -39,16 +40,19 @@ def run(cmd: list[str], *, cwd: Path, env: dict | None = None) -> str:
     return done.stdout
 
 
-def save(version: str, *, default_only: bool = False) -> Path:
+def save(version: str) -> Path:
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         raise SystemExit(f"{version!r} is not a version: give X.Y.Z")
     tag = f"v{version}"
     run(["git", "rev-parse", "--verify", f"refs/tags/{tag}"], cwd=REPO)
     release = SAMPLES / version
-    variants = {"default": release / "default"} if default_only else {"full": release, "default": release / "default"}
-    for target in variants.values():
-        if (target / "profile").exists():
-            raise SystemExit(f"{target} exists: delete it first to save it again")
+    variants = {name: target for name, target in (("full", release), ("default", release / "default"))
+                if not (target / "expected.json").is_file()}
+    if not variants:
+        raise SystemExit(f"{release} exists with both variants: delete it first to save it again")
+    for target in variants.values():  # what a save that stopped half way left
+        for name in ("profile", "jobs"):
+            shutil.rmtree(target / name, ignore_errors=True)
     with tempfile.TemporaryDirectory(prefix="door-release-") as scratch:
         scratch = Path(scratch)
         tree = scratch / "tree"
@@ -90,12 +94,10 @@ def _save_variant(tree: Path, scratch: Path, target: Path, variant: str) -> None
 
 
 def main(argv: list[str]) -> int:
-    default_only = "--default-only" in argv
-    argv = [a for a in argv if a != "--default-only"]
     if len(argv) != 1:
         sys.stderr.write(__doc__.split("\n\n")[0] + "\n")
         return 2
-    print(f"Saved {save(argv[0], default_only=default_only)}")
+    print(f"Saved {save(argv[0])}")
     return 0
 
 

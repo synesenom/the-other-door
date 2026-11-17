@@ -2,7 +2,9 @@
 
 `tests/data_versions/<X.Y.Z>/` holds a release's own `profile/` and `jobs/` and `expected.json`, what that release's
 tools read back from them (`scripts/save_release_data.py`), and `<X.Y.Z>/default/` the same with the default profile:
-no template in `profile/`, `cv_template` and `cover_letter_template` null, as most users have it (#141). `check` copies one to a temporary home, runs the upgrade
+no template in `profile/`, `cv_template` and `cover_letter_template` null, as most users have it (#141). 0.2.0's
+`default/` checks little: `READ_CHANGES["0.2.0"]` (#146) excuses the template paths of both variants, so the default
+profile's template path is really compared from the next release's `default/` sample on. `check` copies one to a temporary home, runs the upgrade
 and reads it back with the same tools (`scripts/release_data.py`'s `snapshot`), and names every difference from
 `expected.json` that no step of the upgrade lists as intended (`Step.changes`) and no `READ_CHANGES` entry lists as a
 change in how the same data is read (#101).

@@ -47,7 +47,8 @@ After the tag exists (it is pushed, so the tag's code is what was released), sav
 gate: `poetry run python scripts/save_release_data.py X.Y.Z` checks the tag out in a throwaway git worktree, has the
 tag's own code write a small made-up `profile/` and `jobs/` and read them back, and puts both, with `expected.json`,
 in `tests/data_versions/X.Y.Z/`, then the same with the default profile in `tests/data_versions/X.Y.Z/default/`
-(`--default-only` adds that variant alone to a release saved without it). Commit that folder, and empty `NEW_SINCE_RELEASE` in
+(each variant is saved only when it is missing, so running it again after a save that failed half way finishes it).
+0.2.0's `default/` checks little: `READ_CHANGES["0.2.0"]` (#146) excuses the template paths of both variants, so the default profile's template path is really compared from the next release's `default/` sample on. Commit that folder, and empty `NEW_SINCE_RELEASE` in
 `tests/release/test_release_sample_unit.py` (the fields new since the last release are in the new sample now).
 `scripts/release_data_generate.py` writes the data with the release's API; when a later release's API moved, that
 script follows it, and the run fails by name rather than saving something that is not the release's.

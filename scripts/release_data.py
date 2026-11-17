@@ -36,7 +36,7 @@ def normalise(value, home: Path, code: Path | None = None):
     """
     labels = {str(p): "<home>" for p in (Path(home), Path(home).resolve())}
     if code is not None:
-        labels.update({str(p): "<code>" for p in (Path(code), Path(code).resolve()) if str(p) not in labels})
+        labels.update({str(p): "<code>" for p in (Path(code), Path(code).resolve())})
     homes = sorted(labels, key=len, reverse=True)  # the longest first: a data folder inside the code's stays <home>
 
     def walk(item):
