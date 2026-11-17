@@ -36,7 +36,7 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import doctor, lock, phone, templates, tracker, workspace
+from door.core import lock, phone, templates, tracker, workspace
 from door.tailoring import style_build, style_extract, style_preview
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
@@ -68,21 +68,32 @@ def _now() -> str:
 def _look(path: Path) -> None:
     """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print)."""
     if not path.is_file():
-        raise ValueError(f"{path} is not a file")
+        raise ValueError(f"{path.name} could not be found.")
     if refused := style_extract.not_pdf(path):
-        raise ValueError(refused["detail"])
+        raise ValueError(f"{path.name} {refused['detail']}")
     try:
         verdict = style_extract.extract(path)["verdict"]
     except (PdfiumError, OSError) as exc:
-        raise ValueError(f"{path.name} could not be read as a PDF ({exc})") from exc
+        raise ValueError(f"{path.name} is not a PDF The other door can read.") from exc
     if not verdict["copyable"]:
-        raise ValueError(verdict["detail"] or f"no style to copy ({verdict['reason']})")
+        raise ValueError(f"{path.name} {verdict['detail']}")
+
+
+class NoChromium(ValueError):
+    """No Chromium to print with. Its words are the app's (no command, #273); a command adds `INSTALL_HINT`."""
+
+    def __init__(self):
+        super().__init__("The browser that prints your CVs is not installed yet, so no style can be built.")
+
+
+INSTALL_HINT = "Run `./door doctor --fix` to install the browser that prints pages."
 
 
 def _intake(path: Path) -> None:
-    """Raise ValueError, in words, when a build of the file at `path` cannot start: no Chromium to print with, or no style."""
+    """Raise ValueError, in words, when a build of the file at `path` cannot start: no Chromium to print with
+    (`NoChromium`), or no style."""
     if not common._chromium_available():
-        raise ValueError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
+        raise NoChromium
     _look(path)
 
 
@@ -341,6 +352,8 @@ def build_style(file):
             result = _build_core(file, progress=reporter)
     except ValueError as exc:
         click.echo(f"Error: {exc}", err=True)
+        if isinstance(exc, NoChromium):
+            click.echo(INSTALL_HINT, err=True)
         sys.exit(1)
     for font in result["fonts"]:
         if font.get("source") == "none":
@@ -392,7 +405,7 @@ def show_style():
     Made again only when your CV, photo or style changed; no model is used."""
     styles = _show_core()["styles"]
     if not styles:
-        click.echo("Nothing could be printed. Run `./door doctor --fix` to install the browser that prints pages.")
+        click.echo(f"Nothing could be printed. {INSTALL_HINT}")
         return
     for name, sets in styles.items():
         click.echo(f"{'Like your CV' if name == 'like' else 'The default'}:")

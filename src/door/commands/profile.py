@@ -785,6 +785,8 @@ def _save_answers(answers: dict) -> bool:
             style_cmd._start_core(answers["style_source"])
         except ValueError as exc:
             click.echo(f"The CV style was not started: {exc}", err=True)
+            if isinstance(exc, style_cmd.NoChromium):
+                click.echo(style_cmd.INSTALL_HINT, err=True)
         else:
             click.echo(f"Your CV style is building in the background ({_STYLE_WAIT}). `./door jobs summary` says when it is ready; "
                        "`./door cv style show` compares, `./door cv style use like` chooses it.")

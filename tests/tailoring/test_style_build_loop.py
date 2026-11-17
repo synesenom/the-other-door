@@ -207,11 +207,14 @@ def test_a_model_error_is_a_failed_result_not_an_exception(world):
     assert result["state"] == "failed" and "no plan" in result["problems"][0] and not world.style.exists()
 
 
-@pytest.mark.parametrize("pdf", ["scan", "linkedin-like"])
-def test_a_cv_with_no_style_to_copy_fails_without_asking_the_model(world, pdf):
+@pytest.mark.parametrize("pdf, words", [
+    ("scan", "scan.pdf looks like a scan: there is no text in it to copy the style from."),
+    ("linkedin-like", "linkedin-like.pdf is a LinkedIn export, which has no design of its own to copy."),
+])
+def test_a_cv_with_no_style_to_copy_fails_in_words_without_asking_the_model(world, pdf, words):
     stylist = Stylist("unused")
     result = world.build(pdf, stylist)
-    assert result["state"] == "failed" and result["problems"] and stylist.calls == []
+    assert result["state"] == "failed" and result["problems"] == [words] and stylist.calls == []
 
 
 def test_a_file_that_is_not_a_pdf_fails_without_asking_the_model(world, tmp_path):
@@ -219,7 +222,8 @@ def test_a_file_that_is_not_a_pdf_fails_without_asking_the_model(world, tmp_path
     word.write_bytes(b"PK")
     stylist = Stylist("unused")
     result = style_build.build(word, profile_dir=world.profile, work_dir=world.work, run=stylist)
-    assert result["state"] == "failed" and "docx" in result["problems"][0] and stylist.calls == []
+    assert result["state"] == "failed" and result["problems"] == ["cv.docx is not a PDF, so it has no layout to copy."]
+    assert stylist.calls == []
 
 
 # ---------- the stress renders ----------
