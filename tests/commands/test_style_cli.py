@@ -138,10 +138,23 @@ def test_a_pdf_that_cannot_be_read_is_named_in_words_without_the_library_message
     assert world.spawned == []
 
 
+def test_a_scan_and_a_linkedin_export_are_named_in_whole_sentences(home, world):
+    # the app's error box shows them as they come (#273): the file's name, then why, no measurement
+    assert mcp_server.build_style(str(STYLES / "scan.pdf")) == {
+        "error": "scan.pdf looks like a scan: there is no text in it to copy the style from."}
+    assert mcp_server.build_style(str(STYLES / "linkedin-like.pdf")) == {
+        "error": "linkedin-like.pdf is a LinkedIn export, which has no design of its own to copy."}
+    assert world.spawned == []
+
+
+def test_a_file_that_is_gone_is_named_not_its_path(home, world, tmp_path):
+    assert mcp_server.build_style(str(tmp_path / "gone.pdf")) == {"error": "gone.pdf could not be found."}
+
+
 def test_a_scan_is_refused_with_the_verdict_and_leaves_the_existing_style_and_state_alone(home, world, cli_env):
     (cli_env.profile_dir / "style").mkdir()
     (cli_env.profile_dir / "style" / "cv.template.html").write_text("kept")
-    with pytest.raises(ValueError, match="text layer"):
+    with pytest.raises(ValueError, match="looks like a scan"):
         style_cmd._start_core(str(STYLES / "scan.pdf"))
     assert world.spawned == [] and not (home / ".style").exists()
     assert (cli_env.profile_dir / "style" / "cv.template.html").read_text() == "kept"
