@@ -6,7 +6,7 @@ they sit beside, then by position, and says how each pair differs: `dx`, `dy` (t
 `d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `blurred_score` and `pages_score`
 say how alike the page images look, `feedback` is what the next round tells the model, and `should_stop` /
 `best_round` are the loop's stopping rule: stop at `CAP` rounds, when every matched element is within `WITHIN_PT`
-points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `GOOD`); the best round is kept.
+points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `GOOD`); the best round is kept, and a build whose best is under `FLOOR` is failed.
 """
 
 from __future__ import annotations
@@ -26,6 +26,9 @@ MIN_GAIN = 0.0025
 # the small-gain rule applies only once the best round scored this, a good rebuild (0.88-0.99 in #238's real runs): below
 # it a flat or worse round goes on to the cap with the feedback (a broken first draft scored 0.31 then 0.01, #243)
 GOOD = 0.8
+# a build whose best round scored under this is failed, nothing written (#241): in #238's real runs the rebuilds that
+# looked like their CV scored 0.63-0.99 and the broken ones (columns swapped or stacked, pages lost) 0.15-0.49
+FLOOR = 0.5
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
 _FEEDBACK_LIMIT = 12
 MIN_PART = 5  # characters: a shorter text is not paired by being part of another ("2019" is in many runs)
