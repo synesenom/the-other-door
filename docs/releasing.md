@@ -9,8 +9,8 @@ only after a person has installed it on a clean machine of each system and gone 
 ## Before the tag
 
 - `./scripts/run-test.sh --release` passes: the offline suite, the release gate, the app's tests with every journey,
-  the CLI journeys (the real `./door` in the test world) and the skill tests, which only run locally (the real model on your Claude plan runs `/onboard`, `/expand` and a review session against the app's
-  test world).
+  the CLI journeys (the real `./door` in the test world) and the real-model tests, which only run locally (the real model on your Claude plan runs `/onboard`, `/expand` and a review session against the app's
+  test world, and rebuilds the CV style of every style corpus CV).
 - The release gate (#57, `tests/release/`, marker `release`) is part of it: every earlier release's saved data,
   `tests/data_versions/<X.Y.Z>/`, is copied to a temporary home, upgraded by the build's own steps and read back with
   the same tools (`show_profile`, `list_companies`, `list_matches`, `show` for each job, `status_summary`,

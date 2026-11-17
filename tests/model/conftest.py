@@ -16,20 +16,25 @@ sys.path.insert(0, str(Path(__file__).parent))
 APP = REPO_ROOT / "app"
 
 
+def claude_ready() -> str | None:
+    """Why the real model cannot run here (no signed-in claude), or None."""
+    if not shutil.which("claude"):
+        return "no claude on PATH"
+    status = subprocess.run(["claude", "auth", "status", "--json"], capture_output=True, text=True)
+    if status.returncode != 0 or not json.loads(status.stdout or "{}").get("loggedIn"):
+        return "claude is not signed in (claude auth login)"
+    return None
+
+
 def ready() -> str | None:
     """Why the skill run cannot happen here, or None."""
     try:
         import claude_agent_sdk  # noqa: F401
     except ImportError:
         return "claude-agent-sdk is not installed (poetry install)"
-    if not shutil.which("claude"):
-        return "no claude on PATH"
     if not (APP / "node_modules" / ".bin" / "tsx").exists():
         return "the app's packages are not installed (npm ci in app/)"
-    status = subprocess.run(["claude", "auth", "status", "--json"], capture_output=True, text=True)
-    if status.returncode != 0 or not json.loads(status.stdout or "{}").get("loggedIn"):
-        return "claude is not signed in (claude auth login)"
-    return None
+    return claude_ready()
 
 
 def make_world(*flags: str) -> dict:
