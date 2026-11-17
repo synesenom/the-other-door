@@ -335,3 +335,20 @@ def test_spaced_letters_are_reported_not_retried():
 def test_no_cv_of_the_style_corpus_reads_as_spaced_letters(pdf):
     # two-column side bands, initials, French text, LaTeX and Word letter-spacing: none is a word printed apart
     assert readability.spaced_problems(readability.extract(pdf)[0], "") == []
+
+
+@pytest.mark.parametrize("printed,heading", [("B i o", "Bio"), ("C V", "CV"), ("B I O", "Bio")])
+def test_a_short_heading_read_back_letter_by_letter_is_spaced(printed, heading):
+    found = readability.spaced_problems(f"Jane Doe\n{printed}\nI build data platforms.\n", f"<h2>{heading}</h2>")
+    assert kinds(found) == ["spaced"] and f'"{printed}"' in found[0]["detail"]
+
+
+def test_short_runs_of_single_letters_that_are_no_heading_are_not_spaced():
+    assert readability.spaced_problems("Grades: B i o\nBio\n", "<h2>Bio</h2><p>Grades</p>") == []
+
+
+def test_a_heading_read_back_letter_by_letter_is_spaced_not_missing_so_nothing_is_retried(tmp_path):
+    pdf = make_pdf(tmp_path / "a.pdf", [GOOD.replace("Profile\n", "P r o f i l e\n").replace("Skills & Tools\n", "S k i l ls & Tools\n")])
+    body = "".join(f"<h2>{h}</h2>" for h in HEADINGS)
+    found = readability.check_pdf(pdf, body, NAME, cv=True)
+    assert "spaced" in kinds(found) and readability.fixable(found) == [] and "glued" not in kinds(found)

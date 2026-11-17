@@ -105,39 +105,38 @@ def overflow_problems(pdf_text: str, body: str) -> list[dict]:
 
 
 SPACED_RUN = 4  # single letters in a row that are a word printed apart, not initials, articles or a short list
-SPACED_SHOWN = 20  # letters of a run a `spaced` detail shows
+SPACED_SHOWN = 40  # characters of a run a `spaced` detail shows
+_LETTER = r"[^\W\d_]"
+_RUN = re.compile(rf"(?<!\S){_LETTER}(?:[ \t]+{_LETTER}){{{SPACED_RUN - 1},}}(?!\S)")
+_ONE_LETTER_LINE = re.compile(rf"(?m)^[ \t]*({_LETTER})[ \t]*\n(?=[ \t]*{_LETTER}[ \t]*$)")
+
+
+def spaced_runs(pdf_text: str, body: str) -> list[str]:
+    """The words the PDF's text reads as single letters apart (#267), as read: `SPACED_RUN` or more in a row on a line
+    or a letter a line ("P r o f i l e"), or a heading of the HTML `body` of two letters or more on a line of its own
+    ("B i o"). That is how pdfium reads text printed with letter-spacing too wide for its size (an inherited fixed
+    length on smaller text) or a justified line spread per character. A run the `body` itself writes apart is the
+    author's."""
+    literal = normalise(html_doc.text(body)) if body else ""
+    text = _ONE_LETTER_LINE.sub(r"\1 ", pdf_text)
+    found = [m.group() for m in _RUN.finditer(text)]
+    for heading in html_doc.headings(body) if body else []:
+        letters = [c for c in squash(heading) if c.isalpha()]
+        if len(letters) >= 2:
+            apart = r"[ \t]+".join(map(re.escape, letters))
+            found += [m.group(1) for m in re.finditer(rf"(?mi)^[ \t]*({apart})[ \t]*$", text)]
+    runs: list[str] = []
+    for run in (" ".join(r.split()) for r in found):
+        if normalise(run) not in literal and run not in runs:
+            runs.append(run)
+    return runs
 
 
 def spaced_problems(pdf_text: str, body: str) -> list[dict]:
-    """``spaced``: words the PDF's text reads as single letters apart (#267), `SPACED_RUN` or more in a row, across lines
-    too ("P r o f i l e", or a letter a line), which is how pdfium reads text printed with letter-spacing too wide for
-    its size (an inherited fixed length on smaller text) or a justified line spread per character. A run the HTML
-    `body` itself writes apart is the author's. One problem naming the first few runs."""
-    literal = normalise(html_doc.text(body)) if body else ""
-    runs: list[str] = []
-
-    def flush(run: list[str]) -> None:
-        shown = " ".join(run)
-        if len(run) >= SPACED_RUN and normalise(shown) not in literal and shown not in runs:
-            runs.append(shown)
-        run.clear()
-
-    column: list[str] = []  # lines of one letter each, one after the other
-    for line in [*pdf_text.splitlines(), ""]:
-        tokens = line.split()
-        if len(tokens) == 1 and len(tokens[0]) == 1 and tokens[0].isalpha():
-            column.append(tokens[0])
-            continue
-        flush(column)
-        run: list[str] = []
-        for token in [*tokens, ""]:
-            if len(token) == 1 and token.isalpha():
-                run.append(token)
-            else:
-                flush(run)
-    if not runs:
+    """``spaced``: one problem naming the first few `spaced_runs` of `pdf_text`, none without."""
+    if not (runs := spaced_runs(pdf_text, body)):
         return []
-    named = [f'"{r[:2 * SPACED_SHOWN - 1]}{"…" if len(r) > 2 * SPACED_SHOWN - 1 else ""}"' for r in runs[:MISSING_NAMED]]
+    named = [f'"{r if len(r) <= SPACED_SHOWN else r[:SPACED_SHOWN] + "…"}"' for r in runs[:MISSING_NAMED]]
     return [{"kind": "spaced", "detail": f"letters printed apart: {', '.join(named)}"}]
 
 
@@ -162,8 +161,9 @@ def page_problems(pages: int, max_pages: int | None) -> list[dict]:
 
 def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, max_pages: int | None = None) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
-    the raw config's value, used when it is a string), and for words read as letters apart (`spaced_problems`, unless
-    no text could be read). A `cv` is also checked for words lost off the page
+    the raw config's value, used when it is a string), and for words read as letters apart (`spaced_problems`); a
+    heading read apart is `spaced` only, not also `missing` or `glued`, which a tailor's retry could not cure. A `cv`
+    is also checked for words lost off the page
     (`overflow_problems`, unless no text could be read), for more pages than `max_pages` (`page_problems`) and,
     when `body` is placed in columns (the `side` div `compile._place_columns` adds only for a template with a side
     column), for a sparse last page (`layout_problems`); a letter gets none of these."""
@@ -172,14 +172,15 @@ def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, max_pages
     text, pages = extract(pdf)
     cols = html_doc.columns(body)
     main, side = (body, "") if cols is None else (cols[0] + cols[1], cols[2])
-    found = problems(text, name=name if isinstance(name, str) else None,
-                     headings=html_doc.headings(main), side=html_doc.headings(side),
-                     keywords=html_doc.keywords(body), pages=pages)
-    readable = not {"empty", "garbled"} & {p["kind"] for p in found}
-    if readable:
-        found += spaced_problems(text, body)
+    apart = [squash(r) for r in spaced_runs(text, body)]
+
+    def read(part: str) -> list[str]:
+        return [h for h in html_doc.headings(part) if not any(r in squash(h) for r in apart)]
+
+    found = problems(text, name=name if isinstance(name, str) else None, headings=read(main), side=read(side),
+                     keywords=html_doc.keywords(body), pages=pages) + spaced_problems(text, body)
     if cv:
-        if readable:
+        if not {"empty", "garbled"} & {p["kind"] for p in found}:
             found += overflow_problems(text, body)
         found += page_problems(pages, max_pages)
         found += layout_problems(pdf_render.page_boxes(pdf), two_column=cols is not None)

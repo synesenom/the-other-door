@@ -124,7 +124,7 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json`, which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
    `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `<h2>` heading
    on a line of its own and in order (a two-column CV's main and side columns each in their own order, a side heading
-   allowed to share a line with main text), the `Keywords` note, no garbled or empty text and no word read as letters apart (`spaced`: "P r o f i l e", what a template's letter-spacing too wide for its text gives). A CV is also checked for text lost off the page: Chromium
+   allowed to share a line with main text), the `Keywords` note, no garbled or empty text and no word read as letters apart (`spaced`: "P r o f i l e", what a template's letter-spacing too wide for its text gives; such a heading is not also `missing`, so no retry is spent on a template's fault). A CV is also checked for text lost off the page: Chromium
    cuts what runs past the page, so a word of the CV that is missing from the PDF's text (`overflow`) means something
    was cut off; and, for a template with a side column, a nearly empty last page (`sparse`). What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);
