@@ -174,9 +174,10 @@ def html_plain_single(r: dict) -> str:
     return _html(css, body)
 
 
-def made_up_photo() -> Image.Image:
-    """A generated head-and-shoulders stand-in (no real face): a warm ground, a round head, dark shoulders."""
-    image = Image.new("RGB", (240, 240), (196, 150, 118))
+def made_up_photo(portrait: bool = False) -> Image.Image:
+    """A generated head-and-shoulders stand-in (no real face): a warm ground, a round head, dark shoulders; 3:4 when
+    *portrait* (a real photo is, and `object-fit: cover` then draws it larger than the shape that clips it)."""
+    image = Image.new("RGB", (240, 320 if portrait else 240), (196, 150, 118))
     draw = ImageDraw.Draw(image)
     draw.ellipse((80, 40, 160, 140), fill=(233, 196, 164))
     draw.ellipse((20, 150, 220, 330), fill=(52, 70, 104))
@@ -260,10 +261,11 @@ def build(out: Path, printer=html_pdf.print_html) -> None:
              ("html-equal-columns", html_equal_columns(record(5))),
              ("html-three-columns", html_three_columns(record(5))),
              ("html-header-photo-round", html_header_photo(record(1), True)),
-             ("html-header-photo-square", html_header_photo(record(2), False))]
+             ("html-header-photo-square", html_header_photo(record(2), False)),
+             ("html-header-photo-round-portrait", html_header_photo(record(3), True))]
     with tempfile.TemporaryDirectory() as folder:
-        made_up_photo().save(Path(folder) / "photo.jpg")
         for stem, html in pages:
+            made_up_photo(portrait=stem.endswith("portrait")).save(Path(folder) / "photo.jpg")
             printer(Path(folder), with_fonts(html), out / f"{stem}.pdf", assets={"fonts": fonts})
     plain = out / "html-plain-single.pdf"
     scan_pdf(_first_page_image(plain), out / "scan.pdf")

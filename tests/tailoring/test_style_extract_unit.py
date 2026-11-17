@@ -488,11 +488,16 @@ def test_a_square_picture_with_a_light_backdrop_and_a_dark_oval_is_a_rect_photo(
     assert style["photo"]["shape"] == "rect"
 
 
-def test_a_header_photo_at_the_top_right_is_found_with_its_box(tmp_path):
-    style = read(tmp_path, clipped_image(470, 720, 86, 86, 43) + body(), images=RED, size=(595, 842))
-    assert style["photo"]["page"] == 1 and style["photo"]["shape"] == "circle"
-    x0, y0, x1, y1 = style["photo"]["bbox"]
-    assert abs(x0 - 470) < 2 and abs(y0 - (842 - 806)) < 2 and x1 > 550
+def cover_clipped(x, y, side, radius, drawn_height):
+    """a picture drawn *side* wide and *drawn_height* tall, centred, under a clip of *side* x *side* (object-fit: cover)"""
+    clip = clipped_image(x, y, side, side, radius)
+    return clip.split(f"{side} 0 0 {side}")[0] + f"{side} 0 0 {drawn_height} {x} {y - (drawn_height - side) / 2} cm /Im1 Do Q\n"
+
+
+@pytest.mark.parametrize("under", ["", "0 0 0 RG 1.5 w 50 712 m 545 712 l S\n", text("F1", 10, 400, 710, "Profile heading words long")])
+def test_a_cover_fitted_portrait_under_a_round_clip_is_a_circle_of_the_clip_whatever_is_under_the_overflow(tmp_path, under):
+    style = read(tmp_path, cover_clipped(470, 720, 86, 43, 115) + under + body(), images=RED, size=(595, 842))
+    assert style["photo"] == {"page": 1, "bbox": [470.0, 36.0, 556.0, 122.0], "shape": "circle"}
 
 
 def test_a_page_sized_image_is_a_background_not_a_photo(tmp_path):

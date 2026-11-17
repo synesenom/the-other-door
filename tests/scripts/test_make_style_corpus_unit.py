@@ -50,7 +50,8 @@ def test_building_the_corpus_prints_each_html_design_and_makes_the_scan(tmp_path
     corpus.build(tmp_path, printer=printer)
     assert [n for n, _ in printed] == ["html-word-two-column.pdf", "html-canva-icons.pdf", "html-plain-single.pdf", "linkedin-like.pdf",
                                            "html-equal-columns.pdf", "html-three-columns.pdf",
-                                           "html-header-photo-round.pdf", "html-header-photo-square.pdf"]
+                                           "html-header-photo-round.pdf", "html-header-photo-square.pdf",
+                                           "html-header-photo-round-portrait.pdf"]
     assert all(set(fonts) <= FONTS for _, fonts in printed)
     assert (tmp_path / "scan.pdf").exists()
 
@@ -59,7 +60,7 @@ def test_the_header_photo_pages_name_a_photo_beside_the_page_and_differ_only_in_
     round_, square = (corpus.html_header_photo(corpus.record(1), r) for r in (True, False))
     assert "<img class='photo' src='photo.jpg'" in round_ and "border-radius:50%" in round_ and "border-radius:0" in square
     assert round_.replace("border-radius:50%", "border-radius:0") == square
-    assert corpus.made_up_photo().size == (240, 240)
+    assert corpus.made_up_photo().size == (240, 240) and corpus.made_up_photo(portrait=True).size == (240, 320)
 
 
 def test_the_made_up_cvs_use_example_addresses_only():
