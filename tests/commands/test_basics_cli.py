@@ -176,3 +176,28 @@ def test_the_example_cv_has_a_tagline_under_the_name_and_parses(env, monkeypatch
     assert "**LinkedIn:**" in text and "**GitHub:**" in text
     found = _infer(env, text)
     assert found["name"] == "Jane Doe" and found["location"] == "Copenhagen" and found["email"] == "jane.doe@example.com"
+
+
+# --- the header's labels in every supported language (#208) --------------------------------------------------------
+
+
+@pytest.mark.parametrize("label", ["Lieu", "Sted", "Helyszín", "Ort", "Location"])
+def test_the_location_label_is_read_in_every_supported_language(env, monkeypatch, label):
+    _answer(monkeypatch)  # the model reads nothing: the place comes from the header
+    result = _infer(env, f"# Jane Doe\n\n**E-mail :** jane@example.com | **{label} :** Frederiksberg\n\n## Profil\n\nx\n")
+    assert (result["name"], result["email"], result["location"]) == ("Jane Doe", "jane@example.com", "Copenhagen")
+    assert result["missing"] == []
+
+
+def test_a_street_address_alone_is_left_to_the_model_not_called_unsupported(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls, city="Copenhagen")
+    result = _infer(env, "# Jane Doe\n\n**Email:** j@example.com | **Address:** Vesterbrogade 12\n")
+    assert len(calls) == 1
+    assert result["location"] == "Copenhagen" and "unsupported_location" not in result and result["missing"] == []
+
+
+def test_an_email_only_in_a_contact_section_is_read_without_the_model(env, monkeypatch):
+    _no_model(monkeypatch)
+    result = _infer(env, "# Jane Doe\n\n> tag@example.org\n\n**Location:** Copenhagen\n\n## Contact\n\n- jane@example.com\n")
+    assert result["email"] == "jane@example.com" and result["missing"] == []
