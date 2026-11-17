@@ -23,7 +23,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from door.core import pairing, pinned, workspace
+from door.core import pairing, pinned, utils, workspace
 
 DEFAULT_PORT = 8765
 CLOUDFLARED_VERSION = "2026.10.6"
@@ -139,7 +139,7 @@ def install_cloudflared(dest: Path | None = None, *, platform: str | None = None
     url = f"https://github.com/cloudflare/cloudflared/releases/download/{CLOUDFLARED_VERSION}/{asset}"
     dest = Path(dest or _bin_dir())
     target = dest / ("cloudflared.exe" if system == "windows" else "cloudflared")
-    with pinned.staging(dest, ".cloudflared.") as staging:
+    with utils.staging(dest, ".cloudflared.") as staging:
         pinned.download([(url, asset, digest)], staging)
         staged = staging / target.name
         if asset.endswith(".tgz"):

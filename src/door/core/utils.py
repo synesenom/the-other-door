@@ -1,11 +1,44 @@
 """Shared utility helpers for The other door."""
 
+import glob
 import html
 import json
 import os
 import re
+import shutil
+import tempfile
 import threading
+import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
+
+# A staged write (an install, an import, a preview) takes minutes at most; a staging folder older than this was left by one that was killed.
+STALE_PART_SECONDS = 3600
+
+
+def _sweep_stale_parts(dest: Path, prefix: str) -> None:
+    """Remove the `prefix` staging folders a killed staged write left in `dest`, never one still in use, and never
+    another tool's (cloudflared's `dest` is the shared ~/.local/bin)."""
+    cutoff = time.time() - STALE_PART_SECONDS
+    for part in Path(dest).glob(f"{glob.escape(prefix)}*.part"):
+        if part.is_dir() and part.stat().st_mtime < cutoff:
+            shutil.rmtree(part, ignore_errors=True)
+
+
+@contextmanager
+def staging(dest: Path, prefix: str) -> Iterator[Path]:
+    """A staging folder unique to this process inside `dest` (made if missing), so two staged writes (installs, imports, previews) never share a
+    half-written file; removed when the block ends, whatever happened. The ones of `prefix` a killed install
+    left are swept first."""
+    dest = Path(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    _sweep_stale_parts(dest, prefix)
+    folder = Path(tempfile.mkdtemp(prefix=prefix, suffix=".part", dir=dest))
+    try:
+        yield folder
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 def _escape_html(text: str) -> str:

@@ -17,6 +17,7 @@ from door.core import stored
     "jobs/drift/thehub/2026.html", "jobs/.lock",
     "profile/style/cv.template.html", "profile/style/fonts/Lato-Regular.ttf", "profile/style/icons/phone.svg", "profile/style/source.pdf",
     "profile/style.next/cv.template.html", "profile/style.next/fonts/Lato-Regular.ttf", "profile/style.next/source.pdf",
+    ".door-import-ab12.part/profile/config.json",
 ])
 def test_known_paths_are_named(path):
     assert stored.named(path) is not None

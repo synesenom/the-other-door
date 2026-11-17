@@ -14,14 +14,13 @@ import os
 import shutil
 import sys
 import tarfile
-import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path, PurePosixPath
 
 import click
 
 from door.commands import _common as common
-from door.core import drive, migrations, sync, usage, workspace
+from door.core import drive, migrations, sync, usage, utils, workspace
 from door.core.lock import SyncConflict
 
 # Bump when the archive layout changes; `import` refuses a newer format.
@@ -329,8 +328,7 @@ def _import_core(
         versions = _read_versions(tar)
         migrations.refuse(versions)
         profile_dir.parent.mkdir(parents=True, exist_ok=True)
-        staging = Path(tempfile.mkdtemp(prefix=".door-import-", dir=profile_dir.parent))
-        try:
+        with utils.staging(profile_dir.parent, ".door-import-") as staging:
             tar.extractall(staging, members=members, filter="data")
             _keep_local_keys(staging / "profile" / "config.json", profile_dir / "config.json")
             jobs_dir.mkdir(parents=True, exist_ok=True)
@@ -342,8 +340,6 @@ def _import_core(
             )
             backup = _new_backup_dir(backups_dir) if has_old_profile or has_old_jobs else None
             _swap_in(staging, profile_dir, jobs_dir, backup)
-        finally:
-            shutil.rmtree(staging, ignore_errors=True)
 
     migrations.ensure_folder(jobs_dir, "jobs")  # an archive with no jobs: the folder is new, so stamped
     warnings = _path_warnings(profile_dir / "config.json")

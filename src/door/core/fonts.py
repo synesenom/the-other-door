@@ -17,7 +17,7 @@ import re
 import statistics
 from pathlib import Path
 
-from door.core import pinned
+from door.core import pinned, utils
 
 _PIN = Path(__file__).with_name("fonts_pin.json")
 ADVANCE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
@@ -249,7 +249,7 @@ def fetch(plan: list[dict], dest: Path) -> list[Path]:
     missing = [w for w in wanted if not (dest / w[1]).is_file() or pinned.sha256(dest / w[1]) != w[2]]
     if missing:
         try:
-            with pinned.staging(dest, ".fonts.") as staging:
+            with utils.staging(dest, ".fonts.") as staging:
                 pinned.download(missing, staging)
                 for _, name, _ in missing:
                     (staging / name).replace(dest / name)

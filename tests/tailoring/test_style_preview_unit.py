@@ -92,6 +92,18 @@ def test_without_a_style_only_the_default_is_shown_and_it_is_written_whole(world
     assert default["version"] and default["two_column"] is False
 
 
+def test_show_sweeps_a_stale_staging_folder_a_killed_show_left(world):
+    import os
+    from door.core import utils
+    home, profile, printer = world
+    stale = home / ".style" / "preview" / ".default.x.part"
+    stale.mkdir(parents=True)
+    old = time.time() - 2 * utils.STALE_PART_SECONDS
+    os.utime(stale, (old, old))
+    _show(home, profile)
+    assert not stale.exists()
+
+
 def test_a_second_show_prints_nothing_while_nothing_changed(world):
     home, profile, printer = world
     first = _show(home, profile)

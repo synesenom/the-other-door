@@ -19,7 +19,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-from door.core import pinned
+from door.core import pinned, utils
 
 _PIN = Path(__file__).with_name("chromium_pin.json")
 
@@ -110,7 +110,7 @@ def install(dest: Path) -> None:
         _remove_other_versions(dest)
         return
     try:
-        with pinned.staging(dest, f"{folder.name}.") as staging:
+        with utils.staging(dest, f"{folder.name}.") as staging:
             part = staging / "chromium.zip"
             pinned.download([(download_url(key), part.name, pin()["platforms"][key]["sha256"])], staging)
             with zipfile.ZipFile(part) as z:

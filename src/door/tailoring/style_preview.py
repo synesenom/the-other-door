@@ -20,7 +20,6 @@ import hashlib
 import html
 import json
 import shutil
-import tempfile
 from pathlib import Path
 
 import pypdfium2
@@ -28,7 +27,7 @@ import pypdfium2
 from door import i18n, version
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
-from door.core import templates, workspace
+from door.core import templates, utils, workspace
 from door.tailoring import cv_body, html_pdf, pdf_render
 
 _SAMPLE_DATE = "1 January 2026"
@@ -119,21 +118,18 @@ def _set(root: Path, folder: Path, key: str, cv_md: str, lang: str, photo: Path 
          letter_template: Path) -> list[str] | None:
     """Make the set in a staging folder of this call and move it in as `folder`; its image names, None when it could
     not be printed. A call that meets another's set already moved in (the same key, the same files) uses that."""
-    root.mkdir(parents=True, exist_ok=True)
-    stage = Path(tempfile.mkdtemp(dir=root, prefix=f".{folder.name}."))
     try:
-        images = _make(stage, cv_md, lang, photo, cv_template, letter_template)
-        (stage / "meta.json").write_text(json.dumps({"key": key, "images": images}), encoding="utf-8")
-        shutil.rmtree(folder, ignore_errors=True)
-        try:
-            stage.rename(folder)
-        except OSError:
-            return _fresh(folder, key)
-        return images
+        with utils.staging(root, f".{folder.name}.") as stage:
+            images = _make(stage, cv_md, lang, photo, cv_template, letter_template)
+            (stage / "meta.json").write_text(json.dumps({"key": key, "images": images}), encoding="utf-8")
+            shutil.rmtree(folder, ignore_errors=True)
+            try:
+                stage.rename(folder)
+            except OSError:
+                return _fresh(folder, key)
+            return images
     except (html_pdf.PrintError, ValueError, OSError, pypdfium2.PdfiumError):
         return None
-    finally:
-        shutil.rmtree(stage, ignore_errors=True)
 
 
 def show(home: Path, profile_dir: Path, config: dict) -> dict:

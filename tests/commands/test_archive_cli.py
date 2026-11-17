@@ -195,6 +195,18 @@ def test_round_trip_into_an_empty_workspace(env):
     assert result["files"] == _export(env, env.tmp_path / "again.tar.gz")["files"]
 
 
+def test_import_sweeps_a_stale_staging_folder_a_killed_import_left(env):
+    import os, time
+    from door.core import utils
+    archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
+    stale = env.dst_profile.parent / ".door-import-x.part"
+    stale.mkdir()
+    old = time.time() - 2 * utils.STALE_PART_SECONDS
+    os.utime(stale, (old, old))
+    _import(env, archive)
+    assert not stale.exists()
+
+
 def test_import_into_folders_that_hold_only_their_version_makes_no_backup(env):
     archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
     migrations.ensure_folder(env.dst_profile, "profile")  # what a first start leaves
