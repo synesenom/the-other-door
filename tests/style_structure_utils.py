@@ -31,19 +31,29 @@ def recorded(name: str) -> dict:
 
 
 @functools.cache
-def _corpus() -> dict[str, dict]:
-    """The recorded answers by the model input of the PDF they were recorded for."""
+def _corpus() -> tuple[dict[str, dict], set[str]]:
+    """The recorded answers by the model input of the PDF they were recorded for, and the inputs of the corpus PDFs
+    that have none (a scan has no input to answer)."""
     from door.tailoring import style_extract, style_structure
 
-    pdfs = RECORDED.parent
-    return {style_structure.rows(style_extract.read_pages(pdfs / f"{f.stem}.pdf"))[0]: recorded(f.stem)
-            for f in sorted(RECORDED.glob("*.json")) if (pdfs / f"{f.stem}.pdf").is_file()}
+    answers, unrecorded = {}, set()
+    for pdf in sorted(RECORDED.parent.glob("*.pdf")):
+        pages = style_extract.read_pages(pdf)
+        text = style_structure.rows(pages)[0]
+        if (RECORDED / f"{pdf.stem}.json").is_file():
+            answers[text] = recorded(pdf.stem)
+        elif any(r["text"].strip() for p in pages for r in p["runs"]):
+            unrecorded.add(text)
+    return answers, unrecorded
 
 
 def fake_ask(text: str, feature: str = "style") -> dict:
-    """The recorded answer when `text` is the input of a corpus CV, else the world's plain rule."""
-    if text in _corpus():
-        return _corpus()[text]
+    """The recorded answer when `text` is the input of a corpus CV (one with none fails: record it with
+    `scripts/record_structure.py`), else the world's plain rule."""
+    answers, unrecorded = _corpus()
+    if text in answers:
+        return answers[text]
+    assert text not in unrecorded, "a corpus CV has no recorded answer: run scripts/record_structure.py"
     return _world_structure().answer(text)
 
 
