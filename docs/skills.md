@@ -51,7 +51,8 @@ GitHub-issue workflow and are prefixed `dev-` to stay out of the way of the user
 The skills are tested end to end, locally and before a release (`./scripts/run-test.sh --model`, never
 in CI): the real model runs `/onboard`, `/expand` and a review session against a test world,
 a second small model plays the user, and the checks are on behaviour only (which tools, in which order,
-what was written and when), never on wording. The same run rebuilds the CV style of every CV in the style
+what was written and when), never on wording, except that a thing that must go unsaid is checked unsaid
+(a CV style still building or failed, a recommended style). The same run rebuilds the CV style of every CV in the style
 corpus and its edge cases with the real stylist agent (`tests/model/test_style_rebuild.py`, about 2-4
 minutes a CV): each build ready, close to its original, its fonts found, and the chosen style printing the
 user's CV in the original's columns, read back whole by an ATS; a case a known issue still breaks is an

@@ -39,7 +39,7 @@ jobs:
           restore-keys: poetry-
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --with corpus
 
       # The real-print tests (marker real_chromium) need the pinned Chromium headless shell
       - name: Cache Chromium
