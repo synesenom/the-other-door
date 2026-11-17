@@ -125,6 +125,22 @@ def test_ask_reads_a_stream(monkeypatch):
     assert argv[argv.index("--output-format") + 1] == "stream-json" and "--verbose" in argv
 
 
+def test_ask_passes_effort_and_strict_mcp_when_asked(monkeypatch):
+    calls = []
+    stdout = _stream(_result(result="{}", structured_output={}))
+    monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, stdout))
+    claude_cli.ask("sys", "q", model="haiku", feature="style", schema={"type": "object"}, effort="low", strict_mcp=True)
+    argv = calls[0]
+    assert argv[argv.index("--effort") + 1] == "low" and "--strict-mcp-config" in argv
+
+
+def test_ask_adds_neither_flag_by_default(monkeypatch):
+    calls = []
+    monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
+    claude_cli.ask("sys", "q", model="haiku", feature="keywords")
+    assert "--effort" not in calls[0] and "--strict-mcp-config" not in calls[0]
+
+
 # --------------------------------------------------------------------------- the call sites record the limits (plan §5)
 _EVENT = _limit({"status": "allowed", "unifiedWindows": {"five_hour": {"utilization": 0.2, "resetsAt": 5},
                                                          "seven_day": {"utilization": 0.6, "resetsAt": 9}}})

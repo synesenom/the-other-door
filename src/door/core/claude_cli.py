@@ -244,6 +244,8 @@ def ask(
     allowed_tools: tuple[str, ...] = (),
     timeout_s: float | None = None,
     profile_dir: Path | None = None,
+    effort: str | None = None,
+    strict_mcp: bool = False,
 ):
     """One question to the model: `system_prompt` as the system prompt, `input`
     on stdin, no tools unless `allowed_tools` names some, no session kept.
@@ -251,7 +253,9 @@ def ask(
     With `schema`, the answer is asked for as JSON of that shape and returned
     as a dict; without, the answer text is returned stripped. Either way the
     answer comes as a stream (`STREAM_ARGS`) whose envelope `run()` returns
-    and whose weight it records under `feature`.
+    and whose weight it records under `feature`. `effort` is `--effort`; `strict_mcp`
+    keeps the user's MCP servers out of the call (`--strict-mcp-config`: their tool
+    lists would be thousands of input tokens).
 
     Raises:
         ClaudeError: as `run()`, or an answer that is not a JSON object when a
@@ -263,6 +267,10 @@ def ask(
     args += STREAM_ARGS
     args += ["--allowedTools", ",".join(allowed_tools)] if allowed_tools else ["--tools", ""]
     args.append("--no-session-persistence")
+    if effort:
+        args += ["--effort", effort]
+    if strict_mcp:
+        args.append("--strict-mcp-config")
     stdout = run(args, feature=feature, input=input, timeout_s=timeout_s, profile_dir=profile_dir)
     if schema is None:
         text = envelope_result(stdout)
