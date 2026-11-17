@@ -129,20 +129,20 @@ def test_an_answer_that_does_not_hold_is_refused_in_words(cv, break_it, why):
     break_it(a, ids_by_text(rows))
     with pytest.raises(StructureError) as refused:
         style_structure.check(a, rows, pages)
-    assert why in refused.value.detail and "layout of this CV could not be read" in str(refused.value)
+    assert why in refused.value.detail and "look of this CV could not be read" in str(refused.value)
 
 
 def test_a_heading_of_more_than_six_words_is_refused(tmp_path):
     long = "Professional experience and positions held over many years"
     pages, rows, _ = read(pdf_of(tmp_path, one_column(heads=(long, "Education", "Skills"))))
-    with pytest.raises(StructureError, match="layout of this CV"):
+    with pytest.raises(StructureError, match="look of this CV"):
         style_structure.check(answer(rows, heads=(long, "Education", "Skills")), rows, pages)
 
 
 def test_headings_in_more_than_two_styles_are_refused(tmp_path):
     content = one_column() + put("F5", 15, 50, 300, "Projects") + put("F3", 11, 50, 250, "Awards")
     pages, rows, _ = read(pdf_of(tmp_path, content))
-    with pytest.raises(StructureError, match="layout of this CV"):
+    with pytest.raises(StructureError, match="look of this CV"):
         style_structure.check(answer(rows, heads=("Experience", "Projects", "Awards")), rows, pages)
 
 
@@ -170,7 +170,7 @@ def test_two_columns_need_a_side_range_that_fits_the_page_and_the_text(tmp_path,
          "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Skills")]}
     with pytest.raises(StructureError) as refused:
         style_structure.check(a, rows, pages)
-    assert why in refused.value.detail and "layout of this CV could not be read" in str(refused.value)
+    assert why in refused.value.detail and "look of this CV could not be read" in str(refused.value)
 
 
 def test_three_columns_are_a_layout_verdict(tmp_path):
@@ -296,7 +296,7 @@ def test_another_prompt_version_asks_again(tmp_path, ask, monkeypatch):
 
 def test_a_broken_answer_is_an_error_in_words_and_is_never_cached(tmp_path, ask):
     ask(lambda text: {**good(text), "name": 9999})
-    with pytest.raises(StructureError, match="The layout of this CV could not be read") as refused:
+    with pytest.raises(StructureError, match="The look of this CV could not be read") as refused:
         style_structure.structure_for(pdf_of(tmp_path, one_column()))
     assert "name" in refused.value.detail
     assert not (workspace.HOME / ".style" / "structure").exists() or not list((workspace.HOME / ".style" / "structure").iterdir())
@@ -306,7 +306,7 @@ def test_a_failed_call_is_an_error_in_plain_words_with_no_fallback_and_no_intern
     ask(claude_cli.ClaudeError("claude -p timed out after 60s"))
     with pytest.raises(StructureError) as failed:
         style_structure.structure_for(pdf_of(tmp_path, one_column()))
-    assert str(failed.value) == "Claude could not be reached, or the plan's usage is full. Try again later."
+    assert str(failed.value) == "Claude could not be reached, or Claude's usage limit is reached. Try again later."
     assert "timed out" in failed.value.detail and "timed out" not in str(failed.value)
 
 

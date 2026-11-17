@@ -70,7 +70,7 @@ class StructureError(ValueError):
 
     @classmethod
     def unreached(cls, exc: Exception) -> StructureError:
-        return cls("Claude could not be reached, or the plan's usage is full. Try again later.", str(exc))
+        return cls("Claude could not be reached, or Claude's usage limit is reached. Try again later.", str(exc))
 
 
 # ---------- the input ----------
@@ -126,7 +126,7 @@ def rows(pages: list[dict]) -> tuple[str, list[dict]]:
 # ---------- the answer ----------
 
 def _fail(why: str) -> StructureError:
-    return StructureError("The layout of this CV could not be read.", f"the model's answer does not hold: {why}")
+    return StructureError("The look of this CV could not be read.", f"the model's answer does not hold: {why}")
 
 
 def _ids(values, rows_by_id: dict, what: str) -> list[int]:

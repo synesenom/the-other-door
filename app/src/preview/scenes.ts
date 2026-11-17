@@ -177,6 +177,8 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-cv', group: 'Profile', title: 'CV', start: { destination: 'Profile', cv: true } },
   { id: 'profile-cv-style-loading', group: 'Profile', title: 'CV, the previews being made', start: { destination: 'Profile', cv: true }, hold: 'show_style' },
   { id: 'profile-cv-style-building', group: 'Profile', title: 'CV, a style being built', start: { destination: 'Profile', cv: true }, style: { building: true } },
+  { id: 'profile-cv-style-reading', group: 'Profile', title: 'CV, a file chosen and its look being read (the spinner)', start: { destination: 'Profile', cv: true }, hold: 'chooseStyleFile', press: ['Use the style of my CV…'] },
+  { id: 'profile-cv-style-unread', group: 'Profile', title: 'CV, the look could not be read (the error box)', start: { destination: 'Profile', cv: true }, fails: { chooseStyleFile: 'Claude could not be reached, or Claude\'s usage limit is reached. Try again later.' }, press: ['Use the style of my CV…'] },
   { id: 'profile-cv-style-candidate', group: 'Profile', title: 'CV, a built style to compare (Use this style, then Print again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 2 } },
   { id: 'profile-cv-style-earlier', group: 'Profile', title: 'CV, a new style while an earlier one is in use', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, candidate: true, prepared: 2 } },
   { id: 'profile-cv-style-printed', group: 'Profile', title: 'CV, the prepared CVs printed again, one failed (Try again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 3, failing: 1 }, press: ['Use this style', 'Print 3 prepared CVs again'] },

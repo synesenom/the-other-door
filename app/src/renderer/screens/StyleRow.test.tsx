@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../testing'
@@ -72,6 +72,11 @@ describe('StyleRow, no style of your own yet', () => {
     let finish: (v: unknown) => void = () => {}
     h.chooseStyleFile.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
     await userEvent.click(screen.getByRole('button', { name: 'Use the style of my CV…' }))
+    // the dialog is open: only the button is disabled, no spinner yet
+    await waitFor(() => expect(h.chooseStyleFile).toHaveBeenCalled())
+    expect(screen.queryByText("Reading your CV's look…")).toBeNull()
+    expect((screen.getByRole('button', { name: 'Use the style of my CV…' }) as HTMLButtonElement).disabled).toBe(true)
+    act(() => h.pushStyleReading())
     expect(await screen.findByText("Reading your CV's look…")).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Use the style of/ })).toBeNull()
     finish({ ok: true, data: { started: true } })

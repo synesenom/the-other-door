@@ -437,7 +437,7 @@ renamed) is said above an empty editor; saving there keeps that file as `cv.md.b
 - **Style** (above "Your CV"): how your tailored CVs are printed. The sheet of The other door's style is
   there, marked "In use". "Use the style of my CV…" opens a file dialog (a PDF of a CV of yours, starting at
   the one you gave the set-up while it is still there) and builds a template from its look in the
-  background (after a short wait, "Reading your CV's look…", while the app reads its layout; then 2-5 minutes on your Claude plan, which "Building your style…" says. A file with no look to copy, or one whose layout could not be read (Claude unreachable, the plan full), is said in a line at once; a build that does not work out later is not). The built style waits beside the other one:
+  background (after a short wait, "Reading your CV's look…", while the app reads its look; then 2-5 minutes on your Claude plan, which "Building your style…" says. A file with no look to copy, or one whose look could not be read (Claude unreachable, or its usage limit reached), is said in a line at once; a build that does not work out later is not). The built style waits beside the other one:
   "The other door's" and "Like your CV", each a sheet you can open to read its pages (your CV and a sample
   letter) in a dialog. "Use this style" puts it in use; "Keep The other door's" (or "Keep my current style"
   when an earlier style of yours is in use) keeps what you use now: the new style is dropped, except the

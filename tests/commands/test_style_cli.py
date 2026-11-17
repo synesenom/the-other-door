@@ -156,7 +156,7 @@ def test_a_cv_whose_structure_could_not_be_read_is_refused_in_words_and_nothing_
 
     monkeypatch.setattr(style_structure, "_ask", broken)
     assert asyncio.run(mcp_server.build_style(str(STYLES / "html-word-two-column.pdf"))) == {
-        "error": "Claude could not be reached, or the plan's usage is full. Try again later."}
+        "error": "Claude could not be reached, or Claude's usage limit is reached. Try again later."}
     assert world.spawned == []
 
 

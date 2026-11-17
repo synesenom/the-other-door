@@ -229,7 +229,7 @@ def test_a_structure_the_model_could_not_read_fails_the_build_in_words_and_write
     stylist = Stylist("unused")
     result = world.build("html-word-two-column", stylist)
     assert result["state"] == "failed" and stylist.calls == []
-    assert result["problems"] == ["Claude could not be reached, or the plan's usage is full. Try again later."]
+    assert result["problems"] == ["Claude could not be reached, or Claude's usage limit is reached. Try again later."]
     assert not world.style.exists() and not world.work.exists()
 
 

@@ -90,7 +90,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
   const choose = async () => {
     setError(null)
     setBusy(true)
-    setReading(true)
+    const stop = window.door.onStyleReading(() => setReading(true))
     try {
       const r = (await window.door.chooseStyleFile()) as { ok: boolean; error?: string; data?: { canceled?: true } }
       if (!r.ok) setError(r.error ?? 'That file could not be used.')
@@ -99,6 +99,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
         onChanged()
       }
     } finally {
+      stop()
       setBusy(false)
       setReading(false)
     }

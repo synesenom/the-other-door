@@ -837,6 +837,25 @@ describe('choosing a CV to copy the style of', () => {
     expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/my cv.pdf' }, { timeout: 120_000 })
   })
 
+  it('tells the window once a file is chosen, after the dialog and before the build', async () => {
+    const { invoke, send, server } = setup(async () => ({ started: true }), undefined, false, real)
+    server.call.mockImplementationOnce(async () => {
+      expect(send).toHaveBeenCalledWith(CHANNELS.styleReading)
+      return { started: true }
+    })
+    await invoke(CHANNELS.chooseStyleFile)
+    expect(send).toHaveBeenCalledWith(CHANNELS.styleReading)
+  })
+
+  it('a cancelled or refused dialog tells the window nothing', async () => {
+    const { invoke, send, styleFile } = setup(undefined, undefined, false, real)
+    styleFile.choose.mockResolvedValueOnce({ canceled: true })
+    await invoke(CHANNELS.chooseStyleFile)
+    styleFile.choose.mockResolvedValueOnce({ error: 'Choose a CV as a PDF.' })
+    await invoke(CHANNELS.chooseStyleFile)
+    expect(send).not.toHaveBeenCalledWith(CHANNELS.styleReading)
+  })
+
   it('a cancelled dialog starts nothing', async () => {
     const { invoke, server, styleFile } = setup(undefined, undefined, false, real)
     styleFile.choose.mockResolvedValueOnce({ canceled: true })
