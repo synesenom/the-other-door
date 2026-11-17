@@ -308,14 +308,37 @@ def _bleed(shapes: list[dict], size: list[float]) -> list[str]:
 
 # ---------- images, the photo ----------
 
+def _clip_bounds(obj, height: float) -> list[float] | None:
+    """The box of the clip paths that apply to *obj* (top left origin), None when it is not clipped."""
+    clip = raw.FPDFPageObj_GetClipPath(obj.raw)
+    xs, ys = [], []
+    for i in range(raw.FPDFClipPath_CountPaths(clip) if clip else 0):
+        for j in range(max(raw.FPDFClipPath_CountPathSegments(clip, i), 0)):
+            seg = raw.FPDFClipPath_GetPathSegment(clip, i, j)
+            x, y = ctypes.c_float(), ctypes.c_float()
+            if seg and raw.FPDFPathSegment_GetPoint(seg, x, y):
+                xs.append(x.value)
+                ys.append(height - y.value)
+    return [min(xs), min(ys), max(xs), max(ys)] if xs else None
+
+
 def _read_images(page, number: int, height: float) -> list[dict]:
-    return [{"page": number, "bbox": _bbox(obj, height)} for obj in page.get_objects(filter=[raw.FPDF_PAGEOBJ_IMAGE])]
+    """Each picture of a page with the box it shows: its own, cut to its clip path (a cover-fitted picture is drawn
+    larger than the shape that clips it)."""
+    out = []
+    for obj in page.get_objects(filter=[raw.FPDF_PAGEOBJ_IMAGE]):
+        box, clip = _bbox(obj, height), _clip_bounds(obj, height)
+        if clip:
+            cut = [max(box[0], clip[0]), max(box[1], clip[1]), min(box[2], clip[2]), min(box[3], clip[3])]
+            box = cut if cut[2] > cut[0] and cut[3] > cut[1] else box
+        out.append({"page": number, "bbox": box})
+    return out
 
 
 def _seen(page, bbox: list[float], background: str | None) -> tuple[list[float], str]:
     """What a picture shows of its box: the box of the pixels that differ from what is around it (a picture often
-    has a blank margin), and its `shape`: `circle` when the corners of that box show the ground and the middle of
-    each side does not, else `rect`."""
+    has a blank margin), and its `shape`: `circle` when that box is near square and the corners of it show the
+    ground as far as a circle's do (`_corner_clearance`), else `rect`."""
     image, shown = pdf_render.render_box(page, bbox, 2.0, pad=3.0)
     scale = image.width / (shown[2] - shown[0])
     around = image.getpixel((0, 0)) if bbox[0] - shown[0] >= 2 and bbox[1] - shown[1] >= 2 else style_trace.channels(background or "#ffffff")
@@ -331,12 +354,28 @@ def _seen(page, bbox: list[float], background: str | None) -> tuple[list[float],
     ink = [min(xs), min(ys), max(xs), max(ys)]
     box = [round(max(bbox[0], shown[0] + ink[0] / scale), 1), round(max(bbox[1], shown[1] + ink[1] / scale), 1),
            round(min(bbox[2], shown[0] + (ink[2] + 1) / scale), 1), round(min(bbox[3], shown[1] + (ink[3] + 1) / scale), 1)]
-    mx, my = (ink[0] + ink[2]) // 2, (ink[1] + ink[3]) // 2
-    corners = [(ink[0] + 1, ink[1] + 1), (ink[2] - 1, ink[1] + 1), (ink[0] + 1, ink[3] - 1), (ink[2] - 1, ink[3] - 1)]
-    sides = [(mx, ink[1] + 1), (mx, ink[3] - 1), (ink[0] + 1, my), (ink[2] - 1, my)]
-    round_ = (all(style_trace.distance(px[c], around) <= 12 for c in corners) and all(style_trace.distance(px[c], around) > 40 for c in sides)
-              and style_trace.distance(px[mx, my], around) > 40)
+    w, h = ink[2] - ink[0] + 1, ink[3] - ink[1] + 1
+    round_ = (_ROUND_ASPECT[0] <= w / h <= _ROUND_ASPECT[1]
+              and _corner_clearance(lambda x, y: style_trace.distance(px[x, y], around) > 12, ink) >= _ROUND_CLEARANCE)
     return box, "circle" if round_ else "rect"
+
+
+# A circle inscribed in its box leaves 1 - 1/sqrt(2) = 0.29 of the half-diagonal clear at each corner; a rounded
+# corner of radius r on a side s leaves 0.59 r / s (0.09 at r = 15%, 0.14 at 24%, 0.23 at 40%), a square none.
+_ROUND_CLEARANCE = 0.2
+_ROUND_ASPECT = (0.85, 1 / 0.85)
+
+
+def _corner_clearance(inked, box: list[int]) -> float:
+    """The part of the half-diagonal of *box* (x0, y0, x1, y1 in pixels) that is clear of ink at its least clear
+    corner: `inked(x, y)` is walked from each corner towards the middle."""
+    half = min(box[2] - box[0] + 1, box[3] - box[1] + 1) / 2
+    least = 1.0
+    for cx, dx in ((box[0], 1), (box[2], -1)):
+        for cy, dy in ((box[1], 1), (box[3], -1)):
+            clear = next((i for i in range(int(half)) if inked(cx + dx * i, cy + dy * i)), half)
+            least = min(least, clear / half)
+    return least
 
 
 def find_photo(page, images: list[dict], size: list[float], background: str | None) -> tuple[dict, list[float]] | None:

@@ -4,7 +4,7 @@
   "latex-sidebar": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Nimbus Sans L": false}, "accent": "#f2a65a", "columns": 2, "side": "left", "icons": 0, "photo": false, "heading_case": "upper"},
   "latex-two-column": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"LMRoman10": true}, "accent": "#8b1e3f", "columns": 2, "side": "right", "icons": 0, "photo": false, "heading_case": "title"},
   "scrubbed-altacv-icons-fr": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Lato": false, "FontAwesome": false}, "accent": "#3a1800", "columns": 2, "side": "right", "icons": [14, 18], "photo": false, "heading_case": "upper"},
-  "scrubbed-pages-sidebar-fr": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Optima": false}, "accent": "#657e2a", "columns": 2, "side": "left", "icons": 0, "photo": true, "heading_case": "upper"},
+  "scrubbed-pages-sidebar-fr": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Optima": false}, "accent": "#657e2a", "columns": 2, "side": "left", "icons": 0, "photo": true, "photo_shape": "rect", "photo_bbox": [35.0, 159.0, 133.2, 297.3], "heading_case": "upper"},
   "scrubbed-pages-header-en": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"AvenirNext": false}, "accent": "#6c8e00", "columns": 1, "side": null, "icons": 2, "photo": false, "heading_case": "title"},
   "html-word-two-column": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Figtree": false}, "accent": "#1f3864", "columns": 2, "side": "right", "icons": 0, "photo": false, "heading_case": "upper", "name_family": "Young Serif"},
   "html-canva-icons": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Figtree": false}, "accent": "#e8625a", "columns": 2, "side": "left", "icons": 4, "photo": false, "heading_case": "upper", "name_family": "Young Serif"},
@@ -12,5 +12,8 @@
   "scan": {"verdict": {"copyable": false, "reason": "scan"}},
   "linkedin-like": {"verdict": {"copyable": false, "reason": "linkedin"}},
   "html-three-columns": {"verdict": {"copyable": false, "reason": "layout"}},
-  "html-equal-columns": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Figtree": false}, "accent": "#2e5e4e", "columns": 2, "side": "left", "icons": 0, "photo": false, "heading_case": "upper", "name_family": "Young Serif"}
+  "html-equal-columns": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Figtree": false}, "accent": "#2e5e4e", "columns": 2, "side": "left", "icons": 0, "photo": false, "heading_case": "upper", "name_family": "Young Serif"},
+  "html-header-photo-round": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Figtree": false}, "accent": "#7a2e1f", "columns": 1, "side": null, "icons": 0, "photo": true, "photo_bbox": [473.2, 30.0, 559.5, 116.2], "heading_case": "upper", "name_family": "Young Serif", "photo_shape": "circle"},
+  "html-header-photo-round-portrait": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Figtree": false}, "accent": "#7a2e1f", "columns": 1, "side": null, "icons": 0, "photo": true, "photo_bbox": [473.2, 30.0, 559.5, 116.2], "heading_case": "upper", "name_family": "Young Serif", "photo_shape": "circle"},
+  "html-header-photo-square": {"verdict": {"copyable": true, "reason": "ok"}, "fonts": {"Figtree": false}, "accent": "#7a2e1f", "columns": 1, "side": null, "icons": 0, "photo": true, "photo_bbox": [473.2, 30.0, 559.5, 116.2], "heading_case": "upper", "name_family": "Young Serif", "photo_shape": "rect"}
 }

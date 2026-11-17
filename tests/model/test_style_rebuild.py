@@ -28,7 +28,7 @@ from style_build_utils import EXAMPLE, STYLES
 
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, fonts, workspace
+from door.core import chromium, fonts, templates, workspace
 from door.tailoring import cv_body, readability, style_build, style_compare, style_extract
 
 pytestmark = [pytest.mark.model, pytest.mark.real_chromium]
@@ -207,6 +207,25 @@ def test_the_chosen_style_prints_the_users_cv_in_the_originals_columns(chosen, n
     pdf, _ = chosen(name)
     case = CASES[name]
     assert _heading_columns(pdf) == (case.columns or EXPECTED[case.pdf]["columns"])
+
+
+@pytest.mark.parametrize("name", [n for n, c in CASES.items() if "photo_shape" in EXPECTED[c.pdf]])
+def test_the_chosen_style_prints_a_photo_in_the_originals_shape_and_place(chosen, builds, tmp_path, name):
+    """#319: the user's CV printed in the chosen style with a (3:4) photo shows it as the original does: a circle or a
+    rect, in the same box (tolerance as the corpus test's)."""
+    from PIL import Image
+    chosen(name)
+    home = builds(name)[1]
+    expected = EXPECTED[CASES[name].pdf]
+    picture = tmp_path / "photo.jpg"
+    Image.new("RGB", (240, 320), "tan").save(picture, "JPEG")
+    template = home / "profile" / "style" / "cv.template.html"
+    pdf, _, placed = compile_cmd.print_page(cv_body.body(CASES[name].cv_md), template.read_text(encoding="utf-8"), template, "en",
+                                            tmp_path / "print", "cv", columns=templates.manifest(template).columns, photo=picture)
+    assert placed, "the photo was not placed"
+    photo = style_extract.extract(pdf)["photo"]
+    assert photo and photo["shape"] == expected["photo_shape"]
+    assert all(abs(a - b) <= 6 for a, b in zip(photo["bbox"], expected["photo_bbox"])), (photo["bbox"], expected["photo_bbox"])
 
 
 @pytest.mark.parametrize("name", CASES)

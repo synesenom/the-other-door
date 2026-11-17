@@ -514,9 +514,9 @@ def test_a_sample_body_that_puts_text_under_the_other_column_s_heading_is_asked_
 
 # ---------- the photo's place with no photo (#246) ----------
 
-def _with_grey_box(tmp_path, bbox, first_page_only=False):
-    """scrubbed-pages-sidebar-fr with a grey box drawn on page 1 at `bbox` (points, origin top left)."""
-    pdf = pdfium.PdfDocument(STYLES / "scrubbed-pages-sidebar-fr.pdf")
+def _with_grey_box(tmp_path, bbox, first_page_only=False, source="scrubbed-pages-sidebar-fr"):
+    """*source* (a corpus CV) with a grey box drawn on page 1 at `bbox` (points, origin top left)."""
+    pdf = pdfium.PdfDocument(STYLES / f"{source}.pdf")
     page = pdf[0]
     height = page.get_height()
     rect = pdfium_raw.FPDFPageObj_CreateNewRect(bbox[0], height - bbox[3], bbox[2] - bbox[0], bbox[3] - bbox[1])
@@ -584,6 +584,34 @@ def test_the_sample_of_a_cv_with_a_photo_is_printed_with_the_originals_photo_and
         assert abs(im.width / im.height - (133 - 35) / (297 - 159)) < 0.05
     stress = [p for p in world.prints if "stress" in p["folder"].parts and p["folder"].name != "photo"]
     assert stress and not [p for p in stress if '<img class="photo"' in p["html"]]  # a print with no photo stays one
+
+
+# ---------- a photo in the header, round or square (#319) ----------
+
+HEADER_PHOTOS = ["html-header-photo-round", "html-header-photo-square"]
+
+
+@pytest.mark.parametrize("stem", HEADER_PHOTOS)
+def test_a_header_photo_is_the_one_the_sample_and_the_photo_stress_render_place_and_no_other_print_does(world, stem):
+    result = world.build(stem, Stylist(*GOOD))
+    assert result["state"] == "ready", result["problems"]
+    with Image.open(world.work / "original-photo.png") as im:
+        assert abs(im.width - im.height) <= 2  # the picture cut from the page, 86 pt square
+    samples = [p for p in world.prints if p["folder"] == world.work]
+    assert samples and all('<img class="photo"' in p["html"] for p in samples)
+    stress = {p["folder"].name: p["html"] for p in world.prints if "stress" in p["folder"].parts}
+    assert '<img class="photo"' in stress["photo"]
+    assert not [n for n, html in stress.items() if n != "photo" and '<img class="photo"' in html]
+
+
+@pytest.mark.parametrize("stem", HEADER_PHOTOS)
+def test_a_template_that_draws_a_box_at_the_header_photo_s_place_with_no_photo_fails_the_stress_renders(world, tmp_path, stem):
+    boxed = _with_grey_box(tmp_path, [473, 30, 560, 117], source=stem)
+    world.print_as = lambda folder: boxed if "stress" in folder.parts and folder.name != "photo" else None
+    stylist = Stylist(cv_round(), cv_only(), letter_round())
+    result = world.build(stem, stylist)
+    assert "Printed with other texts" in stylist.calls[1]["input"] and "img.photo" in stylist.calls[1]["input"]
+    assert result["state"] == "failed" and any("img.photo" in p for p in result["problems"])
 
 
 def test_the_sample_of_a_cv_without_a_photo_needs_no_photo_token(world):
