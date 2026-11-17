@@ -12,7 +12,7 @@ from door.tailoring import pdf_render, style_trace
 # every icon's `fill_rule`: the traced path has its holes as loops of their own
 FILL_RULE = "evenodd"
 # what a bullet of a list is set as: no icon, and no column of its own
-BULLETS = set("•·‣◦▪●○■□–∙-*")
+BULLETS = set("•·‣◦▪●○■□–∙-*★☆")
 
 # the fonts whose letters are pictures, matched on the name in lowercase letters and digits: icon fonts, the
 # symbol fonts (a phone or an envelope set in Wingdings reads back as a stray "(") and TeX's symbol fonts
@@ -30,14 +30,24 @@ def icon_font(name: str) -> bool:
 
 
 def _pictographic(c: str) -> bool:
-    """A symbol (category So) in the blocks set aside for pictures: technical, dingbat, geometric and emoji ranges."""
-    return unicodedata.category(c) == "So" and ("\u2300" <= c <= "\u2bff" or c >= "\U0001f000")
+    """A symbol (category So) set aside for pictures: Miscellaneous Symbols and Dingbats (U+2600-27BF) and the emoji and
+    pictograph planes from U+1F000. Technical marks, box drawing, block elements, geometric shapes (U+2300-25FF) and
+    U+2B00-2BFF are text marks, and so are the rating stars, which are level marks like level dots."""
+    return (unicodedata.category(c) == "So" and c not in BULLETS
+            and ("\u2600" <= c <= "\u27bf" or c >= "\U0001f000"))
+
+
+# what an emoji sequence has beside its pictographs: variation selectors, the joiner, skin-tone modifiers
+_SEQUENCE = set("\u200d\ufe0e\ufe0f") | {chr(c) for c in range(0x1F3FB, 0x1F400)}
 
 
 def glyph_only(text: str) -> bool:
-    """Only control characters, private use or pictographic symbols: what an icon font's glyphs read as. Letters,
-    digits, punctuation, maths, arrows and currency are ordinary text characters, whatever their font."""
-    return all(unicodedata.category(c) in ("Cc", "Co") or _pictographic(c) for c in text)
+    """At least one private-use, control or pictographic character, and nothing else but spaces, control characters and the
+    pieces of an emoji sequence: what an icon font's glyphs read as. Letters, digits, punctuation, maths, arrows,
+    currency, box drawing, geometric bullets and rating stars are ordinary text characters, whatever their font."""
+    return (any(unicodedata.category(c) in ("Cc", "Co") and not c.isspace() or _pictographic(c) for c in text)
+            and all(unicodedata.category(c) in ("Cc", "Co") or c.isspace() or c in _SEQUENCE or _pictographic(c)
+                    for c in text))
 
 
 def mark_icon_runs(runs: list[dict]) -> None:
