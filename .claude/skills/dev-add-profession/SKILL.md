@@ -66,7 +66,7 @@ Write the choice to `thoughts/profession/<cc>-<slug>/plan.md`:
 1. the question exactly as asked (its text, and each option's label and description), then the answer;
 2. the sources in build order, each with its kind, module name and country code (`any` for a worldwide one);
 3. the profession's fake profile from the report (role targets: the given titles; search keywords and topic terms per language; `remote`; the city), and its on-topic and off-topic titles;
-4. the report's non-build recommendations: employers to follow by careers URL, door gaps to file as issues.
+4. the report's non-build recommendations: employers to follow by careers URL, door gaps to file as issues with `/dev-file-issue`.
 
 If nothing was picked, go to step 5 with the profile and the gaps alone (the profession row and the issues are still worth having).
 
