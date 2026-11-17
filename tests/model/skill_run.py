@@ -125,6 +125,7 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path, *
     asked: list[dict] = []
     denied: list[dict] = []
     used: list[dict] = []   # every tool the conversation used besides door's, with its input
+    spoken: list[str] = []   # everything the conversation said to the user, in order
 
     async def can_use_tool(name, data, _context):
         if name == "AskUserQuestion":
@@ -164,6 +165,7 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path, *
                     for block in msg.content:
                         if isinstance(block, TextBlock) and block.text.strip():
                             said.append(block.text)
+                            spoken.append(block.text)
                             transcript.append(f"**claude:** {block.text}")
                         elif isinstance(block, ToolUseBlock):
                             if not block.name.startswith("mcp__door__") and block.name != "AskUserQuestion":
@@ -185,6 +187,7 @@ async def run(world: dict, prompt: str, model: str, max_turns: int, out: Path, *
         "asked": asked,
         "denied": denied,
         "used": used,
+        "said": spoken,
         "files": sorted(str(p.relative_to(world["home"])) for p in Path(world["home"]).rglob("*") if p.is_file()),
     }
     out.mkdir(parents=True, exist_ok=True)
