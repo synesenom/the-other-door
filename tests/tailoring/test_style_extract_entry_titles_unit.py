@@ -58,16 +58,15 @@ def _headings(tmp_path, **kw):
 @pytest.mark.parametrize("lang", list(LANG))
 @pytest.mark.parametrize("upper", [False, True])
 @pytest.mark.parametrize("dates", ["same", "column"])
-def test_headings_not_entry_titles(tmp_path, lang, upper, dates):
+@pytest.mark.parametrize("tsize", [12, 14])
+def test_dated_titles_set_larger_than_the_headings_are_not_the_headings(tmp_path, lang, upper, dates, tsize):
     want = [h.upper() if upper else h for h in LANG[lang][0]]
-    got = _headings(tmp_path, lang=lang, upper=upper, dates=dates)
-    assert [g for g in got if g in want] == want
-    assert not [g for g in got if g not in want]
+    assert _headings(tmp_path, lang=lang, upper=upper, dates=dates, hsize=10, tsize=tsize) == want
 
 
-def test_titles_larger_than_headings_are_not_returned(tmp_path):
-    got = _headings(tmp_path, lang="de", hsize=10, tsize=12, dates="same")
-    assert not any("Firma AG" in g for g in got)
+def test_titles_in_exactly_the_headings_style_come_with_them(tmp_path):
+    # the limit: one style, undated headings among dated titles, nothing tells them apart
+    assert set(LANG["de"][0]) <= set(_headings(tmp_path, lang="de", dates="same"))
 
 
 def test_headings_only_group_is_kept(tmp_path):
@@ -128,16 +127,38 @@ def test_a_date_line_above_a_bold_title_keeps_the_headings(tmp_path, gap):
     assert all(h in got for h in ["Berufserfahrung", "Ausbildung", "Kenntnisse", "Ehrenamt"])
 
 
-def test_a_known_heading_over_a_dated_line_stays(tmp_path):
-    # English names are known; the bold titles dated on their own line are the entry titles
-    heads = ["Experience", "Education", "Skills", "Projects"]
+HEADS = ["Berufserfahrung", "Ausbildung", "Kenntnisse", "Ehrenamt"]
+
+
+def _heads(tmp_path, heads, side=None, color="0 g", size=10, rightdate=None):
     ops, y = ["BT 0 g /F2 18 Tf 50 810 Td (Max Mustermann) Tj ET"], 770
-    for h in heads:
-        ops.append(f"BT 0 g /F2 10 Tf 50 {y} Td ({h}) Tj ET")
-        y -= 14
-        for title in ("Developer 2019 - 2022", "Team Lead 2022 - 2024"):
-            ops.append(f"BT 0 g /F2 10 Tf 50 {y} Td ({title}) Tj ET")
-            ops.append(f"BT 0 g /F1 10 Tf 60 {y - 14} Td (- Development and operation of cloud services for customers) Tj ET")
-            y -= 34
-        y -= 6
-    assert _got(tmp_path, raw_pdf("\n".join(ops))) == heads
+    for i, h in enumerate(heads):
+        ops.append(f"BT {color} /F2 {size} Tf 50 {y} Td ({h}) Tj ET")
+        if side:  # a side column: its first line is on the heading's baseline, then more lines under it
+            ops.append(f"BT 0 g /F1 9 Tf 420 {y} Td ({side.format(i=i)}) Tj ET")
+            for k in range(1, 5):
+                ops.append(f"BT 0 g /F1 9 Tf 420 {y - 12 * k} Td (Zertifikat und Kurs) Tj ET")
+        if rightdate:
+            ops.append(f"BT 0 g /F1 10 Tf 450 {y} Td ({rightdate}) Tj ET")
+        for k in range(3):
+            ops.append(f"BT 0 g /F1 10 Tf 60 {y - 14 - 13 * k} Td (- Entwicklung und Betrieb von Diensten) Tj ET")
+        y -= 80
+    return _got(tmp_path, raw_pdf("\n".join(ops)))
+
+
+def test_a_year_in_a_side_column_on_a_heading_baseline_keeps_the_heading(tmp_path):
+    assert _heads(tmp_path, HEADS, side="Zertifikat AWS 201{i}") == HEADS
+
+
+def test_headings_some_with_a_year_are_all_kept(tmp_path):
+    heads = ["Berufserfahrung seit 2015", "Ausbildung", "Kenntnisse", "Projekte 2020"]
+    assert _heads(tmp_path, heads) == heads
+
+
+def test_all_dated_headings_in_a_coloured_larger_style_are_kept(tmp_path):
+    heads = ["Berufserfahrung 2015-2024", "Ausbildung 2010-2015", "Projekte 2020", "Ehrenamt seit 2018"]
+    assert _heads(tmp_path, heads, color="0.1 0.3 0.7 rg", size=13) == heads
+
+
+def test_a_right_aligned_date_on_every_heading_row_keeps_them_when_coloured_and_larger(tmp_path):
+    assert _heads(tmp_path, HEADS, color="0.1 0.3 0.7 rg", size=13, rightdate="2015 - 2024") == HEADS

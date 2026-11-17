@@ -576,16 +576,20 @@ def _line_units(runs: list[dict]) -> list[dict]:
 _YEAR = re.compile(r"\b(19|20)\d\d\b")
 
 
-def _entry_titles(members: list[dict], units: list[dict]) -> set[int]:
+def _band_at(u: dict, bands: list[dict]) -> dict | None:
+    mid = (u["bbox"][0] + u["bbox"][2]) / 2
+    return next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
+
+
+def _entry_titles(members: list[dict], units: list[dict], bands: list[dict]) -> set[int]:
     """The `id`s of the members that head a dated entry: a year in the member's own text, or in a unit on its baseline
-    (a date column or a date at the right). A line under a member is not read: a heading has text under it too, and
-    a year there (prose, "2019 - 2022  Senior Developer") says nothing about the member. So an entry title with its
-    date on the line below or above it, with no year at all (a project, "heute") or a two-digit one ("'19",
+    in its own column band or in none (a date column, or a date at the right of a band's text). A line under a member is not read: a heading has
+    text under it too. A title dated on the line below or above it, with no year ("heute") or a two-digit one ("'19",
     "Jan 19") is not told from a heading."""
     return {id(u) for u in members
             if _YEAR.search(u["text"]) or any(
                 v is not u and v["page"] == u["page"] and abs(v["bbox"][3] - u["bbox"][3]) <= 0.3 * u["size"]
-                and _YEAR.search(v["text"]) for v in units)}
+                and _band_at(v, bands) in (None, _band_at(u, bands)) and _YEAR.search(v["text"]) for v in units)}
 
 
 def _is_section_title(text: str) -> bool:
@@ -621,9 +625,9 @@ def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | 
 def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name: dict | None) -> list[dict]:
     """The section headings: a short line in one style, not set like the body text (another size, weight or family,
     or in small capitals), that is a known section name (any supported language) or one of a group of three or more
-    lines in one style that is coloured and larger than the body (or, with no such group, the largest). Entry titles
-    dated on their own line (`_entry_titles`) are left out of such a group, and a group of nothing else is no
-    headings; a known section name always is one."""
+    lines in one style that is coloured and larger than the body (or, with no such group, the largest one that is not
+    all dated: `_entry_titles` are lines with a year on their own line, and a group of nothing else is the entries').
+    Entry titles in exactly the headings' style are returned with them."""
     body = body_size([r for r in runs if not r["rotated"]])
     chars: dict[tuple, int] = {}
     for r in runs:
@@ -644,18 +648,16 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
         groups.setdefault(key(u), []).append(u)
     # a group of three or more like lines is headings when it holds a section name or is coloured and larger than the
     # body; with neither anywhere, the largest group is (the entry titles of a CV are in a group of their own)
-    # the dated entry titles that share a heading's style are not headings
-    titles = {k: _entry_titles(g, all_units) for k, g in groups.items()}
-    styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body and len(titles[k]) < len(g)}
+    styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body}
     chosen = [k for k, g in styled.items() if any(id(u) in known for u in g)
               or (k[2] != body_color and _chromatic(k[2]) and k[1] > body)]
-    if not chosen and styled:
-        chosen = [max(styled, key=lambda k: k[1])]
+    if not chosen:  # the entry titles are a group of their own, all dated: not the headings
+        undated = [k for k, g in styled.items() if len(_entry_titles(g, all_units, bands)) < len(g)]
+        chosen = [max(undated, key=lambda k: k[1])] if undated else []
     found = []
     for u in short:
-        if id(u) in known or (key(u) in chosen and id(u) not in titles[key(u)]):
-            mid = (u["bbox"][0] + u["bbox"][2]) / 2
-            band = next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
+        if id(u) in known or key(u) in chosen:
+            band = _band_at(u, bands)
             found.append({"page": u["page"], "text": u["text"], "bbox": u["bbox"], "size": u["size"], "color": u["color"],
                           "weight": u["weight"], "family": u["family"], "italic": u["italic"], "case": _case(u["text"]),
                           "rule": _rule_under(u, shapes, band), "band": band["kind"] if band else None})
