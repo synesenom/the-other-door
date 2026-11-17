@@ -153,11 +153,11 @@ One review, everything in one place, before anything is written:
    plainly hits something they ruled out much lower, that a doubt never costs a posting its place, and that it
    applies from the next run.
 
-8. **CV style** (only when profile/ did not exist at the start (neither "Give new sources" nor "Only check my answers"),
-   never after a pull from Drive, and only when a file in `draft_cv`'s `sources` has `style` true; the first such file in the order given): one line of the review,
+8. **CV style** (a first set-up only, never after a pull from Drive, and only when a file in `draft_cv`'s `sources`
+   has `style` true; use the first such file): one line of the review,
    not a question of its own, off by default: "CV style: The other door's. Make my tailored CVs look like the CV I
-   uploaded? (takes 5-10 minutes in the background)". The user changes it like any other line; keep that file
-   for step 4. Say nothing about a style for a file with no `style`, and name no cost.
+   uploaded? (takes 5–10 minutes in the background)". The user changes it like any other line; keep that file
+   for step 4.
 
 Items 5 and 6 read `mcp__door__show_profile` with the location as `location`: its `options.cities` then holds
 that city alone (the full list is too long to read in one answer), and `worldwide_discovery` serves a city
@@ -188,14 +188,14 @@ location data, scales it and names it in the profile); if it returns an `error`,
 photo can be added later in the app's Profile screen or by saying /onboard again; it never stops onboarding.
 If the user turned the CV style on, then call `mcp__door__build_style` with the file as `file` (after `save_cv` and
 `save_photo`: it reads the saved CV and photo; it returns at once and builds in the background); if it returns an
-`error`, show it in one line and go on. Never call `show_style` or `use_style` here.
+`error`, show it in one line and go on.
 
 Start the first run right away, without asking: `mcp__door__find_jobs` with `skip` =
 `["discover", "follow", "collect"]` (search the boards, then score; a few minutes). If profile/cv.md
 is still the example, say so instead and ask for a CV. Report how many postings it wrote and the top matches,
 or its error.
 If a style build was started, say in one line that it is building in the background and will be offered at the start
-of a later conversation. Never wait for it or check on it.
+of a later conversation. Never wait for it, check on it or call `show_style`/`use_style` here.
 
 Then tell the user how to use The other door from now on: say "get me today's jobs" in a conversation (the
 `find_jobs` tool — it only fetches postings published since the last scrape), then "what's new?".
