@@ -306,7 +306,7 @@ def test_a_linkedin_export_has_no_style_to_copy_and_the_draft_still_succeeds(env
 def test_a_failed_structure_call_means_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
     from door.tailoring import style_structure
 
-    def broken(text):
+    def broken(text, feature="style"):
         raise claude_cli.ClaudeError("claude -p timed out after 60s")
 
     _answer(monkeypatch)
@@ -418,3 +418,15 @@ def test_the_draft_text_of_a_refused_three_column_cv_still_drops_its_icons(monke
     monkeypatch.setattr(style_icons, "draft_edits", lambda runs, style: given.append(runs) or {})
     text = cv_cmd._extract_text(REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "html-three-columns.pdf")
     assert len(given[0]) > 20 and "Experience" in text
+
+
+def test_the_structure_call_of_a_draft_is_billed_to_the_draft(env, monkeypatch):
+    from door.tailoring import style_structure
+    from style_structure_utils import fake_ask
+
+    _answer(monkeypatch)
+    features = []
+    monkeypatch.setattr(style_structure, "_ask", lambda text, feature="style": features.append(feature) or fake_ask(text))
+    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
+    assert features == ["draft_cv"]

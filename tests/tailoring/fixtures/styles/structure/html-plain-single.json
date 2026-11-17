@@ -1,35 +1,29 @@
 {
  "linkedin_export": false,
  "layout": {
-  "columns": "one",
-  "side": "none"
+  "columns": "one"
  },
  "name": 1,
  "headings": [
   {
    "id": 3,
-   "kind": "summary",
-   "column": "main"
+   "kind": "summary"
   },
   {
    "id": 5,
-   "kind": "experience",
-   "column": "main"
+   "kind": "experience"
   },
   {
    "id": 24,
-   "kind": "education",
-   "column": "main"
+   "kind": "education"
   },
   {
    "id": 29,
-   "kind": "skills",
-   "column": "main"
+   "kind": "skills"
   },
   {
    "id": 31,
-   "kind": "languages",
-   "column": "main"
+   "kind": "languages"
   }
  ],
  "entry_titles": [

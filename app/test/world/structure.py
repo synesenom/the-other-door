@@ -30,6 +30,6 @@ name = max(first, key=lambda r: (styles[r["style"]]["size"], -r["id"]))
 short = [r for r in lines if r is not name and len(r["text"].split()) <= 6 and r["style"] != body]
 heads = [r for r in short if i18n.cv_section_kind(r["text"], KINDS)] or short[:3]
 sys.stdout.write(json.dumps({
-    "linkedin_export": False, "layout": {"columns": "one", "side": "none"}, "name": name["id"],
-    "headings": [{"id": r["id"], "kind": i18n.cv_section_kind(r["text"], KINDS) or "other", "column": "main"} for r in heads],
+    "linkedin_export": False, "layout": {"columns": "one"}, "name": name["id"],
+    "headings": [{"id": r["id"], "kind": i18n.cv_section_kind(r["text"], KINDS) or "other"} for r in heads],
     "entry_titles": []}))

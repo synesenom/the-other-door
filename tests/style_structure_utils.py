@@ -53,7 +53,7 @@ def _corpus() -> dict[str, dict]:
             for f in sorted(RECORDED.glob("*.json")) if (pdfs / f"{f.stem}.pdf").is_file()}
 
 
-def fake_ask(text: str) -> dict:
+def fake_ask(text: str, feature: str = "style") -> dict:
     """The recorded answer when `text` is the input of a corpus CV, else a plain rule's."""
     if text in _corpus():
         return _corpus()[text]
@@ -64,8 +64,8 @@ def fake_ask(text: str) -> dict:
     short = [r for r in lines if r is not name and len(r["text"].split()) <= 6 and r["style"] != body]
     heads = [r for r in short if i18n.cv_section_kind(r["text"], _KINDS)] or short
     heads = heads[:3] if len(heads) < 2 else heads
-    return {"linkedin_export": False, "layout": {"columns": "one", "side": "none"}, "name": name["id"],
-            "headings": [{"id": r["id"], "kind": i18n.cv_section_kind(r["text"], _KINDS) or "other", "column": "main"}
+    return {"linkedin_export": False, "layout": {"columns": "one"}, "name": name["id"],
+            "headings": [{"id": r["id"], "kind": i18n.cv_section_kind(r["text"], _KINDS) or "other"}
                          for r in heads], "entry_titles": []}
 
 

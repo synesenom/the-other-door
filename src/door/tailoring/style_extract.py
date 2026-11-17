@@ -739,12 +739,9 @@ def scan_verdict(pages: list[dict]) -> dict:
     return _verdict(True, "ok", "")
 
 
-def structure_verdict(structure: dict | None) -> dict:
+def structure_verdict(structure: dict) -> dict:
     """The verdict of a CV's checked structure (`style_structure.check`): a LinkedIn export has no design of its own and
-    three or more columns have no place in the template model (`layout`); None is a scan's (`structure_for` reads none).
-    Anything else is copyable."""
-    if structure is None:
-        return scan_verdict([])
+    three or more columns have no place in the template model (`layout`). Anything else is copyable."""
     if structure["linkedin"]:
         return _verdict(False, "linkedin", "is a LinkedIn export, which has no design of its own to copy.")
     if structure["columns"] == "three":

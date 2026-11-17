@@ -1,60 +1,49 @@
 {
  "linkedin_export": false,
  "layout": {
-  "columns": "one",
-  "side": "none"
+  "columns": "one"
  },
  "name": 1,
  "headings": [
   {
    "id": 4,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 7,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 23,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 30,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 38,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 40,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 50,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 55,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 63,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 65,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   }
  ],
  "entry_titles": [

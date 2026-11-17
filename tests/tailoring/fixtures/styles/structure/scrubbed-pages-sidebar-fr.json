@@ -2,7 +2,6 @@
  "linkedin_export": false,
  "layout": {
   "columns": "two",
-  "side": "left",
   "side_x0": 32,
   "side_x1": 145
  },
@@ -10,43 +9,35 @@
  "headings": [
   {
    "id": 3,
-   "kind": "summary",
-   "column": "main"
+   "kind": "summary"
   },
   {
    "id": 7,
-   "kind": "experience",
-   "column": "main"
+   "kind": "experience"
   },
   {
    "id": 157,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 13,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   },
   {
    "id": 32,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   },
   {
    "id": 50,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   },
   {
    "id": 75,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   },
   {
    "id": 110,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   }
  ],
  "entry_titles": [

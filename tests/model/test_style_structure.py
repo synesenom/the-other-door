@@ -35,9 +35,9 @@ def read(tmp_path_factory):
     calls: list[str] = []
     real = style_structure._ask
 
-    def counted(text):
+    def counted(text, feature="style"):
         calls.append(text)
-        return real(text)
+        return real(text, feature)
 
     def go(name: str) -> dict:
         if name not in done:
@@ -80,7 +80,7 @@ def test_a_second_read_of_the_same_file_asks_nothing(read):
     before = len(read.calls)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(style_structure, "_cache_dir", lambda: read.home / "cache")
-        mp.setattr(style_structure, "_ask", lambda text: pytest.fail("a second call"))
+        mp.setattr(style_structure, "_ask", lambda text, feature="style": pytest.fail("a second call"))
         style_structure.structure_for(STYLES / "latex-classic.pdf")
     assert len(read.calls) == before
 

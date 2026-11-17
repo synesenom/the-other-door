@@ -4,7 +4,9 @@
 Two cores. `_build_core` is the build itself, in the foreground (the command, with progress). `_start_core` is what the
 `build_style` tool calls: it takes the file in (intake, a copy at `HOME/.style/source.pdf`), ends a build already
 running, starts `python -m door cv style build <copy>` as a process of its own (`core/phone.py`'s way, so it outlives
-the server or the app that asked) and returns at once. Its state is `HOME/.style/run.json` (`pid`, `state`
+the server or the app that asked) and returns once started. The intake reads the CV's structure with one model call
+(`style_structure`, up to 60 s cold, cached by the file); a CV whose structure could not be read is refused in plain words
+and nothing starts. Its state is `HOME/.style/run.json` (`pid`, `state`
 building|ready|failed, `started_at`, `result`; the start's pending record names the process it `spawned`), its folder `HOME/.style/work` and its log `HOME/.style/build.log`.
 Both the starter and the build write run.json, on purpose: the starter's `building` (no pid yet) covers the gap until
 the build takes its lock and writes its own. A build is alive while it holds the OS lock `HOME/.style/build.lock`
@@ -65,16 +67,17 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def _look(path: Path) -> None:
+def _look(path: Path, feature: str = "style") -> None:
     """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print): a
     scan, a LinkedIn export, three columns, or a CV whose structure could not be read (`style_structure`: the one
-    model call per original, cached by the file, so the build that follows makes none)."""
+    model call per original, billed under `feature` and cached by the file, so the build that follows makes none)."""
     if not path.is_file():
         raise ValueError(f"{path.name} could not be found.")
     if refused := style_extract.not_pdf(path):
         raise ValueError(f"{path.name} {refused['detail']}")
     try:
-        verdict = style_extract.structure_verdict(style_structure.structure_for(path))
+        structure = style_structure.structure_for(path, feature)
+        verdict = style_extract.scan_verdict([]) if structure is None else style_extract.structure_verdict(structure)
     except (PdfiumError, OSError) as exc:
         raise ValueError(f"{path.name} is not a PDF The other door can read.") from exc
     if not verdict["copyable"]:

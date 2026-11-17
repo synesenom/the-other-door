@@ -17,10 +17,10 @@ import re
 from pathlib import Path
 
 from door import i18n
-from door.core import claude_cli, utils, workspace
+from door.core import claude_cli, problem_log, utils, workspace
 from door.tailoring import style_extract
 
-PROMPT_VERSION = 1  # bump with the prompt, the schema or `rows`: a cached answer of another version is asked again
+PROMPT_VERSION = 2  # bump with the prompt, the schema or `rows`: a cached answer of another version is asked again
 KINDS = ["experience", "education", "skills", "languages", "certifications", "interests", "summary", "contact",
          "projects", "other"]
 _SECTION_KINDS = tuple(i18n.CvSections.model_fields)
@@ -30,14 +30,15 @@ _SIDE_SHARE = 0.6  # a side column is narrower than this share of the text's wid
 _NEAR = 2.0  # pt of slack where a box is compared with a column
 _CONTINUES = 1.6  # a heading's next line is its second line within this many sizes below
 _PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
+_KEEP_CACHED = 20  # answers kept in the cache folder, the most recently written
 
 SYSTEM = """You read the structure of a CV from its text lines, as a typesetter would. The input lists each text style (font family, size in pt, weight, italic, colour, characters set in it) and each visual line of text with its page, baseline y, left and right x and style. Most text is body text in the most used style.
 
 Answer with:
 - linkedin_export: true when this is LinkedIn's "Save to PDF" profile export, whatever its fonts: a narrow left column headed "Contact", then "Top Skills" (LinkedIn's own wording; also "Languages", "Certifications"), a main column with "Summary", "Experience", "Education", and a "Page N of M" footer on every page. A CV that merely has a page footer or common section names is false.
-- layout: how many columns of text the page body has under any header. A column is a stack of many lines at its own x-range, running down the page beside another; a date or note at the right of a line, or a line of contact details, is no column. For two columns, `side` is the narrower one (the sidebar; when equal, the one holding contact/skills/languages rather than experience) and side_x0/side_x1 its x-range.
+- layout: how many columns of text the page body has under any header. A column is a stack of many lines at its own x-range, running down the page beside another; a date or note at the right of a line, or a line of contact details, is no column. For two columns, the side column is the narrower one (the sidebar; when equal, the one holding contact/skills/languages rather than experience) and side_x0/side_x1 its x-range.
 - name: the id of the line with the candidate's name.
-- headings: every section heading line, by id, with its `kind` and `column` (main, side or across).
+- headings: every section heading line, by id, with its `kind`.
 - entry_titles: the ids of the entry title lines (a job title, employer, degree or school heading one entry).
 
 A section heading names a section of the CV (in any language, also unknown words): it starts a section and the CV has a handful of them, set in one consistent style that stands out from the body. Entry titles repeat within a section, usually carry a date on their line or next to them, and are often in a style close to the headings: tell them apart by position (a heading comes first and groups several entries), by count and by wording, not by style alone. A heading may contain a year ("Projekte 2020"). Text in another column on the same baseline belongs to that column, not to the heading."""
@@ -47,15 +48,13 @@ SCHEMA = {
     "required": ["linkedin_export", "layout", "name", "headings", "entry_titles"],
     "properties": {
         "linkedin_export": {"type": "boolean"},
-        "layout": {"type": "object", "additionalProperties": False, "required": ["columns", "side"],
+        "layout": {"type": "object", "additionalProperties": False, "required": ["columns"],
                    "properties": {"columns": {"enum": ["one", "two", "three_or_more"]},
-                                  "side": {"enum": ["none", "left", "right"]},
                                   "side_x0": {"type": "number"}, "side_x1": {"type": "number"}}},
         "name": {"type": "integer"},
         "headings": {"type": "array", "items": {
-            "type": "object", "additionalProperties": False, "required": ["id", "kind", "column"],
-            "properties": {"id": {"type": "integer"}, "kind": {"enum": KINDS},
-                           "column": {"enum": ["main", "side", "across"]}}}},
+            "type": "object", "additionalProperties": False, "required": ["id", "kind"],
+            "properties": {"id": {"type": "integer"}, "kind": {"enum": KINDS}}}},
         "entry_titles": {"type": "array", "items": {"type": "integer"}},
     },
 }
@@ -63,7 +62,15 @@ SCHEMA = {
 
 class StructureError(ValueError):
     """The structure of a CV could not be read: the call failed or its answer does not hold. The message is for the
-    user."""
+    user, in plain words; `detail` is what went wrong, for the problem log."""
+
+    def __init__(self, message: str, detail: str = ""):
+        super().__init__(message)
+        self.detail = detail
+
+    @classmethod
+    def unreached(cls, exc: Exception) -> StructureError:
+        return cls("Claude could not be reached, or the plan's usage is full. Try again later.", str(exc))
 
 
 # ---------- the input ----------
@@ -119,7 +126,7 @@ def rows(pages: list[dict]) -> tuple[str, list[dict]]:
 # ---------- the answer ----------
 
 def _fail(why: str) -> StructureError:
-    return StructureError(f"could not read the CV's structure: the model's answer does not hold: {why}")
+    return StructureError("The layout of this CV could not be read.", f"the model's answer does not hold: {why}")
 
 
 def _ids(values, rows_by_id: dict, what: str) -> list[int]:
@@ -142,7 +149,7 @@ def _side_range(layout: dict, rows_list: list[dict], size: list[float]) -> tuple
     page, narrower than `_SIDE_SHARE` of the text's width, and snapped to the extent of the rows whose centre is in it
     (the model's numbers are read off a list, so a few points out)."""
     x0, x1 = layout.get("side_x0"), layout.get("side_x1")
-    if not (_number(x0) and _number(x1)) or layout.get("side") not in ("left", "right"):
+    if not (_number(x0) and _number(x1)):
         raise _fail("two columns but no side column's x-range")
     if not 0 <= x0 < x1 <= size[0] + _NEAR:
         raise _fail("the side column is not inside the page")
@@ -223,6 +230,7 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
     side = _side_range(layout, rows_list, pages[0]["size"]) if columns == "two" else None
     footers = all(any(_PAGE_FOOTER.fullmatch(r["text"].strip()) for r in rows_list if r["page"] == n)
                   for n in range(1, len(pages) + 1))
+    body = _body_style(rows_list)
     headings = []
     for i in ids:
         row = by_id[i]
@@ -230,11 +238,13 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
         text, bbox = row["text"], list(row["bbox"])
         second = _continues(row, [r for r in rows_list if r["id"] not in ids and r["id"] != name and r["id"] not in entries],
                             column, side)
-        if second is not None and row["style"].rstrip("*") != _body_style(rows_list):
+        if second is not None and row["style"].rstrip("*") != body:
             text = f"{text} {second['text']}"
             bbox = [min(bbox[0], second["bbox"][0]), min(bbox[1], second["bbox"][1]),
                     max(bbox[2], second["bbox"][2]), max(bbox[3], second["bbox"][3])]
-        kind = i18n.cv_section_kind(text, _SECTION_KINDS) or next(h["kind"] for h in given if h["id"] == i)
+        kind = i18n.cv_section_kind(text, _SECTION_KINDS) or next(h.get("kind") for h in given if h["id"] == i)
+        if kind not in KINDS:
+            raise _fail(f'"{row["text"][:40]}" has no section kind')
         headings.append({"kind": kind, "column": column, "row": row, "text": text, "bbox": bbox})
     return {"linkedin": bool(answer.get("linkedin_export")) and footers, "columns": columns, "side_range": side,
             "name": by_id[name], "headings": headings, "entry_titles": entries}
@@ -259,28 +269,43 @@ def _cache_file(pdf_path: Path) -> Path:
     return _cache_dir() / f"{hashlib.sha256(Path(pdf_path).read_bytes()).hexdigest()}.json"
 
 
-def _read_cache(file: Path) -> dict | None:
+def _read_cache(file: Path, digest: str) -> dict | None:
+    """The cached answer of this `PROMPT_VERSION` that was made for rows of this `digest`, else None."""
     try:
         data = json.loads(file.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    if isinstance(data, dict) and data.get("version") == PROMPT_VERSION and isinstance(data.get("answer"), dict):
+    if (isinstance(data, dict) and data.get("version") == PROMPT_VERSION and data.get("rows") == digest
+            and isinstance(data.get("answer"), dict)):
         return data["answer"]
     return None
 
 
-def _ask(text: str) -> dict:
+def _write_cache(file: Path, digest: str, answer: dict) -> None:
+    utils.write_json_atomic(file, {"version": PROMPT_VERSION, "rows": digest, "answer": answer}, indent=None)
+    try:
+        stale = sorted(file.parent.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True)[_KEEP_CACHED:]
+        for old in stale:
+            old.unlink(missing_ok=True)
+    except OSError:
+        pass  # the cache is a convenience: a file that will not go is left
+
+
+def _ask(text: str, feature: str = "style") -> dict:
     """The one model call: Haiku at low effort with no MCP servers (their tool lists would be thousands of tokens)."""
-    return claude_cli.ask(SYSTEM, text, model="haiku", feature="style", schema=SCHEMA, effort="low", strict_mcp=True,
+    return claude_cli.ask(SYSTEM, text, model="haiku", feature=feature, schema=SCHEMA, effort="low", strict_mcp=True,
                           timeout_s=60)
 
 
-def structure_for(pdf_path) -> dict | None:
+def structure_for(pdf_path, feature: str = "style") -> dict | None:
     """The checked structure (`check`) of the CV in `pdf_path`: the cached answer for its sha256 when there is one for
-    this `PROMPT_VERSION`, else one Haiku call (`_ask`) whose answer is checked and then cached. None for a scan (nothing to read: no call). A cached answer is checked again on every read.
+    this `PROMPT_VERSION` and these rows, else one Haiku call (`_ask`, billed under `feature`) whose answer is checked and
+    then cached. None for a scan (nothing to read: no call). A cached answer is checked again on every read; one that no
+    longer holds is dropped and asked once again.
 
     Raises:
-        StructureError: the call failed or its answer did not hold (nothing is cached then); the message says why.
+        StructureError: the call failed or its answer did not hold (nothing is cached then); the message is in plain
+            words for the user and `detail` says what went wrong (also written to the problem log).
     """
     pdf_path = Path(pdf_path)
     pages = style_extract.read_pages(pdf_path)
@@ -288,16 +313,22 @@ def structure_for(pdf_path) -> dict | None:
         return None
     text, listed = rows(pages)
     file = _cache_file(pdf_path)
-    answer = _read_cache(file)
-    cached = answer is not None
-    if answer is None:
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    if (cached := _read_cache(file, digest)) is not None:
         try:
-            answer = _ask(text)
+            return check(cached, listed, pages)
+        except StructureError:
+            file.unlink(missing_ok=True)
+    try:
+        try:
+            answer = _ask(text, feature)
         except claude_cli.ClaudeError as exc:
-            raise StructureError(f"could not read the CV's structure: {exc}") from None
-    structure = check(answer, listed, pages)
-    if not cached:
-        utils.write_json_atomic(file, {"version": PROMPT_VERSION, "answer": answer}, indent=None)
+            raise StructureError.unreached(exc) from None
+        structure = check(answer, listed, pages)
+    except StructureError as exc:
+        problem_log.failure("cv structure", exc.detail)
+        raise
+    _write_cache(file, digest, answer)
     return structure
 
 

@@ -212,7 +212,7 @@ def _has_style(path: Path) -> bool:
     """Whether the file at `path` has a CV style to copy (`style._look` passes, which reads the CV's structure with
     the one model call the build then reuses); false on any failure, a failed call too (#150)."""
     try:
-        style_cmd._look(path)
+        style_cmd._look(path, "draft_cv")
     except ValueError:  # an unreadable file, or a structure that could not be read, simply offers no style
         return False
     return True

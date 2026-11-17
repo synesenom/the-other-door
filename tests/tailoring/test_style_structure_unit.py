@@ -2,6 +2,7 @@
 The call itself (`claude_cli.ask`) is faked here; no test reaches a model."""
 
 import json
+import os
 
 import pytest
 
@@ -57,8 +58,8 @@ def ids_by_text(rows):
 
 def answer(rows, name="Max Mustermann", heads=("Experience", "Education", "Skills"), layout=None, **extra):
     ids = ids_by_text(rows)
-    return {"linkedin_export": False, "layout": layout or {"columns": "one", "side": "none"}, "name": ids[name],
-            "headings": [{"id": ids[h], "kind": "other", "column": "main"} for h in heads], "entry_titles": [], **extra}
+    return {"linkedin_export": False, "layout": layout or {"columns": "one"}, "name": ids[name],
+            "headings": [{"id": ids[h], "kind": "other"} for h in heads], "entry_titles": [], **extra}
 
 
 # ---------- the input ----------
@@ -111,12 +112,12 @@ def test_a_good_answer_gives_the_name_headings_and_one_column(cv):
 
 
 @pytest.mark.parametrize("break_it,why", [
-    (lambda a, ids: a["headings"].append({"id": 999, "kind": "other", "column": "main"}), "does not exist"),
+    (lambda a, ids: a["headings"].append({"id": 999, "kind": "other"}), "does not exist"),
     (lambda a, ids: a.update(name=999), "name"),
     (lambda a, ids: a["headings"].append(dict(a["headings"][0])), "twice"),
-    (lambda a, ids: a["headings"].append({"id": a["name"], "kind": "other", "column": "main"}), "name"),
+    (lambda a, ids: a["headings"].append({"id": a["name"], "kind": "other"}), "name"),
     (lambda a, ids: a.update(headings=a["headings"][:1]), "fewer than two"),
-    (lambda a, ids: a["headings"].extend({"id": ids[t], "kind": "other", "column": "main"}
+    (lambda a, ids: a["headings"].extend({"id": ids[t], "kind": "other"}
                                          for t in ("Senior Developer, Firma AG", "max@example.com +49 30 1234567")), "2 styles"),
     (lambda a, ids: a["entry_titles"].append(999), "does not exist"),
     (lambda a, ids: a.update(layout={"columns": "four"}), "layout"),
@@ -126,53 +127,55 @@ def test_an_answer_that_does_not_hold_is_refused_in_words(cv, break_it, why):
     pages, rows = cv
     a = answer(rows)
     break_it(a, ids_by_text(rows))
-    with pytest.raises(StructureError, match=why):
+    with pytest.raises(StructureError) as refused:
         style_structure.check(a, rows, pages)
+    assert why in refused.value.detail and "layout of this CV could not be read" in str(refused.value)
 
 
 def test_a_heading_of_more_than_six_words_is_refused(tmp_path):
     long = "Professional experience and positions held over many years"
     pages, rows, _ = read(pdf_of(tmp_path, one_column(heads=(long, "Education", "Skills"))))
-    with pytest.raises(StructureError, match="more than 6 words"):
+    with pytest.raises(StructureError, match="layout of this CV"):
         style_structure.check(answer(rows, heads=(long, "Education", "Skills")), rows, pages)
 
 
 def test_headings_in_more_than_two_styles_are_refused(tmp_path):
     content = one_column() + put("F5", 15, 50, 300, "Projects") + put("F3", 11, 50, 250, "Awards")
     pages, rows, _ = read(pdf_of(tmp_path, content))
-    with pytest.raises(StructureError, match="2 styles"):
+    with pytest.raises(StructureError, match="layout of this CV"):
         style_structure.check(answer(rows, heads=("Experience", "Projects", "Awards")), rows, pages)
 
 
 def test_the_model_s_column_for_a_heading_is_ignored_and_worked_out_from_its_x(tmp_path):
     pages, rows, _ = read(pdf_of(tmp_path, two_columns()))
     ids = ids_by_text(rows)
-    a = {"linkedin_export": False, "layout": {"columns": "two", "side": "left", "side_x0": 38, "side_x1": 120},
+    a = {"linkedin_export": False, "layout": {"columns": "two", "side_x0": 38, "side_x1": 120},
          "name": ids["Max Mustermann"], "entry_titles": [],
-         "headings": [{"id": ids[h], "kind": "other", "column": "side"} for h in ("Experience", "Education", "Skills", "Languages")]}
+         "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Education", "Skills", "Languages")]}
     s = style_structure.check(a, rows, pages)
     assert {h["text"]: h["column"] for h in s["headings"]} == {"Experience": "main", "Education": "main", "Skills": "side", "Languages": "side"}
     assert 38 <= s["side_range"][0] <= 40 and s["side_range"][1] <= 140
 
 
 @pytest.mark.parametrize("layout,why", [
-    ({"columns": "two", "side": "none"}, "side column"),
-    ({"columns": "two", "side": "left", "side_x0": 38, "side_x1": 900}, "inside the page"),
-    ({"columns": "two", "side": "left", "side_x0": 38, "side_x1": 480}, "narrower"),
-    ({"columns": "two", "side": "left", "side_x0": 100, "side_x1": 120}, "no text"),
+    ({"columns": "two"}, "side column"),
+    ({"columns": "two", "side_x0": 38, "side_x1": 900}, "inside the page"),
+    ({"columns": "two", "side_x0": 38, "side_x1": 480}, "narrower"),
+    ({"columns": "two", "side_x0": 100, "side_x1": 120}, "no text"),
 ])
 def test_two_columns_need_a_side_range_that_fits_the_page_and_the_text(tmp_path, layout, why):
     pages, rows, _ = read(pdf_of(tmp_path, two_columns()))
     ids = ids_by_text(rows)
     a = {"linkedin_export": False, "layout": layout, "name": ids["Max Mustermann"], "entry_titles": [],
-         "headings": [{"id": ids[h], "kind": "other", "column": "main"} for h in ("Experience", "Skills")]}
-    with pytest.raises(StructureError, match=why):
+         "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Skills")]}
+    with pytest.raises(StructureError) as refused:
         style_structure.check(a, rows, pages)
+    assert why in refused.value.detail and "layout of this CV could not be read" in str(refused.value)
 
 
 def test_three_columns_are_a_layout_verdict(tmp_path):
     pages, rows, _ = read(pdf_of(tmp_path, one_column()))
-    s = style_structure.check(answer(rows, layout={"columns": "three_or_more", "side": "none"}), rows, pages)
+    s = style_structure.check(answer(rows, layout={"columns": "three_or_more"}), rows, pages)
     assert s["columns"] == "three"
     assert style_extract.structure_verdict(s)["reason"] == "layout"
 
@@ -248,8 +251,8 @@ def ask(monkeypatch, tmp_path):
 
 def good(text):
     by_text = {line["text"]: line["id"] for line in parse(text)[1]}
-    return {"linkedin_export": False, "layout": {"columns": "one", "side": "none"}, "name": by_text["Max Mustermann"],
-            "headings": [{"id": by_text[h], "kind": "other", "column": "main"} for h in ("Experience", "Education", "Skills")],
+    return {"linkedin_export": False, "layout": {"columns": "one"}, "name": by_text["Max Mustermann"],
+            "headings": [{"id": by_text[h], "kind": "other"} for h in ("Experience", "Education", "Skills")],
             "entry_titles": []}
 
 
@@ -293,18 +296,21 @@ def test_another_prompt_version_asks_again(tmp_path, ask, monkeypatch):
 
 def test_a_broken_answer_is_an_error_in_words_and_is_never_cached(tmp_path, ask):
     ask(lambda text: {**good(text), "name": 9999})
-    with pytest.raises(StructureError, match="could not read the CV's structure"):
+    with pytest.raises(StructureError, match="The layout of this CV could not be read") as refused:
         style_structure.structure_for(pdf_of(tmp_path, one_column()))
+    assert "name" in refused.value.detail
     assert not (workspace.HOME / ".style" / "structure").exists() or not list((workspace.HOME / ".style" / "structure").iterdir())
 
 
-def test_a_failed_call_is_an_error_in_words_with_no_fallback(tmp_path, ask):
+def test_a_failed_call_is_an_error_in_plain_words_with_no_fallback_and_no_internal_text(tmp_path, ask):
     ask(claude_cli.ClaudeError("claude -p timed out after 60s"))
-    with pytest.raises(StructureError, match="could not read the CV's structure: claude -p timed out"):
+    with pytest.raises(StructureError) as failed:
         style_structure.structure_for(pdf_of(tmp_path, one_column()))
+    assert str(failed.value) == "Claude could not be reached, or the plan's usage is full. Try again later."
+    assert "timed out" in failed.value.detail and "timed out" not in str(failed.value)
 
 
-def test_a_cached_answer_that_no_longer_holds_is_an_error_not_a_second_call(tmp_path, ask):
+def test_a_cached_answer_that_no_longer_holds_is_dropped_and_asked_once_again(tmp_path, ask):
     asks = ask(good)
     path = pdf_of(tmp_path, one_column())
     style_structure.structure_for(path)
@@ -312,9 +318,60 @@ def test_a_cached_answer_that_no_longer_holds_is_an_error_not_a_second_call(tmp_
     data = json.loads(cache.read_text())
     data["answer"]["name"] = 9999
     cache.write_text(json.dumps(data))
+    assert style_structure.structure_for(path)["name"]["text"] == "Max Mustermann"
+    assert len(asks.calls) == 2
+    assert json.loads(cache.read_text())["answer"]["name"] != 9999
+
+
+def test_an_answer_cached_for_other_rows_is_a_miss(tmp_path, ask):
+    asks = ask(good)
+    path = pdf_of(tmp_path, one_column())
+    style_structure.structure_for(path)
+    cache = next((workspace.HOME / ".style" / "structure").glob("*.json"))
+    data = json.loads(cache.read_text())
+    assert len(data["rows"]) == 64
+    data["rows"] = "0" * 64
+    cache.write_text(json.dumps(data))
+    style_structure.structure_for(path)
+    assert len(asks.calls) == 2
+
+
+def test_the_cache_keeps_the_twenty_most_recent_answers(tmp_path, ask):
+    ask(good)
+    folder = workspace.HOME / ".style" / "structure"
+    folder.mkdir(parents=True)
+    for n in range(25):
+        old = folder / f"{n:064d}.json"
+        old.write_text("{}")
+        os.utime(old, (1000 + n, 1000 + n))
+    style_structure.structure_for(pdf_of(tmp_path, one_column()))
+    kept = {f.name for f in folder.glob("*.json")}
+    assert len(kept) == 20 and f"{0:064d}.json" not in kept and f"{24:064d}.json" in kept
+    assert any(not name.startswith("0000") for name in kept)  # the new one
+
+
+def test_a_heading_with_no_known_kind_is_refused_not_a_key_error(cv):
+    pages, rows = cv
+    a = answer(rows)
+    del a["headings"][0]["kind"]
+    with pytest.raises(StructureError) as refused:
+        style_structure.check(a, rows, pages)
+    assert "kind" in refused.value.detail
+    a["headings"][0]["kind"] = "hobbies"
     with pytest.raises(StructureError):
-        style_structure.structure_for(path)
-    assert len(asks.calls) == 1
+        style_structure.check(a, rows, pages)
+
+
+def test_the_structure_call_is_billed_under_the_feature_it_is_given(tmp_path, ask):
+    asks = ask(good)
+    style_structure.structure_for(pdf_of(tmp_path, one_column()), feature="draft_cv")
+    assert asks.calls[0]["feature"] == "draft_cv"
+
+
+def test_the_schema_asks_for_no_column_and_no_side_of_the_model():
+    heading = style_structure.SCHEMA["properties"]["headings"]["items"]["properties"]
+    layout = style_structure.SCHEMA["properties"]["layout"]["properties"]
+    assert set(heading) == {"id", "kind"} and set(layout) == {"columns", "side_x0", "side_x1"}
 
 
 def test_a_cache_file_that_is_not_json_is_asked_again(tmp_path, ask):
@@ -371,9 +428,9 @@ def test_a_one_column_cv_has_one_only_band_over_its_text(tmp_path):
 def test_two_columns_are_a_side_band_and_a_main_band_left_to_right_with_the_headings_in_their_bands(tmp_path):
     path, pages, rows = structured(tmp_path, two_columns())
     ids = ids_by_text(rows)
-    a = {"linkedin_export": False, "layout": {"columns": "two", "side": "left", "side_x0": 38, "side_x1": 120},
+    a = {"linkedin_export": False, "layout": {"columns": "two", "side_x0": 38, "side_x1": 120},
          "name": ids["Max Mustermann"], "entry_titles": [],
-         "headings": [{"id": ids[h], "kind": "other", "column": "main"} for h in ("Experience", "Education", "Skills", "Languages")]}
+         "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Education", "Skills", "Languages")]}
     style = style_extract.extract(path, structure=style_structure.check(a, rows, pages))
     assert [b["kind"] for b in style["columns"]["bands"]] == ["side", "main"] and style["columns"]["count"] == 2
     assert {h["text"]: h["band"] for h in style["headings"]} == {"Experience": "main", "Education": "main", "Skills": "side", "Languages": "side"}
@@ -383,16 +440,16 @@ def test_a_side_band_on_a_box_has_its_background(tmp_path):
     box = "0.9 0.9 0.8 rg 0 0 160 842 re f\n"
     path, pages, rows = structured(tmp_path, box + two_columns())
     ids = ids_by_text(rows)
-    a = {"linkedin_export": False, "layout": {"columns": "two", "side": "left", "side_x0": 38, "side_x1": 120},
+    a = {"linkedin_export": False, "layout": {"columns": "two", "side_x0": 38, "side_x1": 120},
          "name": ids["Max Mustermann"], "entry_titles": [],
-         "headings": [{"id": ids[h], "kind": "other", "column": "main"} for h in ("Experience", "Skills")]}
+         "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Skills")]}
     bands = style_extract.extract(path, structure=style_structure.check(a, rows, pages))["columns"]["bands"]
     assert bands[0]["background"] == "#e6e6cc" and bands[1]["background"] is None
 
 
 def test_three_columns_refuse_with_the_layout_verdict_and_keep_the_rest(tmp_path):
     path, pages, rows = structured(tmp_path, one_column())
-    s = style_structure.check(answer(rows, layout={"columns": "three_or_more", "side": "none"}), rows, pages)
+    s = style_structure.check(answer(rows, layout={"columns": "three_or_more"}), rows, pages)
     style = style_extract.extract(path, structure=s)
     assert style["verdict"]["reason"] == "layout" and style["runs"] and style["colors"]
 
@@ -409,7 +466,7 @@ def test_no_production_module_but_style_extract_calls_the_heading_and_column_rul
     """The rules are kept only until #344 deletes them: nothing but their own module may use them."""
     from paths import REPO_ROOT
 
-    names = ("find_headings", "column_bands", "_entry_titles", "layout_verdict")
+    names = ("find_headings", "column_bands", "_entry_titles", "layout_verdict", "find_name", "style_verdict")
     for file in (REPO_ROOT / "src" / "door").rglob("*.py"):
         if file.name != "style_extract.py":
             text = file.read_text(encoding="utf-8")

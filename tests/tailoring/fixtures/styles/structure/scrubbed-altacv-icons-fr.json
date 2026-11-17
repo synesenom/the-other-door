@@ -2,7 +2,6 @@
  "linkedin_export": false,
  "layout": {
   "columns": "two",
-  "side": "right",
   "side_x0": 350,
   "side_x1": 545
  },
@@ -10,33 +9,27 @@
  "headings": [
   {
    "id": 7,
-   "kind": "summary",
-   "column": "across"
+   "kind": "summary"
   },
   {
    "id": 13,
-   "kind": "other",
-   "column": "main"
+   "kind": "other"
   },
   {
    "id": 14,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   },
   {
    "id": 37,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   },
   {
    "id": 81,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   },
   {
    "id": 97,
-   "kind": "other",
-   "column": "side"
+   "kind": "other"
   }
  ],
  "entry_titles": [

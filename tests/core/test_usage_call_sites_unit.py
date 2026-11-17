@@ -24,6 +24,8 @@ def test_every_claude_cli_call_names_a_known_feature():
             kw = {k.arg: k.value for k in call.keywords}
             where = f"{path.relative_to(SRC)}:{call.lineno}"
             assert "feature" in kw, f"{where} calls claude_cli.{call.func.attr} without feature="
+            if isinstance(kw["feature"], ast.Name) and kw["feature"].id == "feature":
+                continue  # a wrapper that passes its caller's `feature` on: its own callers name it
             assert isinstance(kw["feature"], ast.Constant), f"{where}: feature= must be a literal"
             assert kw["feature"].value in usage.FEATURES, f"{where}: unknown feature {kw['feature'].value!r}"
             seen.append(kw["feature"].value)
