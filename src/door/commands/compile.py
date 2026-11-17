@@ -132,15 +132,18 @@ _H2 = re.compile(r"(?=<h2[\s>])")
 
 
 def _place_columns(body: str, columns: templates.Columns | None) -> str:
-    """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` (the
-    notes, the photo, the header) as it is, then `<div class="main">` and `<div class="side">`, each section in the
+    """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` after
+    the header (the notes, the photo, the header whole: an `<h2>` inside it is the header's, #242) as it is, then `<div class="main">` and `<div class="side">`, each section in the
     order the body has it. A section goes to the side when its heading is, whole and without case, a title of one of
     the template's ``columns.side`` kinds in any supported language (a CV's headings are in its own language, whatever
     the ad's, #227), or is, whole and without case, one of its ``columns.headings``; any other goes to the main column.
     `body` itself when the template has no side column."""
     if columns is None or not (columns.side or columns.headings):
         return body
-    first, *sections = _H2.split(body)
+    header, closed, after = body.partition("</header>")  # a heading inside the header is the header's, not a section
+    head, rest = (header + closed, after) if closed else ("", body)
+    first, *sections = _H2.split(rest)
+    first = head + first
     main, side = [], []
     for section in sections:
         heading = (html_doc.headings(section) or [""])[0]
