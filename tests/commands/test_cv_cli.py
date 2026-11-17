@@ -119,10 +119,19 @@ def test_extract_text_of_a_docx_keeps_a_run_whose_own_font_overrides_a_symbol_st
     assert cv_cmd._extract_text(path) == "Jane Doe"
 
 
-@pytest.mark.parametrize("font", ["FontAwesome", "Font Awesome 6 Free Solid", "MT Extra", "Webdings", "Zapf Dingbats"])
-def test_extract_text_of_a_docx_leaves_out_runs_in_the_icon_fonts_a_pdf_leaves_out(tmp_path, font):
+ICON_FONTS = ["FontAwesome", "Font Awesome 6 Free Solid", "Symbol", "Wingdings 2", "Webdings", "Zapf Dingbats", "MT Extra", "Marlett"]
+
+
+@pytest.mark.parametrize("font", ICON_FONTS)
+def test_the_pdf_and_docx_readers_leave_out_the_same_icon_fonts(tmp_path, font):
+    # one rule (`style_icons.icon_font`) for both: a PDF's run in the font is an icon, a DOCX's run is left out
+    from door.tailoring import style_icons
+
+    runs = [{"font": font, "text": "Abc"}, {"font": "Calibri", "text": "Abc"}]
+    style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [True, False]
     path = tmp_path / "cv.docx"
-    _styled_docx(path, [(None, [_run("A", font=font), _run("+45 1234 5678")])], [])
+    _styled_docx(path, [(None, [_run("Abc", font=font), _run("+45 1234 5678", font="Calibri")])], [])
     assert cv_cmd._extract_text(path) == "+45 1234 5678"
 
 

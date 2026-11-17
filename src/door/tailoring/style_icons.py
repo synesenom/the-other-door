@@ -13,13 +13,22 @@ FILL_RULE = "evenodd"
 # what a bullet of a list is set as: no icon, and no column of its own
 BULLETS = set("•·‣◦▪●○■□–∙-*")
 
-_ICON_FONT = re.compile(r"awesome|icon|symbol|material|glyph|fontello|ionicons|dingbats|wingdings", re.I)
+# the fonts whose letters are pictures, matched on the name in lowercase letters and digits: icon fonts, the
+# symbol fonts (a phone or an envelope set in Wingdings reads back as a stray "(") and TeX's symbol fonts
+_ICON_FONT = re.compile(r"awesome|icon|symbol|material|glyph|fontello|ionicons|dingbats|wingdings|webdings|mtextra"
+                        r"|marlett|^(cm(sy|mi|ex|bsy)|msam|msbm)")
 _ICON_SIZE = 24.0  # points: a drawing larger than this is not an icon
 _PICTURE_SIZE = 48.0  # points: nor is a picture, which is then a photo or a background
 _SCALE = 10.0  # pixels per point an icon is traced at
 
 
-def _glyph_only(text: str) -> bool:
+def icon_font(name: str) -> bool:
+    """Whether the font called `name` draws pictures for letters (an icon or a symbol font), for a PDF's runs and a
+    DOCX's alike."""
+    return bool(_ICON_FONT.search(re.sub(r"[^a-z0-9]", "", name.lower())))
+
+
+def glyph_only(text: str) -> bool:
     """Only control characters, private use or dingbats: what an icon font's glyphs read as."""
     return all(c < " " or "" <= c <= "" or "✀" <= c <= "➿" for c in text)
 
@@ -33,7 +42,7 @@ def mark_icon_runs(runs: list[dict]) -> None:
         short[run["font"]] = short.get(run["font"], True) and len(run["text"]) <= 2 and not run["text"].isalnum()
     for run in runs:
         run["icon"] = not all(c in BULLETS for c in run["text"]) and bool(
-            _ICON_FONT.search(run["font"]) or _glyph_only(run["text"]) or short[run["font"]])
+            icon_font(run["font"]) or glyph_only(run["text"]) or short[run["font"]])
 
 
 def icon_fonts(runs: list[dict]) -> set[str]:
