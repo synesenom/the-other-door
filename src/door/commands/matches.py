@@ -407,15 +407,16 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
         unsupported = facts_mod.load(output_dir)
 
     config = common._load_config_or_defaults(workspace.PROFILE_DIR)
+    cv_max_pages = common._cv_max_pages(posting, config)
     return {
         "output_dir": str(output_dir),
-        "readability": _readability(output_dir),
+        "readability": _readability(output_dir, max_pages=cv_max_pages),
         "pdfs": {name: str(path) for name, path in pdfs.items()},
         "pngs": {name: _material_pngs(output_dir, name) for name in _MATERIALS},
         "keywords": keywords,
         "tailoring": tailoring,
         "page_counts": {name: pdf_render.get_page_count(path) for name, path in pdfs.items()},
-        "cv_max_pages": common._cv_max_pages(posting, config),
+        "cv_max_pages": cv_max_pages,
         "cover_letter_words": words,
         "rendered": rendered,
         "revisable": cv_html.is_file() and letter_html.is_file(),
@@ -424,8 +425,9 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
     }
 
 
-def _readability(output_dir: Path) -> list[dict] | None:
-    """The ATS read-back of both PDFs in `output_dir`, or None when either cannot be read."""
+def _readability(output_dir: Path, max_pages: int | None = None) -> list[dict] | None:
+    """The ATS read-back of both PDFs in `output_dir` (the CV held to `max_pages`), or None when either cannot be
+    read."""
     config = common._load_json_tolerant(workspace.PROFILE_DIR / "config.json")
     name = config.get("name")
     found: list[dict] = []
@@ -435,7 +437,8 @@ def _readability(output_dir: Path) -> list[dict] | None:
             body = body_path.read_text(encoding="utf-8") if body_path.is_file() else ""
             if material == "cv":
                 body = compile_cmd.placed_cv(body, config)
-            checks = readability.check_pdf(output_dir / f"{material}.pdf", body, name, cv=material == "cv")
+            checks = readability.check_pdf(output_dir / f"{material}.pdf", body, name, cv=material == "cv",
+                                           max_pages=max_pages)
             found += [{"file": material, **p} for p in checks]
     except Exception:  # an unreadable PDF is "not checked", never an error in `show`
         return None
