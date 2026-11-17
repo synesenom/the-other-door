@@ -69,11 +69,13 @@ test.describe('Market (#65)', () => {
     expect(exists(world, 'jobs/market')).toBe(false)
   })
 
-  test('a report that failed says why', async ({ page, world }) => {
+  test('a report that failed is said nowhere and Market is left out (principle 9)', async ({ page, world }) => {
     await ready(page)
     world.faults({ tools: { market: { error: 'profile/companies.json: invalid JSON — Expecting value', once: true } } })
     await page.getByRole('navigation').getByRole('button', { name: 'Analytics', exact: true }).click()
-    const market = page.getByRole('region', { name: 'Market' })
-    await expect(market.getByRole('alert')).toBeVisible({ timeout: 60_000 })
+    await expect.poll(() => world.toolCalls('market').length, { timeout: 60_000 }).toBe(1)
+    await expect(page.getByRole('region', { name: 'Market' })).toHaveCount(0)
+    await expect(page.getByRole('main').getByText('Market', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('alert')).toHaveCount(0)
   })
 })
