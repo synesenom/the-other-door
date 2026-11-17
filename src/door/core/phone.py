@@ -9,7 +9,6 @@ started it. Every process, HTTP call and CLI is a parameter, so tests run none o
 
 from __future__ import annotations
 
-import hashlib
 import io
 import json
 import os
@@ -24,7 +23,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from door.core import pairing, workspace
+from door.core import pairing, pinned, workspace
 
 DEFAULT_PORT = 8765
 CLOUDFLARED_VERSION = "2026.10.6"
@@ -126,15 +125,11 @@ def _arch(machine: str) -> str:
     return "arm64" if machine.lower() in ("arm64", "aarch64") else "x86_64"
 
 
-def install_cloudflared(dest: Path | None = None, *, get=None, platform: str | None = None, machine: str | None = None,
+def install_cloudflared(dest: Path | None = None, *, fetch=None, platform: str | None = None, machine: str | None = None,
                         pins: dict = CLOUDFLARED) -> Path:
     """Download the pinned cloudflared for this system, check its digest, put it in `dest` (~/.local/bin)."""
     import platform as platform_mod
 
-    if get is None:
-        import requests
-
-        get = requests.get
     platform = platform or sys.platform
     system = {"darwin": "darwin", "win32": "windows"}.get(platform, "linux")
     key = f"{system}-{_arch(machine or platform_mod.machine())}"
@@ -142,20 +137,19 @@ def install_cloudflared(dest: Path | None = None, *, get=None, platform: str | N
         raise ValueError(f"no cloudflared for {key}; install it yourself (https://github.com/cloudflare/cloudflared)")
     asset, digest = pins[key]
     url = f"https://github.com/cloudflare/cloudflared/releases/download/{CLOUDFLARED_VERSION}/{asset}"
-    response = get(url, timeout=120)
-    response.raise_for_status()
-    blob = response.content
-    if hashlib.sha256(blob).hexdigest() != digest:
-        raise ValueError(f"the cloudflared download does not match its pinned checksum; nothing was installed ({url})")
-    if asset.endswith(".tgz"):
-        with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tar:
-            member = next(m for m in tar.getmembers() if Path(m.name).name == "cloudflared" and m.isfile())
-            blob = tar.extractfile(member).read()
     dest = Path(dest or _bin_dir())
-    dest.mkdir(parents=True, exist_ok=True)
     target = dest / ("cloudflared.exe" if system == "windows" else "cloudflared")
-    target.write_bytes(blob)
-    target.chmod(0o755)
+    with pinned.staging(dest, ".cloudflared.") as staging:
+        pinned.download([(url, asset, digest)], staging, fetch)
+        staged = staging / target.name
+        if asset.endswith(".tgz"):
+            with tarfile.open(staging / asset, mode="r:gz") as tar:
+                member = next(m for m in tar.getmembers() if Path(m.name).name == "cloudflared" and m.isfile())
+                staged.write_bytes(tar.extractfile(member).read())
+        else:
+            (staging / asset).rename(staged)
+        staged.chmod(0o755)
+        staged.replace(target)
     return target
 
 

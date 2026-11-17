@@ -12,15 +12,12 @@ The embedded subset in a PDF is only measured, never shipped.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
-import shutil
 import statistics
-import tempfile
 from pathlib import Path
 
-from door.core import chromium
+from door.core import pinned
 
 _PIN = Path(__file__).with_name("fonts_pin.json")
 ADVANCE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
@@ -205,10 +202,6 @@ def plan(fonts: list[dict], measured: dict | None = None, *, data: dict | None =
 
 # ---------- fetch ----------
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def fetch(plan: list[dict], dest: Path, *, fetch=None) -> list[Path]:
     """Download what `plan` names into `dest` (the font files and each family's licence beside them) and return the
     font files. A file there with the pinned hash is left alone; every download is checked against the pin before
@@ -217,30 +210,19 @@ def fetch(plan: list[dict], dest: Path, *, fetch=None) -> list[Path]:
     Raises:
         FontsError: a download failed or does not match the pinned sha256.
     """
-    get = fetch or chromium.http_get
     wanted: list[tuple[str, str, str]] = []   # (url, file name in dest, sha256)
     for entry in plan:
         wanted += [(f["url"], f["name"], f["sha256"]) for f in entry["files"]]
         if entry["licence"]:
             wanted.append((entry["licence"]["url"], entry["licence"]["name"], entry["licence"]["sha256"]))
     dest = Path(dest)
-    missing = [w for w in wanted if not (dest / w[1]).is_file() or _sha256(dest / w[1]) != w[2]]
+    missing = [w for w in wanted if not (dest / w[1]).is_file() or pinned.sha256(dest / w[1]) != w[2]]
     if missing:
-        staging = None
         try:
-            dest.mkdir(parents=True, exist_ok=True)
-            chromium.sweep_stale_parts(dest)
-            staging = Path(tempfile.mkdtemp(prefix=".fonts.", suffix=".part", dir=dest))
-            for url, name, sha in missing:
-                part = staging / name
-                get(url, part)
-                if _sha256(part) != sha:
-                    raise FontsError(f"{name} does not match the pinned checksum; nothing was written")
-            for _, name, _ in missing:
-                (staging / name).replace(dest / name)
-        except OSError as exc:
+            with pinned.staging(dest, ".fonts.") as staging:
+                pinned.download(missing, staging, fetch)
+                for _, name, _ in missing:
+                    (staging / name).replace(dest / name)
+        except (OSError, pinned.ChecksumError) as exc:
             raise FontsError(str(exc)) from exc
-        finally:
-            if staging:
-                shutil.rmtree(staging, ignore_errors=True)
     return [dest / f["name"] for entry in plan for f in entry["files"]]
