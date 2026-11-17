@@ -291,6 +291,13 @@ describe('scenes', () => {
     expect(alert).toHaveClass('error')
   })
 
+  it('profile-stories-unread says a bank that could not be read in the error box', async () => {
+    mount('profile-stories-unread')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your story bank could not be read. Try again later.')
+    expect(alert).toHaveClass('error')
+  })
+
   it('settings-data-failed says a refused export and a refused report each in the error box', async () => {
     mount('settings-data-failed')
     await pressInOrder(sceneById('settings-data-failed')!.press!)

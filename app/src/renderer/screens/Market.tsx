@@ -15,21 +15,25 @@ const pct = (share: number) => `${Math.round(share * 100)}%`
  * a check when the CV has it and a cross when it does not (the marks of a posting's skills). The market tool runs
  * once when the screen opens and writes no report.
  */
-export function Market() {
+export function Market({ onFailed }: { onFailed?: () => void } = {}) {
   const [state, setState] = useState<{ kind: 'counting' } | { kind: 'done'; m: MarketReport } | { kind: 'error' }>({ kind: 'counting' })
 
   useEffect(() => {
     let live = true
     call<MarketReport>('market', { save: false }).then(
       (m) => live && setState({ kind: 'done', m }),
-      () => live && setState({ kind: 'error' }),
+      () => {
+        if (!live) return
+        setState({ kind: 'error' })
+        onFailed?.()
+      },
     )
     return () => {
       live = false
     }
   }, [])
 
-  // a count that failed is nothing the user can fix: said nowhere (docs/design/README.md, principle 9)
+  // a section of Analytics, which stands without it: a count that failed is said nowhere and left out (principle 9)
   if (state.kind === 'error') return null
   const skills = state.kind === 'done' ? state.m.skills.slice(0, SKILLS_SHOWN) : []
   return (

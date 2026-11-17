@@ -185,6 +185,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-cv-style-inuse', group: 'Profile', title: 'CV, a style of your own in use', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, prepared: 1 } },
   { id: 'profile-cv-style-two-column', group: 'Profile', title: 'CV, a two-column style', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, two_column: true } },
   { id: 'profile-stories', group: 'Profile', title: 'Stories', start: { destination: 'Profile', stories: true } },
+  { id: 'profile-stories-unread', group: 'Profile', title: 'Stories, a story bank that could not be read (the error box)', start: { destination: 'Profile', stories: true }, fails: { list_stories: 'Your story bank could not be read. Try again later.' } },
   { id: 'profile-stories-failed', group: 'Profile', title: 'Stories, a story that could not be saved (the error box)', start: { destination: 'Profile', stories: true }, fails: { save_story: 'Your story could not be saved. Try again.' }, press: ['Edit', 'Save'] },
   { id: 'settings', group: 'Settings', title: 'Settings', start: { destination: 'Settings' } },
   { id: 'settings-data-failed', group: 'Settings', title: 'Settings, an export and a report refused (the error box)', start: { destination: 'Settings' }, fails: { exportData: 'door-data.tar.gz is there already. Choose another name.', reportProblem: 'report.zip is there already. A report never replaces a file, so nothing was written: choose another name.' }, press: ['Export…', 'Save logs…'] },

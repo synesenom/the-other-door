@@ -122,6 +122,8 @@ function Usage({ cost }: { cost: CostBlock | null }) {
  */
 export function Analytics() {
   const [summary, setSummary] = useState<StatusSummary | null>(null)
+  // the Market's count failed: its section is left out, and its entry beside the sections with it
+  const [marketFailed, setMarketFailed] = useState(false)
   useEffect(() => {
     let live = true
     statusSummary().then(
@@ -153,9 +155,9 @@ export function Analytics() {
           </h2>
           {summary && <Usage cost={summary.cost ?? null} />}
         </section>
-        <Market />
+        <Market onFailed={() => setMarketFailed(true)} />
       </div>
-      <PageSections sections={summary?.pass_rates ? [APPLICATIONS, USAGE, MARKET] : [USAGE, MARKET]} />
+      <PageSections sections={[...(summary?.pass_rates ? [APPLICATIONS] : []), USAGE, ...(marketFailed ? [] : [MARKET])]} />
     </div>
   )
 }
