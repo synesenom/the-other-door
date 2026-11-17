@@ -65,8 +65,9 @@ _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
 def _extract_text(path: Path, style: dict | None = None) -> str:
-    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266, by `style`, its `style_extract.extract`,
-    read here when not given), a DOCX (its paragraphs, symbol-font runs left out, #297) or a Markdown/text file.
+    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266, but not its level dots and bullets, #313,
+    by `style`, its `style_extract.extract`, read here when not given), a DOCX (its paragraphs, symbol-font runs left
+    out, #297) or a Markdown/text file.
 
     Raises:
         FileNotFoundError: no such file.
@@ -81,8 +82,7 @@ def _extract_text(path: Path, style: dict | None = None) -> str:
         from door.tailoring import pdf_render, style_extract
 
         runs = (style or style_extract.extract(path)).get("runs", [])  # none for a scan or a LinkedIn export
-        marked = style_icons.icon_fonts(runs)
-        icons = [(r["page"], r["bbox"]) for r in runs if style_icons.is_glyph(r, marked)]
+        icons = [(r["page"], r["bbox"]) for r in runs if style_icons.stray_glyph(r)]
         return "\n".join(pdf_render.page_texts(path, leave_out=icons)).strip()
     if suffix == ".docx":
         return _docx_text(path)
