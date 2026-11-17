@@ -710,3 +710,18 @@ def test_the_original_text_keeps_the_separators_of_a_separator_font(tmp_path):
 
 
 # ---------- layouts the template model cannot place (#318) ----------
+
+
+def test_a_text_font_that_draws_one_pictograph_keeps_its_bullets_as_text():
+    runs = [run("Calibri", "☎"), run("Calibri", "+45 12 34 56 78"), run("Calibri", "•"), run("Calibri", "Python")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    fonts = style_extract.style_icons.icon_fonts(runs)
+    assert fonts == set() and not style_extract.style_icons.is_glyph(runs[2], fonts)
+    assert style_extract.style_icons.is_glyph(runs[0], fonts)
+
+
+def test_a_level_dot_drawn_with_an_icon_font_is_a_glyph():
+    runs = [run("FontAwesome", ""), run("FontAwesome", "●")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    fonts = style_extract.style_icons.icon_fonts(runs)
+    assert fonts == {"FontAwesome"} and style_extract.style_icons.is_glyph(runs[1], fonts)

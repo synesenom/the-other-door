@@ -59,8 +59,14 @@ def mark_icon_runs(runs: list[dict]) -> None:
 
 
 def icon_fonts(runs: list[dict]) -> set[str]:
-    """The fonts of the runs `mark_icon_runs` marked icons."""
-    return {r["font"] for r in runs if r["icon"]}
+    """The fonts whose bullets are glyphs (`is_glyph`): every run of the font is an icon or bullets, one at least a
+    real icon (marked by `mark_icon_runs`). A text font that draws one pictograph is none, so its bullets stay text; a
+    symbol font of bullets only is none either, its dots being text."""
+    by_font: dict[str, list[dict]] = {}
+    for run in runs:
+        by_font.setdefault(run["font"], []).append(run)
+    return {name for name, its in by_font.items()
+            if all(r["icon"] or only_bullets(r["text"]) for r in its) and any(r["icon"] for r in its)}
 
 
 def only_bullets(text: str) -> bool:
