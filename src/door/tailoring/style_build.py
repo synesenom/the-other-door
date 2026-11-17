@@ -131,9 +131,8 @@ _CV_HEADING = re.compile(r"^##[ \t]+(.+?)[ \t]*$", re.M)
 
 def _side_headings(style: dict) -> list[str]:
     """The texts of the original's headings that sit in a side band, in reading order, known to a section kind or not."""
-    bands = [b for b in style["columns"]["bands"] if b["kind"] == "side"]
-    return [h["text"] for h in style["headings"]
-            if any(b["x0"] - 2 <= (h["bbox"][0] + h["bbox"][2]) / 2 <= b["x1"] + 2 for b in bands)]
+    bands = style["columns"]["bands"]
+    return [h["text"] for h in style["headings"] if (b := _band_of(h["bbox"], bands)) and b["kind"] == "side"]
 
 
 def _side_kinds(style: dict, cv_md: str) -> list[str]:
@@ -259,35 +258,26 @@ def column_text(style: dict, pdf: Path) -> str | None:
     return "\n".join(out)
 
 
-def _fold(text: str) -> str:
-    return " ".join(text.split()).casefold()
-
-
-def _squeeze(text: str) -> str:
-    """`text` without spaces or case: a heading printed in pieces (a drop cap, wide letter-spacing) is the same text."""
-    return "".join(text.split()).casefold()
-
-
 def column_problems(style: dict, render: dict, placed: str) -> list[str]:
     """Where the print (`render`, `style_extract` of it) of the body `placed` (as `compile._place_columns` wrapped it)
     puts its columns against the original's (`style`): each section heading of `div.side` printed nearer a main band
     of the original or across two bands, and each of `div.main` nearer a side band or across two, with where it
     printed and where its column is. A heading is found as a piece of a printed line (`_pieces`: its runs joined,
-    spaces left out), so a drop cap or wide letter-spacing does not hide it. `[]` when the original has one column, the body no side, or each heading is in
+    `readability.squash`d), so a drop cap or wide letter-spacing does not hide it. `[]` when the original has one column, the body no side, or each heading is in
     its column's place; a heading the print does not show is left out."""
     cols = html_doc.columns(placed)
     if cols is None or not _has_side(style):
         return []
     bands = style["columns"]["bands"]
     runs = render.get("runs", [])
-    lines = [(_squeeze("".join(r["text"] for r in piece)), _box(piece))
+    lines = [(readability.squash("".join(r["text"] for r in piece)), _box(piece))
              for page in sorted({r["page"] for r in runs})
              for line in _line_runs([r for r in runs if r["page"] == page])
              for piece in _pieces(line)]
     found: list[str] = []
     for kind, part in (("main", cols[1]), ("side", cols[2])):
         for heading in html_doc.headings(part):
-            boxes = [box for text, box in lines if text == _squeeze(heading)]
+            boxes = [box for text, box in lines if text == readability.squash(heading)]
             homes = [_band_of(box, bands) for box in boxes]
             if not boxes or any(h is not None and (h["kind"] == "side") == (kind == "side") for h in homes):
                 continue
@@ -306,12 +296,12 @@ def body_column_problems(style: dict, body: str, columns: templates.Columns | No
     cols = html_doc.columns(compile_cmd._place_columns(body, columns))
     if cols is None or not _has_side(style):
         return []
-    texts = {"main": _fold(html_doc.text(cols[1])), "side": _fold(html_doc.text(cols[2]))}
+    texts = {"main": readability.normalise(html_doc.text(cols[1])), "side": readability.normalise(html_doc.text(cols[2]))}
     bands = style["columns"]["bands"]
     found: list[str] = []
     for run in style["runs"]:
         band = _band_of(run["bbox"], bands)
-        line = _fold(run["text"])
+        line = readability.normalise(run["text"])
         if band is None or len(line) < _MIN_LINE:
             continue
         own, other = ("side", "main") if band["kind"] == "side" else ("main", "side")
