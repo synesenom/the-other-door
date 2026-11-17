@@ -573,6 +573,33 @@ def _line_units(runs: list[dict]) -> list[dict]:
     return units
 
 
+_YEAR = re.compile(r"\b(19|20)\d\d\b")
+
+
+def _entry_titles(members: list[dict], units: list[dict]) -> set[int]:
+    """The `id`s of the members that head a dated entry: a year in the member's own text, in a unit on its baseline (a
+    date column) or in the line directly under it. A date column under a heading belongs to the entry on its own
+    baseline, not to the heading above. An entry title with no year near it (a project, an undated degree) is not
+    told from a heading, nor is a date with no year ("heute")."""
+    def baseline(v: dict, u: dict) -> bool:
+        return abs(v["bbox"][3] - u["bbox"][3]) <= 0.3 * u["size"]
+
+    def sibling(v: dict, u: dict) -> bool:
+        return any(m is not u and baseline(v, m) for m in members if m["page"] == v["page"])
+
+    def under(v: dict, u: dict) -> bool:
+        return (0 <= v["bbox"][1] - u["bbox"][3] <= 0.8 * u["size"]
+                and min(v["bbox"][2], u["bbox"][2]) > max(v["bbox"][0], u["bbox"][0]))
+
+    out = set()
+    for u in members:
+        near = (v for v in units if v is not u and v["page"] == u["page"]
+                and (baseline(v, u) or (not sibling(v, u) and under(v, u))))
+        if _YEAR.search(u["text"]) or any(_YEAR.search(v["text"]) for v in near):
+            out.add(id(u))
+    return out
+
+
 def _is_section_title(text: str) -> bool:
     return i18n.cv_section_kind(text, _SECTION_KINDS) is not None
 
@@ -626,14 +653,17 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
         groups.setdefault(key(u), []).append(u)
     # a group of three or more like lines is headings when it holds a section name or is coloured and larger than the
     # body; with neither anywhere, the largest group is (the entry titles of a CV are in a group of their own)
-    styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body}
+    all_units = _line_units(runs)
+    # the dated entry titles that share a heading's style are not headings (a known section name always is)
+    titles = {k: _entry_titles(g, all_units) - known for k, g in groups.items()}
+    styled = {k: g for k, g in groups.items() if len(g) >= 3 and k[1] >= body and len(titles[k]) < len(g)}
     chosen = [k for k, g in styled.items() if any(id(u) in known for u in g)
               or (k[2] != body_color and _chromatic(k[2]) and k[1] > body)]
     if not chosen and styled:
         chosen = [max(styled, key=lambda k: k[1])]
     found = []
     for u in short:
-        if id(u) in known or key(u) in chosen:
+        if id(u) in known or (key(u) in chosen and id(u) not in titles[key(u)]):
             mid = (u["bbox"][0] + u["bbox"][2]) / 2
             band = next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
             found.append({"page": u["page"], "text": u["text"], "bbox": u["bbox"], "size": u["size"], "color": u["color"],
