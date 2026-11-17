@@ -12,7 +12,7 @@ process boundary. Run as `python claude.py <world dir> <claude's own arguments>`
   `total_cost_usd` per kind (`COST_USD`), so the usage log has something to weigh; a failed call none.
 - `faults.json`'s `claude` map makes one kind of call fail (`{"fail": "message"}`), wait first
   (`delay_s`), or answer something else (`answer`). Every call is logged to `calls.jsonl`, a model call with
-  its `input` (the system prompt and stdin as received).
+  its `input` (the system prompt and stdin as received; the tailor's, its prompt).
 """
 
 import json
@@ -116,7 +116,8 @@ KINDS = [
     ("careers", "You find the official careers page"),
 ]
 kind = arg("--agent") if arg("--agent") in ("tailor", "stylist") else next((k for k, words in KINDS if words in TEXT), "unknown")
-log(kind, model=arg("--model"), input=TEXT)   # what door sent, so a journey can check its characters (#135)
+# what door sent, so a journey can check its characters (#135): the tailor's prompt is its `-p` argument
+log(kind, model=arg("--model"), input=arg("-p") if kind == "tailor" else TEXT)
 
 said = faults().get(kind, {})
 time.sleep(said.get("delay_s", 0))

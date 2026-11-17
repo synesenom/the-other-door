@@ -323,7 +323,7 @@ Backend engineer with seven years of experience building payment and logistics s
 ## Projects
 
 - **pgwatch-lite** — a small open-source Go tool that reports slow PostgreSQL queries and missing indexes (600 stars).
-- Speaker at the Go meetup at Műhely Budapest: "Idempotent consumers in practice" (2024).
+- Speaker at the Go meetup at Műhely Budapest: “Idempotent consumers in practice” (2024).
 
 ## Education
 
@@ -402,9 +402,10 @@ Docker   Kubernetes   Terraform   AWS   OpenTelemetry   Prometheus   Grafana
 
 Languages:    Hungarian (native) ,   English (fluent)
 
-Talks:  "Idempotent consumers in practice"  -  Go meetup at Műhely Budapest  (2024)
+Talks:  “Idempotent consumers in practice”  -  Go meetup at Műhely Budapest  (2024)
 
-Hobbies:  cycling,  board games
+Hobbies:  cycling,  board games,  Bartók’s whole œuvre on vi-
+nyl
 `
 
 const JONAS_CV = `# Jonas Berg

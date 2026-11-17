@@ -21,11 +21,14 @@ FIGTREE = REPO_ROOT / "profile.example" / "fonts" / "Figtree-Regular.ttf"
 # icon glyphs read as control characters (U+0011), ○ and • bullets: the CV that failed on Windows.
 FRENCH_PDF = TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf"
 
-# persona: (the CV file it hands over, words naming its fresh ad, text its CV file must reach the model with)
+# persona: (the CV file it hands over, words naming its fresh ad, text its CV file must reach the model with;
+# lea's and bence's last item is a word their PDF breaks over two lines with a hyphen, which must come back joined)
 CASES = {
     "mette": ("docx", "varmeværk", ["KJÆR", "Vindstrøm", "Øresund", "–", "•"]),
-    "lea": (FRENCH_PDF, "ferrovia", ["émerveillement", "Côté", "A’lequartier", "4707 – 7772", "○", "•"]),
-    "bence": ("pdf", "pannon", ["Kovács", "Szoftverfejlesztő", "Műhely", "–"]),
+    "lea": ("fixture", "ferrovia", ["émerveillement", "Côté", "A’lequartier", "4707 – 7772", "○", "•",
+                                    "Silencieusementfroidimage"]),
+    "bence": ("pdf", "pannon", ["Kovács", "Szoftverfejlesztő", "Műhely", "–", "“Idempotent consumers in practice”",
+                                "Bartók’s whole œuvre on vinyl"]),
     "asa": ("pdf", "göta älv", ["ÅSA SÖDERLUND", "Göteborg", "Älvstrand", "Västkustens Värmeverk", "–", "•"]),
 }
 
@@ -39,16 +42,17 @@ def _docx(path: Path, text: str) -> Path:
     return path
 
 
-def _source(world: World, kind) -> Path:
-    """The persona's CV as the file the user hands over, in the data folder beside the world's Markdown copy."""
+def _source(world: World, kind: str) -> Path:
+    """The persona's CV as the file the user hands over, in the data folder beside the world's Markdown copy:
+    a DOCX or a PDF of it, or (`fixture`) the French PDF."""
     text = Path(world.info["cvFile"]).read_text(encoding="utf-8")
-    path = Path(world.info["cvFile"]).with_suffix(f".{kind}" if isinstance(kind, str) else ".pdf")
+    path = Path(world.info["cvFile"]).with_suffix(".docx" if kind == "docx" else ".pdf")
     if kind == "docx":
         return _docx(path, text)
     if kind == "pdf":
         lines = text.split("\n")
         return make_pdf(path, ["\n".join(lines[i:i + 50]) for i in range(0, len(lines), 50)], size=10, font=FIGTREE)
-    path.write_bytes(Path(kind).read_bytes())
+    path.write_bytes(FRENCH_PDF.read_bytes())
     return path
 
 
@@ -76,13 +80,19 @@ def _init_find_show_prepare(world: World, persona: str, monkeypatch) -> None:
 
     cv = (world.home / "profile" / "cv.md").read_text(encoding="utf-8")
     assert cv == world.persona["cv"]
+    for call in ("basics", "titles"):   # the other reading steps read the draft whole
+        assert cv.strip() in _model_input(world, call)[0], call
     config = world.read("profile/config.json")
     assert config["name"] == world.persona["name"] and config["location"] == world.persona["city"]
+    assert all(title in _model_input(world, "keywords")[0] for title in config["role_targets"])
 
     ad = next(a for a in world.jobs.values() if words in (a["title"] + " " + a["company"]).lower())
     posting = next((world.home / "jobs" / "postings").glob(f"*/*/{ad['id']}.json"))
     stored = json.loads(posting.read_text(encoding="utf-8"))
     assert stored["company"] == ad["company"] and stored["title"] in ad["title"]   # a gender mark (H/F) cut off
+    boards = json.loads((world.dir / "world.json").read_text(encoding="utf-8"))["boards"]
+    sent = next(p for b in boards.values() for p in b["postings"] if p["id"] == ad["id"])
+    assert stored["description"] == sent["description"]
     scored = [text for text in _model_input(world, "score") if stored["title"] in text]
     assert scored and world.persona["name"] in scored[0]
     assert stored.get("score") is not None, stored
@@ -94,6 +104,9 @@ def _init_find_show_prepare(world: World, persona: str, monkeypatch) -> None:
     code, out, err = world.door("jobs", "prepare", words)
     assert code == 0, f"{out}\n{err}"
     folder = world.home / "jobs" / "output" / ad["id"]
+    assert ad["id"] in _model_input(world, "tailor")[-1]
+    handed = json.loads((folder / "posting.json").read_text(encoding="utf-8"))   # the posting the tailor read
+    assert (handed["title"], handed["description"]) == (stored["title"], stored["description"])
     from door.commands import matches
     from door.core import workspace
     from door.tailoring import pdf_render

@@ -20,17 +20,17 @@ def make_pdf(path: Path, pages: list[str], size: float = 11.0, font: Path | None
     """Write `pages` (one string per page) to `path` as a real, text-bearing PDF."""
     pdf = pdfium.PdfDocument.new()
     if font is None:
-        font = raw.FPDFText_LoadStandardFont(pdf, b"Helvetica")
+        handle = raw.FPDFText_LoadStandardFont(pdf, b"Helvetica")
     else:
         data = Path(font).read_bytes()
         font_data = (ctypes.c_uint8 * len(data)).from_buffer_copy(data)   # kept alive until the save
-        font = raw.FPDFText_LoadFont(pdf, font_data, len(data), raw.FPDF_FONT_TRUETYPE, 1)
+        handle = raw.FPDFText_LoadFont(pdf, font_data, len(data), raw.FPDF_FONT_TRUETYPE, 1)
     try:
         for text in pages:
             page = pdf.new_page(_WIDTH, _HEIGHT)
             y = _HEIGHT - _MARGIN
             for line in text.split("\n") if text else []:
-                obj = raw.FPDFPageObj_CreateTextObj(pdf, font, ctypes.c_float(size))
+                obj = raw.FPDFPageObj_CreateTextObj(pdf, handle, ctypes.c_float(size))
                 buf = ctypes.create_string_buffer((line + "\0").encode("utf-16-le"))
                 raw.FPDFText_SetText(obj, ctypes.cast(buf, ctypes.POINTER(raw.FPDF_WCHAR)))
                 raw.FPDFPageObj_Transform(obj, 1, 0, 0, 1, _MARGIN, y)
@@ -40,7 +40,7 @@ def make_pdf(path: Path, pages: list[str], size: float = 11.0, font: Path | None
             page.close()
         pdf.save(str(path))
     finally:
-        raw.FPDFFont_Close(font)
+        raw.FPDFFont_Close(handle)
         pdf.close()
     return Path(path)
 
