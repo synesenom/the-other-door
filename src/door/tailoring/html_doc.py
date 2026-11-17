@@ -17,6 +17,7 @@ _BLOCKS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "
 # sign-off. A header's tagline is (#189).
 _NOT_CLAIMS_CLASSES = frozenset({"contact", "recipient", "date", "closing"})
 SECTION = "\x00SECTION "
+MAIN, SIDE = '<div class="main">', '<div class="side">'  # the two columns `compile._place_columns` wraps a CV in
 
 
 class _Reader(HTMLParser):
@@ -90,6 +91,16 @@ def _read(body: str) -> _Reader:
 def headings(body: str) -> list[str]:
     """The `<h2>` texts of `body`, in order (entities decoded, inner tags dropped, whitespace collapsed)."""
     return _read(body).headings
+
+
+def columns(body: str) -> tuple[str, str, str] | None:
+    """A CV `body` as `compile._place_columns` placed it, in its parts: what comes before the columns (the header), the
+    main column and the side column; None for a body not placed in columns."""
+    before, found, side = body.partition(SIDE)
+    if not found:
+        return None
+    head, _, main = before.partition(MAIN)
+    return head, main.removesuffix("</div>"), side.removesuffix("</div>")
 
 
 def note(body: str, label: str) -> str | None:

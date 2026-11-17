@@ -457,7 +457,7 @@ def test_a_sample_body_that_puts_text_under_the_other_column_s_heading_is_asked_
 
 # ---------- the photo's place with no photo (#246) ----------
 
-def _with_grey_box(tmp_path, bbox):
+def _with_grey_box(tmp_path, bbox, first_page_only=False):
     """scrubbed-pages-sidebar-fr with a grey box drawn on page 1 at `bbox` (points, origin top left)."""
     pdf = pdfium.PdfDocument(STYLES / "scrubbed-pages-sidebar-fr.pdf")
     page = pdf[0]
@@ -467,6 +467,8 @@ def _with_grey_box(tmp_path, bbox):
     pdfium_raw.FPDFPath_SetDrawMode(rect, pdfium_raw.FPDF_FILLMODE_ALTERNATE, 0)
     pdfium_raw.FPDFPage_InsertObject(page.raw, rect)
     pdfium_raw.FPDFPage_GenerateContent(page.raw)
+    if first_page_only:
+        pdf.del_page(1)
     out = tmp_path / "grey-box.pdf"
     pdf.save(out)
     return out
@@ -481,3 +483,29 @@ def test_a_template_that_draws_the_photo_s_box_with_no_photo_fails_the_stress_re
     assert "Printed with other texts" in extra and "fewer: " in extra and "img.photo" in extra
     assert not any(line.startswith("- photo: ") for line in extra.splitlines())  # printed with one: no box to miss
     assert result["state"] == "failed" and any("img.photo" in p for p in result["problems"])
+
+
+def test_a_letter_template_that_draws_the_photo_s_box_is_asked_again(world, tmp_path):
+    boxed = _with_grey_box(tmp_path, [36, 160, 132, 296], first_page_only=True)  # a letter of one page
+    world.print_as = lambda folder: boxed if folder.name == "letter" else None
+    stylist = Stylist(cv_round(), letter_round(), letter_round())
+    result = world.build("scrubbed-pages-sidebar-fr", stylist)
+    assert "Problems with your letter template" in stylist.calls[-1]["input"] and "img.photo" in stylist.calls[-1]["input"]
+    assert result["state"] == "failed" and any(p.startswith("letter template: with no photo") for p in result["problems"])
+
+
+def test_a_build_whose_every_round_prints_the_columns_in_the_wrong_place_fails_and_says_why(world):
+    world.print_as = lambda folder: SWAPPED if folder == world.work else None
+    result = world.build("latex-sidebar", Stylist(cv_round(), cv_only(), letter_round()), cap=2)
+    assert result["state"] == "failed" and result["scores"] == []
+    assert "no template of the stylist's was kept in 2 rounds" in result["problems"][0]
+    assert "columns in the wrong place" in result["problems"][0]
+
+
+def test_a_sample_body_refused_in_every_round_fails_the_build_naming_the_body(world):
+    line = "<p>Nid Couleur Jardin Silence: UNE&amp;FRUIT 4888, Feuillage Cabane Aquarelle Dimanche</p>"
+    bad = '<header class="cv-header"><h1>A B</h1></header><h2>LEUNE YAUTOMNE</h2><p>x</p><h2>AFONTAINE ANUIT</h2>' + line
+    result = world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(body=bad)), cap=2)
+    assert result["state"] == "failed" and not world.prints
+    assert "no sample body of the stylist's was accepted in 2 rounds" in result["problems"][0]
+    assert "other column" in result["problems"][0]

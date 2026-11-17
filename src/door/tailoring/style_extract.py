@@ -698,6 +698,23 @@ def _read_pages(doc) -> list[dict]:
     return pages
 
 
+def painted(pdf_path: Path) -> list[dict]:
+    """Per page of *pdf_path*, everything drawn: ``{"background", "paths"}``, the page's background fill and every
+    path that paints with its kind, box, fill and stroke (a round or rounded box is a path of no kind, which
+    `extract` keeps out of its shapes), whatever the verdict."""
+    doc = pdf_render.open_pdf(pdf_path)
+    try:
+        out = []
+        for number, page in enumerate(doc, 1):
+            width, height = page.get_size()
+            background, paths = _page_background(_read_shapes(page, number, height), [width, height])
+            out.append({"background": background,
+                        "paths": [{k: v for k, v in s.items() if k != "segments"} for s in paths]})
+        return out
+    finally:
+        doc.close()
+
+
 def extract(pdf_path: Path) -> dict:
     """The style of the CV in *pdf_path* (see the module's docstring). Raises FileNotFoundError for a missing
     file and pypdfium2's PdfiumError for one that is not a PDF."""
