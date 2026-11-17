@@ -1,7 +1,7 @@
 ---
 name: epic-critic
 description: Critique one or two epic plans from a fixed stance (scope or approach), list the pros and cons of each, rebut the other critic, and gate the final plan. Spawned by the /dev-plan-epic skill; not for direct use. The prompt must include the stance, the round, the goal and the plans (and in later rounds the other critic's findings).
-model: fable
+model: opus
 tools:
   - Bash
   - Glob

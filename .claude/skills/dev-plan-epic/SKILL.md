@@ -42,7 +42,7 @@ Spawn both again, round `rebuttal`, each given both plans and **the other critic
 
 ## Step 5: The final plan
 
-Spawn one `epic-architect` with lens `final`, given the goal, both plans, both critiques and both rebuttals. It returns the one `## Epic Plan` that survives, with the disputed points listed, each with both sides.
+Spawn one `epic-architect` with lens `final` and `model: fable` (the one crucial call: it is the plan everything else is built on; every other agent here runs on Opus), given the goal, both plans, both critiques and both rebuttals. It returns the one `## Epic Plan` that survives, with the disputed points listed, each with both sides.
 
 Take every disputed point the maintainer would otherwise decide to the `decider` (the question, the two sides, the context); fold its decisions into the plan with a one-line reason each. A decision it cannot take stays a question in the plan.
 

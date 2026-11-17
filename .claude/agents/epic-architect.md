@@ -1,7 +1,7 @@
 ---
 name: epic-architect
 description: Research one epic's goal and the codebase, then propose a complete plan for it, broken into ordered sub-issues, using as little change as possible. Spawned by the /dev-plan-epic skill, once per lens, and again to write the final plan; not for direct use. The prompt must include the goal, the lens, and (for the final plan) the earlier plans and critiques.
-model: fable
+model: opus
 tools:
   - Bash
   - Glob
