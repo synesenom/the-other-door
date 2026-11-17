@@ -349,8 +349,15 @@ def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs_in_the_contact_line():
 def test_extract_text_of_a_pdf_keeps_level_dots_and_bullets_drawn_with_the_icon_font():
     text = cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf")
     assert "Matinée ○ ○ ○ ○ ○" in text
-    assert text.count("○") == _pdfium_text(STYLES / "scrubbed-altacv-icons-fr.pdf").count("○")
+    assert text.count("○") + text.count("●") == _pdfium_text(STYLES / "scrubbed-altacv-icons-fr.pdf").count("○")
     assert "•" in text
+
+
+# a level in the dots' colour, not their shape (#314): the same glyph in the CV's dark colour is filled, in a pale one
+# empty, so the draft says `●●●●○`; dots of one colour are left as they are
+def test_extract_text_of_a_pdf_says_a_level_shown_by_the_colour_of_its_dots():
+    text = " ".join(cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf").split())
+    assert "Crayon (IL6) ●●●●○" in text
 
 
 def test_extract_text_of_a_pdf_keeps_dots_and_bullets_in_a_font_of_their_own_and_drops_its_glyphs(tmp_path):

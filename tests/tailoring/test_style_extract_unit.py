@@ -629,6 +629,18 @@ def test_level_dots_and_bullets_drawn_with_an_icon_font_are_no_stray_glyphs():
     assert [style_extract.style_icons.stray_glyph(r) for r in runs] == [False, False, True, True, False, False]
 
 
+def test_level_rows_fill_the_darker_dots_and_leave_dots_of_one_colour(  # noqa: E501
+):
+    def dots(text_, color, x0, x1, y=100):
+        return run("FontAwesome", text_, color=color, page=1, size=8, bbox=[x0, y, x1, y + 8])
+
+    rows = style_extract.style_icons.level_rows([
+        dots("○ ○ ○", "#3a1800", 0, 20), dots("○ ○", "#c7c7c7", 22, 36),   # 3 of 5 in colour
+        dots("○ ○ ○", "#3a1800", 0, 20, y=120),                            # one colour: nothing said
+    ])
+    assert rows == [(1, [0, 100, 36, 108], "●●●○○")]
+
+
 def test_a_small_photo_with_a_blank_border_is_not_also_an_icon(tmp_path):
     rows = [[(255, 255, 255)] * 4] + [[(255, 255, 255), (255, 0, 0), (255, 0, 0), (255, 255, 255)]] * 2 + [[(255, 255, 255)] * 4]
     data = bytes(c for row in rows for px in row for c in px)

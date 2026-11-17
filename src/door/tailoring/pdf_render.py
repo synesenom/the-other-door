@@ -59,10 +59,12 @@ def get_page_count(pdf_path: Path) -> int:
         doc.close()
 
 
-def page_texts(pdf_path: Path, leave_out: list[tuple[int, list[float]]] = ()) -> list[str]:
+def page_texts(pdf_path: Path, leave_out: list[tuple[int, list[float]]] = (),
+               rewrite: list[tuple[int, list[float], str]] = ()) -> list[str]:
     """The text of every page of *pdf_path*, in reading order, lines separated by ``\\n``, without the characters
     whose centre is in a box of *leave_out*: ``(page, [x0, y0, x1, y1])``, the page 1-based, the box in points from
-    the top left (`style_extract`'s runs).
+    the top left (`style_extract`'s runs); and with the characters in a box of *rewrite*, ``(page, box, text)``,
+    replaced by *text* where the first of them stood.
 
     Raises:
         FileNotFoundError: If *pdf_path* does not exist.
@@ -73,12 +75,29 @@ def page_texts(pdf_path: Path, leave_out: list[tuple[int, list[float]]] = ()) ->
         for number, page in enumerate(doc, 1):
             textpage = page.get_textpage()
             text = textpage.get_text_range()
-            if boxes := [box for on, box in leave_out if on == number]:
-                text = "".join(c for i, c in enumerate(text) if not _in_boxes(textpage, i, page.get_height(), boxes))
-            texts.append(clean_text(text))
+            texts.append(clean_text(_edited(textpage, text, page.get_height(), number, leave_out, rewrite)))
         return texts
     finally:
         doc.close()
+
+
+def _edited(textpage, text: str, height: float, number: int, leave_out, rewrite) -> str:
+    """*text* of one page without the characters in the `leave_out` boxes, those in a `rewrite` box said by its text."""
+    left_out = [box for on, box in leave_out if on == number]
+    rewrites = [(box, said) for on, box, said in rewrite if on == number]
+    if not left_out and not rewrites:
+        return text
+    out, put = [], set()
+    for i, c in enumerate(text):
+        if left_out and _in_boxes(textpage, i, height, left_out):
+            continue
+        hit = next((n for n, (box, _) in enumerate(rewrites) if _in_boxes(textpage, i, height, [box])), None)
+        if hit is None:
+            out.append(c)
+        elif hit not in put:
+            out.append(rewrites[hit][1])
+            put.add(hit)
+    return "".join(out)
 
 
 def _in_boxes(textpage, index: int, height: float, boxes: list[list[float]]) -> bool:

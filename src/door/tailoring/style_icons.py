@@ -68,6 +68,40 @@ def stray_glyph(run: dict) -> bool:
     return run["icon"] and not only_bullets(run["text"])
 
 
+def _luminance(color: str) -> float:
+    r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
+    return 0.299 * r + 0.587 * g + 0.114 * b
+
+
+def level_rows(runs: list[dict]) -> list[tuple[int, list[float], str]]:
+    """The rows of level dots whose level is in their colour, not their shape (#314): on a line, bullet-only runs
+    of two colours (`○ ○ ○ ○` dark, `○` pale), as (page, box, text) with the text `●●●●○`: the darker colour is
+    filled. Dots of one colour say nothing by it and are left out."""
+    dots = [r for r in runs if r["text"].strip() and only_bullets(r["text"]) and r["color"]]
+    rows: list[list[dict]] = []
+    for r in sorted(dots, key=lambda r: (r["page"], r["bbox"][0])):
+        mid = (r["bbox"][1] + r["bbox"][3]) / 2
+        for row in rows:
+            last = row[-1]
+            if (last["page"] == r["page"] and abs((last["bbox"][1] + last["bbox"][3]) / 2 - mid) <= 0.3 * r["size"]
+                    and r["bbox"][0] - last["bbox"][2] <= r["size"]):
+                row.append(r)
+                break
+        else:
+            rows.append([r])
+    found = []
+    for row in rows:
+        colors = {r["color"] for r in row}
+        if len(colors) != 2:
+            continue
+        filled = min(colors, key=_luminance)
+        text = "".join("●" if r["color"] == filled else "○" for r in row for c in r["text"] if not c.isspace())
+        box = [min(r["bbox"][0] for r in row), min(r["bbox"][1] for r in row),
+               max(r["bbox"][2] for r in row), max(r["bbox"][3] for r in row)]
+        found.append((row[0]["page"], box, text))
+    return found
+
+
 def _touching(a: list[float], b: list[float]) -> bool:
     return a[0] <= b[2] + 1 and b[0] <= a[2] + 1 and a[1] <= b[3] + 1 and b[1] <= a[3] + 1
 
