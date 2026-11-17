@@ -122,7 +122,8 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing. Company forms (`ApS`, `GmbH`, `Ltd`, `S.A.S.`) are never read as skills.
    The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json`, which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
    `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `<h2>` heading
-   on a line of its own and in order, the `Keywords` note and no garbled or empty text. A CV is also checked for text lost off the page: Chromium
+   on a line of its own and in order (a two-column CV's main and side columns each in their own order, a side heading
+   allowed to share a line with main text), the `Keywords` note and no garbled or empty text. A CV is also checked for text lost off the page: Chromium
    cuts what runs past the page, so a word of the CV that is missing from the PDF's text (`overflow`) means something
    was cut off; and, for a template with a side column, a nearly empty last page (`sparse`). What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);
