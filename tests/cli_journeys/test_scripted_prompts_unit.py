@@ -55,3 +55,17 @@ def test_every_ask_is_logged(tmp_path):
     module.text("a", "A")
     module.confirm("b", "B")
     assert [(c["kind"], c["name"]) for c in _calls(tmp_path)] == [("prompt", "a"), ("prompt", "b")]
+
+
+def test_a_prompt_asked_again_and_again_stops_the_wizard(tmp_path):
+    # a wizard that cannot go on asks the same thing forever with a scripted default (a draft that failed, #135):
+    # the journey fails at once instead of at its timeout
+    module = _module(tmp_path, {})
+    for _ in range(prompts.MAX_ASKS):
+        module.select("review", "?", choices=[], default="save")
+    try:
+        module.select("review", "?", choices=[], default="save")
+    except SystemExit as exc:
+        assert "review" in str(exc.code)
+    else:
+        raise AssertionError("the loop was not stopped")

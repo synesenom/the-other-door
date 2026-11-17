@@ -3,16 +3,21 @@
 inquirer reads keys from a real terminal, so the journeys script the wizard as the unit tests do: the
 answers live in the world, `<world>/prompts.json` (`{name: {"answer": X}}` or `{name: {"sequence": [a, b]}}`),
 read on every call; a name with no answer gets the call's `default`. The CLI is a fresh process per command,
-so the place in a sequence is kept in `<world>/prompts-state.json`. Every ask is logged to `calls.jsonl`.
+so the place in a sequence is kept in `<world>/prompts-state.json`. Every ask is logged to `calls.jsonl`. A name
+asked more than `MAX_ASKS` times in one process ends it: a wizard that cannot go on (a draft that failed) would
+ask again with the same default forever.
 """
 
 import json
 import time
 from pathlib import Path
 
+MAX_ASKS = 25
+
 
 def install(module, world: Path) -> None:
     world = Path(world)
+    asked: dict[str, int] = {}
 
     def script() -> dict:
         try:
@@ -26,6 +31,9 @@ def install(module, world: Path) -> None:
 
     def answer(name: str, default):
         log(name)
+        asked[name] = asked.get(name, 0) + 1
+        if asked[name] > MAX_ASKS:
+            raise SystemExit(f"the test world: {name!r} asked {MAX_ASKS} times, the wizard is looping")
         said = script().get(name)
         if not said:
             return default

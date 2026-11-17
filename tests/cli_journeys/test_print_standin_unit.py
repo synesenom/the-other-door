@@ -32,6 +32,12 @@ def _print(standin, tmp_path, html, name="out"):
     return out
 
 
+def test_text_outside_helveticas_standard_encoding_reads_back_whole(standin, tmp_path):
+    # a Hungarian or Swedish CV (#135): ő and ű are not in the encoding of the standard Helvetica
+    out = _print(standin, tmp_path, "<html><body><h1>Kőműves Győző</h1><p>Göteborg – Älvstrand “AB”</p></body></html>")
+    assert pdf_render.page_texts(out)[0] == "Kőműves Győző\nGöteborg – Älvstrand “AB”"
+
+
 def test_the_page_count_grows_with_the_text(standin, tmp_path):
     short = _print(standin, tmp_path, "<html><body><p>a few words</p></body></html>", "short")
     long = _print(standin, tmp_path, "<html><body>" + "<p>" + "forecasting " * 700 + "</p></body></html>", "long")
