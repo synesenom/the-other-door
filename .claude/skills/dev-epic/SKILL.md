@@ -1,6 +1,6 @@
 ---
 name: dev-epic
-description: Churn through an epic issue in one run — resolve its sub-issues one after another, each in its own pull request branched from the previous one's, so the PRs build on each other and are kept green, file what is found on the way as new sub-issues, and tick the epic's checkboxes, until every sub-issue is implemented and every box is checked. Invoked with /dev-epic <epic_issue_number>.
+description: Churn through an epic issue in one run — resolve its sub-issues one after another, each in its own pull request branched from the previous one's, so the PRs build on each other and are kept green, file what is found on the way into other epics, and tick the epic's checkboxes, until every sub-issue is implemented and every box is checked. Invoked with /dev-epic <epic_issue_number>.
 ---
 
 You are working through an epic issue of The other door. The epic's number is the argument. **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
@@ -42,7 +42,7 @@ Read GitHub again on every pass: the counts are never remembered. If the epic is
 
 ### Step 2: Every box has a sub-issue
 
-Read the body's checkboxes. Each unchecked box must map to a sub-issue: by a `#<sub>` on its line, or by its words matching a sub-issue's title. A box that maps to none is work no issue tracks: file it (`mcp__github__issue_write`, `method: create`, a title from the box, a body that quotes the box and links the epic), attach it (`mcp__github__sub_issue_write`, `method: add`, `sub_issue_id` the new issue's `id`, not its number), and add ` (#<sub>)` to the box's line in the epic body. A box that is not work (a note, a question already answered in the comments) goes to the `decider`: tick it with a one-line comment on the epic saying why, or file it.
+Read the body's checkboxes. Each unchecked box must map to a sub-issue: by a `#<sub>` on its line, or by its words matching a sub-issue's title. A box that maps to none is work no issue tracks: file it with `/dev-file-issue epic=<N>` (a title from the box, a body that quotes the box): it attaches the issue here and adds ` (#<sub>)` to that box's line. A box that is not work (a note, a question already answered in the comments) goes to the `decider`: tick it with a one-line comment on the epic saying why, or file it.
 
 ### Step 3: Keep the chain green
 
@@ -68,7 +68,7 @@ A branch the session's own instructions fix (a cloud session's single branch) wi
 
 Run `/dev-resolve <sub> epic=<N> base=<tip>` (`base=main` when the chain is empty; in the fixed-branch case above, no `base`: it stays on that branch) and follow it to the end: it makes the branch from the tip, implements, validates, runs the review (CLAUDE.md "Review") and opens the PR, and returns without watching it; the loop's Step 3 watches it.
 
-Afterwards, sort the issues its review filed (its report's Review line): one **within the epic's goal** is attached to the epic as a new sub-issue (`mcp__github__sub_issue_write`, `method: add`, its `id`), and so joins the queue; one outside it stays on its own and is named in the final report. Attach only what the epic's own text asks for or makes necessary, so the queue does not grow without end.
+The issues its review filed (its report's Review line) went through `/dev-file-issue` into other epics, never this one: the epic's scope stays fixed while it is worked, so its queue does not grow. Name them in the final report.
 
 On a PR, its branch becomes the chain's new tip. If `/dev-resolve` ends in FAIL, record its diagnosis, comment it on the sub-issue, mark it `failed`, and go on: its branch does not join the chain, and the next sub-issue builds on the same tip.
 
@@ -99,7 +99,7 @@ Epic #<N> — <title>
 | #12       | ...   | #40 | green | yes | PR open (chain 1) |
 |   ↳ #15   | ...   | #41 | green | yes | PR open (chain 2) |
 ...
-Sub-issues: <done>/<total> implemented   Added on the way: #.., #..
+Sub-issues: <done>/<total> implemented   Filed for its boxes: #.., #..
 Epic boxes: <checked>/<total> checked    Unchecked: <list, or none>
 Filed outside the epic: #.., #..
 Left for you: <PRs to merge, in chain order, bottom first; questions; or nothing>

@@ -11,7 +11,7 @@ You are the profession orchestrator for The other door. The arguments are the jo
 /dev-add-profession nurse dk
 ```
 
-The titles are the person's role targets: what they would apply for, in any language. One title is fine; several say where the profession's edges are (a reward partner who would also take a C&B specialist job). You run the agents below in order and keep the state between them in `thoughts/profession/<cc>-<slug>/` (gitignored; `<slug>` is the profession in lower-case ASCII with hyphens), so a stopped run picks up where it left off. Every agent's report is saved there too, so the run can be checked afterwards without its conversation: the validator reads them. `docs/adding-a-site.md` is the reference for what a source needs; epic #426 is why this skill exists.
+The titles are the person's role targets: what they would apply for, in any language. One title is fine; several say where the profession's edges are (a reward partner who would also take a C&B specialist job). You run the agents below in order and keep the state between them in `thoughts/profession/<cc>-<slug>/` (gitignored; `<slug>` is the profession in lower-case ASCII with hyphens), so a stopped run picks up where it left off. Every agent's report is saved there too, so the run can be checked afterwards without its conversation: the validator reads them. `docs/adding-a-site.md` is the reference for what a source needs.
 
 **A profession is not a board.** door reaches a job three ways:
 - a **board** searched by keyword (a `Site` with `board=True`, like Jobindex);
@@ -108,9 +108,7 @@ A failure goes back to that source's builder once, as in step 3.
 
 ## Step 6: Issues for the gaps
 
-For each door gap in `plan.md` (title matching, locality, seniority words, naming, a platform refused):
-1. search the open issues (`mcp__github__search_issues`) for it;
-2. add the profession's example to a matching issue, or open a new one under epic #426 (`parent_issue_number`).
+For each door gap in `plan.md` (title matching, locality, seniority words, naming, a platform refused), file it with `/dev-file-issue` (on a matching open issue it adds the profession's example there instead).
 
 Each issue gets the concrete failing input and the expected result, ready for a failing test. Note each issue number in `plan.md`. Don't fix them here: this skill adds sources.
 

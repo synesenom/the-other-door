@@ -130,7 +130,7 @@ Then validate once more and write the new report to `thoughts/validate/<issue_nu
 
 ## Step 4: Review
 
-On **PASS** only (on FAIL go to Step 6). Run the reviewers CLAUDE.md "Review" names, in its order, with `base_branch: <base branch>` and the issue as the goal. Fix each finding on the branch (test-first, then run the tests it touches) or file it as an issue that stands alone and names this one. Keep the list of findings and how each ended (fixed, filed `#N`, not real) for the PR body and Step 6.
+On **PASS** only (on FAIL go to Step 6). Run the reviewers CLAUDE.md "Review" names, in its order, with `base_branch: <base branch>` and the issue as the goal. Fix each finding on the branch (test-first, then run the tests it touches) or file it with `/dev-file-issue` (naming this issue; `not_epic=<epic>` when `epic` is given). Keep the list of findings and how each ended (fixed, filed `#N`, not real) for the PR body and Step 6.
 
 ---
 
