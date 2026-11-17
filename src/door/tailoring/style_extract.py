@@ -573,6 +573,25 @@ def _line_units(runs: list[dict]) -> list[dict]:
     return units
 
 
+_YEAR = re.compile(r"\b(19|20)\d\d\b")
+
+
+def _band_at(u: dict, bands: list[dict]) -> dict | None:
+    mid = (u["bbox"][0] + u["bbox"][2]) / 2
+    return next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
+
+
+def _entry_titles(members: list[dict], units: list[dict], bands: list[dict]) -> set[int]:
+    """The `id`s of the members that head a dated entry: a year in the member's own text, or in a unit on its baseline
+    in its own column band or in none (a date column, or a date at the right of a band's text). A line under a member is not read: a heading has
+    text under it too. A title dated on the line below or above it, with no year ("heute") or a two-digit one ("'19",
+    "Jan 19") is not told from a heading."""
+    return {id(u) for u in members
+            if _YEAR.search(u["text"]) or any(
+                v is not u and v["page"] == u["page"] and abs(v["bbox"][3] - u["bbox"][3]) <= 0.3 * u["size"]
+                and _band_at(v, bands) in (None, _band_at(u, bands)) and _YEAR.search(v["text"]) for v in units)}
+
+
 def _is_section_title(text: str) -> bool:
     return i18n.cv_section_kind(text, _SECTION_KINDS) is not None
 
@@ -606,13 +625,17 @@ def _rule_under(heading: dict, shapes: list[dict], band: dict | None) -> dict | 
 def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name: dict | None) -> list[dict]:
     """The section headings: a short line in one style, not set like the body text (another size, weight or family,
     or in small capitals), that is a known section name (any supported language) or one of a group of three or more
-    lines in one style that is coloured and larger than the body (or, with no such group, the largest)."""
+    lines in one style that is coloured and larger than the body (or, with no such group, the largest, passing over a
+    group whose every line is dated, `_entry_titles`, only for an undated group of fewer lines: entries outnumber
+    sections).
+    Entry titles in exactly the headings' style are returned with them."""
     body = body_size([r for r in runs if not r["rotated"]])
     chars: dict[tuple, int] = {}
     for r in runs:
         chars[(r["family"], r["size"], r["weight"])] = chars.get((r["family"], r["size"], r["weight"]), 0) + len(r["text"])
     body_style = max(chars, key=chars.get) if chars else None
-    short = [u for u in _line_units(runs) if len(u["text"].split()) <= 6
+    all_units = _line_units(runs)
+    short = [u for u in all_units if len(u["text"].split()) <= 6
              and not (name and u["text"] == name["text"] and u["size"] == name["size"])
              and (u["mixed"] or (u["family"], u["size"], u["weight"]) != body_style)]
 
@@ -630,12 +653,17 @@ def find_headings(runs: list[dict], shapes: list[dict], bands: list[dict], name:
     chosen = [k for k, g in styled.items() if any(id(u) in known for u in g)
               or (k[2] != body_color and _chromatic(k[2]) and k[1] > body)]
     if not chosen and styled:
-        chosen = [max(styled, key=lambda k: k[1])]
+        # the largest group; dated entry titles in a style of their own give way to an undated group of fewer lines
+        # (entries outnumber sections), else it stays
+        top = max(styled, key=lambda k: k[1])
+        fewer = [k for k, g in styled.items() if len(g) < len(styled[top])
+                 and len(_entry_titles(g, all_units, bands)) < len(g)]
+        dated = len(_entry_titles(styled[top], all_units, bands)) == len(styled[top])
+        chosen = [max(fewer, key=lambda k: k[1]) if dated and fewer else top]
     found = []
     for u in short:
         if id(u) in known or key(u) in chosen:
-            mid = (u["bbox"][0] + u["bbox"][2]) / 2
-            band = next((b for b in bands if b["x0"] - 2 <= mid <= b["x1"] + 2), None)
+            band = _band_at(u, bands)
             found.append({"page": u["page"], "text": u["text"], "bbox": u["bbox"], "size": u["size"], "color": u["color"],
                           "weight": u["weight"], "family": u["family"], "italic": u["italic"], "case": _case(u["text"]),
                           "rule": _rule_under(u, shapes, band), "band": band["kind"] if band else None})
@@ -731,15 +759,20 @@ def layout_verdict(columns: dict) -> dict | None:
 # ---------- the whole read ----------
 
 def _fonts_used(runs: list[dict]) -> list[dict]:
-    fonts: dict[str, dict] = {}
+    """Each font of the runs with its use. A font is an icon font when every run of it is an icon, a bullet or a
+    separator (a level dot drawn from an icon font is no reason to fetch it) and it is named like an icon font or
+    has a real icon run."""
     keys = ("font", "family", "weight", "italic", "serif", "fixed", "embedded", "type3")
+    by_font: dict[str, list[dict]] = {}
     for run in runs:
-        entry = fonts.setdefault(run["font"], {**{k: run[k] for k in keys}, "icon": True, "runs": 0, "chars": 0})
-        # a bullet drawn from an icon font (the rating's empty dot) is no reason to fetch that font
-        entry["icon"] = entry["icon"] and (run["icon"] or style_icons.only_bullets(run["text"]))
-        entry["runs"] += 1
-        entry["chars"] += sum(not c.isspace() for c in run["text"])
-    return sorted(fonts.values(), key=lambda f: -f["chars"])
+        by_font.setdefault(run["font"], []).append(run)
+    fonts = []
+    for name, its in by_font.items():
+        icon = (all(r["icon"] or style_icons.only_separators(r["text"]) for r in its)
+                and (style_icons.icon_font(name) or any(r["icon"] for r in its)))
+        fonts.append({**{k: its[0][k] for k in keys}, "icon": icon, "runs": len(its),
+                      "chars": sum(not c.isspace() for r in its for c in r["text"])})
+    return sorted(fonts, key=lambda f: -f["chars"])
 
 
 def _read_pages(doc) -> list[dict]:
