@@ -228,31 +228,45 @@ def _by_band(runs: list[dict], bands: list[dict]) -> dict[int, list[dict]]:
     return groups
 
 
-def column_text(style: dict, pdf: Path) -> str | None:
-    """The text of the original `pdf` for the stylist (`text.txt`) on a CV with a side band: each page's lines across
-    the page, then each column's from left to right, under a ``[page N, side column, on the left]`` label, so a section
-    that goes on in its column on the next page is not read as part of the other column's. None for one column.
+def _segments(line: list[dict]) -> list[list[dict]]:
+    """A line's runs cut at its icons, the icons left out: an icon font's glyph reads back as a stray character."""
+    out: list[list[dict]] = [[]]
+    for run in line:
+        if run["icon"]:
+            out.append([])
+        else:
+            out[-1].append(run)
+    return [s for s in out if s]
+
+
+def original_text(style: dict, pdf: Path) -> str:
+    """The text of the original `pdf` for the stylist (`text.txt`), its icons left out (#248). On a CV with a side
+    band, each page's lines across the page, then each column's from left to right, under a ``[page N, side column, on
+    the left]`` label, so a section that goes on in its column on the next page is not read as part of the other
+    column's; on a CV of one column, its lines, page after page.
 
     Each line is read again from the page within its box: `style_extract`'s runs no longer say where a word ends, and
     only the PDF's own text tells a drop cap (``A`` + ``TROTTOIR``) from two words."""
-    if not _has_side(style):
-        return None
-    bands = style["columns"]["bands"]
+    side = _has_side(style)
+    bands = style["columns"]["bands"] if side else []
     out: list[str] = []
     doc = pdf_render.open_pdf(pdf)
     try:
         for number, page in enumerate(doc, 1):
             height, textpage = page.get_height(), page.get_textpage()
-            groups = _by_band([r for r in style["runs"] if r["page"] == number], bands)
+            runs = [r for r in style["runs"] if r["page"] == number]
+            groups = _by_band(runs, bands) if side else {-1: runs}
             for index in [-1, *range(len(bands))]:
                 lines = []
                 for line in _line_runs(groups.get(index, [])):
-                    x0, y0, x1, y1 = _box(line)
-                    text = textpage.get_text_bounded(left=x0 - 1, bottom=height - y1, right=x1 + 1, top=height - y0)
-                    if text.strip():
-                        lines.append(" ".join(text.split()))
+                    parts = []
+                    for segment in _segments(line):
+                        x0, y0, x1, y1 = _box(segment)
+                        parts.append(textpage.get_text_bounded(left=x0 - 1, bottom=height - y1, right=x1 + 1, top=height - y0))
+                    if text := " ".join(" ".join(parts).split()):
+                        lines.append(text)
                 if lines:
-                    out += [f"[page {number}, {_ACROSS if index < 0 else _where(bands[index], bands)}]", *lines]
+                    out += ([f"[page {number}, {_ACROSS if index < 0 else _where(bands[index], bands)}]"] if side else []) + lines
     finally:
         doc.close()
     return "\n".join(out)
@@ -731,7 +745,7 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
     pdf = work / "original.pdf"
     shutil.copyfile(pdf_path, pdf)
     progress_mod.report("reading the CV's style", stage="style")
-    _write(work / "text.txt", column_text(style, pdf) or "\n".join(pdf_render.page_texts(pdf)))
+    _write(work / "text.txt", original_text(style, pdf))
     _write(work / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
     progress_mod.report("fetching the fonts", stage="style")
     plan, result["font_error"] = _get_fonts(pdf, style, work / "fonts", fonts_fetch)
