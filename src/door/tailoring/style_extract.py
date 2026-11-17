@@ -48,7 +48,7 @@ _SECTION_KINDS = tuple(i18n.CvSections.model_fields)
 
 # nothing to copy
 _LINKEDIN_HEADINGS = {"contact", "top skills", "languages", "certifications", "summary", "experience", "education"}
-_PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
+PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
 _MIN_CHARS = 50
 
 
@@ -398,7 +398,7 @@ def find_photo(page, images: list[dict], size: list[float], background: str | No
 
 def _is_footer(run: dict, size: list[float]) -> bool:
     low = run["bbox"][3] > size[1] * 0.94
-    return low and (run["text"].strip().isdigit() or bool(_PAGE_FOOTER.fullmatch(run["text"].strip())))
+    return low and (run["text"].strip().isdigit() or bool(PAGE_FOOTER.fullmatch(run["text"].strip())))
 
 
 def margins(pages: list[dict]) -> dict:
@@ -757,7 +757,7 @@ def style_verdict(pages: list[dict]) -> dict:
         return verdict
     lines = [{r["text"].casefold().strip() for r in p["runs"]} for p in pages]
     headings = set().union(*lines) & _LINKEDIN_HEADINGS
-    footers = all(any(_PAGE_FOOTER.fullmatch(t) for t in page) for page in lines)
+    footers = all(any(PAGE_FOOTER.fullmatch(t) for t in page) for page in lines)
     if len(headings) >= 3 and footers:
         return _verdict(False, "linkedin", "is a LinkedIn export, which has no design of its own to copy.")
     return _verdict(True, "ok", "")

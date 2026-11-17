@@ -17,19 +17,17 @@ import re
 from pathlib import Path
 
 from door import i18n
-from door.core import claude_cli, problem_log, utils, workspace
+from door.core import claude_cli, problem_log, templates, utils, workspace
 from door.tailoring import style_extract
 
 PROMPT_VERSION = 2  # bump with the prompt, the schema or `rows`: a cached answer of another version is asked again
 KINDS = ["experience", "education", "skills", "languages", "certifications", "interests", "summary", "contact",
          "projects", "other"]
-_SECTION_KINDS = tuple(i18n.CvSections.model_fields)
 _MAX_HEADING_WORDS = 6
 _MAX_HEADING_STYLES = 2
 _SIDE_SHARE = 0.6  # a side column is narrower than this share of the text's width
 _NEAR = 2.0  # pt of slack where a box is compared with a column
 _CONTINUES = 1.6  # a heading's next line is its second line within this many sizes below
-_PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
 _KEEP_CACHED = 20  # answers kept in the cache folder, the most recently written
 
 SYSTEM = """You read the structure of a CV from its text lines, as a typesetter would. The input lists each text style (font family, size in pt, weight, italic, colour, characters set in it) and each visual line of text with its page, baseline y, left and right x and style. Most text is body text in the most used style.
@@ -228,7 +226,7 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
         raise _fail("the layout is missing")
     columns = {"one": "one", "two": "two", "three_or_more": "three"}[layout["columns"]]
     side = _side_range(layout, rows_list, pages[0]["size"]) if columns == "two" else None
-    footers = all(any(_PAGE_FOOTER.fullmatch(r["text"].strip()) for r in rows_list if r["page"] == n)
+    footers = all(any(style_extract.PAGE_FOOTER.fullmatch(r["text"].strip()) for r in rows_list if r["page"] == n)
                   for n in range(1, len(pages) + 1))
     body = _body_style(rows_list)
     headings = []
@@ -242,7 +240,7 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
             text = f"{text} {second['text']}"
             bbox = [min(bbox[0], second["bbox"][0]), min(bbox[1], second["bbox"][1]),
                     max(bbox[2], second["bbox"][2]), max(bbox[3], second["bbox"][3])]
-        kind = i18n.cv_section_kind(text, _SECTION_KINDS) or next(h.get("kind") for h in given if h["id"] == i)
+        kind = i18n.cv_section_kind(text, templates.SECTION_KINDS) or next(h.get("kind") for h in given if h["id"] == i)
         if kind not in KINDS:
             raise _fail(f'"{row["text"][:40]}" has no section kind')
         headings.append({"kind": kind, "column": column, "row": row, "text": text, "bbox": bbox})

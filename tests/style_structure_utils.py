@@ -9,38 +9,25 @@ structure it expects without a model; the corpus CVs get their recorded answers.
 """
 
 import functools
+import importlib.util
 import json
 
 from paths import TESTS_DIR
 
-from door import i18n
-
 RECORDED = TESTS_DIR / "tailoring" / "fixtures" / "styles" / "structure"
-_KINDS = tuple(i18n.CvSections.model_fields)
+
+
+@functools.cache
+def _world_structure():
+    """The app's test world's stand-in, `app/test/world/structure.py`, which the stand-in `claude` runs too."""
+    spec = importlib.util.spec_from_file_location("world_structure", TESTS_DIR.parent / "app" / "test" / "world" / "structure.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def recorded(name: str) -> dict:
     return json.loads((RECORDED / f"{name}.json").read_text(encoding="utf-8"))
-
-
-def parse(text: str) -> tuple[dict, list[dict]]:
-    """The styles (id to size, weight, characters) and the lines (id, page, y, x0, x1, style, text) of a model input."""
-    styles, lines, part = {}, [], None
-    for raw in text.splitlines():
-        if raw.startswith("styles ("):
-            part = "styles"
-        elif raw.startswith("lines ("):
-            part = "lines"
-        elif part == "styles":
-            sid, *rest = raw.split(" ")
-            # family may hold spaces: the last five fields are size, weight, italic, colour, chars
-            size, weight, _, _, chars = rest[-5:]
-            styles[sid] = {"size": float(size), "weight": int(weight), "chars": int(chars)}
-        elif part == "lines":
-            i, page, y, x0, x1, style, *words = raw.split(" ")
-            lines.append({"id": int(i), "page": int(page), "x0": int(x0), "x1": int(x1), "style": style.rstrip("*"),
-                          "text": " ".join(words)})
-    return styles, lines
 
 
 @functools.cache
@@ -54,19 +41,10 @@ def _corpus() -> dict[str, dict]:
 
 
 def fake_ask(text: str, feature: str = "style") -> dict:
-    """The recorded answer when `text` is the input of a corpus CV, else a plain rule's."""
+    """The recorded answer when `text` is the input of a corpus CV, else the world's plain rule."""
     if text in _corpus():
         return _corpus()[text]
-    styles, lines = parse(text)
-    body = max(styles, key=lambda s: styles[s]["chars"])
-    first = [r for r in lines if r["page"] == 1] or lines
-    name = max(first, key=lambda r: (styles[r["style"]]["size"], -r["id"]))
-    short = [r for r in lines if r is not name and len(r["text"].split()) <= 6 and r["style"] != body]
-    heads = [r for r in short if i18n.cv_section_kind(r["text"], _KINDS)] or short
-    heads = heads[:3] if len(heads) < 2 else heads
-    return {"linkedin_export": False, "layout": {"columns": "one"}, "name": name["id"],
-            "headings": [{"id": r["id"], "kind": i18n.cv_section_kind(r["text"], _KINDS) or "other"}
-                         for r in heads], "entry_titles": []}
+    return _world_structure().answer(text)
 
 
 def structure_of(pdf, answer: dict) -> dict:

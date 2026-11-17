@@ -287,6 +287,7 @@ def test_the_draft_rules_allow_a_location_as_the_last_part_of_an_entry_heading()
 
 
 def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
+    (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
     """The wizard offers the style build only for a file that has a style to copy (#150)."""
     _answer(monkeypatch)
     styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
@@ -296,7 +297,21 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
     assert [s.get("style") for s in result["sources"]] == [True, False, False, None, False]
 
 
+def test_a_draft_with_a_profile_offers_no_style_and_makes_no_structure_call(env, monkeypatch):
+    from door.tailoring import style_structure
+
+    def never(text, feature="style"):
+        raise AssertionError("the structure call is for a first set-up only")
+
+    _answer(monkeypatch)
+    monkeypatch.setattr(style_structure, "_ask", never)
+    styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+    result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
+    assert [s["style"] for s in result["sources"]] == [False]
+
+
 def test_a_linkedin_export_has_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
+    (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
     _answer(monkeypatch)
     linkedin = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "linkedin-like.pdf"
     result = cv_cmd._draft_cv_core([str(linkedin)], profile_dir=env.profile_dir)
@@ -304,6 +319,7 @@ def test_a_linkedin_export_has_no_style_to_copy_and_the_draft_still_succeeds(env
 
 
 def test_a_failed_structure_call_means_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
+    (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
     from door.tailoring import style_structure
 
     def broken(text, feature="style"):
@@ -317,6 +333,7 @@ def test_a_failed_structure_call_means_no_style_to_copy_and_the_draft_still_succ
 
 
 def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
+    (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
     """Its text (the icon boxes) is one extract (#298: a style extract is the slow part); its style verdict is the
     structure's (`style_structure`), which makes no second extract."""
     from door.tailoring import style_extract
@@ -331,6 +348,7 @@ def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
 
 
 def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch):
+    (env.profile_dir / "config.json").unlink()  # a first set-up
     """`style` says the file has a look to copy; whether this machine can print is another question."""
     from door.commands import _common as common
 
@@ -421,6 +439,7 @@ def test_the_draft_text_of_a_refused_three_column_cv_still_drops_its_icons(monke
 
 
 def test_the_structure_call_of_a_draft_is_billed_to_the_draft(env, monkeypatch):
+    (env.profile_dir / "config.json").unlink()  # a first set-up
     from door.tailoring import style_structure
     from style_structure_utils import fake_ask
 

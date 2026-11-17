@@ -7,7 +7,6 @@ import os
 import pytest
 
 from pdf_utils import raw_pdf
-from style_structure_utils import parse
 
 from door.core import claude_cli, workspace
 from door.tailoring import style_extract, style_structure
@@ -250,7 +249,8 @@ def ask(monkeypatch, tmp_path):
 
 
 def good(text):
-    by_text = {line["text"]: line["id"] for line in parse(text)[1]}
+    by_text = {" ".join(row.split(" ")[6:]): int(row.split(" ")[0])
+               for row in text.split("lines (", 1)[1].splitlines()[1:]}
     return {"linkedin_export": False, "layout": {"columns": "one"}, "name": by_text["Max Mustermann"],
             "headings": [{"id": by_text[h], "kind": "other"} for h in ("Experience", "Education", "Skills")],
             "entry_titles": []}
