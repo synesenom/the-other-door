@@ -451,3 +451,21 @@ def test_a_sample_body_that_puts_text_under_the_other_column_s_heading_is_asked_
     second = stylist.calls[1]["input"]
     assert "other column" in second and "Nid Couleur Jardin Silence" in second and "```body" in second
     assert world.prints and "Nid Couleur" not in world.prints[0]["html"]  # the refused body was never printed
+
+
+
+def test_a_build_whose_every_round_prints_the_columns_in_the_wrong_place_fails_and_says_why(world):
+    world.print_as = lambda folder: SWAPPED if folder == world.work else None
+    result = world.build("latex-sidebar", Stylist(cv_round(), cv_only(), letter_round()), cap=2)
+    assert result["state"] == "failed" and result["scores"] == []
+    assert "no template of the stylist's was kept in 2 rounds" in result["problems"][0]
+    assert "columns in the wrong place" in result["problems"][0]
+
+
+def test_a_sample_body_refused_in_every_round_fails_the_build_naming_the_body(world):
+    line = "<p>Nid Couleur Jardin Silence: UNE&amp;FRUIT 4888, Feuillage Cabane Aquarelle Dimanche</p>"
+    bad = '<header class="cv-header"><h1>A B</h1></header><h2>LEUNE YAUTOMNE</h2><p>x</p><h2>AFONTAINE ANUIT</h2>' + line
+    result = world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(body=bad)), cap=2)
+    assert result["state"] == "failed" and not world.prints
+    assert "no sample body of the stylist's was accepted in 2 rounds" in result["problems"][0]
+    assert "other column" in result["problems"][0]

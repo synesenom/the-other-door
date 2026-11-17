@@ -124,13 +124,13 @@ def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False) -> list[d
     from door.tailoring import pdf_render
 
     text, pages = extract(pdf)
-    cut = body.find('<div class="side"')
-    main, side = (body, "") if cut < 0 else (body[:cut], body[cut:])
+    cols = html_doc.columns(body)
+    main, side = (body, "") if cols is None else (cols[0] + cols[1], cols[2])
     found = problems(text, name=name if isinstance(name, str) else None,
                      headings=html_doc.headings(main), side=html_doc.headings(side),
                      keywords=html_doc.keywords(body), pages=pages)
     if cv:
         if not {"empty", "garbled"} & {p["kind"] for p in found}:
             found += overflow_problems(text, body)
-        found += layout_problems(pdf_render.page_boxes(pdf), two_column='class="side"' in body)
+        found += layout_problems(pdf_render.page_boxes(pdf), two_column=cols is not None)
     return found

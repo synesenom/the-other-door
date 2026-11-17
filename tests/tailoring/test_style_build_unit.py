@@ -273,3 +273,34 @@ def test_the_stylist_is_told_on_which_side_the_side_column_is_and_that_div_main_
     session = types.SimpleNamespace(style=_extract("latex-sidebar"), images=[1], manifest=manifest)
     text = style_build._files_text(session, "", {})
     assert "on the left" in text and "div.main first" in text
+
+
+def _run(text, bbox, page=1, size=10.0):
+    return {"page": page, "text": text, "bbox": bbox, "size": size}
+
+
+def test_a_heading_printed_in_pieces_is_still_found_where_it_printed():
+    # a drop cap (`S` + `kills`) and wide letter-spacing (`L a n g`...) print a heading as several runs on one line
+    style = _extract("latex-sidebar")  # side column on the left, x 7-129
+    render = {"runs": [_run("S", [400, 100, 408, 112], size=14), _run("kills", [408, 102, 440, 112]),
+                       *[_run(c, [400 + 8 * i, 200, 406 + 8 * i, 210]) for i, c in enumerate("Languages")]]}
+    problems = style_build.column_problems(style, render, _placed([], ["Skills", "Languages"]))
+    assert len(problems) == 2 and all("other column" in p for p in problems)
+
+
+def test_a_heading_printed_across_both_columns_is_named_as_such():
+    style = _extract("latex-sidebar")
+    render = {"runs": [_run("Skills", [60, 100, 300, 112])]}  # from the side band into the main one
+    assert style_build._band_of([60, 100, 300, 112], style["columns"]["bands"]) is None
+    problems = style_build.column_problems(style, render, _placed([], ["Skills"]))
+    assert len(problems) == 1 and "across both columns" in problems[0]
+
+
+def test_a_band_between_two_others_is_in_the_middle():
+    bands = [{"x0": 10, "x1": 100, "kind": "side"}, {"x0": 120, "x1": 400, "kind": "main"}, {"x0": 420, "x1": 580, "kind": "side"}]
+    assert [style_build._where(b, bands) for b in bands] == [
+        "side column, on the left", "main column, in the middle", "side column, on the right"]
+
+
+def test_a_print_with_no_text_read_back_has_no_column_problem():
+    assert style_build.column_problems(_extract("latex-sidebar"), {}, _placed(["Education"], ["Skills"])) == []

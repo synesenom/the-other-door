@@ -101,3 +101,14 @@ def test_a_level_item_keeps_its_word_in_the_text_and_the_claims():
     body = '<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>'
     assert "Danish native" in html_doc.text(body)
     assert "Danish native" in html_doc.claim_text(body)
+
+
+
+def test_columns_reads_a_placed_cv_back_in_its_parts():
+    from door.commands import compile as compile_cmd
+    from door.core import templates
+    body = '<header class="cv-header"><h1>A</h1></header><h2>Experience</h2><p>e</p><h2>Skills</h2><p>s</p>'
+    placed = compile_cmd._place_columns(body, templates.Columns(side=["skills"]))
+    assert html_doc.columns(placed) == ('<header class="cv-header"><h1>A</h1></header>', "<h2>Experience</h2><p>e</p>",
+                                        "<h2>Skills</h2><p>s</p>")
+    assert html_doc.columns(body) is None
