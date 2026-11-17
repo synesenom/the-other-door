@@ -12,9 +12,10 @@ from click.testing import CliRunner
 
 from door import mcp_server
 from door.cli import cli
+from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
-from door.core import templates, tracker, workspace
+from door.core import chromium, templates, tracker, workspace
 from door.core.profile_loader import load_config
 from cli_utils import result_text
 from paths import REPO_ROOT
@@ -324,3 +325,25 @@ def test_the_tool_without_a_style_refuses_and_changes_nothing(home, cli_env, arg
     assert answer.isError or "error" in json.loads(text), text
     assert (cli_env.profile_dir / "style.next" / "mark.txt").read_text() == "new" and _keys(cli_env) == (None, None)
     assert not (cli_env.profile_dir / "style").exists()
+
+
+def test_rerender_without_chromium_refuses_in_words_before_any_change(home, cli_env, compiled, monkeypatch):
+    # #296: what the app's Style row shows, no shell command; nothing chosen, nothing printed
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    _folder(cli_env, "style.next")
+    _job(home, "a.1", "prepared")
+    with pytest.raises(common.NoChromium):
+        style_cmd._use_core("like", rerender=True)
+    assert compiled == [] and _keys(cli_env) == (None, None) and (cli_env.profile_dir / "style.next").is_dir()
+    error = asyncio.run(mcp_server.use_style("current", rerender=True))["error"]
+    assert error == str(common.NoChromium()) and "./door" not in error
+
+
+def test_the_command_with_rerender_and_no_chromium_names_the_fix_and_chooses_nothing(home, cli_env, compiled, monkeypatch):
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    _folder(cli_env, "style.next")
+    _job(home, "a.1", "prepared")
+    result = CliRunner().invoke(cli, ["cv", "style", "use", "like", "--rerender"])
+    assert result.exit_code == 1
+    assert str(common.NoChromium()) in result_text(result) and chromium.INSTALL_HINT in result_text(result)
+    assert compiled == [] and (cli_env.profile_dir / "style.next").is_dir()

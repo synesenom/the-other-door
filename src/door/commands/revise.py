@@ -107,6 +107,7 @@ def _revise_core(
             (the file is left unchanged), or a body the guard refuses.
         FileNotFoundError: no such material (a job prepared before the HTML bodies: prepare it again), or nothing
             to undo.
+        NoChromium: nothing to print with (in words; checked before the model, the file unchanged).
         ReviseError: the `claude -p` call failed (file unchanged).
     """
     from door.core.selection import find_posting
@@ -125,6 +126,8 @@ def _revise_core(
             raise FileNotFoundError(
                 f"{job_id!r} was prepared with an older version (a {file}.tex): prepare it again to revise it")
         raise FileNotFoundError(f"{path} not found — prepare {job_id!r} first")
+    if not common._chromium_available():  # before the model and the write: a PDF never stays behind its .html
+        raise common.NoChromium
 
     if undo:
         if not backup.is_file():

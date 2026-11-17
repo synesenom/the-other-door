@@ -79,21 +79,11 @@ def _look(path: Path) -> None:
         raise ValueError(f"{path.name} {verdict['detail']}")
 
 
-class NoChromium(ValueError):
-    """No Chromium to print with. Its words are the app's (no command, #273); a command adds `INSTALL_HINT`."""
-
-    def __init__(self):
-        super().__init__("The browser that prints your CVs is not installed yet, so no style can be built.")
-
-
-INSTALL_HINT = "Run `./door doctor --fix` to install the browser that prints pages."
-
-
 def _intake(path: Path) -> None:
     """Raise ValueError, in words, when a build of the file at `path` cannot start: no Chromium to print with
-    (`NoChromium`), or no style."""
+    (`common.NoChromium`), or no style."""
     if not common._chromium_available():
-        raise NoChromium
+        raise common.NoChromium
     _look(path)
 
 
@@ -280,7 +270,8 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
     `compile`: no model, a failing job listed and the rest done.
 
     Returns ``{"in_use": "like" | "default", "prepared": N}`` and, with `rerender`, ``"rerendered"`` and ``"failed"``
-    (job ids). Raises ValueError, in words, when ``like`` has no style built."""
+    (job ids). Raises ValueError, in words, when ``like`` has no style built, and `NoChromium` for `rerender` with
+    nothing to print with, before any change."""
     from door.commands import compile as compile_cmd
     from door.commands import profile as profile_cmd
 
@@ -288,6 +279,8 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
     candidate, kept = profile_dir / templates.CANDIDATE, profile_dir / templates.STYLE
     if style not in ("like", "default", "current"):
         raise ValueError(f"unknown style {style!r}: like, default or current")
+    if rerender and not common._chromium_available():  # before any change: nothing chosen, nothing printed
+        raise common.NoChromium
     config = common._load_config_or_defaults(profile_dir)
     style_build.restore(profile_dir)
     if style == "like" and not (kept.is_dir() or (candidate.is_dir() and not rerender)):
@@ -352,8 +345,8 @@ def build_style(file):
             result = _build_core(file, progress=reporter)
     except ValueError as exc:
         click.echo(f"Error: {exc}", err=True)
-        if isinstance(exc, NoChromium):
-            click.echo(INSTALL_HINT, err=True)
+        if isinstance(exc, common.NoChromium):
+            click.echo(common.INSTALL_HINT, err=True)
         sys.exit(1)
     for font in result["fonts"]:
         if font.get("source") == "none":
@@ -383,11 +376,15 @@ def use_style(style, rerender):
 
     Applications already prepared keep their old look unless --rerender prints them again; sent ones never change."""
     try:
+        if rerender and not common._chromium_available():  # before the choice, so nothing is half done
+            raise common.NoChromium
         result = _use_core(style)
         if rerender:  # choosing and printing again are two calls: the second never touches a candidate
             result = _use_core("current", True)
     except (ValueError, common.ConfigError) as exc:
         click.echo(f"Error: {exc}", err=True)
+        if isinstance(exc, common.NoChromium):
+            click.echo(common.INSTALL_HINT, err=True)
         sys.exit(1)
     click.echo(_USE_WORDS[result["in_use"]])
     if rerender:
@@ -405,7 +402,7 @@ def show_style():
     Made again only when your CV, photo or style changed; no model is used."""
     styles = _show_core()["styles"]
     if not styles:
-        click.echo(f"Nothing could be printed. {INSTALL_HINT}")
+        click.echo(f"Nothing could be printed. {common.INSTALL_HINT}")
         return
     for name, sets in styles.items():
         click.echo(f"{'Like your CV' if name == 'like' else 'The default'}:")

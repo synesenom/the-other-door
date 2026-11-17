@@ -124,10 +124,10 @@ def test_a_print_failure_is_an_error_with_its_words(world, monkeypatch):
     assert not (world.out / "cv.pdf").exists()
 
 
-def test_no_chromium_names_doctor_fix(world, monkeypatch):
-    monkeypatch.setattr(chromium, "find_chromium", lambda home=None: None)
+def test_no_chromium_raises_the_shared_words(world, monkeypatch):
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
     world.make(cv="<p>x</p>")
-    with pytest.raises(common.MissingToolError, match=r"doctor --fix"):
+    with pytest.raises(common.NoChromium):
         _compile(world)
 
 

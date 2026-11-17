@@ -24,6 +24,16 @@ from door.core import pinned
 _PIN = Path(__file__).with_name("chromium_pin.json")
 
 
+class NoChromium(ValueError):
+    """No Chromium to print with. Its words are the app's (no command, #273, #296); a command adds `INSTALL_HINT`."""
+
+    def __init__(self):
+        super().__init__("The browser that prints your CVs is not installed yet.")
+
+
+INSTALL_HINT = "Run `./door doctor --fix` to install the browser that prints pages."
+
+
 class ChromiumError(Exception):
     pass
 

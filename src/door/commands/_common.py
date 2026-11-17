@@ -280,12 +280,8 @@ def _pick_job() -> str | None:
 
 
 
-class MissingToolError(FileNotFoundError):
-    """A required external tool (Chromium, `claude`) is not installed.
-
-    The message carries the one-line fix; `doctor` lists them all (#138).
-    """
-
+NoChromium = chromium.NoChromium
+INSTALL_HINT = chromium.INSTALL_HINT
 
 _CLAUDE_FIX = "run ./door doctor --fix"
 
