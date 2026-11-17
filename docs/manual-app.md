@@ -109,7 +109,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    what you did; a story tells what was behind it, and the tailor draws on your stories for every application.
    Fill in what the CV could not say, usually what you learned, or untick "Keep this story"; Save waits for one or the other.
    More stories go in Profile → [Stories](#your-stories));
-   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 5-10 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV. Nothing is said if it does not work out);
+   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 2-5 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV. Nothing is said if it does not work out);
    **Where to find employers** (LinkedIn, and profession.hu, HelloWork or Jobbsafari where they serve your city:
    each stays off unless you tick it, because their terms forbid automated access; see the
    [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Risky sources changes it later).
@@ -435,7 +435,7 @@ renamed) is said above an empty editor; saving there keeps that file as `cv.md.b
 - **Style** (above "Your CV"): how your tailored CVs are printed. The sheet of The other door's style is
   there, marked "In use". "Use the style of my CV…" opens a file dialog (a PDF of a CV of yours, starting at
   the one you gave the set-up while it is still there) and builds a template from its look in the
-  background (5-10 minutes on your Claude plan; "Building your style…" says so, and nothing is said if it
+  background (2-5 minutes on your Claude plan; "Building your style…" says so, and nothing is said if it
   does not work out, except a file with no look to copy). The built style waits beside the other one:
   "The other door's" and "Like your CV", each a sheet you can open to read its pages (your CV and a sample
   letter) in a dialog. "Use this style" puts it in use; "Keep The other door's" (or "Keep my current style"

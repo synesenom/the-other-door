@@ -7,7 +7,7 @@ designs; a new one is picked up from expected.json), each with the example CV as
 unreachable, a user's CV far shorter or far longer than the one whose look is copied. A ready style is then chosen and
 previewed, as the app does, and that print is read back: its columns, and what an ATS reads of it. Every check is on
 behaviour, never on the model's HTML. A CV with nothing to copy (a scan, a LinkedIn export) stops before the model and
-is tested offline (`tests/tailoring/test_style_build_loop.py`). A build takes 2-4 minutes.
+is tested offline (`tests/tailoring/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
 
 A case a known issue still breaks is an `xfail` naming it: the release gate stays green, and a pass shows as XPASS.
 """
@@ -33,7 +33,7 @@ from door.tailoring import cv_body, readability, style_build, style_extract
 pytestmark = [pytest.mark.model, pytest.mark.real_chromium]
 
 EXPECTED = json.loads((STYLES / "expected.json").read_text(encoding="utf-8"))
-FLOOR = 0.5  # the best round's blurred score: Sonnet's median was 0.94 in #206, a broken rebuild scores near 0
+FLOOR = 0.5  # the best round's blurred score: Sonnet's median was 0.94 in #206, a broken one (far off, or pages too long) under 0.2
 EXAMPLE_CV = (EXAMPLE / "cv.md").read_text(encoding="utf-8")
 
 SHORT_CV = """# Sam Example
@@ -84,8 +84,7 @@ CASES = {
 }
 
 # the cases a known issue keeps from looking like their original
-KNOWN = {"html-canva-icons": "#242 #243", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242",
-         "scrubbed-pages-header-en": "#244"}
+KNOWN = {"html-canva-icons": "#242", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242"}
 
 
 def _ready() -> str | None:

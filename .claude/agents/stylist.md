@@ -69,7 +69,7 @@ The sample body is the CV's own text from `text.txt`, written in the building bl
 
 ## Later rounds
 
-The task gives the measured differences between the original and your last print (`render_page_1.png`, the page of the sample body in your template; sizes, colours and positions in points, the elements that differ most first, a blurred-image score), or the problems the guard found in your template. Change only the template: close the largest gaps, keep what already matches, and reply with one line on what you changed and the whole new template in one `template` block, nothing after it.
+The task gives the measured differences between the original and your last print (`render_page_1.png`, the page of the sample body in your template; a blurred-image score, then a page count unlike the original's when there is one (fix it first: every line after a page break shifts with it), then sizes, colours and positions in points, the elements that differ most first), or the problems the guard found in your template. Change only the template: close the largest gaps, keep what already matches, and reply with one line on what you changed and the whole new template in one `template` block, nothing after it.
 
 ## The letter
 
