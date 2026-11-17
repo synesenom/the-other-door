@@ -45,6 +45,14 @@ genbadge = { extras = ["coverage"], version = "*" }
 pytest-xdist = "*"
 claude-agent-sdk = "0.2.181"
 
+# The style corpus scrubber (scripts/style_corpus/scrub_pdf.py) and its tests; not in a plain `poetry install`
+# (setup.sh): pikepdf has no wheels for Intel or older macOS. `poetry install --with corpus`
+[tool.poetry.group.corpus]
+optional = true
+
+[tool.poetry.group.corpus.dependencies]
+pikepdf = "*"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # tests/ mirrors the package layout in subfolders, so test modules are imported by

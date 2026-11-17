@@ -9,7 +9,8 @@ by one or in TJ arrays), whose tagged structure (StructTreeRoot, ActualText, Alt
 the page's and every form's text alike (rewrite_content). Every image becomes a flat grey box of its size (a photo, a
 logo). Every colour turns round the colour wheel by one random angle, greys kept
 (turn_colour). Links, outlines, forms, XMP and the document info but its Creator and Producer go.
-Needs pikepdf, which is not a project dependency: run it from its own venv (`python -m venv v && v/bin/pip install pikepdf`).
+Needs pikepdf, of the optional `corpus` group: `poetry install --with corpus`, then
+`poetry run python scripts/style_corpus/scrub_pdf.py ...`.
 
 usage: scrub_pdf.py <in.pdf> <out.pdf> <words.json>   (words.json from `scrub_check.py words <in.pdf>`, plus the
 words and numbers of the original's links and document info, which the text does not show)

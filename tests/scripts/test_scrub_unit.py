@@ -7,7 +7,7 @@ import pytest
 
 from paths import REPO_ROOT
 
-# scrub_pdf.py's pure parts (pikepdf, which only its own venv has, is imported where a PDF is opened)
+# scrub_pdf.py's pure parts (pikepdf, of the optional group: `poetry install --with corpus`, is imported where a PDF is opened)
 _scrub_spec = importlib.util.spec_from_file_location("scrub_pdf", REPO_ROOT / "scripts" / "style_corpus" / "scrub_pdf.py")
 scrub = importlib.util.module_from_spec(_scrub_spec)
 _scrub_spec.loader.exec_module(scrub)
@@ -425,7 +425,7 @@ def test_a_cff_font_program_and_the_structure_of_a_tagged_pdf_are_told_apart_in_
     assert left == ["/ActualText", "/Alt", "/StructTreeRoot"]
 
 
-# --- whole PDFs (pikepdf, which only the scrubber's own venv has) ---
+# --- whole PDFs (pikepdf: `poetry install --with corpus`; skipped without it) ---
 
 def _shown(op, operands):
     """The strings a Tj or a TJ shows, as bytes."""
