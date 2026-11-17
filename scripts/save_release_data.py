@@ -5,7 +5,10 @@
 Checks out the tag `vX.Y.Z` in a throwaway git worktree and runs, with that tag's `src/` on PYTHONPATH and a
 temporary home as `DOOR_HOME`, `release_data_generate.py` (the tag's own code writes a small `profile/` and `jobs/` of
 made-up data) and then `release_data.py snapshot` (the tag's own tools read it back). `profile/`, `jobs/` and
-`expected.json` are copied to `tests/data_versions/X.Y.Z/` and the worktree is removed. The gate
+`expected.json` are copied to `tests/data_versions/X.Y.Z/`, and the same again with the default profile
+(`DOOR_SAMPLE=default`: no template in `profile/`, both template keys null, #141) to `tests/data_versions/X.Y.Z/default/`;
+the worktree is removed. Each variant is saved only when it is missing (no `expected.json`, written last), so a rerun
+after a save that failed half way saves what is not there; a release with both is refused. The gate
 (`tests/release/test_release_data.py`) opens each saved folder with the current code and compares.
 
 No network, no `claude`: the generator writes through the release's stores and cores. `HOME`, `XDG_CONFIG_HOME` and
@@ -42,39 +45,52 @@ def save(version: str) -> Path:
         raise SystemExit(f"{version!r} is not a version: give X.Y.Z")
     tag = f"v{version}"
     run(["git", "rev-parse", "--verify", f"refs/tags/{tag}"], cwd=REPO)
-    target = SAMPLES / version
-    if target.exists():
-        raise SystemExit(f"{target} exists: delete it first to save it again")
+    release = SAMPLES / version
+    variants = {name: target for name, target in (("full", release), ("default", release / "default"))
+                if not (target / "expected.json").is_file()}
+    if not variants:
+        raise SystemExit(f"{release} exists with both variants: delete it first to save it again")
+    for target in variants.values():  # what a save that stopped half way left
+        for name in ("profile", "jobs"):
+            shutil.rmtree(target / name, ignore_errors=True)
     with tempfile.TemporaryDirectory(prefix="door-release-") as scratch:
         scratch = Path(scratch)
-        tree, home = scratch / "tree", scratch / "home"
-        home.mkdir()
+        tree = scratch / "tree"
         run(["git", "worktree", "add", "--detach", str(tree), tag], cwd=REPO)
         try:
-            env = {
-                **os.environ,
-                "PYTHONPATH": str(tree / "src"),
-                "DOOR_HOME": str(home),
-                "HOME": str(scratch / "userhome"),
-                "XDG_CONFIG_HOME": str(scratch / "config"),
-                "APPDATA": str(scratch / "config"),
-                "PYTHONDONTWRITEBYTECODE": "1",
-            }
-            env.pop("PYTHONHOME", None)
-            for key in ("ANTHROPIC_API_KEY", "DOOR_BIN"):
-                env.pop(key, None)
-            run([sys.executable, str(SCRIPTS / "release_data_generate.py")], cwd=tree, env=env)
-            # The first read renders the page images `show` makes when they are missing (and says so, `rendered`);
-            # the second is what the release answers from then on, and is the snapshot.
-            run([sys.executable, str(SCRIPTS / "release_data.py"), "snapshot", str(home)], cwd=tree, env=env)
-            expected = run([sys.executable, str(SCRIPTS / "release_data.py"), "snapshot", str(home)], cwd=tree, env=env)
+            for variant, target in variants.items():
+                _save_variant(tree, scratch / variant, target, variant)
         finally:
             run(["git", "worktree", "remove", "--force", str(tree)], cwd=REPO)
-        target.mkdir(parents=True)
-        for name in ("profile", "jobs"):
-            shutil.copytree(home / name, target / name, ignore=shutil.ignore_patterns(".lock", ".lock.json", ".progress.json", "__pycache__"))
-        (target / "expected.json").write_text(json.dumps(json.loads(expected), indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
-    return target
+    return release
+
+
+def _save_variant(tree: Path, scratch: Path, target: Path, variant: str) -> None:
+    """Generate one sample with the tag's code in a fresh home and copy it, with what the tag reads back, to *target*."""
+    home = scratch / "home"
+    home.mkdir(parents=True)
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(tree / "src"),
+        "DOOR_HOME": str(home),
+        "DOOR_SAMPLE": variant,
+        "HOME": str(scratch / "userhome"),
+        "XDG_CONFIG_HOME": str(scratch / "config"),
+        "APPDATA": str(scratch / "config"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+    env.pop("PYTHONHOME", None)
+    for key in ("ANTHROPIC_API_KEY", "DOOR_BIN"):
+        env.pop(key, None)
+    run([sys.executable, str(SCRIPTS / "release_data_generate.py")], cwd=tree, env=env)
+    # The first read renders the page images `show` makes when they are missing (and says so, `rendered`);
+    # the second is what the release answers from then on, and is the snapshot.
+    run([sys.executable, str(SCRIPTS / "release_data.py"), "snapshot", str(home)], cwd=tree, env=env)
+    expected = run([sys.executable, str(SCRIPTS / "release_data.py"), "snapshot", str(home)], cwd=tree, env=env)
+    target.mkdir(parents=True, exist_ok=True)
+    for name in ("profile", "jobs"):
+        shutil.copytree(home / name, target / name, ignore=shutil.ignore_patterns(".lock", ".lock.json", ".progress.json", "__pycache__"))
+    (target / "expected.json").write_text(json.dumps(json.loads(expected), indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def main(argv: list[str]) -> int:
