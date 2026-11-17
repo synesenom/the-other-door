@@ -290,9 +290,10 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
     """The wizard offers the style build only for a file that has a style to copy (#150)."""
     _answer(monkeypatch)
     styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
-    sources = [str(styled), str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane"]
+    three = styled.with_name("html-three-columns.pdf")
+    sources = [str(styled), str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane", str(three)]
     result = cv_cmd._draft_cv_core(sources, profile_dir=env.profile_dir)
-    assert [s.get("style") for s in result["sources"]] == [True, False, False, None]
+    assert [s.get("style") for s in result["sources"]] == [True, False, False, None, False]
 
 
 def test_a_draft_extracts_each_pdf_once(env, monkeypatch):

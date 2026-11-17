@@ -119,26 +119,6 @@ def html_equal_columns(r: dict) -> str:
     return _html(css, f"<h1>{e(r['name'])}</h1><div>{e(r['title'])}</div><div class='cols'><div class='left'>{left}</div><div class='right'>{right}</div></div>")
 
 
-def html_europass(r: dict) -> str:
-    """A Europass-like page: a narrow label column down the left holds every section title and the dates, the
-    entries are in a wide column at the right."""
-    c = r["contact"]
-    css = ("body{font:10.5pt Calibri,'Helvetica Neue',Arial,sans-serif;color:#222;padding:40px}h1{font-size:24pt;margin:0}"
-           ".row{display:grid;grid-template-columns:110pt 1fr;gap:16pt;margin:10pt 0}.lab{font-weight:bold;color:#0b4f8a}"
-           ".dates{color:#555}ul{margin:2pt 0;padding-left:16px}")
-    rows = (f"<div class='row'><div class='lab'>PERSONAL INFORMATION</div><div><b>{e(r['name'])}</b>"
-            f"{''.join(f'<div>{e(v)}</div>' for v in c.values())}</div></div>"
-            "<div class='row'><div class='lab'>WORK EXPERIENCE</div><div></div></div>")
-    rows += "".join(
-        f"<div class='row'><div class='dates'>{e(j['dates'])}</div><div><b>{e(j['role'])}</b><div>{e(j['company'])}</div>"
-        f"<ul>{''.join(f'<li>{e(b)}</li>' for b in j['bullets'])}</ul></div></div>" for j in r["experience"])
-    rows += "<div class='row'><div class='lab'>EDUCATION</div><div></div></div>"
-    rows += "".join(f"<div class='row'><div class='dates'>{e(x['dates'])}</div><div><b>{e(x['degree'])}</b>"
-                    f"<div>{e(x['school'])}</div></div></div>" for x in r["education"])
-    rows += f"<div class='row'><div class='lab'>SKILLS</div><div>{e(', '.join(r['skills']))}</div></div>"
-    return _html(css, rows)
-
-
 def html_three_columns(r: dict) -> str:
     """Three columns: contact, skills, languages and interests at the left, the experience in the middle, the
     education, projects and certifications at the right."""
@@ -252,7 +232,7 @@ def build(out: Path, printer=html_pdf.print_html) -> None:
     pages = [("html-word-two-column", source(1)), ("html-canva-icons", source(2)),
              ("html-plain-single", source(3)), ("linkedin-like", linkedin_html(record(4))),
              ("html-equal-columns", html_equal_columns(record(5))),
-             ("html-europass", html_europass(record(5))), ("html-three-columns", html_three_columns(record(5)))]
+             ("html-three-columns", html_three_columns(record(5)))]
     with tempfile.TemporaryDirectory() as folder:
         for stem, html in pages:
             printer(Path(folder), with_fonts(html), out / f"{stem}.pdf", assets={"fonts": fonts})

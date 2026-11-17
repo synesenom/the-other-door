@@ -1459,7 +1459,7 @@ def build_style(file: str) -> dict:
         file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).
 
     Returns:
-        ``{"started": True}``, or ``{"error": <why nothing started: no Chromium to print with, or no style to copy (not a PDF, a scan, a LinkedIn export)>}``.
+        ``{"started": True}``, or ``{"error": <why nothing started: no Chromium to print with, or no style to copy (not a PDF, a scan, a LinkedIn export, a CV of three columns)>}``.
     """
     return style_cmd._start_core(str(path_scope.check(file)))
 

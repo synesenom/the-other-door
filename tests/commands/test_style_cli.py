@@ -143,6 +143,8 @@ def test_a_scan_and_a_linkedin_export_are_named_in_whole_sentences(home, world):
         "error": "scan.pdf looks like a scan: there is no text in it to copy the style from."}
     assert mcp_server.build_style(str(STYLES / "linkedin-like.pdf")) == {
         "error": "linkedin-like.pdf is a LinkedIn export, which has no design of its own to copy."}
+    assert mcp_server.build_style(str(STYLES / "html-three-columns.pdf")) == {
+        "error": "html-three-columns.pdf has three or more columns, which the template model cannot place."}
     assert world.spawned == []
 
 
@@ -157,6 +159,9 @@ def test_a_scan_is_refused_with_the_verdict_and_leaves_the_existing_style_and_st
         style_cmd._start_core(str(STYLES / "scan.pdf"))
     assert world.spawned == [] and not (home / ".style").exists()
     assert (cli_env.profile_dir / "style" / "cv.template.html").read_text() == "kept"
+    with pytest.raises(ValueError, match="three or more columns"):
+        style_cmd._start_core(str(STYLES / "html-three-columns.pdf"))
+    assert world.spawned == []
 
 
 def test_the_command_exits_non_zero_with_the_reason(home, tmp_path):

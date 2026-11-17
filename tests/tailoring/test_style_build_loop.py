@@ -210,8 +210,7 @@ def test_a_model_error_is_a_failed_result_not_an_exception(world):
 @pytest.mark.parametrize("pdf, words", [
     ("scan", "scan.pdf looks like a scan: there is no text in it to copy the style from."),
     ("linkedin-like", "linkedin-like.pdf is a LinkedIn export, which has no design of its own to copy."),
-    ("html-europass", "html-europass.pdf has a label column down the left, as a Europass CV does, which the template model cannot place."),
-    ("html-three-columns", "html-three-columns.pdf has three columns, which the template model cannot place."),
+    ("html-three-columns", "html-three-columns.pdf has three or more columns, which the template model cannot place."),
 ])
 def test_a_cv_with_no_style_to_copy_fails_in_words_without_asking_the_model(world, pdf, words):
     stylist = Stylist("unused")
@@ -616,3 +615,11 @@ def test_a_cv_with_two_equal_columns_is_rebuilt_with_a_side_column(world):
     assert world.build("html-equal-columns", Stylist(*GOOD))["state"] == "ready"
     manifest = templates.manifest(world.style / "cv.template.html")
     assert manifest.columns.side and manifest.columns.headings
+
+
+def test_a_print_of_three_columns_is_judged_not_stopped_as_having_no_text(world):
+    """The layout refusal is for the uploaded CV only: a render is read, and `column_problems` judges it (#318)."""
+    world.print_as = lambda folder: STYLES / "html-three-columns.pdf"
+    result = world.build("html-word-two-column", Stylist(*GOOD), cap=2)
+    assert not any("no text to read back" in p for p in result["problems"])
+    assert result["rounds"] == 2 or result["state"] == "ready"

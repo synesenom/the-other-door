@@ -7,7 +7,7 @@ designs; a new one is picked up from expected.json), each with the example CV as
 unreachable, a user's CV far shorter or far longer than the one whose look is copied. A build whose best round stays
 under `style_compare.FLOOR` fails and writes nothing; a ready one's style is then chosen and previewed, as the app does,
 and that print is read back: its columns, and what an ATS reads of it. Every check is on behaviour, never on the model's
-HTML. A CV with nothing to copy (a scan, a LinkedIn export) stops before the model and is tested offline
+HTML. A CV with nothing to copy (a scan, a LinkedIn export, three columns) stops before the model and is tested offline
 (`tests/tailoring/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
 
 A case a known issue still breaks is an `xfail` naming it: the release gate stays green, and a pass shows as XPASS.

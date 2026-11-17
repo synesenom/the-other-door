@@ -786,40 +786,33 @@ def test_spaced_level_dots_do_not_widen_a_column_band():
 
 # ---------- layouts the template model cannot place (#318) ----------
 
-def label_rows(titles, with_entries=True):
-    """A Europass-like page: each section's title in a narrow label column at the left, dates under it, the entries
-    in a wide column at the right (*titles* none in the wide one)."""
-    out = ""
-    for i, title in enumerate(titles):
-        top = 780 - 130 * i
-        out += text("F2", 12, 40, top, title) + stack(40, top - 16, 2, "2020 -")
-        if with_entries:
-            out += stack(200, top, 6, "An entry of the section with words that run on")
-    return out
-
-
-def test_a_label_column_holding_all_the_section_titles_has_no_place_in_the_template_model(tmp_path):
-    style = read(tmp_path, label_rows(["Skills", "Education", "Languages"]))
-    verdict = style["verdict"]
-    assert verdict["copyable"] is False and verdict["reason"] == "layout"
-    assert verdict["detail"].startswith("has a label column down the left, as a Europass CV does")
-    assert "runs" not in style and style["columns"]["count"] == 2
+def three_columns(tmp_path):
+    return read(tmp_path, titled(40, ["Skills", "Languages"]) + titled(300, ["Experience"]) + titled(560, ["Education"]),
+                size=(900, 800))
 
 
 def test_three_columns_have_no_place_in_the_template_model(tmp_path):
-    style = read(tmp_path, titled(40, ["Skills", "Languages"]) + titled(300, ["Experience"]) + titled(560, ["Education"]),
-                 size=(900, 800))
+    style = three_columns(tmp_path)
     assert style["verdict"]["copyable"] is False and style["verdict"]["reason"] == "layout"
-    assert style["verdict"]["detail"] == "has three columns, which the template model cannot place."
+    assert style["verdict"]["detail"] == "has three or more columns, which the template model cannot place."
     assert style["columns"]["count"] == 3
 
 
-def test_a_sidebar_cv_with_its_section_titles_in_both_columns_is_copyable(tmp_path):
-    style = read(tmp_path, titled(40, ["Skills", "Education", "Languages"]) + titled(300, ["Experience", "Projects"]))
+def test_a_three_column_cv_keeps_its_text_and_colours_for_the_draft(tmp_path):
+    style = three_columns(tmp_path)
+    assert len(style["runs"]) > 20 and style["colors"] and style["headings"] and style["fonts"]
+
+
+@pytest.mark.parametrize("side_color,main_color,main_size,names", [
+    ("0 0 0", "0 0 0", 12, ["Experience", "Projects"]), ("0.6 0.1 0.1", "0 0 0", 12, ["Experience", "Projects"]),
+    ("0.9 0.9 0.9", "0.1 0.1 0.1", 12, ["Experience", "Projects"]),
+    ("0 0 0", "0.1 0.3 0.6", 16, ["Where I worked", "Things I built"]),
+    ("0.6 0.1 0.1", "0 0 0", 16, ["Berufserfahrung"]),
+])
+def test_a_sidebar_cv_stays_copyable_whatever_its_main_headings_look_like(tmp_path, side_color, main_color, main_size, names):
+    side = "".join(text("F2", 12, 40, 780 - 90 * i, t, side_color) + stack(40, 764 - 90 * i, 5, "Short side")
+                   for i, t in enumerate(["Skills", "Languages", "Education"]))
+    main = "".join(text("F2", main_size, 250, 780 - 220 * i, t, main_color) + stack(250, 764 - 220 * i, 12, "A longer line of the main text")
+                   for i, t in enumerate(names))
+    style = read(tmp_path, text("F2", 24, 40, 825, "Jane Doe") + side + main)
     assert style["verdict"]["copyable"] is True and style["columns"]["count"] == 2
-
-
-def test_an_ordinary_sidebar_with_the_section_titles_in_the_side_only_stays_copyable(tmp_path):
-    side = titled(40, ["Skills", "Education"])
-    main = text("F2", 12, 300, 780, "Experience") + stack(300, 764, 12, "A line of the main text that runs on and on")
-    assert read(tmp_path, side + main)["verdict"]["copyable"] is True

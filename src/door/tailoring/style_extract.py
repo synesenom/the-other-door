@@ -3,8 +3,7 @@ shapes, icons as SVG paths, the photo. Pure and offline: pypdfium2 and Pillow, n
 
 `extract(pdf_path)` returns one dict (schema version 1, points, the origin at the top left, colours `#rrggbb`):
 `verdict` first (`style_verdict` says when there is nothing to copy: a scan or a LinkedIn export; `layout_verdict`
-a page of a label column or of three columns, which the template cannot place; the other keys are then left out,
-a layout refusal keeps `columns`), then `runs` (one per piece of text on a line), `fonts`, `page` (size, margins, bleed,
+a page of three columns, which the template cannot place, with every other key still there), then `runs` (one per piece of text on a line), `fonts`, `page` (size, margins, bleed,
 background), `colors` (text, accent), `name`, `columns` (bands), `headings` and `heading_style`, `shapes`, `icons`
 (SVG paths next to the text they belong to), `photo`. Fonts are only described (family, weight, italic, serif, fixed); looking
 them up is another step. Icons are `style_icons`'s, traced by `style_trace`.
@@ -682,18 +681,12 @@ def _verdict(copyable: bool, reason: str, detail: str) -> dict:
     return {"copyable": copyable, "reason": reason, "detail": detail}
 
 
-def layout_verdict(columns: dict, headings: list[dict]) -> dict | None:
-    """The `layout` verdict (#318) for a page the template's header, main and side bands cannot place, or None:
-    three or more columns, or two where the narrow one is a label column (a Europass CV's: at least two section
-    headings down it and none in the wide one). The reason is that a rebuilt page would drop or move a column."""
-    bands = columns["bands"]
-    if len(bands) >= 3:
-        return _verdict(False, "layout", f"has {'three' if len(bands) == 3 else len(bands)} columns, "
-                                         "which the template model cannot place.")
-    in_side = sum(h["band"] == "side" for h in headings)
-    if len(bands) == 2 and in_side >= 2 and not any(h["band"] == "main" for h in headings):
-        return _verdict(False, "layout", "has a label column down the left, as a Europass CV does, "
-                                         "which the template model cannot place.")
+def layout_verdict(columns: dict) -> dict | None:
+    """The `layout` verdict (#318) for a page the template's header, main and side bands cannot place: three or
+    more columns, which a rebuilt page would merge or drop. (A Europass CV's label column has no sure mark apart
+    from a sidebar's: the rows its labels share with the entries are as many as a sidebar CV's.)"""
+    if len(columns["bands"]) >= 3:
+        return _verdict(False, "layout", "has three or more columns, which the template model cannot place.")
     return None
 
 
@@ -762,9 +755,7 @@ def extract(pdf_path: Path) -> dict:
         columns = column_bands(pages, shapes)
         name = find_name(runs)
         headings = find_headings(runs, shapes, columns["bands"], name)
-        if refused := layout_verdict(columns, headings):
-            return {**head, "verdict": refused, "columns": columns}
-        return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
+        return {**head, "verdict": layout_verdict(columns) or head["verdict"], "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
                 "columns": columns, "headings": headings, "heading_style": heading_style(headings),
                 "runs": [{k: v for k, v in r.items() if k not in _INTERNAL} for r in runs], "shapes": shapes,
                 "icons": style_icons.find_icons(doc, pages), "photo": pages[0]["photo"]}
