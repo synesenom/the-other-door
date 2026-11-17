@@ -29,7 +29,7 @@ from style_build_utils import EXAMPLE, STYLES
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
 from door.core import chromium, fonts, templates, workspace
-from door.tailoring import cv_body, readability, style_build, style_compare, style_extract
+from door.tailoring import cv_body, readability, style_build, style_compare, style_extract, style_structure
 
 pytestmark = [pytest.mark.model, pytest.mark.real_chromium]
 
@@ -193,20 +193,17 @@ def test_the_candidate_has_its_files(builds, name):
         assert (home / "profile" / "style.next" / file).is_file(), file
 
 
-def _heading_columns(pdf: Path) -> int:
-    """How many columns a print's section headings stand in: groups of their left edges more than a sixth of the page
-    apart. (`style_extract`'s column bands need a side column of many lines; a user's may have a few.)"""
-    style = style_extract.extract(pdf)
-    lefts = sorted({round(h["bbox"][0]) for h in style["headings"]})
-    gap = style["page"]["size"][0] / 6
-    return 1 + sum(1 for a, b in zip(lefts, lefts[1:]) if b - a > gap) if lefts else 0
+def _columns(pdf: Path) -> int:
+    """How many columns of text a print has, as the model reads them (`style_structure`, the call the build makes of an
+    original; a print is read with no structure, so this is a second reading of what the build wrote)."""
+    return style_structure.extract(pdf)["columns"]["count"]
 
 
 @pytest.mark.parametrize("name", CASES)
 def test_the_chosen_style_prints_the_users_cv_in_the_originals_columns(chosen, name):
     pdf, _ = chosen(name)
     case = CASES[name]
-    assert _heading_columns(pdf) == (case.columns or EXPECTED[case.pdf]["columns"])
+    assert _columns(pdf) == (case.columns or EXPECTED[case.pdf]["columns"])
 
 
 @pytest.mark.parametrize("name", [n for n, c in CASES.items() if "photo_shape" in EXPECTED[c.pdf]])

@@ -244,6 +244,18 @@ describe('scenes', () => {
     expect(await screen.findByText('Preparing the previews…')).toBeInTheDocument()
   })
 
+  it('profile-cv-style-reading shows the spinner once the file is chosen', async () => {
+    mount('profile-cv-style-reading')
+    await pressInOrder(sceneById('profile-cv-style-reading')!.press!)
+    expect(await screen.findByText("Reading your CV's look…")).toBeInTheDocument()
+  })
+
+  it('profile-cv-style-unread names the failed read', async () => {
+    mount('profile-cv-style-unread')
+    await pressInOrder(sceneById('profile-cv-style-unread')!.press!)
+    expect(await screen.findByRole('alert')).toHaveTextContent("Claude's usage limit is reached")
+  })
+
   it('profile-cv-style-building keeps the sheet and says the build runs', async () => {
     mount('profile-cv-style-building')
     expect(await screen.findByText('Building your style…')).toBeInTheDocument()

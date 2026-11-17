@@ -22,8 +22,10 @@ from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO))  # scripts.style_corpus.structure_cases, which writes its PDFs with tests/pdf_utils
 
 from door.tailoring import html_pdf, pdf_render  # noqa: E402
+from scripts.style_corpus import structure_cases  # noqa: E402
 
 FONT_DIR = REPO / "profile.example" / "fonts"
 OUT = REPO / "tests" / "tailoring" / "fixtures" / "styles"
@@ -252,7 +254,7 @@ def scan_pdf(image: Image.Image, out: Path) -> None:
 
 
 def build(out: Path, printer=html_pdf.print_html) -> None:
-    """Write the corpus PDFs into *out*: the HTML designs, the LinkedIn-like export and the scan."""
+    """Write the corpus PDFs into *out*: the HTML designs, the LinkedIn-like export, the scan and the hand-written CVs."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     fonts = [FONT_DIR / name for _, name, _, _ in _FACES]
@@ -269,6 +271,15 @@ def build(out: Path, printer=html_pdf.print_html) -> None:
             printer(Path(folder), with_fonts(html), out / f"{stem}.pdf", assets={"fonts": fonts})
     plain = out / "html-plain-single.pdf"
     scan_pdf(_first_page_image(plain), out / "scan.pdf")
+    build_structure_cases(out)
+
+
+def build_structure_cases(out: Path) -> None:
+    """Write the hand-written CVs of `scripts/style_corpus/structure_cases.py` (no Chromium needed) into *out*."""
+    out = Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    for stem, (data, _, _) in structure_cases.CASES.items():
+        (out / f"{stem}.pdf").write_bytes(data)
 
 
 def _first_page_image(pdf: Path) -> Image.Image:

@@ -47,6 +47,7 @@ test('compare the default with a style built from a CV: build, choose it, print 
   await expect(page.getByRole('button', { name: 'Use this style', exact: true })).toBeVisible({ timeout: 240_000 })
   await expect(readyLine(page)).toBeVisible()
   await loaded(page, 'Like your CV, first page')
+  expect(world.claudeCalls('structure')).toHaveLength(1) // read when the file was taken in; the build reused it
   expect(exists(world, 'profile/style.next/cv.template.html')).toBe(true)
   expect(exists(world, 'profile/style/cv.template.html')).toBe(false)
   expect(config(world).cv_template ?? null).toBeNull() // nothing in use changed by building
@@ -88,4 +89,15 @@ test('compare the default with a style built from a CV: build, choose it, print 
   expect(config(world).cv_template).toBeNull()
   expect(config(world).cover_letter_template).toBeNull()
   expect(exists(world, 'profile/style/cv.template.html')).toBe(true)
+})
+
+test('a CV whose structure the model could not read is refused in words and no build starts', async ({ page, world, os }) => {
+  world.faults({ claude: { structure: { fail: 'Claude usage limit reached' } } })
+  await openCv(page)
+  await expect(sheet(page, "The other door's, first page")).toBeVisible({ timeout: 90_000 })
+  await os.nextOpen([scratchFile(world, 'my-cv.pdf', readFileSync(STYLED_PDF))])
+  await page.getByRole('button', { name: 'Use the style of my CV…' }).click()
+  await expect(page.getByRole('alert')).toContainText("Claude could not be reached, or Claude's usage limit is reached")
+  await expect(page.getByText('Building your style…')).toHaveCount(0)
+  expect(exists(world, 'profile/style.next/cv.template.html')).toBe(false)
 })

@@ -40,6 +40,8 @@ export const CHANNELS = {
   buildStyle: 'door:build-style',
   /** A CV chosen from Profile → CV to build a style from: the dialog and the build both run in main (style-file.ts). */
   chooseStyleFile: 'door:choose-style-file',
+  /** Sent to the window once a file is chosen for it, before its structure is read. */
+  styleReading: 'door:style-reading',
   /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
   claudeLoginStart: 'door:claude-login-start',
   claudeLoginCode: 'door:claude-login-code',
@@ -126,6 +128,8 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   // show_style prints up to four pages cold; use_style with rerender prints each prepared application again.
   show_style: 180_000,
   use_style: 600_000,
+  // build_style reads the CV's structure with one Haiku call (60 s on the server) before it starts the build.
+  build_style: 120_000,
 }
 
 // The demo and the onboarding sandbox run on made-up data: none of it may reach the user's Drive.
@@ -390,13 +394,14 @@ export function registerIpc(
   }
 
   // A style built from a CV chosen in Profile → CV: the dialog and the build both here; the window names no path.
-  ipcMain.handle(CHANNELS.chooseStyleFile, async (): Promise<Envelope> => {
+  ipcMain.handle(CHANNELS.chooseStyleFile, async (event): Promise<Envelope> => {
     if (deps.info?.demo || !deps.styleFile) return { ok: false, error: 'A style cannot be built from made-up data.' }
     const chosen = await deps.styleFile.choose()
     if ('canceled' in chosen) return { ok: true, data: { canceled: true } }
     if ('error' in chosen) return { ok: false, error: chosen.error }
+    ;(event as { sender?: { send(channel: string): void } } | undefined)?.sender?.send(CHANNELS.styleReading)
     try {
-      return { ok: true, data: await server.call('build_style', { file: chosen.path }) }
+      return { ok: true, data: await server.call('build_style', { file: chosen.path }, { timeout: TOOL_TIMEOUTS['build_style'] }) }
     } catch (e) {
       return failureEnvelope(e)
     }
@@ -409,7 +414,7 @@ export function registerIpc(
     const resolved = await deps.cvSources.resolve([token])
     if (!resolved.ok) return resolved
     try {
-      return { ok: true, data: await server.call('build_style', { file: resolved.paths[0] }) }
+      return { ok: true, data: await server.call('build_style', { file: resolved.paths[0] }, { timeout: TOOL_TIMEOUTS['build_style'] }) }
     } catch (e) {
       return failureEnvelope(e)
     }

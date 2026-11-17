@@ -24,7 +24,7 @@ from door import i18n
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.core import claude_cli, fonts, pinned, progress as progress_mod, templates, workspace
-from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_icons, style_preview)
+from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_icons, style_preview, style_structure)
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
@@ -139,8 +139,8 @@ def _side_kinds(style: dict, cv_md: str) -> list[str]:
     names a kind, the kinds of skills, languages and interests that `cv_md` has: a tailored CV puts those there. Empty
     for a CV with no side band, or with nothing of those in `cv_md` (one column)."""
     kinds: list[str] = []
-    for text in _side_headings(style):
-        kind = i18n.cv_section_kind(text, templates.SECTION_KINDS)
+    for heading in (h for h in style["headings"] if h["band"] == "side"):
+        kind = heading["kind"] if heading["kind"] in templates.SECTION_KINDS else None
         if kind and kind not in kinds:
             kinds.append(kind)
     if not kinds and _side_headings(style):
@@ -526,7 +526,7 @@ class _Session:
         pdf, placed, _ = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
                                                 columns=self.manifest.columns, photo=self.photo)
         render = style_extract.extract(pdf)
-        if not render["verdict"]["copyable"] and render["verdict"]["reason"] != "layout":  # a render of three columns is judged by `column_problems`
+        if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
         diffs = style_compare.match(self.style, render)
         score = style_compare.pages_score(self.images, style_compare.page_images(pdf, self.work))
@@ -760,7 +760,10 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
     refused = style_extract.not_pdf(pdf_path)
     if refused:
         raise _Stop(f"{pdf_path.name} {refused['detail']}")
-    style = style_extract.extract(pdf_path)
+    try:
+        style = style_structure.extract(pdf_path)  # the one model call per original; `style` has made it already
+    except style_structure.StructureError as exc:
+        raise _Stop(str(exc)) from None
     if not style["verdict"]["copyable"]:
         raise _Stop(f"{pdf_path.name} {style['verdict']['detail']}")
     shutil.rmtree(work, ignore_errors=True)

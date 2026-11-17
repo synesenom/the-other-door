@@ -20,7 +20,7 @@ from door.cli import cli
 from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, lock, phone, workspace
+from door.core import chromium, claude_cli, lock, phone, workspace
 from door.tailoring import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR
@@ -116,7 +116,7 @@ def test_start_refuses_in_words_without_a_chromium_and_starts_nothing(home, worl
 def test_the_tool_says_a_missing_chromium_in_words_with_no_shell_command(home, world, cv_pdf, monkeypatch):
     # the app's Profile → CV shows this error as it comes (#273): no command, no tool name
     monkeypatch.setattr(common, "_chromium_available", lambda: False)
-    error = mcp_server.build_style(str(cv_pdf))["error"]
+    error = asyncio.run(mcp_server.build_style(str(cv_pdf)))["error"]
     assert error == str(common.NoChromium())
     assert "./door" not in error and "doctor" not in error
 
@@ -133,23 +133,48 @@ def test_the_build_command_refuses_without_a_chromium_before_any_model_round_and
 def test_a_pdf_that_cannot_be_read_is_named_in_words_without_the_library_message(home, world, tmp_path):
     broken = tmp_path / "broken.pdf"
     broken.write_bytes(b"%PDF-1.4\nnot really a pdf")
-    assert mcp_server.build_style(str(broken)) == {"error": "broken.pdf is not a PDF The other door can read."}
+    assert asyncio.run(mcp_server.build_style(str(broken))) == {"error": "broken.pdf is not a PDF The other door can read."}
     assert world.spawned == []
 
 
 def test_a_scan_and_a_linkedin_export_are_named_in_whole_sentences(home, world):
     # the app's error box shows them as they come (#273): the file's name, then why, no measurement
-    assert mcp_server.build_style(str(STYLES / "scan.pdf")) == {
+    assert asyncio.run(mcp_server.build_style(str(STYLES / "scan.pdf"))) == {
         "error": "scan.pdf looks like a scan: there is no text in it to copy the style from."}
-    assert mcp_server.build_style(str(STYLES / "linkedin-like.pdf")) == {
+    assert asyncio.run(mcp_server.build_style(str(STYLES / "linkedin-like.pdf"))) == {
         "error": "linkedin-like.pdf is a LinkedIn export, which has no design of its own to copy."}
-    assert mcp_server.build_style(str(STYLES / "html-three-columns.pdf")) == {
+    assert asyncio.run(mcp_server.build_style(str(STYLES / "html-three-columns.pdf"))) == {
         "error": "html-three-columns.pdf has three or more columns, which the template model cannot place."}
     assert world.spawned == []
 
 
+def test_a_cv_whose_structure_could_not_be_read_is_refused_in_words_and_nothing_starts(home, world, monkeypatch):
+    from door.tailoring import style_structure
+
+    def broken(text, feature="style"):
+        raise claude_cli.ClaudeError("claude -p timed out after 60s")
+
+    monkeypatch.setattr(style_structure, "_ask", broken)
+    assert asyncio.run(mcp_server.build_style(str(STYLES / "html-word-two-column.pdf"))) == {
+        "error": "Claude could not be reached, or Claude's usage limit is reached. Try again later."}
+    assert world.spawned == []
+
+
+def test_the_intake_leaves_the_structure_cached_so_the_build_makes_no_second_call(home, world, monkeypatch):
+    from door.tailoring import style_structure
+    from style_structure_utils import fake_ask
+
+    monkeypatch.setattr(style_structure, "_cache_dir", lambda: home / ".style" / "structure")
+    asked = []
+    monkeypatch.setattr(style_structure, "_ask", lambda text, feature="style": asked.append(text) or fake_ask(text))
+    asyncio.run(mcp_server.build_style(str(STYLES / "html-word-two-column.pdf")))
+    assert len(asked) == 1 and len(list((home / ".style" / "structure").glob("*.json"))) == 1
+    style_structure.structure_for(STYLES / "html-word-two-column.pdf")  # what the detached build reads
+    assert len(asked) == 1
+
+
 def test_a_file_that_is_gone_is_named_not_its_path(home, world, tmp_path):
-    assert mcp_server.build_style(str(tmp_path / "gone.pdf")) == {"error": "gone.pdf could not be found."}
+    assert asyncio.run(mcp_server.build_style(str(tmp_path / "gone.pdf"))) == {"error": "gone.pdf could not be found."}
 
 
 def test_a_scan_is_refused_with_the_verdict_and_leaves_the_existing_style_and_state_alone(home, world, cli_env):
@@ -268,14 +293,14 @@ def test_start_leaves_a_finished_build_alone(home, cv_pdf, world):
 
 
 def test_the_tool_starts_a_build_and_says_so(home, cv_pdf, monkeypatch, world):
-    assert mcp_server.build_style(str(cv_pdf)) == {"started": True}
+    assert asyncio.run(mcp_server.build_style(str(cv_pdf))) == {"started": True}
     assert len(world.spawned) == 1
 
 
 def test_the_tool_answers_intake_in_words(home, tmp_path):
     docx = tmp_path / "cv.docx"
     docx.write_bytes(b"x")
-    assert mcp_server.build_style(str(docx)) == {"error": "cv.docx is not a PDF, so it has no layout to copy."}
+    assert asyncio.run(mcp_server.build_style(str(docx))) == {"error": "cv.docx is not a PDF, so it has no layout to copy."}
 
 
 # ----------------------------------------------------------------------------- ending a build

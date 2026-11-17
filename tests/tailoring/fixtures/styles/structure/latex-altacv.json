@@ -1,0 +1,43 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "two",
+  "side_x0": 399,
+  "side_x1": 514
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 4,
+   "kind": "experience"
+  },
+  {
+   "id": 5,
+   "kind": "contact"
+  },
+  {
+   "id": 16,
+   "kind": "skills"
+  },
+  {
+   "id": 35,
+   "kind": "languages"
+  },
+  {
+   "id": 42,
+   "kind": "education"
+  }
+ ],
+ "entry_titles": [
+  6,
+  9,
+  18,
+  21,
+  29,
+  32,
+  43,
+  44,
+  45,
+  46
+ ]
+}

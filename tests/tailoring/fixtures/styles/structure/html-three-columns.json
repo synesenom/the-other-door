@@ -1,0 +1,65 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "three_or_more",
+  "side_x0": 27,
+  "side_x1": 146
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 2,
+   "kind": "contact"
+  },
+  {
+   "id": 3,
+   "kind": "experience"
+  },
+  {
+   "id": 4,
+   "kind": "education"
+  },
+  {
+   "id": 19,
+   "kind": "skills"
+  },
+  {
+   "id": 25,
+   "kind": "projects"
+  },
+  {
+   "id": 44,
+   "kind": "languages"
+  },
+  {
+   "id": 60,
+   "kind": "interests"
+  },
+  {
+   "id": 62,
+   "kind": "certifications"
+  }
+ ],
+ "entry_titles": [
+  6,
+  10,
+  31,
+  35,
+  57,
+  61,
+  8,
+  11,
+  16,
+  18,
+  29,
+  36,
+  41,
+  46,
+  51,
+  56,
+  67,
+  70,
+  73,
+  76
+ ]
+}

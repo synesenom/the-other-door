@@ -61,6 +61,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
   const [shown, setShown] = useState<Shown | null>(null)
   const [open, setOpen] = useState<Which | null>(null)
   const [busy, setBusy] = useState(false)
+  const [reading, setReading] = useState(false) // the chosen CV's structure is being read, before the build starts
   const [error, setError] = useState<string | null>(null)
   const [rerender, setRerender] = useState<Rerender | null>(null)
   const latest = useRef(0)
@@ -89,6 +90,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
   const choose = async () => {
     setError(null)
     setBusy(true)
+    const stop = window.door.onStyleReading(() => setReading(true))
     try {
       const r = (await window.door.chooseStyleFile()) as { ok: boolean; error?: string; data?: { canceled?: true } }
       if (!r.ok) setError(r.error ?? 'That file could not be used.')
@@ -97,7 +99,9 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
         onChanged()
       }
     } finally {
+      stop()
       setBusy(false)
+      setReading(false)
     }
   }
   const use = async (style: Choice) => {
@@ -196,8 +200,8 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
             {earlier && <p className="small muted">Your earlier style is in use.</p>}
             {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
             {!hasLike && !building && canBuild && <p className="small muted">Make your tailored CVs look like a CV of yours. Takes 2–5 minutes in the background.</p>}
-            {building ? (
-              <Spinner message="Building your style…" />
+            {building || reading ? (
+              <Spinner message={building ? 'Building your style…' : "Reading your CV's look…"} />
             ) : (
               canBuild &&
               !candidate && (

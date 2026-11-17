@@ -28,6 +28,8 @@ declare global {
       buildStyle(token: string): Promise<Envelope>
       /** Profile → CV: choose a CV PDF in a dialog and start building a style from it; the window names no path. */
       chooseStyleFile(): Promise<Envelope>
+      /** A file was chosen in `chooseStyleFile`'s dialog and is being read; returns the way to stop. */
+      onStyleReading(cb: () => void): () => void
       /** Signing in to Claude: the main process runs `claude auth login` and pushes its state. */
       claudeLogin: {
         start(email?: string): Promise<{ ok: boolean; error?: string }>

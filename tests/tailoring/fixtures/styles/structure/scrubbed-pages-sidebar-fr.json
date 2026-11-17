@@ -1,0 +1,56 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "two",
+  "side_x0": 32,
+  "side_x1": 145
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 3,
+   "kind": "summary"
+  },
+  {
+   "id": 7,
+   "kind": "experience"
+  },
+  {
+   "id": 157,
+   "kind": "other"
+  },
+  {
+   "id": 13,
+   "kind": "other"
+  },
+  {
+   "id": 32,
+   "kind": "other"
+  },
+  {
+   "id": 50,
+   "kind": "other"
+  },
+  {
+   "id": 75,
+   "kind": "other"
+  },
+  {
+   "id": 110,
+   "kind": "other"
+  }
+ ],
+ "entry_titles": [
+  8,
+  19,
+  41,
+  58,
+  89,
+  101,
+  119,
+  147,
+  158,
+  160,
+  161
+ ]
+}

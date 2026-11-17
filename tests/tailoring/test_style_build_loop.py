@@ -14,6 +14,7 @@ from PIL import Image
 from door.core import claude_cli, fonts, templates
 from door.tailoring import html_guard, html_pdf, readability, style_build, style_compare
 from profile_utils import base_config
+from style_structure_utils import extract_with, recorded
 from style_build_utils import (EXAMPLE, SAMPLE_BODY, STYLES, Stylist, adapt, cv_only, cv_round, fake_fonts, letter_round,
                                reply)
 
@@ -216,6 +217,30 @@ def test_a_cv_with_no_style_to_copy_fails_in_words_without_asking_the_model(worl
     stylist = Stylist("unused")
     result = world.build(pdf, stylist)
     assert result["state"] == "failed" and result["problems"] == [words] and stylist.calls == []
+
+
+def test_a_structure_the_model_could_not_read_fails_the_build_in_words_and_writes_nothing(world, monkeypatch):
+    from door.tailoring import style_structure
+
+    def broken(text, feature="style"):
+        raise claude_cli.ClaudeError("claude -p timed out after 60s")
+
+    monkeypatch.setattr(style_structure, "_ask", broken)
+    stylist = Stylist("unused")
+    result = world.build("html-word-two-column", stylist)
+    assert result["state"] == "failed" and stylist.calls == []
+    assert result["problems"] == ["Claude could not be reached, or Claude's usage limit is reached. Try again later."]
+    assert not world.style.exists() and not world.work.exists()
+
+
+def test_a_build_asks_the_model_for_the_structure_once(world, monkeypatch):
+    from door.tailoring import style_structure
+    from style_structure_utils import fake_ask
+
+    asked = []
+    monkeypatch.setattr(style_structure, "_ask", lambda text, feature="style": asked.append(text) or fake_ask(text))
+    world.build("html-word-two-column", Stylist(*GOOD))
+    assert len(asked) == 1  # the round prints are read with no structure: no model, no second call
 
 
 def test_a_file_that_is_not_a_pdf_fails_without_asking_the_model(world, tmp_path):
@@ -462,7 +487,7 @@ def test_a_swap_that_was_interrupted_puts_the_style_in_use_back_too(world):
 
 
 def test_a_side_band_of_unknown_headings_is_a_column_in_the_template_and_in_the_printed_sample(world):
-    heads = [h["text"] for h in style_build.style_extract.extract(STYLES / "scrubbed-pages-sidebar-fr.pdf")["headings"]]
+    heads = [h["text"] for h in extract_with(STYLES / "scrubbed-pages-sidebar-fr.pdf", recorded("scrubbed-pages-sidebar-fr"))["headings"]]
     side = [h for h in heads if h not in ("YENFANCE ATIROIR", "LEUNE YAUTOMNE", "YDIMANCHE")]
     body = ("<header class=\"cv-header\"><<photo>><h1>A B</h1></header><h2>Parcours</h2><p>x</p>"
             + "".join(f"<h2>{h}</h2><p>y</p>" for h in side[:2]))
@@ -639,18 +664,18 @@ def test_a_round_whose_sample_print_reads_letters_apart_is_not_kept_and_the_next
 
 
 def test_a_cv_with_two_equal_columns_is_rebuilt_with_a_side_column(world):
-    assert style_build._has_side(style_build.style_extract.extract(STYLES / "html-equal-columns.pdf"))
+    assert style_build._has_side(extract_with(STYLES / "html-equal-columns.pdf", recorded("html-equal-columns")))
     assert world.build("html-equal-columns", Stylist(*GOOD))["state"] == "ready"
     manifest = templates.manifest(world.style / "cv.template.html")
     assert manifest.columns.side and manifest.columns.headings
 
 
 def test_a_print_of_three_columns_is_judged_not_stopped_as_having_no_text(world, monkeypatch):
-    """The layout refusal is for the uploaded CV only: a render is read, and `column_problems` judges it (#318)."""
+    """A print is read with no structure (no model call): it is never refused for its layout, `column_problems` judges it."""
     seen = []
     judge = style_build.column_problems
     monkeypatch.setattr(style_build, "column_problems", lambda style, render, placed: seen.append(render) or judge(style, render, placed))
     world.print_as = lambda folder: STYLES / "html-three-columns.pdf"
     result = world.build("html-word-two-column", Stylist(*GOOD), cap=2)
     assert not any("no text to read back" in p for p in result["problems"])
-    assert seen and seen[0]["columns"]["count"] == 3
+    assert seen and seen[0]["verdict"]["copyable"] and seen[0]["runs"]

@@ -1,9 +1,10 @@
 """Read a CV PDF's style as facts (#148, epic #144): fonts, sizes, colours, margins, columns, headings, drawn
 shapes, icons as SVG paths, the photo. Pure and offline: pypdfium2 and Pillow, nothing written, no network.
 
-`extract(pdf_path)` returns one dict (schema version 1, points, the origin at the top left, colours `#rrggbb`):
-`verdict` first (`style_verdict` says when there is nothing to copy: a scan or a LinkedIn export; `layout_verdict`
-a page of three columns, which the template cannot place, with every other key still there), then `runs` (one per piece of text on a line), `fonts`, `page` (size, margins, bleed,
+`extract(pdf_path, structure=None)` returns one dict (schema version 1, points, the origin at the top left, colours
+`#rrggbb`): `verdict` first (`scan_verdict` says a scan has nothing to copy; the `structure`, the CV's name, headings and
+columns as `style_structure` read them with one model call (#343), says a LinkedIn export has none and a page of
+three columns, which the template cannot place, refuses with every other key still there), then `runs` (one per piece of text on a line), `fonts`, `page` (size, margins, bleed,
 background), `colors` (text, accent), `name`, `columns` (bands), `headings` and `heading_style`, `shapes`, `icons`
 (SVG paths next to the text they belong to), `photo`. Fonts are only described (family, weight, italic, serif, fixed); looking
 them up is another step. Icons are `style_icons`'s, traced by `style_trace`.
@@ -47,7 +48,7 @@ _SECTION_KINDS = tuple(i18n.CvSections.model_fields)
 
 # nothing to copy
 _LINKEDIN_HEADINGS = {"contact", "top skills", "languages", "certifications", "summary", "experience", "education"}
-_PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
+PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
 _MIN_CHARS = 50
 
 
@@ -397,7 +398,7 @@ def find_photo(page, images: list[dict], size: list[float], background: str | No
 
 def _is_footer(run: dict, size: list[float]) -> bool:
     low = run["bbox"][3] > size[1] * 0.94
-    return low and (run["text"].strip().isdigit() or bool(_PAGE_FOOTER.fullmatch(run["text"].strip())))
+    return low and (run["text"].strip().isdigit() or bool(PAGE_FOOTER.fullmatch(run["text"].strip())))
 
 
 def margins(pages: list[dict]) -> dict:
@@ -440,7 +441,7 @@ def line_groups(runs: list[dict]) -> list[list[dict]]:
     return [sorted(line, key=lambda r: r["bbox"][0]) for line in lines]
 
 
-def _joined(line: list[dict]) -> str:
+def joined(line: list[dict]) -> str:
     """The text of a line's runs, a space where one run ended or began with one or they are a word apart."""
     out = line[0]["text"]
     for prev, run in zip(line, line[1:]):
@@ -565,7 +566,7 @@ def _line_units(runs: list[dict]) -> list[dict]:
         if len({(r["family"], r["weight"], r["color"], r["italic"]) for r in line}) != 1:
             continue
         first = line[0]
-        units.append({"page": first["page"], "text": _joined(line), "size": max(r["size"] for r in line),
+        units.append({"page": first["page"], "text": joined(line), "size": max(r["size"] for r in line),
                       "mixed": len({r["size"] for r in line}) > 1, "color": first["color"], "weight": first["weight"],
                       "family": first["family"], "italic": first["italic"],
                       "bbox": [min(r["bbox"][0] for r in line), min(r["bbox"][1] for r in line),
@@ -729,16 +730,34 @@ def not_pdf(path) -> dict | None:
     return {"copyable": False, "reason": "not_pdf", "detail": "is not a PDF, so it has no layout to copy."}
 
 
-def style_verdict(pages: list[dict]) -> dict:
-    """Whether there is a style to copy: a scan (under 50 visible characters: no text layer, or an invisible OCR
-    layer) or a LinkedIn export (at least three of its section headings as lines of their own and a `Page N of M`
-    line on every page; English only) has not. Anything else, a plain single-font CV included, is copyable."""
+def scan_verdict(pages: list[dict]) -> dict:
+    """Whether there is text to copy a style from: under 50 visible characters is a scan (no text layer, or an
+    invisible OCR layer), which has none. Anything else is copyable."""
     chars = sum(len(r["text"].replace(" ", "")) for p in pages for r in p["runs"])
     if chars < _MIN_CHARS:
         return _verdict(False, "scan", "looks like a scan: there is no text in it to copy the style from.")
+    return _verdict(True, "ok", "")
+
+
+def structure_verdict(structure: dict) -> dict:
+    """The verdict of a CV's checked structure (`style_structure.check`): a LinkedIn export has no design of its own and
+    three or more columns have no place in the template model (`layout`). Anything else is copyable."""
+    if structure["linkedin"]:
+        return _verdict(False, "linkedin", "is a LinkedIn export, which has no design of its own to copy.")
+    if structure["columns"] == "three":
+        return _verdict(False, "layout", "has three or more columns, which the template model cannot place.")
+    return _verdict(True, "ok", "")
+
+
+def style_verdict(pages: list[dict]) -> dict:
+    """Whether there is a style to copy: a scan (`scan_verdict`) or a LinkedIn export (at least three of its section
+    headings as lines of their own and a `Page N of M` line on every page; English only) has not. Anything else, a
+    plain single-font CV included, is copyable."""
+    if not (verdict := scan_verdict(pages))["copyable"]:
+        return verdict
     lines = [{r["text"].casefold().strip() for r in p["runs"]} for p in pages]
     headings = set().union(*lines) & _LINKEDIN_HEADINGS
-    footers = all(any(_PAGE_FOOTER.fullmatch(t) for t in page) for page in lines)
+    footers = all(any(PAGE_FOOTER.fullmatch(t) for t in page) for page in lines)
     if len(headings) >= 3 and footers:
         return _verdict(False, "linkedin", "is a LinkedIn export, which has no design of its own to copy.")
     return _verdict(True, "ok", "")
@@ -792,6 +811,17 @@ def _read_pages(doc) -> list[dict]:
     return pages
 
 
+def read_pages(pdf_path: Path) -> list[dict]:
+    """The pages of the PDF as `_read_pages` reads them, their icon runs marked (`style_icons.mark_icon_runs`)."""
+    doc = pdf_render.open_pdf(pdf_path)
+    try:
+        pages = _read_pages(doc)
+    finally:
+        doc.close()
+    style_icons.mark_icon_runs([r for p in pages for r in p["runs"]])
+    return pages
+
+
 def painted(pdf_path: Path) -> list[dict]:
     """Per page of *pdf_path*, everything drawn: ``{"background", "paths"}``, the page's background fill and every
     path that paints with its kind, box, fill and stroke (a round or rounded box is a path of no kind, which
@@ -809,24 +839,88 @@ def painted(pdf_path: Path) -> list[dict]:
         doc.close()
 
 
-def extract(pdf_path: Path) -> dict:
-    """The style of the CV in *pdf_path* (see the module's docstring). Raises FileNotFoundError for a missing
-    file and pypdfium2's PdfiumError for one that is not a PDF."""
+def _background_under(shapes: list[dict], height: float):
+    """A function giving the fill of the box that covers most of the page's height under a band (its middle within
+    the box), or None."""
+    boxes = [sh for sh in shapes if sh["kind"] == "box" and sh["fill"] and sh["bbox"][3] - sh["bbox"][1] >= 0.8 * height]
+
+    def under(x0: float, x1: float) -> str | None:
+        mid = (x0 + x1) / 2
+        return next((b["fill"] for b in boxes if b["bbox"][0] - 1 <= mid <= b["bbox"][2] + 1), None)
+
+    return under
+
+
+def _structure_bands(structure: dict, runs: list[dict], shapes: list[dict], height: float) -> dict:
+    """The column bands of the model's layout (`style_structure.check`): one `only` band over the text, or a `side`
+    band at the side range and a `main` band over the text that is not in it, left to right, each with the fill of
+    the box under it. Three columns have no bands (the layout verdict refuses them)."""
+    runs = [r for r in runs if not r["rotated"] and not r["icon"]]
+    if structure["columns"] == "three" or not runs:
+        return {"count": 3 if structure["columns"] == "three" else 0, "bands": []}
+    under = _background_under(shapes, height)
+    if structure["columns"] == "one":
+        parts = [("only", runs)]
+    else:
+        sx0, sx1 = structure["side_range"]
+        side = [r for r in runs if r["bbox"][0] >= sx0 - 2 and r["bbox"][2] <= sx1 + 2]
+        main = [r for r in runs if r["bbox"][0] >= sx1 - 2 or r["bbox"][2] <= sx0 + 2]
+        parts = [("side", side), ("main", [r for r in main if r not in side])]
+    bands = []
+    for kind, members in parts:
+        if not members:
+            continue
+        x0, x1 = round(min(r["bbox"][0] for r in members), 1), round(max(r["bbox"][2] for r in members), 1)
+        if kind == "side":
+            x0, x1 = round(min(x0, structure["side_range"][0]), 1), round(max(x1, structure["side_range"][1]), 1)
+        bands.append({"x0": x0, "x1": x1, "kind": kind, "background": under(x0, x1), "lines": len(line_groups(members))})
+    bands.sort(key=lambda b: b["x0"])
+    return {"count": len(bands), "bands": bands}
+
+
+def _structure_headings(structure: dict, shapes: list[dict], bands: list[dict]) -> list[dict]:
+    """The headings of the structure as `find_headings` returned them (plus their `kind`): the band of a heading is the
+    one of its column (worked out from its x), none for one across both."""
+    found = []
+    for h in structure["headings"]:
+        main, bbox = h["row"]["main"], h["bbox"]
+        wanted = "only" if structure["columns"] == "one" else h["column"]
+        band = next((b for b in bands if b["kind"] == wanted), None)
+        found.append({"page": h["row"]["page"], "text": h["text"], "bbox": bbox, "size": main["size"], "color": main["color"],
+                      "weight": main["weight"], "family": main["family"], "italic": main["italic"],
+                      "case": _case(h["text"]), "rule": _rule_under({"bbox": bbox, "page": h["row"]["page"]}, shapes, band),
+                      "band": band["kind"] if band else None, "kind": h["kind"]})
+    return found
+
+
+def extract(pdf_path: Path, structure: dict | None = None) -> dict:
+    """The style of the CV in *pdf_path* (see the module's docstring). `structure` is the CV's checked structure
+    (`style_structure.check`, which makes it from the model's reading): the name, the headings and the columns come
+    from it, and it decides the LinkedIn and layout verdicts. Without it (a print of a rebuilt template, which is
+    compared by its text and icons) there are no name, headings or columns: `name` is None, `headings` and the bands
+    empty. Raises FileNotFoundError for a missing file and pypdfium2's PdfiumError for one that is not a PDF."""
     doc = pdf_render.open_pdf(pdf_path)
     try:
         pages = _read_pages(doc)
-        head = {"version": VERSION, "verdict": style_verdict(pages), "page_count": len(doc)}
-        if not head["verdict"]["copyable"]:
+        verdict = scan_verdict(pages)
+        if structure and verdict["copyable"]:
+            verdict = structure_verdict(structure)
+        head = {"version": VERSION, "verdict": verdict, "page_count": len(doc)}
+        if not verdict["copyable"] and verdict["reason"] != "layout":  # three columns keep every other key, for the draft
             return head
         style_icons.mark_icon_runs([r for p in pages for r in p["runs"]])
         runs = [r for p in pages for r in p["runs"]]
         shapes = [s for p in pages for s in p["shapes"]]
         page = {"size": pages[0]["size"], "background": pages[0]["background"], "margins": margins(pages),
                 "bleed": _bleed(shapes, pages[0]["size"])}
-        columns = column_bands(pages, shapes)
-        name = find_name(runs)
-        headings = find_headings(runs, shapes, columns["bands"], name)
-        return {**head, "verdict": layout_verdict(columns) or head["verdict"], "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
+        columns, name, headings = {"count": 0, "bands": []}, None, []
+        if structure:
+            columns = _structure_bands(structure, runs, shapes, pages[0]["size"][1])
+            row = structure["name"]
+            name = {"text": row["text"], "size": row["main"]["size"], "color": row["main"]["color"],
+                    "family": row["main"]["family"]}
+            headings = _structure_headings(structure, shapes, columns["bands"])
+        return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
                 "columns": columns, "headings": headings, "heading_style": heading_style(headings),
                 "runs": [{k: v for k, v in r.items() if k not in _INTERNAL} for r in runs], "shapes": shapes,
                 "icons": style_icons.find_icons(doc, pages), "photo": pages[0]["photo"]}

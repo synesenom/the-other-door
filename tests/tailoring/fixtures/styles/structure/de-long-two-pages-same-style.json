@@ -1,0 +1,59 @@
+{
+ "linkedin_export": false,
+ "layout": {
+  "columns": "one"
+ },
+ "name": 1,
+ "headings": [
+  {
+   "id": 2,
+   "kind": "experience"
+  },
+  {
+   "id": 23,
+   "kind": "projects"
+  },
+  {
+   "id": 44,
+   "kind": "education"
+  },
+  {
+   "id": 65,
+   "kind": "education"
+  },
+  {
+   "id": 86,
+   "kind": "other"
+  },
+  {
+   "id": 107,
+   "kind": "skills"
+  }
+ ],
+ "entry_titles": [
+  3,
+  8,
+  13,
+  18,
+  24,
+  29,
+  34,
+  39,
+  45,
+  50,
+  55,
+  60,
+  66,
+  71,
+  76,
+  81,
+  87,
+  92,
+  97,
+  102,
+  108,
+  113,
+  118,
+  123
+ ]
+}

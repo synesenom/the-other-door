@@ -286,6 +286,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         resolve({ ok: true, data: { ...SAMPLE_RUN, started_at: startedAt } })
       })
     })
+  const styleReadingListeners = new Set<() => void>()
   const respond = async (tool: string, args: Record<string, unknown>): Promise<Envelope> => {
     if (tool === 'find_jobs' && scene.play) return playFind(args)
     const free = SHELL_TOOLS.has(tool) || (tool === 'show_profile' && gateReads > 0)
@@ -321,7 +322,15 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
     buildStyle: async () => ({ ok: true, data: { started: true } }),
+    onStyleReading: (cb: () => void) => {
+      styleReadingListeners.add(cb)
+      return () => styleReadingListeners.delete(cb)
+    },
     chooseStyleFile: async () => {
+      // the dialog closes with a file: the window is told, then the structure is read
+      styleReadingListeners.forEach((cb) => cb())
+      if (scene.hold === 'chooseStyleFile') return new Promise(() => undefined)
+      if (scene.fails?.chooseStyleFile) return { ok: false, error: scene.fails.chooseStyleFile }
       // a build that ends, a little later, with a style to compare
       style.building = true
       setTimeout(() => {
