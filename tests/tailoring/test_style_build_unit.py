@@ -384,7 +384,7 @@ def test_the_stylist_is_told_of_a_running_header_how_to_style_it_and_to_leave_it
     style["running_header"] = {"text": "Vent Rivage parfumerie.ours", "size": 9.0}
     session = types.SimpleNamespace(style=style, images=[1, 2], manifest=templates.Manifest(running_header=["name", "web"]))
     text = style_build._files_text(session, "", {})
-    assert "Vent Rivage parfumerie.ours" in text and "@top-left" in text and "@top-right" in text
+    assert "Vent Rivage parfumerie.ours" in text and "@top-left" in text and "name, web" in text
     assert "not in the sample body" in text
     plain = types.SimpleNamespace(style=_style([], [], pages=2), images=[1, 2], manifest=templates.Manifest())
     assert "@top-left" not in style_build._files_text(plain, "", {})

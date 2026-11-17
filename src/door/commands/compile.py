@@ -109,20 +109,18 @@ def _css_string(text: str) -> str:
 
 
 def _running_header(body: str, kinds: list[str]) -> str:
-    """The `<style>` that prints the body's details of `kinds` (a manifest's ``running_header``) at the top of every
-    page after the first (#249): the first at the top left, the others at the top right with a dot between them. The
-    template styles the `@top-left` and `@top-right` margin boxes; the text is the body's (the guard keeps a
-    template's own `content` free of letters). A margin box is no part of the body: the checks read the body as
-    placed. "" when there is no running header or none of its details is in the body."""
+    """The `<style>` that prints the body's details of `kinds` (a manifest's ``running_header``), in that order with a
+    dot between them, in the `@top-left` margin box of every page after the first (#249). The template styles that
+    box; the text is the body's (the guard keeps a template's own `content` free of letters). One box: a header split
+    between the left and the right made pdfium read a nearly empty page as one line, or a letter a line. A margin box
+    is no part of the body: the checks read the body as placed. "" when there is no running header or none of its
+    details is in the body."""
     found = html_doc.details(body)
-    left = found.get(kinds[0]) if kinds else None
-    right = " \u00b7 ".join(found[k] for k in kinds[1:] if k in found)
-    boxes = [(box, text) for box, text in (("top-left", left), ("top-right", right)) if text]
-    if not boxes:
+    text = " \u00b7 ".join(found[k] for k in kinds if k in found)
+    if not text:
         return ""
-    later = " ".join(f"@{box} {{ content: {_css_string(text)}; }}" for box, text in boxes)
-    first = " ".join(f"@{box} {{ content: none; }}" for box, _ in boxes)
-    return f"<style>@page {{ {later} }} @page :first {{ {first} }}</style>"
+    return (f"<style>@page {{ @top-left {{ content: {_css_string(text)}; }} }} "
+            "@page :first { @top-left { content: none; } }</style>")
 
 
 _SEP_SPACE = re.compile(r'(<span class="sep">) ')

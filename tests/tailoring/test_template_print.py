@@ -365,13 +365,15 @@ def test_an_entry_heading_never_starts_a_line_with_its_separator(tmp_path, width
     assert len(lines) > 1 and not [line for line in lines if line[0] in "|-"], lines
 
 
-def test_a_running_header_prints_atop_every_page_after_the_first_and_the_checks_read_the_cv_whole(tmp_path):
+@pytest.mark.parametrize("entries", [12, 8])  # page 2 full, or holding only the last section's two lines
+def test_a_running_header_prints_atop_every_page_after_the_first_and_the_checks_read_the_cv_whole(tmp_path, entries):
     """#249: a template.json `running_header` puts the CV's name and site at the top of page 2 on, not of page 1, and
-    the ATS checks `prepare` runs find nothing wrong (the margin boxes are not the body)."""
+    the ATS checks `prepare` runs find nothing wrong (the margin box is not the body). On a nearly empty page a header
+    split between the left and the right made pdfium read the page as one line, or a letter a line: it is one box."""
     template = REPO_ROOT / "profile.example" / "cv.template.html"
     entries = "".join(f'<div class="entry"><h3>Analyst {n} | Example Co - 20{n:02d}</h3><ul>'
                       + "<li>Prepared the monthly report and the board pack for the finance team.</li>" * 4
-                      + "</ul></div>" for n in range(12))
+                      + "</ul></div>" for n in range(entries))
     body = ('<header class="cv-header"><<photo>><h1>Jane Doe</h1><p class="contact"><span class="email">'
             '<a href="mailto:jane@example.com">jane@example.com</a></span><span class="web">jane.example</span></p>'
             f"</header><h2>Experience</h2>{entries}<h2>Education</h2><p>MSc, Example University</p>")
@@ -380,5 +382,6 @@ def test_a_running_header_prints_atop_every_page_after_the_first_and_the_checks_
     pages = [[line.strip() for line in text.splitlines() if line.strip()] for text in pdf_render.page_texts(pdf)]
     assert len(pages) >= 2
     assert pages[0][0] == "Jane Doe"  # the name alone: no header on page 1
-    assert all(page[0] == "Jane Doe jane.example" for page in pages[1:]), [p[:3] for p in pages]
+    assert all(page[0] == "Jane Doe \u00b7 jane.example" for page in pages[1:]), [p[:3] for p in pages]
+    assert pages[-1][-2:] == ["Education", "MSc, Example University"]
     assert [p for p in readability.check_pdf(pdf, placed, "Jane Doe", cv=True) if p["kind"] != "sparse"] == []

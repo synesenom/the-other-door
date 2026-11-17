@@ -262,14 +262,14 @@ def _page(body, running_header):
 
 def test_a_running_header_puts_the_bodys_name_and_details_atop_every_page_after_the_first():
     html, placed, _ = _page(_HEADER_BODY, ["name", "web"])
-    assert '@top-left { content: "Jane \\"J\\" Doe"; }' in html and '@top-right { content: "jane.example"; }' in html
-    assert re.search(r"@page :first \{[^{]*@top-left \{ content: none; \} @top-right \{ content: none; \}", html)
+    assert '@page { @top-left { content: "Jane \\"J\\" Doe \u00b7 jane.example"; } }' in html
+    assert "@page :first { @top-left { content: none; } }" in html
     assert "@top" not in placed  # what the checks read is the body alone
 
 
-def test_the_details_after_the_first_share_the_right_and_a_missing_one_is_left_out():
-    html = _page(_HEADER_BODY, ["name", "phone", "email", "web"])[0]
-    assert '@top-right { content: "j@x.dk \u00b7 jane.example"; }' in html
+def test_the_details_are_in_the_manifests_order_and_a_missing_one_is_left_out():
+    html = _page(_HEADER_BODY, ["web", "phone", "name"])[0]
+    assert '@top-left { content: "jane.example \u00b7 Jane \\"J\\" Doe"; }' in html
     assert "@top" not in _page("<h2>Work</h2><p>x</p>", ["name", "web"])[0]
 
 

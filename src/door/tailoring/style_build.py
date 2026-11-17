@@ -581,12 +581,10 @@ def _header_text(s: _Session) -> str:
     header = s.style.get("running_header")
     if not kinds or not header:
         return ""
-    right = " and ".join(kinds[1:])
     return (f"\nRunning header: every page after the first repeats '{header['text']}' at its top "
-            f"({header.get('size', '?')} pt). The code prints the CV's {kinds[0]} in the @top-left margin box"
-            + (f" and its {right} in the @top-right one" if right else "") + " of each page after the first: style "
-            "them in @page { @top-left { ... } @top-right { ... } } (font, size, colour, alignment; no content, the "
-            "code writes it), and keep that line not in the sample body.")
+            f"({header.get('size', '?')} pt). The code prints the CV's {', '.join(kinds)} on one line in the @top-left "
+            "margin box of each page after the first: style it in @page { @top-left { ... } } (font, size, colour, "
+            "padding; no content, the code writes it), and keep that line not in the sample body.")
 
 
 
