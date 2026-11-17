@@ -13,12 +13,12 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-# An install takes minutes; a staging folder older than this was left by one that was killed.
+# A staged write (an install, an import, a preview) takes minutes at most; a staging folder older than this was left by one that was killed.
 STALE_PART_SECONDS = 3600
 
 
 def _sweep_stale_parts(dest: Path, prefix: str) -> None:
-    """Remove the `prefix` staging folders a killed install left in `dest`, never one still in use, and never
+    """Remove the `prefix` staging folders a killed staged write left in `dest`, never one still in use, and never
     another tool's (cloudflared's `dest` is the shared ~/.local/bin)."""
     cutoff = time.time() - STALE_PART_SECONDS
     for part in Path(dest).glob(f"{glob.escape(prefix)}*.part"):
@@ -28,7 +28,7 @@ def _sweep_stale_parts(dest: Path, prefix: str) -> None:
 
 @contextmanager
 def staging(dest: Path, prefix: str) -> Iterator[Path]:
-    """A staging folder unique to this process inside `dest` (made if missing), so two installs never share a
+    """A staging folder unique to this process inside `dest` (made if missing), so two staged writes (installs, imports, previews) never share a
     half-written file; removed when the block ends, whatever happened. The ones of `prefix` a killed install
     left are swept first."""
     dest = Path(dest)

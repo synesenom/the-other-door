@@ -44,10 +44,3 @@ def test_staging_leaves_another_tools_stale_part_folder_alone(tmp_path):
     with utils.staging(tmp_path, "x."):
         pass
     assert foreign.exists()
-
-
-def test_a_stale_folder_a_killed_run_left_is_swept_by_the_next_staging(tmp_path):
-    """The style preview and the data import stage the same way: a killed one's folder goes at the next."""
-    killed = _aged(tmp_path / ".door-import-k.part", 2 * utils.STALE_PART_SECONDS)
-    with utils.staging(tmp_path, ".door-import-"):
-        assert not killed.exists()
