@@ -132,8 +132,10 @@ _CSS_LOADERS = re.compile(r"@import|url\(|attr\(|image-set\(|(?<![\w-])image\(|c
 _CSS_CONTENT = re.compile(r"(?<![\w-])content\s*:([^;}]*)", re.I)
 _CSS_LETTER_SPACING = re.compile(r"(?<![\w-])letter-spacing\s*:([^;}]*)", re.I)
 _CSS_LENGTH = re.compile(r"(-?)(\d*\.?\d+)([a-z%]*)")
-# pdfium, reading the pinned Chromium's PDF, splits a word printed wider than this into pieces ("Skil l s", #254)
-MAX_LETTER_SPACING_EM = 0.1
+# pdfium, reading the pinned Chromium's PDF, splits a word printed wider than the most into pieces ("Skil l s") and
+# joins two words printed tighter than the least ("WORKEXPERIENCE"), whatever the font size (#254)
+MIN_LETTER_SPACING_EM, MAX_LETTER_SPACING_EM = -0.02, 0.1
+_CSS_TEXT_JUSTIFY = re.compile(r"(?<![\w-])text-justify\s*:\s*inter-character", re.I)
 # what a `content:` string may print: a list bullet or a separator, never text or a glyph standing for an icon (#248)
 _CONTENT_MARKS = frozenset(style_icons.BULLETS | set("—|/.,"))
 _CSS_ESCAPE = re.compile(r"\\(?:([0-9a-fA-F]{1,6})\s?|\r?\n|(.))", re.S)
@@ -214,16 +216,15 @@ class _TemplateReader(_Reader):
 
 
 def _letter_spacing_ok(value: str) -> bool:
-    """Whether a `letter-spacing` value keeps a word one word in the PDF's text: `normal`, zero or less, or a positive
-    width in `em` of at most `MAX_LETTER_SPACING_EM` (a width in another unit depends on the font size)."""
+    """Whether a `letter-spacing` value keeps each word one word in the PDF's text: `normal`, zero, or a width in `em`
+    from `MIN_LETTER_SPACING_EM` to `MAX_LETTER_SPACING_EM` (a width in another unit depends on the font size)."""
     value = re.sub(r"!\s*important", "", value, flags=re.I).strip().lower()
-    m = _CSS_LENGTH.fullmatch(value)
     if value == "normal":
         return True
-    if not m:
+    if not (m := _CSS_LENGTH.fullmatch(value)):
         return False
-    number = float(m.group(2))
-    return bool(m.group(1)) or number == 0 or (m.group(3) == "em" and number <= MAX_LETTER_SPACING_EM)
+    number = float(m.group(1) + m.group(2))
+    return number == 0 or (m.group(3) == "em" and MIN_LETTER_SPACING_EM <= number <= MAX_LETTER_SPACING_EM)
 
 
 def _css_problems(css: str, manifest) -> list[str]:
@@ -243,8 +244,12 @@ def _css_problems(css: str, manifest) -> list[str]:
                          "belongs in the CV, an icon in an /icons/ file (#248)")
     for m in _CSS_LETTER_SPACING.finditer(css):
         if not _letter_spacing_ok(m.group(1)):
-            found.append(f"letter-spacing: {m.group(1).strip()[:30]} (in em, {MAX_LETTER_SPACING_EM}em at most: wider, a PDF "
-                         "reader reads the letters apart and the words are lost)")
+            found.append(f"letter-spacing: {m.group(1).strip()[:30]} (in em, from {MIN_LETTER_SPACING_EM}em to "
+                         f"{MAX_LETTER_SPACING_EM}em: wider, a PDF reader reads the letters apart; tighter, it reads two "
+                         "words as one)")
+    if _CSS_TEXT_JUSTIFY.search(css):
+        found.append("text-justify: inter-character (a loose line is printed with its letters apart, which a PDF reader "
+                     "reads as pieces)")
     stripped = _CSS_URL.sub("", _CSS_STRING.sub('""', css))
     for m in _CSS_LOADERS.finditer(stripped):
         word = m.group(0).lower()
@@ -260,8 +265,9 @@ def template_problems(html: str, manifest, kind: str = "cv") -> list[str]:
     `manifest` is its `template.json` (`templates.Manifest`, or None for no fonts or icons). Refused: a script, link,
     picture, SVG, frame, object, form, `<base>` or refreshing `<meta>`, an `on*`, `src`, `href`, `srcset` or similar
     attribute, an `@import` or image function in CSS, a CSS escape outside a string, a `url()` other than
-    `/fonts/<file in manifest.fonts>` or `/icons/<file in manifest.icons>`, a `letter-spacing` wider than
-    `MAX_LETTER_SPACING_EM` or not in `em` (#254), a markup a browser could read differently,
+    `/fonts/<file in manifest.fonts>` or `/icons/<file in manifest.icons>`, a `letter-spacing` outside
+    `MIN_LETTER_SPACING_EM` to `MAX_LETTER_SPACING_EM` or not in `em`, or `text-justify: inter-character` (#254),
+    a markup a browser could read differently,
     visible text outside the tokens. Required: exactly one `<<body>>` and one `<<lang>>` and no other token, a rule for
     `.photo` (a CV only: a letter has no photo), `font-synthesis: none`, and a first comment naming the classes of
     the vocabulary (the CV's, or the letter's) that the tailor writes, as the shipped templates' header does.
