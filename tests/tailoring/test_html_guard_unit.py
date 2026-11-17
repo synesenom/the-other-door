@@ -257,6 +257,9 @@ def test_every_problem_is_a_short_line_named_once():
     '.x::after { content: "Jane Doe"; }', '.x::after { content: "\\4A ane"; }', '.x::after { content: "\\004A\\0061ne"; }',
     '@page { @top-center { content: "Jane"; } }', ".x::before { content: attr(data-x); }", '.x::before { content: "2019"; }',
     ".x::before { content: 'a'; }", '.x::before { content : counter(n) "Jane"; }',
+    # an icon font's glyph or a stray mark printed where a dropped icon was (#248)
+    '.web::before { content: "!"; }', '.web::before { content: "\\f0c1"; }', '.x::before { content: ""; }',
+    '.x::before { content: "?"; }',
 ])
 def test_text_baked_in_by_css_is_refused(css):
     assert problems(page(css=css))

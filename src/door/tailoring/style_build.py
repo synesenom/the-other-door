@@ -25,7 +25,7 @@ from door import i18n
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.core import chromium, claude_cli, fonts, progress as progress_mod, templates, workspace
-from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_preview)
+from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_icons, style_preview)
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
@@ -182,8 +182,9 @@ def _where(band: dict, bands: list[dict]) -> str:
 
 
 def _band_of(bbox: list[float], bands: list[dict]) -> dict | None:
-    """The band a box stands in: the one its centre is in or nearest to; None when it spans two bands."""
-    if sum(1 for b in bands if bbox[0] < b["x1"] - 2 and bbox[2] > b["x0"] + 2) > 1:
+    """The band a box stands in: the one its centre is in or nearest to; None when it spans two bands or there are
+    none."""
+    if not bands or sum(1 for b in bands if bbox[0] < b["x1"] - 2 and bbox[2] > b["x0"] + 2) > 1:
         return None
     centre = (bbox[0] + bbox[2]) / 2
     return min(bands, key=lambda b: max(b["x0"] - centre, centre - b["x1"], 0))
@@ -228,11 +229,12 @@ def _by_band(runs: list[dict], bands: list[dict]) -> dict[int, list[dict]]:
     return groups
 
 
-def _segments(line: list[dict]) -> list[list[dict]]:
-    """A line's runs cut at its icons, the icons left out: an icon font's glyph reads back as a stray character."""
+def _segments(line: list[dict], icon_fonts: set[str]) -> list[list[dict]]:
+    """A line's runs cut at its icons, the icons left out: an icon font's glyph reads back as a stray character. A run
+    of bullets only in one of `icon_fonts` (a level dot drawn with the icon font) is one too."""
     out: list[list[dict]] = [[]]
     for run in line:
-        if run["icon"]:
+        if run["icon"] or (run["font"] in icon_fonts and all(c in style_icons.BULLETS or c.isspace() for c in run["text"])):
             out.append([])
         else:
             out[-1].append(run)
@@ -247,26 +249,25 @@ def original_text(style: dict, pdf: Path) -> str:
 
     Each line is read again from the page within its box: `style_extract`'s runs no longer say where a word ends, and
     only the PDF's own text tells a drop cap (``A`` + ``TROTTOIR``) from two words."""
-    side = _has_side(style)
-    bands = style["columns"]["bands"] if side else []
+    bands = style["columns"]["bands"] if _has_side(style) else []
+    icon_fonts = {r["font"] for r in style["runs"] if r["icon"]}
     out: list[str] = []
     doc = pdf_render.open_pdf(pdf)
     try:
         for number, page in enumerate(doc, 1):
             height, textpage = page.get_height(), page.get_textpage()
-            runs = [r for r in style["runs"] if r["page"] == number]
-            groups = _by_band(runs, bands) if side else {-1: runs}
+            groups = _by_band([r for r in style["runs"] if r["page"] == number], bands)
             for index in [-1, *range(len(bands))]:
                 lines = []
                 for line in _line_runs(groups.get(index, [])):
                     parts = []
-                    for segment in _segments(line):
+                    for segment in _segments(line, icon_fonts):
                         x0, y0, x1, y1 = _box(segment)
                         parts.append(textpage.get_text_bounded(left=x0 - 1, bottom=height - y1, right=x1 + 1, top=height - y0))
                     if text := " ".join(" ".join(parts).split()):
                         lines.append(text)
                 if lines:
-                    out += ([f"[page {number}, {_ACROSS if index < 0 else _where(bands[index], bands)}]"] if side else []) + lines
+                    out += ([f"[page {number}, {_ACROSS if index < 0 else _where(bands[index], bands)}]"] if bands else []) + lines
     finally:
         doc.close()
     return "\n".join(out)

@@ -17,6 +17,8 @@ from __future__ import annotations
 import re
 from html.parser import HTMLParser
 
+from door.tailoring import style_icons
+
 TAGS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "span", "strong", "em", "a", "br"})
 VOID = frozenset({"br"})
 # What the template's CSS styles; `photo`, `main` and `side` are written by `compile` after the guard, never by the model.
@@ -132,6 +134,8 @@ _CSS_LETTER_SPACING = re.compile(r"(?<![\w-])letter-spacing\s*:([^;}]*)", re.I)
 _CSS_LENGTH = re.compile(r"(-?)(\d*\.?\d+)([a-z%]*)")
 # pdfium, reading the pinned Chromium's PDF, splits a word printed wider than this into pieces ("Skil l s", #254)
 MAX_LETTER_SPACING_EM = 0.1
+# what a `content:` string may print: a list bullet or a separator, never text or a glyph standing for an icon (#248)
+_CONTENT_MARKS = frozenset(style_icons.BULLETS | set("—|/.,"))
 _CSS_ESCAPE = re.compile(r"\\(?:([0-9a-fA-F]{1,6})\s?|\r?\n|(.))", re.S)
 
 
@@ -233,8 +237,10 @@ def _css_problems(css: str, manifest) -> list[str]:
         if not ((folder == "/fonts" and name in fonts) or (folder == "/icons" and name in icons)):
             found.append(f"url({target[:60]}) (only /fonts/ and /icons/ files template.json names)")
     for m in _CSS_CONTENT.finditer(css):  # text a rule bakes into the page is not the CV's: it would print on every one
-        if any(c.isalnum() for string in _CSS_STRING.findall(m.group(1)) for c in _unescape_css(string[1:-1])):
-            found.append("a letter or digit in content: (text belongs in the CV)")
+        if any(not (c.isspace() or c in _CONTENT_MARKS) for string in _CSS_STRING.findall(m.group(1))
+               for c in _unescape_css(string[1:-1])):
+            found.append(f"content: may hold only spaces, bullets and separators ({''.join(sorted(_CONTENT_MARKS))}): text "
+                         "belongs in the CV, an icon in an /icons/ file (#248)")
     for m in _CSS_LETTER_SPACING.finditer(css):
         if not _letter_spacing_ok(m.group(1)):
             found.append(f"letter-spacing: {m.group(1).strip()[:30]} (in em, {MAX_LETTER_SPACING_EM}em at most: wider, a PDF "
