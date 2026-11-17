@@ -84,8 +84,7 @@ CASES = {
 }
 
 # the cases a known issue keeps from looking like their original
-KNOWN = {"html-canva-icons": "#242 #243", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242",
-         "scrubbed-pages-header-en": "#244"}
+KNOWN = {"html-canva-icons": "#242 #243", "scrubbed-pages-sidebar-fr": "#242", "short-cv-two-columns": "#242"}
 
 
 def _ready() -> str | None:

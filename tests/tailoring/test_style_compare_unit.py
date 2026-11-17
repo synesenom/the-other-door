@@ -154,6 +154,18 @@ def test_feedback_names_the_worst_offenders_first_and_what_is_missing():
     assert "Gone" in text
 
 
+def test_feedback_names_a_page_count_unlike_the_originals_first():
+    """Every line after a page break shifts with it, so the overflow is the first thing to fix (#244)."""
+    original = {**style([run("A"), run("B", page=2)]), "page_count": 2}
+    longer = {**style([run("A", y=140), run("B", page=2)]), "page_count": 3}
+    lines = style_compare.feedback(style_compare.match(original, longer), score=0.4).splitlines()
+    assert "3 pages" in lines[1] and "2" in lines[1]
+    shorter = {**style([run("A"), run("B", y=120)]), "page_count": 1}
+    assert "1 page" in style_compare.feedback(style_compare.match(original, shorter), score=0.4).splitlines()[1]
+    same = style_compare.feedback(style_compare.match(original, {**original}), score=1.0)
+    assert "pages" not in same
+
+
 def test_feedback_of_a_perfect_render_is_the_score_alone():
     s = style([run("A")])
     assert style_compare.feedback(style_compare.match(s, s), score=1.0).count("\n") == 0
@@ -195,12 +207,37 @@ def test_images_of_other_sizes_are_compared_on_their_common_part():
     assert style_compare.blurred_score(page([(20, 20, 60, 40)]), page([(20, 20, 60, 40)], size=(200, 300))) == pytest.approx(1.0)
 
 
-def test_pages_score_averages_the_pages_and_a_missing_page_counts_zero():
+def lines(count, top=20, step=20, size=(200, 280)):
+    """A page of `count` text-like lines from `top`, `step` pixels apart."""
+    return page([(20, top + step * i, 100 - 10 * (i % 3), top + step * i + 8) for i in range(count)], size)
+
+
+def test_pages_score_of_the_same_pages_is_one_and_of_blank_pages_zero():
     a, b = page([(20, 20, 120, 40)]), page([(20, 80, 60, 200)])
     assert style_compare.pages_score([a, b], [a, b]) == pytest.approx(1.0)
-    assert style_compare.pages_score([a, b], [a]) == pytest.approx(0.5)
-    assert style_compare.pages_score([a], [a, b]) == pytest.approx(0.5)
+    assert style_compare.pages_score([a, b], [page([]), page([])]) == pytest.approx(0.0, abs=0.02)
     assert style_compare.pages_score([], []) == 1.0
+
+
+def test_a_page_only_one_side_has_costs_what_it_holds_not_a_whole_page():
+    a, b = lines(12), lines(12)
+    one_line = lines(1)
+    assert style_compare.pages_score([a, b], [a, b, one_line]) > 0.9
+    assert style_compare.pages_score([a, b], [a]) < style_compare.pages_score([a, b], [a, b, one_line])
+    assert style_compare.pages_score([a, b], [a]) < 0.7
+
+
+def test_a_rebuild_a_few_lines_too_long_scores_close_to_the_original():
+    """The same lines, each page's shifted down by two lines, the last two of each page flowing onto the next (#244)."""
+    original = [lines(12), lines(12)]
+    render = [lines(12, top=60), lines(12, top=20), lines(2)]  # page 2 starts with page 1's last two lines
+    assert style_compare.pages_score(original, render) > 0.75
+
+
+def test_a_shift_does_not_make_another_layout_look_alike():
+    original = [lines(12), lines(12)]
+    side = page([(110, 20 + 20 * i, 180, 28 + 20 * i) for i in range(12)])  # the same lines in another column
+    assert style_compare.pages_score(original, [side, side]) < 0.3
 
 
 # ---------- when to stop ----------
@@ -267,6 +304,18 @@ def test_two_different_cvs_score_lower_and_differ(corpus):
     assert style_compare.pages_score(a_images, b_images) < 0.9
     diffs = style_compare.match(a, b)
     assert diffs["missing"] and style_compare.should_stop([0.5], style_compare.worst_offset_pt(diffs)) is False
+
+
+def test_the_original_run_onto_one_more_page_still_scores_high(tmp_path):
+    """A real CV (two pages) printed a few lines too long: its second page shifted down, its last lines on a third (#244)."""
+    images = style_compare.page_images(STYLES / "scrubbed-pages-header-en.pdf", tmp_path)
+    width, height = images[1].size
+    shift = height // 12
+    second = Image.new("RGB", (width, height), "white")
+    second.paste(images[1].crop((0, 0, width, height - shift)), (0, shift))
+    third = Image.new("RGB", (width, height), "white")
+    third.paste(images[1].crop((0, height - shift, width, height)), (0, 0))
+    assert style_compare.pages_score(images, [images[0], second, third]) > 0.8
 
 
 def test_a_compatibility_form_in_one_render_pairs_with_its_plain_letters_in_the_other():

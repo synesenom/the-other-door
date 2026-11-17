@@ -3,10 +3,10 @@
 Both sides are `style_extract.extract` results (`runs` and `icons`, points, origin top left). `match` pairs the text
 runs by their normalised text (the nearest run of the same text when there are several) and the icons by the text
 they sit beside, then by position, and says how each pair differs: `dx`, `dy` (the render's box minus the original's),
-`d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `blurred_score` and `pages_score`
-say how alike the page images look, `feedback` is what the next round tells the model, and `should_stop` /
-`best_round` are the loop's stopping rule: stop at `CAP` rounds, when every matched element is within `WITHIN_PT`
-points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `MIN_SCORE`); the best round is kept.
+`d_size`, and `d_color` (`style_trace.distance`, the largest channel difference). `blurred_score` and `pages_score` (each
+original page at its best vertical shift) say how alike the page images look, `feedback` is what the next round tells the
+model, and `should_stop` / `best_round` are the loop's stopping rule: stop at `CAP` rounds, when every matched element
+is within `WITHIN_PT` points, or when the last round gained under `MIN_GAIN` over the best before it (once the best scored `MIN_SCORE`); the best round is kept.
 """
 
 from __future__ import annotations
@@ -25,6 +25,8 @@ WITHIN_PT = 2.0  # every matched element this close: nothing left to fix
 MIN_GAIN = 0.0025
 MIN_SCORE = 0.2  # the small-gain rule applies only once the best round scored this: below it the rebuild is still far off
 BLUR_RADIUS = 4.0  # pixels at the render's 150 dpi
+SHIFT_REACH = 0.15  # of a page's height: how far `pages_score` looks up and down for where an original page sits
+_SEARCH_SCALE = 4  # the shift is searched on images this many times smaller
 _FEEDBACK_LIMIT = 12
 MIN_PART = 5  # characters: a shorter text is not paired by being part of another ("2019" is in many runs)
 # a difference smaller than these is not worth telling the model about
@@ -146,11 +148,12 @@ def match(original: dict, render: dict) -> dict:
     """How `render` differs from `original` (both `style_extract.extract` results): `runs` (a pair per matched text:
     `text`, `dx`, `dy`, `d_size`, `d_color`, the two colours, `split` when the render cut the text elsewhere),
     `missing` and `extra` (texts only one side has), `icons` (a pair per matched icon: `near`, the same numbers),
-    `icons_missing` and `icons_extra` (counts)."""
+    `icons_missing` and `icons_extra` (counts), `pages` (the two page counts, when both sides have one)."""
     runs, missing, extra = _text_pairs(_texts(original), _texts(render))
     icons, icons_missing, icons_extra = _icon_pairs(original.get("icons", []), render.get("icons", []))
+    counts = original.get("page_count"), render.get("page_count")
     return {"runs": runs, "missing": missing, "extra": extra, "icons": icons, "icons_missing": icons_missing,
-            "icons_extra": icons_extra}
+            "icons_extra": icons_extra, **({"pages": counts} if None not in counts else {})}
 
 
 def worst_offset_pt(diffs: dict) -> float:
@@ -171,9 +174,14 @@ def _off(p: dict) -> bool:
 
 
 def feedback(diffs: dict, score: float) -> str:
-    """What the next round tells the model: the blurred score, the elements that differ most (worst first), and
-    what only one side has."""
+    """What the next round tells the model: the blurred score, a page count unlike the original's (every line after a
+    break shifts with it, so it comes first), the elements that differ most (worst first), and what only one side has."""
     lines = [f"Blurred similarity to the original: {score:.2f} (1.00 = identical)."]
+    original_pages, render_pages = diffs.get("pages") or (0, 0)
+    if original_pages != render_pages:
+        how = "tighten the line height, the spacing and the margins" if render_pages > original_pages else "loosen the spacing"
+        lines.append(f"Fix this first: your rebuild runs to {render_pages} page{'s' * (render_pages != 1)}, the original has "
+                     f"{original_pages}: {how} until it has {original_pages}, like the original's.")
     worst = sorted((p for p in (*diffs["runs"], *diffs["icons"]) if _off(p)), key=lambda p: -_weight(p))
     for p in worst[:_FEEDBACK_LIMIT]:
         what = f"'{p['text'][:40]}'" if "text" in p else f"icon beside '{(p['near'] or '?')[:40]}'"
@@ -197,26 +205,88 @@ def _sum_squares(image: Image.Image) -> int:
     return sum(count * value * value for value, count in enumerate(image.histogram()))
 
 
+def _grey(image: Image.Image, width: int) -> Image.Image:
+    return image.convert("L").crop((0, 0, width, image.height)).filter(ImageFilter.GaussianBlur(BLUR_RADIUS))
+
+
+def _ink(image: Image.Image) -> int:
+    return _sum_squares(ImageChops.invert(image))
+
+
+def _alike(x: Image.Image, y: Image.Image) -> float:
+    """`blurred_score` of two grey blurred images of one size."""
+    pixels = x.width * x.height
+    if not pixels:
+        return 1.0
+    mse = _sum_squares(ImageChops.difference(x, y)) / pixels / 255**2
+    ink = (_ink(x) + _ink(y)) / pixels / 255**2
+    return 1 - mse / max(ink, 0.005)
+
+
 def blurred_score(a: Image.Image, b: Image.Image) -> float:
     """How alike two page images look, 0 to 1: both grey and blurred (a shift of a pixel costs little), over their
     common part, the mean squared difference against the ink of the two pages together (on a mostly white page a plain
     difference is near 0 for any rebuild; a rebuild further off than a blank page still scores above 0)."""
     size = (min(a.width, b.width), min(a.height, b.height))
-    x, y = (im.convert("L").crop((0, 0, *size)).filter(ImageFilter.GaussianBlur(BLUR_RADIUS)) for im in (a, b))
-    pixels = size[0] * size[1]
-    if not pixels:
-        return 1.0
-    mse = _sum_squares(ImageChops.difference(x, y)) / pixels / 255**2
-    ink = (_sum_squares(ImageChops.invert(x)) + _sum_squares(ImageChops.invert(y))) / pixels / 255**2
-    return 1 - mse / max(ink, 0.005)
+    return _alike(*(im.convert("L").crop((0, 0, *size)).filter(ImageFilter.GaussianBlur(BLUR_RADIUS)) for im in (a, b)))
+
+
+def _best_shift(page: Image.Image, strip: Image.Image, top: int, reach: int) -> int:
+    """The row of `strip` where `page` matches best, within `reach` rows of `top` (the nearest of equals): searched on
+    images `_SEARCH_SCALE` times smaller (the blur makes the difference smooth), then row by row around the best."""
+    def search(rows: list[int], scale: int) -> int:
+        size = (max(page.width // scale, 1), max(page.height // scale, 1))
+        target = page.resize(size)
+
+        def error(row: int) -> int:
+            return _sum_squares(ImageChops.difference(target, strip.crop((0, row, page.width, row + page.height)).resize(size)))
+        return min(rows, key=lambda row: (error(row), abs(row - top)))
+
+    steps = reach // _SEARCH_SCALE
+    coarse = search([top + k * _SEARCH_SCALE for k in range(-steps, steps + 1)], _SEARCH_SCALE)
+    return search(list(range(max(coarse - _SEARCH_SCALE + 1, top - reach), min(coarse + _SEARCH_SCALE, top + reach + 1))), 1)
 
 
 def pages_score(original: list[Image.Image], render: list[Image.Image]) -> float:
-    """The mean `blurred_score` over the pages; a page only one side has scores 0."""
-    count = max(len(original), len(render))
-    if not count:
-        return 1.0
-    return sum(blurred_score(a, b) for a, b in zip(original, render)) / count
+    """How alike two documents look, 0 to 1: the mean `blurred_score` of the original's pages, each against the
+    render's pages laid end to end at the vertical shift (up to `SHIFT_REACH` of a page) where it matches best, so
+    that a rebuild a few lines too long is not scored as if every line after the first break were wrong (#244). An
+    original page with nothing under it scores 0; what the render holds outside those windows (lines run onto a page
+    the original does not have) counts as pages scoring 0, as many as its ink makes of the original's mean page, at
+    most one for each page of the render."""
+    if not original or not render:
+        return 1.0 if not original and not render else 0.0
+    width = min(im.width for im in (*original, *render))
+    pages = [_grey(im, width) for im in original]
+    step = render[0].height
+    reach = round(SHIFT_REACH * step)
+    strip = Image.new("L", (width, step * len(render) + 2 * reach), 255)  # white above and below: room to shift into
+    for i, im in enumerate(render):
+        strip.paste(_grey(im, width).crop((0, 0, width, step)), (0, reach + i * step))
+    scores, covered = [], [False] * strip.height
+    for i, page in enumerate(pages):
+        row = _best_shift(page, strip, reach + i * step, reach)
+        scores.append(_alike(page, strip.crop((0, row, width, row + page.height))))
+        covered[row:row + page.height] = [True] * page.height
+    page_ink = sum(map(_ink, pages)) / len(pages)
+    extra = 0.0
+    for i in range(len(render)):  # the render's ink no original page was compared with, page by page
+        top = reach + i * step
+        ink = sum(_ink(strip.crop((0, start, width, end))) for start, end in _runs(covered[top:top + step], False, top))
+        extra += min(ink / page_ink, 1.0) if page_ink else float(ink > 0)
+    return sum(scores) / (len(pages) + extra)
+
+
+def _runs(flags: list[bool], value: bool, offset: int = 0) -> list[tuple[int, int]]:
+    """The [start, end) ranges where `flags` equals `value`, shifted by `offset`."""
+    out, start = [], None
+    for i, flag in enumerate([*flags, not value]):
+        if flag == value and start is None:
+            start = i
+        elif flag != value and start is not None:
+            out.append((start + offset, i + offset))
+            start = None
+    return out
 
 
 def page_images(pdf_path: Path, folder: Path) -> list[Image.Image]:
