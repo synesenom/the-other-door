@@ -738,3 +738,12 @@ def test_an_icon_font_used_once_for_a_bullet_stays_an_icon_font():
              "fixed": False, "embedded": True, "type3": False, "text": t, "icon": icon}
             for t, icon in (("[", True), ("Ó", True), ("○", False))]
     assert style_extract._fonts_used(runs)[0]["icon"] is True
+
+
+def test_spaced_level_dots_do_not_widen_a_column_band():
+    # '○ ○ ○ ○' in the icon font is no icon (#315) but is still no column text: the side band ends at its words
+    from tests.paths import TESTS_DIR
+
+    style = style_extract.extract(TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf")
+    side = next(b for b in style["columns"]["bands"] if b["kind"] == "side")
+    assert side["x1"] == 541.9

@@ -460,7 +460,7 @@ def column_bands(pages: list[dict], shapes: list[dict]) -> dict:
     lines. One band is `only`; with more, the narrowest, if under 40% of the text's width or on a coloured box, is
     the `side`, the others `main`. `background` is the fill of a box covering most of the page's height."""
     runs = [r for p in pages for r in p["runs"] if not r["rotated"] and not r["icon"]
-            and not (len(r["text"]) <= 1 or all(c in style_icons.BULLETS for c in r["text"]))]
+            and not (len(r["text"]) <= 1 or style_icons.only_bullets(r["text"]))]
     if not runs:
         return {"count": 0, "bands": []}
     body = body_size(runs)
