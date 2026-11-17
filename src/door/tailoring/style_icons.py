@@ -41,21 +41,22 @@ def icon_fonts(runs: list[dict]) -> set[str]:
     return {r["font"] for r in runs if r["icon"]}
 
 
-def _only_bullets(text: str) -> bool:
+def only_bullets(text: str) -> bool:
+    """Only bullet characters and spaces: a run of level dots or list bullets."""
     return all(c in BULLETS or c.isspace() for c in text)
 
 
 def is_glyph(run: dict, fonts: set[str]) -> bool:
     """Whether `run` draws an icon, whose glyph reads back as a stray character: one marked `icon`, or a run of
     bullets only in one of `fonts` (`icon_fonts`; a level dot drawn with the icon font)."""
-    return run["icon"] or (run["font"] in fonts and _only_bullets(run["text"]))
+    return run["icon"] or (run["font"] in fonts and only_bullets(run["text"]))
 
 
 def stray_glyph(run: dict) -> bool:
     """Whether `run` reads back in a PDF's text as stray characters a draft of the CV leaves out: an icon's glyph
     (`icon`), not level dots or bullets, which say something (`●●●○○` is 3 of 5; a list), even drawn with the icon
     font (#313)."""
-    return run["icon"] and not _only_bullets(run["text"])
+    return run["icon"] and not only_bullets(run["text"])
 
 
 def _touching(a: list[float], b: list[float]) -> bool:
