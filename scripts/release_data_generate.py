@@ -149,43 +149,34 @@ FIELDS = {
 }
 
 
-def make_default_profile() -> None:
-    """The example config's keys, with the sample's name and contact: no template key, no template in profile/."""
-    profile_cmd._init_core({"name": "Alex Example", "email": "alex.example@example.com"}, profile_dir=PROFILE,
-                           example_dir=workspace.PROFILE_EXAMPLE_DIR)
-    profile_cmd._save_cv_core(CV)
-    _save_photo()
-    (PROFILE / "story_bank.md").unlink(missing_ok=True)
-    for index, story in enumerate(STORIES):
-        stories_cmd._save_story_core(*story, replace_example=index == 0, profile_dir=PROFILE)
-    config = json.loads((PROFILE / "config.json").read_text(encoding="utf-8"))
-    assert not {"cv_template", "cover_letter_template"} & set(config), "the default profile sets no template key"
-    assert not list(PROFILE.glob("*.template.*")), "the default profile has no template in profile/"
-
-
-def _save_photo() -> None:
+def make_profile() -> None:
+    """Every `Profile` key set and the user's own templates in profile/; with DEFAULT the example config's keys only, with
+    the sample's name and contact: no template key, no template in profile/ (#141)."""
     from PIL import Image
 
+    if not DEFAULT:
+        missing = set(Profile.model_fields) - set(FIELDS)
+        assert not missing, f"this release has Profile keys the sample does not set: {sorted(missing)}"
     picture = HOME / "picture.png"
     Image.new("RGB", (300, 400), (180, 120, 90)).save(picture)
+    contact = {"name": "Alex Example", "email": "alex.example@example.com"} if DEFAULT else {}
+    profile_cmd._init_core(contact, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    profile_cmd._save_cv_core(CV)
     profile_cmd._save_photo_core(str(picture))
     picture.unlink()
-
-
-def make_profile() -> None:
-    missing = set(Profile.model_fields) - set(FIELDS)
-    assert not missing, f"this release has Profile keys the sample does not set: {sorted(missing)}"
-    profile_cmd._init_core({}, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
-    profile_cmd._save_cv_core(CV)
-    _save_photo()
-    # The templates come from the code since v0.2.0: the keys name the user's own, so the sample keeps a changed copy.
-    for name in ("cv.template.html", "cover-letter.template.html"):
-        own = (workspace.PROFILE_EXAMPLE_DIR / name).read_text(encoding="utf-8") + "<!-- the user's own styling -->\n"
-        (PROFILE / name).write_text(own, encoding="utf-8")
-    profile_cmd._init_core(FIELDS, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    if not DEFAULT:
+        # The templates come from the code since v0.2.0: the keys name the user's own, so the sample keeps a changed copy.
+        for name in ("cv.template.html", "cover-letter.template.html"):
+            own = (workspace.PROFILE_EXAMPLE_DIR / name).read_text(encoding="utf-8") + "<!-- the user's own styling -->\n"
+            (PROFILE / name).write_text(own, encoding="utf-8")
+        profile_cmd._init_core(FIELDS, profile_dir=PROFILE, example_dir=workspace.PROFILE_EXAMPLE_DIR)
     (PROFILE / "story_bank.md").unlink(missing_ok=True)
     for index, story in enumerate(STORIES):
         stories_cmd._save_story_core(*story, replace_example=index == 0, profile_dir=PROFILE)
+    if DEFAULT:
+        config = json.loads((PROFILE / "config.json").read_text(encoding="utf-8"))
+        assert not {"cv_template", "cover_letter_template"} & set(config), "the default profile sets no template key"
+        assert not list(PROFILE.glob("*.template.*")), "the default profile has no template in profile/"
 
 
 def make_style() -> None:
@@ -406,10 +397,8 @@ def make_run_record() -> None:
 
 
 def main() -> None:
-    if DEFAULT:
-        make_default_profile()
-    else:
-        make_profile()
+    make_profile()
+    if not DEFAULT:
         make_style()
     make_companies()
     # A release's own writes go through `ledger_lock`, which stamps a new jobs/ with its data version first; the sample
