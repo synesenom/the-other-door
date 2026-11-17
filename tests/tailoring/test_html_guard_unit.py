@@ -292,3 +292,24 @@ def test_an_attribute_or_meta_outside_the_allow_list_is_refused():
 ])
 def test_a_function_is_named_with_its_parentheses(css, named):
     assert named in problems(page(css=css))
+
+
+# On the pinned Chromium, pdfium reads a word printed with letter-spacing above 0.1em as pieces ("Skil l s", "P r o f
+# i l e"): measured on Figtree, Young Serif, Lato, Arimo, Tinos, Carlito, Caladea and Cousine at 10 and 16 pt, the
+# first split came at 0.11em for most and never at 0.10em or less (#254).
+@pytest.mark.parametrize("css", ["h2 { letter-spacing: 0.2em; }", "h2 { letter-spacing: .11em !important; }",
+                                 "h2 { letter-spacing: 2pt; }", "h2 { letter-spacing: 1px; }",
+                                 "h2 { letter-spacing: calc(0.05em + 1pt); }", "h2 { LETTER-SPACING: 0.3EM }"])
+def test_letter_spacing_wider_than_a_tenth_of_an_em_or_not_in_em_is_refused(css):
+    assert any("letter-spacing" in p and "0.1em" in p for p in problems(page(css=css)))
+
+
+@pytest.mark.parametrize("css", ["h2 { letter-spacing: 0.1em; }", "h2 { letter-spacing: .05em; }", "h2 { letter-spacing: 0; }",
+                                 "h2 { letter-spacing: normal; }", "h2 { letter-spacing: -0.02em; }", "h2 { letter-spacing: -0.5pt; }",
+                                 "h2 { letter-spacing: 0pt; }"])
+def test_letter_spacing_of_a_tenth_of_an_em_or_less_passes(css):
+    assert problems(page(css=css)) == []
+
+
+def test_letter_spacing_in_a_style_attribute_is_read_too():
+    assert any("letter-spacing" in p for p in problems(page(body='<div style="letter-spacing: 0.3em"></div>\n<<body>>')))
