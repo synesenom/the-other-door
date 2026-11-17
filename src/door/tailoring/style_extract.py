@@ -676,7 +676,7 @@ def _fonts_used(runs: list[dict]) -> list[dict]:
     for run in runs:
         entry = fonts.setdefault(run["font"], {**{k: run[k] for k in keys}, "icon": True, "runs": 0, "chars": 0})
         # a bullet drawn from an icon font (the rating's empty dot) is no reason to fetch that font
-        entry["icon"] = entry["icon"] and (run["icon"] or all(c in style_icons.BULLETS or c.isspace() for c in run["text"]))
+        entry["icon"] = entry["icon"] and (run["icon"] or style_icons.only_bullets(run["text"]))
         entry["runs"] += 1
         entry["chars"] += sum(not c.isspace() for c in run["text"])
     return sorted(fonts.values(), key=lambda f: -f["chars"])
