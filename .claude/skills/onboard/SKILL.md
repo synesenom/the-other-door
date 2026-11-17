@@ -195,7 +195,7 @@ Start the first run right away, without asking: `mcp__door__find_jobs` with `ski
 is still the example, say so instead and ask for a CV. Report how many postings it wrote and the top matches,
 or its error.
 If a style build was started, say in one line that it is building in the background and will be offered at the start
-of a later conversation. Never wait for it, check on it or call `show_style`/`use_style` here.
+of a later conversation if it comes out like your CV. Never wait for it, check on it or call `show_style`/`use_style` here.
 
 Then tell the user how to use The other door from now on: say "get me today's jobs" in a conversation (the
 `find_jobs` tool — it only fetches postings published since the last scrape), then "what's new?".

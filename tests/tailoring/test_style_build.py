@@ -11,7 +11,7 @@ import pytest
 
 from door.commands import compile as compile_cmd
 from door.core import chromium, templates, workspace
-from door.tailoring import cv_body, html_guard, style_build, style_preview
+from door.tailoring import cv_body, html_guard, style_build, style_compare, style_preview
 from pdf_utils import font_names, path_count
 from style_build_utils import BIG, EXAMPLE, STYLES, Stylist, cv_only, cv_round, fake_fonts, letter_round
 
@@ -22,6 +22,13 @@ pytestmark = [
 ]
 
 ICON_RULE = '.contact .email::before { content: ""; display: inline-block; width: 9px; height: 9px; background: url(/icons/email.svg); }'
+
+
+@pytest.fixture(autouse=True)
+def _any_score_will_do(monkeypatch):
+    """The canned stylist writes the shipped template, which does not look like the corpus CV: the floor a build's best
+    round must reach (`style_compare.FLOOR`, test_style_build_loop.py) is not what these tests are about."""
+    monkeypatch.setattr(style_compare, "FLOOR", 0.0)
 
 
 def _build(tmp_path, pdf, stylist):

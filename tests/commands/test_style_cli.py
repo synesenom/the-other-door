@@ -198,6 +198,12 @@ def test_the_command_prints_the_result_and_fails_when_the_build_failed(home, cv_
     assert bad.exit_code != 0 and "the stress renders failed" in result_text(bad)
 
 
+def test_a_ready_build_with_no_fonts_downloaded_says_why(home, cv_pdf, monkeypatch):
+    monkeypatch.setattr(style_build, "build", lambda *a, **k: {**READY, "font_error": "google/fonts unreachable"})
+    ok = CliRunner().invoke(cli, ["cv", "style", "build", str(cv_pdf)])
+    assert ok.exit_code == 0 and "google/fonts unreachable" in result_text(ok)
+
+
 # ----------------------------------------------------------------------------- starting it detached
 def test_start_copies_the_pdf_spawns_the_build_detached_and_returns_at_once(home, cv_pdf, world):
     assert style_cmd._start_core(str(cv_pdf)) == {"started": True}

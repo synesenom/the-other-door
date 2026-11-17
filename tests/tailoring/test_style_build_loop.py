@@ -9,7 +9,7 @@ import shutil
 import pytest
 
 from door.core import claude_cli, fonts, templates
-from door.tailoring import html_guard, html_pdf, readability, style_build
+from door.tailoring import html_guard, html_pdf, readability, style_build, style_compare
 from profile_utils import base_config
 from style_build_utils import (EXAMPLE, SAMPLE_BODY, STYLES, Stylist, adapt, cv_only, cv_round, fake_fonts, letter_round,
                                reply)
@@ -27,6 +27,7 @@ class World:
         self.checked = {"cv": 0, "letter": 0}
         self.problems = {"cv": lambda n: [], "letter": lambda n: []}
         self.print_error: str | None = None
+        self.rebuilt: str | None = None  # the corpus PDF a sample print gives instead of the original: a rebuild unlike it
         monkeypatch.setattr(html_pdf, "print_html", self._print)
         monkeypatch.setattr(readability, "check_pdf", self._check)
 
@@ -34,7 +35,8 @@ class World:
         self.prints.append({"html": html, "folder": folder, "assets": assets})
         if self.print_error:
             raise html_pdf.PrintError(self.print_error)
-        shutil.copyfile(self.pdf, out_pdf)
+        unlike = self.rebuilt and out_pdf.name == "render.pdf"
+        shutil.copyfile(STYLES / f"{self.rebuilt}.pdf" if unlike else self.pdf, out_pdf)
 
     def _check(self, pdf, body, name=None, cv=False):
         kind = "cv" if cv else "letter"
@@ -112,6 +114,50 @@ def test_a_print_that_fails_is_told_to_the_next_round(world):
     world.print_error = "chromium crashed"
     result = world.build("html-word-two-column", stylist, cap=2)
     assert result["state"] == "failed" and "chromium crashed" in stylist.calls[1]["input"]
+
+
+def test_a_rebuild_that_never_comes_near_the_cv_s_look_is_failed_and_writes_nothing(world):
+    world.rebuilt = "latex-classic"  # every sample print looks like another CV
+    stylist = Stylist(cv_round(), cv_only())
+    result = world.build("html-word-two-column", stylist, cap=3)
+    assert result["state"] == "failed" and len(result["scores"]) == 3
+    assert max(result["scores"]) < style_compare.FLOOR
+    assert "did not come close to your CV's look" in result["problems"][0]
+    assert len(stylist.calls) == 3  # no stress round, no letter: nothing of it would be used
+    assert list(world.profile.iterdir()) == []
+
+
+def _scores(monkeypatch, *scores):
+    """The sample prints' blurred scores, one a round in this order, each far from the original's elements (the print
+    itself is the original's PDF, which would stop the loop at once)."""
+    it = iter(scores)
+    monkeypatch.setattr(style_compare, "pages_score", lambda original, render: next(it))
+    monkeypatch.setattr(style_compare, "worst_offset_pt", lambda diffs: 9.0)
+
+
+def test_a_best_round_exactly_at_the_floor_is_ready(world, monkeypatch):
+    _scores(monkeypatch, style_compare.FLOOR, style_compare.FLOOR - 0.1)
+    result = world.build("html-word-two-column", Stylist(cv_round(), cv_only(), letter_round()), cap=2)
+    assert result["state"] == "ready", result["problems"]
+
+
+def test_low_rounds_then_one_that_clears_the_floor_is_ready_with_that_round_s_template(world, monkeypatch):
+    _scores(monkeypatch, 0.2, 0.3, 0.7)
+    third = cv_only(edit=lambda t: t.replace("</head>", "<meta name=\"round\" content=\"third\"></head>"))
+    result = world.build("html-word-two-column", Stylist(cv_round(), cv_only(), third, letter_round()), cap=3)
+    assert result["state"] == "ready" and result["scores"] == [0.2, 0.3, 0.7]
+    assert 'content="third"' in (world.style / "cv.template.html").read_text()
+
+
+def test_a_build_with_no_fonts_under_the_floor_says_the_fonts_could_not_be_downloaded(world):
+    def broken(plan, dest):
+        raise fonts.FontsError("google/fonts unreachable")
+
+    world.rebuilt = "latex-classic"
+    result = world.build("html-word-two-column", Stylist(cv_round(), cv_only()), fonts_fetch=broken, cap=2)
+    assert result["state"] == "failed" and result["font_error"] == "google/fonts unreachable"
+    assert result["problems"][0].startswith("the fonts could not be downloaded (google/fonts unreachable): try again later")
+    assert list(world.profile.iterdir()) == []
 
 
 def test_a_template_that_fails_the_stress_renders_gets_one_more_round_told_what_failed(world):
