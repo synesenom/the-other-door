@@ -7,7 +7,7 @@ import re
 import pytest
 
 from door.core import claude_cli, templates
-from door.tailoring import html_guard, style_build, style_extract
+from door.tailoring import html_guard, pdf_render, style_build, style_extract
 from style_build_utils import STYLES
 
 
@@ -246,7 +246,7 @@ def test_a_body_with_no_side_column_or_an_original_with_none_has_no_column_probl
 
 
 def test_the_text_of_a_two_column_cv_is_given_column_by_column_on_each_page():
-    text = style_build.column_text(_extract("scrubbed-pages-sidebar-fr"), STYLES / "scrubbed-pages-sidebar-fr.pdf")
+    text = style_build.original_text(_extract("scrubbed-pages-sidebar-fr"), STYLES / "scrubbed-pages-sidebar-fr.pdf")
     labels = [line for line in text.splitlines() if line.startswith("[page 1")]
     assert labels == ["[page 1, across the page]", "[page 1, side column, on the left]", "[page 1, main column, on the right]"]
     page2_side, page2_main = text.split("[page 2, side column, on the left]")[1].split("[page 2, main column, on the right]")
@@ -255,8 +255,25 @@ def test_the_text_of_a_two_column_cv_is_given_column_by_column_on_each_page():
     assert "ATROTTOIR ALOIN" in text.splitlines()  # a heading's larger first letter stays in its word
 
 
-def test_the_text_of_a_one_column_cv_is_none():
-    assert style_build.column_text(_extract("latex-classic"), STYLES / "latex-classic.pdf") is None
+def test_the_text_of_a_one_column_cv_is_its_lines_with_no_column_labels():
+    text = style_build.original_text(_extract("latex-classic"), STYLES / "latex-classic.pdf")
+    whole = "\n".join(pdf_render.page_texts(STYLES / "latex-classic.pdf"))
+    assert "[page" not in text
+    assert text.split() == whole.split()
+
+
+@pytest.mark.parametrize("name", ["scrubbed-pages-header-en", "scrubbed-altacv-icons-fr"])
+def test_the_text_of_a_cv_leaves_out_its_icon_glyphs(name):
+    # an icon drawn from an icon font reads back as a stray character ("!"): in text.txt the stylist would copy it
+    # into the sample body, and the rebuild printed it where the icon was (#248)
+    # A lone bullet in the icon font (altacv's last level dot "○") is not marked an icon, but it is one of its glyphs.
+    style = _extract(name)
+    icon_fonts = {r["font"] for r in style["runs"] if r["icon"]}
+    glyphs = {c for r in style["runs"] if r["font"] in icon_fonts for c in r["text"] if not c.isspace()}
+    text = style_build.original_text(style, STYLES / f"{name}.pdf")
+    lines = [line for line in text.splitlines() if not line.startswith("[page ")]
+    assert glyphs and not glyphs & set("".join(lines))
+    assert "petit." in text.splitlines() or name != "scrubbed-pages-header-en"
 
 
 def test_a_sample_body_that_puts_text_of_the_originals_main_column_under_a_side_heading_is_named():

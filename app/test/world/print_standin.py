@@ -1,7 +1,8 @@
 """A stand-in for the Chromium print in the journeys (#146): `html_pdf.print_html` replaced, and a
 `chrome-headless-shell` on PATH that answers `--version`, so `doctor` finds a printer that starts.
 
-It lays the page's text out on A4 pages with pypdfium2 (Helvetica, wrapped by its widths), so a PDF's page
+It lays the page's text out on A4 pages with pypdfium2 (wrapped by Helvetica's widths, set in Figtree, a real font
+embedded whole: Helvetica's standard encoding has no ő, ű or ○, which then read back wrong, #135), so a PDF's page
 count follows the length of what the tailor or `revise` wrote, and door renders real page images from it.
 Only the text matters here: `<h1>`..`<h3>` are set larger, `<li>` gets a bullet, the rest is paragraphs. A body
 holding the word `worldfail` fails as a print does (`PrintError`). A CV style build's sample print (`render.pdf` beside
@@ -27,6 +28,7 @@ _ASCII = [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 
           500, 500, 500, 334, 260, 334, 584]
 _OTHER = {"æ": 889, "ø": 611, "å": 556, "Æ": 1000, "Ø": 778, "Å": 667}  # anything else counts as 556
 WIDTH, HEIGHT = 595, 842
+FONT = Path(__file__).resolve().parents[3] / "profile.example" / "fonts" / "Figtree-Regular.ttf"
 LEFT, RIGHT, TOP, BOTTOM = 64, 531, 64, 790  # the text box, in points from the page's top-left
 
 
@@ -132,7 +134,9 @@ def blocks_of(html: str) -> list[tuple[str, str]]:
 
 def render(blocks: list[tuple[str, str]], out_pdf: Path) -> None:
     pdf = pdfium.PdfDocument.new()
-    font = raw.FPDFText_LoadStandardFont(pdf, b"Helvetica")
+    data = FONT.read_bytes()
+    font_data = (ctypes.c_uint8 * len(data)).from_buffer_copy(data)   # kept alive until the save
+    font = raw.FPDFText_LoadFont(pdf, font_data, len(data), raw.FPDF_FONT_TRUETYPE, 1)
     pages = [pdf.new_page(WIDTH, HEIGHT)]
     y = float(TOP)
     for kind, text in blocks:

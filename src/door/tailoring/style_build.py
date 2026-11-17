@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 import re
 import shutil
-import tempfile
 from pathlib import Path
 
 from PIL import Image
@@ -24,8 +23,8 @@ from pypdfium2 import PdfiumError
 from door import i18n
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
-from door.core import chromium, claude_cli, fonts, progress as progress_mod, templates, workspace
-from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_preview)
+from door.core import claude_cli, fonts, pinned, progress as progress_mod, templates, workspace
+from door.tailoring import (cv_body, font_measure, html_doc, html_guard, html_pdf, pdf_render, readability, style_compare, style_extract, style_icons, style_preview)
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
@@ -181,8 +180,9 @@ def _where(band: dict, bands: list[dict]) -> str:
 
 
 def _band_of(bbox: list[float], bands: list[dict]) -> dict | None:
-    """The band a box stands in: the one its centre is in or nearest to; None when it spans two bands."""
-    if sum(1 for b in bands if bbox[0] < b["x1"] - 2 and bbox[2] > b["x0"] + 2) > 1:
+    """The band a box stands in: the one its centre is in or nearest to; None when it spans two bands or there are
+    none."""
+    if not bands or sum(1 for b in bands if bbox[0] < b["x1"] - 2 and bbox[2] > b["x0"] + 2) > 1:
         return None
     centre = (bbox[0] + bbox[2]) / 2
     return min(bands, key=lambda b: max(b["x0"] - centre, centre - b["x1"], 0))
@@ -227,16 +227,27 @@ def _by_band(runs: list[dict], bands: list[dict]) -> dict[int, list[dict]]:
     return groups
 
 
-def column_text(style: dict, pdf: Path) -> str | None:
-    """The text of the original `pdf` for the stylist (`text.txt`) on a CV with a side band: each page's lines across
-    the page, then each column's from left to right, under a ``[page N, side column, on the left]`` label, so a section
-    that goes on in its column on the next page is not read as part of the other column's. None for one column.
+def _segments(line: list[dict], icon_fonts: set[str]) -> list[list[dict]]:
+    """A line's runs cut at its icons (`style_icons.is_glyph`), the icons left out."""
+    out: list[list[dict]] = [[]]
+    for run in line:
+        if style_icons.is_glyph(run, icon_fonts):
+            out.append([])
+        else:
+            out[-1].append(run)
+    return [s for s in out if s]
+
+
+def original_text(style: dict, pdf: Path) -> str:
+    """The text of the original `pdf` for the stylist (`text.txt`), its icons left out (#248). On a CV with a side
+    band, each page's lines across the page, then each column's from left to right, under a ``[page N, side column, on
+    the left]`` label, so a section that goes on in its column on the next page is not read as part of the other
+    column's; on a CV of one column, its lines, page after page.
 
     Each line is read again from the page within its box: `style_extract`'s runs no longer say where a word ends, and
     only the PDF's own text tells a drop cap (``A`` + ``TROTTOIR``) from two words."""
-    if not _has_side(style):
-        return None
-    bands = style["columns"]["bands"]
+    bands = style["columns"]["bands"] if _has_side(style) else []
+    icon_fonts = style_icons.icon_fonts(style["runs"])
     out: list[str] = []
     doc = pdf_render.open_pdf(pdf)
     try:
@@ -246,12 +257,14 @@ def column_text(style: dict, pdf: Path) -> str | None:
             for index in [-1, *range(len(bands))]:
                 lines = []
                 for line in _line_runs(groups.get(index, [])):
-                    x0, y0, x1, y1 = _box(line)
-                    text = textpage.get_text_bounded(left=x0 - 1, bottom=height - y1, right=x1 + 1, top=height - y0)
-                    if text.strip():
-                        lines.append(" ".join(text.split()))
+                    parts = []
+                    for segment in _segments(line, icon_fonts):
+                        x0, y0, x1, y1 = _box(segment)
+                        parts.append(textpage.get_text_bounded(left=x0 - 1, bottom=height - y1, right=x1 + 1, top=height - y0))
+                    if text := " ".join(" ".join(parts).split()):
+                        lines.append(text)
                 if lines:
-                    out += [f"[page {number}, {_ACROSS if index < 0 else _where(bands[index], bands)}]", *lines]
+                    out += ([f"[page {number}, {_ACROSS if index < 0 else _where(bands[index], bands)}]"] if bands else []) + lines
     finally:
         doc.close()
     return "\n".join(out)
@@ -450,9 +463,12 @@ def _get_fonts(pdf: Path, style: dict, font_dir: Path, fetch) -> tuple[list[dict
         return _shipped_plan(style["fonts"], font_dir), str(exc)
 
 
-def _agent_style(style: dict) -> dict:
-    """`style` as the stylist reads and `profile/style/style.json` keeps it: the icons' traced paths are in the SVG files."""
-    return {**style, "icons": [{k: v for k, v in icon.items() if k not in ("d", "viewBox", "fill_rule")} for icon in style["icons"]]}
+def _agent_style(style: dict, icon_files: dict[str, str]) -> dict:
+    """`style` as the stylist reads and `profile/style/style.json` keeps it: only the icons of a kind `write_icons` wrote
+    a file for, each with its ``file`` (a dropped one has nothing to draw, #248), their traced paths in the SVG files."""
+    icons = [{**{k: v for k, v in icon.items() if k not in ("d", "viewBox", "fill_rule")}, "file": icon_files[kind]}
+             for icon in style["icons"] if (kind := icon_kind((icon.get("near") or {}).get("text"))) in icon_files]
+    return {**style, "icons": icons}
 
 
 def _write(path: Path, text: str) -> None:
@@ -470,6 +486,20 @@ def _clean(template: str, kind: str) -> str:
     return _TITLE.sub(f"<title>{_TITLES[kind]}</title>", text)
 
 
+def _photo_stand_in(style: dict, images: list, work: Path) -> Path | None:
+    """The original's photo cut from its page image, as `work/original-photo.png`, for the sample prints compared with
+    the original (#262: a photo box printed empty, or not at all, cost the score though the template held its place);
+    None when the original has no photo."""
+    photo = style.get("photo")
+    if not photo:
+        return None
+    page = images[photo["page"] - 1]
+    scale = page.width / style["page"]["size"][0]
+    path = work / "original-photo.png"
+    page.crop(tuple(round(v * scale) for v in photo["bbox"])).save(path, "PNG")
+    return path
+
+
 class _Session:
     """One build's state: the original's style and page images, the folder it works in, the manifest and the model seam."""
 
@@ -477,27 +507,31 @@ class _Session:
         self.style, self.work, self.manifest, self.run, self.profile_dir = style, work, manifest, run, profile_dir
         self.images = style_compare.page_images(pdf, work)  # also leaves original_page_N.png beside the files it reads
         self.rounds = 0
+        self.photo = _photo_stand_in(style, self.images, work)
 
     def ask(self, task: str, *, count: bool = True) -> str:
         """One stylist call; the letter's (`count` False) are not rounds of the CV template."""
         self.rounds += count
         return _ask(self.run, task, self.work, self.profile_dir)
 
-    def sample(self, template: str, body: str) -> tuple[dict, float, float, list[str]]:
-        """The sample `body` printed in `template`, read back and compared with the original: the diffs, the blurred
-        score, the worst offset in points and the sections printed in the other column's place (`column_problems`).
+    def sample(self, template: str, body: str) -> tuple[dict, float, float, list[str], list[str]]:
+        """The sample `body` printed in `template` (with the original's own photo when it has one: `_photo_stand_in`),
+        read back and compared with the original: the diffs, the blurred score, the worst offset in points, the
+        sections printed in the other column's place (`column_problems`) and the words read back as letters apart
+        (`readability.spaced_problems`, #267).
 
         Raises:
             _Stop: the print has no text to read back.
         """
         pdf, placed, _ = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
-                                                columns=self.manifest.columns)
+                                                columns=self.manifest.columns, photo=self.photo)
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
         diffs = style_compare.match(self.style, render)
         score = style_compare.pages_score(self.images, style_compare.page_images(pdf, self.work))
-        return diffs, score, style_compare.worst_offset_pt(diffs), column_problems(self.style, render, placed)
+        spaced = [p["detail"] for p in readability.spaced_problems(readability.extract(pdf)[0], placed)]
+        return diffs, score, style_compare.worst_offset_pt(diffs), column_problems(self.style, render, placed), spaced
 
 
 _REPLY_FIRST = ("Reply with one line on what you see (layout, colours), then the ```template block and the ```body block, "
@@ -575,6 +609,9 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
             elif bad := body_column_problems(s.style, sample, s.manifest.columns):
                 feedback = ("Your sample body puts text under a heading of the other column (text.txt gives each page's "
                             "text column by column: a section goes on in its own column on the next page):\n" + _list(bad))
+            elif s.photo and "<<photo>>" not in sample:
+                feedback = ("Your sample body has no <<photo>>: the original has a photo, so the token goes first in "
+                            "the header (the print puts the original's photo there).")
             else:
                 body = sample
                 _write(s.work / "sample_body.html", body)
@@ -585,13 +622,19 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
             feedback = "The guard refused your template, so it was not printed. Fix these:\n" + _list(problems)
             continue
         try:
-            diffs, score, worst, misplaced = s.sample(template, body)
+            diffs, score, worst, misplaced, spaced = s.sample(template, body)
         except (html_pdf.PrintError, _Stop, ValueError) as exc:
             feedback = f"Printing your template failed: {exc}"
             continue
         if misplaced:
             feedback = ("Your template prints the columns in the wrong place, so this round is not kept:\n"
                         + _list(misplaced) + "\n\n" + style_compare.feedback(diffs, score))
+            continue
+        if spaced:
+            feedback = ("Your template prints letters apart, so this round is not kept: a reader takes them as single "
+                        "letters. Their letter-spacing is too wide for their size (a parent's spacing inherited by smaller "
+                        "text, or a justified line spread per character):\n" + _list(spaced) + "\n\n"
+                        + style_compare.feedback(diffs, score))
             continue
         kept.append(template)
         scores.append(score)
@@ -693,7 +736,7 @@ def end(candidate: Path, profile_dir: Path) -> None:
     shutil.rmtree(gone, ignore_errors=True)
 
 
-def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, letter: str) -> None:
+def _publish(profile_dir: Path, work: Path, pdf: Path, cv: str, letter: str) -> None:
     """Write `profile_dir/style.next/` whole, the candidate: staged beside it and moved in, an earlier one set aside
     until the new one is there (`restore` puts it back after an interruption). `profile_dir/style/`, the style in use,
     is never touched here. No ledger lock (nothing else writes there).
@@ -701,42 +744,37 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
     Raises:
         OSError: the files could not be written or moved.
     """
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    chromium.sweep_stale_parts(profile_dir)
-    staging = Path(tempfile.mkdtemp(prefix=".style.", suffix=".part", dir=profile_dir))
-    try:
+    with pinned.staging(profile_dir, ".style.") as staging:
         _write(staging / _CV_FILE, cv)
         _write(staging / _LETTER_FILE, letter)
-        _write(staging / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
-        shutil.copyfile(work / templates.MANIFEST_FILE, staging / templates.MANIFEST_FILE)
+        for name in ("style.json", templates.MANIFEST_FILE):
+            shutil.copyfile(work / name, staging / name)
         shutil.copyfile(pdf, staging / "source.pdf")
         for folder in ("fonts", "icons"):
             if (work / folder).is_dir():
                 shutil.copytree(work / folder, staging / folder, ignore=shutil.ignore_patterns("*.part"))
         move_in(staging, profile_dir, templates.CANDIDATE)
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
 
 
 def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap: int, result: dict) -> None:
     refused = style_extract.not_pdf(pdf_path)
     if refused:
-        raise _Stop(refused["detail"])
+        raise _Stop(f"{pdf_path.name} {refused['detail']}")
     style = style_extract.extract(pdf_path)
     if not style["verdict"]["copyable"]:
-        raise _Stop(style["verdict"]["detail"] or f"no style to copy ({style['verdict']['reason']})")
+        raise _Stop(f"{pdf_path.name} {style['verdict']['detail']}")
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
     pdf = work / "original.pdf"
     shutil.copyfile(pdf_path, pdf)
     progress_mod.report("reading the CV's style", stage="style")
-    _write(work / "text.txt", column_text(style, pdf) or "\n".join(pdf_render.page_texts(pdf)))
-    _write(work / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
+    _write(work / "text.txt", original_text(style, pdf))
     progress_mod.report("fetching the fonts", stage="style")
     plan, result["font_error"] = _get_fonts(pdf, style, work / "fonts", fonts_fetch)
     result["fonts"] = [{k: e[k] for k in ("family", "source", "reason", "faked", "resolved")} for e in plan]
     _write(work / "fonts.css", _font_face_css(plan))
     icon_files, result["dropped_icons"] = write_icons(style["icons"], work / "icons")
+    _write(work / "style.json", json.dumps(_agent_style(style, icon_files), ensure_ascii=False, indent=1))
     cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
     data = _manifest_data(style, list(dict.fromkeys(f["name"] for e in plan for f in e["files"])), icon_files, cv_md)
     _write(work / templates.MANIFEST_FILE, json.dumps(data, indent=1))
@@ -774,7 +812,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
     letter, problems = _letter(s, template, cv_md)
     if letter is None:
         raise _Stop("; ".join(problems))
-    _publish(profile_dir, s.work, pdf, style, template, letter)
+    _publish(profile_dir, s.work, pdf, template, letter)
     result["state"] = "ready"
 
 

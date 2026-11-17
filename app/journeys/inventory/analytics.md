@@ -25,7 +25,7 @@ The world's stand-in claude prices each answer (`COST_USD` in `app/test/world/cl
 
 ## Market (`region "Market"`, `Market.tsx`, always the last section)
 - Opening Analytics calls `market({save:false})` once, with the status "Counting the ads (new skill names may take one short Claude call)…" (timeout 180 s). Never asked again while the screen stays open. — ✓ counts the ads when Analytics opens, once, and writes no report
-- Error: `p.field-error` role alert, `named()` text (a malformed `companies.json`, an invalid config, a timeout). — ✓ a report that failed says why; unit: `Market.test.tsx`
+- Error: said nowhere, Market and its link left out (principle 9: a read-only section the page stands without; a malformed `companies.json`, an invalid config, a timeout). — ✓ a report that failed is said nowhere and Market is left out (principle 9); unit: `Market.test.tsx`
 - No ads read (`skills` empty): one muted line "The market shows here once ads are read." — unit: `Market.test.tsx`; preview: `preview.test.tsx` (empty state)
 - Done view: a muted line "What the ads ask for most." and the first 8 skills, each `listitem "<skill>, in your CV|not in your CV"` "<skill> · NN% of the ads", with the check (`skill-fits`) or the cross (`skill-gap`) of a posting's skills. No buttons. — ✓ counts the ads when Analytics opens, once, and writes no report
 - `counts`, `near_misses`, `uncovered_titles`, `companies` and `warning` are not shown.

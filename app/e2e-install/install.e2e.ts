@@ -15,7 +15,8 @@ import { createTracker } from './close'
 import { bundledPython, chromiumSigningChecks, documentedDataFolder, errorLines, kindOf, machOFiles } from './installer'
 import type { Spawned } from './redirect'
 
-test.use({ worldOptions: { empty: true, persona: 'mette' } })
+// bence: a CV and an ad with ő and ű, outside Windows' code page (cp1252), read by the bundled Python (#135)
+test.use({ worldOptions: { empty: true, persona: 'bence' } })
 
 const REPORT = join(__dirname, '..', 'install-report')
 
@@ -178,6 +179,11 @@ test('the installed app: set-up, the first run and Prepare on what the installer
   expect(output).toHaveLength(1)
   for (const f of ['cv.html', 'cover_letter.html', 'cv.pdf', 'cover_letter.pdf']) expect(world.exists(`jobs/output/${output[0]}/${f}`), f).toBe(true)
   expect(world.claudeCalls('tailor')).toHaveLength(1)
+  // the CV's ő and ű reached the model, and the printed CV and letter read back with the name and headings intact
+  const drafted = String((world.claudeCalls('draft')[0] as { input?: string } | undefined)?.input ?? '')
+  for (const text of ['Kovács', 'Szoftverfejlesztő', 'Műhely']) expect(drafted, text).toContain(text)
+  const shown = (await page.evaluate((id) => window.door.call('show', { job_id: id }), output[0]!)) as { data?: { materials?: { readability?: unknown } } }
+  expect(shown.data?.materials?.readability, JSON.stringify(shown).slice(0, 2000)).toEqual([])
   // real PDFs, not the world's stand-ins: Chromium's Skia producer, the header and at least one page object (#176)
   for (const f of ['cv.pdf', 'cover_letter.pdf']) {
     const bytes = readFileSync(join(world.home, 'jobs', 'output', output[0]!, f))

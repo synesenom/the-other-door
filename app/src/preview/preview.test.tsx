@@ -266,6 +266,57 @@ describe('scenes', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
+  it('profile-cv-style-refused says a choice that failed in the error box', async () => {
+    mount('profile-cv-style-refused')
+    await pressInOrder(sceneById('profile-cv-style-refused')!.press!)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your choice could not be saved. Try again.')
+    expect(alert).toHaveClass('error')
+  })
+
+  it('profile-cv-forget-failed says a page that could not be forgotten in the error box', async () => {
+    mount('profile-cv-forget-failed')
+    await pressInOrder(sceneById('profile-cv-forget-failed')!.press!)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your pages could not be saved. Try again.')
+    expect(alert).toHaveClass('error')
+    expect(screen.getByRole('button', { name: 'Forget https://janedoe.example/portfolio' })).toBeInTheDocument()
+  })
+
+  it('profile-stories-failed says a save that failed in the error box', async () => {
+    mount('profile-stories-failed')
+    await pressInOrder(sceneById('profile-stories-failed')!.press!)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your story could not be saved. Try again.')
+    expect(alert).toHaveClass('error')
+  })
+
+  it('profile-stories-unread says a bank that could not be read in the error box', async () => {
+    mount('profile-stories-unread')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Your story bank could not be read. Try again later.')
+    expect(alert).toHaveClass('error')
+  })
+
+  it('settings-data-failed says a refused export and a refused report each in the error box', async () => {
+    mount('settings-data-failed')
+    await pressInOrder(sceneById('settings-data-failed')!.press!)
+    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2))
+    for (const alert of screen.getAllByRole('alert')) expect(alert).toHaveClass('error')
+    expect(screen.getByText(/door-data\.tar\.gz is there already/)).toBeInTheDocument()
+    expect(screen.getByText(/report\.zip is there already/)).toBeInTheDocument()
+  })
+
+  it('matches-add-job-failed says an import that failed in the error box', async () => {
+    mount('matches-add-job-failed')
+    await pressInOrder(sceneById('matches-add-job-failed')!.press!)
+    await userEvent.type(await screen.findByLabelText('Link'), 'https://example.com/job/1')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('That page needs a sign-in. Paste the ad text instead.')
+    expect(alert).toHaveClass('error')
+  })
+
   it('profile-cv-style-earlier can keep the style in use', async () => {
     mount('profile-cv-style-earlier')
     await userEvent.click(await screen.findByRole('button', { name: 'Keep my current style' }))

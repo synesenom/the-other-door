@@ -24,7 +24,7 @@
 #
 #   ./scripts/run-test.sh --cli-journeys   The real ./door in the app's test world (init,
 #                            find, jobs show/prepare/status and their failures; tests/cli_journeys/). Needs
-#                            Node and `npm ci` in app/. CI runs it on Linux and Windows.
+#                            Node and `npm ci` in app/. CI runs it on Linux, Windows and macOS.
 #
 #   ./scripts/run-test.sh --app      The desktop app's tests, as CI runs them: type
 #                            check, unit tests, the end-to-end smoke test, every

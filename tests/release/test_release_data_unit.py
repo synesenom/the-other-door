@@ -88,6 +88,14 @@ def test_normalise_masks_the_data_folder_and_every_time(tmp_path):
     assert rd.normalise(data, home) == {"path": "<home>/profile/cv.md", "at": "<time>", "n": 3, "list": ["x <time> y"]}
 
 
+def test_normalise_masks_the_code_s_folder_too(tmp_path):
+    """#141: with no template key the templates are the code's own, read from the release's checkout: the folder the
+    release ran from is not the one the gate runs from. A data folder inside the checkout stays `<home>`."""
+    code, home = tmp_path / "tree", tmp_path / "tree" / "home"
+    data = {"cv": f"{code}/profile.example/cv.template.html", "cv_md": f"{home}/profile/cv.md"}
+    assert rd.normalise(data, home, code=code) == {"cv": "<code>/profile.example/cv.template.html", "cv_md": "<home>/profile/cv.md"}
+
+
 def test_the_saved_data_holds_no_address_but_example_com():
     import re
 
@@ -120,3 +128,19 @@ def test_every_read_change_names_why():
         for path, why in entries:
             assert path and "*" not in path, f"{path}: list the exact path, nothing broader"
             assert why.startswith("#"), f"{path}: name the PR that changed the read"
+
+
+def test_a_release_s_default_variant_is_a_sample_of_that_release(tmp_path, monkeypatch):
+    """#141: `<X.Y.Z>/default/` is the same release's data with the default profile (no template in profile/, both
+    template keys null): the gate opens it after the release's own sample, and it counts as that release."""
+    import release_gate_utils as gate
+
+    for name in ("0.1.0", "0.2.0", "0.10.0"):
+        (tmp_path / name / "profile").mkdir(parents=True)
+    (tmp_path / "0.2.0" / "default" / "profile").mkdir(parents=True)
+    monkeypatch.setattr(gate, "SAMPLES_DIR", tmp_path)
+    monkeypatch.setattr(gate, "READ_CHANGES", {"0.2.0": (("show_profile.config.min_score", "#200"),)})
+    assert [p.relative_to(tmp_path).as_posix() for p in gate.samples()] == ["0.1.0", "0.2.0", "0.2.0/default", "0.10.0"]
+    assert [p.name for p in gate.releases()] == ["0.1.0", "0.2.0", "0.10.0"]
+    variant = tmp_path / "0.2.0" / "default"
+    assert gate.sample_major(variant) == 0 and gate.read_changes(variant) == ["show_profile.config.min_score"]

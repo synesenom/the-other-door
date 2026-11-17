@@ -124,16 +124,18 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
    The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json`, which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
    `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `<h2>` heading
    on a line of its own and in order (a two-column CV's main and side columns each in their own order, a side heading
-   allowed to share a line with main text), the `Keywords` note and no garbled or empty text. A CV is also checked for text lost off the page: Chromium
+   allowed to share a line with main text), the `Keywords` note, no garbled or empty text and no word read as letters apart (`spaced`: "P r o f i l e", what a template's letter-spacing too wide for its text gives; such a heading is not also `missing`, so no retry is spent on a template's fault). A CV is also checked for text lost off the page: Chromium
    cuts what runs past the page, so a word of the CV that is missing from the PDF's text (`overflow`) means something
    was cut off; and, for a template with a side column, a nearly empty last page (`sparse`). What does not read back is
    `readable` on the compile result and "Read by an ATS" in `show` (`materials.readability`, recomputed from the PDFs);
-   reported, never a block.
+   reported, never a block. `show`'s `materials.readability` and `prepare`'s read-back also hold the CV to its page
+   limit (`pages`: more pages than the stricter of the country's and the template's), which `compile`'s `readable`
+   does not (the tailor counts its pages itself); `jobs show` says it once, as "(limit N)" on the CV row.
    Chromium prints HTML pages to PDF without a TeX engine (`door.tailoring.html_pdf`, #165): one pinned headless shell, installed by `doctor --fix` or carried by the desktop app, driven over the DevTools protocol on a fresh profile. JavaScript is off, the page is served from loopback over one folder and every other request, `file:` and other hosts included, is refused.
    When the tailor is done, `prepare` reads both PDFs back this way itself. If the name, a heading or a keyword
-   is missing, or text of the CV runs off the page, it runs the tailor once more, in a fresh session, told which problems and that the files exist; the
+   is missing, text of the CV runs off the page or the CV has more pages than its limit, it runs the tailor once more, in a fresh session, told which problems and that the files exist; the
    retry counts in the plan estimate. What still does not read back is `readability` in `prepare`'s answer, with a
-   `warning`; the other kinds (glued, order, empty, garbled, sparse) are listed without a retry. The prepare stays `prepared`.
+   `warning`; the other kinds (glued, order, empty, garbled, spaced, sparse) are listed without a retry. The prepare stays `prepared`.
    Once the job is prepared, `prepare` also estimates its salary: one Haiku call with a web search (`jobs salary`'s,
    saved in `jobs/salary.json`), reused while it is under 90 days old and asked again after. It is only shown (the
    tailor never sees it), and it is skipped while the Claude plan is close to its limit. A search that finds no

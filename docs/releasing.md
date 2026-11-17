@@ -12,7 +12,8 @@ only after a person has installed it on a clean machine of each system and gone 
   the CLI journeys (the real `./door` in the test world) and the real-model tests, which only run locally (the real model on your Claude plan runs `/onboard`, `/expand` and a review session against the app's
   test world, and rebuilds the CV style of every style corpus CV).
 - The release gate (#57, `tests/release/`, marker `release`) is part of it: every earlier release's saved data,
-  `tests/data_versions/<X.Y.Z>/`, is copied to a temporary home, upgraded by the build's own steps and read back with
+  `tests/data_versions/<X.Y.Z>/`, and its `default/` variant (the default profile: no template in `profile/`, both
+  template keys null, the templates the code's own, as most users have it; #141), is copied to a temporary home, upgraded by the build's own steps and read back with
   the same tools (`show_profile`, `list_companies`, `list_matches`, `show` for each job, `status_summary`,
   `list_stories`); it must equal the `expected.json` the release itself wrote, apart from what a step lists in its
   `changes` and what `READ_CHANGES` (`tests/release_gate_utils.py`, #101) lists as a change in how the same data is read. A key the old release returned that is gone or different, and a stored shape that changed without a step,
@@ -45,7 +46,9 @@ The workflow refuses a tag that is not the version. The tag run repeats what the
 After the tag exists (it is pushed, so the tag's code is what was released), save that release's data for the next
 gate: `poetry run python scripts/save_release_data.py X.Y.Z` checks the tag out in a throwaway git worktree, has the
 tag's own code write a small made-up `profile/` and `jobs/` and read them back, and puts both, with `expected.json`,
-in `tests/data_versions/X.Y.Z/`. Commit that folder, and empty `NEW_SINCE_RELEASE` in
+in `tests/data_versions/X.Y.Z/`, then the same with the default profile in `tests/data_versions/X.Y.Z/default/`
+(each variant is saved only when it is missing, so running it again after a save that failed half way finishes it).
+0.2.0's `default/` checks little: `READ_CHANGES["0.2.0"]` (#146) excuses the template paths of both variants, so the default profile's template path is really compared from the next release's `default/` sample on. Commit that folder, and empty `NEW_SINCE_RELEASE` in
 `tests/release/test_release_sample_unit.py` (the fields new since the last release are in the new sample now).
 `scripts/release_data_generate.py` writes the data with the release's API; when a later release's API moved, that
 script follows it, and the run fails by name rather than saving something that is not the release's.

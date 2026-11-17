@@ -593,6 +593,22 @@ def test_private_use_control_and_dingbat_characters_mark_an_icon_run_in_any_font
     assert [r["icon"] for r in runs] == [True, True, True, False]
 
 
+@pytest.mark.parametrize("name", ["FontAwesome", "fontello", "Material Icons", "Symbol", "Wingdings", "Webdings",
+                                  "ZapfDingbats", "Zapf Dingbats", "MT Extra", "MTExtra", "Marlett"])
+def test_icon_font_names_the_icon_and_symbol_fonts(name):
+    assert style_extract.style_icons.icon_font(name)
+
+
+@pytest.mark.parametrize("name", ["Calibri", "Lato-Regular", "CMR10", "Times New Roman"])
+def test_icon_font_leaves_a_text_font_alone(name):
+    assert not style_extract.style_icons.icon_font(name)
+
+
+def test_glyph_only_is_private_use_control_or_dingbats():
+    assert style_extract.style_icons.glyph_only("\uf095\u2706")
+    assert not style_extract.style_icons.glyph_only("\uf095 Phone")
+
+
 def test_a_font_whose_runs_are_all_a_symbol_or_two_is_an_icon_font():
     runs = [run("Odd-Regular", "@"), run("Odd-Regular", "→"), run("Body-Regular", "Words"), run("Body-Regular", "A")]
     style_extract.style_icons.mark_icon_runs(runs)
@@ -603,6 +619,14 @@ def test_a_bullet_and_a_letter_or_digit_are_not_icons_whatever_their_font():
     runs = [run("Symbol", "•"), run("Odd-Regular", "1"), run("Odd-Regular", "1")]
     style_extract.style_icons.mark_icon_runs(runs)
     assert [r["icon"] for r in runs] == [False, False, False]
+
+
+def test_level_dots_and_bullets_drawn_with_an_icon_font_are_no_stray_glyphs():
+    # the draft keeps them (`●●●○○` is 3 of 5, #313); the icon font's other glyphs read back as stray characters
+    runs = [run("FontAwesome", "○ ○ ○"), run("FontAwesome", "○"), run("FontAwesome", "½"), run("FontAwesome", "\x11"),
+            run("Body-Regular", "Words"), run("Body-Regular", "•")]
+    style_extract.style_icons.mark_icon_runs(runs)
+    assert [style_extract.style_icons.stray_glyph(r) for r in runs] == [False, False, True, True, False, False]
 
 
 def test_a_small_photo_with_a_blank_border_is_not_also_an_icon(tmp_path):

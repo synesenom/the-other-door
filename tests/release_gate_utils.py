@@ -1,7 +1,10 @@
 """The release gate's pieces (#57): the saved data of each release, opened by the current code.
 
 `tests/data_versions/<X.Y.Z>/` holds a release's own `profile/` and `jobs/` and `expected.json`, what that release's
-tools read back from them (`scripts/save_release_data.py`). `check` copies one to a temporary home, runs the upgrade
+tools read back from them (`scripts/save_release_data.py`), and `<X.Y.Z>/default/` the same with the default profile:
+no template in `profile/`, `cv_template` and `cover_letter_template` null, as most users have it (#141). 0.2.0's
+`default/` checks little: `READ_CHANGES["0.2.0"]` (#146) excuses the template paths of both variants, so the default
+profile's template path is really compared from the next release's `default/` sample on. `check` copies one to a temporary home, runs the upgrade
 and reads it back with the same tools (`scripts/release_data.py`'s `snapshot`), and names every difference from
 `expected.json` that no step of the upgrade lists as intended (`Step.changes`) and no `READ_CHANGES` entry lists as a
 change in how the same data is read (#101).
@@ -56,10 +59,23 @@ sys.modules["release_data"] = release_data
 _spec.loader.exec_module(release_data)
 
 
+DEFAULT = "default"  # a release's variant with the default profile
+
+
 def releases() -> list[Path]:
     """The saved release folders, oldest first."""
     found = [p for p in SAMPLES_DIR.iterdir() if p.is_dir()] if SAMPLES_DIR.is_dir() else []
     return sorted(found, key=lambda p: _version(p.name))
+
+
+def samples() -> list[Path]:
+    """Every saved sample the gate opens, oldest release first: each release's own, then its `default/` variant."""
+    return [s for release in releases() for s in (release, release / DEFAULT) if (s / "profile").is_dir()]
+
+
+def _release(sample: Path) -> str:
+    """The version a sample was saved from: its folder's name, or its release's for a `default/` variant."""
+    return sample.parent.name if sample.name == DEFAULT else sample.name
 
 
 def _version(name: str) -> tuple[int, ...]:
@@ -68,7 +84,7 @@ def _version(name: str) -> tuple[int, ...]:
 
 def read_changes(sample: Path) -> list[str]:
     """The `READ_CHANGES` paths that apply to *sample*: every entry keyed by its release or a newer one."""
-    have = _version(sample.name)
+    have = _version(_release(sample))
     return [path for key, entries in READ_CHANGES.items() if _version(key) >= have for path, _ in entries]
 
 
@@ -80,7 +96,7 @@ def listed_changes(folder: Path, steps: list[migrations.Step]) -> list[str]:
 
 def sample_major(sample: Path) -> int:
     """The major version of the release a sample was saved from (its folder is named `X.Y.Z`)."""
-    return int(sample.name.split(".")[0])
+    return int(_release(sample).split(".")[0])
 
 
 def is_older_major(sample: Path) -> bool:

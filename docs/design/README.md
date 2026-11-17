@@ -42,7 +42,7 @@ change a colour or a size there, not in a component.
    themselves (sign in again, retry, choose a file). A failure the app retries by itself, or one the
    user can do nothing about, is said nowhere: a site a run could not read, an ad it could not score
    (#478). The run record and the logs keep it. The same failure again and again is something the
-   user can act on (send a report, #593): one line, "Something keeps going wrong. Send a report". A limit that only time lifts (the Claude plan's window) is said, as a line that opens nothing.
+   user can act on (send a report, #593): one line, "Something keeps going wrong. Send a report". A limit that only time lifts (the Claude plan's window) is said, as a line that opens nothing. A read that is the whole of what the user opened (a destination, or a Profile part behind the switcher) says its failure in the `error` box; a read-only section of a page that stands without it (Analytics' Market) says nothing and is left out, with its entry beside the sections.
 
 ## Colour
 

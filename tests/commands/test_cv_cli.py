@@ -66,6 +66,108 @@ def test_extract_text_reads_pdf_docx_and_text(env):
         cv_cmd._extract_text(env.tmp / "missing.pdf")
 
 
+_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+
+
+def _run(text, font=None, style=None):
+    props = (f'<w:rStyle w:val="{style}"/>' if style else "") + (f'<w:rFonts w:ascii="{font}" w:hAnsi="{font}"/>' if font else "")
+    return f"<w:r>{f'<w:rPr>{props}</w:rPr>' if props else ''}<w:t xml:space=\"preserve\">{text}</w:t></w:r>"
+
+
+def _styled_docx(path, paragraphs, styles):
+    """A DOCX of `paragraphs` ((paragraph style or None, runs)) and `styles` ((id, type, based on, font[, default]))."""
+    body = "".join(
+        f"<w:p>{f'<w:pPr><w:pStyle w:val=\"{pstyle}\"/></w:pPr>' if pstyle else ''}{''.join(runs)}</w:p>"
+        for pstyle, runs in paragraphs
+    )
+    defs = "".join(
+        f'<w:style w:type="{kind}" w:styleId="{sid}"{' w:default="1"' if default else ""}>'
+        + (f'<w:basedOn w:val="{base}"/>' if base else "")
+        + (f'<w:rPr><w:rFonts w:ascii="{font}" w:hAnsi="{font}"/></w:rPr>' if font else "") + "</w:style>"
+        for sid, kind, base, font, *default in styles
+    )
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("word/document.xml", f'<?xml version="1.0" encoding="UTF-8"?><w:document {_NS}><w:body>{body}</w:body></w:document>')
+        zf.writestr("word/styles.xml", f'<?xml version="1.0" encoding="UTF-8"?><w:styles {_NS}>{defs}</w:styles>')
+
+
+# a phone or envelope icon set in Wingdings, Webdings or Symbol reads back as a stray "(" or "*": the model would
+# copy it into cv.md (#297, the DOCX twin of #266)
+def test_extract_text_of_a_docx_leaves_out_runs_in_a_symbol_font(tmp_path):
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [
+        (None, [_run("Jane Doe", font="Calibri")]),
+        (None, [_run("(", font="Wingdings"), _run(" +45 1234 5678"), _run("*", font="Symbol"), _run(" jane@example.com")]),
+        (None, [_run("\uf0a7", style="Icon"), _run(" Copenhagen", style="Body")]),
+        ("IconLine", [_run("\u00b7")]),
+        ("Heading1", [_run("Experience")]),
+    ], [
+        ("Body", "character", None, "Calibri"),
+        ("IconBase", "character", None, "Webdings"),
+        ("Icon", "character", "IconBase", None),
+        ("SymbolPara", "paragraph", None, "Wingdings 2"),
+        ("IconLine", "paragraph", "SymbolPara", None),
+        ("Heading1", "paragraph", None, "Cambria"),
+    ])
+    lines = [line.strip() for line in cv_cmd._extract_text(path).splitlines()]
+    assert lines == ["Jane Doe", "+45 1234 5678 jane@example.com", "Copenhagen", "Experience"]
+
+
+def test_extract_text_of_a_docx_keeps_a_run_whose_own_font_overrides_a_symbol_style(tmp_path):
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [("Icons", [_run("Jane Doe", font="Arial")])], [("Icons", "paragraph", None, "Wingdings")])
+    assert cv_cmd._extract_text(path) == "Jane Doe"
+
+
+ICON_FONTS = ["FontAwesome", "Font Awesome 6 Free Solid", "Symbol", "Wingdings 2", "Webdings", "Zapf Dingbats", "MT Extra", "Marlett"]
+
+
+@pytest.mark.parametrize("font", ICON_FONTS)
+def test_the_pdf_and_docx_readers_leave_out_the_same_icon_fonts(tmp_path, font):
+    # one rule (`style_icons.icon_font`) for both: a PDF's run in the font is an icon, a DOCX's run is left out
+    from door.tailoring import style_icons
+
+    runs = [{"font": font, "text": "Abc"}, {"font": "Calibri", "text": "Abc"}]
+    style_icons.mark_icon_runs(runs)
+    assert [r["icon"] for r in runs] == [True, False]
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [(None, [_run("Abc", font=font), _run("+45 1234 5678", font="Calibri")])], [])
+    assert cv_cmd._extract_text(path) == "+45 1234 5678"
+
+
+def test_extract_text_of_a_docx_leaves_out_a_run_of_only_icon_glyphs_whatever_its_font(tmp_path):
+    # a font from the theme or the document defaults is not read: the glyphs themselves tell (#297)
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [(None, [_run("\uf095"), _run(" +45 1234 5678 "), _run("\u2706", font="Calibri"), _run("Copenhagen")])], [])
+    assert cv_cmd._extract_text(path) == "+45 1234 5678 Copenhagen"
+
+
+def test_extract_text_of_a_docx_reads_a_paragraph_without_a_style_in_the_default_one(tmp_path):
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [(None, [_run("(")]), ("Body", [_run("Jane Doe")])], [
+        ("Icons", "paragraph", None, "Wingdings", True),
+        ("Body", "paragraph", None, "Calibri"),
+    ])
+    assert cv_cmd._extract_text(path) == "Jane Doe"
+
+
+def test_extract_text_of_a_docx_leaves_out_a_run_naming_a_symbol_font_for_high_ansi_only(tmp_path):
+    path = tmp_path / "cv.docx"
+    icon = '<w:r><w:rPr><w:rFonts w:hAnsi="Wingdings"/></w:rPr><w:t>(</w:t></w:r>'
+    _styled_docx(path, [(None, [icon, _run(" Jane Doe")])], [])
+    assert cv_cmd._extract_text(path) == "Jane Doe"
+
+
+def test_extract_text_of_a_docx_reads_a_style_based_on_itself(tmp_path):
+    path = tmp_path / "cv.docx"
+    _styled_docx(path, [("Loop", [_run("Jane Doe", style="Ring")])], [
+        ("Loop", "paragraph", "Loop", None),
+        ("Ring", "character", "Round", None),
+        ("Round", "character", "Ring", None),
+    ])
+    assert cv_cmd._extract_text(path) == "Jane Doe"
+
+
 def test_core_drafts_from_files_and_urls(env, monkeypatch):
     calls = []
     _answer(monkeypatch, calls=calls)
@@ -193,6 +295,19 @@ def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
     assert [s.get("style") for s in result["sources"]] == [True, False, False, None]
 
 
+def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
+    """Its text (the icon boxes) and its style verdict read one extract (#298): a style extract is the slow part."""
+    from door.tailoring import style_extract
+
+    _answer(monkeypatch)
+    read, extract = [], style_extract.extract
+    monkeypatch.setattr(style_extract, "extract", lambda path: read.append(path) or extract(path))
+    pdfs = [STYLES / "latex-classic.pdf", STYLES / "scrubbed-altacv-icons-fr.pdf", env.tmp / "old-cv.pdf"]
+    result = cv_cmd._draft_cv_core([*map(str, pdfs), str(env.tmp / "old-cv.docx")], profile_dir=env.profile_dir)
+    assert sorted(map(str, read)) == sorted(map(str, pdfs))
+    assert [s["style"] for s in result["sources"]] == [True, True, False, False]
+
+
 def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch):
     """`style` says the file has a look to copy; whether this machine can print is another question."""
     from door.commands import _common as common
@@ -202,3 +317,65 @@ def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch
     styled = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
     result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
     assert result["sources"][0]["style"] is True
+
+
+STYLES = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles"
+ICONS = ["scrubbed-pages-header-en", "scrubbed-altacv-icons-fr"]
+
+
+def _pdfium_text(pdf):
+    from door.tailoring import pdf_render
+
+    return "\n".join(pdf_render.page_texts(pdf)).strip()
+
+
+# an icon-font glyph reads back as a stray character ("!", "Ó", "½"): the model would copy it into cv.md, and
+# infer_basics read a location as "½ Ours, Tortue" (#266)
+def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs():
+    text = cv_cmd._extract_text(STYLES / "scrubbed-pages-header-en.pdf")
+    assert "!" not in text
+    assert "Merle abeille parapluie lampe les chemise promenade printemps promenade." in text
+    assert "petit." in [line.strip() for line in text.splitlines()]
+
+
+def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs_in_the_contact_line():
+    text = cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf")
+    assert not set("[Ó½¯\x11") & set(text)
+    assert "(+89) 079788144 Ours, Tortue (paysage a couteau) bougie-nuageux" in " ".join(text.split())
+
+
+# a level written as dots is information (3 of 5) and a bullet is list structure: neither is an icon, even drawn
+# with the icon font (#313: the French CV's level dots are FontAwesome's)
+def test_extract_text_of_a_pdf_keeps_level_dots_and_bullets_drawn_with_the_icon_font():
+    text = cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf")
+    assert "Matinée ○ ○ ○ ○ ○" in text
+    assert text.count("○") == _pdfium_text(STYLES / "scrubbed-altacv-icons-fr.pdf").count("○")
+    assert "•" in text
+
+
+def test_extract_text_of_a_pdf_keeps_dots_and_bullets_in_a_font_of_their_own_and_drops_its_glyphs(tmp_path):
+    from pdf_utils import raw_pdf
+
+    # ZapfDingbats: ( is a plane, l a black circle, 4 a check mark
+    content = """BT /F1 11 Tf 50 760 Td (Jane Doe) Tj ET
+BT /F6 9 Tf 50 740 Td (\\() Tj ET BT /F1 11 Tf 64 740 Td (+45 1234 5678) Tj ET
+BT /F6 9 Tf 50 720 Td (l) Tj ET BT /F1 11 Tf 64 720 Td (Led the team) Tj ET
+BT /F1 11 Tf 50 700 Td (Python) Tj ET BT /F6 9 Tf 120 700 Td (l l l) Tj ET
+BT /F6 9 Tf 50 680 Td (4) Tj ET BT /F1 11 Tf 64 680 Td (Certified) Tj ET
+BT /F1 11 Tf 50 660 Td (Data engineer building pipelines in Copenhagen since 2019.) Tj ET"""
+    pdf = tmp_path / "cv.pdf"
+    pdf.write_bytes(raw_pdf(content, fonts={"F6": "ZapfDingbats"}))
+    lines = [" ".join(line.split()) for line in cv_cmd._extract_text(pdf).splitlines()]
+    assert lines == ["Jane Doe", "+45 1234 5678", "● Led the team", "Python ● ● ●", "Certified",
+                     "Data engineer building pipelines in Copenhagen since 2019."]
+
+
+@pytest.mark.parametrize("name", ICONS)
+def test_extract_text_of_a_pdf_with_icons_keeps_its_lines(name):
+    assert len(cv_cmd._extract_text(STYLES / f"{name}.pdf").splitlines()) == len(_pdfium_text(STYLES / f"{name}.pdf").splitlines())
+
+
+@pytest.mark.parametrize("pdf", [p for p in sorted(STYLES.glob("*.pdf")) if p.stem not in ICONS], ids=lambda p: p.stem)
+def test_extract_text_of_a_pdf_with_no_icon_glyphs_is_pdfiums_text(pdf):
+    # a scan, a LinkedIn export and a CV with no icon font: the text as pdfium gives it, in its order
+    assert cv_cmd._extract_text(pdf) == _pdfium_text(pdf)

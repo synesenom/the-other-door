@@ -264,6 +264,67 @@ def test_a_shift_does_not_make_another_layout_look_alike():
     assert style_compare.pages_score(original, [side, side]) < 0.3
 
 
+def banded(text_lines, size=(200, 280)):
+    """A page with a large coloured side band on the left and `text_lines` (thin dark boxes) beside it."""
+    image = Image.new("RGB", size, "white")
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, 70, size[1]), fill=(225, 90, 80))
+    for box in text_lines:
+        draw.rectangle(box, fill="black")
+    return image
+
+
+def test_a_squashed_text_column_beside_a_matching_band_scores_well_below_the_original():
+    """#250: the band matches, but the main column is narrowed to a third and runs on twice as many lines, or moved into
+    the band. The big band must not outweigh the text."""
+    original = banded([(85, 20 + 16 * i, 185, 24 + 16 * i) for i in range(14)])
+    narrowed = banded([(85, 20 + 8 * i, 118, 22 + 8 * i) for i in range(28)])
+    moved = banded([(8, 20 + 16 * i, 62, 24 + 16 * i) for i in range(14)])
+    close = banded([(86, 21 + 16 * i, 183, 25 + 16 * i) for i in range(14)])  # a point or two off: a good rebuild
+    assert score(original, close) > 0.9
+    assert score(original, narrowed) < style_compare.GOOD
+    assert score(original, moved) < style_compare.GOOD
+
+
+def test_a_real_cvs_main_column_squashed_beside_its_band_scores_well_below_itself(tmp_path):
+    """#250 on a real design (html-canva-icons: a red side band, the main text on white): its main column squeezed
+    into a third of its width scores below a good rebuild, though the band is untouched (it scored 0.99 on the
+    blurred page alone)."""
+    original = style_compare.page_images(STYLES / "html-canva-icons.pdf", tmp_path)[0]
+    width, height = original.size
+    band = round(width * 0.36)  # the main column starts right of the band
+    main = original.crop((band, 0, width, height))
+    squashed = Image.new("RGB", original.size, "white")
+    squashed.paste(original.crop((0, 0, band, height)), (0, 0))
+    squashed.paste(main.resize(((width - band) // 3, height)), (band, 0))
+    assert score(original, original) == pytest.approx(1.0)
+    assert score(original, squashed) < style_compare.GOOD
+
+
+
+RENDERS = TESTS_DIR / "tailoring" / "fixtures" / "style_renders"  # grey pages of real rounds of made-up corpus CVs
+
+
+def _pages(name):
+    return [Image.open(p) for p in sorted(RENDERS.glob(f"{name}_*.png"))]
+
+
+@pytest.mark.parametrize("cv, render", [
+    ("html-canva-icons", "good"),  # a round that looks like its CV (0.965)
+    ("latex-sidebar", "good"),  # the lowest good rebuild of the re-scored runs: its lines drift a few points (0.768)
+])
+def test_a_saved_good_rebuild_scores_at_least_good(cv, render):
+    assert style_compare.pages_score(_pages(f"{cv}.original"), _pages(f"{cv}.{render}")) >= style_compare.GOOD
+
+
+@pytest.mark.parametrize("cv, render", [
+    ("html-canva-icons", "squashed"),  # the main column squeezed under the band, two pages (0.245)
+    ("html-canva-icons", "squashed-narrow"),  # the band right, the main text in a narrow column inside it (0.518)
+])
+def test_a_saved_squashed_rebuild_scores_at_most_the_floor(cv, render):
+    assert style_compare.pages_score(_pages(f"{cv}.original"), _pages(f"{cv}.{render}")) <= style_compare.FLOOR
+
+
 # ---------- when to stop ----------
 
 def test_it_goes_on_while_the_rounds_gain_and_the_offsets_are_large():
@@ -363,3 +424,21 @@ def test_a_compatibility_form_in_one_render_pairs_with_its_plain_letters_in_the_
     render = style([run("Ｓｋｉｌｌｓ 2021", x=50, y=103)])  # full-width letters, as some PDFs encode them
     result = style_compare.match(original, render)
     assert [p["dy"] for p in result["runs"]] == [3.0]
+
+
+# ---------- the photo (#262) ----------
+
+def test_a_photo_the_render_lacks_or_places_elsewhere_is_named_in_the_feedback():
+    """scrubbed-pages-sidebar-fr's grey box is its photo: a rebuild that prints none there is told where it goes."""
+    photo = {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shape": "rect"}
+    original = {**style([run("A")]), "photo": photo}
+    none = style_compare.match(original, {**style([run("A")]), "photo": None})
+    assert none["photo"] == {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shift": None}
+    text = style_compare.feedback(none, score=0.4)
+    assert "photo" in text and "x 35-133" in text and "y 159-297" in text
+    off = style_compare.match(original, {**style([run("A")]), "photo": {**photo, "bbox": [45.0, 159.0, 120.0, 260.0]}})
+    assert off["photo"] == {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shift": (10.0, 0.0, -23.0, -37.0)}
+    assert "photo: x +10.0, y +0.0, width -23.0, height -37.0" in style_compare.feedback(off, score=0.4)
+    near = style_compare.match(original, {**style([run("A")]), "photo": {**photo, "bbox": [36.0, 160.0, 134.0, 298.0]}})
+    assert "photo" not in style_compare.feedback(near, score=0.9)
+    assert style_compare.match(style([run("A")]), style([run("A")]))["photo"] is None

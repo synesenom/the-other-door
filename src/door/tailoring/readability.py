@@ -62,8 +62,8 @@ def problems(text: str, *, name: str | None, headings: list[str], keywords: list
 
 
 # The kinds a second tailor run can fix by rewriting the text (the name, a heading or a keyword absent, or text that
-# ran off the page, which a shorter CV cures); the others are reported and not retried.
-FIXABLE = {"missing", "overflow"}
+# ran off the page or a CV over its page limit, which a shorter CV cures); the others are reported and not retried.
+FIXABLE = {"missing", "overflow", "pages"}
 
 
 def fixable(found: list[dict]) -> list[dict]:
@@ -104,6 +104,42 @@ def overflow_problems(pdf_text: str, body: str) -> list[dict]:
     return [{"kind": "overflow", "detail": f"text cut off: {', '.join(absent[:MISSING_NAMED])}"}]
 
 
+SPACED_RUN = 4  # single letters in a row that are a word printed apart, not initials, articles or a short list
+SPACED_SHOWN = 40  # characters of a run a `spaced` detail shows
+_LETTER = r"[^\W\d_]"
+_RUN = re.compile(rf"(?<!\S){_LETTER}(?:[ \t]+{_LETTER}){{{SPACED_RUN - 1},}}(?!\S)")
+_ONE_LETTER_LINE = re.compile(rf"(?m)^[ \t]*({_LETTER})[ \t]*\n(?=[ \t]*{_LETTER}[ \t]*$)")
+
+
+def spaced_runs(pdf_text: str, body: str) -> list[str]:
+    """The words the PDF's text reads as single letters apart (#267), as read: `SPACED_RUN` or more in a row on a line
+    or a letter a line ("P r o f i l e"), or a heading of the HTML `body` of two letters or more on a line of its own
+    ("B i o"). That is how pdfium reads text printed with letter-spacing too wide for its size (an inherited fixed
+    length on smaller text) or a justified line spread per character. A run the `body` itself writes apart is the
+    author's."""
+    literal = normalise(html_doc.text(body)) if body else ""
+    text = _ONE_LETTER_LINE.sub(r"\1 ", pdf_text)
+    found = [m.group() for m in _RUN.finditer(text)]
+    for heading in html_doc.headings(body) if body else []:
+        letters = [c for c in squash(heading) if c.isalpha()]
+        if len(letters) >= 2:
+            apart = r"[ \t]+".join(map(re.escape, letters))
+            found += [m.group(1) for m in re.finditer(rf"(?mi)^[ \t]*({apart})[ \t]*$", text)]
+    runs: list[str] = []
+    for run in (" ".join(r.split()) for r in found):
+        if normalise(run) not in literal and run not in runs:
+            runs.append(run)
+    return runs
+
+
+def spaced_problems(pdf_text: str, body: str) -> list[dict]:
+    """``spaced``: one problem naming the first few `spaced_runs` of `pdf_text`, none without."""
+    if not (runs := spaced_runs(pdf_text, body)):
+        return []
+    named = [f'"{r if len(r) <= SPACED_SHOWN else r[:SPACED_SHOWN] + "…"}"' for r in runs[:MISSING_NAMED]]
+    return [{"kind": "spaced", "detail": f"letters printed apart: {', '.join(named)}"}]
+
+
 def layout_problems(pages: list[tuple[float, float, list[Box]]], *, two_column: bool) -> list[dict]:
     """``sparse``: the last of several pages of a `two_column` CV holds no ink or under a fifth of the page height
     (reported only). `pages` is ``[(width, height, [char box (l, b, r, t)])]``, `pdf_render.page_boxes`."""
@@ -115,22 +151,37 @@ def layout_problems(pages: list[tuple[float, float, list[Box]]], *, two_column: 
     return []
 
 
-def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False) -> list[dict]:
+def page_problems(pages: int, max_pages: int | None) -> list[dict]:
+    """``pages``: a CV of more pages than `max_pages` (`common._cv_max_pages`, the stricter of the country's and the
+    template's), the limit named so the tailor's retry knows what to cut to (#194). No limit: nothing."""
+    if max_pages is None or pages <= max_pages:
+        return []
+    return [{"kind": "pages", "detail": f"{pages} pages, over the limit of {max_pages} page{'s' if max_pages > 1 else ''}"}]
+
+
+def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, max_pages: int | None = None) -> list[dict]:
     """`problems` for `pdf`, with the headings and keywords taken from the HTML `body` it was printed from (`name`:
-    the raw config's value, used when it is a string). A `cv` is also checked for words lost off the page
-    (`overflow_problems`, unless no text could be read) and, when `body` is placed in columns (the `side` div
-    `compile._place_columns` adds only for a template with a side column), for a sparse last page
-    (`layout_problems`); a letter gets neither."""
+    the raw config's value, used when it is a string), and for words read as letters apart (`spaced_problems`); a
+    heading read apart is `spaced` only, not also `missing` or `glued`, which a tailor's retry could not cure. A `cv`
+    is also checked for words lost off the page
+    (`overflow_problems`, unless no text could be read), for more pages than `max_pages` (`page_problems`) and,
+    when `body` is placed in columns (the `side` div `compile._place_columns` adds only for a template with a side
+    column), for a sparse last page (`layout_problems`); a letter gets none of these."""
     from door.tailoring import pdf_render
 
     text, pages = extract(pdf)
     cols = html_doc.columns(body)
     main, side = (body, "") if cols is None else (cols[0] + cols[1], cols[2])
-    found = problems(text, name=name if isinstance(name, str) else None,
-                     headings=html_doc.headings(main), side=html_doc.headings(side),
-                     keywords=html_doc.keywords(body), pages=pages)
+    apart = [squash(r) for r in spaced_runs(text, body)]
+
+    def read(part: str) -> list[str]:
+        return [h for h in html_doc.headings(part) if not any(r in squash(h) for r in apart)]
+
+    found = problems(text, name=name if isinstance(name, str) else None, headings=read(main), side=read(side),
+                     keywords=html_doc.keywords(body), pages=pages) + spaced_problems(text, body)
     if cv:
         if not {"empty", "garbled"} & {p["kind"] for p in found}:
             found += overflow_problems(text, body)
+        found += page_problems(pages, max_pages)
         found += layout_problems(pdf_render.page_boxes(pdf), two_column=cols is not None)
     return found

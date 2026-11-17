@@ -1,8 +1,9 @@
 name: CLI journeys
 
-# The real ./door (door.cmd on Windows) end to end in the test world (#33, tests/cli_journeys/): after
-# setup.sh / setup.ps1 on a fresh checkout, `init`, `find`, `jobs show`, `jobs prepare` and `jobs status`
-# against the stand-in claude and print of app/test/world. This replaces the manual fresh-clone check.
+# The real ./door (door.cmd on Windows) end to end in the test world (#33, tests/cli_journeys/) on Linux, Windows
+# and macOS: after setup.sh / setup.ps1 on a fresh checkout, `init` (from a CV in Danish, French, Hungarian and
+# Swedish, #135), `find`, `jobs show`, `jobs prepare` and `jobs status` against the stand-in claude and print of
+# app/test/world. This replaces the manual fresh-clone check.
 # setup runs with --no-claude --no-chromium: the world's stand-ins take the place of claude and Chromium (its print stand-in), so no network install.
 on:
   pull_request:
@@ -13,6 +14,8 @@ on:
       - "tests/cli_journeys/**"
       - "tests/cli_world.py"
       - "tests/paths.py"
+      - "tests/pdf_utils.py"
+      - "tests/tailoring/fixtures/styles/scrubbed-altacv-icons-fr.pdf"
       - "profile.example/**"
       - "app/package.json"
       - "app/package-lock.json"
@@ -24,7 +27,7 @@ on:
   workflow_dispatch:
 
 # A newer push to the same pull request cancels the run it makes pointless
-# (Windows minutes count double).
+# (Windows minutes count double, macOS ten times).
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -34,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
@@ -46,8 +49,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Set up (Linux)
-        if: runner.os == 'Linux'
+      - name: Set up (Linux, macOS)
+        if: runner.os != 'Windows'
         run: |
           ./scripts/setup.sh --yes --no-claude --no-chromium || [ $? -eq 1 ]
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"

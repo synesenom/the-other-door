@@ -20,7 +20,7 @@ from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
 from door.core import claude_cli, migrations, workspace
-from door.tailoring import cv_body
+from door.tailoring import cv_body, style_icons
 
 _DEFAULT_MODEL = "sonnet"
 _DRAFT_NAME = "cv.draft.md"
@@ -64,8 +64,10 @@ _SCHEMA = {
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
-def _extract_text(path: Path) -> str:
-    """The text of a PDF (pypdfium2), a DOCX (its paragraphs) or a Markdown/text file.
+def _extract_text(path: Path, style: dict | None = None) -> str:
+    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266, but not its level dots and bullets, #313,
+    by `style`, its `style_extract.extract`, read here when not given), a DOCX (its paragraphs, symbol-font runs left
+    out, #297) or a Markdown/text file.
 
     Raises:
         FileNotFoundError: no such file.
@@ -77,15 +79,60 @@ def _extract_text(path: Path) -> str:
     if not path.is_file():
         raise FileNotFoundError(f"{path}: no such file")
     if suffix == ".pdf":
-        from door.tailoring import pdf_render
+        from door.tailoring import pdf_render, style_extract
 
-        return "\n".join(pdf_render.page_texts(path)).strip()
+        runs = (style or style_extract.extract(path)).get("runs", [])  # none for a scan or a LinkedIn export
+        icons = [(r["page"], r["bbox"]) for r in runs if style_icons.stray_glyph(r)]
+        return "\n".join(pdf_render.page_texts(path, leave_out=icons)).strip()
     if suffix == ".docx":
-        with zipfile.ZipFile(path) as zf:
-            root = ElementTree.fromstring(zf.read("word/document.xml"))
-        paragraphs = ["".join(t.text or "" for t in p.iter(f"{_W}t")) for p in root.iter(f"{_W}p")]
-        return "\n".join(p for p in paragraphs if p.strip()).strip()
+        return _docx_text(path)
     return _decode_text_file(path.read_bytes()).strip()
+
+
+def _docx_text(path: Path) -> str:
+    """A DOCX's paragraphs, leaving out its icons, which read back as a stray "(" or "*" (#297): a run of only
+    private-use or dingbat characters, or one set in an icon or symbol font (`style_icons.icon_font`, as a PDF's) (its own
+    font, else its character style's, else its paragraph style's or the default one's, each style through the
+    ones it is based on)."""
+    with zipfile.ZipFile(path) as zf:
+        root = ElementTree.fromstring(zf.read("word/document.xml"))
+        styles = ElementTree.fromstring(zf.read("word/styles.xml") if "word/styles.xml" in zf.namelist() else "<styles/>")
+    based = {s.get(f"{_W}styleId"): (_font(s), _val(s, f"{_W}basedOn")) for s in styles.iter(f"{_W}style")}
+    default = next((s.get(f"{_W}styleId") for s in styles.iter(f"{_W}style")
+                    if s.get(f"{_W}type") == "paragraph" and s.get(f"{_W}default") in ("1", "true")), None)
+
+    def styled(style_id: str | None) -> str | None:
+        seen = set()
+        while style_id in based and style_id not in seen:
+            seen.add(style_id)
+            font, style_id = based[style_id]
+            if font:
+                return font
+        return None
+
+    paragraphs = []
+    for p in root.iter(f"{_W}p"):
+        texts = []
+        for run in p.iter(f"{_W}r"):
+            text = "".join(t.text or "" for t in run.findall(f"{_W}t"))
+            font = (_font(run) or styled(_val(run, f"{_W}rPr/{_W}rStyle"))
+                    or styled(_val(p, f"{_W}pPr/{_W}pStyle") or default))
+            if not (text and style_icons.glyph_only(text)) and not (font and style_icons.icon_font(font)):
+                texts.append(text)
+        paragraphs.append("".join(texts))
+    return "\n".join(p for p in paragraphs if p.strip()).strip()
+
+
+def _val(element, path: str) -> str | None:
+    """The `w:val` of `element`'s child at `path`, or None."""
+    found = element.find(path)
+    return found.get(f"{_W}val") if found is not None else None
+
+
+def _font(element) -> str | None:
+    """The font a run or a style names in its own `w:rPr/w:rFonts` (its ASCII one, else its high-ANSI one)."""
+    fonts = element.find(f"{_W}rPr/{_W}rFonts")
+    return fonts.get(f"{_W}ascii") or fonts.get(f"{_W}hAnsi") if fonts is not None else None
 
 
 _BOMS = ((b"\xef\xbb\xbf", "utf-8-sig"), (b"\xff\xfe", "utf-16"), (b"\xfe\xff", "utf-16"))
@@ -151,10 +198,21 @@ def _skills_line_without_todo(line: str) -> str | None:
     return left if re.sub(r"^[\s*_-]*", "", left) and not left.rstrip("*_ ").endswith(":") else None
 
 
-def _has_style(path: Path) -> bool:
-    """Whether the file at `path` has a CV style to copy (`style._look` passes); false on any failure (#150)."""
+def _pdf_style(path: Path) -> dict | None:
+    """A PDF source's `style_extract.extract`, read once for its text and its style verdict (#298); None for
+    another file or a missing one (`_extract_text` says which)."""
+    if path.suffix.lower() != ".pdf" or not path.is_file():
+        return None
+    from door.tailoring import style_extract
+
+    return style_extract.extract(path)
+
+
+def _has_style(path: Path, style: dict | None) -> bool:
+    """Whether the file at `path` (`style`: its `_pdf_style`) has a CV style to copy (`style._look` passes);
+    false on any failure (#150)."""
     try:
-        style_cmd._look(path)
+        style_cmd._look(path, style)
     except ValueError:  # an unreadable file simply offers no style
         return False
     return True
@@ -200,8 +258,10 @@ def _draft_cv_core(
             described.append({"source": source, "kind": "url"})
             urls.append(source)
         else:
-            text = _extract_text(Path(source))
-            described.append({"source": source, "kind": "file", "chars": len(text), "style": _has_style(Path(source))})
+            path = Path(source)
+            style = _pdf_style(path)
+            text = _extract_text(path, style)
+            described.append({"source": source, "kind": "file", "chars": len(text), "style": _has_style(path, style)})
             parts.append(f"Source file {source}:\n<<<\n{text}\n>>>")
 
     template = workspace.PROFILE_EXAMPLE_DIR / "cv.md"

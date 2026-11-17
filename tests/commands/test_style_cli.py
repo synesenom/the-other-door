@@ -10,7 +10,6 @@ import re
 import shutil
 import signal
 import sys
-import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -21,7 +20,7 @@ from door.cli import cli
 from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, doctor, lock, phone, workspace
+from door.core import chromium, lock, phone, workspace
 from door.tailoring import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR
@@ -109,23 +108,52 @@ def test_a_file_that_is_not_a_pdf_is_refused_in_words_and_nothing_starts(home, w
 
 def test_start_refuses_in_words_without_a_chromium_and_starts_nothing(home, world, cv_pdf, monkeypatch):
     monkeypatch.setattr(common, "_chromium_available", lambda: False)
-    with pytest.raises(ValueError, match=re.escape(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")):
+    with pytest.raises(common.NoChromium):
         style_cmd._start_core(str(cv_pdf))
     assert world.spawned == [] and not (home / ".style").exists()
 
 
-def test_the_build_command_refuses_without_a_chromium_before_any_model_round(home, cv_pdf, monkeypatch):
+def test_the_tool_says_a_missing_chromium_in_words_with_no_shell_command(home, world, cv_pdf, monkeypatch):
+    # the app's Profile → CV shows this error as it comes (#273): no command, no tool name
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    error = mcp_server.build_style(str(cv_pdf))["error"]
+    assert error == str(common.NoChromium())
+    assert "./door" not in error and "doctor" not in error
+
+
+def test_the_build_command_refuses_without_a_chromium_before_any_model_round_and_names_the_fix(home, cv_pdf, monkeypatch):
     monkeypatch.setattr(common, "_chromium_available", lambda: False)
     monkeypatch.setattr(style_cmd.style_build, "build", lambda *a, **k: pytest.fail("a round ran without Chromium"))
     result = CliRunner().invoke(cli, ["cv", "style", "build", str(cv_pdf)])
     assert result.exit_code != 0
-    assert f"no Chromium to print with: {doctor._CHROMIUM_FIX}" in result_text(result)
+    assert str(common.NoChromium()) in result_text(result)
+    assert chromium.INSTALL_HINT in result_text(result)
+
+
+def test_a_pdf_that_cannot_be_read_is_named_in_words_without_the_library_message(home, world, tmp_path):
+    broken = tmp_path / "broken.pdf"
+    broken.write_bytes(b"%PDF-1.4\nnot really a pdf")
+    assert mcp_server.build_style(str(broken)) == {"error": "broken.pdf is not a PDF The other door can read."}
+    assert world.spawned == []
+
+
+def test_a_scan_and_a_linkedin_export_are_named_in_whole_sentences(home, world):
+    # the app's error box shows them as they come (#273): the file's name, then why, no measurement
+    assert mcp_server.build_style(str(STYLES / "scan.pdf")) == {
+        "error": "scan.pdf looks like a scan: there is no text in it to copy the style from."}
+    assert mcp_server.build_style(str(STYLES / "linkedin-like.pdf")) == {
+        "error": "linkedin-like.pdf is a LinkedIn export, which has no design of its own to copy."}
+    assert world.spawned == []
+
+
+def test_a_file_that_is_gone_is_named_not_its_path(home, world, tmp_path):
+    assert mcp_server.build_style(str(tmp_path / "gone.pdf")) == {"error": "gone.pdf could not be found."}
 
 
 def test_a_scan_is_refused_with_the_verdict_and_leaves_the_existing_style_and_state_alone(home, world, cli_env):
     (cli_env.profile_dir / "style").mkdir()
     (cli_env.profile_dir / "style" / "cv.template.html").write_text("kept")
-    with pytest.raises(ValueError, match="text layer"):
+    with pytest.raises(ValueError, match="looks like a scan"):
         style_cmd._start_core(str(STYLES / "scan.pdf"))
     assert world.spawned == [] and not (home / ".style").exists()
     assert (cli_env.profile_dir / "style" / "cv.template.html").read_text() == "kept"
@@ -242,7 +270,7 @@ def test_the_tool_starts_a_build_and_says_so(home, cv_pdf, monkeypatch, world):
 def test_the_tool_answers_intake_in_words(home, tmp_path):
     docx = tmp_path / "cv.docx"
     docx.write_bytes(b"x")
-    assert "no layout to copy" in mcp_server.build_style(str(docx))["error"]
+    assert mcp_server.build_style(str(docx)) == {"error": "cv.docx is not a PDF, so it has no layout to copy."}
 
 
 # ----------------------------------------------------------------------------- ending a build
@@ -318,12 +346,13 @@ def test_a_start_whose_process_refuses_the_file_is_recorded_failed_and_the_log_s
     copy = home / ".style" / "source.pdf"
     copy.parent.mkdir()
     copy.write_bytes(b"not a pdf")
+    started = []
+    spawn = phone.spawn_detached
+    monkeypatch.setattr(phone, "spawn_detached", lambda *a, **k: started.append(spawn(*a, **k)) or started[-1])
     style_cmd._spawn(home, copy)
-    deadline = time.monotonic() + 90
-    while _run(home)["state"] == "building" and time.monotonic() < deadline:
-        time.sleep(0.3)
+    started[0].wait(timeout=90)  # its error reaches the log after it records the failure (#274)
     assert _run(home)["state"] == "failed"
-    assert "could not be read as a PDF" in (home / ".style" / "build.log").read_text()
+    assert "is not a PDF The other door can read" in (home / ".style" / "build.log").read_text()
     assert style_cmd.status(home, home / "profile")["state"] == "failed"
 
 

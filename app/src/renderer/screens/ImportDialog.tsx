@@ -140,7 +140,7 @@ export function ImportDialog({ onClose, onOpen }: Props) {
         </>
       )}
       {error && (
-        <p role="alert" className="field-error">
+        <p role="alert" className="error">
           {named(error)}
         </p>
       )}

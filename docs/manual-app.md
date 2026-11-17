@@ -8,7 +8,9 @@ The first time you open it on a computer with no profile, a short wizard sets *T
 ([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, your CV style being ready, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
 Preparing an application needs the `claude` command line and a Chromium headless shell, which prints the PDFs. The installed app
 brings Chromium (and the Python it runs on) with it; the first screen of the wizard installs Claude and
-signs you in when it is missing. From a checkout, `./door doctor` checks them all.
+signs you in when it is missing. From a checkout, `./door doctor` checks them all. Should Chromium be missing all
+the same, Prepare and Revise say "The browser that prints your CVs is not installed yet." and change nothing;
+`./door doctor --fix` installs it.
 
 ## Installing the app
 

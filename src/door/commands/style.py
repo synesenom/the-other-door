@@ -36,7 +36,7 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import doctor, lock, phone, templates, tracker, workspace
+from door.core import lock, phone, templates, tracker, workspace
 from door.tailoring import style_build, style_extract, style_preview
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
@@ -65,24 +65,26 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def _look(path: Path) -> None:
-    """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print)."""
+def _look(path: Path, style: dict | None = None) -> None:
+    """Raise ValueError, in words, when the file at `path` has no style to copy (whatever this machine can print).
+    `style` is the file's `style_extract.extract`, when the caller has already read it (#298)."""
     if not path.is_file():
-        raise ValueError(f"{path} is not a file")
+        raise ValueError(f"{path.name} could not be found.")
     if refused := style_extract.not_pdf(path):
-        raise ValueError(refused["detail"])
+        raise ValueError(f"{path.name} {refused['detail']}")
     try:
-        verdict = style_extract.extract(path)["verdict"]
+        verdict = (style or style_extract.extract(path))["verdict"]
     except (PdfiumError, OSError) as exc:
-        raise ValueError(f"{path.name} could not be read as a PDF ({exc})") from exc
+        raise ValueError(f"{path.name} is not a PDF The other door can read.") from exc
     if not verdict["copyable"]:
-        raise ValueError(verdict["detail"] or f"no style to copy ({verdict['reason']})")
+        raise ValueError(f"{path.name} {verdict['detail']}")
 
 
 def _intake(path: Path) -> None:
-    """Raise ValueError, in words, when a build of the file at `path` cannot start: no Chromium to print with, or no style."""
+    """Raise ValueError, in words, when a build of the file at `path` cannot start: no Chromium to print with
+    (`common.NoChromium`), or no style."""
     if not common._chromium_available():
-        raise ValueError(f"no Chromium to print with: {doctor._CHROMIUM_FIX}")
+        raise common.NoChromium
     _look(path)
 
 
@@ -259,7 +261,7 @@ def _prepared(jobs_dir: Path) -> list[str]:
             if ledger.get_status(job) == "prepared" and (jobs_dir / "output" / job / "cv.html").is_file()]
 
 
-def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
+def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
     """Choose the CV style: ``like`` (the one built from the user's CV: the candidate moves into `profile/style/`
     and both template keys point at it), ``default`` (both keys cleared, only where they point into `profile/style/`)
     or ``current`` (what is in use stays). Any pick ends the candidate: it is deleted when a built style is already
@@ -269,7 +271,8 @@ def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path 
     `compile`: no model, a failing job listed and the rest done.
 
     Returns ``{"in_use": "like" | "default", "prepared": N}`` and, with `rerender`, ``"rerendered"`` and ``"failed"``
-    (job ids). Raises ValueError, in words, when ``like`` has no style built."""
+    (job ids). Raises ValueError, in words, when ``like`` has no style built, and `NoChromium` for `rerender` with
+    nothing to print with, before any change."""
     from door.commands import compile as compile_cmd
     from door.commands import profile as profile_cmd
 
@@ -277,6 +280,8 @@ def _use_core(style: str = "like", rerender: bool = False, *, profile_dir: Path 
     candidate, kept = profile_dir / templates.CANDIDATE, profile_dir / templates.STYLE
     if style not in ("like", "default", "current"):
         raise ValueError(f"unknown style {style!r}: like, default or current")
+    if rerender and not common._chromium_available():  # before any change: nothing chosen, nothing printed
+        raise common.NoChromium
     config = common._load_config_or_defaults(profile_dir)
     style_build.restore(profile_dir)
     if style == "like" and not (kept.is_dir() or (candidate.is_dir() and not rerender)):
@@ -334,13 +339,15 @@ def build_style(file):
     """Build a template from FILE's look (a CV as a PDF): fonts, colours, layout, in a few minutes of the model's time.
 
     Runs here and now; the `build_style` tool starts the same thing in the background. The result is written to
-    profile/style.next/ only when it passes; nothing uses it until `cv style use` chooses it."""
+    profile/style.next/ only when it passes; nothing uses it until `cv style use like` chooses it."""
     interactive = common._stdout_is_tty()
     try:
         with _progress.live_progress(enabled=interactive) as reporter:
             result = _build_core(file, progress=reporter)
     except ValueError as exc:
         click.echo(f"Error: {exc}", err=True)
+        if isinstance(exc, common.NoChromium):
+            click.echo(common.INSTALL_HINT, err=True)
         sys.exit(1)
     for font in result["fonts"]:
         if font.get("source") == "none":
@@ -355,26 +362,30 @@ def build_style(file):
         sys.exit(1)
     if result["font_error"]:
         click.echo(f"The fonts could not be downloaded ({result['font_error']}): only the fonts The other door ships stand in.")
-    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style.next/; `cv style use` chooses it.")
+    click.echo(f"The template is ready after {result['rounds']} rounds: profile/style.next/; `cv style use like` chooses it.")
 
 
 _USE_WORDS = {"like": "Your own style is in use: the one built from your CV.", "default": "The other door's style is in use."}
 
 
 @style_group.command("use")
-@click.argument("style", type=click.Choice(["like", "default", "current"]), default="like")
+@click.argument("style", type=click.Choice(["like", "default", "current"]))
 @click.option("--rerender", is_flag=True, help="Print the prepared applications again in the style in use (no model).")
 def use_style(style, rerender):
-    """Choose the CV style: like (the one built from your CV, the default), default (The other door's) or current (keep
+    """Choose the CV style: like (the one built from your CV), default (The other door's) or current (keep
     what you use now and drop the one just built).
 
     Applications already prepared keep their old look unless --rerender prints them again; sent ones never change."""
     try:
+        if rerender and not common._chromium_available():  # before the choice, so nothing is half done
+            raise common.NoChromium
         result = _use_core(style)
         if rerender:  # choosing and printing again are two calls: the second never touches a candidate
             result = _use_core("current", True)
     except (ValueError, common.ConfigError) as exc:
         click.echo(f"Error: {exc}", err=True)
+        if isinstance(exc, common.NoChromium):
+            click.echo(common.INSTALL_HINT, err=True)
         sys.exit(1)
     click.echo(_USE_WORDS[result["in_use"]])
     if rerender:
@@ -392,7 +403,7 @@ def show_style():
     Made again only when your CV, photo or style changed; no model is used."""
     styles = _show_core()["styles"]
     if not styles:
-        click.echo("Nothing could be printed. Run `./door doctor --fix` to install the browser that prints pages.")
+        click.echo(f"Nothing could be printed. {common.INSTALL_HINT}")
         return
     for name, sets in styles.items():
         click.echo(f"{'Like your CV' if name == 'like' else 'The default'}:")

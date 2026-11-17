@@ -257,6 +257,9 @@ def test_every_problem_is_a_short_line_named_once():
     '.x::after { content: "Jane Doe"; }', '.x::after { content: "\\4A ane"; }', '.x::after { content: "\\004A\\0061ne"; }',
     '@page { @top-center { content: "Jane"; } }', ".x::before { content: attr(data-x); }", '.x::before { content: "2019"; }',
     ".x::before { content: 'a'; }", '.x::before { content : counter(n) "Jane"; }',
+    # an icon font's glyph or a stray mark printed where a dropped icon was (#248)
+    '.web::before { content: "!"; }', '.web::before { content: "\\f0c1"; }', '.x::before { content: ""; }',
+    '.x::before { content: "?"; }',
 ])
 def test_text_baked_in_by_css_is_refused(css):
     assert problems(page(css=css))
@@ -292,3 +295,31 @@ def test_an_attribute_or_meta_outside_the_allow_list_is_refused():
 ])
 def test_a_function_is_named_with_its_parentheses(css, named):
     assert named in problems(page(css=css))
+
+
+# On the pinned Chromium, pdfium reads a word printed with letter-spacing above 0.1em as pieces ("Skil l s", "P r o f
+# i l e") and two words printed tighter than -0.02em as one ("WORKEXPERIENCE", "ProfessionalProfile"): measured on
+# Figtree, Young Serif, Lato, Arimo, Tinos, Carlito, Caladea and Cousine at 10 and 16 pt, the first split came at
+# 0.11em, the first join at -0.03em (Young Serif; -0.04 to -0.06em for the others), whatever the size (#254).
+@pytest.mark.parametrize("css", ["h2 { letter-spacing: 0.2em; }", "h2 { letter-spacing: .11em !important; }",
+                                 "h2 { letter-spacing: 2pt; }", "h2 { letter-spacing: 1px; }", "h2 { letter-spacing: -0.5pt; }",
+                                 "h2 { letter-spacing: -0.03em; }", "h2 { letter-spacing: -.06em; }",
+                                 "h2 { letter-spacing: calc(0.05em + 1pt); }", "h2 { LETTER-SPACING: 0.3EM }"])
+def test_letter_spacing_outside_the_range_pdfium_reads_back_or_not_in_em_is_refused(css):
+    assert any("letter-spacing" in p and "-0.02em to 0.1em" in p for p in problems(page(css=css)))
+
+
+@pytest.mark.parametrize("css", ["h2 { letter-spacing: 0.1em; }", "h2 { letter-spacing: .05em; }", "h2 { letter-spacing: 0; }",
+                                 "h2 { letter-spacing: normal; }", "h2 { letter-spacing: -0.02em; }", "h2 { letter-spacing: 0pt; }"])
+def test_letter_spacing_from_minus_two_hundredths_to_a_tenth_of_an_em_passes(css):
+    assert problems(page(css=css)) == []
+
+
+def test_inter_character_justification_is_refused():
+    # a loose justified line is widened between its letters: pdfium reads them apart as for a wide letter-spacing
+    assert any("text-justify" in p for p in problems(page(css="p { text-align: justify; text-justify: inter-character; }")))
+    assert problems(page(css="p { text-align: justify; text-justify: inter-word; }")) == []
+
+
+def test_letter_spacing_in_a_style_attribute_is_read_too():
+    assert any("letter-spacing" in p for p in problems(page(body='<div style="letter-spacing: 0.3em"></div>\n<<body>>')))

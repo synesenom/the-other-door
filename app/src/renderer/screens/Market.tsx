@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { named } from './AppName'
-import { call, errorText } from '../api'
+import { call } from '../api'
 import { CheckMark, CrossMark } from './CheckMark'
 import { Spinner } from './Spinner'
 
@@ -16,20 +15,26 @@ const pct = (share: number) => `${Math.round(share * 100)}%`
  * a check when the CV has it and a cross when it does not (the marks of a posting's skills). The market tool runs
  * once when the screen opens and writes no report.
  */
-export function Market() {
-  const [state, setState] = useState<{ kind: 'counting' } | { kind: 'done'; m: MarketReport } | { kind: 'error'; message: string }>({ kind: 'counting' })
+export function Market({ onFailed }: { onFailed?: () => void } = {}) {
+  const [state, setState] = useState<{ kind: 'counting' } | { kind: 'done'; m: MarketReport } | { kind: 'error' }>({ kind: 'counting' })
 
   useEffect(() => {
     let live = true
     call<MarketReport>('market', { save: false }).then(
       (m) => live && setState({ kind: 'done', m }),
-      (e) => live && setState({ kind: 'error', message: errorText(e) }),
+      () => {
+        if (!live) return
+        setState({ kind: 'error' })
+        onFailed?.()
+      },
     )
     return () => {
       live = false
     }
   }, [])
 
+  // a section of Analytics, which stands without it: a count that failed is said nowhere and left out (principle 9)
+  if (state.kind === 'error') return null
   const skills = state.kind === 'done' ? state.m.skills.slice(0, SKILLS_SHOWN) : []
   return (
     <section className="part" aria-labelledby="analytics-market">
@@ -37,11 +42,6 @@ export function Market() {
         Market
       </h2>
       {state.kind === 'counting' && <Spinner message="Counting the ads (new skill names may take one short Claude call)…" />}
-      {state.kind === 'error' && (
-        <p role="alert" className="field-error">
-          {named(state.message)}
-        </p>
-      )}
       {state.kind === 'done' && skills.length === 0 && <p className="small muted">The market shows here once ads are read.</p>}
       {skills.length > 0 && (
         <>

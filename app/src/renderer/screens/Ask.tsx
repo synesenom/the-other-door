@@ -91,7 +91,7 @@ export function Ask({ onGo }: { onGo: (to: AskGoTo) => void }) {
       </form>
       {asking && <Spinner message={`Looking… ${Math.round((Date.now() - state.since) / 1000)} s`} />}
       {state.kind === 'error' && (
-        <p role="alert" className="field-error">
+        <p role="alert" className="error">
           {named(state.message)}
         </p>
       )}

@@ -12,9 +12,10 @@ from click.testing import CliRunner
 
 from door import mcp_server
 from door.cli import cli
+from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
-from door.core import templates, tracker, workspace
+from door.core import chromium, templates, tracker, workspace
 from door.core.profile_loader import load_config
 from cli_utils import result_text
 from paths import REPO_ROOT
@@ -273,10 +274,17 @@ def test_an_interrupted_end_of_a_candidate_never_leaves_it_to_be_chosen(home, cl
 # ----------------------------------------------------------------------------- command and tool
 def test_the_command_says_which_style_is_in_use(home, cli_env, compiled):
     _folder(cli_env, "style.next")
-    result = CliRunner().invoke(cli, ["cv", "style", "use"])
+    result = CliRunner().invoke(cli, ["cv", "style", "use", "like"])
     assert result.exit_code == 0 and "Your own style is in use" in result_text(result)
     result = CliRunner().invoke(cli, ["cv", "style", "use", "default"])
     assert result.exit_code == 0 and "The other door's style is in use" in result_text(result)
+
+
+def test_the_command_without_a_style_chooses_nothing(home, cli_env):
+    _folder(cli_env, "style.next", "new")
+    result = CliRunner().invoke(cli, ["cv", "style", "use"])
+    assert result.exit_code != 0
+    assert (cli_env.profile_dir / "style.next" / "mark.txt").read_text() == "new" and _keys(cli_env) == (None, None)
 
 
 def test_the_command_exits_non_zero_when_nothing_is_built(home, cli_env):
@@ -299,3 +307,43 @@ def test_the_tool_is_a_writing_tool_the_phone_does_not_get_and_answers_in_words(
     _folder(cli_env, "style.next")
     assert asyncio.run(mcp_server.use_style("like", rerender=False))["in_use"] == "like"
     assert "error" in asyncio.run(mcp_server.use_style("sideways"))
+
+
+@pytest.mark.parametrize("arguments", [{}, {"choice": "current"}])
+def test_the_tool_without_a_style_refuses_and_changes_nothing(home, cli_env, arguments):
+    """#252: a misnamed argument was dropped and the default ``like`` applied, against the user's pick."""
+    from mcp.shared.memory import create_connected_server_and_client_session as session
+
+    _folder(cli_env, "style.next", "new")
+
+    async def call():
+        async with session(mcp_server.mcp._mcp_server) as client:
+            return await client.call_tool("use_style", arguments)
+
+    answer = asyncio.run(call())
+    text = answer.content[0].text
+    assert answer.isError or "error" in json.loads(text), text
+    assert (cli_env.profile_dir / "style.next" / "mark.txt").read_text() == "new" and _keys(cli_env) == (None, None)
+    assert not (cli_env.profile_dir / "style").exists()
+
+
+def test_rerender_without_chromium_refuses_in_words_before_any_change(home, cli_env, compiled, monkeypatch):
+    # #296: what the app's Style row shows, no shell command; nothing chosen, nothing printed
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    _folder(cli_env, "style.next")
+    _job(home, "a.1", "prepared")
+    with pytest.raises(common.NoChromium):
+        style_cmd._use_core("like", rerender=True)
+    assert compiled == [] and _keys(cli_env) == (None, None) and (cli_env.profile_dir / "style.next").is_dir()
+    error = asyncio.run(mcp_server.use_style("current", rerender=True))["error"]
+    assert error == str(common.NoChromium()) and "./door" not in error
+
+
+def test_the_command_with_rerender_and_no_chromium_names_the_fix_and_chooses_nothing(home, cli_env, compiled, monkeypatch):
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    _folder(cli_env, "style.next")
+    _job(home, "a.1", "prepared")
+    result = CliRunner().invoke(cli, ["cv", "style", "use", "like", "--rerender"])
+    assert result.exit_code == 1
+    assert str(common.NoChromium()) in result_text(result) and chromium.INSTALL_HINT in result_text(result)
+    assert compiled == [] and (cli_env.profile_dir / "style.next").is_dir()

@@ -228,6 +228,8 @@ def install(sandbox: Path) -> None:
     # the stand-in PDFs hold a summary, not the tailored .tex: an ATS reading them back would miss it all
     readability.check_pdf = lambda *args, **kwargs: []
     common._claude_available = lambda: True
+    # the stand-in tailor writes the PDFs itself: nothing is printed, so no Chromium is needed
+    common._chromium_available = lambda: True
 
 
 if __name__ == "__main__":

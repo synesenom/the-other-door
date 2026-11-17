@@ -14,6 +14,7 @@ import pytest
 from click.testing import CliRunner
 
 from door.cli import cli
+from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import matches as matches_cmd
 from door.commands import prepare as prepare_cmd
@@ -401,6 +402,27 @@ def test_revise_on_a_job_prepared_with_latex_says_to_prepare_it_again(revise_env
         revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
     assert (revise_env.out / "cover_letter.tex").read_text() == "\\documentclass{letter}"
     assert revise_env.calls.claude == [] and revise_env.calls.compile == []
+
+
+def test_revise_without_chromium_says_so_in_words_before_the_model_and_leaves_the_file(revise_env, monkeypatch):
+    # what the app's Materials shows (#296): no shell command, no model spent, no PDF left behind its .html
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    with pytest.raises(common.NoChromium):
+        revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", jobs_dir=revise_env.jobs_dir)
+    assert (revise_env.out / "cover_letter.html").read_text() == LETTER_HTML
+    assert not (revise_env.out / "cover_letter.html.bak").exists()
+    assert revise_env.calls.claude == [] and revise_env.calls.compile == []
+
+
+def test_undo_without_chromium_leaves_the_file_and_its_backup(revise_env, monkeypatch):
+    revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", jobs_dir=revise_env.jobs_dir)
+    revised, backup = (revise_env.out / "cover_letter.html").read_text(), (revise_env.out / "cover_letter.html.bak").read_text()
+    monkeypatch.setattr(common, "_chromium_available", lambda: False)
+    with pytest.raises(common.NoChromium):
+        revise_cmd._revise_core("jobindex-top", "cover_letter", undo=True, jobs_dir=revise_env.jobs_dir)
+    assert (revise_env.out / "cover_letter.html").read_text() == revised
+    assert (revise_env.out / "cover_letter.html.bak").read_text() == backup
+    assert revise_env.calls.compile == ["jobindex-top"]
 
 
 def test_revise_calls_claude_print_mode_without_tools_and_sends_context_on_stdin(revise_env):

@@ -10,20 +10,28 @@ checked against the pin, unpacked, never partly.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import platform as _platform
 import shutil
 import stat
 import sys
-import tempfile
-import time
-import urllib.request
 import zipfile
 from pathlib import Path
 
+from door.core import pinned
+
 _PIN = Path(__file__).with_name("chromium_pin.json")
+
+
+class NoChromium(ValueError):
+    """No Chromium to print with. Its words are the app's (no command, #273, #296); a command adds `INSTALL_HINT`."""
+
+    def __init__(self):
+        super().__init__("The browser that prints your CVs is not installed yet.")
+
+
+INSTALL_HINT = "Run `./door doctor --fix` to install the browser that prints pages."
 
 
 class ChromiumError(Exception):
@@ -82,11 +90,6 @@ def find_chromium(home: Path | None = None) -> str | None:
     return None
 
 
-def http_get(url: str, to: Path) -> None:
-    with urllib.request.urlopen(url, timeout=60) as response, open(to, "wb") as out:  # noqa: S310 - https, pinned
-        shutil.copyfileobj(response, out)
-
-
 def _remove_other_versions(dest: Path) -> None:
     """Drop the older `chromium-*` folders beside `dest`, only where `dest` is one of them."""
     if not dest.name.startswith("chromium-"):
@@ -96,19 +99,7 @@ def _remove_other_versions(dest: Path) -> None:
             shutil.rmtree(other, ignore_errors=True)
 
 
-# An install takes minutes; a staging folder older than this was left by one that was killed.
-STALE_PART_SECONDS = 3600
-
-
-def sweep_stale_parts(dest: Path) -> None:
-    """Remove the staging folders a killed install left in `dest`, never one still in use."""
-    cutoff = time.time() - STALE_PART_SECONDS
-    for part in dest.glob("*.part"):
-        if part.is_dir() and part.stat().st_mtime < cutoff:
-            shutil.rmtree(part, ignore_errors=True)
-
-
-def install(dest: Path, fetch=http_get) -> None:
+def install(dest: Path) -> None:
     """Download the pinned zip, check its sha256 and unpack it into `dest` (a no-op when there)."""
     key = platform_key()
     if key is None:
@@ -118,36 +109,28 @@ def install(dest: Path, fetch=http_get) -> None:
     if (folder / exe_name(key)).is_file():
         _remove_other_versions(dest)
         return
-    dest.mkdir(parents=True, exist_ok=True)
-    sweep_stale_parts(dest)
-    # Names unique to this process, so two installs never share a half-written file.
-    staging = Path(tempfile.mkdtemp(prefix=f"{folder.name}.", suffix=".part", dir=dest))
-    part = staging / "download.zip"
     try:
-        fetch(download_url(key), part)
-        digest = hashlib.sha256(part.read_bytes()).hexdigest()
-        if digest != pin()["platforms"][key]["sha256"]:
-            raise ChromiumError("the download does not match the pinned checksum; nothing was installed")
-        with zipfile.ZipFile(part) as z:
-            for name in z.namelist():
-                target = (staging / name).resolve()
-                if not target.is_relative_to(staging.resolve()):
-                    raise ChromiumError(f"the archive has an entry outside its folder: {name}")
-            z.extractall(staging)
-        exe = staging / folder.name / exe_name(key)
-        if not exe.is_file():
-            raise ChromiumError("the archive has no headless shell in it")
-        exe.chmod(exe.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        try:
-            (staging / folder.name).rename(folder)
-        except OSError:
-            if not (folder / exe_name(key)).is_file():   # else another install finished first: keep it
-                raise
+        with pinned.staging(dest, f"{folder.name}.") as staging:
+            part = staging / "chromium.zip"
+            pinned.download([(download_url(key), part.name, pin()["platforms"][key]["sha256"])], staging)
+            with zipfile.ZipFile(part) as z:
+                for name in z.namelist():
+                    target = (staging / name).resolve()
+                    if not target.is_relative_to(staging.resolve()):
+                        raise ChromiumError(f"the archive has an entry outside its folder: {name}")
+                z.extractall(staging)
+            exe = staging / folder.name / exe_name(key)
+            if not exe.is_file():
+                raise ChromiumError("the archive has no headless shell in it")
+            exe.chmod(exe.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            try:
+                (staging / folder.name).rename(folder)
+            except OSError:
+                if not (folder / exe_name(key)).is_file():   # else another install finished first: keep it
+                    raise
         _remove_other_versions(dest)
-    except (OSError, zipfile.BadZipFile) as exc:
+    except (OSError, zipfile.BadZipFile, pinned.ChecksumError) as exc:
         raise ChromiumError(str(exc)) from exc
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
 
 
 def main(argv: list[str] | None = None) -> int:

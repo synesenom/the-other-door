@@ -41,7 +41,6 @@ HIGH_FACTOR = 5             # warn when page 1 alone exceeds this multiple of th
 HISTORY_RUNS = 10           # how many recent run records the average spans
 DEV_MODULES = ("pytest", "responses", "genbadge")
 
-_CHROMIUM_FIX = "./door doctor --fix   (downloads the pinned Chromium headless shell, no sudo)"
 _PRINT_TIMEOUT = 30  # seconds Chromium gets to print the test page
 _NO_PRINT_FIX = "run `python -m door.tailoring.html_pdf --out test.pdf` with door's Python (in a checkout: `poetry run python -m ...` from the repository with PYTHONPATH=src) to see the error"
 _NO_START_FIX = "run the shell by hand with --version to see why; it was found, so setup does not reinstall it"
@@ -103,7 +102,8 @@ def check_chromium(find=None, run=subprocess.run, quick: bool = False) -> dict:
     """
     path = (find or chromium.find_chromium)()
     if not path:
-        return _check("chromium", False, "no Chromium headless shell found — it prints CVs", _CHROMIUM_FIX, tool="chromium")
+        return _check("chromium", False, "no Chromium headless shell found — it prints CVs", chromium.INSTALL_HINT,
+                      tool="chromium")
     try:
         proc = run([path, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
                    stdin=subprocess.DEVNULL)

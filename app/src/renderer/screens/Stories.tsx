@@ -73,6 +73,7 @@ export function Stories() {
   const [bank, setBank] = useState<Bank | null>(null)
   const [view, setView] = useState<View>({ kind: 'list' })
   const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [removing, setRemoving] = useState<Story | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -82,7 +83,8 @@ export function Stories() {
     let live = true
     call<Bank>('list_stories').then(
       (r) => live && setBank(r),
-      (e) => live && setError(errorText(e)),
+      // only a first read that failed is said: a re-read after a change keeps the bank shown
+      (e) => live && setLoadError(errorText(e)),
     )
     return () => {
       live = false
@@ -161,11 +163,18 @@ export function Stories() {
     }
   }
 
-  if (error && !bank) return <p role="alert" className="field-error">{named(error)}</p>
+  // the bank is all this part shows: one that could not be read says so (docs/design/README.md, principle 9)
+  if (loadError && !bank)
+    return (
+      <p role="alert" className="error">
+        {named(loadError)}
+      </p>
+    )
   if (!bank) return <Spinner message="Reading your story bank…" />
 
+  // a draft, a save or a removal that failed: the error box, not a field's line; the user can try again
   const errorLine = error && (
-    <p role="alert" className="field-error">
+    <p role="alert" className="error">
       {named(error)}
     </p>
   )
