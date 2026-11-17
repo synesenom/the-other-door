@@ -27,6 +27,8 @@ NEW_SINCE_RELEASE: set[str] = {
     "profile/style/**",
     # the candidate a build leaves, waiting to be chosen (#151)
     "profile/style.next/**",
+    # the fact check's round counter: v0.2.0 wrote it, but its saved sample was made without it (#140)
+    "jobs/output/*/.facts_rounds",
 }
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).

@@ -82,3 +82,35 @@ def test_a_style_publish_in_progress_or_interrupted_leaves_only_named_files(tmp_
         path.write_text("x")
     assert stored.unnamed(tmp_path) == []
     assert stored.named("profile/.style.old/template.json").kind == stored.TRANSIENT
+
+
+def test_a_tailor_run_stores_only_named_files(tmp_path, monkeypatch):
+    """#140: what prepare and the tailor's fact check write while the tailor runs (the posting copy and agents file
+    under `jobs/.tailor/<id>/`, removed after) and leave (`.facts_rounds`) is named, seen while the tailor runs."""
+    from door.commands import check_facts as check_facts_cmd
+    from door.commands import prepare as prepare_cmd
+    from door.core import claude_cli, workspace
+
+    profile_dir, jobs_dir, job = tmp_path / "profile", tmp_path / "jobs", "jobindex.123"
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
+    monkeypatch.setattr(workspace, "JOBS_DIR", jobs_dir)
+    monkeypatch.setattr(workspace, "ensure_mcp_config", lambda: None)
+    profile_dir.mkdir()
+    (profile_dir / "cv.md").write_text("### Dev | Acme - 2019\n- Team of 12\n", encoding="utf-8")
+    (jobs_dir / "output" / job).mkdir(parents=True)
+    (jobs_dir / "output" / job / "cv.html").write_text("<ul><li>Cut churn by 40%</li></ul>\n", encoding="utf-8")
+    model_copy = jobs_dir / ".tailor" / job / "posting.json"  # as `_prepare_core` writes it
+    model_copy.parent.mkdir(parents=True)
+    model_copy.write_text(json.dumps({"id": job, "title": "Analyst"}), encoding="utf-8")
+    seen = []
+
+    def tailor(*args, **kwargs):
+        assert check_facts_cmd._check_facts_core(job)["round"] == 1  # the tailor's own fact check
+        seen.append(stored.unnamed(tmp_path))
+
+    monkeypatch.setattr(claude_cli, "run", tailor)
+    assert prepare_cmd._run_tailor(job, model_copy) is True
+    assert (jobs_dir / ".tailor" / job / "agents.json").is_file() and (jobs_dir / "output" / job / ".facts_rounds").is_file()
+    assert seen == [[]]
+    assert stored.named("jobs/agents.json") is None  # the agents file lives in .tailor/<id>/ only

@@ -29,6 +29,7 @@ from door.core import workspace  # noqa: E402
 
 assert workspace.HOME == HOME, f"the release reads {workspace.HOME}, not DOOR_HOME={HOME}"
 
+from door.commands import check_facts as check_facts_cmd  # noqa: E402
 from door.commands import find as find_cmd  # noqa: E402
 from door.commands import profile as profile_cmd  # noqa: E402
 from door.commands import stories as stories_cmd  # noqa: E402
@@ -324,7 +325,7 @@ def make_output() -> None:
         (folder / "stories.json").write_text(json.dumps([]), encoding="utf-8")
         flagged = facts_mod.check(folder, PROFILE, write=False) or []
         keep = [{**item, "reason": "the team size is from the interview notes, not the CV"} for item in flagged]
-        facts_mod.check(folder, PROFILE, keep=keep)
+        check_facts_cmd._check_facts_core(job_id, keep=keep, jobs_dir=JOBS)  # as the tailor runs it: leaves .facts_rounds
         if sent:
             (folder / "cv.html.bak").write_bytes((folder / "cv.html").read_bytes())  # the version before a revise
             (folder / "photo.jpg").write_bytes((PROFILE / "photo.jpg").read_bytes())
