@@ -171,7 +171,7 @@ when you ask.
 
 Cost: a one-off, 2-5 minutes, about $0.25-1.50 at API prices: a stylist call costs $0.03-0.15, a build that goes
 well makes four or five of them (about $0.35, 2 minutes), one whose drafts do not come close makes nine (all seven
-rounds, one more for the stress renders and the letter). That is an estimate from `claude`'s price table, not a
+rounds, one more for the stress renders and the letter). Reading the CV's lines as the file is taken in is one Haiku call of about $0.001, once per file. That is an estimate from `claude`'s price table, not a
 bill: your plan is not charged per call (see [What Claude's work costs](#what-claudes-work-costs)). It draws on the
 same plan window as a find that runs beside it. Later prepares cost what they did
 before: the template is just another input file.
