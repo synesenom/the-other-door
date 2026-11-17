@@ -6,6 +6,8 @@ style are in test_style_build.py."""
 import json
 import shutil
 
+import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_raw
 import pytest
 
 from door.core import claude_cli, fonts, templates
@@ -451,3 +453,31 @@ def test_a_sample_body_that_puts_text_under_the_other_column_s_heading_is_asked_
     second = stylist.calls[1]["input"]
     assert "other column" in second and "Nid Couleur Jardin Silence" in second and "```body" in second
     assert world.prints and "Nid Couleur" not in world.prints[0]["html"]  # the refused body was never printed
+
+
+# ---------- the photo's place with no photo (#246) ----------
+
+def _with_grey_box(tmp_path, bbox):
+    """scrubbed-pages-sidebar-fr with a grey box drawn on page 1 at `bbox` (points, origin top left)."""
+    pdf = pdfium.PdfDocument(STYLES / "scrubbed-pages-sidebar-fr.pdf")
+    page = pdf[0]
+    height = page.get_height()
+    rect = pdfium_raw.FPDFPageObj_CreateNewRect(bbox[0], height - bbox[3], bbox[2] - bbox[0], bbox[3] - bbox[1])
+    pdfium_raw.FPDFPageObj_SetFillColor(rect, 176, 176, 176, 255)
+    pdfium_raw.FPDFPath_SetDrawMode(rect, pdfium_raw.FPDF_FILLMODE_ALTERNATE, 0)
+    pdfium_raw.FPDFPage_InsertObject(page.raw, rect)
+    pdfium_raw.FPDFPage_GenerateContent(page.raw)
+    out = tmp_path / "grey-box.pdf"
+    pdf.save(out)
+    return out
+
+
+def test_a_template_that_draws_the_photo_s_box_with_no_photo_fails_the_stress_renders_and_is_told_why(world, tmp_path):
+    boxed = _with_grey_box(tmp_path, [36, 160, 132, 296])  # where the original's photo is
+    world.print_as = lambda folder: boxed if "stress" in folder.parts and folder.name != "photo" else None
+    stylist = Stylist(cv_round(), cv_only(), letter_round())
+    result = world.build("scrubbed-pages-sidebar-fr", stylist)
+    extra = stylist.calls[1]["input"]
+    assert "Printed with other texts" in extra and "fewer: " in extra and "img.photo" in extra
+    assert not any(line.startswith("- photo: ") for line in extra.splitlines())  # printed with one: no box to miss
+    assert result["state"] == "failed" and any("img.photo" in p for p in result["problems"])

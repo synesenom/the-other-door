@@ -294,6 +294,28 @@ def body_column_problems(style: dict, body: str, columns: templates.Columns | No
     return found
 
 
+def photo_box_problems(style: dict, render: dict) -> list[str]:
+    """A box the print (`render`, `style_extract` of a CV printed with no photo) draws where the original's photo is
+    (#246): a filled or stroked shape on its page that covers half the photo's box or more and is no more than twice
+    its size (a side band's background is far larger). `compile` places `<img class="photo">` only when there is a
+    photo, so anything drawn there without it is the template's own and prints on every CV. `[]` when the original
+    has no photo or nothing is drawn there."""
+    photo = style.get("photo")
+    if not photo:
+        return []
+    x0, y0, x1, y1 = photo["bbox"]
+    area = (x1 - x0) * (y1 - y0)
+    for shape in render["shapes"]:
+        a, b, c, d = shape["bbox"]
+        if shape["page"] != photo["page"] or not (shape.get("fill") or shape.get("stroke")) or (c - a) * (d - b) > 2 * area:
+            continue
+        if max(0, min(c, x1) - max(a, x0)) * max(0, min(d, y1) - max(b, y0)) >= area / 2:
+            return [f"with no photo, the page still draws a box at x {a:.0f}-{c:.0f} pt, y {b:.0f}-{d:.0f} pt, where the "
+                    f"original's photo is: the photo's place is the img.photo alone (size it in .photo; no background, "
+                    f"border or shape drawn for it on another element)"]
+    return []
+
+
 # ---------- the stress variants ----------
 
 _LONG_ROLE = "Senior Principal Engineering Manager for Distributed Data Platforms and Cross-Functional Delivery Programmes"
@@ -554,7 +576,8 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
 def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     """The failures of the template printed with the variants of `cv_md` (`_stress_variants`), through the same placing,
     photo and typography steps `compile` takes, no model: a print that fails, text lost off the page (`readability`'s
-    checks, a last page nearly empty excepted), a section in the other column's place (`column_problems`), a photo not placed, too many pages (the compact variant must fit the
+    checks, a last page nearly empty excepted), a section in the other column's place (`column_problems`), a box drawn where the original's photo is in a print with
+    no photo (`photo_box_problems`), a photo not placed, too many pages (the compact variant must fit the
     manifest's `max_pages`, the rest `templates.MAX_PAGES`)."""
     name = (_NAME.search(cv_md) or [None, None])[1]
     picture = s.work / "stress-photo.jpg"
@@ -567,8 +590,11 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
                 columns=s.manifest.columns, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
-            if s.manifest.columns:
-                found += column_problems(s.style, style_extract.extract(pdf), placed)
+            columns, photo_box = bool(s.manifest.columns), bool(s.style.get("photo")) and not v["photo"]
+            if columns or photo_box:
+                render = style_extract.extract(pdf)
+                found += (column_problems(s.style, render, placed) if columns else []) + \
+                    (photo_box_problems(s.style, render) if photo_box else [])
             pages = pdf_render.get_page_count(pdf)
         except (html_pdf.PrintError, ValueError) as exc:
             failures.append(f"{variant}: printing failed: {exc}")

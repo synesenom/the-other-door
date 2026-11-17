@@ -273,3 +273,33 @@ def test_the_stylist_is_told_on_which_side_the_side_column_is_and_that_div_main_
     session = types.SimpleNamespace(style=_extract("latex-sidebar"), images=[1], manifest=manifest)
     text = style_build._files_text(session, "", {})
     assert "on the left" in text and "div.main first" in text
+
+
+# ---------- the photo's place with no photo (#246) ----------
+
+_PHOTO = {"page": 1, "bbox": [35.0, 159.0, 133.0, 297.0], "shape": "rect"}
+
+
+def _shape(bbox, fill="#b0b0b0", stroke=None, page=1):
+    return {"page": page, "kind": "box", "bbox": bbox, "fill": fill, "stroke": stroke}
+
+
+def test_a_print_with_no_photo_that_draws_a_box_where_the_original_s_photo_is_is_named():
+    problems = style_build.photo_box_problems({"photo": _PHOTO}, {"shapes": [_shape([36, 160, 132, 296])]})
+    assert len(problems) == 1 and "img.photo" in problems[0] and "x 36-132" in problems[0]
+
+
+def test_a_frame_drawn_round_the_photo_s_place_is_named_too():
+    assert style_build.photo_box_problems({"photo": _PHOTO}, {"shapes": [_shape([33, 157, 135, 299], fill=None, stroke="#888888")]})
+
+
+def test_a_side_band_a_rule_or_a_box_elsewhere_is_not_the_photo_s_box():
+    shapes = [_shape([0, 0, 143, 842], fill="#eeeeee"),  # a side band's background, far larger than the photo
+              _shape([35, 300, 133, 301]),  # a rule under the photo's place
+              _shape([200, 160, 298, 298]),  # a box beside it
+              _shape([36, 160, 132, 296], page=2)]  # on another page
+    assert style_build.photo_box_problems({"photo": _PHOTO}, {"shapes": shapes}) == []
+
+
+def test_an_original_with_no_photo_has_no_photo_box_problem():
+    assert style_build.photo_box_problems({"photo": None}, {"shapes": [_shape([36, 160, 132, 296])]}) == []

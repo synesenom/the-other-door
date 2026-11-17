@@ -351,3 +351,15 @@ def test_a_two_column_template_with_a_line_that_cannot_wrap_reports_the_cut_word
     found = results["cv.html"]["readable"]
     assert [p["kind"] for p in found] == ["overflow"], found
     assert "IFRS" in found[0]["detail"] or "reporting" in found[0]["detail"], found
+
+
+@pytest.mark.parametrize("width", [180, 198, 288])  # widths at which the heading broke before " | " or " - "
+def test_an_entry_heading_never_starts_a_line_with_its_separator(tmp_path, width):
+    """#246: a heading too long for its line breaks after the separator, never before it."""
+    template = ("<!doctype html><html lang=\"<<lang>>\"><head><style>@page { size: %dpt 300pt; margin: 10pt; } " % width +
+                "body { font: 12pt sans-serif; } .photo { width: 1pt; }</style></head><body>\n<<body>>\n</body></html>")
+    body = ('<div class="entry"><h3><span class="role">Junior Financial Analyst</span><span class="sep"> | </span>'
+            '<span class="org">Example Co</span><span class="sep"> - </span><span class="dates">2020 - 2023</span></h3></div>')
+    pdf = compile_cmd.print_page(body, template, REPO_ROOT / "profile.example" / "cv.template.html", "en", tmp_path, "cv")[0]
+    lines = [line.strip() for line in pdf_render.page_texts(pdf)[0].splitlines() if line.strip()]
+    assert len(lines) > 1 and not [line for line in lines if line[0] in "|-"], lines
