@@ -264,9 +264,10 @@ def test_the_text_of_a_one_column_cv_is_its_lines_with_no_column_labels():
 def test_the_text_of_a_cv_leaves_out_its_icon_glyphs(name):
     # an icon drawn from an icon font reads back as a stray character ("!"): in text.txt the stylist would copy it
     # into the sample body, and the rebuild printed it where the icon was (#248)
+    # A lone bullet in the icon font (altacv's last level dot "○") is not marked an icon, but it is one of its glyphs.
     style = _extract(name)
-    glyphs = ({c for r in style["runs"] if r["icon"] for c in r["text"] if not c.isspace()}
-              - {c for r in style["runs"] if not r["icon"] for c in r["text"]})
+    icon_fonts = {r["font"] for r in style["runs"] if r["icon"]}
+    glyphs = {c for r in style["runs"] if r["font"] in icon_fonts for c in r["text"] if not c.isspace()}
     text = style_build.original_text(style, STYLES / f"{name}.pdf")
     lines = [line for line in text.splitlines() if not line.startswith("[page ")]
     assert glyphs and not glyphs & set("".join(lines))
