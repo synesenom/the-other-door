@@ -33,37 +33,112 @@ def test_a_glyph_of_width_zero_is_not_in_a_subset_font_and_no_word_is_written_wi
     assert not font.can_write("de", [False, False])
 
 
-def _advance(font, items):
-    """Where each glyph starts, in thousandths of the font size, through a TJ array."""
-    x, starts = 0.0, []
-    for item in items:
-        if isinstance(item, bytes):
-            for b in item:
-                starts.append((b, x))
-                x += font.width(b)
+def _block(*ops, font="/F1", size=10.0):
+    """A text block of a simple font: Tf, a Td to (72, 700), then these operators."""
+    return [("BT", []), ("Tf", [font, size]), ("Td", [72.0, 700.0]), *ops, ("ET", [])]
+
+
+def _laid(font, ops, name="/F1"):
+    """Each glyph of the page as (x, character, where the next glyph would start), in the order drawn."""
+    out = []
+    for g in scrub.glyphs_of(ops, {name: font}):
+        if not isinstance(g, scrub.Glyph):
+            continue
+        x = g.x
+        for b in g.data:
+            ch = font.char_of.get(b) or (str(scrub.DIGIT_NAMES.index(font.digit_of[b])) if b in font.digit_of else chr(b))
+            end = x + font.width(b) * g.size / 1000 + g.tc
+            out.append((round(x, 3), ch, end))
+            x = end
+    return out
+
+
+def _words(font, ops):
+    """(x, word) of each word of the page: letters or digits drawn one after the other, a point apart at most."""
+    found, last, end = [], None, None
+    for x, ch, nxt in _laid(font, ops):
+        if ch.isalnum() and last and last[1][-1:].isalnum() and abs(x - end) <= 1.0:
+            last[1] += ch
         else:
-            x -= item
-    return starts
+            last = [x, ch]
+            found.append(last)
+        end = nxt
+    return [(x, w) for x, w in found if w.isalnum()]
 
 
 def test_words_between_real_spaces_are_replaced_and_each_starts_where_it_did():
     font = _quartz_font()
-    original = [b"Plain words, made up here", 30.0, b"x"]
-    items, owed = scrub.scrub_op(font, original, banned={"plain", "words", "made", "here"})
-    text = b"".join(x for x in items if isinstance(x, bytes)).decode("mac_roman")
+    ops = _block(("TJ", [[b"Plain words, made up here", 30.0, b"x"]]))
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned={"plain", "words", "made", "here"})
+    text = "".join(ch for _, ch, _ in _laid(font, new))
     assert text.count(" ") == 4 and "," in text
     assert not {"plain", "words", "made", "here", "up"} & set(text.lower().replace(",", " ").split())
-    space_at = lambda its: [x for b, x in _advance(font, its) if b == 32]  # noqa: E731
-    assert space_at(items) == pytest.approx(space_at(original))
+    space_at = lambda o: [x for x, ch, _ in _laid(font, o) if ch == " "]  # noqa: E731
+    assert space_at(new) == pytest.approx(space_at(ops))
+    assert [x for x, _ in _words(font, new)] == pytest.approx([x for x, _ in _words(font, ops)])
+
+
+def test_pdftex_glue_ends_a_word_and_a_kern_inside_a_word_does_not():
+    font = _quartz_font()  # a TeX font has no space glyph: words are set apart by kerns of 0.22-0.33 em
+    ops = _block(("TJ", [[b"Pla", 40.0, b"in", -250.0, b"word", -330.0, b"here"]]))
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned={"plain", "word", "here"})
+    before, after = _words(font, ops), _words(font, new)
+    assert [w for _, w in before] == ["Plain", "word", "here"]
+    assert len(after) == 3 and [x for x, _ in after] == pytest.approx([x for x, _ in before])
+
+
+def test_a_line_comes_back_as_one_tj_array_its_words_apart_by_kerns_as_a_reader_finds_word_breaks():
+    font = _quartz_font()  # pdfium reads pdfTeX's word breaks from the kerns of a TJ, not from gaps between Tj's
+    ops = _block(("TJ", [[b"plain", -250.0, b"word", -330.0, b"here"]]))
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned={"plain", "word", "here"})
+    shown = [args[0] for op, args in new if op in ("Tj", "TJ")]
+    assert len(shown) == 1 and [x for x in shown[0] if not isinstance(x, bytes)] == pytest.approx([-250.0, -330.0], abs=60)
+    assert [x for x, _ in _words(font, new)] == pytest.approx([x for x, _ in _words(font, ops)])
+
+
+def test_punctuation_right_after_a_word_moves_with_the_word_s_end_and_the_next_word_stays():
+    names = scrub.encoding_names("/MacRomanEncoding")
+    widths = [900.0 if names.get(c) == "x" else 250.0 if c in (32, 44) else 500.0 for c in range(32, 256)]
+    font = scrub.Font(names, widths, first=32)  # "xx" is 1800 wide, any French two-letter word 1000
+    ops = _block(("Tj", [b"xx, ab"]))
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned={"xx", "ab"})
+    laid = _laid(font, new)
+    comma = next(x for x, ch, _ in laid if ch == ",")
+    assert comma == pytest.approx(72.0 + 10.0)  # right after the new word, not where the original's end left it
+    assert _words(font, new)[1][0] == pytest.approx(_words(font, ops)[1][0])
+
+
+def test_letter_spaced_text_keeps_its_spacing_and_its_words_their_starts():
+    font = _quartz_font()  # Tc of a whole em, as a spaced-out heading: still one word
+    ops = _block(("Tc", [10.0]), ("Tj", [b"HEAD"]), ("Tj", [b" "]), ("Tj", [b"LINE"]))
+    new = scrub.rewrite_content(ops, {"/F1": font}, banned={"head", "line"})
+    before, after = _words(font, ops), _words(font, new)
+    assert [w for _, w in before] == ["HEAD", "LINE"] and len(after) == 2
+    assert [x for x, _ in after] == pytest.approx([x for x, _ in before])
+    assert all(len(w) <= 5 for _, w in after)  # the spacing is not filled with letters
+
+
+def test_character_spacing_ends_with_the_graphics_state_it_was_set_in():
+    font = _quartz_font()
+    ops = [("q", []), *_block(("Tc", [1.0]), ("Tj", [b"ab"])), ("Q", []), *_block(("Tj", [b"ab"]))]
+    xs = [x for x, _, _ in _laid(font, ops)]
+    assert xs == pytest.approx([72.0, 78.0, 72.0, 77.0])
+
+
+def test_every_text_block_sets_its_font_as_a_q_before_it_may_have_dropped_the_last_one():
+    font = _quartz_font()  # pdfTeX: q BT Tm Tf TJ ET Q, block after block in the same font
+    block = [("q", []), ("BT", []), ("Tm", [1.0, 0.0, 0.0, 1.0, 72.0, 700.0]), ("Tf", ["/F1", 10.0]),
+             ("TJ", [[b"x"]]), ("ET", []), ("Q", [])]
+    new = scrub.rewrite_content(block + block, {"/F1": font}, set())
+    assert [op for op, _ in new].count("Tf") == 2
 
 
 def test_a_number_becomes_other_digits_none_of_the_originals_numbers_inside_it():
     font = _quartz_font()
     banned = {"12", "34", "56", "1234"}
     for _ in range(30):
-        items, _ = scrub.scrub_op(font, [b"(+12) 34 56 1234"], banned)
-        text = b"".join(x for x in items if isinstance(x, bytes)).decode("mac_roman")
-        runs = re.findall(r"\d+", text)
+        new = scrub.rewrite_content(_block(("Tj", [b"(+12) 34 56 1234"])), {"/F1": font}, banned)
+        runs = re.findall(r"\d+", "".join(ch for _, ch, _ in _laid(font, new)))
         assert [len(r) for r in runs] == [2, 2, 2, 4]
         assert not any(b in r for r in runs for b in banned)
 
@@ -92,9 +167,8 @@ def test_a_one_letter_word_becomes_one_letter_even_when_two_narrow_ones_fit_its_
 def test_a_narrow_one_letter_word_becomes_another_narrow_letter_so_it_does_not_run_into_the_next_word():
     font = _narrow_font()
     for _ in range(20):
-        items, _ = scrub.scrub_op(font, [b"I see"], banned={"see"})
-        text = b"".join(x for x in items if isinstance(x, bytes)).decode("mac_roman")
-        first = text.split(" ")[0]
+        new = scrub.rewrite_content(_block(("Tj", [b"I see"])), {"/F1": font}, banned={"see"})
+        first = "".join(ch for _, ch, _ in _laid(font, new)).split(" ")[0]
         assert first == "L"  # as narrow as "I", and not the original letter
 
 
@@ -272,6 +346,14 @@ def test_a_cff_font_program_and_the_structure_of_a_tagged_pdf_are_told_apart_in_
 
 # --- whole PDFs (pikepdf, which only the scrubber's own venv has) ---
 
+def _shown(op, operands):
+    """The strings a Tj or a TJ shows, as bytes."""
+    import pikepdf
+
+    items = {"Tj": lambda: [operands[0]], "TJ": lambda: list(operands[0])}.get(str(op), list)()
+    return [bytes(x) for x in items if isinstance(x, pikepdf.String)]
+
+
 def _word_like_pdf(path):
     """A tagged PDF with a fontless Type0 font as Word writes one: hex codes in TJ arrays, a ToUnicode, an Author."""
     pikepdf = pytest.importorskip("pikepdf")
@@ -309,7 +391,7 @@ def test_a_word_like_pdf_loses_its_words_its_structure_and_its_author(tmp_path):
     assert list(bdc.keys()) == ["/MCID"]  # /ActualText and /Alt gone
     font = scrub.Font.from_pdf(pdf.pages[0].Resources.Font.F1)
     text = "".join(font.char_of.get(int.from_bytes(bytes(o)[k:k + 2], "big"), " ")
-                   for op, operands in ops if op == "Tj" for o in operands for k in range(0, len(bytes(o)), 2))
+                   for op, operands in ops for o in _shown(op, operands) for k in range(0, len(o), 2))
     assert text and not {"zebra", "yacht", "quilt"} & set(text.split())
 
 
@@ -338,8 +420,8 @@ def test_a_word_like_pdf_loses_links_form_text_and_named_marked_content_properti
     assert "/Annots" not in out and "/StructParents" not in out
     assert list(out.Resources.Properties.P0.keys()) == ["/MCID"]
     font = scrub.Font.from_pdf(out.Resources.Font.F1)
-    codes = [int.from_bytes(bytes(o)[k:k + 2], "big") for operands, op in pikepdf.parse_content_stream(out.Resources.XObject.X0)
-             if str(op) == "Tj" for o in operands for k in range(0, len(bytes(o)), 2)]
+    codes = [int.from_bytes(o[k:k + 2], "big") for operands, op in pikepdf.parse_content_stream(out.Resources.XObject.X0)
+             for o in _shown(op, operands) for k in range(0, len(o), 2)]
     assert codes and "quilt" != "".join(font.char_of.get(c, " ") for c in codes)
 
 
@@ -419,3 +501,40 @@ def test_a_whole_pdf_has_its_page_and_form_colours_turned():
                if str(op) in ("rg", "RG", "g")]
     assert [c for c, _ in colours] == ["RG", "g", "rg"]
     assert colours[0][1] != [0.1, 0.1, 0.45] and colours[1][1] == [0.3] and colours[2][1] != [0.8, 0.1, 0.05]
+
+
+def test_a_simple_font_pdf_loses_the_text_of_its_forms_too_and_keeps_its_icons(tmp_path):
+    pikepdf = pytest.importorskip("pikepdf")
+    src, dst, words = tmp_path / "in.pdf", tmp_path / "out.pdf", tmp_path / "w.json"
+    pdf = pikepdf.new()
+    widths = pikepdf.Array([500] * 224)
+    text = pikepdf.Dictionary(Type=pikepdf.Name.Font, Subtype=pikepdf.Name.TrueType, BaseFont=pikepdf.Name("/AAAAAA+Test"),
+                              Encoding=pikepdf.Name.MacRomanEncoding, FirstChar=32, LastChar=255, Widths=widths)
+    icons = pikepdf.Dictionary(Type=pikepdf.Name.Font, Subtype=pikepdf.Name.Type1, BaseFont=pikepdf.Name("/BBBBBB+FontAwesome"),
+                               FirstChar=32, LastChar=255, Widths=widths)
+    fonts = pikepdf.Dictionary(F1=pdf.make_indirect(text), FA=pdf.make_indirect(icons))
+    form = pdf.make_stream(b"BT /F1 11 Tf 72 600 Td (quilt) Tj ET")
+    form.Type, form.Subtype, form.BBox = pikepdf.Name.XObject, pikepdf.Name.Form, [0, 0, 300, 800]
+    form.Resources = pikepdf.Dictionary(Font=fonts)
+    page = pdf.add_blank_page(page_size=(300, 800))
+    page.Resources = pikepdf.Dictionary(Font=fonts, XObject=pikepdf.Dictionary(X0=form))
+    page.Contents = pdf.make_stream(b"BT /F1 11 Tf 72 700 Td [(zebra) -250 (yacht)] TJ /FA 11 Tf 0 -20 Td (gh) Tj ET /X0 Do")
+    pdf.save(src)
+    words.write_text('["zebra", "yacht", "quilt"]')
+    scrub.main(str(src), str(dst), str(words))
+    result = pikepdf.open(dst)
+    out = result.pages[0]
+
+    def shown(stream):
+        found, font = [], None
+        for operands, op in pikepdf.parse_content_stream(stream):
+            if str(op) == "Tf":
+                font = str(operands[0])
+            else:
+                found += [(font, o.decode("mac_roman")) for o in _shown(op, operands)]
+        return found
+
+    page_text, form_text = shown(out), shown(out.Resources.XObject.X0)
+    assert [t for f, t in page_text if f == "/FA"] == ["gh"]  # icons: codes of their own font, not letters
+    said = " ".join(t for f, t in page_text + form_text if f == "/F1")
+    assert form_text and said and not {"zebra", "yacht", "quilt"} & set(said.lower().split())

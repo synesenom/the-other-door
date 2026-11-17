@@ -2,17 +2,14 @@
 width, never one of the original, and every number other digits with none of the original's numbers inside;
 icons, rules, colours and positions stay as they are.
 
-Made for pdfTeX PDFs (words placed by kerns, no space glyphs) and Quartz ones (Apple Pages: subset TrueType
-fonts in MacRoman, real space glyphs; a glyph of width 0 is not in the subset, so no word is written with it);
-and Word, Google Docs and Canva ones (Type0 fonts, Identity-H, and Skia's Type3 fallback fonts, glyphs placed one by one or in
-TJ arrays: each word is laid out again from where it started, see rewrite_content), whose tagged structure (StructTreeRoot,
-ActualText, Alt) goes too. Every image becomes a flat grey box of its
-size (a photo, a logo). Every colour turns round the colour wheel by one random angle, greys kept (turn_colour).
-Links, outlines, forms, XMP and the document info but its Creator and Producer go.
-Two paths are kept on purpose, with no real pdfTeX or Quartz original left to re-verify a merged one: the
-simple-font path (scrub_op) breaks words at a TJ kern under 0.15 em, which fits pdfTeX's justified glue
-(0.22-0.33 em: below the 0.3 em gap the other path ends a word at, so it would join words), and the Type0/Type3 path
-(rewrite_content) lays each per-glyph layout out again, which a simple font's TJ arrays do not need.
+Made for pdfTeX PDFs (words placed by kerns, no space glyphs), Quartz ones (Apple Pages: subset TrueType fonts in
+MacRoman, real space glyphs, character spacing; a glyph of width 0 is not in the subset, so no word is written with
+it), and Word, Google Docs and Canva ones (Type0 fonts, Identity-H, and Skia's Type3 fallback fonts, glyphs placed one
+by one or in TJ arrays), whose tagged structure (StructTreeRoot, ActualText, Alt) goes too. One path for all of them,
+the page's and every form's text alike (rewrite_content): each word (no gap over 0.15 em inside it, under pdfTeX's
+justified glue) is laid out again from where it started, each line written back as one TJ. Every image becomes a flat
+grey box of its size (a photo, a logo). Every colour turns round the colour wheel by one random angle, greys kept
+(turn_colour). Links, outlines, forms, XMP and the document info but its Creator and Producer go.
 Needs pikepdf, which is not a project dependency: run it from its own venv (`python -m venv v && v/bin/pip install pikepdf`).
 
 usage: scrub_pdf.py <in.pdf> <out.pdf> <words.json>   (words.json from `scrub_check.py words <in.pdf>`, plus the
@@ -66,7 +63,6 @@ MARKS = {"0301": "acute", "0300": "grave", "0302": "circumflex", "0308": "dieres
          "030A": "ring", "0327": "cedilla", "030C": "caron", "030B": "hungarumlaut"}
 BASE_CODECS = {"/MacRomanEncoding": "mac_roman", "/WinAnsiEncoding": "cp1252"}
 DIGIT_NAMES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
-SPACE_KERN = -150
 INFO_KEPT = ("/Creator", "/Producer")
 GREY = 0xB4
 
@@ -219,16 +215,18 @@ def styled(word: str, case: str) -> str:
     return word.upper() if case == "upper" else word[:1].upper() + word[1:] if case == "title" else word
 
 
-def pick(font: Font, target: float, case: str, banned: set[str], letters: int) -> str:
+def pick(font: Font, target: float, case: str, banned: set[str], letters: int, spacing: float = 0.0) -> str:
     """A French word (or two run together) in this case whose width is closest to the original's; too wide counts
     three times as much as too narrow, since a wider word eats the space after it. A one-letter word stays one
     letter, of the width nearest its own: "à", "a", "y" or a letter of the font in its case, else in the other (a
-    narrow "I" becomes an "l", not "Il", "A" or "J", which would run into the word after it)."""
+    narrow "I" becomes an "l", not "Il", "A" or "J", which would run into the word after it). *spacing*: what the
+    character spacing (Tc) adds after each letter, counted in every width."""
+    wide = lambda w: font.word_width(w, [False] * len(w)) + spacing * len(w)  # noqa: E731
     pool = [styled(w, case) for w in FRENCH if w not in banned and font.can_write(styled(w, case), [False] * len(w))]
     if letters == 1:
         own = [ch for ch in font.code_for_char if ch.isalpha() and ch.lower() not in banned]
         pool = [w for w in pool if len(w) == 1] + [ch for ch in own if ch.islower() == (case == "lower")]
-        if not any(abs(font.word_width(w, [False]) - target) <= 0.25 * target for w in pool):
+        if not any(abs(wide(w) - target) <= 0.25 * target for w in pool):
             pool += [ch for ch in own if ch.islower() != (case == "lower")]
         pool = sorted(set(pool))
     elif letters == 2:
@@ -237,7 +235,7 @@ def pick(font: Font, target: float, case: str, banned: set[str], letters: int) -
     if not pool:
         return made_up(font, case, banned, letters)
     off = lambda w: 3 * (w - target) if w > target else target - w  # noqa: E731
-    width = {w: font.word_width(w, [False] * len(w)) for w in pool}
+    width = {w: wide(w) for w in pool}
     best = sorted(pool, key=lambda w: off(width[w]))[:2]
     if letters == 1:  # among letters, one far off the best is no choice
         best = [w for w in best if off(width[w]) <= off(width[best[0]]) + 0.1 * target]
@@ -246,7 +244,7 @@ def pick(font: Font, target: float, case: str, banned: set[str], letters: int) -
         tail_case = "upper" if case == "upper" else "lower"
         tails = [styled(w, tail_case) for w in FRENCH if w not in banned and len(w) > 2
                  and font.can_write(styled(w, tail_case), [False] * len(w))]
-        tw = {w: font.word_width(w, [False] * len(w)) for w in tails}
+        tw = {w: wide(w) for w in tails}
         pairs = sorted(((a, b) for a in pool if len(a) > 2 for b in tails),
                        key=lambda ab: off(width[ab[0]] + tw[ab[1]]))[:3]
         if pairs and off(width[pairs[0][0]] + tw[pairs[0][1]]) < off(width[word]):
@@ -270,25 +268,6 @@ def made_up(font: Font, case: str, banned: set[str], letters: int) -> str:
     return word
 
 
-def runs(items: list, member: dict) -> list[list[tuple[int, int]]]:
-    """The (item, byte) positions of each unbroken run of codes in *member* through a TJ array; a wide kern breaks one."""
-    positions = []
-    for i, item in enumerate(items):
-        if isinstance(item, bytes):
-            positions += [(i, j) if b in member else None for j, b in enumerate(item)]
-        elif item < SPACE_KERN:
-            positions.append(None)
-    found, cur = [], []
-    for p in positions + [None]:
-        if p is None:
-            if cur:
-                found.append(cur)
-            cur = []
-        else:
-            cur.append(p)
-    return found
-
-
 def new_number(length: int, digits: list[int], banned: set[str]) -> str:
     """*length* random digits of these, with no banned number of two digits or more inside them."""
     numbers = [b for b in banned if b.isdigit() and len(b) >= 2]
@@ -297,64 +276,6 @@ def new_number(length: int, digits: list[int], banned: set[str]) -> str:
         if not any(b in number for b in numbers):
             return number
     raise SystemExit(f"no {length}-digit number avoids the original's")
-
-
-def scrub_op(font: Font, items: list, banned: set[str]) -> list:
-    """items: a TJ array as a list of bytes and numbers. Each word is replaced whole (any length) where its
-    first letter was; its width difference is added back at the next word break (a wide kern, or a space glyph),
-    so words start where they did. A number becomes as many other digits, none of the original's numbers in it."""
-    first_of, in_word = {}, set()
-    for word in runs(items, font.char_of):
-        original = "".join(font.char_of[items[i][j]] for i, j in word)
-        target = sum(font.width(items[i][j]) for i, j in word)
-        fr = pick(font, target, case_of([ch.isupper() for ch in original]), banned | {original.lower()}, len(word))
-        first_of[word[0]] = bytes(font.code_for_char[ch] for ch in fr)
-        in_word.update(word)
-    digit_code = {DIGIT_NAMES.index(font.digit_of[c]): c for c in font.code_for_digit}
-    new_digit = {}
-    for number in runs(items, font.digit_of) if digit_code else []:
-        digits = new_number(len(number), sorted(digit_code), banned)
-        new_digit.update({p: digit_code[int(d)] for p, d in zip(number, digits)})
-    out, owed = [], 0.0
-    for i, item in enumerate(items):
-        if not isinstance(item, bytes):
-            if item < SPACE_KERN and abs(owed) > 1e-6:
-                # at a word space: what the words before it gained or lost is given back here,
-                # so punctuation moves with its word and the next word starts where it did
-                out.append(round(owed, 3))
-                owed = 0.0
-            out.append(item)
-            continue
-        buf = bytearray()
-        for j, b in enumerate(item):
-            if b in font.space_codes and abs(owed) > 1e-6:
-                out += [bytes(buf), round(owed, 3)]  # a real space: given back before it, as at a wide kern
-                buf, owed = bytearray(), 0.0
-            if (i, j) in first_of:
-                buf += first_of[(i, j)]
-                owed += sum(font.width(c) for c in first_of[(i, j)])
-            elif (i, j) in new_digit:
-                buf.append(new_digit[(i, j)])
-                owed += font.width(buf[-1])
-            elif (i, j) not in in_word:
-                buf.append(b)
-                owed += font.width(b)
-            owed -= font.width(b)
-        out.append(bytes(buf))
-    # tidy: no empty strings, adjacent numbers merged, a trailing number carried out of the run
-    # (pdfium applies a number only before a string that draws something)
-    tidy = []
-    for x in out:
-        if isinstance(x, bytes):
-            if x:
-                tidy.append(x)
-        elif tidy and not isinstance(tidy[-1], bytes):
-            tidy[-1] += x
-        else:
-            tidy.append(x)
-    while tidy and not isinstance(tidy[-1], bytes):
-        owed += tidy.pop()
-    return tidy, owed
 
 
 def _hex_chars(h: str) -> str:
@@ -392,25 +313,34 @@ def parse_w(array: list) -> dict[int, float]:
 
 
 class Glyph(NamedTuple):
-    """Text drawn in one font and size from (x, y) of the text matrix *tm*; *data* is one code, or a replaced word's."""
+    """Text drawn in one font and size from (x, y) of the text matrix *tm*, with the character spacing *tc* after each
+    glyph; *data* is one code, or a replaced word's."""
     tm: tuple | None
     font: str
     size: float
     x: float
     y: float
     data: bytes
+    tc: float = 0.0
 
 
-WORD_GAP = 0.3  # of the font size: a wider gap between two glyphs ends a word
+WORD_GAP = 0.15  # of the font size: a wider gap between two glyphs ends a word (pdfTeX's glue is 0.22-0.33)
 
 
 def glyphs_of(ops: list, fonts: dict) -> list:
     """A page's operators with every text block read into Glyphs at their positions in the text matrix's space
     (one per code, whether set by Tj or inside a TJ); every other operator stays, Tf, Tm and Td go (the writer
-    puts them back). Tc, Tw, Tz, TL, Ts, TD, T*, ' and " are refused: nothing here would move for them."""
-    out, text = [], False
-    tm, font, size, lx, ly, x = None, None, 1.0, 0.0, 0.0, 0.0
+    puts them back). Tc stays where it was set and, with the font and size, is followed through q and Q; Tw, Tz,
+    TL, Ts, TD, T*, ' and " are refused: nothing here would move for them."""
+    out, text, saved = [], False, []
+    tm, font, size, lx, ly, x, tc = None, None, 1.0, 0.0, 0.0, 0.0, 0.0
     for op, operands in ops:
+        if op == "q":
+            saved.append((tc, font, size))
+        elif op == "Q":
+            tc, font, size = saved.pop() if saved else (0.0, None, 1.0)
+        elif op == "Tc":
+            tc = float(operands[0])
         if op == "BT":
             tm, lx, ly, x, text = None, 0.0, 0.0, 0.0, True
         elif op == "ET":
@@ -432,9 +362,9 @@ def glyphs_of(ops: list, fonts: dict) -> list:
                     continue
                 for k in range(0, len(item), f.code_len):
                     data = item[k:k + f.code_len]
-                    out.append(Glyph(tm, font, size, x, ly, data))
-                    x += f.width(int.from_bytes(data, "big")) * size / 1000
-        elif op in ("Tc", "Tw", "Tz", "TL", "Ts", "TD", "T*", "'", '"'):
+                    out.append(Glyph(tm, font, size, x, ly, data, tc))
+                    x += f.width(int.from_bytes(data, "big")) * size / 1000 + tc
+        elif op in ("Tw", "Tz", "TL", "Ts", "TD", "T*", "'", '"'):
             raise SystemExit(f"unhandled text operator {op}")
         else:
             out.append((op, operands))
@@ -443,8 +373,10 @@ def glyphs_of(ops: list, fonts: dict) -> list:
 
 def rewrite_content(ops: list, fonts: dict, banned: set[str]) -> list:
     """The page's operators with each word (a run of letters, or of digits, in one font, size and line, no gap
-    over WORD_GAP of the size between them) of a text block replaced as scrub_op does, written as one Tj at the
-    glyph where the word started, so every word and every glyph outside a word keeps its absolute start."""
+    over WORD_GAP of the size between them) of a text block replaced, written from the glyph where the word started
+    (_written), so every word keeps its absolute start. A word becomes a French word of about its width (pick), a number
+    as many other digits with none of the original's numbers inside them; the marks right after it (a comma, a
+    bracket: no space or gap between) move with its end, every other glyph stays where it was."""
     stream, runs_out = glyphs_of(ops, fonts), []
     i = 0
     while i < len(stream):
@@ -455,47 +387,72 @@ def rewrite_content(ops: list, fonts: dict, banned: set[str]) -> list:
             continue
         f = fonts[g.font]
         kind = lambda glyph: f.kind(int.from_bytes(glyph.data, "big"))  # noqa: E731
-        k, j, end = kind(g), i + 1, g.x + f.width(int.from_bytes(g.data, "big")) * g.size / 1000
+        advance = lambda glyph: f.width(int.from_bytes(glyph.data, "big")) * g.size / 1000 + g.tc  # noqa: E731
+        k, j, end = kind(g), i + 1, g.x + advance(g)
         if k:
             while (j < len(stream) and isinstance(stream[j], Glyph) and kind(stream[j]) == k
-                   and stream[j][:2] == g[:2] and stream[j][2] == g.size and stream[j].y == g.y
+                   and stream[j][:3] == g[:3] and stream[j].y == g.y and stream[j].tc == g.tc
                    and stream[j].x - end <= WORD_GAP * g.size):
-                end = stream[j].x + f.width(int.from_bytes(stream[j].data, "big")) * g.size / 1000
+                end = stream[j].x + advance(stream[j])
                 j += 1
         run = [int.from_bytes(x.data, "big") for x in stream[i:j]]
         data = g.data
         if k == "char_of":
             original = "".join(f.char_of[c] for c in run)
             word = pick(f, (end - g.x) * 1000 / g.size, case_of([ch.isupper() for ch in original]),
-                        banned | {original.lower()}, len(run))
+                        banned | {original.lower()}, len(run), g.tc * 1000 / g.size)
             data = b"".join(f.code_for_char[ch].to_bytes(f.code_len, "big") for ch in word) or data
         elif k == "digit_of" and f.code_for_digit:
             digit_code = {DIGIT_NAMES.index(f.digit_of[c]): c for c in f.code_for_digit}
             data = b"".join(digit_code[int(d)].to_bytes(f.code_len, "big") for d in new_number(len(run), sorted(digit_code), banned))
         runs_out.append(g._replace(data=data))
+        if k:
+            codes = range(0, len(data), f.code_len)
+            shift = g.x + sum(advance(g._replace(data=data[c:c + f.code_len])) for c in codes) - end
+            while (j < len(stream) and isinstance(stream[j], Glyph) and not kind(stream[j]) and stream[j][:3] == g[:3]
+                   and stream[j].y == g.y and int.from_bytes(stream[j].data, "big") not in f.space_codes
+                   and stream[j].x - end <= WORD_GAP * g.size):
+                end = stream[j].x + advance(stream[j])
+                runs_out.append(stream[j]._replace(x=stream[j].x + shift))
+                j += 1
         i = j
-    return _written(runs_out)
+    return _written(runs_out, fonts)
 
 
-def _written(stream: list) -> list:
-    """Glyphs back as operators: Tf and Tm when they change, a Td from the last Td's place to each start, one Tj."""
+def _written(stream: list, fonts: dict) -> list:
+    """Glyphs back as operators: Tf and Tm when they change and at each block's first glyph (a Q before it may have
+    dropped the font), a Td to the first glyph of each line, and the line as one TJ whose kerns put every other glyph
+    where it started (a reader finds pdfTeX's word breaks in those kerns, not in gaps between separate Tj's)."""
     unset = object()
-    out, tm, font, size, px, py = [], unset, None, None, 0.0, 0.0
+    out, tm, font, size, px, py, end = [], unset, None, None, 0.0, 0.0, None
     for g in stream:
         if not isinstance(g, Glyph):
             out.append(g)
+            end = None
             if g[0] == "BT":  # a new block starts from the identity matrix
-                tm, px, py = unset, 0.0, 0.0
+                tm, font, px, py = unset, None, 0.0, 0.0
             continue
         if (g.font, g.size) != (font, size):
-            font, size = g.font, g.size
+            font, size, end = g.font, g.size, None
             out.append(("Tf", [font, size]))
         if g.tm != tm:
-            tm, px, py = g.tm, 0.0, 0.0
+            tm, px, py, end = g.tm, 0.0, 0.0, None
             out.append(("Tm", list(tm or (1.0, 0, 0, 1.0, 0, 0))))
-        out += [("Td", [round(g.x - px, 4), round(g.y - py, 4)]), ("Tj", [g.data])]
-        px, py = g.x, g.y
-    return out
+        if end is None or g.y != py:
+            out += [("Td", [round(g.x - px, 4), round(g.y - py, 4)]), ("TJ", [[]])]
+            px, py, end = g.x, g.y, g.x
+        line = out[-1][1][0]
+        kern = round((end - g.x) * 1000 / g.size, 3)
+        if abs(kern) > 0.01:
+            line.append(kern)
+        if line and isinstance(line[-1], bytes):
+            line[-1] += g.data
+        else:
+            line.append(g.data)
+        f = fonts[g.font]
+        end = g.x + sum(f.width(int.from_bytes(g.data[k:k + f.code_len], "big")) * g.size / 1000 + g.tc
+                        for k in range(0, len(g.data), f.code_len))
+    return [("Tj", [args[0][0]]) if op == "TJ" and len(args[0]) == 1 else (op, args) for op, args in out]
 
 
 COLOUR_OPS = ("rg", "RG", "sc", "SC", "scn", "SCN")
@@ -580,7 +537,7 @@ def grey_images(resources) -> int:
     return count
 
 
-def wide_ops(page, fonts: dict, banned: set[str]) -> list:
+def page_ops(page, fonts: dict, banned: set[str]) -> list:
     """A page's (or form's) content as pikepdf operators: rewrite_content over its plain operands. Marked content
     keeps only its /MCID: /ActualText and /Alt are the CV's text again."""
     import pikepdf
@@ -610,14 +567,16 @@ def wide_ops(page, fonts: dict, banned: set[str]) -> list:
     return [([back(x) for x in operands], pikepdf.Operator(o)) for o, operands in rewrite_content(ops, fonts, banned)]
 
 
-def fonts_of(resources, wide: bool) -> dict:
+def fonts_of(resources) -> dict:
+    """Each font of these resources by its name; an icon font's codes are none of them letters or digits (FontAwesome's
+    own encoding puts its icons on the codes of ASCII letters)."""
     fonts = {}
     for name, f in (resources.get("/Font") or {}).items():
-        if "fontawesome" in str(f.get("/BaseFont", "")).lower() and not wide:
-            continue
         if f.get("/Subtype") not in ("/Type1", "/TrueType", "/MMType1", "/Type0", "/Type3"):
             raise SystemExit(f"unhandled font {f.get('/Subtype')} {f.get('/BaseFont')}")
         fonts[name] = Font.from_pdf(f)
+        if "fontawesome" in str(f.get("/BaseFont", "")).lower():
+            fonts[name].char_of, fonts[name].digit_of = {}, {}
     return fonts
 
 
@@ -635,7 +594,7 @@ def scrub_resources(resources, banned: set[str], seen: set | None = None) -> Non
             continue
         seen.add(x.objgen)
         res = x.get("/Resources", resources)
-        data = pikepdf.unparse_content_stream(wide_ops(x, fonts_of(res, True), banned))
+        data = pikepdf.unparse_content_stream(page_ops(x, fonts_of(res), banned))
         x.write(data)
         scrub_resources(res, banned, seen)
 
@@ -653,39 +612,9 @@ def main(src: str, dst: str, words_json: str) -> None:
     pdf = pikepdf.open(src)
     images = 0
     for page in pdf.pages:
-        wide = any(f.get("/Subtype") in ("/Type0", "/Type3") for _, f in page.Resources.get("/Font", {}).items())
-        fonts = fonts_of(page.Resources, wide)
         images += grey_images(page.Resources)
-        if wide:
-            page.Contents = pdf.make_stream(pikepdf.unparse_content_stream(wide_ops(page, fonts, banned)))
-            scrub_resources(page.Resources, banned)
-            _drop_page_keys(page)
-            continue
-        cur, size, new_ops, carry_pt = None, 1.0, [], 0.0
-        for operands, op in pikepdf.parse_content_stream(page):
-            o = str(op)
-            if o == "Tf":
-                cur, size = str(operands[0]), float(operands[1])
-            if o in ("Td", "TD", "Tm", "T*", "BT", "ET", "'", '"'):
-                carry_pt = 0.0
-            font = fonts.get(cur)
-            if (font and o in ("'", '"')) or o == "BI":
-                raise SystemExit(f"unhandled operator {o}")
-            if font and o in ("Tj", "TJ"):
-                src_items = [bytes(operands[0])] if o == "Tj" else [
-                    bytes(x) if isinstance(x, pikepdf.String) else float(x) for x in operands[0]]
-                items, owed = scrub_op(font, src_items, banned)
-                if carry_pt:
-                    items = [carry_pt * 1000 / size, *items]
-                carry_pt = owed * size / 1000
-                arr = pikepdf.Array([pikepdf.String(x) if isinstance(x, bytes) else round(x, 3) for x in items])
-                operands, op = [arr], pikepdf.Operator("TJ")
-            elif o in ("Tj", "TJ") and carry_pt:
-                src_items = [operands[0]] if o == "Tj" else list(operands[0])
-                operands, op = [pikepdf.Array([round(carry_pt * 1000 / size, 3), *src_items])], pikepdf.Operator("TJ")
-                carry_pt = 0.0
-            new_ops.append((operands, op))
-        page.Contents = pdf.make_stream(pikepdf.unparse_content_stream(new_ops))
+        page.Contents = pdf.make_stream(pikepdf.unparse_content_stream(page_ops(page, fonts_of(page.Resources), banned)))
+        scrub_resources(page.Resources, banned)
         _drop_page_keys(page)
     for key in ("/StructTreeRoot", "/MarkInfo", "/Lang", "/Outlines", "/Names", "/Metadata", "/PageLabels", "/AcroForm", "/OpenAction", "/Threads", "/PieceInfo"):
         if key in pdf.Root:
