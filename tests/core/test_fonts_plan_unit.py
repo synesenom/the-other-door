@@ -280,7 +280,10 @@ def test_a_staging_folder_a_killed_fetch_left_is_swept_and_a_fresh_one_kept(data
 REAL_LOOKALIKES = {"Aptos": "Arimo", "Segoe UI": "Open Sans", "Helvetica Neue": "Arimo", "HelveticaNeue": "Arimo",
                    "Verdana": "Work Sans", "Garamond": "EB Garamond", "Palatino": "Spectral",
                    "Palatino Linotype": "Spectral", "Book Antiqua": "Spectral", "Optima": "Asap",
-                   "Avenir": "Lato", "Avenir Next": "Lato"}
+                   "Avenir": "Lato", "Avenir Next": "Lato",
+                   "AdobeGaramondPro": "EB Garamond", "AGaramondPro-Regular": "EB Garamond",
+                   "AvenirNextLTPro-Regular": "Lato", "Avenir Next LT Pro": "Lato",
+                   "HelveticaNeueLTStd-Roman": "Arimo", "AptosDisplay": "Arimo", "Aptos Display": "Arimo"}
 
 
 @pytest.mark.parametrize("name,family", sorted(REAL_LOOKALIKES.items()))
@@ -302,3 +305,12 @@ def test_on_the_real_pin_a_measured_font_near_a_pinned_family_is_nearest_not_the
 def test_on_the_real_pin_a_measured_font_far_from_every_family_gets_the_look_alike_not_the_default():
     [p] = fonts.plan([font("Verdana-Regular", "Verdana")], _measure("Verdana-Regular", per_char=1.5))
     assert (p["source"], p["resolved"]) == ("lookalike", "Work Sans")
+
+
+def test_a_pin_with_only_some_families_never_names_one_it_lacks():
+    # the offline fallback of style_build: only the families the code ships
+    data = fonts.pin()
+    data["families"] = {n: f for n, f in data["families"].items() if n in ("Figtree", "Young Serif")}
+    plan = fonts.plan([font("Aptos-Regular", "Aptos"), font("Calibri-Regular", "Calibri"),
+                       font("CenturyGothic", "Century Gothic")], data=data)
+    assert [(p["family"], p["resolved"]) for p in plan] == [("Aptos", None), ("Calibri", None), ("Century Gothic", None)]
