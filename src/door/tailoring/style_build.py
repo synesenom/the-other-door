@@ -466,9 +466,12 @@ def _get_fonts(pdf: Path, style: dict, font_dir: Path, fetch) -> tuple[list[dict
         return _shipped_plan(style["fonts"], font_dir), str(exc)
 
 
-def _agent_style(style: dict) -> dict:
-    """`style` as the stylist reads and `profile/style/style.json` keeps it: the icons' traced paths are in the SVG files."""
-    return {**style, "icons": [{k: v for k, v in icon.items() if k not in ("d", "viewBox", "fill_rule")} for icon in style["icons"]]}
+def _agent_style(style: dict, icon_files: dict[str, str]) -> dict:
+    """`style` as the stylist reads and `profile/style/style.json` keeps it: only the icons of a kind `write_icons` wrote
+    a file for, each with its ``file`` (a dropped one has nothing to draw, #248), their traced paths in the SVG files."""
+    icons = [{**{k: v for k, v in icon.items() if k not in ("d", "viewBox", "fill_rule")}, "file": icon_files[kind]}
+             for icon in style["icons"] if (kind := icon_kind((icon.get("near") or {}).get("text"))) in icon_files]
+    return {**style, "icons": icons}
 
 
 def _write(path: Path, text: str) -> None:
@@ -709,7 +712,7 @@ def end(candidate: Path, profile_dir: Path) -> None:
     shutil.rmtree(gone, ignore_errors=True)
 
 
-def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, letter: str) -> None:
+def _publish(profile_dir: Path, work: Path, pdf: Path, cv: str, letter: str) -> None:
     """Write `profile_dir/style.next/` whole, the candidate: staged beside it and moved in, an earlier one set aside
     until the new one is there (`restore` puts it back after an interruption). `profile_dir/style/`, the style in use,
     is never touched here. No ledger lock (nothing else writes there).
@@ -723,8 +726,8 @@ def _publish(profile_dir: Path, work: Path, pdf: Path, style: dict, cv: str, let
     try:
         _write(staging / _CV_FILE, cv)
         _write(staging / _LETTER_FILE, letter)
-        _write(staging / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
-        shutil.copyfile(work / templates.MANIFEST_FILE, staging / templates.MANIFEST_FILE)
+        for name in ("style.json", templates.MANIFEST_FILE):
+            shutil.copyfile(work / name, staging / name)
         shutil.copyfile(pdf, staging / "source.pdf")
         for folder in ("fonts", "icons"):
             if (work / folder).is_dir():
@@ -747,12 +750,12 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
     shutil.copyfile(pdf_path, pdf)
     progress_mod.report("reading the CV's style", stage="style")
     _write(work / "text.txt", original_text(style, pdf))
-    _write(work / "style.json", json.dumps(_agent_style(style), ensure_ascii=False, indent=1))
     progress_mod.report("fetching the fonts", stage="style")
     plan, result["font_error"] = _get_fonts(pdf, style, work / "fonts", fonts_fetch)
     result["fonts"] = [{k: e[k] for k in ("family", "source", "reason", "faked", "resolved")} for e in plan]
     _write(work / "fonts.css", _font_face_css(plan))
     icon_files, result["dropped_icons"] = write_icons(style["icons"], work / "icons")
+    _write(work / "style.json", json.dumps(_agent_style(style, icon_files), ensure_ascii=False, indent=1))
     cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
     data = _manifest_data(style, list(dict.fromkeys(f["name"] for e in plan for f in e["files"])), icon_files, cv_md)
     _write(work / templates.MANIFEST_FILE, json.dumps(data, indent=1))
@@ -790,7 +793,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
     letter, problems = _letter(s, template, cv_md)
     if letter is None:
         raise _Stop("; ".join(problems))
-    _publish(profile_dir, s.work, pdf, style, template, letter)
+    _publish(profile_dir, s.work, pdf, template, letter)
     result["state"] = "ready"
 
 
