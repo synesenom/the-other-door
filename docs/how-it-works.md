@@ -149,8 +149,11 @@ the printed CV look like a CV you already have: you give a PDF of it (the deskto
 tick, `init`'s review line, `/onboard`'s review line, `cv style build`, or "use my CV's style" in a
 conversation) and a build runs in the background, beside whatever else you are doing.
 
-What a build does, in order: it reads the PDF on this computer, with no network and no model (its fonts,
-colours, margins, columns, headings, rules, photo and icons); it fetches the free look-alike of each font from
+What a build does, in order: it reads the PDF on this computer, with no network (its fonts,
+colours, margins, rules, photo and icons), and asks Claude Haiku once, as it takes the file in, which lines are the
+name, the section headings and the entry titles and how many columns the page has (it is sent the CV's text lines,
+usage feature `style`; the answer is kept by the file's checksum, so the build that follows asks nothing again, and a
+read that fails says so and starts no build); it fetches the free look-alike of each font from
 Google's open font collection (pinned and checked by hash; no CV data is sent); then the stylist agent (Sonnet,
 usage feature `style`, shown as "Building a CV template") writes an HTML and CSS template round by round. Each
 draft is printed with the pinned Chromium and compared with your PDF page by page; when no draft comes close to

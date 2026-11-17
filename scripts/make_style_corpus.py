@@ -22,6 +22,7 @@ from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO))  # scripts.style_corpus.structure_cases, which writes its PDFs with tests/pdf_utils
 
 from door.tailoring import html_pdf, pdf_render  # noqa: E402
 from scripts.style_corpus import structure_cases  # noqa: E402
