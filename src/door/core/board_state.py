@@ -1,6 +1,6 @@
 """The fold of progress events into the view of `find`'s steps (`BoardState`).
 
-Pure, no output: `core.progress.JsonProgress` writes its `steps` to `jobs/.progress.json` and
+Pure, no output: `core.progress.ProgressFile` writes its `steps` to `jobs/.progress.json` and
 `door.pipeline.display` draws it. The events and their meaning are described in
 `door.pipeline.display`.
 """
