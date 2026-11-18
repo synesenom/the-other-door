@@ -23,7 +23,7 @@ steps run, the version is written after the last. A failing step restores the fo
 version; refused data (newer, older major) is never written to. Either leaves a `status()` the tools answer with.
 An import or a Drive pull refuses such an archive (`refuse`, raising `RefusedData`) before it changes anything and
 runs `upgrade_all` right after the swap. Google Drive keeps the two versions on the archive file itself
-(`appProperties`), so a pull or push can refuse without downloading (`core/sync.py`).
+(`appProperties`), so a pull or push can refuse without downloading (`core/sync/sync.py`).
 """
 
 from __future__ import annotations

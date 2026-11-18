@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from door.core import sync
+from door.core.sync import sync
 
 
 @pytest.mark.parametrize(
@@ -72,7 +72,7 @@ import json
 import shutil
 from pathlib import Path
 
-from door.core import drive
+from door.core.sync import drive
 
 
 class FakeDrive:

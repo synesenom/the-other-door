@@ -1,7 +1,8 @@
 """Names stored on users' machines and Drive, after the rebrand to "The other door" (#452): the Drive folder
 the user sees, the archive in it, the settings folder holding the Drive token, the phone server's launchd label."""
 
-from door.core import drive, launch_agent
+from door.core import launch_agent
+from door.core.sync import drive
 
 
 def test_drive_folder_and_archive():

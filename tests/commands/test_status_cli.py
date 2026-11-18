@@ -390,7 +390,8 @@ def test_status_refuses_a_bad_job_id_before_taking_the_lock(cli_env, monkeypatch
 
 
 def test_the_cli_says_on_stderr_when_it_synced_with_drive(cli_env, monkeypatch):
-    from door.core import lock, sync
+    from door.core import lock
+    from door.core.sync import sync
 
     monkeypatch.setattr(lock, "pre_acquire_hook", lambda purpose, jobs_dir: sync._note("pulled", "Pulled newer data from Google Drive"))
     monkeypatch.setattr(lock, "post_release_hook", lambda purpose, jobs_dir: sync._note("pushed", "Synced to Google Drive"))

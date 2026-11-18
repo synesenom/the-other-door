@@ -16,7 +16,9 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import archive, drive, migrations, usage, workspace
+from door.core import migrations, usage, workspace
+from door.core.sync import archive
+from door.core.sync import drive
 from door.core.lock import SyncConflict
 from door.core.progress import report
 

@@ -62,12 +62,12 @@ def test_no_discovery_source_sends_credentials_or_sets_a_cookie(source):
 
 
 def test_only_the_drive_module_names_googles_hosts():
-    """Google Drive sync (#265) talks to Google from `core/drive.py` alone. The one other mention is the
+    """Google Drive sync (#265) talks to Google from `core/sync/drive.py` alone. The one other mention is the
     Chrome for Testing download in `chromium_pin.json` (#165): a pinned, sha256-checked browser, no account."""
     offenders = [
         rel
         for rel, text in _texts()
         for host in ("googleapis.com", "accounts.google.com")
-        if host in text and rel not in ("src/door/core/drive.py", "src/door/core/chromium_pin.json")
+        if host in text and rel not in ("src/door/core/sync/drive.py", "src/door/core/chromium_pin.json")
     ]
     assert offenders == []

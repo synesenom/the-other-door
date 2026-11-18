@@ -83,8 +83,10 @@ from door.commands import setup as setup_cmd
 from door.commands import status as status_cmd
 from door.commands import stories as stories_cmd
 from door.commands import style as style_cmd
-from door.core import archive as archive_core
-from door.core import claude_cli, drive, migrations, problem_log, sync, workspace
+from door.core.sync import archive as archive_core
+from door.core import claude_cli, migrations, problem_log, workspace
+from door.core.sync import drive
+from door.core.sync import sync
 from door.core.lock import LockHeldError, SyncConflict, ledger_lock, lock_holder
 from door.core import companies as companies_store
 from door.core.profile_loader import ConfigError

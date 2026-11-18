@@ -694,7 +694,7 @@ def test_languages_help_lists_the_supported_languages(monkeypatch):
 # --------------------------------------------------------------------------- #
 from pathlib import Path  # noqa: E402
 
-from door.core import drive  # noqa: E402
+from door.core.sync import drive  # noqa: E402
 
 
 class _Drive:

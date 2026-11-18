@@ -15,7 +15,7 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import archive as archive_cmd
-from door.core import archive as archive_core
+from door.core.sync import archive as archive_core
 from door.core import migrations, workspace
 import door.mcp_server as server
 from profile_utils import write_config
@@ -183,7 +183,8 @@ def test_export_and_import_tools(env, monkeypatch):
 
 
 # --------------------------------------------------------------------------- Google Drive (#265)
-from door.core import drive, sync  # noqa: E402
+from door.core.sync import drive  # noqa: E402
+from door.core.sync import sync  # noqa: E402
 
 
 def test_export_leaves_the_progress_mirror_out(env):

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from door.core import archive as archive_core
+from door.core.sync import archive as archive_core
 from door.core import migrations, workspace
 from profile_utils import write_config
 

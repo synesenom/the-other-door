@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from door.core import archive as archive_core
+from door.core.sync import archive as archive_core
 from door.core import lock, selection, workspace
 from door.core.history import HistoryStore
 from paths import REPO_ROOT

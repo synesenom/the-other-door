@@ -70,7 +70,7 @@ export function py(world: World, code: string, ...args: string[]): string {
 
 /** An export of the world's home as it is now (door's own `data export`), written to `target`. */
 export function exportHome(world: World, target: string): string {
-  py(world, 'import sys; from door.core import archive; archive._export_core(sys.argv[1])', target)
+  py(world, 'import sys; from door.core.sync import archive; archive._export_core(sys.argv[1])', target)
   return target
 }
 
@@ -98,7 +98,7 @@ export function patchDriveState(world: World, patch: Record<string, unknown>): v
 
 /** sync's fingerprint of the home as it is now: "this computer has not changed since". */
 export function fingerprint(world: World): string {
-  return py(world, 'import sys; from pathlib import Path; from door.core import sync; h = Path(sys.argv[1]); print(sync.fingerprint(h / "profile", h / "jobs"))', world.home)
+  return py(world, 'import sys; from pathlib import Path; from door.core.sync import sync; h = Path(sys.argv[1]); print(sync.fingerprint(h / "profile", h / "jobs"))', world.home)
 }
 
 /** world.json, changed in place (the server reads it again on every call). */

@@ -208,7 +208,7 @@ def connect(open_browser=None, timeout: float = 300, show_url=None) -> dict:
     if not is_configured():
         raise DriveError(
             "Google Drive sync is not configured in this build: the maintainer has not set the "
-            "OAuth client (CLIENT_ID / CLIENT_SECRET in src/door/core/drive.py)."
+            "OAuth client (CLIENT_ID / CLIENT_SECRET in src/door/core/sync/drive.py)."
         )
     if open_browser is None:
         open_browser = webbrowser.open  # looked up now, so a patched `webbrowser.open` applies

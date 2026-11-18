@@ -1,6 +1,6 @@
 # Settings: inventory of interactions and branches (desktop app, real Python server)
 
-Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,DataMoves,PhoneSetup,Documentation,Switch,Dialog,Spinner,AppName,PageSections}.tsx`, `connection-rows.ts`, `problems.ts`, `renderer/theme.ts`, `renderer/api.ts`, the Settings-related parts of `renderer/App.tsx`, `main/{claude-login,archive-files,ipc,index}.ts`, `preload/index.ts`, `main/door-server.ts` (env, error translation), plus the Python side: `commands/setup.py`, `core/doctor.py`, `commands/archive.py`, `core/archive.py`, `core/drive.py` (connect/state/errors), `core/sync.py`, `core/phone.py`, `core/pairing.py` (in part), `core/scraper_fix.py` (refusals/outcomes), `core/installers.py` (`plan_install`, `find_claude`), and the tool wrappers in `mcp_server.py`. I also used the unit test names and the e2e tests of the time (`e2e/settings.e2e.ts`, `e2e/data.e2e.ts`, since folded into the journeys) and `test/home-fixture.ts`.
+Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,DataMoves,PhoneSetup,Documentation,Switch,Dialog,Spinner,AppName,PageSections}.tsx`, `connection-rows.ts`, `problems.ts`, `renderer/theme.ts`, `renderer/api.ts`, the Settings-related parts of `renderer/App.tsx`, `main/{claude-login,archive-files,ipc,index}.ts`, `preload/index.ts`, `main/door-server.ts` (env, error translation), plus the Python side: `commands/setup.py`, `core/doctor.py`, `commands/archive.py`, `core/sync/archive.py`, `core/sync/drive.py` (connect/state/errors), `core/sync/sync.py`, `core/phone.py`, `core/pairing.py` (in part), `core/scraper_fix.py` (refusals/outcomes), `core/installers.py` (`plan_install`, `find_claude`), and the tool wrappers in `mcp_server.py`. I also used the unit test names and the e2e tests of the time (`e2e/settings.e2e.ts`, `e2e/data.e2e.ts`, since folded into the journeys) and `test/home-fixture.ts`.
 
 ## 0. Things that hold for the whole area
 
@@ -165,7 +165,7 @@ Actions (all go through `act`):
 
 | Trigger | Error text |
 |---|---|
-| Not configured | "Google Drive sync is not configured in this build: the maintainer has not set the OAuth client (CLIENT_ID / CLIENT_SECRET in src/door/core/drive.py)." | — not tested: the row offers no Connect when not configured (covered by: the row says it is not available, with nothing to click)
+| Not configured | "Google Drive sync is not configured in this build: the maintainer has not set the OAuth client (CLIENT_ID / CLIENT_SECRET in src/door/core/sync/drive.py)." | — not tested: the row offers no Connect when not configured (covered by: the row says it is not available, with nothing to click)
 | No redirect within 300 s | "Google Drive connect: no answer from the browser within 300 s. Open this address and allow access, then run `data connect` again: <url>". **The app's IPC timeout is 330 s, so the Python message arrives first.** | — not tested: five minutes; the fake Drive answers at once
 | State mismatch | "Google Drive connect: the answer did not match this request (state); try again." | — not tested: the fake Drive has no OAuth redirect; any text is a drive.connect fault, as the denial test does
 | Denied, or no code | "Google Drive connect was not allowed (access_denied)." / "(no code)." | — unit: `app/src/renderer/screens/Connections.test.tsx`

@@ -24,7 +24,7 @@ try:
     refused = False
 except ConnectionRefusedError:
     refused = True
-from door.core import drive
+from door.core.sync import drive
 print(json.dumps({
     "refused": refused,
     "now": datetime.now(timezone.utc).isoformat(),

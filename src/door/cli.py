@@ -123,7 +123,7 @@ _SYNC_MARKS = {"pulled": ("↓", "cyan"), "pushed": ("↑", "bright_black"), "wa
 
 def _say_what_drive_did() -> None:
     """Once a command is done: one line per Google Drive pull, push or skipped sync it caused."""
-    from door.core import sync
+    from door.core.sync import sync
 
     for kind, message in sync.drain_notes():
         mark, colour = _SYNC_MARKS[kind]

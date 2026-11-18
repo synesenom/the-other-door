@@ -172,7 +172,9 @@ def _no_drive_sync(tmp_path, monkeypatch):
     itself uses `enable_sync_hooks`."""
     import webbrowser
 
-    from door.core import drive, lock, sync
+    from door.core import lock
+    from door.core.sync import drive
+    from door.core.sync import sync
 
     sync.drain_notes()
 

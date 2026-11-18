@@ -13,7 +13,8 @@ import door.core.tracker as _tracker_mod
 from door.commands import _common as common
 from door.commands import _progress, _prompts
 from door.commands import style as style_cmd
-from door.core import companies, drive, lock, profile_loader, progress, recurring, runs, usage, workspace
+from door.core import companies, lock, profile_loader, progress, recurring, runs, usage, workspace
+from door.core.sync import drive
 from door.core import utils
 from door.tailoring import facts as facts_mod
 

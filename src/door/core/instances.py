@@ -8,7 +8,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from door.core import drive, utils
+from door.core import utils
+from door.core.sync import drive
 
 
 def _path() -> Path:

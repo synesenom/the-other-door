@@ -64,13 +64,13 @@ _NO_SYNC_PURPOSES = frozenset({"export", "import", "sync", "upgrade"})
 
 
 def _default_pre(purpose: str, jobs_dir: Path) -> None:
-    from door.core import sync
+    from door.core.sync import sync
 
     sync.on_acquire(purpose, jobs_dir)
 
 
 def _default_post(purpose: str, jobs_dir: Path) -> None:
-    from door.core import sync
+    from door.core.sync import sync
 
     sync.on_release(purpose, jobs_dir)
 

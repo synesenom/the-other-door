@@ -265,7 +265,8 @@ def _drive_step() -> bool:
     A failure only warns: the wizard goes on without Drive.
     """
     from door.commands import archive as archive_cmd
-    from door.core import drive, sync
+    from door.core.sync import drive
+    from door.core.sync import sync
 
     if not drive.is_configured():
         click.echo("Google Drive sync is not configured in this build: skipping it.")
@@ -308,7 +309,7 @@ def _drive_step() -> bool:
 def _drive_push() -> None:
     """At the wizard's end, put what it wrote on Drive (its writes may not take the ledger lock)."""
     from door.commands import archive as archive_cmd
-    from door.core import drive
+    from door.core.sync import drive
     from door.core.lock import SyncConflict
 
     if drive.read_state() is None:

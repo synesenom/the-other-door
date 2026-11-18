@@ -1,4 +1,4 @@
-"""Packing profile/ and jobs/ into one archive and unpacking one (`export` and `import`; also Google Drive's, `core/sync.py`).
+"""Packing profile/ and jobs/ into one archive and unpacking one (`export` and `import`; also Google Drive's, `core/sync/sync.py`).
 
 The archive is a `.tar.gz` holding `manifest.json`, `profile/...` and `jobs/...`.
 The ledger lock never goes in it.

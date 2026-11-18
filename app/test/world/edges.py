@@ -159,7 +159,8 @@ HTTPAdapter.send = _fake_send
 # --------------------------------------------------------------------------- door, with its edges replaced
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
-from door.core import drive, phone, process, sites  # noqa: E402
+from door.core import phone, process, sites  # noqa: E402
+from door.core.sync import drive  # noqa: E402
 from door.core.models import JobPosting  # noqa: E402
 from door.scrapers import report  # noqa: E402
 
@@ -260,7 +261,7 @@ def _connect(open_browser=None, timeout: float = 300, show_url=None) -> dict:
     if not drive.is_configured():
         raise drive.DriveError(
             "Google Drive sync is not configured in this build: the maintainer has not set the "
-            "OAuth client (CLIENT_ID / CLIENT_SECRET in src/door/core/drive.py)."
+            "OAuth client (CLIENT_ID / CLIENT_SECRET in src/door/core/sync/drive.py)."
         )
     account = world().get("drive", {}).get("account", "someone@example.com")
     drive.write_state({"refresh_token": "world", "access_token": "world", "expires_at": time.time() + 3600})
