@@ -32,11 +32,15 @@ def test_globalnyt_details_live():
         assert ads, fail("globalnyt", "details", "no ads to open")
         now = datetime.now(timezone.utc)
         postings = []
-        for ad in ads[:2]:
+        for ad in ads[:4]:
             page = session.get(ad["url"]).text
             company = globalnyt._detail_field(page, "Organisation")
-            assert company, fail("globalnyt", "details", f"no Organisation on {ad['url']}")
+            if not company:   # Globalnyt's own ads and a leftover test post name no organisation; the scraper falls back
+                continue
             postings.append(globalnyt._to_posting(ad, company, globalnyt._detail_field(page, "Sted"), now))
+            if len(postings) == 2:
+                break
+        assert postings, fail("globalnyt", "details", f"no Organisation on any of the first {len(ads[:4])} ads")
     assert_contract("globalnyt", postings, "details", config=CONFIG)
 
 

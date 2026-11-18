@@ -86,7 +86,6 @@ ZERO_HIT_FIXTURES: dict[str, str] = {
     "arbetsformedlingen": "boards/fixtures/arbetsformedlingen/empty.json",
     "francetravail": "boards/fixtures/francetravail/search_empty.html",
     "choisirleservicepublic": "boards/fixtures/choisirleservicepublic/search_empty.html",
-    "globalnyt": {"posted_at_share": 0.8},                            # a 2025 leftover test post (/stilling/hej/) heads the list; a run drops it by max_age_days
     "kozigallas": "boards/fixtures/kozigallas/list_empty.html",
     "workable": "feeds/fixtures/workable/search_empty.json",
     "reliefweb": "boards/fixtures/reliefweb/empty.xml",
@@ -112,6 +111,7 @@ NO_ZERO_HIT: dict[str, str] = {
 FIELD_EXCEPTIONS: dict[str, dict] = {
     "jobbank": {"location_share": 0.5},                                # a Danish search also lists "Udlandet (øvrige)" (abroad) ads
     "euraxess": {"location": False},                                   # the location is "<city>, <country>"; its live test checks the country
+    "globalnyt": {"posted_at_share": 0.8, "description_share": 0.8},                         # a 2025 leftover test post (/stilling/hej/, "Det her er en test") heads the list; a run drops it by max_age_days
     "kozigallas": {"posted_at_future_days": 14},
     "hr_manager": {"description_share": 0.8},                         # the newest ads may have no text yet (RegionH, 2026-11-13: 3 of 100, 2 of the first 10)                       # the date can be a planned publication date
 }
