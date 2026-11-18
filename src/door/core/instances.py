@@ -6,10 +6,9 @@ lists them."""
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
-from door.core import drive
+from door.core import drive, utils
 
 
 def _path() -> Path:
@@ -26,11 +25,7 @@ def read() -> dict[str, dict]:
 
 
 def _write(data: dict) -> None:
-    path = _path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    os.replace(tmp, path)
+    utils.write_atomic(_path(), json.dumps(data, indent=2))
 
 
 def _plan(claude_config_dir: str | None) -> str:

@@ -96,3 +96,58 @@ class TestWriteJsonAtomic:
             write_json_atomic(target, {"bad": object()}, default=None)
         assert target.read_text(encoding="utf-8") == "{}"
         assert list(tmp_path.iterdir()) == [target]
+
+
+# --------------------------------------------------------------------------- #
+# write_atomic
+# --------------------------------------------------------------------------- #
+
+class TestWriteAtomic:
+    def test_text_and_bytes(self, tmp_path):
+        from door.core.utils import write_atomic
+
+        write_atomic(tmp_path / "a" / "t.txt", "Søren\n")
+        write_atomic(tmp_path / "b.bin", b"\x00\x01")
+        assert (tmp_path / "a" / "t.txt").read_bytes() == "Søren\n".encode()
+        assert (tmp_path / "b.bin").read_bytes() == b"\x00\x01"
+        assert sorted(p.name for p in tmp_path.iterdir()) == ["a", "b.bin"]
+
+    def test_writers_never_share_a_temp_name(self, tmp_path, monkeypatch):
+        import os
+
+        from door.core.utils import write_atomic
+
+        sources = []
+        real = os.replace
+        monkeypatch.setattr(os, "replace", lambda s, d: (sources.append(str(s)), real(s, d))[1])
+        write_atomic(tmp_path / "x.json", "1")
+        write_atomic(tmp_path / "x.json", "2")
+        assert len(set(sources)) == 2
+
+    def test_mode_is_set_before_data_is_written(self, tmp_path, monkeypatch):
+        import os
+        import stat
+        import sys
+
+        from door.core.utils import write_atomic
+
+        if sys.platform == "win32":
+            pytest.skip("POSIX modes")
+        seen = []
+        real = os.fdopen
+
+        def spy(fd, *a, **k):
+            seen.append(stat.S_IMODE(os.fstat(fd).st_mode))
+            return real(fd, *a, **k)
+
+        monkeypatch.setattr(os, "fdopen", spy)
+        write_atomic(tmp_path / "s.json", "{}", mode=0o600)
+        assert seen == [0o600]
+        assert stat.S_IMODE((tmp_path / "s.json").stat().st_mode) == 0o600
+
+    def test_failure_leaves_no_temp_file(self, tmp_path):
+        from door.core.utils import write_atomic
+
+        with pytest.raises(TypeError):
+            write_atomic(tmp_path / "f.txt", 5)  # type: ignore[arg-type]
+        assert list(tmp_path.iterdir()) == []

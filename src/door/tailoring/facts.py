@@ -9,7 +9,6 @@ did not. Pure and deterministic: no model call, no network, never raises out of 
 from __future__ import annotations
 
 import json
-import os
 import re
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -17,7 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from door import i18n
-from door.core import skill_aliases, workspace
+from door.core import skill_aliases, utils, workspace
 from door.matching import integrity
 from door.render import html_doc
 
@@ -444,9 +443,7 @@ def check(
     if write:
         try:
             payload = {"checked_at": datetime.now(timezone.utc).isoformat(), "unsupported": found}
-            tmp = output_dir / (FACTS_FILE + ".tmp")
-            tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-            os.replace(tmp, output_dir / FACTS_FILE)
+            utils.write_json_atomic(output_dir / FACTS_FILE, payload, default=None)
         except OSError:
             pass
     return found

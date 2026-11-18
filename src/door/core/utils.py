@@ -105,18 +105,36 @@ def _validate_job_id(job_id: str) -> None:
         raise ValueError(f"invalid job_id: {job_id!r}")
 
 
-def write_json_atomic(path: Path, data, *, indent: int | None = 2, default=str) -> None:
-    """Write `data` as JSON to `path` atomically: a temp file, then `os.replace`.
+def write_atomic(path: Path, data: str | bytes, *, mode: int | None = None) -> None:
+    """Write text (UTF-8) or bytes to `path` atomically: a unique temp file beside it, then `os.replace`.
 
-    A reader never sees a half-written file, and a failed write leaves the old
-    file (and no temp file) behind. The parent directory is created; the temp
-    name is unique per process and thread, so concurrent writers never share it.
+    A reader never sees a half-written file, and a failed write leaves the old file (and no temp
+    file) behind. The parent directory is created. With `mode` the file is created with it before
+    any data is written (never readable by others, even briefly); without, it keeps the existing
+    file's mode, else 0o644.
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    if mode is None:
+        try:
+            mode = path.stat().st_mode & 0o777
+        except OSError:
+            mode = 0o644
+    fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    tmp = Path(name)
     try:
-        tmp.write_text(json.dumps(data, indent=indent, ensure_ascii=False, default=default), encoding="utf-8")
+        os.chmod(name, mode)
+        if isinstance(data, bytes):
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(data)
+        else:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(data)
         os.replace(tmp, path)
     finally:
         tmp.unlink(missing_ok=True)
+
+
+def write_json_atomic(path: Path, data, *, indent: int | None = 2, default=str, mode: int | None = None) -> None:
+    """Write `data` as JSON to `path` through `write_atomic`."""
+    write_atomic(path, json.dumps(data, indent=indent, ensure_ascii=False, default=default), mode=mode)

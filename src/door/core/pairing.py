@@ -16,6 +16,8 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from door.core import utils
+
 CODE_TTL = timedelta(minutes=10)
 STRONG_TTL = timedelta(minutes=5)   # a QR code: nobody types it, so it is long and lives briefly
 STRONG_LENGTH = 24
@@ -38,12 +40,7 @@ def _read(path: Path) -> list[dict]:
 
 
 def _write(path: Path, rows: list[dict]) -> None:
-    tmp = path.with_suffix(".tmp")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        json.dump(rows, fh, indent=2)
-    os.chmod(tmp, 0o600)
-    os.replace(tmp, path)
+    utils.write_atomic(path, json.dumps(rows, indent=2), mode=0o600)
 
 
 def _hash(secret: str) -> str:

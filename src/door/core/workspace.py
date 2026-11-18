@@ -12,6 +12,7 @@ import re
 import sys
 from pathlib import Path
 
+from door.core import utils
 
 REPO_ROOT = Path(__file__).resolve().parents[3]   # src/door/core/workspace.py -> the repo
 # The data folder, read once at import: `$DOOR_HOME`, else the checkout (empty = unset).
@@ -54,13 +55,9 @@ def ensure_mcp_config() -> Path:
             return MCP_CONFIG
     except (OSError, ValueError):
         pass
-    tmp = MCP_CONFIG.with_name(MCP_CONFIG.name + f".{os.getpid()}.tmp")
     try:
-        HOME.mkdir(parents=True, exist_ok=True)
-        tmp.write_text(json.dumps(wanted, indent=2) + "\n", encoding="utf-8")
-        os.replace(tmp, MCP_CONFIG)
+        utils.write_atomic(MCP_CONFIG, json.dumps(wanted, indent=2) + "\n")
     except OSError as exc:
-        tmp.unlink(missing_ok=True)
         raise RuntimeError(f"cannot write {MCP_CONFIG} ({exc}); DOOR_HOME must be a writable folder") from None
     return MCP_CONFIG
 
