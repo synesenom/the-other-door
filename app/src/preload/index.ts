@@ -5,7 +5,7 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
 // opener and two openers for a prepared job's PDFs (by job id, never a path). The channel names match src/main/ipc.ts (not imported: a sandboxed
 // preload cannot load modules). The event never reaches the page, only the payload.
 contextBridge.exposeInMainWorld('door', {
-  // `tokens`: the CV files the user picked (draft_cv, enrich, build_style); main puts their paths into the tool's argument.
+  // `tokens`: the files the user picked (CV files for draft_cv, enrich, build_style; the photo for save_photo, an archive for import_data, one-shot); main puts their paths into the tool's argument.
   call: (tool: string, args?: Record<string, unknown>, callId?: string, tokens?: string[]) =>
     ipcRenderer.invoke('door:call', tool, args ?? {}, callId, tokens),
   onProgress: (callId: string, cb: (p: { progress: number; total?: number; message: string }) => void) => {

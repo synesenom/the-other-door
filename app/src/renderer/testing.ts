@@ -19,7 +19,7 @@ const SAVED_PROFILE = {
 
 export function mockDoor(given: Record<string, Handler>) {
   const handlers: Record<string, Handler> = { show_profile: SAVED_PROFILE, ...given }
-  // `tokens`: the picked CV files of draft_cv, enrich, build_style; their handler gets them as `tokens` (build_style answers started)
+  // `tokens`: the picked files of draft_cv, enrich, build_style (their handler gets them as `tokens`; build_style answers started) and of save_photo, import_data (answered by `savePhoto`, `importData`)
   const call = vi.fn(async (tool: string, args: Record<string, unknown> = {}, _callId?: string, tokens?: string[]) => {
     if (tool === 'save_photo' && tokens) return savePhoto(tokens[0]!)
     if (tool === 'import_data' && tokens) return importData(tokens[0]!)

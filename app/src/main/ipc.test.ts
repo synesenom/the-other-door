@@ -17,7 +17,7 @@ const oneShot = (token: string, path: string) => {
   return (t: string) => (left && t === token ? ((left = false), path) : null)
 }
 
-function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<unknown> = async () => ({ ok: 1 }), demoRun?: (args: any, onProgress: any) => any, notifyThrows = false, info: { environment: Environment; home?: string } = { environment: 'sandbox' }) {
+function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<unknown> = async () => ({ ok: 1 }), demoRun?: (args: any, onProgress: any) => any, notifyThrows = false, info: { environment: Environment; home?: string } = { environment: 'sandbox' }, without: { photoFile?: false; archiveFiles?: false } = {}) {
   const cvSources = {
     pick: vi.fn(async () => ({ files: [{ token: 'tok1', name: 'cv.pdf', size: 10 }], refused: [] })),
     add: vi.fn(async (_paths: string[]) => ({ files: [{ token: 'tok2', name: 'dropped.pdf', size: 10 }], refused: [] })),
@@ -66,7 +66,7 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
   const notify = vi.fn((_n: Notice) => {
     if (notifyThrows) throw new Error('notify broke')
   })
-  registerIpc(ipcMain, server, { openExternal, home, savePdf: { showSaveDialog, downloads: '/Users/ada/Downloads' }, showItemInFolder, info, currentBoard, demoRun, notify, cvSources, claudeLogin, archiveFiles, photoFile, styleFile, problemLog })
+  registerIpc(ipcMain, server, { openExternal, home, savePdf: { showSaveDialog, downloads: '/Users/ada/Downloads' }, showItemInFolder, info, currentBoard, demoRun, notify, cvSources, claudeLogin, archiveFiles: without.archiveFiles === false ? undefined : archiveFiles, photoFile: without.photoFile === false ? undefined : photoFile, styleFile, problemLog })
   const send = vi.fn()
   const invoke = (channel: string, ...args: unknown[]) => handlers.get(channel)!({ sender: { send } }, ...args)
   return { server, openExternal, invoke, send, dir, showSaveDialog, saveDir, showItemInFolder, currentBoard, home, notify, cvSources, claudeLogin, archiveFiles, photoFile, styleFile, problemLog }
@@ -561,6 +561,13 @@ describe('the CV photo (#605)', () => {
     expect((await files(invoke, 'save_photo', {}, ['ph1'])).ok).toBe(true)
     expect(await files(invoke, 'save_photo', {}, ['ph1'])).toEqual({ ok: false, error: 'Choose the picture again.' })
     expect(server.call).toHaveBeenCalledTimes(1)
+  })
+
+  it('a token store that is not there answers the rule\'s words and calls nothing', async () => {
+    const one = setup(undefined, undefined, false, undefined, { photoFile: false, archiveFiles: false })
+    expect(await files(one.invoke, 'save_photo', {}, ['ph1'])).toEqual({ ok: false, error: 'Choose the picture again.' })
+    expect(await files(one.invoke, 'import_data', {}, ['arch1'])).toEqual({ ok: false, error: 'Choose the archive again.' })
+    expect(one.server.call).not.toHaveBeenCalled()
   })
 
   it('save_photo cannot be called with a path through door:call', async () => {

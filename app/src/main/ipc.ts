@@ -274,8 +274,8 @@ export function registerIpc(
     const refusal = pathRefusal(tool, isPlainObject(args) ? args : {})
     if (refusal) return refuse(refusal)
     if (deps.info && deps.info.environment !== 'production' && DRIVE_TOOLS.has(tool)) return refuse('Google Drive is not available in staging or the sandbox.')
-    // Picked CV files come as tokens (draft_cv, enrich, build_style: their `picked` PATH_ARGS rule): the paths go into
-    // that rule's argument, the window never names one.
+    // Picked files come as tokens (draft_cv, enrich, build_style: reusable CV-file tokens; save_photo, import_data: one-shot
+    // tokens of their own store; their `picked` PATH_ARGS rule): the paths go into that rule's argument, the window never names one.
     let toolArgs = isPlainObject(args) ? args : {}
     let paths: string[] = []
     if (tokens !== undefined) {

@@ -313,6 +313,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     call: async (tool, args = {}, _callId, tokens) => {
       if (!tokens) return respond(tool, args)
       if (tool === 'build_style') return { ok: true, data: { started: true } }
+      if (tool === 'save_photo') return { ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }
+      if (tool === 'import_data') return { ok: false, error: 'Nothing is imported in the preview.' }
       if (tool === 'enrich') return respond('enrich', { files: ['jane-doe-cv.pdf'] })
       const r = await respond('draft_cv', {})
       if (!r.ok) return r
