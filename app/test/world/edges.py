@@ -159,7 +159,7 @@ HTTPAdapter.send = _fake_send
 # --------------------------------------------------------------------------- door, with its edges replaced
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
-from door.core import process, sites  # noqa: E402
+from door.core import process, sites, workspace  # noqa: E402
 from door.core.phone import phone  # noqa: E402
 from door.core.sync import drive  # noqa: E402
 from door.core.models import JobPosting  # noqa: E402
@@ -248,7 +248,7 @@ prepare_cmd._HEARTBEAT_INTERVAL_S = 1.0
 # --------------------------------------------------------------------------- Google Drive: a folder plays the account
 _DRIVE = WORLD / "drive"
 _DRIVE.mkdir(exist_ok=True)
-drive._BASE = WORLD / "config"
+workspace.CONFIG_BASE = WORLD / "config"
 drive.is_configured = lambda: bool(world().get("drive", {}).get("configured", True))
 
 

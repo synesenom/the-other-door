@@ -160,3 +160,18 @@ def test_ensure_mcp_config_in_a_read_only_home_names_the_variable(reloaded, tmp_
     monkeypatch.setattr(ws.os, "replace", boom)
     with pytest.raises(RuntimeError, match="DOOR_HOME"):
         ws.ensure_mcp_config()
+
+
+def test_config_dir_follows_the_one_override(monkeypatch, tmp_path):
+    from door.core.phone import instances
+
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "cfg")
+    assert workspace.config_dir() == tmp_path / "cfg"
+    assert instances._path() == tmp_path / "cfg" / "instances.json"
+
+
+def test_config_dir_defaults_to_the_per_os_folder(monkeypatch, tmp_path):
+    monkeypatch.setattr(workspace, "CONFIG_BASE", None)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.setattr(workspace.sys, "platform", "linux")
+    assert workspace.config_dir() == tmp_path / "door"

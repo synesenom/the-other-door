@@ -784,7 +784,7 @@ class _Drive:
     def __init__(self, monkeypatch, tmp_path):
         from door.core.sync import drive
 
-        monkeypatch.setattr(drive, "_BASE", tmp_path / "cfg")
+        monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "cfg")
         drive.write_state({"refresh_token": "rt", "account": "me@x.org"})
         self.blob, self.version, self.properties, self.uploads = None, 0, {}, 0
         monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {

@@ -8,12 +8,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from door.core import utils
-from door.core.sync import drive
+from door.core import utils, workspace
 
 
 def _path() -> Path:
-    return drive._base() / "instances.json"
+    return workspace.config_dir() / "instances.json"
 
 
 def read() -> dict[str, dict]:

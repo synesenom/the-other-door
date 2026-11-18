@@ -32,7 +32,7 @@ from pathlib import Path
 
 import requests
 
-from door.core import utils
+from door.core import utils, workspace
 from door.core.progress import report
 
 # The OAuth client of The other door (a Google Cloud "Desktop app" client, scope
@@ -65,10 +65,6 @@ _API = "https://www.googleapis.com"
 _FOLDER_MIME = "application/vnd.google-apps.folder"
 _TIMEOUT = 60
 
-# Where drive.json lives; None = the per-OS default. Tests point it at a temp dir.
-_BASE: Path | None = None
-
-
 class DriveError(RuntimeError):
     """A Drive call failed (not connected, revoked, refused, unreachable)."""
 
@@ -78,18 +74,8 @@ class DriveOffline(DriveError):
 
 
 # --------------------------------------------------------------------------- state
-def _base() -> Path:
-    if _BASE is not None:
-        return Path(_BASE)
-    if sys.platform == "win32":
-        root = os.environ.get("APPDATA")
-        return (Path(root) if root else Path.home() / "AppData" / "Roaming") / "door"
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    return (Path(xdg) if xdg else Path.home() / ".config") / "door"
-
-
 def state_path() -> Path:
-    return _base() / "drive.json"
+    return workspace.config_dir() / "drive.json"
 
 
 def read_state() -> dict | None:

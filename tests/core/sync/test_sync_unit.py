@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from door.core import workspace
 from door.core.sync import sync
 
 
@@ -79,7 +80,7 @@ class FakeDrive:
     """Stands in for Google Drive: one blob and a version counter."""
 
     def __init__(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(drive, "_BASE", tmp_path / "cfg")
+        monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "cfg")
         drive.write_state({"refresh_token": "rt", "account": "me@x.org"})
         self.blob = None
         self.version = 0
@@ -233,7 +234,7 @@ def test_first_sync_with_data_on_both_sides_conflicts(world):
 
 
 def test_sync_now_when_not_connected(tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path / "none")
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "none")
     with pytest.raises(drive.DriveError, match="not connected"):
         sync.sync_now()
 

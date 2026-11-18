@@ -15,6 +15,7 @@ import responses
 
 from tests.paths import REPO_ROOT
 
+from door.core import workspace
 from door.core.sync import drive
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -31,40 +32,40 @@ def configured(monkeypatch):
 @pytest.fixture
 def state(tmp_path, monkeypatch):
     """A connected computer: a state file with a still-valid access token."""
-    monkeypatch.setattr(drive, "_BASE", tmp_path / "cfg")
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "cfg")
     drive.write_state({"refresh_token": "rt", "access_token": "at", "expires_at": 9e12, "account": "me@x.org"})
     return tmp_path / "cfg" / "drive.json"
 
 
 # --------------------------------------------------------------------------- state
 def test_state_path_defaults_to_dot_config(monkeypatch, tmp_path):
-    monkeypatch.setattr(drive, "_BASE", None)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", None)
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     assert drive.state_path() == tmp_path / ".config" / "door" / "drive.json"
 
 
 def test_state_path_honours_xdg(monkeypatch, tmp_path):
-    monkeypatch.setattr(drive, "_BASE", None)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", None)
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
     assert drive.state_path() == tmp_path / "xdg" / "door" / "drive.json"
 
 
 def test_state_path_on_windows_uses_appdata(monkeypatch, tmp_path):
-    monkeypatch.setattr(drive, "_BASE", None)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", None)
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setenv("APPDATA", str(tmp_path / "roaming"))
     assert drive.state_path() == tmp_path / "roaming" / "door" / "drive.json"
 
 
 def test_read_state_is_none_when_absent(tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     assert drive.read_state() is None
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions")
 def test_write_state_is_private(tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path / "cfg")
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "cfg")
     drive.write_state({"refresh_token": "x"})
     assert stat.S_IMODE(os.stat(tmp_path / "cfg").st_mode) == 0o700
     assert stat.S_IMODE(os.stat(tmp_path / "cfg" / "drive.json").st_mode) == 0o600
@@ -77,7 +78,7 @@ def test_write_state_is_private(tmp_path, monkeypatch):
 def test_connect_refuses_while_unconfigured(monkeypatch, tmp_path):
     import webbrowser
 
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     monkeypatch.setattr(drive, "CLIENT_ID", "")
     monkeypatch.setattr(drive, "CLIENT_SECRET", "")
     opened = []
@@ -92,7 +93,7 @@ def test_connect_looks_up_the_browser_at_call_time(monkeypatch, tmp_path):
     # A default bound at import time escapes a patched `webbrowser.open` (tests opened real tabs).
     import webbrowser
 
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     monkeypatch.setattr(drive, "CLIENT_ID", "id")
     monkeypatch.setattr(drive, "CLIENT_SECRET", "secret")
     seen = []
@@ -123,7 +124,7 @@ def _browser(query_for):
 
 @responses.activate
 def test_connect_runs_pkce_loopback_and_stores_tokens(configured, tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     responses.post(TOKEN_URL, json={"access_token": "at", "refresh_token": "rt", "expires_in": 3600})
     responses.get(f"{API}/drive/v3/about", json={"user": {"emailAddress": "me@x.org"}})
     browser, seen = _browser(lambda q: {"code": "abc", "state": q["state"]})
@@ -143,7 +144,7 @@ def test_connect_runs_pkce_loopback_and_stores_tokens(configured, tmp_path, monk
 
 @responses.activate
 def test_connect_rejects_a_wrong_state(configured, tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     browser, _ = _browser(lambda q: {"code": "abc", "state": "forged"})
     with pytest.raises(drive.DriveError, match="state"):
         drive.connect(open_browser=browser, timeout=10)
@@ -152,7 +153,7 @@ def test_connect_rejects_a_wrong_state(configured, tmp_path, monkeypatch):
 
 @responses.activate
 def test_connect_surfaces_the_url_when_no_browser_opens(configured, tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     with pytest.raises(drive.DriveError, match="no answer") as exc:
         drive.connect(open_browser=lambda url: False, timeout=0.2)
     assert "accounts.google.com" in str(exc.value)
@@ -160,7 +161,7 @@ def test_connect_surfaces_the_url_when_no_browser_opens(configured, tmp_path, mo
 
 @responses.activate
 def test_connect_shows_the_url_even_when_the_browser_opens(configured, tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     shown = []
     with pytest.raises(drive.DriveError, match="no answer"):
         drive.connect(open_browser=lambda url: True, timeout=0.2, show_url=shown.append)
@@ -169,14 +170,14 @@ def test_connect_shows_the_url_even_when_the_browser_opens(configured, tmp_path,
 
 @responses.activate
 def test_connect_times_out(configured, tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     with pytest.raises(drive.DriveError, match="no answer"):
         drive.connect(open_browser=lambda url: True, timeout=0.2)
 
 
 @responses.activate
 def test_connect_reports_a_denied_consent(configured, tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     browser, _ = _browser(lambda q: {"error": "access_denied", "state": q["state"]})
     with pytest.raises(drive.DriveError, match="access_denied"):
         drive.connect(open_browser=browser, timeout=10)
@@ -200,7 +201,7 @@ def test_revoked_grant_says_to_reconnect(configured, state):
 
 
 def test_access_token_without_state_says_not_connected(tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     with pytest.raises(drive.DriveError, match="not connected"):
         drive.access_token()
 
@@ -369,7 +370,7 @@ def test_disconnect_swallows_a_failed_revoke(state):
 
 
 def test_disconnect_when_not_connected(tmp_path, monkeypatch):
-    monkeypatch.setattr(drive, "_BASE", tmp_path)
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path)
     assert drive.disconnect() is False
 
 

@@ -24,6 +24,21 @@ BACKUPS_DIR = HOME / "backups"   # what `import` replaced, one folder per import
 UPSKILL_DIR = HOME / "upskill"   # `cv gaps` / `skill_gaps` reports
 MCP_CONFIG = HOME / ".mcp.json"   # the checkout's committed file, or the one `ensure_mcp_config` writes
 
+# The per-user config folder (`drive.json`, `instances.json`); None = the per-OS default. Tests point it at a temp dir.
+CONFIG_BASE: Path | None = None
+
+
+def config_dir() -> Path:
+    """The per-OS config folder of The other door (outside `profile/` and `jobs/`), or `CONFIG_BASE`."""
+    if CONFIG_BASE is not None:
+        return Path(CONFIG_BASE)
+    if sys.platform == "win32":
+        root = os.environ.get("APPDATA")
+        return (Path(root) if root else Path.home() / "AppData" / "Roaming") / "door"
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    return (Path(xdg) if xdg else Path.home() / ".config") / "door"
+
+
 def mcp_config_entry() -> dict:
     """The `.mcp.json` content that starts the door server with the interpreter running now."""
     env = {"PYTHONPATH": str(REPO_ROOT / "src"), "DOOR_HOME": str(HOME), "PYTHONUTF8": "1"}  # never the code page (#132)

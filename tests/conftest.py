@@ -172,13 +172,13 @@ def _no_drive_sync(tmp_path, monkeypatch):
     itself uses `enable_sync_hooks`."""
     import webbrowser
 
-    from door.core import lock
+    from door.core import lock, workspace
     from door.core.sync import drive
     from door.core.sync import sync
 
     sync.drain_notes()
 
-    monkeypatch.setattr(drive, "_BASE", tmp_path / "drive-config")
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "drive-config")
     monkeypatch.setattr(drive, "CLIENT_ID", "")  # the real client never reaches a test
     monkeypatch.setattr(drive, "CLIENT_SECRET", "")
     monkeypatch.setattr(lock, "pre_acquire_hook", lambda purpose, jobs_dir: None)
@@ -203,7 +203,7 @@ def _no_start_upgrade(monkeypatch):
 @pytest.fixture
 def enable_sync_hooks(monkeypatch):
     """Put the real Drive sync hooks back on the ledger lock (for tests with a fake Drive)."""
-    from door.core import lock
+    from door.core import lock, workspace
 
     monkeypatch.setattr(lock, "pre_acquire_hook", lock._default_pre)
     monkeypatch.setattr(lock, "post_release_hook", lock._default_post)
