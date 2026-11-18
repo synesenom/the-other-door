@@ -49,7 +49,7 @@ export async function saveProfile(state: WizardState): Promise<SaveResult> {
   }
   // The CV style build runs on in the background beside the first run; it is optional, so a refusal says nothing.
   const source = state.style ? styleSource(state) : null
-  if (source) await window.door.buildStyle(source).catch(() => undefined)
+  if (source) await call('build_style', {}, { tokens: [source] }).catch(() => undefined)
   try {
     return { ok: true, profile: await call<ShowProfile>('show_profile') }
   } catch (e) {

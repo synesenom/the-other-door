@@ -234,8 +234,9 @@ renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-serv
   passes a path. `door:pick-cv-files` runs the open dialog in the main process
   (`src/main/cv-sources.ts`: pdf, docx, md, markdown, txt, up to 25 MB, checked again when used)
   and answers `{files: [{token, name, size}], refused}`; the paths stay in a registry in main
-  under random tokens, with no way to read it. `door:draft-cv` takes `{files: tokens, urls}`,
-  resolves the tokens, refuses a non-http address and a linkedin.com one, and calls `draft_cv`
+  under random tokens, with no way to read it. `door:call` takes `tokens` as its fourth argument for the tools whose `PATH_ARGS` rule is `picked`
+  (`draft_cv`, `enrich`, `build_style`): it resolves them into the paths of that argument, and for
+  `draft_cv` (`sources` are its pages) refuses a non-http address and a linkedin.com one and calls it
   (960 s). `door:drop-cv-files` does the same for a drop: the preload turns each dropped `File` into its path with `webUtils.getPathForFile`, out of the page's reach, and the same checks and tokens apply. `door:cv-sources-clear` empties the registry when the wizard closes. `door:call`
   refuses every argument that names a local file (`PATH_ARGS` in `ipc.ts`: `draft_cv` `sources`
   other than http(s) addresses, `import_posting` `path`, `export_data` `path`, `import_data`

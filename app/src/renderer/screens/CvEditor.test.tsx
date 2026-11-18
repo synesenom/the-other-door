@@ -390,26 +390,25 @@ describe('CvEditor, the CV file', () => {
     h.cvFile.mockResolvedValue('new.pdf') // main remembers the file it reads
     await user.click(replace)
     const dialog = await screen.findByRole('dialog', { name: 'Add from your CV file' })
-    expect(h.enrichFile).toHaveBeenCalledWith('t1')
+    expect(h.call).toHaveBeenCalledWith('enrich', {}, undefined, ['t1'])
     await user.click(await within(dialog).findByRole('checkbox', { name: /dbt/ }))
     await user.click(within(dialog).getByRole('button', { name: 'Add 1 to my Master CV' }))
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('enrich', { apply: [1] }))
     expect(await screen.findByText('Spoke at PyData', { selector: '.md-added' })).toBeInTheDocument()
     expect(within(screen.getByRole('group', { name: 'Sources' })).getByText('new.pdf')).toBeInTheDocument()
-    expect(h.draftCv).not.toHaveBeenCalled()
+    expect(h.call.mock.calls.some((c) => c[0] === 'draft_cv')).toBe(false)
   })
 
   it('with no Master CV yet, a CV file is drafted into it whole', async () => {
     const user = userEvent.setup()
-    const h = mockDoor({ show_profile: profile({ text: '' }), save_cv: { cv_path: '/p/cv.md', backup: null }, ...NO_STORIES })
+    const h = mockDoor({ show_profile: profile({ text: '' }), draft_cv: { markdown: '# Ada\n\n## New\n', sources: [], provenance: [], todos: [] }, save_cv: { cv_path: '/p/cv.md', backup: null }, ...NO_STORIES })
     h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
-    h.draftCv.mockResolvedValue({ ok: true, data: { markdown: '# Ada\n\n## New\n', sources: [], provenance: [], todos: [] } })
     render(<Profile onDraft={vi.fn()} onSaved={vi.fn()} />)
     await user.click(await screen.findByRole('button', { name: 'Add a CV file…' }))
     expect(await screen.findByRole('heading', { name: 'New' })).toBeInTheDocument()
-    expect(h.draftCv).toHaveBeenCalledWith({ files: ['t1'], urls: [] })
+    expect(h.call).toHaveBeenCalledWith('draft_cv', { sources: [] }, undefined, ['t1'])
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_cv', { markdown: '# Ada\n\n## New\n', backup: true }), { timeout: 3000 })
-    expect(h.enrichFile).not.toHaveBeenCalled()
+    expect(h.call.mock.calls.some((c) => c[0] === 'enrich')).toBe(false)
   })
 
   it('a new CV file builds the style of your own again from it', async () => {
@@ -436,7 +435,7 @@ describe('CvEditor, the CV file', () => {
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Claude did not answer')
     expect(screen.getByRole('heading', { name: 'Experience' })).toBeInTheDocument()
     expect(h.styleFromCvFile).not.toHaveBeenCalled()
-    expect(h.draftCv).not.toHaveBeenCalled()
+    expect(h.call.mock.calls.some((c) => c[0] === 'draft_cv')).toBe(false)
   })
 
   it('a refused file is said by its reason', async () => {
@@ -446,7 +445,7 @@ describe('CvEditor, the CV file', () => {
     render(<CvEditor onDraft={vi.fn()} />)
     await user.click(await screen.findByRole('button', { name: 'Add a CV file…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('cv.exe: not a CV file')
-    expect(h.draftCv).not.toHaveBeenCalled()
+    expect(h.call.mock.calls.some((c) => c[0] === 'draft_cv')).toBe(false)
   })
 })
 
