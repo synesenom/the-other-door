@@ -47,9 +47,6 @@ updates:
       # Electron is pinned on one major line (CLAUDE.md); moving it is a deliberate change.
       - dependency-name: electron
         update-types: [version-update:semver-major]
-      # TypeScript 7 needs a declaration for the side-effect CSS imports first (#15).
-      - dependency-name: typescript
-        update-types: [version-update:semver-major]
       # The app runs on Node 22: its types stay on the same major.
       - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
