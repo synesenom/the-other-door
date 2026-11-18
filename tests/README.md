@@ -10,7 +10,7 @@ tests/
 │   ├── discovery/         # the discovery sources' tests, with their fixtures/<source>/
 │   └── feeds/             # the employer feed platforms' tests, with their fixtures/<site>/
 ├── commands/              # one test_<command>_cli.py per CLI command, plus the MCP tool list
-├── core/                  # src/door/core/: doctor, installers, sites, history, lock, candidates, runs, …
+├── core/                  # src/door/core/: doctor, sites, lock, …; sync/, phone/, downloads/, jobs/ and employers/ mirror the subpackages
 ├── pipeline/              # src/door/pipeline/: `find`'s five steps (search, discover, follow, collect, match), the step display, and all of them together (`test_pipeline_countries_end_to_end.py`: one `find` per country and ad languages)
 ├── i18n/                  # src/door/i18n/: every language and country data file, detection
 ├── matching/              # prefilter, dedup, condense, language, prescreen, scorer; fixtures/golden/

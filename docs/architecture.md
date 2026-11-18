@@ -517,6 +517,8 @@ Its user-facing line goes into the release notes. `tests/core/test_stored_unit.p
 
 ## Supporting modules (`src/door/core/`)
 
+Five groups are subpackages (`sync/`, `phone/`, `downloads/`, `jobs/`, `employers/`; their `__init__.py` are empty and modules are imported by their full path, e.g. `door.core.jobs.tracker`); the rest is flat. Where a row below names a module, it is in the group named in `CLAUDE.md`'s `src/door/core/` row.
+
 | Module | Purpose |
 |--------|---------|
 | `models.py` | `JobPosting`, `make_job_id()`, `load_posting()` / `save_posting()` |
