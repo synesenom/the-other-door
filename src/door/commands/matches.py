@@ -18,6 +18,7 @@ from door.commands import status as status_cmd
 from door.core import sites, workspace
 from door.tailoring import facts as facts_mod
 from door.render import html_doc, readability
+from door.render import page as page_mod
 
 
 def _list_core(
@@ -436,7 +437,7 @@ def _readability(output_dir: Path, max_pages: int) -> list[dict] | None:
             body_path = output_dir / f"{material}.html"
             body = body_path.read_text(encoding="utf-8") if body_path.is_file() else ""
             if material == "cv":
-                body = compile_cmd.placed_cv(body, config)
+                body = page_mod.placed_cv(body, config)
             checks = readability.check_pdf(output_dir / f"{material}.pdf", body, name, cv=material == "cv",
                                            max_pages=max_pages)
             found += [{"file": material, **p} for p in checks]

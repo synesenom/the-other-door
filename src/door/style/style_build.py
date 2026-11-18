@@ -22,11 +22,11 @@ from pypdfium2 import PdfiumError
 
 from door import i18n
 from door.commands import _common as common
-from door.commands import compile as compile_cmd
 from door.core import claude_cli, pinned, progress as progress_mod, templates, utils, workspace
 from door.style import fonts
 from door.style import cv_body, font_measure, style_compare, style_extract, style_icons, style_preview, style_structure
 from door.render import html_doc, html_guard, html_pdf, pdf_render, readability
+from door.render import page as page_mod
 
 STYLIST = "stylist"
 _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
@@ -273,7 +273,7 @@ def original_text(style: dict, pdf: Path) -> str:
 
 
 def column_problems(style: dict, render: dict, placed: str) -> list[str]:
-    """Where the print (`render`, `style_extract` of it) of the body `placed` (as `compile._place_columns` wrapped it)
+    """Where the print (`render`, `style_extract` of it) of the body `placed` (as `page.place_columns` wrapped it)
     puts its columns against the original's (`style`): each section heading of `div.side` printed nearer a main band
     of the original or across two bands, and each of `div.main` nearer a side band or across two, with where it
     printed and where its column is. A heading is found as a piece of a printed line (`_pieces`: its runs joined,
@@ -307,7 +307,7 @@ def body_column_problems(style: dict, body: str, columns: templates.Columns | No
     """What the sample `body`, placed in `columns`, puts in the other column than the original has it: each line of
     the original (of `_MIN_LINE` characters or more) found in the body's side column that the original has in a main
     band, or in its main column that it has in a side band. `[]` without a side band or a side column."""
-    cols = html_doc.columns(compile_cmd._place_columns(body, columns))
+    cols = html_doc.columns(page_mod.place_columns(body, columns))
     if cols is None or not _has_side(style):
         return []
     texts = {"main": readability.normalise(html_doc.text(cols[1])), "side": readability.normalise(html_doc.text(cols[2]))}
@@ -525,7 +525,7 @@ class _Session:
         Raises:
             _Stop: the print has no text to read back.
         """
-        pdf, placed, _ = compile_cmd.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
+        pdf, placed, _ = page_mod.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
                                                 columns=self.manifest.columns, photo=self.photo)
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
@@ -659,7 +659,7 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     for variant, v in _stress_variants(cv_md).items():
         progress_mod.report(f"stress render: {variant}", stage="style")
         try:
-            pdf, placed, photo = compile_cmd.print_page(
+            pdf, placed, photo = page_mod.print_page(
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
                 columns=s.manifest.columns, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
@@ -696,7 +696,7 @@ def _letter(s: _Session, template: str, cv_md: str) -> tuple[str | None, list[st
         elif not (problems := html_guard.template_problems(candidate, s.manifest, "letter")):
             candidate = _clean(candidate, "letter")
             try:
-                pdf = compile_cmd.print_page(body, candidate, s.work / _CV_FILE, "en", s.work / "letter", "letter")[0]
+                pdf = page_mod.print_page(body, candidate, s.work / _CV_FILE, "en", s.work / "letter", "letter")[0]
                 problems = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, body, None)]
                 problems += photo_box_problems(s.style, style_extract.painted(pdf))
                 if (pages := pdf_render.get_page_count(pdf)) != 1:

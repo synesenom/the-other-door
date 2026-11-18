@@ -17,7 +17,7 @@ from PIL import Image
 from door import i18n
 from door.commands import compile as compile_cmd
 from door.core import chromium, workspace
-from door.render import pdf_render, readability
+from door.render import page, pdf_render, readability
 from paths import REPO_ROOT, TESTS_DIR
 from pdf_utils import font_names, image_count, page_count
 
@@ -361,6 +361,6 @@ def test_an_entry_heading_never_starts_a_line_with_its_separator(tmp_path, width
                 "body { font: 12pt sans-serif; } .photo { width: 1pt; }</style></head><body>\n<<body>>\n</body></html>")
     body = ('<div class="entry"><h3><span class="role">Junior Financial Analyst</span><span class="sep"> | </span>'
             '<span class="org">Example Co</span><span class="sep"> - </span><span class="dates">2020 - 2023</span></h3></div>')
-    pdf = compile_cmd.print_page(body, template, REPO_ROOT / "profile.example" / "cv.template.html", "en", tmp_path, "cv")[0]
+    pdf = page.print_page(body, template, REPO_ROOT / "profile.example" / "cv.template.html", "en", tmp_path, "cv")[0]
     lines = [line.strip() for line in pdf_render.page_texts(pdf)[0].splitlines() if line.strip()]
     assert len(lines) > 1 and not [line for line in lines if line[0] in "|-"], lines
