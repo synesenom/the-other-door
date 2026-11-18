@@ -86,3 +86,21 @@ def test_is_alive_is_true_for_this_process_and_false_for_a_gone_one():
 
     assert process.is_alive(os.getpid())
     assert not process.is_alive(2**22 + 12345)
+
+
+def test_a_group_is_killed_by_its_id_even_when_its_leader_is_gone(monkeypatch):
+    sent = []
+    monkeypatch.setattr(process.os, "killpg", lambda pgid, sig: sent.append((pgid, sig)), raising=False)
+    monkeypatch.setattr(process.os, "getpgid", lambda pid: (_ for _ in ()).throw(ProcessLookupError()), raising=False)
+    monkeypatch.setattr(process.sys, "platform", "darwin")
+    process.kill_tree(4242, signal.SIGKILL, group=True)
+    assert sent == [(4242, signal.SIGKILL)]
+
+
+def test_a_group_nobody_may_signal_is_left_alone(monkeypatch):
+    def refuse(pgid, sig):
+        raise PermissionError
+
+    monkeypatch.setattr(process.os, "killpg", refuse, raising=False)
+    monkeypatch.setattr(process.sys, "platform", "darwin")
+    process.kill_tree(4242, group=True)

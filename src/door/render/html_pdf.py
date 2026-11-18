@@ -117,7 +117,7 @@ def _launch(args: list[str]) -> subprocess.Popen:
 
 def _kill_tree(proc) -> None:
     """The browser and its children."""
-    process.kill_tree(proc.pid, getattr(signal, "SIGKILL", signal.SIGTERM))  # no SIGKILL on Windows: taskkill ends it
+    process.kill_tree(proc.pid, getattr(signal, "SIGKILL", signal.SIGTERM), group=True)  # a session of its own
     try:
         proc.wait(timeout=5)
     except (OSError, subprocess.SubprocessError, AttributeError):

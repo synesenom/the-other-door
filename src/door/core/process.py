@@ -47,14 +47,16 @@ def is_alive(pid: int) -> bool:
     return True
 
 
-def kill_tree(pid: int, sig: int = signal.SIGTERM) -> None:
+def kill_tree(pid: int, sig: int = signal.SIGTERM, *, group: bool = False) -> None:
     """End a process this module started, with everything it started: each runs in a session of its own
-    (`spawn_detached`), and Python on a Mac starts the real server as a child of a launcher. A pid that leads no
-    group is ended alone: the group is somebody else's. On Windows the whole tree is always ended (taskkill)."""
+    (`spawn_detached`), and Python on a Mac starts the real server as a child of a launcher. With `group` the pid
+    is known to be a session leader's (its id is the group's, still true after the leader was reaped), and the group
+    is signalled whatever became of the leader; otherwise a pid that leads no group is ended alone: the group is
+    somebody else's. On Windows the whole tree is always ended (taskkill), `sig` and `group` unused."""
     try:
         if sys.platform == "win32":
             subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True, timeout=15, stdin=subprocess.DEVNULL)
-        elif os.getpgid(pid) == pid:
+        elif group or os.getpgid(pid) == pid:
             os.killpg(pid, sig)
         else:
             os.kill(pid, sig)
