@@ -52,6 +52,7 @@ import threading
 from pathlib import Path
 
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import TextContent
 
 from door import i18n
@@ -155,12 +156,25 @@ class _DoorMCP(FastMCP):
         if refusal is not None:  # logged once, by the upgrade, not at every call
             return [TextContent(type="text", text=json.dumps({"error": refusal}, indent=2))]
         try:
+            self._refuse_unknown_arguments(name, arguments)
             result = await super().call_tool(name, arguments)
         except Exception as exc:
             problem_log.crash(f"tool {name}", exc.__cause__ or exc)  # FastMCP wraps it in a ToolError
             raise
         _log_answer(name, _answer_of(result))
         return result
+
+
+    def _refuse_unknown_arguments(self, name, arguments) -> None:
+        """FastMCP's argument model drops a key it does not know; a misnamed one must fail, not take the default (#268)."""
+        tool = self._tool_manager.get_tool(name)
+        if tool is None or not arguments:
+            return
+        fields = tool.fn_metadata.arg_model.model_fields
+        known = {info.alias or field for field, info in fields.items()} | set(fields)
+        unknown = sorted(k for k in arguments if k not in known)
+        if unknown:
+            raise ToolError(f"{name} takes no argument {', '.join(repr(k) for k in unknown)}")
 
 
 mcp = _DoorMCP("door")
