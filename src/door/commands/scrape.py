@@ -10,6 +10,7 @@ import re
 import threading
 from pathlib import Path
 
+from door.core import utils
 from door.commands import _common as common
 from door import i18n
 from door.core import lock, profile_loader
@@ -94,8 +95,7 @@ class _SiteRun:
             return
         integrity.apply(posting)
         posting_path = self.out_dir / f"{posting['id']}.json"
-        with posting_path.open("w", encoding="utf-8") as f:
-            json.dump(posting, f, indent=2, default=str)
+        utils.write_atomic(posting_path, json.dumps(posting, indent=2, default=str))
         self.candidates_paths.append(posting_path)
         if pid:
             self.store.record(job_id, pid, posting.get("url", ""), self.site)

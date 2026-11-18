@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from door.core import utils
 from door import i18n
 
 _REMOTE_RE = i18n.compile_words(i18n.marker_words("remote"))
@@ -162,7 +163,7 @@ def prefilter(candidates_dir: Path, config: dict) -> list[Path]:
             data["score"] = 0.0
             data["score_reason"] = drop_reason
             try:
-                json_path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+                utils.write_atomic(json_path, json.dumps(data, indent=2, default=str))
             except OSError:
                 pass  # best-effort write
         else:

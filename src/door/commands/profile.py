@@ -9,6 +9,7 @@ from pathlib import Path
 
 import click
 
+from door.core import utils
 from door import i18n
 from door.commands import _prompts
 from door.core import workspace
@@ -893,7 +894,7 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
 
     config_path = profile_dir / "config.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+    utils.write_atomic(config_path, json.dumps(merged, indent=2))
     disclaimers = [
         {"key": s["key"], "text": s["disclaimer"]}
         for s in map(discovery_sources.info, discovery_sources.SOURCES)

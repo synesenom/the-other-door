@@ -28,6 +28,7 @@ from difflib import SequenceMatcher
 from functools import lru_cache
 from pathlib import Path
 
+from door.core import utils
 from door import i18n
 from door.matching import title_fit
 from door.matching.prefilter import _is_location_compatible
@@ -224,7 +225,7 @@ def prescreen(paths: list[Path], config: dict, profile_terms: set[str]) -> list[
             data["score"] = 0.0
             data["score_reason"] = f"prescreen: {score:.2f} below cutoff"
         try:
-            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+            utils.write_atomic(path, json.dumps(data, indent=2, default=str))
         except OSError:
             pass
 

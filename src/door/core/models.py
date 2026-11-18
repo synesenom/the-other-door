@@ -9,6 +9,8 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel
 
+from door.core import utils
+
 
 class JobPosting(BaseModel):
     id: str
@@ -72,4 +74,4 @@ def load_posting(path: Path) -> JobPosting:
 def save_posting(posting: JobPosting, path: Path) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(posting.model_dump_json(indent=2), encoding="utf-8")
+    utils.write_atomic(path, posting.model_dump_json(indent=2))
