@@ -222,6 +222,8 @@ export function CvEditor({
   const [cvFile, setCvFile] = useState<string | null>(null)
   const [drafting, setDrafting] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
+  // counts the CV files drafted from here: the style of the user's own is built again from a new one
+  const [replaced, setReplaced] = useState(0)
   const editorId = useId()
   const ids = useId()
   // A preview marker opens the editor with its gap selected, so typing replaces it (as the onboarding review does).
@@ -292,6 +294,7 @@ export function CvEditor({
       setText(r.markdown)
       setView('edit')
       setMessage(`Drafted from ${file.name}. Check it below and Save.`)
+      setReplaced((n) => n + 1)
       window.door.cvFile().then(setCvFile, () => undefined)
     } catch (e) {
       setFileError(errorText(e))
@@ -417,14 +420,7 @@ export function CvEditor({
           />
         )}
       </section>
-      {style && (
-        <section className="part" aria-labelledby={`${ids}-style`}>
-          <h2 className="display-s" id={`${ids}-style`}>
-            Style
-          </h2>
-          <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} />
-        </section>
-      )}
+      {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
       <section className="part" aria-labelledby={`${ids}-content`}>
         <h2 className="display-s" id={`${ids}-content`}>
           Content
@@ -466,21 +462,22 @@ export function CvEditor({
         ) : (
           <Markdown text={text} className="cv-preview" onGap={goToGap} marked={added ?? undefined} />
         )}
-        <div className="profile-save">
-          {/* always there, so Save does not move when the first change makes Undo possible */}
-          <button type="button" className="quiet" disabled={!dirty || saving} onClick={() => setText(saved)}>
-            Undo changes
-          </button>
-          <button type="button" className="primary" disabled={!dirty || saving || text.trim() === ''} onClick={() => void save()}>
-            Save
-          </button>
-          {saving ? <Spinner message="Saving…" /> : message ? <p className="small">{message}</p> : dirty ? <p className="small muted">Unsaved changes</p> : null}
-          {/* no field's error: the box, in the bar on a line of its own, so it is seen from wherever Save was pressed */}
-          {error && (
-            <ErrorBox text={error} />
-          )}
-        </div>
       </section>
+      {/* the save bar at the CV page's foot, sticky: in reach from Sources and Style too */}
+      <div className="profile-save">
+        {/* always there, so Save does not move when the first change makes Undo possible */}
+        <button type="button" className="quiet" disabled={!dirty || saving} onClick={() => setText(saved)}>
+          Undo changes
+        </button>
+        <button type="button" className="primary" disabled={!dirty || saving || text.trim() === ''} onClick={() => void save()}>
+          Save
+        </button>
+        {saving ? <Spinner message="Saving…" /> : message ? <p className="small">{message}</p> : dirty ? <p className="small muted">Unsaved changes</p> : null}
+        {/* no field's error: the box, in the bar on a line of its own, so it is seen from wherever Save was pressed */}
+        {error && (
+          <ErrorBox text={error} />
+        )}
+      </div>
     </div>
   )
 }

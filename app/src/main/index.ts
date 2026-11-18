@@ -230,7 +230,6 @@ app.whenReady().then(() => {
     // The CV a style is built from (Profile → CV): chosen here, the build started here; its dialog opens at the CV
     // the set-up read (the path kept in a file of the app's own folder, never sent anywhere).
     styleFile: createStyleFile({
-      showOpenDialog,
       stat,
       realpath,
       exists: existsSync,

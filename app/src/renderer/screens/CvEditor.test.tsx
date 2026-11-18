@@ -7,6 +7,7 @@ import { CvEditor } from './CvEditor'
 
 afterEach(cleanup)
 
+const STYLE_SET = { cv: ['/h/cv_page_1.png'], letter: [], version: 'v', two_column: false }
 const CV = '# Ada Lovelace\n\n## Experience\n\n- Analyst at Acme\n'
 
 const profile = (cv: Partial<{ text: string | null; is_example: boolean; exists: boolean }> = {}, sources: string[] = []) => ({
@@ -330,6 +331,19 @@ describe('CvEditor, the CV file', () => {
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_cv', { markdown: '# Ada\n\n## New\n' }))
   })
 
+  it('a new CV file builds the style of your own again from it', async () => {
+    const user = userEvent.setup()
+    const h = mockDoor({ show_profile: profile(), show_style: { styles: { default: STYLE_SET, like: STYLE_SET }, in_use: 'like', candidate: false } })
+    h.cvFile.mockResolvedValue('old.pdf')
+    h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
+    h.draftCv.mockResolvedValue({ ok: true, data: { markdown: '# Ada\n', sources: [], provenance: [], todos: [] } })
+    render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
+    await screen.findByRole('img', { name: /Your CV/ })
+    expect(h.styleFromCvFile).not.toHaveBeenCalled()
+    await user.click(await screen.findByRole('button', { name: 'Replace…' }))
+    await waitFor(() => expect(h.styleFromCvFile).toHaveBeenCalledTimes(1))
+  })
+
   it('a file that cannot be drafted from is said, the CV untouched', async () => {
     const user = userEvent.setup()
     const h = mockDoor({ show_profile: profile() })
@@ -358,7 +372,7 @@ describe('CvEditor, the Style', () => {
   it('is above the CV, and its previews are read again after a save', async () => {
     const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: null }, ...styled })
     render(<CvEditor onDraft={vi.fn()} onSaved={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
-    await screen.findByRole('img', { name: /The other door's/ })
+    await screen.findByRole('img', { name: /The other door/ })
     const row = screen.getByRole('heading', { name: 'Style' })
     expect(row.compareDocumentPosition(screen.getByText('Your CV')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     h.call.mockClear()

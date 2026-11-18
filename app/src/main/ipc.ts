@@ -41,7 +41,7 @@ export const CHANNELS = {
   /** The CV style build: a CV file the wizard read, by its token. */
   buildStyle: 'door:build-style',
   /** A CV chosen from Profile → CV to build a style from: the dialog and the build both run in main (style-file.ts). */
-  chooseStyleFile: 'door:choose-style-file',
+  styleFromCvFile: 'door:style-from-cv-file',
   /** Sent to the window once a file is chosen for it, before its structure is read. */
   styleReading: 'door:style-reading',
   /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
@@ -226,7 +226,7 @@ export function registerIpc(
     /** The CV photo's file (photo-file.ts). */
     photoFile?: Pick<PhotoFile, 'pick' | 'take'>
     /** The CV a style is built from (style-file.ts). */
-    styleFile?: Pick<StyleFile, 'choose' | 'remember' | 'name'>
+    styleFile?: Pick<StyleFile, 'current' | 'remember' | 'name'>
     /** The problem log (problem-log.ts): what the window was refused. */
     problemLog?: ProblemLog
     /** The update check (updates.ts). */
@@ -398,11 +398,10 @@ export function registerIpc(
   }
   ipcMain.handle(CHANNELS.cvFile, async (): Promise<string | null> => (deps.info?.demo || !deps.styleFile ? null : deps.styleFile.name()))
 
-  // A style built from a CV chosen in Profile → CV: the dialog and the build both here; the window names no path.
-  ipcMain.handle(CHANNELS.chooseStyleFile, async (event): Promise<Envelope> => {
+  // A style built from the CV file (Profile → CV): the file and the build both here; the window names no path.
+  ipcMain.handle(CHANNELS.styleFromCvFile, async (event): Promise<Envelope> => {
     if (deps.info?.demo || !deps.styleFile) return { ok: false, error: 'A style cannot be built from made-up data.' }
-    const chosen = await deps.styleFile.choose()
-    if ('canceled' in chosen) return { ok: true, data: { canceled: true } }
+    const chosen = await deps.styleFile.current()
     if ('error' in chosen) return { ok: false, error: chosen.error }
     ;(event as { sender?: { send(channel: string): void } } | undefined)?.sender?.send(CHANNELS.styleReading)
     try {

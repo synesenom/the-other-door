@@ -258,23 +258,23 @@ textarea { resize: none; }
 .style-row { display: flex; flex-direction: column; gap: var(--space-3); align-items: stretch; }
 .style-row .spinner-line { margin-left: 0; margin-right: 0; }
 .style-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); align-items: start; }
-.style-card { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-width: 0; }
-.style-actions-slot > .secondary { width: max-content; white-space: nowrap; }
+.style-card { position: relative; /* holds its visually hidden "in use": the window must not grow with it */ display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-width: 0; }
 .style-thumb { display: block; width: 100%; padding: 0; background: none; border: 1px solid var(--color-border); border-radius: var(--radius-s); overflow: hidden; cursor: pointer; }
 .style-thumb .paper { display: block; width: 100%; border-radius: 0; }
 .style-sheet { box-sizing: border-box; width: 100%; aspect-ratio: 1 / 1.414; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
 .style-caption { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
-.style-mark { color: var(--color-accent); }
-/* the room of up to two choices under a card, and below the cards of one muted line and one button: the row is as
-   tall loading as loaded, whatever the state, so the next block does not move */
-.style-actions-slot { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-height: calc(2 * var(--size-control-height) + var(--space-2)); }
-.style-below { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; min-height: calc(var(--text-small-size) * var(--text-small-line) + var(--space-3) + var(--size-control-height)); }
+/* the blue dash above the sheet in use; the other card keeps its room, so the sheets line up */
+.style-dash { visibility: hidden; }
+.style-current .style-dash { visibility: visible; }
+/* the switch held while a build starts or runs */
+.style-switch-busy { opacity: 0.6; }
+.style-below { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+.style-below:empty { display: none; }
 .style-rerender { display: flex; gap: var(--space-3); align-items: center; }
 @media (hover: hover) { .style-thumb:hover { border-color: var(--color-ink); } }
 
 @media (max-width: 899px) {
   .style-cards { gap: var(--space-3); }
-  .style-actions-slot > .secondary { width: 100%; white-space: normal; height: auto; min-height: var(--size-control-height); }
   .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); }
   .page-aside { display: none; }
   .board-screen { padding: var(--space-6) var(--space-4) var(--space-8); }
@@ -444,6 +444,8 @@ legend.field-label { padding-bottom: var(--space-2); }
 .part > * { margin: 0; }
 .part-head { display: flex; flex-direction: column; gap: var(--space-1); }
 .part-head > * { margin: 0; }
+/* a heading with one control at its right (Profile → CV's Style and its switch) */
+.part-head-row { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 /* A part of a screen (the review, Profile, Settings): a serif title over a thin rule. Its heading stays with
    what it heads; the wider gap is between its fields. */
 .part > :is(.part-head, h2) + * { margin-top: calc(var(--space-4) - 28px); }
@@ -521,11 +523,12 @@ details.part > summary + * { margin-top: var(--space-4); }
 .connection-choice ul { padding-left: var(--space-5); }
 /* Profile (issue 222): the Settings column; the save bar stays in reach at the foot. */
 .profile-chips > * { margin: 0; }
-.profile-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) 0; background: var(--color-ground); }
+/* its foot 20 px from the bottom, the sidebar's: Save lines up with Find new jobs */
+.profile-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) 0 var(--space-5); background: var(--color-ground); }
 .profile-save > p { margin: 0; }
 .profile-save > .error { flex-basis: 100%; }
 /* a page that ends with its sticky save bar ends at the bar: no room to scroll below it */
-.settings:has(> .profile-save:last-child) { padding-bottom: 0; }
+.settings:has(> .profile-save:last-child, > :last-child > .profile-save:last-child) { padding-bottom: 0; }
 /* In Profile an error is a sentence under its field. */
 .field-error { margin: 0; font-size: var(--text-small-size); font-weight: 600; color: var(--color-ink); }
 .field-error::before { content: '↳ '; color: var(--color-ink-muted); }
@@ -538,9 +541,12 @@ details.part > summary + * { margin-top: var(--space-4); }
 .cv-pages-list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: var(--space-2) var(--space-3); flex-wrap: wrap; min-width: 0; }
 .cv-pages-list .chip { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%; padding-right: var(--size-gap-s); }
 /* the CV's name on the left, the Preview switch on the right; the text right under them */
-.cv-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3); }
+.cv-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .cv-head .field-name { align-items: baseline; } /* the small Markdown link on the label's line */
-.cv-head + * { margin-top: calc(-1 * var(--space-2)); }
+/* the switch keeps its 44 px to press, hanging 8 px over the space above and below, so the row is the label's height */
+.cv-head .switch { margin-block: calc(-1 * var(--space-2)); }
+/* the editor (or the preview) close under its name, past the switch's hanging 8 px; not a part's 28 px */
+.part > .cv-head + * { margin-top: calc(var(--space-2) - 28px); }
 .cv-editor .cv-text { min-height: 480px; font-size: var(--text-small-size); line-height: 1.55; }
 .cv-example { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-m); }
 .cv-preview { padding: var(--space-6); background: var(--color-page); border: 1px solid var(--color-border); border-radius: var(--radius-l); }

@@ -29,7 +29,7 @@ contextBridge.exposeInMainWorld('door', {
   pickPhoto: () => ipcRenderer.invoke('door:pick-photo'),
   savePhoto: (token: string) => ipcRenderer.invoke('door:save-photo', token),
   buildStyle: (token: string) => ipcRenderer.invoke('door:build-style', token),
-  chooseStyleFile: () => ipcRenderer.invoke('door:choose-style-file'),
+  styleFromCvFile: () => ipcRenderer.invoke('door:style-from-cv-file'),
   // A file was chosen for it: its structure is now being read.
   onStyleReading: (cb: () => void) => {
     const listener = () => cb()

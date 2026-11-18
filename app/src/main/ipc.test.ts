@@ -29,7 +29,7 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
     take: vi.fn((t: string) => (t === 'ph1' ? '/Users/ada/Pictures/me.jpg' : null)),
   }
   const styleFile = {
-    choose: vi.fn(async (): Promise<{ path: string } | { canceled: true } | { error: string }> => ({ path: '/Users/ada/my cv.pdf' })),
+    current: vi.fn(async (): Promise<{ path: string } | { error: string }> => ({ path: '/Users/ada/my cv.pdf' })),
     remember: vi.fn(async (_path: string) => undefined),
     name: vi.fn(async (): Promise<string | null> => 'my cv.pdf'),
   }
@@ -828,79 +828,42 @@ describe('the CV style build', () => {
   })
 })
 
-describe('choosing a CV to copy the style of', () => {
+describe('a style from the CV file', () => {
   const real = { demo: false }
 
-  it('the file is chosen in main and build_style gets the real path, never the window', async () => {
+  it('build_style gets the CV file\'s real path from main, never from the window', async () => {
     const { invoke, server, styleFile } = setup(async () => ({ started: true }), undefined, false, real)
-    expect(await invoke(CHANNELS.chooseStyleFile)).toEqual({ ok: true, data: { started: true } })
-    expect(styleFile.choose).toHaveBeenCalled()
+    expect(await invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: true, data: { started: true } })
+    expect(styleFile.current).toHaveBeenCalled()
     expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/my cv.pdf' }, { timeout: 120_000 })
   })
 
-  it('tells the window once a file is chosen, after the dialog and before the build', async () => {
+  it('tells the window once the file is taken, before the build', async () => {
     const { invoke, send, server } = setup(async () => ({ started: true }), undefined, false, real)
     server.call.mockImplementationOnce(async () => {
       expect(send).toHaveBeenCalledWith(CHANNELS.styleReading)
       return { started: true }
     })
-    await invoke(CHANNELS.chooseStyleFile)
+    await invoke(CHANNELS.styleFromCvFile)
     expect(send).toHaveBeenCalledWith(CHANNELS.styleReading)
   })
 
-  it('a cancelled or refused dialog tells the window nothing', async () => {
-    const { invoke, send, styleFile } = setup(undefined, undefined, false, real)
-    styleFile.choose.mockResolvedValueOnce({ canceled: true })
-    await invoke(CHANNELS.chooseStyleFile)
-    styleFile.choose.mockResolvedValueOnce({ error: 'Choose a CV as a PDF.' })
-    await invoke(CHANNELS.chooseStyleFile)
-    expect(send).not.toHaveBeenCalledWith(CHANNELS.styleReading)
-  })
-
-  it('a cancelled dialog starts nothing', async () => {
-    const { invoke, server, styleFile } = setup(undefined, undefined, false, real)
-    styleFile.choose.mockResolvedValueOnce({ canceled: true })
-    expect(await invoke(CHANNELS.chooseStyleFile)).toEqual({ ok: true, data: { canceled: true } })
-    expect(server.call).not.toHaveBeenCalled()
-  })
-
-  it('a file refused in main, or by the tool, reaches the window as the reason', async () => {
+  it('a CV file refused in main, or by the tool, reaches the window as the reason, and starts nothing', async () => {
     const one = setup(undefined, undefined, false, real)
-    one.styleFile.choose.mockResolvedValueOnce({ error: 'Choose a CV as a PDF.' })
-    expect(await one.invoke(CHANNELS.chooseStyleFile)).toEqual({ ok: false, error: 'Choose a CV as a PDF.' })
+    one.styleFile.current.mockResolvedValueOnce({ error: 'Choose your CV file under Sources first.' })
+    expect(await one.invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: false, error: 'Choose your CV file under Sources first.' })
+    expect(one.server.call).not.toHaveBeenCalled()
+    expect(one.send).not.toHaveBeenCalledWith(CHANNELS.styleReading)
     const two = setup(async () => {
       throw new DoorError('this PDF is a scan: there is no style to copy')
     }, undefined, false, real)
-    expect(await two.invoke(CHANNELS.chooseStyleFile)).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
+    expect(await two.invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
   })
 
-  it('made-up data builds nothing and opens no dialog', async () => {
+  it('made-up data builds nothing', async () => {
     const { invoke, server, styleFile } = setup(undefined, undefined, false, { demo: true })
-    expect((await invoke(CHANNELS.chooseStyleFile)).ok).toBe(false)
-    expect(styleFile.choose).not.toHaveBeenCalled()
+    expect((await invoke(CHANNELS.styleFromCvFile)).ok).toBe(false)
+    expect(styleFile.current).not.toHaveBeenCalled()
     expect(server.call).not.toHaveBeenCalled()
-  })
-
-  it('the CV the set-up read is remembered for the dialog, never on made-up data', async () => {
-    const answer = { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: false }, { source: '/Users/ada/b.pdf', kind: 'file', style: true }, { source: '/Users/ada/c.pdf', kind: 'file', style: true }] }
-    const one = setup(async () => answer, undefined, false, real)
-    await one.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
-    expect(one.styleFile.remember).toHaveBeenCalledTimes(1)
-    expect(one.styleFile.remember).toHaveBeenCalledWith('/Users/ada/b.pdf')
-    const two = setup(async () => answer, undefined, false, { demo: true })
-    await two.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
-    expect(two.styleFile.remember).not.toHaveBeenCalled()
-  })
-
-  it('with no file whose style can be copied, the first file the draft read is the CV file', async () => {
-    const answer = { markdown: '# Ada', sources: [{ source: 'https://ada.dev', kind: 'url' }, { source: '/Users/ada/cv.docx', kind: 'file', style: false }, { source: '/Users/ada/other.pdf', kind: 'file' }] }
-    const { invoke, styleFile } = setup(async () => answer, undefined, false, real)
-    await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
-    expect(styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.docx')
-  })
-
-  it('names the CV file to the window, by its name only, and none on made-up data', async () => {
-    expect(await setup(undefined, undefined, false, real).invoke(CHANNELS.cvFile)).toBe('my cv.pdf')
-    expect(await setup(undefined, undefined, false, { demo: true }).invoke(CHANNELS.cvFile)).toBeNull()
   })
 })

@@ -264,7 +264,7 @@ describe('scenes', () => {
 
   it('profile-cv-style-candidate chooses the new style, then offers to print the prepared CVs again', async () => {
     mount('profile-cv-style-candidate')
-    await userEvent.click(await screen.findByRole('button', { name: 'Use this style' }))
+    await userEvent.click(await screen.findByRole('switch', { name: 'Use my own style' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Print 2 prepared CVs again' }))
     expect(await screen.findByText('2 printed again.')).toBeInTheDocument()
   })
@@ -329,20 +329,13 @@ describe('scenes', () => {
     expect(alert).toHaveClass('error')
   })
 
-  it('profile-cv-style-earlier can keep the style in use', async () => {
-    mount('profile-cv-style-earlier')
-    await userEvent.click(await screen.findByRole('button', { name: 'Keep my current style' }))
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Use this style' })).toBeNull())
-    expect(screen.getByText('In use')).toBeInTheDocument()
-  })
-
   it('profile-cv-style-inuse opens the full pages of a style, and goes back to The other door\'s', async () => {
     mount('profile-cv-style-inuse')
-    await userEvent.click(await screen.findByRole('button', { name: 'Show Like your CV in full' }))
-    expect(within(await screen.findByRole('dialog', { name: 'Like your CV' })).getAllByRole('img')).toHaveLength(2)
+    await userEvent.click(await screen.findByRole('button', { name: 'Show Your CV in full' }))
+    expect(within(await screen.findByRole('dialog', { name: 'Your CV' })).getAllByRole('img')).toHaveLength(1)
     await userEvent.keyboard('{Escape}')
-    await userEvent.click(screen.getByRole('button', { name: "Use The other door's" }))
-    await waitFor(() => expect(within(screen.getByRole('group', { name: "The other door's" })).getByText('In use')).toBeInTheDocument())
+    await userEvent.click(await screen.findByRole('switch', { name: 'Use my own style' }))
+    await waitFor(() => expect(screen.getByRole('group', { name: 'The other door' }).className).toContain('style-current'))
   })
 
   it('profile-cv-style-two-column says what two columns may cost', async () => {
@@ -350,9 +343,9 @@ describe('scenes', () => {
     expect(await screen.findByText('Some application systems read two-column CVs less well.')).toBeInTheDocument()
   })
 
-  it('profile-cv starts a build, which ends with a style to compare', async () => {
+  it('profile-cv: the switch puts the style of your CV in use, the blue dash above it', async () => {
     mount('profile-cv')
-    await userEvent.click(await screen.findByRole('button', { name: 'Use the style of my CV…' }))
-    expect(await screen.findByText('Building your style…')).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('switch', { name: 'Use my own style' }))
+    await waitFor(() => expect(screen.getByRole('group', { name: 'Your CV' }).className).toContain('style-current'))
   })
 })

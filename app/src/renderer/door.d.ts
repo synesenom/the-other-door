@@ -28,9 +28,9 @@ declare global {
       savePhoto(token: string): Promise<Envelope>
       /** Start the CV style build from a CV file the wizard read, by its token. */
       buildStyle(token: string): Promise<Envelope>
-      /** Profile → CV: choose a CV PDF in a dialog and start building a style from it; the window names no path. */
-      chooseStyleFile(): Promise<Envelope>
-      /** A file was chosen in `chooseStyleFile`'s dialog and is being read; returns the way to stop. */
+      /** Profile → CV: start building a style from the CV file (Sources); the window names no path. */
+      styleFromCvFile(): Promise<Envelope>
+      /** The CV file was taken by `styleFromCvFile` and is being read; returns the way to stop. */
       onStyleReading(cb: () => void): () => void
       /** Signing in to Claude: the main process runs `claude auth login` and pushes its state. */
       claudeLogin: {
