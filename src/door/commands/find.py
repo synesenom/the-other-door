@@ -35,6 +35,9 @@ def _run_record_filename(started_at: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "-", started_at) + ".json"
 
 
+_NAMED_FAILURES = 5  # failed sites named in the summary line; the rest are counted
+
+
 def _format_run_summary(record: dict, min_score: float) -> str:
     """Format the one-line summary shared by `find`'s stdout and `jobs/runs/latest.log`.
 
@@ -45,13 +48,21 @@ def _format_run_summary(record: dict, min_score: float) -> str:
     dt = datetime.fromisoformat(record["started_at"])
     ts = dt.strftime("%Y-%m-%dT%H:%M")
     new_count = len(record["new_above_threshold"])
-    n_failures = len(record["failures"])
+    sites = _failed_sites(record)
+    unscored = len((record.get("match") or {}).get("failed") or [])  # job ids: counted, not named
+    n_failures = len(sites) + unscored
+    names = sites[:_NAMED_FAILURES]
+    if len(sites) > _NAMED_FAILURES:
+        names.append(f"+{len(sites) - _NAMED_FAILURES} more")
+    if unscored:
+        names.append(f"{unscored} unscored ads")
+    failures = f"{n_failures} failures" + (f" ({', '.join(names)})" if names else "")
     status = "ok" if n_failures == 0 else "failed"
     elapsed = common._format_elapsed(record["elapsed_s"])
 
     line = (
         f"{ts} {status} {runs.postings_scraped(record)} scraped, {runs.scored(record)} scored, "
-        f"{new_count} new >= {min_score:g}, {n_failures} failures, {elapsed}"
+        f"{new_count} new >= {min_score:g}, {failures}, {elapsed}"
     )
     steps = [f"{name}: {record[name].get('summary', '')}" for name in STEPS if record.get(name)]
     if record.get("unsure_on"):  # the sources whose terms forbid automated access that the user turned on
@@ -92,8 +103,8 @@ def _fold_late(first: dict, late: dict, *, lists=(), counts=(), keep=()) -> None
 
 
 def _failed_sites(record: dict) -> list[str]:
-    """The sites of ``search`` and ``collect`` whose outcome was ``error`` or ``failed``."""
-    return [e["site"] for e in runs.site_entries(record) if e.get("outcome") in ("error", "failed")]
+    """The sites of ``search`` and ``collect`` whose outcome was ``error`` or ``failed``, each once."""
+    return list(dict.fromkeys(e["site"] for e in runs.site_entries(record) if e.get("outcome") in ("error", "failed")))
 
 
 @lock.locked("run")
