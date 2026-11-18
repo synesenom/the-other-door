@@ -1,4 +1,7 @@
-"""The skills and agents under .claude/ name only tools the door MCP server has, with its parameters (#33).
+"""The skills and agents the CLI and app use name only tools the door MCP server has, with its parameters (#33).
+
+Only the user skills (not `dev-`) and the agents the code runs: the developer skills and agents are not part
+of the product.
 
 A skill is prose the model follows, so a renamed tool or parameter breaks a conversation, never a test,
 unless this one reads them. The server's tools come from `app/src/generated/tools.json`, which
@@ -14,7 +17,12 @@ from paths import REPO_ROOT
 
 _TOOLS = {t["name"]: set(t["inputSchema"].get("properties", {}))
           for t in json.loads((REPO_ROOT / "app" / "src" / "generated" / "tools.json").read_text(encoding="utf-8"))}
-_FILES = sorted([*(REPO_ROOT / ".claude" / "skills").glob("*/SKILL.md"), *(REPO_ROOT / ".claude" / "agents").glob("*.md")])
+_SRC = "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
+_SKILLS = [p for p in (REPO_ROOT / ".claude" / "skills").glob("*/SKILL.md") if not p.parent.name.startswith("dev-")]
+# An agent the code runs is named in src/door, by its file (`agents/tailor.md`) or its name (`"stylist"`).
+_AGENTS = [p for p in (REPO_ROOT / ".claude" / "agents").glob("*.md")
+           if re.search(rf'agents/{p.stem}\.md|"{p.stem}(\.md)?"', _SRC)]
+_FILES = sorted([*_SKILLS, *_AGENTS])
 _TOOL = re.compile(r"mcp__door__(\w+)")
 # "`mcp__door__keywords` with the recommended titles as `role_targets` and `languages`": the backticked words
 # after "as", "with" or "pass" in the sentence that names the tool.

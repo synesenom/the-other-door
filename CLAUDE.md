@@ -368,8 +368,8 @@ model through the Agent SDK (`claude-agent-sdk`, on the plan `claude` is signed 
 against the app's test world (`app/test/world/make-world.ts`: `boot.py`'s server, the stand-in `claude.py`
 for the tools' own model calls), with a small model playing the persona (`tests/model/skill_run.py`, which
 also runs one skill by hand and writes its transcript). They check behaviour only: the tools and their order,
-what was written and when. `tests/model/test_skill_contract_unit.py` (offline) checks that every tool a skill
-or agent names exists, with the parameters it passes. `tests/model/test_style_rebuild.py` (#238) runs the
+what was written and when. `tests/model/test_skill_contract_unit.py` (offline) checks that every tool a user skill
+or an agent the code runs names exists, with the parameters it passes. `tests/model/test_style_rebuild.py` (#238) runs the
 CV style rebuild with the real stylist on every style corpus CV and its edges; it needs a signed-in `claude` and the pinned Chromium.
 
 The offline suite runs in parallel (`pytest -n auto`, pytest-xdist, in `run-test.sh` and CI;
