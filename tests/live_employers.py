@@ -46,8 +46,9 @@ DETECTION: dict[str, Careers] = {
     "career_sites": Careers("https://careers.maersk.com/", "Copenhagen", "career_sites", "https://www.maersk.com/careers/"),
     "oracle_hcm": Careers("https://ejqi.fa.ocs.oraclecloud.eu/hcmUI/CandidateExperience/en/sites/CX_1001", "London",
                           "oracle_hcm", "ejqi.fa.ocs.oraclecloud.eu/CX_1001"),
-    # Phenom hides a Workday site: Genmab's Phenom pages lead to its Workday tenant.
-    "phenom": Careers("https://careers.genmab.com/", "Copenhagen", "career_sites", "https://genmab.wd3.myworkdayjobs.com"),
+    # Phenom hides a Workday site: Philips' Phenom-style pages (/emea/en/search-results) lead to its Workday tenant.
+    # Checked 2026-11-18: Genmab's Workday lists no jobs publicly any more, Philips' does.
+    "phenom": Careers("https://careers.philips.com/", "Copenhagen", "career_sites", "https://philips.wd3.myworkdayjobs.com"),
     "smartrecruiters": Careers("https://careers.smartrecruiters.com/interikeagroup", "Stockholm", "smartrecruiters",
                                "interikeagroup"),
     "signatur": Careers("https://portal.signatur.dk/Pages/Search.aspx?ClientId=2296", "Copenhagen", "signatur", "2296"),
