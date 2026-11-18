@@ -12,6 +12,7 @@ from pathlib import Path
 
 from door.commands import _common as common
 from door import i18n
+from door.core import profile_loader
 from door.core import progress as progress_mod
 from door.core import models, sites, workspace
 from door.core import freshness
@@ -192,7 +193,7 @@ def _scrape_core(
     if mode not in ("search", "collect"):
         raise ValueError(f"unknown mode {mode!r} (search or collect)")
     collecting = mode == "collect"
-    config = {**common._load_config(profile_dir), "_mode": mode}
+    config = {**profile_loader.load_profile_config(profile_dir), "_mode": mode}
     # The profile's country (lowercase ISO code, or None) is resolved once for every scraper.
     country = i18n.country_for_location(config.get("location") or "")
     config["_country"] = country.code.lower() if country is not None else None

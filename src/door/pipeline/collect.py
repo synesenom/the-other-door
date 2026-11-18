@@ -33,6 +33,7 @@ from pathlib import Path
 from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
+from door.core import profile_loader
 from door.core import companies as store
 from door.core import utils, workspace
 from door.core.sites import FEED_SITES
@@ -154,7 +155,7 @@ def _collect_core(
     """
     jobs_dir = workspace.JOBS_DIR if jobs_dir is None else jobs_dir
     profile_dir = workspace.PROFILE_DIR if profile_dir is None else profile_dir
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     retired = _retire(profile_dir, config) if not companies else []
     feeds = scrape_cmd._feed_config_for(profile_dir, companies)
     employers = sum(len(ids) for ids in feeds.values())

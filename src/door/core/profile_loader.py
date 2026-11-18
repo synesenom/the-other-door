@@ -216,6 +216,16 @@ def format_validation_error(exc: ValidationError, config_path: Path | str) -> li
     return lines
 
 
+def load_profile_config(profile_dir: Path) -> dict:
+    """Validate `profile_dir/config.json` against `Profile`; return it as a dict.
+
+    Raises:
+        FileNotFoundError: the file does not exist.
+        ConfigError: it is not valid JSON or fails the schema (issue #137).
+    """
+    return load_config(profile_dir / "config.json")
+
+
 def load_config_or_defaults(profile_dir: Path) -> dict:
     """Like `load_config` of `profile_dir/config.json`, but a missing file means "all defaults".
 
@@ -224,7 +234,7 @@ def load_config_or_defaults(profile_dir: Path) -> dict:
     raises `ConfigError` — it is never silently replaced by defaults.
     """
     try:
-        return load_config(profile_dir / "config.json")
+        return load_profile_config(profile_dir)
     except FileNotFoundError:
         return {}
 

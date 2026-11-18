@@ -31,6 +31,7 @@ from pathlib import Path
 from door import pipeline
 from door.commands import _common as common
 from door.commands import companies as companies_cmd
+from door.core import profile_loader
 from door.core import ats_detect, candidates, careers_ai, sites, wikidata, workspace
 from door.core import companies as store
 from door.core import progress as progress_mod
@@ -181,7 +182,7 @@ def _follow_core(
     """
     jobs_dir = workspace.JOBS_DIR if jobs_dir is None else jobs_dir
     profile_dir = workspace.PROFILE_DIR if profile_dir is None else profile_dir
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     now = datetime.now(timezone.utc)
     started = time.monotonic()
 

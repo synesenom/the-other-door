@@ -14,21 +14,11 @@ import click
 from door import i18n
 from door.core import chromium, companies, installers, profile_loader, progress, templates, workspace
 from door.core.lock import ledger_lock
-from door.core.profile_loader import ConfigError, Profile, load_config
+from door.core.profile_loader import ConfigError, Profile
 
 
 # ALL_SITES lives in door.core.sites (re-exported here) so both
 # the CLI and Profile.sites validate against the same registry.
-def _load_config(profile_dir: Path) -> dict:
-    """Validate `profile_dir/config.json` against `Profile`; return it as a dict.
-
-    Raises:
-        FileNotFoundError: the file does not exist.
-        ConfigError: it is not valid JSON or fails the schema (issue #137).
-    """
-    return load_config(profile_dir / "config.json")
-
-
 _DEFAULT_RETIRE_AFTER_DAYS = 90
 
 

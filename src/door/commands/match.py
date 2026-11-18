@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 from door.commands import _common as common
+from door.core import profile_loader
 from door.core import progress as progress_mod
 from door.core import selection
 from door.core import workspace
@@ -132,7 +133,7 @@ def _match_core(
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
 
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     common._require_own_cv(config, profile_dir)
 
     if paths is not None:
