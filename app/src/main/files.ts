@@ -85,7 +85,10 @@ export async function checkPicked(
   try {
     real = io.realpath ? await io.realpath(path) : path
     if (!accepted(real)) return { ok: false, error: rule.wrongType }
-    if (rule.size && io.stat) size = (await io.stat(real)).size
+    if (rule.size) {
+      if (!io.stat) throw new Error('a size cap needs stat')
+      size = (await io.stat(real)).size
+    }
   } catch {
     return { ok: false, error: rule.unreadable ?? 'That file could not be read.' }
   }

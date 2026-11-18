@@ -87,6 +87,9 @@ describe('checkPicked', () => {
     expect(await checkPicked('/a/B.PDF', rule, io('/z/c.pdf', 10))).toEqual({ ok: true, real: '/z/c.pdf', size: 10 })
     expect((await checkPicked('/a/x.tar.gz', rule, io('/z/y.tar.gz'))).ok).toBe(true)
   })
+  it('refuses rather than skip the size cap when the size cannot be read', async () => {
+    expect(await checkPicked('/a/c.pdf', rule, { realpath: async () => '/a/c.pdf' })).toEqual({ ok: false, error: 'unread' })
+  })
   it('refuses a wrong name without reading the file', async () => {
     expect(await checkPicked('/a/b.txt', rule, { stat: async () => { throw new Error('no') } })).toEqual({ ok: false, error: 'wrong' })
   })
