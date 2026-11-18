@@ -104,13 +104,14 @@ def _validate_job_id(job_id: str) -> None:
         raise ValueError(f"invalid job_id: {job_id!r}")
 
 
-def write_atomic(path: Path, data: str | bytes, *, mode: int | None = None) -> None:
-    """Write text (UTF-8) or bytes to `path` atomically: a unique temp file beside it, then `os.replace`.
+@contextmanager
+def atomic_target(path: Path, *, mode: int | None = None):
+    """Yield a unique temp file beside `path`; on a clean exit `os.replace` it onto `path`.
 
-    A reader never sees a half-written file, and a failed write leaves the old file (and no temp
-    file) behind. The parent directory is created. With `mode` the file is created with it before
-    any data is written (never readable by others, even briefly); without, it keeps the existing
-    file's mode, else `0o666 & ~umask` (what `write_text` gave).
+    The parent directory is created. The temp file has `mode` before anything is written (never
+    readable by others, even briefly); without `mode` it keeps the existing file's mode, else
+    `0o666 & ~umask` (what `write_text` gave). A failed block leaves the old file, and the temp
+    file is always removed.
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,14 +123,24 @@ def write_atomic(path: Path, data: str | bytes, *, mode: int | None = None) -> N
             os.umask(umask)
             mode = 0o666 & ~umask
     fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    os.close(fd)
     tmp = Path(name)
     try:
-        with os.fdopen(fd, "wb" if isinstance(data, bytes) else "w", **({} if isinstance(data, bytes) else {"encoding": "utf-8"})) as fh:
-            os.chmod(name, mode)
-            fh.write(data)
+        os.chmod(tmp, mode)
+        yield tmp
         os.replace(tmp, path)
     finally:
         tmp.unlink(missing_ok=True)
+
+
+def write_atomic(path: Path, data: str | bytes, *, mode: int | None = None) -> None:
+    """Write text (UTF-8) or bytes to `path` atomically, through `atomic_target`."""
+    with atomic_target(path, mode=mode) as tmp:
+        if isinstance(data, bytes):
+            tmp.write_bytes(data)
+        else:
+            with open(tmp, "w", encoding="utf-8") as fh:
+                fh.write(data)
 
 
 def write_json_atomic(path: Path, data, *, indent: int | None = 2, default=str) -> None:

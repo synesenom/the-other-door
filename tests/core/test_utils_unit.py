@@ -134,13 +134,13 @@ class TestWriteAtomic:
         if sys.platform == "win32":
             pytest.skip("POSIX modes")
         seen = []
-        real = os.fdopen
+        real = open
 
-        def spy(fd, *a, **k):
-            seen.append(stat.S_IMODE(os.fstat(fd).st_mode))
-            return real(fd, *a, **k)
+        def spy(file, *a, **k):
+            seen.append(stat.S_IMODE(os.stat(file).st_mode))
+            return real(file, *a, **k)
 
-        monkeypatch.setattr(os, "fdopen", spy)
+        monkeypatch.setattr("door.core.utils.open", spy, raising=False)
         write_atomic(tmp_path / "s.json", "{}", mode=0o600)
         assert seen == [0o600]
         assert stat.S_IMODE((tmp_path / "s.json").stat().st_mode) == 0o600
@@ -210,3 +210,17 @@ class TestWriteAtomic:
         with pytest.raises(PermissionError):
             write_atomic(tmp_path / "c.txt", "x")
         assert list(tmp_path.iterdir()) == []
+
+
+def test_atomic_target_failure_leaves_target_and_no_temp(tmp_path):
+    from door.core.utils import atomic_target
+
+    target = tmp_path / "sub" / "out.bin"
+    target.parent.mkdir()
+    target.write_bytes(b"old")
+    with pytest.raises(RuntimeError):
+        with atomic_target(target, mode=0o600) as tmp:
+            tmp.write_bytes(b"new")
+            raise RuntimeError("boom")
+    assert target.read_bytes() == b"old"
+    assert [p.name for p in target.parent.iterdir()] == ["out.bin"]

@@ -11,7 +11,6 @@ import os
 import platform
 import re
 import sys
-import tempfile
 import zipfile
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -21,7 +20,7 @@ import click
 from door import version as version_mod
 from door.commands import _common as common
 from door.commands import setup as setup_cmd
-from door.core import problem_log, recurring, workspace
+from door.core import problem_log, recurring, utils, workspace
 
 RUNS_KEPT = 5
 
@@ -156,18 +155,11 @@ def _report_core(path: Path | str | None = None, *, profile_dir: Path | None = N
         if isinstance(record, dict):
             entries[f"runs/{record_path.name}"] = json.dumps(_trim_record(record), indent=2, ensure_ascii=False)
 
-    target.parent.mkdir(parents=True, exist_ok=True)
-    fd, name = tempfile.mkstemp(dir=target.parent, prefix=target.name + ".", suffix=".tmp")
-    os.close(fd)
-    tmp = Path(name)
-    try:
+    # mode 0o600: the report holds the logs, so it stays private to the user
+    with utils.atomic_target(target, mode=0o600) as tmp:
         with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as archive:
             for name, text in entries.items():
                 archive.writestr(name, mask(text))
-        os.replace(tmp, target)
-    except BaseException:
-        tmp.unlink(missing_ok=True)
-        raise
     recurring.stamp_report(workspace.HOME)  # what went wrong before it is in the report: said no more
     return {"path": str(target), "files": list(entries), "bytes": target.stat().st_size}
 
