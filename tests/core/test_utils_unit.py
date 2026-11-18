@@ -96,3 +96,131 @@ class TestWriteJsonAtomic:
             write_json_atomic(target, {"bad": object()}, default=None)
         assert target.read_text(encoding="utf-8") == "{}"
         assert list(tmp_path.iterdir()) == [target]
+
+
+# --------------------------------------------------------------------------- #
+# write_atomic
+# --------------------------------------------------------------------------- #
+
+class TestWriteAtomic:
+    def test_text_and_bytes(self, tmp_path):
+        from door.core.utils import write_atomic
+
+        write_atomic(tmp_path / "a" / "t.txt", "Søren\n")
+        write_atomic(tmp_path / "b.bin", b"\x00\x01")
+        assert (tmp_path / "a" / "t.txt").read_bytes() == "Søren\n".encode()
+        assert (tmp_path / "b.bin").read_bytes() == b"\x00\x01"
+        assert sorted(p.name for p in tmp_path.iterdir()) == ["a", "b.bin"]
+
+    def test_writers_never_share_a_temp_name(self, tmp_path, monkeypatch):
+        import os
+
+        from door.core.utils import write_atomic
+
+        sources = []
+        real = os.replace
+        monkeypatch.setattr(os, "replace", lambda s, d: (sources.append(str(s)), real(s, d))[1])
+        write_atomic(tmp_path / "x.json", "1")
+        write_atomic(tmp_path / "x.json", "2")
+        assert len(set(sources)) == 2
+
+    def test_mode_is_set_before_data_is_written(self, tmp_path, monkeypatch):
+        import os
+        import stat
+        import sys
+
+        from door.core.utils import write_atomic
+
+        if sys.platform == "win32":
+            pytest.skip("POSIX modes")
+        seen = []
+        real = open
+
+        def spy(file, *a, **k):
+            seen.append(stat.S_IMODE(os.stat(file).st_mode))
+            return real(file, *a, **k)
+
+        monkeypatch.setattr("door.core.utils.open", spy, raising=False)
+        write_atomic(tmp_path / "s.json", "{}", mode=0o600)
+        assert seen == [0o600]
+        assert stat.S_IMODE((tmp_path / "s.json").stat().st_mode) == 0o600
+
+    def test_failure_leaves_no_temp_file(self, tmp_path):
+        from door.core.utils import write_atomic
+
+        with pytest.raises(TypeError):
+            write_atomic(tmp_path / "f.txt", 5)  # type: ignore[arg-type]
+        assert list(tmp_path.iterdir()) == []
+
+    def test_new_file_follows_the_umask(self, tmp_path):
+        import os
+        import stat
+        import sys
+
+        from door.core.utils import write_atomic
+
+        if sys.platform == "win32":
+            pytest.skip("POSIX modes")
+        old = os.umask(0o077)
+        try:
+            write_atomic(tmp_path / "n.json", "{}")
+        finally:
+            os.umask(old)
+        assert stat.S_IMODE((tmp_path / "n.json").stat().st_mode) == 0o600
+
+    def test_mode_over_an_existing_file_wins(self, tmp_path):
+        import os
+        import stat
+        import sys
+
+        from door.core.utils import write_atomic
+
+        if sys.platform == "win32":
+            pytest.skip("POSIX modes")
+        f = tmp_path / "e.json"
+        f.write_text("old")
+        os.chmod(f, 0o644)
+        write_atomic(f, "new", mode=0o600)
+        assert stat.S_IMODE(f.stat().st_mode) == 0o600
+
+    def test_no_mode_keeps_the_existing_mode(self, tmp_path):
+        import os
+        import stat
+        import sys
+
+        from door.core.utils import write_atomic
+
+        if sys.platform == "win32":
+            pytest.skip("POSIX modes")
+        f = tmp_path / "k.json"
+        f.write_text("old")
+        os.chmod(f, 0o640)
+        write_atomic(f, "new")
+        assert stat.S_IMODE(f.stat().st_mode) == 0o640
+
+    def test_chmod_failure_closes_the_fd_and_leaves_no_temp(self, tmp_path, monkeypatch):
+        import os
+
+        from door.core.utils import write_atomic
+
+        def boom(*a, **k):
+            raise PermissionError("no")
+
+        monkeypatch.setattr(os, "chmod", boom)
+        with pytest.raises(PermissionError):
+            write_atomic(tmp_path / "c.txt", "x")
+        assert list(tmp_path.iterdir()) == []
+
+
+def test_atomic_target_failure_leaves_target_and_no_temp(tmp_path):
+    from door.core.utils import atomic_target
+
+    target = tmp_path / "sub" / "out.bin"
+    target.parent.mkdir()
+    target.write_bytes(b"old")
+    with pytest.raises(RuntimeError):
+        with atomic_target(target, mode=0o600) as tmp:
+            tmp.write_bytes(b"new")
+            raise RuntimeError("boom")
+    assert target.read_bytes() == b"old"
+    assert [p.name for p in target.parent.iterdir()] == ["out.bin"]

@@ -15,7 +15,7 @@ from pathlib import Path
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from door.core import migrations
+from door.core import migrations, utils
 
 NAME = "photo.jpg"                  # what `save` writes in the profile folder
 MAX_BYTES = 10 * 1024 * 1024        # the largest file accepted
@@ -102,7 +102,5 @@ def save(source, profile_dir) -> Path:
     data = clean(source)
     target = Path(profile_dir) / NAME
     migrations.ensure_folder(target.parent, "profile")
-    scratch = target.with_name(NAME + ".tmp")
-    scratch.write_bytes(data)
-    scratch.replace(target)
+    utils.write_atomic(target, data)
     return target

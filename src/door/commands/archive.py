@@ -139,10 +139,9 @@ def _export_core(
     if target.exists():
         raise FileExistsError(f"{target} already exists — pass another path")
 
-    target.parent.mkdir(parents=True, exist_ok=True)
     manifest = json.dumps({"format": FORMAT, "exported_at": datetime.now(timezone.utc).isoformat()}).encode()
-    tmp = target.with_name(target.name + ".tmp")
-    try:
+    # mode 0o600: the export holds the whole profile, so it stays private to the user
+    with utils.atomic_target(target, mode=0o600) as tmp:
         with tarfile.open(tmp, "w:gz") as tar:
             info = tarfile.TarInfo(_MANIFEST)
             info.size = len(manifest)
@@ -151,10 +150,6 @@ def _export_core(
             files = _add_tree(tar, profile_dir, "profile", _EXCLUDED["profile"])
             if jobs_dir.is_dir():
                 files += _add_tree(tar, jobs_dir, "jobs", _EXCLUDED["jobs"])
-        os.replace(tmp, target)
-    except BaseException:
-        tmp.unlink(missing_ok=True)
-        raise
 
     return {"path": str(target), "files": files, "bytes": target.stat().st_size}
 

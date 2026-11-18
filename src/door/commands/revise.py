@@ -6,7 +6,7 @@ from pathlib import Path
 
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
-from door.core import claude_cli, profile_loader, workspace
+from door.core import claude_cli, profile_loader, utils, workspace
 from door.matching import integrity
 from door.tailoring import facts as facts_mod
 from door.render import html_doc, html_guard
@@ -70,11 +70,6 @@ def _carry_notes(old: str, new: str) -> str:
     ]
     return "\n".join([*notes, new]) if notes else new
 
-
-def _write_atomic(path: Path, text: str) -> None:
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(text, encoding="utf-8")
-    os.replace(tmp, path)
 
 
 def _revise_core(
@@ -166,7 +161,7 @@ def _revise_core(
             raise ValueError(f"the revision uses {', '.join(refused)}, outside the tags and links a {file} is written in; file left unchanged")
 
         backup.write_text(original, encoding="utf-8")
-        _write_atomic(path, new_body + "\n")
+        utils.write_atomic(path, new_body + "\n")
         outcome = "revised"
 
     compiled = compile_cmd._compile_core(job_id, render=True, jobs_dir=jobs_dir)

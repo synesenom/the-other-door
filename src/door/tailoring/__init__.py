@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import os
 import re
 from pathlib import Path
 
-from door.core import migrations
+from door.core import migrations, utils
 
 __all__ = ["StoryBank"]
 
@@ -114,15 +113,7 @@ class StoryBank:
                 f"{self._path.name} has content but no readable story; not overwriting it"
             )
         migrations.ensure_folder(self._path.parent, "profile")
-        tmp_path = self._path.with_suffix(".md.tmp")
-        try:
-            content = self._serialize()
-            tmp_path.write_text(content, encoding="utf-8")
-            os.replace(tmp_path, self._path)
-        finally:
-            # Remove the temp file if the atomic replace failed.
-            if tmp_path.exists():
-                tmp_path.unlink()
+        utils.write_atomic(self._path, self._serialize())
 
     # ------------------------------------------------------------------
     # Private helpers

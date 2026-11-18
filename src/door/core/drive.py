@@ -32,6 +32,7 @@ from pathlib import Path
 
 import requests
 
+from door.core import utils
 from door.core.progress import report
 
 # The OAuth client of The other door (a Google Cloud "Desktop app" client, scope
@@ -106,11 +107,7 @@ def write_state(state: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if sys.platform != "win32":
         os.chmod(path.parent, 0o700)
-    tmp = path.with_name(path.name + ".tmp")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        json.dump(state, fh, indent=2)
-    os.replace(tmp, path)
+    utils.write_atomic(path, json.dumps(state, indent=2), mode=0o600)
 
 
 def update_state(**changes) -> dict:
