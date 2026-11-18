@@ -2,6 +2,7 @@ import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 're
 import { ErrorBox } from './AppName'
 import { call, draftCv, errorText } from '../api'
 import { Dialog } from './Dialog'
+import { Hint } from './Hint'
 import { Markdown } from './Markdown'
 import { MarkdownLink } from './MarkdownHelp'
 import type { ShowProfile } from './onboarding/reducer'
@@ -176,6 +177,25 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
         </>
       )}
     </Dialog>
+  )
+}
+
+/** A field's name with what it means in the info bubble beside it: a label of its control, or (`id`) of a group. */
+function FieldName({ label, help, after, htmlFor, id }: { label: string; help: string; after?: ReactNode; htmlFor?: string; id?: string }) {
+  return (
+    <div className="field-name">
+      {htmlFor ? (
+        <label htmlFor={htmlFor} className="field-label">
+          {label}
+        </label>
+      ) : (
+        <span id={id} className="field-label">
+          {label}
+        </span>
+      )}
+      {after}
+      <Hint label={`About ${label}`}>{help}</Hint>
+    </div>
   )
 }
 
@@ -402,24 +422,37 @@ export function CvEditor({
           profile/cv.md could not be read as text (it may be in another encoding, or not text at all). What you save here replaces it; the file as it is now is kept as cv.md.bak.
         </p>
       )}
-        {/* the CV file: named, replaced by drafting from another one */}
-        <div className="cv-pages">
-          <span className="field-label cv-pages-label">CV file</span>
-          {cvFile ? <span className="small">{cvFile}</span> : <span className="small muted">No CV file yet</span>}
-          {drafting ? (
-            <Spinner message="Reading your CV file (a minute or two)…" />
-          ) : (
-            <button type="button" className="secondary" onClick={() => void flush().then(replaceFile)}>
-              {cvFile ? 'Replace…' : 'Choose a CV file…'}
-            </button>
-          )}
+        {/* three fields, as every form's (docs/design/README.md "Field name"): a name 4 px above its control, what
+            belongs under it (the pages, a line, an error) under it, 28 px between fields */}
+        <div className="field onb-field" role="group" aria-labelledby="cv-file-name">
+          <FieldName id="cv-file-name" label="CV file" help="The file your CV was drafted from. Replacing it drafts your CV again from the new file, and builds your own style from it when you use one." />
+          <div className="cv-file">
+            {cvFile ? <span className="body">{cvFile}</span> : <span className="body muted">No CV file yet</span>}
+            {drafting ? (
+              <Spinner message="Reading your CV file (a minute or two)…" />
+            ) : (
+              <button type="button" className="secondary" onClick={() => void flush().then(replaceFile)}>
+                {cvFile ? 'Replace…' : 'Choose a CV file…'}
+              </button>
+            )}
+          </div>
+          {message && <p className="small muted">{message}</p>}
+          {fileError && <p className="field-error" role="alert">{fileError}</p>}
         </div>
-        {message && <p className="small">{message}</p>}
-        {fileError && <ErrorBox text={fileError} />}
-        {/* the pages the CV is read from, above it: each can be forgotten; a page added, or all read again, by the buttons under them */}
-        {remembered.length > 0 && (
-          <div className="cv-pages">
-            <span className="field-label cv-pages-label">Pages</span>
+        <div className="field onb-field" role="group" aria-labelledby="cv-pages-name">
+          <FieldName id="cv-pages-name" label="Pages" help="Public pages about you: a portfolio, GitHub, a publication list. Add a page proposes what one shows and your CV does not; Check again reads them all for what is new." />
+          <div className="actions">
+            <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel('page') })}>
+              Add a page
+            </button>
+            {remembered.length > 0 && (
+              <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel('again') })}>
+                Check again
+              </button>
+            )}
+          </div>
+          {/* under the control only its pills: each page, forgotten by its × */}
+          {remembered.length > 0 && (
             <ul className="cv-pages-list" aria-label="Pages your CV is read from">
               {remembered.map((u) => (
                 <li key={u} className="chip small">
@@ -432,21 +465,9 @@ export function CvEditor({
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-        <div className="actions">
-          <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel('page') })}>
-            Add a page
-          </button>
-          {remembered.length > 0 && (
-            <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel('again') })}>
-              Check again
-            </button>
           )}
+          {pagesError && <p className="field-error" role="alert">{pagesError}</p>}
         </div>
-        {pagesError && (
-          <ErrorBox text={pagesError} />
-        )}
         {(panel === 'page' || panel === 'again') && (
           <Expand
             key={panel}
@@ -462,17 +483,10 @@ export function CvEditor({
             }}
           />
         )}
-        {/* the CV: its name, with the Preview switch on the right, then the text or how it reads */}
+        {/* the text: its name, with Saved and the Preview switch on the right, then the text or how it reads */}
+        <div className="field onb-field">
         <div className="cv-head">
-          <div className="field-name">
-            <label htmlFor={editorId} className="field-label">
-              Text
-            </label>
-            {/* a link like the pages' ones: small, not the label's weight */}
-            <span className="small muted">
-              (<MarkdownLink />)
-            </span>
-          </div>
+          <FieldName htmlFor={editorId} label="Text" after={<span className="small muted">(<MarkdownLink />)</span>} help="Your CV in Markdown, what every application is tailored from. It saves itself as you type." />
           {written && (
             <span className="small muted cv-written" role="status">
               {written}
@@ -505,8 +519,9 @@ export function CvEditor({
         ) : (
           <Markdown text={text} className="cv-preview" onGap={goToGap} marked={added ?? undefined} />
         )}
-        {/* the write failed: said by the editor, tried again at the next pause */}
-        {saveError && <ErrorBox text={saveError} />}
+        {/* the write failed: said under the text, tried again at the next pause */}
+        {saveError && <p className="field-error" role="alert">{saveError}</p>}
+        </div>
       </section>
       {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
     </>

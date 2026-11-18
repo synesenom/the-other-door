@@ -533,18 +533,17 @@ details.part > summary + * { margin-top: var(--space-4); }
 .field-error::before { content: '↳ '; color: var(--color-ink-muted); }
 /* The CV (issue 222): the editor on the page colour, the example line a quiet surface strip in words. */
 /* the pages line above the CV: a label, then the pages as chips */
-.cv-pages { display: flex; align-items: baseline; gap: var(--space-3); }
-.cv-pages-label { flex: none; }
-.cv-pages-list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: var(--space-2) var(--space-3); flex-wrap: wrap; min-width: 0; }
+.cv-file { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; } /* the file's name, its button beside it */
+.cv-pages-list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: var(--size-gap-s); flex-wrap: wrap; min-width: 0; }
 .cv-pages-list .chip { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%; padding-right: var(--size-gap-s); }
 /* the CV's name on the left, the Preview switch on the right; the text right under them */
 .cv-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .cv-head .field-name { align-items: baseline; } /* the small Markdown link on the label's line */
+.cv-head .field-name .hint-icon { align-self: center; }
 /* the switch keeps its 44 px to press, hanging 8 px over the space above and below, so the row is the label's height */
 .cv-head .switch { margin-block: calc(-1 * var(--space-2)); }
 .cv-written { margin-left: auto; } /* "Saving…", "Saved": beside the Preview switch */
 /* the editor (or the preview) close under its name, past the switch's hanging 8 px; not a part's 28 px */
-.part > .cv-head + * { margin-top: calc(var(--space-2) - 28px); }
 .cv-editor .cv-text { min-height: 480px; font-size: var(--text-small-size); line-height: 1.55; }
 .cv-example { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-m); }
 .cv-preview { padding: var(--space-6); background: var(--color-page); border: 1px solid var(--color-border); border-radius: var(--radius-l); }

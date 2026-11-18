@@ -427,12 +427,16 @@ never has one. It is not on the phone.
 
 ### Your CV
 
-**Your CV** names the CV file your CV was last drafted from. **Replace…** (or **Choose a CV file…** when there is
-none) drafts your CV again from another file, one Claude call on your plan (a minute or two): the draft lands in
-the editor and is saved, your CV before it kept as `cv.md.bak`. Under it, the pages your CV is read from: each page
-is a chip with a × to forget it, and under them **Add a page** and **Check again**.
+Three fields, each with an ⓘ that says what it is for.
 
-Then `profile/cv.md` in an editor, "Text (Markdown)" with the Preview switch on its right, which shows how it reads,
+**CV file** names the file your CV was last drafted from. **Replace…** (or **Choose a CV file…** when there is
+none) drafts your CV again from another file, one Claude call on your plan (a minute or two): the draft lands in
+the editor and is saved, your CV before it kept as `cv.md.bak`.
+
+**Pages**: **Add a page** and **Check again**, and under them the pages your CV is read from, each a chip with a × to
+forget it.
+
+**Text** is `profile/cv.md` in an editor, "Text (Markdown)" with the Preview switch on its right, which shows how it reads,
 with each gap (`TODO`) marked "to fill in": a click on a marker opens the editor with that gap selected. There is no
 Save: what you type is saved a second after you stop, and when you leave the editor ("Saving…", then "Saved", beside
 Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak`, so that is one step back to
