@@ -10,6 +10,19 @@ When summarising what you just did, use at most 10 short bullet points: what hap
 
 A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implemented (`/dev-epic`: every sub-issue implemented, every box checked). The only reason to stop and wait for the user is a decision the `decider` returned CANNOT DECIDE on. Finishing a step, an agent returning, an issue filed, a merge or a permission to wait for are not reasons to stop: go straight on to the next step. Anything else only the user can give (a permission the harness asks for, a merge into `main`, a FAIL after two attempts) blocks that one item, never the run: ask for it in one line and go on with every other item. After the user merges or grants something, re-read what it unblocked and start it in the same turn.
 
+Waiting is not idle time. While a PR's checks run, or a PR waits for the user's merge, find the next issue to resolve and start it without being asked. Pick it in this order:
+
+1. The next open sub-issue of the epic being worked.
+2. Else an open sub-issue of an epic the session's work belongs to, or of an epic it filed into.
+3. Else the open issue users would notice most.
+
+Skip an issue that:
+- waits on the user (real files, a decision, a permission);
+- is blocked by an open PR;
+- would change the same files as an open PR (it would only conflict). Say in one line which PR it waits for.
+
+Start it with `/dev-resolve` in its own worktree from `origin/main` (or on the open PR's branch, when it builds on it), and say in one line what started. Stop looking only when no issue is left that can go ahead without the user.
+
 ## Decisions
 
 When a question comes up that is the user's to decide (a design choice, a policy, a trade-off, which option of several), do not ask it first. Spawn the `decider` agent (`.claude/agents/decider.md`, on Fable) with the question, the options you see and the context; it researches the codebase, the docs, the issues and PRs and the web, and returns one definite decision with its reasons, or CANNOT DECIDE. Act on a decision and name it, with its main reason, in your report. Ask the user (AskUserQuestion) only on CANNOT DECIDE, with the question as the agent put it and what it found.
