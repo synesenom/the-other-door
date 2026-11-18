@@ -34,7 +34,7 @@ it is open; there is nothing to press. Settings → Version shows the version yo
 background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
 that installs it at once. When the app installs an update itself, a running phone server is stopped first; one on Tailscale starts
 again with the new version, a quick tunnel needs setting up again with a new code. A CV style being built from your CV is ended too: start it again after the update. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
-replace themselves: Settings says "Version X is available" with a Download button that opens the release page, and
+replace themselves (a phone server the older version left is stopped at the next start, a Tailscale one starts again, a quick tunnel needs a new code): Settings says "Version X is available" with a Download button that opens the release page, and
 you install the download over this one. The check sends no information about you; offline, or when the release
 cannot be reached, it shows nothing and writes one line to the problem log. The unsigned Windows installer may
 show SmartScreen's warning again on an update. Only a published release counts, not a draft or a pre-release. A

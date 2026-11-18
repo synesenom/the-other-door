@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { quitStep, restorePhoneAfterUpdate, stopForUpdate, stopPhoneForUpdate, stopStyleBuildForUpdate } from './phone-update'
+import { quitStep, restoreOutdatedPhone, restorePhoneAfterUpdate, stopForUpdate, stopPhoneForUpdate, stopStyleBuildForUpdate } from './phone-update'
 
 function setup(calls: Record<string, (args: any) => unknown>, marker = false) {
   const files = new Set<string>(marker ? ['/m'] : [])
@@ -162,5 +162,37 @@ describe('quitStep', () => {
   })
   it('proceeds once they are stopped, so quitting again does not loop', () => {
     expect(quitStep({ installsOnQuit: true, stopped: true })).toBe('proceed')
+  })
+})
+
+describe('restoreOutdatedPhone', () => {
+  const old = (connection: string) => ({ phone_status: () => ({ running: true, outdated: true, connection }), phone_stop: () => ({ stopped: true }), phone_start: () => ({ running: true }) })
+  it('stops an outdated server and starts Tailscale again', async () => {
+    const s = setup(old('tailscale'))
+    await restoreOutdatedPhone(s.deps)
+    expect(s.call).toHaveBeenCalledWith('phone_stop', {})
+    expect(s.call).toHaveBeenCalledWith('phone_start', { connection: 'tailscale' }, 300_000)
+  })
+  it('leaves a quick tunnel stopped', async () => {
+    const s = setup(old('cloudflare'))
+    await restoreOutdatedPhone(s.deps)
+    expect(s.call).toHaveBeenCalledWith('phone_stop', {})
+    expect(s.call).not.toHaveBeenCalledWith('phone_start', expect.anything(), expect.anything())
+  })
+  it('leaves a current server, a stopped one and an update marker alone', async () => {
+    for (const [calls, marker] of [
+      [{ phone_status: () => ({ running: true, outdated: false, connection: 'tailscale' }) }, false],
+      [{ phone_status: () => ({ running: false, outdated: true }) }, false],
+      [old('tailscale'), true],
+    ] as const) {
+      const s = setup({ ...calls }, marker)
+      await restoreOutdatedPhone(s.deps)
+      expect(s.call).not.toHaveBeenCalledWith('phone_stop', {})
+    }
+  })
+  it('logs a failed restart', async () => {
+    const s = setup({ ...old('tailscale'), phone_start: () => ({ error: 'nope' }) })
+    await restoreOutdatedPhone(s.deps)
+    expect(s.log).toHaveBeenCalled()
   })
 })

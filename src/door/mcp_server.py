@@ -498,7 +498,7 @@ def phone_status() -> dict:
         ``{"running", "devices", "web_built", "tailscale_installed"}``, plus
         ``"connection"`` (cloudflare or tailscale), ``"address"``, ``"port"`` and
         ``"lasting"`` (Tailscale's address never changes; a quick tunnel's does)
-        while it runs.
+        while it runs, and ``"outdated"`` (started by another version of the app).
     """
     from door.core.phone import phone
 

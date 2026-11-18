@@ -989,7 +989,7 @@
   },
   {
     "name": "phone_status",
-    "description": "Whether The other door is serving this data folder to a phone, where, over what, and which phones are paired.\n\n    Returns:\n        ``{\"running\", \"devices\", \"web_built\", \"tailscale_installed\"}``, plus\n        ``\"connection\"`` (cloudflare or tailscale), ``\"address\"``, ``\"port\"`` and\n        ``\"lasting\"`` (Tailscale's address never changes; a quick tunnel's does)\n        while it runs.\n    ",
+    "description": "Whether The other door is serving this data folder to a phone, where, over what, and which phones are paired.\n\n    Returns:\n        ``{\"running\", \"devices\", \"web_built\", \"tailscale_installed\"}``, plus\n        ``\"connection\"`` (cloudflare or tailscale), ``\"address\"``, ``\"port\"`` and\n        ``\"lasting\"`` (Tailscale's address never changes; a quick tunnel's does)\n        while it runs, and ``\"outdated\"`` (started by another version of the app).\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {},

@@ -25,6 +25,7 @@ from pathlib import Path
 from door.core import process, utils, workspace
 from door.core.downloads import pinned
 from door.core.phone import pairing
+from door.version import VERSION
 
 DEFAULT_PORT = 8765
 CLOUDFLARED_VERSION = "2026.10.6"
@@ -141,7 +142,11 @@ def _free_port(start: int = DEFAULT_PORT) -> int:
 
 
 def status(home: Path, **deps) -> dict:
-    """Whether this data folder is serving a phone, where, over what, and which phones are paired."""
+    """Whether this data folder is serving a phone, where, over what, and which phones are paired.
+
+    `outdated` says a live server was started by another version (or one that did not record it, #109):
+    it answers with old code, so `start` replaces it; the app does so at its start.
+    """
     d = {**_defaults(), **deps}
     run = _read_run(home)
     # A quick tunnel that died took its address with it: nothing is served then, and `start` brings it all back.
@@ -154,7 +159,8 @@ def status(home: Path, **deps) -> dict:
     }
     if running:
         out.update(connection=run["connection"], address=run["address"], port=run["port"],
-                   lasting=run["connection"] == "tailscale", started_at=run.get("started_at"))
+                   lasting=run["connection"] == "tailscale", started_at=run.get("started_at"),
+                   outdated=run.get("version") != VERSION)
     return out
 
 
@@ -183,7 +189,7 @@ def start(home: Path, connection: str, **deps) -> dict:
     if connection not in ("cloudflare", "tailscale"):
         return {"error": f"unknown connection {connection!r} (cloudflare or tailscale)"}
     current = status(home, **deps)
-    if current["running"] and current["connection"] == connection:
+    if current["running"] and current["connection"] == connection and not current["outdated"]:
         return current
     stale = _read_run(home)
     if stale:
@@ -206,7 +212,7 @@ def start(home: Path, connection: str, **deps) -> dict:
     serve = d["spawn"]([sys.executable, "-m", "door", "serve", "start", "--port", str(port), "--web", str(d["web_dir"])],
                        log=logs / "serve.log", env=env)
     run = {"serve_pid": serve.pid, "port": port, "connection": connection,
-           "started_at": datetime.now(UTC).isoformat(timespec="seconds")}
+           "started_at": datetime.now(UTC).isoformat(timespec="seconds"), "version": VERSION}
     local = f"http://127.0.0.1:{port}"
     if not _wait(lambda: d["answers"](local), tries=60, sleep=d["sleep"]):
         _stop_pids(run, d["kill"])
