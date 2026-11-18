@@ -3,24 +3,26 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from './fixtures'
-import { cvBox, exists, openCv, readText, saveButton, started, writeText } from './helpers/profile'
+import { cvBox, editCv, exists, openCv, readText, saveButton, started, writeText } from './helpers/profile'
 import type { Page } from '@playwright/test'
 
 /** The quiet line beside Preview once the text is written. */
 const written = (page: Page) => page.getByRole('status').getByText('Saved', { exact: true })
 
 test.describe('the editor', () => {
-  test('opens on the CV as saved, with no note', async ({ page, world }) => {
+  test('opens on the CV as saved, as it reads; Edit shows its text', async ({ page, world }) => {
     await openCv(page)
-    await expect(cvBox(page)).toHaveValue(world.persona.cv)
+    await expect(page.getByRole('region', { name: 'Master CV' }).getByRole('heading', { name: 'Skills' })).toBeVisible()
+    await expect(cvBox(page)).toHaveCount(0)
     await expect(page.getByRole('note')).toHaveCount(0)
-    await expect(page.getByRole('switch', { name: 'Preview' })).toHaveAttribute('aria-checked', 'false')
     await expect(page.getByRole('button', { name: 'Add a page' })).toBeEnabled()
+    await page.getByRole('button', { name: 'Edit the Master CV' }).click()
+    await expect(cvBox(page)).toHaveValue(world.persona.cv)
   })
 
   test('the text saves itself; cv.md.bak keeps the CV as it was when Profile opened', { tag: '@core' }, async ({ page, world }) => {
     writeText(world, 'profile/cv.draft.md', '# A draft from the wizard\n') // a draft left over is done with
-    await openCv(page)
+    await editCv(page)
     await cvBox(page).fill(`${world.persona.cv}\n- Danish driving licence B\n`)
     await expect(written(page)).toBeVisible({ timeout: 5_000 })
     expect(readText(world, 'profile/cv.md')).toBe(`${world.persona.cv}\n- Danish driving licence B\n`)
@@ -37,7 +39,7 @@ test.describe('the editor', () => {
   })
 
   test('a failing save says why, keeps the text, and is tried again', async ({ page, world }) => {
-    await openCv(page)
+    await editCv(page)
     world.faults({ tools: { save_cv: { error: 'profile/cv.md is read-only' } } })
     await cvBox(page).fill('# Mette\n')
     await cvBox(page).blur()
@@ -61,9 +63,8 @@ test.describe('the editor', () => {
 test.describe('a CV with gaps (Jonas: TODO where the draft found nothing)', () => {
   test.use({ worldOptions: { persona: 'jonas' } })
 
-  test('the preview marks each gap to fill in', async ({ page }) => {
+  test('the CV as it reads marks each gap to fill in', async ({ page }) => {
     await openCv(page)
-    await page.getByRole('switch', { name: 'Preview' }).click()
     await expect(page.getByRole('button', { name: 'to fill in' })).toHaveCount(3, { timeout: 5_000 })
     await page.getByRole('button', { name: 'to fill in' }).first().click()
     await expect(cvBox(page)).toBeFocused()

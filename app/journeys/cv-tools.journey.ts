@@ -29,20 +29,22 @@ test.describe('Add a page', () => {
     expect(readText(world, 'profile/cv.md')).toBe(world.persona.cv) // nothing added yet
   })
 
-  test('Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor', { tag: '@core' }, async ({ page, world }) => {
+  test('Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the CV as it reads and in its text', { tag: '@core' }, async ({ page, world }) => {
     await openCv(page)
     await readPage(page, 'https://github.example/mkl')
     await expect(expand(page).getByRole('checkbox', { name: first })).toBeChecked({ timeout: 60_000 })
     if (await expand(page).getByRole('checkbox', { name: second }).count()) await expand(page).getByRole('checkbox', { name: second }).uncheck()
     await expand(page).getByRole('button', { name: 'Add 1 to my CV' }).click()
     await expect(expand(page)).toHaveCount(0, { timeout: 10_000 })
-    await expect(page.locator('.cv-backdrop .md-added')).toHaveText('- Bayesian hierarchical models (PyMC)')
+    await expect(page.locator('.cv-preview .md-added')).toHaveText('Bayesian hierarchical models (PyMC)')
     const cv = readText(world, 'profile/cv.md')
     expect(cv).toContain('- Bayesian hierarchical models (PyMC)')
     expect(cv.indexOf('- Bayesian hierarchical models (PyMC)')).toBeGreaterThan(cv.indexOf('## Skills'))
     expect(readText(world, 'profile/cv.md.bak')).toBe(world.persona.cv)
     expect(exists(world, 'profile/.enrich_proposals.json')).toBe(false)
+    await page.getByRole('button', { name: 'Edit the Master CV' }).click()
     await expect(cvBox(page)).toHaveValue(cv)
+    await expect(page.locator('.cv-backdrop .md-added')).toHaveText('- Bayesian hierarchical models (PyMC)')
     await expect(pages(page)).toContainText('github.example/mkl')
   })
 })

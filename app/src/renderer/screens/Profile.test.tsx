@@ -130,7 +130,7 @@ describe('Profile, opened at a section', () => {
   it('the CV style is listed beside the page only where it can be shown', async () => {
     mockDoor({ show_profile: show(), ...NO_STORIES, show_style: { styles: {}, in_use: 'default', candidate: false } })
     render(<Profile onSaved={() => {}} onDraft={() => {}} style={{ state: 'none', canBuild: true, onChanged: () => {} }} />)
-    await screen.findByLabelText('Your CV (Markdown)')
+    await screen.findByRole('group', { name: 'Pages' })
     const links = within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link')
     expect(links.slice(-3).map((l) => l.textContent)).toEqual(['Master CV', 'CV style', 'Stories'])
   })
@@ -162,7 +162,7 @@ describe('Profile', () => {
 
   it('saves only what changed, by name or in other, and reads the profile again', async () => {
     const { call, onSaved } = await open({ init_profile: { config_path: '/x' } })
-    await screen.findByLabelText('Your CV (Markdown)')
+    await screen.findByRole('group', { name: 'Pages' })
     const reads = () => call.mock.calls.filter((c) => c[0] === 'show_profile').length
     const before = reads()
     await userEvent.clear(screen.getByLabelText('Name'))
@@ -262,7 +262,7 @@ describe('Profile', () => {
 
   it('is one page: the details, then the CV and the Stories, each listed beside it', async () => {
     await open()
-    await screen.findByLabelText('Your CV (Markdown)')
+    await screen.findByRole('group', { name: 'Pages' })
     const names = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     expect(names.slice(-2)).toEqual(['Master CV', 'Stories'])
     expect(names[0]).toBe('About you')
@@ -290,7 +290,7 @@ describe('Profile, keeping what is shown true', () => {
   it('the CV and the Stories are there when config.json is not valid', async () => {
     mockDoor({ show_profile: { ...show(), config: null, errors: ['profile/config.json: remote — bad'] }, ...NO_STORIES })
     render(<Profile onSaved={() => {}} onDraft={() => {}} />)
-    expect(await screen.findByLabelText('Your CV (Markdown)')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Master CV' })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('remote — bad')
     expect(screen.getByRole('region', { name: 'Stories' })).toBeInTheDocument()
   })
