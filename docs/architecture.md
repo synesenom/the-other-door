@@ -248,13 +248,13 @@ steps' work reports `keyword` (a search done), `detail` (a LinkedIn page read), 
 (`follow`) and `entry_start` / `entry_end` (one employer's request group, so the display can count
 employers and show hosts in flight). Each surface renders them its own way:
 
-- **CLI** — `find` draws one line per step with `door.pipeline.display` (`render_lines` is a pure function from the state `BoardState` folds the events into; `StepBoard` redraws the lines in place on a terminal, `PlainSteps` prints `[4/5] collect: … (41m)` as each step ends when stdout is a pipe or a log file); the other commands use `LiveLine` (`src/door/commands/_progress.py`), only when stdout is a terminal and not `--quiet`.
+- **CLI** — `find` draws one line per step with `door.pipeline.display` (`render_lines` is a pure function from the state `BoardState` (`door.core.board_state`) folds the events into; `StepBoard` redraws the lines in place on a terminal, `PlainSteps` prints `[4/5] collect: … (41m)` as each step ends when stdout is a pipe or a log file); the other commands use `LiveLine` (`src/door/commands/_progress.py`), only when stdout is a terminal and not `--quiet`.
 - **MCP** — the two long tools (`find_jobs`, `prepare`) are `async`, run the core in a worker thread and forward each event
   to `ctx.report_progress` (a running count as `progress`, the event text as `message`), one long tool at a time.
 - **Other processes** — `ledger_lock` attaches a sink that mirrors the latest event into
   `jobs/.progress.json` for as long as the lock is held and deletes it on release. `status_summary` /
   `jobs summary` read it, gated on the lock, to answer "how far is it?". The sink also folds every
-  event (before its throttle) with `pipeline.display.BoardState` and writes the five steps as `steps`
+  event (before its throttle) with `core.board_state.BoardState` and writes the five steps as `steps`
   beside the latest event; `status_summary.in_progress.steps` passes them on (the desktop app draws its run screen from them).
 
 ### Registering the MCP server

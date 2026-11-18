@@ -31,6 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 from door.core import utils
+from door.core.board_state import BoardState
 
 PROGRESS_NAME = ".progress.json"
 # A board's events whose message is only a keyword: how a line says them.
@@ -193,16 +194,13 @@ class ProgressFile:
     whose counter has reached its total always write; the rest are written at
     most every `min_interval` seconds. Write failures are swallowed.
 
-    Every event, throttled or not, is also folded into a `pipeline.display.BoardState`
+    Every event, throttled or not, is also folded into a `board_state.BoardState`
     (on the wall clock, so the times can be written as ISO), and each write carries
     the folded `steps` (see `serialize_steps`): the desktop app draws its run screen
     from them, for a run started anywhere. A fold that raises is ignored.
     """
 
     def __init__(self, path: Path, *, min_interval: float = 0.25, clock=time.monotonic, wall=time.time):
-        # imported here: `pipeline.display` imports this module
-        from door.pipeline.display import BoardState
-
         self._path = Path(path)
         self._min_interval = min_interval
         self._clock = clock
