@@ -461,7 +461,7 @@ is tinted in the editor and the preview, brought into view, until you next type 
 
 The story bank the tailor draws on when it prepares an application (`profile/story_bank.md`): each story is CARL: the context (what happened and what was asked), what you did (action), what came of it (result) and what you learned. Every story is shown whole: its title, then its four parts, each name beside its text, with **Edit**, which opens it in a dialog and changes it in place (renaming it too), and **Remove**, which asks first.
 
-- **Write a story**: in a dialog, describe something you did in your own words and "Draft it". One Claude call (a few minutes) proposes a story from what you wrote, read beside your CV: where they differ it keeps your text and shows what differs; a field it could not fill is left empty and marked, and you fill it before saving.
+- **Write a story**: in a dialog, describe something you did in your own words and "Draft it". One Claude call (a minute or two) turns what you wrote into a story, read beside your CV, and the same dialog shows it in its four parts, to check like a story you edit: where your text and the CV differ it keeps your text and says what differs; a part it could not fill is left empty and marked, and you fill it before **Save**, which adds it and goes back to your stories. One text is one story: your CV only fills in facts, it never adds stories of its own.
 
 Stories are not on the phone.
 

@@ -1171,11 +1171,11 @@ def remove_story(title: str) -> dict:
 @mcp.tool()
 @_tool_errors
 def draft_stories(text: str | None = None, from_cv: bool = False, model: str | None = None) -> dict:
-    """Propose stories for the story bank from some text the user wrote about something they did
-    (read beside profile/cv.md, which fills in what the text leaves out; where they differ the text wins and
-    `conflicts` says what), or (`from_cv`) one story from the CV alone (profile/cv.draft.md while onboarding), to show
+    """Propose the one story some text the user wrote about something they did tells, for the story bank
+    (read beside profile/cv.md, which fills in facts the text leaves out but is never a story of its own; where they
+    differ the text wins and `conflicts` says what), or (`from_cv`) one story from the CV alone (profile/cv.draft.md while onboarding), to show
     what a story is: the bank holds what the CV does not say, so stories come from the user. One `claude -p` call. Nothing is saved:
-    show the proposals and their `conflicts`, let the user fill what is empty (`missing`) and pick, then call `save_story` for each. Exactly one of `text` and
+    show the story and its `conflicts`, let the user fill what is empty (`missing`), then call `save_story` after a yes. Exactly one of `text` and
     `from_cv`. Identical to `./door cv stories draft`.
 
     Args:
