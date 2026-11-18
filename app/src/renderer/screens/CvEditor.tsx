@@ -7,6 +7,7 @@ import { Markdown } from './Markdown'
 import { MarkdownLink } from './MarkdownHelp'
 import type { ShowProfile } from './onboarding/reducer'
 import { Spinner } from './Spinner'
+import { Switch } from './Switch'
 import { StyleRow } from './StyleRow'
 import { todoOffsets } from './todos'
 
@@ -224,7 +225,7 @@ export function CvEditor({
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saved, setSaved] = useState('')
   const [text, setText] = useState('')
-  // read: the CV as it reads, Edit opens the text; a CV that opens empty has nothing to read and is the text at once
+  // read: the CV as it reads (Preview on), the default; a CV that opens empty has nothing to read and is the text at once
   const [view, setView] = useState<'edit' | 'read'>('read')
   const [panel, setPanel] = useState<null | 'page' | 'again'>(null)
   // The pages read before (enrich_sources): remembered when one is read, forgotten by its ×, each saved at once.
@@ -486,24 +487,20 @@ export function CvEditor({
             }}
           />
         )}
-        {/* the CV as it reads, with Edit on the right; editing, the text with Saved and Done */}
+        {/* the CV as it reads, or its text, with Saved and the Preview switch on the right */}
         <div className="field onb-field">
         <div className="cv-head">
           {editing ? (
             <FieldName htmlFor={editorId} label="Text" after={<span className="small muted">(<MarkdownLink />)</span>} help="Everything about your work in Markdown, what every application's CV is picked from and tailored. It saves itself as you type." />
           ) : (
-            <FieldName id="cv-text-name" label="Text" help="Everything about your work, what every application's CV is picked from and tailored. Edit to change it; it saves itself as you type." />
+            <FieldName id="cv-text-name" label="Text" help="Everything about your work, what every application's CV is picked from and tailored. Turn Preview off to change it; it saves itself as you type." />
           )}
           {written && (
             <span className="small muted cv-written" role="status">
               {written}
             </span>
           )}
-          {(!editing || text.trim() !== '') && (
-            <button type="button" className="secondary" aria-label={editing ? 'Done editing' : 'Edit the Master CV'} onClick={() => setView(editing ? 'read' : 'edit')}>
-              {editing ? 'Done' : 'Edit'}
-            </button>
-          )}
+          <Switch label="Preview" checked={!editing} onChange={(on) => setView(on ? 'read' : 'edit')} />
         </div>
         {editing ? (
           // an added line is a bullet, "- text", under its section: the copy behind the editor tints those lines

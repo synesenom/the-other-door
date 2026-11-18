@@ -30,8 +30,8 @@ async function open(handlers: Record<string, unknown> = {}, cv = {}, sources: st
   render(<Profile onDraft={onDraft} onSaved={onSaved} />)
   // loaded once its fields are; a CV with text opens on how it reads, and these tests edit it
   await screen.findByRole('group', { name: 'Pages' })
-  const edit = screen.queryByRole('button', { name: 'Edit the Master CV' })
-  if (edit) await userEvent.click(edit)
+  const preview = screen.getByRole('switch', { name: 'Preview' })
+  if (preview.getAttribute('aria-checked') === 'true') await userEvent.click(preview)
   return { ...h, onDraft, onSaved }
 }
 
@@ -45,14 +45,14 @@ async function show(cv = {}) {
 const editor = () => screen.getByLabelText('Your CV (Markdown)')
 
 describe('CvEditor', () => {
-  it('opens on the CV as it reads; Edit shows its text and Done goes back', async () => {
+  it('opens on the CV as it reads, Preview on; off shows its text, on again how it reads', async () => {
     await show()
     expect(await screen.findByRole('heading', { name: 'Experience' })).toBeInTheDocument()
     expect(screen.queryByLabelText('Your CV (Markdown)')).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Edit the Master CV' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
     expect(editor()).toHaveValue(CV)
     expect(screen.queryByRole('heading', { name: 'Experience' })).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Done editing' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
     expect(screen.getByRole('heading', { name: 'Experience' })).toBeInTheDocument()
     expect(screen.queryByLabelText('Your CV (Markdown)')).toBeNull()
   })
@@ -60,11 +60,11 @@ describe('CvEditor', () => {
   it('an empty CV has nothing to read: it opens on its text, and stays there as it is typed into', async () => {
     await show({ text: '' })
     expect(await screen.findByLabelText('Your CV (Markdown)')).toHaveValue('')
-    expect(screen.queryByRole('button', { name: 'Done editing' })).toBeNull()
-    // typed into, it stays the text, with Done to read it
+    expect(screen.getByRole('switch', { name: 'Preview' })).not.toBeChecked()
+    // typed into, it stays the text, and Preview shows how it reads
     await userEvent.type(editor(), '# Ada')
     expect(editor()).toHaveValue('# Ada')
-    await userEvent.click(screen.getByRole('button', { name: 'Done editing' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
     expect(screen.getByRole('heading', { name: 'Ada' })).toBeInTheDocument()
   })
 
@@ -197,9 +197,9 @@ describe('Add a page', () => {
     await readPage()
     await userEvent.click(await within(dialog()).findByRole('button', { name: 'Add 2 to my CV' }))
     await waitFor(() => expect(marked()).toEqual(['- Built a churn model in Python']))
-    await userEvent.click(screen.getByRole('button', { name: 'Done editing' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
     expect(marked()).toEqual(['Built a churn model in Python'])
-    await userEvent.click(screen.getByRole('button', { name: 'Edit the Master CV' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
     await userEvent.type(editor(), 'x')
     expect(marked()).toEqual([])
   })
@@ -331,7 +331,7 @@ describe('CvEditor, its two parts', () => {
   it('are Master CV (the file, the pages, the text), said to be what each application\'s CV is tailored from, and then CV style', async () => {
     mockDoor({ show_profile: profile(), show_style: { styles: {}, in_use: 'default', candidate: false } })
     render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
-    await screen.findByRole('button', { name: 'Edit the Master CV' })
+    await screen.findByRole('switch', { name: 'Preview' })
     expect(screen.getByRole('region', { name: 'Master CV' }).compareDocumentPosition(screen.getByRole('region', { name: 'CV style' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     const cv = within(screen.getByRole('region', { name: 'Master CV' }))
     expect(cv.getByText(/each application gets a CV of its own, picked from this one and tailored to the ad/)).toBeInTheDocument()
@@ -412,7 +412,7 @@ describe('CvEditor, the Style', () => {
     render(<Profile onDraft={vi.fn()} onSaved={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
     await screen.findByRole('img', { name: /The other door/ })
     const row = screen.getByRole('heading', { name: 'CV style' })
-    await userEvent.click(screen.getByRole('button', { name: 'Edit the Master CV' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
     expect(editor().compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     h.call.mockClear()
     await userEvent.type(editor(), '- SQL{Enter}')

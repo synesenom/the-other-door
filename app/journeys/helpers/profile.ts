@@ -26,10 +26,10 @@ export async function openCv(page: Page): Promise<void> {
   await expect(page.getByRole('group', { name: 'Pages' })).toBeVisible({ timeout: 30_000 })
 }
 
-/** Profile → Master CV, its text open in the editor. */
+/** Profile → Master CV, Preview off: its text in the editor. */
 export async function editCv(page: Page): Promise<void> {
   await openCv(page)
-  await page.getByRole('button', { name: 'Edit the Master CV' }).click()
+  await page.getByRole('switch', { name: 'Preview' }).click()
 }
 
 /** The editor's textarea. */

@@ -42,7 +42,7 @@ test.describe('Add a page', () => {
     expect(cv.indexOf('- Bayesian hierarchical models (PyMC)')).toBeGreaterThan(cv.indexOf('## Skills'))
     expect(readText(world, 'profile/cv.md.bak')).toBe(world.persona.cv)
     expect(exists(world, 'profile/.enrich_proposals.json')).toBe(false)
-    await page.getByRole('button', { name: 'Edit the Master CV' }).click()
+    await page.getByRole('switch', { name: 'Preview' }).click()
     await expect(cvBox(page)).toHaveValue(cv)
     await expect(page.locator('.cv-backdrop .md-added')).toHaveText('- Bayesian hierarchical models (PyMC)')
     await expect(pages(page)).toContainText('github.example/mkl')
