@@ -11,6 +11,7 @@ import os
 import platform
 import re
 import sys
+import tempfile
 import zipfile
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -156,7 +157,9 @@ def _report_core(path: Path | str | None = None, *, profile_dir: Path | None = N
             entries[f"runs/{record_path.name}"] = json.dumps(_trim_record(record), indent=2, ensure_ascii=False)
 
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_name(target.name + ".tmp")
+    fd, name = tempfile.mkstemp(dir=target.parent, prefix=target.name + ".", suffix=".tmp")
+    os.close(fd)
+    tmp = Path(name)
     try:
         with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as archive:
             for name, text in entries.items():

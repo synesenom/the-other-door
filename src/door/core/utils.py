@@ -7,7 +7,6 @@ import os
 import re
 import shutil
 import tempfile
-import threading
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -111,7 +110,7 @@ def write_atomic(path: Path, data: str | bytes, *, mode: int | None = None) -> N
     A reader never sees a half-written file, and a failed write leaves the old file (and no temp
     file) behind. The parent directory is created. With `mode` the file is created with it before
     any data is written (never readable by others, even briefly); without, it keeps the existing
-    file's mode, else 0o644.
+    file's mode, else `0o666 & ~umask` (what `write_text` gave).
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -119,22 +118,20 @@ def write_atomic(path: Path, data: str | bytes, *, mode: int | None = None) -> N
         try:
             mode = path.stat().st_mode & 0o777
         except OSError:
-            mode = 0o644
+            umask = os.umask(0)
+            os.umask(umask)
+            mode = 0o666 & ~umask
     fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
     tmp = Path(name)
     try:
-        os.chmod(name, mode)
-        if isinstance(data, bytes):
-            with os.fdopen(fd, "wb") as fh:
-                fh.write(data)
-        else:
-            with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                fh.write(data)
+        with os.fdopen(fd, "wb" if isinstance(data, bytes) else "w", **({} if isinstance(data, bytes) else {"encoding": "utf-8"})) as fh:
+            os.chmod(name, mode)
+            fh.write(data)
         os.replace(tmp, path)
     finally:
         tmp.unlink(missing_ok=True)
 
 
-def write_json_atomic(path: Path, data, *, indent: int | None = 2, default=str, mode: int | None = None) -> None:
+def write_json_atomic(path: Path, data, *, indent: int | None = 2, default=str) -> None:
     """Write `data` as JSON to `path` through `write_atomic`."""
-    write_atomic(path, json.dumps(data, indent=indent, ensure_ascii=False, default=default), mode=mode)
+    write_atomic(path, json.dumps(data, indent=indent, ensure_ascii=False, default=default))

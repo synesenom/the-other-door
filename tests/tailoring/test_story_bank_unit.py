@@ -82,12 +82,12 @@ def test_save_load_round_trip(tmp_path):
 
 
 def test_save_atomic_no_tmp_left_behind(tmp_path):
-    """After save(), the .md.tmp file must not exist."""
+    """After save(), only the story bank is in the folder."""
     path = tmp_path / "story_bank.md"
     sb = StoryBank(path)
     sb.append(VALID_STORY)
     sb.save()
-    assert not (tmp_path / "story_bank.md.tmp").exists()
+    assert {p.name for p in tmp_path.iterdir()} <= {"story_bank.md", ".data_version"}
 
 
 def test_load_corrupt_file_falls_back_to_empty(tmp_path):

@@ -14,6 +14,7 @@ import os
 import shutil
 import sys
 import tarfile
+import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path, PurePosixPath
 
@@ -141,7 +142,9 @@ def _export_core(
 
     target.parent.mkdir(parents=True, exist_ok=True)
     manifest = json.dumps({"format": FORMAT, "exported_at": datetime.now(timezone.utc).isoformat()}).encode()
-    tmp = target.with_name(target.name + ".tmp")
+    fd, name = tempfile.mkstemp(dir=target.parent, prefix=target.name + ".", suffix=".tmp")
+    os.close(fd)
+    tmp = Path(name)
     try:
         with tarfile.open(tmp, "w:gz") as tar:
             info = tarfile.TarInfo(_MANIFEST)
