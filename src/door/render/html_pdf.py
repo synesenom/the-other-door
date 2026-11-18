@@ -28,7 +28,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from door.core import chromium
+from door.core import chromium, process
 from door.render import cdp
 
 A4_INCHES = (8.27, 11.69)
@@ -117,13 +117,7 @@ def _launch(args: list[str]) -> subprocess.Popen:
 
 def _kill_tree(proc) -> None:
     """The browser and its children."""
-    try:
-        if sys.platform == "win32":
-            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True, timeout=15, stdin=subprocess.DEVNULL)
-        else:
-            os.killpg(proc.pid, signal.SIGKILL)
-    except (OSError, subprocess.SubprocessError):
-        pass
+    process.kill_tree(proc.pid, getattr(signal, "SIGKILL", signal.SIGTERM))  # no SIGKILL on Windows: taskkill ends it
     try:
         proc.wait(timeout=5)
     except (OSError, subprocess.SubprocessError, AttributeError):

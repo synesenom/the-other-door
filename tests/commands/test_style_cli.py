@@ -20,7 +20,7 @@ from door.cli import cli
 from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, claude_cli, lock, phone, workspace
+from door.core import chromium, claude_cli, lock, process, workspace
 from door.style import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR
@@ -90,8 +90,8 @@ class World:
 @pytest.fixture
 def world(monkeypatch):
     w = World()
-    monkeypatch.setattr(phone, "spawn_detached", w.spawn)
-    monkeypatch.setattr(phone, "kill_tree", w.kill)
+    monkeypatch.setattr(process, "spawn_detached", w.spawn)
+    monkeypatch.setattr(process, "kill_tree", w.kill)
     yield w
     for holder in w.holders:
         holder.release()
@@ -377,8 +377,8 @@ def test_a_start_whose_process_refuses_the_file_is_recorded_failed_and_the_log_s
     copy.parent.mkdir()
     copy.write_bytes(b"not a pdf")
     started = []
-    spawn = phone.spawn_detached
-    monkeypatch.setattr(phone, "spawn_detached", lambda *a, **k: started.append(spawn(*a, **k)) or started[-1])
+    spawn = process.spawn_detached
+    monkeypatch.setattr(process, "spawn_detached", lambda *a, **k: started.append(spawn(*a, **k)) or started[-1])
     style_cmd._spawn(home, copy)
     started[0].wait(timeout=90)  # its error reaches the log after it records the failure (#274)
     assert _run(home)["state"] == "failed"
@@ -455,14 +455,14 @@ def test_a_build_that_finishes_while_it_is_stopped_keeps_its_ready_record(home, 
         _state(home, pid=4242, state="ready", started_at="t", result=READY)
         world.kill(pid)
 
-    monkeypatch.setattr(phone, "kill_tree", finished)
+    monkeypatch.setattr(process, "kill_tree", finished)
     style_cmd._stop_core()
     assert _run(home)["state"] == "ready"
 
 
 def test_a_build_that_never_lets_go_of_its_lock_is_left_as_it_was_and_the_tool_says_so(home, world, monkeypatch):
     monkeypatch.setattr(style_cmd, "LOCK_WAIT", 0.1)
-    monkeypatch.setattr(phone, "kill_tree", world.killed.append)  # the process does not die
+    monkeypatch.setattr(process, "kill_tree", world.killed.append)  # the process does not die
     run = {"pid": 4242, "state": "building", "started_at": _now()}
     _state(home, **run)
     world.hold(home)

@@ -159,7 +159,7 @@ HTTPAdapter.send = _fake_send
 # --------------------------------------------------------------------------- door, with its edges replaced
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
-from door.core import drive, phone, sites  # noqa: E402
+from door.core import drive, phone, process, sites  # noqa: E402
 from door.core.models import JobPosting  # noqa: E402
 from door.scrapers import report  # noqa: E402
 
@@ -367,7 +367,7 @@ phone.remove = _phone_remove
 # --------------------------------------------------------------------------- detached door processes
 # The CV style build (`python -m door cv style build`, started by the server with a PYTHONPATH of its own) is a process
 # of its own: the world's hook rides along on its PYTHONPATH, so it too reads the world, and its stand-ins, not the outside.
-_spawn_detached = phone.spawn_detached
+_spawn_detached = process.spawn_detached
 
 
 def _spawn_detached_in_world(argv, *, log, env=None, hidden_console=False):
@@ -376,7 +376,7 @@ def _spawn_detached_in_world(argv, *, log, env=None, hidden_console=False):
     return _spawn_detached(argv, log=log, env=env, hidden_console=hidden_console)
 
 
-phone.spawn_detached = _spawn_detached_in_world
+process.spawn_detached = _spawn_detached_in_world
 
 
 # --------------------------------------------------------------------------- the printer: no Chromium

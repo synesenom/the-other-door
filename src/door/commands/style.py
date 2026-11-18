@@ -3,7 +3,7 @@
 
 Two cores. `_build_core` is the build itself, in the foreground (the command, with progress). `_start_core` is what the
 `build_style` tool calls: it takes the file in (intake, a copy at `HOME/.style/source.pdf`), ends a build already
-running, starts `python -m door cv style build <copy>` as a process of its own (`core/phone.py`'s way, so it outlives
+running, starts `python -m door cv style build <copy>` as a process of its own (`core/process.py`'s way, so it outlives
 the server or the app that asked) and returns once started. The intake reads the CV's structure with one model call
 (`style_structure`, up to 60 s cold, cached by the file); a CV whose structure could not be read is refused in plain words
 and nothing starts. Its state is `HOME/.style/run.json` (`pid`, `state`
@@ -22,7 +22,6 @@ app does before an update installs (#215).
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import signal
@@ -38,7 +37,7 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import lock, phone, profile_loader, templates, tracker, workspace
+from door.core import lock, process, profile_loader, templates, tracker, workspace
 from door.style import style_build, style_extract, style_preview, style_structure
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
@@ -49,18 +48,16 @@ def _style_dir(home: Path) -> Path:
     return Path(home) / ".style"
 
 
+def _run_path(home: Path) -> Path:
+    return _style_dir(home) / "run.json"
+
+
 def _read(home: Path) -> dict | None:
-    try:
-        run = json.loads((_style_dir(home) / "run.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    return run
+    return process.read_run(_run_path(home))
 
 
 def _write(home: Path, run: dict) -> None:
-    path = _style_dir(home) / "run.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(run, indent=2, ensure_ascii=False), encoding="utf-8")
+    process.write_run(_run_path(home), run)
 
 
 def _now() -> str:
@@ -121,9 +118,9 @@ def _end_running(home: Path) -> dict | None:
         return None
     own = (None, os.getpid(), os.getppid())
     if run.get("pid") not in own and lock.held(_lock_path(home)):
-        phone.kill_tree(run["pid"])
+        process.kill_tree(run["pid"])
     elif _pending(run) and run.get("spawned") not in own:
-        phone.kill_tree(run["spawned"])
+        process.kill_tree(run["spawned"])
     else:
         return None
     return run
@@ -202,11 +199,9 @@ def _spawn(home: Path, copy: Path) -> None:
     folder = _style_dir(home)
     pending = {"state": "building", "started_at": _now()}
     _write(home, pending)
-    env = {**os.environ, "DOOR_HOME": str(home), "PYTHONPATH": str(workspace.REPO_ROOT / "src")}
-    process = phone.spawn_detached([sys.executable, "-m", "door", "cv", "style", "build", str(copy)],
-                                   log=folder / "build.log", env=env, hidden_console=True)
+    started = process.spawn_door(home, ["cv", "style", "build", str(copy)], log=folder / "build.log", hidden_console=True)
     if _read(home) == pending:  # the build has not written its own yet: `_stop_core` can end it before it does
-        _write(home, {**pending, "spawned": process.pid})
+        _write(home, {**pending, "spawned": started.pid})
 
 
 def _start_core(file: str, *, home: Path | None = None) -> dict:
