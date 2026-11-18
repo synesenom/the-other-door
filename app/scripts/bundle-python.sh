@@ -15,9 +15,8 @@ LOCK="$APP/scripts/bundle.lock.json"
 
 case "$(uname -s)-$(uname -m)" in
   Darwin-arm64) PY_TRIPLE=aarch64-apple-darwin; CR_KEY=mac-arm64 ;;
-  Darwin-x86_64) PY_TRIPLE=x86_64-apple-darwin; CR_KEY=mac-x64 ;;
   Linux-x86_64) PY_TRIPLE=x86_64-unknown-linux-gnu; CR_KEY=linux64 ;;
-  *) echo "bundle-python.sh: $(uname -s) $(uname -m) is not supported (x64 Linux, macOS)" >&2; exit 2 ;;
+  *) echo "bundle-python.sh: $(uname -s) $(uname -m) is not supported (Apple silicon, x64 Linux)" >&2; exit 2 ;;
 esac
 
 jsonfield() { node -e "const l=require(process.argv[1]);const v=process.argv[2].split('.').reduce((o,k)=>o[k],l);process.stdout.write(String(v))" "$1" "$2"; }

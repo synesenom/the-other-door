@@ -57,7 +57,6 @@ jobs:
       matrix:
         include:
           - { os: macos-15, name: macos-arm64 }
-          - { os: macos-15-intel, name: macos-x64 }
           - { os: windows-latest, name: windows-x64 }
           - { os: ubuntu-latest, name: linux-x64 }
     runs-on: ${{ matrix.os }}
@@ -115,20 +114,18 @@ jobs:
           # What the release gets: the .dmg and .deb under names a person reads (dist/ keeps the build's names for
           # the tests below); the Windows installer and the AppImage already carry their human names, so the
           # manifests name the uploaded files themselves; the update files (manifests, mac .zip, blockmaps) as built.
-          # latest-mac.yml is not uploaded here: the two mac builds each make one, the mac-manifest job merges them.
           shopt -s nullglob
           version="$(node -p "require('./package.json').version")"
           mkdir -p upload
           for f in dist/the-other-door-*.{dmg,deb}; do
             case "$(basename "$f")" in
               *-mac-arm64.dmg) name="Mac-Apple-silicon.dmg" ;;
-              *-mac-x64.dmg)   name="Mac-Intel.dmg" ;;
               *.deb)           name="Debian-Ubuntu.deb" ;;
               *) continue ;;
             esac
             cp "$f" "upload/The-other-door-$version-$name"
           done
-          cp dist/The-other-door-*.{exe,exe.blockmap,AppImage} dist/the-other-door-*.zip dist/the-other-door-*.zip.blockmap dist/latest.yml dist/latest-linux.yml upload/ 2>/dev/null || true
+          cp dist/The-other-door-*.{exe,exe.blockmap,AppImage} dist/the-other-door-*.zip dist/the-other-door-*.zip.blockmap dist/latest.yml dist/latest-linux.yml dist/latest-mac.yml upload/ 2>/dev/null || true
           # every file the updater and the downloads need must be there: a missing one fails the job
           case "$RUNNER_OS" in
             Windows) expected=("The-other-door-$version-Windows.exe" "The-other-door-$version-Windows.exe.blockmap" latest.yml) ;;
@@ -136,16 +133,13 @@ jobs:
             macOS)   expected=() ;;
           esac
           if [ "$RUNNER_OS" = macOS ]; then
-            arch="$(uname -m | sed 's/x86_64/x64/')"
-            dmg=Mac-Apple-silicon; [ "$arch" = x64 ] && dmg=Mac-Intel
-            expected=("The-other-door-$version-$dmg.dmg" "the-other-door-$version-mac-$arch.zip" "the-other-door-$version-mac-$arch.zip.blockmap")
+            expected=("The-other-door-$version-Mac-Apple-silicon.dmg" "the-other-door-$version-mac-arm64.zip" "the-other-door-$version-mac-arm64.zip.blockmap")
             [ -f dist/latest-mac.yml ] || { echo "missing dist/latest-mac.yml" >&2; exit 1; }
           fi
           for f in "${expected[@]}"; do
             [ -f "upload/$f" ] || { echo "missing from the release upload: $f" >&2; exit 1; }
           done
           if [ "$GITHUB_EVENT_NAME" = push ]; then gh release upload "$GITHUB_REF_NAME" upload/* --clobber; fi
-          mkdir -p mac-manifest && cp dist/latest-mac.yml mac-manifest/ 2>/dev/null || true
 
       - name: Keep the installers of the dry run
         if: github.event_name == 'workflow_dispatch'
@@ -154,14 +148,6 @@ jobs:
           name: dry-run-${{ matrix.name }}
           path: app/upload/*
           retention-days: 14
-          if-no-files-found: error
-
-      - name: Keep the mac manifest for the merge
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v7
-        with:
-          name: mac-manifest-${{ matrix.name }}
-          path: app/mac-manifest/latest-mac.yml
           if-no-files-found: error
 
       - name: Smoke-test the packaged app
@@ -188,47 +174,6 @@ jobs:
           path: app/install-report
           retention-days: 14
           if-no-files-found: ignore
-
-  # One latest-mac.yml for both mac builds (#17): the updater reads only that name, and each runner made its own.
-  mac-manifest:
-    needs: build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: app
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-
-      - run: npm ci
-
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: mac-manifest-*
-          path: app/mac-manifests
-
-      - name: Merge
-        run: npx tsx scripts/merge-mac-manifest.ts mac-manifests/mac-manifest-macos-arm64/latest-mac.yml mac-manifests/mac-manifest-macos-x64/latest-mac.yml latest-mac.yml
-
-      - name: Upload to the draft release
-        if: github.event_name == 'push'
-        run: gh release upload "$GITHUB_REF_NAME" latest-mac.yml --clobber
-
-      - name: Keep the merged manifest of the dry run
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v7
-        with:
-          name: dry-run-mac-manifest
-          path: app/latest-mac.yml
-          retention-days: 14
-          if-no-files-found: error
 
   # Windows on ARM (a Surface Pro 11): the release's x64 installer, emulated, as such a user installs it (#18).
   install-windows-arm:

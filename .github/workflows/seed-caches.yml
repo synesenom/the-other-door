@@ -37,7 +37,6 @@ jobs:
         include:
           - { os: ubuntu-latest, name: linux-x64, bundle: true }
           - { os: macos-15, name: macos-arm64, bundle: true }
-          - { os: macos-15-intel, name: macos-x64, bundle: true }
           - { os: windows-latest, name: windows-x64, bundle: true }
           # Windows on ARM installs the x64 installer: npm only, no bundle.
           - { os: windows-11-arm, name: windows-arm64, bundle: false }
