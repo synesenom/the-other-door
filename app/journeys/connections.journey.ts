@@ -196,8 +196,9 @@ test.describe('Google Drive, connected', () => {
     await expect.poll(() => world.toolCalls('sync_data').map((c) => c.args)).toEqual([NO_CHOICE])
     await expect.poll(() => existsSync(driveArchive(world))).toBe(true)
     expect(tarList(driveArchive(world))).toEqual(expect.arrayContaining(['manifest.json', 'profile/config.json', 'jobs/applications.json']))
-    const state = readDriveState(world)!
-    expect(state.synced_version).toBe(md5(driveArchive(world)))
+    // the upload lands before sync records it: wait for the record, not the file
+    await expect.poll(() => readDriveState(world)?.synced_version).toBeTruthy()
+    expect(readDriveState(world)!.synced_version).toBe(md5(driveArchive(world)))
     await goToSettings(page)
     const row = driveRow(page)
     await expect(row).toContainText(/last synced Oct 26, \d\d:\d\d/)
