@@ -18,12 +18,14 @@ import socket
 import subprocess
 import sys
 import tarfile
+import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 from door.core import process, utils, workspace
 from door.core.downloads import pinned
+from door import version
 from door.core.phone import pairing
 
 DEFAULT_PORT = 8765
@@ -141,7 +143,11 @@ def _free_port(start: int = DEFAULT_PORT) -> int:
 
 
 def status(home: Path, **deps) -> dict:
-    """Whether this data folder is serving a phone, where, over what, and which phones are paired."""
+    """Whether this data folder is serving a phone, where, over what, and which phones are paired.
+
+    `outdated` says a live server was started by another version (or one that did not record it, #109):
+    it answers with old code, so `start` replaces it; the app does so at its start.
+    """
     d = {**_defaults(), **deps}
     run = _read_run(home)
     # A quick tunnel that died took its address with it: nothing is served then, and `start` brings it all back.
@@ -154,7 +160,8 @@ def status(home: Path, **deps) -> dict:
     }
     if running:
         out.update(connection=run["connection"], address=run["address"], port=run["port"],
-                   lasting=run["connection"] == "tailscale", started_at=run.get("started_at"))
+                   lasting=run["connection"] == "tailscale", started_at=run.get("started_at"),
+                   outdated=run.get("version") != version.VERSION)
     return out
 
 
@@ -172,7 +179,16 @@ def _stop_pids(run: dict, kill) -> None:
             kill(run[key])
 
 
+# The app's restart at its start and a Start pressed in Settings run on two threads of one server.
+_LOCK = threading.RLock()
+
+
 def start(home: Path, connection: str, **deps) -> dict:
+    with _LOCK:
+        return _start(home, connection, **deps)
+
+
+def _start(home: Path, connection: str, **deps) -> dict:
     """Serve this data folder to a phone over `connection` ("cloudflare" or "tailscale"); reuses a running one.
 
     Returns `status()`, or ``{"needs": "install_tailscale" | "sign_in_tailscale" | "enable_https", "link"}``
@@ -183,7 +199,7 @@ def start(home: Path, connection: str, **deps) -> dict:
     if connection not in ("cloudflare", "tailscale"):
         return {"error": f"unknown connection {connection!r} (cloudflare or tailscale)"}
     current = status(home, **deps)
-    if current["running"] and current["connection"] == connection:
+    if current["running"] and current["connection"] == connection and not current["outdated"]:
         return current
     stale = _read_run(home)
     if stale:
@@ -206,7 +222,7 @@ def start(home: Path, connection: str, **deps) -> dict:
     serve = d["spawn"]([sys.executable, "-m", "door", "serve", "start", "--port", str(port), "--web", str(d["web_dir"])],
                        log=logs / "serve.log", env=env)
     run = {"serve_pid": serve.pid, "port": port, "connection": connection,
-           "started_at": datetime.now(UTC).isoformat(timespec="seconds")}
+           "started_at": datetime.now(UTC).isoformat(timespec="seconds"), "version": version.VERSION}
     local = f"http://127.0.0.1:{port}"
     if not _wait(lambda: d["answers"](local), tries=60, sleep=d["sleep"]):
         _stop_pids(run, d["kill"])
@@ -255,6 +271,11 @@ def start(home: Path, connection: str, **deps) -> dict:
 
 def stop(home: Path, **deps) -> dict:
     """Stop what `start` started for this data folder."""
+    with _LOCK:
+        return _stop(home, **deps)
+
+
+def _stop(home: Path, **deps) -> dict:
     d = {**_defaults(), **deps}
     run = _read_run(home)
     if not run:
