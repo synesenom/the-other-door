@@ -150,3 +150,10 @@ def test_non_ascii_data_folder_and_cv_name():
     world = build_world("asa", empty=True, home_name="Zoé Åsa-home")
     assert "Zoé" in str(world.home)
     _init_find_show_prepare(world, "asa", cv_name="Åsa Söderlund CV.pdf")
+
+    # the same characters in argv (`poetry -C` in the launcher moves the cwd to the checkout, so a path, not a cwd)
+    ad = world.home / "Älvstrand annons.md"
+    ad.write_text("Vi söker en ingenjör i Göteborg.\n", encoding="utf-8")
+    code, out, err = world.door("jobs", "add", str(ad), "--title", "Ingenjör", "--company", "Älvstrand AB")
+    assert code == 0, f"{out}\n{err}"
+    assert "Älvstrand AB" in out, out

@@ -326,6 +326,13 @@ describe('resolvePackagedSpawn', () => {
     expect(s.env!['APPDATA']).toBe('C:\\Users\\ada\\AppData\\Roaming')
   })
 
+  it('on Windows: a non-ASCII data folder and user folder reach the env unchanged (#277)', () => {
+    const home = 'C:\\Users\\Zoé\\AppData\\Roaming\\door'
+    const s = resolvePackagedSpawn({ resourcesPath: 'C:\\Program Files\\door\\resources', home, platform: 'win32', env: { PATH: 'C:\\Windows', USERPROFILE: 'C:\\Users\\Zoé' } })
+    expect(s.env).toMatchObject({ DOOR_HOME: home, USERPROFILE: 'C:\\Users\\Zoé' })
+    expect(s.env!['PATH']).toBe('C:\\Users\\Zoé\\.local\\bin;C:\\Windows')
+  })
+
   it('on Windows: keeps what Windows needs to run a .cmd (an npm-installed claude.cmd), whatever its case', () => {
     const s = resolvePackagedSpawn({ resourcesPath: 'C:\\r', home: 'C:\\h', platform: 'win32', env: {
       PATH: 'C:\\Windows', ComSpec: 'C:\\Windows\\system32\\cmd.exe', PATHEXT: '.COM;.EXE;.BAT;.CMD', SystemRoot: 'C:\\Windows',
