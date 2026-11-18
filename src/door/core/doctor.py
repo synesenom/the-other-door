@@ -616,11 +616,11 @@ def run_checks(
         "last_run": {...} | None, "last_scrape": [{"site", "last_success",
         "age_hours"}, ...]}``.
     """
-    from door.core.profile_loader import ConfigError, load_config
+    from door.core import profile_loader
 
     try:
-        config = load_config(Path(profile_dir) / "config.json")
-    except (FileNotFoundError, ConfigError):
+        config = profile_loader.load_profile_config(Path(profile_dir))
+    except (FileNotFoundError, profile_loader.ConfigError):
         config = {}
     try:  # the probes read the followed employers like a scrape does
         config = {**config, **companies.feed_config(profile_dir)}
