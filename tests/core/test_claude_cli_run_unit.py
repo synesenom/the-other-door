@@ -27,7 +27,7 @@ def test_run_calls_claude_in_print_mode_from_the_repo_root(monkeypatch):
     assert claude_cli.run(["--model", "haiku"], input="q", timeout_s=5, feature="ask") == "hi"
     argv, kwargs = calls[0]
     assert argv[:2] == ["claude", "-p"]
-    assert argv[2:] == ["--model", "haiku"]
+    assert argv[2:] == ["--model", "haiku", "--strict-mcp-config"]
     assert kwargs["input"] == "q"
     assert kwargs["timeout"] == 5
     assert kwargs["cwd"] == workspace.REPO_ROOT

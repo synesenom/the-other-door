@@ -51,6 +51,7 @@ def env(base: dict[str, str] | None = None, profile_dir: Path | None = None) -> 
 # `result` line is the envelope `--output-format json` gives and whose `rate_limit_event`
 # says how full the plan's windows are. `-p` refuses `stream-json` without `--verbose`.
 STREAM_ARGS = ["--output-format", "stream-json", "--verbose"]
+STRICT_MCP = "--strict-mcp-config"   # only the servers a call names with --mcp-config (#345)
 
 # The plan windows read from a `rate_limit_event` (`unifiedWindows` or `rateLimitType`).
 WINDOWS = ("five_hour", "seven_day")
@@ -161,6 +162,10 @@ def run(
         ClaudeError: the binary could not be started, the call timed out, or
             it exited non-zero (the message carries `claude`'s stderr).
     """
+    # Never the user's own MCP servers or connectors: their tool lists cost ~34k input tokens a call (#345).
+    # A call that needs a server names it with `--mcp-config`, which `--strict-mcp-config` then limits to.
+    if STRICT_MCP not in args:
+        args = [*args, STRICT_MCP]
     argv = [installers.find_claude() or "claude", "-p", *args]
     try:
         result = subprocess.run(
@@ -246,7 +251,6 @@ def ask(
     timeout_s: float | None = None,
     profile_dir: Path | None = None,
     effort: str | None = None,
-    strict_mcp: bool = False,
 ):
     """One question to the model: `system_prompt` as the system prompt, `input`
     on stdin, no tools unless `allowed_tools` names some, no session kept.
@@ -254,9 +258,7 @@ def ask(
     With `schema`, the answer is asked for as JSON of that shape and returned
     as a dict; without, the answer text is returned stripped. Either way the
     answer comes as a stream (`STREAM_ARGS`) whose envelope `run()` returns
-    and whose weight it records under `feature`. `effort` is `--effort`; `strict_mcp`
-    keeps the user's MCP servers out of the call (`--strict-mcp-config`: their tool
-    lists would be thousands of input tokens).
+    and whose weight it records under `feature`. `effort` is `--effort`.
 
     Raises:
         ClaudeError: as `run()`, or an answer that is not a JSON object when a
@@ -270,8 +272,6 @@ def ask(
     args.append("--no-session-persistence")
     if effort:
         args += ["--effort", effort]
-    if strict_mcp:
-        args.append("--strict-mcp-config")
     stdout = run(args, feature=feature, input=input, timeout_s=timeout_s, profile_dir=profile_dir)
     if schema is None:
         text = envelope_result(stdout)

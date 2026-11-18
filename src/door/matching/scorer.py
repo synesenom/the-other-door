@@ -332,6 +332,7 @@ def build_claude_argv(
         "--no-session-persistence",
         "--effort",
         "low",
+        claude_cli.STRICT_MCP,
     ]
     if fallback_model:
         argv += ["--fallback-model", fallback_model]

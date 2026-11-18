@@ -93,6 +93,12 @@ def test_each_claude_call_site(call_site, tmp_path, monkeypatch):
     [(argv, env)] = calls
     # asks for the stream, which carries the plan's windows
     assert argv[argv.index("--output-format") + 1] == "stream-json" and "--verbose" in argv
+    # no MCP server of the user's: ~34k input tokens a call (#345); the tailor's own door server is named by --mcp-config
+    assert "--strict-mcp-config" in argv
+    if feature == "tailoring":
+        assert list(json.loads(argv[argv.index("--mcp-config") + 1])["mcpServers"]) == ["door"]
+    else:
+        assert "--mcp-config" not in argv
     # the configured plan, and no parent session
     assert env["CLAUDE_CONFIG_DIR"] == "/plans/personal" and env["KEEP_ME"] == "yes"
     assert "CLAUDECODE" not in env and not [k for k in env if k.startswith("CLAUDE_CODE_")]

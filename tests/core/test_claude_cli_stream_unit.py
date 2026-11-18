@@ -125,20 +125,28 @@ def test_ask_reads_a_stream(monkeypatch):
     assert argv[argv.index("--output-format") + 1] == "stream-json" and "--verbose" in argv
 
 
-def test_ask_passes_effort_and_strict_mcp_when_asked(monkeypatch):
+def test_ask_passes_effort_when_asked_and_always_no_user_mcp_servers(monkeypatch):
     calls = []
     stdout = _stream(_result(result="{}", structured_output={}))
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, stdout))
-    claude_cli.ask("sys", "q", model="haiku", feature="style", schema={"type": "object"}, effort="low", strict_mcp=True)
+    claude_cli.ask("sys", "q", model="haiku", feature="style", schema={"type": "object"}, effort="low")
     argv = calls[0]
-    assert argv[argv.index("--effort") + 1] == "low" and "--strict-mcp-config" in argv
+    assert argv[argv.index("--effort") + 1] == "low" and argv.count("--strict-mcp-config") == 1
 
 
-def test_ask_adds_neither_flag_by_default(monkeypatch):
+def test_ask_adds_no_effort_by_default_but_is_strict(monkeypatch):
     calls = []
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
     claude_cli.ask("sys", "q", model="haiku", feature="keywords")
-    assert "--effort" not in calls[0] and "--strict-mcp-config" not in calls[0]
+    assert "--effort" not in calls[0] and "--strict-mcp-config" in calls[0]
+
+
+def test_run_is_strict_unless_the_caller_already_said_so(monkeypatch):
+    calls = []
+    monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, "x"))
+    claude_cli.run(["--model", "haiku"], feature="revise")
+    claude_cli.run(["--mcp-config", "{}", "--strict-mcp-config"], feature="ask")
+    assert calls[0].count("--strict-mcp-config") == 1 and calls[1].count("--strict-mcp-config") == 1
 
 
 # --------------------------------------------------------------------------- the call sites record the limits (plan §5)
