@@ -4,12 +4,12 @@
 // tokens back. The registry is never readable from outside (there is no getter), and is cleared when
 // the wizard closes. A file choice always goes through one of those two and a token like this.
 import { randomUUID } from 'node:crypto'
-import { basename, extname } from 'node:path'
+import { basename } from 'node:path'
 import { checkPicked } from './files'
 import { isExternalUrl } from './security'
 
 export const MAX_CV_BYTES = 25 * 1024 * 1024
-export const CV_EXTENSIONS = ['.pdf', '.docx', '.md', '.markdown', '.txt']
+export const CV_EXTENSIONS = ['pdf', 'docx', 'md', 'markdown', 'txt']
 export const LINKEDIN_HINT = "LinkedIn pages can't be read; save your profile as a PDF (More → Save to PDF) and add that file."
 
 export interface CvFile {
@@ -29,19 +29,12 @@ interface Deps {
   realpath?(path: string): Promise<string>
 }
 
-/** Why a file cannot be used, or null; the server is handed the real path checked here (a pick later swapped for a link is refused). */
-async function problem(path: string, deps: Deps): Promise<{ reason: string } | { reason: null; size: number; real: string }> {
-  const checked = await checkPicked(
-    path,
-    {
-      extensions: CV_EXTENSIONS.map((e) => e.slice(1)),
-      maxBytes: MAX_CV_BYTES,
-      wrongType: 'Only PDF, DOCX, Markdown and text files can be read.',
-      tooBig: 'That file is over 25 MB.',
-    },
-    deps,
-  )
-  return checked.ok ? { reason: null, size: checked.size, real: checked.real } : { reason: checked.error }
+/** The rule for a CV file; the server is handed the real path checked here (a pick later swapped for a link is refused). */
+const CV_RULE = {
+  extensions: CV_EXTENSIONS,
+  maxBytes: MAX_CV_BYTES,
+  wrongType: 'Only PDF, DOCX, Markdown and text files can be read.',
+  tooBig: 'That file is over 25 MB.',
 }
 
 export function createCvSources(deps: Deps) {
@@ -50,9 +43,9 @@ export function createCvSources(deps: Deps) {
     const result: PickResult = { files: [], refused: [] }
     for (const path of paths) {
       const name = basename(path)
-      const p = await problem(path, deps)
-      if (p.reason !== null) {
-        result.refused.push({ name, reason: p.reason })
+      const p = await checkPicked(path, CV_RULE, deps)
+      if (!p.ok) {
+        result.refused.push({ name, reason: p.error })
         continue
       }
       const token = randomUUID()
@@ -65,7 +58,7 @@ export function createCvSources(deps: Deps) {
     async pick(): Promise<PickResult> {
       const answer = await deps.showOpenDialog({
         properties: ['openFile', 'multiSelections'],
-        filters: [{ name: 'CV files', extensions: CV_EXTENSIONS.map((e) => e.slice(1)) }],
+        filters: [{ name: 'CV files', extensions: CV_EXTENSIONS }],
       })
       return answer.canceled ? { files: [], refused: [] } : add(answer.filePaths)
     },
@@ -75,8 +68,8 @@ export function createCvSources(deps: Deps) {
       for (const token of tokens) {
         const path = registry.get(token)
         if (!path) return { ok: false, error: 'A chosen file is no longer available; add it again.' }
-        const p = await problem(path, deps)
-        if (p.reason !== null) return { ok: false, error: `${basename(path)}: ${p.reason}` }
+        const p = await checkPicked(path, CV_RULE, deps)
+        if (!p.ok) return { ok: false, error: `${basename(path)}: ${p.error}` }
         paths.push(p.real)
       }
       return { ok: true, paths }

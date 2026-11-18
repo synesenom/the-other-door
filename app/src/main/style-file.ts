@@ -15,6 +15,7 @@ interface Deps {
   exists: (path: string) => boolean
 }
 
+const STYLE_EXTENSIONS = ['pdf']
 const isPdf = (p: string) => p.toLowerCase().endsWith('.pdf')
 
 export function createStyleFile(deps: Deps) {
@@ -24,14 +25,14 @@ export function createStyleFile(deps: Deps) {
       const r = await deps.showOpenDialog({
         title: 'Choose a CV to copy the style of',
         properties: ['openFile'],
-        filters: [{ name: 'CV as a PDF', extensions: ['pdf'] }],
+        filters: [{ name: 'CV as a PDF', extensions: STYLE_EXTENSIONS }],
         ...(hint && deps.exists(hint) ? { defaultPath: hint } : {}),
       })
       if (r.canceled || r.filePaths.length === 0) return { canceled: true }
       const chosen = r.filePaths[0]!
       const checked = await checkPicked(
         chosen,
-        { extensions: ['pdf'], maxBytes: MAX_STYLE_BYTES, wrongType: 'Choose a CV as a PDF.', tooBig: 'That file is over 25 MB.', unreadable: `${basename(chosen)} could not be read.` },
+        { extensions: STYLE_EXTENSIONS, maxBytes: MAX_STYLE_BYTES, wrongType: 'Choose a CV as a PDF.', tooBig: 'That file is over 25 MB.', unreadable: `${basename(chosen)} could not be read.` },
         deps,
       )
       return checked.ok ? { path: checked.real } : { error: checked.error }

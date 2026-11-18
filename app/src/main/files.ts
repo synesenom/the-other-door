@@ -73,7 +73,7 @@ export interface PickedRule {
 export async function checkPicked(
   path: string,
   rule: PickedRule,
-  io: { realpath?: (p: string) => Promise<string>; stat: (p: string) => Promise<{ size: number }> },
+  io: { realpath?: (p: string) => Promise<string>; stat?: (p: string) => Promise<{ size: number }> },
 ): Promise<{ ok: true; real: string; size: number } | { ok: false; error: string }> {
   const accepted = (p: string) => rule.extensions.some((e) => p.toLowerCase().endsWith(`.${e}`))
   if (!accepted(path)) return { ok: false, error: rule.wrongType }
@@ -82,7 +82,7 @@ export async function checkPicked(
   try {
     real = io.realpath ? await io.realpath(path) : path
     if (!accepted(real)) return { ok: false, error: rule.wrongType }
-    if (rule.maxBytes !== undefined) size = (await io.stat(real)).size
+    if (rule.maxBytes !== undefined) size = (await io.stat!(real)).size
   } catch {
     return { ok: false, error: rule.unreadable ?? 'That file could not be read.' }
   }

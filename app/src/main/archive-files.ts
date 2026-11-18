@@ -15,8 +15,9 @@ interface Deps {
   today?: () => string
 }
 
-const FILTERS = [{ name: 'The other door export', extensions: ['tar.gz', 'tgz'] }]
-const isArchive = (p: string) => /\.(tar\.gz|tgz)$/i.test(p)
+const ARCHIVE_EXTENSIONS = ['tar.gz', 'tgz']
+const FILTERS = [{ name: 'The other door export', extensions: ARCHIVE_EXTENSIONS }]
+const isArchive = (p: string) => ARCHIVE_EXTENSIONS.some((e) => p.toLowerCase().endsWith(`.${e}`))
 
 export const defaultExportName = (day: string) => `door-export-${day}.tar.gz`
 export const defaultReportName = (day: string) => `door-report-${day}.zip`
@@ -51,7 +52,7 @@ export function createArchiveFiles(deps: Deps) {
       const r = await deps.showOpenDialog({ title: 'Import data', properties: ['openFile'], filters: FILTERS })
       if (r.canceled || r.filePaths.length === 0) return { canceled: true }
       const chosen = r.filePaths[0]!
-      const checked = await checkPicked(chosen, { extensions: ['tar.gz', 'tgz'], wrongType: 'Choose an export, a .tar.gz file.' }, { realpath: deps.realpath, stat: async () => ({ size: 0 }) })
+      const checked = await checkPicked(chosen, { extensions: ARCHIVE_EXTENSIONS, wrongType: 'Choose an export, a .tar.gz file.' }, deps)
       if (!checked.ok) return { error: checked.error }
       pending = { token: randomUUID(), path: checked.real }
       return { token: pending.token, name: basename(chosen) }
