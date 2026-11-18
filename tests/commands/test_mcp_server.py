@@ -779,7 +779,7 @@ def test_setup_runs_the_scraper_fix_it_is_given(cli_env, monkeypatch):
 
 
 class _Drive:
-    """Google Drive's one archive: a blob and its version (as `tests/core/test_sync_unit.py`'s FakeDrive)."""
+    """Google Drive's one archive: a blob and its version (as `tests/core/sync/test_sync_unit.py`'s FakeDrive)."""
 
     def __init__(self, monkeypatch, tmp_path):
         from door.core.sync import drive

@@ -8,7 +8,7 @@ so each has its own list:
 - **Employer feeds:** the other sites (``Site.config_key``), then the platforms The other door only detects
   (``ats_detect.PRECEDENCE``, by their detection test);
 - **Employer discovery:** the discovery sources (``discovery_sources.SOURCES``), run locally, not in CI, so
-  their rows keep the last local result, and the Wikidata lookup (``tests/core/test_wikidata_live.py``);
+  their rows keep the last local result, and the Wikidata lookup (``tests/core/employers/test_wikidata_live.py``);
 - **Matcher:** every golden scoring case (``tests/matching/fixtures/golden/``), from
   ``tests/matching/test_matcher_golden.py``'s ``[<case>]`` runs (the real scorer on a Claude plan).
 

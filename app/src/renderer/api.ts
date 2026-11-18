@@ -120,7 +120,7 @@ export interface CostBlock {
   }[]
 }
 
-/** One site's outcome in a run record (`core/runs.site_entries`). */
+/** One site's outcome in a run record (`core/jobs/runs.site_entries`). */
 export interface SiteOutcome {
   site: string
   outcome: string

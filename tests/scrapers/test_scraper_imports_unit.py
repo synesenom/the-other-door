@@ -1,6 +1,6 @@
 """Import guard: a site module's only `door` import is `door.scrapers.sdk`.
 
-The discovery sources (`core/discovery_sources.SOURCES`: `linkedin`, which is not a `Site`) are
+The discovery sources (`core/employers/discovery_sources.SOURCES`: `linkedin`, which is not a `Site`) are
 scanned the same way (#280)."""
 import ast
 

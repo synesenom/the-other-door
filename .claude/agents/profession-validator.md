@@ -42,7 +42,7 @@ Against `git diff <base_branch>...HEAD` and the files, for each new source. `<pk
   - a `probe` with its probe test;
   - a feed also has `detect_url` and `feed_url` and its place in `ats_detect.PRECEDENCE`.
 - **discovery:**
-  - its line in `core/discovery_sources.SOURCES`;
+  - its line in `core/employers/discovery_sources.SOURCES`;
   - `NAME`, `COUNTRIES`, `CONFIG_KEY`, `run`;
   - its `<source>_discovery` key in `Profile`, set to `False` in `tests/profile_utils.base_config`, with a row in `docs/configuration.md`'s Keys table;
   - its state under `jobs/discovery/<source>.json`;

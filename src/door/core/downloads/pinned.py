@@ -1,4 +1,4 @@
-"""The one step that downloads a file pinned by sha256 (#202): the Chromium shell (`core/chromium`), cloudflared
+"""The one step that downloads a file pinned by sha256 (#202): the Chromium shell (`core/downloads/chromium`), cloudflared
 (`core/phone`) and the CV fonts (`style/fonts`).
 
 A caller opens a `utils.staging` folder (a unique `.part` folder inside its destination, removed afterwards, the ones a
