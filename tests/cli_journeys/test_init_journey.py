@@ -42,11 +42,13 @@ def _docx(path: Path, text: str) -> Path:
     return path
 
 
-def _source(world: World, kind: str) -> Path:
+def _source(world: World, kind: str, name: str | None = None) -> Path:
     """The persona's CV as the file the user hands over, in the data folder beside the world's Markdown copy:
     a DOCX or a PDF of it, or (`fixture`) the French PDF."""
     text = Path(world.info["cvFile"]).read_text(encoding="utf-8")
     path = Path(world.info["cvFile"]).with_suffix(".docx" if kind == "docx" else ".pdf")
+    if name:
+        path = path.with_name(name)
     if kind == "docx":
         return _docx(path, text)
     if kind == "pdf":
@@ -56,12 +58,12 @@ def _source(world: World, kind: str) -> Path:
     return path
 
 
-def _init_find_show_prepare(world: World, persona: str) -> None:
+def _init_find_show_prepare(world: World, persona: str, cv_name: str | None = None) -> None:
     """init from the persona's CV file, the first run it starts, then `jobs show` and `jobs prepare` of the fresh ad:
     every character of the CV and of the ad kept on the way to the model, the disk and the printed PDFs."""
     kind, words, kept = CASES[persona]
     # once: a source that cannot be read is asked for again, and the second answer (empty) skips the draft
-    world.script_prompts({"cv_sources": {"sequence": [str(_source(world, kind))]}})
+    world.script_prompts({"cv_sources": {"sequence": [str(_source(world, kind, cv_name))]}})
     code, out, err = world.door("init")
     assert code == 0, f"{out}\n{err}"
     assert "No sources" not in out, err   # "Your sources could not be read: 'charmap' codec can't encode ..." (#134)
@@ -140,3 +142,11 @@ def test_init_by_flags_asks_nothing(world):
 @pytest.mark.parametrize("persona", ["lea", "bence", "asa"])
 def test_a_cv_in_its_own_language_through_init_the_first_run_and_prepare(persona):
     _init_find_show_prepare(build_world(persona, empty=True), persona)
+
+
+def test_non_ascii_data_folder_and_cv_name():
+    """#277: a data folder and a CV file named with non-ASCII characters (C:\\Users\\Zoé\\..., "Åsa Söderlund CV.pdf")
+    reach argv, DOOR_HOME and the cwd of every step: init, find, show and prepare."""
+    world = build_world("asa", empty=True, home_name="Zoé Åsa-home")
+    assert "Zoé" in str(world.home)
+    _init_find_show_prepare(world, "asa", cv_name="Åsa Söderlund CV.pdf")

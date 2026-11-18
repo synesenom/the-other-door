@@ -274,6 +274,11 @@ describe('resolveSpawn', () => {
     expect(s.env).not.toHaveProperty('SECRET')
   })
 
+  it('passes a non-ASCII DOOR_HOME through unchanged (#277)', () => {
+    const home = 'C:\\Users\\Zoé\\Åsa Söderlund\\door'
+    expect(resolveSpawn('/repo', { ...env, DOOR_HOME: home }, 'linux').env).toMatchObject({ DOOR_HOME: home })
+  })
+
   it('forwards CLAUDE_CONFIG_DIR when set and leaves it out when not', () => {
     expect(resolveSpawn('/repo', { ...env, CLAUDE_CONFIG_DIR: '/sandbox/.claude' }, 'linux').env).toMatchObject({ CLAUDE_CONFIG_DIR: '/sandbox/.claude' })
     expect(resolveSpawn('/repo', env, 'linux').env).not.toHaveProperty('CLAUDE_CONFIG_DIR')
