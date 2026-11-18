@@ -7,6 +7,7 @@ unless this one reads them. The server's tools come from `app/src/generated/tool
 
 import json
 import re
+from pathlib import Path
 
 import pytest
 
@@ -20,6 +21,20 @@ _TOOL = re.compile(r"mcp__door__(\w+)")
 # after "as", "with" or "pass" in the sentence that names the tool.
 _ARG = re.compile(r"\b(?:as|with|pass|passing)\s+`(\w+)`((?:\s*(?:,|and|or)\s*`\w+`)*)")
 _MORE = re.compile(r"`(\w+)`")
+
+# The GitHub MCP tools (#302), pinned by hand in github_tools.json.
+_GITHUB = {k: v for k, v in json.loads((Path(__file__).parent / "github_tools.json").read_text(encoding="utf-8")).items() if k != "_comment"}
+_GH_TOOL = re.compile(r"mcp__github__(\w+)")
+_GH_ARG = re.compile(r"`([a-z]\w*): ([^`]*)`")   # "`owner: synesenom`", "`method: get`"; "`Epic: ...`" is a title
+
+
+def named_github_calls(text: str) -> list[tuple[str, str, str]]:
+    """``(tool, argument, value)`` for each `key: value` between a GitHub tool's name and the next tool, blank line or rule."""
+    out = []
+    for m in _GH_TOOL.finditer(text):
+        rest = re.split(r"mcp__|\n\s*\n|\n---", text[m.end():], maxsplit=1)[0]
+        out += [(m.group(1), k, v) for k, v in _GH_ARG.findall(rest)]
+    return out
 
 
 def _id(path) -> str:
@@ -73,3 +88,28 @@ def test_every_tool_a_skill_names_is_a_server_tool(path):
 def test_every_argument_a_skill_passes_is_a_parameter_of_its_tool(path):
     wrong = [(t, a) for t, a in named_arguments(path.read_text(encoding="utf-8")) if t in _TOOLS and a not in _TOOLS[t]]
     assert not wrong, f"{_id(path)} passes arguments its tools do not take: {wrong}"
+
+
+def test_the_reader_finds_the_arguments_a_github_tool_gets():
+    text = "Call `mcp__github__issue_write`, `method: create`, title `Epic: x`.\n- `owner: o`\n\nThen `repo: r`."
+    assert named_github_calls(text) == [("issue_write", "method", "create"), ("issue_write", "owner", "o")]
+
+
+@pytest.mark.parametrize("path", _FILES, ids=_id)
+def test_every_github_tool_a_skill_names_is_pinned(path):
+    unknown = set(_GH_TOOL.findall(path.read_text(encoding="utf-8"))) - set(_GITHUB)
+    assert not unknown, f"{_id(path)} names GitHub tools not in tests/model/github_tools.json: {sorted(unknown)}"
+
+
+@pytest.mark.parametrize("path", _FILES, ids=_id)
+def test_every_github_argument_and_method_a_skill_passes_exists(path):
+    wrong = []
+    for tool, arg, value in named_github_calls(path.read_text(encoding="utf-8")):
+        pin = _GITHUB.get(tool)
+        if pin is None:
+            continue
+        if arg not in pin["params"]:
+            wrong.append((tool, arg))
+        elif arg == "method" and "methods" in pin and value not in pin["methods"]:
+            wrong.append((tool, f"method: {value}"))
+    assert not wrong, f"{_id(path)} passes what the GitHub tools do not take: {wrong}"
