@@ -11,6 +11,7 @@ import { startDemoRun } from './demo-run'
 import { doorHome } from './files'
 import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
+import { flushPage } from './close-flush'
 import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
 import { quitStep, restorePhoneAtStart, stopForUpdate, type PhoneUpdateDeps } from './phone-update'
@@ -137,6 +138,8 @@ const claudeLogin = createClaudeLogin({
   },
 })
 
+let pagesFlushed = false
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1200,
@@ -161,6 +164,14 @@ function createWindow(): void {
   })
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   win.once('ready-to-show', () => win.show())
+  // The page writes what it holds unsaved (the Master CV's last seconds of typing) before the window goes.
+  let closing = false
+  win.on('close', (event) => {
+    if (closing || pagesFlushed) return // a quit has flushed every page already (before-quit)
+    event.preventDefault()
+    closing = true
+    void flushPage(win.webContents, ipcMain).finally(() => win.destroy())
+  })
   if (devUrl) void win.loadURL(devUrl)
   else void win.loadFile(join(__dirname, '../renderer/index.html'))
 }
@@ -254,6 +265,15 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', (event) => {
+  // The pages write what they hold unsaved first, while the server still answers; then the quit goes on.
+  if (!pagesFlushed) {
+    event.preventDefault()
+    void Promise.all(BrowserWindow.getAllWindows().map((w) => flushPage(w.webContents, ipcMain))).finally(() => {
+      pagesFlushed = true
+      app.quit()
+    })
+    return
+  }
   // Quitting installs a downloaded update: stop the phone server and a style build first, once, then quit again.
   if (quitStep({ installsOnQuit: updates.willInstallOnQuit(), stopped: stoppedForUpdate }) === 'stop-then-quit') {
     event.preventDefault()

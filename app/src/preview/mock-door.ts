@@ -327,6 +327,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
     buildStyle: async () => ({ ok: true, data: { started: true } }),
+    onBeforeClose: () => () => undefined,
     onStyleReading: (cb: () => void) => {
       styleReadingListeners.add(cb)
       return () => styleReadingListeners.delete(cb)

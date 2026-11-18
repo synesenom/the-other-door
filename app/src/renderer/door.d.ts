@@ -35,6 +35,7 @@ declare global {
       styleFromCvFile(): Promise<Envelope>
       /** The CV file was taken by `styleFromCvFile` and is being read; returns the way to stop. */
       onStyleReading(cb: () => void): () => void
+      onBeforeClose(cb: () => Promise<void>): () => void
       /** Signing in to Claude: the main process runs `claude auth login` and pushes its state. */
       claudeLogin: {
         start(email?: string): Promise<{ ok: boolean; error?: string }>

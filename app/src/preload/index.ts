@@ -54,6 +54,16 @@ contextBridge.exposeInMainWorld('door', {
       }
     },
   },
+  // The window is closing: the page writes what it holds unsaved, then says so (src/main/close-flush.ts).
+  onBeforeClose: (cb: () => Promise<void>) => {
+    const listener = () => {
+      void cb().finally(() => ipcRenderer.send('door:before-close-done'))
+    }
+    ipcRenderer.on('door:before-close', listener)
+    return () => {
+      ipcRenderer.removeListener('door:before-close', listener)
+    }
+  },
   info: () => ipcRenderer.invoke('door:info'),
   showHome: () => ipcRenderer.invoke('door:show-home'),
   checkUpdate: () => ipcRenderer.invoke('door:check-update'),
