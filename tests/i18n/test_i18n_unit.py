@@ -855,6 +855,20 @@ def test_cv_conventions_follow_the_location_s_country_and_default_to_neutral():
     assert i18n.cv_conventions_for_location(None).photo == "no"
 
 
+def test_cv_country_and_conventions_prefer_the_posting_s_location_then_the_profile_s():
+    config = {"location": "Copenhagen"}
+    assert i18n.cv_country({"location": "London, United Kingdom"}, config).code == "gb"
+    assert i18n.cv_conventions({"location": "London, United Kingdom"}, config).photo == "no"
+    assert i18n.cv_country({}, config).code == "dk"
+    assert i18n.cv_conventions({"location": None}, config).photo == "optional"
+
+
+def test_cv_country_is_none_and_conventions_neutral_when_no_location_names_a_country():
+    assert i18n.cv_country({"location": "Atlantis"}, {"location": "Atlantis"}) is None
+    neutral = i18n.cv_conventions({}, {})
+    assert (neutral.photo, neutral.date_of_birth, neutral.max_pages) == ("no", False, 2)
+
+
 def test_preload_loads_the_language_libraries_with_one_blas_thread(monkeypatch):
     # #18: numpy's OpenBLAS hung as it loaded on a worker thread of the Windows server; it is loaded once, up front
     import sys

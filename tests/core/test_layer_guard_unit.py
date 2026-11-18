@@ -3,15 +3,15 @@
 `door.commands` composes the packages below it; `render/` and `style/` have no business reaching up
 into it, and `render/` is also under `style/`. `pipeline/` is left out: it is the layer that composes
 the commands' cores (`find`'s five steps). `core/sync.py` is the one named exception: its Drive hooks
-call the archive core lazily, which moving would be a change of its own.
+call the archive core lazily; issue #213 removes it, and then EXCEPTIONS goes empty.
 """
 
 import ast
 
-from paths import PACKAGE_DIR, REPO_ROOT
+from paths import PACKAGE_DIR
 
 LOWER = ("render", "style", "core", "tailoring", "matching", "i18n", "scrapers")
-EXCEPTIONS = {"core/sync.py"}
+EXCEPTIONS = {("core/sync.py", "door.commands.archive")}  # remove with #213
 
 
 def _imports(path):
@@ -21,26 +21,23 @@ def _imports(path):
             for alias in node.names:
                 yield node.lineno, alias.name
         elif isinstance(node, ast.ImportFrom) and node.level == 0:
-            yield node.lineno, node.module or ""
             for alias in node.names:
                 yield node.lineno, f"{node.module}.{alias.name}"
 
 
 def _offenders(packages, forbidden):
-    found = []
+    found = set()
     for package in packages:
         for path in sorted((PACKAGE_DIR / package).rglob("*.py")):
-            if str(path.relative_to(PACKAGE_DIR)) in EXCEPTIONS:
-                continue
-            for line, name in _imports(path):
+            for _line, name in _imports(path):
                 if name == forbidden or name.startswith(forbidden + "."):
-                    found.append(f"{path.relative_to(REPO_ROOT)}:{line} imports {name}")
-    return sorted(set(found))
+                    found.add((str(path.relative_to(PACKAGE_DIR)), name))
+    return found
 
 
 def test_the_lower_packages_never_import_the_commands():
-    assert _offenders(LOWER, "door.commands") == []
+    assert _offenders(LOWER, "door.commands") == EXCEPTIONS
 
 
 def test_render_never_imports_style():
-    assert _offenders(("render",), "door.style") == []
+    assert _offenders(("render",), "door.style") == set()

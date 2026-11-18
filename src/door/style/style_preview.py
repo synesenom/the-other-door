@@ -141,7 +141,7 @@ def show(home: Path, profile_dir: Path, config: dict) -> dict:
     root = Path(home) / ".style" / "preview"
     cv_md = cv_text(Path(profile_dir), config)
     lang = _language(cv_md)
-    photo = page_mod.profile_photo(config, {})
+    photo = page_mod.profile_photo(config, {})  # no posting: the profile's own country decides
     out: dict[str, dict] = {}
     for style in ("default", "like"):
         folder = root / style

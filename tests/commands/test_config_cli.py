@@ -67,7 +67,7 @@ def test_scrape_passes_per_site_lists_to_scrapers_as_a_dict(cli_env, monkeypatch
     assert seen["config"]["greenhouse_boards"] == ["acme"]
 
 
-# one command per loader: lenient (`_load_config_or_defaults`) and strict (`_load_config`)
+# one command per loader: lenient (`profile_loader.load_config_or_defaults`) and strict (`_load_config`)
 @pytest.mark.parametrize("argv", [["jobs"], ["find"]])
 def test_commands_reject_an_invalid_config(cli_env, argv):
     _break_config(cli_env, min_sore=0.5)
