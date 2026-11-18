@@ -20,7 +20,7 @@ from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
 from door.core import claude_cli, migrations, workspace
-from door.tailoring import cv_body, style_icons
+from door.style import cv_body, style_icons
 
 _DEFAULT_MODEL = "sonnet"
 _DRAFT_NAME = "cv.draft.md"
@@ -79,7 +79,8 @@ def _extract_text(path: Path) -> str:
     if not path.is_file():
         raise FileNotFoundError(f"{path}: no such file")
     if suffix == ".pdf":
-        from door.tailoring import pdf_render, style_extract
+        from door.render import pdf_render
+        from door.style import style_extract
 
         style = style_extract.extract(path)
         runs = style.get("runs", [])  # none for a scan; without a structure a LinkedIn export keeps its runs

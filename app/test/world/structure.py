@@ -1,5 +1,5 @@
 """What the stand-in `claude` answers the call that reads a CV's structure (#343): the CV's text lines come on stdin as
-`door.tailoring.style_structure.rows` writes them, and the answer is a plain rule's, as in `tests/style_structure_utils`:
+`door.style.style_structure.rows` writes them, and the answer is a plain rule's, as in `tests/style_structure_utils`:
 the name is the largest text of the first page, the headings are the lines of at most six words set unlike the body
 text that a section kind names, one column, not LinkedIn. Run as `python structure.py` with the input on stdin; needs
 `door` importable."""

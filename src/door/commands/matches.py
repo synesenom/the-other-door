@@ -17,7 +17,7 @@ from door.commands import salary as salary_cmd
 from door.commands import status as status_cmd
 from door.core import sites, workspace
 from door.tailoring import facts as facts_mod
-from door.tailoring import html_doc, readability
+from door.render import html_doc, readability
 
 
 def _list_core(
@@ -380,7 +380,7 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
         would not read back from the PDFs on disk (`readability.check_pdf`; each ``{file, kind, detail}``,
         ``file`` ``cv`` or ``cover_letter``; ``[]`` clean; None when a PDF could not be read).
     """
-    from door.tailoring import pdf_render
+    from door.render import pdf_render
 
     pdfs = {name: output_dir / f"{name}.pdf" for name in _MATERIALS}
     if not all(p.is_file() for p in pdfs.values()):

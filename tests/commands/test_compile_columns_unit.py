@@ -8,7 +8,7 @@ import pytest
 
 from compile_utils import install
 from door.commands import compile as compile_cmd
-from door.tailoring import html_doc
+from door.render import html_doc
 from door.core import workspace
 
 POSTING = {"title": "T", "company": "C", "location": "Copenhagen"}
@@ -226,7 +226,7 @@ def test_the_cvs_check_is_asked_for_and_the_letters_is_not(world, monkeypatch):
 
 
 def test_a_sparse_last_page_of_a_two_column_cv_comes_through_compile(world, monkeypatch):
-    from door.tailoring import pdf_render
+    from door.render import pdf_render
 
     _columns(world)
     monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])

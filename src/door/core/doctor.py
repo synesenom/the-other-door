@@ -42,7 +42,7 @@ HISTORY_RUNS = 10           # how many recent run records the average spans
 DEV_MODULES = ("pytest", "responses", "genbadge")
 
 _PRINT_TIMEOUT = 30  # seconds Chromium gets to print the test page
-_NO_PRINT_FIX = "run `python -m door.tailoring.html_pdf --out test.pdf` with door's Python (in a checkout: `poetry run python -m ...` from the repository with PYTHONPATH=src) to see the error"
+_NO_PRINT_FIX = "run `python -m door.render.html_pdf --out test.pdf` with door's Python (in a checkout: `poetry run python -m ...` from the repository with PYTHONPATH=src) to see the error"
 _NO_START_FIX = "run the shell by hand with --version to see why; it was found, so setup does not reinstall it"
 
 def _check(name: str, ok: bool, detail: str, fix: str | None = None, *, required: bool = True,
@@ -132,7 +132,7 @@ def _check_print(path: str, run) -> dict:
         p for p in (str(workspace.REPO_ROOT / "src"), os.environ.get("PYTHONPATH", "")) if p)}
     with tempfile.TemporaryDirectory(prefix="door-doctor-") as folder:
         out = Path(folder) / "test.pdf"
-        argv = [sys.executable, "-m", "door.tailoring.html_pdf", "--out", str(out), "--timeout", str(_PRINT_TIMEOUT)]
+        argv = [sys.executable, "-m", "door.render.html_pdf", "--out", str(out), "--timeout", str(_PRINT_TIMEOUT)]
         detail = None
         try:  # the outer margin lets print_html kill Chromium's process tree first
             proc = run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace",

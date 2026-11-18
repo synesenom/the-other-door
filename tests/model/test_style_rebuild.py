@@ -8,7 +8,7 @@ unreachable, a user's CV far shorter or far longer than the one whose look is co
 under `style_compare.FLOOR` fails and writes nothing; a ready one's style is then chosen and previewed, as the app does,
 and that print is read back: its columns, and what an ATS reads of it. Every check is on behaviour, never on the model's
 HTML. A CV with nothing to copy (a scan, a LinkedIn export, three columns) stops before the model and is tested offline
-(`tests/tailoring/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
+(`tests/style/test_style_build_loop.py`). A build takes 2-5 minutes (all seven rounds when no draft comes close).
 
 A case a known issue still breaks is an `xfail` naming it: the release gate stays green, and a pass shows as XPASS.
 """
@@ -28,8 +28,10 @@ from style_build_utils import EXAMPLE, STYLES
 
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, fonts, templates, workspace
-from door.tailoring import cv_body, readability, style_build, style_compare, style_extract, style_structure
+from door.core import chromium, templates, workspace
+from door.style import fonts
+from door.style import cv_body, style_build, style_compare, style_extract, style_structure
+from door.render import readability
 
 pytestmark = [pytest.mark.model, pytest.mark.real_chromium]
 

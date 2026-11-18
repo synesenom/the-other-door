@@ -102,7 +102,7 @@ Windows, or after the `.deb`'s `apt-get remove` its `/opt` folder, `/usr/bin` li
 HOME and Chromium folder and the journeys' test world (`test/world/`): a CV in, the review saved, the first run to
 its summary, the best match prepared (its CV printed by the **bundled** Chromium), quit, reopened. It
 checks the server is the bundled Python on the bundled door with `DOOR_BIN` the bundled `bin/`, doctor finds
-the bundled Chromium, a page printed with the installed interpreter (`python -m door.tailoring.html_pdf`), the data folder is where `docs/manual-app.md` says, no ERROR line in `logs/door.log`, and nothing
+the bundled Chromium, a page printed with the installed interpreter (`python -m door.render.html_pdf`), the data folder is where `docs/manual-app.md` says, no ERROR line in `logs/door.log`, and nothing
 written inside the app. The plan per system is `e2e-install/installer.ts` (unit-tested in `npm test`).
 A Prepare that logs an ERROR line fails the test at once. A failed run leaves in
 `install-report/` (uploaded by CI) the data folder's `logs/` (`door.log`: when the server stopped, its exit code or

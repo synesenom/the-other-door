@@ -3,7 +3,7 @@ whole vocabulary."""
 
 import re
 
-from door.tailoring import html_guard
+from door.render import html_guard
 from tests.paths import REPO_ROOT
 
 AGENTS = REPO_ROOT / ".claude" / "agents"

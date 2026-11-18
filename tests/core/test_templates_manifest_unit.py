@@ -62,6 +62,6 @@ def test_a_wrong_manifest_is_refused(tmp_path, data):
 
 
 def test_an_icon_kind_is_a_contact_kind_the_guard_lets_through_or_the_entry_date():
-    from door.tailoring import html_guard
+    from door.render import html_guard
 
     assert set(templates.ICON_KINDS) - {"date"} <= html_guard.CLASSES  # a kind the tailor may write is one a template may draw

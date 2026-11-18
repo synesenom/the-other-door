@@ -82,7 +82,7 @@ def test_the_saved_cv_is_the_confirmed_draft(onboarded):
 
 
 # ----------------------------------------------------------------------------- the CV style opt-in (#153)
-STYLED_PDF = Path(__file__).resolve().parents[1] / "tailoring" / "fixtures" / "styles" / "latex-classic.pdf"
+STYLED_PDF = Path(__file__).resolve().parents[1] / "style" / "fixtures" / "styles" / "latex-classic.pdf"
 
 
 def _with_a_pdf_cv(world) -> None:

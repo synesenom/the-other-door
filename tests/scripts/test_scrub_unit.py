@@ -506,7 +506,7 @@ def test_a_word_like_pdf_loses_links_form_text_and_named_marked_content_properti
     assert codes and "quilt" != "".join(font.char_of.get(c, " ") for c in codes)
 
 
-STYLES = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "styles"
+STYLES = REPO_ROOT / "tests" / "style" / "fixtures" / "styles"
 
 
 @pytest.mark.parametrize("name", ["html-word-two-column.pdf", "html-canva-icons.pdf"])

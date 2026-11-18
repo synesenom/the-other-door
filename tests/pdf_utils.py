@@ -54,8 +54,8 @@ def page_count(path: Path) -> int:
 
 
 def page_text(path: Path, index: int = 0) -> str:
-    """The text of one page, as `door.tailoring.pdf_render.page_texts` reads it."""
-    from door.tailoring import pdf_render
+    """The text of one page, as `door.render.pdf_render.page_texts` reads it."""
+    from door.render import pdf_render
 
     return pdf_render.page_texts(path)[index]
 

@@ -4,7 +4,7 @@ header comments. A class named in either of the last two that the guard refuses 
 import re
 
 from door import i18n
-from door.tailoring import html_guard
+from door.render import html_guard
 from paths import REPO_ROOT
 
 _CLASS = re.compile(r'class="([^"]*)"')

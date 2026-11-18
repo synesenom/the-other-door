@@ -255,7 +255,7 @@ def test_status_after_an_interrupted_swap_brings_the_earlier_style_back(home, cl
 
 
 def test_an_interrupted_end_of_a_candidate_never_leaves_it_to_be_chosen(home, cli_env, monkeypatch):
-    from door.tailoring import style_build
+    from door.style import style_build
     _folder(cli_env, "style", "kept")
     _folder(cli_env, "style.next", "new")
 

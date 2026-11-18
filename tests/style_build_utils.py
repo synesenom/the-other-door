@@ -5,10 +5,10 @@ import json
 import re
 import shutil
 
-from door.tailoring import cv_body
+from door.style import cv_body
 from paths import REPO_ROOT, TESTS_DIR
 
-STYLES = TESTS_DIR / "tailoring" / "fixtures" / "styles"
+STYLES = TESTS_DIR / "style" / "fixtures" / "styles"
 EXAMPLE = REPO_ROOT / "profile.example"
 BIG = "body { font-size: 30pt !important; }"  # makes the compact stress variant run over the page limit
 # the shipped template is one column: the canned stylist places a corpus CV's side column on the right, as

@@ -19,7 +19,7 @@ pytestmark = pytest.mark.cli_journeys
 FIGTREE = REPO_ROOT / "profile.example" / "fonts" / "Figtree-Regular.ttf"
 # A real French CV, its words scrubbed: accents, ’ and –, a word hyphenated at a line end (pdfium's U+FFFE),
 # icon glyphs read as control characters (U+0011), ○ and • bullets: the CV that failed on Windows.
-FRENCH_PDF = TESTS_DIR / "tailoring" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf"
+FRENCH_PDF = TESTS_DIR / "style" / "fixtures" / "styles" / "scrubbed-altacv-icons-fr.pdf"
 
 # persona: (the CV file it hands over, words naming its fresh ad, text its CV file must reach the model with;
 # lea's and bence's last item is a word their PDF breaks over two lines with a hyphen, which must come back joined)

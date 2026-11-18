@@ -19,7 +19,7 @@ from door.commands import compile as compile_cmd
 from door.commands import matches as matches_cmd
 from door.commands import prepare as prepare_cmd
 from door.commands import revise as revise_cmd
-from door.tailoring import html_doc
+from door.render import html_doc
 from door.commands import status as status_cmd
 from door.core import workspace
 import door.mcp_server as server
@@ -221,7 +221,7 @@ def _materials(env, job_id="jobindex-top", pngs=True):
 
 @pytest.fixture
 def fake_pages(monkeypatch):
-    import door.tailoring.pdf_render as pdf_render
+    import door.render.pdf_render as pdf_render
 
     counts = {"cv.pdf": 2, "cover_letter.pdf": 1}
     monkeypatch.setattr(pdf_render, "get_page_count", lambda path: counts[Path(path).name])

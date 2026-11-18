@@ -9,7 +9,7 @@ import { expect, test } from './fixtures'
 import { argsOf, config, exists, openCv } from './helpers/profile'
 import { scratchFile } from './helpers/onboarding'
 
-const STYLED_PDF = resolve(__dirname, '..', '..', 'tests', 'tailoring', 'fixtures', 'styles', 'latex-classic.pdf')
+const STYLED_PDF = resolve(__dirname, '..', '..', 'tests', 'style', 'fixtures', 'styles', 'latex-classic.pdf')
 const readyLine = (page: Page) => page.getByRole('button', { name: 'Your CV style is ready to compare', exact: true })
 const sheet = (page: Page, name: string) => page.getByRole('img', { name })
 const loaded = (page: Page, name: string) => expect.poll(() => sheet(page, name).evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
