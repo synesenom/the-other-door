@@ -11,7 +11,9 @@ import click
 
 from door import i18n
 from door.commands import _prompts
-from door.core import companies as companies_mod, discovery_sources, workspace
+from door.core import workspace
+from door.core.employers import companies as companies_mod
+from door.core.employers import discovery_sources
 from door.core import migrations, profile_loader
 from door.core import templates as templates_mod
 from door.core.profile_loader import ConfigError, read_config_data
@@ -265,7 +267,8 @@ def _drive_step() -> bool:
     A failure only warns: the wizard goes on without Drive.
     """
     from door.commands import archive as archive_cmd
-    from door.core import drive, sync
+    from door.core.sync import drive
+    from door.core.sync import sync
 
     if not drive.is_configured():
         click.echo("Google Drive sync is not configured in this build: skipping it.")
@@ -308,7 +311,7 @@ def _drive_step() -> bool:
 def _drive_push() -> None:
     """At the wizard's end, put what it wrote on Drive (its writes may not take the ledger lock)."""
     from door.commands import archive as archive_cmd
-    from door.core import drive
+    from door.core.sync import drive
     from door.core.lock import SyncConflict
 
     if drive.read_state() is None:
@@ -432,7 +435,8 @@ def _prereq_step() -> None:
     """Interrupt only for a missing `claude` or sign-in. Declining never stops the wizard: what
     reading the sources cannot do without Claude is asked instead."""
     from door.commands import setup as setup_cmd
-    from door.core import claude_cli, doctor, installers
+    from door.core import claude_cli, doctor
+    from door.core.downloads import installers
 
     if doctor.check_claude_cli()["status"] != "ok":
         if not _prompts.confirm("claude_install", "The other door reads your CV with Claude Code, which is not installed. Install it now?", default=True):
@@ -606,7 +610,7 @@ def _pick_titles(answers: dict) -> None:
 
 def _pick_discovery(answers: dict) -> None:
     """Each source serving the city is the user's call, off unless ticked; the question carries each one's
-    disclaimer (`door.core.disclaimer`)."""
+    disclaimer (`door.core.employers.disclaimer`)."""
     sources = discovery_sources.for_location(answers.get("location") or "")
     if not sources:
         return

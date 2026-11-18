@@ -4,7 +4,7 @@ Every employer in the candidates queue (`jobs/candidates.json`) that `profile/co
 does not already settle (followed, or found unfollowable or unresolved less than 90 days ago) is
 run through the detection of `door.commands.companies._classify`: the shape of its links, the
 DNS name of its career host, its careers page and the pages that links to, and for a name its
-likely slugs on each feed, then its own website as Wikidata names it (`door.core.wikidata`, one lookup
+likely slugs on each feed, then its own website as Wikidata names it (`door.core.employers.wikidata`, one lookup
 per name a run, shared by all employers: `companies.Context.employers`) (all with a polite session,
 probing on). The verdict
 is recorded in companies.json at once: ``followed`` (with the feed), ``unfollowable`` (a
@@ -32,8 +32,12 @@ from door import pipeline
 from door.commands import _common as common
 from door.commands import companies as companies_cmd
 from door.core import lock, profile_loader
-from door.core import ats_detect, candidates, careers_ai, sites, wikidata, workspace
-from door.core import companies as store
+from door.core import sites, workspace
+from door.core.jobs import candidates
+from door.core.employers import ats_detect
+from door.core.employers import careers_ai
+from door.core.employers import wikidata
+from door.core.employers import companies as store
 from door.core import progress as progress_mod
 from door.scrapers import _parallel, http_client
 from door.scrapers.feeds import hr_manager

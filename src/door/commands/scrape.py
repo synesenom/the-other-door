@@ -15,8 +15,8 @@ from door import i18n
 from door.core import lock, profile_loader
 from door.core import progress as progress_mod
 from door.core import models, sites, workspace
-from door.core import freshness
-from door.core import companies as companies_store
+from door.core.jobs import freshness
+from door.core.employers import companies as companies_store
 from door.core.sites import FEED_SITES, SITES
 from door.matching import integrity, title_fit
 from door.scrapers import _parallel
@@ -148,7 +148,7 @@ def _scrape_core(
             module-level `PROFILE_DIR`).
 
     A board keeps postings since its last successful scrape, minus a day, never more than
-    `max_age_days` ago (`door.core.freshness`); older ones are skipped (not written, not
+    `max_age_days` ago (`door.core.jobs.freshness`); older ones are skipped (not written, not
     recorded in history) and counted as ``stale``. The cutoff is also passed to the scraper as
     ``since=`` so one that can filter at the source does. A site's watermark only advances after
     a scrape that completed without failing or hitting the cap.
@@ -219,7 +219,7 @@ def _scrape_core(
     from datetime import date
     run_date = date.today().isoformat()
 
-    from door.core.history import HistoryStore
+    from door.core.jobs.history import HistoryStore
     store = HistoryStore(jobs_dir / "history.json")
     recheck_after_days = config.get("recheck_after_days", None)
 
@@ -413,7 +413,7 @@ def _scrape_core(
     # Optional liveness verification pass
     liveness_result = None
     if config.get("verify_liveness", False):
-        import door.core.liveness as liveness
+        from door.scrapers import liveness
         before = len(candidates_paths)
         # verify_liveness reports one event per posting itself.
         candidates_paths = liveness.verify_liveness(candidates_paths, config)

@@ -420,7 +420,7 @@ def test_scrape_liveness_called_when_flag_set(cli_env, monkeypatch, capsys):
     })
 
     import door.scrapers.boards.jobindex as ji
-    import door.core.liveness as liveness_mod
+    from door.scrapers import liveness as liveness_mod
 
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [_make_posting("pid-liveness-active")])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
@@ -484,7 +484,7 @@ def test_scrape_prints_a_flag_for_an_empty_site(cli_env, monkeypatch, capsys):
 
 def test_scrape_core_answered_with_no_hits_is_ok_and_moves_the_watermark(cli_env, monkeypatch):
     import door.scrapers.boards.jobindex as ji
-    from door.core import freshness
+    from door.core.jobs import freshness
     from door.scrapers import record_answered
 
     def answered(config, **kwargs):
@@ -786,7 +786,7 @@ def test_a_reserved_verdict_is_never_fetched(cli_env, monkeypatch, capsys):
 # --------------------------------------------------------------------------- #
 
 def _follow(profile_dir, platform, entry, name="Acme", status="followed"):
-    from door.core import companies
+    from door.core.employers import companies
 
     items = companies.load(profile_dir)
     companies.record(items, name, feed=(platform, entry) if status == "followed" else None, status=status,

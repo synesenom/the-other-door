@@ -31,7 +31,8 @@ from door.commands import _common as common  # noqa: E402
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
 from door.commands import salary as salary_cmd  # noqa: E402
-from door.core import discovery_sources, drive, lock, sites, workspace  # noqa: E402
+from door.core import lock, sites, workspace  # noqa: E402
+from door.core.employers import discovery_sources  # noqa: E402
 from door.core.models import JobPosting, make_job_id  # noqa: E402
 from door.matching import scorer  # noqa: E402
 from door.render import readability  # noqa: E402
@@ -209,7 +210,7 @@ def install(sandbox: Path) -> None:
     workspace.UPSKILL_DIR = sandbox / "upskill"
     # Never your Google Drive: the sync would treat the sandbox as the workspace and push it
     # over your archive (or pull yours in). A config dir of its own is a computer never connected.
-    drive._BASE = sandbox / "config"
+    workspace.CONFIG_BASE = sandbox / "config"
     lock.pre_acquire_hook = lambda purpose, jobs_dir: None
     lock.post_release_hook = lambda purpose, jobs_dir: None
     for site in demo_data.POSTINGS:

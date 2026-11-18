@@ -165,7 +165,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "json")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 # An aggregator's own id for a SmartRecruiters ad: smartrecruiters:<company>:<posting>.
 _SR_STRING = re.compile(r"smartrecruiters:([A-Za-z0-9_.-]+):\d+", re.IGNORECASE)

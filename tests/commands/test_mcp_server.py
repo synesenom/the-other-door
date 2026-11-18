@@ -172,7 +172,7 @@ def test_init_profile_tool_passes_only_given_fields(monkeypatch):
 
 
 def test_init_profile_returns_the_disclaimer_of_a_source_turned_on(tmp_path, monkeypatch):
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     monkeypatch.setattr(workspace, "HOME", tmp_path)
     monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
@@ -513,7 +513,7 @@ def test_every_tool_takes_the_parameters_its_command_takes():
 
 
 def test_drive_tools_turn_failures_into_errors(monkeypatch):
-    from door.core import drive
+    from door.core.sync import drive
     from door.core.lock import SyncConflict
 
     def conflict(*a, **k):
@@ -546,7 +546,7 @@ def test_a_sync_conflict_says_so_in_a_field(monkeypatch):
 
 
 def test_status_summary_has_a_drive_block(tmp_path, monkeypatch):
-    from door.core import drive
+    from door.core.sync import drive
 
     monkeypatch.setattr(drive, "CLIENT_ID", "id")
     monkeypatch.setattr(drive, "CLIENT_SECRET", "secret")
@@ -563,7 +563,7 @@ def test_status_summary_has_a_drive_block(tmp_path, monkeypatch):
 
 
 def test_status_summary_says_when_this_build_has_no_drive(tmp_path, monkeypatch):
-    from door.core import drive
+    from door.core.sync import drive
 
     monkeypatch.setattr(drive, "CLIENT_ID", "")
     summary = status_cmd._status_summary_core(jobs_dir=tmp_path / "jobs", profile_dir=tmp_path / "profile")
@@ -571,7 +571,8 @@ def test_status_summary_says_when_this_build_has_no_drive(tmp_path, monkeypatch)
 
 
 def test_startup_pull_is_best_effort(tmp_path, monkeypatch):
-    from door.core import drive, sync
+    from door.core.sync import drive
+    from door.core.sync import sync
 
     calls = []
     monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
@@ -591,7 +592,8 @@ def test_startup_pull_is_best_effort(tmp_path, monkeypatch):
 
 
 def test_startup_pull_skips_while_the_ledger_is_locked(tmp_path, monkeypatch):
-    from door.core import drive, sync
+    from door.core.sync import drive
+    from door.core.sync import sync
     from door.core.lock import ledger_lock
 
     calls = []
@@ -604,7 +606,7 @@ def test_startup_pull_skips_while_the_ledger_is_locked(tmp_path, monkeypatch):
 
 
 def test_merge_companies_proposes_merges_and_reports_errors(tmp_path, monkeypatch):
-    from door.core import companies as store
+    from door.core.employers import companies as store
 
     monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
     monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
@@ -777,12 +779,12 @@ def test_setup_runs_the_scraper_fix_it_is_given(cli_env, monkeypatch):
 
 
 class _Drive:
-    """Google Drive's one archive: a blob and its version (as `tests/core/test_sync_unit.py`'s FakeDrive)."""
+    """Google Drive's one archive: a blob and its version (as `tests/core/sync/test_sync_unit.py`'s FakeDrive)."""
 
     def __init__(self, monkeypatch, tmp_path):
-        from door.core import drive
+        from door.core.sync import drive
 
-        monkeypatch.setattr(drive, "_BASE", tmp_path / "cfg")
+        monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "cfg")
         drive.write_state({"refresh_token": "rt", "account": "me@x.org"})
         self.blob, self.version, self.properties, self.uploads = None, 0, {}, 0
         monkeypatch.setattr(drive, "remote_meta", lambda: None if self.blob is None else {

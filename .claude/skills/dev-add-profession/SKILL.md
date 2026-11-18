@@ -16,7 +16,7 @@ The titles are the person's role targets: what they would apply for, in any lang
 **A profession is not a board.** door reaches a job three ways:
 - a **board** searched by keyword (a `Site` with `board=True`, like Jobindex);
 - a followed employer's **feed** (a `Site` with a `config_key`, like Greenhouse or HR-Manager);
-- a **discovery source** that only tells `discover` which employers hire, so `follow` can find their feeds (a module in `core/discovery_sources.SOURCES`, like LinkedIn or profession.hu).
+- a **discovery source** that only tells `discover` which employers hire, so `follow` can find their feeds (a module in `core/employers/discovery_sources.SOURCES`, like LinkedIn or profession.hu).
 
 A profession may need any of the three, or none: often the fix is a door bug (title matching, the location filter) or employers to follow by careers URL. The research says which, and only what you pick is built.
 
@@ -28,7 +28,7 @@ A profession may need any of the three, or none: often the fix is a door bug (ti
 
 1. Resolve the country to an ISO 3166-1 alpha-2 code (lower case) and English name. Split the titles on commas, trim them and keep their spelling. Name the profession in a few English words that cover them all ("HR reward"), and take `<slug>` from that name. If the country is ambiguous ("Georgia"), or the titles don't read as one profession (a nurse and an electrician), ask with AskUserQuestion; for two professions, suggest running the skill once per profession.
 2. The country must have `src/door/i18n/country/<cc>.toml`. If it doesn't, stop: `/dev-add-country <country>` comes first.
-3. Look at what exists: the boards serving the country (`core/sites.boards_for_location`), the discovery sources for it (`core/discovery_sources.SOURCES` and each module's `COUNTRIES`), and whether the profession suite exists (`tests/professions.py`, #427) and already has a row for this profession. Tell the user in one line (`HR reward partner in Denmark (dk): 3 boards, 2 discovery sources, no profession row yet`).
+3. Look at what exists: the boards serving the country (`core/sites.boards_for_location`), the discovery sources for it (`core/employers/discovery_sources.SOURCES` and each module's `COUNTRIES`), and whether the profession suite exists (`tests/professions.py`, #427) and already has a row for this profession. Tell the user in one line (`HR reward partner in Denmark (dk): 3 boards, 2 discovery sources, no profession row yet`).
 4. The working tree must be clean (`git status --porcelain`); if it isn't, stop and say so. Unless the current branch is already `feat/profession-<cc>-<slug>`, branch from the default branch: `git fetch origin && git checkout -b feat/profession-<cc>-<slug> origin/main`.
 5. `mkdir -p thoughts/profession/<cc>-<slug>`.
 

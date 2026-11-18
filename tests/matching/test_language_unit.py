@@ -322,7 +322,7 @@ def test_an_english_ad_from_hungary_is_kept_for_an_english_only_profile(tmp_path
 
 
 def test_run_claude_resolves_the_path_and_replaces_argv0(monkeypatch):
-    from door.core import installers
+    from door.core.downloads import installers
 
     seen = []
 

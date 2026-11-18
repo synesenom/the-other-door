@@ -12,7 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from door.core import chromium, doctor, workspace
+from door.core import doctor, workspace
+from door.core.downloads import chromium
 from profile_utils import write_config
 
 NOW = datetime(2026, 9, 24, 12, 0, tzinfo=timezone.utc)
@@ -524,7 +525,7 @@ def test_run_checks_probes_only_when_asked(tmp_path):
 
 def test_probes_get_the_followed_employers_of_their_platform(tmp_path):
     """A feed scraper's probe reads its employers; they live in profile/companies.json."""
-    from door.core import companies
+    from door.core.employers import companies
 
     profile_dir = tmp_path / "profile"
     seen = {}
@@ -850,7 +851,8 @@ def test_outside_a_checkout_there_is_no_developer_tools_check(tmp_path, monkeypa
 
 
 def test_serve_instances_check_names_each_home_its_reach_phones_and_sleep(tmp_path, monkeypatch):
-    from door.core import instances, pairing
+    from door.core.phone import instances
+    from door.core.phone import pairing
 
     assert doctor.check_serve_instances() is None  # no instance: no line
     anna = tmp_path / "anna"

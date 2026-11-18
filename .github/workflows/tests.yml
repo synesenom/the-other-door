@@ -47,13 +47,13 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.local/share/door
-          key: chromium-${{ hashFiles('src/door/core/chromium_pin.json') }}
+          key: chromium-${{ hashFiles('src/door/core/downloads/chromium_pin.json') }}
 
       - name: Install Chromium
         if: steps.chromium-cache.outputs.cache-hit != 'true'
         run: |
           export PYTHONPATH=src
-          python -m door.core.chromium --dest "$(python -c 'from door.core import chromium; print(chromium.chromium_root())')"
+          python -m door.core.downloads.chromium --dest "$(python -c 'from door.core.downloads import chromium; print(chromium.chromium_root())')"
 
       # In parallel, one worker per core (pytest-xdist; the runner has 4).
       - name: Run offline tests

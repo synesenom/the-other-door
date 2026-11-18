@@ -21,7 +21,9 @@ import re
 
 import pytest
 
-from door.core import ats_detect, discovery_sources, sites
+from door.core import sites
+from door.core.employers import ats_detect
+from door.core.employers import discovery_sources
 from live_employers import DETECTION, NO_DETECTION
 from live_matrix import NO_LIVE_TEST, NO_ZERO_HIT, ZERO_HIT_FIXTURES
 from paths import TESTS_DIR

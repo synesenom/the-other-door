@@ -12,7 +12,10 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.core import chromium, companies, installers, profile_loader, progress, templates, workspace
+from door.core import profile_loader, progress, templates, workspace
+from door.core.employers import companies
+from door.core.downloads import chromium
+from door.core.downloads import installers
 from door.core.profile_loader import ConfigError, Profile
 
 
@@ -23,7 +26,7 @@ _DEFAULT_RETIRE_AFTER_DAYS = 90
 
 def _feed_config(profile_dir: Path) -> dict[str, list[str]]:
     """Each platform's followed employers under the key its scraper reads, from
-    `profile_dir/companies.json` (`door.core.companies.feed_config`).
+    `profile_dir/companies.json` (`door.core.employers.companies.feed_config`).
 
     Raises:
         ConfigError: companies.json is malformed.
@@ -135,7 +138,7 @@ def _resolve_job_ref(ref: str, jobs_dir: Path | None = None) -> str:
         AmbiguousJobRef: several jobs match (a ValueError carrying the ``candidates``).
         ValueError: nothing matches.
     """
-    from door.core.selection import resolve_job_ref
+    from door.core.jobs.selection import resolve_job_ref
 
     return resolve_job_ref(ref, jobs_dir if jobs_dir is not None else workspace.JOBS_DIR)
 
@@ -145,7 +148,7 @@ def _job_ref_cli(ref: str | None, jobs_dir: Path | None = None) -> str | None:
     matches (`_pick_job`; None when there are none). Several matches: pick one of them on a
     terminal; elsewhere the `AmbiguousJobRef` error stands."""
     from door.commands import _prompts
-    from door.core.selection import AmbiguousJobRef
+    from door.core.jobs.selection import AmbiguousJobRef
 
     if ref is None:
         return _pick_job()
@@ -161,7 +164,7 @@ def _job_ref_cli(ref: str | None, jobs_dir: Path | None = None) -> str | None:
 
 def _job_label(job_id: str, jobs_dir: Path | None = None) -> str:
     """How the CLI names a job to the user: "<title> — <company>"; the id when the posting is not on disk."""
-    from door.core.selection import find_posting
+    from door.core.jobs.selection import find_posting
 
     posting = find_posting(jobs_dir if jobs_dir is not None else workspace.JOBS_DIR, job_id) or {}
     title, company = posting.get("title"), posting.get("company")
@@ -176,7 +179,7 @@ def job_words(posting: dict, jobs_dir: Path) -> str:
     Each candidate is checked with `selection.resolve_job_ref`."""
     import shlex
 
-    from door.core.selection import _words, resolve_job_ref
+    from door.core.jobs.selection import _words, resolve_job_ref
 
     job_id = posting["id"]
     company, title = _words(posting.get("company") or ""), _words(posting.get("title") or "")
@@ -206,8 +209,8 @@ def _pick_job() -> str | None:
     """Ask which posting to update: the ones in play first (by status, then
     score), then the unapplied matches at min_score; None when there are none."""
     from door.commands import _prompts
-    from door.core import tracker as _tracker_mod
-    from door.core.selection import select_matches
+    from door.core.jobs import tracker as _tracker_mod
+    from door.core.jobs.selection import select_matches
 
     jobs_dir = workspace.JOBS_DIR
     config = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR)

@@ -316,7 +316,7 @@ def assert_detects(platform: str, careers=None) -> None:
     reached, an answer is a change (mode ``detection``): the page or the platform's markers moved.
     """
     from door.commands import companies
-    from door.core import ats_detect
+    from door.core.employers import ats_detect
     from live_employers import DETECTION
 
     row = careers or DETECTION[platform]

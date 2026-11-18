@@ -744,7 +744,7 @@ def probe(config: dict) -> ProbeResult | None:
     return result
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 _JOB_POSTING = re.compile(r"""["']@type["']\s*:\s*(\[[^\]]*)?["']JobPosting["']""")
 

@@ -223,7 +223,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "xml")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 FEED_KEY = None  # (no JSON feed to confirm an entry with: `feed_url` is None)
 

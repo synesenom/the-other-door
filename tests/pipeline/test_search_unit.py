@@ -4,8 +4,9 @@ import json
 
 import pytest
 
-from door.core import candidates, companies
-from door.core import freshness
+from door.core.jobs import candidates
+from door.core.employers import companies
+from door.core.jobs import freshness
 from door.core.progress import Progress
 from door.pipeline import search
 from pipeline_utils import fake_scraper, posting

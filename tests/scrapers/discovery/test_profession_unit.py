@@ -100,7 +100,7 @@ def test_two_forms_of_one_employers_name_are_one_employer():
 
 
 def test_a_profession_ad_link_is_a_job_board_link_not_an_employer_site():
-    from door.core import ats_detect
+    from door.core.employers import ats_detect
 
     assert ats_detect.is_job_board("https://www.profession.hu/allas/data-scientist-1234567")
     assert not ats_detect.is_job_board("https://karrier.example.hu/jobs/1")

@@ -417,7 +417,7 @@ def test_an_english_ad_requiring_hungarian_is_detected_as_requiring_it():
 
 
 def test_build_argv_uses_the_resolved_claude_path(monkeypatch):
-    from door.core import installers
+    from door.core.downloads import installers
     from door.matching import scorer
 
     monkeypatch.setattr(installers, "find_claude", lambda *a, **k: "/x/claude")

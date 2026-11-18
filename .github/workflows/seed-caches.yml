@@ -18,7 +18,7 @@ on:
       - "app/package-lock.json"
       - "poetry.lock"
       - "app/scripts/bundle.lock.json"
-      - "src/door/core/chromium_pin.json"
+      - "src/door/core/downloads/chromium_pin.json"
       - "app/scripts/bundle-python.*"
       - ".github/workflows/seed-caches.yml"
   schedule:
@@ -63,7 +63,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/.bundle-cache
-          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'src/door/core/chromium_pin.json', 'poetry.lock') }}
+          key: bundle-${{ matrix.name }}-${{ hashFiles('app/scripts/bundle.lock.json', 'src/door/core/downloads/chromium_pin.json', 'poetry.lock') }}
 
       # Windows on ARM restores node_modules whole: npm ci is slow there (#167)
       - name: Restore the app's packages
@@ -117,10 +117,10 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.local/share/door
-          key: chromium-${{ hashFiles('src/door/core/chromium_pin.json') }}
+          key: chromium-${{ hashFiles('src/door/core/downloads/chromium_pin.json') }}
 
       - name: Install Chromium
         if: steps.chromium-cache.outputs.cache-hit != 'true'
         run: |
           export PYTHONPATH=src
-          python -m door.core.chromium --dest "$(python -c 'from door.core import chromium; print(chromium.chromium_root())')"
+          python -m door.core.downloads.chromium --dest "$(python -c 'from door.core.downloads import chromium; print(chromium.chromium_root())')"

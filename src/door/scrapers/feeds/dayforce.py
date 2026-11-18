@@ -176,7 +176,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "json")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 _LOCALE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]+)*$")
 

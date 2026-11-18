@@ -159,7 +159,9 @@ HTTPAdapter.send = _fake_send
 # --------------------------------------------------------------------------- door, with its edges replaced
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
-from door.core import drive, phone, process, sites  # noqa: E402
+from door.core import process, sites, workspace  # noqa: E402
+from door.core.phone import phone  # noqa: E402
+from door.core.sync import drive  # noqa: E402
 from door.core.models import JobPosting  # noqa: E402
 from door.scrapers import report  # noqa: E402
 
@@ -246,7 +248,7 @@ prepare_cmd._HEARTBEAT_INTERVAL_S = 1.0
 # --------------------------------------------------------------------------- Google Drive: a folder plays the account
 _DRIVE = WORLD / "drive"
 _DRIVE.mkdir(exist_ok=True)
-drive._BASE = WORLD / "config"
+workspace.CONFIG_BASE = WORLD / "config"
 drive.is_configured = lambda: bool(world().get("drive", {}).get("configured", True))
 
 
@@ -260,7 +262,7 @@ def _connect(open_browser=None, timeout: float = 300, show_url=None) -> dict:
     if not drive.is_configured():
         raise drive.DriveError(
             "Google Drive sync is not configured in this build: the maintainer has not set the "
-            "OAuth client (CLIENT_ID / CLIENT_SECRET in src/door/core/drive.py)."
+            "OAuth client (CLIENT_ID / CLIENT_SECRET in src/door/core/sync/drive.py)."
         )
     account = world().get("drive", {}).get("account", "someone@example.com")
     drive.write_state({"refresh_token": "world", "access_token": "world", "expires_at": time.time() + 3600})
@@ -306,7 +308,7 @@ drive.upload = _upload
 drive.disconnect = _disconnect
 
 # --------------------------------------------------------------------------- the phone: a pretend tunnel
-# The same shapes as door.core.phone: `address`, `lasting`, devices as {device, paired_at, last_seen}.
+# The same shapes as door.core.phone.phone: `address`, `lasting`, devices as {device, paired_at, last_seen}.
 # A pairing waits for "the phone": the test writes `<world>/phone-scanned` and the next status pairs it.
 _PHONE = {"running": False, "devices": [], "pending": None}
 _ADDRESS = "https://quiet-river.trycloudflare.example"

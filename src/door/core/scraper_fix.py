@@ -25,7 +25,8 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from door.core import claude_cli, installers, usage, workspace
+from door.core import claude_cli, usage, workspace
+from door.core.downloads import installers
 from door.core.lock import LockHeldError, ledger_lock
 from door.core.sites import ALL_SITES
 
@@ -125,7 +126,7 @@ _PROBE_SNIPPET = (
     "import importlib, json, sys\n"
     "from pathlib import Path\n"
     "from door.core.profile_loader import load_profile_config\n"
-    "from door.core import companies\n"
+    "from door.core.employers import companies\n"
     "from door.core.sites import SITES\n"
     "cfg = load_profile_config(Path(sys.argv[2]))\n"
     "cfg.update(companies.feed_config(Path(sys.argv[2])))\n"

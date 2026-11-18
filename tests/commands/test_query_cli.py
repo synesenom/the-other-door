@@ -7,7 +7,7 @@ from click.testing import CliRunner
 from cli_utils import result_text, write_list_posting
 from door.cli import cli
 from door.commands import query as query_cmd
-import door.core.tracker as tracker_mod
+from door.core.jobs import tracker as tracker_mod
 
 
 def _seed(jobs_dir):

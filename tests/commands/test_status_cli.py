@@ -11,7 +11,7 @@ import pytest
 from click.testing import CliRunner
 
 from door.cli import cli
-from door.core.tracker import ApplicationTracker
+from door.core.jobs.tracker import ApplicationTracker
 from cli_utils import FRESH_SCRAPED_AT, result_text, write_list_posting
 
 
@@ -87,7 +87,7 @@ def test_status_no_args_prints_pipeline_summary(cli_env):
 
 
 def test_status_with_only_a_job_picks_the_status_from_one_list(cli_env, prompts):
-    from door.core.tracker import ApplicationTracker
+    from door.core.jobs.tracker import ApplicationTracker
 
     prompts.answers = {"status": "interview:assessment", "notes": "numerical test"}
 
@@ -104,7 +104,7 @@ def test_status_with_only_a_job_picks_the_status_from_one_list(cli_env, prompts)
 
 
 def test_status_alone_picks_the_job_from_a_list_in_play_first(cli_env, prompts):
-    from door.core.tracker import ApplicationTracker
+    from door.core.jobs.tracker import ApplicationTracker
 
     _write_status_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-top", score=0.9, title="Top match")
     _write_status_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-wpp", score=0.7, title="Team Lead", company="WPP")
@@ -236,7 +236,7 @@ def test_status_lists_the_ledger_counts(cli_env):
 def _silent_ledger(cli_env, statuses):
     from datetime import datetime, timedelta, timezone
 
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     cli_env.jobs_dir.mkdir(parents=True, exist_ok=True)
     (cli_env.jobs_dir / "applications.json").unlink(missing_ok=True)
@@ -250,7 +250,7 @@ def _silent_ledger(cli_env, statuses):
 
 def test_status_summary_counts_the_applications_with_no_answer(cli_env):
     from door.commands import status as status_cmd
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     old = tracker_mod.NO_ANSWER_DAYS + 5
     _silent_ledger(cli_env, [("applied", old), ("interview:screening", old), ("applied", 3),
@@ -266,7 +266,7 @@ def test_status_summary_counts_the_applications_with_no_answer(cli_env):
 
 def test_status_summary_counts_only_the_silent_applications_jobs_list_ongoing_shows(cli_env):
     from door.commands import status as status_cmd
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     old = tracker_mod.NO_ANSWER_DAYS + 5
     _silent_ledger(cli_env, [("applied", old), ("applied", old), ("applied", old)])
@@ -279,7 +279,7 @@ def test_status_summary_counts_only_the_silent_applications_jobs_list_ongoing_sh
 
 
 def test_status_prints_the_count_of_applications_with_no_answer(cli_env):
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     days = tracker_mod.NO_ANSWER_DAYS
     old = days + 5
@@ -308,7 +308,7 @@ def test_status_with_an_empty_ledger_says_so_in_one_line(cli_env):
 # --------------------------------------------------------------------------- #
 
 def _seed_employers(profile_dir):
-    from door.core import companies
+    from door.core.employers import companies
 
     items: list = []
     companies.record(items, "Pleo", feed=("ashby", "pleo"), status="followed", found_via="manual")
@@ -390,7 +390,8 @@ def test_status_refuses_a_bad_job_id_before_taking_the_lock(cli_env, monkeypatch
 
 
 def test_the_cli_says_on_stderr_when_it_synced_with_drive(cli_env, monkeypatch):
-    from door.core import lock, sync
+    from door.core import lock
+    from door.core.sync import sync
 
     monkeypatch.setattr(lock, "pre_acquire_hook", lambda purpose, jobs_dir: sync._note("pulled", "Pulled newer data from Google Drive"))
     monkeypatch.setattr(lock, "post_release_hook", lambda purpose, jobs_dir: sync._note("pushed", "Synced to Google Drive"))
@@ -598,7 +599,7 @@ def test_status_core_result_keeps_job_id_and_adds_label(cli_env):
 
 def test_status_summary_reads_the_postings_once(cli_env, monkeypatch):
     from door.commands import status
-    from door.core import selection
+    from door.core.jobs import selection
 
     _write_status_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-high", score=0.9)
     walks = []
@@ -716,7 +717,7 @@ def test_the_warning_carries_the_reason_the_tailor_kept_an_item_for(cli_env):
 
 
 def _histories(cli_env, histories: dict) -> None:
-    from door.core import tracker
+    from door.core.jobs import tracker
 
     t = tracker.ApplicationTracker(cli_env.jobs_dir / "applications.json")
     for job, statuses in histories.items():

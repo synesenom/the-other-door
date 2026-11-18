@@ -3,7 +3,7 @@
 #   python/   python-build-standalone 3.12 with The other door's locked packages installed into it (by hash, wheels only)
 #   door/   src/, .claude/agents/{tailor,reviewer,matcher}.md and profile.example/, as in a checkout
 #   bin/      chromium/ (the Chromium headless shell that prints CVs, #165)
-# Pinned in scripts/bundle.lock.json (Chromium: src/door/core/chromium_pin.json, the pin `doctor --fix` installs from too); downloads are cached in app/.bundle-cache/ (DOOR_BUNDLE_CACHE).
+# Pinned in scripts/bundle.lock.json (Chromium: src/door/core/downloads/chromium_pin.json, the pin `doctor --fix` installs from too); downloads are cached in app/.bundle-cache/ (DOOR_BUNDLE_CACHE).
 # No cross-building: run it on each system. Windows: bundle-python.ps1 (#355). Then: scripts/check-bundle.sh.
 set -euo pipefail
 
@@ -22,8 +22,8 @@ esac
 
 jsonfield() { node -e "const l=require(process.argv[1]);const v=process.argv[2].split('.').reduce((o,k)=>o[k],l);process.stdout.write(String(v))" "$1" "$2"; }
 field() { jsonfield "$LOCK" "$1"; }
-# pinfield PATH: a value of the Chromium pin (src/door/core/chromium_pin.json)
-pinfield() { jsonfield "$REPO/src/door/core/chromium_pin.json" "$1"; }
+# pinfield PATH: a value of the Chromium pin (src/door/core/downloads/chromium_pin.json)
+pinfield() { jsonfield "$REPO/src/door/core/downloads/chromium_pin.json" "$1"; }
 sha256() { if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
 
 # fetch URL SHA256: sets FETCHED to the cached file, downloaded once and checked every time
@@ -64,7 +64,7 @@ rsync -a --exclude '__pycache__' "$REPO/src/" "$OUT/door/src/"
 cp "$REPO/.claude/agents/tailor.md" "$REPO/.claude/agents/reviewer.md" "$REPO/.claude/agents/matcher.md" "$OUT/door/.claude/agents/"
 rsync -a "$REPO/profile.example/" "$OUT/door/profile.example/"
 
-# 4. the Chromium headless shell, unpacked as bin/chromium/chrome-headless-shell-<key>/ (what core/chromium.find_chromium reads)
+# 4. the Chromium headless shell, unpacked as bin/chromium/chrome-headless-shell-<key>/ (what core/downloads/chromium.find_chromium reads)
 CR_VERSION="$(pinfield version)"
 cr_url="$(pinfield url)"; cr_url="${cr_url//\{version\}/$CR_VERSION}"; cr_url="${cr_url//\{key\}/$CR_KEY}"
 fetch "$cr_url" "$(pinfield "platforms.$CR_KEY.sha256")"

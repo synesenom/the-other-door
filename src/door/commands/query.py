@@ -12,7 +12,9 @@ from pathlib import Path
 import click
 
 from door.commands import _common as common
-from door.core import selection, tracker as tracker_mod, workspace
+from door.core import workspace
+from door.core.jobs import selection
+from door.core.jobs import tracker as tracker_mod
 
 
 def _day(value: str | None, name: str) -> str | None:

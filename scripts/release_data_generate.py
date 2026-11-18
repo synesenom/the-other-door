@@ -37,8 +37,14 @@ from door.commands import check_facts as check_facts_cmd  # noqa: E402
 from door.commands import find as find_cmd  # noqa: E402
 from door.commands import profile as profile_cmd  # noqa: E402
 from door.commands import stories as stories_cmd  # noqa: E402
-from door.core import candidates, companies, discovery_state, freshness, history, tracker  # noqa: E402
-from door.core import discovery_sources, lock  # noqa: E402
+from door.core.jobs import candidates  # noqa: E402
+from door.core.jobs import discovery_state  # noqa: E402
+from door.core.jobs import freshness  # noqa: E402
+from door.core.jobs import history  # noqa: E402
+from door.core.jobs import tracker  # noqa: E402
+from door.core.employers import companies  # noqa: E402
+from door.core import lock  # noqa: E402
+from door.core.employers import discovery_sources  # noqa: E402
 from door.core import migrations  # noqa: E402
 from door.core.models import JobPosting  # noqa: E402
 from door.core.profile_loader import Profile  # noqa: E402

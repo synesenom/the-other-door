@@ -8,7 +8,7 @@ so each has its own list:
 - **Employer feeds:** the other sites (``Site.config_key``), then the platforms The other door only detects
   (``ats_detect.PRECEDENCE``, by their detection test);
 - **Employer discovery:** the discovery sources (``discovery_sources.SOURCES``), run locally, not in CI, so
-  their rows keep the last local result, and the Wikidata lookup (``tests/core/test_wikidata_live.py``);
+  their rows keep the last local result, and the Wikidata lookup (``tests/core/employers/test_wikidata_live.py``);
 - **Matcher:** every golden scoring case (``tests/matching/fixtures/golden/``), from
   ``tests/matching/test_matcher_golden.py``'s ``[<case>]`` runs (the real scorer on a Claude plan).
 
@@ -84,8 +84,8 @@ def _has_live_test(name: str) -> bool:
 def sections(xml: str) -> list[tuple[str, list[tuple[str, str]]]]:
     """The page's lists, in order: ``[(title, [(label, status), ...]), ...]``."""
     sys.path.insert(0, str(_REPO / "src"))
-    from door.core.ats_detect import PRECEDENCE
-    from door.core.discovery_sources import SOURCES
+    from door.core.employers.ats_detect import PRECEDENCE
+    from door.core.employers.discovery_sources import SOURCES
     from door.core.sites import SITES
 
     boards = [n for n, s in SITES.items() if s.board]

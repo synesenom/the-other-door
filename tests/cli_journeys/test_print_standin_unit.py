@@ -8,7 +8,8 @@ import sys
 import pytest
 
 from door.commands import compile as compile_cmd
-from door.core import chromium, workspace
+from door.core import workspace
+from door.core.downloads import chromium
 from door.render import html_pdf, pdf_render
 from paths import REPO_ROOT
 

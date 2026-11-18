@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-import door.core.tracker as _tracker_mod
+from door.core.jobs import tracker as _tracker_mod
 from door import i18n
 from door.commands import _common as common
 from door.commands import _progress
@@ -375,7 +375,7 @@ def _prepare_core(
         ValueError: `job_id` is not a valid slug.
         LookupError: no posting with that id.
     """
-    from door.core.selection import find_posting_path
+    from door.core.jobs.selection import find_posting_path
 
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
@@ -525,7 +525,7 @@ def _prepare_core(
 
 def _top_match_id(jobs_dir: Path, profile_dir: Path | None = None) -> str | None:
     """The id of the highest-scoring unapplied match (in `jobs list` order), or None."""
-    from door.core.selection import select_matches
+    from door.core.jobs.selection import select_matches
 
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
@@ -541,7 +541,7 @@ def _render_prepared(result: dict, *, interactive: bool) -> None:
     """A finished (or skipped) `_prepare_core` result: what happened as a ✓/⚠
     line, `show`'s card for the posting (without the ad itself), the materials
     summary and what to do next."""
-    from door.core.selection import find_posting
+    from door.core.jobs.selection import find_posting
 
     job_id = result["job_id"]
     output_dir = Path(result["output_dir"])

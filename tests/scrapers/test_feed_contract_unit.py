@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-from door.core import ats_detect
+from door.core.employers import ats_detect
 from door.core.sites import FEED_SITES, SITES
 from paths import REPO_ROOT
 
@@ -48,7 +48,7 @@ def test_name_probes_go_platform_by_platform_in_precedence_order_each_probe_over
 
 
 def test_ats_detect_names_no_platform_outside_its_precedence_tuple():
-    source = (REPO_ROOT / "src/door/core/ats_detect.py").read_text(encoding="utf-8")
+    source = (REPO_ROOT / "src/door/core/employers/ats_detect.py").read_text(encoding="utf-8")
     start = source.index("PRECEDENCE = (")
     rest = source[:start] + source[source.index(")", start) + 1:]
     names = ("greenhouse", "lever", "workable", "ashby", "recruitee", "pinpoint", "teamtailor", "smartrecruiters",

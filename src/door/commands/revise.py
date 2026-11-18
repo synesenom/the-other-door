@@ -105,7 +105,7 @@ def _revise_core(
         NoChromium: nothing to print with (in words; checked before the model, the file unchanged).
         ReviseError: the `claude -p` call failed (file unchanged).
     """
-    from door.core.selection import find_posting
+    from door.core.jobs.selection import find_posting
 
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR

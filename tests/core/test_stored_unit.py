@@ -46,7 +46,8 @@ def test_cores_store_only_named_files(tmp_path, monkeypatch):
     from door.commands import companies as companies_cmd
     from door.commands import profile as profile_cmd
     from door.commands import stories as stories_cmd
-    from door.core import migrations, tracker, workspace
+    from door.core import migrations, workspace
+    from door.core.jobs import tracker
 
     profile_dir, jobs_dir = tmp_path / "profile", tmp_path / "jobs"
     monkeypatch.setattr(workspace, "HOME", tmp_path)

@@ -101,7 +101,7 @@ A source whose terms ban scraping (the research's verdict `discovery`), or one o
    - **Live smoke** (`test_<source>_live.py`, copy `test_profession_live.py`): `test_<source>_employers_live`, one request with `keyword`, checked by `live_utils.assert_discovery` (employers with a name, a title and a link where it gives one; a refusal, including a captcha or consent page where the results should be, is not reached). The source stops on a wall page (`sdk.wall_page`) as on a 403.
 4. **Green:** `src/door/scrapers/discovery/<source>.py` with `NAME`, `COUNTRIES` (lower-case ISO codes, `()` for anywhere), `CONFIG_KEY = "<source>_discovery"`, `run(config, **kwargs)` and only the optional hooks it needs (`enabled`, `extras`, `skip_employer`). It imports only from `door.scrapers.sdk`. Its docstring follows `profession.py`'s: what it is and why it is not a job source, the request limits, the terms clause, the markup, the date it was checked.
 5. **Register it:**
-   - one line in `SOURCES` (`src/door/core/discovery_sources.py`);
+   - one line in `SOURCES` (`src/door/core/employers/discovery_sources.py`);
    - `<source>_discovery: bool = True` in `Profile` (`src/door/core/profile_loader.py`), next to `profession_discovery`;
    - `"<source>_discovery": False` in `tests/profile_utils.base_config`, so no offline test runs it;
    - its domain in `job_boards` of `src/door/i18n/country/<cc>.toml` (as `profession.hu` is in `hu.toml`), or in the module's own `JOB_BOARD_HOSTS` (as `discovery/jobbsafari.py` does; `ats_detect.is_job_board` reads every discovery source's), so `follow` never takes an ad link on it for an employer's site.

@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from door.core import archive as archive_core  # noqa: E402
+from door.core.sync import archive as archive_core  # noqa: E402
 from door.core import models, utils, workspace  # noqa: E402
 from door.core.lock import ledger_lock  # noqa: E402
 

@@ -328,7 +328,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "html")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 def is_shared_host(host: str) -> bool:
     """Whether *host* is the board's own (a link there that carries no client id is no employer's career site)."""

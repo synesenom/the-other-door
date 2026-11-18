@@ -219,7 +219,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "json")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 def detect_url(url: str) -> Detection | None:
     """An HR-Manager feed or job-agent link and the customer alias it names; an application link

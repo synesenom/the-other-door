@@ -191,7 +191,7 @@ def _check(probe: bool, quick: bool) -> None:
 
 def _detect_platform() -> str:
     """`installers.detect_platform()` for this machine (monkeypatched in tests)."""
-    from door.core.installers import detect_platform
+    from door.core.downloads.installers import detect_platform
 
     return detect_platform()
 
@@ -292,7 +292,7 @@ def _setup_core(
         ValueError: `install` names an unknown tool.
     """
     from door.core import doctor
-    from door.core.installers import INSTALLABLE, plan_install
+    from door.core.downloads.installers import INSTALLABLE, plan_install
 
     profile_dir = profile_dir if profile_dir is not None else workspace.PROFILE_DIR
     jobs_dir = jobs_dir if jobs_dir is not None else workspace.JOBS_DIR
@@ -395,7 +395,7 @@ def _register_mcp_server(platform: str) -> tuple[bool, str | None]:
     bin/python), register a local-scope entry for the venv's real interpreter;
     then check the server answers the way Claude Code will start it."""
     from door.core import doctor
-    from door.core.installers import plan_mcp_registration
+    from door.core.downloads.installers import plan_mcp_registration
 
     if doctor._custom_home():   # the tailor's .mcp.json is generated for this interpreter, nothing to register
         check = doctor.check_generated_mcp()

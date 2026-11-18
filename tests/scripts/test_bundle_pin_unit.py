@@ -1,4 +1,4 @@
-"""One Chromium pin (#165): `src/door/core/chromium_pin.json` is read by `doctor --fix`'s installer and by
+"""One Chromium pin (#165): `src/door/core/downloads/chromium_pin.json` is read by `doctor --fix`'s installer and by
 the bundle scripts, so a version bump is one edit; the checks that exercise the bundle print a page."""
 
 from __future__ import annotations

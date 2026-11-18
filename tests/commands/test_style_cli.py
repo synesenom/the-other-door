@@ -20,7 +20,8 @@ from door.cli import cli
 from door.commands import _common as common
 from door.commands import status as status_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, claude_cli, lock, process, workspace
+from door.core import claude_cli, lock, process, workspace
+from door.core.downloads import chromium
 from door.style import style_build, style_preview
 from cli_utils import result_text
 from paths import TESTS_DIR

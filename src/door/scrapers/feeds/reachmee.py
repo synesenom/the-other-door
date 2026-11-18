@@ -278,7 +278,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(lambda: _read_list(session, p), parse, "html")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 def _link_site(path: list[str], query: dict[str, str]) -> tuple[str, str, str] | None:
     """``(installation, customer, site)`` a ReachMee link's path and query name: an ``/ext/<I>/<customer>/…?site=<n>``

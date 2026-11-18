@@ -13,7 +13,8 @@ from pathlib import Path
 import click
 
 from door.commands import _common as common
-from door.core import claude_cli, selection, workspace
+from door.core import claude_cli, workspace
+from door.core.jobs import selection
 
 # The tools the model may call: reading only. Left out: `market` (it saves a report by default), `show`
 # (it can open the PDF viewer and render page images) and `ask` itself (no recursion).

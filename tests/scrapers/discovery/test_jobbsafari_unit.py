@@ -91,7 +91,7 @@ def test_swedish_keywords_keep_swedish_titles_and_drop_the_rest():
 
 
 def test_a_jobbsafari_link_is_a_job_board_link_not_an_employer_site():
-    from door.core import ats_detect
+    from door.core.employers import ats_detect
 
     assert ats_detect.is_job_board("https://jobbsafari.se/jobb/projektledare-1234")
     assert not ats_detect.is_job_board("https://jobs.globex.example/job/1")

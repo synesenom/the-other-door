@@ -28,7 +28,12 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import chromium, claude_cli, companies, discovery_sources, installers, migrations, runs, sites
+from door.core import claude_cli, migrations, sites
+from door.core.jobs import runs
+from door.core.employers import companies
+from door.core.employers import discovery_sources
+from door.core.downloads import chromium
+from door.core.downloads import installers
 from door.core.sites import FEED_SITES
 from door.scrapers import PROBE_TIMEOUT_S, ProbeResult  # noqa: F401 - re-exported
 from door.scrapers import http_client
@@ -364,7 +369,7 @@ def configured_sites(config: dict) -> list[str]:
 def last_scrape_per_site(config: dict, jobs_dir: Path, now: datetime | None = None) -> list[dict]:
     """Each board's watermark from `jobs/scrape_state.json` (None = never scraped). Only boards have
     one: an employer's feed is read whole, what is new is what the history has not seen."""
-    from door.core.freshness import _parse_dt, load_scrape_state
+    from door.core.jobs.freshness import _parse_dt, load_scrape_state
 
     now = now or datetime.now(timezone.utc)
     state = load_scrape_state(jobs_dir)
@@ -567,7 +572,8 @@ def _sleep_minutes(run=subprocess.run) -> int | None:
 
 def check_serve_instances(reach=_reaches, sleep_minutes=_sleep_minutes) -> dict | None:
     """The `door serve` instances on this machine (#302): each answers? how many phones? does the Mac sleep?"""
-    from door.core import instances, pairing
+    from door.core.phone import instances
+    from door.core.phone import pairing
 
     found = instances.read()
     if not found:

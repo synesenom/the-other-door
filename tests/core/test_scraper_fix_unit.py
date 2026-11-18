@@ -312,7 +312,7 @@ def test_status_lists_untracked_files_individually(env):
 
 
 def test_run_scraper_fixer_uses_the_resolved_claude_path(monkeypatch, tmp_path):
-    from door.core import installers
+    from door.core.downloads import installers
 
     seen = {}
 

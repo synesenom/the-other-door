@@ -12,7 +12,8 @@ import pytest
 import responses
 
 from door.commands import companies as companies_cmd
-from door.core import candidates, companies
+from door.core.jobs import candidates
+from door.core.employers import companies
 from door.pipeline import follow
 from door.scrapers import _parallel
 from profile_utils import write_config
@@ -455,7 +456,8 @@ def test_an_unresolved_employer_is_still_held_for_ninety_days(env):
 
 
 def test_found_via_names_every_board_and_discovery_source(env):
-    from door.core import discovery_sources, sites
+    from door.core import sites
+    from door.core.employers import discovery_sources
     values = companies.found_via_values()
     assert {"manual", "ai"} <= set(values)
     assert {s.name for s in sites.SITES.values() if s.board} <= set(values)

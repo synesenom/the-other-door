@@ -37,7 +37,8 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import lock, process, profile_loader, templates, tracker, workspace
+from door.core import lock, process, profile_loader, templates, workspace
+from door.core.jobs import tracker
 from door.style import style_build, style_extract, style_preview, style_structure
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go

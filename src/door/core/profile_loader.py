@@ -90,7 +90,7 @@ class Profile(BaseModel):
     # e.g. "~/.claude-personal"; None = whatever the environment says.
     claude_config_dir: str | None = None
 
-    # History / liveness / dedup (src/door/commands/scrape.py, core/liveness.py,
+    # History / liveness / dedup (src/door/commands/scrape.py, core/jobs/liveness.py,
     # matching/dedup.py).
     recheck_after_days: int | None = Field(default=None, ge=0)
     # How many sites, and hosts within a per-company feed, a step works on at once

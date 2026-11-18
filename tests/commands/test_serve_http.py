@@ -8,7 +8,7 @@ from starlette.testclient import TestClient
 
 from door import mcp_server as server
 from door import serve_http
-from door.core import pairing
+from door.core.phone import pairing
 
 HEADERS = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
 INIT = {

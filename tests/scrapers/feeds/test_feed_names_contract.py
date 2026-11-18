@@ -11,7 +11,7 @@ import sys
 import pytest
 import responses
 
-from door.core import companies
+from door.core.employers import companies
 from door.core.sites import SITES
 from door.scrapers import drain_errors
 from paths import TESTS_DIR

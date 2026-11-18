@@ -26,7 +26,7 @@ Feed helpers
 
 Feed platforms (the detection half of a per-company feed site, issue #282)
     A feed site's module also says how its feed is found, in plain functions that
-    `core/ats_detect.py` (a dispatcher over `ats_detect.PRECEDENCE`) and `commands/companies.py`
+    `core/employers/ats_detect.py` (a dispatcher over `ats_detect.PRECEDENCE`) and `commands/companies.py`
     call; none is required except the first two:
     `detect_url(url) -> Detection | None` (a careers or job link on the platform, with the entry
     it names, or `entry=None` when the link names no account),
@@ -48,7 +48,7 @@ Feed platforms (the detection half of a per-company feed site, issue #282)
 Matching and i18n
     Wrappers over `title_fit`, `locality`, `ats_detect` and `i18n`; see each docstring.
 
-Discovery sources (`core/discovery_sources.py`, issue #280)
+Discovery sources (`core/employers/discovery_sources.py`, issue #280)
     A module that tells `discover` which employers hire (LinkedIn) exposes `NAME`, `COUNTRIES`,
     `CONFIG_KEY`, `run(config, **kwargs) -> DiscoveryResult` and the optional hooks `enabled`,
     `extras(queue)` and `skip_employer(emp, state, now)`. `DiscoveryResult` and `Employer` describe
@@ -71,8 +71,9 @@ from typing import TypedDict
 from datetime import datetime
 
 from door import i18n
-from door.core import ats_detect, freshness
-from door.core.ats_detect import Detection
+from door.core.jobs import freshness
+from door.core.employers import ats_detect
+from door.core.employers.ats_detect import Detection
 from door.core.models import JobPosting, make_job_id, normalize_platform_id, tenant_platform_id
 from door.matching import locality, prefilter, title_fit
 from door.scrapers import (
@@ -287,7 +288,7 @@ def look_back_days(since: datetime | None, now: datetime) -> int | None:
 def followed_name(config: dict, config_key: str, entry: str, fallback: str = "") -> str:
     """The followed employer's name for *entry* (as written under *config_key*), else *fallback*:
     the feed's own guess stays only for a feed `collect` did not name."""
-    from door.core import companies  # call-time: companies imports the sites registry, which imports scrapers
+    from door.core.employers import companies  # call-time: companies imports the sites registry, which imports scrapers
 
     name = ((config.get("_names") or {}).get(config_key) or {}).get(companies.entry_key(entry), "")
     return name.strip() or fallback
@@ -332,7 +333,7 @@ class DiscoveryResult(TypedDict, total=False):
 
 def name_key(name: str) -> str:
     """The employer-name key two spellings of one employer share (case, suffixes, spacing)."""
-    from door.core import companies  # call-time, like followed_name
+    from door.core.employers import companies  # call-time, like followed_name
 
     return companies.name_key(name)
 
@@ -344,7 +345,7 @@ def is_job_board(url: str) -> bool:
 
 def awaiting_job_page(entry: dict) -> bool:
     """A queued employer `follow` could not resolve by name, whose job page is still to be read."""
-    from door.core import candidates
+    from door.core.jobs import candidates
 
     return candidates.awaiting_job_page(entry)
 

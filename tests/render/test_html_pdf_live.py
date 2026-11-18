@@ -9,7 +9,7 @@ import threading
 import pypdfium2 as pdfium
 import pytest
 
-from door.core import chromium
+from door.core.downloads import chromium
 from door.render.html_pdf import PrintError, print_html
 from live_utils import not_reached
 

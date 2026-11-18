@@ -21,7 +21,8 @@ import time
 import traceback
 from pathlib import Path
 
-from door.core import runs, workspace
+from door.core import workspace
+from door.core.jobs import runs
 
 FOLDER = "logs"
 FILE = "door.log"

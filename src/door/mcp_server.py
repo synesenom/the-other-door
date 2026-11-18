@@ -83,12 +83,14 @@ from door.commands import setup as setup_cmd
 from door.commands import status as status_cmd
 from door.commands import stories as stories_cmd
 from door.commands import style as style_cmd
-from door.core import archive as archive_core
-from door.core import claude_cli, drive, migrations, problem_log, sync, workspace
+from door.core.sync import archive as archive_core
+from door.core import claude_cli, migrations, problem_log, workspace
+from door.core.sync import drive
+from door.core.sync import sync
 from door.core.lock import LockHeldError, SyncConflict, ledger_lock, lock_holder
-from door.core import companies as companies_store
+from door.core.employers import companies as companies_store
 from door.core.profile_loader import ConfigError
-from door.core.tracker import DuplicateApplicationError
+from door.core.jobs.tracker import DuplicateApplicationError
 
 # Answers not logged: a background run's failure was logged when it ended (`job_result` only repeats it);
 # a sent status's warning names the claims of the CV the materials make.
@@ -301,7 +303,7 @@ def _tool_errors(fn):
 
 def _error(exc: Exception) -> dict:
     """``{"error": message}``, plus the ``candidates`` of an ambiguous job reference."""
-    from door.core.selection import AmbiguousJobRef
+    from door.core.jobs.selection import AmbiguousJobRef
 
     from door.core.lock import SyncConflict
 
@@ -498,7 +500,7 @@ def phone_status() -> dict:
         ``"lasting"`` (Tailscale's address never changes; a quick tunnel's does)
         while it runs.
     """
-    from door.core import phone
+    from door.core.phone import phone
 
     return phone.status(workspace.HOME)
 
@@ -519,7 +521,7 @@ async def phone_start(connection: str = "cloudflare") -> dict:
         "sign_in_tailscale" | "enable_https", "link"}`` for a step the user
         takes (the link says where); or ``{"error"}``.
     """
-    from door.core import phone
+    from door.core.phone import phone
 
     return await asyncio.to_thread(phone.start, workspace.HOME, connection)
 
@@ -528,7 +530,7 @@ async def phone_start(connection: str = "cloudflare") -> dict:
 @_tool_errors
 def phone_stop() -> dict:
     """Stop serving this data folder to phones (the server, the connection, keeping the Mac awake)."""
-    from door.core import phone
+    from door.core.phone import phone
 
     return phone.stop(workspace.HOME)
 
@@ -549,7 +551,7 @@ def pair_phone(device: str) -> dict:
         ``{"device", "qr_svg", "expires_at"}`` (an SVG to show), or ``{"error"}`` when
         nothing is serving or the name is already paired.
     """
-    from door.core import phone
+    from door.core.phone import phone
 
     return phone.pair(workspace.HOME, device)
 
@@ -562,7 +564,7 @@ def unpair_phone(device: str) -> dict:
     Returns:
         ``{"removed": device}``, or ``{"error"}`` when no phone has that name.
     """
-    from door.core import phone
+    from door.core.phone import phone
 
     return phone.remove(workspace.HOME, device)
 

@@ -142,7 +142,7 @@ function Row({ step, index, now, unchosen, onChoose }: { step: StepRow; index: n
   )
 }
 
-/** Postings the sites that worked handed over (search and collect), the way `core/runs.postings_scraped` counts. */
+/** Postings the sites that worked handed over (search and collect), the way `core/jobs/runs.postings_scraped` counts. */
 function postingsFound(record: RunRecord): number {
   const sites = [...(record.search?.sites ?? []), ...(record.collect?.sites ?? [])]
   return sites.filter((s) => s.outcome === 'ok').reduce((sum, s) => sum + (s.count ?? 0), 0)

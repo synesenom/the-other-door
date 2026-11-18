@@ -165,7 +165,7 @@ class _Session:
 
 def test_every_page_discovery_source_has_an_entry_here():
     # LinkedIn reads its search cards its own way and has its own tests.
-    from door.core.discovery_sources import SOURCES
+    from door.core.employers.discovery_sources import SOURCES
 
     assert set(_SOURCES) == set(SOURCES) - {"linkedin"}
 

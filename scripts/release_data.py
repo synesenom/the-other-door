@@ -56,7 +56,8 @@ def normalise(value, home: Path, code: Path | None = None):
 def snapshot(home: Path) -> dict:
     """What the running code reads back from the data folder *home* (`workspace` must already point at it)."""
     from door import mcp_server as tools
-    from door.core import selection, workspace
+    from door.core import workspace
+    from door.core.jobs import selection
 
     out: dict = {}
     profile = tools.show_profile()

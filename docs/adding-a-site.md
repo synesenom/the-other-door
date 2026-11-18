@@ -71,7 +71,7 @@ company hosts).
      "unclear" are `allowed` too, said in the module docstring.
    - `unsure`: the terms forbid automated access on the host *The other door* reads. Such a source is
      never a board or a feed that runs by default: it is only an employer **discovery** source (a module
-     in `scrapers/discovery/`, registered in `core/discovery_sources.SOURCES` and run by `discover`: LinkedIn,
+     in `scrapers/discovery/`, registered in `core/employers/discovery_sources.SOURCES` and run by `discover`: LinkedIn,
      profession.hu, HelloWork, Jobbsafari; see `scrapers/discovery/profession.py`) with its own
      `<source>_discovery` switch, off until the user turns it on, and the disclaimer shown when they do.
      A test fails for an `unsure` `Site` that has no switch. It runs under LinkedIn's constraints:
@@ -121,7 +121,7 @@ company hosts).
 
    A per-company feed names its key too (`config_key="greenhouse_boards"`: the key `_scrape_core` fills from the platform's followed employers in `profile/companies.json`; it is the one source, `sites.FEED_SITES`), so an empty scrape can say what to follow. A feed's module also says how its feed is *found*, so `companies add` and `follow` need no other edit: `detect_url(url)` (a careers link on the platform and the entry it names) and `feed_url(entry)` (the endpoint that confirms an entry by its jobs, or `None`), and where they apply `detect_cname`, `detect_html`, `name_probes(slug)` (public endpoints to try for a company name) and `FEED_KEY`; add the module's name to `ats_detect.PRECEDENCE` (the one place the dispatcher names platforms; the order is the order links to several platforms on one page are weighed in). `sdk.Detection`, `sdk.Probe`, `sdk.parts`, `sdk.first`, `sdk.NOT_ACCOUNTS` and `sdk.unfollowable` build them; An optional `resolve(session, det, url)` reads further after a detection; a platform that cannot be followed but whose link names the employer returns its detection with `employer` (the name) and `site` (its own website, if given) set, and `follow` then tries that site's platform and that name's feeds before the employer stays `unfollowable` (Visma Recruit). `tests/scrapers/test_feed_contract_unit.py` checks the shape.
 
-   A board's module names its own hosts, `JOB_BOARD_HOSTS = ("stepstone.",)` (markers in a host; `JOB_BOARD_EXACT` for whole hosts): a link there is an ad on the board, so `follow` never takes it for an employer's career site (`tests/core/test_ats_detect_unit.py` fails for a board without one).
+   A board's module names its own hosts, `JOB_BOARD_HOSTS = ("stepstone.",)` (markers in a host; `JOB_BOARD_EXACT` for whole hosts): a link there is an ad on the board, so `follow` never takes it for an employer's career site (`tests/core/employers/test_ats_detect_unit.py` fails for a board without one).
 
    That one entry makes a board searched for every profile in its countries and valid in `--boards`, makes `scrape` import it,
    and puts it in the pool `scrape` runs the sites in.

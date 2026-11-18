@@ -21,7 +21,8 @@ from PIL import Image
 from pypdfium2 import PdfiumError
 
 from door import i18n
-from door.core import claude_cli, pinned, profile_loader, progress as progress_mod, templates, utils, workspace
+from door.core import claude_cli, profile_loader, progress as progress_mod, templates, utils, workspace
+from door.core.downloads import pinned
 from door.style import fonts
 from door.style import cv_body, font_measure, style_compare, style_extract, style_icons, style_preview, style_structure
 from door.render import html_doc, html_guard, html_pdf, pdf_render, readability

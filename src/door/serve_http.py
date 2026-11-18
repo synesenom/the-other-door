@@ -3,7 +3,7 @@
 Routes, for one data folder (`home`) each:
 
 - `POST /mcp` — the MCP server (streamable HTTP, stateless, JSON answers), behind a device token.
-- `POST /pair` — trade a one-time pairing code for a device token (`core/pairing.py`).
+- `POST /pair` — trade a one-time pairing code for a device token (`core/phone/pairing.py`).
 - `GET /files/jobs/output/...` — a prepared job's files (the page images), behind the token; nothing else.
 - `POST /session` — (token) sets an HttpOnly cookie that opens `/files/` only, so an `<img>` can load a page.
 - `GET /manifest.webmanifest` and the web app (`app/`'s web build, #303) — public: code, no data.
@@ -28,7 +28,8 @@ from starlette.routing import Route
 
 from door import mcp_server as server
 from door import serve_policy
-from door.core import pairing, workspace
+from door.core import workspace
+from door.core.phone import pairing
 
 MAX_BODY = 1_000_000         # a request's body, at most (a pasted ad is far less)
 MAX_FAILURES = 10            # wrong tokens or codes from one address ...

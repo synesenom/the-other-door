@@ -79,7 +79,8 @@ def wizard_calls(monkeypatch, prompts):
     from door.commands import find as find_cmd
     from door.commands import preview as preview_cmd
     from door.commands import titles as titles_cmd
-    from door.core import doctor, installers
+    from door.core import doctor
+    from door.core.downloads import installers
 
     calls = types.SimpleNamespace(keywords=[], drafts=[], basics=_basics(), look={"board": "jobindex", "matches": []}, titles=[
         {"title": "Data Scientist", "reason": "your latest title", "recommended": True},
@@ -382,7 +383,8 @@ def test_public_pages_are_kept_for_enrich_but_not_linkedin(init_env, prompts, mo
 
 
 def test_a_missing_claude_interrupts_and_can_be_declined(init_env, prompts, monkeypatch):
-    from door.core import doctor, installers
+    from door.core import doctor
+    from door.core.downloads import installers
 
     monkeypatch.setattr(doctor, "check_claude_cli", lambda *a, **k: {"status": "missing"})
     monkeypatch.setattr(installers, "find_claude", lambda *a, **k: None)
@@ -470,7 +472,7 @@ def test_the_review_offers_the_supported_job_ad_languages(init_env, prompts, mon
 
 def test_init_keeps_the_employers_already_followed(init_env, prompts):
     """Re-running init on a profile that follows employers leaves the list alone, and no note is printed."""
-    from door.core import companies
+    from door.core.employers import companies
 
     _write_existing_profile_config(init_env)
     companies.save(init_env.profile_dir, [companies.Company(
@@ -694,7 +696,7 @@ def test_languages_help_lists_the_supported_languages(monkeypatch):
 # --------------------------------------------------------------------------- #
 from pathlib import Path  # noqa: E402
 
-from door.core import drive  # noqa: E402
+from door.core.sync import drive  # noqa: E402
 
 
 class _Drive:
@@ -1076,7 +1078,7 @@ def _disclaimed(init_env, fields):
 
 
 def test_turning_a_source_on_returns_its_disclaimer(init_env):
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     result = profile_cmd._init_core({"linkedin_discovery": True}, init_env.profile_dir, init_env.example_dir)
     assert result["disclaimers"] == [{"key": "linkedin_discovery", "text": discovery_sources.info("linkedin")["disclaimer"]}]
@@ -1092,7 +1094,7 @@ def test_a_disclaimer_comes_only_when_a_source_goes_from_not_on_to_on(init_env):
 
 
 def test_init_set_prints_the_disclaimer_once(init_env):
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     first = CliRunner().invoke(cli, ["init", "--set", "linkedin_discovery=true"])
     assert discovery_sources.info("linkedin")["disclaimer"] in result_text(first)
@@ -1101,7 +1103,7 @@ def test_init_set_prints_the_disclaimer_once(init_env):
 
 
 def test_the_wizards_discovery_question_is_the_generated_disclaimer(init_env, prompts, monkeypatch):
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     _stop_at_first_run(monkeypatch)
     prompts.answers.update(_JANE)

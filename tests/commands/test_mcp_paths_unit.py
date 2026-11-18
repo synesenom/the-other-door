@@ -6,7 +6,7 @@ import door.mcp_server as server
 from door.commands import add as add_cmd
 from door.commands import cv as cv_cmd
 from door.commands import profile as profile_cmd
-from door.core import archive as archive_core
+from door.core.sync import archive as archive_core
 from door.core import path_scope, workspace
 
 

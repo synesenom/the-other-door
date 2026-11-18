@@ -8,7 +8,7 @@ from pathlib import Path
 
 import click
 
-import door.core.tracker as _tracker_mod
+from door.core.jobs import tracker as _tracker_mod
 from door import i18n
 from door.commands import _common as common
 from door.commands import _prompts
@@ -71,7 +71,7 @@ def _list_core(
         or ``"unapplied"``; ``is_new`` is whether it was first seen after the last
         review (always True before the first review).
     """
-    from door.core import selection
+    from door.core.jobs import selection
 
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
@@ -144,7 +144,8 @@ def _match_row(posting: dict, app_tracker, reviewed_at, seen) -> dict:
 def _weak_matches(postings, app_tracker, jobs_dir, config, reviewed_at, seen) -> dict | None:
     """Until any posting on disk has scored at least the config's ``min_score``: the best few
     untracked, fresh postings below it, with what would widen the search. None otherwise."""
-    from door.core import discovery_sources, selection
+    from door.core.jobs import selection
+    from door.core.employers import discovery_sources
 
     bar = config.get("min_score", common._DEFAULT_MIN_SCORE)
     if any((p.get("score") or 0) >= bar for p in postings):
@@ -304,7 +305,7 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
         LookupError: no posting with that id under `jobs_dir`.
         FileNotFoundError: ``open`` and no prepared materials yet.
     """
-    from door.core.selection import find_posting
+    from door.core.jobs.selection import find_posting
 
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR

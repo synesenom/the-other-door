@@ -27,7 +27,8 @@ from conftest import claude_ready
 from style_build_utils import EXAMPLE, STYLES
 
 from door.commands import style as style_cmd
-from door.core import chromium, templates, workspace
+from door.core import templates, workspace
+from door.core.downloads import chromium
 from door.style import fonts
 from door.style import cv_body, style_build, style_compare, style_extract, style_structure
 from door.render import page, readability

@@ -7,7 +7,8 @@ import shutil
 import pytest
 from PIL import Image
 
-from door.core import chromium, workspace
+from door.core import workspace
+from door.core.downloads import chromium
 from door.style import style_preview
 from paths import REPO_ROOT
 

@@ -1,6 +1,6 @@
 """A site that pushed back rests before The other door asks it again.
 
-- `door.core.freshness`: `record_pushback` stamps `pushback_at` in
+- `door.core.jobs.freshness`: `record_pushback` stamps `pushback_at` in
   `jobs/scrape_state.json` (keeping the watermark), `resting_until` says until when
   a site with a `cooldown_hours` rests, and a clean scrape (`record_scrape`) clears it.
 - `_scrape_core`: a scraper that calls `door.scrapers.record_pushback` gets the
@@ -15,7 +15,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from door.commands import scrape as scrape_cmd
-from door.core import freshness, sites, workspace
+from door.core import sites, workspace
+from door.core.jobs import freshness
 from door.scrapers import drain_pushback, record_error, record_pushback
 from profile_utils import write_config
 

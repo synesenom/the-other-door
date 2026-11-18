@@ -57,7 +57,7 @@ scripts/check-bundle.sh    # imports, the MCP handshake, doctor (with its Chromi
   (`scripts/lock_requirements.py` writes the requirements; a package with no wheel for the system fails the build).
 - `door/` is `src/`, `.claude/agents/{tailor,matcher}.md` and `profile.example/`, laid out as in a checkout.
 - `bin/` is `chromium/`, the Chrome for Testing headless shell that
-  prints CVs (#165), pinned in `src/door/core/chromium_pin.json` (the one pin, also what `doctor --fix` installs;
+  prints CVs (#165), pinned in `src/door/core/downloads/chromium_pin.json` (the one pin, also what `doctor --fix` installs;
   not in `bundle.lock.json`): an estimated 105-128 MB more per installer zipped and about 200 MB unpacked. On Windows on ARM the
   win64 shell runs under emulation.
 - Versions and sha256s are pinned in `scripts/bundle.lock.json` (from each release's metadata); a download

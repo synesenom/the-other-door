@@ -15,7 +15,7 @@ from door.scrapers import http_client, robots
 @pytest.fixture(autouse=True)
 def _no_follow_ai(request, monkeypatch):
     """`follow`'s Haiku fallback never reaches the `claude` CLI from a test; tests that want an answer patch this."""
-    from door.core import careers_ai
+    from door.core.employers import careers_ai
 
     if request.module.__name__.endswith("test_careers_ai_unit"):
         return  # that module fakes `claude_cli.ask` underneath
@@ -28,7 +28,7 @@ _WIKIDATA_TESTS = ("test_wikidata_unit", "test_follow_employer_site_unit")
 @pytest.fixture(autouse=True)
 def _no_wikidata(request, monkeypatch):
     """`follow`'s website lookup (Wikidata, #566) finds nothing in a test; its own tests serve saved answers."""
-    from door.core import wikidata
+    from door.core.employers import wikidata
 
     if request.module.__name__.endswith(_WIKIDATA_TESTS) or request.node.get_closest_marker("live"):
         return
@@ -82,7 +82,7 @@ def _no_real_claude_lookup(monkeypatch, tmp_path_factory):
     `which`/`home` or patches `installers.find_claude` itself."""
     import shutil
 
-    from door.core import installers
+    from door.core.downloads import installers
 
     real = installers.find_claude
     real_which = shutil.which
@@ -101,7 +101,7 @@ def _no_real_chromium_lookup(request, monkeypatch, tmp_path_factory):
     """A test never finds the developer's Chromium shell (`$DOOR_BIN`, `~/.local/share/door`), so
     `doctor` starts none: the lookup reads an empty home unless a test passes its own `home` or
     patches `find_chromium` itself; a test marked `real_chromium` prints with the real one."""
-    from door.core import chromium
+    from door.core.downloads import chromium
 
     if request.node.get_closest_marker("live") or request.node.get_closest_marker("real_chromium"):
         return
@@ -172,11 +172,13 @@ def _no_drive_sync(tmp_path, monkeypatch):
     itself uses `enable_sync_hooks`."""
     import webbrowser
 
-    from door.core import drive, lock, sync
+    from door.core import lock, workspace
+    from door.core.sync import drive
+    from door.core.sync import sync
 
     sync.drain_notes()
 
-    monkeypatch.setattr(drive, "_BASE", tmp_path / "drive-config")
+    monkeypatch.setattr(workspace, "CONFIG_BASE", tmp_path / "drive-config")
     monkeypatch.setattr(drive, "CLIENT_ID", "")  # the real client never reaches a test
     monkeypatch.setattr(drive, "CLIENT_SECRET", "")
     monkeypatch.setattr(lock, "pre_acquire_hook", lambda purpose, jobs_dir: None)
@@ -201,7 +203,7 @@ def _no_start_upgrade(monkeypatch):
 @pytest.fixture
 def enable_sync_hooks(monkeypatch):
     """Put the real Drive sync hooks back on the ledger lock (for tests with a fake Drive)."""
-    from door.core import lock
+    from door.core import lock, workspace
 
     monkeypatch.setattr(lock, "pre_acquire_hook", lock._default_pre)
     monkeypatch.setattr(lock, "post_release_hook", lock._default_post)

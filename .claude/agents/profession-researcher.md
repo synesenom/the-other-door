@@ -26,7 +26,7 @@ You are the profession researcher for The other door. You find out how The other
 - `CLAUDE.md`, especially the Conventions on boards, discovery sources, feed platforms, `profile/companies.json`, local jobs only and `topic_terms`;
 - `docs/adding-a-site.md` (what may be added: the terms rule, no login, no per-user API key, no browser, what a discovery source may keep);
 - `docs/job-sites.md`;
-- `src/door/core/sites.py` and `src/door/core/discovery_sources.py` (what exists, and for which countries);
+- `src/door/core/sites.py` and `src/door/core/employers/discovery_sources.py` (what exists, and for which countries);
 - `src/door/matching/title_fit.py` (how a title counts as on topic);
 - `src/door/i18n/country/<cc>.toml`, and `src/door/i18n/lang/` for the country's languages.
 

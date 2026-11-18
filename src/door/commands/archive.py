@@ -1,11 +1,11 @@
 """`export` and `import`: carry profile/ and jobs/ to another computer as one archive.
 
 The archive is a `.tar.gz` holding `manifest.json`, `profile/...` and `jobs/...`; the cores that pack and
-unpack it are in `door.core.archive`.
+unpack it are in `door.core.sync.archive`.
 `import` replaces the local data, after moving it to `backups/<timestamp>/`.
 
 `connect`, `sync` and `disconnect` keep the same archive on Google Drive (issue #265,
-`door.core.drive` and `door.core.sync`).
+`door.core.sync.drive` and `door.core.sync.sync`).
 """
 
 import sys
@@ -14,8 +14,10 @@ from pathlib import Path
 import click
 
 from door.commands import _common as common
-from door.core import archive as archive_core
-from door.core import drive, lock, sync, workspace
+from door.core.sync import archive as archive_core
+from door.core import lock, workspace
+from door.core.sync import drive
+from door.core.sync import sync
 from door.core.lock import SyncConflict
 
 

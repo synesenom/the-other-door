@@ -174,7 +174,7 @@ def print_html(folder, html, out_pdf, *, assets=None, timeout=60.0, launcher=Non
 
 def install() -> None:
     """Put the stand-in where door's print and Chromium lookup are."""
-    from door.core import chromium
+    from door.core.downloads import chromium
     from door.render import html_pdf
 
     html_pdf.print_html = print_html

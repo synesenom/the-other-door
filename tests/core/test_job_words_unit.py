@@ -2,7 +2,7 @@
 
 from cli_utils import write_list_posting
 from door.commands import _common as common
-from door.core.selection import resolve_job_ref
+from door.core.jobs.selection import resolve_job_ref
 
 
 def _post(jobs_dir, job_id, company, title, score=0.9):

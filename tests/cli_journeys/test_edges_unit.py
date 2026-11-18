@@ -24,11 +24,11 @@ try:
     refused = False
 except ConnectionRefusedError:
     refused = True
-from door.core import drive
+from door.core import workspace
 print(json.dumps({
     "refused": refused,
     "now": datetime.now(timezone.utc).isoformat(),
-    "drive": str(drive._BASE),
+    "drive": str(workspace.CONFIG_BASE),
     "mcp": "door.mcp_server" in sys.modules,
     "stacks": (edges.WORLD / "server-stacks.txt").exists(),
 }))

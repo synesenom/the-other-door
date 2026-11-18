@@ -12,7 +12,7 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import companies as companies_cmd
-from door.core import companies as companies_store
+from door.core.employers import companies as companies_store
 from profile_utils import write_config
 from cli_utils import result_text
 from paths import TESTS_DIR

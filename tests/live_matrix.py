@@ -29,7 +29,8 @@ class Run(NamedTuple):
 
 def module(run: Run):
     """The run's scraper module, a site's or a discovery source's: both read ads with `probe` and `scrape`."""
-    from door.core import discovery_sources, sites
+    from door.core import sites
+    from door.core.employers import discovery_sources
 
     if run.source in sites.SITES:
         return importlib.import_module(sites.SITES[run.source].module)
@@ -40,7 +41,8 @@ def serves(run: Run) -> bool:
     """Whether the run's source reads ads for its city: a board of the city's country, or a discovery source
     registered for that country."""
     from door import i18n
-    from door.core import discovery_sources, sites
+    from door.core import sites
+    from door.core.employers import discovery_sources
 
     if run.source in sites.SITES:
         return run.source in sites.boards_for_location(run.city)

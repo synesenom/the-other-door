@@ -16,7 +16,7 @@ on:
       - "app/src/main/**"
       - "pyproject.toml"
       - "poetry.lock"
-      - "src/door/core/chromium_pin.json"
+      - "src/door/core/downloads/chromium_pin.json"
       - "src/door/style/fonts_pin.json"
       - ".github/workflows/package-windows.yml"
   # Everything else is checked once it is on main, not on every pull request (slow, and macOS and Windows minutes cost 10x and 2x).
@@ -60,7 +60,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/.bundle-cache
-          key: bundle-windows-x64-${{ hashFiles('app/scripts/bundle.lock.json', 'src/door/core/chromium_pin.json', 'poetry.lock') }}
+          key: bundle-windows-x64-${{ hashFiles('app/scripts/bundle.lock.json', 'src/door/core/downloads/chromium_pin.json', 'poetry.lock') }}
 
       - name: Install the app's packages
         run: npm ci

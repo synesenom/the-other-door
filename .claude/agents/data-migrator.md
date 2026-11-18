@@ -34,7 +34,7 @@ You write the data upgrade a release needs (#56). A tester who installs this rel
 On a branch `release/data-<version or date>` from `main`:
 
 1. Read `src/door/core/stored.py`'s `INVENTORY` at `main` and at the tag (`git show <tag>:src/door/core/stored.py`; a tag before #56 has none: read `docs/data.md` and the writers instead). For each stored file, diff what describes it between the tag and `main`:
-   - the model or format named in its entry (`Profile` in `core/profile_loader.py`, a company entry in `core/companies.py`, a ledger entry in `core/tracker.py`, history, the story bank's sections, run records, `skill_aliases.json`, …): `git diff <tag>..main -- <file>`;
+   - the model or format named in its entry (`Profile` in `core/profile_loader.py`, a company entry in `core/employers/companies.py`, a ledger entry in `core/jobs/tracker.py`, history, the story bank's sections, run records, `skill_aliases.json`, …): `git diff <tag>..main -- <file>`;
    - its location (a renamed or moved file);
    - the code-owned files (`profile.example/` templates and fonts; `core/templates.py`).
 2. For each difference, find the PR that made it (`git log <tag>..main --format='%h %s' -- <file>`, then `gh pr list --search <sha> --state merged`) and read its body and diff. Sort it:

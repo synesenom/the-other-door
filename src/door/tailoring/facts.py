@@ -16,7 +16,8 @@ from functools import lru_cache
 from pathlib import Path
 
 from door import i18n
-from door.core import skill_aliases, utils, workspace
+from door.core import utils, workspace
+from door.core.jobs import skill_aliases
 from door.matching import integrity
 from door.render import html_doc
 

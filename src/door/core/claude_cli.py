@@ -12,7 +12,8 @@ import os
 import subprocess
 from pathlib import Path
 
-from door.core import installers, usage, workspace
+from door.core import usage, workspace
+from door.core.downloads import installers
 
 
 def config_dir(profile_dir: Path | None = None) -> str | None:

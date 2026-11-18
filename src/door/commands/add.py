@@ -146,7 +146,7 @@ def _add_core(
     from pydantic import ValidationError
 
     from door.core.models import JobPosting, make_job_id
-    from door.core.selection import find_posting_path
+    from door.core.jobs.selection import find_posting_path
 
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
@@ -302,7 +302,7 @@ def _render_added(result: dict, *, interactive: bool) -> None:
         console.print()
     matches_cmd._render_posting_detail(posting, posting["status"], console, description=False)
     console.print()
-    from door.core.selection import find_posting
+    from door.core.jobs.selection import find_posting
 
     words = common.job_words(find_posting(workspace.JOBS_DIR, result["job_id"]) or {"id": result["job_id"]}, workspace.JOBS_DIR)
     # soft_wrap: a path or a command is never broken across lines, so it stays copyable.

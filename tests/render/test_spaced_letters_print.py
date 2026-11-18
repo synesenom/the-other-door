@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-from door.core import chromium
+from door.core.downloads import chromium
 from door.render import html_pdf, readability
 
 pytestmark = [

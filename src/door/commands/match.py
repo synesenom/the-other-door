@@ -7,7 +7,7 @@ from pathlib import Path
 from door.commands import _common as common
 from door.core import profile_loader
 from door.core import progress as progress_mod
-from door.core import selection
+from door.core.jobs import selection
 from door.core import workspace
 from door.core import utils
 from door.matching import integrity

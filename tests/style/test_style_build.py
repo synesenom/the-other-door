@@ -10,7 +10,8 @@ import os
 import pytest
 
 from door.commands import compile as compile_cmd
-from door.core import chromium, templates, workspace
+from door.core import templates, workspace
+from door.core.downloads import chromium
 from door.style import cv_body, style_build, style_compare, style_extract, style_preview
 from door.render import html_guard, page
 from pdf_utils import font_names, path_count

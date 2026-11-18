@@ -39,7 +39,7 @@ def test_list_excludes_already_applied(cli_env):
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-applied", score=0.9, title="Applied Job")
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-new", score=0.9, title="New Job")
 
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
     app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
     app_tracker.set_status("job-applied", "applied")
     app_tracker.save()
@@ -202,7 +202,7 @@ def test_list_fits_each_row_in_one_line(cli_env):
 
 
 def _set_statuses(jobs_dir, **statuses):
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     app_tracker = tracker_mod.ApplicationTracker(jobs_dir / "applications.json")
     for job_id, status in statuses.items():
@@ -307,7 +307,7 @@ def test_list_ongoing_shows_each_postings_status(cli_env):
 
 
 def test_list_closed_shows_applications_that_ended_not_dismissed_matches(cli_env):
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     for job_id, title in [("job-rej", "Rejected Job"), ("job-gho", "Ghosted Job"), ("job-wd", "Withdrawn Job"),
                           ("job-dis", "Dismissed Job"), ("job-app", "Applied Job")]:
@@ -336,7 +336,7 @@ def test_list_closed_is_not_combined_with_status_or_ongoing(cli_env):
 
 def test_list_rows_carry_their_last_change_and_interview_rounds(cli_env):
     from door.commands import matches as matches_cmd
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-int", score=0.9, title="Interview Job")
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-new", score=0.9, title="Fresh Job")
@@ -357,7 +357,7 @@ def test_list_rows_say_when_an_application_had_no_answer_for_45_days(cli_env):
     from datetime import datetime, timedelta, timezone
 
     from door.commands import matches as matches_cmd
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     now = datetime.now(tz=timezone.utc)
     old, recent = now - timedelta(days=50), now - timedelta(days=5)
@@ -387,7 +387,7 @@ def test_list_rows_say_when_an_application_had_no_answer_for_45_days(cli_env):
 def test_list_ongoing_marks_an_application_with_no_answer(cli_env):
     from datetime import datetime, timedelta, timezone
 
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     now = datetime.now(tz=timezone.utc)
     app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
@@ -406,7 +406,7 @@ def test_list_ongoing_marks_an_application_with_no_answer(cli_env):
 def test_list_ongoing_keeps_the_posting_readable_beside_a_silent_interview_round(cli_env, monkeypatch):
     from datetime import datetime, timedelta, timezone
 
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     monkeypatch.setenv("COLUMNS", "80")
     now = datetime.now(tz=timezone.utc)
@@ -459,7 +459,7 @@ def test_list_core_scored_ignores_dropped_and_unscored_postings(cli_env):
 def test_list_core_scored_does_not_depend_on_status_or_filters(cli_env):
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-a", score=0.9, title="A Job")
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-b", score=0.9, title="B Job")
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
     app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
     app_tracker.set_status("job-a", "applied")
     app_tracker.save()
@@ -507,7 +507,7 @@ def test_weak_is_none_when_nothing_was_scored(cli_env):
 
 def test_weak_is_none_once_any_posting_cleared_the_bar_even_discarded_or_old(cli_env):
     _weak_env(cli_env, [0.4, 0.8])
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
     app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
     app_tracker.set_status("job-1", "discarded")
     app_tracker.save()
@@ -519,7 +519,7 @@ def test_weak_is_none_once_any_posting_cleared_the_bar_even_discarded_or_old(cli
 
 def test_weak_is_none_when_the_below_bar_ones_are_tracked_or_stale(cli_env):
     _weak_env(cli_env, [0.4])
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
     app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
     app_tracker.set_status("job-0", "applied")
     app_tracker.save()

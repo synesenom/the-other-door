@@ -25,7 +25,7 @@ plain HTTP client (checked live 2026-10-14: 134 requests at a
 Terms: https://www.linkedin.com/legal/user-agreement - they ask for no scrapers; robots.txt
 disallows both paths. This module is not a `Site`. It is small and slow: the caller gives the
 request ``budget`` of a run (search pages and job pages together, adapting to what LinkedIn
-tolerated before: `door.core.discovery_state`) and the ``pause`` between two requests (2 to 4 s
+tolerated before: `door.core.jobs.discovery_state`) and the ``pause`` between two requests (2 to 4 s
 by default), details only for titles on topic for the keywords (`door.matching.title_fit.on_topic`).
 LinkedIn limits a burst of about a hundred requests with HTTP 429; the first 429 of a run is waited
 out (`_BACKOFF_S`) and the request tried again, a second one in a row stops the run, as does any
@@ -52,7 +52,7 @@ from door.scrapers import sdk
 
 _SITE = "linkedin"
 
-# The discovery-source contract (`door.core.discovery_sources`).
+# The discovery-source contract (`door.core.employers.discovery_sources`).
 NAME = "linkedin"
 COUNTRIES: tuple[str, ...] = ()  # works anywhere
 CONFIG_KEY = "linkedin_discovery"

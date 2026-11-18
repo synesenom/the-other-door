@@ -8,8 +8,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from door.core import profile_loader
-from door.core import candidates, discovery_sources
-from door.core import discovery_state as ds
+from door.core.jobs import candidates
+from door.core.employers import discovery_sources
+from door.core.jobs import discovery_state as ds
 from door.pipeline import discover
 from door.scrapers.discovery import linkedin
 import door.scrapers as scrapers

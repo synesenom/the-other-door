@@ -1,12 +1,12 @@
 """Import guard: a site module's only `door` import is `door.scrapers.sdk`.
 
-The discovery sources (`core/discovery_sources.SOURCES`: `linkedin`, which is not a `Site`) are
+The discovery sources (`core/employers/discovery_sources.SOURCES`: `linkedin`, which is not a `Site`) are
 scanned the same way (#280)."""
 import ast
 
 import pytest
 
-from door.core import discovery_sources
+from door.core.employers import discovery_sources
 from door.core.sites import SITES
 from tests.paths import REPO_ROOT
 

@@ -55,7 +55,7 @@ def test_scrape_passes_per_site_lists_to_scrapers_as_a_dict(cli_env, monkeypatch
 
     monkeypatch.setattr(gh, "scrape", _fake)
     monkeypatch.delattr(gh, "iter_scrape", raising=False)
-    from door.core import companies
+    from door.core.employers import companies
 
     items = companies.load(cli_env.profile_dir)
     companies.record(items, "Acme", feed=("greenhouse", "acme"), status="followed", found_via="manual", reason=None)

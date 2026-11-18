@@ -13,7 +13,9 @@ import shutil
 import pytest
 
 from door.commands import companies as companies_cmd
-from door.core import candidates, careers_ai, workspace
+from door.core import workspace
+from door.core.jobs import candidates
+from door.core.employers import careers_ai
 from door.matching import title_fit
 from door.pipeline import follow, search
 from professions import PROFESSIONS
@@ -110,7 +112,7 @@ MIN_UNIVERSITIES = 3
 @pytest.mark.live
 def test_researcher_finds_three_danish_universities_live(tmp_path, monkeypatch):
     """#431 acceptance: following the universities' feeds, `collect` writes on-topic postings of at least three of them."""
-    from door.core import companies as store
+    from door.core.employers import companies as store
     from door.pipeline import collect
 
     config = PROFESSIONS["researcher"]["config"]

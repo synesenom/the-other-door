@@ -2,7 +2,7 @@
 
 Not a test module itself (no `test_` prefix). Each feed platform's live test (`test_<platform>_live.py`,
 `test_<platform>_detection_live`) runs the detection `companies add` runs (`companies._resolve_core`) on its row's
-careers page: the page still shows the platform, and the feed it names still answers. `tests/core/test_wikidata_live.py`
+careers page: the page still shows the platform, and the feed it names still answers. `tests/core/employers/test_wikidata_live.py`
 looks each `BY_NAME` employer up on Wikidata, by the name a job board gives it, and follows its website to its feed
 (`companies._by_website`). When an employer moves to another platform or its page moves, change its row here.
 
