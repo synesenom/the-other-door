@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Dispatch, ReactNode } from 'react'
-import { AppName, ErrorBox, named } from '../AppName'
+import { AppName, ErrorBox, ErrorList, named } from '../AppName'
 import { call, errorText } from '../../api'
 import { DocDialog, LEGAL_DISCLAIMER } from '../Documentation'
 import { Markdown } from '../Markdown'
@@ -42,14 +42,7 @@ export function cvOverview(state: WizardState, profile: ShowProfile): string {
 }
 
 function Errors({ messages }: { messages?: string[] }) {
-  if (!messages?.length) return null
-  return (
-    <ul role="alert" className="error onb-errors">
-      {messages.map((e) => (
-        <li key={e}>{e}</li>
-      ))}
-    </ul>
-  )
+  return messages?.length ? <ErrorList messages={messages} /> : null
 }
 
 function Part({ title, lead, messages, children }: { title: string; lead?: ReactNode; messages?: string[]; children: ReactNode }) {

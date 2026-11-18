@@ -4,6 +4,7 @@
 import { useState, type ReactNode } from 'react'
 import { CheckMark, CrossMark, WarningMark } from '../renderer/screens/CheckMark'
 import { Switch } from '../renderer/screens/Switch'
+import { ErrorBox } from '../renderer/screens/AppName'
 
 const COLOURS = [
   'ground', 'surface', 'page', 'ink', 'ink-muted', 'border',
@@ -129,7 +130,7 @@ export function Guide() {
             <p className="notice small">Marked as applied.</p>
           </Row>
           <Row label="error">
-            <p className="error small">The other door could not start the run.</p>
+            <ErrorBox className="small" text="The other door could not start the run." />
           </Row>
           <Row label="title-line">
             <div className="title-line">

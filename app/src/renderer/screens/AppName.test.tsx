@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { ErrorBox, named } from './AppName'
+import { ErrorBox, ErrorList, named } from './AppName'
 
 afterEach(cleanup)
 
@@ -39,5 +39,13 @@ describe('ErrorBox', () => {
   it('adds the given class after error', () => {
     const { getByRole } = render(<ErrorBox className="small" text="Nope" />)
     expect(getByRole('alert')).toHaveClass('error', 'small')
+  })
+})
+
+describe('ErrorList', () => {
+  it('lists each message in one alert, naming the app', () => {
+    const { container } = render(<ErrorList messages={['One.', 'The other door could not.']} />)
+    expect(container.querySelectorAll('ul[role="alert"] li')).toHaveLength(2)
+    expect(container.querySelectorAll('.app-name')).toHaveLength(1)
   })
 })
