@@ -416,9 +416,9 @@ describe('Review, the CV style tick', () => {
     const h = setup(styled)
     await userEvent.click(box()!)
     expect(seen.style).toBe(true)
-    expect(h.buildStyle).not.toHaveBeenCalled()
+    expect(h.callWithFiles).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
-    await waitFor(() => expect(h.buildStyle).toHaveBeenCalledWith('f1'))
+    await waitFor(() => expect(h.callWithFiles).toHaveBeenCalledWith('build_style', {}, ['f1']))
     expect(h.onSaved).toHaveBeenCalled()
   })
 

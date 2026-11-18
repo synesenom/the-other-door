@@ -51,7 +51,7 @@ describe('Reading', () => {
     const h = setup({ draft_stories: { outcome: 'proposed', stories: [story] } })
     expect(screen.getByRole('list', { name: 'Reading' })).toBeInTheDocument()
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
-    expect(h.draftCv).toHaveBeenCalledWith({ files: [], urls: ['https://ada.dev'] })
+    expect(h.callWithFiles).toHaveBeenCalledWith('draft_cv', { sources: ['https://ada.dev'] }, [])
     expect(h.call).toHaveBeenCalledWith('draft_stories', { from_cv: true })
     expect(seen.story).toEqual({ values: { title: 'Halved the close', context: 'c', action: 'a', result: 'r', learning: '' }, keep: true })
     expect(h.call).toHaveBeenCalledWith('infer_basics', { markdown: '# Ada\n'  })
@@ -67,7 +67,7 @@ describe('Reading', () => {
   it('goes on to the review under StrictMode too (the dev build mounts it twice), reading once', async () => {
     const h = setup({}, undefined, undefined, true)
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
-    expect(h.draftCv).toHaveBeenCalledTimes(1)
+    expect(h.callWithFiles).toHaveBeenCalledTimes(1)
     expect(seen.name).toBe('Ada')
   })
 
@@ -111,7 +111,7 @@ describe('Reading', () => {
       </Host>
     )
     const { rerender } = render(view(true))
-    await waitFor(() => expect(h.draftCv).toHaveBeenCalled())
+    await waitFor(() => expect(h.callWithFiles).toHaveBeenCalled())
     rerender(view(false))
     await act(async () => finish(draft))
     expect(h.call).not.toHaveBeenCalled()
@@ -156,7 +156,7 @@ describe('Reading', () => {
   it('no sources: no draft, and the review asks the rest', async () => {
     const h = setup({ infer_basics: { ...basics, name: null, email: null, location: null, missing: ['name', 'email', 'location'] } }, { step: 'reading' })
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
-    expect(h.draftCv).not.toHaveBeenCalled()
+    expect(h.callWithFiles).not.toHaveBeenCalled()
   })
 
   it('a redo keeps its answers and offers new titles', async () => {

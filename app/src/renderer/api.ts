@@ -383,7 +383,7 @@ export interface CvDraft {
 
 /** A CV draft from picked files (tokens) and web pages; the window never names a path, so this has its own channel. */
 export async function draftCv(payload: { files: string[]; urls: string[] }): Promise<CvDraft> {
-  const r = (await window.door.draftCv(payload)) as Envelope<CvDraft>
+  const r = (await window.door.callWithFiles('draft_cv', { sources: payload.urls }, payload.files)) as Envelope<CvDraft>
   if (!r.ok) throw new ApiError(r.error, r.candidates, r.stopped, r.conflict)
   return r.data
 }

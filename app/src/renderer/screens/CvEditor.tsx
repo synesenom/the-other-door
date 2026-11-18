@@ -74,7 +74,7 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
   const [error, setError] = useState<string | null>(null)
   const nothing: Step = { kind: 'read', result: { outcome: 'nothing_new', proposals: [], unreachable: [] }, dropped: new Set() }
   const readFile = async (token: string) => {
-    const r = (await window.door.enrichFile(token)) as { ok: true; data: Enriched } | { ok: false; error: string }
+    const r = (await window.door.callWithFiles('enrich', {}, [token])) as { ok: true; data: Enriched } | { ok: false; error: string }
     if (!r.ok) {
       setError(r.error)
       return setStep(nothing)

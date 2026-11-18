@@ -18,10 +18,8 @@ declare global {
       /** Opens the file dialog (in the main process); the files come back as tokens, never paths. */
       pickCvFiles(): Promise<PickResult>
       dropCvFiles(files: File[]): Promise<PickResult>
-      /** Drafts a CV from picked files (by token) and web pages. */
-      draftCv(payload: { files: string[]; urls: string[] }): Promise<Envelope>
-      /** A CV file chosen in the picker (its token), read by enrich for what it adds to the Master CV. */
-      enrichFile(token: string): Promise<Envelope>
+      /** `draft_cv` (args: `sources` pages), `enrich` or `build_style` with picked CV files, by token: main puts their paths in the tool's argument. */
+      callWithFiles(tool: string, args: Record<string, unknown>, tokens: string[]): Promise<Envelope>
       /** The CV file a draft last read, by its name, or null (Profile → CV's Sources). */
       cvFile(): Promise<string | null>
       /** Forgets the picked files (the wizard closed). */
@@ -29,8 +27,6 @@ declare global {
       /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (save_photo's answer). */
       pickPhoto(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
       savePhoto(token: string): Promise<Envelope>
-      /** Start the CV style build from a CV file the wizard read, by its token. */
-      buildStyle(token: string): Promise<Envelope>
       /** Profile → CV: start building a style from the CV file (Sources); the window names no path. */
       styleFromCvFile(): Promise<Envelope>
       /** The CV file was taken by `styleFromCvFile` and is being read; returns the way to stop. */

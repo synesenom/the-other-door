@@ -681,7 +681,7 @@ describe('the CV draft channels', () => {
 
   it('drafts from the resolved paths and the urls, with the long limit', async () => {
     const { invoke, server } = setup(async () => ({ markdown: '# Ada' }))
-    const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: ['https://example.com/ada'] })
+    const r = await invoke(CHANNELS.callWithFiles, 'draft_cv', { sources: ['https://example.com/ada'] }, ['tok1'])
     expect(r).toEqual({ ok: true, data: { markdown: '# Ada' } })
     expect(server.call).toHaveBeenCalledWith('draft_cv', { sources: ['/Users/ada/cv.pdf', 'https://example.com/ada'] }, expect.objectContaining({ timeout: expect.any(Number) }))
   })
@@ -691,7 +691,7 @@ describe('the CV draft channels', () => {
       markdown: '# Ada',
       sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: true }, { source: 'https://example.com/ada', kind: 'url' }],
     }))
-    const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: ['https://example.com/ada'] })
+    const r = await invoke(CHANNELS.callWithFiles, 'draft_cv', { sources: ['https://example.com/ada'] }, ['tok1'])
     expect(r).toEqual({
       ok: true,
       data: { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: true, token: 'tok1' }, { source: 'https://example.com/ada', kind: 'url' }] },
@@ -700,31 +700,31 @@ describe('the CV draft channels', () => {
 
   it('refuses an unknown token without calling the server', async () => {
     const { invoke, server } = setup()
-    const r = await invoke(CHANNELS.draftCv, { files: ['guess'], urls: [] })
+    const r = await invoke(CHANNELS.callWithFiles, 'draft_cv', { sources: [] }, ['guess'])
     expect(r.ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
   it('refuses a LinkedIn page with the hint, and a non-http address', async () => {
     const { invoke, server } = setup()
-    const li = await invoke(CHANNELS.draftCv, { files: [], urls: ['https://www.linkedin.com/in/ada'] })
+    const li = await invoke(CHANNELS.callWithFiles, 'draft_cv', { sources: ['https://www.linkedin.com/in/ada'] }, [])
     expect(li).toMatchObject({ ok: false, error: expect.stringContaining('Save to PDF') })
-    const bad = await invoke(CHANNELS.draftCv, { files: [], urls: ['file:///etc/passwd'] })
+    const bad = await invoke(CHANNELS.callWithFiles, 'draft_cv', { sources: ['file:///etc/passwd'] }, [])
     expect(bad.ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
   it.each([
-    [{ files: 'tok1', urls: [] }],
-    [{ files: [], urls: 'https://a.com' }],
-    [{ files: [1], urls: [] }],
-    [{ files: [], urls: [2] }],
-    ['text'],
-    [null],
-    [{ files: [], urls: [] }],
-  ])('refuses the payload %j', async (payload) => {
+    [{ sources: [] }, 'tok1'],
+    [{ sources: [] }, [1]],
+    [{ sources: 'https://a.com' }, []],
+    [{ sources: [2] }, []],
+    ['text', []],
+    [null, []],
+    [{ sources: [] }, []],
+  ])('refuses the call %j with tokens %j', async (args, tokens) => {
     const { invoke, server } = setup()
-    expect((await invoke(CHANNELS.draftCv, payload)).ok).toBe(false)
+    expect((await invoke(CHANNELS.callWithFiles, 'draft_cv', args, tokens)).ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
@@ -732,7 +732,7 @@ describe('the CV draft channels', () => {
     const { invoke } = setup(async () => {
       throw Object.assign(new DoorError('draft_cv took too long'), { timedOut: true as const })
     })
-    const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
+    const r = await invoke(CHANNELS.callWithFiles, 'draft_cv', { sources: [] }, ['tok1'])
     expect(r).toEqual({ ok: false, error: expect.stringContaining('too long') })
   })
 
@@ -796,12 +796,33 @@ describe('door:call refuses what names a local file', () => {
   })
 })
 
+describe('the picked-file channel', () => {
+  it('refuses a tool that takes no picked file, and a path the window names', async () => {
+    const { invoke, server, cvSources } = setup()
+    for (const tool of ['status_summary', 'save_photo', 'import_posting', 'export_data', 'nope', 7]) {
+      expect((await invoke(CHANNELS.callWithFiles, tool, {}, ['tok1'])).ok).toBe(false)
+    }
+    expect((await invoke(CHANNELS.callWithFiles, 'build_style', { file: '/etc/passwd' }, ['tok1'])).ok).toBe(false)
+    expect((await invoke(CHANNELS.callWithFiles, 'enrich', { files: ['/etc/passwd'] }, ['tok1'])).ok).toBe(false)
+    expect(cvSources.resolve).not.toHaveBeenCalled()
+    expect(server.call).not.toHaveBeenCalled()
+  })
+
+  it('refuses a token that was never handed out', async () => {
+    const { invoke, server } = setup()
+    for (const tool of ['draft_cv', 'enrich', 'build_style']) {
+      expect((await invoke(CHANNELS.callWithFiles, tool, {}, ['guess'])).ok).toBe(false)
+    }
+    expect(server.call).not.toHaveBeenCalled()
+  })
+})
+
 describe('the CV style build', () => {
   const real = { environment: 'production' as const }
 
   it('a picked CV file goes to build_style by token: the tool gets the real path', async () => {
     const { invoke, server, cvSources } = setup(async () => ({ started: true }), undefined, false, real)
-    expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: true, data: { started: true } })
+    expect(await invoke(CHANNELS.callWithFiles, 'build_style', {}, ['tok1'])).toEqual({ ok: true, data: { started: true } })
     expect(cvSources.resolve).toHaveBeenCalledWith(['tok1'])
     expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/cv.pdf' }, { timeout: 120_000 })
   })
@@ -810,13 +831,13 @@ describe('the CV style build', () => {
     const { invoke } = setup(async () => {
       throw new DoorError('this PDF is a scan: there is no style to copy')
     }, undefined, false, real)
-    expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
+    expect(await invoke(CHANNELS.callWithFiles, 'build_style', {}, ['tok1'])).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
   })
 
   it('an unknown token, or a path from the window, builds nothing', async () => {
     const { invoke, server } = setup(undefined, undefined, false, real)
-    for (const t of ['nope', '/Users/ada/cv.pdf', 42]) {
-      expect((await invoke(CHANNELS.buildStyle, t)).ok).toBe(false)
+    for (const t of [['nope'], ['/Users/ada/cv.pdf'], 42, [], ['tok1', 'tok2']]) {
+      expect((await invoke(CHANNELS.callWithFiles, 'build_style', {}, t)).ok).toBe(false)
     }
     expect(server.call).not.toHaveBeenCalled()
   })
@@ -824,7 +845,7 @@ describe('the CV style build', () => {
   it('staging and the sandbox build for real', async () => {
     for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
       const { invoke, server } = setup(async () => ({ started: true }), undefined, false, info)
-      expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: true, data: { started: true } })
+      expect(await invoke(CHANNELS.callWithFiles, 'build_style', {}, ['tok1'])).toEqual({ ok: true, data: { started: true } })
       expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/cv.pdf' }, { timeout: 120_000 })
     }
   })
@@ -836,18 +857,18 @@ describe('a style from the CV file', () => {
   it('the CV file is the first file the draft read with a style to copy, else its first file', async () => {
     const styled = { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: false }, { source: '/Users/ada/b.pdf', kind: 'file', style: true }, { source: '/Users/ada/c.pdf', kind: 'file', style: true }] }
     const one = setup(async () => styled, undefined, false, real)
-    await one.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
+    await one.invoke(CHANNELS.callWithFiles, 'draft_cv', { sources: [] }, ['tok1'])
     expect(one.styleFile.remember).toHaveBeenCalledTimes(1)
     expect(one.styleFile.remember).toHaveBeenCalledWith('/Users/ada/b.pdf')
     const plain = { markdown: '# Ada', sources: [{ source: 'https://ada.dev', kind: 'url' }, { source: '/Users/ada/cv.docx', kind: 'file', style: false }, { source: '/Users/ada/other.pdf', kind: 'file' }] }
     const two = setup(async () => plain, undefined, false, real)
-    await two.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
+    await two.invoke(CHANNELS.callWithFiles, 'draft_cv', { sources: [] }, ['tok1'])
     expect(two.styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.docx')
   })
 
   it('a CV file to add from is read by enrich from its path, and is the CV file from then on', async () => {
     const one = setup(async () => ({ outcome: 'proposed', proposals: [] }), undefined, false, real)
-    const r = await one.invoke(CHANNELS.enrichFile, 'tok1')
+    const r = await one.invoke(CHANNELS.callWithFiles, 'enrich', {}, ['tok1'])
     expect(r).toEqual({ ok: true, data: { outcome: 'proposed', proposals: [] } })
     expect(one.server.call).toHaveBeenCalledWith('enrich', { files: ['/Users/ada/cv.pdf'] }, expect.objectContaining({ timeout: expect.any(Number) }))
     expect(one.styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.pdf')
@@ -857,10 +878,10 @@ describe('a style from the CV file', () => {
     const failed = setup(async () => {
       throw new DoorError('the file could not be read')
     }, undefined, false, real)
-    expect((await failed.invoke(CHANNELS.enrichFile, 'tok1')).ok).toBe(false)
+    expect((await failed.invoke(CHANNELS.callWithFiles, 'enrich', {}, ['tok1'])).ok).toBe(false)
     expect(failed.styleFile.remember).not.toHaveBeenCalled()
     const guessed = setup(undefined, undefined, false, real)
-    expect((await guessed.invoke(CHANNELS.enrichFile, 'guess')).ok).toBe(false)
+    expect((await guessed.invoke(CHANNELS.callWithFiles, 'enrich', {}, ['guess'])).ok).toBe(false)
     expect(guessed.server.call).not.toHaveBeenCalled()
   })
 

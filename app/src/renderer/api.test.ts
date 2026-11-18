@@ -201,11 +201,11 @@ describe('findJobs', () => {
 
 
 describe('draftCv', () => {
-  it('sends tokens and urls through the draft channel, never the generic call', async () => {
+  it('sends tokens and urls through the files channel, never the generic call', async () => {
     const h = mockDoor({ draft_cv: { markdown: '# Ada', sources: [], provenance: [], todos: [] } })
     const r = await draftCv({ files: ['tok'], urls: ['https://a.com'] })
     expect(r.markdown).toBe('# Ada')
-    expect(h.draftCv).toHaveBeenCalledWith({ files: ['tok'], urls: ['https://a.com'] })
+    expect(h.callWithFiles).toHaveBeenCalledWith('draft_cv', { sources: ['https://a.com'] }, ['tok'])
     expect(h.call).not.toHaveBeenCalled()
   })
 

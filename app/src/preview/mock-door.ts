@@ -317,16 +317,16 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     pickCvFiles: async () => ({ files: [{ token: 'preview-1', name: 'jane-doe-cv.pdf', size: 184_000 }], refused: [] }),
     dropCvFiles: async (files) => ({ files: files.map((f, i) => ({ token: `preview-drop-${i}`, name: f.name, size: f.size })), refused: [] }),
     cvFile: async () => 'jane-doe-cv.pdf',
-    draftCv: async () => {
+    callWithFiles: async (tool) => {
+      if (tool === 'build_style') return { ok: true, data: { started: true } }
+      if (tool === 'enrich') return respond('enrich', { files: ['jane-doe-cv.pdf'] })
       const r = await respond('draft_cv', {})
       if (!r.ok) return r
       return { ok: true, data: { markdown: fixtures.show_profile.cv.text, provenance: [], todos: [], sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }] } }
     },
-    enrichFile: async () => respond('enrich', { files: ['jane-doe-cv.pdf'] }),
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
-    buildStyle: async () => ({ ok: true, data: { started: true } }),
     onStyleReading: (cb: () => void) => {
       styleReadingListeners.add(cb)
       return () => styleReadingListeners.delete(cb)

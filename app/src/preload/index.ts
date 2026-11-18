@@ -22,14 +22,13 @@ contextBridge.exposeInMainWorld('door', {
   pickCvFiles: () => ipcRenderer.invoke('door:pick-cv-files'),
   // A drop: only Electron can turn a dropped File into a path, here, out of the page's reach.
   dropCvFiles: (files: File[]) => ipcRenderer.invoke('door:drop-cv-files', files.map((f) => webUtils.getPathForFile(f)).filter(Boolean)),
-  draftCv: (payload: { files: string[]; urls: string[] }) => ipcRenderer.invoke('door:draft-cv', payload),
-  enrichFile: (token: string) => ipcRenderer.invoke('door:enrich-file', token),
+  // draft_cv, enrich and build_style with the picked CV files, by token: main puts their paths in the tool's argument.
+  callWithFiles: (tool: string, args: Record<string, unknown>, tokens: string[]) => ipcRenderer.invoke('door:call-with-files', tool, args, tokens),
   cvFile: () => ipcRenderer.invoke('door:cv-file'),
   clearCvSources: () => ipcRenderer.invoke('door:cv-sources-clear'),
   // The CV photo: chosen in a dialog the main process runs, saved by the token it hands back.
   pickPhoto: () => ipcRenderer.invoke('door:pick-photo'),
   savePhoto: (token: string) => ipcRenderer.invoke('door:save-photo', token),
-  buildStyle: (token: string) => ipcRenderer.invoke('door:build-style', token),
   styleFromCvFile: () => ipcRenderer.invoke('door:style-from-cv-file'),
   // A file was chosen for it: its structure is now being read.
   onStyleReading: (cb: () => void) => {
