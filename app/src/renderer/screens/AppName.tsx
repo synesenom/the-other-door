@@ -22,3 +22,19 @@ export function named(message: ReactNode): ReactNode {
     </Fragment>
   ))
 }
+
+/** Error lines in one alert list, each naming the app where it does. */
+export function ErrorList({ messages }: { messages: string[] }) {
+  return (
+    <ul role="alert" className="error onb-errors">
+      {messages.map((m) => (
+        <li key={m}>{named(m)}</li>
+      ))}
+    </ul>
+  )
+}
+
+/** The error box: an alert line whose message may name the app. */
+export function ErrorBox({ text, className }: { text: ReactNode; className?: string }) {
+  return <p role="alert" className={className ? `error ${className}` : 'error'}>{named(text)}</p>
+}

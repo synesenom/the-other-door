@@ -1,7 +1,7 @@
 // The phone app's root (#303): the pair screen until this phone has a token, then the desktop app's own
 // App over the web bridge. A revoked token (401 anywhere) brings the pair screen back.
 import { useCallback, useEffect, useState } from 'react'
-import { AppName, named } from '../renderer/screens/AppName'
+import { AppName, ErrorBox } from '../renderer/screens/AppName'
 import { App } from '../renderer/App'
 import { Splash } from '../renderer/Splash'
 import { createWebDoor } from './bridge'
@@ -113,9 +113,7 @@ export function Web({ store, fetch }: { store: TokenStore; fetch: typeof globalT
         <h1 className="display-l">Adding the ad you shared</h1>
         {state.error ? (
           <>
-            <p role="alert" className="body error">
-              {named(state.error)}
-            </p>
+            <ErrorBox className="body" text={state.error} />
             <div className="actions">
               <button
                 type="button"

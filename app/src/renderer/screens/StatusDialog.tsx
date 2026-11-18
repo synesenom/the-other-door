@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox } from './AppName'
 import { INTERVIEW_KINDS, STATUSES, call, errorText } from '../api'
 import type { SetStatusResult } from '../api'
 import { Dialog } from './Dialog'
@@ -63,9 +63,7 @@ export function StatusDialog({ jobId, title, current, preset, onClose, onDone }:
   )
 
   const failure = error && (
-    <p role="alert" className="error">
-      {named(error)}
-    </p>
+    <ErrorBox text={error} />
   )
 
   if (preset === 'discarded')

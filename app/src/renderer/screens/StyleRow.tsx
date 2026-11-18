@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox, named } from './AppName'
 import { call, errorText, styleUrl } from '../api'
 import { Dialog } from './Dialog'
 import { PageStack } from './PageStack'
@@ -234,9 +234,7 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
             </div>
           )}
           {error && (
-            <p role="alert" className="error">
-              {named(error)}
-            </p>
+            <ErrorBox text={error} />
           )}
         </>
       )}
