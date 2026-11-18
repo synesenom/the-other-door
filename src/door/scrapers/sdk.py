@@ -71,7 +71,7 @@ from typing import TypedDict
 from datetime import datetime
 
 from door import i18n
-from door.core import freshness
+from door.core.jobs import freshness
 from door.core.employers import ats_detect
 from door.core.employers.ats_detect import Detection
 from door.core.models import JobPosting, make_job_id, normalize_platform_id, tenant_platform_id
@@ -345,7 +345,7 @@ def is_job_board(url: str) -> bool:
 
 def awaiting_job_page(entry: dict) -> bool:
     """A queued employer `follow` could not resolve by name, whose job page is still to be read."""
-    from door.core import candidates
+    from door.core.jobs import candidates
 
     return candidates.awaiting_job_page(entry)
 

@@ -195,7 +195,7 @@ def test_scrape_core_liveness_absent_is_none_and_not_called(tmp_path, monkeypatc
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    import door.core.liveness as liveness_mod
+    from door.core.jobs import liveness as liveness_mod
 
     def _should_not_be_called(paths, config):
         raise AssertionError("verify_liveness must NOT be called when flag is absent")

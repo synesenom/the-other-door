@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import pytest
 import responses
 
-from door.core import candidates
+from door.core.jobs import candidates
 from door.core.employers import companies
 from door.pipeline import follow
 from paths import TESTS_DIR

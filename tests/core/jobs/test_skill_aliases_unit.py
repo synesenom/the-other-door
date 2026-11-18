@@ -1,8 +1,8 @@
-"""Unit tests for core/skill_aliases.py: the tolerant reader of jobs/skill_aliases.json."""
+"""Unit tests for core/jobs/skill_aliases.py: the tolerant reader of jobs/skill_aliases.json."""
 
 import json
 
-from door.core import skill_aliases
+from door.core.jobs import skill_aliases
 
 
 def test_missing_file_is_empty_without_warning(tmp_path):

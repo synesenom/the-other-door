@@ -8,7 +8,7 @@ another one plugs in without a change to this file. This step runs every source 
 for its country, one after the other, and puts each employer in the candidates queue
 (`jobs/candidates.json`, the source named in ``sources``) for `follow`.
 
-Each source has its own state, `jobs/discovery/<source>.json` (`door.core.discovery_state`: pace,
+Each source has its own state, `jobs/discovery/<source>.json` (`door.core.jobs.discovery_state`: pace,
 rest after a refusal, keyword rotation, history), its own request budget and pause, and its own
 progress and error bookkeeping; one source resting, off or crashing never blocks another. The block
 keeps its flat fields (sums over the sources that ran; with one source, exactly its values) and gains
@@ -28,7 +28,7 @@ through the last 7 days; paced and capped):
 
 **Pace.** A run makes at most ``pace.budget`` requests per source (search pages and job pages together),
 pausing 2 to 4 s (times ``pace.factor``) between two; a refusal halves the next budget and
-doubles the next pause, three clean runs step back (`door.core.discovery_state`, which also logs
+doubles the next pause, three clean runs step back (`door.core.jobs.discovery_state`, which also logs
 every run's observation in ``history``). A source rests a day after it refuses (a 429, a
 login wall), and is skipped when its ``<source>_discovery`` key is off (``linkedin_discovery``). A
 crash is reported in the block, never raised.
@@ -55,7 +55,9 @@ from types import SimpleNamespace
 from door import pipeline, scrapers
 from door.commands import _common as common
 from door.core import lock, profile_loader
-from door.core import candidates, discovery_state, progress, workspace
+from door.core import progress, workspace
+from door.core.jobs import candidates
+from door.core.jobs import discovery_state
 from door.core.employers import discovery_sources
 from door.core.employers import companies as store
 from door.matching import title_fit

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from door.core.selection import (
+from door.core.jobs.selection import (
     find_posting,
     find_posting_path,
     ledger_breakdown,
@@ -347,7 +347,7 @@ def test_pipeline_summary_ignores_output_directory(tmp_path):
 def test_ledger_breakdown_zero_fills_known_statuses_for_empty_ledger():
     result = ledger_breakdown({})
 
-    from door.core.tracker import STATUSES
+    from door.core.jobs.tracker import STATUSES
 
     assert result == dict.fromkeys(STATUSES, 0)
 
@@ -478,7 +478,7 @@ def test_find_posting_path_returns_none_when_missing(tmp_path):
 # Job references by name (issue #312)
 # --------------------------------------------------------------------------- #
 
-from door.core.selection import AmbiguousJobRef, resolve_job_ref  # noqa: E402
+from door.core.jobs.selection import AmbiguousJobRef, resolve_job_ref  # noqa: E402
 
 
 def _ledger(jobs_dir: Path, statuses: dict) -> None:
@@ -573,7 +573,7 @@ def test_resolve_job_ref_rejects_invalid_slugs(tmp_path, ref):
 
 
 def _count_walks(monkeypatch) -> list:
-    from door.core import selection
+    from door.core.jobs import selection
 
     walks: list = []
     real = selection.iter_postings

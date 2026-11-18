@@ -3,7 +3,7 @@
 import json
 from datetime import datetime, timedelta, timezone
 
-from door.core import candidates
+from door.core.jobs import candidates
 
 NOW = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
 
@@ -107,7 +107,7 @@ def test_a_name_tried_mark_survives_a_merge_and_a_save(tmp_path):
 
 
 def test_a_profession_employer_never_awaits_a_job_page():
-    from door.core import candidates as c
+    from door.core.jobs import candidates as c
 
     entry = {"name": "Trendency Zrt.", "sources": ["profession"], "name_tried": "2026-10-20T00:00:00+00:00",
              "links": ["https://www.profession.hu/allas/data-scientist-1234567"], "job_ids": []}

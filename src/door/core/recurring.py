@@ -15,7 +15,8 @@ import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from door.core import problem_log, runs
+from door.core import problem_log
+from door.core.jobs import runs
 
 SITE_RUNS = 3  # the same site failed (failed or error) in each of its last 3 tries
 SCORING_RUNS = 2  # ads left unscored in each of the last 2 runs that scored

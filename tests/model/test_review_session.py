@@ -18,7 +18,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.core import lock, templates, tracker
+from door.core import lock, templates
+from door.core.jobs import tracker
 from paths import REPO_ROOT
 
 from conftest import home, run_skill

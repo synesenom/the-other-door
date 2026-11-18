@@ -18,7 +18,7 @@ from collections.abc import Collection, Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
-from door.core import tracker as tracker_mod
+from door.core.jobs import tracker as tracker_mod
 from door.core import workspace
 
 def date_dirs(jobs_dir: Path) -> list[Path]:

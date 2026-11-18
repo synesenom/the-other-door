@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.core import freshness
+from door.core.jobs import freshness
 from door.core.employers import companies
 from door.pipeline import collect
 from pipeline_utils import fake_scraper, posting
@@ -251,7 +251,7 @@ def test_non_local_postings_a_scraper_skipped_are_counted_per_site_and_in_the_su
 # --- postings whose title is off topic for the keywords ------------------------------------------------------
 
 def test_an_off_topic_posting_is_not_written_but_counted_and_remembered(env, monkeypatch):
-    from door.core.history import HistoryStore
+    from door.core.jobs.history import HistoryStore
 
     follow(env, "Acme", "lever", "acme")
     feed = [lever_posting(1), lever_posting(2, title="Machine Operator, night shift", platform_id="p2"),

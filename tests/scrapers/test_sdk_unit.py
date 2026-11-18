@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.core import freshness
+from door.core.jobs import freshness
 from door.core.employers import ats_detect
 from door.matching import locality, title_fit
 from door.scrapers import sdk

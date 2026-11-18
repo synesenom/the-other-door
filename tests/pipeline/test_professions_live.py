@@ -13,7 +13,8 @@ import shutil
 import pytest
 
 from door.commands import companies as companies_cmd
-from door.core import candidates, workspace
+from door.core import workspace
+from door.core.jobs import candidates
 from door.core.employers import careers_ai
 from door.matching import title_fit
 from door.pipeline import follow, search

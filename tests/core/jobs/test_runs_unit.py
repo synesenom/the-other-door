@@ -1,6 +1,6 @@
 """Reading a run record (`jobs/runs/<timestamp>.json`)."""
 
-from door.core import runs
+from door.core.jobs import runs
 
 SITE = {"site": "jobindex", "outcome": "ok", "count": 3}
 FEED = {"site": "lever", "outcome": "failed", "count": 0, "errors": ["x"]}

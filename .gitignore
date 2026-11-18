@@ -14,6 +14,9 @@ profile/
 
 # Scraped postings, matched postings, and generated application materials
 jobs/
+# ...but not the code that reads and writes them
+!src/door/core/jobs/
+!tests/core/jobs/
 
 # Upskill reports (top-level output directory only)
 /upskill/

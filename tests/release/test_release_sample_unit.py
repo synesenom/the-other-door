@@ -15,7 +15,8 @@ from pathlib import Path
 import pydantic
 import pytest
 
-from door.core import models, profile_loader, stored, tracker
+from door.core import models, profile_loader, stored
+from door.core.jobs import tracker
 from door.core.employers import companies
 from release_gate_utils import DEFAULT, releases
 

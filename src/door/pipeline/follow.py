@@ -32,7 +32,8 @@ from door import pipeline
 from door.commands import _common as common
 from door.commands import companies as companies_cmd
 from door.core import lock, profile_loader
-from door.core import candidates, sites, workspace
+from door.core import sites, workspace
+from door.core.jobs import candidates
 from door.core.employers import ats_detect
 from door.core.employers import careers_ai
 from door.core.employers import wikidata

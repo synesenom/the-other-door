@@ -9,8 +9,9 @@ from pathlib import Path
 import pytest
 
 from door.core.sync import archive as archive_core
-from door.core import lock, selection, workspace
-from door.core.history import HistoryStore
+from door.core import lock, workspace
+from door.core.jobs import selection
+from door.core.jobs.history import HistoryStore
 from paths import REPO_ROOT
 from profile_utils import write_config
 

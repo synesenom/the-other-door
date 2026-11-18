@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
-from door.core.history import HistoryStore
+from door.core.jobs.history import HistoryStore
 
 
 _NOW = datetime(2026, 6, 14, 12, 0, 0, tzinfo=timezone.utc)

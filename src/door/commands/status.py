@@ -9,11 +9,12 @@ from pathlib import Path
 
 import click
 
-import door.core.tracker as _tracker_mod
+from door.core.jobs import tracker as _tracker_mod
 from door.commands import _common as common
 from door.commands import _progress, _prompts
 from door.commands import style as style_cmd
-from door.core import lock, profile_loader, progress, recurring, runs, usage, workspace
+from door.core import lock, profile_loader, progress, recurring, usage, workspace
+from door.core.jobs import runs
 from door.core.employers import companies
 from door.core.sync import drive
 from door.core import utils
@@ -123,7 +124,7 @@ def _material_hashes(out_dir: Path) -> dict[str, str]:
 
 def _ad_text(jobs_dir: Path, job_id: str) -> str:
     """The job's ad, the longer of its posting's and the one kept with its materials ("" if neither)."""
-    from door.core.selection import find_posting
+    from door.core.jobs.selection import find_posting
 
     kept = common._load_json_tolerant(jobs_dir / "output" / job_id / "posting.json")
     return max(((find_posting(jobs_dir, job_id) or {}).get("description") or "",
@@ -291,7 +292,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         prices, per activity and feature, and one find and one prepare, or None before any call
         was weighed.
     """
-    from door.core import selection
+    from door.core.jobs import selection
 
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
@@ -722,7 +723,7 @@ def _since_last_review(
         run since the review, from its latest failure. ``postings`` are the
         postings already read, when the caller has them; ``records`` the run records likewise.
     """
-    from door.core import selection
+    from door.core.jobs import selection
 
     reviewed_iso = _last_reviewed_at(jobs_dir)
     reviewed_at = common._parse_iso(reviewed_iso)

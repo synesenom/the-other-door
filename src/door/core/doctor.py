@@ -28,7 +28,8 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import claude_cli, migrations, runs, sites
+from door.core import claude_cli, migrations, sites
+from door.core.jobs import runs
 from door.core.employers import companies
 from door.core.employers import discovery_sources
 from door.core.downloads import chromium
@@ -368,7 +369,7 @@ def configured_sites(config: dict) -> list[str]:
 def last_scrape_per_site(config: dict, jobs_dir: Path, now: datetime | None = None) -> list[dict]:
     """Each board's watermark from `jobs/scrape_state.json` (None = never scraped). Only boards have
     one: an employer's feed is read whole, what is new is what the history has not seen."""
-    from door.core.freshness import _parse_dt, load_scrape_state
+    from door.core.jobs.freshness import _parse_dt, load_scrape_state
 
     now = now or datetime.now(timezone.utc)
     state = load_scrape_state(jobs_dir)

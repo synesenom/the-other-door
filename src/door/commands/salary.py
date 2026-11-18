@@ -14,7 +14,8 @@ from pathlib import Path
 import click
 
 from door.commands import _common as common
-from door.core import claude_cli, lock, profile_loader, salary, selection, workspace
+from door.core import claude_cli, lock, profile_loader, salary, workspace
+from door.core.jobs import selection
 from door.core.utils import write_json_atomic
 
 CACHE = "salary.json"

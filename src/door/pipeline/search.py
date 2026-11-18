@@ -18,7 +18,9 @@ from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
 from door.core import lock, profile_loader
-from door.core import candidates, freshness, sites, utils, workspace
+from door.core import sites, utils, workspace
+from door.core.jobs import candidates
+from door.core.jobs import freshness
 from door.core.employers import companies as store
 from door.core.sites import BOARDS
 from door.matching import title_fit

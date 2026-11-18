@@ -1,6 +1,6 @@
 """`find`'s scrape stage keeps only postings published since that site's last scrape.
 
-- `door.core.freshness`: `--days`, the per-site watermark in
+- `door.core.jobs.freshness`: `--days`, the per-site watermark in
   `jobs/scrape_state.json`, and the cutoff it implies (pure, no network).
 - `_scrape_core`: drops postings published before the cutoff, reports how
   many, and advances a site's watermark only after a complete, successful
@@ -21,7 +21,7 @@ from door.commands import find as find_cmd
 from door.commands import scrape as scrape_cmd
 from door.core import workspace
 import door.mcp_server as server
-from door.core.freshness import (
+from door.core.jobs.freshness import (
     days_back,
     load_scrape_state,
     record_scrape,

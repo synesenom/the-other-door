@@ -62,7 +62,7 @@ def test_show_prints_all_fields_and_untracked_status_is_new(cli_env):
 def test_show_prints_tracked_status(cli_env):
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
 
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
     app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
     app_tracker.set_status("job-abc", "interview:technical")
     app_tracker.save()
@@ -630,7 +630,7 @@ def test_show_carries_and_prints_the_reason_of_a_kept_item(cli_env, one_page):
 def _track(cli_env, job_id, status, days_ago):
     from datetime import datetime, timedelta, timezone
 
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
     app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
     app_tracker.set_status(job_id, status, now=datetime.now(tz=timezone.utc) - timedelta(days=days_ago))
     app_tracker.save()
@@ -638,7 +638,7 @@ def _track(cli_env, job_id, status, days_ago):
 
 def test_show_core_says_when_the_application_had_no_answer(cli_env):
     from door.commands import matches as matches_cmd
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-old")
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-new")
@@ -653,7 +653,7 @@ def test_show_core_says_when_the_application_had_no_answer(cli_env):
 
 
 def test_show_prints_the_no_answer_line_only_for_a_silent_application(cli_env):
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-old")
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-new")
@@ -666,7 +666,7 @@ def test_show_prints_the_no_answer_line_only_for_a_silent_application(cli_env):
 
 
 def test_show_on_a_terminal_says_no_answer_too(cli_env, monkeypatch):
-    import door.core.tracker as tracker_mod
+    from door.core.jobs import tracker as tracker_mod
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-old")
     _track(cli_env, "job-old", "applied", tracker_mod.NO_ANSWER_DAYS + 5)

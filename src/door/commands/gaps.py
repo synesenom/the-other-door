@@ -74,7 +74,7 @@ def _resolve_targets(targets: list[str], top: int | None, *, jobs_dir: Path, pro
     """Each role name in *targets* as ``{"kind": "role", "label"}``, and each job in *jobs* (words
     from its company and title, or its id) and each of the top N matches as
     ``{"kind": "posting", "label", "job_id", "posting"}``."""
-    from door.core.selection import find_posting
+    from door.core.jobs.selection import find_posting
 
     resolved = []
 

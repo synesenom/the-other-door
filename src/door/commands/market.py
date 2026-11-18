@@ -21,7 +21,9 @@ import click
 from door.commands import _common as common
 from door.core import profile_loader
 from door.core.employers import companies as companies_store
-from door.core import claude_cli, lock, selection, skill_aliases, workspace
+from door.core import claude_cli, lock, workspace
+from door.core.jobs import selection
+from door.core.jobs import skill_aliases
 from door.core.utils import write_json_atomic
 from door.matching import title_fit
 

@@ -4,7 +4,7 @@ and which employers it has already looked at. Pure and offline (tmp_path)."""
 import json
 from datetime import datetime, timedelta, timezone
 
-from door.core import discovery_state as ds
+from door.core.jobs import discovery_state as ds
 
 NOW = datetime(2026, 10, 13, 8, 0, tzinfo=timezone.utc)
 

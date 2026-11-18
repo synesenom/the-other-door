@@ -90,7 +90,7 @@ from door.core.sync import sync
 from door.core.lock import LockHeldError, SyncConflict, ledger_lock, lock_holder
 from door.core.employers import companies as companies_store
 from door.core.profile_loader import ConfigError
-from door.core.tracker import DuplicateApplicationError
+from door.core.jobs.tracker import DuplicateApplicationError
 
 # Answers not logged: a background run's failure was logged when it ended (`job_result` only repeats it);
 # a sent status's warning names the claims of the CV the materials make.
@@ -303,7 +303,7 @@ def _tool_errors(fn):
 
 def _error(exc: Exception) -> dict:
     """``{"error": message}``, plus the ``candidates`` of an ambiguous job reference."""
-    from door.core.selection import AmbiguousJobRef
+    from door.core.jobs.selection import AmbiguousJobRef
 
     from door.core.lock import SyncConflict
 

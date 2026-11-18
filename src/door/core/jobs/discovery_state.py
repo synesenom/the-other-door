@@ -31,7 +31,8 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from door.core import freshness, utils
+from door.core import utils
+from door.core.jobs import freshness
 
 DIR = "discovery"
 LEGACY = {"linkedin": "linkedin_discovery.json"}  # a source's file before the per-source layout

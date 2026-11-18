@@ -189,7 +189,7 @@ def test_reimporting_the_same_id_needs_force(env):
 
 
 def test_imported_posting_works_with_show_and_prepare(env, monkeypatch):
-    from door.core.selection import find_posting_path
+    from door.core.jobs.selection import find_posting_path
 
     result = add_cmd._add_core(env.ad, title="Lead Data Scientist", company="Acme", jobs_dir=env.jobs_dir)
     assert find_posting_path(env.jobs_dir, result["job_id"]) == _today_dir(env) / f"{result['job_id']}.json"
@@ -474,7 +474,7 @@ def test_add_cli_and_tool_take_a_url_alone(env, monkeypatch):
 
 
 def test_add_cli_header_has_no_job_id_and_hints_use_words_that_resolve(env):
-    from door.core.selection import resolve_job_ref
+    from door.core.jobs.selection import resolve_job_ref
 
     result = CliRunner().invoke(cli, ["jobs", "add", str(env.ad), "--title", "Lead Data Scientist", "--company", "Acme"])
     assert result.exit_code == 0, result_text(result)

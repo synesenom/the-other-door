@@ -351,7 +351,7 @@ def test_judge_discover_reports_each_source():
 
 
 def test_cap_queue_keeps_n_spread_over_sources(tmp_path):
-    from door.core import candidates
+    from door.core.jobs import candidates
     queue = {f"a{i}": {"name": f"a{i}", "sources": ["linkedin"]} for i in range(10)}
     queue.update({f"b{i}": {"name": f"b{i}", "sources": ["jobindex"]} for i in range(10)})
     candidates.save(tmp_path, queue)

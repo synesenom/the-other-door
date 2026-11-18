@@ -15,7 +15,7 @@ import responses
 
 import wikidata_utils
 from door.commands import companies as companies_cmd
-from door.core import candidates
+from door.core.jobs import candidates
 from door.core.employers import companies
 from door.core.employers import wikidata
 from door.pipeline import follow

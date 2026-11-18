@@ -3,7 +3,8 @@ folders left directly under `jobs/` by an older version are moved there."""
 
 import json
 
-from door.core import selection, workspace
+from door.core import workspace
+from door.core.jobs import selection
 from door.core.lock import ledger_lock
 
 

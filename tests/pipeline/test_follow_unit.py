@@ -12,7 +12,7 @@ import pytest
 import responses
 
 from door.commands import companies as companies_cmd
-from door.core import candidates
+from door.core.jobs import candidates
 from door.core.employers import companies
 from door.pipeline import follow
 from door.scrapers import _parallel

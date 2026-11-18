@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from door.core.tracker import (
+from door.core.jobs.tracker import (
     ApplicationTracker,
     DuplicateApplicationError,
     is_actionable,
@@ -201,7 +201,7 @@ def _at(day: int) -> datetime:
 
 
 def test_the_statuses_are_one_list_with_a_status_per_interview_kind():
-    from door.core.tracker import STATUSES
+    from door.core.jobs.tracker import STATUSES
 
     assert STATUSES == (
         "unapplied", "prepared", "applied",
@@ -260,7 +260,7 @@ def _ledger(*statuses_per_job):
 
 
 def test_interview_outcomes_count_each_kind_by_how_it_went():
-    from door.core.tracker import interview_outcomes
+    from door.core.jobs.tracker import interview_outcomes
 
     tracker = _ledger(
         ["interview:screening", "interview:technical", "rejected"],
@@ -306,7 +306,7 @@ def test_the_timeline_is_every_change_with_each_interview_rounds_result():
 
 
 def test_the_application_stage_counts_every_sent_application_by_how_it_went():
-    from door.core.tracker import application_outcomes
+    from door.core.jobs.tracker import application_outcomes
 
     tracker = _ledger(
         ["applied", "rejected"],
@@ -323,7 +323,7 @@ def test_the_application_stage_counts_every_sent_application_by_how_it_went():
 
 
 def test_an_application_ghosted_then_invited_passed_the_application_stage():
-    from door.core.tracker import application_outcomes
+    from door.core.jobs.tracker import application_outcomes
 
     tracker = _ledger(["applied", "ghosted", "interview:screening"])
 
@@ -333,7 +333,7 @@ def test_an_application_ghosted_then_invited_passed_the_application_stage():
 def test_an_application_with_no_change_for_45_days_counts_as_ghosted():
     from datetime import timedelta
 
-    from door.core.tracker import application_outcomes, standings
+    from door.core.jobs.tracker import application_outcomes, standings
 
     tracker = _ledger(["applied"], ["applied", "interview:screening"], ["prepared"])
     applied_at = _at(1)
@@ -350,7 +350,7 @@ def test_an_application_with_no_change_for_45_days_counts_as_ghosted():
 def test_no_answer_is_an_applied_or_interview_card_silent_for_more_than_45_days():
     from datetime import timedelta
 
-    from door.core.tracker import NO_ANSWER_DAYS, no_answer
+    from door.core.jobs.tracker import NO_ANSWER_DAYS, no_answer
 
     tracker = _ledger(["applied"], ["applied", "interview:screening"], ["prepared"], ["applied", "offer"],
                       ["applied", "rejected"], ["applied", "ghosted"], ["applied", "discarded"])
@@ -365,7 +365,7 @@ def test_no_answer_is_an_applied_or_interview_card_silent_for_more_than_45_days(
 def test_no_answer_waits_for_more_than_45_days_and_reads_the_last_event():
     from datetime import timedelta
 
-    from door.core.tracker import no_answer
+    from door.core.jobs.tracker import no_answer
 
     tracker = _ledger(["applied"])
     assert no_answer(tracker, "job-0", _at(1) + timedelta(days=45)) is False
@@ -373,7 +373,7 @@ def test_no_answer_waits_for_more_than_45_days_and_reads_the_last_event():
 
 
 def test_no_answer_is_false_for_an_unknown_job_and_for_a_recent_one_on_the_default_clock():
-    from door.core.tracker import no_answer
+    from door.core.jobs.tracker import no_answer
 
     tracker = _ledger()
     assert no_answer(tracker, "job-missing", _at(30)) is False
@@ -384,7 +384,7 @@ def test_no_answer_is_false_for_an_unknown_job_and_for_a_recent_one_on_the_defau
 def test_no_answer_count_counts_silent_applied_and_interview_jobs_only():
     from datetime import timedelta
 
-    from door.core.tracker import NO_ANSWER_DAYS, no_answer_count
+    from door.core.jobs.tracker import NO_ANSWER_DAYS, no_answer_count
 
     tracker = _ledger(["applied"], ["applied", "interview:screening"], ["prepared"], ["applied", "offer"],
                       ["applied", "rejected"], ["applied", "ghosted"])
@@ -396,7 +396,7 @@ def test_no_answer_count_counts_silent_applied_and_interview_jobs_only():
 
 
 def test_the_pass_rate_counts_only_decided_rounds_with_a_one_sigma_binomial_interval():
-    from door.core.tracker import pass_rate
+    from door.core.jobs.tracker import pass_rate
 
     rate = pass_rate({"passed": 4, "rejected": 1, "ghosted": 1, "withdrawn": 3, "pending": 2})
 
@@ -406,7 +406,7 @@ def test_the_pass_rate_counts_only_decided_rounds_with_a_one_sigma_binomial_inte
 
 
 def test_the_binomial_interval_stays_inside_zero_and_one_and_is_wide_on_one_round():
-    from door.core.tracker import pass_rate
+    from door.core.jobs.tracker import pass_rate
 
     assert pass_rate({"passed": 1, "rejected": 0, "ghosted": 0, "withdrawn": 0, "pending": 0}) == {
         "passed": 1, "decided": 1, "rate": 1.0, "low": pytest.approx(0.5), "high": 1.0,
@@ -416,7 +416,7 @@ def test_the_binomial_interval_stays_inside_zero_and_one_and_is_wide_on_one_roun
 
 
 def test_no_pass_rate_until_a_round_is_decided():
-    from door.core.tracker import pass_rate
+    from door.core.jobs.tracker import pass_rate
 
     assert pass_rate({"passed": 0, "rejected": 0, "ghosted": 0, "withdrawn": 1, "pending": 2}) == {
         "passed": 0, "decided": 0, "rate": None, "low": None, "high": None,
@@ -469,7 +469,7 @@ def test_at_in_the_future_is_refused(tmp_path):
 
 
 def test_parse_at_reads_a_date_or_a_datetime():
-    from door.core.tracker import parse_at
+    from door.core.jobs.tracker import parse_at
 
     assert parse_at("2026-08-23") == datetime(2026, 8, 23, tzinfo=timezone.utc)
     assert parse_at("2026-08-23T14:05") == datetime(2026, 8, 23, 14, 5, tzinfo=timezone.utc)
@@ -488,7 +488,7 @@ def test_the_materials_sent_are_kept_through_later_changes(tmp_path):
 
 
 def test_is_sent_covers_applied_and_everything_after_it():
-    from door.core.tracker import is_sent
+    from door.core.jobs.tracker import is_sent
 
     assert all(is_sent(s) for s in ("applied", "interview:screening", "ghosted", "rejected", "offer"))
     assert not any(is_sent(s) for s in ("unapplied", "prepared", "discarded", None))
@@ -497,7 +497,7 @@ def test_is_sent_covers_applied_and_everything_after_it():
 def test_application_results_name_how_each_sent_application_went():
     from datetime import timedelta
 
-    from door.core.tracker import application_outcomes, application_results
+    from door.core.jobs.tracker import application_outcomes, application_results
 
     tracker = _ledger(["applied", "interview:screening"], ["applied"], ["prepared"], ["applied", "rejected"])
     later = _at(1) + timedelta(days=60)
@@ -520,7 +520,7 @@ def _band_inputs(top, near):
 
 
 def test_score_bands_split_at_the_median_and_rate_each_band():
-    from door.core.tracker import pass_rate, score_bands
+    from door.core.jobs.tracker import pass_rate, score_bands
 
     results, scores = _band_inputs(["passed"] * 5 + ["rejected"] * 1, ["passed"] * 1 + ["ghosted"] * 5)
 
@@ -533,7 +533,7 @@ def test_score_bands_split_at_the_median_and_rate_each_band():
 
 
 def test_score_bands_leave_out_jobs_with_no_score():
-    from door.core.tracker import score_bands
+    from door.core.jobs.tracker import score_bands
 
     results, scores = _band_inputs(["passed"] * 5, ["rejected"] * 5)
     for n, bad in enumerate((None, 0, 0.0)):
@@ -548,7 +548,7 @@ def test_score_bands_leave_out_jobs_with_no_score():
 
 
 def test_score_bands_need_five_decided_in_each_band():
-    from door.core.tracker import score_bands
+    from door.core.jobs.tracker import score_bands
 
     results, scores = _band_inputs(["passed"] * 5, ["rejected"] * 4)
     assert score_bands(results, scores) is None
@@ -557,7 +557,7 @@ def test_score_bands_need_five_decided_in_each_band():
 
 
 def test_score_bands_split_among_the_distinct_scores_as_evenly_as_possible():
-    from door.core.tracker import score_bands
+    from door.core.jobs.tracker import score_bands
 
     results = {f"j{n}": "rejected" for n in range(7)} | {f"k{n}": "passed" for n in range(6)}
     scores = {f"j{n}": 0.7 for n in range(7)} | {f"k{n}": 0.9 for n in range(6)}
@@ -573,14 +573,14 @@ def test_score_bands_split_among_the_distinct_scores_as_evenly_as_possible():
 
 
 def test_score_bands_with_one_distinct_score_are_none():
-    from door.core.tracker import score_bands
+    from door.core.jobs.tracker import score_bands
 
     results = {f"j{n}": "passed" for n in range(12)}
     assert score_bands(results, dict.fromkeys(results, 0.8)) is None
 
 
 def test_score_bands_have_no_reading_when_the_ranges_overlap_or_the_top_is_lower():
-    from door.core.tracker import score_bands
+    from door.core.jobs.tracker import score_bands
 
     results, scores = _band_inputs(["passed"] * 3 + ["rejected"] * 3, ["passed"] * 2 + ["rejected"] * 4)
     assert score_bands(results, scores)["reading"] is None
@@ -590,7 +590,7 @@ def test_score_bands_have_no_reading_when_the_ranges_overlap_or_the_top_is_lower
 
 
 def test_score_bands_decide_only_passed_rejected_and_ghosted():
-    from door.core.tracker import score_bands
+    from door.core.jobs.tracker import score_bands
 
     results, scores = _band_inputs(["passed"] * 5 + ["pending", "withdrawn"], ["rejected"] * 5 + ["pending"] * 2)
 
