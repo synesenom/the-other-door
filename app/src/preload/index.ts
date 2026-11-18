@@ -1,9 +1,14 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import { beforeCloseHandler } from './before-close'
 
 // The renderer's whole surface: one call, a progress subscription, the run board, Stop and the
 // run record (by its start time), a link
 // opener and two openers for a prepared job's PDFs (by job id, never a path). The channel names match src/main/ipc.ts (not imported: a sandboxed
 // preload cannot load modules). The event never reaches the page, only the payload.
+// The one listener of the window closing: it answers at once when no screen has anything to write.
+const writers = new Set<() => Promise<void>>()
+ipcRenderer.on('door:before-close', beforeCloseHandler(writers, () => ipcRenderer.send('door:before-close-done')))
+
 contextBridge.exposeInMainWorld('door', {
   call: (tool: string, args?: Record<string, unknown>, callId?: string) =>
     ipcRenderer.invoke('door:call', tool, args ?? {}, callId),
@@ -56,12 +61,9 @@ contextBridge.exposeInMainWorld('door', {
   },
   // The window is closing: the page writes what it holds unsaved, then says so (src/main/close-flush.ts).
   onBeforeClose: (cb: () => Promise<void>) => {
-    const listener = () => {
-      void cb().finally(() => ipcRenderer.send('door:before-close-done'))
-    }
-    ipcRenderer.on('door:before-close', listener)
+    writers.add(cb)
     return () => {
-      ipcRenderer.removeListener('door:before-close', listener)
+      writers.delete(cb)
     }
   },
   info: () => ipcRenderer.invoke('door:info'),

@@ -11,7 +11,7 @@ import { startDemoRun } from './demo-run'
 import { doorHome } from './files'
 import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
-import { flushPage } from './close-flush'
+import { beforeQuitStep, closeStep, flushPage } from './close-flush'
 import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
 import { quitStep, restorePhoneAtStart, stopForUpdate, type PhoneUpdateDeps } from './phone-update'
@@ -167,7 +167,7 @@ function createWindow(): void {
   // The page writes what it holds unsaved (the Master CV's last seconds of typing) before the window goes.
   let closing = false
   win.on('close', (event) => {
-    if (closing || pagesFlushed) return // a quit has flushed every page already (before-quit)
+    if (closeStep({ closing, pagesFlushed }) === 'let-close') return // a quit has flushed every page already (before-quit)
     event.preventDefault()
     closing = true
     void flushPage(win.webContents, ipcMain).finally(() => win.destroy())
@@ -266,7 +266,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', (event) => {
   // The pages write what they hold unsaved first, while the server still answers; then the quit goes on.
-  if (!pagesFlushed) {
+  if (beforeQuitStep({ pagesFlushed }) === 'flush-then-quit') {
     event.preventDefault()
     void Promise.all(BrowserWindow.getAllWindows().map((w) => flushPage(w.webContents, ipcMain))).finally(() => {
       pagesFlushed = true
@@ -283,7 +283,7 @@ app.on('before-quit', (event) => {
   }
   board.stop()
   claudeLogin.cancel()
-  void server.close()
+  void server.close(5000) // a save in flight gets a moment to finish
 })
 
 /** Where a saved PDF is offered first: Downloads, or home when Windows cannot say where Downloads is (a redirected
