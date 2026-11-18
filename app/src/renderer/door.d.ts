@@ -9,7 +9,7 @@ import type { RunBoard } from '../main/run-board'
 declare global {
   interface Window {
     door: {
-      call(tool: string, args?: Record<string, unknown>, callId?: string): Promise<Envelope>
+      call(tool: string, args?: Record<string, unknown>, callId?: string, tokens?: string[]): Promise<Envelope>
       onProgress(callId: string, cb: (p: { progress: number; total?: number; message: string }) => void): () => void
       openExternal(url: string): Promise<{ ok: boolean; error?: string }>
       /** `sent`: the copy kept when the application was sent. */
@@ -18,8 +18,6 @@ declare global {
       /** Opens the file dialog (in the main process); the files come back as tokens, never paths. */
       pickCvFiles(): Promise<PickResult>
       dropCvFiles(files: File[]): Promise<PickResult>
-      /** `draft_cv` (args: `sources` pages), `enrich` or `build_style` with picked CV files, by token: main puts their paths in the tool's argument. */
-      callWithFiles(tool: string, args: Record<string, unknown>, tokens: string[]): Promise<Envelope>
       /** The CV file a draft last read, by its name, or null (Profile → CV's Sources). */
       cvFile(): Promise<string | null>
       /** Forgets the picked files (the wizard closed). */

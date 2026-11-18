@@ -5,8 +5,9 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
 // opener and two openers for a prepared job's PDFs (by job id, never a path). The channel names match src/main/ipc.ts (not imported: a sandboxed
 // preload cannot load modules). The event never reaches the page, only the payload.
 contextBridge.exposeInMainWorld('door', {
-  call: (tool: string, args?: Record<string, unknown>, callId?: string) =>
-    ipcRenderer.invoke('door:call', tool, args ?? {}, callId),
+  // `tokens`: the CV files the user picked (draft_cv, enrich, build_style); main puts their paths into the tool's argument.
+  call: (tool: string, args?: Record<string, unknown>, callId?: string, tokens?: string[]) =>
+    ipcRenderer.invoke('door:call', tool, args ?? {}, callId, tokens),
   onProgress: (callId: string, cb: (p: { progress: number; total?: number; message: string }) => void) => {
     const listener = (_event: unknown, id: unknown, payload: { progress: number; total?: number; message: string }) => {
       if (id === callId) cb(payload)
@@ -22,8 +23,6 @@ contextBridge.exposeInMainWorld('door', {
   pickCvFiles: () => ipcRenderer.invoke('door:pick-cv-files'),
   // A drop: only Electron can turn a dropped File into a path, here, out of the page's reach.
   dropCvFiles: (files: File[]) => ipcRenderer.invoke('door:drop-cv-files', files.map((f) => webUtils.getPathForFile(f)).filter(Boolean)),
-  // draft_cv, enrich and build_style with the picked CV files, by token: main puts their paths in the tool's argument.
-  callWithFiles: (tool: string, args: Record<string, unknown>, tokens: string[]) => ipcRenderer.invoke('door:call-with-files', tool, args, tokens),
   cvFile: () => ipcRenderer.invoke('door:cv-file'),
   clearCvSources: () => ipcRenderer.invoke('door:cv-sources-clear'),
   // The CV photo: chosen in a dialog the main process runs, saved by the token it hands back.

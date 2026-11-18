@@ -118,7 +118,7 @@ export interface DoctorReport {
 }
 
 export interface CvDraftInfo {
-  sources: { source: string; kind: 'file' | 'url'; chars?: number; /** A file whose look can be copied (`draft_cv`). */ style?: boolean; /** The token the main process gave the file (`door:call-with-files`). */ token?: string }[]
+  sources: { source: string; kind: 'file' | 'url'; chars?: number; /** A file whose look can be copied (`draft_cv`). */ style?: boolean; /** The token the main process gave the file (`door:call`). */ token?: string }[]
 }
 
 /** A title `suggest_titles` proposes, or one the user named. */

@@ -310,20 +310,20 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   const done = async () => ({ ok: true })
   const never = () => () => undefined
   return {
-    call: (tool, args = {}) => respond(tool, args),
-    onProgress: never,
-    openExternal: done,
-    saveMaterial: async (_j: string, _w: string, _s: boolean, name: string) => ({ ok: true, path: `/Users/jane/Downloads/${name}` }),
-    pickCvFiles: async () => ({ files: [{ token: 'preview-1', name: 'jane-doe-cv.pdf', size: 184_000 }], refused: [] }),
-    dropCvFiles: async (files) => ({ files: files.map((f, i) => ({ token: `preview-drop-${i}`, name: f.name, size: f.size })), refused: [] }),
-    cvFile: async () => 'jane-doe-cv.pdf',
-    callWithFiles: async (tool) => {
+    call: async (tool, args = {}, _callId, tokens) => {
+      if (!tokens) return respond(tool, args)
       if (tool === 'build_style') return { ok: true, data: { started: true } }
       if (tool === 'enrich') return respond('enrich', { files: ['jane-doe-cv.pdf'] })
       const r = await respond('draft_cv', {})
       if (!r.ok) return r
       return { ok: true, data: { markdown: fixtures.show_profile.cv.text, provenance: [], todos: [], sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }] } }
     },
+    onProgress: never,
+    openExternal: done,
+    saveMaterial: async (_j: string, _w: string, _s: boolean, name: string) => ({ ok: true, path: `/Users/jane/Downloads/${name}` }),
+    pickCvFiles: async () => ({ files: [{ token: 'preview-1', name: 'jane-doe-cv.pdf', size: 184_000 }], refused: [] }),
+    dropCvFiles: async (files) => ({ files: files.map((f, i) => ({ token: `preview-drop-${i}`, name: f.name, size: f.size })), refused: [] }),
+    cvFile: async () => 'jane-doe-cv.pdf',
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),

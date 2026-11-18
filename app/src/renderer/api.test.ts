@@ -205,8 +205,7 @@ describe('draftCv', () => {
     const h = mockDoor({ draft_cv: { markdown: '# Ada', sources: [], provenance: [], todos: [] } })
     const r = await draftCv({ files: ['tok'], urls: ['https://a.com'] })
     expect(r.markdown).toBe('# Ada')
-    expect(h.callWithFiles).toHaveBeenCalledWith('draft_cv', { sources: ['https://a.com'] }, ['tok'])
-    expect(h.call).not.toHaveBeenCalled()
+    expect(h.call).toHaveBeenCalledWith('draft_cv', { sources: ['https://a.com'] }, undefined, ['tok'])
   })
 
   it('throws an ApiError with the words of a failed draft', async () => {

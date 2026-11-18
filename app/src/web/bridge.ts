@@ -187,7 +187,6 @@ export function createWebDoor(deps: WebDeps) {
     async dropCvFiles(): Promise<PickResult> {
       return { files: [], refused: [] }
     },
-    callWithFiles: machineOnly,
     async cvFile() {
       return null
     },
