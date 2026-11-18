@@ -109,3 +109,10 @@ def test_a_prepare_readback_warning_is_not_logged_but_its_error_is(log):
     assert "ERROR tool prepare: tailor step failed" in log.read_text(encoding="utf-8")
     server._log_answer("market", {"warning": "grouping failed"})
     assert "WARNING tool market: grouping failed" in log.read_text(encoding="utf-8")
+
+
+def test_a_misnamed_argument_is_refused_without_counting_as_a_failure(log):
+    """#268: the caller fixes it from the refusal; it never feeds "something keeps going wrong"."""
+    result = _call("list_stories", {"bogus": 1})
+    assert result.isError and "bogus" in result.content[0].text
+    assert "ERROR" not in (log.read_text() if log.exists() else "")
