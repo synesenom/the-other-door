@@ -23,7 +23,7 @@ NOT_REACHED = "not reached:"
 # How a scraper's recorded error says the site refused or was unreachable (requests' and the scrapers' wording).
 _REFUSAL = re.compile(
     r"\b(?:401|403|429|503)\b|Too Many Requests|Forbidden|Unauthorized|Service Unavailable|pushback"
-    r"|timed out|Timeout\b|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
+    r"|empty answer \(HTTP 202\)|timed out|Timeout\b|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
     re.IGNORECASE,
 )
 
@@ -86,7 +86,7 @@ _WALL_MAX = 600          # a wall is short; a real ad that mentions cookies is l
 _MAX_PAST_DAYS = {"search": 365, "collect": 3 * 365}   # a live test passes no `since`, so a board lists older ads too; a feed keeps long-open jobs
 _GRACE_DAYS = 1          # a posting dated tomorrow is a time zone, not a fault
 
-# Defaults of the rules (a site's `FIELD_EXCEPTIONS` row overrides `company_share`, `description_share`).
+# Defaults of the rules (a site's `FIELD_EXCEPTIONS` row overrides `company_share`, `description_share`, `posted_at_share`).
 _COMPANY_SHARE = 0.9
 _DESCRIPTION_SHARE = 0.9
 _DESCRIPTION_MIN = 80
@@ -262,7 +262,7 @@ def assert_field_contract(site: str, postings: list[dict], config: dict | None =
     if dates:
         rule("posted_at", [p for p in rows if p.get("posted_at") in (None, "")], _PRESENT_SHARE, "posted_at")
     rule("posted_at", failing_posted_at(rows, mode, future_days=exc.get("posted_at_future_days", _GRACE_DAYS)),
-         _POSTED_AT_SHARE, "posted_at")
+         exc.get("posted_at_share", _POSTED_AT_SHARE), "posted_at")
     described = exc.get("description_share", _DESCRIPTION_SHARE)
     if descriptions and described:
         rule("description", failing_description(rows, exc.get("description_min", _DESCRIPTION_MIN)), described,

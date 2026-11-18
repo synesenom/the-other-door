@@ -184,4 +184,4 @@ def probe(config: dict) -> ProbeResult | None:
         now = datetime.now(timezone.utc)
         return [_to_posting(i, now) for i in items], True, ""
 
-    return run_probe(lambda: session.get(url).text, parse, "xml")
+    return run_probe(lambda: _fetch_feed(session, url), parse, "xml")

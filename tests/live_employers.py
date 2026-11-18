@@ -36,7 +36,7 @@ DETECTION: dict[str, Careers] = {
     "successfactors": Careers("https://careers.novonordisk.com", "Copenhagen", "successfactors", "careers.novonordisk.com"),
     "emply": Careers("https://international.au.dk/about/profile/vacant-positions/", "Aarhus", "emply",
                      "https://international.au.dk/about/profile/vacant-positions/"),
-    "recman": Careers("https://stillinger.signo.no", "Oslo", "recman", "stillinger.signo.no"),
+    "recman": Careers("https://stillinger.signo.no", "Oslo", "recman", "signo"),
     "beetween": Careers("https://giboire.nous-recrutons.fr", "Paris", "beetween", "giboire"),
     "digitalrecruiters": Careers("https://recrutement.franprix.fr", "Paris", "digitalrecruiters", "recrutement.franprix.fr"),
     "jobtrain": Careers("https://jobs.crisis.org.uk", "London", "jobtrain", "jobs.crisis.org.uk"),
@@ -46,8 +46,9 @@ DETECTION: dict[str, Careers] = {
     "career_sites": Careers("https://careers.maersk.com/", "Copenhagen", "career_sites", "https://www.maersk.com/careers/"),
     "oracle_hcm": Careers("https://ejqi.fa.ocs.oraclecloud.eu/hcmUI/CandidateExperience/en/sites/CX_1001", "London",
                           "oracle_hcm", "ejqi.fa.ocs.oraclecloud.eu/CX_1001"),
-    # Phenom hides a Workday site: Genmab's Phenom pages lead to its Workday tenant.
-    "phenom": Careers("https://careers.genmab.com/", "Copenhagen", "career_sites", "https://genmab.wd3.myworkdayjobs.com"),
+    # Phenom is only detected, never followed (no feed entry): Genmab's careers host is a CNAME for Phenom's and its
+    # Workday site lists no jobs publicly (checked 2026-11-18), so it stays `phenom` with no entry.
+    "phenom": Careers("https://careers.genmab.com/", "Copenhagen", "phenom", None),
     "smartrecruiters": Careers("https://careers.smartrecruiters.com/interikeagroup", "Stockholm", "smartrecruiters",
                                "interikeagroup"),
     "signatur": Careers("https://portal.signatur.dk/Pages/Search.aspx?ClientId=2296", "Copenhagen", "signatur", "2296"),

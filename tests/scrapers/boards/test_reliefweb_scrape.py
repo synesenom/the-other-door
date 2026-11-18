@@ -113,6 +113,17 @@ def test_probe_reports_an_empty_answer_as_not_ok():
 
 
 @responses.activate
+def test_a_listing_held_by_the_firewall_is_not_reached_not_changed():
+    # An empty 202 twice is a hold, not a changed feed: the probe says unreachable, the live listing skips (#198).
+    from live_utils import NOT_REACHED, assert_listing
+
+    _serve(body="", status=202)
+    _serve(body="", status=202)
+    with pytest.raises(pytest.skip.Exception, match=NOT_REACHED):
+        assert_listing("reliefweb", reliefweb, _CFG)
+
+
+@responses.activate
 def test_an_empty_feed_is_quiet():
     _serve(body=_xml("empty.xml"))
     assert reliefweb.scrape(_CFG) == []
