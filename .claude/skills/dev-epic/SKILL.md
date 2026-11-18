@@ -1,6 +1,6 @@
 ---
 name: dev-epic
-description: Churn through an epic issue in one run — resolve its sub-issues one after another on one epic branch (each in its own pull request into that branch, merged once green), file what is found on the way into other epics, tick the epic's checkboxes, then open one pull request from the epic branch into main with a plain summary and screenshots or a GIF of anything a user sees. Invoked with /dev-epic <epic_issue_number>.
+description: Churn through an epic issue in one run — resolve its sub-issues one after another on one epic branch (each in its own pull request into that branch, merged once green), file what is found on the way as issues of their own, tick the epic's checkboxes, then open one pull request from the epic branch into main with a plain summary and screenshots or a GIF of anything a user sees. Invoked with /dev-epic <epic_issue_number>.
 ---
 
 You are working through an epic issue of The other door. The epic's number is the argument. **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
@@ -36,7 +36,7 @@ The plan binds the run:
 
 - **Order**: the plan's order is the order of the sub-issues (Step 4's rule that a dependency goes first still holds).
 - **Spike first**: when the plan has a riskiest assumption, its spike is the first sub-issue. When that sub-issue's result is a no-go (the plan's numbers), stop the epic at once: comment the result and the plan's "if no-go" line on the epic, mark the rest `blocked: plan`, and ask the maintainer in one line. Do not build on a failed premise.
-- **Not doing**: an item on that list is never built, however a sub-issue's review or a box suggests it; a finding that wants it is filed into another epic (Step 4), not done here.
+- **Not doing**: an item on that list is never built, however a sub-issue's review or a box suggests it; a finding that wants it is filed as an issue of its own (Step 4), not done here.
 - **A plan that proves wrong while working** (a sub-issue shows an assumption false, a step needs a model where the plan chose code, or the reverse): stop and run `/dev-plan-epic <N>` again with what was found, rather than adding sub-issues one by one. This is the case the plan exists for.
 
 ### Step 1: Read the epic
@@ -77,7 +77,7 @@ If none is left to pick, go to Step 6.
 
 Run `/dev-resolve <sub> epic=<N> base=<epic branch> target=<epic branch>` and follow it to the end: it makes the branch from the epic branch's tip, implements, validates, runs the review (CLAUDE.md "Review") and opens the PR into the epic branch, and returns without watching it; the loop's Step 3 watches it and merges it.
 
-The issues its review filed (its report's Review line) went through `/dev-file-issue` into other epics, never this one: the epic's scope stays fixed while it is worked, so its queue does not grow. Name them in the final report.
+The issues its review filed (its report's Review line) went through `/dev-file-issue` as issues of their own, never into this epic: the epic's scope stays fixed while it is worked, so its queue does not grow. Name them in the final report.
 
 If `/dev-resolve` ends in FAIL, record its diagnosis, comment it on the sub-issue, mark it `failed`, and go on: nothing of it is merged, and the next sub-issue builds on the same tip. Keep each sub-issue's review lines (what the reviewers found and how each ended) and, for a change to the app's screens, what a user sees: Step 8 uses them.
 
