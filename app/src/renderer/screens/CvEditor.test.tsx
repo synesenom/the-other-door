@@ -305,12 +305,13 @@ describe('CvEditor, the profile unreadable', () => {
 })
 
 describe('CvEditor, its two parts', () => {
-  it('are Your CV (the file, the pages, the text) and then CV style', async () => {
+  it('are Master CV (the file, the pages, the text), said to be what each application\'s CV is tailored from, and then CV style', async () => {
     mockDoor({ show_profile: profile(), show_style: { styles: {}, in_use: 'default', candidate: false } })
     render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
     await screen.findByLabelText('Your CV (Markdown)')
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Your CV', 'CV style'])
-    const cv = within(screen.getByRole('region', { name: 'Your CV' }))
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Master CV', 'CV style'])
+    const cv = within(screen.getByRole('region', { name: 'Master CV' }))
+    expect(cv.getByText(/each application gets a CV of its own, picked from this one and tailored to the ad/)).toBeInTheDocument()
     expect(cv.getByLabelText('Your CV (Markdown)')).toBeInTheDocument()
     expect(cv.getByRole('button', { name: 'Add a page' })).toBeInTheDocument()
   })
@@ -322,12 +323,12 @@ describe('CvEditor, the CV file', () => {
     h.cvFile.mockResolvedValue('my cv.pdf')
     render(<CvEditor onDraft={vi.fn()} />)
     await screen.findByLabelText('Your CV (Markdown)')
-    expect(await within(screen.getByRole('region', { name: 'Your CV' })).findByText('my cv.pdf')).toBeInTheDocument()
+    expect(await within(screen.getByRole('region', { name: 'Master CV' })).findByText('my cv.pdf')).toBeInTheDocument()
   })
 
   it('none known: says so, and offers to choose one', async () => {
     await open()
-    const sources = within(screen.getByRole('region', { name: 'Your CV' }))
+    const sources = within(screen.getByRole('region', { name: 'Master CV' }))
     expect(await sources.findByText('No CV file yet')).toBeInTheDocument()
     expect(sources.getByRole('button', { name: 'Choose a CV file…' })).toBeInTheDocument()
   })

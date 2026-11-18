@@ -394,7 +394,7 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 ## Profile
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
-then [Your CV](#your-cv), its [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
+then your [Master CV](#master-cv), its [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
 are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar at the
 page's foot saves the settings; your CV saves itself as you type.
 
@@ -425,7 +425,10 @@ A picture it refuses is explained under the field. "Remove" deletes it. The same
 review, held until you save. A photo is only put on the CVs for jobs in a country that allows one; the cover letter
 never has one. It is not on the phone.
 
-### Your CV
+### Master CV
+
+Everything about your work, in one place. It is never sent as it is: each application gets a CV of its own,
+picked from this one and tailored to the ad, so put in more than one CV would hold.
 
 Three fields, each with an ⓘ that says what it is for.
 
@@ -462,7 +465,7 @@ the preview, brought into view, until you next type.
 How your tailored CVs are printed. "The other door" and, once one is built, "Your CV" side by side, each first page
 at half the width so the two can be compared; the one in use has a blue border, and each opens its full pages (your
 CV and a sample letter) in a dialog. The switch **Use my own style**, at the section's top right, chooses: on, your
-style is used, built first from your CV file (under Your CV) when there is none yet (a PDF; after a short wait,
+style is used, built first from your CV file (under Master CV) when there is none yet (a PDF; after a short wait,
 "Reading your CV's look…", then 2-5 minutes on your Claude plan, which "Building your style…" says, and it is put in
 use once ready); off, The other door's style is used again, your style kept. A CV file that cannot be used (none
 yet, not a PDF, no look to copy, or a look that could not be read because Claude was unreachable or its usage limit

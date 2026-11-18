@@ -38,7 +38,7 @@ There is no gate into the wizard for an invalid config while the app runs. At la
 Always present: `heading level 1 "Profile"`.
 
 ### 1.1 One page
-- No switch between parts: the details' sections, then `region "Your CV"` (the CV file, the pages, the editor), `region "CV style"` (only when the app says how the build stands) and `region "Stories"`, each with its `heading level 2`, and the details' save bar at the page's foot. — ✓ opens with every section and the saved values; unit: `app/src/renderer/screens/Profile.test.tsx`
+- No switch between parts: the details' sections, then `region "Master CV"` (the CV file, the pages, the editor), `region "CV style"` (only when the app says how the build stands) and `region "Stories"`, each with its `heading level 2`, and the details' save bar at the page's foot. — ✓ opens with every section and the saved values; unit: `app/src/renderer/screens/Profile.test.tsx`
 - The CV and the Stories read their own data: a details part that cannot be read (error, spinner, invalid config) leaves them on the page. — ✓ a part that could not be read says so, and the rest of the page is there
 
 ### 1.2 Details load states
@@ -199,9 +199,9 @@ Other data-driven variants:
   - Transport errors.
 - **save_cv always writes `profile/cv.md`**, but `show_profile` reads `config.cv_content`. With a custom `cv_content` path, a Save "succeeds" and the editor then reloads the **other** file, so the edit appears to vanish. Edge case, needs a custom config. — not tested: needs a custom cv_content path, which the form cannot set
 
-### 4.3 Your CV: the CV file and the pages
+### 4.3 Master CV: the CV file and the pages
 
-The CV is two parts, `heading "Your CV"` (three fields: CV file, Pages, Text) and `heading "CV style"` (only when the app says how the build stands). Each field is a form field: its name with an info bubble (`button "About <name>"`), 4 px above its control, what belongs to it under it, an error under it as `field-error`. Replace…, Add a page and Check again first write what was typed.
+The CV is two parts, `heading "Master CV"` (a muted line under it: everything about the user's work, never sent as it is, each application's CV picked from it and tailored; then three fields: CV file, Pages, Text) and `heading "CV style"` (only when the app says how the build stands). Each field is a form field: its name with an info bubble (`button "About <name>"`), 4 px above its control, what belongs to it under it, an error under it as `field-error`. Replace…, Add a page and Check again first write what was typed.
 
 - **`group "CV file"`**: the name of the file a draft last read (`door:cv-file`, from the path the main process keeps), else "No CV file yet", with `button "Replace…"` (or `"Choose a CV file…"`) beside it: the file dialog (`pickCvFiles`), a draft with `draftCv({files:[token], urls:[]})` (spinner "Reading your CV file (a minute or two)…") put in the editor and saved by it, with "Drafted from <name>. Your CV before it is kept as cv.md.bak."; a refused file or a failed draft is said under the field, the CV untouched. — unit only: `CvEditor.test.tsx`
 - **`group "Pages"`**: `button "Add a page"` (opens `dialog "Add a page"`, §4.4) and, with remembered pages, `button "Check again"` (opens `dialog "Check your pages again"`), then under them `list "Pages your CV is read from"`: one chip per page, shown without `https://` (the full address on hover), each with `button "Forget <page>"`, which removes it at once (`init_profile`); a page that could not be forgotten is said under the field and its chip stays. — ✓ reads the page asked for, remembers it, and proposes what the CV lacks, all ticked; ✓ Check again reads them all and names the page of each proposal; ✓ a page is forgotten by its ×; unit: `app/src/renderer/screens/CvEditor.test.tsx`
@@ -221,7 +221,7 @@ The CV is two parts, `heading "Your CV"` (three fields: CV file, Pages, Text) an
 - Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor
 - Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — not covered by a journey; the refusal: unit: `tests/commands/test_enrich_cli.py`; the dialog showing it: no test
 
-### 4.5 CV style (StyleRow.tsx, after Your CV)
+### 4.5 CV style (StyleRow.tsx, after Master CV)
 
 Sources: `StyleRow.tsx`, `PageStack.tsx`, `style-file.ts` (main), `commands/style.py` (`_use_core`, `status`, `_show_core`), `style/style_preview.py`. `show_style` answers `{styles: {default, like?}, in_use, candidate}`; `use_style(style: like|default|current, rerender)` answers `{in_use, prepared, rerendered?, failed?}`. Shown only in the app window (the phone has no Profile), and the build actions are not offered on made-up data.
 
@@ -234,7 +234,7 @@ Sources: `StyleRow.tsx`, `PageStack.tsx`, `style-file.ts` (main), `commands/styl
 | Building | the sheet stays, "Building your style…"; the switch held; a failed build says nothing | — ✓ the switch builds the style… |
 | A built style waits (`candidate`) | "The other door" and "Your CV", each sheet a button that opens its full pages; the accent border on the one in use | the switch on: `use_style like`; turned on before the build ended, the style is used when it is ready — preview: `profile-cv-style-candidate` |
 | A style of your own in use, or kept | the accent border on the one in use; the switch flips at once and goes back if `use_style` fails | the switch: `like` on, `default` off — preview: `profile-cv`, `profile-cv-style-inuse` |
-| A new CV file (Your CV's Replace…) | with a style of your own built, it is built again from the new file and used when ready if yours was in use | — unit: `CvEditor.test.tsx`, `StyleRow.test.tsx` |
+| A new CV file (Master CV's Replace…) | with a style of your own built, it is built again from the new file and used when ready if yours was in use | — unit: `CvEditor.test.tsx`, `StyleRow.test.tsx` |
 | Two-column style | "Some application systems read two-column CVs less well." | none — preview: `profile-cv-style-two-column` |
 | After a switch with prepared CVs | `button "Print N prepared CVs again"`, then "Printing again…", then "N printed again." (and Try again when some failed) | ✓ the switch builds the style…; preview: `profile-cv-style-printed` |
 | Full pages | `dialog` named by the style: `pill "CV · N pages"`, `pill "Cover letter · N page"`, the pages, Close, Esc | — ✓ the switch builds the style… |

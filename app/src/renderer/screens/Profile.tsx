@@ -164,7 +164,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
   const shown = LAYOUT.sections.filter((s) => s.id !== CONFIG_ONLY && s.screen !== 'settings' && fieldsOf(s.id).length > 0)
   const aside = (
     <PageSections
-      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'Your CV' }, ...(style ? [{ id: 'profile-style', label: 'CV style' }] : []), { id: 'profile-stories', label: 'Stories' }]}
+      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'Master CV' }, ...(style ? [{ id: 'profile-style', label: 'CV style' }] : []), { id: 'profile-stories', label: 'Stories' }]}
     />
   )
 
@@ -343,7 +343,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
     <Wrap aside={aside}>
       {errors.general.length > 0 && <ErrorList messages={errors.general} />}
       {details}
-      {/* two parts, Your CV and CV style */}
+      {/* two parts, Master CV and CV style */}
       <CvEditor onDraft={onDraft} onSaved={onSaved} style={style} />
       <section className="part" aria-labelledby="profile-stories">
         <h2 className="display-s" id="profile-stories">

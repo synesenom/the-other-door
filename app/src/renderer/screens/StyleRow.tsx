@@ -51,7 +51,7 @@ function Pages({ which, set, onClose }: { which: Which; set: StyleSet; onClose: 
 
 /**
  * Profile's CV style, a section of its own: its heading with the switch "Use my own style" at its right, then The
- * other door's style and, once one is built from the user's CV file (under Your CV), theirs, side by side to compare; the
+ * other door's style and, once one is built from the user's CV file (under Master CV), theirs, side by side to compare; the
  * one in use has the accent border. On with no style of theirs yet, the switch builds one from the CV file and
  * uses it once ready; off goes back to The other door. A new CV file (`replaced` counts them) builds the style
  * again from it. `state` is the build's, from the sidebar's summary (the app polls it while a build runs);
