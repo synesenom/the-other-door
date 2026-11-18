@@ -205,9 +205,9 @@ export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: {
   return (
     <section className="part" aria-labelledby={`${ids}-heading`}>
       <div className="part-head part-head-row">
-        <h2 className="display-s" id={`${ids}-heading`}>
+        <h3 className="label" id={`${ids}-heading`}>
           Style
-        </h2>
+        </h3>
         {shown !== null && (canBuild || hasLike) && (
           <div className={held ? 'style-switch style-switch-busy' : 'style-switch'}>
             <Switch label="Use my own style" checked={inUse === 'like' || wanted} onChange={toggle} />

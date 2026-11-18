@@ -393,10 +393,10 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 
 ## Profile
 
-Who you are and the jobs you want (how the app works is in [Settings](#settings)). Three parts, picked with the
-switch at the top or from the list on the right: Details (the settings below), [CV](#your-cv) and
-[Stories](#your-stories). The list names Details' sections, the one you are reading marked, then CV and
-Stories; a click jumps to a section or opens a part (a window narrower than 900 px leaves the list out).
+Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
+then your [CV](#your-cv) and your [Stories](#your-stories). The list on the right names its sections, the one you
+are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). One Save bar at the
+page's foot saves both the settings and the CV's text.
 
 The everyday settings of `profile/config.json` ([Configuration](configuration.md)), in sections:
 About you (name, email, city, whether you need a visa or work permit there, where you would work, the languages of the job ads), What to
@@ -427,7 +427,7 @@ never has one. It is not on the phone.
 
 ### Your CV
 
-Three sections: **Sources**, **Style** and **Content**.
+Three groups: **Sources**, **Style** and **Content**.
 
 **Sources** names the CV file your CV was last drafted from. **Replace…** (or **Choose a CV file…** when there is
 none) drafts your CV again from another file, one Claude call on your plan (a minute or two): the draft lands in
@@ -435,9 +435,9 @@ the editor under Content, and nothing is saved until you press Save. Under it, t
 each page is a chip with a × to forget it, and under them **Add a page** and **Check again**.
 
 **Content** is `profile/cv.md` in an editor, "Your CV (Markdown)" with the
-Preview switch on its right, which shows how it reads, with each gap (`TODO`) marked "to fill in": a click on a marker opens the editor with that gap selected. Save keeps the previous version as
-`cv.md.bak` (one step back), and "Undo changes" drops what you have not saved; what you typed stays
-while you look at Details. With no CV yet, a line above the sections says so and offers "Draft it from your CV
+Preview switch on its right, which shows how it reads, with each gap (`TODO`) marked "to fill in": a click on a marker opens the editor with that gap selected. The page's Save writes it with your
+other changes and keeps the previous version as `cv.md.bak` (one step back); a change counts among the unsaved
+ones at the page's foot, and "Undo changes" drops what you have not saved. With no CV yet, a line above the groups says so and offers "Draft it from your CV
 file or pages", the wizard's screens. A `cv.md` that cannot be read as text (another encoding, a Word file
 renamed) is said above an empty editor; saving there keeps that file as `cv.md.bak`.
 

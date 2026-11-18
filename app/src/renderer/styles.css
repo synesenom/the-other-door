@@ -448,7 +448,7 @@ legend.field-label { padding-bottom: var(--space-2); }
 .part-head-row { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 /* A part of a screen (the review, Profile, Settings): a serif title over a thin rule. Its heading stays with
    what it heads; the wider gap is between its fields. */
-.part > :is(.part-head, h2) + * { margin-top: calc(var(--space-4) - 28px); }
+.part > :is(.part-head, h2, h3) + * { margin-top: calc(var(--space-4) - 28px); }
 details.part { display: block; }
 /* Analytics' Claude usage: one stacked bar for the whole total (always full: where it went, never a quota
    filling up), then an activity per row, its dot in its part's tone, what it did after its name, its dollars
@@ -497,7 +497,6 @@ details.part > summary + * { margin-top: var(--space-4); }
 .page-aside a { display: block; position: relative; padding: var(--space-1) 0; font-size: var(--text-small-size); color: var(--color-ink-muted); text-decoration: none; }
 .page-aside a:hover { color: var(--color-ink); }
 /* the other views of the screen after its sections, set apart by a gap */
-.page-aside .page-aside-parts { margin-top: var(--space-4); }
 .page-aside a:is([aria-current='location'], [aria-current='page']) { color: var(--color-ink); font-weight: 600; }
 .page-aside a:is([aria-current='location'], [aria-current='page'])::before { content: ''; position: absolute; left: calc(-1 * var(--space-4) - 1px); top: 4px; bottom: 4px; width: 2px; background: var(--color-accent); }
 .page-with-aside :is(h2, summary)[id] { scroll-margin-top: var(--size-screen-top); }

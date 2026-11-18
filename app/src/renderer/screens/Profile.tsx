@@ -1,11 +1,11 @@
-import { Fragment, useEffect, useId, useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react'
 import { ErrorBox, ErrorList, named } from './AppName'
 import { call, errorText } from '../api'
 import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
 import { photoPolicy, type ShowProfile } from './onboarding/reducer'
 import layout from './profile-form/fields.json'
 import { changedKeys, fieldErrors, formValues, toInitArgs, type Exclude, type FieldSpec, type FormValues } from './profile-form/form'
-import { CvEditor } from './CvEditor'
+import { CvEditor, type CvControl } from './CvEditor'
 import { Hint } from './Hint'
 import { PhotoField, photoHelp } from './PhotoField'
 import { Spinner } from './Spinner'
@@ -48,15 +48,15 @@ function Chips({ label, help, errors, values, onChange }: { label: string; help?
 }
 
 /**
- * Profile: every key of profile/config.json in sections, the tuning keys left to config.json. Save sends
- * only what changed, through init_profile (which checks it all); an error is said under its field.
+ * Profile: one page. Every key of profile/config.json in sections (the tuning keys left to config.json), then the CV
+ * and the Stories. One Save writes what changed: the details through init_profile (which checks it all; an error is
+ * said under its field), then the CV through the editor. The CV's file, style and pages, the photo and the stories are
+ * each saved the moment they change, by their own controls.
  */
-/** Where Profile opens: the CV or the Stories, or a section of the details scrolled into view. */
-export type ProfileStart = { view: 'cv' | 'stories' } | { section: string }
+/** Where Profile opens: a section scrolled into view, `cv` and `stories` among them. */
+export type ProfileStart = { section: string }
 
 export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => void; onDraft: () => void; start?: ProfileStart; style?: ComponentProps<typeof CvEditor>['style'] }) {
-  // Details (config.json), the CV (cv.md) or the Stories (story_bank.md); the details' unsaved changes stay while the CV is shown.
-  const [view, setView] = useState<'details' | 'cv' | 'stories'>(start && 'view' in start ? start.view : 'details')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saved, setSaved] = useState<FormValues>({})
@@ -65,11 +65,14 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
   const [saving, setSaving] = useState(false)
   // after a save that changed the role targets or languages: Claude proposing the search terms again
   const [refreshing, setRefreshing] = useState(false)
-  const [done, setDone] = useState(false)
+  // the line after a save: "Saved.", or that the previous CV is kept
+  const [done, setDone] = useState<string | null>(null)
   // Counts Undo: the city field holds whether "Other…" is chosen, so Undo starts it afresh.
   const [undone, setUndone] = useState(0)
-  // The CV's unsaved text, kept like the details' while the other part is shown.
-  const [cvUnsaved, setCvUnsaved] = useState<string | null>(null)
+  // The CV editor, saved and undone by this page's bar: whether it has unsaved text, and why its save failed.
+  const cv = useRef<CvControl | null>(null)
+  const [cvEdit, setCvEdit] = useState({ dirty: false, empty: false })
+  const [cvError, setCvError] = useState<string | null>(null)
   // The CV photo is saved the moment it is chosen or removed (its own tools), not with Save: why one was refused, and a counter that renews the preview.
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
@@ -91,38 +94,55 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
   useEffect(() => {
     void load()
   }, [])
-  const startSection = start && 'section' in start ? start.section : null
+  const startSection = start?.section ?? null
   useEffect(() => {
-    if (profile && startSection) document.getElementById(`profile-${startSection}`)?.scrollIntoView({ block: 'start' })
+    if (profile && startSection) document.getElementById(`profile-${startSection}`)?.scrollIntoView?.({ block: 'start' })
   }, [profile, startSection])
 
   const set = (key: string, value: FormValues[string]) => {
-    setDone(false)
+    setDone(null)
     setValues((v) => ({ ...v, [key]: value }))
   }
   const changes = changedKeys(saved, values)
+  const unsaved = changes.length + (cvEdit.dirty ? 1 : 0)
   const save = async () => {
     setSaving(true)
     setErrors({ byKey: {}, general: [] })
+    setCvError(null)
     // the search terms follow the role targets and the ad languages: Claude proposes them again, and they are saved
     const refresh = changes.includes('role_targets') || changes.includes('languages')
     try {
-      await call('init_profile', toInitArgs(saved, values, specs))
-      if (refresh) {
-        setRefreshing(true)
+      if (changes.length > 0) {
         try {
-          await call('keywords', { role_targets: values['role_targets'], languages: values['languages'], save: true })
-        } catch {
-          // the terms saved before stay; the next change of role targets asks again
-        } finally {
-          setRefreshing(false)
+          await call('init_profile', toInitArgs(saved, values, specs))
+        } catch (e) {
+          // the details are checked first: nothing is written, the CV neither, until they are right
+          setErrors(fieldErrors(errorText(e), specs))
+          return
+        }
+        if (refresh) {
+          setRefreshing(true)
+          try {
+            await call('keywords', { role_targets: values['role_targets'], languages: values['languages'], save: true })
+          } catch {
+            // the terms saved before stay; the next change of role targets asks again
+          } finally {
+            setRefreshing(false)
+          }
+        }
+        await load()
+      }
+      let line = 'Saved.'
+      if (cvEdit.dirty && cv.current) {
+        try {
+          line = await cv.current.save()
+        } catch (e) {
+          setCvError(errorText(e))
+          return
         }
       }
-      await load()
-      setDone(true)
+      setDone(line)
       onSaved()
-    } catch (e) {
-      setErrors(fieldErrors(errorText(e), specs))
     } finally {
       setSaving(false)
     }
@@ -161,89 +181,15 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
 
   const fieldsOf = (id: string) => LAYOUT.fields.filter((f) => f.section === id && specs.some((x) => x.key === f.key))
   const shown = LAYOUT.sections.filter((s) => s.id !== CONFIG_ONLY && s.screen !== 'settings' && fieldsOf(s.id).length > 0)
-  // the section list beside every part: Details' sections, then the CV and the Stories; from another part a
-  // section opens Details and scrolls to it
-  const [jump, setJump] = useState<string | null>(null)
-  useEffect(() => {
-    if (view === 'details' && jump && profile) {
-      document.getElementById(jump)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
-      setJump(null)
-    }
-  }, [view, jump, profile])
-  const openPart = (v: 'cv' | 'stories') => {
-    setView(v)
-    document.querySelector('.main')?.scrollTo?.({ top: 0 })
-  }
   const aside = (
     <PageSections
-      sections={profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []}
-      parts={[
-        { label: 'CV', current: view === 'cv', onOpen: () => openPart('cv') },
-        { label: 'Stories', current: view === 'stories', onOpen: () => openPart('stories') },
-      ]}
-      elsewhere={view === 'details' ? undefined : (id) => {
-        setView('details')
-        setJump(id)
-      }}
+      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'CV' }, { id: 'profile-stories', label: 'Stories' }]}
     />
   )
-  const switcher = (
-    <div className="doc-switch" role="group" aria-label="Part of the profile">
-      <button type="button" className="pill" aria-pressed={view === 'details'} onClick={() => setView('details')}>
-        Details
-      </button>
-      <button type="button" className="pill" aria-pressed={view === 'cv'} onClick={() => setView('cv')}>
-        CV
-      </button>
-      <button type="button" className="pill" aria-pressed={view === 'stories'} onClick={() => setView('stories')}>
-        Stories
-      </button>
-    </div>
-  )
-  if (view === 'stories') {
-    return (
-      <Wrap aside={aside}>
-        {switcher}
-        <Stories />
-      </Wrap>
-    )
-  }
-  if (view === 'cv') {
-    return (
-      <Wrap aside={aside}>
-        {switcher}
-        <CvEditor onDraft={onDraft} onSaved={onSaved} unsaved={cvUnsaved} onUnsaved={setCvUnsaved} style={style} />
-      </Wrap>
-    )
-  }
-  if (loadError) {
-    return (
-      <Wrap aside={aside}>
-        {switcher}
-        <ErrorBox text={loadError} />
-      </Wrap>
-    )
-  }
-  if (!profile) return <Wrap aside={aside}><Spinner message="Reading your profile…" /></Wrap>
-  if (profile.config === null) {
-    return (
-      <Wrap aside={aside}>
-        {switcher}
-        <div role="alert" className="error">
-          <p>profile/config.json could not be read:</p>
-          <ul>
-            {profile.errors.map((e) => (
-              <li key={e}>{e}</li>
-            ))}
-          </ul>
-        </div>
-      </Wrap>
-    )
-  }
 
   const control = (f: Layout['fields'][number]): ReactNode => {
     const spec = specs.find((s) => s.key === f.key)
-    if (!spec) return null
+    if (!spec || !profile) return null
     const err = errors.byKey[f.key]
     const value = values[f.key]
     if (f.key === 'location') return <CityField key={`${f.key}-${undone}`} label={f.label} help={f.help} errors={err} location={String(value)} options={profile.options} onChange={(v) => set(f.key, v)} />
@@ -394,29 +340,65 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
     )
   }
 
+  // the details: read, or why they could not be (only this part: the CV and the Stories read their own)
+  const details = loadError ? (
+    <ErrorBox text={loadError} />
+  ) : !profile ? (
+    <Spinner message="Reading your profile…" />
+  ) : profile.config === null ? (
+    <div role="alert" className="error">
+      <p>profile/config.json could not be read:</p>
+      <ul>
+        {profile.errors.map((e) => (
+          <li key={e}>{e}</li>
+        ))}
+      </ul>
+    </div>
+  ) : (
+    shown.map(section)
+  )
+
   return (
     <Wrap aside={aside}>
-      {switcher}
       {errors.general.length > 0 && <ErrorList messages={errors.general} />}
-      {shown.map(section)}
+      {details}
+      <section className="part" aria-labelledby="profile-cv">
+        <h2 className="display-s" id="profile-cv">
+          CV
+        </h2>
+        <CvEditor onDraft={onDraft} onSaved={onSaved} control={cv} onDirty={(d) => {
+            if (d.dirty) setDone(null)
+            setCvEdit(d)
+          }} style={style} />
+      </section>
+      <section className="part" aria-labelledby="profile-stories">
+        <h2 className="display-s" id="profile-stories">
+          Stories
+        </h2>
+        <Stories />
+      </section>
+      {/* one bar for the page, at its foot and always in reach: the details and the CV's text */}
       <div className="profile-save">
         {/* always there, so Save does not move when the first change makes Undo possible */}
-        <button type="button" className="quiet" disabled={changes.length === 0 || saving} onClick={() => {
+        <button type="button" className="quiet" disabled={unsaved === 0 || saving} onClick={() => {
             setValues(saved)
             setUndone((n) => n + 1)
+            cv.current?.undo()
           }}>
           Undo changes
         </button>
-        <button type="button" className="primary" disabled={changes.length === 0 || saving} onClick={() => void save()}>
+        <button type="button" className="primary" disabled={unsaved === 0 || saving || (cvEdit.dirty && cvEdit.empty)} onClick={() => void save()}>
           Save
         </button>
         {saving ? (
           <Spinner message={refreshing ? 'Updating what we search for (up to two minutes)…' : 'Saving…'} />
-        ) : changes.length > 0 ? (
-          <p className="small muted">{changes.length === 1 ? '1 unsaved change' : `${changes.length} unsaved changes`}</p>
+        ) : unsaved > 0 ? (
+          <p className="small muted">{unsaved === 1 ? '1 unsaved change' : `${unsaved} unsaved changes`}</p>
         ) : done ? (
-          <p className="small">Saved.</p>
+          <p className="small">{done}</p>
         ) : null}
+        {/* the CV has no field: its error is the box, in the bar, seen from wherever Save was pressed */}
+        {cvError && <ErrorBox text={cvError} />}
       </div>
     </Wrap>
   )

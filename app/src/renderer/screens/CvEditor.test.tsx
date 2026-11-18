@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../testing'
 import { CvEditor } from './CvEditor'
+import { Profile } from './Profile'
 
 afterEach(cleanup)
 
@@ -19,11 +20,14 @@ const profile = (cv: Partial<{ text: string | null; is_example: boolean; exists:
   enrich_sources: sources,
 })
 
+const NO_STORIES = { list_stories: { exists: false, stories: [] } }
+
+/** The CV as Profile shows it: Profile's one save bar saves it. */
 async function open(handlers: Record<string, unknown> = {}, cv = {}, sources: string[] = []) {
-  const h = mockDoor({ show_profile: profile(cv, sources), ...handlers })
+  const h = mockDoor({ show_profile: profile(cv, sources), ...NO_STORIES, ...handlers })
   const onDraft = vi.fn()
   const onSaved = vi.fn()
-  render(<CvEditor onDraft={onDraft} onSaved={onSaved} />)
+  render(<Profile onDraft={onDraft} onSaved={onSaved} />)
   await screen.findByLabelText('Your CV (Markdown)')
   return { ...h, onDraft, onSaved }
 }
@@ -59,7 +63,7 @@ describe('CvEditor', () => {
     await userEvent.type(editor(), '- SQL{Enter}')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}- SQL\n` })
-    expect(await screen.findByText('Saved. The previous version is kept as cv.md.bak.')).toBeInTheDocument()
+    expect(await screen.findByText('Saved. The previous CV is kept as cv.md.bak.')).toBeInTheDocument()
   })
 
   it('the first CV is saved with no word of a backup, and the profile is read again', async () => {
@@ -292,7 +296,7 @@ describe('CvEditor, its three parts', () => {
     mockDoor({ show_profile: profile(), show_style: { styles: {}, in_use: 'default', candidate: false } })
     render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
     await screen.findByLabelText('Your CV (Markdown)')
-    const names = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+    const names = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
     expect(names).toEqual(['Sources', 'Style', 'Content'])
     expect(within(screen.getByRole('region', { name: 'Content' })).getByLabelText('Your CV (Markdown)')).toBeInTheDocument()
     expect(within(screen.getByRole('region', { name: 'Sources' })).getByRole('button', { name: 'Add a page' })).toBeInTheDocument()
@@ -317,11 +321,11 @@ describe('CvEditor, the CV file', () => {
 
   it('replacing it drafts the CV from the new file into the editor, saved only by Save', async () => {
     const user = userEvent.setup()
-    const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: '/p/cv.md.bak' } })
+    const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: '/p/cv.md.bak' }, ...NO_STORIES })
     h.cvFile.mockResolvedValue('old.pdf')
     h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
     h.draftCv.mockResolvedValue({ ok: true, data: { markdown: '# Ada\n\n## New\n', sources: [], provenance: [], todos: [] } })
-    render(<CvEditor onDraft={vi.fn()} />)
+    render(<Profile onDraft={vi.fn()} onSaved={vi.fn()} />)
     await user.click(await screen.findByRole('button', { name: 'Replace…' }))
     await waitFor(() => expect(editor()).toHaveValue('# Ada\n\n## New\n'))
     expect(h.draftCv).toHaveBeenCalledWith({ files: ['t1'], urls: [] })
@@ -370,8 +374,8 @@ describe('CvEditor, the Style', () => {
   const styled = { show_style: { styles: { default: { cv: ['/h/cv_page_1.png'], letter: ['/h/letter_page_1.png'], version: 'v1', two_column: false } }, in_use: 'default', candidate: false } }
 
   it('is above the CV, and its previews are read again after a save', async () => {
-    const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: null }, ...styled })
-    render(<CvEditor onDraft={vi.fn()} onSaved={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
+    const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: null }, ...styled, ...NO_STORIES })
+    render(<Profile onDraft={vi.fn()} onSaved={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
     await screen.findByRole('img', { name: /The other door/ })
     const row = screen.getByRole('heading', { name: 'Style' })
     expect(row.compareDocumentPosition(screen.getByText('Your CV')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

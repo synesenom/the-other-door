@@ -68,7 +68,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   const mainRef = useRef<HTMLElement>(null)
   // Profile opened from a problem line: on the CV.
   // Where Profile opens next, counted so the same place opens it again
-  const [profileStart, setProfileStart] = useState<{ n: number; at: ProfileStart } | null>(start?.cv ? { n: 1, at: { view: 'cv' } } : start?.stories ? { n: 1, at: { view: 'stories' } } : null)
+  const [profileStart, setProfileStart] = useState<{ n: number; at: ProfileStart } | null>(start?.cv ? { n: 1, at: { section: 'cv' } } : start?.stories ? { n: 1, at: { section: 'stories' } } : null)
   // Where Settings opens next (Report a problem, from the sidebar's line), counted the same way
   const [settingsStart, setSettingsStart] = useState<{ n: number; at: 'report' | 'risky' } | null>(null)
   const narrow = useNarrow()
@@ -361,7 +361,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   const fix = (p: Problem) => {
     setFinding(false)
     if (p.target === 'profile-cv') {
-      setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { view: 'cv' } }))
+      setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { section: 'cv' } }))
       setCurrent('Profile')
     } else if (p.target === 'profile') setCurrent('Profile')
     else {

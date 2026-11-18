@@ -25,7 +25,6 @@ async function setUpAgain(page: Page, world: World) {
   rmSync(join(world.home, 'profile', 'cv.md')) // the wizard is offered again while there is no CV
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible(LAUNCH)
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Profile', exact: true }).click()
-  await page.getByRole('group', { name: 'Part of the profile' }).getByRole('button', { name: 'CV', exact: true }).click()
   await page.getByRole('button', { name: 'Draft it from your CV file or pages', exact: true }).click()
   await expect(sourcesHeading(page)).toBeVisible(LAUNCH)
 }
