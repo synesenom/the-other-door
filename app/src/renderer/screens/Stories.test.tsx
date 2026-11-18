@@ -81,20 +81,30 @@ describe('Stories', () => {
     expect(screen.getByRole('list', { name: 'Your stories' })).toBeInTheDocument()
   })
 
-  it('a text that holds several stories shows them one at a time; Skip leaves one out', async () => {
+  it('shows only the one story the text tells, never the others of an answer', async () => {
     const user = userEvent.setup()
-    const { call } = show({ draft_stories: { outcome: 'proposed', stories: [story('One'), story('Two'), story('Three')] } })
+    const { call } = show({ draft_stories: { outcome: 'proposed', stories: [story('One'), story('Two')] } })
     await user.click(await screen.findByRole('button', { name: 'Write a story' }))
-    await user.type(screen.getByLabelText('What did you do?'), 'Three things.')
+    await user.type(screen.getByLabelText('What did you do?'), 'One thing.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
-    await user.click(within(await screen.findByRole('dialog', { name: 'Story 1 of 3' })).getByRole('button', { name: 'Save' }))
-    await user.click(within(await screen.findByRole('dialog', { name: 'Story 2 of 3' })).getByRole('button', { name: 'Skip' }))
-    const last = within(await screen.findByRole('dialog', { name: 'Story 3 of 3' }))
-    expect(last.getByLabelText('Title')).toHaveValue('Three')
-    await user.click(last.getByRole('button', { name: 'Save' }))
+    const dialog = within(await screen.findByRole('dialog', { name: 'Your story' }))
+    expect(dialog.getByLabelText('Title')).toHaveValue('One')
+    expect(screen.queryByDisplayValue('Two')).toBeNull()
+    await user.click(dialog.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(call.mock.calls.filter((c) => c[0] === 'save_story').map((c) => (c[1] as { title: string }).title)).toEqual(['One', 'Three'])
-    expect(screen.getByText('Added 2 stories.')).toBeInTheDocument()
+    expect(call.mock.calls.filter((c) => c[0] === 'save_story').map((c) => (c[1] as { title: string }).title)).toEqual(['One'])
+  })
+
+  it('Cancel on the drafted story saves nothing and goes back to the list', async () => {
+    const user = userEvent.setup()
+    const { call } = show({ draft_stories: { outcome: 'proposed', stories: [story('One')] } })
+    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.type(screen.getByLabelText('What did you do?'), 'One thing.')
+    await user.click(screen.getByRole('button', { name: 'Draft it' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Your story' })).getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(call.mock.calls.some((c) => c[0] === 'save_story')).toBe(false)
+    expect(screen.getByRole('list', { name: 'Your stories' })).toBeInTheDocument()
   })
 
   it('an empty bank offers only writing a story, never a draft from the CV', async () => {

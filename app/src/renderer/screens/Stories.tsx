@@ -60,13 +60,12 @@ type View =
   | { kind: 'list' }
   | { kind: 'form'; old: string; values: Values }
   | { kind: 'text'; text: string; drafting: boolean }
-  // what a text was drafted into, one story at a time in the same dialog: `at` is the one shown, `added` the ones saved
-  | { kind: 'draft'; rows: { values: Values; conflicts: string[] }[]; at: number; added: string[] }
+  // the story a text was drafted into, in the same dialog
+  | { kind: 'draft'; values: Values; conflicts: string[] }
 
 /**
  * Profile's Stories: the story bank the tailor draws on (profile/story_bank.md). See, edit, and write a story: the
- * text is drafted into its four parts in the same dialog, to check and save (a text with several stories shows them
- * one at a time). Every rule
+ * text is drafted into the one story it tells, shown in its four parts in the same dialog to check and save. Every rule
  * (what a story needs) is the server's; this only asks and shows.
  */
 export function Stories() {
@@ -132,36 +131,27 @@ export function Stories() {
     setNote(null)
     try {
       const r = await call<{ outcome: string; stories: Draft[] }>('draft_stories', { text })
-      if (!r.stories?.length) {
+      const story = r.stories?.[0]
+      if (!story) {
         setNote(r.outcome === 'nothing_new' ? 'Nothing new to propose.' : 'No story could be drafted.')
         setView({ kind: 'list' })
         return
       }
-      setView({ kind: 'draft', rows: r.stories.map((s) => ({ values: toValues(s), conflicts: s.conflicts ?? [] })), at: 0, added: [] })
+      setView({ kind: 'draft', values: toValues(story), conflicts: story.conflicts ?? [] })
     } catch (e) {
       setError(errorText(e))
       setView({ kind: 'text', text, drafting: false })
     }
   }
 
-  /** The next drafted story, or the list again when it was the last one. */
-  const next = (view: Extract<View, { kind: 'draft' }>, added: string[]) => {
-    if (view.at + 1 < view.rows.length) {
-      setView({ ...view, at: view.at + 1, added })
-      return
-    }
-    if (added.length) setNote(added.length === 1 ? `Added ${added[0]}.` : `Added ${added.length} stories.`)
-    back()
-    reload()
-  }
-
-  const saveDraft = async (view: Extract<View, { kind: 'draft' }>) => {
-    const values = view.rows[view.at]!.values
+  const saveDraft = async (values: Values) => {
     setBusy(true)
     setError(null)
     try {
       await call('save_story', saveArgs(values))
-      next(view, [...view.added, values.title.trim()])
+      setNote(`Added ${values.title.trim()}.`)
+      back()
+      reload()
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -225,34 +215,24 @@ export function Stories() {
   )
 
   // the drafted story in its four parts, in the same dialog: only what the text says, to fill in and correct
-  const drafted = view.kind === 'draft' && (() => {
-    const row = view.rows[view.at]!
-    const missing = missingOf(row.values)
-    const several = view.rows.length > 1
-    const setValues = (values: Values) => setView({ ...view, rows: view.rows.map((x, j) => (j === view.at ? { ...x, values } : x)) })
-    return (
-      <Dialog title={several ? `Story ${view.at + 1} of ${view.rows.length}` : 'Your story'} onClose={() => next({ ...view, at: view.rows.length - 1 }, view.added)}>
-        <p className="small muted">Only what your text says. Fill in what is empty and change what is off.</p>
-        {row.conflicts.map((c) => <p key={c} className="small field-error">{`Differs from your CV: ${c}`}</p>)}
-        {missing.length > 0 && <p className="small field-error">{`Still to fill in: ${missing.join(', ')}`}</p>}
-        <Fields key={view.at} values={row.values} onChange={setValues} />
-        {errorLine}
-        <div className="actions">
-          <button type="button" className="quiet" onClick={() => next({ ...view, at: view.rows.length - 1 }, view.added)}>
-            Cancel
-          </button>
-          {several && (
-            <button type="button" className="secondary" disabled={busy} onClick={() => { setError(null); next(view, view.added) }}>
-              Skip
-            </button>
-          )}
-          <button type="button" className="primary" disabled={busy || !complete(row.values)} onClick={() => void saveDraft(view)}>
-            Save
-          </button>
-        </div>
-      </Dialog>
-    )
-  })()
+  const missing = view.kind === 'draft' ? missingOf(view.values) : []
+  const drafted = view.kind === 'draft' && (
+    <Dialog title="Your story" onClose={back}>
+      <p className="small muted">Only what your text says. Fill in what is empty and change what is off.</p>
+      {view.conflicts.map((c) => <p key={c} className="small field-error">{`Differs from your CV: ${c}`}</p>)}
+      {missing.length > 0 && <p className="small field-error">{`Still to fill in: ${missing.join(', ')}`}</p>}
+      <Fields values={view.values} onChange={(values) => setView({ ...view, values })} />
+      {errorLine}
+      <div className="actions">
+        <button type="button" className="quiet" onClick={back}>
+          Cancel
+        </button>
+        <button type="button" className="primary" disabled={busy || !complete(view.values)} onClick={() => void saveDraft(view.values)}>
+          Save
+        </button>
+      </div>
+    </Dialog>
+  )
 
   return (
     <div className="stories">
