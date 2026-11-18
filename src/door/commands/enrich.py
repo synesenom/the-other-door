@@ -19,6 +19,7 @@ import click
 
 from door.commands import _common as common
 from door.commands import _prompts
+from door.commands import cv as cv_cmd
 from door.core import profile_loader
 from door.core import claude_cli, utils, workspace
 
@@ -119,28 +120,34 @@ def _digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _propose(urls, *, config, cv_path, profile_dir, model, timeout_s) -> dict:
-    urls = [u.strip() for u in (urls or []) if u and u.strip()] or list(config.get("enrich_sources") or [])
-    if not urls:
+def _propose(urls, files, *, config, cv_path, profile_dir, model, timeout_s) -> dict:
+    files = [f.strip() for f in (files or []) if f and f.strip()]
+    urls = [u.strip() for u in (urls or []) if u and u.strip()]
+    if not urls and not files:
+        urls = list(config.get("enrich_sources") or [])
+    if not urls and not files:
         raise ValueError("no URLs to read: pass some, or list them under enrich_sources in profile/config.json")
     if not cv_path.is_file():
         raise FileNotFoundError(f"{cv_path} not found (profile/cv.md): set up the profile first")
     cv_text = cv_path.read_text(encoding="utf-8")
+    # a CV file is read here, like draft_cv's; its text goes in the prompt, as a page's would be fetched
+    read = [f"CV file {Path(f).name}:\n<<<\n{cv_cmd._extract_text(Path(f))}\n>>>\n\n" for f in files]
 
     prompt = (
         f"Role targets: {', '.join(config.get('role_targets') or [])}\n\n"
         f"Current CV (profile/cv.md):\n<<<\n{cv_text}\n>>>\n\n"
-        "Read these pages:\n" + "\n".join(urls) + "\n"
+        + "".join(read)
+        + ("Read these pages:\n" + "\n".join(urls) + "\n" if urls else "")
     )
     answer = claude_cli.ask(
-        _RULES, prompt, model=model or _DEFAULT_MODEL, feature="enrich", schema=_SCHEMA, allowed_tools=("WebFetch",),
-        timeout_s=timeout_s, profile_dir=profile_dir,
+        _RULES, prompt, model=model or _DEFAULT_MODEL, feature="enrich", schema=_SCHEMA,
+        allowed_tools=("WebFetch",) if urls else (), timeout_s=timeout_s, profile_dir=profile_dir,
     )
     if not isinstance(answer.get("proposals"), list):
         raise claude_cli.ClaudeError("claude's answer has no `proposals` list")
     proposals = _clean_proposals(answer["proposals"], cv_text)
     unreachable = [str(u) for u in answer.get("unreachable") or [] if u]
-    result = {"outcome": "proposed" if proposals else "nothing_new", "urls": urls, "proposals": proposals, "unreachable": unreachable}
+    result = {"outcome": "proposed" if proposals else "nothing_new", "urls": urls, "files": files, "proposals": proposals, "unreachable": unreachable}
     proposals_path = profile_dir / _PROPOSALS_FILE
     if proposals:
         utils.write_atomic(
@@ -184,26 +191,27 @@ def _apply(apply, all_, *, profile_dir) -> dict:
 def _enrich_core(
     urls: list[str] | None = None,
     *,
+    files: list[str] | None = None,
     apply: list[int] | None = None,
     all: bool = False,
     model: str | None = None,
     profile_dir: Path | None = None,
     timeout_s: float = 600,
 ) -> dict:
-    """Propose additions to the CV from `urls` (default: the profile's
-    `enrich_sources`), or — with `apply` (proposal numbers) or `all` — add the
+    """Propose additions to the CV from `urls` and CV `files` (PDF, DOCX,
+    Markdown or text; with neither, the profile's `enrich_sources`), or — with `apply` (proposal numbers) or `all` — add the
     proposals of the previous call to the CV.
 
     Returns:
-        Propose: ``{"outcome": "proposed" | "nothing_new", "urls", "proposals":
+        Propose: ``{"outcome": "proposed" | "nothing_new", "urls", "files", "proposals":
         [{"n", "section", "text", "source"}], "unreachable", "proposals_path"?}``.
         Apply: ``{"outcome": "applied", "added", "cv_path", "backup"}``.
 
     Raises:
         FileNotFoundError, ConfigError: no or invalid profile/config.json; no
             CV; nothing proposed yet (apply).
-        ValueError: no URLs; URLs together with apply/all; a bad number; the
-            CV changed since the proposals were made.
+        ValueError: no URLs; URLs or files together with apply/all; a file of
+            another type; a bad number; the CV changed since the proposals were made.
         claude_cli.ClaudeError: the `claude -p` call failed or answered
             something else.
     """
@@ -211,11 +219,11 @@ def _enrich_core(
         profile_dir = workspace.PROFILE_DIR
     config = profile_loader.load_profile_config(profile_dir)
     if apply or all:
-        if urls:
+        if urls or files:
             raise ValueError("pass URLs to propose, or apply/all to add the last proposals, not both")
         return _apply(apply or [], all, profile_dir=profile_dir)
     return _propose(
-        urls, config=config, cv_path=workspace.cv_path(config, profile_dir), profile_dir=profile_dir,
+        urls, files, config=config, cv_path=workspace.cv_path(config, profile_dir), profile_dir=profile_dir,
         model=model, timeout_s=timeout_s,
     )
 
@@ -261,17 +269,19 @@ def _echo_applied(result: dict) -> None:
     callback=lambda ctx, param, value: None if value is None else _numbers(value),
 )
 @click.option("--all", "all_", is_flag=True, default=False, help="Add every proposal from the last run.")
+@click.option("--file", "files", multiple=True, type=click.Path(), help="A CV file (PDF, DOCX, Markdown) to read too; repeat for more.")
 @click.option("--model", default=None, help=f"Claude model to read the pages with (default: {_DEFAULT_MODEL}).")
-def enrich(urls: tuple[str, ...], apply: list[int] | None, all_: bool, model: str | None):
-    """Propose additions to profile/cv.md from public URLS (default: the
-    profile's enrich_sources), then add the ones you pick.
+def enrich(urls: tuple[str, ...], apply: list[int] | None, all_: bool, files: tuple[str, ...], model: str | None):
+    """Propose additions to profile/cv.md from public URLS and CV files
+    (--file; with neither, the profile's enrich_sources), then add the ones
+    you pick.
 
     One `claude -p` call reads the pages; nothing is written until you choose.
     On a terminal it asks which proposals to add; elsewhere it prints them
     and `enrich --apply 1,3` (or `--all`) adds them.
     """
     try:
-        result = _enrich_core(list(urls), apply=apply, all=all_, model=model, profile_dir=workspace.PROFILE_DIR)
+        result = _enrich_core(list(urls), files=list(files), apply=apply, all=all_, model=model, profile_dir=workspace.PROFILE_DIR)
         if result["outcome"] == "applied":
             _echo_applied(result)
             return

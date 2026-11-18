@@ -430,17 +430,15 @@ never has one. It is not on the phone.
 Everything about your work, in one place. It is never sent as it is: each application gets a CV of its own,
 picked from this one and tailored to the ad, so put in more than one CV would hold.
 
-Three fields, each with an ⓘ that says what it is for.
+**Sources** is what your Master CV is read from: **Replace CV file…** (**Add a CV file…** when there is none), **Add a
+page** and **Check again**, and under them your CV file and each page as a chip (a page's × forgets it). A source only
+ever adds: a new CV file, like a page, is read in one Claude call on your plan (a minute or two), and what it has that
+your Master CV does not is proposed, all ticked; what you keep is added, tinted blue, and nothing is taken out or
+rewritten (what changed, such as an end date, you change yourself in the text). With no Master CV yet, a CV file is
+drafted into it whole. A new CV file is your CV file from then on, and your own CV style is built again from it.
 
-**CV file** names the file your CV was last drafted from. **Replace…** (or **Choose a CV file…** when there is
-none) drafts your CV again from another file, one Claude call on your plan (a minute or two): the draft lands in
-the editor and is saved, your CV before it kept as `cv.md.bak`.
-
-**Pages**: **Add a page** and **Check again**, and under them the pages your CV is read from, each a chip with a × to
-forget it.
-
-**Text** is `profile/cv.md` as it reads, the **Preview** switch on its right on, with each gap (`TODO`) a blue "to fill
-in" pill: a click on one shows the text in an editor, "Text (Markdown)", with that gap selected, as Preview off does;
+Under them `profile/cv.md` as it reads, the **Preview** switch on its right on, with each gap (`TODO`) a blue "to fill
+in" pill: a click on one shows the text in an editor ("Written in Markdown" beside it), with that gap selected, as Preview off does;
 an empty CV opens in the editor. There is no Save: what you type is saved a second after you stop, and when you leave
 the editor ("Saving…", then "Saved", beside Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak`, so that is one step back to
 where this visit began; ⌘Z (Ctrl+Z) undoes typing. An empty CV is never saved. With no CV yet, a line above says so

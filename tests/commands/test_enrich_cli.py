@@ -89,6 +89,39 @@ def test_propose_asks_claude_with_webfetch_the_cv_and_the_urls(env, monkeypatch)
     assert calls[0]["profile_dir"] == env.profile_dir
 
 
+def test_propose_from_a_cv_file_reads_its_text_and_fetches_nothing(env, monkeypatch, tmp_path):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    new_cv = tmp_path / "new-cv.md"
+    new_cv.write_text("# Jane Doe\n\n## Talks\n\n- Spoke at PyData Copenhagen 2025\n")
+    result = enrich_cmd._enrich_core(files=[str(new_cv)], profile_dir=env.profile_dir)
+
+    assert result["outcome"] == "proposed"
+    assert result["files"] == [str(new_cv)] and result["urls"] == []
+    assert env.cv_path.read_text() == CV  # proposed only, as from a page
+    sent = calls[0]["input"]
+    assert "Spoke at PyData Copenhagen 2025" in sent and "Built a churn model" in sent
+    assert "https://github.com/jane" not in sent  # the remembered pages are not read with a file
+    assert "--allowedTools" not in calls[0]["args"]  # nothing to fetch
+
+
+def test_propose_from_a_file_of_another_type_is_an_error(env, monkeypatch, tmp_path):
+    _answer(monkeypatch)
+    odd = tmp_path / "cv.exe"
+    odd.write_text("x")
+    with pytest.raises(ValueError, match="PDF, DOCX, Markdown"):
+        enrich_cmd._enrich_core(files=[str(odd)], profile_dir=env.profile_dir)
+
+
+def test_cli_reads_a_cv_file_given_with_file(env, monkeypatch, tmp_path, prompts):
+    _answer(monkeypatch)
+    new_cv = tmp_path / "new-cv.md"
+    new_cv.write_text("# Jane\n")
+    result = CliRunner().invoke(cli, ["cv", "enrich", "--file", str(new_cv)])
+    assert result.exit_code == 0, result_text(result)
+    assert "Spoke at PyData Copenhagen 2025" in result_text(result)
+
+
 def test_propose_defaults_to_enrich_sources(env, monkeypatch):
     calls = []
     _answer(monkeypatch, calls=calls)

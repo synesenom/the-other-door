@@ -33,6 +33,8 @@ export const CHANNELS = {
   pickCvFiles: 'door:pick-cv-files',
   dropCvFiles: 'door:drop-cv-files',
   draftCv: 'door:draft-cv',
+  /** A CV file chosen in the picker, read by enrich for what it adds to the Master CV (by its token). */
+  enrichFile: 'door:enrich-file',
   /** The CV file's name (Profile → CV's Sources), or null. */
   cvFile: 'door:cv-file',
   clearCvSources: 'door:cv-sources-clear',
@@ -143,31 +145,32 @@ const COALESCE_MS = 200
 // a file is chosen in a dialog the main process runs and goes by token (cv-sources.ts now;
 // export and import in #222). `urls` entries (http or https) are the one thing allowed in `sources`.
 // A tool whose parameter could name a file must be here (a test reads tools.json for it).
-export const PATH_ARGS: Record<string, { arg: string; urlsOnly?: true }> = {
-  draft_cv: { arg: 'sources', urlsOnly: true },
-  import_posting: { arg: 'path' },
-  export_data: { arg: 'path' },
-  import_data: { arg: 'archive' },
-  report_problem: { arg: 'path' },
+export const PATH_ARGS: Record<string, { arg: string; urlsOnly?: true }[]> = {
+  draft_cv: [{ arg: 'sources', urlsOnly: true }],
+  import_posting: [{ arg: 'path' }],
+  export_data: [{ arg: 'path' }],
+  import_data: [{ arg: 'archive' }],
+  report_problem: [{ arg: 'path' }],
   // the CV photo is chosen in a dialog and saved by token (door:save-photo)
-  save_photo: { arg: 'path' },
+  save_photo: [{ arg: 'path' }],
   // a CV PDF whose look is copied
-  build_style: { arg: 'file' },
-  // enrich reads web pages; a local file is never one of them.
-  enrich: { arg: 'urls', urlsOnly: true },
+  build_style: [{ arg: 'file' }],
+  // enrich reads web pages, and a CV file chosen in a dialog and sent by token (door:enrich-file)
+  enrich: [{ arg: 'urls', urlsOnly: true }, { arg: 'files' }],
 }
 
 /** Why a call from the window is refused for naming a local file, or null. */
 function pathRefusal(tool: string, args: Record<string, unknown>): string | null {
-  const rule = PATH_ARGS[tool]
-  if (!rule) return null
-  const value = args[rule.arg]
-  if (value === undefined || value === null) return null
-  if (rule.urlsOnly) {
-    if (Array.isArray(value) && value.every((v) => isExternalUrl(v))) return null
-    return `${tool} takes web addresses only; files are chosen with the file picker.`
+  for (const rule of PATH_ARGS[tool] ?? []) {
+    const value = args[rule.arg]
+    if (value === undefined || value === null) continue
+    if (rule.urlsOnly) {
+      if (Array.isArray(value) && value.every((v) => isExternalUrl(v))) continue
+      return `${tool} takes web addresses only; files are chosen with the file picker.`
+    }
+    return `${tool} cannot take a file path from the window; files are chosen with a file dialog.`
   }
-  return `${tool} cannot take a file path from the window; files are chosen with a file dialog.`
+  return null
 }
 
 /** The answer of a failed call, in the envelope the window reads (a DoorError keeps its candidates). */
@@ -372,6 +375,20 @@ export function registerIpc(
       const data = await server.call('draft_cv', { sources: [...paths, ...urls] }, { timeout: TOOL_TIMEOUTS['draft_cv'] })
       await rememberCvFile(data)
       return { ok: true, data: withTokens(data, files) }
+    } catch (e) {
+      return failureEnvelope(e)
+    }
+  })
+
+  // A newer CV file: enrich proposes what it adds to the Master CV, and it is the CV file from then on (the style's)
+  ipcMain.handle(CHANNELS.enrichFile, async (_event, token: unknown): Promise<Envelope> => {
+    if (typeof token !== 'string' || !deps.cvSources) return { ok: false, error: 'Choose the file again.' }
+    const resolved = await deps.cvSources.resolve([token])
+    if (!resolved.ok) return resolved
+    try {
+      const data = await server.call('enrich', { files: resolved.paths }, { timeout: TOOL_TIMEOUTS['enrich'] })
+      await deps.styleFile?.remember(resolved.paths[0]!)
+      return { ok: true, data }
     } catch (e) {
       return failureEnvelope(e)
     }

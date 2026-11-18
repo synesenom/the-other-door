@@ -188,6 +188,7 @@ export function createWebDoor(deps: WebDeps) {
       return { files: [], refused: [] }
     },
     draftCv: machineOnly,
+    enrichFile: machineOnly,
     async cvFile() {
       return null
     },

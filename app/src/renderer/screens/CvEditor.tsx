@@ -58,14 +58,30 @@ const webAddress = (typed: string) => (/^[a-z][a-z0-9+.-]*:\/\//i.test(typed) ? 
 
 type Step = { kind: 'ask'; url: string; refused?: string } | { kind: 'reading' } | { kind: 'read'; result: Enriched; dropped: Set<number> } | { kind: 'adding' }
 
+/** What a dialog adds from: a page asked for, the remembered pages again, or a newer CV file chosen in the picker. */
+type From = { kind: 'page' } | { kind: 'again' } | { kind: 'file'; token: string; name: string }
+
 /**
- * "Add a page" (`again` false), in a dialog so the CV under it stays put: one page asked for, read (`enrich` proposes what it shows and the CV lacks),
+ * "Add a page" (`page`), in a dialog so the CV under it stays put: one page asked for, read (`enrich` proposes what it shows and the CV lacks),
  * the ticked proposals added; a page read is remembered (profile/config.json's enrich_sources). "Check again"
- * (`again`): the remembered pages read again, for what is new on them since.
+ * (`again`): the remembered pages read again, for what is new on them since. "Replace CV file…" (`file`): the new file
+ * read the same way, by its token (main gives enrich its path), and from then on the CV file (`onFile`).
  */
-function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: boolean; pages: string[]; blocked: boolean; onRead: (url: string) => void; onClose: () => void; onAdded: (texts: string[]) => void }) {
-  const [step, setStep] = useState<Step>(again ? { kind: 'reading' } : { kind: 'ask', url: '' })
+function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { from: From; pages: string[]; blocked: boolean; onRead: (url: string) => void; onFile: () => void; onClose: () => void; onAdded: (texts: string[]) => void }) {
+  const again = from.kind === 'again'
+  const file = from.kind === 'file' ? from : null
+  const [step, setStep] = useState<Step>(from.kind === 'page' ? { kind: 'ask', url: '' } : { kind: 'reading' })
   const [error, setError] = useState<string | null>(null)
+  const nothing: Step = { kind: 'read', result: { outcome: 'nothing_new', proposals: [], unreachable: [] }, dropped: new Set() }
+  const readFile = async (token: string) => {
+    const r = (await window.door.enrichFile(token)) as { ok: true; data: Enriched } | { ok: false; error: string }
+    if (!r.ok) {
+      setError(r.error)
+      return setStep(nothing)
+    }
+    onFile()
+    setStep({ kind: 'read', result: { ...r.data, proposals: r.data.proposals ?? [], unreachable: [] }, dropped: new Set() })
+  }
   const read = async (urls: string[]) => {
     setStep({ kind: 'reading' })
     setError(null)
@@ -78,11 +94,12 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
       setStep({ kind: 'read', result, dropped: new Set() })
     } catch (e) {
       setError(errorText(e))
-      setStep(again ? { kind: 'read', result: { outcome: 'nothing_new', proposals: [], unreachable: [] }, dropped: new Set() } : { kind: 'ask', url: urls[0] ?? '' })
+      setStep(again ? nothing : { kind: 'ask', url: urls[0] ?? '' })
     }
   }
   useEffect(() => {
-    if (again) void read(pages)
+    if (file) void readFile(file.token)
+    else if (again) void read(pages)
     // once, on opening
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -100,9 +117,10 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
   const errorLine = error && (
     <ErrorBox text={error} />
   )
-  const label = again ? 'Check your pages again' : 'Add a page'
+  const label = file ? 'Your new CV file' : again ? 'Check your pages again' : 'Add a page'
+  const reading = file ? `Reading ${file.name} (a minute or two)…` : again ? 'Reading your pages again (a few minutes)…' : 'Reading the page (a few minutes)…'
 
-  if (step.kind === 'reading') return <Dialog title={label} onClose={onClose}><Spinner message={again ? 'Reading your pages again (a few minutes)…' : 'Reading the page (a few minutes)…'} /></Dialog>
+  if (step.kind === 'reading') return <Dialog title={label} onClose={onClose}><Spinner message={reading} /></Dialog>
   if (step.kind === 'adding') return <Dialog title={label} onClose={() => {} /* the CV is being written: it ends by itself */}><Spinner message="Adding to your CV…" /></Dialog>
   if (step.kind === 'ask') {
     const url = step.url.trim()
@@ -145,7 +163,7 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
       {errorLine}
       {result.proposals.length === 0 ? (
         <>
-          {!error && <p className="body">{again ? 'Nothing new on your pages.' : 'Nothing on that page is missing from your CV.'}</p>}
+          {!error && <p className="body">{file ? `Nothing in ${file.name} is missing from your Master CV.` : again ? 'Nothing new on your pages.' : 'Nothing on that page is missing from your CV.'}</p>}
           <div className="actions">
             <button type="button" className="secondary" onClick={onClose}>
               Close
@@ -154,7 +172,7 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
         </>
       ) : (
         <>
-          <p className="small muted">What your CV does not have yet. Untick what should not go in.</p>
+          <p className="small muted">What your Master CV does not have yet. Untick what should not go in.</p>
           <Proposals
             proposals={result.proposals}
             dropped={dropped}
@@ -227,7 +245,7 @@ export function CvEditor({
   const [text, setText] = useState('')
   // read: the CV as it reads (Preview on), the default; a CV that opens empty has nothing to read and is the text at once
   const [view, setView] = useState<'edit' | 'read'>('read')
-  const [panel, setPanel] = useState<null | 'page' | 'again'>(null)
+  const [panel, setPanel] = useState<From | null>(null)
   // The pages read before (enrich_sources): remembered when one is read, forgotten by its ×, each saved at once.
   const [pages, setPages] = useState<string[] | null>(null)
   const [pagesError, setPagesError] = useState<string | null>(null)
@@ -353,7 +371,7 @@ export function CvEditor({
   }
 
   /** Another CV file: drafted into the editor, and saved like any change (the CV before it kept as cv.md.bak). */
-  const replaceFile = async () => {
+  const chooseFile = async () => {
     setFileError(null)
     setMessage(null)
     const picked = await window.door.pickCvFiles()
@@ -361,13 +379,15 @@ export function CvEditor({
     if (refused) return setFileError(`${refused.name}: ${refused.reason}`)
     const file = picked.files[0]
     if (!file) return
+    // a Master CV only grows: what the file adds is proposed, as a page's is; with none yet, it is drafted from the file
+    if (saved.trim()) return setPanel({ kind: 'file', token: file.token, name: file.name })
     setDrafting(true)
     try {
       const r = await draftCv({ files: [file.token], urls: [] })
       setAdded(null)
       setText(r.markdown)
       setView('read')
-      setMessage(`Drafted from ${file.name}. Your CV before it is kept as cv.md.bak.`)
+      setMessage(`Drafted from ${file.name}.`)
       setReplaced((n) => n + 1)
       window.door.cvFile().then(setCvFile, () => undefined)
     } catch (e) {
@@ -426,38 +446,33 @@ export function CvEditor({
           profile/cv.md could not be read as text (it may be in another encoding, or not text at all). What you save here replaces it; the file as it is now is kept as cv.md.bak.
         </p>
       )}
-        {/* three fields, as every form's (docs/design/README.md "Field name"): a name 4 px above its control, what
-            belongs under it (the pages, a line, an error) under it, 28 px between fields */}
-        <div className="field onb-field" role="group" aria-labelledby="cv-file-name">
-          <FieldName id="cv-file-name" label="CV file" help="The file your CV was drafted from. Replacing it drafts your CV again from the new file, and builds your own style from it when you use one." />
-          <div className="cv-file">
-            {cvFile ? <span className="body">{cvFile}</span> : <span className="body muted">No CV file yet</span>}
+        {/* one field, Sources: what the Master CV is read from, a CV file or a page, each proposing what it adds */}
+        <div className="field onb-field" role="group" aria-labelledby="cv-sources-name">
+          <FieldName id="cv-sources-name" label="Sources" help="Your CV file and public pages: a portfolio, GitHub, a publication list. Each proposes what it shows and your Master CV does not, and adds what you tick; nothing is taken out. Check again reads the pages for what is new." />
+          <div className="actions">
             {drafting ? (
               <Spinner message="Reading your CV file (a minute or two)…" />
             ) : (
-              <button type="button" className="secondary" onClick={() => void flush().then(replaceFile)}>
-                {cvFile ? 'Replace…' : 'Choose a CV file…'}
+              <button type="button" className="secondary" onClick={() => void flush().then(chooseFile)}>
+                {cvFile ? 'Replace CV file…' : 'Add a CV file…'}
               </button>
             )}
-          </div>
-          {message && <p className="small muted">{message}</p>}
-          {fileError && <p className="field-error" role="alert">{fileError}</p>}
-        </div>
-        <div className="field onb-field" role="group" aria-labelledby="cv-pages-name">
-          <FieldName id="cv-pages-name" label="Pages" help="Public pages about you: a portfolio, GitHub, a publication list. Add a page proposes what one shows and your CV does not; Check again reads them all for what is new." />
-          <div className="actions">
-            <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel('page') })}>
+            <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel({ kind: 'page' }) })}>
               Add a page
             </button>
             {remembered.length > 0 && (
-              <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel('again') })}>
+              <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel({ kind: 'again' }) })}>
                 Check again
               </button>
             )}
           </div>
-          {/* under the control only its pills: each page, forgotten by its × */}
-          {remembered.length > 0 && (
-            <ul className="cv-pages-list" aria-label="Pages your CV is read from">
+          {(cvFile || remembered.length > 0) && (
+            <ul className="cv-pages-list" aria-label="What your Master CV is read from">
+              {cvFile && (
+                <li className="chip small">
+                  <span className="chip-text">{cvFile}</span>
+                </li>
+              )}
               {remembered.map((u) => (
                 <li key={u} className="chip small">
                   <span className="chip-text" title={u}>
@@ -470,15 +485,21 @@ export function CvEditor({
               ))}
             </ul>
           )}
-          {pagesError && <p className="field-error" role="alert">{pagesError}</p>}
+          {message && <p className="small muted">{message}</p>}
+          {(fileError || pagesError) && <p className="field-error" role="alert">{fileError ?? pagesError}</p>}
         </div>
-        {(panel === 'page' || panel === 'again') && (
+        {panel && (
           <Expand
-            key={panel}
-            again={panel === 'again'}
+            key={panel.kind}
+            from={panel}
             pages={remembered}
             blocked={dirty}
             onRead={(url) => !remembered.includes(url) && void keepPages([...remembered, url])}
+            onFile={() => {
+              // the new file is the CV file now: named under Sources, and the style of your own built again from it
+              setReplaced((n) => n + 1)
+              window.door.cvFile().then(setCvFile, () => undefined)
+            }}
             onClose={() => setPanel(null)}
             onAdded={(texts) => {
               setPanel(null)
@@ -490,10 +511,10 @@ export function CvEditor({
         {/* the CV as it reads, or its text, with Saved and the Preview switch on the right */}
         <div className="field onb-field">
         <div className="cv-head">
-          {editing ? (
-            <FieldName htmlFor={editorId} label="Text" after={<span className="small muted">(<MarkdownLink />)</span>} help="Everything about your work in Markdown, what every application's CV is picked from and tailored. It saves itself as you type." />
-          ) : (
-            <FieldName id="cv-text-name" label="Text" help="Everything about your work, what every application's CV is picked from and tailored. Turn Preview off to change it; it saves itself as you type." />
+          {editing && (
+            <span className="small muted">
+              Written in <MarkdownLink />
+            </span>
           )}
           {written && (
             <span className="small muted cv-written" role="status">
