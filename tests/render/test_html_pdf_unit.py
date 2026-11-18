@@ -439,3 +439,38 @@ def test_an_asset_given_as_files_serves_only_those_files(fake, tmp_path):
     for blocked in ("/icons/other.svg", "/icons/../secret.txt", "/icons/%2e%2e/secret.txt", "/icons", "/icons/",
                     "/icons/sub/p.svg"):
         assert fake.statuses[blocked] == 404, blocked
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="process groups are POSIX")
+def test_kill_tree_ends_the_helpers_of_a_browser_that_already_exited(tmp_path):
+    import signal
+    import subprocess
+
+    pidfile = tmp_path / "child.pid"
+    script = (
+        "import subprocess, sys;"
+        "c = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']);"
+        f"open({str(pidfile)!r}, 'w').write(str(c.pid))"
+    )
+    proc = subprocess.Popen([sys.executable, "-c", script], start_new_session=True)
+    proc.wait()  # the leader is reaped, its helper lives on in the group
+    deadline = time.monotonic() + 5
+    while not pidfile.exists() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    child = int(pidfile.read_text())
+    try:
+        html_pdf._kill_tree(proc)
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            try:
+                os.kill(child, 0)
+            except ProcessLookupError:
+                break
+            time.sleep(0.05)
+        else:
+            pytest.fail("the helper outlived the browser")
+    finally:
+        try:
+            os.kill(child, signal.SIGKILL)
+        except ProcessLookupError:
+            pass

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from door.commands import _common as common
 from door import i18n
-from door.core import profile_loader
+from door.core import lock, profile_loader
 from door.core import progress as progress_mod
 from door.core import models, sites, workspace
 from door.core import freshness
@@ -108,7 +108,7 @@ class _SiteRun:
             self.store.save()
 
 
-@common._locked("scrape")
+@lock.locked("scrape")
 def _scrape_core(
     site_list: list[str] | None,
     jobs_dir: Path | None = None,

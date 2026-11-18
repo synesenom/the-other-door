@@ -67,11 +67,11 @@ import json, subprocess, sys
 sys.path.insert(0, %r)
 import edges
 from pathlib import Path
-from door.core import phone
+from door.core import process
 seen = []
 subprocess.Popen = lambda argv, **kw: seen.append([argv, kw["env"]])
-phone.spawn_detached([sys.executable, "-m", "door", "cv", "style", "build", "x.pdf"], log=Path(%r), env={"PYTHONPATH": "/the/src", "DOOR_WORLD": %r})
-phone.spawn_detached([sys.executable, "-c", "pass"], log=Path(%r), env={"PYTHONPATH": "/the/src"})
+process.spawn_detached([sys.executable, "-m", "door", "cv", "style", "build", "x.pdf"], log=Path(%r), env={"PYTHONPATH": "/the/src", "DOOR_WORLD": %r})
+process.spawn_detached([sys.executable, "-c", "pass"], log=Path(%r), env={"PYTHONPATH": "/the/src"})
 print(json.dumps([e["PYTHONPATH"] for _, e in seen]))
 """ % (str(WORLD_DIR), str(tmp_path / "a.log"), str(tmp_path), str(tmp_path / "b.log"))
     env = {**os.environ, "DOOR_WORLD": str(tmp_path), "PYTHONPATH": str(SRC_DIR)}

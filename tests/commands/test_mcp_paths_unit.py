@@ -4,9 +4,9 @@ import pytest
 
 import door.mcp_server as server
 from door.commands import add as add_cmd
-from door.commands import archive as archive_cmd
 from door.commands import cv as cv_cmd
 from door.commands import profile as profile_cmd
+from door.core import archive as archive_core
 from door.core import path_scope, workspace
 
 
@@ -18,8 +18,8 @@ def scoped(tmp_path, monkeypatch):
     monkeypatch.setattr(workspace, "REPO_ROOT", tmp_path / "repo")
     monkeypatch.delenv(path_scope.ENV, raising=False)
     calls = []
-    for mod, name in ((cv_cmd, "_draft_cv_core"), (add_cmd, "_add_core"), (archive_cmd, "_export_core"),
-                      (archive_cmd, "_import_core"), (profile_cmd, "_init_core")):
+    for mod, name in ((cv_cmd, "_draft_cv_core"), (add_cmd, "_add_core"), (archive_core, "_export_core"),
+                      (archive_core, "_import_core"), (profile_cmd, "_init_core")):
         monkeypatch.setattr(mod, name, lambda *a, _n=name, **kw: calls.append((_n, a, kw)) or {"ok": True})
     return home, calls
 

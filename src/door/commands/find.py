@@ -16,7 +16,7 @@ import click
 from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
-from door.core import discovery_sources, problem_log, profile_loader, runs, usage, utils, workspace
+from door.core import discovery_sources, lock, problem_log, profile_loader, runs, usage, utils, workspace
 from door.core.sites import BOARDS
 from door.pipeline import collect as collect_step
 from door.pipeline import discover as discover_step
@@ -94,7 +94,7 @@ def _failed_sites(record: dict) -> list[str]:
     return [e["site"] for e in runs.site_entries(record) if e.get("outcome") in ("error", "failed")]
 
 
-@common._locked("run")
+@lock.locked("run")
 def _find_core(
     step: str | None = None,
     *,

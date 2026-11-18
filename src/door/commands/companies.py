@@ -29,7 +29,7 @@ import requests
 
 from door import i18n
 from door.commands import _common as common
-from door.core import ats_detect, profile_loader, sites, wikidata, workspace
+from door.core import ats_detect, lock, profile_loader, sites, wikidata, workspace
 from door.core import companies as store
 from door.scrapers.feeds import hr_manager
 from door.scrapers.http_client import PoliteSession, RobotsBlocked
@@ -620,7 +620,7 @@ def _name_for(result: dict) -> str:
     return result.get("page_name") or store.guess_name(result.get("entry") or text)
 
 
-@common._locked("companies add")
+@lock.locked("companies add")
 def _add_core(
     inputs: list[str], *, dry_run: bool = False, probe: bool = True,
     profile_dir: Path | None = None, jobs_dir: Path | None = None,
@@ -703,7 +703,7 @@ def _list_core(
             "counts": {s: sum(1 for c in items if c.status == s) for s in store.STATUSES}}
 
 
-@common._locked("companies remove")
+@lock.locked("companies remove")
 def _remove_core(names: list[str], *, profile_dir: Path | None = None, jobs_dir: Path | None = None) -> dict:
     """Unfollow: remove each named employer from the list. Never prints.
 
@@ -725,7 +725,7 @@ def _remove_core(names: list[str], *, profile_dir: Path | None = None, jobs_dir:
     return {"removed": removed, "not_found": missing}
 
 
-@common._locked("companies merge")
+@lock.locked("companies merge")
 def _merge_core(names: list[str] | None = None, *, profile_dir: Path | None = None, jobs_dir: Path | None = None) -> dict:
     """Propose or make a merge of two entries that are one employer. Never prints.
 

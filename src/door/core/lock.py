@@ -59,7 +59,7 @@ class SyncConflict(RuntimeError):
 # Google Drive sync (issue #265). The outermost block pulls once the OS lock is held and
 # pushes just before it is released, for every purpose but the sync ones themselves (which
 # would recurse). Both run outside `_held_guard`; the defaults import `sync` lazily
-# (`sync` imports the archive commands, which import this module). Tests swap them.
+# (`sync` imports `archive`, which imports this module). Tests swap them.
 _NO_SYNC_PURPOSES = frozenset({"export", "import", "sync", "upgrade"})
 
 
@@ -291,3 +291,31 @@ def ledger_lock(jobs_dir: Path, purpose: str):
                     pass
                 _os_unlock(entry[0])
                 entry[0].close()
+
+
+def locked(purpose: str):
+    """Run the decorated core under the `jobs/` ledger lock (issue #145).
+
+    The core's `jobs_dir` argument (default: the module-level `JOBS_DIR`,
+    read at call time) names the lock. Raises `LockHeldError` at once when
+    another process holds it; re-entrant within the holding thread. The core's
+    ``progress=`` reporter (if any) is active for the call, the lock's Drive
+    sync included.
+    """
+    import functools
+    import inspect
+
+    def decorate(fn):
+        signature = inspect.signature(fn)
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            bound = signature.bind_partial(*args, **kwargs)
+            jobs_dir = bound.arguments.get("jobs_dir") or workspace.JOBS_DIR
+            # The reporter first, so the lock's Drive pull and push show on it too.
+            with progress.activate(kwargs.get("progress")), ledger_lock(jobs_dir, purpose):
+                return fn(*args, **kwargs)
+
+        return wrapper
+
+    return decorate

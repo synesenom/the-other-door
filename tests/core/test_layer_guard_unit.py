@@ -2,9 +2,8 @@
 
 `door.commands` composes the packages below it; `render/` and `style/` have no business reaching up
 into it, and `render/` is also under `style/`. `pipeline/` is left out: it is the layer that composes
-the commands' cores (`find`'s five steps). `core/sync.py` is the one named exception: its Drive hooks
-call the archive core lazily; issue #213 removes it, and then EXCEPTIONS goes empty. Nor do they import
-`door.pipeline`.
+the commands' cores (`find`'s five steps). There is no exception: `core/sync.py`'s Drive hooks call the
+archive cores in `core/archive.py`. Nor do they import `door.pipeline`.
 """
 
 import ast
@@ -12,7 +11,6 @@ import ast
 from paths import PACKAGE_DIR
 
 LOWER = ("render", "style", "core", "tailoring", "matching", "i18n", "scrapers")
-EXCEPTIONS = {("core/sync.py", "door.commands.archive")}  # remove with #213
 
 
 def _imports(path):
@@ -37,7 +35,7 @@ def _offenders(packages, forbidden):
 
 
 def test_the_lower_packages_never_import_the_commands():
-    assert _offenders(LOWER, "door.commands") == EXCEPTIONS
+    assert _offenders(LOWER, "door.commands") == set()
 
 
 def test_the_lower_packages_never_import_the_pipeline():
