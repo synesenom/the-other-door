@@ -7,7 +7,7 @@ Conventions used below:
 - `named(text)` swaps "The other door" for a styled `<span class="app-name">`. The text content stays the same, so `getByText` still matches.
 - Every server error reaches the window as `ApiError.message`, and `errorText(e)` returns that message unchanged. There are three ways to fail:
   1. **Expected core error.** `{"error": str(exc)}` comes back from `_tool_errors` (ValueError, LookupError, FileNotFoundError, ConfigError, CompaniesError, LockHeldError, ClaudeError, DriveError, SyncConflict…). The message is the exception text.
-  2. **FastMCP argument validation or an unexpected exception** (e.g. OSError). The result is `isError`, and the text is `Error executing tool <tool>: <pydantic or exception text>`, which can run to several lines.
+  2. **MCPServer argument validation or an unexpected exception** (e.g. OSError). The result is `isError`, and the text is `Error executing tool <tool>: <pydantic or exception text>`, which can run to several lines.
   3. **Transport errors** (door-server.ts):
      - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 660 s, market 180 s.
      - `The other door's server stopped; try again`: the child process died.
@@ -365,7 +365,7 @@ How the test world produces each part:
 **Surprises and bugs**
 1. **Enrich apply message bug.** The server returns `added` as a list, so the window says "Added [object Object],… to your CV." The unit test mocks a number. — not covered by a journey
 2. **A details Save re-creates a missing `cv.md` as the example CV** (and restores templates) through `_init_core`'s copy step. — ✓ saving the details does not make up a CV
-3. **Bad number typed into "How close a match to show"** (or emptied) fails FastMCP argument validation. Four raw pydantic lines appear in the top alert instead of under the field. The other numeric fields go through `other` and get a clean under-field message. — not covered by a journey
+3. **Bad number typed into "How close a match to show"** (or emptied) fails MCPServer argument validation. Four raw pydantic lines appear in the top alert instead of under the field. The other numeric fields go through `other` and get a clean under-field message. — not covered by a journey
 4. **Switching CV → Details unmounts CvEditor**, losing unsaved CV text. Leaving Profile loses everything. Neither prompts. — ✓ unsaved CV text survives a look at the details
 5. **CV Save does not refresh App's profile**, so the "You have no CV yet" sidebar line stays stale. — ✓ the sidebar line goes once the first CV is saved
 6. **Market "Add these titles"** does not refresh the Details form (stale values that a later details Save can overwrite). It also seeds an empty `search_keywords` with the role targets. — not covered by a journey; the seeding is right (the role targets are what an empty list searches for): unit: `tests/commands/test_market_cli.py`

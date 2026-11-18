@@ -18,9 +18,17 @@ def test_the_three_places_agree():
 
 
 def test_the_server_says_its_version_in_initialize():
+    import asyncio
+
+    from mcp import Client
+
     from door import mcp_server
 
-    assert mcp_server.mcp._mcp_server.create_initialization_options().server_version == version.VERSION
+    async def initialize():
+        async with Client(mcp_server.mcp) as client:
+            return client.server_info.version
+
+    assert asyncio.run(initialize()) == version.VERSION
 
 
 def test_set_version_changes_all_three(tmp_path):

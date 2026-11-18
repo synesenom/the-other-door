@@ -314,17 +314,17 @@ def test_the_tool_is_a_writing_tool_the_phone_does_not_get_and_answers_in_words(
 @pytest.mark.parametrize("arguments", [{}, {"choice": "current"}])
 def test_the_tool_without_a_style_refuses_and_changes_nothing(home, cli_env, arguments):
     """#252: a misnamed argument was dropped and the default ``like`` applied, against the user's pick."""
-    from mcp.shared.memory import create_connected_server_and_client_session as session
+    from mcp import Client
 
     _folder(cli_env, "style.next", "new")
 
     async def call():
-        async with session(mcp_server.mcp._mcp_server) as client:
+        async with Client(mcp_server.mcp) as client:
             return await client.call_tool("use_style", arguments)
 
     answer = asyncio.run(call())
     text = answer.content[0].text
-    assert answer.isError or "error" in json.loads(text), text
+    assert answer.is_error or "error" in json.loads(text), text
     assert (cli_env.profile_dir / "style.next" / "mark.txt").read_text() == "new" and _keys(cli_env) == (None, None)
     assert not (cli_env.profile_dir / "style").exists()
 
