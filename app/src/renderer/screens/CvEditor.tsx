@@ -339,8 +339,16 @@ export function CvEditor({
     const t = setTimeout(() => void flush(), SAVE_AFTER_MS)
     return () => clearTimeout(t)
   }, [text, saved, profile])
-  // leaving Profile with a pause not yet reached still writes it
-  useEffect(() => () => void flush(), [])
+  // a pause not yet reached is still written when Profile is left, or when the window closes (the app waits for it)
+  const flushRef = useRef(flush)
+  flushRef.current = flush
+  useEffect(() => {
+    const unregister = window.door.onBeforeClose(() => flushRef.current())
+    return () => {
+      unregister()
+      void flushRef.current()
+    }
+  }, [])
   /** The editor left: written now, and the style previews (made from the CV) and the app read it again. */
   const leave = async () => {
     const before = savedRef.current

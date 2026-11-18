@@ -106,6 +106,13 @@ describe('CvEditor', () => {
     await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}x`, backup: true }))
   })
 
+  it('what was typed just before the window closes is saved, and the close waits for it', async () => {
+    const { call, pushBeforeClose } = await open({ save_cv: { cv_path: '/p/cv.md', backup: null } })
+    fireEvent.change(editor(), { target: { value: `${CV}x` } }) // no pause, no blur
+    await pushBeforeClose()
+    expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}x`, backup: true })
+  })
+
   it('the first CV saved has the profile read again, so the sidebar\'s "no CV yet" goes', async () => {
     const { onSaved } = await open({ save_cv: { cv_path: '/p/cv.md', backup: null } }, { exists: false, text: null })
     await userEvent.type(editor(), '# Ada')

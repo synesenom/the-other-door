@@ -38,6 +38,14 @@ test.describe('the editor', () => {
     await expect(saveButton(page)).toBeDisabled()
   })
 
+  test('text typed just before the window is closed is written first', async ({ page, app, world }) => {
+    await editCv(page)
+    const typed = `${world.persona.cv}\n- Typed at the last second\n`
+    await cvBox(page).fill(typed) // no pause, no blur
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close())
+    await expect.poll(() => readText(world, 'profile/cv.md'), { timeout: 10_000 }).toBe(typed)
+  })
+
   test('a failing save says why, keeps the text, and is tried again', async ({ page, world }) => {
     await editCv(page)
     world.faults({ tools: { save_cv: { error: 'profile/cv.md is read-only' } } })
