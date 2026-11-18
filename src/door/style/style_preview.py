@@ -104,11 +104,12 @@ def _fresh(folder: Path, key: str) -> list[str] | None:
 def _make(stage: Path, cv_md: str, lang: str, photo: Path | None, cv_template: Path, letter_template: Path) -> list[str]:
     """Print the CV and the letter into `stage` and the pages of both to images; the file names of the images."""
     columns = (templates.manifest(cv_template) or templates.Manifest()).columns
-    pdf, _, picture = page_mod.print_page(cv_body.body(cv_md, lang), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv",
-                                 columns=columns, photo=photo)
+    pdf, _, picture = page_mod.print_page(
+        cv_body.body(cv_md, lang), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv", columns=columns, photo=photo)
     images = [p.name for p in pdf_render.render_pdf_pages(pdf, stage)]
     # the letter is printed with the CV template's fonts and icons, as `style_build` checks it
-    letter = page_mod.print_page(sample_letter(cv_md), letter_template.read_text(encoding="utf-8"), cv_template, "en", stage, "letter")
+    letter = page_mod.print_page(
+        sample_letter(cv_md), letter_template.read_text(encoding="utf-8"), cv_template, "en", stage, "letter")
     images += [p.name for p in pdf_render.render_pdf_pages(letter[0], stage)]
     if picture:
         (stage / picture).unlink(missing_ok=True)
@@ -141,7 +142,7 @@ def show(home: Path, profile_dir: Path, config: dict) -> dict:
     root = Path(home) / ".style" / "preview"
     cv_md = cv_text(Path(profile_dir), config)
     lang = _language(cv_md)
-    photo = page_mod.profile_photo(config, common._cv_conventions({}, config))
+    photo = page_mod.profile_photo(config, i18n.cv_conventions_for_location(config.get("location")))
     out: dict[str, dict] = {}
     for style in ("default", "like"):
         folder = root / style

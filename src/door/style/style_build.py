@@ -525,8 +525,8 @@ class _Session:
         Raises:
             _Stop: the print has no text to read back.
         """
-        pdf, placed, _ = page_mod.print_page(body, template, self.work / _CV_FILE, "en", self.work, "render",
-                                                columns=self.manifest.columns, photo=self.photo)
+        pdf, placed, _ = page_mod.print_page(
+            body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns, photo=self.photo)
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
