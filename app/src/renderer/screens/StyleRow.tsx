@@ -4,6 +4,7 @@ import { call, errorText, styleUrl } from '../api'
 import { Dialog } from './Dialog'
 import { PageStack } from './PageStack'
 import { Spinner } from './Spinner'
+import { Switch } from './Switch'
 
 type Which = 'default' | 'like'
 interface StyleSet {
@@ -21,10 +22,9 @@ type Doc = 'cv' | 'letter'
 /** After a switch: the prepared CVs the new style could be printed on, asked about, being printed, or done. */
 type Rerender = { kind: 'offer'; prepared: number; style: Which } | { kind: 'busy'; prepared: number; style: Which } | { kind: 'done'; printed: number; failed: number; style: Which }
 
-const NAMES: Record<Which, string> = { like: 'Like your CV', default: "The other door's" }
+const NAMES: Record<Which, string> = { like: 'Your CV', default: 'The other door' }
 const pages = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`
 const noun = (n: number) => `${n} prepared ${n === 1 ? 'CV' : 'CVs'}`
-type Choice = Which | 'current'
 
 /** The full pages of one style in a dialog: a document to read and close. */
 function Pages({ which, set, onClose }: { which: Which; set: StyleSet; onClose: () => void }) {
@@ -50,21 +50,28 @@ function Pages({ which, set, onClose }: { which: Which; set: StyleSet; onClose: 
 }
 
 /**
- * Profile → CV's Style: The other door's style and, once one is built from a CV of the user's, theirs, side by side to
- * compare and choose. `state` is the build's, from the sidebar's summary (the app polls it while a build runs);
- * `onChanged` tells the app a build started or a style was chosen, so the summary is read again; `reload` counts what
- * makes the previews stale (a saved CV). Nothing is said when the previews cannot be made or a build fails (the
- * doctor and the sidebar say what the user can act on), but a file with no style to copy is named.
+ * Profile → CV's Style, a section of its own: its heading with the switch "Use my own style" at its right, then The
+ * other door's style and, once one is built from the user's CV file (Sources), theirs, side by side to compare; the
+ * blue dash sits above the one in use. On with no style of theirs yet, the switch builds one from the CV file and
+ * uses it once ready; off goes back to The other door. A new CV file (`replaced` counts them) builds the style
+ * again from it. `state` is the build's, from the sidebar's summary (the app polls it while a build runs);
+ * `onChanged` tells the app a build started or a style was chosen; `reload` counts what makes the previews stale (a
+ * saved CV). Nothing is said when the previews cannot be made or a build fails later (the doctor and the sidebar say
+ * what the user can act on), but a CV file that cannot be used is named.
  */
-export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none' | 'building' | 'ready' | 'failed' | null; canBuild: boolean; onChanged: () => void; reload: number }) {
+export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: { state: 'none' | 'building' | 'ready' | 'failed' | null; canBuild: boolean; onChanged: () => void; reload: number; replaced?: number }) {
   // null: the first read is still going. A later read keeps what is shown until it answers.
   const [shown, setShown] = useState<Shown | null>(null)
   const [open, setOpen] = useState<Which | null>(null)
   const [busy, setBusy] = useState(false)
-  const [reading, setReading] = useState(false) // the chosen CV's structure is being read, before the build starts
+  const [reading, setReading] = useState(false) // the CV file's structure is being read, before the build starts
+  // the switch was turned on with no style built: the one being built is used once it is ready
+  const [wanted, setWanted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [rerender, setRerender] = useState<Rerender | null>(null)
   const latest = useRef(0)
+  const was = useRef(state)
+  const firstReplaced = useRef(replaced)
   const ids = useId()
 
   const read = async () => {
@@ -76,10 +83,8 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
       answer = { styles: {}, in_use: 'default', candidate: false }
     }
     if (n === latest.current) setShown(answer)
+    return answer
   }
-  useEffect(() => {
-    void read()
-  }, [reload, state])
   useEffect(
     () => () => {
       latest.current++
@@ -87,14 +92,16 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
     [],
   )
 
-  const choose = async () => {
+  const build = async () => {
     setError(null)
     setBusy(true)
     const stop = window.door.onStyleReading(() => setReading(true))
     try {
-      const r = (await window.door.chooseStyleFile()) as { ok: boolean; error?: string; data?: { canceled?: true } }
-      if (!r.ok) setError(r.error ?? 'That file could not be used.')
-      else if (!r.data?.canceled) {
+      const r = (await window.door.styleFromCvFile()) as { ok: boolean; error?: string }
+      if (!r.ok) {
+        setWanted(false)
+        setError(r.error ?? 'Your CV file could not be used.')
+      } else {
         setRerender(null)
         onChanged()
       }
@@ -104,16 +111,19 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
       setReading(false)
     }
   }
-  const use = async (style: Choice) => {
+  const use = async (style: Which) => {
     setError(null)
     setBusy(true)
+    // shown at once: the answer can wait behind the app's other calls; a choice that fails is read back below
+    setShown((s) => s && { ...s, in_use: style, candidate: style === 'like' ? false : s.candidate })
     try {
       const r = await call<{ in_use: Which; prepared: number }>('use_style', { style })
-      setRerender(style !== 'current' && r.prepared > 0 ? { kind: 'offer', prepared: r.prepared, style: r.in_use } : null)
+      setRerender(r.prepared > 0 ? { kind: 'offer', prepared: r.prepared, style: r.in_use } : null)
       onChanged()
       await read()
     } catch (e) {
       setError(errorText(e))
+      void read() // back to what is in use
     } finally {
       setBusy(false)
     }
@@ -130,115 +140,134 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
     }
   }
 
+  // the previews are read on opening, after a save and when the build moves on; a build that ends while the user's
+  // own style is wanted or in use is put in use (it was built from their CV file for that)
+  useEffect(() => {
+    const finished = was.current === 'building' && state === 'ready'
+    was.current = state
+    void read().then((answer) => {
+      if (finished && answer.candidate && (wanted || answer.in_use === 'like')) {
+        setWanted(false)
+        void use('like')
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reload, state])
+
+  // a new CV file: the style of the user's own is built again from it
+  useEffect(() => {
+    if (replaced === firstReplaced.current || !canBuild || !shown?.styles.like) return
+    firstReplaced.current = replaced
+    void build()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replaced])
+
   const building = state === 'building'
+  const held = busy || building || reading
   const sets = shown?.styles ?? {}
   const hasLike = Boolean(sets.like)
   const candidate = Boolean(shown?.candidate)
   const inUse = shown?.in_use ?? 'default'
-  const earlier = candidate && inUse === 'like'
-  const marked = (which: Which) => (which === 'default' ? inUse === 'default' : inUse === 'like' && !candidate)
+  const current = (which: Which) => (which === 'default' ? inUse === 'default' : inUse === 'like' && !candidate)
   const twoColumn = sets.like?.two_column === true
 
-  /** The choices under a style, in the order they are read: what to keep, then what to use. */
-  const actions = (which: Which): [label: string, choice: Choice][] => {
-    if (which === 'like') {
-      if (candidate) return [...(earlier ? ([['Keep my current style', 'current']] as [string, Choice][]) : []), ['Use this style', 'like']]
-      return inUse !== 'like' ? [["Use my CV's style", 'like']] : []
+  const toggle = (on: boolean) => {
+    if (held) return
+    if (!on) {
+      setWanted(false)
+      void use('default')
+    } else if (hasLike) void use('like')
+    else {
+      setWanted(true)
+      void build()
     }
-    return inUse !== 'default' || candidate ? [[inUse === 'default' ? "Keep The other door's" : "Use The other door's", 'default']] : []
   }
 
+  // the blue dash above the sheet in use (docs/design/README.md "The blue dash"); the other keeps its room
   const card = (which: Which) => {
     const set = sets[which]
     if (!set) return null
     const caption = `${ids}-${which}`
     return (
-      <div key={which} className="style-card" role="group" aria-labelledby={caption}>
+      <div key={which} className={current(which) ? 'style-card style-current' : 'style-card'} role="group" aria-labelledby={caption}>
+        <span className="dash style-dash" aria-hidden="true" />
         <button type="button" className="style-thumb" aria-label={`Show ${NAMES[which]} in full`} onClick={() => setOpen(which)}>
           <img className="paper" src={styleUrl(which, set.cv[0]!, set.version)} alt={`${NAMES[which]}, first page`} />
         </button>
         <p className="small style-caption">
           <span id={caption}>{named(NAMES[which])}</span>
-          {marked(which) && <span className="style-mark">In use</span>}
+          {current(which) && <span className="visually-hidden">, in use</span>}
         </p>
-        <div className="style-actions-slot">
-          {actions(which).map(([label, choice]) => (
-            <button key={label} type="button" className="secondary" disabled={busy} onClick={() => void use(choice)}>
-              {named(label)}
-            </button>
-          ))}
-        </div>
       </div>
     )
   }
 
   return (
-    <div className="style-row">
-      <span className="field-label">Style</span>
-      {shown === null ? (
-        <>
-          <div className="style-cards">
-            <div className="style-card" aria-hidden="true">
-              <div className="style-sheet" />
-              <p className="small style-caption"><span>&nbsp;</span></p>
-              <div className="style-actions-slot" />
-            </div>
+    <section className="part" aria-labelledby="profile-cv-style">
+      <div className="part-head part-head-row">
+        <h3 className="label" id="profile-cv-style">
+          Style
+        </h3>
+        {shown !== null && (canBuild || hasLike) && (
+          <div className={held ? 'style-switch style-switch-busy' : 'style-switch'}>
+            <Switch label="Use my own style" checked={inUse === 'like' || wanted} onChange={toggle} />
           </div>
-          <div className="style-below">
-            <Spinner message="Preparing the previews…" />
-          </div>
-        </>
-      ) : (
-        <>
-          {(hasLike || sets.default) && (
+        )}
+      </div>
+      <div className="style-row">
+        {shown === null ? (
+          <>
             <div className="style-cards">
-              {card('default')}
-              {card('like')}
+              <div className="style-card" aria-hidden="true">
+                <span className="dash style-dash" />
+                <div className="style-sheet" />
+                <p className="small style-caption">
+                  <span>&nbsp;</span>
+                </p>
+              </div>
             </div>
-          )}
-          <div className="style-below">
-            {earlier && <p className="small muted">Your earlier style is in use.</p>}
-            {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
-            {!hasLike && !building && canBuild && <p className="small muted">Make your tailored CVs look like a CV of yours. Takes 2–5 minutes in the background.</p>}
-            {building || reading ? (
-              <Spinner message={building ? 'Building your style…' : "Reading your CV's look…"} />
-            ) : (
-              canBuild &&
-              !candidate && (
-                <div className="actions">
-                  <button type="button" className="secondary" disabled={busy} onClick={() => void choose()}>
-                    {hasLike ? 'Use the style of another CV…' : 'Use the style of my CV…'}
-                  </button>
-                </div>
-              )
+            <div className="style-below">
+              <Spinner message="Preparing the previews…" />
+            </div>
+          </>
+        ) : (
+          <>
+            {(hasLike || sets.default) && (
+              <div className="style-cards">
+                {card('default')}
+                {card('like')}
+              </div>
             )}
-          </div>
-          {rerender?.kind === 'offer' && (
-            <div className="style-rerender">
-              <button type="button" className="secondary" onClick={() => void printAgain(rerender.style, rerender.prepared)}>
-                {`Print ${noun(rerender.prepared)} again`}
-              </button>
+            <div className="style-below">
+              {!hasLike && !building && !reading && canBuild && <p className="small muted">Your tailored CVs printed in the style of your CV file. Building it takes 2–5 minutes in the background.</p>}
+              {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
+              {(building || reading) && <Spinner message={building ? 'Building your style…' : "Reading your CV's look…"} />}
             </div>
-          )}
-          {rerender?.kind === 'busy' && <Spinner message="Printing again…" />}
-          {rerender?.kind === 'done' && (
-            <div className="style-rerender">
-              <p role="status" className="small">
-                {`${rerender.printed} printed again.`}
-              </p>
-              {rerender.failed > 0 && (
-                <button type="button" className="secondary" onClick={() => void printAgain(rerender.style, rerender.printed + rerender.failed)}>
-                  Try again
+            {rerender?.kind === 'offer' && (
+              <div className="style-rerender">
+                <button type="button" className="secondary" onClick={() => void printAgain(rerender.style, rerender.prepared)}>
+                  {`Print ${noun(rerender.prepared)} again`}
                 </button>
-              )}
-            </div>
-          )}
-          {error && (
-            <ErrorBox text={error} />
-          )}
-        </>
-      )}
-      {open && sets[open] && <Pages which={open} set={sets[open]!} onClose={() => setOpen(null)} />}
-    </div>
+              </div>
+            )}
+            {rerender?.kind === 'busy' && <Spinner message="Printing again…" />}
+            {rerender?.kind === 'done' && (
+              <div className="style-rerender">
+                <p role="status" className="small">
+                  {`${rerender.printed} printed again.`}
+                </p>
+                {rerender.failed > 0 && (
+                  <button type="button" className="secondary" onClick={() => void printAgain(rerender.style, rerender.printed + rerender.failed)}>
+                    Try again
+                  </button>
+                )}
+              </div>
+            )}
+            {error && <ErrorBox text={error} />}
+          </>
+        )}
+        {open && sets[open] && <Pages which={open} set={sets[open]!} onClose={() => setOpen(null)} />}
+      </div>
+    </section>
   )
 }

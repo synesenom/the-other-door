@@ -8,11 +8,8 @@ import { addChip, argsOf, config, exists, expectChips, narrow, openDetails, save
 const region = (page: import('@playwright/test').Page, name: string) => page.getByRole('region', { name, exact: true })
 
 test.describe('the Details form', () => {
-  test('opens on Details with every section and the saved values', async ({ page, world }) => {
+  test('opens with every section and the saved values', async ({ page, world }) => {
     await openDetails(page)
-    const parts = page.getByRole('group', { name: 'Part of the profile' })
-    await expect(parts.getByRole('button', { name: 'Details', exact: true })).toHaveAttribute('aria-pressed', 'true')
-    await expect(parts.getByRole('button', { name: 'CV', exact: true })).toHaveAttribute('aria-pressed', 'false')
     for (const name of ['About you', 'What to look for', 'What to skip']) await expect(region(page, name)).toBeVisible()
     await expect(page.getByRole('region', { name: 'In profile/config.json only' })).toHaveCount(0)
 
@@ -38,7 +35,7 @@ test.describe('the Details form', () => {
     await expect(page.getByRole('button', { name: 'Undo changes' })).toBeDisabled()
     // the sections aside
     const sections = page.getByRole('navigation', { name: 'Sections' })
-    await expect(sections.getByRole('link')).toHaveText(['About you', 'What to look for', 'What to skip', 'CV', 'Stories'])
+    await expect(sections.getByRole('link')).toHaveText(['About you', 'What to look for', 'What to skip', 'CV', 'Sources', 'CV style', 'CV content', 'Stories'])
   })
 
   test('Save writes the changed text, flag and number fields and nothing else', { tag: '@core' }, async ({ page, world }) => {
@@ -166,13 +163,12 @@ test.describe('Details cannot be read', () => {
     await expect(page.getByRole('region', { name: 'About you' })).toHaveCount(0)
   })
 
-  test('the CV can still be reached when the details cannot be read', async ({ page, world }) => {
+  test('a part that could not be read says so, and the rest of the page is there', async ({ page, world }) => {
     await started(page)
     world.faults({ tools: { show_profile: { error: 'profile/ is not readable', once: true } } })
     await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Profile', exact: true }).click()
     await expect(page.getByRole('alert')).toHaveText('profile/ is not readable')
-    await page.getByRole('group', { name: 'Part of the profile' }).getByRole('button', { name: 'CV', exact: true }).click({ timeout: 3_000 })
-    await expect(page.getByRole('textbox', { name: 'Your CV (Markdown)' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Stories' })).toBeVisible()
   })
 })
 

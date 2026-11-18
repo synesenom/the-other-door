@@ -124,7 +124,7 @@ describe('createWebDoor', () => {
     expect(await door.info()).toEqual({ environment: 'production', remote: true })
     expect(await door.pickCvFiles()).toEqual({ files: [], refused: [] })
     expect(await door.exportData()).toEqual({ ok: false, error: expect.stringMatching(/computer running The other door/) })
-    expect(await door.chooseStyleFile()).toEqual({ ok: false, error: expect.stringMatching(/computer running The other door/) })
+    expect(await door.styleFromCvFile()).toEqual({ ok: false, error: expect.stringMatching(/computer running The other door/) })
   })
 
   it('a target opened before the app listens is held until it does', async () => {

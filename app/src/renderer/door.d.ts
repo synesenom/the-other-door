@@ -20,6 +20,8 @@ declare global {
       dropCvFiles(files: File[]): Promise<PickResult>
       /** Drafts a CV from picked files (by token) and web pages. */
       draftCv(payload: { files: string[]; urls: string[] }): Promise<Envelope>
+      /** The CV file a draft last read, by its name, or null (Profile → CV's Sources). */
+      cvFile(): Promise<string | null>
       /** Forgets the picked files (the wizard closed). */
       clearCvSources(): Promise<void>
       /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (save_photo's answer). */
@@ -27,9 +29,9 @@ declare global {
       savePhoto(token: string): Promise<Envelope>
       /** Start the CV style build from a CV file the wizard read, by its token. */
       buildStyle(token: string): Promise<Envelope>
-      /** Profile → CV: choose a CV PDF in a dialog and start building a style from it; the window names no path. */
-      chooseStyleFile(): Promise<Envelope>
-      /** A file was chosen in `chooseStyleFile`'s dialog and is being read; returns the way to stop. */
+      /** Profile → CV: start building a style from the CV file (Sources); the window names no path. */
+      styleFromCvFile(): Promise<Envelope>
+      /** The CV file was taken by `styleFromCvFile` and is being read; returns the way to stop. */
       onStyleReading(cb: () => void): () => void
       /** Signing in to Claude: the main process runs `claude auth login` and pushes its state. */
       claudeLogin: {

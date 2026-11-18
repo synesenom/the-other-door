@@ -1,6 +1,6 @@
-import { Fragment, useEffect, useId, useRef, useState } from 'react'
+import { Fragment, useEffect, useId, useRef, useState, type MutableRefObject } from 'react'
 import { ErrorBox } from './AppName'
-import { call, errorText } from '../api'
+import { call, draftCv, errorText } from '../api'
 import { Dialog } from './Dialog'
 import { Markdown } from './Markdown'
 import { MarkdownLink } from './MarkdownHelp'
@@ -180,23 +180,31 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
 }
 
 /**
- * Your CV (profile/cv.md): edited as Markdown, with a preview. Save goes through save_cv, which keeps the
- * previous version as cv.md.bak. "Add a page" is /expand as a button; drafting from a CV file is
- * the first launch's CV step (`onDraft`).
+ * Profile → CV, in three parts. Sources: the CV file a draft read, replaced by drafting from another (the draft lands
+ * in the editor, saved only by Save), and the pages the CV is read from ("Add a page" is /expand as a button).
+ * Style: the CV style (StyleRow). Content: profile/cv.md edited as Markdown, with a preview. It has no Save of its
+ * own: Profile's one save bar saves the CV with the rest of the page, through `control` (save_cv keeps the previous
+ * version as cv.md.bak), and hears whether there is anything to save through `onDirty`.
  */
+export interface CvControl {
+  /** Writes the CV; the line to show once saved. Throws what went wrong. */
+  save: () => Promise<string>
+  undo: () => void
+}
+
 export function CvEditor({
   onDraft,
   onSaved,
-  unsaved = null,
-  onUnsaved,
+  onDirty,
+  control,
   style,
 }: {
   onDraft: () => void
   /** cv.md was written: what reads the profile (the sidebar's "no CV yet") reads it again. */
   onSaved?: () => void
-  /** Text typed and not saved when the editor was last shown (Profile keeps it while Details is shown). */
-  unsaved?: string | null
-  onUnsaved?: (text: string | null) => void
+  /** Whether the CV has unsaved text, and whether that text is empty (nothing a Save can write). */
+  onDirty?: (state: { dirty: boolean; empty: boolean }) => void
+  control?: MutableRefObject<CvControl | null>
   /** The CV style: how its build stands (the sidebar's summary), whether one can be built here (not on made-up data),
    * and what to tell the app when a build starts or a style is chosen. */
   style?: { state: 'none' | 'building' | 'ready' | 'failed' | null; canBuild: boolean; onChanged: () => void }
@@ -212,11 +220,16 @@ export function CvEditor({
   const [pagesError, setPagesError] = useState<string | null>(null)
   // What the last "Add … to my CV" put in: tinted in the preview until the next edit or save.
   const [added, setAdded] = useState<string[] | null>(null)
-  const [saving, setSaving] = useState(false)
   // counts the saves: the style previews are made from the CV
   const [saves, setSaves] = useState(0)
+  // what a draft from another CV file asks of the user
   const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // the CV file a draft read, by its name (the main process keeps its path); being drafted from; its error
+  const [cvFile, setCvFile] = useState<string | null>(null)
+  const [drafting, setDrafting] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
+  // counts the CV files drafted from here: the style of the user's own is built again from a new one
+  const [replaced, setReplaced] = useState(0)
   const editorId = useId()
   // A preview marker opens the editor with its gap selected, so typing replaces it (as the onboarding review does).
   const box = useRef<HTMLTextAreaElement>(null)
@@ -254,42 +267,67 @@ export function CvEditor({
     } else document.querySelector('.cv-preview .md-added')?.scrollIntoView?.({ block: 'center' })
   }, [added, view, text.includes(`- ${added?.[0]?.trim()}`)])
 
-  const load = async (first = false) => {
+  const load = async () => {
     try {
       const p = await call<Profile>('show_profile')
       setProfile(p)
       setPages((had) => had ?? (p as Profile).config?.enrich_sources ?? p.enrich_sources ?? [])
       setSaved(p.cv.text ?? '')
-      setText(first && unsaved !== null ? unsaved : (p.cv.text ?? ''))
+      setText(p.cv.text ?? '')
     } catch (e) {
       setLoadError(errorText(e))
     }
   }
   useEffect(() => {
-    void load(true)
+    void load()
+    window.door.cvFile().then(setCvFile, () => undefined)
   }, [])
+
+  /** Another CV file: drafted into the editor, where it is checked and saved like any change. */
+  const replaceFile = async () => {
+    setFileError(null)
+    setMessage(null)
+    const picked = await window.door.pickCvFiles()
+    const refused = picked.refused[0]
+    if (refused) return setFileError(`${refused.name}: ${refused.reason}`)
+    const file = picked.files[0]
+    if (!file) return
+    setDrafting(true)
+    try {
+      const r = await draftCv({ files: [file.token], urls: [] })
+      setAdded(null)
+      setText(r.markdown)
+      setView('edit')
+      setMessage(`Drafted from ${file.name}. Check it below and Save.`)
+      setReplaced((n) => n + 1)
+      window.door.cvFile().then(setCvFile, () => undefined)
+    } catch (e) {
+      setFileError(errorText(e))
+    } finally {
+      setDrafting(false)
+    }
+  }
 
   const dirty = text !== saved
   useEffect(() => {
-    if (profile) onUnsaved?.(dirty ? text : null)
-  }, [profile, text, saved])
-  const save = async () => {
-    setSaving(true)
-    setError(null)
-    setMessage(null)
-    setAdded(null)
-    try {
-      const r = await call<{ backup?: string | null }>('save_cv', { markdown: text })
-      await load()
-      setMessage(r.backup ? 'Saved. The previous version is kept as cv.md.bak.' : 'Saved.')
-      setSaves((n) => n + 1)
-      onSaved?.()
-    } catch (e) {
-      setError(errorText(e))
-    } finally {
-      setSaving(false)
+    if (profile) onDirty?.({ dirty, empty: text.trim() === '' })
+  }, [profile, dirty, text.trim() === ''])
+  if (control)
+    control.current = {
+      save: async () => {
+        const r = await call<{ backup?: string | null }>('save_cv', { markdown: text })
+        setMessage(null)
+        setAdded(null)
+        await load()
+        setSaves((n) => n + 1)
+        onSaved?.()
+        return r.backup ? 'Saved. The previous CV is kept as cv.md.bak.' : 'Saved.'
+      },
+      undo: () => {
+        setMessage(null)
+        setText(saved)
+      },
     }
-  }
 
   if (loadError) return <ErrorBox text={loadError} />
   if (!profile) return <Spinner message="Reading your CV…" />
@@ -310,7 +348,7 @@ export function CvEditor({
       {/* the wizard may end with no CV; the example CV is never copied in, so only a developer's hand-made profile has it */}
       {!profile.cv.exists && (
         <div role="note" className="cv-example small">
-          <span>You have no CV yet. Write it here, or </span>
+          <span>You have no CV yet. Choose your CV file under Sources, write it under Content, or </span>
           <button type="button" className="link-inline" onClick={onDraft}>
             Draft it from your CV file or pages
           </button>
@@ -321,105 +359,115 @@ export function CvEditor({
           profile/cv.md could not be read as text (it may be in another encoding, or not text at all). What you save here replaces it; the file as it is now is kept as cv.md.bak.
         </p>
       )}
-      {/* the pages the CV is read from, above it: each can be forgotten; a page added, or all read again, by the buttons under them */}
-      {remembered.length > 0 && (
+      <section className="part" aria-labelledby="profile-cv-sources">
+        <h3 className="label" id="profile-cv-sources">
+          Sources
+        </h3>
+        {/* the CV file: named, replaced by drafting from another one */}
         <div className="cv-pages">
-          <span className="field-label cv-pages-label">Pages</span>
-          <ul className="cv-pages-list" aria-label="Pages your CV is read from">
-            {remembered.map((u) => (
-              <li key={u} className="chip small">
-                <span className="chip-text" title={u}>
-                  {u.replace(/^https?:\/\//, '')}
-                </span>
-                <button type="button" className="chip-x" aria-label={`Forget ${u}`} onClick={() => void keepPages(remembered.filter((x) => x !== u))}>
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <div className="actions">
-        <button type="button" className="secondary" disabled={dirty} onClick={() => { setMessage(null); setPanel('page') }}>
-          Add a page
-        </button>
-        {remembered.length > 0 && (
-          <button type="button" className="secondary" disabled={dirty} onClick={() => { setMessage(null); setPanel('again') }}>
-            Check again
-          </button>
-        )}
-      </div>
-      {dirty && <p className="small muted">Save or undo your changes before adding from a page.</p>}
-      {pagesError && (
-        <ErrorBox text={pagesError} />
-      )}
-      {(panel === 'page' || panel === 'again') && (
-        <Expand
-          key={panel}
-          again={panel === 'again'}
-          pages={remembered}
-          blocked={dirty}
-          onRead={(url) => !remembered.includes(url) && void keepPages([...remembered, url])}
-          onClose={() => setPanel(null)}
-          onAdded={(texts) => {
-            setPanel(null)
-            void load()
-            setAdded(texts)
-          }}
-        />
-      )}
-      {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} />}
-      {/* the CV: its name, with the Preview switch on the right, then the text or how it reads */}
-      <div className="cv-head">
-        <div className="field-name">
-          <label htmlFor={editorId} className="field-label">
-            Your CV
-          </label>
-          {/* a link like the pages' ones: small, not the label's weight */}
-          <span className="small muted">
-            (<MarkdownLink />)
-          </span>
-        </div>
-        <Switch label="Preview" checked={view === 'preview'} onChange={(on) => setView(on ? 'preview' : 'edit')} />
-      </div>
-      {view === 'edit' ? (
-        // an added line is a bullet, "- text", under its section: the copy behind the editor tints those lines
-        <div className="cv-text-wrap">
-          {added && added.length > 0 && (
-            <div ref={backdrop} className="cv-text cv-backdrop" aria-hidden="true">
-              {text.split('\n').map((line, i) => (
-                <Fragment key={i}>
-                  {added.some((a) => line.trim() === `- ${a.trim()}`) ? <mark className="md-added">{line}</mark> : line}
-                  {'\n'}
-                </Fragment>
-              ))}
-            </div>
+          <span className="field-label cv-pages-label">CV file</span>
+          {cvFile ? <span className="small">{cvFile}</span> : <span className="small muted">No CV file yet</span>}
+          {drafting ? (
+            <Spinner message="Reading your CV file (a minute or two)…" />
+          ) : (
+            <button type="button" className="secondary" disabled={dirty} onClick={() => void replaceFile()}>
+              {cvFile ? 'Replace…' : 'Choose a CV file…'}
+            </button>
           )}
-          <textarea ref={box} id={editorId} aria-label="Your CV (Markdown)" className="cv-text" spellCheck value={text}
-            onScroll={(e) => backdrop.current && (backdrop.current.scrollTop = e.currentTarget.scrollTop)}
-            onChange={(e) => {
-              setMessage(null)
-              setAdded(null)
-              setText(e.target.value)
-            }} />
         </div>
-      ) : (
-        <Markdown text={text} className="cv-preview" onGap={goToGap} marked={added ?? undefined} />
-      )}
-      <div className="profile-save">
-        {/* always there, so Save does not move when the first change makes Undo possible */}
-        <button type="button" className="quiet" disabled={!dirty || saving} onClick={() => setText(saved)}>
-          Undo changes
-        </button>
-        <button type="button" className="primary" disabled={!dirty || saving || text.trim() === ''} onClick={() => void save()}>
-          Save
-        </button>
-        {saving ? <Spinner message="Saving…" /> : message ? <p className="small">{message}</p> : dirty ? <p className="small muted">Unsaved changes</p> : null}
-        {/* no field's error: the box, in the bar on a line of its own, so it is seen from wherever Save was pressed */}
-        {error && (
-          <ErrorBox text={error} />
+        {message && <p className="small">{message}</p>}
+        {fileError && <ErrorBox text={fileError} />}
+        {/* the pages the CV is read from, above it: each can be forgotten; a page added, or all read again, by the buttons under them */}
+        {remembered.length > 0 && (
+          <div className="cv-pages">
+            <span className="field-label cv-pages-label">Pages</span>
+            <ul className="cv-pages-list" aria-label="Pages your CV is read from">
+              {remembered.map((u) => (
+                <li key={u} className="chip small">
+                  <span className="chip-text" title={u}>
+                    {u.replace(/^https?:\/\//, '')}
+                  </span>
+                  <button type="button" className="chip-x" aria-label={`Forget ${u}`} onClick={() => void keepPages(remembered.filter((x) => x !== u))}>
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
-      </div>
+        <div className="actions">
+          <button type="button" className="secondary" disabled={dirty} onClick={() => { setMessage(null); setPanel('page') }}>
+            Add a page
+          </button>
+          {remembered.length > 0 && (
+            <button type="button" className="secondary" disabled={dirty} onClick={() => { setMessage(null); setPanel('again') }}>
+              Check again
+            </button>
+          )}
+        </div>
+        {dirty && <p className="small muted">Save or undo your changes before adding from a page or another file.</p>}
+        {pagesError && (
+          <ErrorBox text={pagesError} />
+        )}
+        {(panel === 'page' || panel === 'again') && (
+          <Expand
+            key={panel}
+            again={panel === 'again'}
+            pages={remembered}
+            blocked={dirty}
+            onRead={(url) => !remembered.includes(url) && void keepPages([...remembered, url])}
+            onClose={() => setPanel(null)}
+            onAdded={(texts) => {
+              setPanel(null)
+              void load()
+              setAdded(texts)
+            }}
+          />
+        )}
+      </section>
+      {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
+      <section className="part" aria-labelledby="profile-cv-content">
+        <h3 className="label" id="profile-cv-content">
+          Content
+        </h3>
+        {/* the CV: its name, with the Preview switch on the right, then the text or how it reads */}
+        <div className="cv-head">
+          <div className="field-name">
+            <label htmlFor={editorId} className="field-label">
+              Your CV
+            </label>
+            {/* a link like the pages' ones: small, not the label's weight */}
+            <span className="small muted">
+              (<MarkdownLink />)
+            </span>
+          </div>
+          <Switch label="Preview" checked={view === 'preview'} onChange={(on) => setView(on ? 'preview' : 'edit')} />
+        </div>
+        {view === 'edit' ? (
+          // an added line is a bullet, "- text", under its section: the copy behind the editor tints those lines
+          <div className="cv-text-wrap">
+            {added && added.length > 0 && (
+              <div ref={backdrop} className="cv-text cv-backdrop" aria-hidden="true">
+                {text.split('\n').map((line, i) => (
+                  <Fragment key={i}>
+                    {added.some((a) => line.trim() === `- ${a.trim()}`) ? <mark className="md-added">{line}</mark> : line}
+                    {'\n'}
+                  </Fragment>
+                ))}
+              </div>
+            )}
+            <textarea ref={box} id={editorId} aria-label="Your CV (Markdown)" className="cv-text" spellCheck value={text}
+              onScroll={(e) => backdrop.current && (backdrop.current.scrollTop = e.currentTarget.scrollTop)}
+              onChange={(e) => {
+                setMessage(null)
+                setAdded(null)
+                setText(e.target.value)
+              }} />
+          </div>
+        ) : (
+          <Markdown text={text} className="cv-preview" onGap={goToGap} marked={added ?? undefined} />
+        )}
+      </section>
     </div>
   )
 }

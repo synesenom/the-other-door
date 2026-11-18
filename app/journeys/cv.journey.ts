@@ -9,8 +9,6 @@ import { cvBox, exists, openCv, readText, saveButton, started, writeText } from 
 test.describe('the editor', () => {
   test('opens on the CV as saved, with no note', async ({ page, world }) => {
     await openCv(page)
-    const parts = page.getByRole('group', { name: 'Part of the profile' })
-    await expect(parts.getByRole('button', { name: 'CV', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await expect(cvBox(page)).toHaveValue(world.persona.cv)
     await expect(page.getByRole('note')).toHaveCount(0)
     await expect(page.getByRole('switch', { name: 'Preview' })).toHaveAttribute('aria-checked', 'false')
@@ -23,19 +21,19 @@ test.describe('the editor', () => {
     writeText(world, 'profile/cv.draft.md', '# A draft from the wizard\n') // a draft left over is done with
     await openCv(page)
     await cvBox(page).fill(`${world.persona.cv}\n- Danish driving licence B\n`)
-    await expect(page.getByText('Unsaved changes', { exact: true })).toBeVisible()
-    await expect(page.getByText('Save or undo your changes before adding from a page.')).toBeVisible()
+    await expect(page.getByText('1 unsaved change', { exact: true })).toBeVisible()
+    await expect(page.getByText('Save or undo your changes before adding from a page or another file.')).toBeVisible()
     await saveButton(page).click()
-    await expect(page.getByText('Saved. The previous version is kept as cv.md.bak.')).toBeVisible()
+    await expect(page.getByText('Saved. The previous CV is kept as cv.md.bak.')).toBeVisible()
     expect(readText(world, 'profile/cv.md')).toBe(`${world.persona.cv}\n- Danish driving licence B\n`)
     expect(readText(world, 'profile/cv.md.bak')).toBe(world.persona.cv)
     expect(world.toolCalls('save_cv')).toHaveLength(1)
     expect(exists(world, 'profile/cv.draft.md')).toBe(false)
     await expect(saveButton(page)).toBeDisabled()
-    await expect(page.getByText('Save or undo your changes before adding from a page.')).toHaveCount(0)
+    await expect(page.getByText('Save or undo your changes before adding from a page or another file.')).toHaveCount(0)
     // typing again clears the message
     await cvBox(page).press('x')
-    await expect(page.getByText('Saved. The previous version is kept as cv.md.bak.')).toHaveCount(0)
+    await expect(page.getByText('Saved. The previous CV is kept as cv.md.bak.')).toHaveCount(0)
   })
 
   test('a failing save says why and keeps the text', async ({ page, world }) => {
@@ -48,17 +46,20 @@ test.describe('the editor', () => {
     expect(readText(world, 'profile/cv.md')).toBe(world.persona.cv)
     world.clearFaults()
     await saveButton(page).click()
-    await expect(page.getByText('Saved. The previous version is kept as cv.md.bak.')).toBeVisible()
+    await expect(page.getByText('Saved. The previous CV is kept as cv.md.bak.')).toBeVisible()
     await expect(page.getByRole('alert')).toHaveCount(0)
     expect(readText(world, 'profile/cv.md')).toBe('# Mette\n')
   })
 
-  test('unsaved CV text survives a look at the details', async ({ page }) => {
+  test('one Save writes a change of the details and the CV together', async ({ page, world }) => {
     await openCv(page)
     await cvBox(page).fill('# Mette, rewritten\n')
-    await page.getByRole('group', { name: 'Part of the profile' }).getByRole('button', { name: 'Details', exact: true }).click()
-    await page.getByRole('group', { name: 'Part of the profile' }).getByRole('button', { name: 'CV', exact: true }).click()
-    await expect(cvBox(page)).toHaveValue('# Mette, rewritten\n', { timeout: 5_000 })
+    await page.getByLabel('Name', { exact: true }).fill('Mette B')
+    await expect(page.getByText('2 unsaved changes', { exact: true })).toBeVisible()
+    await saveButton(page).click()
+    await expect(page.getByText('Saved. The previous CV is kept as cv.md.bak.')).toBeVisible()
+    expect(readText(world, 'profile/cv.md')).toBe('# Mette, rewritten\n')
+    expect(JSON.parse(readText(world, 'profile/config.json')).name).toBe('Mette B')
   })
 
   test('a cv.md that cannot be read as text is said, not shown as an empty CV', async ({ page, world }) => {
@@ -93,7 +94,7 @@ test.describe('no CV yet', () => {
   test('the sidebar line opens the CV, which says there is none', async ({ page, world }) => {
     await started(page)
     await page.getByRole('group', { name: 'Needs you' }).getByRole('button', { name: 'You have no CV yet' }).click()
-    await expect(page.getByRole('note')).toHaveText('You have no CV yet. Write it here, or Draft it from your CV file or pages')
+    await expect(page.getByRole('note')).toHaveText('You have no CV yet. Choose your CV file under Sources, write it under Content, or Draft it from your CV file or pages')
     await expect(cvBox(page)).toHaveValue('')
     await expect(saveButton(page)).toBeDisabled()
     expect(exists(world, 'profile/cv.md')).toBe(false)

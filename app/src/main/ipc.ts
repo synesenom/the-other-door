@@ -33,6 +33,8 @@ export const CHANNELS = {
   pickCvFiles: 'door:pick-cv-files',
   dropCvFiles: 'door:drop-cv-files',
   draftCv: 'door:draft-cv',
+  /** The CV file's name (Profile → CV's Sources), or null. */
+  cvFile: 'door:cv-file',
   clearCvSources: 'door:cv-sources-clear',
   /** The CV photo (photo-file.ts): a picture chosen in main, then saved by its token. */
   pickPhoto: 'door:pick-photo',
@@ -40,7 +42,7 @@ export const CHANNELS = {
   /** The CV style build: a CV file the wizard read, by its token. */
   buildStyle: 'door:build-style',
   /** A CV chosen from Profile → CV to build a style from: the dialog and the build both run in main (style-file.ts). */
-  chooseStyleFile: 'door:choose-style-file',
+  styleFromCvFile: 'door:style-from-cv-file',
   /** Sent to the window once a file is chosen for it, before its structure is read. */
   styleReading: 'door:style-reading',
   /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
@@ -225,7 +227,7 @@ export function registerIpc(
     /** The CV photo's file (photo-file.ts). */
     photoFile?: Pick<PhotoFile, 'pick' | 'take'>
     /** The CV a style is built from (style-file.ts). */
-    styleFile?: Pick<StyleFile, 'choose' | 'remember'>
+    styleFile?: Pick<StyleFile, 'current' | 'remember' | 'name'>
     /** The problem log (problem-log.ts): what the window was refused. */
     problemLog?: ProblemLog
     /** The update check (updates.ts). */
@@ -368,7 +370,7 @@ export function registerIpc(
     }
     try {
       const data = await server.call('draft_cv', { sources: [...paths, ...urls] }, { timeout: TOOL_TIMEOUTS['draft_cv'] })
-      await rememberStyleSource(data)
+      await rememberCvFile(data)
       return { ok: true, data: withTokens(data, files) }
     } catch (e) {
       return failureEnvelope(e)
@@ -387,18 +389,20 @@ export function registerIpc(
     }
   })
 
-  // The first file the draft read that has a style to copy: Profile → CV's dialog opens there.
-  const rememberStyleSource = async (data: unknown): Promise<void> => {
+  // The CV file: the first file the draft read that has a style to copy, else the first file it read. Profile → CV's
+  // Sources names it, and a style is built from it.
+  const rememberCvFile = async (data: unknown): Promise<void> => {
     if (!deps.styleFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
-    const source = data['sources'].find((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && s['style'] === true)
-    if (isPlainObject(source) && typeof source['source'] === 'string') await deps.styleFile.remember(source['source'])
+    const files = data['sources'].filter((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && typeof s['source'] === 'string') as { source: string; style?: boolean }[]
+    const file = files.find((s) => s.style === true) ?? files[0]
+    if (file) await deps.styleFile.remember(file.source)
   }
+  ipcMain.handle(CHANNELS.cvFile, async (): Promise<string | null> => (deps.styleFile ? deps.styleFile.name() : null))
 
-  // A style built from a CV chosen in Profile → CV: the dialog and the build both here; the window names no path.
-  ipcMain.handle(CHANNELS.chooseStyleFile, async (event): Promise<Envelope> => {
+  // A style built from the CV file (Profile → CV): the file and the build both here; the window names no path.
+  ipcMain.handle(CHANNELS.styleFromCvFile, async (event): Promise<Envelope> => {
     if (!deps.styleFile) return { ok: false, error: 'A style cannot be built here.' }
-    const chosen = await deps.styleFile.choose()
-    if ('canceled' in chosen) return { ok: true, data: { canceled: true } }
+    const chosen = await deps.styleFile.current()
     if ('error' in chosen) return { ok: false, error: chosen.error }
     ;(event as { sender?: { send(channel: string): void } } | undefined)?.sender?.send(CHANNELS.styleReading)
     try {
