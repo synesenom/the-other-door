@@ -24,6 +24,33 @@ npm run dev        # opens the window; starts ../.venv/bin/python -m door.mcp_se
 `DOOR_PYTHON` names another interpreter; `DOOR_HOME` points the server at another
 data folder (the default is the checkout's `profile/` and `jobs/`).
 
+## Environments
+
+The app runs in one of three environments, and only these three (`src/main/environments.ts`). A fourth is not
+added: a new need is a start of one of them (like the sandbox's `:empty`), not a new mode.
+
+| Environment | Start it with | Data | What is real |
+|---|---|---|---|
+| **Production** | the installed app, or `npm run dev` | yours: the data folder (`DOOR_HOME`, else the checkout's `profile/` and `jobs/`) and your Google Drive archive | everything |
+| **Staging** | `npm run dev:staging`, `:fresh` empties it first | a throwaway folder, `app/.staging/`, kept between starts | everything but Google Drive: real runs, the wizard, the CV style build, Prepare, on your Claude plan |
+| **Sandbox** | `npm run dev:sandbox` (made-up data, kept), `:fresh` (made again), `:empty` (empty: the wizard opens) | `app/.sandbox/`: the example profile (Jane Doe) and nine finance jobs in every state (`src/main/sandbox.ts`), or nothing | everything but Google Drive and "Find new jobs", which plays a simulated run of about 20 s (`src/main/demo-run.ts`: no network, no claude) adding two made-up matches; the wizard installs nothing |
+
+Use staging to try a feature for real from a fresh start; use the sandbox to look at every screen in every state, or to
+try the first launch, without waiting on job boards. In both, the server's `DOOR_HOME` and the config folders that hold
+the Drive connection point inside the folder, the main process refuses the Drive tools (Settings says Drive is not
+available, the wizard does not offer it), and the sidebar and the window title say Staging or Sandbox. `HOME` stays
+yours, so `claude` is signed in and runs on your plan. Both refuse a folder that is or holds the checkout's real data.
+Delete the folder when you are done. A packaged app is always production.
+
+For tests (an unpackaged built app): `DOOR_SANDBOX_DIR` starts the sandbox in that folder, `DOOR_SANDBOX_EMPTY=1`
+starts it empty, `DOOR_SANDBOX_RUN_MS` sets the simulated run's length, `DOOR_SANDBOX_DISCOVERY=off` seeds a profile
+with every discovery source off (the README's GIF), and `DOOR_SANDBOX_SIGNED_OUT=1` gives the sandbox a Claude config
+folder of its own (`<folder>/.claude`), so it starts signed out and "Sign in with Claude" can be tried without touching
+your login (`CLAUDE_CONFIG_DIR=app/.sandbox/.claude claude auth logout` signs it out again).
+
+`npm run dev:preview` (below) and the journeys' test world (`app/test/world/`) are test tools, not environments: the
+first draws screens from saved answers, the second is a fake world the automated tests drive.
+
 ## Work on one screen (`npm run dev:preview`)
 
 `npm run dev:preview` serves the real screens in a browser tab at <http://localhost:5199/>, on made-up data: no Electron,
@@ -37,10 +64,10 @@ which comes back after a reload:
 ```
 
 Edits hot reload and keep the screen's state. After changing `docs/design/tokens.json`, run `npm run gen-theme`.
-The answers are `src/preview/fixtures.json` (the real server's answers on the demo data, with a closed application added) and
+The answers are `src/preview/fixtures.json` (the real server's answers on the sandbox's made-up data, with a closed application added) and
 `src/preview/mock-door.ts`; `src/preview/preview.test.tsx` renders every scene in every state, so a fixture a screen can no longer
 read fails the tests. Only this dev server loads `src/preview/`: no build includes it. For dialogs, Drive, or anything in the main
-process, use `npm run dev:demo`.
+process, use the sandbox (`npm run dev:sandbox`).
 
 ## The bundle a packaged app carries (#223)
 
@@ -127,7 +154,7 @@ One version for *The other door* and the app: `python3 scripts/set_version.py 0.
 `.github/workflows/release.yml` builds macOS (Apple silicon), Windows and Linux, runs the unit tests
 (off Linux, where `app.yml` runs them) and the packaged smoke test on each, and uploads the installers to a **draft** release of this repo (the
 workflow's own token writes it; run by hand, Actions → Release → Run workflow, it is a dry run that uploads to no release, the installers kept as run artifacts: do it before tagging); publish it only after the checklist in [docs/releasing.md](../docs/releasing.md)
-passed: a clean-machine install on each system, the release notes, the download link. Installed apps update from the published release (#17, `src/main/updates.ts`): a signed macOS build (the packed `package.json`'s `doorSigned`, set by `electron-builder.config.cjs` when the certificate and notarization are there), the Windows installer and the AppImage download the next version in the background through `electron-updater` (`latest*.yml`, the mac `.zip`, blockmaps; the release workflow uploads them) and install it on restart (the phone server and a running CV style build are stopped first, `src/main/phone-update.ts`, #77, #215; a Tailscale phone server starts again with the new version, a style build has to be started again); an unsigned macOS build and the `.deb` read GitHub's `releases/latest` and link to its page; a checkout and the demo do nothing. `DOOR_UPDATES=off` keeps a packaged app from checking; `test:package` and `test:install` set it, nothing else should.
+passed: a clean-machine install on each system, the release notes, the download link. Installed apps update from the published release (#17, `src/main/updates.ts`): a signed macOS build (the packed `package.json`'s `doorSigned`, set by `electron-builder.config.cjs` when the certificate and notarization are there), the Windows installer and the AppImage download the next version in the background through `electron-updater` (`latest*.yml`, the mac `.zip`, blockmaps; the release workflow uploads them) and install it on restart (the phone server and a running CV style build are stopped first, `src/main/phone-update.ts`, #77, #215; a Tailscale phone server starts again with the new version, a style build has to be started again); an unsigned macOS build and the `.deb` read GitHub's `releases/latest` and link to its page; a checkout, staging and the sandbox do nothing. `DOOR_UPDATES=off` keeps a packaged app from checking; `test:package` and `test:install` set it, nothing else should.
 
 For signed builds add
 `MAC_CERTIFICATE`/`MAC_CERTIFICATE_PASSWORD` (Developer ID Application, `.p12` in base64), `APPLE_ID`,
@@ -140,15 +167,15 @@ before opening it, Windows SmartScreen warns once.
 | Command | What it does |
 |---|---|
 | `npm run dev` / `npm run build` | run / build with electron-vite (`predev`, `prebuild` regenerate the theme) |
-| `npm run dev:demo` / `npm run dev:demo:fresh` | run on made-up data instead of yours: the example profile (Jane Doe) and nine finance jobs in every state (new matches, one in Danish, prepared with pages, applied, in a screening interview, discarded), built once in `app/.demo/` (gitignored; `:fresh` builds it again). The server's `DOOR_HOME` and the config folders that hold the Drive connection point inside it, so nothing reaches your `profile/`, `jobs/` or Drive archive (Settings shows Drive as not available, and the main process refuses the Drive tools on made-up data); `HOME` stays yours, so Prepare and Revise still call your signed-in `claude` (your plan). The sidebar and the window title say Demo. "Find new jobs" there plays a simulated run (about 20 s, `src/main/demo-run.ts`: no network, no claude) that adds two new matches. `DOOR_DEMO_DIR` names another demo folder (an unpackaged app only; `seedDemo` still refuses the checkout's real data) and `DOOR_DEMO_RUN_MS` the run's length: the e2e test uses both. |
-| `npm run dev:onboard` | try the first launch: the app on an empty folder, `app/.onboard/` (gitignored), made again on every start, so the wizard always starts from nothing. Like the demo, the server's `DOOR_HOME` and the Drive config folders point inside it (`demoEnv`; `resetOnboard` refuses the checkout's real data) and `HOME` stays yours, so the reading step calls your signed-in `claude`. "Find new jobs" is the simulated run of the demo (no network, no claude). The sidebar and the window title say Onboarding sandbox. `DOOR_ONBOARD_DIR` names another folder (an unpackaged app only; the e2e test uses it), `DOOR_ONBOARD_SIGNED_OUT=1` gives it a Claude config folder of its own (`CLAUDE_CONFIG_DIR=<folder>/.claude`), so it starts signed out without touching your login and "Sign in with Claude" can be tried for real (that folder keeps its login across restarts; `CLAUDE_CONFIG_DIR=app/.onboard/.claude claude auth logout` signs it out). |
-| `npm run build:web` / `npm run test:web` | the phone app (issue 303): the same renderer behind `src/web/` (`bridge.ts` is `window.door` over `door serve`'s `/mcp`, `Pair.tsx` trades a pairing code for the device token kept in IndexedDB, `Web.tsx` shows the pair screen or the desktop `App`; `remote.ts` tells the screens they run on a phone), built by `vite.web.config.mts` into `out/web`, which `./door serve` serves. `test:web` runs `e2e-web/` against a real `door serve` on the demo's made-up data in a phone-sized Electron window (`browser.cjs`, its own storage) at several narrow, tall sizes; `serve-fixture.ts` is the one file under `app/` the guard lets start *The other door*. |
-| `npm run record:phone-gif` | re-record `docs/demo/phone.gif`: `demo-record/phone.record.ts` drives the phone app against a real `door serve` on the demo's made-up data (360 wide, its own storage), through the demo shim (fake boards, canned scores and CV), so Find new jobs and Prepare play out without the network or Claude; its frames are Chromium's screencast (a frame per repaint), which `app_gif.py --width 360` makes into the GIF and `scripts/demo/video_from_frames.py` into an .mp4 (needs an ffmpeg: `imageio-ffmpeg`'s or one on PATH). |
-| `npm run record:gif` | re-record the README's `docs/demo/app.gif`: the built app on the demo's made-up data in a temp folder (never `app/.demo`), driven by `demo-record/app.record.ts` (Playwright; the stand-in claude, light theme by emulation, a drawn cursor), its screencast frames turned into the GIF by `scripts/demo/app_gif.py` (Pillow, from Poetry). Not a test; CI never runs it. |
+| `npm run dev:staging` / `:fresh` | staging: the real app on a throwaway folder (see Environments) |
+| `npm run dev:sandbox` / `:fresh` / `:empty` | the sandbox: made-up data or an empty folder, a simulated run (see Environments) |
+| `npm run build:web` / `npm run test:web` | the phone app (issue 303): the same renderer behind `src/web/` (`bridge.ts` is `window.door` over `door serve`'s `/mcp`, `Pair.tsx` trades a pairing code for the device token kept in IndexedDB, `Web.tsx` shows the pair screen or the desktop `App`; `remote.ts` tells the screens they run on a phone), built by `vite.web.config.mts` into `out/web`, which `./door serve` serves. `test:web` runs `e2e-web/` against a real `door serve` on the sandbox's made-up data in a phone-sized Electron window (`browser.cjs`, its own storage) at several narrow, tall sizes; `serve-fixture.ts` is the one file under `app/` the guard lets start *The other door*. |
+| `npm run record:phone-gif` | re-record `docs/demo/phone.gif`: `demo-record/phone.record.ts` drives the phone app against a real `door serve` on the sandbox's made-up data (360 wide, its own storage), through the demo shim (fake boards, canned scores and CV), so Find new jobs and Prepare play out without the network or Claude; its frames are Chromium's screencast (a frame per repaint), which `app_gif.py --width 360` makes into the GIF and `scripts/demo/video_from_frames.py` into an .mp4 (needs an ffmpeg: `imageio-ffmpeg`'s or one on PATH). |
+| `npm run record:gif` | re-record the README's `docs/demo/app.gif`: the built app on the sandbox's made-up data in a temp folder (never `app/.sandbox`), driven by `demo-record/app.record.ts` (Playwright; the stand-in claude, light theme by emulation, a drawn cursor), its screencast frames turned into the GIF by `scripts/demo/app_gif.py` (Pillow, from Poetry). Not a test; CI never runs it. |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | vitest unit tests: no Python, no network (what CI runs) |
 | `npm run test:integration` | the real Python server on a generated `DOOR_HOME` (`test/home-fixture.ts`; `buildHome({ prepared: 'jobindex.123' })` adds a finished prepare from `test/fixtures/prepared/`: a 2-page CV, a 1-page letter, their page images and `.html` bodies) with isolated `HOME` and a stand-in `claude` first on `PATH` (it fails and leaves `claude-was-called` in the scratch folder, so a test never reaches your real one); skips with a message when there is no `.venv` or `DOOR_PYTHON` |
-| `npm run test:e2e` | builds, then the Playwright smoke tests (`e2e/`) drive the built app in the two modes the journeys never start, the demo's simulated run and the onboarding sandbox, against the real server on a temp `DOOR_HOME` (Python as above; skips with a message without it). CI runs it under `xvfb-run` |
+| `npm run test:e2e` | builds, then the Playwright smoke tests (`e2e/`) drive the built app in the sandbox, which the journeys never start (its simulated run, and the first launch on an empty sandbox), against the real server on a temp `DOOR_HOME` (Python as above; skips with a message without it). CI runs it under `xvfb-run` |
 | `npm run test:journeys` | builds, then every journey (`journeys/`): each user action in the built app against the real server in a test world (`test/world/`), the screen and the data checked after each (`journeys/README.md`). CI runs all of them on each PR and on main, split over four runners and retried once: a journey that passes only on its retry is reported flaky, not failed (#121) |
 | `npm run test:journeys:core` | builds, then only the journeys tagged `@core` (the main paths): the quick local check before a push |
 | `npm run test:install` | install this system's installer from `dist/` (or `DOOR_INSTALLER`) the user's way, then set-up, the first run and Prepare in the installed app, then uninstall; CI runs it on every installer ("The install test" above) |
@@ -232,4 +259,4 @@ renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-serv
 - Matches and Applications are live, with Prepare, Ready to send, Revise and Undo. A real
   Prepare and a real Revise need the `claude` command line and Chromium, so no test runs
   them (vitest covers their states with a mocked bridge); try them by hand. A real `find_jobs` run is never started by a test (it reads
-  the network and calls `claude`); the demo's simulated run and the run board are what the tests cover.
+  the network and calls `claude`); the sandbox's simulated run and the run board are what the tests cover.

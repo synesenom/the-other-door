@@ -1,12 +1,12 @@
-// The server the phone app's end-to-end test talks to (#303): `door serve` on the demo's made-up data
-// in a temp folder (never app/.demo, profile/ or jobs/), with the stand-in claude and an isolated user
+// The server the phone app's end-to-end test talks to (#303): `door serve` on the sandbox's made-up data
+// in a temp folder (never app/.sandbox, profile/ or jobs/), with the stand-in claude and an isolated user
 // home from the shared fixture. The one file under app/ allowed to start The other door's CLI (guard.test.ts):
 // a test needs the real server a phone talks to.
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { join } from 'node:path'
-import { seedDemo } from '../src/main/demo'
+import { seedSandbox } from '../src/main/sandbox'
 import { buildEmptyHome, repoRoot, type Home } from '../test/home-fixture'
 
 /** A fresh storage folder for one phone window (browser.cjs's DOOR_WEB_PROFILE). */
@@ -50,7 +50,7 @@ function forTheShim(home: string): void {
 
 export async function serveDemo(options: { stubbed?: boolean } = {}): Promise<Served> {
   const fixture = buildEmptyHome()
-  seedDemo(fixture.home, repoRoot, 'fresh')
+  seedSandbox(fixture.home, repoRoot, true)
   if (options.stubbed) forTheShim(fixture.home)
   const env = { ...process.env, ...fixture.env, PYTHONPATH: `${repoRoot}/src`, ...(options.stubbed ? { DOOR_DEMO_DIR: fixture.home } : {}) }
   const argv = (...rest: string[]) => (options.stubbed ? [SHIM, 'serve', ...rest] : cliArgs(...rest))

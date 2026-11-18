@@ -20,7 +20,7 @@ function setup(extra: Record<string, unknown> = {}, props: Partial<Parameters<ty
   const h = mockDoor({ ...happy, ...extra })
   h.pickCvFiles.mockResolvedValue({ files: [{ token: 't', name: 'cv.pdf', size: 1 }], refused: [] })
   const onFinish = vi.fn()
-  const view = render(<Wizard profile={freshProfile} sandbox={false} onFinish={onFinish} {...props} />)
+  const view = render(<Wizard profile={freshProfile} environment="production" onFinish={onFinish} {...props} />)
   return { ...h, onFinish, unmount: view.unmount }
 }
 
@@ -40,11 +40,13 @@ describe('Wizard', () => {
     expect(h.call.mock.calls.map((c) => c[0])).not.toContain('init_profile')
   })
 
-  it('has no Drive choice in the sandbox, nor when a profile exists (set up again)', async () => {
-    setup({}, { sandbox: true })
-    await screen.findByRole('heading', { name: 'Tell me about yourself' })
-    expect(screen.queryByRole('button', { name: 'Bring my profile from Google Drive' })).toBeNull()
-    cleanup()
+  it('has no Drive choice in staging or the sandbox, nor when a profile exists (set up again)', async () => {
+    for (const environment of ['staging', 'sandbox'] as const) {
+      setup({}, { environment })
+      await screen.findByRole('heading', { name: 'Tell me about yourself' })
+      expect(screen.queryByRole('button', { name: 'Bring my profile from Google Drive' })).toBeNull()
+      cleanup()
+    }
     setup({}, { profile: saved })
     await screen.findByRole('heading', { name: 'Tell me about yourself' })
     expect(screen.queryByRole('button', { name: 'Bring my profile from Google Drive' })).toBeNull()
@@ -128,11 +130,13 @@ describe('Wizard', () => {
   })
 
   it('installs a missing Chromium quietly, once, and not in the sandbox', async () => {
-    const h = setup({ doctor: doctorReport('ok', false), setup: { outcome: 'ok' } })
-    await waitFor(() => expect(h.call).toHaveBeenCalledWith('setup', { install: ['chromium'], yes: true }))
-    expect(screen.queryByRole('dialog')).toBeNull()
-    cleanup()
-    const sandboxed = setup({ doctor: doctorReport('ok', false), setup: { outcome: 'ok' } }, { sandbox: true })
+    for (const environment of ['production', 'staging'] as const) {
+      const h = setup({ doctor: doctorReport('ok', false), setup: { outcome: 'ok' } }, { environment })
+      await waitFor(() => expect(h.call).toHaveBeenCalledWith('setup', { install: ['chromium'], yes: true }))
+      expect(screen.queryByRole('dialog')).toBeNull()
+      cleanup()
+    }
+    const sandboxed = setup({ doctor: doctorReport('ok', false), setup: { outcome: 'ok' } }, { environment: 'sandbox' })
     await screen.findByRole('button', { name: 'Drop relevant documents here (CV or LinkedIn PDF)' })
     await waitFor(() => expect(sandboxed.call.mock.calls.map((c) => c[0])).toContain('doctor'))
     expect(sandboxed.call.mock.calls.map((c) => c[0])).not.toContain('setup')

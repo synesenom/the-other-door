@@ -1,8 +1,8 @@
-// The first launch, end to end in the built app: DOOR_ONBOARD_DIR (a temp folder) makes the unpackaged
-// app an onboarding sandbox, an empty home. The wizard is walked with the real server; the stand-in claude
+// The first launch, end to end in the built app: DOOR_SANDBOX_DIR (a temp folder) with DOOR_SANDBOX_EMPTY=1
+// makes the unpackaged app an empty sandbox. The wizard is walked with the real server; the stand-in claude
 // first on PATH answers its model calls from scripted files (`answerOnboarding`), or fails where a test wants
-// that. The first run is the simulated one (DOOR_DEMO_RUN_MS makes it short). The real jobs/, profile/,
-// app/.demo and app/.onboard are never touched.
+// that. The first run is the simulated one (DOOR_SANDBOX_RUN_MS makes it short). The real jobs/, profile/,
+// app/.sandbox and app/.staging are never touched.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
@@ -16,7 +16,7 @@ const CV_NO_CITY = '# Ada Lovelace\n\n**Email:** ada@example.com\n\nData scienti
 /** What the real data folders look like: a change here means the test reached outside its sandbox. */
 function snapshot(): string {
   const parts: string[] = []
-  for (const dir of [join(repoRoot, 'profile'), join(repoRoot, 'jobs'), join(APP, '.demo'), join(APP, '.onboard')]) {
+  for (const dir of [join(repoRoot, 'profile'), join(repoRoot, 'jobs'), join(APP, '.sandbox'), join(APP, '.staging')]) {
     if (!existsSync(dir)) {
       parts.push(`${dir}: absent`)
       continue
@@ -31,7 +31,7 @@ async function launch(fixture: ReturnType<typeof buildEmptyHome>, sandbox: strin
   return electron.launch({
     args: ['.', ...(process.env.CI ? ['--no-sandbox'] : [])],
     cwd: APP,
-    env: { ...(process.env as Record<string, string>), ...fixture.env, DOOR_ONBOARD_DIR: sandbox, DOOR_DEMO_RUN_MS: '4000' },
+    env: { ...(process.env as Record<string, string>), ...fixture.env, DOOR_SANDBOX_DIR: sandbox, DOOR_SANDBOX_EMPTY: '1', DOOR_SANDBOX_RUN_MS: '4000' },
   })
 }
 
@@ -110,7 +110,7 @@ test('a good CV goes from the sources to the review, Save and a first run, askin
     await page.getByRole('button', { name: /View .*matches/i }).click({ timeout: 60_000 })
     await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible()
     await expect(page.getByText('Finance Controller')).toBeVisible()
-    await expect(page.getByRole('note', { name: 'Onboarding sandbox' })).toBeVisible()
+    await expect(page.getByRole('note', { name: 'Sandbox' })).toBeVisible()
   } finally {
     await app.close()
   }

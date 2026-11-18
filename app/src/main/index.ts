@@ -6,7 +6,7 @@ import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, Notification, pr
 import { createArchiveFiles } from './archive-files'
 import { createClaudeLogin } from './claude-login'
 import { createCvSources } from './cv-sources'
-import { demoDir, demoDiscoveryOff, demoEnv, demoModeFor, demoRunMs, onboardDir, onboardEnv, onboardModeFor, resetOnboard, seedDemo } from './demo'
+import { prepare, sandboxRunMs, serverEnv, startFor } from './environments'
 import { startDemoRun } from './demo-run'
 import { doorHome } from './files'
 import { watchForeignEnd } from './foreign-run'
@@ -27,17 +27,13 @@ import { windowBackground } from './window-look'
 // Chromium in its resources (#223) and keeps the data in the user's data folder.
 const packaged = app.isPackaged
 const repoRoot = packaged ? process.resourcesPath : resolve(app.getAppPath(), '..')
-// `npm run dev:demo`: made-up data in app/.demo/, never your real profile/, jobs/ or Drive.
-// DOOR_DEMO_DIR (an unpackaged app only) starts the demo in that folder: how the tests run it.
-// `npm run dev:onboard` (or DOOR_ONBOARD_DIR, unpackaged): an empty folder app/.onboard/, made again on
-// every start, to try the first launch; the run there is simulated like the demo's.
-const onboard = onboardModeFor(import.meta.env.MODE, process.env, app.isPackaged)
-const demo = onboard ? null : demoModeFor(import.meta.env.MODE, process.env, app.isPackaged)
-const demoFolder = onboard ? onboardDir(process.env, repoRoot) : demoDir(process.env, repoRoot)
-if (onboard) resetOnboard(demoFolder, repoRoot)
-else if (demo) seedDemo(demoFolder, repoRoot, demo, new Date(), { discoveryOff: demoDiscoveryOff(process.env) })
-const simulated = Boolean(demo || onboard)
-const env = onboard ? onboardEnv(process.env, demoFolder) : demo ? demoEnv(process.env, demoFolder) : process.env
+// The environment of this start (environments.ts, app/README.md "Environments"): production on your data,
+// staging (`npm run dev:staging`) all real on app/.staging/, or the sandbox (`npm run dev:sandbox`) on app/.sandbox/
+// with a simulated run. Staging and the sandbox never reach your profile/, jobs/ or Drive.
+const start = startFor(import.meta.env.MODE, process.env, packaged, repoRoot)
+prepare(start, repoRoot, process.env)
+const environment = start.environment
+const env = serverEnv(start, process.env)
 // The data folder: DOOR_HOME, else the checkout (from a checkout) or the user's data folder (packaged).
 const home = doorHome(env, packaged ? app.getPath('userData') : repoRoot)
 // What went wrong that the screens do not say (#593): the server's own failures it logs itself; these are the app's.
@@ -48,7 +44,7 @@ const server = new DoorServer(
   { ...(packaged ? { expectedVersion: app.getVersion() } : {}), onProblem: (where, message) => problemLog.write(where, message) },
 )
 // Is a newer version out (#501, #17): an installed app that can replace itself downloads it and installs on
-// restart; one that cannot links to the release; a checkout and the demo say nothing (updates.ts). It checks at
+// restart; one that cannot links to the release; a checkout, staging and the sandbox say nothing (updates.ts). It checks at
 // start and once a day, so an app left open learns of a release too; Settings has nothing to press for it.
 let doorSigned = false
 try {
@@ -56,7 +52,7 @@ try {
 } catch {
   // no package.json to read: not signed
 }
-const mode = updatesAllowed(process.env) ? updateMode({ platform: process.platform, packaged, simulated, doorSigned, appImage: Boolean(process.env['APPIMAGE']) }) : 'none'
+const mode = updatesAllowed(process.env) ? updateMode({ platform: process.platform, packaged, simulated: environment !== 'production', doorSigned, appImage: Boolean(process.env['APPIMAGE']) }) : 'none'
 // The detached phone server and a CV style build are stopped before an update installs (phone-update.ts, #77, #215).
 let stoppedForUpdate = false
 const phoneDeps = (): PhoneUpdateDeps => ({
@@ -189,7 +185,7 @@ app.whenReady().then(() => {
   })
   registerIpc(ipcMain, server, {
     // `home` is for reading only: the window shows where the data is and never sends a path back.
-    info: { ...(onboard ? { demo: true, sandbox: 'onboard' as const } : { demo: Boolean(demo) }), home },
+    info: { environment, home },
     openExternal: (url) => shell.openExternal(url),
     home,
     savePdf: {
@@ -239,13 +235,13 @@ app.whenReady().then(() => {
         write: (path) => writeFile(join(app.getPath('userData'), 'style-source.txt'), path, 'utf-8'),
       },
     }),
-    // In the demo and the onboarding sandbox "Find new jobs" is a simulation: nothing reaches the network or claude.
-    ...(simulated
-      ? { demoRun: (args: Record<string, unknown>, onProgress: (p: Progress) => void) => startDemoRun(demoFolder, { args, onProgress, onBoard: pushBoard, totalMs: demoRunMs(process.env) }) }
+    // In the sandbox "Find new jobs" is a simulation: nothing reaches the network or claude.
+    ...(start.environment === 'sandbox'
+      ? { demoRun: (args: Record<string, unknown>, onProgress: (p: Progress) => void) => startDemoRun(start.folder, { args, onProgress, onBoard: pushBoard, totalMs: sandboxRunMs(process.env) }) }
       : {}),
   })
   createWindow()
-  if (!simulated && mode !== 'none') void restorePhoneAtStart(phoneDeps())
+  if (environment === 'production' && mode !== 'none') void restorePhoneAtStart(phoneDeps())
   if (mode !== 'none') checkEvery(updates, CHECK_EVERY_MS) // at start and once a day; never waits, never throws
   // Start the server now so the first screen does not wait for Python.
   void server.listTools().catch(() => undefined)

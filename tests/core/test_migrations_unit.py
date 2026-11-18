@@ -392,7 +392,7 @@ def test_ensure_folder_leaves_a_folder_with_data_or_a_version_alone(tmp_path):
 
 
 def test_the_app_stamps_the_data_versions_this_build_writes():
-    """The journeys' world and the app's demo are folders set up by this build: stamped like `init` stamps them, or
+    """The journeys' world and the app's sandbox are folders set up by this build: stamped like `init` stamps them, or
     every start would run the upgrade (and find an extra backup). The app has one place for the two versions
     (`app/src/main/data-versions.ts`) that this test keeps equal to `migrations.current`; a release that adds a step
     changes that file (dev-release, the data-migrator)."""
@@ -403,7 +403,7 @@ def test_the_app_stamps_the_data_versions_this_build_writes():
     versions = (app / "src" / "main" / "data-versions.ts").read_text(encoding="utf-8")
     assert re.search(r"PROFILE_DATA_VERSION = '([\d.]+)'", versions).group(1) == str(migrations.current("profile"))
     assert re.search(r"JOBS_DATA_VERSION = '([\d.]+)'", versions).group(1) == str(migrations.current("jobs"))
-    for path in (app / "test" / "world" / "build.ts", app / "src" / "main" / "demo.ts"):
+    for path in (app / "test" / "world" / "build.ts", app / "src" / "main" / "sandbox.ts"):
         text = path.read_text(encoding="utf-8")
         assert "data-versions" in text and not re.search(r"DATA_VERSION = '", text), path.name
 

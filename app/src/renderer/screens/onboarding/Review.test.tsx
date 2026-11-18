@@ -18,14 +18,14 @@ const answers: Partial<WizardState> = {
   keywords: ['lead'], topicTerms: ['data'], keywordsState: 'proposed', cvText: '# Ada\n',
 }
 let seen: WizardState
-function setup(start: Partial<WizardState> = answers, handlers: Record<string, unknown> = {}, profile: ShowProfile = freshProfile, sandbox = false) {
+function setup(start: Partial<WizardState> = answers, handlers: Record<string, unknown> = {}, profile: ShowProfile = freshProfile) {
   const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile, keywords: { keywords: ['new'], topic_terms: ['t'] }, ...handlers })
   const onSaved = vi.fn()
   render(
     <Host profile={profile} start={start}>
       {(state, dispatch) => {
         seen = state
-        return <Review state={state} profile={profile} dispatch={dispatch} onSaved={onSaved} sandbox={sandbox} />
+        return <Review state={state} profile={profile} dispatch={dispatch} onSaved={onSaved} />
       }}
     </Host>,
   )
@@ -422,14 +422,11 @@ describe('Review, the CV style tick', () => {
     expect(h.onSaved).toHaveBeenCalled()
   })
 
-  it('is not there without a style to copy, on a set-up again, or in the sandbox', () => {
+  it('is not there without a style to copy, or on a set-up again', () => {
     setup({ ...answers, files: styled.files, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false, token: 'f1' }] } })
     expect(box()).toBeNull()
     cleanup()
     setup({ ...styled, mode: 'redo' })
-    expect(box()).toBeNull()
-    cleanup()
-    setup(styled, {}, freshProfile, true)
     expect(box()).toBeNull()
   })
 })

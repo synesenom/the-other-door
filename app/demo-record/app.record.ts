@@ -1,7 +1,7 @@
-// Records docs/demo/app.gif (`npm run record:gif`): the built app on made-up data (the demo, in a temp
-// folder: never app/.demo, your profile/ or jobs/), driven like a person would, a frame on every repaint
+// Records docs/demo/app.gif (`npm run record:gif`): the built app on made-up data (the sandbox, in a temp
+// folder: never app/.sandbox, your profile/ or jobs/), driven like a person would, a frame on every repaint
 // (Chromium's screencast); scripts/demo/app_gif.py turns the frames into the GIF. Light theme by emulation only, so the
-// app's stored Appearance is left alone. No claude, no network: the demo's run is simulated.
+// app's stored Appearance is left alone. No claude, no network: the sandbox's run is simulated.
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { _electron as electron, expect, test, type Locator, type Page } from '@playwright/test'
@@ -51,7 +51,7 @@ test('record the app', async () => {
   const app = await electron.launch({
     args: ['.'],
     cwd: APP,
-    env: { ...(process.env as Record<string, string>), ...fixture.env, DOOR_DEMO_DIR: join(fixture.scratch, 'demo'), DOOR_DEMO_RUN_MS: '9000', DOOR_DEMO_DISCOVERY: 'off' },
+    env: { ...(process.env as Record<string, string>), ...fixture.env, DOOR_SANDBOX_DIR: join(fixture.scratch, 'sandbox'), DOOR_SANDBOX_RUN_MS: '9000', DOOR_SANDBOX_DISCOVERY: 'off' },
   })
   const frames: { file: string; at: number }[] = []
   try {
