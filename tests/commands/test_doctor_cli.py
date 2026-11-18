@@ -13,7 +13,7 @@ from door.commands import compile as compile_cmd
 from door.commands import prepare as prepare_cmd
 from door.commands import setup as setup_cmd
 from door.core.downloads import chromium as chromium_mod
-from door.core import workspace
+from door.core import claude_cli, workspace
 import door.core.doctor as doctor
 import door.mcp_server as server
 from profile_utils import write_config
@@ -272,11 +272,13 @@ def test_prepare_without_claude_fails_before_tailoring(env, monkeypatch):
 
     result = prepare_cmd._prepare_core("jobindex-acme-ds", jobs_dir=env.jobs_dir)
     assert result["outcome"] == "failed"
-    assert "./door doctor --fix" in result["error"] and "npm" not in result["error"]
+    assert result["error"] == claude_cli.NO_CLAUDE and "./door" not in result["error"] and "status left" not in result["error"]
+    top = prepare_cmd._prepare_core(None, jobs_dir=env.jobs_dir)
+    assert top["error"] == claude_cli.NO_CLAUDE
 
     out = CliRunner().invoke(cli, ["jobs", "prepare", "jobindex-acme-ds"])
     assert out.exit_code == 1
-    assert "claude" in result_text(out)
+    assert claude_cli.NO_CLAUDE in result_text(out) and claude_cli.INSTALL_HINT in result_text(out)
 
 
 def test_prepare_without_chromium_fails_before_tailoring(env, monkeypatch):
@@ -307,7 +309,7 @@ def test_prepare_top_match_without_claude_fails_before_selecting(env, monkeypatc
     result = prepare_cmd._prepare_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
     assert result["outcome"] == "failed"
     assert result["job_id"] is None
-    assert "claude" in result["error"]
+    assert result["error"] == claude_cli.NO_CLAUDE
 
 
 def test_doctor_prints_the_data_folder(env, monkeypatch):

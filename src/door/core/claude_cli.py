@@ -15,6 +15,10 @@ from pathlib import Path
 from door.core import usage, workspace
 from door.core.downloads import installers
 
+# The words are the app's (no command, #304); a command adds `INSTALL_HINT`.
+NO_CLAUDE = "Claude is not installed yet. Install it in Settings, under Connections."
+INSTALL_HINT = "Run `./door doctor --fix` to install the claude CLI."
+
 
 def config_dir(profile_dir: Path | None = None) -> str | None:
     """profile/config.json's `claude_config_dir`, `~` expanded; None when unset.
