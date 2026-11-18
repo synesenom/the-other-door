@@ -13,7 +13,7 @@ A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implement
 Waiting is not idle time. While a PR's checks run, or a PR waits for the user's merge, find the next issue to resolve and start it without being asked. Pick it in this order:
 
 1. The next open sub-issue of the epic being worked.
-2. Else an open sub-issue of an epic the session's work belongs to, or of an epic it filed into.
+2. Else an open sub-issue of an epic the session's work belongs to.
 3. Else the open issue users would notice most.
 
 Skip an issue that:
@@ -39,7 +39,7 @@ Before summarising a change you implemented (a PR, or a branch about to become o
 
 Then, once their findings are dealt with, spawn `integration-reviewer` (`.claude/agents/integration-reviewer.md`) last, on the final diff: it maps the change's blast radius and asks whether the whole solution would be smaller had the feature been in the codebase's founding principles, so the code does not grow by accretion.
 
-Each reports its findings with evidence. Every finding, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) through `/dev-file-issue`, which makes it a sub-issue of an epic, whose number you give. The summary names each finding and which way it went; none is only mentioned. A finding you judge not real: say why in one line.
+Each reports its findings with evidence. Every finding, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) through `/dev-file-issue`, whose number you give. The summary names each finding and which way it went; none is only mentioned. A finding you judge not real: say why in one line.
 
 ## Pull requests
 
