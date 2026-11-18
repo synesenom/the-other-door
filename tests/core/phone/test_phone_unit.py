@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from door import version
 from door.core.phone import pairing
 from door.core.phone import phone
 from door.core.downloads import pinned as pinned_mod
@@ -271,7 +272,7 @@ def _old_server(tmp_path, w, connection, version="0.1.0"):
 @pytest.mark.parametrize("version,outdated", [("0.1.0", True), (None, True), ("current", False)])
 def test_status_says_a_live_server_of_another_version_is_outdated_and_changes_nothing(tmp_path, version, outdated):
     w = World(tmp_path)
-    _old_server(tmp_path, w, "cloudflare", phone.VERSION if version == "current" else version)
+    _old_server(tmp_path, w, "cloudflare", version.VERSION if version == "current" else version)
     out = phone.status(tmp_path, **deps(w, tmp_path))
     assert out["running"] is True and out["outdated"] is outdated
     assert w.killed == [] and w.spawned == []
@@ -283,12 +284,12 @@ def test_start_replaces_a_running_server_of_another_version(tmp_path, version):
     _old_server(tmp_path, w, "cloudflare", version)
     out = phone.start(tmp_path, "cloudflare", **deps(w, tmp_path))
     assert 7 in w.killed and out["running"] is True and out["outdated"] is False
-    assert json.loads((tmp_path / ".serve" / "run.json").read_text())["version"] == phone.VERSION
+    assert json.loads((tmp_path / ".serve" / "run.json").read_text())["version"] == version.VERSION
 
 
 def test_start_keeps_a_running_server_of_the_same_version(tmp_path):
     w = World(tmp_path)
-    _old_server(tmp_path, w, "cloudflare", phone.VERSION)
+    _old_server(tmp_path, w, "cloudflare", version.VERSION)
     out = phone.start(tmp_path, "cloudflare", **deps(w, tmp_path))
     assert out["running"] is True and w.killed == [] and w.spawned == []
 

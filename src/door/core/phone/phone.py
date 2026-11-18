@@ -25,8 +25,8 @@ from pathlib import Path
 
 from door.core import process, utils, workspace
 from door.core.downloads import pinned
+from door import version
 from door.core.phone import pairing
-from door.version import VERSION
 
 DEFAULT_PORT = 8765
 CLOUDFLARED_VERSION = "2026.10.6"
@@ -161,7 +161,7 @@ def status(home: Path, **deps) -> dict:
     if running:
         out.update(connection=run["connection"], address=run["address"], port=run["port"],
                    lasting=run["connection"] == "tailscale", started_at=run.get("started_at"),
-                   outdated=run.get("version") != VERSION)
+                   outdated=run.get("version") != version.VERSION)
     return out
 
 
@@ -222,7 +222,7 @@ def _start(home: Path, connection: str, **deps) -> dict:
     serve = d["spawn"]([sys.executable, "-m", "door", "serve", "start", "--port", str(port), "--web", str(d["web_dir"])],
                        log=logs / "serve.log", env=env)
     run = {"serve_pid": serve.pid, "port": port, "connection": connection,
-           "started_at": datetime.now(UTC).isoformat(timespec="seconds"), "version": VERSION}
+           "started_at": datetime.now(UTC).isoformat(timespec="seconds"), "version": version.VERSION}
     local = f"http://127.0.0.1:{port}"
     if not _wait(lambda: d["answers"](local), tries=60, sleep=d["sleep"]):
         _stop_pids(run, d["kill"])
