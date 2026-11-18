@@ -200,7 +200,7 @@ function FieldName({ label, help, after, htmlFor, id }: { label: string; help: s
 }
 
 /**
- * Profile's "Your CV" and "CV style". Your CV: the CV file a draft read, replaced by drafting from another, the pages
+ * Profile's "Master CV" and "CV style". Master CV: the CV file a draft read, replaced by drafting from another, the pages
  * the CV is read from ("Add a page" is /expand as a button), then profile/cv.md as Markdown with a preview. The text
  * saves itself a second after typing stops, and when the editor is left: no Save. The first save of a visit keeps the
  * CV as it was as cv.md.bak; the later ones leave that backup alone (save_cv's `backup`).
@@ -379,11 +379,11 @@ export function CvEditor({
   const dirty = text !== saved
   const written = writing ? 'Saving…' : saveError ? null : dirty ? null : saves > 0 || backedUp.current ? 'Saved' : null
 
-  // Profile's part "Your CV": the file and the pages it is read from, then the text; the style is a part of its own after it
+  // Profile's part "Master CV": the file and the pages it is read from, then the text; the style is a part of its own after it
   const part = (body: ReactNode) => (
     <section className="part" aria-labelledby="profile-cv">
       <h2 className="display-s" id="profile-cv">
-        Your CV
+        Master CV
       </h2>
       {body}
     </section>
@@ -406,8 +406,9 @@ export function CvEditor({
     <>
       <section className="part cv-editor" aria-labelledby="profile-cv">
       <h2 className="display-s" id="profile-cv">
-        Your CV
+        Master CV
       </h2>
+      <p className="small muted">Everything about your work, in one place. It is never sent as it is: each application gets a CV of its own, picked from this one and tailored to the ad, so put in more than one CV would hold.</p>
       {/* the wizard may end with no CV; the example CV is never copied in, so only a developer's hand-made profile has it */}
       {!profile.cv.exists && (
         <div role="note" className="cv-example small">
@@ -486,7 +487,7 @@ export function CvEditor({
         {/* the text: its name, with Saved and the Preview switch on the right, then the text or how it reads */}
         <div className="field onb-field">
         <div className="cv-head">
-          <FieldName htmlFor={editorId} label="Text" after={<span className="small muted">(<MarkdownLink />)</span>} help="Your CV in Markdown, what every application is tailored from. It saves itself as you type." />
+          <FieldName htmlFor={editorId} label="Text" after={<span className="small muted">(<MarkdownLink />)</span>} help="Everything about your work in Markdown, what every application's CV is picked from and tailored. It saves itself as you type." />
           {written && (
             <span className="small muted cv-written" role="status">
               {written}

@@ -1,4 +1,4 @@
-// Profile → Your CV: the editor of profile/cv.md (load, edit, preview, the live save with cv.md.bak), the CV's
+// Profile → Master CV: the editor of profile/cv.md (load, edit, preview, the live save with cv.md.bak), the CV's
 // notes (no CV, gaps). The file and the pages above the editor are cv-tools.journey.ts.
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'

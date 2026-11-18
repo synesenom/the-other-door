@@ -132,7 +132,7 @@ describe('Profile, opened at a section', () => {
     render(<Profile onSaved={() => {}} onDraft={() => {}} style={{ state: 'none', canBuild: true, onChanged: () => {} }} />)
     await screen.findByLabelText('Your CV (Markdown)')
     const links = within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link')
-    expect(links.slice(-3).map((l) => l.textContent)).toEqual(['Your CV', 'CV style', 'Stories'])
+    expect(links.slice(-3).map((l) => l.textContent)).toEqual(['Master CV', 'CV style', 'Stories'])
   })
 
   it('the CV and the Stories are sections of the same page, scrolled to like the rest', async () => {
@@ -264,9 +264,9 @@ describe('Profile', () => {
     await open()
     await screen.findByLabelText('Your CV (Markdown)')
     const names = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
-    expect(names.slice(-2)).toEqual(['Your CV', 'Stories'])
+    expect(names.slice(-2)).toEqual(['Master CV', 'Stories'])
     expect(names[0]).toBe('About you')
-    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-2).map((l) => l.textContent)).toEqual(['Your CV', 'Stories'])
+    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-2).map((l) => l.textContent)).toEqual(['Master CV', 'Stories'])
     expect(screen.getAllByRole('button', { name: 'Save' })).toHaveLength(1)
   })
 
