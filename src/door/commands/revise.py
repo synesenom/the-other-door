@@ -160,7 +160,7 @@ def _revise_core(
         if refused:
             raise ValueError(f"the revision uses {', '.join(refused)}, outside the tags and links a {file} is written in; file left unchanged")
 
-        backup.write_text(original, encoding="utf-8")
+        utils.write_atomic(backup, original)
         utils.write_atomic(path, new_body + "\n")
         outcome = "revised"
 

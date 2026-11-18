@@ -2,7 +2,6 @@
 "since last review"), and the review watermark `mark_reviewed` stamps."""
 
 import hashlib
-import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,11 +12,10 @@ from door.core.jobs import tracker as _tracker_mod
 from door.commands import _common as common
 from door.commands import _progress, _prompts
 from door.commands import style as style_cmd
-from door.core import lock, profile_loader, progress, recurring, usage, workspace
+from door.core import lock, profile_loader, progress, recurring, usage, utils, workspace
 from door.core.jobs import runs
 from door.core.employers import companies
 from door.core.sync import drive
-from door.core import utils
 from door.tailoring import facts as facts_mod
 
 
@@ -103,7 +101,7 @@ def _set_status_core(
         sent_dir = out_dir / "sent"
         sent_dir.mkdir(parents=True, exist_ok=True)
         for name in materials:
-            shutil.copy2(out_dir / name, sent_dir / name)
+            utils.write_atomic(sent_dir / name, (out_dir / name).read_bytes())
         result["sent_dir"] = str(sent_dir)
     if _tracker_mod.is_sent(status):
         warnings = [w for w in (_ad_warning(jobs_dir, job_id), _unsupported_warning(out_dir, job_id)) if w]

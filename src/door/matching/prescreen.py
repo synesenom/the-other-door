@@ -225,7 +225,7 @@ def prescreen(paths: list[Path], config: dict, profile_terms: set[str]) -> list[
             data["score"] = 0.0
             data["score_reason"] = f"prescreen: {score:.2f} below cutoff"
         try:
-            utils.write_atomic(path, json.dumps(data, indent=2, default=str))
+            utils.write_json_atomic(path, data)
         except OSError:
             pass
 

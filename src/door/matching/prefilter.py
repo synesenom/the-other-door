@@ -163,7 +163,7 @@ def prefilter(candidates_dir: Path, config: dict) -> list[Path]:
             data["score"] = 0.0
             data["score_reason"] = drop_reason
             try:
-                utils.write_atomic(json_path, json.dumps(data, indent=2, default=str))
+                utils.write_json_atomic(json_path, data)
             except OSError:
                 pass  # best-effort write
         else:

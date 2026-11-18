@@ -50,9 +50,8 @@ import unicodedata
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from door.core import utils
 from door import i18n
-from door.core import sites
+from door.core import sites, utils
 from door.core.employers import ats_detect
 
 # Company-form suffixes to strip from company names (whole words, any case).
@@ -235,7 +234,7 @@ def dedup(paths: list[Path], config: dict, aliases: list[list[str]] | None = Non
                 data["score_reason"] = "duplicate"
                 data["duplicate_of"] = canonical_id
                 try:
-                    utils.write_atomic(p, json.dumps(data, indent=2, default=str))
+                    utils.write_json_atomic(p, data)
                 except OSError:
                     pass  # best-effort write
 

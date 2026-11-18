@@ -44,3 +44,33 @@ def test_report_stamp_keeps_old_file(tmp_path, failing_swap):
     with pytest.raises(OSError):
         recurring.stamp_report(tmp_path)
     assert stamp.read_text(encoding="utf-8") == "old"
+
+
+def test_init_keeps_old_config(tmp_path, failing_swap):
+    from door.commands import profile as profile_cmd
+    from door.core import workspace
+
+    profile_dir = tmp_path / "profile"
+    profile_dir.mkdir()
+    config = profile_dir / "config.json"
+    config.write_text((workspace.PROFILE_EXAMPLE_DIR / "config.json").read_text(encoding="utf-8"), encoding="utf-8")
+    before = config.read_bytes()
+    with pytest.raises(OSError):
+        profile_cmd._init_core(
+            {"name": "Ada", "email": "a@x.com", "location": "Copenhagen", "role_targets": ["analyst"]},
+            profile_dir=profile_dir,
+            example_dir=workspace.PROFILE_EXAMPLE_DIR,
+        )
+    assert config.read_bytes() == before
+
+
+def test_new_file_mode_never_touches_the_umask(tmp_path, monkeypatch):
+    from door.core import utils
+
+    def no(*_a):
+        raise AssertionError("os.umask called during a write")
+
+    monkeypatch.setattr(os, "umask", no)
+    path = tmp_path / "new.txt"
+    utils.write_atomic(path, "x")
+    assert path.stat().st_mode & 0o777 == 0o666 & ~utils._UMASK

@@ -30,9 +30,8 @@ import subprocess
 from pathlib import Path
 from typing import Callable
 
-from door.core import utils
 from door import i18n
-from door.core import claude_cli, usage
+from door.core import claude_cli, usage, utils
 from door.core.downloads import installers
 from door.matching import scorer
 
@@ -126,7 +125,7 @@ def _load(path: Path) -> dict | None:
 
 def _save(path: Path, data: dict) -> None:
     try:
-        utils.write_atomic(Path(path), json.dumps(data, indent=2, default=str))
+        utils.write_json_atomic(Path(path), data)
     except OSError:
         pass
 

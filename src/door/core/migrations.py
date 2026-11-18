@@ -39,10 +39,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from door.core import utils
 from door import version as app_version
 from door.core import lock as lock_mod
-from door.core import problem_log, usage, workspace
+from door.core import problem_log, usage, utils, workspace
 from door.core.downloads import pinned
 
 VERSION_FILE = ".data_version"
@@ -194,7 +193,7 @@ def _templates_from_code(profile_dir: Path) -> None:
     if dropped:
         for key in dropped:
             del config[key]
-        utils.write_atomic(config_path, json.dumps(config, indent=2))
+        utils.write_json_atomic(config_path, config)
 
 
 PROFILE_STEPS: list[Step] = [

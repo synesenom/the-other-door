@@ -341,7 +341,7 @@ def condense_postings(
         )
         data["description_condensed"] = condensed
         try:
-            utils.write_atomic(path, json.dumps(data, indent=2, default=str))
+            utils.write_json_atomic(path, data)
         except OSError:
             continue
 

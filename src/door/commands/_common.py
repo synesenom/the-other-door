@@ -11,9 +11,8 @@ from pathlib import Path
 
 import click
 
-from door.core import utils
 from door import i18n
-from door.core import profile_loader, progress, templates, workspace
+from door.core import profile_loader, progress, templates, utils, workspace
 from door.core.employers import companies
 from door.core.downloads import chromium
 from door.core.downloads import installers
@@ -111,7 +110,7 @@ def _write_with_backup(path: Path, text: str) -> Path | None:
     backup = None
     if path.exists():
         backup = path.with_name(path.name + ".bak")
-        shutil.copyfile(path, backup)
+        utils.write_atomic(backup, path.read_bytes())
     utils.write_atomic(path, text)
     return backup
 

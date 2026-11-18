@@ -24,7 +24,7 @@ from door.core.employers import companies as companies_store
 from door.core import claude_cli, lock, workspace
 from door.core.jobs import selection
 from door.core.jobs import skill_aliases
-from door.core.utils import write_json_atomic
+from door.core.utils import write_atomic, write_json_atomic
 from door.matching import title_fit
 
 _TREND_MIN = 50  # scored ads needed in both windows before a trend means anything
@@ -370,7 +370,8 @@ def _market_core(days: int = 30, save: bool = True, *, jobs_dir: Path | None = N
             report = build(merged, warning, str(path) if save else None)
             if save:
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(render_markdown(report), encoding="utf-8")
+                write_atomic(path, render_markdown(report))
+
     except lock.LockHeldError as exc:
         busy = f"another run of The other door holds the lock ({exc}); skill groups and report not saved"
         return build({**new, **aliases}, f"{warning}; {busy}" if warning else busy, None)

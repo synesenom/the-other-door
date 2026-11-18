@@ -10,10 +10,9 @@ import re
 import threading
 from pathlib import Path
 
-from door.core import utils
 from door.commands import _common as common
 from door import i18n
-from door.core import lock, profile_loader
+from door.core import lock, profile_loader, utils
 from door.core import progress as progress_mod
 from door.core import models, sites, workspace
 from door.core.jobs import freshness
@@ -95,7 +94,7 @@ class _SiteRun:
             return
         integrity.apply(posting)
         posting_path = self.out_dir / f"{posting['id']}.json"
-        utils.write_atomic(posting_path, json.dumps(posting, indent=2, default=str))
+        utils.write_json_atomic(posting_path, posting)
         self.candidates_paths.append(posting_path)
         if pid:
             self.store.record(job_id, pid, posting.get("url", ""), self.site)
