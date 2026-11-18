@@ -1,7 +1,7 @@
 // The phone app's first screen (#303): trade the code `door serve pair` printed for this phone's
 // token. A QR code opens the app at `#pair=CODE`, which pairs without typing.
 import { useEffect, useRef, useState } from 'react'
-import { AppName, named } from '../renderer/screens/AppName'
+import { AppName, ErrorBox, named } from '../renderer/screens/AppName'
 
 export function codeFromHash(hash: string): string {
   const m = /^#pair=([^&]+)$/.exec(hash)
@@ -81,11 +81,7 @@ export function Pair({
             onChange={(e) => setCode(e.target.value)}
           />
         </div>
-        {error && (
-          <p role="alert" className="small error">
-            {named(error)}
-          </p>
-        )}
+        {error && <ErrorBox className="small" text={error} />}
         <div className="actions">
           <button type="submit" className="primary" disabled={busy || !code.trim()}>
             {busy ? 'Pairing…' : 'Pair'}

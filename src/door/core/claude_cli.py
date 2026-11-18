@@ -15,6 +15,10 @@ from pathlib import Path
 from door.core import usage, workspace
 from door.core.downloads import installers
 
+# The words are the app's (no command, #304); a command adds `INSTALL_HINT`.
+NO_CLAUDE = "Claude is not installed yet."
+INSTALL_HINT = "Run `./door doctor --fix` to install the claude CLI."
+
 
 def config_dir(profile_dir: Path | None = None) -> str | None:
     """profile/config.json's `claude_config_dir`, `~` expanded; None when unset.
@@ -51,6 +55,7 @@ def env(base: dict[str, str] | None = None, profile_dir: Path | None = None) -> 
 # `result` line is the envelope `--output-format json` gives and whose `rate_limit_event`
 # says how full the plan's windows are. `-p` refuses `stream-json` without `--verbose`.
 STREAM_ARGS = ["--output-format", "stream-json", "--verbose"]
+STRICT_MCP = "--strict-mcp-config"   # only the servers a call names with --mcp-config (#345)
 
 # The plan windows read from a `rate_limit_event` (`unifiedWindows` or `rateLimitType`).
 WINDOWS = ("five_hour", "seven_day")
@@ -161,7 +166,9 @@ def run(
         ClaudeError: the binary could not be started, the call timed out, or
             it exited non-zero (the message carries `claude`'s stderr).
     """
-    argv = [installers.find_claude() or "claude", "-p", *args]
+    # Never the user's own MCP servers or connectors: their tool lists cost ~34k input tokens a call (#345).
+    # A call that needs a server names it with `--mcp-config`, which `--strict-mcp-config` then limits to.
+    argv = [installers.find_claude() or "claude", "-p", *args, STRICT_MCP]
     try:
         result = subprocess.run(
             argv, capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=cwd or workspace.REPO_ROOT,
@@ -171,6 +178,8 @@ def run(
         )
     except subprocess.TimeoutExpired:
         raise ClaudeError(f"claude -p timed out after {timeout_s:.0f}s") from None
+    except FileNotFoundError:
+        raise ClaudeError(NO_CLAUDE) from None
     except OSError as exc:
         raise ClaudeError(f"could not invoke `claude` CLI: {exc}") from None
     envelope, limits = read_stream(result.stdout)
@@ -246,7 +255,6 @@ def ask(
     timeout_s: float | None = None,
     profile_dir: Path | None = None,
     effort: str | None = None,
-    strict_mcp: bool = False,
 ):
     """One question to the model: `system_prompt` as the system prompt, `input`
     on stdin, no tools unless `allowed_tools` names some, no session kept.
@@ -254,9 +262,7 @@ def ask(
     With `schema`, the answer is asked for as JSON of that shape and returned
     as a dict; without, the answer text is returned stripped. Either way the
     answer comes as a stream (`STREAM_ARGS`) whose envelope `run()` returns
-    and whose weight it records under `feature`. `effort` is `--effort`; `strict_mcp`
-    keeps the user's MCP servers out of the call (`--strict-mcp-config`: their tool
-    lists would be thousands of input tokens).
+    and whose weight it records under `feature`. `effort` is `--effort`.
 
     Raises:
         ClaudeError: as `run()`, or an answer that is not a JSON object when a
@@ -270,8 +276,6 @@ def ask(
     args.append("--no-session-persistence")
     if effort:
         args += ["--effort", effort]
-    if strict_mcp:
-        args.append("--strict-mcp-config")
     stdout = run(args, feature=feature, input=input, timeout_s=timeout_s, profile_dir=profile_dir)
     if schema is None:
         text = envelope_result(stdout)

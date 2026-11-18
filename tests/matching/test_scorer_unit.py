@@ -229,6 +229,7 @@ def test_build_claude_argv_contains_required_flags():
     assert argv[out_idx + 1] == "stream-json"
     assert "--verbose" in argv
     assert "--no-session-persistence" in argv
+    assert "--strict-mcp-config" in argv
     assert "haiku" in argv
 
 

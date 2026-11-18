@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createStyleFile, MAX_STYLE_BYTES } from './style-file'
 
-function setup(path: string | null, opts: { size?: number; real?: string; hint?: string | null; hintExists?: boolean } = {}) {
+function setup(path: string | null, opts: { size?: number; real?: string; unreadable?: boolean; hint?: string | null; hintExists?: boolean } = {}) {
   const showOpenDialog = vi.fn(async (_options: Record<string, unknown>) => (path === null ? { canceled: true, filePaths: [] } : { canceled: false, filePaths: [path] }))
   const stat = vi.fn(async () => ({ size: opts.size ?? 1000 }))
-  const realpath = vi.fn(async (p: string) => opts.real ?? p)
+  const realpath = vi.fn(async (p: string) => {
+    if (opts.unreadable) throw new Error('gone')
+    return opts.real ?? p
+  })
   let hint: string | null = opts.hint ?? null
   const hintStore = {
     read: vi.fn(async () => hint),
@@ -17,6 +20,9 @@ function setup(path: string | null, opts: { size?: number; real?: string; hint?:
 }
 
 describe('createStyleFile', () => {
+  it('names the file when it cannot be resolved', async () => {
+    expect(await setup('/a/my cv.pdf', { unreadable: true }).style.choose()).toEqual({ error: 'my cv.pdf could not be read.' })
+  })
   it('asks for a PDF and answers the real path', async () => {
     const { style, showOpenDialog } = setup('/Users/ada/my cv.pdf')
     expect(await style.choose()).toEqual({ path: '/Users/ada/my cv.pdf' })

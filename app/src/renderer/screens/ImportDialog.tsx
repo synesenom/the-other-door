@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox } from './AppName'
 import { call, errorText, placeLine, scoreText } from '../api'
 import type { ImportResult, Posting } from '../api'
 import { Dialog } from './Dialog'
@@ -140,9 +140,7 @@ export function ImportDialog({ onClose, onOpen }: Props) {
         </>
       )}
       {error && (
-        <p role="alert" className="error">
-          {named(error)}
-        </p>
+        <ErrorBox text={error} />
       )}
       <div className="actions">
         <button type="button" className="quiet" onClick={onClose}>

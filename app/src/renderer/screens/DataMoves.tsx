@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox } from './AppName'
 import { Dialog } from './Dialog'
 import { Spinner } from './Spinner'
 
@@ -101,9 +101,7 @@ export function DataMoves({ home, onImported }: { home?: string; onImported: () 
         </ul>
       )}
       {error && (
-        <p role="alert" className="error">
-          {named(error)}
-        </p>
+        <ErrorBox text={error} />
       )}
       {picked && (
         <Dialog title={`Import ${picked.name}?`} onClose={() => setPicked(null)}>

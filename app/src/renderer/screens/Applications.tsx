@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox, named } from './AppName'
 import { call, errorText } from '../api'
 import type { Document, Match, Opening, MatchesResult, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
@@ -209,9 +209,7 @@ export function Applications({
         </p>
       )}
       {error && (
-        <p role="alert" className="error">
-          {named(error)}
-        </p>
+        <ErrorBox text={error} />
       )}
       {rows && rows.length === 0 && closed.length === 0 && !error && (
         <p className="body muted">Nothing in play yet. Mark a match Prepared or Applied and it shows here.</p>

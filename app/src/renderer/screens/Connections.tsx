@@ -1,4 +1,4 @@
-import { AppName, named } from './AppName'
+import { AppName, ErrorBox } from './AppName'
 import { CheckMark } from './CheckMark'
 import { PhoneSetup, type PhoneStatus } from './PhoneSetup'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -119,11 +119,7 @@ function ClaudeConnection({ doctor, email, onRecheck }: { doctor: DoctorReport |
   return (
     <Row name="Claude" fine={fine} state={state} actions={actions}>
       {body}
-      {error && (
-        <p role="alert" className="small error">
-          {named(error)}
-        </p>
-      )}
+      {error && <ErrorBox className="small" text={error} />}
       {asking && (
         <Dialog title="Install the Claude command line?" onClose={() => setAsking(false)}>
           <p className="body">It is installed for you only, without asking for a password.</p>
@@ -280,11 +276,7 @@ function DriveConnection({
     <Row name="Google Drive" fine={row.kind === 'connected' && !row.error} state={state} actions={actions}>
       {body}
       {message && <p className="small">{message}</p>}
-      {error && (
-        <p role="alert" className="small error">
-          {named(error)}
-        </p>
-      )}
+      {error && <ErrorBox className="small" text={error} />}
       {confirming && (
         <Dialog title="Disconnect Google Drive?" onClose={() => setConfirming(false)}>
           <p className="body">The last changes go to Drive first, then this computer stops syncing. The copy on Drive stays, and you can connect again later.</p>
@@ -378,11 +370,7 @@ export function PhoneConnection() {
   ) : null
   return (
     <Row name="Your phone" fine={running && paired} state={state} actions={actions}>
-      {error && (
-        <p role="alert" className="small error">
-          {named(error)}
-        </p>
-      )}
+      {error && <ErrorBox className="small" text={error} />}
       {confirming && (
         <Dialog title="Disconnect your phone?" onClose={() => setConfirming(false)}>
           <p className="body">Your phone stops reaching <AppName />. To use it again, set it up here and scan a new code.</p>

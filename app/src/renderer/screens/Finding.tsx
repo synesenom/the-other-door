@@ -1,4 +1,4 @@
-import { AppName, named } from './AppName'
+import { AppName, ErrorBox } from './AppName'
 import { CheckMark, CrossMark, WarningMark } from './CheckMark'
 import { useEffect, useState } from 'react'
 import { scoreText, showRun } from '../api'
@@ -338,9 +338,7 @@ export function Finding({
       {!showing && state && state.kind !== 'summary' && (
         <>
           {state.kind === 'error' && (
-            <p role="alert" className="error">
-              {named(`The other door could not start the run: ${state.message}`)}
-            </p>
+            <ErrorBox text={`The other door could not start the run: ${state.message}`} />
           )}
           <div className="actions">
             <button type="button" className="primary" onClick={onStart}>

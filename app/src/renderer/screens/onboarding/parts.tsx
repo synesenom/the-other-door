@@ -2,7 +2,7 @@
 // quiet Back and Skip), the chip input and the city picker.
 import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
-import { named } from '../AppName'
+import { ErrorList, named } from '../AppName'
 import { Hint } from '../Hint'
 import type { ProfileOptions } from './reducer'
 
@@ -26,13 +26,7 @@ export function Frame({ title, lead, errors, children, onBack, onNext, nextLabel
     <section className="onb-step" aria-label={title}>
       <h1 className="display-l">{title}</h1>
       {lead && <p className="subtitle">{lead}</p>}
-      {errors && errors.length > 0 && (
-        <ul role="alert" className="error onb-errors">
-          {errors.map((e) => (
-            <li key={e}>{e}</li>
-          ))}
-        </ul>
-      )}
+      {errors && errors.length > 0 && <ErrorList messages={errors} />}
       {children}
       <div className="actions onb-actions">
         {onBack && (

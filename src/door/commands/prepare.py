@@ -181,7 +181,6 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
         "--agent", "tailor",
         "--allowedTools", ",".join(_tailor_tools(job_id, posting_path)),
         "--mcp-config", json.dumps(workspace.mcp_config_entry()),
-        "--strict-mcp-config",
         *claude_cli.STREAM_ARGS,  # the stream carries the run's usage and the plan's limits (#575)
     ]
     for folder in _tailor_folders(posting_path):
@@ -390,7 +389,7 @@ def _prepare_core(
         return {"job_id": job_id, "outcome": "failed", "error": str(exc)}
     if job_id is None:
         if not common._claude_available():
-            return {"job_id": None, "outcome": "failed", "error": f"the `claude` CLI is not installed — {common._CLAUDE_FIX}."}
+            return {"job_id": None, "outcome": "failed", "error": claude_cli.NO_CLAUDE}
         job_id = _top_match_id(jobs_dir, profile_dir)
         if job_id is None:
             return {"job_id": None, "outcome": "no_matches"}
@@ -440,7 +439,7 @@ def _prepare_core(
         result["regenerated_incomplete"] = True
 
     if not common._claude_available():
-        return {**result, "error": f"the `claude` CLI is not installed — {common._CLAUDE_FIX}; status left unchanged."}
+        return {**result, "error": claude_cli.NO_CLAUDE}
 
     if not common._chromium_available():
         return {**result, "error": str(common.NoChromium())}
@@ -629,7 +628,9 @@ def prepare(job_id: str | None, force: bool, timeout_min: float):
         return
     if result["outcome"] not in ("prepared", "skipped"):
         click.echo(f"Error: {result['error']}", err=True)
-        if not common._chromium_available():
+        if not common._claude_available():
+            click.echo(claude_cli.INSTALL_HINT, err=True)
+        elif not common._chromium_available():
             click.echo(common.INSTALL_HINT, err=True)
         sys.exit(1)
     _render_prepared(result, interactive=interactive)

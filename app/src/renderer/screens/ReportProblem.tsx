@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox } from './AppName'
 import { Spinner } from './Spinner'
 
 const basename = (p: string) => p.split(/[\\/]/).pop() ?? p
@@ -42,9 +42,7 @@ export function ReportProblem({ onSaved }: { onSaved?: () => void } = {}) {
       {busy && <Spinner message="Saving…" />}
       {saved && <p className="small">{`Saved as ${saved}. Send it to ${REPORT_TO}.`}</p>}
       {error && (
-        <p role="alert" className="error">
-          {named(error)}
-        </p>
+        <ErrorBox text={error} />
       )}
     </div>
   )

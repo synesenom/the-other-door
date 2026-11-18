@@ -10,7 +10,7 @@ Preparing an application needs the `claude` command line and a Chromium headless
 brings Chromium (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all. Should Chromium be missing all
 the same, Prepare and Revise say "The browser that prints your CVs is not installed yet." and change nothing;
-`./door doctor --fix` installs it.
+`./door doctor --fix` installs it. Should Claude be missing, Prepare and Revise say "Claude is not installed yet." and change nothing; from a shell, `jobs prepare` adds the `./door doctor --fix` line.
 
 ## Installing the app
 
