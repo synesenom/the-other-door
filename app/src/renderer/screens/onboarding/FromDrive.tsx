@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { call, errorText } from '../../api'
-import { named } from '../AppName'
+import { ErrorBox } from '../AppName'
 
 /**
  * The wizard's other way in, for someone who already uses The other door on another computer: connect Google Drive and
@@ -47,11 +47,7 @@ export function FromDrive({ onPulled }: { onPulled: () => void }) {
           There is nothing from The other door on your Google Drive yet. Go on below; your new profile is sent there when you save it.
         </p>
       )}
-      {error && (
-        <p role="alert" className="error small">
-          {named(error)}
-        </p>
-      )}
+      {error && <ErrorBox className="small" text={error} />}
     </div>
   )
 }

@@ -24,6 +24,6 @@ export function named(message: ReactNode): ReactNode {
 }
 
 /** The error box: an alert line whose message may name the app. */
-export function ErrorBox({ text }: { text: ReactNode }) {
-  return <p role="alert" className="error">{named(text)}</p>
+export function ErrorBox({ text, className }: { text: ReactNode; className?: string }) {
+  return <p role="alert" className={className ? `error ${className}` : 'error'}>{named(text)}</p>
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox } from './AppName'
 import type { LoginState } from '../../main/claude-login'
 import { Spinner } from './Spinner'
 
@@ -98,11 +98,7 @@ export function SignIn({ email, onDone }: { email?: string; onDone: () => void |
               Sign-in code
             </label>
             <input id="signin-code" className="onb-input" autoComplete="off" spellCheck={false} value={code} onChange={(e) => setCode(e.target.value)} />
-            {codeError && (
-              <p role="alert" className="small error">
-                {named(codeError)}
-              </p>
-            )}
+            {codeError && <ErrorBox className="small" text={codeError} />}
             <div className="actions">
               <button type="submit" className="secondary" disabled={!code.trim()}>
                 Send code
@@ -126,9 +122,7 @@ export function SignIn({ email, onDone }: { email?: string; onDone: () => void |
   if (problem) {
     return (
       <div className="onb-field field">
-        <p role="alert" className="body error">
-          {named(problem)}
-        </p>
+        <ErrorBox className="body" text={problem} />
         {startButton('Try again')}
       </div>
     )

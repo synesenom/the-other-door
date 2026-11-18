@@ -2,7 +2,7 @@
 // home screen, for someone who never opens a terminal. Everything goes through the phone tools
 // (phone_start, pair_phone, phone_status); the pairing code is only ever inside the QR image.
 import { useEffect, useRef, useState } from 'react'
-import { AppName, named } from './AppName'
+import { AppName, ErrorBox } from './AppName'
 import { call, errorText } from '../api'
 import { Dialog } from './Dialog'
 import { Spinner } from './Spinner'
@@ -116,11 +116,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
           <p className="body"><AppName /> on your phone is this app, served by this computer. There is nothing to install: scan a code and it works anywhere while this computer is on.</p>
           <p className="small muted">When this computer restarts, set this up again and scan a new code. What you see on your phone passes through Cloudflare, which could read it on the way.</p>
           {busy && <Spinner message={busy} />}
-          {error && (
-            <p role="alert" className="small error">
-              {named(error)}
-            </p>
-          )}
+          {error && <ErrorBox className="small" text={error} />}
           <div className="actions">
             <button type="button" className="quiet" onClick={onClose}>
               Cancel
@@ -167,11 +163,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
             </>
           )}
           {busy && <Spinner message={busy} />}
-          {error && (
-            <p role="alert" className="small error">
-              {named(error)}
-            </p>
-          )}
+          {error && <ErrorBox className="small" text={error} />}
           <div className="actions">
             <button ref={close} type="button" className="quiet" onClick={onClose}>
               Close

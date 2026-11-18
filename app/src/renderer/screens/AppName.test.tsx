@@ -35,4 +35,9 @@ describe('ErrorBox', () => {
     expect(box.querySelectorAll('.app-name')).toHaveLength(1)
     expect(box).toHaveTextContent('The other door could not start.')
   })
+
+  it('adds the given class after error', () => {
+    const { getByRole } = render(<ErrorBox className="small" text="Nope" />)
+    expect(getByRole('alert')).toHaveClass('error', 'small')
+  })
 })
