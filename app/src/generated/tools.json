@@ -1402,13 +1402,18 @@
   },
   {
     "name": "save_cv",
-    "description": "Put reviewed CV text in place as profile/cv.md (the previous one is kept as cv.md.bak; the scratch\n    profile/cv.draft.md is removed). The desktop app's onboarding calls it after the user read and edited the\n    text; `./door init`'s CV step does the same. Empty text is refused. Creates profile/ when missing.\n\n    Args:\n        markdown: The whole CV, in profile.example/cv.md's structure.\n\n    Returns:\n        ``{\"cv_path\", \"backup\"}`` (``backup`` None when there was no CV before) or ``{\"error\"}``.\n    ",
+    "description": "Put reviewed CV text in place as profile/cv.md (the previous one is kept as cv.md.bak; the scratch\n    profile/cv.draft.md is removed). The desktop app's onboarding calls it after the user read and edited the\n    text; `./door init`'s CV step does the same. Empty text is refused. Creates profile/ when missing.\n\n    Args:\n        markdown: The whole CV, in profile.example/cv.md's structure.\n        backup: False leaves cv.md.bak as it is (the app's live save keeps the CV as it was when Profile opened).\n\n    Returns:\n        ``{\"cv_path\", \"backup\"}`` (``backup`` None when there was no CV before) or ``{\"error\"}``.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
         "markdown": {
           "title": "Markdown",
           "type": "string"
+        },
+        "backup": {
+          "default": true,
+          "title": "Backup",
+          "type": "boolean"
         }
       },
       "required": [

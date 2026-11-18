@@ -57,35 +57,44 @@ describe('CvEditor', () => {
     expect(screen.getByRole('switch', { name: 'Preview' })).not.toBeChecked()
   })
 
-  it('saves through save_cv, says the old one is kept, and Save waits for a change', async () => {
+  it('saves itself when the editor is left: the first save keeps the backup, the later ones leave it', async () => {
     const { call } = await open({ save_cv: { cv_path: '/p/cv.md', backup: '/p/cv.md.bak' } })
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeNull() // the details' Save, not the CV's
     await userEvent.type(editor(), '- SQL{Enter}')
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
-    expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}- SQL\n` })
-    expect(await screen.findByText('Saved. The previous CV is kept as cv.md.bak.')).toBeInTheDocument()
+    await userEvent.tab()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}- SQL\n`, backup: true }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Saved')
+    await userEvent.type(editor(), '- R{Enter}')
+    await userEvent.tab()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}- SQL\n- R\n`, backup: false }))
   })
 
-  it('the first CV is saved with no word of a backup, and the profile is read again', async () => {
+  it('saves itself a moment after typing stops', async () => {
+    const { call } = await open({ save_cv: { cv_path: '/p/cv.md', backup: null } })
+    await userEvent.type(editor(), 'x')
+    expect(call.mock.calls.some((c) => c[0] === 'save_cv')).toBe(false)
+    await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}x`, backup: true }), { timeout: 3000 })
+  })
+
+  it('the first CV saved has the profile read again, so the sidebar\'s "no CV yet" goes', async () => {
     const { onSaved } = await open({ save_cv: { cv_path: '/p/cv.md', backup: null } }, { exists: false, text: null })
     await userEvent.type(editor(), '# Ada')
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
-    expect(await screen.findByText('Saved.')).toBeInTheDocument()
-    expect(screen.queryByText(/cv\.md\.bak/)).toBeNull()
-    expect(onSaved).toHaveBeenCalled() // the sidebar's "no CV yet" goes
+    await userEvent.tab()
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
+  })
+
+  it('an emptied CV is never written', async () => {
+    const { call } = await open({ save_cv: {} })
+    await userEvent.clear(editor())
+    await userEvent.tab()
+    await new Promise((r) => setTimeout(r, 1200))
+    expect(call.mock.calls.some((c) => c[0] === 'save_cv')).toBe(false)
   })
 
   it('a cv.md that cannot be read as text is said, and saving keeps it as cv.md.bak', async () => {
     await open({}, { exists: true, text: null })
     expect(screen.getByRole('note')).toHaveTextContent('profile/cv.md could not be read as text')
     expect(screen.getByRole('note')).toHaveTextContent('cv.md.bak')
-  })
-
-  it('Undo changes puts the saved CV back', async () => {
-    await open()
-    await userEvent.type(editor(), 'x')
-    await userEvent.click(screen.getByRole('button', { name: 'Undo changes' }))
-    expect(editor()).toHaveValue(CV)
   })
 
   it('no CV yet: an empty editor, and a note whose link opens the draft', async () => {
@@ -209,26 +218,30 @@ describe('Add a page', () => {
     expect(call.mock.calls.some((c) => c[0] === 'enrich')).toBe(false)
   })
 
-  it('waits for unsaved edits to be saved or undone, since adding rewrites the CV', async () => {
-    await open({}, {}, ['https://ada.dev'])
+  it('writes what was typed before a page is read, since adding rewrites the CV', async () => {
+    const { call } = await open({ save_cv: {} }, {}, ['https://ada.dev'])
     await userEvent.type(editor(), 'x')
-    expect(screen.getByRole('button', { name: 'Add a page' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Check again' })).toBeDisabled()
-    expect(screen.getByText('Save or undo your changes before adding from a page or another file.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Add a page' }))
+    expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}x`, backup: true })
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
 })
 
 describe("errors that are no field's", () => {
-  it('a Save that fails is said in the error box', async () => {
-    await open({ save_cv: () => { throw { message: 'profile/ is not writable' } } })
+  it('a save that fails is said in the error box by the editor, and tried again at the next pause', async () => {
+    let fail = true
+    const { call } = await open({ save_cv: () => { if (fail) throw { message: 'profile/ is not writable' }; return {} } })
     await userEvent.type(editor(), 'x')
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await userEvent.tab()
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('profile/ is not writable')
     expect(alert).toHaveClass('error')
-    expect(alert).not.toHaveClass('field-error')
-    // in the sticky Save bar, on its own line: seen from wherever Save was pressed
-    expect(alert.closest('.profile-save')).not.toBeNull()
+    expect(alert.closest('.profile-save')).toBeNull()
+    fail = false
+    await userEvent.type(editor(), 'y')
+    await userEvent.tab()
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+    expect(call.mock.calls.filter((c) => c[0] === 'save_cv')).toHaveLength(2)
   })
 
   it('a page that cannot be forgotten is said in the error box', async () => {
@@ -291,35 +304,35 @@ describe('CvEditor, the profile unreadable', () => {
   })
 })
 
-describe('CvEditor, its three parts', () => {
-  it('are Sources, Style and Content, in that order', async () => {
+describe('CvEditor, its two parts', () => {
+  it('are Your CV (the file, the pages, the text) and then CV style', async () => {
     mockDoor({ show_profile: profile(), show_style: { styles: {}, in_use: 'default', candidate: false } })
     render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
     await screen.findByLabelText('Your CV (Markdown)')
-    const names = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-    expect(names).toEqual(['Sources', 'Style', 'Content'])
-    expect(within(screen.getByRole('region', { name: 'Content' })).getByLabelText('Your CV (Markdown)')).toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Sources' })).getByRole('button', { name: 'Add a page' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Your CV', 'CV style'])
+    const cv = within(screen.getByRole('region', { name: 'Your CV' }))
+    expect(cv.getByLabelText('Your CV (Markdown)')).toBeInTheDocument()
+    expect(cv.getByRole('button', { name: 'Add a page' })).toBeInTheDocument()
   })
 })
 
 describe('CvEditor, the CV file', () => {
-  it('is named under Sources, by its name', async () => {
+  it('is named, by its name', async () => {
     const h = mockDoor({ show_profile: profile() })
     h.cvFile.mockResolvedValue('my cv.pdf')
     render(<CvEditor onDraft={vi.fn()} />)
     await screen.findByLabelText('Your CV (Markdown)')
-    expect(await within(screen.getByRole('region', { name: 'Sources' })).findByText('my cv.pdf')).toBeInTheDocument()
+    expect(await within(screen.getByRole('region', { name: 'Your CV' })).findByText('my cv.pdf')).toBeInTheDocument()
   })
 
   it('none known: says so, and offers to choose one', async () => {
     await open()
-    const sources = within(screen.getByRole('region', { name: 'Sources' }))
+    const sources = within(screen.getByRole('region', { name: 'Your CV' }))
     expect(await sources.findByText('No CV file yet')).toBeInTheDocument()
     expect(sources.getByRole('button', { name: 'Choose a CV file…' })).toBeInTheDocument()
   })
 
-  it('replacing it drafts the CV from the new file into the editor, saved only by Save', async () => {
+  it('replacing it drafts the CV from the new file into the editor, which saves it', async () => {
     const user = userEvent.setup()
     const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: '/p/cv.md.bak' }, ...NO_STORIES })
     h.cvFile.mockResolvedValue('old.pdf')
@@ -329,10 +342,8 @@ describe('CvEditor, the CV file', () => {
     await user.click(await screen.findByRole('button', { name: 'Replace…' }))
     await waitFor(() => expect(editor()).toHaveValue('# Ada\n\n## New\n'))
     expect(h.draftCv).toHaveBeenCalledWith({ files: ['t1'], urls: [] })
-    expect(h.call.mock.calls.some((c) => c[0] === 'save_cv')).toBe(false)
-    expect(screen.getByText(/Drafted from new.pdf/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Save' }))
-    await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_cv', { markdown: '# Ada\n\n## New\n' }))
+    expect(screen.getByText(/Drafted from new.pdf. Your CV before it is kept as cv.md.bak./)).toBeInTheDocument()
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_cv', { markdown: '# Ada\n\n## New\n', backup: true }), { timeout: 3000 })
   })
 
   it('a new CV file builds the style of your own again from it', async () => {
@@ -373,20 +384,20 @@ describe('CvEditor, the CV file', () => {
 describe('CvEditor, the Style', () => {
   const styled = { show_style: { styles: { default: { cv: ['/h/cv_page_1.png'], letter: ['/h/letter_page_1.png'], version: 'v1', two_column: false } }, in_use: 'default', candidate: false } }
 
-  it('is above the CV, and its previews are read again after a save', async () => {
+  it('comes after the CV, and its previews are read again once the editor is left', async () => {
     const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: null }, ...styled, ...NO_STORIES })
     render(<Profile onDraft={vi.fn()} onSaved={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
     await screen.findByRole('img', { name: /The other door/ })
-    const row = screen.getByRole('heading', { name: 'Style' })
-    expect(row.compareDocumentPosition(screen.getByText('Your CV')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const row = screen.getByRole('heading', { name: 'CV style' })
+    expect(editor().compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     h.call.mockClear()
     await userEvent.type(editor(), '- SQL{Enter}')
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await userEvent.tab()
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('show_style', {}))
   })
 
   it('is not there without the app telling it how the build stands', async () => {
     await open()
-    expect(screen.queryByRole('heading', { name: 'Style' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'CV style' })).toBeNull()
   })
 })

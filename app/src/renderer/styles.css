@@ -264,8 +264,8 @@ textarea { resize: none; }
 .style-sheet { box-sizing: border-box; width: 100%; aspect-ratio: 1 / 1.414; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
 .style-caption { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
 /* the blue dash above the sheet in use; the other card keeps its room, so the sheets line up */
-.style-dash { visibility: hidden; }
-.style-current .style-dash { visibility: visible; }
+/* the sheet in use: a 2 px accent border (its 1 px border and a 1 px ring, so nothing moves) */
+.style-current .style-thumb, .style-current .style-thumb:hover { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
 /* the switch held while a build starts or runs */
 .style-switch-busy { opacity: 0.6; }
 .style-below { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
@@ -496,7 +496,6 @@ details.part > summary + * { margin-top: var(--space-4); }
 .page-aside ul { list-style: none; margin: 0; padding: 0 0 0 var(--space-4); border-left: 1px solid var(--color-border); display: flex; flex-direction: column; gap: var(--space-1); }
 .page-aside a { display: block; position: relative; padding: var(--space-1) 0; font-size: var(--text-small-size); color: var(--color-ink-muted); text-decoration: none; }
 .page-aside a:hover { color: var(--color-ink); }
-.page-aside-sub a { padding-left: var(--space-3); } /* a group of the part above it */
 /* the other views of the screen after its sections, set apart by a gap */
 .page-aside a:is([aria-current='location'], [aria-current='page']) { color: var(--color-ink); font-weight: 600; }
 .page-aside a:is([aria-current='location'], [aria-current='page'])::before { content: ''; position: absolute; left: calc(-1 * var(--space-4) - 1px); top: 4px; bottom: 4px; width: 2px; background: var(--color-accent); }
@@ -533,8 +532,6 @@ details.part > summary + * { margin-top: var(--space-4); }
 .field-error { margin: 0; font-size: var(--text-small-size); font-weight: 600; color: var(--color-ink); }
 .field-error::before { content: '↳ '; color: var(--color-ink-muted); }
 /* The CV (issue 222): the editor on the page colour, the example line a quiet surface strip in words. */
-.cv-editor { display: flex; flex-direction: column; gap: var(--space-4); }
-.cv-editor > * { margin: 0; }
 /* the pages line above the CV: a label, then the pages as chips */
 .cv-pages { display: flex; align-items: baseline; gap: var(--space-3); }
 .cv-pages-label { flex: none; }
@@ -545,6 +542,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 .cv-head .field-name { align-items: baseline; } /* the small Markdown link on the label's line */
 /* the switch keeps its 44 px to press, hanging 8 px over the space above and below, so the row is the label's height */
 .cv-head .switch { margin-block: calc(-1 * var(--space-2)); }
+.cv-written { margin-left: auto; } /* "Saving…", "Saved": beside the Preview switch */
 /* the editor (or the preview) close under its name, past the switch's hanging 8 px; not a part's 28 px */
 .part > .cv-head + * { margin-top: calc(var(--space-2) - 28px); }
 .cv-editor .cv-text { min-height: 480px; font-size: var(--text-small-size); line-height: 1.55; }

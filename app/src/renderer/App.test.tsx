@@ -682,8 +682,8 @@ describe('App, the first-launch gate', () => {
         const { call } = gated(profile(), { doctor: doctorReport('ok', chromium), show_style: shown })
         render(<App />)
         await userEvent.click(await screen.findByRole('button', { name: 'Profile' }))
-        await screen.findByRole('region', { name: 'CV' })
-        await screen.findByRole('heading', { name: 'Style' })
+        await screen.findByRole('region', { name: 'Your CV' })
+        await screen.findByRole('heading', { name: 'CV style' })
         await waitFor(() => expect(call.mock.calls.map((c) => c[0])).toContain('doctor'))
         await act(() => new Promise((r) => setTimeout(r, 50)))
         const toggle = screen.queryByRole('switch', { name: 'Use my own style' })
@@ -926,7 +926,7 @@ describe('App, the first-launch gate', () => {
     const example = () => profile({ cv: { ...existingProfile.cv, exists: false, text: null } })
     const draftAgain = async () => {
       await userEvent.click(await screen.findByRole('button', { name: 'Profile' }))
-      await screen.findByRole('region', { name: 'CV' })
+      await screen.findByRole('region', { name: 'Your CV' })
       await userEvent.click(await screen.findByRole('button', { name: 'Draft it from your CV file or pages' }))
     }
 

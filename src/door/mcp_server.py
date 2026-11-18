@@ -1432,20 +1432,21 @@ async def preview_matches(
 
 @mcp.tool()
 @_tool_errors
-def save_cv(markdown: str) -> dict:
+def save_cv(markdown: str, backup: bool = True) -> dict:
     """Put reviewed CV text in place as profile/cv.md (the previous one is kept as cv.md.bak; the scratch
     profile/cv.draft.md is removed). The desktop app's onboarding calls it after the user read and edited the
     text; `./door init`'s CV step does the same. Empty text is refused. Creates profile/ when missing.
 
     Args:
         markdown: The whole CV, in profile.example/cv.md's structure.
+        backup: False leaves cv.md.bak as it is (the app's live save keeps the CV as it was when Profile opened).
 
     Returns:
         ``{"cv_path", "backup"}`` (``backup`` None when there was no CV before) or ``{"error"}``.
     """
     from door.commands import profile as profile_cmd
 
-    return profile_cmd._save_cv_core(markdown)
+    return profile_cmd._save_cv_core(markdown, backup=backup)
 
 
 @mcp.tool()

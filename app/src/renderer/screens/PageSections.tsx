@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react'
  * The parts of a one-column screen, listed beside it (Profile, Settings): where you are, and a jump to any
  * of them. `id` is the element each part's heading has; a part folded in a closed <details> is unfolded.
  */
-/** `sub`: a group inside the part listed before it (the CV's), indented under it. */
-export function PageSections({ sections }: { sections: { id: string; label: string; sub?: boolean }[] }) {
+export function PageSections({ sections }: { sections: { id: string; label: string }[] }) {
   const [here, setHere] = useState(sections[0]?.id)
   // a part jumped to stays marked while the jump scrolls, even one too short to reach the line
   const jumped = useRef<string | null>(null)
@@ -44,7 +43,7 @@ export function PageSections({ sections }: { sections: { id: string; label: stri
     <nav className="page-aside" aria-label="Sections">
       <ul>
         {sections.map((s) => (
-          <li key={s.id} className={s.sub ? 'page-aside-sub' : undefined}>
+          <li key={s.id}>
             <a
               href={`#${s.id}`}
               aria-current={s.id === here ? 'location' : undefined}

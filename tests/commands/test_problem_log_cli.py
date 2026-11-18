@@ -40,7 +40,7 @@ def test_a_tool_answering_an_error_is_logged_with_its_name(log, tmp_path, monkey
 def test_the_arguments_of_a_failed_call_are_not_logged(log, monkeypatch):
     from door.commands import profile as profile_cmd
 
-    def refuse(markdown):
+    def refuse(markdown, backup=True):
         raise ValueError("the CV could not be saved")
 
     monkeypatch.setattr(profile_cmd, "_save_cv_core", refuse)

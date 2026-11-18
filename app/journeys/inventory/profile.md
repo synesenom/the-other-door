@@ -25,8 +25,8 @@ Conventions used below:
 | Open Profile from the problem line "You have no CV yet" | `group "Needs you"` → `button "You have no CV yet"` (sidebar foot; wide window only) | Profile opens scrolled to the **CV** section (`start={section:'cv'}`) and remounts (key n+1). The line shows only when `show_profile.config` is non-null **and** `cv.exists === false`. It is not shown in demo mode. The example CV gets no line. | — ✓ the sidebar line opens the CV, which says there is none
 | Open Settings → Risky sources from Finding | Finding screen's "choose discovery" action (`discovery_unchosen` non-empty) | Settings opens scrolled to `#settings-risky` | — ✓ the sources never chosen are said under Discover, and Enable opens Settings on Risky sources
 | `onDraft` (the CV section's buttons) | see §4 | `setUpAgain()`: calls `show_profile`, then the onboarding wizard opens prefilled with Cancel available (config exists). If `show_profile` fails, **nothing happens** (silent). | — unit: `app/src/renderer/screens/CvEditor.test.tsx`; the silent show_profile failure is not tested (nothing on screen to assert)
-| `onSaved` (after a successful details Save) | — | App re-reads `show_profile` (sidebar lines, `discovery_unchosen`) and bumps `refreshKey`, which remounts Matches. **CV Save does not call it**, so the sidebar "You have no CV yet" line stays stale after the first CV is saved (until something else re-reads the profile). | — ✓ the sidebar line goes once the first CV is saved
-| Leave Profile (any nav button, Find new jobs) | — | Profile unmounts. **Unsaved details and unsaved CV text are dropped silently.** There is no prompt. | — not tested: nothing on screen to assert
+| `onSaved` (after a details Save, the first CV written, or the editor left after a write) | — | App re-reads `show_profile` (sidebar lines, `discovery_unchosen`) and bumps `refreshKey`, which remounts Matches. | — ✓ the first CV saves itself, with no backup, and the sidebar line goes
+| Leave Profile (any nav button, Find new jobs) | — | Profile unmounts. **Unsaved details are dropped silently**; CV text typed since the last pause is written as the editor goes. | — not tested: nothing on screen to assert
 | Remote (phone) | — | Profile is never rendered (`current === 'Profile' && !remote`). Not reachable in Electron. | — not tested: unreachable in Electron (the phone never renders Profile)
 
 There is no gate into the wizard for an invalid config while the app runs. At launch, `config === null` opens the wizard (or remote-setup), so Profile's "could not be read" view is only reachable if config.json breaks **after** launch, or in the demo, where the wizard is not allowed.
@@ -38,7 +38,7 @@ There is no gate into the wizard for an invalid config while the app runs. At la
 Always present: `heading level 1 "Profile"`.
 
 ### 1.1 One page
-- No switch between parts: the details' sections, then `region "CV"` (`heading level 2 "CV"`, with the groups Sources, Style and Content as `heading level 3`), then `region "Stories"`, and one save bar at the page's foot. — ✓ opens with every section and the saved values; unit: `app/src/renderer/screens/Profile.test.tsx`
+- No switch between parts: the details' sections, then `region "Your CV"` (the CV file, the pages, the editor), `region "CV style"` (only when the app says how the build stands) and `region "Stories"`, each with its `heading level 2`, and the details' save bar at the page's foot. — ✓ opens with every section and the saved values; unit: `app/src/renderer/screens/Profile.test.tsx`
 - The CV and the Stories read their own data: a details part that cannot be read (error, spinner, invalid config) leaves them on the page. — ✓ a part that could not be read says so, and the rest of the page is there
 
 ### 1.2 Details load states
@@ -124,12 +124,11 @@ One bar for the page: it saves the details and the CV's text. `button "Save"` is
 
 | Condition | Visible |
 |---|---|
-| Changes > 0 | `button "Undo changes"` (disabled while saving; puts back the details and the CV) and `p` "1 unsaved change" / "N unsaved changes". N counts **keys**, plus one for a changed CV: both exclude parts count as one, and a hidden discovery key that changed still counts. | — unit: `app/src/renderer/screens/Profile.test.tsx` (5 changes, the two skip lists one key)
+| Changes > 0 | `button "Undo changes"` (disabled while saving) and `p` "1 unsaved change" / "N unsaved changes". N counts **keys** (the CV saves itself and is not counted): both exclude parts count as one, and a hidden discovery key that changed still counts. | — unit: `app/src/renderer/screens/Profile.test.tsx` (5 changes, the two skip lists one key)
 | Saving | status "Saving…" | — not tested: a passing state
 | After success, with no further edits | `p` "Saved.", or "Saved. The previous CV is kept as cv.md.bak." when the CV was saved (not a status role). It is cleared by the next edit. | — ✓ Save writes the changed text, flag and number fields and nothing else
 
 **Save flow**
-- The details first, then the CV: refused details save nothing of the CV either (its text kept). — ✓ one Save writes a change of the details and the CV together; unit: `app/src/renderer/screens/Profile.test.tsx`
 - The call is `init_profile(toInitArgs(saved, values, specs))`: — ✓ Save writes the changed text, flag and number fields and nothing else (init_profile arguments)
   - Named keys go by name: name, email, location, languages, role_targets, search_keywords, topic_terms, remote, min_score.
   - Exclude goes as `exclude_companies` / `exclude_keywords`.
@@ -177,7 +176,7 @@ See the search_keywords row above: nothing on screen; Claude proposes the terms 
 
 | Data | Note text | Button |
 |---|---|---|
-| `!cv.exists` | "You have no CV yet. Choose your CV file under Sources, write it under Content, or " | inline link `button "Draft it from your CV file or pages"` → onDraft (wizard) | — ✓ the sidebar line opens the CV, which says there is none; ✓ Draft it from your CV file or pages opens the set-up wizard (h1 "Tell me about yourself")
+| `!cv.exists` | "You have no CV yet. Choose your CV file, write it below, or " | inline link `button "Draft it from your CV file or pages"` → onDraft (wizard) | — ✓ the sidebar line opens the CV, which says there is none; ✓ Draft it from your CV file or pages opens the set-up wizard (h1 "Tell me about yourself")
 | own CV (the example CV too: it is never copied in, so no user has it) | no note | — | — ✓ opens on the CV as saved, with no note
 
 Other data-driven variants:
@@ -189,21 +188,20 @@ Other data-driven variants:
 - Head: "Your CV" with an inline `button "Markdown"` (the cheatsheet), and on its right `switch "Preview"` (button role=switch, `aria-checked`). — unit: `app/src/renderer/screens/CvEditor.test.tsx`
   - Off: `textbox "Your CV (Markdown)"` (textarea, spellcheck on). — ✓ opens on the CV as saved, with no note
   - On: rendered Markdown (`.markdown.cv-preview`, see §7). The preview is of the **current unsaved text**. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
-- Typing clears the "Saved…" message. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak
 - **Added lines:** after "Add N to my CV" (§4.4) each added bullet (`- <text>`) is tinted (`.md-added`, the `accent-tint` token): in the preview the list item, in the editor a tinted copy of the text behind the textarea (`.cv-backdrop`, scrolled with it). The first one is brought into view after the add and on each Preview switch. Typing or a Save clears the tint. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor
-- Saved by Profile's one save bar (§2.5): "1 unsaved change" counts a changed CV; Save is disabled while the changed text is empty or whitespace; Undo changes restores the saved text; then "Saved. The previous CV is kept as cv.md.bak." — ✓ Save writes cv.md and keeps the previous one as cv.md.bak; unit: `app/src/renderer/screens/CvEditor.test.tsx`
-- **Save:** `save_cv({markdown: text})`, then `show_profile` again (the banner can disappear once the text is no longer the example; the editor resets to the file). — ✓ Save writes cv.md and keeps the previous one as cv.md.bak
-  - On disk: `profile/cv.md` = text; `profile/cv.md.bak` = the previous content (**only if a cv.md existed**; with no prior CV there is no .bak but the message still says it is kept); `profile/cv.draft.md` is deleted. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak (cv.draft.md deleted); unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ the first save does not speak of a backup
+- No Save: the text is written a second after typing stops and when the editor is left (`save_cv`, `backup: true` only on the visit's first write, so `cv.md.bak` is the CV as Profile opened it); `status` "Saving…" then "Saved" beside Preview; an emptied CV is never written; a failed write is the error box under the editor, tried again at the next pause. — ✓ the text saves itself; cv.md.bak keeps the CV as it was when Profile opened; ✓ a failing save says why, keeps the text, and is tried again; unit: `app/src/renderer/screens/CvEditor.test.tsx`
+- **The write:** `save_cv({markdown, backup})`; the editor keeps its text (no read-back while typing). — ✓ the text saves itself; cv.md.bak keeps the CV as it was when Profile opened
+  - On disk: `profile/cv.md` = text; `profile/cv.md.bak` = the CV as Profile opened it (**only if a cv.md existed**); `profile/cv.draft.md` is deleted. — ✓ the text saves itself; cv.md.bak keeps the CV as it was when Profile opened; ✓ the first CV saves itself, with no backup, and the sidebar line goes
   - `save_cv` takes no lock.
-- **Save errors** (the error box in the save bar): — ✓ a failing save says why and keeps the text (through a tool fault; the empty-CV error is unreachable)
+- **Write errors** (the error box under the editor, tried again at the next pause): — ✓ a failing save says why, keeps the text, and is tried again (through a tool fault; the empty-CV error is unreachable: an empty CV is never written)
   - "the CV is empty; nothing was written" is **unreachable** (the button is disabled).
   - Permission errors (OSError is not "expected") → `Error executing tool save_cv: [Errno 13] Permission denied: '<path>'`.
   - Transport errors.
 - **save_cv always writes `profile/cv.md`**, but `show_profile` reads `config.cv_content`. With a custom `cv_content` path, a Save "succeeds" and the editor then reloads the **other** file, so the edit appears to vanish. Edge case, needs a custom config. — not tested: needs a custom cv_content path, which the form cannot set
 
-### 4.3 Sources: the CV file and the pages
+### 4.3 Your CV: the CV file and the pages
 
-The CV part is three sections, `heading "Sources"`, `heading "Style"` (only when the app says how the build stands) and `heading "Content"` (the editor), each a `region` named by its heading. — unit: `CvEditor.test.tsx`
+The CV is two parts, `heading "Your CV"` (the file, the pages, then the editor) and `heading "CV style"` (only when the app says how the build stands). Replace…, Add a page and Check again first write what was typed.
 
 - **The CV file** (label "CV file"): the name of the file a draft last read (`door:cv-file`, from the path the main process keeps; never on made-up data), else "No CV file yet". `button "Replace…"` (or `"Choose a CV file…"`) opens the file dialog (`pickCvFiles`), drafts with `draftCv({files:[token], urls:[]})` (spinner "Reading your CV file (a minute or two)…") and puts the draft in the editor, unsaved, with "Drafted from <name>. Check it below and Save."; a refused file or a failed draft is the error box under it, the CV untouched. Disabled while the editor is dirty. — unit only: `CvEditor.test.tsx`
 
@@ -215,7 +213,7 @@ The CV part is three sections, `heading "Sources"`, `heading "Style"` (only when
 | `button "Add a page"` | Disabled while the editor has unsaved edits | Opens `dialog "Add a page"` (§4.4) | — unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ reads the page asked for, remembers it, and proposes what the CV lacks, all ticked
 | `button "Check again"` (only with remembered pages) | Disabled while the editor has unsaved edits | Opens `dialog "Check your pages again"` (§4.4) | — ✓ Check again reads them all and names the page of each proposal
 
-- With the editor dirty, the line "Save or undo your changes before adding from a page or another file." shows under them. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak
+- Replace…, Add a page and Check again first write what was typed. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
 
 ### 4.4 The page dialogs: Add a page, Check your pages again
 
@@ -232,7 +230,7 @@ The CV part is three sections, `heading "Sources"`, `heading "Style"` (only when
 - Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor
 - Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — not covered by a journey; the refusal: unit: `tests/commands/test_enrich_cli.py`; the dialog showing it: no test
 
-### 4.5 The Style (StyleRow.tsx, between Sources and Content)
+### 4.5 CV style (StyleRow.tsx, after Your CV)
 
 Sources: `StyleRow.tsx`, `PageStack.tsx`, `style-file.ts` (main), `commands/style.py` (`_use_core`, `status`, `_show_core`), `style/style_preview.py`. `show_style` answers `{styles: {default, like?}, in_use, candidate}`; `use_style(style: like|default|current, rerender)` answers `{in_use, prepared, rerendered?, failed?}`. Shown only in the app window (the phone has no Profile), and the build actions are not offered on made-up data.
 
@@ -240,12 +238,12 @@ Sources: `StyleRow.tsx`, `PageStack.tsx`, `style-file.ts` (main), `commands/styl
 |---|---|---|
 | First read | an empty sheet's room and "Preparing the previews…"; no switch yet | none — unit: `StyleRow.test.tsx`; preview: `profile-cv-style-loading` |
 | No previews (no Chromium, or the call fails) | nothing but the switch; no error | `switch "Use my own style"` — unit: `StyleRow.test.tsx` |
-| No style of your own | the sheet "The other door" with the blue dash above it, the line "Your tailored CVs printed in the style of your CV file. Building it takes 2–5 minutes in the background." | `switch "Use my own style"` at the heading's right, off: on builds from the CV file (`door:style-from-cv-file`) and uses the style once ready — ✓ the switch builds the style from the CV file and uses it once ready, prints the prepared CVs again, and goes back; unit |
+| No style of your own | the sheet "The other door" with the accent border, the line "Your tailored CVs printed in the style of your CV file. Building it takes 2–5 minutes in the background." | `switch "Use my own style"` at the heading's right, off: on builds from the CV file (`door:style-from-cv-file`) and uses the style once ready — ✓ the switch builds the style from the CV file and uses it once ready, prints the prepared CVs again, and goes back; unit |
 | Reading | "Reading your CV's look…" while the CV file is taken in; the switch held; a CV file that cannot be used (none, not a PDF, over 25 MB, no look to copy, Claude unreachable) is the error box and the switch goes back off | ✓ a CV file whose structure the model could not read is refused in words and no build starts; preview: `profile-cv-style-reading`, `profile-cv-style-unread` |
 | Building | the sheet stays, "Building your style…"; the switch held; a failed build says nothing | — ✓ the switch builds the style… |
-| A built style waits (`candidate`) | "The other door" and "Your CV", each sheet a button that opens its full pages; the dash above the one in use | the switch on: `use_style like`; turned on before the build ended, the style is used when it is ready — preview: `profile-cv-style-candidate` |
-| A style of your own in use, or kept | the dash above the one in use; the switch flips at once and goes back if `use_style` fails | the switch: `like` on, `default` off — preview: `profile-cv`, `profile-cv-style-inuse` |
-| A new CV file (Sources' Replace…) | with a style of your own built, it is built again from the new file and used when ready if yours was in use | — unit: `CvEditor.test.tsx`, `StyleRow.test.tsx` |
+| A built style waits (`candidate`) | "The other door" and "Your CV", each sheet a button that opens its full pages; the accent border on the one in use | the switch on: `use_style like`; turned on before the build ended, the style is used when it is ready — preview: `profile-cv-style-candidate` |
+| A style of your own in use, or kept | the accent border on the one in use; the switch flips at once and goes back if `use_style` fails | the switch: `like` on, `default` off — preview: `profile-cv`, `profile-cv-style-inuse` |
+| A new CV file (Your CV's Replace…) | with a style of your own built, it is built again from the new file and used when ready if yours was in use | — unit: `CvEditor.test.tsx`, `StyleRow.test.tsx` |
 | Two-column style | "Some application systems read two-column CVs less well." | none — preview: `profile-cv-style-two-column` |
 | After a switch with prepared CVs | `button "Print N prepared CVs again"`, then "Printing again…", then "N printed again." (and Try again when some failed) | ✓ the switch builds the style…; preview: `profile-cv-style-printed` |
 | Full pages | `dialog` named by the style: `pill "CV · N pages"`, `pill "Cover letter · N page"`, the pages, Close, Esc | — ✓ the switch builds the style… |
@@ -368,7 +366,7 @@ How the test world produces each part:
 2. **A details Save re-creates a missing `cv.md` as the example CV** (and restores templates) through `_init_core`'s copy step. — ✓ saving the details does not make up a CV
 3. **Bad number typed into "How close a match to show"** (or emptied) fails MCPServer argument validation. Four raw pydantic lines appear in the top alert instead of under the field. The other numeric fields go through `other` and get a clean under-field message. — not covered by a journey
 4. Leaving Profile loses unsaved details and CV text. It does not prompt. — not tested: nothing on screen to assert
-5. **CV Save does not refresh App's profile**, so the "You have no CV yet" sidebar line stays stale. — ✓ the sidebar line goes once the first CV is saved
+5. The first CV written refreshes App's profile, so the "You have no CV yet" line goes. — ✓ the first CV saves itself, with no backup, and the sidebar line goes
 6. **Market "Add these titles"** does not refresh the Details form (stale values that a later details Save can overwrite). It also seeds an empty `search_keywords` with the role targets. — not covered by a journey; the seeding is right (the role targets are what an empty list searches for): unit: `tests/commands/test_market_cli.py`
 7. **The Profile form cannot record a discovery source as "chosen: off"**, so `discovery_unchosen` cannot be cleared by leaving it off. — not covered by a journey
 8. A details part that cannot be read leaves the CV and the Stories on the page. — ✓ a part that could not be read says so, and the rest of the page is there
@@ -385,7 +383,7 @@ How the test world produces each part:
 
 **Found by the journeys, not in the list above**
 - An unreadable (non-UTF-8) `cv.md` opens as an empty editor with no note — ✓ a cv.md that cannot be read as text is said, not shown as an empty CV
-- Saving the first CV says "The previous version is kept as cv.md.bak." when there was none — ✓ the first save does not speak of a backup
+- The first CV written leaves no `cv.md.bak` — ✓ the first CV saves itself, with no backup, and the sidebar line goes
 - A Use these with no title words empties the saved title words — not covered by a journey
 - A Why? error is never cleared — not covered by a journey
 - A failed market report is never asked again — not covered by a journey

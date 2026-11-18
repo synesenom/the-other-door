@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useRef, useState, type MutableRefObject } from 'react'
+import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { ErrorBox } from './AppName'
 import { call, draftCv, errorText } from '../api'
 import { Dialog } from './Dialog'
@@ -180,31 +180,23 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
 }
 
 /**
- * Profile → CV, in three parts. Sources: the CV file a draft read, replaced by drafting from another (the draft lands
- * in the editor, saved only by Save), and the pages the CV is read from ("Add a page" is /expand as a button).
- * Style: the CV style (StyleRow). Content: profile/cv.md edited as Markdown, with a preview. It has no Save of its
- * own: Profile's one save bar saves the CV with the rest of the page, through `control` (save_cv keeps the previous
- * version as cv.md.bak), and hears whether there is anything to save through `onDirty`.
+ * Profile's "Your CV" and "CV style". Your CV: the CV file a draft read, replaced by drafting from another, the pages
+ * the CV is read from ("Add a page" is /expand as a button), then profile/cv.md as Markdown with a preview. The text
+ * saves itself a second after typing stops, and when the editor is left: no Save. The first save of a visit keeps the
+ * CV as it was as cv.md.bak; the later ones leave that backup alone (save_cv's `backup`).
  */
-export interface CvControl {
-  /** Writes the CV; the line to show once saved. Throws what went wrong. */
-  save: () => Promise<string>
-  undo: () => void
-}
+/** How long typing must stop before the text is written. */
+export const SAVE_AFTER_MS = 1000
 
 export function CvEditor({
   onDraft,
   onSaved,
-  onDirty,
-  control,
   style,
 }: {
   onDraft: () => void
-  /** cv.md was written: what reads the profile (the sidebar's "no CV yet") reads it again. */
+  /** cv.md was written and the editor left (or the first CV written): what reads the profile (the sidebar's "no CV
+   * yet") reads it again. */
   onSaved?: () => void
-  /** Whether the CV has unsaved text, and whether that text is empty (nothing a Save can write). */
-  onDirty?: (state: { dirty: boolean; empty: boolean }) => void
-  control?: MutableRefObject<CvControl | null>
   /** The CV style: how its build stands (the sidebar's summary), whether one can be built here (not on made-up data),
    * and what to tell the app when a build starts or a style is chosen. */
   style?: { state: 'none' | 'building' | 'ready' | 'failed' | null; canBuild: boolean; onChanged: () => void }
@@ -230,6 +222,13 @@ export function CvEditor({
   const [fileError, setFileError] = useState<string | null>(null)
   // counts the CV files drafted from here: the style of the user's own is built again from a new one
   const [replaced, setReplaced] = useState(0)
+  // the live save: writing, or why the last write failed (tried again at the next pause)
+  const [writing, setWriting] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  // the text to write, read by the timer and on leaving; whether this visit has kept its backup yet; a write running
+  const latest = useRef('')
+  const backedUp = useRef(false)
+  const inFlight = useRef<Promise<void> | null>(null)
   const editorId = useId()
   // A preview marker opens the editor with its gap selected, so typing replaces it (as the onboarding review does).
   const box = useRef<HTMLTextAreaElement>(null)
@@ -274,6 +273,7 @@ export function CvEditor({
       setPages((had) => had ?? (p as Profile).config?.enrich_sources ?? p.enrich_sources ?? [])
       setSaved(p.cv.text ?? '')
       setText(p.cv.text ?? '')
+      latest.current = p.cv.text ?? ''
     } catch (e) {
       setLoadError(errorText(e))
     }
@@ -283,7 +283,54 @@ export function CvEditor({
     window.door.cvFile().then(setCvFile, () => undefined)
   }, [])
 
-  /** Another CV file: drafted into the editor, where it is checked and saved like any change. */
+  /** Write the text as it is now, unless it is saved or empty; one write at a time. */
+  const savedRef = useRef('')
+  savedRef.current = saved
+  const flush = async (): Promise<void> => {
+    if (inFlight.current) await inFlight.current
+    const markdown = latest.current
+    if (markdown === savedRef.current || markdown.trim() === '') return
+    const first = !backedUp.current
+    const run = (async () => {
+      setWriting(true)
+      try {
+        await call('save_cv', { markdown, backup: first })
+        backedUp.current = true
+        savedRef.current = markdown
+        setSaved(markdown)
+        setSaveError(null)
+        // the first CV: the sidebar's "no CV yet" goes at once
+        if (profile && !profile.cv.exists && first) onSaved?.()
+      } catch (e) {
+        setSaveError(errorText(e))
+      } finally {
+        setWriting(false)
+      }
+    })()
+    inFlight.current = run
+    await run
+    inFlight.current = null
+  }
+  // a pause in typing writes it
+  useEffect(() => {
+    latest.current = text
+    if (!profile || text === saved || text.trim() === '') return
+    const t = setTimeout(() => void flush(), SAVE_AFTER_MS)
+    return () => clearTimeout(t)
+  }, [text, saved, profile])
+  // leaving Profile with a pause not yet reached still writes it
+  useEffect(() => () => void flush(), [])
+  /** The editor left: written now, and the style previews (made from the CV) and the app read it again. */
+  const leave = async () => {
+    const before = savedRef.current
+    await flush()
+    if (savedRef.current !== before) {
+      setSaves((n) => n + 1)
+      onSaved?.()
+    }
+  }
+
+  /** Another CV file: drafted into the editor, and saved like any change (the CV before it kept as cv.md.bak). */
   const replaceFile = async () => {
     setFileError(null)
     setMessage(null)
@@ -298,7 +345,7 @@ export function CvEditor({
       setAdded(null)
       setText(r.markdown)
       setView('edit')
-      setMessage(`Drafted from ${file.name}. Check it below and Save.`)
+      setMessage(`Drafted from ${file.name}. Your CV before it is kept as cv.md.bak.`)
       setReplaced((n) => n + 1)
       window.door.cvFile().then(setCvFile, () => undefined)
     } catch (e) {
@@ -308,29 +355,21 @@ export function CvEditor({
     }
   }
 
+  // a change not written yet: what reads or rewrites the CV on the server waits for it
   const dirty = text !== saved
-  useEffect(() => {
-    if (profile) onDirty?.({ dirty, empty: text.trim() === '' })
-  }, [profile, dirty, text.trim() === ''])
-  if (control)
-    control.current = {
-      save: async () => {
-        const r = await call<{ backup?: string | null }>('save_cv', { markdown: text })
-        setMessage(null)
-        setAdded(null)
-        await load()
-        setSaves((n) => n + 1)
-        onSaved?.()
-        return r.backup ? 'Saved. The previous CV is kept as cv.md.bak.' : 'Saved.'
-      },
-      undo: () => {
-        setMessage(null)
-        setText(saved)
-      },
-    }
+  const written = writing ? 'Saving…' : saveError ? null : dirty ? null : saves > 0 || backedUp.current ? 'Saved' : null
 
-  if (loadError) return <ErrorBox text={loadError} />
-  if (!profile) return <Spinner message="Reading your CV…" />
+  // Profile's part "Your CV": the file and the pages it is read from, then the text; the style is a part of its own after it
+  const part = (body: ReactNode) => (
+    <section className="part" aria-labelledby="profile-cv">
+      <h2 className="display-s" id="profile-cv">
+        Your CV
+      </h2>
+      {body}
+    </section>
+  )
+  if (loadError) return part(<ErrorBox text={loadError} />)
+  if (!profile) return part(<Spinner message="Reading your CV…" />)
   const keepPages = async (next: string[]) => {
     const before = pages
     setPages(next)
@@ -344,11 +383,15 @@ export function CvEditor({
   }
   const remembered = pages ?? []
   return (
-    <div className="cv-editor">
+    <>
+      <section className="part cv-editor" aria-labelledby="profile-cv">
+      <h2 className="display-s" id="profile-cv">
+        Your CV
+      </h2>
       {/* the wizard may end with no CV; the example CV is never copied in, so only a developer's hand-made profile has it */}
       {!profile.cv.exists && (
         <div role="note" className="cv-example small">
-          <span>You have no CV yet. Choose your CV file under Sources, write it under Content, or </span>
+          <span>You have no CV yet. Choose your CV file, write it below, or </span>
           <button type="button" className="link-inline" onClick={onDraft}>
             Draft it from your CV file or pages
           </button>
@@ -359,10 +402,6 @@ export function CvEditor({
           profile/cv.md could not be read as text (it may be in another encoding, or not text at all). What you save here replaces it; the file as it is now is kept as cv.md.bak.
         </p>
       )}
-      <section className="part" aria-labelledby="profile-cv-sources">
-        <h3 className="label" id="profile-cv-sources">
-          Sources
-        </h3>
         {/* the CV file: named, replaced by drafting from another one */}
         <div className="cv-pages">
           <span className="field-label cv-pages-label">CV file</span>
@@ -370,7 +409,7 @@ export function CvEditor({
           {drafting ? (
             <Spinner message="Reading your CV file (a minute or two)…" />
           ) : (
-            <button type="button" className="secondary" disabled={dirty} onClick={() => void replaceFile()}>
+            <button type="button" className="secondary" onClick={() => void flush().then(replaceFile)}>
               {cvFile ? 'Replace…' : 'Choose a CV file…'}
             </button>
           )}
@@ -396,16 +435,15 @@ export function CvEditor({
           </div>
         )}
         <div className="actions">
-          <button type="button" className="secondary" disabled={dirty} onClick={() => { setMessage(null); setPanel('page') }}>
+          <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel('page') })}>
             Add a page
           </button>
           {remembered.length > 0 && (
-            <button type="button" className="secondary" disabled={dirty} onClick={() => { setMessage(null); setPanel('again') }}>
+            <button type="button" className="secondary" onClick={() => void flush().then(() => { setMessage(null); setPanel('again') })}>
               Check again
             </button>
           )}
         </div>
-        {dirty && <p className="small muted">Save or undo your changes before adding from a page or another file.</p>}
         {pagesError && (
           <ErrorBox text={pagesError} />
         )}
@@ -424,23 +462,22 @@ export function CvEditor({
             }}
           />
         )}
-      </section>
-      {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
-      <section className="part" aria-labelledby="profile-cv-content">
-        <h3 className="label" id="profile-cv-content">
-          Content
-        </h3>
         {/* the CV: its name, with the Preview switch on the right, then the text or how it reads */}
         <div className="cv-head">
           <div className="field-name">
             <label htmlFor={editorId} className="field-label">
-              Your CV
+              Text
             </label>
             {/* a link like the pages' ones: small, not the label's weight */}
             <span className="small muted">
               (<MarkdownLink />)
             </span>
           </div>
+          {written && (
+            <span className="small muted cv-written" role="status">
+              {written}
+            </span>
+          )}
           <Switch label="Preview" checked={view === 'preview'} onChange={(on) => setView(on ? 'preview' : 'edit')} />
         </div>
         {view === 'edit' ? (
@@ -457,6 +494,7 @@ export function CvEditor({
               </div>
             )}
             <textarea ref={box} id={editorId} aria-label="Your CV (Markdown)" className="cv-text" spellCheck value={text}
+              onBlur={() => void leave()}
               onScroll={(e) => backdrop.current && (backdrop.current.scrollTop = e.currentTarget.scrollTop)}
               onChange={(e) => {
                 setMessage(null)
@@ -467,7 +505,10 @@ export function CvEditor({
         ) : (
           <Markdown text={text} className="cv-preview" onGap={goToGap} marked={added ?? undefined} />
         )}
+        {/* the write failed: said by the editor, tried again at the next pause */}
+        {saveError && <ErrorBox text={saveError} />}
       </section>
-    </div>
+      {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
+    </>
   )
 }
