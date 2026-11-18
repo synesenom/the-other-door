@@ -11,7 +11,7 @@ const calls = (call: { mock: { calls: unknown[][] } }) => call.mock.calls.filter
 
 afterEach(cleanup)
 
-function show(where: 'real' | 'demo' | 'sandbox' = 'real', remote = false, update?: unknown) {
+function show(where: 'production' | 'staging' | 'sandbox' = 'production', remote = false, update?: unknown) {
   const h = mockDoor({})
   if (update) h.checkUpdate.mockResolvedValue(update as never)
   const props = {
@@ -76,7 +76,7 @@ describe('Settings', () => {
       scrolled.push(this)
     }
     try {
-      render(<Settings doctor={null} drive={null} where="real" at="report" onRecheck={vi.fn()} onDriveChanged={vi.fn()} onDataChanged={vi.fn()} />)
+      render(<Settings doctor={null} drive={null} where="production" at="report" onRecheck={vi.fn()} onDriveChanged={vi.fn()} onDataChanged={vi.fn()} />)
       expect(scrolled).toEqual([screen.getByRole('region', { name: 'Report a problem' })])
     } finally {
       Element.prototype.scrollIntoView = before
@@ -86,7 +86,7 @@ describe('Settings', () => {
   it('a saved report is said to the app, so the sidebar reads the summary again', async () => {
     const h = mockDoor({})
     const onReported = vi.fn()
-    render(<Settings doctor={null} drive={null} where="real" onReported={onReported} onRecheck={vi.fn()} onDriveChanged={vi.fn()} onDataChanged={vi.fn()} />)
+    render(<Settings doctor={null} drive={null} where="production" onReported={onReported} onRecheck={vi.fn()} onDriveChanged={vi.fn()} onDataChanged={vi.fn()} />)
     h.reportProblem.mockResolvedValueOnce({ ok: false, canceled: true })
     const report = screen.getByRole('region', { name: 'Report a problem' })
     await userEvent.click(within(report).getByRole('button', { name: 'Save logs…' }))
@@ -98,7 +98,7 @@ describe('Settings', () => {
   })
 
   it('the phone has no list of parts', () => {
-    show('real', true)
+    show('production', true)
     expect(screen.queryByRole('navigation', { name: 'Sections' })).toBeNull()
   })
 
@@ -118,7 +118,7 @@ describe('Settings', () => {
   })
 
   it('on the phone: no export, import or report; it says these are done on the computer running The other door', () => {
-    show('real', true)
+    show('production', true)
     const computer = screen.getByRole('region', { name: 'This computer' })
     expect(within(computer).getByText(/where it is installed/)).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Your data' })).toBeNull()
@@ -126,7 +126,7 @@ describe('Settings', () => {
   })
 
   it('on the phone: only Appearance and where the data is; no connections, no doctor', () => {
-    const { onRecheck, call } = show('real', true)
+    const { onRecheck, call } = show('production', true)
     expect(screen.getByRole('region', { name: 'Appearance' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'This computer' })).toHaveTextContent('/Users/ada/door-data')
     expect(screen.queryByRole('region', { name: 'Connections' })).toBeNull()
@@ -149,7 +149,7 @@ describe('Settings: Version', () => {
   })
 
   it('a build that cannot install says a newer version is available and opens its page', async () => {
-    const { openExternal } = show('real', false, link)
+    const { openExternal } = show('production', false, link)
     const section = await screen.findByRole('region', { name: 'Version' })
     expect(within(section).getByText('Version 0.1.1 is available')).toBeInTheDocument()
     await userEvent.click(within(section).getByRole('button', { name: 'Download' }))
@@ -157,28 +157,28 @@ describe('Settings: Version', () => {
   })
 
   it('with nothing newer: only the version, nothing to press (the app checks by itself)', async () => {
-    show('real', false, none)
+    show('production', false, none)
     const section = await screen.findByRole('region', { name: 'Version' })
     expect(within(section).getByText('Version 0.1.0')).toBeInTheDocument()
     expect(within(section).queryByRole('button')).toBeNull()
   })
 
   it('says it is downloading, with no Download link', async () => {
-    show('real', false, downloading)
+    show('production', false, downloading)
     const section = await screen.findByRole('region', { name: 'Version' })
     expect(within(section).getByText('Downloading 0.1.1')).toBeInTheDocument()
     expect(within(section).queryByRole('button', { name: 'Download' })).toBeNull()
   })
 
   it('offers a restart once downloaded', async () => {
-    const { installUpdate } = show('real', false, downloaded)
+    const { installUpdate } = show('production', false, downloaded)
     const section = await screen.findByRole('region', { name: 'Version' })
     await userEvent.click(within(section).getByRole('button', { name: 'Restart to update to 0.1.1' }))
     expect(installUpdate).toHaveBeenCalledTimes(1)
   })
 
   it('follows the state the app pushes', async () => {
-    const h = show('real', false, downloading)
+    const h = show('production', false, downloading)
     const section = await screen.findByRole('region', { name: 'Version' })
     expect(within(section).getByText('Downloading 0.1.1')).toBeInTheDocument()
     act(() => h.pushUpdate(downloaded))

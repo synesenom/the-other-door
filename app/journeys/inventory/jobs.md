@@ -26,10 +26,10 @@ Conventions used below:
 
 Calls at start: `info` IPC, then `show_profile` {}. Once the shell is up: `status_summary` {}, re-run on every `refreshKey` bump, and `doctor` {}, skipped when remote.
 
-`document.title`: "The other door"; "The other door (demo)" in the demo; "The other door (onboarding sandbox)" when `info.sandbox==='onboard'`.
+`document.title`: "The other door"; "The other door (staging)" or "The other door (sandbox)" by `info.environment`.
 
 ### Sidebar (`aside` = role complementary). Hidden entirely when narrow and a posting is pushed.
-- **Demo tag** (only when `info.demo`): `role=note`, aria-label "Demo data" with text "Demo" and title "Made-up jobs (app/.demo). Nothing here changes your real data or Drive.". In the onboarding sandbox: aria-label "Onboarding sandbox", text "Sandbox", title "Onboarding sandbox (app/.onboard). Nothing here changes your real data or Drive.".
+- **Environment tag** (only when `info.environment` is not `production`): `role=note`, aria-label and text "Sandbox" (title "Sandbox (app/.sandbox): made-up data and a simulated job search. Nothing here changes your real data or Drive.") or "Staging" (title "Staging (app/.staging): everything is real but the data, kept apart from yours and from Drive.").
 - **nav "Main"**, buttons **"Matches"**, **"Applications"**, **"Profile"**, **"Settings"**, **"Analytics"**. The phone (remote) has no Profile and no Analytics. The current one has `aria-current="page"`, but only while Finding jobs is not on screen. Clicking one sets current and leaves Finding (`finding=false`). Narrow adds a `.tab-dash` span to the current tab (aria-hidden). TabIcon SVGs are aria-hidden, so each name is just the word. — ✓ the nav goes to Applications and back to Matches, which reads the list again; ✓ lists the matches best first… (Matches current)
 - **btn "Find new jobs" / "Finding jobs…"** (sidebar-foot; hidden by CSS when narrow): — ✓ Find new jobs runs the five steps against the boards, scores the new ads and sums the run up
   - Text is "Finding jobs…" when `own` (this window's run is running, or the board says active and own) or `foreign` (board active and not own). Otherwise "Find new jobs". — ✓ Find new jobs runs the five steps…; ✓ a run started in a terminal: the window jumps to Finding jobs…

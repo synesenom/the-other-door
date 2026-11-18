@@ -177,21 +177,21 @@ describe('App', () => {
     expect(call.mock.calls.filter((c) => c[0] === 'status_summary')).toHaveLength(1)
   })
 
-  it('says so in a banner and the window title when it runs on the demo data', async () => {
+  it('says so in a banner and the window title when it runs in the sandbox', async () => {
     const { info } = setup()
-    info.mockResolvedValue({ demo: true })
+    info.mockResolvedValue({ environment: 'sandbox' })
     render(<App />)
-    const tag = await screen.findByRole('note', { name: 'Demo data' })
-    expect(tag).toHaveTextContent('Demo')
-    expect(tag).toHaveAttribute('title', expect.stringContaining('Made-up jobs'))
-    await waitFor(() => expect(document.title).toBe('The other door (demo)'))
+    const tag = await screen.findByRole('note', { name: 'Sandbox' })
+    expect(tag).toHaveTextContent('Sandbox')
+    expect(tag).toHaveAttribute('title', expect.stringContaining('made-up data'))
+    await waitFor(() => expect(document.title).toBe('The other door (sandbox)'))
   })
 
   it('shows no banner on your own data', async () => {
     setup()
     render(<App />)
     await screen.findByText(/Nothing scored yet/)
-    expect(screen.queryByRole('note', { name: 'Demo data' })).toBeNull()
+    expect(screen.queryByRole('note')).toBeNull()
   })
 })
 
@@ -521,16 +521,9 @@ describe('App, the first-launch gate', () => {
     expect(call).toHaveBeenCalledWith('doctor', { quick: true }) // no test print on the app's own status call
   })
 
-  it('never shows the wizard in the demo, even if the profile has no config', async () => {
-    const { info } = gated(freshProfile)
-    info.mockResolvedValue({ demo: true })
-    render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Matches' })).toBeInTheDocument()
-  })
-
   it('on the phone: Matches, Applications and Settings; the profile is changed on the computer', async () => {
     const { info } = gated(profile())
-    info.mockResolvedValue({ demo: false, remote: true })
+    info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
     const nav = await screen.findByRole('navigation')
     expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Matches', 'Applications', 'Settings'])
@@ -538,7 +531,7 @@ describe('App, the first-launch gate', () => {
 
   it('on the phone, doctor is never asked and what needs you is said, not a button to a screen it lacks', async () => {
     const { info, call } = gated(profile({ cv: cvState(), discovery_unchosen: [{ key: 'linkedin_discovery', label: 'LinkedIn' }] }))
-    info.mockResolvedValue({ demo: false, remote: true })
+    info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
     const foot = await screen.findByRole('group', { name: 'Needs you' })
     expect(within(foot).getByText('You have no CV yet')).toBeInTheDocument()
@@ -551,26 +544,22 @@ describe('App, the first-launch gate', () => {
 
   it('on the phone, a home with no profile says to set The other door up on the computer running The other door', async () => {
     const { info } = gated(freshProfile)
-    info.mockResolvedValue({ demo: false, remote: true })
+    info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
     expect(await screen.findByRole('heading', { name: 'Set up The other door first' })).toBeInTheDocument()
     expect(screen.getByText(/where it is installed/)).toBeInTheDocument()
     expect(screen.queryByRole('navigation')).toBeNull()
   })
 
-  it('does show it in the onboarding sandbox, whose folder is empty', async () => {
-    const { info } = gated(freshProfile)
-    info.mockResolvedValue({ demo: true, sandbox: 'onboard' })
-    render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Tell me about yourself' })).toBeInTheDocument()
-  })
-
-  it('shows it in staging, with no way to Google Drive', async () => {
-    const { info } = gated(freshProfile)
-    info.mockResolvedValue({ demo: false, sandbox: 'staging' })
-    render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Tell me about yourself' })).toBeInTheDocument()
-    expect(screen.queryByText(/Google Drive/)).toBeNull()
+  it('shows it in staging and an empty sandbox, with no way to Google Drive', async () => {
+    for (const environment of ['staging', 'sandbox'] as const) {
+      const { info } = gated(freshProfile)
+      info.mockResolvedValue({ environment })
+      render(<App />)
+      expect(await screen.findByRole('heading', { name: 'Tell me about yourself' })).toBeInTheDocument()
+      expect(screen.queryByText(/Google Drive/)).toBeNull()
+      cleanup()
+    }
   })
 
   it('goes to the app when show_profile fails', async () => {
@@ -581,17 +570,9 @@ describe('App, the first-launch gate', () => {
     expect(await screen.findByRole('heading', { name: 'Matches' })).toBeInTheDocument()
   })
 
-  it('says in the sidebar and the title that it is the onboarding sandbox', async () => {
-    const { info } = gated(profile())
-    info.mockResolvedValue({ demo: true, sandbox: 'onboard' })
-    render(<App />)
-    expect(await screen.findByRole('note', { name: 'Onboarding sandbox' })).toHaveTextContent('Sandbox')
-    await waitFor(() => expect(document.title).toBe('The other door (onboarding sandbox)'))
-  })
-
   it('says in the sidebar and the title that it is staging', async () => {
     const { info } = gated(profile())
-    info.mockResolvedValue({ demo: false, sandbox: 'staging' })
+    info.mockResolvedValue({ environment: 'staging' })
     render(<App />)
     expect(await screen.findByRole('note', { name: 'Staging' })).toHaveTextContent('Staging')
     await waitFor(() => expect(document.title).toBe('The other door (staging)'))
@@ -712,7 +693,7 @@ describe('App, the first-launch gate', () => {
 
     it('on the phone a ready CV style is not said', async () => {
       const { info, call } = gated(profile(), { status_summary: summary({ style: { state: 'ready' } }) })
-      info.mockResolvedValue({ demo: false, remote: true })
+      info.mockResolvedValue({ environment: 'production', remote: true })
       render(<App />)
       await screen.findByRole('heading', { name: 'Matches' })
       await waitFor(() => expect(call.mock.calls.map((c) => c[0])).toContain('status_summary'))
@@ -765,7 +746,7 @@ describe('App, the first-launch gate', () => {
       cleanup()
       const drive = { connected: true, account: 'a@b.c', last_synced: null, last_error: null, configured: true }
       const phone = gated(profile(), { status_summary: summary({ drive }) })
-      phone.info.mockResolvedValue({ demo: false, remote: true })
+      phone.info.mockResolvedValue({ environment: 'production', remote: true })
       render(<App />)
       await screen.findByRole('heading', { name: 'Matches' })
       await waitFor(() => expect(phone.call.mock.calls.map((c) => c[0])).toContain('status_summary'))
@@ -851,7 +832,7 @@ describe('App, the first-launch gate', () => {
 
     it('on the phone, something that keeps going wrong is not said: the report is made on the computer', async () => {
       const { info, call } = gated(profile(), { status_summary: summary({ recurring_problem: true }) })
-      info.mockResolvedValue({ demo: false, remote: true })
+      info.mockResolvedValue({ environment: 'production', remote: true })
       render(<App />)
       await screen.findByRole('heading', { name: 'Matches' })
       await waitFor(() => expect(call.mock.calls.map((c) => c[0])).toContain('status_summary'))
@@ -862,7 +843,7 @@ describe('App, the first-launch gate', () => {
     it('on the phone, the plan line is said, as plain text', async () => {
       const low = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.9 }, room: { find: 1, prepare: 2 }, binding: 'five_hour' }
       const { info } = gated(profile(), { status_summary: summary({ plan: low }) })
-      info.mockResolvedValue({ demo: false, remote: true })
+      info.mockResolvedValue({ environment: 'production', remote: true })
       render(<App />)
       const line = await screen.findByText('Claude can prepare 2 more')
       expect(line.closest('button')).toBeNull()

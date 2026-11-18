@@ -11,8 +11,8 @@ export interface DriveStatus {
   configured?: boolean
 }
 
-/** Where the app runs: the user's data, the made-up data of the demo or the onboarding sandbox, or staging's throwaway data. */
-export type Where = 'real' | 'demo' | 'sandbox' | 'staging'
+/** Where the app runs (app/README.md "Environments"): your data, or staging's or the sandbox's throwaway data. */
+export type Environment = 'production' | 'staging' | 'sandbox'
 
 export type ClaudeRow =
   | { kind: 'checking' }
@@ -49,9 +49,8 @@ export function claudeRow(doctor: DoctorReport | null): ClaudeRow {
   return { kind: 'signed-out' }
 }
 
-export function driveRow(drive: DriveStatus | null, where: Where): DriveRow {
-  if (where === 'demo') return { kind: 'unavailable', why: 'Not available in the demo' }
-  if (where === 'sandbox') return { kind: 'unavailable', why: 'Not available in the onboarding sandbox' }
+export function driveRow(drive: DriveStatus | null, where: Environment): DriveRow {
+  if (where === 'sandbox') return { kind: 'unavailable', why: 'Not available in the sandbox' }
   if (where === 'staging') return { kind: 'unavailable', why: 'Not available in staging' }
   if (drive === null) return { kind: 'checking' }
   if (drive.configured === false) return { kind: 'unavailable', why: 'Not available in this build' }

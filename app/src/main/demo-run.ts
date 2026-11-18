@@ -1,6 +1,6 @@
-// The simulated run of the demo (`npm run dev:demo`): "Find new jobs" there plays a scripted
+// The simulated run of the sandbox (`npm run dev:sandbox`): "Find new jobs" there plays a scripted
 // sequence instead of calling `find_jobs`, so nothing reaches the network or your Claude plan.
-// It pushes the same boards a real run does, writes two made-up postings into the demo's
+// It pushes the same boards a real run does, writes two made-up postings into the sandbox's
 // jobs/ folder and answers with a run record of the real shape. Only file writes and timers.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

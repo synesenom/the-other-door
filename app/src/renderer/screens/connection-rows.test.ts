@@ -42,25 +42,24 @@ describe('claudeRow', () => {
 const off: DriveStatus = { connected: false, account: null, last_synced: null, last_error: null, configured: true }
 
 describe('driveRow', () => {
-  it('the demo, the sandbox and staging never reach Drive', () => {
-    expect(driveRow(off, 'demo')).toEqual({ kind: 'unavailable', why: 'Not available in the demo' })
+  it('staging and the sandbox never reach Drive', () => {
     expect(driveRow(off, 'staging')).toEqual({ kind: 'unavailable', why: 'Not available in staging' })
-    expect(driveRow(off, 'sandbox')).toEqual({ kind: 'unavailable', why: 'Not available in the onboarding sandbox' })
+    expect(driveRow(off, 'sandbox')).toEqual({ kind: 'unavailable', why: 'Not available in the sandbox' })
   })
 
   it('a build without the Google client cannot connect', () => {
-    expect(driveRow({ ...off, configured: false }, 'real')).toEqual({ kind: 'unavailable', why: 'Not available in this build' })
+    expect(driveRow({ ...off, configured: false }, 'production')).toEqual({ kind: 'unavailable', why: 'Not available in this build' })
   })
 
   it('off, connected, connected with an error', () => {
-    expect(driveRow(off, 'real')).toEqual({ kind: 'off' })
+    expect(driveRow(off, 'production')).toEqual({ kind: 'off' })
     const on = { ...off, connected: true, account: 'ada@gmail.com', last_synced: '2026-10-29T08:00:00+00:00' }
-    expect(driveRow(on, 'real')).toEqual({ kind: 'connected', account: 'ada@gmail.com', lastSynced: '2026-10-29T08:00:00+00:00', error: null })
-    expect(driveRow({ ...on, last_error: 'offline' }, 'real')).toMatchObject({ kind: 'connected', error: 'offline' })
+    expect(driveRow(on, 'production')).toEqual({ kind: 'connected', account: 'ada@gmail.com', lastSynced: '2026-10-29T08:00:00+00:00', error: null })
+    expect(driveRow({ ...on, last_error: 'offline' }, 'production')).toMatchObject({ kind: 'connected', error: 'offline' })
   })
 
   it('no summary yet is checking', () => {
-    expect(driveRow(null, 'real')).toEqual({ kind: 'checking' })
+    expect(driveRow(null, 'production')).toEqual({ kind: 'checking' })
   })
 })
 

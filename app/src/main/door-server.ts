@@ -76,7 +76,7 @@ export function resolveSpawn(repoRoot: string, env: Env, platform: string = proc
   // process ran (ipc.ts PATH_ARGS), so the server's data-folder check (path_scope.py) is not needed.
   // PYTHONUTF8: UTF-8 mode, so on Windows no text is read or written in the code page (#132).
   const child: Record<string, string> = { PYTHONPATH: path.join(repoRoot, 'src'), DOOR_PATHS_FROM_DIALOGS: '1', PYTHONUTF8: '1' }
-  // CLAUDE_CONFIG_DIR picks which plan claude is signed in to (an isolated one in the onboarding sandbox).
+  // CLAUDE_CONFIG_DIR picks which plan claude is signed in to (an isolated one in the sandbox with DOOR_SANDBOX_SIGNED_OUT).
   // PATH too when given, so a test can put a stand-in claude first (the SDK would pass the parent's).
   for (const key of ['DOOR_HOME', 'HOME', 'XDG_CONFIG_HOME', 'APPDATA', 'PATH', 'CLAUDE_CONFIG_DIR'] as const) {
     const value = env[key]

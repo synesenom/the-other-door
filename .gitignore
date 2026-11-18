@@ -57,8 +57,7 @@ app/test-results/
 app/journeys-report/
 app/blob-report/
 app/install-report/
-app/.demo/
-app/.onboard/
+app/.sandbox/
 app/.staging/
 
 # the packaged app (#223): the bundle, its download cache and the installers

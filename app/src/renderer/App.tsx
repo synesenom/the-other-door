@@ -11,7 +11,7 @@ import { Analytics } from './screens/Analytics'
 import { Applications } from './screens/Applications'
 import { Finding, type FindingState } from './screens/Finding'
 import { Matches } from './screens/Matches'
-import type { DriveStatus } from './screens/connection-rows'
+import type { DriveStatus, Environment } from './screens/connection-rows'
 import { discoveryOff } from './screens/onboarding/reducer'
 import type { DoctorReport, ShowProfile, WizardState } from './screens/onboarding/reducer'
 import { Profile, type ProfileStart } from './screens/Profile'
@@ -61,8 +61,9 @@ export interface AppStart {
 export function App({ start }: { start?: AppStart } = {}) {
   const [gate, setGate] = useState<Gate>({ kind: 'loading' })
   const [profile, setProfile] = useState<ShowProfile | null>(null)
-  const [sandbox, setSandbox] = useState(false)
-  const [staging, setStaging] = useState(false)
+  // Production, staging or the sandbox (app/README.md "Environments")
+  const [environment, setEnvironment] = useState<Environment>('production')
+  const sandbox = environment === 'sandbox'
   const [current, setCurrent] = useState<Destination>(start?.destination ?? 'Matches')
   const mainRef = useRef<HTMLElement>(null)
   // Profile opened from a problem line: on the CV.
@@ -73,7 +74,6 @@ export function App({ start }: { start?: AppStart } = {}) {
   const narrow = useNarrow()
   const [pushed, setPushed] = useState(false)
   const [lastRun, setLastRun] = useState<string | null>(null)
-  const [demo, setDemo] = useState(false)
   const [home, setHome] = useState<string | undefined>(undefined)
   const [remote, setRemote] = useState(false)
   // The connections (Settings and the sidebar's lines): Claude from doctor, Drive from the summary.
@@ -190,26 +190,22 @@ export function App({ start }: { start?: AppStart } = {}) {
     mainRef.current?.scrollTo?.({ top: 0 })
   }, [current, showFinding])
 
-  // The first launch: where the data is (the demo never gets the wizard; the onboarding sandbox,
-  // empty by design, does) and what `show_profile` says. No config means the wizard; anything
+  // The first launch: where the window runs and what `show_profile` says. No config means the wizard; anything
   // odd (the server not answering) means the app, whose screens say what is wrong.
   useEffect(() => {
     let live = true
     ;(async () => {
       const info = await window.door.info?.().catch(() => undefined)
       if (!live) return
-      setDemo(Boolean(info?.demo))
-      setSandbox(info?.sandbox === 'onboard')
-      setStaging(info?.sandbox === 'staging')
+      setEnvironment(info?.environment ?? 'production')
       setHome(info?.home)
       setRemote(Boolean(info?.remote))
-      const wizardAllowed = !info?.demo || info.sandbox === 'onboard'
       try {
         const p = await call<ShowProfile>('show_profile')
         if (!live) return
         setProfile(p)
         if (p.config === null && info?.remote) setGate({ kind: 'remote-setup' })
-        else setGate(p.config === null && wizardAllowed ? { kind: 'wizard', profile: p } : { kind: 'shell' })
+        else setGate(p.config === null ? { kind: 'wizard', profile: p } : { kind: 'shell' })
       } catch {
         if (live) setGate({ kind: 'shell' })
       }
@@ -219,8 +215,8 @@ export function App({ start }: { start?: AppStart } = {}) {
     }
   }, [])
   useEffect(() => {
-    document.title = sandbox ? 'The other door (onboarding sandbox)' : demo ? 'The other door (demo)' : staging ? 'The other door (staging)' : 'The other door'
-  }, [demo, sandbox, staging])
+    document.title = environment === 'production' ? 'The other door' : `The other door (${environment})`
+  }, [environment])
 
   /** Opens the wizard on what is saved now (a fresh read): Profile's "Draft it from your CV file or pages",
    * offered while the CV is the example one or missing. A profile that cannot
@@ -300,7 +296,7 @@ export function App({ start }: { start?: AppStart } = {}) {
     // decided on the first Drive status read: a Drive connected later syncs as it connects (Settings)
     if (!inShell || drive === null || syncedOnOpen.current) return
     syncedOnOpen.current = true
-    if (remote || demo || sandbox || !drive.connected) return
+    if (remote || environment !== 'production' || !drive.connected) return
     call<{ action: string }>('sync_data', {}).then(
       (r) => (r.action === 'pull' ? dataChanged() : setRefreshKey((k) => k + 1)),
       (e) => {
@@ -308,7 +304,7 @@ export function App({ start }: { start?: AppStart } = {}) {
         setRefreshKey((k) => k + 1)
       },
     )
-  }, [inShell, remote, demo, sandbox, drive])
+  }, [inShell, remote, environment, drive])
 
   /** Reads doctor again: Claude's sign-in, for Settings and the sidebar's lines. The last answer stays
    * until the new one comes, and only the latest check's answer counts. A doctor that fails keeps its error.
@@ -340,16 +336,15 @@ export function App({ start }: { start?: AppStart } = {}) {
     return (
       <div className="shell-bare">
         <main className="main">
-          <Wizard profile={gate.profile} sandbox={sandbox} noDrive={staging} start={start?.wizard} onFinish={(firstRun) => void finishWizard(firstRun)} onCancel={gate.profile.config ? () => setGate({ kind: 'shell' }) : undefined} />
+          <Wizard profile={gate.profile} environment={environment} start={start?.wizard} onFinish={(firstRun) => void finishWizard(firstRun)} onCancel={gate.profile.config ? () => setGate({ kind: 'shell' }) : undefined} />
         </main>
       </div>
     )
   }
-  const where = sandbox ? 'sandbox' : demo ? 'demo' : staging ? 'staging' : 'real'
   // What is wrong and needs you (Claude, the Claude plan's window, the CV, Drive, something that keeps going wrong):
   // a short line each at the sidebar's foot (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
   // The other door; a problem report is made there too, so the phone does not say that one.
-  const lines = problems({ doctor, drive, driveConflict, cv: demo ? null : profile?.config ? profile.cv : null, recurring: remote ? null : recurring, plan, style: remote ? null : styleState })
+  const lines = problems({ doctor, drive, driveConflict, cv: profile?.config ? profile.cv : null, recurring: remote ? null : recurring, plan, style: remote ? null : styleState })
   const destinations = remote ? PHONE_DESTINATIONS : DESTINATIONS
   /** Opens Profile at one of its sections (the same way for every link into it). */
   const openProfile = (section: string) => {
@@ -397,15 +392,15 @@ export function App({ start }: { start?: AppStart } = {}) {
     <div className={narrow && pushed ? 'shell pushed' : 'shell'}>
       {!(narrow && pushed) && (
       <aside className="sidebar">
-        {(demo || staging) && (
+        {environment !== 'production' && (
           // A small tag; the sentence is its tooltip.
           <p
             role="note"
-            aria-label={sandbox ? 'Onboarding sandbox' : staging ? 'Staging' : 'Demo data'}
+            aria-label={sandbox ? 'Sandbox' : 'Staging'}
             className="demo-tag small"
-            title={sandbox ? 'Onboarding sandbox (app/.onboard). Nothing here changes your real data or Drive.' : staging ? 'Staging (app/.staging): everything is real but the data, kept apart from yours and from Drive.' : 'Made-up jobs (app/.demo). Nothing here changes your real data or Drive.'}
+            title={sandbox ? 'Sandbox (app/.sandbox): made-up data and a simulated job search. Nothing here changes your real data or Drive.' : 'Staging (app/.staging): everything is real but the data, kept apart from yours and from Drive.'}
           >
-            {sandbox ? 'Sandbox' : staging ? 'Staging' : 'Demo'}
+            {sandbox ? 'Sandbox' : 'Staging'}
           </p>
         )}
         <nav aria-label="Main">
@@ -437,8 +432,8 @@ export function App({ start }: { start?: AppStart } = {}) {
             onStart={() => void startRun()}
             onStop={() => void stopRun()}
             onViewMatches={() => goToMatches(true)}
-            discoveryUnchosen={demo || remote ? [] : (profile?.discovery_unchosen ?? [])}
-            discoveryOff={demo || remote || !profile ? [] : discoveryOff(profile)}
+            discoveryUnchosen={sandbox || remote ? [] : (profile?.discovery_unchosen ?? [])}
+            discoveryOff={sandbox || remote || !profile ? [] : discoveryOff(profile)}
             onChooseDiscovery={openRisky}
             onLowerBar={remote ? undefined : () => openProfile('search')}
             onCheckSearch={remote ? undefined : () => openProfile('search')}
@@ -470,7 +465,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             key={profileStart?.n ?? 0}
             start={profileStart?.at}
             onDraft={() => void setUpAgain().catch(() => undefined)}
-            style={{ state: styleState, canBuild: !demo && !doctor?.checks.some((c) => c.name === 'chromium' && c.status !== 'ok'), onChanged: () => setSummaryKey((k) => k + 1) }}
+            style={{ state: styleState, canBuild: !doctor?.checks.some((c) => c.name === 'chromium' && c.status !== 'ok'), onChanged: () => setSummaryKey((k) => k + 1) }}
             onSaved={() => {
               void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
               setRefreshKey((k) => k + 1) // the matches may change with the minimum score or the age limit
@@ -483,7 +478,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             onReported={() => setRefreshKey((k) => k + 1)}
             doctor={doctor}
             drive={drive}
-            where={where}
+            where={environment}
             home={home}
             email={profile?.config?.email}
             onRecheck={recheck}

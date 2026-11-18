@@ -3,6 +3,7 @@ import type { PickResult } from '../main/cv-sources'
 import type { LoginState } from '../main/claude-login'
 import type { NoticeTarget } from '../main/notices'
 import type { UpdateResult } from '../main/updates'
+import type { Environment } from '../main/environments'
 import type { RunBoard } from '../main/run-board'
 
 declare global {
@@ -42,7 +43,7 @@ declare global {
         onState(cb: (state: LoginState) => void): () => void
       }
       /** Where the app runs; `home` is the data folder, shown and never sent back. */
-      info(): Promise<{ demo: boolean; sandbox?: 'onboard' | 'staging'; home?: string; remote?: boolean }>
+      info(): Promise<{ environment: Environment; home?: string; remote?: boolean }>
       /** The phone app's address of a prepared page image (issue 303); the desktop app uses door-file://. */
       pageUrl?(jobId: string, pngPath: string, v: number, sent?: boolean): string
       /** The preview page's own address for a style preview image (a browser has no door-file scheme). */

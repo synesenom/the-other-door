@@ -360,7 +360,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     },
     info: async () => {
       gateReads = 1
-      return { demo: false, home: '/demo' }
+      return { environment: 'production' as const, home: '/demo' }
     },
     pageUrl,
     exportData: async () => (scene.fails?.exportData ? { ok: false, error: scene.fails.exportData } : { ok: false, canceled: true }),

@@ -1,45 +1,9 @@
-// The developer demo (`npm run dev:demo`): the app runs on made-up data in app/.demo/ —
-// the example profile (Jane Doe) and jobs in every state — so exploring it never changes
-// your real profile/, jobs/ or Drive archive. Pure file work, no processes.
+// The sandbox's made-up data (`npm run dev:sandbox`, environments.ts): the example profile (Jane Doe) and
+// jobs in every state, so exploring the app never changes your real profile/, jobs/ or Drive archive.
+// Pure file work, no processes.
 import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { JOBS_DATA_VERSION, PROFILE_DATA_VERSION } from './data-versions'
-
-export type DemoMode = 'keep' | 'fresh'
-
-/** electron-vite's `--mode`: `demo` keeps the demo folder, `demo-fresh` builds it again; anything else is no demo. */
-export function demoMode(mode: string | undefined): DemoMode | null {
-  if (mode === 'demo') return 'keep'
-  if (mode === 'demo-fresh') return 'fresh'
-  return null
-}
-
-/** The demo folder: `DOOR_DEMO_DIR` when set (tests use a temp folder), else `app/.demo` of the checkout. */
-export function demoDir(env: Record<string, string | undefined>, repoRoot: string): string {
-  const override = env['DOOR_DEMO_DIR']
-  return override ? override : join(repoRoot, 'app', '.demo')
-}
-
-/** The demo mode of this start: the build mode's, else `keep` when `DOOR_DEMO_DIR` is set and the app is not packaged. */
-export function demoModeFor(mode: string | undefined, env: Record<string, string | undefined>, packaged: boolean): DemoMode | null {
-  return demoMode(mode) ?? (!packaged && env['DOOR_DEMO_DIR'] ? 'keep' : null)
-}
-
-/** `DOOR_DEMO_RUN_MS`: how long the simulated run takes (a test makes it short); read in the demo only. */
-export function demoRunMs(env: Record<string, string | undefined>): number | undefined {
-  const n = Number(env['DOOR_DEMO_RUN_MS'])
-  return Number.isFinite(n) && n > 0 ? n : undefined
-}
-
-/**
- * The server's environment in the demo: the data folder is the demo's, and the config
- * folders The other door keeps its Drive connection in (drive.json) point inside it too, so the
- * sync sees no connection and never pulls or pushes. HOME and PATH stay yours, so claude
- * is still signed in: Prepare and Revise run for real, on your plan, on the made-up data.
- */
-export function demoEnv(base: Record<string, string | undefined>, demo: string): Record<string, string | undefined> {
-  return { ...base, DOOR_HOME: demo, XDG_CONFIG_HOME: join(demo, '.config'), APPDATA: join(demo, 'appdata') }
-}
 
 interface DemoJob {
   id: string
@@ -180,7 +144,7 @@ function within(dir: string, other: string): boolean {
 }
 
 /** Throws unless `dir` is a folder that may be deleted: not the checkout, not inside it, not its jobs/ or profile/. */
-function refuseRealData(dir: string, repoRoot: string, what: string): string {
+export function refuseRealData(dir: string, repoRoot: string, what: string): string {
   const to = resolve(dir)
   const repo = resolve(repoRoot)
   if (within(to, repo) || within(join(repo, 'jobs'), to) || within(join(repo, 'profile'), to)) {
@@ -189,74 +153,14 @@ function refuseRealData(dir: string, repoRoot: string, what: string): string {
   return to
 }
 
-/** electron-vite's `--mode onboard` (`npm run dev:onboard`): the app on an empty data folder, to try the first launch. */
-export function onboardMode(mode: string | undefined): 'onboard' | null {
-  return mode === 'onboard' ? 'onboard' : null
-}
-
-/** The onboarding sandbox: `DOOR_ONBOARD_DIR` when set (tests use a temp folder), else `app/.onboard` of the checkout. */
-export function onboardDir(env: Record<string, string | undefined>, repoRoot: string): string {
-  const override = env['DOOR_ONBOARD_DIR']
-  return override ? override : join(repoRoot, 'app', '.onboard')
-}
-
-/** The onboarding mode of this start: the build mode's, else on when `DOOR_ONBOARD_DIR` is set and the app is not packaged. */
-export function onboardModeFor(mode: string | undefined, env: Record<string, string | undefined>, packaged: boolean): 'onboard' | null {
-  return onboardMode(mode) ?? (!packaged && env['DOOR_ONBOARD_DIR'] ? 'onboard' : null)
-}
-
-/** Leaves `dir` an empty folder (whatever it held is deleted). Refuses, before deleting anything, a folder that is or holds the checkout's real data. */
-export function resetOnboard(dir: string, repoRoot: string): void {
-  const to = refuseRealData(dir, repoRoot, 'an onboarding')
-  rmSync(to, { recursive: true, force: true })
-  mkdirSync(to, { recursive: true })
-}
-
-export type StagingMode = 'keep' | 'fresh'
-
-/** electron-vite's `--mode staging` (`npm run dev:staging`): the real app on a throwaway folder, kept; `staging-fresh` empties it first. */
-export function stagingMode(mode: string | undefined): StagingMode | null {
-  if (mode === 'staging') return 'keep'
-  if (mode === 'staging-fresh') return 'fresh'
-  return null
-}
-
-/** The staging folder: `app/.staging` of the checkout. */
-export function stagingDir(repoRoot: string): string {
-  return join(repoRoot, 'app', '.staging')
-}
-
-/** Makes the staging folder (`fresh` empties it first). Refuses, before deleting anything, a folder that is or holds the checkout's real data. */
-export function prepareStaging(dir: string, repoRoot: string, mode: StagingMode): void {
-  const to = refuseRealData(dir, repoRoot, 'a staging')
-  if (mode === 'fresh') rmSync(to, { recursive: true, force: true })
-  mkdirSync(to, { recursive: true })
-}
-
-/**
- * The server's environment in the onboarding sandbox: the demo's (data and Drive state inside the
- * folder, HOME and PATH yours so the claude CLI is real), plus, with DOOR_ONBOARD_SIGNED_OUT=1, a
- * Claude config folder of its own, so the sandbox starts signed out and your own login is untouched.
- */
-export function onboardEnv(base: Record<string, string | undefined>, dir: string): Record<string, string | undefined> {
-  const env = demoEnv(base, dir)
-  if (base['DOOR_ONBOARD_SIGNED_OUT'] === '1') env['CLAUDE_CONFIG_DIR'] = join(dir, '.claude')
-  return env
-}
-
-/** Build the demo folder unless it is there (`fresh` builds it again). Refuses, before deleting anything, a folder that is or holds the checkout's data. */
-/** The discovery sources a profile can turn on, each off in a demo seeded with `discoveryOff`. */
+/** The discovery sources a profile can turn on, each off in a sandbox seeded with `discoveryOff`. */
 const DISCOVERY_KEYS = ['linkedin_discovery', 'profession_discovery', 'hellowork_discovery', 'jobbsafari_discovery']
 
-/** `DOOR_DEMO_DISCOVERY=off`: a demo whose profile has every discovery source off (the README's app.gif). */
-export function demoDiscoveryOff(env: Record<string, string | undefined>): boolean {
-  return env['DOOR_DEMO_DISCOVERY'] === 'off'
-}
-
-export function seedDemo(demo: string, repoRoot: string, mode: DemoMode, now: Date = new Date(), options: { discoveryOff?: boolean } = {}): { created: boolean } {
-  const to = refuseRealData(demo, repoRoot, 'a demo')
+/** Fills the sandbox folder with the made-up data unless it holds a profile or jobs already (`fresh` empties it first). Refuses, before deleting anything, a folder that is or holds the checkout's data. */
+export function seedSandbox(dir: string, repoRoot: string, fresh: boolean, now: Date = new Date(), options: { discoveryOff?: boolean } = {}): { created: boolean } {
+  const to = refuseRealData(dir, repoRoot, 'a sandbox')
   const repo = resolve(repoRoot)
-  if (mode === 'fresh') rmSync(to, { recursive: true, force: true })
+  if (fresh) rmSync(to, { recursive: true, force: true })
   if (existsSync(join(to, 'profile')) || existsSync(join(to, 'jobs'))) return { created: false }
 
   cpSync(join(repo, 'profile.example'), join(to, 'profile'), { recursive: true })
