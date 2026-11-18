@@ -354,5 +354,3 @@ def test_plain_prints_a_line_for_a_late_pass_too():
                          detail="2 candidates: 1 followed"))
     assert out[-1] == "[3/5] follow (late): 2 candidates: 1 followed"
 
-
-# -- the boards and sources a step reads (the app lists them under the step's bar) ------------------

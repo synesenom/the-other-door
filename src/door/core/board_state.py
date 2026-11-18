@@ -1,8 +1,30 @@
 """The fold of progress events into the view of `find`'s steps (`BoardState`).
 
 Pure, no output: `core.progress.ProgressFile` writes its `steps` to `jobs/.progress.json` and
-`door.pipeline.display` draws it. The events and their meaning are described in
-`door.pipeline.display`.
+`door.pipeline.display` draws it.
+
+The events (see `door.pipeline`): ``stage="steps"`` ``message="plan"`` with
+``detail="search,discover,..."`` once; ``stage="step"`` with ``site=<step>`` and ``outcome`` start
+(with ``total``), done, failed or skipped (``detail`` = summary or reason). Inside a running step,
+the events of its work: ``items`` (``detail`` = JSON ``[[id, label], ...]``: what the step reads, listed
+waiting; the app draws them under the bar, the terminal does not), ``scrape`` (a board starts, or ends
+with its ``outcome``: ok and empty check it, a site not read at all, resting, reserved or not configured,
+leaves the list, any other fails it; search's count is its boards finished of those listed), ``postings``
+(a board's or feed's running count), ``keyword_search`` / ``ad_details`` (a board at work: message = the
+keyword, ``done``/``total`` = keyword N of M / ad N of the keyword's M; kept on the board's item as its
+``activity`` until the board ends), ``candidate`` (follow), ``entry_start`` / ``entry_end`` (an
+employer's request group, message = host), and match's ``scored`` / ``scoring`` and pass names.
+
+`discover` runs in the background beside the others, so its events never go to "the running step"
+(the ``li_*`` stages are the generic stage names of every discovery source, not LinkedIn's alone; the site
+is the discriminator):
+``item`` (``detail`` = a source of its ``items``, outcome start, done or failed),
+``li_request`` (message "page 3/15" / "job page 12/15", ``done``/``total`` = requests made / budget)
+``li_wait`` (``done`` = seconds of pause that begin now, drawn as a countdown) and ``li_end`` (how its
+requests ended, outcome done or failed: the line is finished there, and the step's own done event,
+when `find` has queued its result, only replaces the text) always belong to its line, and the work events of the other steps skip it. A second pass over a step that already ended (``stage="late"``, ``site=<step>``, outcome start / done / failed: the late follow and late
+collect for the employers discover queued) turns the finished line back into a running one, then
+into a done one whose summary ends in ``+ late: <summary>``: the five lines stay five.
 """
 
 from __future__ import annotations
