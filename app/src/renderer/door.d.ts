@@ -22,9 +22,8 @@ declare global {
       cvFile(): Promise<string | null>
       /** Forgets the picked files (the wizard closed). */
       clearCvSources(): Promise<void>
-      /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (save_photo's answer). */
+      /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (`call('save_photo', {}, undefined, [token])`). */
       pickPhoto(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
-      savePhoto(token: string): Promise<Envelope>
       /** Profile → CV: start building a style from the CV file (Sources); the window names no path. */
       styleFromCvFile(): Promise<Envelope>
       /** The CV file was taken by `styleFromCvFile` and is being read; returns the way to stop. */
@@ -47,10 +46,8 @@ declare global {
       /** The preview page's own address for a style preview image (a browser has no door-file scheme). */
       /** Writes an export where the user says in a save dialog (export_data's answer, or canceled). */
       exportData(): Promise<Envelope | { ok: false; canceled: true }>
-      /** Picks an archive to import in an open dialog: a token and the file's name. */
+      /** Picks an archive to import in an open dialog: a token and the file's name, imported by `call('import_data', {}, undefined, [token])`. */
       pickArchive(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
-      /** Imports the picked archive (import_data's answer). */
-      importData(token: string): Promise<Envelope>
       /** Writes a problem report where the user says in a save dialog (report_problem's answer, or canceled). */
       reportProblem(): Promise<Envelope | { ok: false; canceled: true }>
       /** Shows the data folder in the file manager. */

@@ -146,7 +146,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
       const picked = await window.door.pickPhoto()
       if ('error' in picked) setPhotoError(picked.error)
       else if ('token' in picked) {
-        const saved = await window.door.savePhoto(picked.token)
+        const saved = await window.door.call('save_photo', {}, undefined, [picked.token])
         if (saved.ok) {
           setPhotoVersion((v) => v + 1)
           await load(true)

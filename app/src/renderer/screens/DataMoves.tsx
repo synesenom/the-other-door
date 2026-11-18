@@ -46,7 +46,7 @@ export function DataMoves({ home, onImported }: { home?: string; onImported: () 
     const token = picked!.token
     setPicked(null)
     start('import')
-    const r = await window.door.importData(token)
+    const r = await window.door.call('import_data', {}, undefined, [token])
     setBusy(null)
     if (!r.ok) {
       setError(r.error)

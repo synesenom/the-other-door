@@ -326,7 +326,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     cvFile: async () => 'jane-doe-cv.pdf',
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
-    savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
     onStyleReading: (cb: () => void) => {
       styleReadingListeners.add(cb)
       return () => styleReadingListeners.delete(cb)
@@ -370,7 +369,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     pageUrl,
     exportData: async () => (scene.fails?.exportData ? { ok: false, error: scene.fails.exportData } : { ok: false, canceled: true }),
     pickArchive: async () => ({ canceled: true }),
-    importData: async () => ({ ok: false, error: 'Nothing is imported in the preview.' }),
     reportProblem: async () => (scene.fails?.reportProblem ? { ok: false, error: scene.fails.reportProblem } : { ok: false, canceled: true }),
     showHome: done,
     checkUpdate: async () => ({ enabled: false as const }),

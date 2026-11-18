@@ -21,6 +21,8 @@ export function mockDoor(given: Record<string, Handler>) {
   const handlers: Record<string, Handler> = { show_profile: SAVED_PROFILE, ...given }
   // `tokens`: the picked CV files of draft_cv, enrich, build_style; their handler gets them as `tokens` (build_style answers started)
   const call = vi.fn(async (tool: string, args: Record<string, unknown> = {}, _callId?: string, tokens?: string[]) => {
+    if (tool === 'save_photo' && tokens) return savePhoto(tokens[0]!)
+    if (tool === 'import_data' && tokens) return importData(tokens[0]!)
     if (tool === 'build_style' && tokens && !(tool in handlers)) return { ok: true, data: { started: true } }
     if (!(tool in handlers)) return { ok: false, error: `unexpected tool ${tool}` }
     const h = handlers[tool]
@@ -50,6 +52,7 @@ export function mockDoor(given: Record<string, Handler>) {
   })
   const pushStyleReading = () => styleReadingListeners.forEach((cb) => cb())
   const styleFromCvFile = vi.fn(async (): Promise<unknown> => ({ ok: true, data: { started: true } }))
+  // `save_photo` and `import_data` by token, through `call`: a test answers them here.
   const savePhoto = vi.fn(async (_token: string): Promise<unknown> => ({ ok: true, data: { photo_path: '/p/photo.jpg' } }))
   // Progress callbacks are kept by call id so a test can fire them (`emitProgress`).
   const progressCallbacks = new Map<string, (p: { progress: number; total?: number; message: string }) => void>()
@@ -124,7 +127,7 @@ export function mockDoor(given: Record<string, Handler>) {
       }
     }),
   }
-  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, savePhoto, styleFromCvFile, onStyleReading, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, importData, reportProblem }
+  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, styleFromCvFile, onStyleReading, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, reportProblem }
   return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, savePhoto, styleFromCvFile, onStyleReading, pushStyleReading, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, importData, reportProblem }
 }
 

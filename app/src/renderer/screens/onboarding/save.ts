@@ -31,7 +31,7 @@ export async function saveProfile(state: WizardState): Promise<SaveResult> {
   }
   // The photo has its own tools: a picked picture is saved by its token, one marked for removal is deleted.
   if (state.photo.kind === 'new') {
-    const saved = await window.door.savePhoto(state.photo.token)
+    const saved = await window.door.call('save_photo', {}, undefined, [state.photo.token])
     if (!saved.ok) return { ok: false, kind: 'photo', error: saved.error }
   } else if (state.photo.kind === 'none') {
     try {

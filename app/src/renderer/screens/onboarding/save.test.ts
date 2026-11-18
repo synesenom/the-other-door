@@ -60,8 +60,8 @@ describe('saveProfile', () => {
   it('saves a chosen photo by its token after the CV, and a removal through remove_photo', async () => {
     const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
     const result = await saveProfile(filled({ cvText: '# Ada\n', photo: { kind: 'new', token: 't1', name: 'me.jpg' } }))
-    expect(names(h)).toEqual(['init_profile', 'save_cv', 'show_profile'])
-    expect(window.door.savePhoto).toHaveBeenCalledWith('t1')
+    expect(names(h)).toEqual(['init_profile', 'save_cv', 'save_photo', 'show_profile'])
+    expect(h.savePhoto).toHaveBeenCalledWith('t1')
     expect(result.ok).toBe(true)
     const gone = mockDoor({ init_profile: {}, remove_photo: { removed: true }, show_profile: existingProfile })
     await saveProfile(filled({ photo: { kind: 'none' } }))
