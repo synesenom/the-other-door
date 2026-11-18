@@ -144,3 +144,17 @@ nav = [
 [date]
 pattern = "{day} {month} {year}"
 months = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"]
+
+# The extra month forms (abbreviations; the full names are [date].months), for reading a date written out.
+[months]
+"jan." = 1
+"feb." = 2
+"apr." = 4
+"jun." = 6
+"jul." = 7
+"aug." = 8
+"sep." = 9
+"sept." = 9
+"okt." = 10
+"nov." = 11
+"dec." = 12

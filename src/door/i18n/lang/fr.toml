@@ -48,30 +48,18 @@ career_site_words = [
     "nos offres", "nous rejoindre", "rejoignez-nous",
 ]
 
-# The month names and their abbreviations, for reading a date written out ("En ligne depuis le 25 octobre 2026").
+# The extra month forms (abbreviations, unaccented spellings; the full names are [date].months), for reading a date written out ("En ligne depuis le 25 octobre 2026").
 [months]
-janvier = 1
 "janv." = 1
-"février" = 2
 fevrier = 2
 "févr." = 2
 "fevr." = 2
-mars = 3
-avril = 4
 "avr." = 4
-mai = 5
-juin = 6
-juillet = 7
 "juil." = 7
-"août" = 8
 aout = 8
-septembre = 9
 "sept." = 9
-octobre = 10
 "oct." = 10
-novembre = 11
 "nov." = 11
-"décembre" = 12
 decembre = 12
 "déc." = 12
 "dec." = 12
@@ -218,6 +206,7 @@ nav = [
 pattern = "{day} {month} {year}"
 first = "1er {month} {year}"
 months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+day_suffixes = ["er", "re", "e"]
 
 # French typography at compile time: a narrow no-break space before these marks and inside guillemets.
 [typography]
