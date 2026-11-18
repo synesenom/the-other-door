@@ -850,7 +850,8 @@ def test_outside_a_checkout_there_is_no_developer_tools_check(tmp_path, monkeypa
 
 
 def test_serve_instances_check_names_each_home_its_reach_phones_and_sleep(tmp_path, monkeypatch):
-    from door.core import instances, pairing
+    from door.core.phone import instances
+    from door.core.phone import pairing
 
     assert doctor.check_serve_instances() is None  # no instance: no line
     anna = tmp_path / "anna"

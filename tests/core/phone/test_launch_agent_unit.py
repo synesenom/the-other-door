@@ -4,7 +4,7 @@ import plistlib
 
 import pytest
 
-from door.core import launch_agent
+from door.core.phone import launch_agent
 
 
 def test_the_plist_runs_serve_for_one_home_and_keeps_it_alive(tmp_path):

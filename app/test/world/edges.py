@@ -159,7 +159,8 @@ HTTPAdapter.send = _fake_send
 # --------------------------------------------------------------------------- door, with its edges replaced
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
-from door.core import phone, process, sites  # noqa: E402
+from door.core import process, sites  # noqa: E402
+from door.core.phone import phone  # noqa: E402
 from door.core.sync import drive  # noqa: E402
 from door.core.models import JobPosting  # noqa: E402
 from door.scrapers import report  # noqa: E402
@@ -307,7 +308,7 @@ drive.upload = _upload
 drive.disconnect = _disconnect
 
 # --------------------------------------------------------------------------- the phone: a pretend tunnel
-# The same shapes as door.core.phone: `address`, `lasting`, devices as {device, paired_at, last_seen}.
+# The same shapes as door.core.phone.phone: `address`, `lasting`, devices as {device, paired_at, last_seen}.
 # A pairing waits for "the phone": the test writes `<world>/phone-scanned` and the next status pairs it.
 _PHONE = {"running": False, "devices": [], "pending": None}
 _ADDRESS = "https://quiet-river.trycloudflare.example"

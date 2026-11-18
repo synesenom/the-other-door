@@ -9,7 +9,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from door.core import pairing, phone
+from door.core.phone import pairing
+from door.core.phone import phone
 from door.core import pinned as pinned_mod
 
 

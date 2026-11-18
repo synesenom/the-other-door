@@ -2,7 +2,7 @@
 
 import pytest
 
-from door.core import instances
+from door.core.phone import instances
 
 
 def test_register_lists_and_unregister_forgets(tmp_path):

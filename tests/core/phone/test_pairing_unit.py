@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from door.core import pairing
+from door.core.phone import pairing
 
 NOW = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)
 

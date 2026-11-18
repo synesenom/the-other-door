@@ -567,7 +567,8 @@ def _sleep_minutes(run=subprocess.run) -> int | None:
 
 def check_serve_instances(reach=_reaches, sleep_minutes=_sleep_minutes) -> dict | None:
     """The `door serve` instances on this machine (#302): each answers? how many phones? does the Mac sleep?"""
-    from door.core import instances, pairing
+    from door.core.phone import instances
+    from door.core.phone import pairing
 
     found = instances.read()
     if not found:

@@ -11,7 +11,7 @@ from starlette.testclient import TestClient
 from door import mcp_server as server
 from door import serve_http
 from door.commands import find as find_cmd
-from door.core import pairing
+from door.core.phone import pairing
 from door.core.progress import activate, report
 
 HEADERS = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}

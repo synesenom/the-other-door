@@ -15,7 +15,10 @@ from pathlib import Path
 
 import click
 
-from door.core import instances, launch_agent, pairing, workspace
+from door.core import workspace
+from door.core.phone import instances
+from door.core.phone import launch_agent
+from door.core.phone import pairing
 
 DEFAULT_PORT = 8765
 

@@ -282,7 +282,7 @@ phone (the web app) ──HTTPS──▶ tunnel (Cloudflare / Tailscale) ──�
 
 `./door serve` (`commands/serve.py`, `serve_http.py`) serves the same `mcp` object over streamable HTTP
 (stateless, JSON answers) with *The other door*'s routes beside it: `/pair` trades a one-time code for a device
-token (`core/pairing.py`, hashes only, in `<home>/.serve/`), `/session` sets the HttpOnly cookie that
+token (`core/phone/pairing.py`, hashes only, in `<home>/.serve/`), `/session` sets the HttpOnly cookie that
 opens `/files/jobs/output/...` to an `<img>`, and `/` is the web build of the desktop renderer
 (`app/src/web/`, issue 303). Every guarded route needs the token; wrong tries lock an address out. Over
 HTTP the long tools run as the server's own task and return at once (`job_result`, `cancel_job`).
@@ -292,8 +292,8 @@ A paired phone gets only `serve_policy.PHONE_TOOLS`: finding, preparing and the 
 changes the profile, the CV or the employers, no `ask`, `doctor`, `setup`, Drive, export or import;
 never a local path or a home-network address; and `compile` refuses any body that `render/html_guard.py`
 finds outside its tags, classes and links, whoever prepared it. Each
-person has their own home, port and Claude plan (`core/instances.py` refuses a shared port or plan) and,
-on a Mac, a launch agent (`core/launch_agent.py`).
+person has their own home, port and Claude plan (`core/phone/instances.py` refuses a shared port or plan) and,
+on a Mac, a launch agent (`core/phone/launch_agent.py`).
 
 ## Data model
 

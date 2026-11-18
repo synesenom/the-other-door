@@ -500,7 +500,7 @@ def phone_status() -> dict:
         ``"lasting"`` (Tailscale's address never changes; a quick tunnel's does)
         while it runs.
     """
-    from door.core import phone
+    from door.core.phone import phone
 
     return phone.status(workspace.HOME)
 
@@ -521,7 +521,7 @@ async def phone_start(connection: str = "cloudflare") -> dict:
         "sign_in_tailscale" | "enable_https", "link"}`` for a step the user
         takes (the link says where); or ``{"error"}``.
     """
-    from door.core import phone
+    from door.core.phone import phone
 
     return await asyncio.to_thread(phone.start, workspace.HOME, connection)
 
@@ -530,7 +530,7 @@ async def phone_start(connection: str = "cloudflare") -> dict:
 @_tool_errors
 def phone_stop() -> dict:
     """Stop serving this data folder to phones (the server, the connection, keeping the Mac awake)."""
-    from door.core import phone
+    from door.core.phone import phone
 
     return phone.stop(workspace.HOME)
 
@@ -551,7 +551,7 @@ def pair_phone(device: str) -> dict:
         ``{"device", "qr_svg", "expires_at"}`` (an SVG to show), or ``{"error"}`` when
         nothing is serving or the name is already paired.
     """
-    from door.core import phone
+    from door.core.phone import phone
 
     return phone.pair(workspace.HOME, device)
 
@@ -564,7 +564,7 @@ def unpair_phone(device: str) -> dict:
     Returns:
         ``{"removed": device}``, or ``{"error"}`` when no phone has that name.
     """
-    from door.core import phone
+    from door.core.phone import phone
 
     return phone.remove(workspace.HOME, device)
 

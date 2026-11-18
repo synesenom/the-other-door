@@ -4,7 +4,8 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import serve as serve_cmd
-from door.core import pairing, workspace
+from door.core import workspace
+from door.core.phone import pairing
 
 
 def run(*args):
@@ -66,7 +67,7 @@ def test_the_core_says_where_and_whether_the_web_app_is_built(tmp_path):
 
 
 def test_serve_registers_its_home_and_refuses_another_persons_port(tmp_path, monkeypatch):
-    from door.core import instances
+    from door.core.phone import instances
 
     monkeypatch.setattr(serve_cmd, "_run_server", lambda app, host, port: None)
     anna, ben = tmp_path / "anna", tmp_path / "ben"
@@ -79,7 +80,7 @@ def test_serve_registers_its_home_and_refuses_another_persons_port(tmp_path, mon
 
 
 def test_install_agent_and_uninstall_agent(tmp_path, monkeypatch):
-    from door.core import launch_agent
+    from door.core.phone import launch_agent
 
     monkeypatch.setattr(workspace, "HOME", tmp_path)
     seen = {}
