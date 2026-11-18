@@ -35,7 +35,7 @@ def _run_record_filename(started_at: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "-", started_at) + ".json"
 
 
-_NAMED_FAILURES = 5  # failures named in the summary line; the rest are counted
+_NAMED_FAILURES = 5  # failed sites named in the summary line; the rest are counted
 
 
 def _format_run_summary(record: dict, min_score: float) -> str:
@@ -48,10 +48,15 @@ def _format_run_summary(record: dict, min_score: float) -> str:
     dt = datetime.fromisoformat(record["started_at"])
     ts = dt.strftime("%Y-%m-%dT%H:%M")
     new_count = len(record["new_above_threshold"])
-    failed = list(dict.fromkeys(record["failures"]))
-    n_failures = len(failed)
-    shown = failed[:_NAMED_FAILURES] + ([f"+{n_failures - _NAMED_FAILURES} more"] if n_failures > _NAMED_FAILURES else [])
-    failures = f"{n_failures} failures" + (f" ({', '.join(shown)})" if shown else "")
+    sites = list(dict.fromkeys(_failed_sites(record)))  # a board can fail in search and collect
+    unscored = len((record.get("match") or {}).get("failed") or [])  # job ids: counted, not named
+    n_failures = len(sites) + unscored
+    names = sites[:_NAMED_FAILURES]
+    if len(sites) > _NAMED_FAILURES:
+        names.append(f"+{len(sites) - _NAMED_FAILURES} more")
+    if unscored:
+        names.append(f"{unscored} unscored ads")
+    failures = f"{n_failures} failures" + (f" ({', '.join(names)})" if names else "")
     status = "ok" if n_failures == 0 else "failed"
     elapsed = common._format_elapsed(record["elapsed_s"])
 

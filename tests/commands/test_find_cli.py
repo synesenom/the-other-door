@@ -255,17 +255,26 @@ def test_the_summary_names_the_failed_boards(cli_env, monkeypatch):
     assert " failed " in line and "1 failures (thehub)," in line
 
 
+def _summary_record(sites=(), unscored=()):
+    failed = [{"site": s, "outcome": "failed", "count": 0} for s in sites]
+    return {"started_at": "2026-09-23T06:30:00", "new_above_threshold": [], "elapsed_s": 5,
+            "search": {"sites": failed}, "match": {"failed": list(unscored)},
+            "failures": list(sites) + list(unscored)}
+
+
 def test_the_summary_names_at_most_five_failures_and_counts_the_rest():
-    record = {"started_at": "2026-09-23T06:30:00", "new_above_threshold": [], "elapsed_s": 5,
-              "failures": [f"site{i}" for i in range(7)]}
-    line = find_cmd._format_run_summary(record, 0.65)
+    line = find_cmd._format_run_summary(_summary_record([f"site{i}" for i in range(7)]), 0.65)
     assert "7 failures (site0, site1, site2, site3, site4, +2 more)," in line
 
 
+def test_the_summary_counts_unscored_ads_instead_of_naming_them():
+    line = find_cmd._format_run_summary(_summary_record(["thehub"], ["jobindex.1", "jobindex.2"]), 0.65)
+    assert "3 failures (thehub, 2 unscored ads)," in line
+    assert "jobindex.1" not in line
+
+
 def test_a_clean_run_names_no_failures():
-    record = {"started_at": "2026-09-23T06:30:00", "new_above_threshold": [], "elapsed_s": 5, "failures": []}
-    assert "0 failures," in find_cmd._format_run_summary(record, 0.65)
-    assert "0 failures (" not in find_cmd._format_run_summary(record, 0.65)
+    assert "0 failures," in find_cmd._format_run_summary(_summary_record(), 0.65)
 
 
 def test_new_matches_and_the_top_come_from_the_match_step(cli_env, monkeypatch):
