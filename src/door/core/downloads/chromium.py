@@ -51,7 +51,7 @@ def platform_key(system: str | None = None, machine: str | None = None) -> str |
     system = system if system is not None else _platform.system()
     machine = (machine if machine is not None else _platform.machine()).lower()
     if system == "Darwin":
-        return {"arm64": "mac-arm64", "aarch64": "mac-arm64", "x86_64": "mac-x64", "amd64": "mac-x64"}.get(machine)
+        return "mac-arm64" if machine in ("arm64", "aarch64") else None
     if system == "Linux":
         return "linux64" if machine in ("x86_64", "amd64") else None
     if system == "Windows":

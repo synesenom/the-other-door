@@ -32,7 +32,6 @@ DEFAULT_PORT = 8765
 CLOUDFLARED_VERSION = "2026.10.6"
 # The release's own digests (github.com/cloudflare/cloudflared/releases), checked before anything runs.
 CLOUDFLARED = {
-    "darwin-x86_64": ("cloudflared-darwin-amd64.tgz", "6c04a13835ca5ff29a0c6f58d17d1f3956aad1b7df1631f5b5efbc06269deded"),
     "darwin-arm64": ("cloudflared-darwin-arm64.tgz", "ea1e5105d35bbe16cee5b2f7b4742059ada341fbd35938ed827c24b85efa51c8"),
     "linux-x86_64": ("cloudflared-linux-amd64", "1d356dac769d0dbf62ebe588c4034824bbff98d5790c2f844cc99e0e2f57462d"),
     "windows-x86_64": ("cloudflared-windows-amd64.exe", "d521b3bf68982165f0d06d76732f22d9a105ef057ff3ae4c0986f3a23190950f"),

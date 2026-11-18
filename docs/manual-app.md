@@ -20,7 +20,7 @@ first launch the wizard offers to install the `claude` command line if it is mis
 own installer, into `~/.local/bin`, for you only and without a password; it keeps itself up to date)
 and signs you in to your Claude plan.
 
-- **macOS** (12 or later; Apple silicon and Intel have their own `.dmg`): open the `.dmg` and drag
+- **macOS** (Apple silicon, 12 or later): open the `.dmg` and drag
   *The other door* into Applications. The first time you open it, macOS refuses: allow it once as in
   [Opening it on macOS the first time](#opening-it-on-macos-the-first-time). The `claude` installer
   needs macOS 13 or later; on 12, install Claude Code another way first.

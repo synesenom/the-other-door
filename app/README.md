@@ -45,7 +45,7 @@ process, use `npm run dev:demo`.
 ## The bundle a packaged app carries (#223)
 
 A packaged app does not use the checkout's `.venv`: it carries its own Python and Chromium. Build them for
-this computer (macOS, or x64 Linux; Windows has `bundle-python.ps1`, #355) and check them:
+this computer (Apple silicon macOS, or x64 Linux; Windows has `bundle-python.ps1`, #355) and check them:
 
 ```sh
 scripts/bundle-python.sh   # → app/resources/{python,door,bin}, about 310 MB before Chromium, which adds an estimated 200 MB unpacked; downloads cached in app/.bundle-cache/
@@ -85,7 +85,7 @@ overrides it, which is how the smoke test runs it on a temp folder with the stan
 ## The install test (#639)
 
 `test:package` checks an unpacked app; the install test takes the file a user downloads. CI runs it on every
-installer (#18): the package workflows on each build (macOS arm64 and x64, Windows x64, Linux AppImage and
+installer (#18): the package workflows on each build (macOS arm64, Windows x64, Linux AppImage and
 `.deb`, and the Windows installer on `windows-11-arm`, emulated), and `release.yml` on what a tag ships. Locally:
 
 ```sh
@@ -124,10 +124,10 @@ real Claude sign-in and real scoring (a plan login), and live job boards (`scrip
 
 One version for *The other door* and the app: `python3 scripts/set_version.py 0.2.0` (from the repo root) sets it in
 `pyproject.toml`, `src/door/version.py` and `app/package.json`; commit, then push the tag `v0.2.0`.
-`.github/workflows/release.yml` builds macOS (Apple silicon and Intel), Windows and Linux, runs the unit tests
+`.github/workflows/release.yml` builds macOS (Apple silicon), Windows and Linux, runs the unit tests
 (off Linux, where `app.yml` runs them) and the packaged smoke test on each, and uploads the installers to a **draft** release of this repo (the
 workflow's own token writes it; run by hand, Actions → Release → Run workflow, it is a dry run that uploads to no release, the installers kept as run artifacts: do it before tagging); publish it only after the checklist in [docs/releasing.md](../docs/releasing.md)
-passed: a clean-machine install on each system, the release notes, the download link. Installed apps update from the published release (#17, `src/main/updates.ts`): a signed macOS build (the packed `package.json`'s `doorSigned`, set by `electron-builder.config.cjs` when the certificate and notarization are there), the Windows installer and the AppImage download the next version in the background through `electron-updater` (`latest*.yml`, the mac `.zip`, blockmaps; the release workflow uploads them, `scripts/merge-mac-manifest.ts` merges the two mac manifests) and install it on restart (the phone server and a running CV style build are stopped first, `src/main/phone-update.ts`, #77, #215; a Tailscale phone server starts again with the new version, a style build has to be started again); an unsigned macOS build and the `.deb` read GitHub's `releases/latest` and link to its page; a checkout and the demo do nothing. `DOOR_UPDATES=off` keeps a packaged app from checking; `test:package` and `test:install` set it, nothing else should.
+passed: a clean-machine install on each system, the release notes, the download link. Installed apps update from the published release (#17, `src/main/updates.ts`): a signed macOS build (the packed `package.json`'s `doorSigned`, set by `electron-builder.config.cjs` when the certificate and notarization are there), the Windows installer and the AppImage download the next version in the background through `electron-updater` (`latest*.yml`, the mac `.zip`, blockmaps; the release workflow uploads them) and install it on restart (the phone server and a running CV style build are stopped first, `src/main/phone-update.ts`, #77, #215; a Tailscale phone server starts again with the new version, a style build has to be started again); an unsigned macOS build and the `.deb` read GitHub's `releases/latest` and link to its page; a checkout and the demo do nothing. `DOOR_UPDATES=off` keeps a packaged app from checking; `test:package` and `test:install` set it, nothing else should.
 
 For signed builds add
 `MAC_CERTIFICATE`/`MAC_CERTIFICATE_PASSWORD` (Developer ID Application, `.p12` in base64), `APPLE_ID`,
