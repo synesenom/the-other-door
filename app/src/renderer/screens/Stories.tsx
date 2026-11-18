@@ -29,23 +29,22 @@ const toValues = (s: Story | Draft): Values => ({ title: s.title, context: s.con
 const complete = (v: Values) => [v.title, ...TEXT.map((k) => v[k])].every((x) => x.trim() !== '')
 const missingOf = (v: Values) => ['title', ...TEXT].filter((k) => !(v as Record<string, string>)[k]!.trim())
 
-/** The title and four texts, in place; `label` keeps the ids apart when several forms are on screen. */
-export function Fields({ values, onChange, label }: { values: Values; onChange: (v: Values) => void; label?: string }) {
+/** The title and four texts, in place. */
+export function Fields({ values, onChange }: { values: Values; onChange: (v: Values) => void }) {
   const id = useId()
-  const prefix = label ? `${label}: ` : ''
   const set = (k: keyof Values, v: string) => onChange({ ...values, [k]: v })
   return (
     <div className="stories-fields">
       <div className="field onb-field">
         <label htmlFor={`${id}-title`} className="field-label">
-          {`${prefix}${LABEL.title}`}
+          {LABEL.title}
         </label>
         <input id={`${id}-title`} className="onb-input" value={values.title} onChange={(e) => set('title', e.target.value)} />
       </div>
       {TEXT.map((k) => (
         <div className="field onb-field" key={k}>
           <label htmlFor={`${id}-${k}`} className="field-label">
-            {`${prefix}${LABEL[k]}`}
+            {LABEL[k]}
           </label>
           {/* two lines, fixed: a part of a story is a sentence or two, all of it in view */}
           <textarea id={`${id}-${k}`} className="onb-input" rows={2} value={values[k]} onChange={(e) => set(k, e.target.value)} />
@@ -60,13 +59,14 @@ const saveArgs = (v: Values, extra: Record<string, unknown> = {}) => ({ title: v
 type View =
   | { kind: 'list' }
   | { kind: 'form'; old: string; values: Values }
-  | { kind: 'text'; text: string }
-  | { kind: 'drafting'; what: string }
-  | { kind: 'drafts'; rows: { values: Values; keep: boolean; conflicts: string[] }[] }
+  | { kind: 'text'; text: string; drafting: boolean }
+  // what a text was drafted into, one story at a time in the same dialog: `at` is the one shown, `added` the ones saved
+  | { kind: 'draft'; rows: { values: Values; conflicts: string[] }[]; at: number; added: string[] }
 
 /**
- * Profile's Stories: the story bank the tailor draws on (profile/story_bank.md). See, edit, add by fields,
- * draft from pasted text (proposals only: the ones kept are saved one by one). Every rule
+ * Profile's Stories: the story bank the tailor draws on (profile/story_bank.md). See, edit, and write a story: the
+ * text is drafted into its four parts in the same dialog, to check and save (a text with several stories shows them
+ * one at a time). Every rule
  * (what a story needs) is the server's; this only asks and shows.
  */
 export function Stories() {
@@ -126,40 +126,46 @@ export function Stories() {
     }
   }
 
-  const draft = async (args: Record<string, unknown>, what: string) => {
-    setView({ kind: 'drafting', what })
+  const draft = async (text: string) => {
+    setView({ kind: 'text', text, drafting: true })
     setError(null)
     setNote(null)
     try {
-      const r = await call<{ outcome: string; stories: Draft[] }>('draft_stories', args)
+      const r = await call<{ outcome: string; stories: Draft[] }>('draft_stories', { text })
       if (!r.stories?.length) {
         setNote(r.outcome === 'nothing_new' ? 'Nothing new to propose.' : 'No story could be drafted.')
         setView({ kind: 'list' })
         return
       }
-      setView({ kind: 'drafts', rows: r.stories.map((s) => ({ values: toValues(s), keep: true, conflicts: s.conflicts ?? [] })) })
+      setView({ kind: 'draft', rows: r.stories.map((s) => ({ values: toValues(s), conflicts: s.conflicts ?? [] })), at: 0, added: [] })
     } catch (e) {
       setError(errorText(e))
-      setView({ kind: 'list' })
+      setView({ kind: 'text', text, drafting: false })
     }
   }
 
-  const saveKept = async (rows: { values: Values; keep: boolean; conflicts: string[] }[]) => {
+  /** The next drafted story, or the list again when it was the last one. */
+  const next = (view: Extract<View, { kind: 'draft' }>, added: string[]) => {
+    if (view.at + 1 < view.rows.length) {
+      setView({ ...view, at: view.at + 1, added })
+      return
+    }
+    if (added.length) setNote(added.length === 1 ? `Added ${added[0]}.` : `Added ${added.length} stories.`)
+    back()
+    reload()
+  }
+
+  const saveDraft = async (view: Extract<View, { kind: 'draft' }>) => {
+    const values = view.rows[view.at]!.values
     setBusy(true)
     setError(null)
-    let saved = 0
     try {
-      for (const row of rows.filter((r) => r.keep)) {
-        await call('save_story', saveArgs(row.values))
-        saved += 1
-      }
-      setNote(`Added ${saved} ${saved === 1 ? 'story' : 'stories'}.`)
-      back()
+      await call('save_story', saveArgs(values))
+      next(view, [...view.added, values.title.trim()])
     } catch (e) {
-      setError(`${errorText(e)}${saved ? ` (${saved} saved before it)` : ''}`)
+      setError(errorText(e))
     } finally {
       setBusy(false)
-      reload()
     }
   }
 
@@ -174,8 +180,6 @@ export function Stories() {
   const errorLine = error && (
     <ErrorBox text={error} />
   )
-
-  if (view.kind === 'drafting') return <Spinner message={`Drafting stories from ${view.what} (a few minutes)…`} />
 
   // edited in a dialog over the list, the story it came from still in view behind it
   const form = view.kind === 'form' && (
@@ -193,68 +197,74 @@ export function Stories() {
     </Dialog>
   )
 
-  // one text box and "Draft it": a dialog over the list; what it drafts is reviewed in place
+  // one text box and "Draft it": a dialog over the list, where the draft is then checked and saved
   const writing = view.kind === 'text' && (
     <Dialog title="Write a story" onClose={back} initialFocus="textarea">
-      <div className="field onb-field">
-        <label htmlFor="stories-text" className="field-label">
-          What did you do?
-        </label>
-        <textarea id="stories-text" className="onb-input" rows={6} value={view.text} onChange={(e) => setView({ kind: 'text', text: e.target.value })} />
-      </div>
-      <div className="actions">
-        <button type="button" className="quiet" onClick={back}>
-          Cancel
-        </button>
-        <button type="button" className="primary" disabled={!view.text.trim()} onClick={() => void draft({ text: view.text }, 'your text')}>
-          Draft it
-        </button>
-      </div>
+      {view.drafting ? (
+        <Spinner message="Drafting your story (a minute or two)…" />
+      ) : (
+        <>
+          <div className="field onb-field">
+            <label htmlFor="stories-text" className="field-label">
+              What did you do?
+            </label>
+            <textarea id="stories-text" className="onb-input" rows={6} value={view.text} onChange={(e) => setView({ kind: 'text', text: e.target.value, drafting: false })} />
+          </div>
+          {errorLine}
+          <div className="actions">
+            <button type="button" className="quiet" onClick={back}>
+              Cancel
+            </button>
+            <button type="button" className="primary" disabled={!view.text.trim()} onClick={() => void draft(view.text)}>
+              Draft it
+            </button>
+          </div>
+        </>
+      )}
     </Dialog>
   )
 
-  if (view.kind === 'drafts') {
-    const kept = view.rows.filter((r) => r.keep)
-    const ready = kept.length > 0 && kept.every((r) => complete(r.values))
+  // the drafted story in its four parts, in the same dialog: only what the text says, to fill in and correct
+  const drafted = view.kind === 'draft' && (() => {
+    const row = view.rows[view.at]!
+    const missing = missingOf(row.values)
+    const several = view.rows.length > 1
+    const setValues = (values: Values) => setView({ ...view, rows: view.rows.map((x, j) => (j === view.at ? { ...x, values } : x)) })
     return (
-      <section className="cv-panel" aria-label="Drafted stories">
-        <h2 className="label">Drafted stories</h2>
-        <p className="small muted">Only what your text says. Fill in what is empty, change what is off, and untick what should not be kept.</p>
-        {view.rows.map((r, i) => (
-          <div key={i} className="stories-draft">
-            <label className="choice">
-              <input type="checkbox" checked={r.keep} onChange={() => setView({ ...view, rows: view.rows.map((x, j) => (j === i ? { ...x, keep: !x.keep } : x)) })} />
-              <span>{`Keep ${r.values.title || 'this story'}`}</span>
-            </label>
-            {r.keep && r.conflicts.map((c) => <p key={c} className="small field-error">{`Differs from your CV: ${c}`}</p>)}
-            {r.keep && missingOf(r.values).length > 0 && <p className="small field-error">{`Still to fill in: ${missingOf(r.values).join(', ')}`}</p>}
-            {r.keep && <Fields label={r.values.title || `Story ${i + 1}`} values={r.values} onChange={(v) => setView({ ...view, rows: view.rows.map((x, j) => (j === i ? { ...x, values: v } : x)) })} />}
-          </div>
-        ))}
+      <Dialog title={several ? `Story ${view.at + 1} of ${view.rows.length}` : 'Your story'} onClose={() => next({ ...view, at: view.rows.length - 1 }, view.added)}>
+        <p className="small muted">Only what your text says. Fill in what is empty and change what is off.</p>
+        {row.conflicts.map((c) => <p key={c} className="small field-error">{`Differs from your CV: ${c}`}</p>)}
+        {missing.length > 0 && <p className="small field-error">{`Still to fill in: ${missing.join(', ')}`}</p>}
+        <Fields key={view.at} values={row.values} onChange={setValues} />
         {errorLine}
         <div className="actions">
-          <button type="button" className="quiet" onClick={back}>
+          <button type="button" className="quiet" onClick={() => next({ ...view, at: view.rows.length - 1 }, view.added)}>
             Cancel
           </button>
-          <button type="button" className="primary" disabled={busy || !ready} onClick={() => void saveKept(view.rows)}>
-            {`Save ${kept.length} ${kept.length === 1 ? 'story' : 'stories'}`}
+          {several && (
+            <button type="button" className="secondary" disabled={busy} onClick={() => { setError(null); next(view, view.added) }}>
+              Skip
+            </button>
+          )}
+          <button type="button" className="primary" disabled={busy || !complete(row.values)} onClick={() => void saveDraft(view)}>
+            Save
           </button>
         </div>
-      </section>
+      </Dialog>
     )
-  }
+  })()
 
   return (
     <div className="stories">
       <p className="small muted">The stories the tailor draws on for your applications: the context, what you did, what came of it and what you learned.</p>
       {/* one way in: writing a story. Not drafted from the CV: a story adds what the CV does not say */}
       <div className="actions stories-add">
-        <button type="button" className="primary" onClick={() => { setNote(null); setView({ kind: 'text', text: '' }) }}>
+        <button type="button" className="primary" onClick={() => { setNote(null); setError(null); setView({ kind: 'text', text: '', drafting: false }) }}>
           Write a story
         </button>
       </div>
       {note && <p className="small">{named(note)}</p>}
-      {!form && !writing && errorLine}
+      {!form && !writing && !drafted && errorLine}
       {bank.stories.length === 0 ? (
         <p className="small muted">No stories yet. Write one about something your CV only lists: what was going on, what you did, what came of it.</p>
       ) : (
@@ -298,6 +308,7 @@ export function Stories() {
       )}
       {form}
       {writing}
+      {drafted}
     </div>
   )
 }

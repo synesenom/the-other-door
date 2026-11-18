@@ -56,34 +56,45 @@ describe('Stories', () => {
     await waitFor(() => expect(call).toHaveBeenCalledWith('remove_story', { title: 'Ran the migration' }))
   })
 
-  it('drafts from text, shows the draft, and needs the empty fields filled', async () => {
+  it('drafts from text in the same dialog: the story in its four parts, saved, then the list again', async () => {
     const user = userEvent.setup()
     const { call } = show({ draft_stories: { outcome: 'proposed', stories: [{ ...story('Drafted'), learning: '', missing: ['learning'], conflicts: ['You wrote 50%; your CV says 30%.'] }] } })
     await user.click(await screen.findByRole('button', { name: 'Write a story' }))
     await user.type(screen.getByLabelText('What did you do?'), 'I drafted something.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
-    await screen.findByRole('region', { name: 'Drafted stories' })
+    const dialog = within(await screen.findByRole('dialog', { name: 'Your story' }))
     expect(call).toHaveBeenCalledWith('draft_stories', { text: 'I drafted something.' })
-    expect(screen.getByText(/Still to fill in: learning/)).toBeInTheDocument()
-    expect(screen.getByText(/Differs from your CV: You wrote 50%/)).toBeInTheDocument()
-    const save = screen.getByRole('button', { name: 'Save 1 story' })
+    // one story, edited like any other: plain labels, no ticks, the bank's list not editable behind it
+    expect(dialog.getByLabelText('Title')).toHaveValue('Drafted')
+    expect(dialog.getByLabelText('Context')).toHaveValue('Drafted C')
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Drafted stories' })).toBeNull()
+    expect(dialog.getByText(/Still to fill in: learning/)).toBeInTheDocument()
+    expect(dialog.getByText(/Differs from your CV: You wrote 50%/)).toBeInTheDocument()
+    const save = dialog.getByRole('button', { name: 'Save' })
     expect(save).toBeDisabled()
-    await user.type(screen.getByLabelText('Drafted: Learning'), 'Learned.')
+    await user.type(dialog.getByLabelText('Learning'), 'Learned.')
     await user.click(save)
     await waitFor(() => expect(call).toHaveBeenCalledWith('save_story', expect.objectContaining({ title: 'Drafted', learning: 'Learned.' })))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByText('Added Drafted.')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Your stories' })).toBeInTheDocument()
   })
 
-  it('saves only the ticked drafts, one call each', async () => {
+  it('a text that holds several stories shows them one at a time; Skip leaves one out', async () => {
     const user = userEvent.setup()
     const { call } = show({ draft_stories: { outcome: 'proposed', stories: [story('One'), story('Two'), story('Three')] } })
     await user.click(await screen.findByRole('button', { name: 'Write a story' }))
     await user.type(screen.getByLabelText('What did you do?'), 'Three things.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
-    await screen.findByRole('region', { name: 'Drafted stories' })
-    expect(call).toHaveBeenCalledWith('draft_stories', { text: 'Three things.' })
-    await user.click(screen.getByRole('checkbox', { name: 'Keep Two' }))
-    await user.click(screen.getByRole('button', { name: 'Save 2 stories' }))
-    await waitFor(() => expect(call.mock.calls.filter((c) => c[0] === 'save_story').map((c) => (c[1] as { title: string }).title)).toEqual(['One', 'Three']))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Story 1 of 3' })).getByRole('button', { name: 'Save' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Story 2 of 3' })).getByRole('button', { name: 'Skip' }))
+    const last = within(await screen.findByRole('dialog', { name: 'Story 3 of 3' }))
+    expect(last.getByLabelText('Title')).toHaveValue('Three')
+    await user.click(last.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(call.mock.calls.filter((c) => c[0] === 'save_story').map((c) => (c[1] as { title: string }).title)).toEqual(['One', 'Three'])
+    expect(screen.getByText('Added 2 stories.')).toBeInTheDocument()
   })
 
   it('an empty bank offers only writing a story, never a draft from the CV', async () => {
@@ -118,7 +129,7 @@ describe('Stories', () => {
     expect(screen.getByLabelText('Title')).toHaveValue('Ran the migration')
   })
 
-  it('a draft that failed is said in the error box over the list, to try again', async () => {
+  it('a draft that failed is said in the dialog, the text kept to try again', async () => {
     const user = userEvent.setup()
     show({
       draft_stories: () => {
@@ -128,10 +139,11 @@ describe('Stories', () => {
     await user.click(await screen.findByRole('button', { name: 'Write a story' }))
     await user.type(screen.getByLabelText('What did you do?'), 'Something.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
-    const alert = await screen.findByRole('alert')
+    const dialog = within(await screen.findByRole('dialog', { name: 'Write a story' }))
+    const alert = await dialog.findByRole('alert')
     expect(alert).toHaveTextContent('Claude did not answer. Try again.')
     expect(alert).toHaveClass('error')
-    expect(screen.getByRole('button', { name: 'Write a story' })).toBeInTheDocument()
+    expect(dialog.getByLabelText('What did you do?')).toHaveValue('Something.')
   })
 
   it('a bank that could not be read says so in the error box: it is all the part shows', async () => {
@@ -178,24 +190,22 @@ describe('Stories', () => {
     expect(screen.getByRole('list', { name: 'Your stories' })).toBeInTheDocument()
   })
 
-  it('kept drafts that failed to save say how many were saved, in the error box on the drafts', async () => {
+  it('a draft that failed to save is said in its dialog, which stays', async () => {
     const user = userEvent.setup()
-    let saves = 0
     show({
-      draft_stories: { outcome: 'proposed', stories: [story('One'), story('Two')] },
+      draft_stories: { outcome: 'proposed', stories: [story('One')] },
       save_story: () => {
-        saves += 1
-        if (saves > 1) throw new Error('Your story could not be saved.')
-        return { outcome: 'added' }
+        throw new Error('Your story could not be saved.')
       },
     })
     await user.click(await screen.findByRole('button', { name: 'Write a story' }))
-    await user.type(screen.getByLabelText('What did you do?'), 'Two things.')
+    await user.type(screen.getByLabelText('What did you do?'), 'One thing.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
-    await user.click(await screen.findByRole('button', { name: 'Save 2 stories' }))
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Your story could not be saved. (1 saved before it)')
+    const dialog = within(await screen.findByRole('dialog', { name: 'Your story' }))
+    await user.click(dialog.getByRole('button', { name: 'Save' }))
+    const alert = await dialog.findByRole('alert')
+    expect(alert).toHaveTextContent('Your story could not be saved.')
     expect(alert).toHaveClass('error')
-    expect(screen.getByRole('region', { name: 'Drafted stories' })).toBeInTheDocument()
+    expect(dialog.getByLabelText('Title')).toHaveValue('One')
   })
 })
