@@ -244,6 +244,30 @@ def test_failures_are_failed_sites_of_search_and_collect_and_unscored_postings(c
     assert run_core(cli_env)["failures"] == ["thehub", "lever", "job-x"]
 
 
+def test_the_summary_names_the_failed_boards(cli_env, monkeypatch):
+    blocks = stub_blocks(cli_env.jobs_dir)
+    search = {**blocks["search"], "sites": [{"site": "thehub", "outcome": "error", "error": "boom"}]}
+    collect = {**blocks["collect"], "sites": [{"site": "thehub", "outcome": "failed", "count": 0, "errors": ["x"]}]}
+    stub_steps(monkeypatch, cli_env.jobs_dir, search=search, collect=collect)
+    record = run_core(cli_env)
+    assert "1 failures (thehub)," in find_cmd._format_run_summary(record, 0.65)
+    [line] = (cli_env.jobs_dir / "runs" / "latest.log").read_text().splitlines()
+    assert " failed " in line and "1 failures (thehub)," in line
+
+
+def test_the_summary_names_at_most_five_failures_and_counts_the_rest():
+    record = {"started_at": "2026-09-23T06:30:00", "new_above_threshold": [], "elapsed_s": 5,
+              "failures": [f"site{i}" for i in range(7)]}
+    line = find_cmd._format_run_summary(record, 0.65)
+    assert "7 failures (site0, site1, site2, site3, site4, +2 more)," in line
+
+
+def test_a_clean_run_names_no_failures():
+    record = {"started_at": "2026-09-23T06:30:00", "new_above_threshold": [], "elapsed_s": 5, "failures": []}
+    assert "0 failures," in find_cmd._format_run_summary(record, 0.65)
+    assert "0 failures (" not in find_cmd._format_run_summary(record, 0.65)
+
+
 def test_new_matches_and_the_top_come_from_the_match_step(cli_env, monkeypatch):
     top = [{"id": "job-a", "score": 0.9, "title": "DS", "company": "Acme"}]
     match = {**stub_blocks(cli_env.jobs_dir)["match"], "new_above_threshold": ["job-a"], "top": top}
