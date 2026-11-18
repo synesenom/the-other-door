@@ -65,6 +65,16 @@ export async function stopForUpdate(deps: PhoneUpdateDeps): Promise<void> {
   await Promise.all([stopPhoneForUpdate(deps), stopStyleBuildForUpdate(deps)])
 }
 
+async function startTailscale(deps: PhoneUpdateDeps, why: string): Promise<void> {
+  try {
+    const out = (await deps.call('phone_start', { connection: 'tailscale' }, START_TIMEOUT_MS)) as { error?: string; needs?: string } | undefined
+    if (out?.error) deps.log(`starting the phone server ${why} failed: ${out.error}`)
+    else if (out?.needs) deps.log(`starting the phone server ${why} needs: ${out.needs}`)
+  } catch (e) {
+    deps.log(`starting the phone server ${why} failed: ${message(e)}`)
+  }
+}
+
 export async function restorePhoneAfterUpdate(deps: PhoneUpdateDeps): Promise<void> {
   if (!deps.fs.exists(deps.markerPath)) return
   // Removed first: one try per update, never a retry at every start.
@@ -73,29 +83,23 @@ export async function restorePhoneAfterUpdate(deps: PhoneUpdateDeps): Promise<vo
   } catch (e) {
     deps.log(`removing the phone restart marker failed: ${message(e)}`)
   }
-  try {
-    const out = (await deps.call('phone_start', { connection: 'tailscale' }, START_TIMEOUT_MS)) as { error?: string; needs?: string } | undefined
-    if (out?.error) deps.log(`starting the phone server after an update failed: ${out.error}`)
-    else if (out?.needs) deps.log(`starting the phone server after an update needs: ${out.needs}`)
-  } catch (e) {
-    deps.log(`starting the phone server after an update failed: ${message(e)}`)
-  }
+  await startTailscale(deps, 'after an update')
 }
 
 // After a hand install (#109) a phone server of the older version may still be answering. At start, with no update
 // marker: stop it, and start it again only on Tailscale (a quick tunnel stays stopped, its address changes anyway).
+// A first start after a hand install may wait for the server's cold start and a data migration (DoorServer allows 30 s).
+const START_CHECK_MS = 60_000
+
 export async function restoreOutdatedPhone(deps: PhoneUpdateDeps): Promise<void> {
-  if (deps.fs.exists(deps.markerPath)) return
   try {
-    const status = (await bounded(deps.call('phone_status', {}), deps.timeoutMs ?? 10_000)) as
+    const status = (await bounded(deps.call('phone_status', {}), deps.timeoutMs ?? START_CHECK_MS)) as
       | { running?: boolean; outdated?: boolean; connection?: string }
       | undefined
     if (!status?.running || !status.outdated) return
-    await bounded(deps.call('phone_stop', {}), deps.timeoutMs ?? 10_000)
-    if (status.connection !== 'tailscale') return
-    const out = (await deps.call('phone_start', { connection: 'tailscale' }, START_TIMEOUT_MS)) as { error?: string; needs?: string } | undefined
-    if (out?.error) deps.log(`starting the phone server of the older version again failed: ${out.error}`)
-    else if (out?.needs) deps.log(`starting the phone server of the older version again needs: ${out.needs}`)
+    // `phone_start` replaces an outdated server itself; a quick tunnel is only stopped.
+    if (status.connection === 'tailscale') await startTailscale(deps, 'of the older version again')
+    else await bounded(deps.call('phone_stop', {}), deps.timeoutMs ?? START_CHECK_MS)
   } catch (e) {
     deps.log(`replacing the phone server of an older version failed: ${message(e)}`)
   }

@@ -291,3 +291,23 @@ def test_start_keeps_a_running_server_of_the_same_version(tmp_path):
     _old_server(tmp_path, w, "cloudflare", phone.VERSION)
     out = phone.start(tmp_path, "cloudflare", **deps(w, tmp_path))
     assert out["running"] is True and w.killed == [] and w.spawned == []
+
+
+def test_two_starts_at_once_spawn_one_server(tmp_path):
+    import threading
+
+    w = World(tmp_path)
+    d = deps(w, tmp_path)
+    gate = threading.Event()
+    slow = d["answers"]
+
+    def answers(url):
+        gate.wait(0.3)  # the first start is still waiting for its server when the second one comes
+        return slow(url)
+
+    d["answers"] = answers
+    out = []
+    threads = [threading.Thread(target=lambda: out.append(phone.start(tmp_path, "cloudflare", **d))) for _ in range(2)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert len([s for s in w.spawned if "serve" in s["argv"]]) == 1

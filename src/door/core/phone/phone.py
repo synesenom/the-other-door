@@ -18,6 +18,7 @@ import socket
 import subprocess
 import sys
 import tarfile
+import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -178,7 +179,16 @@ def _stop_pids(run: dict, kill) -> None:
             kill(run[key])
 
 
+# The app's restart at its start and a Start pressed in Settings run on two threads of one server.
+_LOCK = threading.RLock()
+
+
 def start(home: Path, connection: str, **deps) -> dict:
+    with _LOCK:
+        return _start(home, connection, **deps)
+
+
+def _start(home: Path, connection: str, **deps) -> dict:
     """Serve this data folder to a phone over `connection` ("cloudflare" or "tailscale"); reuses a running one.
 
     Returns `status()`, or ``{"needs": "install_tailscale" | "sign_in_tailscale" | "enable_https", "link"}``
@@ -261,6 +271,11 @@ def start(home: Path, connection: str, **deps) -> dict:
 
 def stop(home: Path, **deps) -> dict:
     """Stop what `start` started for this data folder."""
+    with _LOCK:
+        return _stop(home, **deps)
+
+
+def _stop(home: Path, **deps) -> dict:
     d = {**_defaults(), **deps}
     run = _read_run(home)
     if not run:

@@ -170,8 +170,8 @@ describe('restoreOutdatedPhone', () => {
   it('stops an outdated server and starts Tailscale again', async () => {
     const s = setup(old('tailscale'))
     await restoreOutdatedPhone(s.deps)
-    expect(s.call).toHaveBeenCalledWith('phone_stop', {})
     expect(s.call).toHaveBeenCalledWith('phone_start', { connection: 'tailscale' }, 300_000)
+    expect(s.call).not.toHaveBeenCalledWith('phone_stop', {})
   })
   it('leaves a quick tunnel stopped', async () => {
     const s = setup(old('cloudflare'))
@@ -179,13 +179,12 @@ describe('restoreOutdatedPhone', () => {
     expect(s.call).toHaveBeenCalledWith('phone_stop', {})
     expect(s.call).not.toHaveBeenCalledWith('phone_start', expect.anything(), expect.anything())
   })
-  it('leaves a current server, a stopped one and an update marker alone', async () => {
-    for (const [calls, marker] of [
-      [{ phone_status: () => ({ running: true, outdated: false, connection: 'tailscale' }) }, false],
-      [{ phone_status: () => ({ running: false, outdated: true }) }, false],
-      [old('tailscale'), true],
-    ] as const) {
-      const s = setup({ ...calls }, marker)
+  it('leaves a current server, and a stopped one alone', async () => {
+    for (const calls of [
+      { phone_status: () => ({ running: true, outdated: false, connection: 'tailscale' }) },
+      { phone_status: () => ({ running: false, outdated: true }) },
+    ]) {
+      const s = setup({ ...calls })
       await restoreOutdatedPhone(s.deps)
       expect(s.call).not.toHaveBeenCalledWith('phone_stop', {})
     }
@@ -194,5 +193,13 @@ describe('restoreOutdatedPhone', () => {
     const s = setup({ ...old('tailscale'), phone_start: () => ({ error: 'nope' }) })
     await restoreOutdatedPhone(s.deps)
     expect(s.log).toHaveBeenCalled()
+  })
+  it('acts on a first answer that is slow, as a cold start with a migration is', async () => {
+    vi.useFakeTimers()
+    const s = setup({ ...old('cloudflare'), phone_status: () => new Promise((r) => setTimeout(() => r({ running: true, outdated: true, connection: 'cloudflare' }), 40_000)) })
+    const p = restoreOutdatedPhone({ ...s.deps, timeoutMs: undefined })
+    await vi.advanceTimersByTimeAsync(40_000)
+    await p
+    expect(s.call).toHaveBeenCalledWith('phone_stop', {})
   })
 })
