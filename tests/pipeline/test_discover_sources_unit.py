@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.commands import _common as common
 from door.core import profile_loader
 from door.core import candidates, discovery_sources
 from door.core import discovery_state as ds
