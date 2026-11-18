@@ -28,7 +28,9 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import claude_cli, companies, discovery_sources, migrations, runs, sites
+from door.core import claude_cli, migrations, runs, sites
+from door.core.employers import companies
+from door.core.employers import discovery_sources
 from door.core.downloads import chromium
 from door.core.downloads import installers
 from door.core.sites import FEED_SITES

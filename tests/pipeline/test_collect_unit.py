@@ -5,7 +5,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.core import companies, freshness
+from door.core import freshness
+from door.core.employers import companies
 from door.pipeline import collect
 from pipeline_utils import fake_scraper, posting
 from profile_utils import write_config

@@ -472,7 +472,7 @@ def test_the_review_offers_the_supported_job_ad_languages(init_env, prompts, mon
 
 def test_init_keeps_the_employers_already_followed(init_env, prompts):
     """Re-running init on a profile that follows employers leaves the list alone, and no note is printed."""
-    from door.core import companies
+    from door.core.employers import companies
 
     _write_existing_profile_config(init_env)
     companies.save(init_env.profile_dir, [companies.Company(
@@ -1078,7 +1078,7 @@ def _disclaimed(init_env, fields):
 
 
 def test_turning_a_source_on_returns_its_disclaimer(init_env):
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     result = profile_cmd._init_core({"linkedin_discovery": True}, init_env.profile_dir, init_env.example_dir)
     assert result["disclaimers"] == [{"key": "linkedin_discovery", "text": discovery_sources.info("linkedin")["disclaimer"]}]
@@ -1094,7 +1094,7 @@ def test_a_disclaimer_comes_only_when_a_source_goes_from_not_on_to_on(init_env):
 
 
 def test_init_set_prints_the_disclaimer_once(init_env):
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     first = CliRunner().invoke(cli, ["init", "--set", "linkedin_discovery=true"])
     assert discovery_sources.info("linkedin")["disclaimer"] in result_text(first)
@@ -1103,7 +1103,7 @@ def test_init_set_prints_the_disclaimer_once(init_env):
 
 
 def test_the_wizards_discovery_question_is_the_generated_disclaimer(init_env, prompts, monkeypatch):
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     _stop_at_first_run(monkeypatch)
     prompts.answers.update(_JANE)

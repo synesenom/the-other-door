@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from door.core import discovery_sources
+from door.core.employers import discovery_sources
 from paths import PACKAGE_DIR, REPO_ROOT
 
 _HOSTS = ("linkedin.com", "jobs-guest")

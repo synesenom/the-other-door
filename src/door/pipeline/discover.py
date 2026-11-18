@@ -2,7 +2,7 @@
 
 A discovery source is not a job source; it only tells which employers hire for the profile's
 keywords. Today there is one, LinkedIn (`door.scrapers.discovery.linkedin`); a source is a module registered
-in `door.core.discovery_sources` that follows the contract documented there (``NAME``,
+in `door.core.employers.discovery_sources` that follows the contract documented there (``NAME``,
 ``COUNTRIES``, ``CONFIG_KEY``, ``run`` and the optional hooks ``extras`` and ``skip_employer``), so
 another one plugs in without a change to this file. This step runs every source the profile enables
 for its country, one after the other, and puts each employer in the candidates queue
@@ -55,8 +55,9 @@ from types import SimpleNamespace
 from door import pipeline, scrapers
 from door.commands import _common as common
 from door.core import lock, profile_loader
-from door.core import candidates, discovery_sources, discovery_state, progress, workspace
-from door.core import companies as store
+from door.core import candidates, discovery_state, progress, workspace
+from door.core.employers import discovery_sources
+from door.core.employers import companies as store
 from door.matching import title_fit
 
 _ROTATE_PER_RUN = 1000  # keywords a run in rotate mode lines up: all of them, the budget decides how far it gets

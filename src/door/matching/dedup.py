@@ -51,7 +51,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from door import i18n
-from door.core import ats_detect, sites
+from door.core import sites
+from door.core.employers import ats_detect
 
 # Company-form suffixes to strip from company names (whole words, any case).
 _LEGAL_SUFFIX_RE = i18n.compile_words(i18n.legal_suffixes())

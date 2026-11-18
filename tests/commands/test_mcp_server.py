@@ -172,7 +172,7 @@ def test_init_profile_tool_passes_only_given_fields(monkeypatch):
 
 
 def test_init_profile_returns_the_disclaimer_of_a_source_turned_on(tmp_path, monkeypatch):
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     monkeypatch.setattr(workspace, "HOME", tmp_path)
     monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
@@ -606,7 +606,7 @@ def test_startup_pull_skips_while_the_ledger_is_locked(tmp_path, monkeypatch):
 
 
 def test_merge_companies_proposes_merges_and_reports_errors(tmp_path, monkeypatch):
-    from door.core import companies as store
+    from door.core.employers import companies as store
 
     monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
     monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")

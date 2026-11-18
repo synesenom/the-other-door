@@ -442,7 +442,7 @@ refuses (a 403 or 429, a redirect to a login page, or a captcha, block or consen
 should be) stops for the run and rests a day: a refusal is never read as "no employers".
 They are **employer discovery** only: *The other door* keeps none of their
 ads, only the employers behind them, whose own feeds `follow` finds and `collect` reads. They are
-run by the `discover` step (`door.core.discovery_sources`), each with its own key (`linkedin_discovery`,
+run by the `discover` step (`door.core.employers.discovery_sources`), each with its own key (`linkedin_discovery`,
 `profession_discovery`, `hellowork_discovery`, `jobbsafari_discovery`), state, pace and rest.
 
 - **LinkedIn finds employers, not jobs.** A search card has no description, and LinkedIn limits a

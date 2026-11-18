@@ -6,12 +6,12 @@ belongs to, from public signals only: the link's own shape, the host's DNS CNAME
 careers page (one polite GET, robots.txt honoured), and for a bare name a probe of each
 feed's public endpoint with the name's likely slugs (Greenhouse -> Lever US, then EU -> Ashby
 -> Recruitee -> Pinpoint -> Teamtailor -> Workable -> SmartRecruiters) and of its likely career hosts' CNAMEs.
-`_add_core` records what it finds in `profile/companies.json` (`door.core.companies`),
+`_add_core` records what it finds in `profile/companies.json` (`door.core.employers.companies`),
 unfollowable and unresolved employers too, with the reason.
 
 `_classify` runs the same detection over a queued candidate's links (and name); `follow`
 (`door.pipeline.follow`) calls it for every employer in the candidates queue. A name that none of this
-resolves is looked up on Wikidata (`door.core.wikidata`, #566) for the employer's own website, whose careers
+resolves is looked up on Wikidata (`door.core.employers.wikidata`, #566) for the employer's own website, whose careers
 pages, careers hosts and platform tenants are then read the same way (`_by_website`).
 """
 
@@ -29,8 +29,10 @@ import requests
 
 from door import i18n
 from door.commands import _common as common
-from door.core import ats_detect, lock, profile_loader, sites, wikidata, workspace
-from door.core import companies as store
+from door.core import lock, profile_loader, sites, workspace
+from door.core.employers import ats_detect
+from door.core.employers import wikidata
+from door.core.employers import companies as store
 from door.scrapers.feeds import hr_manager
 from door.scrapers.http_client import PoliteSession, RobotsBlocked
 

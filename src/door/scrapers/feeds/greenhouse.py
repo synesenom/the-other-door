@@ -120,7 +120,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "json")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 # The vendor's own site: it carries job markup, but is nobody's career site.
 JOB_BOARD_EXACT = ("www.greenhouse.com", "greenhouse.com")

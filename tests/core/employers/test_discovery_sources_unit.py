@@ -5,7 +5,7 @@ import types
 
 import pytest
 
-from door.core import discovery_sources as reg
+from door.core.employers import discovery_sources as reg
 
 
 @pytest.fixture

@@ -9,7 +9,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.core import candidates, companies
+from door.core import candidates
+from door.core.employers import companies
 from door.core import discovery_state as ds
 from door.matching import title_fit
 from door.scrapers.discovery import linkedin

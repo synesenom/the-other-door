@@ -88,7 +88,7 @@ from door.core import claude_cli, migrations, problem_log, workspace
 from door.core.sync import drive
 from door.core.sync import sync
 from door.core.lock import LockHeldError, SyncConflict, ledger_lock, lock_holder
-from door.core import companies as companies_store
+from door.core.employers import companies as companies_store
 from door.core.profile_loader import ConfigError
 from door.core.tracker import DuplicateApplicationError
 

@@ -17,7 +17,9 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from door.core import ats_detect, companies, freshness, utils
+from door.core import freshness, utils
+from door.core.employers import ats_detect
+from door.core.employers import companies
 
 FILE = "candidates.json"
 _LIST_FIELDS = ("links", "titles", "sources")

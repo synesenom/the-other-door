@@ -12,7 +12,8 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.core import companies, profile_loader, progress, templates, workspace
+from door.core import profile_loader, progress, templates, workspace
+from door.core.employers import companies
 from door.core.downloads import chromium
 from door.core.downloads import installers
 from door.core.profile_loader import ConfigError, Profile
@@ -25,7 +26,7 @@ _DEFAULT_RETIRE_AFTER_DAYS = 90
 
 def _feed_config(profile_dir: Path) -> dict[str, list[str]]:
     """Each platform's followed employers under the key its scraper reads, from
-    `profile_dir/companies.json` (`door.core.companies.feed_config`).
+    `profile_dir/companies.json` (`door.core.employers.companies.feed_config`).
 
     Raises:
         ConfigError: companies.json is malformed.

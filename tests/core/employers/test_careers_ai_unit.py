@@ -2,7 +2,8 @@
 
 import pytest
 
-from door.core import careers_ai, claude_cli
+from door.core import claude_cli
+from door.core.employers import careers_ai
 
 
 def test_the_answer_url_is_read():

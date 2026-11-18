@@ -308,7 +308,7 @@ def test_status_with_an_empty_ledger_says_so_in_one_line(cli_env):
 # --------------------------------------------------------------------------- #
 
 def _seed_employers(profile_dir):
-    from door.core import companies
+    from door.core.employers import companies
 
     items: list = []
     companies.record(items, "Pleo", feed=("ashby", "pleo"), status="followed", found_via="manual")

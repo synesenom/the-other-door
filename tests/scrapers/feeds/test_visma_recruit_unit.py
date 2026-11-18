@@ -2,7 +2,7 @@
 
 import pytest
 
-from door.core import ats_detect
+from door.core.employers import ats_detect
 from door.scrapers.feeds import visma_recruit
 
 _GUID = "2b368797-8e2c-4527-bc80-7cc9ac2d9c39"

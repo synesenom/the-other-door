@@ -32,7 +32,7 @@ class Site:
             board of the profile's country is (`boards_for_location`).
         config_key: For per-company feeds, the key under which the engine
             hands the scraper the employers followed on its platform (from
-            `profile/companies.json`, see `door.core.companies.feed_config`; the
+            `profile/companies.json`, see `door.core.employers.companies.feed_config`; the
             the platform's `detect_url` etc. are in its module, see `door.scrapers.sdk`); `collect` skips the site until
             at least one employer is followed on it.
         terms_url: The terms of use read before the site was added (issue
@@ -41,7 +41,7 @@ class Site:
             fetches"). `allowed`: the terms allow reading the ads or say nothing against it ("no terms
             found" and "unclear" are allowed too, said in the module docstring). `unsure`: the terms
             forbid automated access on the host the site reads; it runs only once the user turned it on,
-            with the disclaimer (`door.core.disclaimer`). `reserved`: the terms expressly reserve the
+            with the disclaimer (`door.core.employers.disclaimer`). `reserved`: the terms expressly reserve the
             content against scraping or text-and-data mining, which Danish Copyright Act §11b honours
             even when robots.txt is open (BoligPortal v ReData, 2025); `scrape` skips a reserved site
             without a request (outcome `reserved`).
@@ -70,7 +70,7 @@ class Site:
     def module(self) -> str:
         """Its dotted module: ``door.scrapers.boards.<name>`` for a keyword board, ``door.scrapers.feeds.<name>``
         for an employer feed platform (Workable, a board with a feed, is a feed). A discovery source is not a site
-        (`door.core.discovery_sources`, ``door.scrapers.discovery.<name>``)."""
+        (`door.core.employers.discovery_sources`, ``door.scrapers.discovery.<name>``)."""
         if self.board and not self.config_key:
             return f"door.scrapers.boards.{self.name}"
         return f"door.scrapers.feeds.{self.name}"
@@ -217,7 +217,7 @@ SITES: dict[str, Site] = {s.name: s for s in [
          terms_url="https://www.sap.com/about/legal/terms-of-use.html",
          verdict="allowed", terms_summary="the career site feed is public; nothing on scraping"),
     # LinkedIn, profession.hu, HelloWork and Jobbsafari are not sites: they only discover employers (`discover`,
-    # `door.core.discovery_sources`), so they have no entry here.
+    # `door.core.employers.discovery_sources`), so they have no entry here.
 ]}
 
 ALL_SITES = list(SITES)

@@ -6,7 +6,7 @@ import ast
 
 import pytest
 
-from door.core import discovery_sources
+from door.core.employers import discovery_sources
 from door.core.sites import SITES
 from tests.paths import REPO_ROOT
 

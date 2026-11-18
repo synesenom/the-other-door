@@ -26,7 +26,7 @@ def _posting(site: str, n: int = 1) -> dict:
 
 
 def _follow(profile_dir, platform, entry, name="Acme"):
-    from door.core import companies
+    from door.core.employers import companies
 
     items = companies.load(profile_dir)
     companies.record(items, name, feed=(platform, entry), status="followed", found_via="manual", reason=None)

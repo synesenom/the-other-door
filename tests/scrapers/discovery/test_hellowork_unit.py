@@ -88,7 +88,7 @@ def test_the_fixture_employers_are_the_on_topic_ones():
 
 
 def test_a_hellowork_ad_link_is_a_job_board_link_not_an_employer_site():
-    from door.core import ats_detect
+    from door.core.employers import ats_detect
 
     assert ats_detect.is_job_board("https://www.hellowork.com/fr-fr/emplois/90000002.html")
     assert not ats_detect.is_job_board("https://carrieres.example.fr/jobs/1")

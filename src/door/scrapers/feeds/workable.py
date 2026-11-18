@@ -269,7 +269,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "json")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 # Workable's own cross-company board: an aggregator, not an employer's page.
 JOB_BOARD_HOSTS = ("jobs.workable.com",)

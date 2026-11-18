@@ -52,7 +52,7 @@ from door.scrapers import sdk
 
 _SITE = "linkedin"
 
-# The discovery-source contract (`door.core.discovery_sources`).
+# The discovery-source contract (`door.core.employers.discovery_sources`).
 NAME = "linkedin"
 COUNTRIES: tuple[str, ...] = ()  # works anywhere
 CONFIG_KEY = "linkedin_discovery"

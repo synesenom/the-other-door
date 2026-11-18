@@ -525,7 +525,7 @@ def test_run_checks_probes_only_when_asked(tmp_path):
 
 def test_probes_get_the_followed_employers_of_their_platform(tmp_path):
     """A feed scraper's probe reads its employers; they live in profile/companies.json."""
-    from door.core import companies
+    from door.core.employers import companies
 
     profile_dir = tmp_path / "profile"
     seen = {}

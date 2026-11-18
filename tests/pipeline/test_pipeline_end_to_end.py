@@ -7,7 +7,8 @@ from datetime import date
 import pytest
 
 from door.commands import find as find_cmd
-from door.core import candidates, companies
+from door.core import candidates
+from door.core.employers import companies
 from door.scrapers.discovery import linkedin
 from pipeline_utils import fake_scraper, posting
 from profile_utils import write_config

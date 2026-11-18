@@ -1,6 +1,6 @@
 """The one disclaimer shown whenever an unsure source is turned on (#569)."""
 
-from door.core import disclaimer
+from door.core.employers import disclaimer
 
 
 def test_the_text_names_the_site_what_its_terms_say_and_links_them():

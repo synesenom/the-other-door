@@ -15,7 +15,7 @@ from door.scrapers import http_client, robots
 @pytest.fixture(autouse=True)
 def _no_follow_ai(request, monkeypatch):
     """`follow`'s Haiku fallback never reaches the `claude` CLI from a test; tests that want an answer patch this."""
-    from door.core import careers_ai
+    from door.core.employers import careers_ai
 
     if request.module.__name__.endswith("test_careers_ai_unit"):
         return  # that module fakes `claude_cli.ask` underneath
@@ -28,7 +28,7 @@ _WIKIDATA_TESTS = ("test_wikidata_unit", "test_follow_employer_site_unit")
 @pytest.fixture(autouse=True)
 def _no_wikidata(request, monkeypatch):
     """`follow`'s website lookup (Wikidata, #566) finds nothing in a test; its own tests serve saved answers."""
-    from door.core import wikidata
+    from door.core.employers import wikidata
 
     if request.module.__name__.endswith(_WIKIDATA_TESTS) or request.node.get_closest_marker("live"):
         return

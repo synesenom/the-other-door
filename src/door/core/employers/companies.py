@@ -41,7 +41,8 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 
 from door import i18n
-from door.core import ats_detect, migrations, sites, utils
+from door.core import migrations, sites, utils
+from door.core.employers import ats_detect
 
 FILENAME = "companies.json"
 VERSION = 1
@@ -54,7 +55,7 @@ Status = Literal["followed", "unfollowable", "unresolved", "dormant"]
 def found_via_values() -> tuple[str, ...]:
     """Every value ``found_via`` can take: ``manual``, ``ai``, each board in `sites.SITES` and each source in
     `discovery_sources.SOURCES`, read at call time so a new source needs no list edit here."""
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
     names = list(_FOUND_VIA_EXTRA) + [s.name for s in sites.SITES.values() if s.board] + list(discovery_sources.SOURCES)
     return tuple(dict.fromkeys(names))
 

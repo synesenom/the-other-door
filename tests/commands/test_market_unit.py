@@ -134,7 +134,7 @@ def test_companies_repeat_at_least_two_top_10():
 
 
 def test_mark_followed_matches_names_like_the_employer_list():
-    from door.core import companies as store
+    from door.core.employers import companies as store
 
     items = [store.Company(name="Novo Nordisk", feed=store.Feed(platform="greenhouse", id="novo"), status="followed", found_via="manual"),
              store.Company(name="Pleo", status="dormant", found_via="manual")]
@@ -195,7 +195,7 @@ def test_scored_companies_counts_scored_ads_only(tree):
 
 
 def test_followed_company_is_marked(tree):
-    from door.core import companies as store
+    from door.core.employers import companies as store
 
     store.save(tree[0], [store.Company(name="Acme", feed=store.Feed(platform="greenhouse", id="acme"), status="followed", found_via="manual")])
     r = _core(tree, save=False)

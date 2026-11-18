@@ -11,7 +11,9 @@ import click
 
 from door import i18n
 from door.commands import _prompts
-from door.core import companies as companies_mod, discovery_sources, workspace
+from door.core import workspace
+from door.core.employers import companies as companies_mod
+from door.core.employers import discovery_sources
 from door.core import migrations, profile_loader
 from door.core import templates as templates_mod
 from door.core.profile_loader import ConfigError, read_config_data
@@ -608,7 +610,7 @@ def _pick_titles(answers: dict) -> None:
 
 def _pick_discovery(answers: dict) -> None:
     """Each source serving the city is the user's call, off unless ticked; the question carries each one's
-    disclaimer (`door.core.disclaimer`)."""
+    disclaimer (`door.core.employers.disclaimer`)."""
     sources = discovery_sources.for_location(answers.get("location") or "")
     if not sources:
         return

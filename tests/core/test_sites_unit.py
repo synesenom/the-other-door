@@ -44,7 +44,7 @@ def test_each_feed_scraper_reads_the_config_key_its_registry_entry_names():
 
 
 def test_a_detection_takes_its_config_key_from_the_registry():
-    from door.core import ats_detect
+    from door.core.employers import ats_detect
 
     assert ats_detect.Detection("lever", "x", "").config_key == "lever_companies"
     assert ats_detect.Detection("lever", None, "").config_key is None

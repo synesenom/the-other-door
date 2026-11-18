@@ -40,7 +40,7 @@ INVENTORY: tuple[Stored, ...] = (
     # --- profile/ ---
     Stored("profile/config.json", CONFIG, "door.core.profile_loader.Profile (extra=forbid)"),
     Stored("profile/cv.md", DATA, "Markdown CV; sections named by i18n `cv_sections`"),
-    Stored("profile/companies.json", LEDGER, "door.core.companies: {version: 1, companies: [entry]}", "has its own internal version"),
+    Stored("profile/companies.json", LEDGER, "door.core.employers.companies: {version: 1, companies: [entry]}", "has its own internal version"),
     Stored("profile/story_bank.md", DATA, "door.tailoring.story_bank.StoryBank: one `##` story per CARL (Context, Action, Result, Learning)"),
     Stored("profile/photo.jpg", DATA, "JPEG written by door.core.photo.save (EXIF dropped, scaled)"),
     Stored("profile/cv.template.html", CODE_OWNED, "HTML page, CSS and fonts for the CV (the body goes where <<body>> stands)", "ships as profile.example/cv.template.html; a file in profile/ overrides it"),

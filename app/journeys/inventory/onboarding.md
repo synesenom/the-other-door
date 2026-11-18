@@ -3,7 +3,7 @@
 Sources read in full: `app/src/renderer/screens/onboarding/{Wizard,Connect,Sources,Reading,Review,parts}.tsx`,
 `reducer.ts`, `save.ts`, `testing.tsx`; `app/src/renderer/{App.tsx,api.ts,Splash.tsx}`, `screens/{SignIn,Hint,Switch,Dialog,Spinner,AppName,Markdown(words),Documentation(DocDialog),todos}.tsx/ts`;
 `app/src/main/{cv-sources.ts,claude-login.ts,demo.ts (onboard*),demo-run.ts}`, the relevant parts of `ipc.ts`, `door-server.ts`, `index.ts`, `preload`;
-Python `commands/cv.py`, `commands/profile.py` (`_save_cv_core`, `_init_core`, `_show_profile_core`, `_profile_options`), `commands/titles.py`, `commands/keywords.py`, `commands/preview.py`, `core/discovery_sources.py`, `core/claude_cli.py`, `core/profile_loader.py`, `mcp_server.py` wrappers; `app/e2e/onboarding.e2e.ts`, `app/test/home-fixture.ts`.
+Python `commands/cv.py`, `commands/profile.py` (`_save_cv_core`, `_init_core`, `_show_profile_core`, `_profile_options`), `commands/titles.py`, `commands/keywords.py`, `commands/preview.py`, `core/employers/discovery_sources.py`, `core/claude_cli.py`, `core/profile_loader.py`, `mcp_server.py` wrappers; `app/e2e/onboarding.e2e.ts`, `app/test/home-fixture.ts`.
 
 Conventions below: **role "name"** is what `getByRole(role, { name })` finds. `named()` only swaps the words "The other door" for a styled span: text matching still works on the plain words.
 

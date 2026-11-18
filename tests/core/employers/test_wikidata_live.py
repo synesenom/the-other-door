@@ -8,7 +8,8 @@ when no link or name probe found a feed) still finds its feed there (mode ``webs
 import pytest
 
 from door.commands import companies as companies_cmd
-from door.core import ats_detect, wikidata
+from door.core.employers import ats_detect
+from door.core.employers import wikidata
 from live_employers import BY_NAME
 from live_utils import _page_refusal, fail, not_reached
 

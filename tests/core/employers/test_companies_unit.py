@@ -1,4 +1,4 @@
-"""`door.core.companies`: the employer list in `profile/companies.json`."""
+"""`door.core.employers.companies`: the employer list in `profile/companies.json`."""
 
 from datetime import datetime, timedelta, timezone
 
@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from door.core import companies
+from door.core.employers import companies
 from door.core.profile_loader import ConfigError, load_profile_config
 from profile_utils import write_config
 
@@ -550,7 +550,7 @@ def test_guess_name_takes_the_tenant_on_a_platforms_host(entry, name):
 
 
 def test_no_guessed_name_is_a_platforms_host_label():
-    from door.core import ats_detect
+    from door.core.employers import ats_detect
 
     labels = {d.split(".")[0] for d in ats_detect.platform_domains()}
     assert {"emply", "myworkdayjobs", "oraclecloud", "smartrecruiters", "teamtailor"} <= labels

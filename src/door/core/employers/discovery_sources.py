@@ -5,7 +5,7 @@ with ``NAME``, ``COUNTRIES`` (ISO 3166 codes it serves, lowercase; ``()`` = anyw
 (a ``<source>_discovery`` bool in the profile; a source runs only once the user turned it on), ``VERDICT``
 (``"unsure"``: its terms forbid automated access, see `door.core.sites.VERDICTS`), ``TERMS_URL`` and
 ``TERMS_SUMMARY`` (what the verdict rests on; the docstring quotes the terms in a "Terms" passage; the
-disclaimer shown when the user turns it on is generated from them, `door.core.disclaimer`), ``run(config, **kwargs) -> DiscoveryResult``
+disclaimer shown when the user turns it on is generated from them, `door.core.employers.disclaimer`), ``run(config, **kwargs) -> DiscoveryResult``
 (see `door.scrapers.sdk`), and the optional hooks ``enabled(config) -> reason | None`` (a further
 reason to skip), ``extras(queue) -> dict`` (more keyword arguments for ``run``, read from the candidates
 queue) and ``skip_employer(emp, state, now) -> str | None`` (a reason not to queue an employer).
@@ -17,7 +17,7 @@ from __future__ import annotations
 import importlib
 from types import ModuleType
 
-from door.core import disclaimer
+from door.core.employers import disclaimer
 
 SOURCES: dict[str, str] = {
     "linkedin": "door.scrapers.discovery.linkedin",

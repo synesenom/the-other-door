@@ -113,7 +113,7 @@ def test_the_step_reports_itself_and_its_passes(env, fakes, progress_events):
 
 
 def test_an_employer_with_a_posting_that_cleared_min_score_counts_as_relevant(env, fakes):
-    from door.core import companies
+    from door.core.employers import companies
 
     items = []
     companies.record(items, "Acme", feed=("lever", "acme"), status="followed", found_via="jobindex",
@@ -167,7 +167,7 @@ def test_the_top_carries_location_and_english_title_and_no_ranks(env, fakes):
 
 
 def test_a_match_on_a_shared_feed_counts_for_the_feed_entry(env, fakes):
-    from door.core import companies
+    from door.core.employers import companies
 
     items = []
     companies.record(items, "Statens Rekrutteringsløsning", feed=("hr_manager", "statensrekrutteringsloesning_tr"),

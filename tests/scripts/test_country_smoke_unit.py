@@ -14,7 +14,8 @@ import pytest
 from door.commands import _common as common
 from door.commands import find as find_cmd
 from door.core import profile_loader
-from door.core import companies, lock, workspace
+from door.core import lock, workspace
+from door.core.employers import companies
 from door.matching import scorer
 from paths import REPO_ROOT
 

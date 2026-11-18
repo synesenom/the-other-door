@@ -220,7 +220,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "json")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 def _tenant_of(host: str) -> str | None:
     """The slug a ``<slug>.taleez.com`` host names; ``None`` for the vendor's shared hosts."""

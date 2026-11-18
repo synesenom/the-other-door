@@ -786,7 +786,7 @@ def test_a_reserved_verdict_is_never_fetched(cli_env, monkeypatch, capsys):
 # --------------------------------------------------------------------------- #
 
 def _follow(profile_dir, platform, entry, name="Acme", status="followed"):
-    from door.core import companies
+    from door.core.employers import companies
 
     items = companies.load(profile_dir)
     companies.record(items, name, feed=(platform, entry) if status == "followed" else None, status=status,

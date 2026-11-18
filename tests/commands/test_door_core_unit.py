@@ -150,7 +150,7 @@ def test_scrape_core_per_site_outcomes_preserved_in_order(tmp_path, monkeypatch)
         "role_targets": ["data scientist"],
         "location": "Copenhagen",
     })
-    from door.core import companies as _companies
+    from door.core.employers import companies as _companies
     _items = _companies.load(profile_dir)
     _companies.record(_items, "Acme", feed=("lever", "acme"), status="followed", found_via="manual", reason=None)
     _companies.save(profile_dir, _items)
@@ -294,7 +294,7 @@ def test_scrape_core_surviving_paths_reflect_dedup_output(tmp_path, monkeypatch)
 
 
 def test_scrape_core_dedups_with_the_names_companies_json_holds_for_one_employer(tmp_path, monkeypatch):
-    from door.core import companies as companies_store
+    from door.core.employers import companies as companies_store
 
     profile_dir, jobs_dir = _scrape_env(tmp_path)
     companies_store.save(profile_dir, [

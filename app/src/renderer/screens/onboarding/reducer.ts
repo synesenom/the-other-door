@@ -28,7 +28,7 @@ export type MissingKey = 'name' | 'email' | 'location' | 'titles'
 export type Remote = 'yes' | 'no' | 'hybrid'
 
 /** A discovery source onboarding asks about: its config key and its name in words, with the terms verdict and the
- * disclaimer the server writes for it (`door.core.disclaimer`): shown as it is, whenever the source is on or offered. */
+ * disclaimer the server writes for it (`door.core.employers.disclaimer`): shown as it is, whenever the source is on or offered. */
 export interface DiscoveryChoice {
   key: string
   label: string

@@ -3,7 +3,7 @@
 
 import pytest
 
-from door.core import ats_detect
+from door.core.employers import ats_detect
 from door.scrapers.sdk import Detection
 from door.scrapers.feeds import icims
 from door.scrapers.http_client import PoliteSession

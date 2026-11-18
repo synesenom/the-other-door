@@ -45,7 +45,7 @@ from door.scrapers import sdk
 
 _SITE = "profession"
 
-# The discovery-source contract (`door.core.discovery_sources`).
+# The discovery-source contract (`door.core.employers.discovery_sources`).
 NAME = "profession"
 COUNTRIES: tuple[str, ...] = ("hu",)
 CONFIG_KEY = "profession_discovery"

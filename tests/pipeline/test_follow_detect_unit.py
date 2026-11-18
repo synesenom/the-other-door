@@ -10,7 +10,8 @@ from datetime import datetime, timezone
 import pytest
 import responses
 
-from door.core import candidates, companies
+from door.core import candidates
+from door.core.employers import companies
 from door.pipeline import follow
 from paths import TESTS_DIR
 
@@ -346,7 +347,7 @@ def test_a_platform_found_on_a_later_page_beats_a_listing_found_on_an_earlier_on
 # --- the Haiku fallback ----------------------------------------------------------------------------------
 
 def _ai(monkeypatch, url, calls):
-    from door.core import careers_ai
+    from door.core.employers import careers_ai
 
     def ask(name, title, location, **kw):
         calls.append((name, title, location))
@@ -420,7 +421,7 @@ def test_the_ai_is_not_asked_without_probing(env, monkeypatch):
 def test_the_ai_questions_run_together_after_every_python_check_is_done(env, monkeypatch):
     import threading
 
-    from door.core import careers_ai
+    from door.core.employers import careers_ai
 
     assert careers_ai.MAX_PARALLEL == 4
     lock = threading.Lock()

@@ -16,7 +16,8 @@ import click
 from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
-from door.core import discovery_sources, lock, problem_log, profile_loader, runs, usage, utils, workspace
+from door.core import lock, problem_log, profile_loader, runs, usage, utils, workspace
+from door.core.employers import discovery_sources
 from door.core.sites import BOARDS
 from door.pipeline import collect as collect_step
 from door.pipeline import discover as discover_step

@@ -31,7 +31,8 @@ from door.commands import _common as common  # noqa: E402
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
 from door.commands import salary as salary_cmd  # noqa: E402
-from door.core import discovery_sources, lock, sites, workspace  # noqa: E402
+from door.core import lock, sites, workspace  # noqa: E402
+from door.core.employers import discovery_sources  # noqa: E402
 from door.core.sync import drive  # noqa: E402
 from door.core.models import JobPosting, make_job_id  # noqa: E402
 from door.matching import scorer  # noqa: E402

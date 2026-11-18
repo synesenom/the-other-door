@@ -16,7 +16,7 @@ from door.core import lock, profile_loader
 from door.core import progress as progress_mod
 from door.core import models, sites, workspace
 from door.core import freshness
-from door.core import companies as companies_store
+from door.core.employers import companies as companies_store
 from door.core.sites import FEED_SITES, SITES
 from door.matching import integrity, title_fit
 from door.scrapers import _parallel

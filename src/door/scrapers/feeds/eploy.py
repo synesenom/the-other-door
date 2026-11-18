@@ -191,7 +191,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "xml")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 def detect_url(url: str) -> Detection | None:
     """A link on an Eploy-hosted site (``<name>web.eploy.net``) and the host it names."""

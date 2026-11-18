@@ -84,8 +84,8 @@ def _has_live_test(name: str) -> bool:
 def sections(xml: str) -> list[tuple[str, list[tuple[str, str]]]]:
     """The page's lists, in order: ``[(title, [(label, status), ...]), ...]``."""
     sys.path.insert(0, str(_REPO / "src"))
-    from door.core.ats_detect import PRECEDENCE
-    from door.core.discovery_sources import SOURCES
+    from door.core.employers.ats_detect import PRECEDENCE
+    from door.core.employers.discovery_sources import SOURCES
     from door.core.sites import SITES
 
     boards = [n for n, s in SITES.items() if s.board]

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from door.core import ats_detect
+from door.core.employers import ats_detect
 from door.scrapers.feeds import jobtrain
 from paths import TESTS_DIR
 

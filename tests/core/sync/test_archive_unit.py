@@ -99,7 +99,7 @@ def test_export_writes_profile_and_jobs_without_the_lock(env):
 
 
 def test_the_employer_list_travels_with_the_profile(env):
-    from door.core import companies
+    from door.core.employers import companies
 
     companies.save(env.profile_dir, [companies.Company(
         name="BEC", feed=companies.Feed(platform="hr_manager", id="bec"), status="followed", found_via="manual")])

@@ -7,7 +7,7 @@ link before HR-ON, the order of the page-link platforms, the signature fallbacks
 
 import pytest
 
-from door.core import ats_detect
+from door.core.employers import ats_detect
 
 
 def _d(det):

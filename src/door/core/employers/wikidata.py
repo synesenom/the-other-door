@@ -26,8 +26,8 @@ from dataclasses import dataclass
 import requests
 
 from door import i18n
-from door.core import ats_detect
-from door.core import companies as store
+from door.core.employers import ats_detect
+from door.core.employers import companies as store
 
 API = "https://www.wikidata.org/w/api.php"
 MAX_LOOKUPS = 60        # names looked up on Wikidata per run

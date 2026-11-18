@@ -220,7 +220,7 @@ def platform_domain_of(host: str) -> str | None:
 def is_job_board(url: str) -> bool:
     """Whether *url* is on a job board, aggregator or recruiter rather than an employer's own site."""
     host = safe_urlparse(url if "://" in url else f"https://{url}").netloc.lower().split(":")[0]
-    from door.core import discovery_sources
+    from door.core.employers import discovery_sources
 
     boards = [importlib.import_module(s.module) for s in sites.SITES.values() if s.board]
     sources = [discovery_sources.get(name) for name in discovery_sources.SOURCES]

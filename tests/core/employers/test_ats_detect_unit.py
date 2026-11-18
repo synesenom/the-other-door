@@ -2,7 +2,7 @@
 
 import pytest
 
-from door.core import ats_detect
+from door.core.employers import ats_detect
 from paths import TESTS_DIR
 
 
@@ -283,7 +283,7 @@ def test_career_links_and_ad_links_skip_a_malformed_href():
     ("Københavns Universitet", "koebenhavnsuniversitet"), ("Példa Kft.", "pelda"), ("Ötvös", "oetvoes"),
 ])
 def test_name_key_is_the_first_slug_and_never_moves(name, key):
-    from door.core import companies
+    from door.core.employers import companies
 
     assert ats_detect.slug_candidates(name)[0] == key
     assert companies.name_key(name) == key

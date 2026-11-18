@@ -49,7 +49,7 @@ from door.scrapers import sdk
 
 _SITE = "hellowork"
 
-# The discovery-source contract (`door.core.discovery_sources`).
+# The discovery-source contract (`door.core.employers.discovery_sources`).
 NAME = "hellowork"
 COUNTRIES: tuple[str, ...] = ("fr",)
 CONFIG_KEY = "hellowork_discovery"

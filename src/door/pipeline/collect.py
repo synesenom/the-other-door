@@ -7,7 +7,7 @@ employers' feeds (different hosts side by side, at most `PER_PROVIDER` of one pr
 host paced). ``--company NAME ...`` collects just those employers.
 
 Before reading, the employers that yielded nothing relevant for ``retire_after_days`` (default 90)
-are made ``dormant`` and skipped (`door.core.companies.retire_idle`; an employer added by hand is
+are made ``dormant`` and skipped (`door.core.employers.companies.retire_idle`; an employer added by hand is
 never retired; a dormant one seen again with an on-topic ad is followed again by `follow`).
 After reading, the employers whose new postings have an on-topic title are stamped ``last_relevant``
 (`match` stamps those with a posting at or above ``min_score``). The retirement runs here, at the start of
@@ -34,7 +34,7 @@ from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
 from door.core import lock, profile_loader
-from door.core import companies as store
+from door.core.employers import companies as store
 from door.core import utils, workspace
 from door.core.sites import FEED_SITES
 from door.matching import title_fit

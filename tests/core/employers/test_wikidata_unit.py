@@ -7,7 +7,7 @@ import re
 import pytest
 import responses
 
-from door.core import wikidata
+from door.core.employers import wikidata
 from door.scrapers.http_client import PoliteSession
 import wikidata_utils
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from door.core import ats_detect
+from door.core.employers import ats_detect
 from door.scrapers.feeds import welcometothejungle as wttj
 from door.scrapers.http_client import PoliteSession
 

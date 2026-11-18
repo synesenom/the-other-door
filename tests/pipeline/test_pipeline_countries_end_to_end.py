@@ -15,7 +15,8 @@ import responses
 
 from door import i18n
 from door.commands import find as find_cmd
-from door.core import claude_cli, companies, sites
+from door.core import claude_cli, sites
+from door.core.employers import companies
 from door.scrapers import sdk
 from door.scrapers.feeds import career_sites
 from pipeline_utils import fake_scraper, posting

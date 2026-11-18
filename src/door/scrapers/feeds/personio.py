@@ -171,7 +171,7 @@ def probe(config: dict) -> ProbeResult | None:
     return run_probe(fetch, parse, "xml")
 
 
-# --- feed detection (issue #282): what `core/ats_detect.py` and `commands/companies.py` ask ---
+# --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
 def _entry(host: str) -> str | None:
     """The ``personio_companies`` entry of a career host: the slug on ``.com``, the whole host on ``.de``."""

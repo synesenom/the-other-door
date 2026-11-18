@@ -20,7 +20,7 @@ from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
 from door.core import lock, profile_loader
-from door.core import companies as store
+from door.core.employers import companies as store
 from door.core import tracker as tracker_mod
 from door.core import workspace
 from door.core.selection import select_matches

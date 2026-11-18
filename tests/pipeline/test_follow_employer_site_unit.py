@@ -15,7 +15,9 @@ import responses
 
 import wikidata_utils
 from door.commands import companies as companies_cmd
-from door.core import candidates, companies, wikidata
+from door.core import candidates
+from door.core.employers import companies
+from door.core.employers import wikidata
 from door.pipeline import follow
 from profile_utils import write_config
 
@@ -210,7 +212,7 @@ def test_the_careers_hosts_of_a_domain_include_the_countrys_own_labels():
 
 
 def test_the_tenants_tried_are_the_names_and_the_domains_of_the_employer_and_its_parent():
-    from door.core import wikidata
+    from door.core.employers import wikidata
 
     group = wikidata.Employer("Q862303", "Telia Company", "https://www.teliacompany.com/sv", True)
     found = wikidata.Employer("Q4567911", "Telia Sverige", "http://www.telia.se", True, group)

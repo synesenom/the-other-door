@@ -36,7 +36,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from door.commands import _common as common  # noqa: E402
 from door.commands import find as find_cmd  # noqa: E402
-from door.core import candidates, companies, workspace  # noqa: E402
+from door.core import candidates, workspace  # noqa: E402
+from door.core.employers import companies  # noqa: E402
 from door.matching import scorer  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("sandbox", Path(__file__).resolve().parent / "sandbox.py")
