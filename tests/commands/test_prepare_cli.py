@@ -425,7 +425,7 @@ def test_run_tailor_missing_claude_binary_raises(tmp_path, monkeypatch):
 
     monkeypatch.setattr(subprocess, "run", raise_not_found)
 
-    with pytest.raises(prepare_cmd.TailorError, match="could not invoke `claude` CLI"):
+    with pytest.raises(prepare_cmd.TailorError, match="Claude is not installed yet"):
         prepare_cmd._run_tailor("job-abc", posting_path)
 
 
