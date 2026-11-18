@@ -50,7 +50,8 @@ def review(tmp_path_factory):
                      seed=lambda world: _age(world, SILENT),
                      stop_after_tool="mark_reviewed", persona_kind="onboarded",
                      facts_note="You only want to look at what is new and then finish: do not ask for anything to be "
-                                "run, prepared or changed, and when the assistant has shown you the jobs, say you are done.")
+                                "run, prepared or changed. When the assistant has shown you the jobs, say \"I'm done "
+                                "for today\" (that is you finishing the review, not a change you ask for).")
 
 
 def test_it_starts_from_the_status_and_lists_the_matches_before_showing_one(review):
