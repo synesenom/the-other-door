@@ -587,7 +587,7 @@ describe('App, the first-launch gate', () => {
       render(<App />)
       await screen.findByRole('heading', { name: 'Matches' })
       await userEvent.click(await lines().findByRole('button', { name: 'You have no CV yet' }))
-      expect(await screen.findByRole('group', { name: 'Pages' })).toBeInTheDocument()
+      expect(await screen.findByRole('group', { name: 'Sources' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
     })
 
@@ -596,7 +596,7 @@ describe('App, the first-launch gate', () => {
       render(<App />)
       await screen.findByRole('heading', { name: 'Matches' })
       await userEvent.click(await lines().findByRole('button', { name: 'Your CV style is ready to compare' }))
-      expect(await screen.findByRole('group', { name: 'Pages' })).toBeInTheDocument()
+      expect(await screen.findByRole('group', { name: 'Sources' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
     })
 

@@ -543,7 +543,7 @@ describe('the CV photo (#605)', () => {
 
   it('save_photo cannot be called with a path through door:call', async () => {
     const { invoke, server } = setup()
-    expect(PATH_ARGS['save_photo']).toEqual({ arg: 'path' })
+    expect(PATH_ARGS['save_photo']).toEqual([{ arg: 'path' }])
     const r = await invoke(CHANNELS.call, 'save_photo', { path: '/etc/passwd' })
     expect(r.ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
@@ -577,7 +577,7 @@ describe('reporting a problem', () => {
   })
 
   it('the window may not name the report\'s file through door:call', async () => {
-    expect(PATH_ARGS['report_problem']).toEqual({ arg: 'path' })
+    expect(PATH_ARGS['report_problem']).toEqual([{ arg: 'path' }])
     const { invoke, server } = setup()
     expect((await invoke(CHANNELS.call, 'report_problem', { path: '/tmp/x.zip' })).ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
@@ -755,6 +755,7 @@ describe('door:call refuses what names a local file', () => {
     ['import_data', { archive: '/tmp/x.tar.gz' }],
     ['enrich', { urls: ['/Users/ada/notes.md'] }],
     ['enrich', { urls: ['https://ada.dev', 'file:///etc/passwd'] }],
+    ['enrich', { files: ['/Users/ada/cv.pdf'] }],
   ])('%s %j', async (tool, args) => {
     const { invoke, server } = setup()
     const r = await invoke(CHANNELS.call, tool, args)
@@ -790,7 +791,7 @@ describe('door:call refuses what names a local file', () => {
     expect(found.length).toBeGreaterThan(0)
     for (const f of found) {
       const [tool, arg] = f.split('.') as [string, string]
-      expect(PATH_ARGS[tool]?.arg === arg || allowed.has(f), `${f} is neither in PATH_ARGS nor allowed`).toBe(true)
+      expect(PATH_ARGS[tool]?.some((rule) => rule.arg === arg) || allowed.has(f), `${f} is neither in PATH_ARGS nor allowed`).toBe(true)
     }
   })
 })
@@ -842,6 +843,25 @@ describe('a style from the CV file', () => {
     const two = setup(async () => plain, undefined, false, real)
     await two.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
     expect(two.styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.docx')
+  })
+
+  it('a CV file to add from is read by enrich from its path, and is the CV file from then on', async () => {
+    const one = setup(async () => ({ outcome: 'proposed', proposals: [] }), undefined, false, real)
+    const r = await one.invoke(CHANNELS.enrichFile, 'tok1')
+    expect(r).toEqual({ ok: true, data: { outcome: 'proposed', proposals: [] } })
+    expect(one.server.call).toHaveBeenCalledWith('enrich', { files: ['/Users/ada/cv.pdf'] }, expect.objectContaining({ timeout: expect.any(Number) }))
+    expect(one.styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.pdf')
+  })
+
+  it('a CV file that cannot be read to add from is not remembered, and an unknown token reads nothing', async () => {
+    const failed = setup(async () => {
+      throw new DoorError('the file could not be read')
+    }, undefined, false, real)
+    expect((await failed.invoke(CHANNELS.enrichFile, 'tok1')).ok).toBe(false)
+    expect(failed.styleFile.remember).not.toHaveBeenCalled()
+    const guessed = setup(undefined, undefined, false, real)
+    expect((await guessed.invoke(CHANNELS.enrichFile, 'guess')).ok).toBe(false)
+    expect(guessed.server.call).not.toHaveBeenCalled()
   })
 
   it('names the CV file to the window by its name only', async () => {

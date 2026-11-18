@@ -23,7 +23,7 @@ export async function openCv(page: Page): Promise<void> {
   await openDetails(page)
   // the CV is a section of the one Profile page: brought into view, as its link beside the page does
   await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Master CV', exact: true }).click()
-  await expect(page.getByRole('group', { name: 'Pages' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('group', { name: 'Sources' })).toBeVisible({ timeout: 30_000 })
 }
 
 /** Profile → Master CV, Preview off: its text in the editor. */

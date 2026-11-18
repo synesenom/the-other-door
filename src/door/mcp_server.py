@@ -1087,9 +1087,10 @@ def suggest_titles(
 @mcp.tool()
 @_tool_errors
 def enrich(
-    urls: list[str] | None = None, apply: list[int] | None = None, all: bool = False, model: str | None = None
+    urls: list[str] | None = None, files: list[str] | None = None, apply: list[int] | None = None, all: bool = False,
+    model: str | None = None,
 ) -> dict:
-    """Propose additions to profile/cv.md from public URLs, then add the chosen ones.
+    """Propose additions to profile/cv.md from public URLs and CV files, then add the chosen ones.
 
     Two calls: first with `urls` (or none, for the profile's
     `enrich_sources`) — one `claude -p` call reads the pages with WebFetch
@@ -1101,17 +1102,21 @@ def enrich(
 
     Args:
         urls: Pages to read (portfolio, publication list, course syllabus, GitHub user …).
-            Omit for `enrich_sources`.
+            Omit, with no `files`, for `enrich_sources`.
+        files: CV files to read (PDF, DOCX, Markdown), inside the data folder: a newer CV whose
+            new facts are proposed like a page's; nothing is fetched for them.
         apply: Proposal numbers from the previous call to add.
         all: Add every proposal from the previous call.
         model: Claude model to read the pages with (default: sonnet).
 
     Returns:
-        Propose: ``{"outcome": "proposed" | "nothing_new", "urls",
+        Propose: ``{"outcome": "proposed" | "nothing_new", "urls", "files",
         "proposals": [{"n", "section", "text", "source"}], "unreachable"}``.
         Apply: ``{"outcome": "applied", "added", "cv_path", "backup"}``.
     """
-    return enrich_cmd._enrich_core(urls, apply=apply, all=all, model=model, profile_dir=workspace.PROFILE_DIR)
+    for path in files or []:
+        path_scope.check(path)
+    return enrich_cmd._enrich_core(urls, files=files, apply=apply, all=all, model=model, profile_dir=workspace.PROFILE_DIR)
 
 
 @mcp.tool()

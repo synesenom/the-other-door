@@ -32,12 +32,14 @@ test.setTimeout(300_000)
 
 const ownStyle = (page: Page) => page.getByRole('switch', { name: 'Use my own style' })
 
-/** The CV file under Sources: chosen in the dialog and drafted from, which the app remembers. */
+/** The CV file under Sources: chosen in the dialog and read for what it adds (nothing kept here), which the app remembers. */
 async function chooseCvFile(page: Page, world: Parameters<typeof scratchFile>[0], os: { nextOpen(files: string[]): Promise<void> }) {
   await os.nextOpen([scratchFile(world, 'my-cv.pdf', readFileSync(STYLED_PDF))])
-  await page.getByRole('button', { name: /^(Choose a CV file|Replace)…$/ }).click()
-  await expect(page.getByText(/Drafted from my-cv\.pdf/)).toBeVisible({ timeout: 120_000 })
-  await expect(page.getByText('my-cv.pdf', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: /^(Add a CV file|Replace CV file)…$/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Your new CV file' })
+  await expect(dialog.getByRole('button', { name: /^(Cancel|Close)$/ })).toBeVisible({ timeout: 120_000 })
+  await dialog.getByRole('button', { name: /^(Cancel|Close)$/ }).click()
+  await expect(page.getByRole('group', { name: 'Sources' }).getByText('my-cv.pdf', { exact: true })).toBeVisible()
 }
 
 test('the switch builds the style from the CV file and uses it once ready, prints the prepared CVs again, and goes back', async ({ page, world, os }) => {
@@ -100,7 +102,7 @@ test('a CV file whose structure the model could not read is refused in words and
   await expect(sheet(page, 'The other door, first page')).toBeVisible({ timeout: 90_000 })
   await chooseCvFile(page, world, os)
   world.faults({ claude: { structure: { fail: 'Claude usage limit reached' } } })
-  rmSync(join(world.home, '.style', 'structure'), { recursive: true, force: true }) // the draft's read is cached: read again
+  rmSync(join(world.home, '.style', 'structure'), { recursive: true, force: true }) // a cached read would answer without the model
   await ownStyle(page).click()
   await expect(page.getByRole('alert')).toContainText("Claude could not be reached, or Claude's usage limit is reached")
   await expect(page.getByText('Building your style…')).toHaveCount(0)

@@ -1,12 +1,13 @@
-// Profile → CV, the pages above the editor: "Add a page" and "Check again" in dialogs (enrich: propose,
+// Profile → Master CV, its Sources: "Add a page", "Check again" and "Replace CV file…" in dialogs (enrich: propose,
 // then add the ticked ones to cv.md, marked in the CV). The market report is in Analytics (analytics.journey.ts).
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { argsOf, config, cvBox, expectChips, exists, openCv, readText } from './helpers/profile'
+import { scratchFile } from './helpers/onboarding'
 
 const expand = (page: Page) => page.getByRole('dialog', { name: 'Add a page' })
 const again = (page: Page) => page.getByRole('dialog', { name: 'Check your pages again' })
-const pages = (page: Page) => page.getByRole('list', { name: 'Pages your CV is read from' })
+const pages = (page: Page) => page.getByRole('list', { name: 'What your Master CV is read from' })
 const first = 'Bayesian hierarchical models (PyMC)'
 const second = 'Gave a talk on probabilistic load forecasting at PyData Copenhagen 2024.'
 
@@ -19,7 +20,7 @@ async function readPage(page: Page, url: string) {
 test.describe('Add a page', () => {
   test('reads the page asked for, remembers it, and proposes what the CV lacks, all ticked', async ({ page, world }) => {
     await openCv(page)
-    await expect(pages(page)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^Forget / })).toHaveCount(0) // no page read yet
     await readPage(page, 'mkl.example/talks')
     await expect(expand(page).getByRole('group', { name: 'Work Experience' }).getByRole('checkbox', { name: second })).toBeChecked({ timeout: 60_000 })
     expect(argsOf(world, 'enrich')).toEqual([expect.objectContaining({ urls: ['https://mkl.example/talks'] })])
@@ -63,5 +64,24 @@ test.describe('the pages read before', () => {
     await openCv(page)
     await page.getByRole('button', { name: 'Forget https://mkl.example/talks' }).click()
     await expect.poll(() => config(world).enrich_sources).toEqual(['https://github.example/mkl'])
+  })
+})
+
+test.describe('Replace CV file', () => {
+  test('a new CV file proposes what it adds, and adding keeps everything the Master CV had', { tag: '@core' }, async ({ page, world, os }) => {
+    await openCv(page)
+    await os.nextOpen([scratchFile(world, 'newer-cv.md', `${world.persona.cv}\n## Talks\n\n- ${second}\n`)])
+    await page.getByRole('group', { name: 'Sources' }).getByRole('button', { name: /^(Add a CV file|Replace CV file)…$/ }).click()
+    const dialog = page.getByRole('dialog', { name: 'Your new CV file' })
+    await expect(dialog.getByRole('checkbox', { name: first })).toBeChecked({ timeout: 60_000 })
+    expect(argsOf(world, 'enrich')).toEqual([expect.objectContaining({ files: [expect.stringMatching(/newer-cv\.md$/)] })])
+    expect(world.toolCalls('draft_cv')).toHaveLength(0) // nothing drafted over the Master CV
+    await dialog.getByRole('button', { name: /^Add \d+ to my CV$/ }).click()
+    await expect(dialog).toHaveCount(0, { timeout: 10_000 })
+    const cv = readText(world, 'profile/cv.md')
+    for (const line of world.persona.cv.split('\n').filter((l) => l.trim())) expect(cv).toContain(line) // all it had
+    expect(cv).toContain(first)
+    await expect(page.locator('.cv-preview .md-added').first()).toBeVisible()
+    await expect(pages(page).getByText('newer-cv.md', { exact: true })).toBeVisible() // the CV file from now on
   })
 })

@@ -247,7 +247,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           outcome: 'proposed',
           urls: args['urls'],
           unreachable: [],
-          proposals: ENRICH_PROPOSALS.map((p) => ({ ...p, source: (args['urls'] as string[] | undefined)?.[0] ?? fixtures.show_profile.enrich_sources[0] })),
+          proposals: ENRICH_PROPOSALS.map((p) => ({ ...p, source: (args['urls'] as string[] | undefined)?.[0] ?? (args['files'] as string[] | undefined)?.[0] ?? fixtures.show_profile.enrich_sources[0] })),
         }
       case 'list_stories':
         return { ...fixtures.list_stories, stories: state === 'empty' ? [] : fixtures.list_stories.stories }
@@ -322,6 +322,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       if (!r.ok) return r
       return { ok: true, data: { markdown: fixtures.show_profile.cv.text, provenance: [], todos: [], sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }] } }
     },
+    enrichFile: async () => respond('enrich', { files: ['jane-doe-cv.pdf'] }),
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
