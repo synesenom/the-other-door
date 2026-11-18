@@ -17,6 +17,7 @@ from live_utils import NOT_REACHED, assert_field_contract, not_reached, not_reac
     "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
     "reed: pushback (HTTP 429); stopped for this run",
     "503 Server Error: Service Unavailable for url: https://x",
+    "empty answer (HTTP 202) twice, not the feed",
 ])
 def test_a_refusal_or_an_unreachable_host_is_not_reached(message):
     assert refused([message])
@@ -113,6 +114,18 @@ def test_a_site_exception_loosens_a_rule(monkeypatch):
     _fails(ads, "company", config=CPH)
     monkeypatch.setitem(live_matrix.FIELD_EXCEPTIONS, "jobindex", {"company_share": 0.8})
     assert_field_contract("jobindex", ads, CPH)
+
+
+def test_a_site_may_keep_a_stale_posting_by_a_posted_at_share(monkeypatch):
+    ads = _ads(7)
+    for ad in ads[:6]:
+        ad["posted_at"] = datetime.now(timezone.utc) - timedelta(days=2)
+    ads[6]["posted_at"] = datetime.now(timezone.utc) - timedelta(days=400)
+    _fails(ads, "posted_at", config=CPH)
+    monkeypatch.setitem(live_matrix.FIELD_EXCEPTIONS, "jobindex", {"posted_at_share": 0.8})
+    assert_field_contract("jobindex", ads, CPH)
+    ads[5]["posted_at"] = datetime.now(timezone.utc) - timedelta(days=400)     # 5 of 7 is under 80%
+    _fails(ads, "posted_at", config=CPH)
 
 
 def test_the_message_has_up_to_three_examples():
