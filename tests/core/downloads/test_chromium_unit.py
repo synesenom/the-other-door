@@ -22,7 +22,7 @@ def _install(dest, fetch):
         chromium.install(dest)
 
 
-KEYS = ("mac-arm64", "mac-x64", "linux64", "win64")
+KEYS = ("mac-arm64", "linux64", "win64")
 
 
 def test_the_pin_names_a_version_and_a_checksum_per_platform():
@@ -44,7 +44,6 @@ def test_download_url_is_the_pinned_chrome_for_testing_zip():
 
 @pytest.mark.parametrize("system,machine,key", [
     ("Darwin", "arm64", "mac-arm64"),
-    ("Darwin", "x86_64", "mac-x64"),
     ("Linux", "x86_64", "linux64"),
     ("Linux", "AMD64", "linux64"),
     ("Windows", "AMD64", "win64"),

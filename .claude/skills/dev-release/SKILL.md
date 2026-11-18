@@ -88,7 +88,7 @@ Then open the PR with `/dev-pr` and tell the user to merge it once CI is green. 
 First the dry run on `main`, which is at the version bump: `gh workflow run release.yml --ref main`. It builds and tests exactly as a tag does and uploads to no release. Find the run (it can take a few seconds to appear): `gh run list --workflow release.yml --branch main --event workflow_dispatch --limit 1 --json databaseId,url`, then watch it in the background, `gh run watch <id> --exit-status`, and wait for its notification; do not poll.
 
 - **Red**: `gh run view <id> --log-failed | tail -80`, say which job failed and why in a few lines. The fix goes to `main` through a PR, then start again at Step 1; there is nothing to clean up (no tag, no draft). A job that failed for a runner reason (a timeout, a download) can be re-run instead: ask, then `gh run rerun <id> --failed`.
-- **Green**: ask with AskUserQuestion: "The dry run passed (<run url>). Push the tag vX.Y.Z on <short sha> (<subject>)? It starts release.yml, which builds the installers for macOS (Apple silicon, Intel), Windows and Linux into a draft release only you can see (about 20 minutes)." Options: "Push the tag", "Not now". On "Not now", **stop**.
+- **Green**: ask with AskUserQuestion: "The dry run passed (<run url>). Push the tag vX.Y.Z on <short sha> (<subject>)? It starts release.yml, which builds the installers for macOS (Apple silicon), Windows and Linux into a draft release only you can see (about 20 minutes)." Options: "Push the tag", "Not now". On "Not now", **stop**.
 
 ```bash
 git tag vX.Y.Z
@@ -104,7 +104,7 @@ Find the run (it can take a few seconds to appear): `gh run list --workflow rele
 
 ## Step 5: The draft
 
-`gh release view vX.Y.Z --json url,isDraft,assets --jq '{url, isDraft, assets: [.assets[].name]}'`: it must be a draft holding the installers `The-other-door-X.Y.Z-Mac-Apple-silicon.dmg`, `-Mac-Intel.dmg`, `-Windows.exe`, `-Linux.AppImage`, `-Debian-Ubuntu.deb`, and the update files `latest.yml`, `latest-linux.yml`, `latest-mac.yml` (from the `mac-manifest` job), `the-other-door-X.Y.Z-mac-arm64.zip`, `the-other-door-X.Y.Z-mac-x64.zip` and their `.blockmap` files (and the `.exe`'s). Name anything missing.
+`gh release view vX.Y.Z --json url,isDraft,assets --jq '{url, isDraft, assets: [.assets[].name]}'`: it must be a draft holding the installers `The-other-door-X.Y.Z-Mac-Apple-silicon.dmg`, `-Windows.exe`, `-Linux.AppImage`, `-Debian-Ubuntu.deb`, and the update files `latest.yml`, `latest-linux.yml`, `latest-mac.yml`, `the-other-door-X.Y.Z-mac-arm64.zip` and their `.blockmap` files (and the `.exe`'s). Name anything missing.
 
 Write the release notes into `thoughts/release/vX.Y.Z.md` (gitignored), for the people who will install it, not for developers. They are a changelog, built from Step 1's sorted PRs:
 

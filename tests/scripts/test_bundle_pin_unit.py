@@ -21,7 +21,7 @@ def test_bundle_lock_does_not_carry_a_second_chromium_pin():
 def test_the_unix_bundle_reads_the_one_pin_for_each_system_it_packages():
     sh = _text("bundle-python.sh")
     assert "chromium_pin.json" in sh
-    for key in ("mac-arm64", "mac-x64", "linux64"):
+    for key in ("mac-arm64", "linux64"):
         assert key in sh
     assert "bin/chromium" in sh
 

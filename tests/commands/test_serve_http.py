@@ -1,6 +1,7 @@
 """`door serve`'s HTTP app (#302): the MCP tools behind a device token, pairing, page files, the web app."""
 
 import asyncio
+import json
 import os
 
 import pytest
@@ -74,6 +75,24 @@ def test_tools_over_http_are_the_stdio_tools(home):
         names = {t["name"] for t in r.json()["result"]["tools"]}
     stdio = {t.name for t in asyncio.run(server.mcp.list_tools())}
     assert names == stdio
+
+
+def test_two_apps_in_one_process_both_answer_and_a_tunnel_host_is_accepted(home):
+    token = paired(home)
+    auth = {**HEADERS, "Authorization": f"Bearer {token}", "Host": "quiet-lake.trycloudflare.com"}
+    for _ in range(2):
+        with client(home) as c:
+            assert c.post("/mcp", json=INIT, headers=auth).status_code == 200
+            assert c.post("/mcp", json=LIST, headers=auth).json()["result"]["tools"]
+
+
+def test_a_tool_answers_one_json_text_block_with_no_structured_content(home):
+    token = paired(home)
+    with client(home) as c:
+        body = call_tool(c, token, "status_summary", {}).json()["result"]
+    assert [b["type"] for b in body["content"]] == ["text"]
+    assert isinstance(json.loads(body["content"][0]["text"]), dict)
+    assert not body.get("structuredContent")
 
 
 def test_pairing_over_http_gives_a_token_once(home):

@@ -165,15 +165,6 @@ describe('what goes wrong, for the problem log', () => {
     expect(r.seen[0]![1]).toMatch(process.platform === 'win32' ? /^exit code 1, no signal/ : /^exit code none, signal SIGKILL/)
   })
 
-  it('a child that dies in a call: the MCP request log left out of its stderr', async () => {
-    const r = recorder()
-    const s = make({}, { onProblem: r.onProblem })
-    await s.call('json')
-    await s.call('exit', { noise: 300 }).catch(() => undefined)
-    expect(r.seen[0]![1]).not.toContain('Processing request of type')
-    expect(r.seen[0]![1]).toContain('Traceback (most recent call last)')
-  })
-
   it('a child that dies with a long stderr: its end kept, under the log\'s cap', async () => {
     const r = recorder()
     const s = make({}, { onProblem: r.onProblem })

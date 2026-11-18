@@ -28,7 +28,7 @@ body:
     id: os
     attributes:
       label: System
-      options: [macOS (Apple silicon), macOS (Intel), Windows, Linux (AppImage), Linux (.deb)]
+      options: [macOS (Apple silicon), Windows, Linux (AppImage), Linux (.deb)]
     validations:
       required: true
   - type: textarea
