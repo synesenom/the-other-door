@@ -41,7 +41,6 @@ server.setRequestHandler(CallToolRequestSchema, async (req, extra) => {
     case 'iserror':
       return text('Error executing tool: boom', true)
     case 'exit':
-      writeSync(2, 'INFO     Processing request of type CallToolRequest\n'.repeat(args.noise ?? 0))
       writeSync(2, `${'x'.repeat(99)}\n`.repeat(args.filler ?? 0))
       writeSync(2, `Traceback (most recent call last):\n${'  File "x.py", line 1, in f\n'.repeat(args.depth ?? 0)}RuntimeError: the fake fell over\n`)
       process.exit(1)
