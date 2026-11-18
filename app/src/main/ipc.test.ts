@@ -808,6 +808,21 @@ describe('the picked-file channel', () => {
     expect(server.call).not.toHaveBeenCalled()
   })
 
+  it('a new CV file to enrich from needs its token: none calls nothing and remembers nothing', async () => {
+    const { invoke, server, styleFile } = setup()
+    expect(await invoke(CHANNELS.callWithFiles, 'enrich', {}, [])).toEqual({ ok: false, error: 'Choose the file again.' })
+    expect(server.call).not.toHaveBeenCalled()
+    expect(styleFile.remember).not.toHaveBeenCalled()
+  })
+
+  it('a refusal is logged by the tool name only, as door:call logs it', async () => {
+    const { invoke, problemLog } = setup()
+    await invoke(CHANNELS.callWithFiles, 'build_style', { file: '/etc/passwd' }, ['tok1'])
+    await invoke(CHANNELS.callWithFiles, 'status_summary', {}, [])
+    expect(problemLog.write.mock.calls.map((c) => c[0])).toEqual(['refused build_style', 'refused status_summary'])
+    expect(JSON.stringify(problemLog.write.mock.calls)).not.toContain('/etc/passwd')
+  })
+
   it('refuses a token that was never handed out', async () => {
     const { invoke, server } = setup()
     for (const tool of ['draft_cv', 'enrich', 'build_style']) {

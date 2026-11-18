@@ -263,12 +263,13 @@ export function registerIpc(
   }
   let runs = 0 // find_jobs calls in flight
   let demo: { stop: () => void } | null = null
+  // A refusal is logged by the tool's name only: what the window sent may be anything.
+  const refused = (tool: unknown, error: string): Envelope => {
+    deps.problemLog?.write(`refused ${typeof tool === 'string' ? tool.slice(0, 64) : 'a call'}`, error)
+    return { ok: false, error }
+  }
   ipcMain.handle(CHANNELS.call, async (event, tool: unknown, args: unknown, callId?: unknown): Promise<Envelope> => {
-    // A refusal is logged by the tool's name only: what the window sent may be anything.
-    const refuse = (error: string): Envelope => {
-      deps.problemLog?.write(`refused ${typeof tool === 'string' ? tool.slice(0, 64) : 'a call'}`, error)
-      return { ok: false, error }
-    }
+    const refuse = (error: string) => refused(tool, error)
     if (typeof tool !== 'string' || !ALLOWED.has(tool)) return refuse('unknown tool')
     const refusal = pathRefusal(tool, isPlainObject(args) ? args : {})
     if (refusal) return refuse(refusal)
@@ -358,11 +359,12 @@ export function registerIpc(
   // What is particular to one tool runs around the call.
   ipcMain.handle(CHANNELS.callWithFiles, async (_event, tool: unknown, args: unknown, tokens: unknown): Promise<Envelope> => {
     const rule = typeof tool === 'string' ? PATH_ARGS[tool]?.find((r) => r.picked) : undefined
-    if (typeof tool !== 'string' || !rule || !ALLOWED.has(tool)) return { ok: false, error: 'unknown tool' }
+    if (typeof tool !== 'string' || !rule) return refused(tool, 'unknown tool')
     const given = isPlainObject(args) ? args : {}
     const refusal = pathRefusal(tool, given)
-    if (refusal) return { ok: false, error: refusal }
-    if (!Array.isArray(tokens) || !tokens.every((t) => typeof t === 'string') || (rule.picked === 'one' && tokens.length !== 1)) return { ok: false, error: 'Choose the file again.' }
+    if (refusal) return refused(tool, refusal)
+    // only a draft may go without a file (it reads pages); a style builds from exactly one
+    if (!Array.isArray(tokens) || !tokens.every((t) => typeof t === 'string') || (tokens.length === 0 && tool !== 'draft_cv') || (rule.picked === 'one' && tokens.length > 1)) return { ok: false, error: 'Choose the file again.' }
     if (tool === 'draft_cv') {
       const urls = given['sources'] ?? []
       if (!Array.isArray(urls)) return { ok: false, error: 'nothing to draft from' }
