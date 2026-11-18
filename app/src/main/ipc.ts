@@ -16,6 +16,7 @@ import { inPlayStatus, needsJob, noticeFor, type Notice, type NoticeEvent } from
 import { type RunBoard } from './run-board'
 import { checkUrls, type CvSources } from './cv-sources'
 import type { UpdateResult } from './updates'
+import type { Environment } from './environments'
 import { isExternalUrl } from './security'
 
 export const CHANNELS = {
@@ -134,7 +135,7 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   build_style: 120_000,
 }
 
-// The demo and the onboarding sandbox run on made-up data: none of it may reach the user's Drive.
+// Staging and the sandbox run on throwaway data: none of it may reach the user's Drive.
 const DRIVE_TOOLS = new Set(['connect_drive', 'sync_data', 'disconnect_drive'])
 const COALESCE_MS = 200
 
@@ -212,13 +213,13 @@ export function registerIpc(
     /** Save CV / Save letter: a save dialog in front of the window, offered in the Downloads folder. */
     savePdf?: { showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }>; downloads: string }
     showItemInFolder: (path: string) => void
-    /** What the window shows about where its data is: `demo` when it runs on the made-up data. */
-    info?: { demo: boolean; sandbox?: 'onboard'; home?: string }
+    /** Where the window runs (environments.ts) and where its data is. */
+    info?: { environment: Environment; home?: string }
     /** The last run board, for a window that opens (or reloads) while a run is going. */
     currentBoard?: () => RunBoard
     /** Told when a long tool settles (see notices.ts); never allowed to change the answer. */
     notify?: (notice: Notice) => void
-    /** The demo only: the simulated `find_jobs`, which nothing in the demo sends to the server. */
+    /** The sandbox only: the simulated `find_jobs`, which nothing in the sandbox sends to the server. */
     /** The CV files the window may draft from (cv-sources.ts). */
     cvSources?: CvSources
     /** The files of a data move (archive-files.ts). */
@@ -270,7 +271,7 @@ export function registerIpc(
     if (typeof tool !== 'string' || !ALLOWED.has(tool)) return refuse('unknown tool')
     const refusal = pathRefusal(tool, isPlainObject(args) ? args : {})
     if (refusal) return refuse(refusal)
-    if (deps.info?.demo && DRIVE_TOOLS.has(tool)) return refuse('Google Drive is not available on made-up data.')
+    if (deps.info && deps.info.environment !== 'production' && DRIVE_TOOLS.has(tool)) return refuse('Google Drive is not available in staging or the sandbox.')
     const sender = (event as { sender?: { send(channel: string, ...a: unknown[]): void } } | undefined)?.sender
     const options: { onProgress?: (p: Progress) => void; timeout?: number } = {}
     if (tool in TOOL_TIMEOUTS) options.timeout = TOOL_TIMEOUTS[tool]
@@ -389,18 +390,18 @@ export function registerIpc(
   })
 
   // The CV file: the first file the draft read that has a style to copy, else the first file it read. Profile → CV's
-  // Sources names it and the style dialog opens there. Never on made-up data.
+  // Sources names it, and a style is built from it.
   const rememberCvFile = async (data: unknown): Promise<void> => {
-    if (deps.info?.demo || !deps.styleFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
+    if (!deps.styleFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
     const files = data['sources'].filter((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && typeof s['source'] === 'string') as { source: string; style?: boolean }[]
     const file = files.find((s) => s.style === true) ?? files[0]
     if (file) await deps.styleFile.remember(file.source)
   }
-  ipcMain.handle(CHANNELS.cvFile, async (): Promise<string | null> => (deps.info?.demo || !deps.styleFile ? null : deps.styleFile.name()))
+  ipcMain.handle(CHANNELS.cvFile, async (): Promise<string | null> => (deps.styleFile ? deps.styleFile.name() : null))
 
   // A style built from the CV file (Profile → CV): the file and the build both here; the window names no path.
   ipcMain.handle(CHANNELS.styleFromCvFile, async (event): Promise<Envelope> => {
-    if (deps.info?.demo || !deps.styleFile) return { ok: false, error: 'A style cannot be built from made-up data.' }
+    if (!deps.styleFile) return { ok: false, error: 'A style cannot be built here.' }
     const chosen = await deps.styleFile.current()
     if ('error' in chosen) return { ok: false, error: chosen.error }
     ;(event as { sender?: { send(channel: string): void } } | undefined)?.sender?.send(CHANNELS.styleReading)
@@ -411,9 +412,8 @@ export function registerIpc(
     }
   })
 
-  // The CV style build: the CV file the wizard read, by its token (the window never names a path); not on made-up data.
+  // The CV style build: the CV file the wizard read, by its token (the window never names a path).
   ipcMain.handle(CHANNELS.buildStyle, async (_event, token: unknown): Promise<Envelope> => {
-    if (deps.info?.demo) return { ok: false, error: 'A style cannot be built from made-up data.' }
     if (typeof token !== 'string' || !deps.cvSources) return { ok: false, error: 'Choose the file again.' }
     const resolved = await deps.cvSources.resolve([token])
     if (!resolved.ok) return resolved
@@ -502,7 +502,7 @@ export function registerIpc(
 
   ipcMain.handle(CHANNELS.installUpdate, async (): Promise<{ ok: boolean }> => (await deps.updates?.install()) ?? { ok: false })
 
-  ipcMain.handle(CHANNELS.info, async () => deps.info ?? { demo: false })
+  ipcMain.handle(CHANNELS.info, async () => deps.info ?? { environment: 'production' })
   ipcMain.handle(CHANNELS.currentBoard, async (): Promise<RunBoard> => deps.currentBoard?.() ?? { active: false })
   ipcMain.handle(CHANNELS.openExternal, async (_event, url: unknown): Promise<{ ok: boolean; error?: string }> => {
     if (!isExternalUrl(url)) return { ok: false, error: 'only http and https links can be opened' }

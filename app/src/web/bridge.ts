@@ -212,7 +212,7 @@ export function createWebDoor(deps: WebDeps) {
       onState: () => () => undefined,
     },
     async info() {
-      return { demo: false, remote: true as const }
+      return { environment: 'production' as const, remote: true as const }
     },
     exportData: machineOnly,
     async pickArchive() {

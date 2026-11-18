@@ -9,7 +9,7 @@ import { DataMoves } from './DataMoves'
 import { PageSections } from './PageSections'
 import { ReportProblem } from './ReportProblem'
 import { SettingsFields } from './SettingsFields'
-import type { DriveStatus, Where } from './connection-rows'
+import type { DriveStatus, Environment } from './connection-rows'
 import type { DoctorReport } from './onboarding/reducer'
 
 /**
@@ -34,7 +34,7 @@ export function Settings({
 }: {
   doctor: DoctorReport | null
   drive: DriveStatus | null
-  where: Where
+  where: Environment
   home?: string
   email?: string
   onRecheck: () => void | Promise<void>

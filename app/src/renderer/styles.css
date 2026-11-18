@@ -617,8 +617,6 @@ p.sidebar-problem { margin: 0; color: var(--color-ink-muted, var(--color-ink)); 
 .story-text > div { display: grid; grid-template-columns: 88px minmax(0, 1fr); column-gap: var(--space-4); align-items: baseline; }
 .story-text dt, .story-text dd { margin: 0; }
 .stories-fields { display: flex; flex-direction: column; gap: 28px; /* as far apart as Profile's fields */ }
-.stories-draft { display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
-.stories-draft > * { margin: 0; }
 .employers { display: flex; flex-direction: column; gap: var(--space-3); }
 .employers > * { margin: 0; }
 .employer-list { list-style: none; margin: 0; padding: 0; }

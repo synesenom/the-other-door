@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../testing'
 import { Connections } from './Connections'
-import type { DriveStatus, Where } from './connection-rows'
+import type { DriveStatus, Environment } from './connection-rows'
 import type { DoctorReport } from './onboarding/reducer'
 
 /** The calls a test is about: the phone row's status read (issue 444) happens on every open. */
@@ -19,7 +19,7 @@ const signedOut: DoctorReport = { ok: false, checks: [cli(), { name: 'claude log
 const off: DriveStatus = { connected: false, account: null, last_synced: null, last_error: null, configured: true }
 const on: DriveStatus = { connected: true, account: 'ada@gmail.com', last_synced: '2026-10-29T08:00:00+00:00', last_error: null, configured: true }
 
-function show(opts: { doctor?: DoctorReport | null; drive?: DriveStatus | null; where?: Where; handlers?: Record<string, unknown>; conflict?: boolean } = {}) {
+function show(opts: { doctor?: DoctorReport | null; drive?: DriveStatus | null; where?: Environment; handlers?: Record<string, unknown>; conflict?: boolean } = {}) {
   const h = mockDoor(opts.handlers ?? {})
   const onRecheck = vi.fn()
   const onDriveChanged = vi.fn()
@@ -32,7 +32,7 @@ function show(opts: { doctor?: DoctorReport | null; drive?: DriveStatus | null; 
       <Connections
         doctor={opts.doctor === undefined ? signedIn : opts.doctor}
         drive={opts.drive === undefined ? off : opts.drive}
-        where={opts.where ?? 'real'}
+        where={opts.where ?? 'production'}
         email="ada@example.com"
         onRecheck={onRecheck}
         driveConflict={conflict}
@@ -234,10 +234,10 @@ describe('Connections: Google Drive', () => {
     expect(row('Google Drive').getByText(/both changed since they last synced/)).toBeInTheDocument()
   })
 
-  it('the demo and the sandbox say Drive is not available, and offer nothing', () => {
-    for (const where of ['demo', 'sandbox'] as const) {
+  it('staging and the sandbox say Drive is not available, and offer nothing', () => {
+    for (const where of ['staging', 'sandbox'] as const) {
       const { row } = show({ where })
-      expect(row('Google Drive').getByText(/Not available in the (demo|onboarding sandbox)/)).toBeInTheDocument()
+      expect(row('Google Drive').getByText(/Not available in (staging|the sandbox)/)).toBeInTheDocument()
       expect(row('Google Drive').queryAllByRole('button')).toHaveLength(0)
       cleanup()
     }

@@ -3,7 +3,7 @@ import { CheckMark } from './CheckMark'
 import { PhoneSetup, type PhoneStatus } from './PhoneSetup'
 import { useEffect, useState, type ReactNode } from 'react'
 import { ApiError, call, errorText } from '../api'
-import { claudeRow, driveRow, installFailure, type DriveStatus, type SetupAnswer, type Where } from './connection-rows'
+import { claudeRow, driveRow, installFailure, type DriveStatus, type SetupAnswer, type Environment } from './connection-rows'
 import { Dialog } from './Dialog'
 import type { DoctorReport } from './onboarding/reducer'
 import { SignIn } from './SignIn'
@@ -161,7 +161,7 @@ function DriveConnection({
   onDataChanged,
 }: {
   drive: DriveStatus | null
-  where: Where
+  where: Environment
   conflict: boolean
   onConflict: (conflict: boolean) => void
   onDriveChanged: () => void
@@ -410,7 +410,7 @@ export function Connections({
 }: {
   doctor: DoctorReport | null
   drive: DriveStatus | null
-  where: Where
+  where: Environment
   email?: string
   onRecheck: () => void | Promise<void>
   /** Both sides changed (a sync found it, here or on opening): the Drive row asks which to keep. */

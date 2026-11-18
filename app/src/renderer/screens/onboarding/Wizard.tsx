@@ -5,14 +5,15 @@ import { Connect } from './Connect'
 import { Reading } from './Reading'
 import { canRunFirst, claudeReady, initialState, STEPS, wizardReducer } from './reducer'
 import type { DoctorReport, ShowProfile, WizardState } from './reducer'
+import type { Environment } from '../connection-rows'
 import { Review } from './Review'
 import { Sources } from './Sources'
 
 interface Props {
   /** `show_profile` as the window found it: `config` null on a fresh home. */
   profile: ShowProfile
-  /** The onboarding sandbox: the first run is simulated, nothing real is installed or read from the boards. */
-  sandbox: boolean
+  /** Where the window runs: Drive only in production; the sandbox installs nothing and its first run is simulated, so it needs no Claude sign-in. */
+  environment: Environment
   /** The wizard is over: back to the app, with the first run started when `run`. */
   onFinish: (run: boolean) => void
   /** A redo can be left at its first step without changing anything. */
@@ -22,7 +23,7 @@ interface Props {
 }
 
 /** The first-launch wizard (and "Set up again"): sources, reading, one review; written only by the review's Save. */
-export function Wizard({ profile: initial, sandbox, onFinish, onCancel, start }: Props) {
+export function Wizard({ profile: initial, environment, onFinish, onCancel, start }: Props) {
   const [state, dispatch] = useReducer(wizardReducer, undefined, () => ({ ...initialState(initial), ...start }))
   const [doctor, setDoctor] = useState<DoctorReport | null>(null)
   const quietInstall = useRef(false)
@@ -40,13 +41,13 @@ export function Wizard({ profile: initial, sandbox, onFinish, onCancel, start }:
 
   // The Chromium that prints the CV is needed only at `prepare`, so it is no question here: it installs quietly (the installed app brings its own, so this is a checkout's).
   useEffect(() => {
-    if (sandbox || quietInstall.current || !doctor?.checks.some((c) => c.name === 'chromium' && c.status !== 'ok')) return
+    if (environment === 'sandbox' || quietInstall.current || !doctor?.checks.some((c) => c.name === 'chromium' && c.status !== 'ok')) return
     quietInstall.current = true
     call('setup', { install: ['chromium'], yes: true }).catch(() => undefined)
-  }, [doctor, sandbox])
+  }, [doctor, environment])
 
   // A first set-up (no profile) that may reach Google Drive can bring the profile from there instead (issue 616).
-  const pulled = sandbox || initial.config ? undefined : () => onFinish(false)
+  const pulled = environment !== 'production' || initial.config ? undefined : () => onFinish(false)
   if (doctor === null) return <Splash />
   const connecting = !claudeReady(doctor)
   // Always the three steps of setting up: connecting Claude comes before them, the three still to come.
@@ -74,9 +75,8 @@ export function Wizard({ profile: initial, sandbox, onFinish, onCancel, start }:
           state={state}
           profile={initial}
           dispatch={dispatch}
-          sandbox={sandbox}
           onBack={() => dispatch({ type: 'back' })}
-          onSaved={(saved) => onFinish(state.mode === 'fresh' && canRunFirst(state, saved, doctor, sandbox))}
+          onSaved={(saved) => onFinish(state.mode === 'fresh' && canRunFirst(state, saved, doctor, environment === 'sandbox'))}
         />
       )
   }

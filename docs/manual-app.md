@@ -38,7 +38,7 @@ replace themselves (a phone server the older version left is stopped at the next
 you install the download over this one. The check sends no information about you; offline, or when the release
 cannot be reached, it shows nothing and writes one line to the problem log. The unsigned Windows installer may
 show SmartScreen's warning again on an update. Only a published release counts, not a draft or a pre-release. A
-checkout and the demo never check, and then Settings has no Version part. The app and the pipeline inside it are always one version: an app that finds another says so
+checkout, staging and the sandbox never check, and then Settings has no Version part. The app and the pipeline inside it are always one version: an app that finds another says so
 ("Install the app again").
 
 **Your data** (profile, jobs, applications, backups) lives in your user folder, never inside the
@@ -127,7 +127,8 @@ While your CV is still the example one, "Draft it from your CV file or pages" in
 the same screens with your answers filled in: your sources are read, with new titles to choose
 from. Your answers stay, and Save starts no search.
 
-`npm run dev:onboard` tries all of this on an empty folder (see [`app/README.md`](../app/README.md)).
+`npm run dev:sandbox:empty` tries all of this on an empty folder, with a simulated first run; `npm run dev:staging` tries it
+for real (real runs too) on a throwaway folder (see Environments in [`app/README.md`](../app/README.md)).
 
 ## Finding new jobs
 
@@ -196,9 +197,9 @@ LinkedIn (and the other discovery sources serving your city), at your own risk, 
 [legal disclaimer](../LEGAL_DISCLAIMER.md) and "Turn it on in Settings", which opens Settings at
 Risky sources. It is said only on that card, never again, and not on the phone.
 
-### In the demo
+### In the sandbox
 
-`npm run dev:demo` plays a simulated run of about twenty seconds: nothing reaches the network or
+`npm run dev:sandbox` plays a simulated run of about twenty seconds: nothing reaches the network or
 your Claude plan. It finishes with two new made-up matches, one site that returned nothing and one
 resting, so every part of the screen can be seen. Stop works as in a real run.
 
@@ -468,7 +469,7 @@ is tinted in the editor and the preview, brought into view, until you next type 
 
 The story bank the tailor draws on when it prepares an application (`profile/story_bank.md`): each story is CARL: the context (what happened and what was asked), what you did (action), what came of it (result) and what you learned. Every story is shown whole: its title, then its four parts, each name beside its text, with **Edit**, which opens it in a dialog and changes it in place (renaming it too), and **Remove**, which asks first.
 
-- **Write a story**: in a dialog, describe something you did in your own words and "Draft it". One Claude call (a few minutes) proposes a story from what you wrote, read beside your CV: where they differ it keeps your text and shows what differs; a field it could not fill is left empty and marked, and you fill it before saving.
+- **Write a story**: in a dialog, describe something you did in your own words and "Draft it". One Claude call (a minute or two) turns what you wrote into a story, read beside your CV, and the same dialog shows it in its four parts, to check like a story you edit: where your text and the CV differ it keeps your text and says what differs; a part it could not fill is left empty and marked, and you fill it before **Save**, which adds it and goes back to your stories. One text is one story: your CV only fills in facts, it never adds stories of its own.
 
 Stories are not on the phone.
 
@@ -498,8 +499,8 @@ fine, an empty ring when not) and what you can do about it.
   computer and Drive both changed since the last sync, nothing is replaced until you choose
   ("Google Drive needs a choice" at the sidebar's foot opens it): "Keep this computer" (its data
   replaces the copy on Drive) or "Keep Drive" (Drive's data replaces this computer's, which is
-  kept in `backups/`). "Disconnect" asks first, sends the last changes, and the copy on Drive stays. In the demo
-  and the onboarding sandbox Drive is not available (made-up data never reaches your Drive),
+  kept in `backups/`). "Disconnect" asks first, sends the last changes, and the copy on Drive stays. In staging
+  and the sandbox Drive is not available (their throwaway data never reaches your Drive),
   and a build without *The other door*'s Google client says so.
 
 **Risky sources**: sites whose terms forbid automated reading (LinkedIn and the others),

@@ -124,12 +124,10 @@ interface Props {
   dispatch: Dispatch<Action>
   onSaved: (profile: ShowProfile) => void
   onBack?: () => void
-  /** The onboarding sandbox: nothing real is built. */
-  sandbox?: boolean
 }
 
 /** One review with everything inferred, editable in place. Only Save writes. */
-export function Review({ state, profile, dispatch, onSaved, onBack, sandbox = false }: Props) {
+export function Review({ state, profile, dispatch, onSaved, onBack }: Props) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [legalOpen, setLegalOpen] = useState(false)
@@ -301,7 +299,7 @@ export function Review({ state, profile, dispatch, onSaved, onBack, sandbox = fa
         )}
       </Folded>
 
-      {!sandbox && styleSource(state) && (
+      {styleSource(state) && (
         <Part title="Your CV's style">
           <div className="field onb-field">
             <label className="choice">

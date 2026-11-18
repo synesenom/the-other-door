@@ -1,6 +1,6 @@
-// The simulated run of the demo, end to end in the built app: DOOR_DEMO_DIR (a temp folder) makes
-// the unpackaged app a demo, and DOOR_DEMO_RUN_MS makes the 20 s script short. Nothing reaches the
-// network or claude; the real jobs/ and profile/ and app/.demo are never touched.
+// The sandbox's simulated run, end to end in the built app: DOOR_SANDBOX_DIR (a temp folder) makes
+// the unpackaged app the sandbox, and DOOR_SANDBOX_RUN_MS makes the 20 s script short. Nothing reaches the
+// network or claude; the real jobs/ and profile/ and app/.sandbox are never touched.
 import { existsSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
@@ -13,14 +13,14 @@ test.skip(!fixture.hasPython, `no Python at ${fixture.python} (set DOOR_PYTHON)`
 
 let launches = 0
 function launch(runMs: number) {
-  // a demo folder of its own per test: the first one's postings must not reach the second
+  // a sandbox folder of its own per test: the first one's postings must not reach the second
   const demo = join(fixture.scratch, `demo-${(launches += 1)}`)
   return {
     demo,
     app: electron.launch({
       args: ['.', ...(process.env.CI ? ['--no-sandbox'] : [])],
       cwd: APP,
-      env: { ...(process.env as Record<string, string>), ...fixture.env, DOOR_DEMO_DIR: demo, DOOR_DEMO_RUN_MS: String(runMs) },
+      env: { ...(process.env as Record<string, string>), ...fixture.env, DOOR_SANDBOX_DIR: demo, DOOR_SANDBOX_RUN_MS: String(runMs) },
     }),
   }
 }

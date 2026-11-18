@@ -2,7 +2,7 @@
 
 The bank holds the CARL stories (context, action, result, learning) the tailor draws on. Four cores, one
 call each: *list*, *save* (add, or replace one by its title), *remove*, and
-*draft* (one `claude -p` call that proposes stories from the CV or from pasted
+*draft* (one `claude -p` call that proposes one story from the CV or from pasted
 text; nothing is written, the caller saves the ones the user keeps through
 *save*). The `list_stories`, `save_story`, `remove_story` and `draft_stories`
 tools and the desktop app's Stories view call the same cores.
@@ -39,7 +39,13 @@ _RULES = (
     "past-tense headline, e.g. 'Halved the month-end close at Acme'), `context` (the situation and what was "
     "asked of the person), `action` (what they did), `result` (what came of it), `learning` (what was learned), "
     "`missing` (the names of the fields you left empty) and `conflicts`. One sentence or two per field, plain "
-    "text, no Markdown. Propose one story per distinct achievement. Answer with the JSON only."
+    "text, no Markdown. Answer with the JSON only."
+)
+# The user writes about one thing they did: one story, theirs. The CV beside it only fills in facts, never a story
+# of its own (it would turn every achievement it lists into a draft).
+_TEXT_RULES = (
+    "The source is the user's text about one thing they did: propose exactly one story, the one the text tells. "
+    "The CV is there only for facts the text leaves out: never draft a story from it."
 )
 # A CV alone lists achievements; the story bank is for what it does not say. So from the CV only one story is
 # drafted, onboarding's showcase of what a story is: the rest the user tells.
@@ -152,8 +158,8 @@ def _remove_story_core(title, *, profile_dir: Path | None = None) -> dict:
 
 
 def _draft_stories_core(text=None, from_cv=False, model=None, *, profile_dir: Path | None = None) -> dict:
-    """Propose stories from pasted `text` (read beside the CV, if there is one), or one story from the CV (onboarding's
-    showcase: `profile/cv.draft.md` while onboarding, else the CV); nothing is written.
+    """Propose the one story pasted `text` tells (read beside the CV, if there is one, for its facts), or one story
+    from the CV (onboarding's showcase: `profile/cv.draft.md` while onboarding, else the CV); nothing is written.
 
     Returns:
         `{"outcome": "proposed" | "nothing_new", "stories": [{title, ..., missing, conflicts}]}`; `missing` names
@@ -171,7 +177,7 @@ def _draft_stories_core(text=None, from_cv=False, model=None, *, profile_dir: Pa
         raise ValueError("give exactly one source: some text describing the story, or from_cv")
     existing: set[str] = set()
     cv_path = workspace.cv_path(profile_loader.load_config_or_defaults(profile_dir), profile_dir)
-    rules = _RULES
+    rules = f"{_RULES} {_TEXT_RULES}"
     if from_cv:
         cv_text = cv_cmd._onboarding_cv_text(profile_dir, profile_loader.load_config_or_defaults(profile_dir))
         if cv_text is None:
@@ -202,8 +208,7 @@ def _draft_stories_core(text=None, from_cv=False, model=None, *, profile_dir: Pa
         story["conflicts"] = _clean_lines(raw.get("conflicts"))
         story["missing"] = [name for name in _TEXT_FIELDS if not story[name]]
         stories.append(story)
-    if from_cv:
-        stories = stories[:1]
+    stories = stories[:1]
     return {"outcome": "proposed" if stories else "nothing_new", "stories": stories}
 
 
@@ -302,7 +307,7 @@ def remove_story(title):
 @click.option("--from-cv", "from_cv", is_flag=True, help="Propose one story from your CV, as an example of what a story is.")
 @click.option("--model", default=None, help=f"Claude model to ask (default: {_DEFAULT_MODEL}).")
 def draft_stories(text, from_cv, model):
-    """Propose stories from TEXT, or one from your CV as an example; nothing is saved (use `cv stories add`)."""
+    """Propose the one story TEXT tells, or one from your CV as an example; nothing is saved (use `cv stories add`)."""
     try:
         result = _draft_stories_core(text, from_cv, model, profile_dir=workspace.PROFILE_DIR)
     except (ValueError, FileNotFoundError, claude_cli.ClaudeError) as exc:

@@ -7,10 +7,11 @@ import { registerIpc, CHANNELS, PATH_ARGS, type Envelope } from './ipc'
 import { cspHeader, isAllowedNavigation } from './security'
 import tools from '../generated/tools.json'
 import type { Notice } from './notices'
+import type { Environment } from './environments'
 
 type Handler = (event: unknown, ...args: any[]) => Promise<any>
 
-function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<unknown> = async () => ({ ok: 1 }), demoRun?: (args: any, onProgress: any) => any, notifyThrows = false, info: { demo: boolean; sandbox?: 'onboard'; home?: string } = { demo: true }) {
+function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<unknown> = async () => ({ ok: 1 }), demoRun?: (args: any, onProgress: any) => any, notifyThrows = false, info: { environment: Environment; home?: string } = { environment: 'sandbox' }) {
   const cvSources = {
     pick: vi.fn(async () => ({ files: [{ token: 'tok1', name: 'cv.pdf', size: 10 }], refused: [] })),
     add: vi.fn(async (_paths: string[]) => ({ files: [{ token: 'tok2', name: 'dropped.pdf', size: 10 }], refused: [] })),
@@ -73,9 +74,9 @@ describe('registerIpc', () => {
     expect(await invoke(CHANNELS.currentBoard)).toEqual({ active: true })
   })
 
-  it('tells the window whether it runs on the demo data', async () => {
+  it('tells the window which environment it runs in', async () => {
     const { invoke } = setup()
-    expect(await invoke('door:info')).toEqual({ demo: true })
+    expect(await invoke('door:info')).toEqual({ environment: 'sandbox' })
   })
 
   it('forwards a call to the server and wraps the result', async () => {
@@ -90,7 +91,7 @@ describe('registerIpc', () => {
       const e = new DoorError('both changed')
       e.conflict = true
       throw e
-    }, undefined, false, { demo: false })
+    }, undefined, false, { environment: 'production' })
     expect(await invoke(CHANNELS.call, 'sync_data', {})).toEqual({ ok: false, error: 'both changed', conflict: true })
   })
 
@@ -136,16 +137,16 @@ describe('registerIpc', () => {
     ['show_style', 60_000],
     ['use_style', 60_000],
   ])('gives %s a call limit over %i ms', async (tool, floor) => {
-    const { server, invoke } = setup(undefined, undefined, false, { demo: false })
+    const { server, invoke } = setup(undefined, undefined, false, { environment: 'production' })
     await invoke(CHANNELS.call, tool, {})
     expect(server.call.mock.calls[0][2].timeout).toBeGreaterThan(floor)
   })
 
-  it('never lets the demo or the onboarding sandbox reach Drive', async () => {
-    for (const info of [{ demo: true }, { demo: true, sandbox: 'onboard' as const }]) {
+  it('never lets staging or the sandbox reach Drive', async () => {
+    for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
       const { server, invoke } = setup(undefined, undefined, false, info)
       for (const tool of ['connect_drive', 'sync_data', 'disconnect_drive']) {
-        expect(await invoke(CHANNELS.call, tool, {})).toEqual({ ok: false, error: 'Google Drive is not available on made-up data.' })
+        expect(await invoke(CHANNELS.call, tool, {})).toEqual({ ok: false, error: 'Google Drive is not available in staging or the sandbox.' })
       }
       expect(server.call).not.toHaveBeenCalled()
     }
@@ -319,7 +320,7 @@ describe('a run (find_jobs)', () => {
   })
 })
 
-describe('the demo\'s run', () => {
+describe('the sandbox\'s run', () => {
   it('never reaches the server: find_jobs goes to the simulation, with its arguments and progress', async () => {
     const record = { started_at: 'x' }
     const demoRun = vi.fn((_args: unknown, onProgress: (p: unknown) => void) => {
@@ -426,7 +427,7 @@ describe('notifications', () => {
     expect(notify.mock.calls[0][0]).toMatchObject({ title: 'New jobs found', target: { screen: 'matches', newOnly: true } })
   })
 
-  it('announces the demo run through the same path', async () => {
+  it('announces the sandbox\'s run through the same path', async () => {
     const demoRun = () => ({ result: Promise.resolve(record), stop: () => undefined })
     const { invoke, notify } = setup(async () => ({}), demoRun)
     await invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
@@ -590,7 +591,7 @@ describe('reporting a problem', () => {
     expect(problemLog.write.mock.calls).toEqual([
       ['refused rm_rf', 'unknown tool'],
       ['refused import_posting', 'import_posting cannot take a file path from the window; files are chosen with a file dialog.'],
-      ['refused sync_data', 'Google Drive is not available on made-up data.'],
+      ['refused sync_data', 'Google Drive is not available in staging or the sandbox.'],
     ])
   })
 })
@@ -795,7 +796,7 @@ describe('door:call refuses what names a local file', () => {
 })
 
 describe('the CV style build', () => {
-  const real = { demo: false }
+  const real = { environment: 'production' as const }
 
   it('a picked CV file goes to build_style by token: the tool gets the real path', async () => {
     const { invoke, server, cvSources } = setup(async () => ({ started: true }), undefined, false, real)
@@ -819,17 +820,33 @@ describe('the CV style build', () => {
     expect(server.call).not.toHaveBeenCalled()
   })
 
-  it('made-up data, the demo and the onboarding sandbox, builds nothing', async () => {
-    for (const info of [{ demo: true }, { demo: true, sandbox: 'onboard' as const }]) {
-      const { invoke, server } = setup(undefined, undefined, false, info)
-      expect((await invoke(CHANNELS.buildStyle, 'tok1')).ok).toBe(false)
-      expect(server.call).not.toHaveBeenCalled()
+  it('staging and the sandbox build for real', async () => {
+    for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
+      const { invoke, server } = setup(async () => ({ started: true }), undefined, false, info)
+      expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: true, data: { started: true } })
+      expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/cv.pdf' }, { timeout: 120_000 })
     }
   })
 })
 
 describe('a style from the CV file', () => {
-  const real = { demo: false }
+  const real = { environment: 'production' as const }
+
+  it('the CV file is the first file the draft read with a style to copy, else its first file', async () => {
+    const styled = { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: false }, { source: '/Users/ada/b.pdf', kind: 'file', style: true }, { source: '/Users/ada/c.pdf', kind: 'file', style: true }] }
+    const one = setup(async () => styled, undefined, false, real)
+    await one.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
+    expect(one.styleFile.remember).toHaveBeenCalledTimes(1)
+    expect(one.styleFile.remember).toHaveBeenCalledWith('/Users/ada/b.pdf')
+    const plain = { markdown: '# Ada', sources: [{ source: 'https://ada.dev', kind: 'url' }, { source: '/Users/ada/cv.docx', kind: 'file', style: false }, { source: '/Users/ada/other.pdf', kind: 'file' }] }
+    const two = setup(async () => plain, undefined, false, real)
+    await two.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
+    expect(two.styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.docx')
+  })
+
+  it('names the CV file to the window by its name only', async () => {
+    expect(await setup(undefined, undefined, false, real).invoke(CHANNELS.cvFile)).toBe('my cv.pdf')
+  })
 
   it('build_style gets the CV file\'s real path from main, never from the window', async () => {
     const { invoke, server, styleFile } = setup(async () => ({ started: true }), undefined, false, real)
@@ -860,10 +877,11 @@ describe('a style from the CV file', () => {
     expect(await two.invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
   })
 
-  it('made-up data builds nothing', async () => {
-    const { invoke, server, styleFile } = setup(undefined, undefined, false, { demo: true })
-    expect((await invoke(CHANNELS.styleFromCvFile)).ok).toBe(false)
-    expect(styleFile.current).not.toHaveBeenCalled()
-    expect(server.call).not.toHaveBeenCalled()
+  it('staging and the sandbox build for real', async () => {
+    for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
+      const { invoke, server } = setup(async () => ({ started: true }), undefined, false, info)
+      expect(await invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: true, data: { started: true } })
+      expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/my cv.pdf' }, { timeout: 120_000 })
+    }
   })
 })

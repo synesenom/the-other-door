@@ -139,8 +139,8 @@ Actions:
 
 | kind | Condition | Visible |
 |---|---|---|
-| unavailable | `where==='demo'` | "Not available in the demo" (no buttons) | — not tested: the demo window is not this world
-| unavailable | `where==='sandbox'` (onboarding sandbox) | "Not available in the onboarding sandbox" | — not tested: the onboarding sandbox window is not this world
+| unavailable | `where==='staging'` | "Not available in staging" (no buttons) | — not tested: the staging window is not this world
+| unavailable | `where==='sandbox'` | "Not available in the sandbox" (no buttons) | — not tested: the sandbox window is not this world
 | checking | drive `null` (summary not answered or failed) | status "Checking Google Drive…" (**forever if `status_summary` fails**) | — not tested: status_summary answers before Settings opens; its failure is the shell's journey
 | unavailable | `configured === false` | "Not available in this build". **Not reachable from this repo's build:** `CLIENT_ID` and `CLIENT_SECRET` are set in `drive.py`. Needs a Python patch. | — unit: `app/src/renderer/screens/Connections.test.tsx` (world option drive.configured=false)
 | off | `!connected` | "Keeps this computer and another one in step." + **"Connect"** | — ✓ Connect waits for the browser, then syncs at once: this computer’s data goes to an empty Drive

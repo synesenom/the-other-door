@@ -190,17 +190,26 @@ def test_draft_from_text_asks_sonnet_without_tools_and_writes_nothing(env, monke
 
 def test_draft_post_processing(env, monkeypatch):
     _seed(env, OTHER)
+    _model(monkeypatch, [{**STORY, "missing": ["wrong"]}])
+    assert stories_cmd._draft_stories_core("I cut the build time.", profile_dir=env.profile_dir)["stories"][0]["missing"] == []
     _model(monkeypatch, [
-        {**STORY, "missing": ["wrong"]},
-        {**STORY, "title": "cut the BUILD time"},  # duplicate in proposals
         {"title": "", "context": "x"},  # untitled
         {"title": "Half drafted", "context": "s"},  # empty fields
     ])
+    result = stories_cmd._draft_stories_core("I half drafted it.", profile_dir=env.profile_dir)
+    assert [s["title"] for s in result["stories"]] == ["Half drafted"]
+    assert result["stories"][0]["missing"] == ["action", "result", "learning"]
+
+
+def test_draft_from_text_is_the_one_story_the_text_tells(env, monkeypatch):
+    # the user wrote about one thing: the CV beside it gives facts, never stories of its own
+    (env.profile_dir / "cv.md").write_text("# Jane\n\n- Cut the build time.\n- Ran the migration.\n")
+    calls = []
+    _model(monkeypatch, [{**STORY}, {**OTHER}, {**STORY, "title": "A third"}], calls)
     result = stories_cmd._draft_stories_core("I cut the build time.", profile_dir=env.profile_dir)
-    titles = [s["title"] for s in result["stories"]]
-    assert titles == ["Cut the build time", "Half drafted"]
-    assert result["stories"][0]["missing"] == []
-    assert result["stories"][1]["missing"] == ["action", "result", "learning"]
+    assert [s["title"] for s in result["stories"]] == ["Cut the build time"]
+    assert "exactly one story" in calls[0]["system"]
+    assert "one story per distinct achievement" not in calls[0]["system"]
 
 
 def test_draft_from_cv_is_one_story_to_show_what_a_story_is(env, monkeypatch):
@@ -351,13 +360,11 @@ def test_draft_from_text_without_a_cv_uses_the_text_only(env, monkeypatch):
 
 def test_draft_returns_conflicts_beside_missing(env, monkeypatch):
     (env.profile_dir / "cv.md").write_text("# Jane\n\n- Cut build time by 30%.\n")
-    _model(monkeypatch, [
-        {**STORY, "conflicts": ["The text says 50%, the CV says 30%.", 3, " "]},
-        {**OTHER, "context": "", "conflicts": "not a list"},
-    ])
-    result = stories_cmd._draft_stories_core("Cut it by half.", profile_dir=env.profile_dir)
-    first, second = result["stories"]
+    _model(monkeypatch, [{**STORY, "conflicts": ["The text says 50%, the CV says 30%.", 3, " "]}])
+    first, = stories_cmd._draft_stories_core("Cut it by half.", profile_dir=env.profile_dir)["stories"]
     assert first["conflicts"] == ["The text says 50%, the CV says 30%."] and first["missing"] == []
+    _model(monkeypatch, [{**OTHER, "context": "", "conflicts": "not a list"}])
+    second, = stories_cmd._draft_stories_core("I ran it.", profile_dir=env.profile_dir)["stories"]
     assert second["conflicts"] == [] and second["missing"] == ["context"]
 
 
