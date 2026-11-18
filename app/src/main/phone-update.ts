@@ -65,19 +65,41 @@ export async function stopForUpdate(deps: PhoneUpdateDeps): Promise<void> {
   await Promise.all([stopPhoneForUpdate(deps), stopStyleBuildForUpdate(deps)])
 }
 
-export async function restorePhoneAfterUpdate(deps: PhoneUpdateDeps): Promise<void> {
-  if (!deps.fs.exists(deps.markerPath)) return
-  // Removed first: one try per update, never a retry at every start.
-  try {
-    deps.fs.remove(deps.markerPath)
-  } catch (e) {
-    deps.log(`removing the phone restart marker failed: ${message(e)}`)
+// A first start after a hand install may wait for the server's cold start and a data migration (DoorServer allows 30 s).
+const START_CHECK_MS = 60_000
+
+// At the app's start (#77, #109): an update left a marker, so a Tailscale server is started again with the new version;
+// or no marker, and a live server of an older version (a hand install, which stops nothing) is replaced the same way.
+// A quick tunnel is only stopped (its address changes anyway). `phone_start` replaces an outdated server itself.
+export async function restorePhoneAtStart(deps: PhoneUpdateDeps): Promise<void> {
+  const marked = deps.fs.exists(deps.markerPath)
+  if (marked) {
+    // Removed first: one try per update, never a retry at every start.
+    try {
+      deps.fs.remove(deps.markerPath)
+    } catch (e) {
+      deps.log(`removing the phone restart marker failed: ${message(e)}`)
+    }
   }
   try {
-    const out = (await deps.call('phone_start', { connection: 'tailscale' }, START_TIMEOUT_MS)) as { error?: string; needs?: string } | undefined
-    if (out?.error) deps.log(`starting the phone server after an update failed: ${out.error}`)
-    else if (out?.needs) deps.log(`starting the phone server after an update needs: ${out.needs}`)
+    let restart = marked
+    if (!marked) {
+      const status = (await bounded(deps.call('phone_status', {}), deps.timeoutMs ?? START_CHECK_MS)) as
+        | { running?: boolean; outdated?: boolean; connection?: string }
+        | undefined
+      if (!status?.running || !status.outdated) return
+      if (status.connection !== 'tailscale') {
+        await bounded(deps.call('phone_stop', {}), deps.timeoutMs ?? START_CHECK_MS)
+        return
+      }
+      restart = true
+    }
+    if (restart) {
+      const out = (await deps.call('phone_start', { connection: 'tailscale' }, START_TIMEOUT_MS)) as { error?: string; needs?: string } | undefined
+      if (out?.error) deps.log(`starting the phone server after an update failed: ${out.error}`)
+      else if (out?.needs) deps.log(`starting the phone server after an update needs: ${out.needs}`)
+    }
   } catch (e) {
-    deps.log(`starting the phone server after an update failed: ${message(e)}`)
+    deps.log(`restoring the phone server at start failed: ${message(e)}`)
   }
 }

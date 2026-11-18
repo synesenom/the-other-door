@@ -284,8 +284,9 @@ def test_a_page_that_does_not_load_is_a_print_error(fake, tmp_path):
 def test_a_pdf_that_cannot_be_written_is_a_print_error(fake, tmp_path):
     folder = tmp_path / "work"
     folder.mkdir()
+    (tmp_path / "a-file").write_text("", encoding="utf-8")
     with pytest.raises(PrintError, match="printing failed"):
-        html_pdf.print_html(folder, "<p/>", tmp_path / "no-such-dir" / "out.pdf", launcher=fake.launcher)
+        html_pdf.print_html(folder, "<p/>", tmp_path / "a-file" / "out.pdf", launcher=fake.launcher)
     _cleaned(fake)
 
 

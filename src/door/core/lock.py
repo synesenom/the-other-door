@@ -37,7 +37,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import progress, workspace
+from door.core import progress, utils, workspace
 
 _LOCK_NAME = ".lock"
 _INFO_NAME = ".lock.json"
@@ -252,7 +252,7 @@ def ledger_lock(jobs_dir: Path, purpose: str):
                 "started_at": datetime.now(timezone.utc).isoformat(),
             }
             try:
-                (jobs_dir / _INFO_NAME).write_text(json.dumps(info), encoding="utf-8")
+                utils.write_atomic(jobs_dir / _INFO_NAME, json.dumps(info))
             except BaseException:
                 _os_unlock(fh)
                 fh.close()

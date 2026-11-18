@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from door import version as door_version
 from door.core.phone import pairing
 from door.core.phone import phone
 from door.core.downloads import pinned as pinned_mod
@@ -257,3 +258,57 @@ def test_remove_takes_a_phone_away(tmp_path):
     assert phone.remove(tmp_path, "Pixel") == {"removed": "Pixel"}
     assert pairing.devices(tmp_path) == []
     assert "error" in phone.remove(tmp_path, "Pixel")
+
+
+def _old_server(tmp_path, w, connection, version="0.1.0"):
+    w.alive.add(7)
+    run = {"serve_pid": 7, "port": 8765, "connection": connection, "address": "https://x", "started_at": "2026-01-01T00:00:00"}
+    if version:
+        run["version"] = version
+    (tmp_path / ".serve").mkdir(exist_ok=True)
+    (tmp_path / ".serve" / "run.json").write_text(json.dumps(run))
+
+
+@pytest.mark.parametrize("version,outdated", [("0.1.0", True), (None, True), ("current", False)])
+def test_status_says_a_live_server_of_another_version_is_outdated_and_changes_nothing(tmp_path, version, outdated):
+    w = World(tmp_path)
+    _old_server(tmp_path, w, "cloudflare", door_version.VERSION if version == "current" else version)
+    out = phone.status(tmp_path, **deps(w, tmp_path))
+    assert out["running"] is True and out["outdated"] is outdated
+    assert w.killed == [] and w.spawned == []
+
+
+@pytest.mark.parametrize("version", ["0.1.0", None])
+def test_start_replaces_a_running_server_of_another_version(tmp_path, version):
+    w = World(tmp_path)
+    _old_server(tmp_path, w, "cloudflare", version)
+    out = phone.start(tmp_path, "cloudflare", **deps(w, tmp_path))
+    assert 7 in w.killed and out["running"] is True and out["outdated"] is False
+    assert json.loads((tmp_path / ".serve" / "run.json").read_text())["version"] == door_version.VERSION
+
+
+def test_start_keeps_a_running_server_of_the_same_version(tmp_path):
+    w = World(tmp_path)
+    _old_server(tmp_path, w, "cloudflare", door_version.VERSION)
+    out = phone.start(tmp_path, "cloudflare", **deps(w, tmp_path))
+    assert out["running"] is True and w.killed == [] and w.spawned == []
+
+
+def test_two_starts_at_once_spawn_one_server(tmp_path):
+    import threading
+
+    w = World(tmp_path)
+    d = deps(w, tmp_path)
+    gate = threading.Event()
+    slow = d["answers"]
+
+    def answers(url):
+        gate.wait(0.3)  # the first start is still waiting for its server when the second one comes
+        return slow(url)
+
+    d["answers"] = answers
+    out = []
+    threads = [threading.Thread(target=lambda: out.append(phone.start(tmp_path, "cloudflare", **d))) for _ in range(2)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert len([s for s in w.spawned if "serve" in s["argv"]]) == 1

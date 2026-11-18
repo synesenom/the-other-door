@@ -41,7 +41,7 @@ from typing import Callable
 
 from door import version as app_version
 from door.core import lock as lock_mod
-from door.core import problem_log, usage, workspace
+from door.core import problem_log, usage, utils, workspace
 from door.core.downloads import pinned
 
 VERSION_FILE = ".data_version"
@@ -193,7 +193,7 @@ def _templates_from_code(profile_dir: Path) -> None:
     if dropped:
         for key in dropped:
             del config[key]
-        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+        utils.write_json_atomic(config_path, config)
 
 
 PROFILE_STEPS: list[Step] = [
@@ -376,7 +376,7 @@ def upgrade_folder(folder: Path, steps: list[Step], *, backups_dir: Path, label:
     if compare(have, want) != "upgrade":
         return False
     backup = _backup(folder, Path(backups_dir), label, have, want)
-    (folder / MARKER).write_text(str(backup), encoding="utf-8")  # a kill from here on is undone at the next start
+    utils.write_atomic(folder / MARKER, str(backup))  # a kill from here on is undone at the next start
     ran = ""
     try:
         for step in steps[have.n:]:

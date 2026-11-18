@@ -2,7 +2,6 @@
 
 import json
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -11,7 +10,7 @@ import click
 
 from door import i18n
 from door.commands import _prompts
-from door.core import workspace
+from door.core import utils, workspace
 from door.core.employers import companies as companies_mod
 from door.core.employers import discovery_sources
 from door.core import migrations, profile_loader
@@ -55,7 +54,7 @@ def _copy_missing_example_files(example_dir: Path, profile_dir: Path) -> list[st
         if dest.exists():
             continue
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
+        utils.write_atomic(dest, src.read_bytes())
         copied.append(str(rel))
     return copied
 
@@ -893,7 +892,7 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
 
     config_path = profile_dir / "config.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+    utils.write_json_atomic(config_path, merged)
     disclaimers = [
         {"key": s["key"], "text": s["disclaimer"]}
         for s in map(discovery_sources.info, discovery_sources.SOURCES)

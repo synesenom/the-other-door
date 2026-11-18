@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { quitStep, restorePhoneAfterUpdate, stopForUpdate, stopPhoneForUpdate, stopStyleBuildForUpdate } from './phone-update'
+import { quitStep, restorePhoneAtStart, stopForUpdate, stopPhoneForUpdate, stopStyleBuildForUpdate } from './phone-update'
 
 function setup(calls: Record<string, (args: any) => unknown>, marker = false) {
   const files = new Set<string>(marker ? ['/m'] : [])
@@ -109,17 +109,18 @@ describe('stopForUpdate', () => {
   })
 })
 
-describe('restorePhoneAfterUpdate', () => {
+describe('restorePhoneAtStart: after an update', () => {
   it('starts Tailscale again and removes the marker', async () => {
     const s = setup({ phone_start: () => ({ running: true }) }, true)
-    await restorePhoneAfterUpdate(s.deps)
+    await restorePhoneAtStart(s.deps)
     expect(s.call).toHaveBeenCalledWith('phone_start', { connection: 'tailscale' }, 300_000)
     expect(s.files.has('/m')).toBe(false)
   })
   it('does nothing without a marker', async () => {
-    const s = setup({})
-    await restorePhoneAfterUpdate(s.deps)
-    expect(s.call).not.toHaveBeenCalled()
+    const s = setup({ phone_status: () => ({ running: false }) })
+    await restorePhoneAtStart(s.deps)
+    expect(s.call).not.toHaveBeenCalledWith('phone_start', expect.anything(), expect.anything())
+    expect(s.call).not.toHaveBeenCalledWith('phone_stop', {})
   })
   it.each([
     ['needs', () => ({ needs: 'sign_in', link: 'x' })],
@@ -132,20 +133,20 @@ describe('restorePhoneAfterUpdate', () => {
     ],
   ])('logs %s and still removes the marker', async (_n, f) => {
     const s = setup({ phone_start: f }, true)
-    await restorePhoneAfterUpdate(s.deps)
+    await restorePhoneAtStart(s.deps)
     expect(s.log).toHaveBeenCalled()
     expect(s.files.has('/m')).toBe(false)
   })
   it('removes the marker before starting, so a start that never ends is not retried', async () => {
     const s = setup({ phone_start: () => new Promise(() => undefined) }, true)
-    void restorePhoneAfterUpdate(s.deps)
+    void restorePhoneAtStart(s.deps)
     await Promise.resolve()
     expect(s.files.has('/m')).toBe(false)
   })
   it('waits for a slow start as long as the window would, and logs nothing on success', async () => {
     vi.useFakeTimers()
     const s = setup({ phone_start: () => new Promise((r) => setTimeout(() => r({ running: true }), 60_000)) }, true)
-    const p = restorePhoneAfterUpdate(s.deps)
+    const p = restorePhoneAtStart(s.deps)
     await vi.advanceTimersByTimeAsync(60_000)
     await p
     expect(s.call).toHaveBeenCalledWith('phone_start', { connection: 'tailscale' }, 300_000)
@@ -162,5 +163,44 @@ describe('quitStep', () => {
   })
   it('proceeds once they are stopped, so quitting again does not loop', () => {
     expect(quitStep({ installsOnQuit: true, stopped: true })).toBe('proceed')
+  })
+})
+
+describe('restorePhoneAtStart: an older version left a server', () => {
+  const old = (connection: string) => ({ phone_status: () => ({ running: true, outdated: true, connection }), phone_stop: () => ({ stopped: true }), phone_start: () => ({ running: true }) })
+  it('stops an outdated server and starts Tailscale again', async () => {
+    const s = setup(old('tailscale'))
+    await restorePhoneAtStart(s.deps)
+    expect(s.call).toHaveBeenCalledWith('phone_start', { connection: 'tailscale' }, 300_000)
+    expect(s.call).not.toHaveBeenCalledWith('phone_stop', {})
+  })
+  it('leaves a quick tunnel stopped', async () => {
+    const s = setup(old('cloudflare'))
+    await restorePhoneAtStart(s.deps)
+    expect(s.call).toHaveBeenCalledWith('phone_stop', {})
+    expect(s.call).not.toHaveBeenCalledWith('phone_start', expect.anything(), expect.anything())
+  })
+  it('leaves a current server, and a stopped one alone', async () => {
+    for (const calls of [
+      { phone_status: () => ({ running: true, outdated: false, connection: 'tailscale' }) },
+      { phone_status: () => ({ running: false, outdated: true }) },
+    ]) {
+      const s = setup({ ...calls })
+      await restorePhoneAtStart(s.deps)
+      expect(s.call).not.toHaveBeenCalledWith('phone_stop', {})
+    }
+  })
+  it('logs a failed restart', async () => {
+    const s = setup({ ...old('tailscale'), phone_start: () => ({ error: 'nope' }) })
+    await restorePhoneAtStart(s.deps)
+    expect(s.log).toHaveBeenCalled()
+  })
+  it('acts on a first answer that is slow, as a cold start with a migration is', async () => {
+    vi.useFakeTimers()
+    const s = setup({ ...old('cloudflare'), phone_status: () => new Promise((r) => setTimeout(() => r({ running: true, outdated: true, connection: 'cloudflare' }), 40_000)) })
+    const p = restorePhoneAtStart({ ...s.deps, timeoutMs: undefined })
+    await vi.advanceTimersByTimeAsync(40_000)
+    await p
+    expect(s.call).toHaveBeenCalledWith('phone_stop', {})
   })
 })

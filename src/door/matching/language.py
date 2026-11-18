@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Callable
 
 from door import i18n
-from door.core import claude_cli, usage
+from door.core import claude_cli, usage, utils
 from door.core.downloads import installers
 from door.matching import scorer
 
@@ -125,7 +125,7 @@ def _load(path: Path) -> dict | None:
 
 def _save(path: Path, data: dict) -> None:
     try:
-        Path(path).write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+        utils.write_json_atomic(Path(path), data)
     except OSError:
         pass
 

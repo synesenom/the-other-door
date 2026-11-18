@@ -13,7 +13,7 @@ import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
 import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
-import { quitStep, restorePhoneAfterUpdate, stopForUpdate, type PhoneUpdateDeps } from './phone-update'
+import { quitStep, restorePhoneAtStart, stopForUpdate, type PhoneUpdateDeps } from './phone-update'
 import { createProblemLog } from './problem-log'
 import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest, resolveStylePreviewRequest } from './protocol'
 import { createPhotoFile } from './photo-file'
@@ -245,7 +245,7 @@ app.whenReady().then(() => {
       : {}),
   })
   createWindow()
-  if (!simulated && mode !== 'none') void restorePhoneAfterUpdate(phoneDeps())
+  if (!simulated && mode !== 'none') void restorePhoneAtStart(phoneDeps())
   if (mode !== 'none') checkEvery(updates, CHECK_EVERY_MS) // at start and once a day; never waits, never throws
   // Start the server now so the first screen does not wait for Python.
   void server.listTools().catch(() => undefined)

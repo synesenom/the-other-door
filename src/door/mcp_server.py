@@ -52,6 +52,7 @@ import threading
 from pathlib import Path
 
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import TextContent
 
 from door import i18n
@@ -154,6 +155,7 @@ class _DoorMCP(FastMCP):
             refusal = _data_refusal(name)
         if refusal is not None:  # logged once, by the upgrade, not at every call
             return [TextContent(type="text", text=json.dumps({"error": refusal}, indent=2))]
+        self._refuse_unknown_arguments(name, arguments)  # the caller fixes it from the refusal: not a failure to log
         try:
             result = await super().call_tool(name, arguments)
         except Exception as exc:
@@ -161,6 +163,16 @@ class _DoorMCP(FastMCP):
             raise
         _log_answer(name, _answer_of(result))
         return result
+
+    def _refuse_unknown_arguments(self, name, arguments) -> None:
+        """FastMCP's argument model drops a key it does not know; a misnamed one must fail, not take the default (#268)."""
+        tool = self._tool_manager.get_tool(name)
+        if tool is None:
+            return
+        known = set(tool.parameters.get("properties", {}))  # the inputSchema clients read
+        unknown = sorted(k for k in arguments or {} if k not in known)
+        if unknown:
+            raise ToolError(f"{name} takes no argument {', '.join(repr(k) for k in unknown)}")
 
 
 mcp = _DoorMCP("door")
@@ -498,7 +510,7 @@ def phone_status() -> dict:
         ``{"running", "devices", "web_built", "tailscale_installed"}``, plus
         ``"connection"`` (cloudflare or tailscale), ``"address"``, ``"port"`` and
         ``"lasting"`` (Tailscale's address never changes; a quick tunnel's does)
-        while it runs.
+        while it runs, and ``"outdated"`` (started by another version of the app).
     """
     from door.core.phone import phone
 

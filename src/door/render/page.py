@@ -5,12 +5,11 @@ body through this module.
 """
 
 import re
-import shutil
 from pathlib import Path
 
 from door import i18n
 from door.core import photo as photo_mod
-from door.core import templates, workspace
+from door.core import templates, utils, workspace
 from door.render import html_doc, html_pdf, typography
 
 # The CV photo (#605): the tailor writes `<<photo>>` where it wants one. After the guard has read the body, `compile`
@@ -44,7 +43,7 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
     if source is None:
         return body.replace(_PHOTO_TOKEN, ""), None
     name = PHOTO_FILES[photo_mod.kind(source.read_bytes()[:16])]
-    shutil.copyfile(source, output_dir / name)
+    utils.write_atomic(output_dir / name, source.read_bytes())
     first, _, rest = body.partition(_PHOTO_TOKEN)
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 

@@ -819,3 +819,15 @@ def test_sync_data_settles_a_both_sides_change_the_way_asked(tmp_path, monkeypat
 
     assert server.sync_data(**{keep: True})["action"] == action
     assert (jobs / "mine.json").exists() is mine_kept
+
+
+def test_a_tool_call_with_an_unknown_argument_is_refused():
+    """#268: a misnamed argument is an error naming it, not the default applied."""
+
+    async def go():
+        async with mcp_client.create_connected_server_and_client_session(door_mcp) as client:
+            return await client.call_tool("list_stories", {"bogus": 1})
+
+    result = asyncio.run(go())
+    assert result.isError
+    assert "bogus" in result.content[0].text

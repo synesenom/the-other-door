@@ -115,18 +115,18 @@ def test_stale_lock_info_from_a_dead_process_is_taken_over(tmp_path):
 
 
 def test_a_failed_info_write_releases_the_lock(tmp_path, monkeypatch):
-    real_write = Path.write_text
+    real_write = lock_mod.utils.write_atomic
 
-    def failing_write(self, *args, **kwargs):
-        if self.name == ".lock.json":
+    def failing_write(path, *args, **kwargs):
+        if Path(path).name == ".lock.json":
             raise OSError("disk full")
-        return real_write(self, *args, **kwargs)
+        return real_write(path, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "write_text", failing_write)
+    monkeypatch.setattr(lock_mod.utils, "write_atomic", failing_write)
     with pytest.raises(OSError, match="disk full"):
         with ledger_lock(tmp_path, "run"):
             pass
-    monkeypatch.setattr(Path, "write_text", real_write)
+    monkeypatch.setattr(lock_mod.utils, "write_atomic", real_write)
     assert lock_mod._held_depth(tmp_path) == 0
     with ledger_lock(tmp_path, "set_status"):
         pass

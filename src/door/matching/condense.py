@@ -40,6 +40,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from door.core import utils
 from door import i18n
 
 # ---------------------------------------------------------------------------
@@ -340,7 +341,7 @@ def condense_postings(
         )
         data["description_condensed"] = condensed
         try:
-            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+            utils.write_json_atomic(path, data)
         except OSError:
             continue
 

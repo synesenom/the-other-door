@@ -152,7 +152,7 @@ class TestWriteAtomic:
             write_atomic(tmp_path / "f.txt", 5)  # type: ignore[arg-type]
         assert list(tmp_path.iterdir()) == []
 
-    def test_new_file_follows_the_umask(self, tmp_path):
+    def test_new_file_follows_the_umask(self, tmp_path, monkeypatch):
         import os
         import stat
         import sys
@@ -161,12 +161,22 @@ class TestWriteAtomic:
 
         if sys.platform == "win32":
             pytest.skip("POSIX modes")
-        old = os.umask(0o077)
-        try:
-            write_atomic(tmp_path / "n.json", "{}")
-        finally:
-            os.umask(old)
+        from door.core import utils
+
+        monkeypatch.setattr(utils, "_UMASK", 0o077)
+        write_atomic(tmp_path / "n.json", "{}")
         assert stat.S_IMODE((tmp_path / "n.json").stat().st_mode) == 0o600
+
+    def test_a_write_never_touches_the_process_umask(self, tmp_path, monkeypatch):
+        import os
+
+        from door.core import utils
+
+        def no(*_a):
+            raise AssertionError("os.umask called during a write")
+
+        monkeypatch.setattr(os, "umask", no)
+        utils.write_atomic(tmp_path / "new.txt", "x")
 
     def test_mode_over_an_existing_file_wins(self, tmp_path):
         import os

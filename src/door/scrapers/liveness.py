@@ -22,7 +22,7 @@ from pathlib import Path
 
 import requests.exceptions
 
-from door.core import progress
+from door.core import progress, utils
 from door.scrapers.http_client import PoliteSession
 
 # Phrases that, when found in the (lowercased) response body of a 200-family
@@ -161,10 +161,10 @@ def verify_liveness(paths: list[Path], config: dict) -> list[Path]:
         if status == "expired":
             data["score"] = 0.0
             data["score_reason"] = "expired"
-            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+            utils.write_json_atomic(path, data)
             progress.report("liveness: expired", i, len(paths), stage="liveness")
         else:
-            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+            utils.write_json_atomic(path, data)
             progress.report(f"liveness: {status}", i, len(paths), stage="liveness")
             surviving.append(path)
 

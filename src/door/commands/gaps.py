@@ -16,7 +16,7 @@ from door.commands import _common as common
 from door.commands import _progress
 from door.commands import matches as matches_cmd
 from door.core import profile_loader
-from door.core import claude_cli, workspace
+from door.core import claude_cli, utils, workspace
 from door.core import progress as progress_mod
 from door.matching import integrity
 
@@ -174,7 +174,7 @@ def _skill_gaps_core(
     out_dir = workspace.UPSKILL_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
     report_path = out_dir / f"report-{today}.md"
-    report_path.write_text(report + "\n", encoding="utf-8")
+    utils.write_atomic(report_path, report + "\n")
     return {
         "report_path": str(report_path),
         "report": report + "\n",

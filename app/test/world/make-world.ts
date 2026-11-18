@@ -7,7 +7,8 @@ import { join, resolve } from 'node:path'
 import { buildWorld } from './build'
 
 const [persona = 'mette', ...flags] = process.argv.slice(2)
-const world = buildWorld({ persona, empty: flags.includes('--empty') })
+const homeName = flags.find((f) => f.startsWith('--home-name='))?.slice('--home-name='.length)
+const world = buildWorld({ persona, empty: flags.includes('--empty'), homeName })
 const sources = join(world.home, 'sources')
 mkdirSync(sources, { recursive: true })
 const cvFile = join(sources, `${persona}-cv.md`)
