@@ -86,6 +86,7 @@ ZERO_HIT_FIXTURES: dict[str, str] = {
     "arbetsformedlingen": "boards/fixtures/arbetsformedlingen/empty.json",
     "francetravail": "boards/fixtures/francetravail/search_empty.html",
     "choisirleservicepublic": "boards/fixtures/choisirleservicepublic/search_empty.html",
+    "globalnyt": {"posted_at_share": 0.8},                            # a 2025 leftover test post (/stilling/hej/) heads the list; a run drops it by max_age_days
     "kozigallas": "boards/fixtures/kozigallas/list_empty.html",
     "workable": "feeds/fixtures/workable/search_empty.json",
     "reliefweb": "boards/fixtures/reliefweb/empty.xml",
@@ -105,6 +106,7 @@ NO_ZERO_HIT: dict[str, str] = {
 #   description_min          shortest description counted (default 80)
 #   location                 False: skip the "not another country's" rule of a country board
 #   location_share           the share of local postings needed (default 0.9)
+#   posted_at_share          the share of plausible dates needed (default 0.9)
 #   posted_at_future_days    how far ahead a date may be (default 1)
 # "unverified: tune after a live run" marks a waiver no live run has confirmed; tighten it once one has.
 FIELD_EXCEPTIONS: dict[str, dict] = {
