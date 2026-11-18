@@ -568,7 +568,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 .cv-backdrop .md-added { color: transparent; }
 /* an added line is tinted as a whole row, 8 px past its text on both sides; the bullet inside the tint in the preview */
 .markdown li.md-added { position: relative; isolation: isolate; background: none; }
-.markdown li.md-added::before { content: ''; position: absolute; z-index: -1; inset: 0 calc(-1 * var(--space-2)) 0 calc(-1 * (var(--space-5) + var(--space-2)) + var(--space-3)); background: var(--color-accent-tint); border-radius: var(--radius-m); }
+.markdown li.md-added::before { content: ''; position: absolute; z-index: -1; inset: 0 calc(-1 * var(--space-2)) 0 calc(-1 * (var(--space-5) + var(--space-2))); background: var(--color-accent-tint); border-radius: var(--radius-m); }
 .markdown p.md-added, .cv-backdrop .md-added { margin-inline: calc(-1 * var(--space-2)); padding-inline: var(--space-2); }
 .cv-backdrop .md-added { display: inline-block; box-sizing: border-box; width: calc(100% + 2 * var(--space-2)); vertical-align: top; }
 /* what "Add … to my Master CV" just put in, tinted in the preview: the accent, faint, so it reads in both themes */
