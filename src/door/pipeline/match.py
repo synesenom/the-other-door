@@ -19,7 +19,7 @@ from door import pipeline
 from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
-from door.core import profile_loader
+from door.core import lock, profile_loader
 from door.core import companies as store
 from door.core import tracker as tracker_mod
 from door.core import workspace
@@ -84,7 +84,7 @@ def _run_passes(today: Path, jobs_dir: Path, config: dict, profile_dir: Path) ->
     return total
 
 
-@common._locked("match")
+@lock.locked("match")
 def _match_step_core(
     *, jobs_dir: Path | None = None, profile_dir: Path | None = None, progress=None,
 ) -> dict:

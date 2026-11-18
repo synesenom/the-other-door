@@ -20,7 +20,7 @@ from pathlib import Path, PurePosixPath
 import click
 
 from door.commands import _common as common
-from door.core import drive, migrations, sync, usage, utils, workspace
+from door.core import drive, lock, migrations, sync, usage, utils, workspace
 from door.core.lock import SyncConflict
 
 # Bump when the archive layout changes; `import` refuses a newer format.
@@ -100,7 +100,7 @@ def _is_within(path: Path, root: Path) -> bool:
 # --------------------------------------------------------------------------- #
 # export
 # --------------------------------------------------------------------------- #
-@common._locked("export")
+@lock.locked("export")
 def _export_core(
     path: Path | str | None = None,
     *,
@@ -277,7 +277,7 @@ def _path_warnings(config_path: Path) -> list[str]:
     return warnings
 
 
-@common._locked("import")
+@lock.locked("import")
 def _import_core(
     archive: Path | str,
     *,
@@ -462,7 +462,7 @@ def _connect_core(show_url=None) -> dict:
     return drive.connect(show_url=show_url)
 
 
-@common._locked("sync")
+@lock.locked("sync")
 def _sync_core(keep_local: bool = False, keep_drive: bool = False, *, jobs_dir: Path | None = None) -> dict:
     """Bring this computer and Google Drive level. Never prints.
 

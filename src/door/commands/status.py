@@ -22,7 +22,7 @@ from door.tailoring import facts as facts_mod
 _SHORT_AD_CHARS = 400
 
 
-@common._locked("set_status")
+@lock.locked("set_status")
 def _set_status_core(
     job_id: str,
     status: str,
@@ -748,7 +748,7 @@ def _since_last_review(
     }
 
 
-@common._locked("mark_reviewed")
+@lock.locked("mark_reviewed")
 def _mark_reviewed_core(jobs_dir: Path | None = None) -> dict:
     """Stamp `jobs/last_review.json` with now: the end of a review session.
 
@@ -769,7 +769,7 @@ def _mark_reviewed_core(jobs_dir: Path | None = None) -> dict:
     return {"reviewed_at": reviewed_at, "previous": previous}
 
 
-@common._locked("mark_seen")
+@lock.locked("mark_seen")
 def _mark_seen_core(job_ref: str, jobs_dir: Path | None = None) -> dict:
     """One match opened: it is no longer new (`jobs/last_review.json`'s ``seen``).
 

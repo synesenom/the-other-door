@@ -33,7 +33,7 @@ from pathlib import Path
 from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
-from door.core import profile_loader
+from door.core import lock, profile_loader
 from door.core import companies as store
 from door.core import utils, workspace
 from door.core.sites import FEED_SITES
@@ -130,7 +130,7 @@ def _stamp_problems(sites: list[dict], feeds: dict[str, list[str]], profile_dir:
         store.save(profile_dir, items)
 
 
-@common._locked("collect")
+@lock.locked("collect")
 def _collect_core(
     *, companies: list[str] | None = None, late: bool = False,
     jobs_dir: Path | None = None, profile_dir: Path | None = None, progress=None,

@@ -17,7 +17,7 @@ from pathlib import Path
 from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
-from door.core import profile_loader
+from door.core import lock, profile_loader
 from door.core import candidates, freshness, sites, utils, workspace
 from door.core import companies as store
 from door.core.sites import BOARDS
@@ -74,7 +74,7 @@ def _summary(block: dict) -> str:
     return text + (f", {block['failed']} failed" if block["failed"] else "")
 
 
-@common._locked("search")
+@lock.locked("search")
 def _search_core(
     *, boards: list[str] | None = None,
     jobs_dir: Path | None = None, profile_dir: Path | None = None, progress=None,

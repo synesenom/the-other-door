@@ -31,7 +31,7 @@ from pathlib import Path
 from door import pipeline
 from door.commands import _common as common
 from door.commands import companies as companies_cmd
-from door.core import profile_loader
+from door.core import lock, profile_loader
 from door.core import ats_detect, candidates, careers_ai, sites, wikidata, workspace
 from door.core import companies as store
 from door.core import progress as progress_mod
@@ -152,7 +152,7 @@ def _summary(block: dict) -> str:
     return ("would record " if block["dry_run"] and block["checked"] else "") + ", ".join(parts)
 
 
-@common._locked("follow")
+@lock.locked("follow")
 def _follow_core(
     *, dry_run: bool = False, probe: bool = True, late: bool = False, jobs_dir: Path | None = None,
     profile_dir: Path | None = None, progress=None,

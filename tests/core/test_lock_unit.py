@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from cli_utils import CaptureReporter
 from door.core import lock as lock_mod
 from door.core.lock import LockHeldError, ledger_lock, lock_holder
 from paths import SRC_DIR
@@ -310,3 +311,20 @@ def test_held_tells_a_free_file_from_one_another_handle_holds(tmp_path):
             with lock_mod.hold(path, 0):
                 pass
     assert lock_mod.held(path) is False
+
+
+def test_locked_activates_progress_and_attaches_progress_file(tmp_path):
+    seen = {}
+
+    @lock_mod.locked("toy")
+    def core(*, jobs_dir=None, progress=None):
+        from door.core import progress as p
+
+        p.report("working", 1, 2)
+        seen["file"] = json.loads((jobs_dir / ".progress.json").read_text())
+
+    cap = CaptureReporter()
+    core(jobs_dir=tmp_path, progress=cap)
+    assert [e.message for e in cap.events] == ["working"]
+    assert seen["file"]["message"] == "working"
+    assert not (tmp_path / ".progress.json").exists()
