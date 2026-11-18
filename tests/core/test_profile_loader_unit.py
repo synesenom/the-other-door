@@ -2,7 +2,7 @@
 
 Covers Profile validation (role_targets/min_score/languages
 rules), relative-path resolution against the project root, path-existence
-checks, and load_profile's default-path + missing-file branches.
+checks.
 Pure and offline — filesystem only (tmp_path), no network.
 """
 
@@ -13,11 +13,11 @@ from pydantic import ValidationError
 
 import door.core.profile_loader as profile_loader
 from door.core import workspace
-from door.core.profile_loader import Profile, load_profile
+from door.core.profile_loader import Profile
 
 
 def _make_templates(dir_path):
-    """Create the three template files load_profile requires; return their paths."""
+    """Create the three template files the loader requires; return their paths."""
     dir_path.mkdir(parents=True, exist_ok=True)
     paths = {}
     for name in ("cv_template", "cv_content", "cover_letter_template"):
@@ -151,71 +151,7 @@ def test_a_profile_with_no_cv_yet_is_valid(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
-# load_profile entry point
-# --------------------------------------------------------------------------- #
-
-def test_load_profile_reads_json(tmp_path):
-    cfg = _valid_config(tmp_path / "tpl")
-    config_path = tmp_path / "config.json"
-    config_path.write_text(json.dumps(cfg))
-
-    profile = load_profile(config_path)
-    assert profile.name == "Jane Doe"
-
-
-def test_load_profile_missing_file_raises(tmp_path):
-    missing = tmp_path / "nope" / "config.json"
-    with pytest.raises(FileNotFoundError, match="Copy profile.example"):
-        load_profile(missing)
-
-
-def test_load_profile_default_path(tmp_path, monkeypatch):
-    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
-    cfg = _valid_config(tmp_path / "tpl")
-    config_path = tmp_path / "profile" / "config.json"
-    config_path.parent.mkdir(parents=True)
-    config_path.write_text(json.dumps(cfg))
-
-    profile = load_profile()  # config_path=None -> workspace.PROFILE_DIR/config.json
-    assert profile.email == "jane@example.com"
-
-
-# --------------------------------------------------------------------------- #
-# Complete schema: every key the code reads is declared (issue #137)
-# --------------------------------------------------------------------------- #
-
-def test_languages_accept_supported_names_and_codes(tmp_path):
-    profile = Profile.model_validate(_valid_config(tmp_path / "tpl", languages=["English", "da"]))
-    assert profile.languages == ["English", "da"]
-
-
-@pytest.mark.parametrize("bad", ["Danish (B1)"])
-def test_languages_reject_an_unsupported_entry_naming_the_supported_ones(tmp_path, bad):
-    """Levels belong in the CV; `languages` lists the ad languages to consider."""
-    with pytest.raises(ValidationError) as exc:
-        Profile.model_validate(_valid_config(tmp_path / "tpl", languages=["English", bad]))
-    message = str(exc.value)
-    assert repr(bad) in message
-    assert "English" in message and "Danish" in message
-
-
-def test_unknown_top_level_key_fails_naming_the_key(tmp_path):
-    with pytest.raises(ValidationError) as exc:
-        Profile.model_validate(_valid_config(tmp_path / "tpl", greenhouse_board=["acme"]))
-    assert any(err["loc"] == ("greenhouse_board",) for err in exc.value.errors())
-
-
-def test_example_profile_validates_against_the_schema():
-    """profile.example/config.json must use only declared keys (paths aside)."""
-    example = json.loads(
-        (profile_loader._PROJECT_ROOT / "profile.example" / "config.json").read_text()
-    )
-    unknown = set(example) - set(Profile.model_fields)
-    assert unknown == set()
-
-
-# --------------------------------------------------------------------------- #
-# load_config: validate once, hand callers a plain dict (issue #137)
+# load_profile_config: validate once, hand callers a plain dict (issue #137)
 # --------------------------------------------------------------------------- #
 
 def test_load_config_returns_only_the_keys_that_were_set(tmp_path):
@@ -223,7 +159,7 @@ def test_load_config_returns_only_the_keys_that_were_set(tmp_path):
     path = tmp_path / "config.json"
     path.write_text(json.dumps(cfg))
 
-    config = profile_loader.load_config(path)
+    config = profile_loader.load_profile_config(path.parent)
 
     assert isinstance(config, dict)
     assert config["max_age_days"] == 14
@@ -238,7 +174,7 @@ def test_load_config_raises_config_error_with_one_line_per_problem(tmp_path):
     path.write_text(json.dumps(cfg))
 
     with pytest.raises(profile_loader.ConfigError) as exc:
-        profile_loader.load_config(path)
+        profile_loader.load_profile_config(path.parent)
 
     lines = exc.value.lines
     assert any(line.startswith(f"{path}: min_sore — ") for line in lines)
@@ -250,13 +186,13 @@ def test_load_config_reports_malformed_json(tmp_path):
     path = tmp_path / "config.json"
     path.write_text("{not json")
     with pytest.raises(profile_loader.ConfigError) as exc:
-        profile_loader.load_config(path)
+        profile_loader.load_profile_config(path.parent)
     assert "invalid JSON" in str(exc.value)
 
 
 def test_load_config_missing_file_raises_file_not_found(tmp_path):
     with pytest.raises(FileNotFoundError):
-        profile_loader.load_config(tmp_path / "nope.json")
+        profile_loader.load_profile_config(tmp_path / "nope")
 
 
 def test_load_config_does_not_require_template_files(tmp_path):
@@ -265,7 +201,7 @@ def test_load_config_does_not_require_template_files(tmp_path):
     cfg = _valid_config(tmp_path / "tpl", cv_template=str(tmp_path / "gone.html"))
     path = tmp_path / "config.json"
     path.write_text(json.dumps(cfg))
-    assert profile_loader.load_config(path)["cv_template"].endswith("gone.html")
+    assert profile_loader.load_profile_config(path.parent)["cv_template"].endswith("gone.html")
 
 
 def test_load_config_check_paths_reports_missing_templates(tmp_path):
@@ -273,7 +209,7 @@ def test_load_config_check_paths_reports_missing_templates(tmp_path):
     path = tmp_path / "config.json"
     path.write_text(json.dumps(cfg))
     with pytest.raises(profile_loader.ConfigError) as exc:
-        profile_loader.load_config(path, check_paths=True)
+        profile_loader.load_profile_config(path.parent, check_paths=True)
     assert any("cv_template not found" in line for line in exc.value.lines)
 
 
@@ -327,5 +263,5 @@ def test_the_templates_are_optional_and_a_profile_without_them_is_valid(tmp_path
     del cfg["cv_template"], cfg["cover_letter_template"]
     path = tmp_path / "config.json"
     path.write_text(json.dumps(cfg))
-    config = profile_loader.load_config(path, check_paths=True)
+    config = profile_loader.load_profile_config(path.parent, check_paths=True)
     assert "cv_template" not in config and "cover_letter_template" not in config

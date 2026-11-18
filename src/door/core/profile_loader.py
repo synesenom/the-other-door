@@ -4,7 +4,7 @@
 `Profile` declares every key the pipeline reads from the config (issue
 #137) and forbids unknown ones, so a typo such as ``min_sore`` or
 ``greenhouse_board`` fails at load time with the key named instead of being
-silently ignored at scrape time. `load_config` is the entrypoint the CLI and
+silently ignored at scrape time. `load_profile_config` is the entrypoint the CLI and
 MCP cores use: validate once, then hand callers the plain dict they have
 always received.
 """
@@ -164,7 +164,7 @@ class Profile(BaseModel):
 
     @model_validator(mode="after")
     def _paths_exist(self, info: ValidationInfo) -> "Profile":
-        # `load_config(check_paths=False)` skips this: the batch commands never
+        # `load_profile_config(check_paths=False)` skips this: the batch commands never
         # read the templates, so a missing one must not stop a `find`.
         # The CV is not checked: no CV is "no CV yet" (`init` never copies the example's),
         # and the commands that read it say so themselves.
@@ -194,18 +194,6 @@ def read_config_data(config_path: Path) -> dict:
         raise ConfigError([f"{config_path}: invalid JSON — {exc}"]) from None
 
 
-def load_profile(config_path: Path | None = None) -> Profile:
-    if config_path is None:
-        config_path = workspace.PROFILE_DIR / "config.json"
-    config_path = Path(config_path)
-    if not config_path.exists():
-        raise FileNotFoundError(
-            f"Profile config not found: {config_path}\n"
-            "Copy profile.example/ to profile/ and fill in your details."
-        )
-    return Profile.model_validate(read_config_data(config_path))
-
-
 def format_validation_error(exc: ValidationError, config_path: Path | str) -> list[str]:
     """One ``<path>: <dotted.key> — <message>`` line per pydantic error."""
     lines = []
@@ -216,18 +204,8 @@ def format_validation_error(exc: ValidationError, config_path: Path | str) -> li
     return lines
 
 
-def load_profile_config(profile_dir: Path) -> dict:
-    """Validate `profile_dir/config.json` against `Profile`; return it as a dict.
-
-    Raises:
-        FileNotFoundError: the file does not exist.
-        ConfigError: it is not valid JSON or fails the schema (issue #137).
-    """
-    return load_config(profile_dir / "config.json")
-
-
 def load_config_or_defaults(profile_dir: Path) -> dict:
-    """Like `load_config` of `profile_dir/config.json`, but a missing file means "all defaults".
+    """Like `load_profile_config`, but a missing file means "all defaults".
 
     For read-only views over `jobs/` (`list`, `status`, `prepare` without a job) that work on
     a fresh clone before `init`. A config that exists but is invalid still
@@ -239,8 +217,8 @@ def load_config_or_defaults(profile_dir: Path) -> dict:
         return {}
 
 
-def load_config(config_path: Path, check_paths: bool = False) -> dict:
-    """Validate ``config_path`` against `Profile`; return it as a plain dict.
+def load_profile_config(profile_dir: Path, check_paths: bool = False) -> dict:
+    """Validate ``profile_dir/config.json`` against `Profile`; return it as a plain dict.
 
     Keys, types and ranges are always checked. Whether the template/CV files
     exist is only checked with ``check_paths=True`` (`doctor`'s profile check):
@@ -252,10 +230,10 @@ def load_config(config_path: Path, check_paths: bool = False) -> dict:
     receiving the ``scrape(config: dict)`` shape they always have.
 
     Raises:
-        FileNotFoundError: ``config_path`` does not exist.
+        FileNotFoundError: ``profile_dir/config.json`` does not exist.
         ConfigError: the file is not valid JSON or fails validation.
     """
-    config_path = Path(config_path)
+    config_path = Path(profile_dir) / "config.json"
     if not config_path.exists():
         raise FileNotFoundError(f"profile/config.json not found: {config_path}")
     data = read_config_data(config_path)

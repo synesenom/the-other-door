@@ -76,11 +76,11 @@ def _data_file(path: Path, relative: str) -> str:
 
 
 def check_profile(profile_dir: Path) -> dict:
-    from door.core.profile_loader import ConfigError, load_config
+    from door.core.profile_loader import ConfigError, load_profile_config
 
     path = Path(profile_dir) / "config.json"
     try:
-        load_config(path, check_paths=True)
+        load_profile_config(profile_dir, check_paths=True)
     except FileNotFoundError:
         return _check("profile", False, f"{path} not found", "./door init")
     except ConfigError as exc:

@@ -16,7 +16,7 @@ from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
 from door.core import chromium, templates, tracker, workspace
-from door.core.profile_loader import load_config
+from door.core.profile_loader import load_profile_config
 from cli_utils import result_text
 from paths import REPO_ROOT
 
@@ -59,7 +59,7 @@ def test_like_moves_the_candidate_in_and_sets_both_keys_relative_to_the_home(hom
     assert result["in_use"] == "like"
     assert (cli_env.profile_dir / "style" / "mark.txt").read_text() == "new" and not (cli_env.profile_dir / "style.next").exists()
     assert _keys(cli_env) == IN_USE
-    config = load_config(cli_env.profile_dir / "config.json")
+    config = load_profile_config(cli_env.profile_dir)
     assert templates.resolve("cv_template", config).resolve() == (cli_env.profile_dir / "style" / CV).resolve()
 
 
