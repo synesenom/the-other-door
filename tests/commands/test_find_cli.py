@@ -250,6 +250,7 @@ def test_the_summary_names_the_failed_boards(cli_env, monkeypatch):
     collect = {**blocks["collect"], "sites": [{"site": "thehub", "outcome": "failed", "count": 0, "errors": ["x"]}]}
     stub_steps(monkeypatch, cli_env.jobs_dir, search=search, collect=collect)
     record = run_core(cli_env)
+    assert record["failures"] == ["thehub"]
     assert "1 failures (thehub)," in find_cmd._format_run_summary(record, 0.65)
     [line] = (cli_env.jobs_dir / "runs" / "latest.log").read_text().splitlines()
     assert " failed " in line and "1 failures (thehub)," in line

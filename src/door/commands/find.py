@@ -48,7 +48,7 @@ def _format_run_summary(record: dict, min_score: float) -> str:
     dt = datetime.fromisoformat(record["started_at"])
     ts = dt.strftime("%Y-%m-%dT%H:%M")
     new_count = len(record["new_above_threshold"])
-    sites = list(dict.fromkeys(_failed_sites(record)))  # a board can fail in search and collect
+    sites = _failed_sites(record)
     unscored = len((record.get("match") or {}).get("failed") or [])  # job ids: counted, not named
     n_failures = len(sites) + unscored
     names = sites[:_NAMED_FAILURES]
@@ -103,8 +103,8 @@ def _fold_late(first: dict, late: dict, *, lists=(), counts=(), keep=()) -> None
 
 
 def _failed_sites(record: dict) -> list[str]:
-    """The sites of ``search`` and ``collect`` whose outcome was ``error`` or ``failed``."""
-    return [e["site"] for e in runs.site_entries(record) if e.get("outcome") in ("error", "failed")]
+    """The sites of ``search`` and ``collect`` whose outcome was ``error`` or ``failed``, each once."""
+    return list(dict.fromkeys(e["site"] for e in runs.site_entries(record) if e.get("outcome") in ("error", "failed")))
 
 
 @lock.locked("run")
