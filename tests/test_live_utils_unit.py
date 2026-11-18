@@ -28,6 +28,7 @@ def test_a_refusal_or_an_unreachable_host_is_not_reached(message):
     ["no search results block on page (keyword='x', page=1)"],
     ["429 Client Error: Too Many Requests", "no search results block on page"],   # a parse failure too: changed
     ["KeyError: 'jobs'"],
+    ["empty answer (HTTP 200) twice, not the feed"],   # only a 202 is the firewall's hold
 ])
 def test_no_errors_or_a_parse_failure_is_not_a_refusal(errors):
     assert not refused(errors)

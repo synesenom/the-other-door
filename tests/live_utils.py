@@ -23,7 +23,7 @@ NOT_REACHED = "not reached:"
 # How a scraper's recorded error says the site refused or was unreachable (requests' and the scrapers' wording).
 _REFUSAL = re.compile(
     r"\b(?:401|403|429|503)\b|Too Many Requests|Forbidden|Unauthorized|Service Unavailable|pushback"
-    r"|empty answer(?: \(HTTP 202\))?|timed out|Timeout\b|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
+    r"|empty answer \(HTTP 202\)|timed out|Timeout\b|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
     re.IGNORECASE,
 )
 
