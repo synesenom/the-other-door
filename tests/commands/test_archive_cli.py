@@ -15,6 +15,7 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import archive as archive_cmd
+from door.core import archive as archive_core
 from door.core import migrations, workspace
 import door.mcp_server as server
 from profile_utils import write_config
@@ -54,11 +55,11 @@ def env(tmp_path, monkeypatch):
 
 
 def _export(env, path=None):
-    return archive_cmd._export_core(path, profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    return archive_core._export_core(path, profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
 
 
 def _import(env, archive):
-    return archive_cmd._import_core(
+    return archive_core._import_core(
         archive, profile_dir=env.dst_profile, jobs_dir=env.dst_jobs, backups_dir=env.backups_dir
     )
 
@@ -155,11 +156,11 @@ def test_export_refuses_a_path_inside_the_data(env):
 
 def test_export_without_a_profile_is_an_error(env, tmp_path):
     with pytest.raises(FileNotFoundError, match="nothing to export"):
-        archive_cmd._export_core(tmp_path / "x.tar.gz", profile_dir=tmp_path / "none", jobs_dir=env.jobs_dir)
+        archive_core._export_core(tmp_path / "x.tar.gz", profile_dir=tmp_path / "none", jobs_dir=env.jobs_dir)
 
 
 def test_export_works_without_jobs(env, tmp_path):
-    result = archive_cmd._export_core(tmp_path / "x.tar.gz", profile_dir=env.profile_dir, jobs_dir=tmp_path / "nojobs")
+    result = archive_core._export_core(tmp_path / "x.tar.gz", profile_dir=env.profile_dir, jobs_dir=tmp_path / "nojobs")
     assert {n for n in _names(result["path"]) if n.startswith("jobs/")} <= {"jobs/", "jobs/.data_version"}  # the lock stamps it
 
 
@@ -167,13 +168,13 @@ def test_export_holds_the_ledger_lock(env, monkeypatch):
     from door.core.lock import lock_holder
 
     seen = {}
-    real = archive_cmd._add_tree
+    real = archive_core._add_tree
 
     def spy(tar, root, arcname, exclude):
         seen["holder"] = lock_holder(env.jobs_dir)
         return real(tar, root, arcname, exclude)
 
-    monkeypatch.setattr(archive_cmd, "_add_tree", spy)
+    monkeypatch.setattr(archive_core, "_add_tree", spy)
     _export(env, env.tmp_path / "out.tar.gz")
     assert seen["holder"]["purpose"] == "export"
 
@@ -264,13 +265,13 @@ def test_import_holds_the_ledger_lock(env, monkeypatch):
 
     archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
     seen = {}
-    real = archive_cmd._swap_in
+    real = archive_core._swap_in
 
     def spy(*args, **kwargs):
         seen["holder"] = lock_holder(env.dst_jobs)
         return real(*args, **kwargs)
 
-    monkeypatch.setattr(archive_cmd, "_swap_in", spy)
+    monkeypatch.setattr(archive_core, "_swap_in", spy)
     _import(env, archive)
     assert seen["holder"]["purpose"] == "import"
 

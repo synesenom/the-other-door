@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from door.commands import archive as archive_cmd  # noqa: E402
+from door.core import archive as archive_core  # noqa: E402
 from door.core import models, utils, workspace  # noqa: E402
 from door.core.lock import ledger_lock  # noqa: E402
 
@@ -138,7 +138,7 @@ def _plan_migration(jobs_dir: Path) -> dict:
 
 
 def _backup_ledgers(jobs_dir: Path, backups_dir: Path) -> Path:
-    backup = archive_cmd._new_backup_dir(backups_dir)
+    backup = archive_core._new_backup_dir(backups_dir)
     target = backup / "jobs"
     target.mkdir()
     for name in _MIGRATED:

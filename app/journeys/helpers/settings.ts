@@ -70,7 +70,7 @@ export function py(world: World, code: string, ...args: string[]): string {
 
 /** An export of the world's home as it is now (door's own `data export`), written to `target`. */
 export function exportHome(world: World, target: string): string {
-  py(world, 'import sys; from door.commands import archive; archive._export_core(sys.argv[1])', target)
+  py(world, 'import sys; from door.core import archive; archive._export_core(sys.argv[1])', target)
   return target
 }
 

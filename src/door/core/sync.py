@@ -16,7 +16,7 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import drive, migrations, usage, workspace
+from door.core import archive, drive, migrations, usage, workspace
 from door.core.lock import SyncConflict
 from door.core.progress import report
 
@@ -132,8 +132,6 @@ def push(*, profile_dir=None, jobs_dir=None) -> dict:
     Raises:
         DriveError: Drive's archive carries a data version above this computer's (nothing is uploaded).
     """
-    from door.commands import archive as archive_cmd
-
     profile_dir, jobs_dir, _ = _dirs(profile_dir, jobs_dir)
     if not _has_local_data(profile_dir):
         return {"action": "skipped"}
@@ -145,7 +143,7 @@ def push(*, profile_dir=None, jobs_dir=None) -> dict:
             raise drive.DriveError(NEWER_ON_DRIVE)
     with tempfile.TemporaryDirectory(prefix="door-sync-") as tmp:
         target = Path(tmp) / drive.FILE_NAME
-        archive_cmd._export_core(target, profile_dir=profile_dir, jobs_dir=jobs_dir)
+        archive._export_core(target, profile_dir=profile_dir, jobs_dir=jobs_dir)
         version = drive.upload(target, {PROP_KEYS[f]: str(v) for f, v in local.items()})
     drive.update_state(
         synced_version=version,
@@ -162,8 +160,6 @@ def pull(*, profile_dir=None, jobs_dir=None, backups_dir=None) -> dict:
     Only the backup the previous sync pull made is deleted; backups from a manual
     `data import` stay.
     """
-    from door.commands import archive as archive_cmd
-
     profile_dir, jobs_dir, backups_dir = _dirs(profile_dir, jobs_dir, backups_dir)
     meta = drive.remote_meta()
     if meta is None:
@@ -173,7 +169,7 @@ def pull(*, profile_dir=None, jobs_dir=None, backups_dir=None) -> dict:
         with tempfile.TemporaryDirectory(prefix="door-sync-") as tmp:
             target = Path(tmp) / drive.FILE_NAME
             drive.download(target)
-            result = archive_cmd._import_core(target, profile_dir=profile_dir, jobs_dir=jobs_dir, backups_dir=backups_dir)
+            result = archive._import_core(target, profile_dir=profile_dir, jobs_dir=jobs_dir, backups_dir=backups_dir)
     except migrations.RefusedData as exc:
         refusal = _drive_refusal(exc)
         drive.update_state(last_error=str(refusal))

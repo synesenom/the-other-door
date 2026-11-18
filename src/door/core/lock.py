@@ -59,7 +59,7 @@ class SyncConflict(RuntimeError):
 # Google Drive sync (issue #265). The outermost block pulls once the OS lock is held and
 # pushes just before it is released, for every purpose but the sync ones themselves (which
 # would recurse). Both run outside `_held_guard`; the defaults import `sync` lazily
-# (`sync` imports the archive commands, which import this module). Tests swap them.
+# (`sync` imports `archive`, which imports this module). Tests swap them.
 _NO_SYNC_PURPOSES = frozenset({"export", "import", "sync", "upgrade"})
 
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from door.commands import archive as archive_cmd
+from door.core import archive as archive_core
 from door.core import lock, selection, workspace
 from door.core.history import HistoryStore
 from paths import REPO_ROOT
@@ -200,13 +200,13 @@ def test_a_partially_migrated_tree_is_finished(env):
 
 def test_the_ledger_lock_is_held(env, monkeypatch):
     seen = {}
-    real = archive_cmd._new_backup_dir
+    real = archive_core._new_backup_dir
 
     def spy(backups_dir):
         seen["holder"] = lock.lock_holder(env.jobs_dir)
         return real(backups_dir)
 
-    monkeypatch.setattr(archive_cmd, "_new_backup_dir", spy)
+    monkeypatch.setattr(archive_core, "_new_backup_dir", spy)
     _migrate(env)
     assert seen["holder"]["purpose"] == "migrate"
 

@@ -83,6 +83,7 @@ from door.commands import setup as setup_cmd
 from door.commands import status as status_cmd
 from door.commands import stories as stories_cmd
 from door.commands import style as style_cmd
+from door.core import archive as archive_core
 from door.core import claude_cli, drive, migrations, problem_log, sync, workspace
 from door.core.lock import LockHeldError, SyncConflict, ledger_lock, lock_holder
 from door.core import companies as companies_store
@@ -1838,7 +1839,7 @@ def export_data(path: str | None = None) -> dict:
     """
     if path is not None:
         path_scope.check(path)
-    return archive_cmd._export_core(path, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR)
+    return archive_core._export_core(path, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR)
 
 
 @mcp.tool()
@@ -1865,7 +1866,7 @@ def import_data(archive: str) -> dict:
         sent), where the backup is; ``data_versions`` is the versions the archive carried.
     """
     path_scope.check(archive)
-    return archive_cmd._import_core(archive, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR)
+    return archive_core._import_core(archive, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR)
 
 
 @mcp.tool()
