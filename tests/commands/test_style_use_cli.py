@@ -266,7 +266,7 @@ def test_an_interrupted_end_of_a_candidate_never_leaves_it_to_be_chosen(home, cl
             return None  # only the delete of what was renamed away is cut short
         raise OSError("killed")
 
-    monkeypatch.setattr(style_cmd.shutil, "rmtree", killed)
+    monkeypatch.setattr(shutil, "rmtree", killed)
     with pytest.raises(OSError):
         style_cmd._use_core("current")
     style_build.restore(cli_env.profile_dir)

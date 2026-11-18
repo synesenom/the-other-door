@@ -115,7 +115,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             results.append(entry)
             continue
         if body != text:
-            path.write_text(body, encoding="utf-8")
+            utils.write_atomic(path, body)
         refused = html_guard.unsafe(body)
         if refused:  # model output never gets to load another file, reach the network or run anything
             entry.update(status="error", stderr=f"refused: {file} uses {', '.join(refused)}, which is outside the tags and links a CV or letter is written in")

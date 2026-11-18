@@ -28,7 +28,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import claude_cli, migrations, sites
+from door.core import claude_cli, migrations, sites, utils
 from door.core.jobs import runs
 from door.core.employers import companies
 from door.core.employers import discovery_sources
@@ -486,7 +486,7 @@ def _save_raw(jobs_dir: Path, site: str, result: ProbeResult, now: datetime) -> 
     stamp = now.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     path = Path(jobs_dir) / "drift" / site / f"{stamp}.{result.get('ext') or 'html'}"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(result.get("raw") or "", encoding="utf-8")
+    utils.write_atomic(path, result.get("raw") or "")
     return path
 
 

@@ -104,6 +104,11 @@ def _validate_job_id(job_id: str) -> None:
         raise ValueError(f"invalid job_id: {job_id!r}")
 
 
+# Read once: `os.umask` can only be read by setting it, which races with other threads' file creation.
+_UMASK = os.umask(0)
+os.umask(_UMASK)
+
+
 @contextmanager
 def atomic_target(path: Path, *, mode: int | None = None):
     """Yield a unique temp file beside `path`; on a clean exit `os.replace` it onto `path`.
@@ -119,9 +124,7 @@ def atomic_target(path: Path, *, mode: int | None = None):
         try:
             mode = path.stat().st_mode & 0o777
         except OSError:
-            umask = os.umask(0)
-            os.umask(umask)
-            mode = 0o666 & ~umask
+            mode = 0o666 & ~_UMASK
     fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
     os.close(fd)
     tmp = Path(name)

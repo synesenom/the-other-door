@@ -28,7 +28,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from door.core import process
+from door.core import process, utils
 from door.core.downloads import chromium
 from door.render import cdp
 
@@ -215,7 +215,7 @@ def print_html(folder: Path, html: str, out_pdf: Path, *,
             "paperWidth": A4_INCHES[0], "paperHeight": A4_INCHES[1],
             "marginTop": 0, "marginBottom": 0, "marginLeft": 0, "marginRight": 0,
         }, session_id=sid, timeout=left())
-        Path(out_pdf).write_bytes(base64.b64decode(result["data"]))
+        utils.write_atomic(Path(out_pdf), base64.b64decode(result["data"]))
     except cdp.CdpTimeout as exc:
         raise PrintError(f"Chromium did not finish printing in {timeout:g} s ({exc})") from exc
     except cdp.CdpError as exc:

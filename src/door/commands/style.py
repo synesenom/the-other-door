@@ -23,7 +23,6 @@ app does before an update installs (#215).
 from __future__ import annotations
 
 import os
-import shutil
 import signal
 import sys
 import threading
@@ -37,7 +36,7 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import lock, process, profile_loader, templates, workspace
+from door.core import lock, process, profile_loader, templates, utils, workspace
 from door.core.jobs import tracker
 from door.style import style_build, style_extract, style_preview, style_structure
 
@@ -216,7 +215,7 @@ def _start_core(file: str, *, home: Path | None = None) -> dict:
     _end_running(home)
     copy = _style_dir(home) / "source.pdf"
     copy.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(pdf, copy)
+    utils.write_atomic(copy, pdf.read_bytes())
     _spawn(home, copy)
     return {"started": True}
 

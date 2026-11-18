@@ -4,7 +4,6 @@ watermarks, resting and history, and run the passes (liveness, prefilter, dedup,
 condense, prescreen) over what was written. `door.pipeline.search` and `.collect` call
 `_scrape_core` with their own site lists; the match step runs the passes (`_scrape_passes`)."""
 
-import json
 import queue
 import re
 import threading
@@ -12,7 +11,7 @@ from pathlib import Path
 
 from door.commands import _common as common
 from door import i18n
-from door.core import lock, profile_loader
+from door.core import lock, profile_loader, utils
 from door.core import progress as progress_mod
 from door.core import models, sites, workspace
 from door.core.jobs import freshness
@@ -94,8 +93,7 @@ class _SiteRun:
             return
         integrity.apply(posting)
         posting_path = self.out_dir / f"{posting['id']}.json"
-        with posting_path.open("w", encoding="utf-8") as f:
-            json.dump(posting, f, indent=2, default=str)
+        utils.write_json_atomic(posting_path, posting)
         self.candidates_paths.append(posting_path)
         if pid:
             self.store.record(job_id, pid, posting.get("url", ""), self.site)

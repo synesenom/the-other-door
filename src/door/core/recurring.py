@@ -15,7 +15,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from door.core import problem_log
+from door.core import problem_log, utils
 from door.core.jobs import runs
 
 SITE_RUNS = 3  # the same site failed (failed or error) in each of its last 3 tries
@@ -108,7 +108,7 @@ def stamp_report(home: Path, at: datetime | None = None) -> None:
         return
     folder = home / problem_log.FOLDER
     folder.mkdir(exist_ok=True)
-    (folder / STAMP).write_text((at or datetime.now(timezone.utc)).isoformat(), encoding="utf-8")
+    utils.write_atomic(folder / STAMP, (at or datetime.now(timezone.utc)).isoformat())
 
 
 def check(home: Path, records: list[dict], *, now: datetime | None = None) -> bool:
