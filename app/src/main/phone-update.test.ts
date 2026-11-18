@@ -117,9 +117,10 @@ describe('restorePhoneAtStart: after an update', () => {
     expect(s.files.has('/m')).toBe(false)
   })
   it('does nothing without a marker', async () => {
-    const s = setup({})
+    const s = setup({ phone_status: () => ({ running: false }) })
     await restorePhoneAtStart(s.deps)
-    expect(s.call).not.toHaveBeenCalled()
+    expect(s.call).not.toHaveBeenCalledWith('phone_start', expect.anything(), expect.anything())
+    expect(s.call).not.toHaveBeenCalledWith('phone_stop', {})
   })
   it.each([
     ['needs', () => ({ needs: 'sign_in', link: 'x' })],
