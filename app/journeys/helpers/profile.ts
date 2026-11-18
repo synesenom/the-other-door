@@ -18,12 +18,18 @@ export async function openDetails(page: Page): Promise<void> {
   await expect(page.getByRole('region', { name: 'About you' })).toBeVisible({ timeout: 30_000 })
 }
 
-/** Profile → CV, loaded (the editor is on screen). */
+/** Profile → Master CV, loaded (its fields on screen; a CV with text shown as it reads). */
 export async function openCv(page: Page): Promise<void> {
   await openDetails(page)
   // the CV is a section of the one Profile page: brought into view, as its link beside the page does
   await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Master CV', exact: true }).click()
-  await expect(page.getByRole('switch', { name: 'Preview' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('group', { name: 'Pages' })).toBeVisible({ timeout: 30_000 })
+}
+
+/** Profile → Master CV, its text open in the editor. */
+export async function editCv(page: Page): Promise<void> {
+  await openCv(page)
+  await page.getByRole('button', { name: 'Edit the Master CV' }).click()
 }
 
 /** The editor's textarea. */

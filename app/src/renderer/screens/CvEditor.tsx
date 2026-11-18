@@ -8,7 +8,6 @@ import { MarkdownLink } from './MarkdownHelp'
 import type { ShowProfile } from './onboarding/reducer'
 import { Spinner } from './Spinner'
 import { StyleRow } from './StyleRow'
-import { Switch } from './Switch'
 import { todoOffsets } from './todos'
 
 type Profile = ShowProfile & { config: (ShowProfile['config'] & { role_targets?: string[] }) | null }
@@ -225,7 +224,8 @@ export function CvEditor({
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saved, setSaved] = useState('')
   const [text, setText] = useState('')
-  const [view, setView] = useState<'edit' | 'preview'>('edit')
+  // read: the CV as it reads, Edit opens the text; a CV that opens empty has nothing to read and is the text at once
+  const [view, setView] = useState<'edit' | 'read'>('read')
   const [panel, setPanel] = useState<null | 'page' | 'again'>(null)
   // The pages read before (enrich_sources): remembered when one is read, forgotten by its ×, each saved at once.
   const [pages, setPages] = useState<string[] | null>(null)
@@ -293,6 +293,7 @@ export function CvEditor({
       setPages((had) => had ?? (p as Profile).config?.enrich_sources ?? p.enrich_sources ?? [])
       setSaved(p.cv.text ?? '')
       setText(p.cv.text ?? '')
+      if (!p.cv.text?.trim()) setView('edit') // nothing to read: the text at once
       latest.current = p.cv.text ?? ''
     } catch (e) {
       setLoadError(errorText(e))
@@ -364,7 +365,7 @@ export function CvEditor({
       const r = await draftCv({ files: [file.token], urls: [] })
       setAdded(null)
       setText(r.markdown)
-      setView('edit')
+      setView('read')
       setMessage(`Drafted from ${file.name}. Your CV before it is kept as cv.md.bak.`)
       setReplaced((n) => n + 1)
       window.door.cvFile().then(setCvFile, () => undefined)
@@ -377,6 +378,7 @@ export function CvEditor({
 
   // a change not written yet: what reads or rewrites the CV on the server waits for it
   const dirty = text !== saved
+  const editing = view === 'edit'
   const written = writing ? 'Saving…' : saveError ? null : dirty ? null : saves > 0 || backedUp.current ? 'Saved' : null
 
   // Profile's part "Master CV": the file and the pages it is read from, then the text; the style is a part of its own after it
@@ -484,18 +486,26 @@ export function CvEditor({
             }}
           />
         )}
-        {/* the text: its name, with Saved and the Preview switch on the right, then the text or how it reads */}
+        {/* the CV as it reads, with Edit on the right; editing, the text with Saved and Done */}
         <div className="field onb-field">
         <div className="cv-head">
-          <FieldName htmlFor={editorId} label="Text" after={<span className="small muted">(<MarkdownLink />)</span>} help="Everything about your work in Markdown, what every application's CV is picked from and tailored. It saves itself as you type." />
+          {editing ? (
+            <FieldName htmlFor={editorId} label="Text" after={<span className="small muted">(<MarkdownLink />)</span>} help="Everything about your work in Markdown, what every application's CV is picked from and tailored. It saves itself as you type." />
+          ) : (
+            <FieldName id="cv-text-name" label="Text" help="Everything about your work, what every application's CV is picked from and tailored. Edit to change it; it saves itself as you type." />
+          )}
           {written && (
             <span className="small muted cv-written" role="status">
               {written}
             </span>
           )}
-          <Switch label="Preview" checked={view === 'preview'} onChange={(on) => setView(on ? 'preview' : 'edit')} />
+          {(!editing || text.trim() !== '') && (
+            <button type="button" className="secondary" aria-label={editing ? 'Done editing' : 'Edit the Master CV'} onClick={() => setView(editing ? 'read' : 'edit')}>
+              {editing ? 'Done' : 'Edit'}
+            </button>
+          )}
         </div>
-        {view === 'edit' ? (
+        {editing ? (
           // an added line is a bullet, "- text", under its section: the copy behind the editor tints those lines
           <div className="cv-text-wrap">
             {added && added.length > 0 && (

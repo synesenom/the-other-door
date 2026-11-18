@@ -439,10 +439,10 @@ the editor and is saved, your CV before it kept as `cv.md.bak`.
 **Pages**: **Add a page** and **Check again**, and under them the pages your CV is read from, each a chip with a × to
 forget it.
 
-**Text** is `profile/cv.md` in an editor, "Text (Markdown)" with the Preview switch on its right, which shows how it reads,
-with each gap (`TODO`) marked "to fill in": a click on a marker opens the editor with that gap selected. There is no
-Save: what you type is saved a second after you stop, and when you leave the editor ("Saving…", then "Saved", beside
-Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak`, so that is one step back to
+**Text** is `profile/cv.md` as it reads, with each gap (`TODO`) marked "to fill in", and **Edit** on its right. Edit
+(or a click on a marker, which selects that gap) shows the text in an editor, "Text (Markdown)", and **Done** shows it
+as it reads again; an empty CV opens in the editor. There is no Save: what you type is saved a second after you stop,
+and when you leave the editor ("Saving…", then "Saved", beside Done). The first save after you open Profile keeps the CV as it was as `cv.md.bak`, so that is one step back to
 where this visit began; ⌘Z (Ctrl+Z) undoes typing. An empty CV is never saved. With no CV yet, a line above says so
 and offers "Draft it from your CV file or pages", the wizard's screens. A `cv.md` that cannot be read as text
 (another encoding, a Word file renamed) is said above an empty editor; what you write there replaces it, the file
