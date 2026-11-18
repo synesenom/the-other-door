@@ -31,16 +31,17 @@ def test_globalnyt_details_live():
         ads = globalnyt._parse_list(session.get(globalnyt._LIST_URL).json())
         assert ads, fail("globalnyt", "details", "no ads to open")
         now = datetime.now(timezone.utc)
+        candidates = 4   # two ads, and at most two of Globalnyt's own that name no organisation
         postings = []
-        for ad in ads[:4]:
+        for ad in ads[:candidates]:
             page = session.get(ad["url"]).text
             company = globalnyt._detail_field(page, "Organisation")
-            if not company:   # Globalnyt's own ads and a leftover test post name no organisation; the scraper falls back
+            if not company:   # Globalnyt's own ads name no organisation; the scraper falls back to the board name
                 continue
             postings.append(globalnyt._to_posting(ad, company, globalnyt._detail_field(page, "Sted"), now))
             if len(postings) == 2:
                 break
-        assert postings, fail("globalnyt", "details", f"no Organisation on any of the first {len(ads[:4])} ads")
+        assert len(postings) == 2, fail("globalnyt", "details", f"{len(postings)} of the first {candidates} ads name an Organisation")
     assert_contract("globalnyt", postings, "details", config=CONFIG)
 
 
