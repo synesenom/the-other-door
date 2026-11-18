@@ -153,7 +153,7 @@ def manifest(name: str) -> dict:
 
 
 def build_app(*, home: Path, web_dir: Path | None, name: str):
-    """The Starlette app for one data folder: FastMCP's streamable-HTTP app plus The other door's routes and guard."""
+    """The Starlette app for one data folder: MCPServer's streamable-HTTP app plus The other door's routes and guard."""
     home = Path(home).resolve()
     output = (home / "jobs" / "output").resolve()
     limiter = _Limiter()
@@ -161,12 +161,12 @@ def build_app(*, home: Path, web_dir: Path | None, name: str):
 
     # Stateless JSON answers: a phone that slept or changed networks just calls again. The host check
     # against DNS rebinding is off: a tunnel's hostname is not known here, and every call needs a token.
-    server.mcp.settings.stateless_http = True
-    server.mcp.settings.json_response = True
-    server.mcp.settings.transport_security = TransportSecuritySettings(enable_dns_rebinding_protection=False)
-    server.mcp._session_manager = None  # one per app: a session manager runs once
     server.enable_background_runs()  # a phone sleeps and a tunnel cuts long requests: runs return at once
-    app = server.mcp.streamable_http_app()
+    app = server.mcp.streamable_http_app(
+        stateless_http=True,
+        json_response=True,
+        transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+    )
 
     async def pair(request: Request) -> Response:
         try:

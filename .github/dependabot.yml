@@ -20,9 +20,6 @@ updates:
         applies-to: security-updates
         patterns: ["*"]
     ignore:
-      # mcp 2.x renamed FastMCP and changed the server API: moving is its own change (#14).
-      - dependency-name: mcp
-        update-types: [version-update:semver-major]
       # cryptography 49 and later ship no Intel macOS wheel, and the app is still built for Intel Macs
       # (pyproject.toml keeps it below 49).
       - dependency-name: cryptography

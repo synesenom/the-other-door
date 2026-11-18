@@ -16,7 +16,7 @@ NEWER = {"state": "newer", "message": migrations.NEWER}
 
 
 def _answer(result):
-    return json.loads(result[0].text)
+    return json.loads(result.content[0].text)
 
 
 @pytest.fixture

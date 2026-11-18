@@ -51,9 +51,9 @@ import json
 import threading
 from pathlib import Path
 
-from mcp.server.fastmcp import Context, FastMCP
-from mcp.server.fastmcp.exceptions import ToolError
-from mcp.types import TextContent
+from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
+from mcp.types import CallToolResult, TextContent
 
 from door import i18n
 from door import version as version_mod
@@ -101,12 +101,9 @@ _UNLOGGED_ANSWERS = ("job_result", "set_status")
 _UNLOGGED_WARNINGS = ("prepare",)
 
 
-def _answer_of(result) -> dict | None:
-    """The dict a tool answered, read back from FastMCP's converted result (its first text block)."""
-    blocks = result[0] if isinstance(result, tuple) else result
-    if isinstance(blocks, dict):
-        return blocks
-    for block in blocks or ():
+def _answer_of(result: CallToolResult) -> dict | None:
+    """The dict a tool answered, read back from the converted result (its first text block)."""
+    for block in result.content or ():
         text = getattr(block, "text", None)
         if text is not None:
             try:
@@ -145,27 +142,27 @@ def _data_refusal(tool: str) -> str | None:
     return state["message"]
 
 
-class _DoorMCP(FastMCP):
-    """FastMCP whose every tool call is the one place a failure is logged (#593): over stdio and HTTP alike."""
+class _DoorMCP(MCPServer):
+    """MCPServer whose every tool call is the one place a failure is logged (#593): over stdio and HTTP alike."""
 
-    async def call_tool(self, name, arguments):
+    async def call_tool(self, name, arguments, context=None):
         refusal = _data_refusal(name)
         if refusal is not None and migrations.status()["state"] == "busy":
             await asyncio.to_thread(migrations.upgrade_all)  # a run held the lock at start: try again
             refusal = _data_refusal(name)
         if refusal is not None:  # logged once, by the upgrade, not at every call
-            return [TextContent(type="text", text=json.dumps({"error": refusal}, indent=2))]
+            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": refusal}, indent=2))])
         self._refuse_unknown_arguments(name, arguments)  # the caller fixes it from the refusal: not a failure to log
         try:
-            result = await super().call_tool(name, arguments)
+            result = await super().call_tool(name, arguments, context)
         except Exception as exc:
-            problem_log.crash(f"tool {name}", exc.__cause__ or exc)  # FastMCP wraps it in a ToolError
+            problem_log.crash(f"tool {name}", exc.__cause__ or exc)  # MCPServer wraps it
             raise
         _log_answer(name, _answer_of(result))
         return result
 
     def _refuse_unknown_arguments(self, name, arguments) -> None:
-        """FastMCP's argument model drops a key it does not know; a misnamed one must fail, not take the default (#268)."""
+        """MCPServer's argument model drops a key it does not know; a misnamed one must fail, not take the default (#268)."""
         tool = self._tool_manager.get_tool(name)
         if tool is None:
             return
@@ -175,9 +172,8 @@ class _DoorMCP(FastMCP):
             raise ToolError(f"{name} takes no argument {', '.join(repr(k) for k in unknown)}")
 
 
-mcp = _DoorMCP("door")
-# Its version in `initialize` (FastMCP takes none): the desktop app refuses a server of another version (#224).
-mcp._mcp_server.version = version_mod.VERSION
+# Its version in `initialize`: the desktop app refuses a server of another version (#224).
+mcp = _DoorMCP("door", version=version_mod.VERSION)
 
 # Every CLI command (sub-commands as "group sub") and the MCP tool(s) that
 # expose it. `status` is two tools because the command is two operations:

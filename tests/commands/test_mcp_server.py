@@ -4,7 +4,7 @@ Asserts every CLI command has a tool and every tool mirrors a command
 (the parity test), the tools' parameter schemas, that each tool delegates
 to its `_*_core` with the module-level `JOBS_DIR`/`PROFILE_DIR`, and that
 expected failures come back as ``{"error": ...}``. Uses an in-process
-client against the `FastMCP` instance; no subprocess, no network.
+client against the `MCPServer` instance; no subprocess, no network.
 """
 
 import asyncio
@@ -13,7 +13,7 @@ import pytest
 import json
 from pathlib import Path
 
-import mcp.shared.memory as mcp_client
+from mcp import Client
 
 from door.cli import cli
 import door.mcp_server as server
@@ -30,7 +30,7 @@ from paths import REPO_ROOT
 
 def _list_tools():
     async def _run():
-        async with mcp_client.create_connected_server_and_client_session(door_mcp) as client:
+        async with Client(door_mcp) as client:
             return await client.list_tools()
 
     return asyncio.run(_run())
@@ -195,7 +195,7 @@ LONG_TOOLS = ("find_jobs", "prepare")
 
 
 class _FakeCtx:
-    """A stand-in for FastMCP's `Context`: records `report_progress` calls."""
+    """A stand-in for MCPServer's `Context`: records `report_progress` calls."""
 
     def __init__(self, fail=False):
         self.calls = []
@@ -212,7 +212,7 @@ def test_long_tools_are_async_and_ctx_is_not_in_the_schema():
 
     tools = {t.name: t for t in _list_tools().tools}
     for name in LONG_TOOLS:
-        assert "ctx" not in tools[name].inputSchema.get("properties", {}), name
+        assert "ctx" not in tools[name].input_schema.get("properties", {}), name
     for fn in (server.find_jobs, server.prepare):
         assert inspect.iscoroutinefunction(fn)
 
@@ -392,7 +392,7 @@ def test_status_summary_tool_returns_in_progress_key(tmp_path, monkeypatch):
 
 
 def test_progress_notifications_reach_a_real_client_session(monkeypatch):
-    """End to end through FastMCP's `Context` injection and the in-memory transport."""
+    """End to end through MCPServer's `Context` injection and the in-memory transport."""
     from door.core import progress
 
     def fake_run_core(step=None, *, progress=None, **kw):
@@ -409,11 +409,11 @@ def test_progress_notifications_reach_a_real_client_session(monkeypatch):
         received.append((value, total, message))
 
     async def scenario():
-        async with mcp_client.create_connected_server_and_client_session(door_mcp) as client:
+        async with Client(door_mcp) as client:
             return await client.call_tool("find_jobs", {}, progress_callback=on_progress)
 
     result = asyncio.run(scenario())
-    assert not result.isError
+    assert not result.is_error
     assert received == [(1.0, None, "jobindex: scraping (site 1/1)"), (2.0, None, "jobindex: 2 posting(s)")]
 
 
@@ -423,7 +423,7 @@ def test_tools_snapshot_matches_server():
     tool fails here until `npm run gen-tools` is run in app/ and the file committed."""
     snapshot = json.loads((REPO_ROOT / "app" / "src" / "generated" / "tools.json").read_text())
     live = sorted(
-        ({"name": t.name, "description": t.description or "", "inputSchema": t.inputSchema}
+        ({"name": t.name, "description": t.description or "", "inputSchema": t.input_schema}
          for t in _list_tools().tools),
         key=lambda t: t["name"],
     )
@@ -485,7 +485,7 @@ def _cli_params_of(command) -> set[str]:
 def test_the_find_jobs_tool_takes_every_option_of_every_step_and_the_group():
     """`find`'s subcommands each take a part of the tool's parameters; together with the group's, all of them
     (the tool's `step` is the subcommand itself)."""
-    tool = {t.name: set(t.inputSchema["properties"]) for t in _list_tools().tools}["find_jobs"]
+    tool = {t.name: set(t.input_schema["properties"]) for t in _list_tools().tools}["find_jobs"]
     steps = [name for name in server.CLI_COMMAND_TOOLS if name.startswith("find ")]
     assert len(steps) == 5
     cli_params = set().union(*(_cli_params(name) for name in steps)) - _SURFACE_ONLY
@@ -496,7 +496,7 @@ def test_every_tool_takes_the_parameters_its_command_takes():
     """Option-level parity: whatever a command can be told, its tool can be told,
     and the other way round — modulo `_SURFACE_ONLY` and `_ALIASES` above.
     A new `--flag` fails this test until its tool takes it (and vice versa)."""
-    tools = {tool.name: set(tool.inputSchema.get("properties", {})) for tool in _list_tools().tools}
+    tools = {tool.name: set(tool.input_schema.get("properties", {})) for tool in _list_tools().tools}
     for command_name, tool_names in server.CLI_COMMAND_TOOLS.items():
         if command_name.startswith("find "):
             continue  # checked above: one tool, five subcommands
@@ -825,9 +825,9 @@ def test_a_tool_call_with_an_unknown_argument_is_refused():
     """#268: a misnamed argument is an error naming it, not the default applied."""
 
     async def go():
-        async with mcp_client.create_connected_server_and_client_session(door_mcp) as client:
+        async with Client(door_mcp) as client:
             return await client.call_tool("list_stories", {"bogus": 1})
 
     result = asyncio.run(go())
-    assert result.isError
+    assert result.is_error
     assert "bogus" in result.content[0].text

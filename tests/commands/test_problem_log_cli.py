@@ -3,7 +3,7 @@
 import asyncio
 
 import click
-import mcp.shared.memory as mcp_client
+from mcp import Client
 import pytest
 from click.testing import CliRunner
 
@@ -25,7 +25,7 @@ def log(tmp_path):
 
 def _call(tool: str, args: dict):
     async def run():
-        async with mcp_client.create_connected_server_and_client_session(server.mcp) as client:
+        async with Client(server.mcp) as client:
             return await client.call_tool(tool, args)
 
     return asyncio.run(run())
@@ -56,7 +56,7 @@ def test_a_tool_that_crashes_is_logged(log, monkeypatch):
 
     monkeypatch.setattr(market_cmd, "_market_core", broken)
     result = _call("market", {})
-    assert result.isError
+    assert result.is_error
     assert "ERROR tool market: RuntimeError: the market fell over" in log.read_text(encoding="utf-8")
 
 
@@ -114,5 +114,5 @@ def test_a_prepare_readback_warning_is_not_logged_but_its_error_is(log):
 def test_a_misnamed_argument_is_refused_without_counting_as_a_failure(log):
     """#268: the caller fixes it from the refusal; it never feeds "something keeps going wrong"."""
     result = _call("list_stories", {"bogus": 1})
-    assert result.isError and "bogus" in result.content[0].text
+    assert result.is_error and "bogus" in result.content[0].text
     assert "ERROR" not in (log.read_text() if log.exists() else "")
