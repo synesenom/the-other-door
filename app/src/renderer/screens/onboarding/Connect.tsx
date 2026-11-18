@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AppName, named } from '../AppName'
+import { AppName, ErrorBox } from '../AppName'
 import { call, errorText } from '../../api'
 import { Dialog } from '../Dialog'
 import { SignIn } from '../SignIn'
@@ -45,9 +45,7 @@ export function Connect({ doctor, onRecheck, onBack }: { doctor: DoctorReport; o
         </div>
         {working && <Spinner message="Installing…" />}
         {(error || (installed && !working)) && (
-          <p role="alert" className="error">
-            {named(error ?? "The install finished, but Claude still can't be found. Try again, or close and reopen The other door.")}
-          </p>
+          <ErrorBox text={error ?? "The install finished, but Claude still can't be found. Try again, or close and reopen The other door."} />
         )}
         {(error || (installed && !working)) && (
           <p className="small muted">

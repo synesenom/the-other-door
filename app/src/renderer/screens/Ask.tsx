@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox } from './AppName'
 import { call, errorText } from '../api'
 import { Spinner } from './Spinner'
 
@@ -91,9 +91,7 @@ export function Ask({ onGo }: { onGo: (to: AskGoTo) => void }) {
       </form>
       {asking && <Spinner message={`Looking… ${Math.round((Date.now() - state.since) / 1000)} s`} />}
       {state.kind === 'error' && (
-        <p role="alert" className="error">
-          {named(state.message)}
-        </p>
+        <ErrorBox text={state.message} />
       )}
       {state.kind === 'done' && (
         <div className="ask-answer">

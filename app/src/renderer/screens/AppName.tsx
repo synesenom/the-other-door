@@ -22,3 +22,8 @@ export function named(message: ReactNode): ReactNode {
     </Fragment>
   ))
 }
+
+/** The error box: an alert line whose message may name the app. */
+export function ErrorBox({ text }: { text: ReactNode }) {
+  return <p role="alert" className="error">{named(text)}</p>
+}

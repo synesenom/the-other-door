@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { named } from './AppName'
+import { ErrorBox, named } from './AppName'
 
 afterEach(cleanup)
 
@@ -24,5 +24,15 @@ describe('named', () => {
   it('leaves other messages as they are', () => {
     expect(named('Nothing to see')).toBe('Nothing to see')
     expect(named(null)).toBeNull()
+  })
+})
+
+describe('ErrorBox', () => {
+  it('is an alert with the error class and the name set', () => {
+    const { getByRole } = render(<ErrorBox text="The other door could not start." />)
+    const box = getByRole('alert')
+    expect(box).toHaveClass('error')
+    expect(box.querySelectorAll('.app-name')).toHaveLength(1)
+    expect(box).toHaveTextContent('The other door could not start.')
   })
 })

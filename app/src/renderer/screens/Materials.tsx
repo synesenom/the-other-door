@@ -1,4 +1,4 @@
-import { named } from './AppName'
+import { ErrorBox, named } from './AppName'
 import { useRemote } from '../remote'
 import { useEffect, useState } from 'react'
 import { call, errorText, materialUrl, saveMaterial, visiblePages } from '../api'
@@ -111,9 +111,7 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
         <button type="button" className="back" onClick={onBack}>
           ← Posting
         </button>
-        <p role="alert" className="error">
-          {named(loadError)}
-        </p>
+        <ErrorBox text={loadError} />
       </div>
     )
   if (!posting) return <p className="muted">Loading</p>
@@ -231,9 +229,7 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
         </p>
       )}
       {failure && (
-        <p role="alert" className="error">
-          {named(failure)}
-        </p>
+        <ErrorBox text={failure} />
       )}
       {busy && <Spinner message="Revising…" />}
       {/* One document at a time, large enough to read; the switch also picks what Revise changes. */}

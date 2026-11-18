@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Dispatch, ReactNode } from 'react'
-import { AppName, named } from '../AppName'
+import { AppName, ErrorBox, named } from '../AppName'
 import { call, errorText } from '../../api'
 import { DocDialog, LEGAL_DISCLAIMER } from '../Documentation'
 import { Markdown } from '../Markdown'
@@ -373,9 +373,7 @@ export function Review({ state, profile, dispatch, onSaved, onBack, sandbox = fa
 
       {saving && <Spinner message="Saving…" />}
       {saveError && (
-        <p role="alert" className="error">
-          {named(saveError)}
-        </p>
+        <ErrorBox text={saveError} />
       )}
     </Frame>
   )

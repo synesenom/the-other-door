@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox, named } from './AppName'
 import { call, errorText } from '../api'
 import { Dialog } from './Dialog'
 import { Spinner } from './Spinner'
@@ -166,17 +166,13 @@ export function Stories() {
   // the bank is all this part shows: one that could not be read says so (docs/design/README.md, principle 9)
   if (loadError && !bank)
     return (
-      <p role="alert" className="error">
-        {named(loadError)}
-      </p>
+      <ErrorBox text={loadError} />
     )
   if (!bank) return <Spinner message="Reading your story bank…" />
 
   // a draft, a save or a removal that failed: the error box, not a field's line; the user can try again
   const errorLine = error && (
-    <p role="alert" className="error">
-      {named(error)}
-    </p>
+    <ErrorBox text={error} />
   )
 
   if (view.kind === 'drafting') return <Spinner message={`Drafting stories from ${view.what} (a few minutes)…`} />
