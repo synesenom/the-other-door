@@ -140,8 +140,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     return { ok: true, data: { action: keep ?? 'push' } }
   }
   const freshProfile = () => ({ ...fixtures.show_profile, config: null, errors: ['config.json not found'], cv: { ...fixtures.show_profile.cv, exists: false, text: null, headline: null, sections: [] }, discovery_unchosen: [] })
-  // The CV as "Add … to my CV" left it: each added line a bullet under its section, as enrich writes it.
-  let cvText = fixtures.show_profile.cv.text
+  // The CV as "Add … to my Master CV" left it: each added line a bullet under its section, as enrich writes it.
+  let cvText = scene.cvGaps ? fixtures.show_profile.cv.text.replace('+45 00 00 00 00', 'TODO').replace('Copenhagen', 'TODO') : fixtures.show_profile.cv.text
   const withCv = <T extends { cv: object }>(p: T): T => ({ ...p, cv: { ...p.cv, text: cvText } })
   const profile = () =>
     scene.fresh ? freshProfile() : withCv(scene.discoveryUnchosen !== undefined ? { ...fixtures.show_profile, discovery_unchosen: scene.discoveryUnchosen } : fixtures.show_profile)

@@ -35,7 +35,7 @@ test.describe('Add a page', () => {
     await readPage(page, 'https://github.example/mkl')
     await expect(expand(page).getByRole('checkbox', { name: first })).toBeChecked({ timeout: 60_000 })
     if (await expand(page).getByRole('checkbox', { name: second }).count()) await expand(page).getByRole('checkbox', { name: second }).uncheck()
-    await expand(page).getByRole('button', { name: 'Add 1 to my CV' }).click()
+    await expand(page).getByRole('button', { name: 'Add 1 to my Master CV' }).click()
     await expect(expand(page)).toHaveCount(0, { timeout: 10_000 })
     await expect(page.locator('.cv-preview .md-added')).toHaveText('Bayesian hierarchical models (PyMC)')
     const cv = readText(world, 'profile/cv.md')
@@ -72,11 +72,11 @@ test.describe('Replace CV file', () => {
     await openCv(page)
     await os.nextOpen([scratchFile(world, 'newer-cv.md', `${world.persona.cv}\n## Talks\n\n- ${second}\n`)])
     await page.getByRole('group', { name: 'Sources' }).getByRole('button', { name: /^(Add a CV file|Replace CV file)…$/ }).click()
-    const dialog = page.getByRole('dialog', { name: 'Your new CV file' })
+    const dialog = page.getByRole('dialog', { name: 'Add from your CV file' })
     await expect(dialog.getByRole('checkbox', { name: first })).toBeChecked({ timeout: 60_000 })
     expect(argsOf(world, 'enrich')).toEqual([expect.objectContaining({ files: [expect.stringMatching(/newer-cv\.md$/)] })])
     expect(world.toolCalls('draft_cv')).toHaveLength(0) // nothing drafted over the Master CV
-    await dialog.getByRole('button', { name: /^Add \d+ to my CV$/ }).click()
+    await dialog.getByRole('button', { name: /^Add \d+ to my Master CV$/ }).click()
     await expect(dialog).toHaveCount(0, { timeout: 10_000 })
     const cv = readText(world, 'profile/cv.md')
     for (const line of world.persona.cv.split('\n').filter((l) => l.trim())) expect(cv).toContain(line) // all it had

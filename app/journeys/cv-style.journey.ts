@@ -36,7 +36,7 @@ const ownStyle = (page: Page) => page.getByRole('switch', { name: 'Use my own st
 async function chooseCvFile(page: Page, world: Parameters<typeof scratchFile>[0], os: { nextOpen(files: string[]): Promise<void> }) {
   await os.nextOpen([scratchFile(world, 'my-cv.pdf', readFileSync(STYLED_PDF))])
   await page.getByRole('button', { name: /^(Add a CV file|Replace CV file)…$/ }).click()
-  const dialog = page.getByRole('dialog', { name: 'Your new CV file' })
+  const dialog = page.getByRole('dialog', { name: 'Add from your CV file' })
   await expect(dialog.getByRole('button', { name: /^(Cancel|Close)$/ })).toBeVisible({ timeout: 120_000 })
   await dialog.getByRole('button', { name: /^(Cancel|Close)$/ }).click()
   await expect(page.getByRole('group', { name: 'Sources' }).getByText('my-cv.pdf', { exact: true })).toBeVisible()

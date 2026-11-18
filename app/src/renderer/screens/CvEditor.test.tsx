@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../testing'
@@ -99,6 +99,13 @@ describe('CvEditor', () => {
     await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}x`, backup: true }), { timeout: 3000 })
   })
 
+  it('what was typed just before Profile is left is saved as it goes', async () => {
+    const { call } = await open({ save_cv: { cv_path: '/p/cv.md', backup: null } })
+    fireEvent.change(editor(), { target: { value: `${CV}x` } }) // no pause, no blur
+    cleanup() // another destination: Profile unmounts
+    await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}x`, backup: true }))
+  })
+
   it('the first CV saved has the profile read again, so the sidebar\'s "no CV yet" goes', async () => {
     const { onSaved } = await open({ save_cv: { cv_path: '/p/cv.md', backup: null } }, { exists: false, text: null })
     await userEvent.type(editor(), '# Ada')
@@ -150,7 +157,7 @@ describe('Add a page', () => {
     await userEvent.type(within(dialog()).getByLabelText('Which page?'), url)
     await userEvent.click(within(dialog()).getByRole('button', { name: 'Read it' }))
   }
-  // the CV as the server has it after "Add … to my CV" put the chosen line in
+  // the CV as the server has it after "Add … to my Master CV" put the chosen line in
   const ADDED = `${CV}- Built a churn model in Python\n`
   const marked = () => [...document.querySelectorAll('.md-added')].map((m) => m.textContent)
 
@@ -175,7 +182,7 @@ describe('Add a page', () => {
     // one page: no "from" on every line
     expect(within(dialog()).queryByText(/from https/)).toBeNull()
     await userEvent.click(within(dialog()).getByRole('checkbox', { name: 'dbt' }))
-    await userEvent.click(within(dialog()).getByRole('button', { name: 'Add 1 to my CV' }))
+    await userEvent.click(within(dialog()).getByRole('button', { name: 'Add 1 to my Master CV' }))
     expect(answers[1]).toEqual({ apply: [1] })
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     // what went in is marked in the CV, and nothing else is said
@@ -195,7 +202,7 @@ describe('Add a page', () => {
       },
     })
     await readPage()
-    await userEvent.click(await within(dialog()).findByRole('button', { name: 'Add 2 to my CV' }))
+    await userEvent.click(await within(dialog()).findByRole('button', { name: 'Add 2 to my Master CV' }))
     await waitFor(() => expect(marked()).toEqual(['- Built a churn model in Python']))
     await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
     expect(marked()).toEqual(['Built a churn model in Python'])
@@ -230,7 +237,7 @@ describe('Add a page', () => {
   it('nothing new is said so', async () => {
     await open({ enrich: { outcome: 'nothing_new', urls: ['https://ada.dev'], proposals: [], unreachable: [] } })
     await readPage()
-    expect(await screen.findByText('Nothing on that page is missing from your CV.')).toBeInTheDocument()
+    expect(await screen.findByText('Nothing on that page is missing from your Master CV.')).toBeInTheDocument()
   })
 
   it('Cancel closes it without reading', async () => {
@@ -375,10 +382,10 @@ describe('CvEditor, the CV file', () => {
     const replace = await screen.findByRole('button', { name: 'Replace CV file…' })
     h.cvFile.mockResolvedValue('new.pdf') // main remembers the file it reads
     await user.click(replace)
-    const dialog = await screen.findByRole('dialog', { name: 'Your new CV file' })
+    const dialog = await screen.findByRole('dialog', { name: 'Add from your CV file' })
     expect(h.enrichFile).toHaveBeenCalledWith('t1')
     await user.click(await within(dialog).findByRole('checkbox', { name: /dbt/ }))
-    await user.click(within(dialog).getByRole('button', { name: 'Add 1 to my CV' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Add 1 to my Master CV' }))
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('enrich', { apply: [1] }))
     expect(await screen.findByText('Spoke at PyData', { selector: '.md-added' })).toBeInTheDocument()
     expect(within(screen.getByRole('group', { name: 'Sources' })).getByText('new.pdf')).toBeInTheDocument()
@@ -418,7 +425,7 @@ describe('CvEditor, the CV file', () => {
     h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
     render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
     await user.click(await screen.findByRole('button', { name: 'Replace CV file…' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Your new CV file' })
+    const dialog = await screen.findByRole('dialog', { name: 'Add from your CV file' })
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Claude did not answer')
     expect(screen.getByRole('heading', { name: 'Experience' })).toBeInTheDocument()
     expect(h.styleFromCvFile).not.toHaveBeenCalled()

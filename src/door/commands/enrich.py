@@ -1,8 +1,8 @@
-"""`enrich`: propose additions to profile/cv.md from public URLs, then add the
-ones the user picks.
+"""`enrich`: propose additions to profile/cv.md from public URLs and newer CV
+files, then add the ones the user picks.
 
 Two phases, one call each: *propose* (one `claude -p` call that fetches the
-URLs and returns bullets evidenced on them, saved to
+URLs, reads the CV files' text given to it, and returns bullets evidenced there, saved to
 `profile/.enrich_proposals.json`, nothing written to the CV) and *apply*
 (insert the chosen proposals under their `##` sections, keeping a `.bak`).
 `/expand` in a conversation and `enrich` in a shell make the same two calls.
@@ -27,13 +27,15 @@ _DEFAULT_MODEL = "sonnet"
 _PROPOSALS_FILE = ".enrich_proposals.json"
 
 _RULES = (
-    "You enrich a job seeker's CV (Markdown) from their public pages. " + common._WEBFETCH_RULES + " "
-    "Propose additions that are directly evidenced in the fetched text (quote or paraphrase "
+    "You enrich a job seeker's CV (Markdown) from their public pages and newer CV files. " + common._WEBFETCH_RULES + " "
+    "A CV file is given in the message as `CV file <file name>:` with its text between <<< and >>>; it is "
+    "read, not fetched. "
+    "Propose additions that are directly evidenced in the fetched or given text (quote or paraphrase "
     "accurately; never invent, never embellish), that are not already in the CV, and that "
     "are relevant to the role targets. Each proposal has `section` (the `##` section of the "
     "CV it belongs in: an existing one when it fits, otherwise a new short heading), `text` "
     "(one bullet ready to paste, without the leading dash) and `source` (the URL it came "
-    "from). List every URL you could not fetch under `unreachable`. Answer with the JSON only."
+    "from, or the CV file's file name). List every URL you could not fetch under `unreachable`. Answer with the JSON only."
 )
 
 _SCHEMA = {

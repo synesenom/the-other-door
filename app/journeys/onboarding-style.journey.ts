@@ -19,7 +19,7 @@ const readyLine = (page: Page) => page.getByRole('button', { name: 'Your CV styl
 // The build runs in a process of its own, and the sidebar reads its state every 30 s.
 test.setTimeout(300_000)
 
-test('a CV with a style to copy: tick, Save, the search starts at once, the build is ready later and its line opens Profile → CV', async ({ page, world, os }) => {
+test('a CV with a style to copy: tick, Save, the search starts at once, the build is ready later and its line opens Profile → CV style', async ({ page, world, os }) => {
   await expect(sourcesHeading(page)).toBeVisible(LAUNCH)
   await pick(page, os, [scratchFile(world, 'my-cv.pdf', readFileSync(STYLED_PDF))])
   await expect(chosen(page).getByText('my-cv.pdf', { exact: true })).toBeVisible()
@@ -38,7 +38,7 @@ test('a CV with a style to copy: tick, Save, the search starts at once, the buil
   await expect(readyLine(page)).toBeVisible({ timeout: 240_000 })
   expect(world.exists('profile/style.next/cv.template.html')).toBe(true)
   await readyLine(page).click()
-  await expect(page.getByRole('heading', { name: 'Master CV' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'CV style' })).toBeInViewport()
   await expect(page.getByRole('button', { name: 'Profile', exact: true })).toHaveAttribute('aria-current', 'page')
 })
 

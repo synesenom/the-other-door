@@ -111,7 +111,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    what you did; a story tells what was behind it, and the tailor draws on your stories for every application.
    Fill in what the CV could not say, usually what you learned, or untick "Keep this story"; Save waits for one or the other.
    More stories go in Profile → [Stories](#your-stories));
-   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 2-5 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV. Nothing is said if it does not work out);
+   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 2-5 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV style. Nothing is said if it does not work out);
    **Where to find employers** (LinkedIn, and profession.hu, HelloWork or Jobbsafari where they serve your city:
    each stays off unless you tick it, because their terms forbid automated access; see the
    [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Risky sources changes it later).
@@ -440,8 +440,8 @@ drafted into it whole. A new CV file is your CV file from then on, and your own 
 Under them `profile/cv.md` as it reads, the **Preview** switch on its right on, with each gap (`TODO`) a blue "to fill
 in" pill: a click on one shows the text in an editor ("Written in Markdown" beside it), with that gap selected, as Preview off does;
 an empty CV opens in the editor. There is no Save: what you type is saved a second after you stop, and when you leave
-the editor ("Saving…", then "Saved", beside Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak`, so that is one step back to
-where this visit began; ⌘Z (Ctrl+Z) undoes typing. An empty CV is never saved. With no CV yet, a line above says so
+the editor ("Saving…", then "Saved", beside Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak` (adding from a source keeps the
+CV as it was just before the addition instead), so that is one step back; ⌘Z (Ctrl+Z) undoes typing. An empty CV is never saved. With no CV yet, a line above says so
 and offers "Draft it from your CV file or pages", the wizard's screens. A `cv.md` that cannot be read as text
 (another encoding, a Word file renamed) is said above an empty editor; what you write there replaces it, the file
 kept as `cv.md.bak`.
@@ -449,7 +449,7 @@ kept as `cv.md.bak`.
 - **Add a page** (the `/expand` skill as a button): a dialog asks for one page (your portfolio, GitHub,
   a publication list, a course page) and "Read it". One Claude call on your plan (a few minutes)
   proposes what the page shows and your CV does not, grouped by the section each would go into.
-  Untick what should not go in and "Add … to my CV": they go under their sections, and the old CV
+  Untick what should not go in and "Add … to my Master CV": they go under their sections, and the old CV
   is kept as `cv.md.bak`. The page is remembered among your pages.
 - **Check again** reads all your pages for what is new on them since, each proposal naming its page.
   What the CV already says, even worded or punctuated a little differently, is not proposed again,

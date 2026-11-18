@@ -87,7 +87,7 @@ On each, download the installer from the draft release and check, in order:
    version downloads it by itself and offers "Restart to update to X"; an unsigned mac one shows the Download link.
    With the phone server running on the old version, "Restart to update" stops it first (a Tailscale one
    answers the phone again from the new version, a quick tunnel is off until set up again). With a CV style build
-   running (Profile → CV → "Use the style of my CV…"), "Restart to update" ends it and the update installs; the
+   running (Profile → CV style → "Use my own style"), "Restart to update" ends it and the update installs; the
    style in use is unchanged.
 
 Anything that fails is fixed on `main` and released as a new version (the next patch number); a draft is

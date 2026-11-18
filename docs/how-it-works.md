@@ -165,7 +165,7 @@ so must the letter. Only a template that passes is kept, in
 less well by some application systems.
 
 Nothing changes until you choose. The default stays in use until you compare the two (`cv style show`, a
-conversation, or the app's Profile, CV) and pick one with `cv style use` or in the app; `jobs summary` and a
+conversation, or the app's Profile → CV style) and pick one with `cv style use` or in the app; `jobs summary` and a
 review session say when a style is ready. Jobs already prepared are printed again in the style you chose only
 when you ask.
 

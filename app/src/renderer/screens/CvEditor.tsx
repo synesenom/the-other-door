@@ -117,11 +117,11 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
   const errorLine = error && (
     <ErrorBox text={error} />
   )
-  const label = file ? 'Your new CV file' : again ? 'Check your pages again' : 'Add a page'
+  const label = file ? 'Add from your CV file' : again ? 'Check your pages again' : 'Add a page'
   const reading = file ? `Reading ${file.name} (a minute or two)…` : again ? 'Reading your pages again (a few minutes)…' : 'Reading the page (a few minutes)…'
 
   if (step.kind === 'reading') return <Dialog title={label} onClose={onClose}><Spinner message={reading} /></Dialog>
-  if (step.kind === 'adding') return <Dialog title={label} onClose={() => {} /* the CV is being written: it ends by itself */}><Spinner message="Adding to your CV…" /></Dialog>
+  if (step.kind === 'adding') return <Dialog title={label} onClose={() => {} /* the CV is being written: it ends by itself */}><Spinner message="Adding to your Master CV…" /></Dialog>
   if (step.kind === 'ask') {
     const url = step.url.trim()
     return (
@@ -163,7 +163,7 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
       {errorLine}
       {result.proposals.length === 0 ? (
         <>
-          {!error && <p className="body">{file ? `Nothing in ${file.name} is missing from your Master CV.` : again ? 'Nothing new on your pages.' : 'Nothing on that page is missing from your CV.'}</p>}
+          {!error && <p className="body">{file ? `Nothing in ${file.name} is missing from your Master CV.` : again ? 'Nothing new on your pages.' : 'Nothing on that page is missing from your Master CV.'}</p>}
           <div className="actions">
             <button type="button" className="secondary" onClick={onClose}>
               Close
@@ -189,7 +189,7 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
               Cancel
             </button>
             <button type="button" className="primary" disabled={chosen.length === 0 || blocked} onClick={() => void add(chosen, result.proposals)}>
-              {`Add ${chosen.length} to my CV`}
+              {`Add ${chosen.length} to my Master CV`}
             </button>
           </div>
         </>
@@ -229,7 +229,7 @@ export function CvEditor({
   const [panel, setPanel] = useState<From | null>(null)
   // The pages read before (enrich_sources): remembered when one is read, forgotten by its ×, each saved at once.
   const [pages, setPages] = useState<string[] | null>(null)
-  // What the last "Add … to my CV" put in: tinted in the preview until the next edit or save.
+  // What the last "Add … to my Master CV" put in: tinted in the preview until the next edit or save.
   const [added, setAdded] = useState<string[] | null>(null)
   // counts the saves: the style previews are made from the CV
   const [saves, setSaves] = useState(0)

@@ -360,8 +360,8 @@ export function App({ start }: { start?: AppStart } = {}) {
   }
   const fix = (p: Problem) => {
     setFinding(false)
-    if (p.target === 'profile-cv') {
-      setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { section: 'cv' } }))
+    if (p.target === 'profile-cv' || p.target === 'profile-style') {
+      setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { section: p.target === 'profile-cv' ? 'cv' : 'style' } }))
       setCurrent('Profile')
     } else if (p.target === 'profile') setCurrent('Profile')
     else {

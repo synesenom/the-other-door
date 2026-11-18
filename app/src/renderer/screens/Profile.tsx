@@ -90,8 +90,18 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
     void load()
   }, [])
   const startSection = start?.section ?? null
+  // the section asked for, brought into view once it is on the page (CV style comes after the CV is read)
   useEffect(() => {
-    if (profile && startSection) document.getElementById(`profile-${startSection}`)?.scrollIntoView?.({ block: 'start' })
+    if (!profile || !startSection) return
+    const show = () => {
+      const target = document.getElementById(`profile-${startSection}`)
+      target?.scrollIntoView?.({ block: 'start' })
+      return Boolean(target)
+    }
+    if (show()) return
+    const watch = new MutationObserver(() => show() && watch.disconnect())
+    watch.observe(document.body, { childList: true, subtree: true })
+    return () => watch.disconnect()
   }, [profile, startSection])
 
   const set = (key: string, value: FormValues[string]) => {

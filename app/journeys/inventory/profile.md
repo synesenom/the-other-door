@@ -12,7 +12,7 @@ Conventions used below:
      - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 660 s, market 180 s.
      - `The other door's server stopped; try again`: the child process died.
      - `<tool> returned something that is not JSON`.
-     - Main-process refusals: `unknown tool`, and `enrich takes web addresses only; files are chosen with the file picker.`
+     - Main-process refusals: `unknown tool`, `enrich takes web addresses only; files are chosen with the file picker.` (its `urls`), and `enrich cannot take a file path from the window; files are chosen with a file dialog.` (its `files`: a CV file goes by token, `door:enrich-file`)
 - Playwright name matching is a case-insensitive **substring** match by default. Many names here collide, so use `exact: true` where noted (e.g. `CV` with `Draft … CV …`, `Name` with the hint button `About Name`, `Add` with `Add these titles…`).
 
 ---
@@ -120,13 +120,13 @@ Discovery switches are not on Profile: they are how the app works, in Settings (
 
 ### 2.5 Save bar (`.profile-save`, sticky at the bottom)
 
-One bar for the page: it saves the details and the CV's text. `button "Save"` is disabled when there are no changes, a save is running, or the changed CV is empty. — ✓ opens with every section and the saved values
+The details' bar (the CV's text saves itself, §4.2). `button "Save"` is disabled when there are no changes or a save is running. — ✓ opens with every section and the saved values
 
 | Condition | Visible |
 |---|---|
 | Changes > 0 | `button "Undo changes"` (disabled while saving) and `p` "1 unsaved change" / "N unsaved changes". N counts **keys** (the CV saves itself and is not counted): both exclude parts count as one, and a hidden discovery key that changed still counts. | — unit: `app/src/renderer/screens/Profile.test.tsx` (5 changes, the two skip lists one key)
 | Saving | status "Saving…" | — not tested: a passing state
-| After success, with no further edits | `p` "Saved.", or "Saved. The previous CV is kept as cv.md.bak." when the CV was saved (not a status role). It is cleared by the next edit. | — ✓ Save writes the changed text, flag and number fields and nothing else
+| After success, with no further edits | `p` "Saved." (not a status role). It is cleared by the next edit. | — ✓ Save writes the changed text, flag and number fields and nothing else
 
 **Save flow**
 - The call is `init_profile(toInitArgs(saved, values, specs))`: — ✓ Save writes the changed text, flag and number fields and nothing else (init_profile arguments)
@@ -188,7 +188,7 @@ Other data-driven variants:
 - Head: "Text" with its info bubble, and on its right `switch "Preview"` (button role=switch, `aria-checked`), on when Profile opens. — ✓ opens on the CV as saved, as it reads; Preview off shows its text
   - Preview on (the default): rendered Markdown (`.markdown.cv-preview`, see §7), each `TODO` a "to fill in" marker that opens the editor with it selected. — ✓ the CV as it reads marks each gap to fill in
   - Preview off: `textbox "Your CV (Markdown)"` (textarea, spellcheck on), the label with an inline `button "Markdown"` (the cheatsheet). A CV that opens empty opens with Preview off. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
-- **Added lines:** after "Add N to my CV" (§4.4) each added bullet (`- <text>`) is tinted (`.md-added`, the `accent-tint` token): in the preview the list item, in the editor a tinted copy of the text behind the textarea (`.cv-backdrop`, scrolled with it). The first one is brought into view after the add and on each Preview switch. Typing or a Save clears the tint. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the CV as it reads and in its text
+- **Added lines:** after "Add N to my Master CV" (§4.4) each added bullet (`- <text>`) is tinted (`.md-added`, the `accent-tint` token): in the preview the list item, in the editor a tinted copy of the text behind the textarea (`.cv-backdrop`, scrolled with it). The first one is brought into view after the add and on each Preview switch. Typing or a Save clears the tint. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the CV as it reads and in its text
 - No Save: the text is written a second after typing stops and when the editor is left (`save_cv`, `backup: true` only on the visit's first write, so `cv.md.bak` is the CV as Profile opened it); `status` "Saving…" then "Saved" beside Preview; an emptied CV is never written; a failed write is the error box under the editor, tried again at the next pause. — ✓ the text saves itself; cv.md.bak keeps the CV as it was when Profile opened; ✓ a failing save says why, keeps the text, and is tried again; unit: `app/src/renderer/screens/CvEditor.test.tsx`
 - **The write:** `save_cv({markdown, backup})`; the editor keeps its text (no read-back while typing). — ✓ the text saves itself; cv.md.bak keeps the CV as it was when Profile opened
   - On disk: `profile/cv.md` = text; `profile/cv.md.bak` = the CV as Profile opened it (**only if a cv.md existed**); `profile/cv.draft.md` is deleted. — ✓ the text saves itself; cv.md.bak keeps the CV as it was when Profile opened; ✓ the first CV saves itself, with no backup, and the sidebar line goes
@@ -204,7 +204,7 @@ Other data-driven variants:
 The CV is two parts, `heading "Master CV"` (a muted line under it: everything about the user's work, never sent as it is, each application's CV picked from it and tailored; then the field Sources, then the CV) and `heading "CV style"` (only when the app says how the build stands). Each field is a form field: its name with an info bubble (`button "About <name>"`), 4 px above its control, what belongs to it under it, an error under it as `field-error`. Replace…, Add a page and Check again first write what was typed.
 
 - **`group "Sources"`**: `button "Replace CV file…"` (`"Add a CV file…"` with no CV file known), `button "Add a page"` (opens `dialog "Add a page"`, §4.4) and, with remembered pages, `button "Check again"` (opens `dialog "Check your pages again"`), then under them `list "What your Master CV is read from"`: the CV file a draft or a read last took (`door:cv-file`, from the path the main process keeps; no ×), then one chip per page, shown without `https://` (the full address on hover), each with `button "Forget <page>"`, which removes it at once (`init_profile`); a page that could not be forgotten is said under the field and its chip stays. — ✓ reads the page asked for, remembers it, and proposes what the CV lacks, all ticked; ✓ Check again reads them all and names the page of each proposal; ✓ a page is forgotten by its ×; unit: `app/src/renderer/screens/CvEditor.test.tsx`
-- A CV file chosen (`pickCvFiles`): with a Master CV, `dialog "Your new CV file"` reads it (`door:enrich-file` by its token, `enrich {files}` in main, the spinner "Reading <name> (a minute or two)…"), proposes what it adds as a page's read does (or "Nothing in <name> is missing from your Master CV."), and adds the ticked ones, tinted; the file is the CV file from then on and builds your own style again; a failed read is said in the dialog, the CV and the CV file as they were. With no Master CV, `draftCv({files:[token], urls:[]})` (spinner "Reading your CV file (a minute or two)…") drafts it whole, saved; a refused file is said under the field. — ✓ a new CV file proposes what it adds, and adding keeps everything the Master CV had; unit: `CvEditor.test.tsx`
+- A CV file chosen (`pickCvFiles`): with a Master CV, `dialog "Add from your CV file"` reads it (`door:enrich-file` by its token, `enrich {files}` in main, the spinner "Reading <name> (a minute or two)…"), proposes what it adds as a page's read does (or "Nothing in <name> is missing from your Master CV."), and adds the ticked ones, tinted; the file is the CV file from then on and builds your own style again; a failed read is said in the dialog, the CV and the CV file as they were. With no Master CV, `draftCv({files:[token], urls:[]})` (spinner "Reading your CV file (a minute or two)…") drafts it whole, saved; a refused file is said under the field. — ✓ a new CV file proposes what it adds, and adding keeps everything the Master CV had; unit: `CvEditor.test.tsx`
 
 ### 4.4 The page dialogs: Add a page, Check your pages again
 
@@ -215,10 +215,10 @@ The CV is two parts, `heading "Master CV"` (a muted line under it: everything ab
 **`dialog "Check your pages again"`**: every remembered page read at once (spinner "Reading your pages again (a few minutes)…"), each proposal named with " · from <page>" when there are several pages; nothing new: "Nothing new on your pages." — ✓ Check again reads them all and names the page of each proposal
 
 **Both**
-- Proposals: "What your Master CV does not have yet. Untick what should not go in.", then one `group` per CV section (a plain block named by the section, fixed gaps), a `checkbox` per proposal named by its text, all ticked. **Cancel**, **Add N to my CV** (primary; disabled at 0). — ✓ reads the page asked for…
+- Proposals: "What your Master CV does not have yet. Untick what should not go in.", then one `group` per CV section (a plain block named by the section, fixed gaps), a `checkbox` per proposal named by its text, all ticked. **Cancel**, **Add N to my Master CV** (primary; disabled at 0). — ✓ reads the page asked for…
 - `enrich` proposes nothing the CV already says, even in other punctuation, Markdown or near wording (the words compared, a line 90% alike), so a second read adds nothing twice. — unit: `tests/commands/test_enrich_cli.py`
-- Nothing on the page: "Nothing on that page is missing from your CV." and **Close**. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
-- Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the CV as it reads and in its text
+- Nothing on the page: "Nothing on that page is missing from your Master CV." and **Close**. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
+- Add: `enrich({apply})`, the spinner "Adding to your Master CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the CV as it reads and in its text
 - Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — not covered by a journey; the refusal: unit: `tests/commands/test_enrich_cli.py`; the dialog showing it: no test
 
 ### 4.5 CV style (StyleRow.tsx, after Master CV)
@@ -323,10 +323,10 @@ Variants to drive:
 `{ role_targets, keywords: [str], topic_terms: [str], saved: false }`. The window reads `keywords` and `topic_terms` (each `?? []`).
 
 ### save_cv
-`{ cv_path, backup }` or `{error}`. Only success or throw is read.
+`save_cv({markdown, backup})` (`backup` false after a visit's first save): `{ cv_path, backup }` or `{error}`. Only success or throw is read.
 
 ### enrich
-- Propose: `{ outcome: "proposed"|"nothing_new", urls, proposals: [{n, section, text, source}], unreachable: [str], proposals_path? }`. The window reads `proposals` and `unreachable` (each `?? []`).
+- Propose (`urls`, or `files` by `door:enrich-file`): `{ outcome: "proposed"|"nothing_new", urls, files, proposals: [{n, section, text, source}], unreachable: [str], proposals_path? }`. The window reads `proposals` and `unreachable` (each `?? []`).
 - Apply: `{ outcome: "applied", added: [{n,section,text,source}] /* LIST, window expects number */, cv_path, backup }`.
 
 ### market (save:false)
@@ -349,7 +349,7 @@ How the test world produces each part:
 ## 11. Counts and surprises
 
 **Counts**
-- User actions: about **58** distinct actions (controls times action) across the shell, Details fields, Suggest keywords, the save bar, PageSections, the CV editor (Preview, Save, Undo, three tools, two draft buttons), Expand (chips, Read, tick, Add), Markdown link, Hint.
+- User actions: about **58** distinct actions (controls times action) across the shell, Details fields, Suggest keywords, the save bar, PageSections, the Master CV (Preview, Sources' three buttons and its chips, the draft link), Expand (chips, Read, tick, Add), Markdown link, Hint.
 - Failure and edge branches: about **75**, as enumerated above.
 
 **Surprises and bugs**

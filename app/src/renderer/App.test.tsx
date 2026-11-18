@@ -591,13 +591,22 @@ describe('App, the first-launch gate', () => {
       expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
     })
 
-    it('a CV style that is ready is said, and opens Profile on the CV', async () => {
-      gated(profile(), { status_summary: summary({ style: { state: 'ready' } }) })
-      render(<App />)
-      await screen.findByRole('heading', { name: 'Matches' })
-      await userEvent.click(await lines().findByRole('button', { name: 'Your CV style is ready to compare' }))
-      expect(await screen.findByRole('group', { name: 'Sources' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
+    it('a CV style that is ready is said, and opens Profile at CV style, which comes once the CV is read', async () => {
+      const scrolled = vi.fn()
+      Element.prototype.scrollIntoView = function (this: Element) {
+        scrolled(this.id)
+      }
+      try {
+        gated(profile(), { status_summary: summary({ style: { state: 'ready' } }) })
+        render(<App />)
+        await screen.findByRole('heading', { name: 'Matches' })
+        await userEvent.click(await lines().findByRole('button', { name: 'Your CV style is ready to compare' }))
+        expect(await screen.findByRole('heading', { name: 'CV style' })).toBeInTheDocument()
+        await waitFor(() => expect(scrolled).toHaveBeenCalledWith('profile-style'))
+        expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
+      } finally {
+        delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+      }
     })
 
     it('a CV style being built is not said; the summary is read again every 30 s until it is ready', async () => {

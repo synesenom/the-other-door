@@ -103,6 +103,35 @@ def test_propose_from_a_cv_file_reads_its_text_and_fetches_nothing(env, monkeypa
     assert "Spoke at PyData Copenhagen 2025" in sent and "Built a churn model" in sent
     assert "https://github.com/jane" not in sent  # the remembered pages are not read with a file
     assert "--allowedTools" not in calls[0]["args"]  # nothing to fetch
+    # the rules say what a CV file is and what its proposals' source is
+    rules = calls[0]["args"][calls[0]["args"].index("--system-prompt") + 1]
+    assert "CV file" in rules and "file name" in rules
+    assert "CV file new-cv.md:" in sent
+
+
+def test_propose_from_pages_and_a_cv_file_fetches_the_pages_and_reads_the_file(env, monkeypatch, tmp_path):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    new_cv = tmp_path / "new-cv.md"
+    new_cv.write_text("# Jane\n")
+    result = enrich_cmd._enrich_core(["https://jane.example"], files=[str(new_cv)], profile_dir=env.profile_dir)
+    assert result["urls"] == ["https://jane.example"] and result["files"] == [str(new_cv)]
+    args = calls[0]["args"]
+    assert args[args.index("--allowedTools") + 1] == "WebFetch"
+    assert "CV file new-cv.md:" in calls[0]["input"] and "https://jane.example" in calls[0]["input"]
+
+
+def test_files_with_apply_is_an_error(env, monkeypatch, tmp_path):
+    _answer(monkeypatch)
+    with pytest.raises(ValueError, match="not both"):
+        enrich_cmd._enrich_core(files=[str(tmp_path / "cv.md")], apply=[1], profile_dir=env.profile_dir)
+
+
+def test_cli_a_missing_file_says_so_and_fails(env, monkeypatch, tmp_path, prompts):
+    _answer(monkeypatch)
+    result = CliRunner().invoke(cli, ["cv", "enrich", "--file", str(tmp_path / "gone.pdf")])
+    assert result.exit_code == 1
+    assert "gone.pdf: no such file" in result_text(result)
 
 
 def test_propose_from_a_file_of_another_type_is_an_error(env, monkeypatch, tmp_path):
