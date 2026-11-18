@@ -46,6 +46,8 @@ export interface WorldOptions {
   persona?: string
   /** A first launch: no profile/, no jobs/. */
   empty?: boolean
+  /** The data folder's own name inside the scratch folder (default `home`); a non-ASCII one tests paths (#277). */
+  homeName?: string
   /** Whether the stand-in claude is signed in (default true). */
   signedIn?: boolean
   /** Extra keys for profile/config.json. */
@@ -396,7 +398,7 @@ export function answersFor(persona: Persona) {
   }
 }
 
-const dirsOf = (scratch: string) => ({ home: join(scratch, 'home'), world: join(scratch, 'world'), bin: join(scratch, 'bin'), userHome: join(scratch, 'userhome') })
+const dirsOf = (scratch: string, homeName = 'home') => ({ home: join(scratch, homeName), world: join(scratch, 'world'), bin: join(scratch, 'bin'), userHome: join(scratch, 'userhome') })
 
 /** Builds a world in a fresh temp folder. */
 export function buildWorld(options: WorldOptions = {}): World {
@@ -404,7 +406,7 @@ export function buildWorld(options: WorldOptions = {}): World {
   if (!persona) throw new Error(`no persona ${options.persona}`)
   const ads = ADS.filter((a) => a.persona === persona.key)
   const scratch = mkdtempSync(join(tmpdir(), 'door-world-'))
-  const { home, world: worldDir, bin, userHome } = dirsOf(scratch)
+  const { home, world: worldDir, bin, userHome } = dirsOf(scratch, options.homeName)
   // a user folder as Windows lays it out: its known folders (Downloads, AppData) resolve only when they exist
   const roaming = join(userHome, 'AppData', 'Roaming')
   const local = join(userHome, 'AppData', 'Local')

@@ -274,6 +274,11 @@ describe('resolveSpawn', () => {
     expect(s.env).not.toHaveProperty('SECRET')
   })
 
+  it('passes a non-ASCII DOOR_HOME through unchanged (#277)', () => {
+    const home = 'C:\\Users\\Zoé\\Åsa Söderlund\\door'
+    expect(resolveSpawn('/repo', { ...env, DOOR_HOME: home }, 'linux').env).toMatchObject({ DOOR_HOME: home })
+  })
+
   it('forwards CLAUDE_CONFIG_DIR when set and leaves it out when not', () => {
     expect(resolveSpawn('/repo', { ...env, CLAUDE_CONFIG_DIR: '/sandbox/.claude' }, 'linux').env).toMatchObject({ CLAUDE_CONFIG_DIR: '/sandbox/.claude' })
     expect(resolveSpawn('/repo', env, 'linux').env).not.toHaveProperty('CLAUDE_CONFIG_DIR')
@@ -319,6 +324,13 @@ describe('resolvePackagedSpawn', () => {
     expect(s.command).toBe('C:\\Program Files\\door\\resources\\python\\python.exe')
     expect(s.env!['PATH']).toBe('C:\\Users\\ada\\.local\\bin;C:\\Windows')
     expect(s.env!['APPDATA']).toBe('C:\\Users\\ada\\AppData\\Roaming')
+  })
+
+  it('on Windows: a non-ASCII data folder and user folder reach the env unchanged (#277)', () => {
+    const home = 'C:\\Users\\Zoé\\AppData\\Roaming\\door'
+    const s = resolvePackagedSpawn({ resourcesPath: 'C:\\Program Files\\door\\resources', home, platform: 'win32', env: { PATH: 'C:\\Windows', USERPROFILE: 'C:\\Users\\Zoé' } })
+    expect(s.env).toMatchObject({ DOOR_HOME: home, USERPROFILE: 'C:\\Users\\Zoé' })
+    expect(s.env!['PATH']).toBe('C:\\Users\\Zoé\\.local\\bin;C:\\Windows')
   })
 
   it('on Windows: keeps what Windows needs to run a .cmd (an npm-installed claude.cmd), whatever its case', () => {
