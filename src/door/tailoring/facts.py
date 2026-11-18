@@ -40,12 +40,19 @@ _TODO_RE = re.compile(r"\bTODO\b")
 
 @lru_cache(maxsize=1)
 def _date_res() -> tuple[re.Pattern, re.Pattern, re.Pattern]:
-    """The day before a month name ("29 octobre", "1er oct.") and a numeric month before a year
-    ("10/2026", "29/10/2026"), and a day after the month name when it ends in a period ("2020. március 15."): a date's day and month are not figures to check, its year still is."""
+    """The parts of a date that are not figures to check (its year still is): the day before a
+    month name ("29 octobre", "1er oct."), the day after one ("2020. március 15.", "March 15, 2020"),
+    and a numeric day or month around a year ("10/2026", "15.03.2020", "2020.03.15.")."""
     names = sorted((re.escape(n) for n in i18n.month_numbers()), key=len, reverse=True)
     month = re.compile(rf"(?<![\w.,])\d{{1,2}}(?:er|re|e)?\.?[ \u00a0\u202f]*(?=(?:{'|'.join(names)})(?!\w))", re.I) if names else re.compile(r"(?!)")
-    after = re.compile(rf"(?<![\w])((?:{'|'.join(names)}))[ \u00a0\u202f]*\d{{1,2}}\.(?!\d)", re.I) if names else re.compile(r"(?!)")
-    numeric = re.compile(r"(?<![\w.,/])(?:(?:0?[1-9]|[12]\d|3[01])/)?(?:0?[1-9]|1[0-2])/(?=(?:19|20)\d\d(?!\d))")
+    day = r"\d{1,2}"
+    # after the month name: a closing period ("2020. március 15."), a Hungarian suffix ("15-én"), or a comma before the year ("March 15, 2020")
+    after = re.compile(rf"(?<![\w])({'|'.join(names)})[ \u00a0\u202f]*{day}(?:\.(?!\d)|-[éá]n|,(?=[ \u00a0\u202f]*(?:19|20)\d\d))", re.I) if names else re.compile(r"(?!)")
+    d, m = r"(?:0?[1-9]|[12]\d|3[01])", r"(?:0?[1-9]|1[0-2])"
+    # a numeric date: month/ before a year, day.month. before a year (dk), and .month.day after a year (hu)
+    numeric = re.compile(
+        rf"(?<![\w.,/])(?:(?:{d}/)?{m}/|{d}\.{m}\.)(?=(?:19|20)\d\d(?!\d))|(?<![\d.,/](?:19|20)\d\d)(?<=(?:19|20)\d\d)\.{m}\.{d}\.?(?!\d)"
+    )
     return month, after, numeric
 
 

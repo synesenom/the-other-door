@@ -715,7 +715,7 @@ def test_french_months_are_numbered_and_validated(tmp_path):
     assert months["janvier"] == 1 and months["août"] == 8 and months["aout"] == 8
     assert months["décembre"] == 12 and months["févr."] == 2 and months["sept."] == 9
     assert set(months.values()) == set(range(1, 13))
-    assert len(i18n.month_numbers(("da",))) == 12
+    assert i18n.month_numbers(("da",))["okt."] == 10 and set(i18n.month_numbers(("da",)).values()) == set(range(1, 13))
     for body in ('months = {janvier = 13}', 'months = {janvier = 1}'):
         bad = tmp_path / "xx.toml"
         bad.write_text(f'code = "xx"\nname = "X"\n{body}\n')
