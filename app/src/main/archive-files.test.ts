@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createArchiveFiles, defaultExportName, defaultReportName } from './archive-files'
 
-function setup(opts: { save?: string | null; open?: string[]; existing?: string[]; real?: Record<string, string> } = {}) {
+function setup(opts: { save?: string | null; open?: string[]; existing?: string[]; real?: Record<string, string>; unreadable?: boolean } = {}) {
   const showSaveDialog = vi.fn(async () => (opts.save === null ? { canceled: true } : { canceled: false, filePath: opts.save ?? '/Users/ada/door-export-2026-10-30.tar.gz' }))
   const showOpenDialog = vi.fn(async () => (opts.open ? { canceled: false, filePaths: opts.open } : { canceled: true, filePaths: [] }))
   const exists = vi.fn((p: string) => (opts.existing ?? []).includes(p))
-  const realpath = vi.fn(async (p: string) => opts.real?.[p] ?? p)
+  const realpath = vi.fn(async (p: string) => {
+    if (opts.unreadable) throw new Error('gone')
+    return opts.real?.[p] ?? p
+  })
   const files = createArchiveFiles({ showSaveDialog, showOpenDialog, exists, realpath, today: () => '2026-10-30' })
   return { files, showSaveDialog, showOpenDialog, exists, realpath }
 }
@@ -38,6 +41,11 @@ describe('exportTarget', () => {
 })
 
 describe('pick and take', () => {
+  it('says so when the file cannot be resolved', async () => {
+    const { files } = setup({ open: ['/a/x.tar.gz'], unreadable: true })
+    expect(await files.pick()).toEqual({ error: 'That file could not be read.' })
+  })
+
   it('a picked archive comes back as a token and its name, never its path', async () => {
     const { files } = setup({ open: ['/Users/ada/secret/door-export.tar.gz'] })
     const r = await files.pick()

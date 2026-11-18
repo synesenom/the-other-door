@@ -4,11 +4,12 @@
 // tokens back. The registry is never readable from outside (there is no getter), and is cleared when
 // the wizard closes. A file choice always goes through one of those two and a token like this.
 import { randomUUID } from 'node:crypto'
-import { basename, extname } from 'node:path'
+import { basename } from 'node:path'
+import { checkPicked } from './files'
 import { isExternalUrl } from './security'
 
 export const MAX_CV_BYTES = 25 * 1024 * 1024
-export const CV_EXTENSIONS = ['.pdf', '.docx', '.md', '.markdown', '.txt']
+export const CV_EXTENSIONS = ['pdf', 'docx', 'md', 'markdown', 'txt']
 export const LINKEDIN_HINT = "LinkedIn pages can't be read; save your profile as a PDF (More → Save to PDF) and add that file."
 
 export interface CvFile {
@@ -28,23 +29,11 @@ interface Deps {
   realpath?(path: string): Promise<string>
 }
 
-/** Why a file cannot be used, or null. */
-async function problem(path: string, deps: Deps): Promise<{ reason: string; size?: number } | { reason: null; size: number; real: string }> {
-  const isCv = (p: string) => CV_EXTENSIONS.includes(extname(p).toLowerCase())
-  if (!isCv(path)) return { reason: 'Only PDF, DOCX, Markdown and text files can be read.' }
-  let real: string
-  let size: number
-  try {
-    // The name picked and the file behind it must both be a CV file: a pick later swapped for a
-    // link to something else is refused, and the server is handed the real path checked here.
-    real = deps.realpath ? await deps.realpath(path) : path
-    if (!isCv(real)) return { reason: 'Only PDF, DOCX, Markdown and text files can be read.' }
-    size = (await deps.stat(real)).size
-  } catch {
-    return { reason: 'That file could not be read.' }
-  }
-  if (size > MAX_CV_BYTES) return { reason: 'That file is over 25 MB.' }
-  return { reason: null, size, real }
+/** The rule for a CV file; the server is handed the real path checked here (a pick later swapped for a link is refused). */
+const CV_RULE = {
+  extensions: CV_EXTENSIONS,
+  size: { maxBytes: MAX_CV_BYTES, tooBig: 'That file is over 25 MB.' },
+  wrongType: 'Only PDF, DOCX, Markdown and text files can be read.',
 }
 
 export function createCvSources(deps: Deps) {
@@ -53,9 +42,9 @@ export function createCvSources(deps: Deps) {
     const result: PickResult = { files: [], refused: [] }
     for (const path of paths) {
       const name = basename(path)
-      const p = await problem(path, deps)
-      if (p.reason !== null) {
-        result.refused.push({ name, reason: p.reason })
+      const p = await checkPicked(path, CV_RULE, deps)
+      if (!p.ok) {
+        result.refused.push({ name, reason: p.error })
         continue
       }
       const token = randomUUID()
@@ -68,7 +57,7 @@ export function createCvSources(deps: Deps) {
     async pick(): Promise<PickResult> {
       const answer = await deps.showOpenDialog({
         properties: ['openFile', 'multiSelections'],
-        filters: [{ name: 'CV files', extensions: CV_EXTENSIONS.map((e) => e.slice(1)) }],
+        filters: [{ name: 'CV files', extensions: CV_EXTENSIONS }],
       })
       return answer.canceled ? { files: [], refused: [] } : add(answer.filePaths)
     },
@@ -78,8 +67,8 @@ export function createCvSources(deps: Deps) {
       for (const token of tokens) {
         const path = registry.get(token)
         if (!path) return { ok: false, error: 'A chosen file is no longer available; add it again.' }
-        const p = await problem(path, deps)
-        if (p.reason !== null) return { ok: false, error: `${basename(path)}: ${p.reason}` }
+        const p = await checkPicked(path, CV_RULE, deps)
+        if (!p.ok) return { ok: false, error: `${basename(path)}: ${p.error}` }
         paths.push(p.real)
       }
       return { ok: true, paths }
