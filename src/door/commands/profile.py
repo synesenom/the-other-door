@@ -2,7 +2,6 @@
 
 import json
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -55,7 +54,7 @@ def _copy_missing_example_files(example_dir: Path, profile_dir: Path) -> list[st
         if dest.exists():
             continue
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
+        utils.write_atomic(dest, src.read_bytes())
         copied.append(str(rel))
     return copied
 

@@ -20,7 +20,7 @@ import click
 from door.commands import _common as common
 from door.commands import _prompts
 from door.core import profile_loader
-from door.core import claude_cli, workspace
+from door.core import claude_cli, utils, workspace
 
 _DEFAULT_MODEL = "sonnet"
 _PROPOSALS_FILE = ".enrich_proposals.json"
@@ -143,9 +143,9 @@ def _propose(urls, *, config, cv_path, profile_dir, model, timeout_s) -> dict:
     result = {"outcome": "proposed" if proposals else "nothing_new", "urls": urls, "proposals": proposals, "unreachable": unreachable}
     proposals_path = profile_dir / _PROPOSALS_FILE
     if proposals:
-        proposals_path.write_text(
+        utils.write_atomic(
+            proposals_path,
             json.dumps({"cv_path": str(cv_path), "cv_digest": _digest(cv_text), "proposals": proposals}, indent=2),
-            encoding="utf-8",
         )
         result["proposals_path"] = str(proposals_path)
     elif proposals_path.exists():

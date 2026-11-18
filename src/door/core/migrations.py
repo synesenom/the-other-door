@@ -376,7 +376,7 @@ def upgrade_folder(folder: Path, steps: list[Step], *, backups_dir: Path, label:
     if compare(have, want) != "upgrade":
         return False
     backup = _backup(folder, Path(backups_dir), label, have, want)
-    (folder / MARKER).write_text(str(backup), encoding="utf-8")  # a kill from here on is undone at the next start
+    utils.write_atomic(folder / MARKER, str(backup))  # a kill from here on is undone at the next start
     ran = ""
     try:
         for step in steps[have.n:]:

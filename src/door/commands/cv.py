@@ -19,7 +19,7 @@ import click
 from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
-from door.core import claude_cli, migrations, profile_loader, workspace
+from door.core import claude_cli, migrations, profile_loader, utils, workspace
 from door.style import cv_body, style_icons
 
 _DEFAULT_MODEL = "sonnet"
@@ -285,7 +285,7 @@ def _draft_cv_core(
             draft_path.unlink()
         result.update(cv_path=str(cv_path), backup=str(backup) if backup else None)
     else:
-        draft_path.write_text(markdown, encoding="utf-8")
+        utils.write_atomic(draft_path, markdown)
         result["draft_path"] = str(draft_path)
     return result
 

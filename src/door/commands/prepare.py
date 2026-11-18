@@ -270,7 +270,7 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None,
             (output_dir / name).unlink(missing_ok=True)
     try:
         agents = {name: claude_cli.agent_definition(name) for name in _TAILOR_AGENTS}
-        (Path(posting_path).parent / _AGENTS_FILE).write_text(json.dumps(agents), encoding="utf-8")
+        utils.write_atomic(Path(posting_path).parent / _AGENTS_FILE, json.dumps(agents))
     except (OSError, ValueError) as exc:
         raise TailorError(f"cannot set up the tailor agents: {exc}") from None
     try:

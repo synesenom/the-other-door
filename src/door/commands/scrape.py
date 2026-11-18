@@ -4,7 +4,6 @@ watermarks, resting and history, and run the passes (liveness, prefilter, dedup,
 condense, prescreen) over what was written. `door.pipeline.search` and `.collect` call
 `_scrape_core` with their own site lists; the match step runs the passes (`_scrape_passes`)."""
 
-import json
 import queue
 import re
 import threading

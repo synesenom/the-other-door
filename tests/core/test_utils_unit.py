@@ -167,6 +167,17 @@ class TestWriteAtomic:
         write_atomic(tmp_path / "n.json", "{}")
         assert stat.S_IMODE((tmp_path / "n.json").stat().st_mode) == 0o600
 
+    def test_a_write_never_touches_the_process_umask(self, tmp_path, monkeypatch):
+        import os
+
+        from door.core import utils
+
+        def no(*_a):
+            raise AssertionError("os.umask called during a write")
+
+        monkeypatch.setattr(os, "umask", no)
+        utils.write_atomic(tmp_path / "new.txt", "x")
+
     def test_mode_over_an_existing_file_wins(self, tmp_path):
         import os
         import stat

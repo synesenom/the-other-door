@@ -5,7 +5,7 @@ is unsupported before it ends. There is no command. A call is one round, two at 
 from pathlib import Path
 
 from door.commands import _common as common
-from door.core import workspace
+from door.core import utils, workspace
 from door.tailoring import facts as facts_mod
 
 MAX_ROUNDS = 2
@@ -49,7 +49,7 @@ def _check_facts_core(job_id: str, keep: list[dict] | None = None, jobs_dir: Pat
     if found is None:
         return {"job_id": job_id, "round": used, "rounds_left": MAX_ROUNDS - used, "unsupported": None}
     try:
-        (output_dir / ROUNDS_FILE).write_text(str(used + 1), encoding="utf-8")
+        utils.write_atomic(output_dir / ROUNDS_FILE, str(used + 1))
     except OSError:
         pass
     return {"job_id": job_id, "round": used + 1, "rounds_left": MAX_ROUNDS - used - 1, "unsupported": found}
