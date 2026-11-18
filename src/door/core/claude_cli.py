@@ -15,6 +15,10 @@ from pathlib import Path
 from door.core import usage, workspace
 from door.core.downloads import installers
 
+# The words are the app's (no command, #304); a command adds `INSTALL_HINT`.
+NO_CLAUDE = "Claude is not installed yet."
+INSTALL_HINT = "Run `./door doctor --fix` to install the claude CLI."
+
 
 def config_dir(profile_dir: Path | None = None) -> str | None:
     """profile/config.json's `claude_config_dir`, `~` expanded; None when unset.
@@ -174,6 +178,8 @@ def run(
         )
     except subprocess.TimeoutExpired:
         raise ClaudeError(f"claude -p timed out after {timeout_s:.0f}s") from None
+    except FileNotFoundError:
+        raise ClaudeError(NO_CLAUDE) from None
     except OSError as exc:
         raise ClaudeError(f"could not invoke `claude` CLI: {exc}") from None
     envelope, limits = read_stream(result.stdout)

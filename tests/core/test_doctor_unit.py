@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from door.core import doctor, workspace
+from door.core import claude_cli, doctor, workspace
 from door.core.downloads import chromium
 from profile_utils import write_config
 
@@ -832,7 +832,7 @@ def test_check_claude_cli_finds_local_bin_off_path(tmp_path):
 
 def test_check_claude_cli_fix_is_doctor_fix(tmp_path):
     check = doctor.check_claude_cli(which=_which(), home=tmp_path)
-    assert check["fix"].startswith("./door doctor --fix")
+    assert check["fix"] == claude_cli.INSTALL_HINT  # the command written once, beside the browser one
 
 
 def test_check_claude_login_unreadable_fix_is_claude_update():

@@ -50,7 +50,8 @@ def test_run_uses_the_profiles_plan_and_a_fresh_session(tmp_path, monkeypatch):
     "exc, message",
     [
         (subprocess.TimeoutExpired(["claude"], 7), "timed out after 7s"),
-        (FileNotFoundError("claude"), "could not invoke `claude` CLI"),
+        (FileNotFoundError("claude"), "^" + claude_cli.NO_CLAUDE + "$"),
+        (PermissionError("claude"), "could not invoke `claude` CLI"),
     ],
 )
 def test_run_wraps_failures_in_claude_error(monkeypatch, exc, message):

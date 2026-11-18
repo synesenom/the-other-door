@@ -160,7 +160,7 @@ def check_claude_cli(which=shutil.which, home: Path | None = None) -> dict:
     check = _check(
         "claude CLI", bool(found),
         f"claude: {found}" if found else "no `claude` on PATH or in ~/.local/bin — needed by match/prepare/revise",
-        "./door doctor --fix   (installs the claude CLI, no sudo)", tool="claude",
+        claude_cli.INSTALL_HINT, tool="claude",
     )
     return {**check, "details": {"path": str(found)}} if found else check
 

@@ -690,3 +690,12 @@ def test_show_names_the_pdfs_plainly_without_a_name(env, fake_pages):
     names = matches_cmd._show_core("jobindex-top", jobs_dir=env.jobs_dir)["materials"]["file_names"]
 
     assert names == {"cv": "CV.pdf", "cover_letter": "Cover letter.pdf"}
+
+
+def test_revise_without_claude_says_so_in_one_plain_sentence(revise_env, monkeypatch):
+    def missing(argv, **k):
+        raise FileNotFoundError("claude")
+    monkeypatch.setattr(subprocess, "run", missing)
+    with pytest.raises(revise_cmd.ReviseError) as err:
+        revise_cmd._revise_core("jobindex-top", "cv", "tighten", jobs_dir=revise_env.jobs_dir)
+    assert str(err.value) == "Claude is not installed yet; file left unchanged"
