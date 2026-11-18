@@ -145,8 +145,13 @@ def _data_refusal(tool: str) -> str | None:
     return state["message"]
 
 
-# One lock per event loop (a test runs many): the queue of the sync tools.
-_SYNC_LOCKS: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+# The server's locks, one set per event loop (a test calling `asyncio.run` repeatedly would otherwise hit a
+# cross-loop error): "sync" queues the sync tools, "long" is the two long tools' busy lock.
+_LOOP_LOCKS: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+
+
+def _loop_lock(kind: str) -> asyncio.Lock:
+    return _LOOP_LOCKS.setdefault(asyncio.get_running_loop(), {}).setdefault(kind, asyncio.Lock())
 
 
 class _DoorMCP(MCPServer):
@@ -179,8 +184,7 @@ class _DoorMCP(MCPServer):
         tool = self._tool_manager.get_tool(name)
         if tool is None or tool.is_async:
             return contextlib.nullcontext()
-        loop = asyncio.get_running_loop()
-        return _SYNC_LOCKS.setdefault(loop, asyncio.Lock())
+        return _loop_lock("sync")
 
     def _refuse_unknown_arguments(self, name, arguments) -> None:
         """MCPServer's argument model drops a key it does not know; a misnamed one must fail, not take the default (#268)."""
@@ -349,18 +353,6 @@ _BUSY = (
     "wait for it to finish before calling again"
 )
 
-# One lock for the two long tools, re-created for each running event loop (a
-# test calling `asyncio.run` repeatedly would otherwise hit a cross-loop error).
-_serial = {"loop": None, "lock": None}
-
-
-def _serial_lock() -> asyncio.Lock:
-    loop = asyncio.get_running_loop()
-    if _serial["loop"] is not loop:
-        _serial["loop"], _serial["lock"] = loop, asyncio.Lock()
-    return _serial["lock"]
-
-
 class _McpBridge:
     """A progress `Reporter` that forwards events to ``ctx.report_progress``.
 
@@ -444,7 +436,7 @@ async def _run_long(ctx, core, *args, tool: str = "find_jobs", **kwargs):
     With background runs on (`door serve`) the run is started and
     ``{"started", "tool", "started_at"}`` comes back at once.
     """
-    lock = _serial_lock()
+    lock = _loop_lock("long")
     if lock.locked():
         return {"error": _BUSY}
     await lock.acquire()
