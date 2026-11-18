@@ -831,3 +831,28 @@ def test_a_tool_call_with_an_unknown_argument_is_refused():
     result = asyncio.run(go())
     assert result.is_error
     assert "bogus" in result.content[0].text
+
+
+def test_two_writing_calls_at_once_do_not_refuse_each_other(tmp_path, monkeypatch):
+    """mcp 1.x ran sync tools one after another on the loop; 2.x runs them in threads, so the lock refused the second."""
+    import time
+
+    from door.core import lock
+
+    monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(server, "_data_refusal", lambda name: None)
+
+    def slow(job_id, jobs_dir):
+        with lock.ledger_lock(jobs_dir, "mark_seen"):
+            time.sleep(0.3)
+        return {"job_id": job_id}
+
+    monkeypatch.setattr(status_cmd, "_mark_seen_core", slow)
+
+    async def scenario():
+        async with Client(door_mcp) as client:
+            return await asyncio.gather(
+                client.call_tool("mark_seen", {"job_id": "a"}), client.call_tool("mark_seen", {"job_id": "b"}))
+
+    results = asyncio.run(scenario())
+    assert [json.loads(r.content[0].text) for r in results] == [{"job_id": "a"}, {"job_id": "b"}]

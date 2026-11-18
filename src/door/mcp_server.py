@@ -36,6 +36,7 @@ reports (`door.core.progress`) go to the client as MCP progress
 notifications (`ctx.report_progress`). The loop being free also means
 `status_summary` answers during a run, with an `in_progress` block. Only one
 of the two runs at a time; a second call comes back as an error at once.
+The other (sync) tools queue and run one at a time, as before mcp 2.x ran them in threads.
 stdout is the JSON-RPC stream, so nothing under `src/door/` prints.
 
 Run directly for the `stdio` transport (the shape Claude Code's `.mcp.json`
@@ -45,10 +46,12 @@ expects):
 """
 
 import asyncio
+import contextlib
 import functools
 import inspect
 import json
 import threading
+import weakref
 from pathlib import Path
 
 from mcp.server.mcpserver import Context, MCPServer
@@ -142,6 +145,10 @@ def _data_refusal(tool: str) -> str | None:
     return state["message"]
 
 
+# One lock per event loop (a test runs many): the queue of the sync tools.
+_SYNC_LOCKS: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+
+
 class _DoorMCP(MCPServer):
     """MCPServer whose every tool call is the one place a failure is logged (#593): over stdio and HTTP alike."""
 
@@ -154,12 +161,22 @@ class _DoorMCP(MCPServer):
             return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": refusal}, indent=2))])
         self._refuse_unknown_arguments(name, arguments)  # the caller fixes it from the refusal: not a failure to log
         try:
-            result = await super().call_tool(name, arguments, context)
+            async with self._one_at_a_time(name):
+                result = await super().call_tool(name, arguments, context)
         except Exception as exc:
             problem_log.crash(f"tool {name}", exc.__cause__ or exc)  # MCPServer wraps it
             raise
         _log_answer(name, _answer_of(result))
         return result
+
+    def _one_at_a_time(self, name):
+        """mcp 2.x runs a sync tool in a thread; 1.x ran them on the loop, one after another. The writing tools take
+        the ledger lock and refuse each other, so sync tools queue here; async ones (a run, a build) stay free."""
+        tool = self._tool_manager.get_tool(name)
+        if tool is None or tool.is_async:
+            return contextlib.nullcontext()
+        loop = asyncio.get_running_loop()
+        return _SYNC_LOCKS.setdefault(loop, asyncio.Lock())
 
     def _refuse_unknown_arguments(self, name, arguments) -> None:
         """MCPServer's argument model drops a key it does not know; a misnamed one must fail, not take the default (#268)."""
