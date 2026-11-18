@@ -12,7 +12,7 @@ import pytest
 from door.commands import compile as compile_cmd
 from door.core import chromium, templates, workspace
 from door.style import cv_body, style_build, style_compare, style_extract, style_preview
-from door.render import html_guard
+from door.render import html_guard, page
 from pdf_utils import font_names, path_count
 from style_build_utils import BIG, EXAMPLE, STYLES, Stylist, cv_only, cv_round, fake_fonts, letter_round
 from style_structure_utils import extract_with, recorded
@@ -105,7 +105,7 @@ def test_a_print_with_the_side_column_on_the_wrong_side_is_found_whatever_its_he
     template = ('<!DOCTYPE html><html lang="<<lang>>"><head><meta charset="utf-8"><style>@page { size: A4; margin: 0 } '
                 "body { margin: 40pt; display: grid; grid-template-columns: 1fr 150pt; font-family: serif } "
                 ".cv-header { grid-column: 1 / -1 } .photo { width: 1pt } " + extra + "</style></head><body><<body>></body></html>")
-    pdf, placed, _ = compile_cmd.print_page(body, template, EXAMPLE / "cv.template.html", "en", tmp_path, "r",
+    pdf, placed, _ = page.print_page(body, template, EXAMPLE / "cv.template.html", "en", tmp_path, "r",
                                             columns=templates.Columns(side=["skills", "languages"]))
     problems = style_build.column_problems(style, style_extract.extract(pdf), placed)
     assert any('"Skills"' in p for p in problems) and any('"Languages"' in p for p in problems), problems
@@ -121,6 +121,6 @@ def test_a_box_drawn_where_the_photo_is_is_found_whatever_its_corners(tmp_path, 
     template = ('<!DOCTYPE html><html lang="<<lang>>"><head><meta charset="utf-8"><style>@page { size: A4; margin: 0 } '
                 'body { margin: 40pt } .photo { width: 1pt } .cv-header::before { content: ""; display: block; '
                 "width: 98pt; height: 98pt; " + css + " }</style></head><body><<body>></body></html>")
-    pdf = compile_cmd.print_page(body, template, EXAMPLE / "cv.template.html", "en", tmp_path, "r")[0]
+    pdf = page.print_page(body, template, EXAMPLE / "cv.template.html", "en", tmp_path, "r")[0]
     style = {"photo": {"page": 1, "bbox": [40.0, 40.0, 138.0, 138.0], "shape": "rect"}}
     assert style_build.photo_box_problems(style, style_extract.painted(pdf))

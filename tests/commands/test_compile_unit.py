@@ -434,3 +434,9 @@ def test_a_plain_span_for_any_other_detail_passes_beside_the_kinded_ones(world):
             "<h2>Experience</h2>")
     world.make(cv=body)
     assert _compile(world)["results"][0]["status"] == "compiled"
+
+
+def test_a_hand_edited_location_that_is_no_text_does_not_stop_a_compile_with_no_photo(world):
+    (world.profile / "config.json").write_text(json.dumps({"name": "Jane Doe", "location": 5}))
+    world.make(cv="<<photo>><p>Jane Doe</p>", posting={"title": "T", "company": "C"})
+    assert _compile(world)["results"][0]["status"] == "compiled"

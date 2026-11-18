@@ -6,10 +6,9 @@ import re
 import pytest
 
 from door import i18n
-from door.commands import compile as compile_cmd
 from door.core import templates
 from door.style import cv_body
-from door.render import html_doc, html_guard
+from door.render import html_doc, html_guard, page
 from paths import REPO_ROOT
 
 EXAMPLE = (REPO_ROOT / "profile.example" / "cv.md").read_text(encoding="utf-8")
@@ -115,7 +114,7 @@ def test_nothing_in_is_nothing_out_and_the_result_is_the_same_each_time():
 
 def test_the_columns_place_its_sections_like_a_tailored_body():
     out = cv_body.body(EXAMPLE, "en")
-    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills", "languages", "certifications"]))
+    placed = page.place_columns(out, templates.Columns(side=["skills", "languages", "certifications"]))
     main, side = placed.split('<div class="side">')
     assert html_doc.headings(main) == ["Profile", "Work Experience", "Education"]
     assert html_doc.headings(side) == ["Skills", "Certifications", "Languages"]
@@ -124,13 +123,13 @@ def test_the_columns_place_its_sections_like_a_tailored_body():
 
 def test_headings_are_placed_in_any_supported_language():
     out = cv_body.body("# A\n\n## Expérience\n\n### R | O — 2020\n\n## Compétences\n\nPython\n", "fr")
-    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills"]))
+    placed = page.place_columns(out, templates.Columns(side=["skills"]))
     assert html_doc.headings(placed.split('<div class="side">')[1]) == ["Compétences"]
 
 
 def test_a_heading_named_as_a_side_heading_goes_to_the_side_whatever_it_says():
     out = "<header></header><h2>Profil</h2><p>a</p><h2>Savoir-être</h2><p>b</p><h2>LOGICIELS</h2><p>c</p>"
-    placed = compile_cmd._place_columns(out, templates.Columns(side=["skills"], headings=["savoir-être", "Logiciels"]))
+    placed = page.place_columns(out, templates.Columns(side=["skills"], headings=["savoir-être", "Logiciels"]))
     main, side = placed.split('<div class="side">')
     assert html_doc.headings(main) == ["Profil"]
     assert html_doc.headings(side) == ["Savoir-être", "LOGICIELS"]
@@ -138,8 +137,8 @@ def test_a_heading_named_as_a_side_heading_goes_to_the_side_whatever_it_says():
 
 def test_side_headings_alone_make_a_side_column_and_a_template_with_none_places_nothing():
     out = "<h2>Logiciels</h2><p>c</p>"
-    assert compile_cmd._place_columns(out, None) == out
-    assert '<div class="side"><h2>Logiciels</h2>' in compile_cmd._place_columns(out, templates.Columns(headings=["Logiciels"]))
+    assert page.place_columns(out, None) == out
+    assert '<div class="side"><h2>Logiciels</h2>' in page.place_columns(out, templates.Columns(headings=["Logiciels"]))
 
 
 def test_every_section_kind_the_i18n_reads_is_the_one_the_columns_use():

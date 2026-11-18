@@ -112,10 +112,10 @@ def _set_status_core(
 def _material_hashes(out_dir: Path) -> dict[str, str]:
     """``{file: sha256}`` of the materials `prepare` leaves in `out_dir` that are there, and the CV photo
     `compile` copied beside them when the CV carries one (#605)."""
-    from door.commands import compile as compile_cmd
+    from door.render import page as page_mod
     from door.commands import prepare as prepare_cmd
 
-    names = (*prepare_cmd._TAILOR_OUTPUTS, *compile_cmd._PHOTO_FILES.values())
+    names = (*prepare_cmd._TAILOR_OUTPUTS, *page_mod.PHOTO_FILES.values())
     return {name: hashlib.sha256((out_dir / name).read_bytes()).hexdigest() for name in names if (out_dir / name).is_file()}
 
 

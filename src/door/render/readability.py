@@ -165,7 +165,7 @@ def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, max_pages
     heading read apart is `spaced` only, not also `missing` or `glued`, which a tailor's retry could not cure. A `cv`
     is also checked for words lost off the page
     (`overflow_problems`, unless no text could be read), for more pages than `max_pages` (`page_problems`) and,
-    when `body` is placed in columns (the `side` div `compile._place_columns` adds only for a template with a side
+    when `body` is placed in columns (the `side` div `page.place_columns` adds only for a template with a side
     column), for a sparse last page (`layout_problems`); a letter gets none of these."""
     from door.render import pdf_render
 

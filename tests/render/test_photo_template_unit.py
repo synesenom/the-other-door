@@ -10,10 +10,10 @@ _LETTER = (REPO_ROOT / "profile.example" / "cover-letter.template.html").read_te
 
 
 def test_the_template_styles_the_photo_class_compile_looks_for():
-    from door.commands import compile as compile_cmd
+    from door.render import page
 
-    css = compile_cmd._COMMENTS.sub("", _TEMPLATE)
-    assert compile_cmd._PHOTO_CLASS.search(css)
+    css = page._COMMENTS.sub("", _TEMPLATE)
+    assert page._PHOTO_CLASS.search(css)
     assert re.search(r"\.cv-header \.photo\s*\{[^}]*width:\s*2\.2cm", css)
 
 
