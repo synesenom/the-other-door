@@ -25,7 +25,8 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from door.core import claude_cli, installers, usage, workspace
+from door.core import claude_cli, usage, workspace
+from door.core.downloads import installers
 from door.core.lock import LockHeldError, ledger_lock
 from door.core.sites import ALL_SITES
 

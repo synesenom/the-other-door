@@ -15,7 +15,8 @@ from door.cli import cli
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import style as style_cmd
-from door.core import chromium, templates, tracker, workspace
+from door.core import templates, tracker, workspace
+from door.core.downloads import chromium
 from door.core.profile_loader import load_profile_config
 from cli_utils import result_text
 from paths import REPO_ROOT

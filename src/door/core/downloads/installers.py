@@ -8,7 +8,7 @@ would install a tool there — nothing here executes anything. `door doctor --fi
 Tools (a `door.core.doctor` check names its tool in `tool`):
 
     chromium    the pinned Chromium headless shell that prints CVs (#165): `python -m
-                door.core.chromium` downloads it, checks its sha256 and unpacks it into a
+                door.core.downloads.chromium` downloads it, checks its sha256 and unpacks it into a
                 per-user folder, no sudo
     claude      the `claude` CLI via Anthropic's native installer into
                 ~/.local/bin, no sudo, no Node, updates itself (npm only when
@@ -25,7 +25,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from door.core import chromium
+from door.core.downloads import chromium
 
 INSTALLABLE = ("claude", "chromium")
 
@@ -130,7 +130,7 @@ def plan_install(tool: str, platform: str, *, which=shutil.which, home: Path | N
         if platform not in (*_UNIX, "windows") or chromium.platform_key() is None:
             hint = "no Chromium headless shell is pinned for this machine"
         else:
-            commands = [[sys.executable, "-m", "door.core.chromium", "--dest", str(root)]]
+            commands = [[sys.executable, "-m", "door.core.downloads.chromium", "--dest", str(root)]]
             note = f"Chromium is in {root} (about 200 MB)."
             if platform in _UNIX and platform != "macos":
                 note += (" On Linux it needs system libraries (libnss3, libgbm1, libxkbcommon0, libasound2 ...); "

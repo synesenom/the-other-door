@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from door.core import chromium
+from door.core.downloads import chromium
 from door.render import html_doc, html_pdf
 from pdf_utils import make_pdf
 

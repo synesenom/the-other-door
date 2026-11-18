@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
-from door.core import chromium
+from door.core.downloads import chromium
 from door.render import html_pdf
 from door.render.html_pdf import PrintError
 from ws_fake import FakeWs

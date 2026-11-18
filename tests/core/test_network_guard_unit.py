@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from door.core import pinned
+from door.core.downloads import pinned
 
 
 def test_a_urllib_download_is_refused(tmp_path):

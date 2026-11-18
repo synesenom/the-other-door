@@ -31,7 +31,8 @@ from pathlib import Path
 from typing import Callable
 
 from door import i18n
-from door.core import claude_cli, installers, usage
+from door.core import claude_cli, usage
+from door.core.downloads import installers
 from door.matching import scorer
 
 DEFAULT_MODEL = "haiku"

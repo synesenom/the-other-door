@@ -28,7 +28,9 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from door.core import chromium, claude_cli, companies, discovery_sources, installers, migrations, runs, sites
+from door.core import claude_cli, companies, discovery_sources, migrations, runs, sites
+from door.core.downloads import chromium
+from door.core.downloads import installers
 from door.core.sites import FEED_SITES
 from door.scrapers import PROBE_TIMEOUT_S, ProbeResult  # noqa: F401 - re-exported
 from door.scrapers import http_client

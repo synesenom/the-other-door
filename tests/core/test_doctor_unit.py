@@ -12,7 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from door.core import chromium, doctor, workspace
+from door.core import doctor, workspace
+from door.core.downloads import chromium
 from profile_utils import write_config
 
 NOW = datetime(2026, 9, 24, 12, 0, tzinfo=timezone.utc)

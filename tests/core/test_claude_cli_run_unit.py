@@ -85,7 +85,7 @@ def test_json_result_rejects_bad_envelopes(stdout, message):
 
 
 def test_run_uses_the_resolved_claude_path(monkeypatch):
-    from door.core import installers
+    from door.core.downloads import installers
 
     calls = []
     monkeypatch.setattr(installers, "find_claude", lambda *a, **k: "/x/claude")

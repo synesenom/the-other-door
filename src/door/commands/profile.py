@@ -433,7 +433,8 @@ def _prereq_step() -> None:
     """Interrupt only for a missing `claude` or sign-in. Declining never stops the wizard: what
     reading the sources cannot do without Claude is asked instead."""
     from door.commands import setup as setup_cmd
-    from door.core import claude_cli, doctor, installers
+    from door.core import claude_cli, doctor
+    from door.core.downloads import installers
 
     if doctor.check_claude_cli()["status"] != "ok":
         if not _prompts.confirm("claude_install", "The other door reads your CV with Claude Code, which is not installed. Install it now?", default=True):

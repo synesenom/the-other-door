@@ -79,7 +79,8 @@ def wizard_calls(monkeypatch, prompts):
     from door.commands import find as find_cmd
     from door.commands import preview as preview_cmd
     from door.commands import titles as titles_cmd
-    from door.core import doctor, installers
+    from door.core import doctor
+    from door.core.downloads import installers
 
     calls = types.SimpleNamespace(keywords=[], drafts=[], basics=_basics(), look={"board": "jobindex", "matches": []}, titles=[
         {"title": "Data Scientist", "reason": "your latest title", "recommended": True},
@@ -382,7 +383,8 @@ def test_public_pages_are_kept_for_enrich_but_not_linkedin(init_env, prompts, mo
 
 
 def test_a_missing_claude_interrupts_and_can_be_declined(init_env, prompts, monkeypatch):
-    from door.core import doctor, installers
+    from door.core import doctor
+    from door.core.downloads import installers
 
     monkeypatch.setattr(doctor, "check_claude_cli", lambda *a, **k: {"status": "missing"})
     monkeypatch.setattr(installers, "find_claude", lambda *a, **k: None)

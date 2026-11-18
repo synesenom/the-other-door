@@ -1,4 +1,4 @@
-"""Unit tests for `door.core.installers` (issue #141).
+"""Unit tests for `door.core.downloads.installers` (issue #141).
 
 Pure planning: which platform we are on, and the exact argv that would
 install each tool there. Nothing is ever executed here.
@@ -8,8 +8,8 @@ import subprocess
 
 import pytest
 
-from door.core import installers
-from door.core.installers import detect_platform, plan_install
+from door.core.downloads import installers
+from door.core.downloads.installers import detect_platform, plan_install
 
 
 @pytest.fixture(autouse=True)
@@ -53,18 +53,18 @@ def _which(*present):
 def test_plan_chromium_runs_the_pinned_installer_module(platform, tmp_path, monkeypatch):
     import sys
 
-    from door.core import chromium
+    from door.core.downloads import chromium
 
     monkeypatch.setattr(chromium, "platform_key", lambda *a, **k: "linux64")
     plan = plan_install("chromium", platform, which=_which(), home=tmp_path)
-    assert plan["commands"] == [[sys.executable, "-m", "door.core.chromium", "--dest", str(chromium.chromium_root(tmp_path))]]
+    assert plan["commands"] == [[sys.executable, "-m", "door.core.downloads.chromium", "--dest", str(chromium.chromium_root(tmp_path))]]
     assert str(chromium.chromium_root(tmp_path)) in plan["note"]
     assert plan["hint"] is None
     assert ("libnss3" in plan["note"]) == (platform not in ("macos", "windows"))
 
 
 def test_plan_chromium_where_no_shell_is_pinned_is_a_hint(tmp_path, monkeypatch):
-    from door.core import chromium
+    from door.core.downloads import chromium
 
     monkeypatch.setattr(chromium, "platform_key", lambda *a, **k: None)
     plan = plan_install("chromium", "debian", which=_which(), home=tmp_path)

@@ -12,7 +12,9 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.core import chromium, companies, installers, profile_loader, progress, templates, workspace
+from door.core import companies, profile_loader, progress, templates, workspace
+from door.core.downloads import chromium
+from door.core.downloads import installers
 from door.core.profile_loader import ConfigError, Profile
 
 

@@ -28,7 +28,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from door.core import chromium, process
+from door.core import process
+from door.core.downloads import chromium
 from door.render import cdp
 
 A4_INCHES = (8.27, 11.69)

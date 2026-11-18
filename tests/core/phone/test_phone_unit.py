@@ -11,7 +11,7 @@ import pytest
 
 from door.core.phone import pairing
 from door.core.phone import phone
-from door.core import pinned as pinned_mod
+from door.core.downloads import pinned as pinned_mod
 
 
 class Proc:

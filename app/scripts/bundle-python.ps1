@@ -48,8 +48,8 @@ robocopy (Join-Path $Repo 'src') (Join-Path $Out 'door\src') /E /XD __pycache__ 
 foreach ($Agent in 'tailor.md', 'reviewer.md', 'matcher.md') { Copy-Item (Join-Path $Repo ".claude\agents\$Agent") (Join-Path $Out 'door\.claude\agents') }
 robocopy (Join-Path $Repo 'profile.example') (Join-Path $Out 'door\profile.example') /E /NFL /NDL /NJH /NJS | Out-Null
 
-# 4. the Chromium headless shell, pinned in src\door\core\chromium_pin.json (the pin `doctor --fix` installs from too)
-$Cr = Get-Content (Join-Path $Repo 'src\door\core\chromium_pin.json') -Raw | ConvertFrom-Json
+# 4. the Chromium headless shell, pinned in src\door\core\downloads\chromium_pin.json (the pin `doctor --fix` installs from too)
+$Cr = Get-Content (Join-Path $Repo 'src\door\core\downloads\chromium_pin.json') -Raw | ConvertFrom-Json
 $CrUrl = $Cr.url.Replace('{version}', $Cr.version).Replace('{key}', 'win64')
 Expand-Archive -Force -Path (Fetch $CrUrl $Cr.platforms.'win64'.sha256) -DestinationPath (Join-Path $Out 'bin\chromium')
 

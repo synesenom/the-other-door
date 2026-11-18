@@ -70,7 +70,8 @@ from pathlib import Path
 from typing import Callable
 
 from door import i18n
-from door.core import claude_cli, installers, usage, workspace
+from door.core import claude_cli, usage, workspace
+from door.core.downloads import installers
 
 _REPO_ROOT = workspace.REPO_ROOT
 _MATCHER_AGENT_PATH = _REPO_ROOT / ".claude" / "agents" / "matcher.md"

@@ -22,7 +22,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from door.core import pinned, process, utils, workspace
+from door.core import process, utils, workspace
+from door.core.downloads import pinned
 from door.core.phone import pairing
 
 DEFAULT_PORT = 8765

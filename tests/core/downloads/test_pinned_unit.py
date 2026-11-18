@@ -7,7 +7,7 @@ import hashlib
 
 import pytest
 
-from door.core import pinned
+from door.core.downloads import pinned
 
 
 def _sha(data: bytes) -> str:

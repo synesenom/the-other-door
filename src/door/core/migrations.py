@@ -41,7 +41,8 @@ from typing import Callable
 
 from door import version as app_version
 from door.core import lock as lock_mod
-from door.core import pinned, problem_log, usage, workspace
+from door.core import problem_log, usage, workspace
+from door.core.downloads import pinned
 
 VERSION_FILE = ".data_version"
 BACKUP_PREFIX = "upgrade-"

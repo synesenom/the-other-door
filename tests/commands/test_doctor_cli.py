@@ -12,7 +12,7 @@ from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import prepare as prepare_cmd
 from door.commands import setup as setup_cmd
-from door.core import chromium as chromium_mod
+from door.core.downloads import chromium as chromium_mod
 from door.core import workspace
 import door.core.doctor as doctor
 import door.mcp_server as server
@@ -319,7 +319,7 @@ def test_doctor_prints_the_data_folder(env, monkeypatch):
 
 
 def test_mcp_registration_passes_door_home_only_when_it_is_not_the_checkout(tmp_path, monkeypatch):
-    from door.core import installers
+    from door.core.downloads import installers
 
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -350,7 +350,7 @@ _REAL_CHROMIUM_AVAILABLE = common._chromium_available
 
 
 def test_claude_available_follows_find_claude(monkeypatch):
-    from door.core import installers
+    from door.core.downloads import installers
 
     monkeypatch.setattr(common, "_claude_available", _REAL_CLAUDE_AVAILABLE)
     monkeypatch.setattr(installers, "find_claude", lambda *a, **k: "/x/claude")

@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from door.core import chromium
-from door.core import pinned as pinned_mod
+from door.core.downloads import chromium
+from door.core.downloads import pinned as pinned_mod
 
 
 def _install(dest, fetch):

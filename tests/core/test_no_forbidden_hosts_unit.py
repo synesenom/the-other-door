@@ -68,6 +68,6 @@ def test_only_the_drive_module_names_googles_hosts():
         rel
         for rel, text in _texts()
         for host in ("googleapis.com", "accounts.google.com")
-        if host in text and rel not in ("src/door/core/sync/drive.py", "src/door/core/chromium_pin.json")
+        if host in text and rel not in ("src/door/core/sync/drive.py", "src/door/core/downloads/chromium_pin.json")
     ]
     assert offenders == []

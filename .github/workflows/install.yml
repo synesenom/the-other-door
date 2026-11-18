@@ -12,10 +12,10 @@ on:
       - poetry.lock
       - scripts/setup.sh
       - scripts/setup.ps1
-      - src/door/core/installers.py
-      - src/door/core/chromium.py
-      - src/door/core/chromium_pin.json
-      - src/door/core/pinned.py
+      - src/door/core/downloads/installers.py
+      - src/door/core/downloads/chromium.py
+      - src/door/core/downloads/chromium_pin.json
+      - src/door/core/downloads/pinned.py
   push:
     branches: [main]
     paths:
@@ -23,10 +23,10 @@ on:
       - poetry.lock
       - scripts/setup.sh
       - scripts/setup.ps1
-      - src/door/core/installers.py
-      - src/door/core/chromium.py
-      - src/door/core/chromium_pin.json
-      - src/door/core/pinned.py
+      - src/door/core/downloads/installers.py
+      - src/door/core/downloads/chromium.py
+      - src/door/core/downloads/chromium_pin.json
+      - src/door/core/downloads/pinned.py
   workflow_dispatch:
 
 # A newer push to the same pull request cancels the run it makes pointless
@@ -76,7 +76,7 @@ jobs:
           PYTHONPATH=src poetry run python -c "
           import sys
           from door.commands import setup
-          from door.core import chromium
+          from door.core.downloads import chromium
           result = setup._setup_core(install=['chromium'], yes=True)
           for entry in result['results']:
               print(entry['tool'], 'ok' if entry['ok'] else entry.get('error'))

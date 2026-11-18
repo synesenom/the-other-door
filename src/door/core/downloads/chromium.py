@@ -3,7 +3,7 @@
 One data file, `chromium_pin.json`, names the Chrome for Testing version and each platform's
 sha256; this module and the app's bundle scripts read it, so there is one pin. The shell is
 found in the packaged app's `$DOOR_BIN/chromium/`, else in a per-user folder that
-`python -m door.core.chromium --dest <folder>` fills (what `doctor --fix` runs): downloaded,
+`python -m door.core.downloads.chromium --dest <folder>` fills (what `doctor --fix` runs): downloaded,
 checked against the pin, unpacked, never partly.
 """
 
@@ -19,7 +19,8 @@ import sys
 import zipfile
 from pathlib import Path
 
-from door.core import pinned, utils
+from door.core import utils
+from door.core.downloads import pinned
 
 _PIN = Path(__file__).with_name("chromium_pin.json")
 
@@ -134,7 +135,7 @@ def install(dest: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m door.core.chromium")
+    parser = argparse.ArgumentParser(prog="python -m door.core.downloads.chromium")
     parser.add_argument("--dest", required=True, type=Path)
     args = parser.parse_args(argv)
     try:

@@ -17,7 +17,8 @@ import re
 import statistics
 from pathlib import Path
 
-from door.core import pinned, utils
+from door.core import utils
+from door.core.downloads import pinned
 
 _PIN = Path(__file__).with_name("fonts_pin.json")
 ADVANCE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "

@@ -14,7 +14,7 @@ from door.commands import setup as setup_cmd
 from door.core import workspace
 import shutil
 import door.core.doctor as doctor
-import door.core.installers as installers
+from door.core.downloads import installers
 import door.mcp_server as server
 from profile_utils import write_config
 from cli_utils import result_text
@@ -80,7 +80,7 @@ def env(tmp_path, monkeypatch):
     return types.SimpleNamespace(profile_dir=profile_dir, jobs_dir=jobs_dir, ran=ran)
 
 
-CHROMIUM_ARGV = ["python", "-m", "door.core.chromium", "--dest", "<root>"]  # the `env` fixture stubs plan_install's chromium step
+CHROMIUM_ARGV = ["python", "-m", "door.core.downloads.chromium", "--dest", "<root>"]  # the `env` fixture stubs plan_install's chromium step
 CLAUDE_ARGV = ["sh", "-c", "s=\"$(curl -fsSL https://claude.ai/install.sh)\" && printf '%s\\n' \"$s\" | bash -s stable"]
 
 

@@ -82,7 +82,7 @@ def _no_real_claude_lookup(monkeypatch, tmp_path_factory):
     `which`/`home` or patches `installers.find_claude` itself."""
     import shutil
 
-    from door.core import installers
+    from door.core.downloads import installers
 
     real = installers.find_claude
     real_which = shutil.which
@@ -101,7 +101,7 @@ def _no_real_chromium_lookup(request, monkeypatch, tmp_path_factory):
     """A test never finds the developer's Chromium shell (`$DOOR_BIN`, `~/.local/share/door`), so
     `doctor` starts none: the lookup reads an empty home unless a test passes its own `home` or
     patches `find_chromium` itself; a test marked `real_chromium` prints with the real one."""
-    from door.core import chromium
+    from door.core.downloads import chromium
 
     if request.node.get_closest_marker("live") or request.node.get_closest_marker("real_chromium"):
         return
