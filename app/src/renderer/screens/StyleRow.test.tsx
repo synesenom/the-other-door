@@ -47,7 +47,7 @@ describe('StyleRow, no style of your own yet', () => {
     await open({})
     const img = await ready()
     expect(img.getAttribute('src')).toBe('door-file://style/default/cv_page_1.png?v=d1')
-    expect(screen.getByRole('group', { name: "The other door" }).className).toContain('style-current') // the blue dash above it
+    expect(screen.getByRole('group', { name: "The other door" }).className).toContain('style-current') // the accent border on it
     expect(screen.getByRole('switch', { name: 'Use my own style' }).getAttribute('aria-checked')).toBe('false')
     expect(screen.getByText(/in the style of your CV file\. Building it takes 2–5 minutes in the background\./)).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Use the style of|Use this style|Keep/ })).toBeNull()
@@ -111,7 +111,7 @@ describe('StyleRow, no style of your own yet', () => {
 })
 
 describe('StyleRow, a style of your own', () => {
-  it("compares the two, the blue dash above the one in use, no button under either", async () => {
+  it("compares the two, the accent border on the one in use, no button under either", async () => {
     await open({ show_style: both({ candidate: true }) }, { state: 'ready' })
     await ready()
     expect(screen.getByRole('img', { name: /Your CV/ }).getAttribute('src')).toBe('door-file://style/like/cv_page_1.png?v=l1')
@@ -120,7 +120,7 @@ describe('StyleRow, a style of your own', () => {
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(["Show The other door in full", 'Show Your CV in full'])
   })
 
-  it('on: use_style like, the app told, the dash moved, then the question about the prepared CVs', async () => {
+  it('on: use_style like, the app told, the border moved, then the question about the prepared CVs', async () => {
     const calls: Record<string, unknown>[] = []
     let inUse = 'default'
     const h = await open({ show_style: () => both({ in_use: inUse }), use_style: (a: Record<string, unknown>) => (calls.push(a), (inUse = 'like'), { in_use: 'like', prepared: 2 }) })

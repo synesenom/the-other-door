@@ -22,7 +22,7 @@ export async function openDetails(page: Page): Promise<void> {
 export async function openCv(page: Page): Promise<void> {
   await openDetails(page)
   // the CV is a section of the one Profile page: brought into view, as its link beside the page does
-  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'CV', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Your CV', exact: true }).click()
   await expect(page.getByRole('switch', { name: 'Preview' })).toBeVisible({ timeout: 30_000 })
 }
 
