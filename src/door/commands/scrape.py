@@ -413,7 +413,7 @@ def _scrape_core(
     # Optional liveness verification pass
     liveness_result = None
     if config.get("verify_liveness", False):
-        from door.core.jobs import liveness
+        from door.scrapers import liveness
         before = len(candidates_paths)
         # verify_liveness reports one event per posting itself.
         candidates_paths = liveness.verify_liveness(candidates_paths, config)

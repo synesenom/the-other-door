@@ -9,7 +9,7 @@ from pathlib import Path
 
 import responses as responses_lib
 
-from door.core.jobs import liveness
+from door.scrapers import liveness
 
 
 # ---------------------------------------------------------------------------

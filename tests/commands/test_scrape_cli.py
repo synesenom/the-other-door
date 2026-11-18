@@ -420,7 +420,7 @@ def test_scrape_liveness_called_when_flag_set(cli_env, monkeypatch, capsys):
     })
 
     import door.scrapers.boards.jobindex as ji
-    from door.core.jobs import liveness as liveness_mod
+    from door.scrapers import liveness as liveness_mod
 
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [_make_posting("pid-liveness-active")])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
