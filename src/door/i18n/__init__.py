@@ -171,6 +171,7 @@ class DateFormat(_Strict):
     pattern: str = "{month} {day}, {year}"
     first: str | None = None
     months: list[str] = []
+    day_suffixes: list[str] = []  # what a day may carry in this language ("1st", "1er", "15-én"), for reading a date written out
 
     @field_validator("months")
     @classmethod
@@ -700,6 +701,17 @@ def month_numbers(codes: tuple[str, ...] | None = None) -> dict[str, int]:
         for name, number in pack.months.items():
             mapping.setdefault(name, number)
     return mapping
+
+
+def day_suffixes(codes: tuple[str, ...] | None = None) -> list[str]:
+    """What a day number may carry in a written date ("1st", "1er", "15-én"), over the languages ``codes``."""
+    return _union(p.date.day_suffixes for p in _packs(codes))
+
+
+def numeric_date_formats() -> tuple[str, ...]:
+    """Every all-numeric full date format (``DD``, ``MM``, ``YYYY`` and separators): each country's
+    ``[cv].date_format`` and the US order."""
+    return tuple(sorted({c.cv.date_format for c in countries().values()} | {"MM/DD/YYYY"}))
 
 
 def skill_stop_words(codes: tuple[str, ...] | None = None) -> list[str]:

@@ -42,23 +42,30 @@ _TODO_RE = re.compile(r"\bTODO\b")
 def _date_res() -> tuple[re.Pattern, re.Pattern, re.Pattern]:
     """The parts of a date that are not figures to check (its year still is): the day before a
     month name ("29 octobre", "1er oct."), the day after one ("2020. március 15.", "March 15, 2020"),
-    and a numeric day or month around a year ("10/2026", "15.03.2020", "2020.03.15.")."""
+    and the day and month of an all-numeric date in any country's format ("15.03.2020", "2020-03-15")."""
+    never = re.compile(r"(?!)")
     names = sorted((re.escape(n) for n in i18n.month_numbers()), key=len, reverse=True)
-    month = re.compile(rf"(?<![\w.,])\d{{1,2}}(?:er|re|e)?\.?[ \u00a0\u202f]*(?=(?:{'|'.join(names)})(?!\w))", re.I) if names else re.compile(r"(?!)")
-    day = r"\d{1,2}"
-    # after the month name: a closing period ("2020. március 15."), a Hungarian suffix ("15-én"), or a comma before the year ("March 15, 2020")
-    after = re.compile(rf"(?<![\w])({'|'.join(names)})[ \u00a0\u202f]*{day}(?:\.(?!\d)|-[éá]n|,(?=[ \u00a0\u202f]*(?:19|20)\d\d))", re.I) if names else re.compile(r"(?!)")
-    d, m = r"(?:0?[1-9]|[12]\d|3[01])", r"(?:0?[1-9]|1[0-2])"
-    # a numeric date: month/ before a year, day.month. before a year (dk), and .month.day after a year (hu)
-    numeric = re.compile(
-        rf"(?<![\w.,/])(?:(?:{d}/)?{m}/|{d}\.{m}\.)(?=(?:19|20)\d\d(?!\d))|(?<![\d.,/](?:19|20)\d\d)(?<=(?:19|20)\d\d)\.{m}\.{d}\.?(?!\d)"
-    )
+    suffixes = "|".join(sorted((re.escape(x) for x in i18n.day_suffixes()), key=len, reverse=True))
+    sfx = rf"(?:{suffixes})" if suffixes else r"(?!)"
+    gap = r"[ \u00a0\u202f]*"
+    year = r"(?:19|20)\d\d"
+    month = re.compile(rf"(?<![\w.,])\d{{1,2}}(?:{sfx})?\.?{gap}(?=(?:{'|'.join(names)})(?!\w))", re.I) if names else never
+    # after the month name: a closing period ("2020. március 15."), a suffix ("15-én"), or a comma before the year ("March 15, 2020")
+    after = re.compile(rf"(?<![\w])({'|'.join(names)}){gap}\d{{1,2}}(?:{sfx}(?!\w)|\.(?!\d)|(?:{sfx})?,(?={gap}{year}))", re.I) if names else never
+    parts = {"DD": r"(?:0?[1-9]|[12]\d|3[01])", "MM": r"(?:0?[1-9]|1[0-2])"}
+    alts = []
+    for n, fmt in enumerate(["MM/YYYY", *sorted(i18n.numeric_date_formats(), key=len, reverse=True)]):
+        body = re.escape(fmt.rstrip("."))
+        for token, rx in parts.items():
+            body = body.replace(token, rx)
+        alts.append(body.replace("YYYY", f"(?P<y{n}>{year})") + (r"\.?" if fmt.endswith(".") else ""))
+    numeric = re.compile(r"(?<![\w.,/])(?:" + "|".join(alts) + r")(?!\d)")
     return month, after, numeric
 
 
 def _strip_dates(line: str) -> str:
     month, after, numeric = _date_res()
-    return numeric.sub("", after.sub(r"\1 ", month.sub("", line)))
+    return numeric.sub(lambda m: next(v for v in m.groupdict().values() if v), after.sub(r"\1 ", month.sub("", line)))
 
 
 def _dashes(text: str) -> str:

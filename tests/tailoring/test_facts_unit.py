@@ -484,6 +484,11 @@ def test_us_order_date_claims_only_the_year():
     assert _values("<li>Started March 15, 2020</li>", cv_md="", current_year=2026) == ["2020"]
 
 
+@pytest.mark.parametrize("date", ["2020-03-15", "03/15/2020", "15/03/2020", "Started March 1st, 2020", "Depuis le 1er mars 2020", "March 15th, 2020"])
+def test_iso_us_and_suffixed_dates_claim_only_the_year(date):
+    assert _values(f"<li>Acme, {date}</li>", cv_md="", current_year=2026) == ["2020"]
+
+
 def test_french_letter_date_line_needs_no_source():
     tex = "<p>Paris, le 29 octobre 2026<br>Objet : candidature</p>"
     assert _bad(tex, file="cover_letter", current_year=2026) == []

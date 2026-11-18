@@ -909,3 +909,8 @@ def test_a_month_extra_beside_the_date_names_completes_them(tmp_path):
                     'months = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]\n')
     pack = i18n.load_language_file(good)
     assert pack.months == {"jan.": 1}
+
+
+def test_numeric_date_formats_and_day_suffixes_come_from_the_data():
+    assert {"DD.MM.YYYY", "YYYY.MM.DD.", "YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY"} <= set(i18n.numeric_date_formats())
+    assert {"er", "st", "th", "-én"} <= set(i18n.day_suffixes())

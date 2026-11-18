@@ -192,3 +192,4 @@ dec = 12
 [date]
 pattern = "{month} {day}, {year}"
 months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+day_suffixes = ["st", "nd", "rd", "th"]

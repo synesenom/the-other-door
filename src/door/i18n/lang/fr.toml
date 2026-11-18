@@ -206,6 +206,7 @@ nav = [
 pattern = "{day} {month} {year}"
 first = "1er {month} {year}"
 months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+day_suffixes = ["er", "re", "e"]
 
 # French typography at compile time: a narrow no-break space before these marks and inside guillemets.
 [typography]

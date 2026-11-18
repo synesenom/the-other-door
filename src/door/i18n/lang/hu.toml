@@ -101,6 +101,7 @@ nav = [
 [date]
 pattern = "{year}. {month} {day}."
 months = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"]
+day_suffixes = ["-én", "-án"]
 
 # The extra month forms (abbreviations; the full names are [date].months), for reading a date written out.
 [months]
