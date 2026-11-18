@@ -38,6 +38,8 @@ export interface Scene {
   /** Google Drive as the scene starts it (default off): Connect and Disconnect, and the sync on opening, change it
    * as the real tools would. `failed`: connected, the last sync failed; `conflict`: the next sync finds both sides changed. */
   drive?: 'off' | 'connected' | 'failed' | 'conflict'
+  /** The Master CV with gaps (TODO) where a draft found nothing: "to fill in" pills in its preview. */
+  cvGaps?: boolean
   /** A CV style build that is ready: the sidebar's foot says so. */
   styleReady?: boolean
   /** Profile → CV's Style: which style is in use, whether one built from a CV is kept (`like`), whether it waits to
@@ -182,7 +184,11 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-cv-style-candidate', group: 'Profile', title: 'CV, a built style to compare (the switch on, then Print again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 2 } },
   { id: 'profile-cv-style-printed', group: 'Profile', title: 'CV, the prepared CVs printed again, one failed (Try again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 3, failing: 1 }, press: ['Use my own style', 'Print 3 prepared CVs again'] },
   { id: 'profile-cv-style-refused', group: 'Profile', title: 'CV, choosing a style failed (the error box)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true }, fails: { use_style: 'Your choice could not be saved. Try again.' }, press: ['Use my own style'] },
-  { id: 'profile-cv-forget-failed', group: 'Profile', title: 'CV, a page that could not be forgotten (the error box)', start: { destination: 'Profile', cv: true }, fails: { init_profile: 'Your pages could not be saved. Try again.' }, press: ['Forget https://janedoe.example/portfolio'] },
+  { id: 'profile-cv-forget-failed', group: 'Profile', title: 'CV, a page that could not be forgotten (under Sources)', start: { destination: 'Profile', cv: true }, fails: { init_profile: 'Your pages could not be saved. Try again.' }, press: ['Forget https://janedoe.example/portfolio'] },
+  { id: 'profile-cv-gaps', group: 'Profile', title: 'CV with gaps: "to fill in" pills in the preview', start: { destination: 'Profile', cv: true }, cvGaps: true },
+  { id: 'profile-cv-text', group: 'Profile', title: 'CV, Preview off: the text, "Written in Markdown"', start: { destination: 'Profile', cv: true }, press: ['Preview'] },
+  { id: 'profile-cv-file', group: 'Profile', title: 'CV, a new CV file: what it adds, proposed', start: { destination: 'Profile', cv: true }, press: ['Replace CV file…'] },
+  { id: 'profile-cv-file-failed', group: 'Profile', title: 'CV, a new CV file that could not be read (in the dialog)', start: { destination: 'Profile', cv: true }, fails: { enrich: 'Your CV file could not be read. Try again.' }, press: ['Replace CV file…'] },
   { id: 'profile-cv-style-inuse', group: 'Profile', title: 'CV, a style of your own in use', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, prepared: 1 } },
   { id: 'profile-cv-style-two-column', group: 'Profile', title: 'CV, a two-column style', start: { destination: 'Profile', cv: true }, style: { in_use: 'like', like: true, two_column: true } },
   { id: 'profile-stories', group: 'Profile', title: 'Stories', start: { destination: 'Profile', stories: true } },

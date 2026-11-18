@@ -345,10 +345,11 @@ def _echo_written(result: dict, *, disclaimers: bool = True) -> None:
         click.echo(item["text"])
 
 
-def _save_cv_core(markdown: str) -> dict:
+def _save_cv_core(markdown: str, backup: bool = True) -> dict:
     """Put `markdown` in place as profile/cv.md (the previous one kept as cv.md.bak) and drop the
     scratch profile/cv.draft.md. The shell twin is `init`'s CV step; the app's wizard calls it
-    through the `save_cv` tool once the user has reviewed the text. Empty text is refused."""
+    through the `save_cv` tool once the user has reviewed the text. Empty text is refused.
+    `backup=False` leaves cv.md.bak as it is: the app's live save, whose first save of a visit kept it."""
     from door.commands import _common as common
 
     if not isinstance(markdown, str) or not markdown.strip():
@@ -356,9 +357,14 @@ def _save_cv_core(markdown: str) -> dict:
     profile_dir = Path(workspace.PROFILE_DIR)
     migrations.ensure_folder(profile_dir, "profile")
     cv_path = profile_dir / "cv.md"
-    backup = common._write_with_backup(cv_path, markdown)
+    if backup:
+        kept = common._write_with_backup(cv_path, markdown)
+    else:
+        utils.write_atomic(cv_path, markdown)
+        bak = cv_path.with_name(cv_path.name + ".bak")
+        kept = bak if bak.exists() else None
     (profile_dir / "cv.draft.md").unlink(missing_ok=True)
-    return {"cv_path": str(cv_path), "backup": str(backup) if backup else None}
+    return {"cv_path": str(cv_path), "backup": str(kept) if kept else None}
 
 
 def _photo_value(path: Path) -> str:

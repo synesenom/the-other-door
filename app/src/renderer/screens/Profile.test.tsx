@@ -127,15 +127,12 @@ describe('Profile, opened at a section', () => {
     await waitFor(() => expect(scrolled).toEqual(['profile-skip']))
   })
 
-  it('the CV\'s groups are listed under it beside the page, the style only where it can be shown', async () => {
+  it('the CV style is listed beside the page only where it can be shown', async () => {
     mockDoor({ show_profile: show(), ...NO_STORIES, show_style: { styles: {}, in_use: 'default', candidate: false } })
     render(<Profile onSaved={() => {}} onDraft={() => {}} style={{ state: 'none', canBuild: true, onChanged: () => {} }} />)
-    await screen.findByLabelText('Your CV (Markdown)')
+    await screen.findByRole('group', { name: 'Sources' })
     const links = within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link')
-    expect(links.slice(-5).map((l) => l.textContent)).toEqual(['CV', 'Sources', 'CV style', 'CV content', 'Stories'])
-    // each one jumps to its group's heading
-    for (const [label, heading] of [['Sources', 'Sources'], ['CV style', 'Style'], ['CV content', 'Content']])
-      expect(links.find((l) => l.textContent === label)).toHaveAttribute('href', `#${screen.getByRole('heading', { name: heading, level: 3 }).id}`)
+    expect(links.slice(-3).map((l) => l.textContent)).toEqual(['Master CV', 'CV style', 'Stories'])
   })
 
   it('the CV and the Stories are sections of the same page, scrolled to like the rest', async () => {
@@ -165,7 +162,7 @@ describe('Profile', () => {
 
   it('saves only what changed, by name or in other, and reads the profile again', async () => {
     const { call, onSaved } = await open({ init_profile: { config_path: '/x' } })
-    await screen.findByLabelText('Your CV (Markdown)')
+    await screen.findByRole('group', { name: 'Sources' })
     const reads = () => call.mock.calls.filter((c) => c[0] === 'show_profile').length
     const before = reads()
     await userEvent.clear(screen.getByLabelText('Name'))
@@ -263,13 +260,13 @@ describe('Profile', () => {
     expect(screen.queryByLabelText('Search keywords')).toBeNull()
   })
 
-  it('is one page: the details, then the CV and the Stories, each listed beside it, with one Save', async () => {
+  it('is one page: the details, then the CV and the Stories, each listed beside it', async () => {
     await open()
-    await screen.findByLabelText('Your CV (Markdown)')
+    await screen.findByRole('group', { name: 'Sources' })
     const names = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
-    expect(names.slice(-2)).toEqual(['CV', 'Stories'])
+    expect(names.slice(-2)).toEqual(['Master CV', 'Stories'])
     expect(names[0]).toBe('About you')
-    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-4).map((l) => l.textContent)).toEqual(['CV', 'Sources', 'CV content', 'Stories'])
+    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-2).map((l) => l.textContent)).toEqual(['Master CV', 'Stories'])
     expect(screen.getAllByRole('button', { name: 'Save' })).toHaveLength(1)
   })
 
@@ -293,7 +290,7 @@ describe('Profile, keeping what is shown true', () => {
   it('the CV and the Stories are there when config.json is not valid', async () => {
     mockDoor({ show_profile: { ...show(), config: null, errors: ['profile/config.json: remote — bad'] }, ...NO_STORIES })
     render(<Profile onSaved={() => {}} onDraft={() => {}} />)
-    expect(await screen.findByLabelText('Your CV (Markdown)')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Master CV' })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('remote — bad')
     expect(screen.getByRole('region', { name: 'Stories' })).toBeInTheDocument()
   })
@@ -306,49 +303,14 @@ describe('Profile, keeping what is shown true', () => {
     expect(screen.getByRole('region', { name: 'Stories' })).toBeInTheDocument()
   })
 
-  it('one Save writes the details, then the CV, and counts both as changes', async () => {
-    const { call } = await open({ init_profile: {}, save_cv: { cv_path: '/p/cv.md', backup: '/p/cv.md.bak' } })
-    await userEvent.clear(screen.getByLabelText('Name'))
-    await userEvent.type(screen.getByLabelText('Name'), 'Ada B')
+  it('Save is the details\' only: the CV saves itself and is not counted', async () => {
+    const { call } = await open({ save_cv: {} })
     await userEvent.type(await screen.findByLabelText('Your CV (Markdown)'), '# Ada B')
-    expect(screen.getByText('2 unsaved changes')).toBeInTheDocument()
-    await userEvent.click(saveButton())
-    expect(await screen.findByText('Saved. The previous CV is kept as cv.md.bak.')).toBeInTheDocument()
-    const order = call.mock.calls.map((c) => c[0]).filter((t) => t === 'init_profile' || t === 'save_cv')
-    expect(order).toEqual(['init_profile', 'save_cv'])
-    expect(call).toHaveBeenCalledWith('save_cv', { markdown: '# Ada B' })
-  })
-
-  it('details that are refused save nothing of the CV either, its text kept', async () => {
-    const { call } = await open({
-      init_profile: () => {
-        throw { message: 'profile/config.json: email — value is not a valid email address' }
-      },
-      save_cv: {},
-    })
-    await userEvent.clear(screen.getByLabelText('Email'))
-    await userEvent.type(screen.getByLabelText('Email'), 'ada')
-    await userEvent.type(await screen.findByLabelText('Your CV (Markdown)'), '# Ada B')
-    await userEvent.click(saveButton())
-    expect(await screen.findByText('value is not a valid email address')).toBeInTheDocument()
-    expect(call.mock.calls.some((c) => c[0] === 'save_cv')).toBe(false)
-    expect(screen.getByLabelText('Your CV (Markdown)')).toHaveValue('# Ada B')
-  })
-
-  it('Undo changes puts back both the details and the CV', async () => {
-    await open()
-    await userEvent.type(screen.getByLabelText('Name'), 'x')
-    await userEvent.type(await screen.findByLabelText('Your CV (Markdown)'), '# Ada B')
-    await userEvent.click(screen.getByRole('button', { name: 'Undo changes' }))
-    expect(screen.getByLabelText('Name')).toHaveValue('Ada Lovelace')
-    expect(screen.getByLabelText('Your CV (Markdown)')).toHaveValue('')
+    await userEvent.tab()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: '# Ada B', backup: true }))
     expect(saveButton()).toBeDisabled()
+    expect(screen.queryByText(/unsaved change/)).toBeNull()
   })
 
-  it('a CV that is emptied cannot be saved', async () => {
-    await open({}, {})
-    const box = await screen.findByLabelText('Your CV (Markdown)')
-    await userEvent.type(box, ' ')
-    expect(saveButton()).toBeDisabled()
-  })
+
 })

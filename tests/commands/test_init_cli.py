@@ -1060,6 +1060,17 @@ def test_save_cv_core_keeps_a_cv_that_is_not_text_byte_for_byte(init_env):
     assert (init_env.profile_dir / "cv.md.bak").read_bytes() == old
 
 
+def test_save_cv_core_without_backup_leaves_the_backup_as_it_was(init_env):
+    # the app's live save: the backup is the CV as it was when Profile opened, not the last keystroke's
+    init_env.profile_dir.mkdir()
+    (init_env.profile_dir / "cv.md").write_text("OPENED")
+    profile_cmd._save_cv_core("# Me\n\nFIRST\n")
+    result = profile_cmd._save_cv_core("# Me\n\nSECOND\n", backup=False)
+    assert (init_env.profile_dir / "cv.md").read_text() == "# Me\n\nSECOND\n"
+    assert (init_env.profile_dir / "cv.md.bak").read_text() == "OPENED"
+    assert result == {"cv_path": str(init_env.profile_dir / "cv.md"), "backup": str(init_env.profile_dir / "cv.md.bak")}
+
+
 def test_save_cv_core_creates_the_profile_folder(init_env):
     result = profile_cmd._save_cv_core("# Me\n")
     assert (init_env.profile_dir / "cv.md").read_text() == "# Me\n"

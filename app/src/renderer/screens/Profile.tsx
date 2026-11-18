@@ -1,11 +1,11 @@
-import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useEffect, useId, useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react'
 import { ErrorBox, ErrorList, named } from './AppName'
 import { call, errorText } from '../api'
 import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
 import { photoPolicy, type ShowProfile } from './onboarding/reducer'
 import layout from './profile-form/fields.json'
 import { changedKeys, fieldErrors, formValues, toInitArgs, type Exclude, type FieldSpec, type FormValues } from './profile-form/form'
-import { CvEditor, type CvControl } from './CvEditor'
+import { CvEditor } from './CvEditor'
 import { Hint } from './Hint'
 import { PhotoField, photoHelp } from './PhotoField'
 import { Spinner } from './Spinner'
@@ -24,12 +24,6 @@ const CONFIG_ONLY = 'config'
 
 const REMOTE: Record<string, string> = { hybrid: 'Hybrid', yes: 'Remote only', no: 'On site' }
 /** The minimum score as three words; a value set by hand in config.json shows as a fourth choice. */
-/** The CV part's groups, listed under it beside the page (headings in CvEditor and StyleRow). */
-const CV_GROUPS = [
-  { id: 'profile-cv-sources', label: 'Sources', sub: true },
-  { id: 'profile-cv-style', label: 'CV style', sub: true },
-  { id: 'profile-cv-content', label: 'CV content', sub: true },
-]
 const MATCH: [number, string][] = [[0.5, 'Broad'], [0.65, 'Balanced'], [0.75, 'Strong']]
 
 type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: FieldSpec[] }; config: Record<string, unknown> | null }
@@ -71,14 +65,9 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
   const [saving, setSaving] = useState(false)
   // after a save that changed the role targets or languages: Claude proposing the search terms again
   const [refreshing, setRefreshing] = useState(false)
-  // the line after a save: "Saved.", or that the previous CV is kept
-  const [done, setDone] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
   // Counts Undo: the city field holds whether "Other…" is chosen, so Undo starts it afresh.
   const [undone, setUndone] = useState(0)
-  // The CV editor, saved and undone by this page's bar: whether it has unsaved text, and why its save failed.
-  const cv = useRef<CvControl | null>(null)
-  const [cvEdit, setCvEdit] = useState({ dirty: false, empty: false })
-  const [cvError, setCvError] = useState<string | null>(null)
   // The CV photo is saved the moment it is chosen or removed (its own tools), not with Save: why one was refused, and a counter that renews the preview.
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
@@ -101,53 +90,49 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
     void load()
   }, [])
   const startSection = start?.section ?? null
+  // the section asked for, brought into view once it is on the page (CV style comes after the CV is read)
   useEffect(() => {
-    if (profile && startSection) document.getElementById(`profile-${startSection}`)?.scrollIntoView?.({ block: 'start' })
+    if (!profile || !startSection) return
+    const show = () => {
+      const target = document.getElementById(`profile-${startSection}`)
+      target?.scrollIntoView?.({ block: 'start' })
+      return Boolean(target)
+    }
+    if (show()) return
+    const watch = new MutationObserver(() => show() && watch.disconnect())
+    watch.observe(document.body, { childList: true, subtree: true })
+    return () => watch.disconnect()
   }, [profile, startSection])
 
   const set = (key: string, value: FormValues[string]) => {
-    setDone(null)
+    setDone(false)
     setValues((v) => ({ ...v, [key]: value }))
   }
   const changes = changedKeys(saved, values)
-  const unsaved = changes.length + (cvEdit.dirty ? 1 : 0)
   const save = async () => {
     setSaving(true)
     setErrors({ byKey: {}, general: [] })
-    setCvError(null)
     // the search terms follow the role targets and the ad languages: Claude proposes them again, and they are saved
     const refresh = changes.includes('role_targets') || changes.includes('languages')
     try {
-      if (changes.length > 0) {
-        try {
-          await call('init_profile', toInitArgs(saved, values, specs))
-        } catch (e) {
-          // the details are checked first: nothing is written, the CV neither, until they are right
-          setErrors(fieldErrors(errorText(e), specs))
-          return
-        }
-        if (refresh) {
-          setRefreshing(true)
-          try {
-            await call('keywords', { role_targets: values['role_targets'], languages: values['languages'], save: true })
-          } catch {
-            // the terms saved before stay; the next change of role targets asks again
-          } finally {
-            setRefreshing(false)
-          }
-        }
-        await load()
+      try {
+        await call('init_profile', toInitArgs(saved, values, specs))
+      } catch (e) {
+        setErrors(fieldErrors(errorText(e), specs))
+        return
       }
-      let line = 'Saved.'
-      if (cvEdit.dirty && cv.current) {
+      if (refresh) {
+        setRefreshing(true)
         try {
-          line = await cv.current.save()
-        } catch (e) {
-          setCvError(errorText(e))
-          return
+          await call('keywords', { role_targets: values['role_targets'], languages: values['languages'], save: true })
+        } catch {
+          // the terms saved before stay; the next change of role targets asks again
+        } finally {
+          setRefreshing(false)
         }
       }
-      setDone(line)
+      await load()
+      setDone(true)
       onSaved()
     } finally {
       setSaving(false)
@@ -189,7 +174,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
   const shown = LAYOUT.sections.filter((s) => s.id !== CONFIG_ONLY && s.screen !== 'settings' && fieldsOf(s.id).length > 0)
   const aside = (
     <PageSections
-      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'CV' }, ...CV_GROUPS.filter((g) => style || g.id !== 'profile-cv-style'), { id: 'profile-stories', label: 'Stories' }]}
+      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'Master CV' }, ...(style ? [{ id: 'profile-style', label: 'CV style' }] : []), { id: 'profile-stories', label: 'Stories' }]}
     />
   )
 
@@ -368,43 +353,33 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
     <Wrap aside={aside}>
       {errors.general.length > 0 && <ErrorList messages={errors.general} />}
       {details}
-      <section className="part" aria-labelledby="profile-cv">
-        <h2 className="display-s" id="profile-cv">
-          CV
-        </h2>
-        <CvEditor onDraft={onDraft} onSaved={onSaved} control={cv} onDirty={(d) => {
-            if (d.dirty) setDone(null)
-            setCvEdit(d)
-          }} style={style} />
-      </section>
+      {/* two parts, Master CV and CV style */}
+      <CvEditor onDraft={onDraft} onSaved={onSaved} style={style} />
       <section className="part" aria-labelledby="profile-stories">
         <h2 className="display-s" id="profile-stories">
           Stories
         </h2>
         <Stories />
       </section>
-      {/* one bar for the page, at its foot and always in reach: the details and the CV's text */}
+      {/* the details' bar, at the page's foot and always in reach (the CV, the photo and the stories save themselves) */}
       <div className="profile-save">
         {/* always there, so Save does not move when the first change makes Undo possible */}
-        <button type="button" className="quiet" disabled={unsaved === 0 || saving} onClick={() => {
+        <button type="button" className="quiet" disabled={changes.length === 0 || saving} onClick={() => {
             setValues(saved)
             setUndone((n) => n + 1)
-            cv.current?.undo()
           }}>
           Undo changes
         </button>
-        <button type="button" className="primary" disabled={unsaved === 0 || saving || (cvEdit.dirty && cvEdit.empty)} onClick={() => void save()}>
+        <button type="button" className="primary" disabled={changes.length === 0 || saving} onClick={() => void save()}>
           Save
         </button>
         {saving ? (
           <Spinner message={refreshing ? 'Updating what we search for (up to two minutes)…' : 'Saving…'} />
-        ) : unsaved > 0 ? (
-          <p className="small muted">{unsaved === 1 ? '1 unsaved change' : `${unsaved} unsaved changes`}</p>
+        ) : changes.length > 0 ? (
+          <p className="small muted">{changes.length === 1 ? '1 unsaved change' : `${changes.length} unsaved changes`}</p>
         ) : done ? (
-          <p className="small">{done}</p>
+          <p className="small">Saved.</p>
         ) : null}
-        {/* the CV has no field: its error is the box, in the bar, seen from wherever Save was pressed */}
-        {cvError && <ErrorBox text={cvError} />}
       </div>
     </Wrap>
   )

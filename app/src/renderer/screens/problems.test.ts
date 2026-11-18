@@ -14,10 +14,10 @@ const calm: ProblemInput = {
 }
 
 describe('problems, the CV style', () => {
-  it('a style that is ready is said last, opening Profile on the CV; nothing for the other states', () => {
+  it('a style that is ready is said last, opening Profile at CV style; nothing for the other states', () => {
     expect(problems({ ...calm, recurring: true, style: 'ready' })).toEqual([
       { key: 'report', text: 'Something keeps going wrong. Send a report', target: 'settings-report' },
-      { key: 'style', text: 'Your CV style is ready to compare', target: 'profile-cv' },
+      { key: 'style', text: 'Your CV style is ready to compare', target: 'profile-style' },
     ])
     for (const style of ['none', 'building', 'failed', null, undefined] as const) expect(problems({ ...calm, style })).toEqual([])
   })

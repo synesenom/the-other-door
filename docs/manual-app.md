@@ -111,7 +111,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    what you did; a story tells what was behind it, and the tailor draws on your stories for every application.
    Fill in what the CV could not say, usually what you learned, or untick "Keep this story"; Save waits for one or the other.
    More stories go in Profile → [Stories](#your-stories));
-   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 2-5 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV. Nothing is said if it does not work out);
+   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 2-5 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV style. Nothing is said if it does not work out);
    **Where to find employers** (LinkedIn, and profession.hu, HelloWork or Jobbsafari where they serve your city:
    each stays off unless you tick it, because their terms forbid automated access; see the
    [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Risky sources changes it later).
@@ -394,9 +394,9 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 ## Profile
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
-then your [CV](#your-cv) and your [Stories](#your-stories). The list on the right names its sections, with the CV's groups (Sources, CV style, CV content) under CV, the one you
-are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). One Save bar at the
-page's foot saves both the settings and the CV's text.
+then your [Master CV](#master-cv), its [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
+are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar at the
+page's foot saves the settings; your CV saves itself as you type.
 
 The everyday settings of `profile/config.json` ([Configuration](configuration.md)), in sections:
 About you (name, email, city, whether you need a visa or work permit there, where you would work, the languages of the job ads), What to
@@ -425,45 +425,52 @@ A picture it refuses is explained under the field. "Remove" deletes it. The same
 review, held until you save. A photo is only put on the CVs for jobs in a country that allows one; the cover letter
 never has one. It is not on the phone.
 
-### Your CV
+### Master CV
 
-Three groups: **Sources**, **Style** and **Content**.
+Everything about your work, in one place. It is never sent as it is: each application gets a CV of its own,
+picked from this one and tailored to the ad, so put in more than one CV would hold.
 
-**Sources** names the CV file your CV was last drafted from. **Replace…** (or **Choose a CV file…** when there is
-none) drafts your CV again from another file, one Claude call on your plan (a minute or two): the draft lands in
-the editor under Content, and nothing is saved until you press Save. Under it, the pages your CV is read from:
-each page is a chip with a × to forget it, and under them **Add a page** and **Check again**.
+**Sources** is what your Master CV is read from: **Replace CV file…** (**Add a CV file…** when there is none), **Add a
+page** and **Check again**, and under them your CV file and each page as a chip (a page's × forgets it). A source only
+ever adds: a new CV file, like a page, is read in one Claude call on your plan (a minute or two), and what it has that
+your Master CV does not is proposed, all ticked; what you keep is added, tinted blue, and nothing is taken out or
+rewritten (what changed, such as an end date, you change yourself in the text). With no Master CV yet, a CV file is
+drafted into it whole. A new CV file is your CV file from then on, and your own CV style is built again from it.
 
-**Content** is `profile/cv.md` in an editor, "Your CV (Markdown)" with the
-Preview switch on its right, which shows how it reads, with each gap (`TODO`) marked "to fill in": a click on a marker opens the editor with that gap selected. The page's Save writes it with your
-other changes and keeps the previous version as `cv.md.bak` (one step back); a change counts among the unsaved
-ones at the page's foot, and "Undo changes" drops what you have not saved. With no CV yet, a line above the groups says so and offers "Draft it from your CV
-file or pages", the wizard's screens. A `cv.md` that cannot be read as text (another encoding, a Word file
-renamed) is said above an empty editor; saving there keeps that file as `cv.md.bak`.
+Under them `profile/cv.md` as it reads, the **Preview** switch on its right on, with each gap (`TODO`) a blue "to fill
+in" pill: a click on one shows the text in an editor ("Written in Markdown" beside it), with that gap selected, as Preview off does;
+an empty CV opens in the editor. There is no Save: what you type is saved a second after you stop, and when you leave
+the editor ("Saving…", then "Saved", beside Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak` (adding from a source keeps the
+CV as it was just before the addition instead), so that is one step back; ⌘Z (Ctrl+Z) undoes typing. An empty CV is never saved. With no CV yet, a line above says so
+and offers "Draft it from your CV file or pages", the wizard's screens. A `cv.md` that cannot be read as text
+(another encoding, a Word file renamed) is said above an empty editor; what you write there replaces it, the file
+kept as `cv.md.bak`.
 
-- **Style** (between Sources and Content): how your tailored CVs are printed. "The other door" and, once one is
-  built, "Your CV" side by side, each first page at half the width so the two can be compared; the blue dash sits
-  above the one in use, and each opens its full pages (your CV and a sample letter) in a dialog. The switch **Use my
-  own style**, at the section's top right, chooses: on, your style is used, built first from your CV file under
-  Sources when there is none yet (a PDF; after a short wait, "Reading your CV's look…", then 2-5 minutes on your
-  Claude plan, which "Building your style…" says, and it is put in use once ready); off, The other door's style is
-  used again, your style kept. A CV file that cannot be used (none yet, not a PDF, no look to copy, or a look that
-  could not be read because Claude was unreachable or its usage limit reached) is said at once; a build that does
-  not work out later is not. A new CV file chosen under Sources builds your style again from it. Prepared
-  applications keep their look; after a switch "Print N prepared CVs again" does it (no Claude call; sent ones
-  never change; "Try again" appears if some could not be printed). A two-column style may be read less well by
-  application systems, and the section says so.
 - **Add a page** (the `/expand` skill as a button): a dialog asks for one page (your portfolio, GitHub,
   a publication list, a course page) and "Read it". One Claude call on your plan (a few minutes)
   proposes what the page shows and your CV does not, grouped by the section each would go into.
-  Untick what should not go in and "Add … to my CV": they go under their sections, and the old CV
+  Untick what should not go in and "Add … to my Master CV": they go under their sections, and the old CV
   is kept as `cv.md.bak`. The page is remembered among your pages.
 - **Check again** reads all your pages for what is new on them since, each proposal naming its page.
   What the CV already says, even worded or punctuated a little differently, is not proposed again,
   so checking twice adds nothing twice.
 
-These wait until your unsaved edits are saved or undone, since they rewrite the CV. What was added
-is tinted in the editor and the preview, brought into view, until you next type or save.
+What you typed is saved before either reads, since they rewrite the CV. What was added is tinted in the editor and
+the preview, brought into view, until you next type.
+
+### CV style
+
+How your tailored CVs are printed. "The other door" and, once one is built, "Your CV" side by side, each first page
+at half the width so the two can be compared; the one in use has a blue border, and each opens its full pages (your
+CV and a sample letter) in a dialog. The switch **Use my own style**, at the section's top right, chooses: on, your
+style is used, built first from your CV file (under Master CV) when there is none yet (a PDF; after a short wait,
+"Reading your CV's look…", then 2-5 minutes on your Claude plan, which "Building your style…" says, and it is put in
+use once ready); off, The other door's style is used again, your style kept. A CV file that cannot be used (none
+yet, not a PDF, no look to copy, or a look that could not be read because Claude was unreachable or its usage limit
+reached) is said at once; a build that does not work out later is not. A new CV file builds your style again from
+it. Prepared applications keep their look; after a switch "Print N prepared CVs again" does it (no Claude call; sent
+ones never change; "Try again" appears if some could not be printed). A two-column style may be read less well by
+application systems, and the section says so.
 
 ### Your stories
 

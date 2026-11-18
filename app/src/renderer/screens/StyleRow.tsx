@@ -50,9 +50,9 @@ function Pages({ which, set, onClose }: { which: Which; set: StyleSet; onClose: 
 }
 
 /**
- * Profile → CV's Style, a section of its own: its heading with the switch "Use my own style" at its right, then The
- * other door's style and, once one is built from the user's CV file (Sources), theirs, side by side to compare; the
- * blue dash sits above the one in use. On with no style of theirs yet, the switch builds one from the CV file and
+ * Profile's CV style, a section of its own: its heading with the switch "Use my own style" at its right, then The
+ * other door's style and, once one is built from the user's CV file (under Master CV), theirs, side by side to compare; the
+ * one in use has the accent border. On with no style of theirs yet, the switch builds one from the CV file and
  * uses it once ready; off goes back to The other door. A new CV file (`replaced` counts them) builds the style
  * again from it. `state` is the build's, from the sidebar's summary (the app polls it while a build runs);
  * `onChanged` tells the app a build started or a style was chosen; `reload` counts what makes the previews stale (a
@@ -183,14 +183,13 @@ export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: {
     }
   }
 
-  // the blue dash above the sheet in use (docs/design/README.md "The blue dash"); the other keeps its room
+  // the sheet in use has the accent border (docs/design/README.md, Profile → CV style)
   const card = (which: Which) => {
     const set = sets[which]
     if (!set) return null
     const caption = `${ids}-${which}`
     return (
       <div key={which} className={current(which) ? 'style-card style-current' : 'style-card'} role="group" aria-labelledby={caption}>
-        <span className="dash style-dash" aria-hidden="true" />
         <button type="button" className="style-thumb" aria-label={`Show ${NAMES[which]} in full`} onClick={() => setOpen(which)}>
           <img className="paper" src={styleUrl(which, set.cv[0]!, set.version)} alt={`${NAMES[which]}, first page`} />
         </button>
@@ -203,11 +202,11 @@ export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: {
   }
 
   return (
-    <section className="part" aria-labelledby="profile-cv-style">
+    <section className="part" aria-labelledby="profile-style">
       <div className="part-head part-head-row">
-        <h3 className="label" id="profile-cv-style">
-          Style
-        </h3>
+        <h2 className="display-s" id="profile-style">
+          CV style
+        </h2>
         {shown !== null && (canBuild || hasLike) && (
           <div className={held ? 'style-switch style-switch-busy' : 'style-switch'}>
             <Switch label="Use my own style" checked={inUse === 'like' || wanted} onChange={toggle} />
@@ -219,7 +218,6 @@ export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: {
           <>
             <div className="style-cards">
               <div className="style-card" aria-hidden="true">
-                <span className="dash style-dash" />
                 <div className="style-sheet" />
                 <p className="small style-caption">
                   <span>&nbsp;</span>

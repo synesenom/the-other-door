@@ -1087,9 +1087,10 @@ def suggest_titles(
 @mcp.tool()
 @_tool_errors
 def enrich(
-    urls: list[str] | None = None, apply: list[int] | None = None, all: bool = False, model: str | None = None
+    urls: list[str] | None = None, files: list[str] | None = None, apply: list[int] | None = None, all: bool = False,
+    model: str | None = None,
 ) -> dict:
-    """Propose additions to profile/cv.md from public URLs, then add the chosen ones.
+    """Propose additions to profile/cv.md from public URLs and CV files, then add the chosen ones.
 
     Two calls: first with `urls` (or none, for the profile's
     `enrich_sources`) — one `claude -p` call reads the pages with WebFetch
@@ -1101,17 +1102,21 @@ def enrich(
 
     Args:
         urls: Pages to read (portfolio, publication list, course syllabus, GitHub user …).
-            Omit for `enrich_sources`.
+            Omit, with no `files`, for `enrich_sources`.
+        files: CV files to read (PDF, DOCX, Markdown), inside the data folder: a newer CV whose
+            new facts are proposed like a page's; nothing is fetched for them.
         apply: Proposal numbers from the previous call to add.
         all: Add every proposal from the previous call.
         model: Claude model to read the pages with (default: sonnet).
 
     Returns:
-        Propose: ``{"outcome": "proposed" | "nothing_new", "urls",
+        Propose: ``{"outcome": "proposed" | "nothing_new", "urls", "files",
         "proposals": [{"n", "section", "text", "source"}], "unreachable"}``.
         Apply: ``{"outcome": "applied", "added", "cv_path", "backup"}``.
     """
-    return enrich_cmd._enrich_core(urls, apply=apply, all=all, model=model, profile_dir=workspace.PROFILE_DIR)
+    for path in files or []:
+        path_scope.check(path)
+    return enrich_cmd._enrich_core(urls, files=files, apply=apply, all=all, model=model, profile_dir=workspace.PROFILE_DIR)
 
 
 @mcp.tool()
@@ -1432,20 +1437,21 @@ async def preview_matches(
 
 @mcp.tool()
 @_tool_errors
-def save_cv(markdown: str) -> dict:
+def save_cv(markdown: str, backup: bool = True) -> dict:
     """Put reviewed CV text in place as profile/cv.md (the previous one is kept as cv.md.bak; the scratch
     profile/cv.draft.md is removed). The desktop app's onboarding calls it after the user read and edited the
     text; `./door init`'s CV step does the same. Empty text is refused. Creates profile/ when missing.
 
     Args:
         markdown: The whole CV, in profile.example/cv.md's structure.
+        backup: False leaves cv.md.bak as it is (the app's live save keeps the CV as it was when Profile opened).
 
     Returns:
         ``{"cv_path", "backup"}`` (``backup`` None when there was no CV before) or ``{"error"}``.
     """
     from door.commands import profile as profile_cmd
 
-    return profile_cmd._save_cv_core(markdown)
+    return profile_cmd._save_cv_core(markdown, backup=backup)
 
 
 @mcp.tool()
