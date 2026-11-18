@@ -10,13 +10,13 @@ import type { Page } from '@playwright/test'
 const written = (page: Page) => page.getByRole('status').getByText('Saved', { exact: true })
 
 test.describe('the editor', () => {
-  test('opens on the CV as saved, as it reads; Edit shows its text', async ({ page, world }) => {
+  test('opens on the CV as saved, as it reads; Preview off shows its text', async ({ page, world }) => {
     await openCv(page)
     await expect(page.getByRole('region', { name: 'Master CV' }).getByRole('heading', { name: 'Skills' })).toBeVisible()
     await expect(cvBox(page)).toHaveCount(0)
     await expect(page.getByRole('note')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Add a page' })).toBeEnabled()
-    await page.getByRole('button', { name: 'Edit the Master CV' }).click()
+    await page.getByRole('switch', { name: 'Preview' }).click()
     await expect(cvBox(page)).toHaveValue(world.persona.cv)
   })
 
