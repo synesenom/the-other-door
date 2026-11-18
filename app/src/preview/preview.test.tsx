@@ -286,12 +286,12 @@ describe('scenes', () => {
     expect(alert).toHaveClass('error')
   })
 
-  it('profile-cv-forget-failed says a page that could not be forgotten in the error box', async () => {
+  it('profile-cv-forget-failed says a page that could not be forgotten under the Pages field', async () => {
     mount('profile-cv-forget-failed')
     await pressInOrder(sceneById('profile-cv-forget-failed')!.press!)
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Your pages could not be saved. Try again.')
-    expect(alert).toHaveClass('error')
+    expect(alert).toHaveClass('field-error')
     expect(screen.getByRole('button', { name: 'Forget https://janedoe.example/portfolio' })).toBeInTheDocument()
   })
 

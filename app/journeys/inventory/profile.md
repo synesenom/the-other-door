@@ -193,7 +193,7 @@ Other data-driven variants:
 - **The write:** `save_cv({markdown, backup})`; the editor keeps its text (no read-back while typing). — ✓ the text saves itself; cv.md.bak keeps the CV as it was when Profile opened
   - On disk: `profile/cv.md` = text; `profile/cv.md.bak` = the CV as Profile opened it (**only if a cv.md existed**); `profile/cv.draft.md` is deleted. — ✓ the text saves itself; cv.md.bak keeps the CV as it was when Profile opened; ✓ the first CV saves itself, with no backup, and the sidebar line goes
   - `save_cv` takes no lock.
-- **Write errors** (the error box under the editor, tried again at the next pause): — ✓ a failing save says why, keeps the text, and is tried again (through a tool fault; the empty-CV error is unreachable: an empty CV is never written)
+- **Write errors** (under the Text field as `field-error`, tried again at the next pause): — ✓ a failing save says why, keeps the text, and is tried again (through a tool fault; the empty-CV error is unreachable: an empty CV is never written)
   - "the CV is empty; nothing was written" is **unreachable** (the button is disabled).
   - Permission errors (OSError is not "expected") → `Error executing tool save_cv: [Errno 13] Permission denied: '<path>'`.
   - Transport errors.
@@ -201,19 +201,10 @@ Other data-driven variants:
 
 ### 4.3 Your CV: the CV file and the pages
 
-The CV is two parts, `heading "Your CV"` (the file, the pages, then the editor) and `heading "CV style"` (only when the app says how the build stands). Replace…, Add a page and Check again first write what was typed.
+The CV is two parts, `heading "Your CV"` (three fields: CV file, Pages, Text) and `heading "CV style"` (only when the app says how the build stands). Each field is a form field: its name with an info bubble (`button "About <name>"`), 4 px above its control, what belongs to it under it, an error under it as `field-error`. Replace…, Add a page and Check again first write what was typed.
 
-- **The CV file** (label "CV file"): the name of the file a draft last read (`door:cv-file`, from the path the main process keeps; never on made-up data), else "No CV file yet". `button "Replace…"` (or `"Choose a CV file…"`) opens the file dialog (`pickCvFiles`), drafts with `draftCv({files:[token], urls:[]})` (spinner "Reading your CV file (a minute or two)…") and puts the draft in the editor, unsaved, with "Drafted from <name>. Check it below and Save."; a refused file or a failed draft is the error box under it, the CV untouched. Disabled while the editor is dirty. — unit only: `CvEditor.test.tsx`
-
-- **`list "Pages your CV is read from"`** (only with remembered pages, after the label "Pages"): one chip per page, shown without `https://` (the full address on hover), each with `button "Forget <page>"`, which removes it at once (`init_profile`). — ✓ a page is forgotten by its ×
-- Under it, two secondary buttons:
-
-| Control | Enabled | Effect |
-|---|---|---|
-| `button "Add a page"` | Disabled while the editor has unsaved edits | Opens `dialog "Add a page"` (§4.4) | — unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ reads the page asked for, remembers it, and proposes what the CV lacks, all ticked
-| `button "Check again"` (only with remembered pages) | Disabled while the editor has unsaved edits | Opens `dialog "Check your pages again"` (§4.4) | — ✓ Check again reads them all and names the page of each proposal
-
-- Replace…, Add a page and Check again first write what was typed. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
+- **`group "CV file"`**: the name of the file a draft last read (`door:cv-file`, from the path the main process keeps), else "No CV file yet", with `button "Replace…"` (or `"Choose a CV file…"`) beside it: the file dialog (`pickCvFiles`), a draft with `draftCv({files:[token], urls:[]})` (spinner "Reading your CV file (a minute or two)…") put in the editor and saved by it, with "Drafted from <name>. Your CV before it is kept as cv.md.bak."; a refused file or a failed draft is said under the field, the CV untouched. — unit only: `CvEditor.test.tsx`
+- **`group "Pages"`**: `button "Add a page"` (opens `dialog "Add a page"`, §4.4) and, with remembered pages, `button "Check again"` (opens `dialog "Check your pages again"`), then under them `list "Pages your CV is read from"`: one chip per page, shown without `https://` (the full address on hover), each with `button "Forget <page>"`, which removes it at once (`init_profile`); a page that could not be forgotten is said under the field and its chip stays. — ✓ reads the page asked for, remembers it, and proposes what the CV lacks, all ticked; ✓ Check again reads them all and names the page of each proposal; ✓ a page is forgotten by its ×; unit: `app/src/renderer/screens/CvEditor.test.tsx`
 
 ### 4.4 The page dialogs: Add a page, Check your pages again
 

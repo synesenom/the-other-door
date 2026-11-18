@@ -227,15 +227,15 @@ describe('Add a page', () => {
   })
 })
 
-describe("errors that are no field's", () => {
-  it('a save that fails is said in the error box by the editor, and tried again at the next pause', async () => {
+describe('errors under their field', () => {
+  it('a save that fails is said under the text, and tried again at the next pause', async () => {
     let fail = true
     const { call } = await open({ save_cv: () => { if (fail) throw { message: 'profile/ is not writable' }; return {} } })
     await userEvent.type(editor(), 'x')
     await userEvent.tab()
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('profile/ is not writable')
-    expect(alert).toHaveClass('error')
+    expect(alert).toHaveClass('field-error')
     expect(alert.closest('.profile-save')).toBeNull()
     fail = false
     await userEvent.type(editor(), 'y')
@@ -244,13 +244,13 @@ describe("errors that are no field's", () => {
     expect(call.mock.calls.filter((c) => c[0] === 'save_cv')).toHaveLength(2)
   })
 
-  it('a page that cannot be forgotten is said in the error box', async () => {
+  it('a page that cannot be forgotten is said under the Pages field', async () => {
     await open({ init_profile: () => { throw { message: 'config.json is not writable' } } }, {}, ['https://ada.dev'])
     await userEvent.click(screen.getByRole('button', { name: 'Forget https://ada.dev' }))
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('config.json is not writable')
-    expect(alert).toHaveClass('error')
-    expect(alert).not.toHaveClass('field-error')
+    expect(alert).toHaveClass('field-error')
+    expect(within(screen.getByRole('group', { name: 'Pages' })).getByRole('alert')).toBe(alert)
     // the saved list still holds it: the chip comes back
     expect(screen.getByRole('button', { name: 'Forget https://ada.dev' })).toBeInTheDocument()
   })
