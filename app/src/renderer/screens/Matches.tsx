@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { AppName, named } from './AppName'
+import { AppName, ErrorBox, named } from './AppName'
 import { call, errorText, statusSummary } from '../api'
 import type { Document, Match, Opening, MatchesResult, SetStatusResult, StatusSummary } from '../api'
 import { useNarrow } from '../useNarrow'
@@ -330,9 +330,7 @@ export function Matches({
           </p>
         )}
         {error && (
-          <p role="alert" className="error">
-            {named(error)}
-          </p>
+          <ErrorBox text={error} />
         )}
         {shown && shown.length === 0 && !error && (
           <div className="empty">

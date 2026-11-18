@@ -715,7 +715,7 @@ def test_french_months_are_numbered_and_validated(tmp_path):
     assert months["janvier"] == 1 and months["août"] == 8 and months["aout"] == 8
     assert months["décembre"] == 12 and months["févr."] == 2 and months["sept."] == 9
     assert set(months.values()) == set(range(1, 13))
-    assert i18n.month_numbers(("da",)) == {}
+    assert i18n.month_numbers(("da",))["okt."] == 10 and set(i18n.month_numbers(("da",)).values()) == set(range(1, 13))
     for body in ('months = {janvier = 13}', 'months = {janvier = 1}'):
         bad = tmp_path / "xx.toml"
         bad.write_text(f'code = "xx"\nname = "X"\n{body}\n')
@@ -896,3 +896,21 @@ def test_a_heading_is_the_section_kind_whose_title_it_is_whole_without_case_or_a
 @pytest.mark.parametrize("kind", ["phone", "email", "web", "location"])
 def test_every_supported_language_labels_the_everyday_contact_details(code, kind):
     assert getattr(i18n._packs((code,))[0].contact_labels, kind)
+
+
+def test_each_languages_written_months_are_read_as_dates():
+    for code, name, number in (("da", "marts", 3), ("hu", "március", 3), ("sv", "mars", 3), ("en", "March", 3), ("fr", "août", 8)):
+        assert i18n.month_numbers((code,))[name.lower()] == number
+
+
+def test_a_month_extra_beside_the_date_names_completes_them(tmp_path):
+    good = tmp_path / "xx.toml"
+    good.write_text('code = "xx"\nname = "X"\nmonths = {"jan." = 1}\n[date]\npattern = "{day} {month} {year}"\n'
+                    'months = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]\n')
+    pack = i18n.load_language_file(good)
+    assert pack.months == {"jan.": 1}
+
+
+def test_numeric_date_formats_and_day_suffixes_come_from_the_data():
+    assert {"DD.MM.YYYY", "YYYY.MM.DD.", "YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY"} <= set(i18n.numeric_date_formats())
+    assert {"er", "st", "th", "-én"} <= set(i18n.day_suffixes())

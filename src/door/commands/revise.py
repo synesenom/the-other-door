@@ -154,7 +154,7 @@ def _revise_core(
             if not isinstance(answer, str):
                 raise claude_cli.ClaudeError("claude's answer is not text")
         except claude_cli.ClaudeError as exc:
-            raise ReviseError(f"{exc}; file left unchanged") from None
+            raise ReviseError(f"{str(exc).rstrip('.')}; file left unchanged") from None
         new_body = _carry_notes(original, _clean_revised_body(answer))
         refused = html_guard.unsafe(new_body)
         if refused:

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox } from './AppName'
 import { call, errorText, languageLine, openExternal, placeLine, scoreText } from '../api'
 import type { PrepareResult, Posting as PostingData, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
@@ -135,9 +135,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
 
   if (error)
     return (
-      <p role="alert" className="error">
-        {named(error)}
-      </p>
+      <ErrorBox text={error} />
     )
   if (!posting) return <p className="muted">Loading</p>
 
@@ -227,9 +225,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
         </p>
       )}
       {prepareError && (
-        <p role="alert" className="error">
-          {named(prepareError)}
-        </p>
+        <ErrorBox text={prepareError} />
       )}
       {!narrow && (
         <div className="actions">

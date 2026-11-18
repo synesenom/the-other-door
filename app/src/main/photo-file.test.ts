@@ -1,14 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createPhotoFile, MAX_PHOTO_BYTES } from './photo-file'
 
-function setup(path: string | null, size = 1000, real?: string) {
+function setup(path: string | null, size = 1000, real?: string | Error) {
   const showOpenDialog = vi.fn(async (_options: Record<string, unknown>) => (path === null ? { canceled: true, filePaths: [] } : { canceled: false, filePaths: [path] }))
   const stat = vi.fn(async () => ({ size }))
-  const realpath = vi.fn(async (p: string) => real ?? p)
+  const realpath = vi.fn(async (p: string) => {
+    if (real instanceof Error) throw real
+    return real ?? p
+  })
   return { photo: createPhotoFile({ showOpenDialog, stat, realpath }), showOpenDialog, stat }
 }
 
 describe('createPhotoFile', () => {
+  it('says so when the file cannot be resolved', async () => {
+    expect(await setup('/a/me.png', 1000, new Error('gone')).photo.pick()).toEqual({ error: 'That file could not be read.' })
+  })
+
   it('offers a JPEG or PNG filter and returns a token and a name, never the path', async () => {
     const { photo, showOpenDialog } = setup('/Users/ada/secret/me.JPG')
     const r = await photo.pick()

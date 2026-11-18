@@ -91,6 +91,13 @@ app.setAppUserModelId(APP_ID)
 
 // System notifications for a finished long job (notices.ts says what, notifier.ts when): only
 // while no window is in front; a click brings one forward and tells it where to go.
+/** An open dialog in front of the window (the focused one, else the first). */
+function showOpenDialog(options: unknown): Promise<Electron.OpenDialogReturnValue> {
+  const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+  const o = options as Electron.OpenDialogOptions
+  return win ? dialog.showOpenDialog(win, o) : dialog.showOpenDialog(o)
+}
+
 function focusWindow(): BrowserWindow {
   let win = BrowserWindow.getAllWindows()[0]
   if (!win) {
@@ -204,38 +211,26 @@ app.whenReady().then(() => {
         const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
         return win ? dialog.showSaveDialog(win, options as Electron.SaveDialogOptions) : dialog.showSaveDialog(options as Electron.SaveDialogOptions)
       },
-      showOpenDialog: (options) => {
-        const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
-        return win ? dialog.showOpenDialog(win, options as Electron.OpenDialogOptions) : dialog.showOpenDialog(options as Electron.OpenDialogOptions)
-      },
+      showOpenDialog,
       exists: existsSync,
       realpath,
     }),
     // The CV files of the onboarding wizard: chosen here, in front of the window, sent as tokens.
     cvSources: createCvSources({
-      showOpenDialog: (options) => {
-        const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
-        return win ? dialog.showOpenDialog(win, options as Electron.OpenDialogOptions) : dialog.showOpenDialog(options as Electron.OpenDialogOptions)
-      },
+      showOpenDialog,
       stat,
       realpath,
     }),
     // The CV photo of the Profile screen and the wizard: chosen here, saved by token.
     photoFile: createPhotoFile({
-      showOpenDialog: (options) => {
-        const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
-        return win ? dialog.showOpenDialog(win, options as Electron.OpenDialogOptions) : dialog.showOpenDialog(options as Electron.OpenDialogOptions)
-      },
+      showOpenDialog,
       stat,
       realpath,
     }),
     // The CV a style is built from (Profile → CV): chosen here, the build started here; its dialog opens at the CV
     // the set-up read (the path kept in a file of the app's own folder, never sent anywhere).
     styleFile: createStyleFile({
-      showOpenDialog: (options) => {
-        const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
-        return win ? dialog.showOpenDialog(win, options as Electron.OpenDialogOptions) : dialog.showOpenDialog(options as Electron.OpenDialogOptions)
-      },
+      showOpenDialog,
       stat,
       realpath,
       exists: existsSync,

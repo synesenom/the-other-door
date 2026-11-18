@@ -238,8 +238,6 @@ def _pick_job() -> str | None:
 NoChromium = chromium.NoChromium
 INSTALL_HINT = chromium.INSTALL_HINT
 
-_CLAUDE_FIX = "run ./door doctor --fix"
-
 
 def _claude_available() -> bool:
     """Whether the `claude` CLI is on PATH or in ~/.local/bin (monkeypatched in tests)."""

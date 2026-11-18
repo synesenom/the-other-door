@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useId, useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react'
-import { named } from './AppName'
+import { ErrorBox, ErrorList, named } from './AppName'
 import { call, errorText } from '../api'
 import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
 import { photoPolicy, type ShowProfile } from './onboarding/reducer'
@@ -220,7 +220,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
     return (
       <Wrap aside={aside}>
         {switcher}
-        <p role="alert" className="error">{named(loadError)}</p>
+        <ErrorBox text={loadError} />
       </Wrap>
     )
   }
@@ -397,13 +397,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
   return (
     <Wrap aside={aside}>
       {switcher}
-      {errors.general.length > 0 && (
-        <ul role="alert" className="error onb-errors">
-          {errors.general.map((e) => (
-            <li key={e}>{e}</li>
-          ))}
-        </ul>
-      )}
+      {errors.general.length > 0 && <ErrorList messages={errors.general} />}
       {shown.map(section)}
       <div className="profile-save">
         {/* always there, so Save does not move when the first change makes Undo possible */}

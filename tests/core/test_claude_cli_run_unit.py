@@ -27,7 +27,7 @@ def test_run_calls_claude_in_print_mode_from_the_repo_root(monkeypatch):
     assert claude_cli.run(["--model", "haiku"], input="q", timeout_s=5, feature="ask") == "hi"
     argv, kwargs = calls[0]
     assert argv[:2] == ["claude", "-p"]
-    assert argv[2:] == ["--model", "haiku"]
+    assert argv[2:] == ["--model", "haiku", "--strict-mcp-config"]
     assert kwargs["input"] == "q"
     assert kwargs["timeout"] == 5
     assert kwargs["cwd"] == workspace.REPO_ROOT
@@ -50,7 +50,8 @@ def test_run_uses_the_profiles_plan_and_a_fresh_session(tmp_path, monkeypatch):
     "exc, message",
     [
         (subprocess.TimeoutExpired(["claude"], 7), "timed out after 7s"),
-        (FileNotFoundError("claude"), "could not invoke `claude` CLI"),
+        (FileNotFoundError("claude"), "^" + claude_cli.NO_CLAUDE + "$"),
+        (PermissionError("claude"), "could not invoke `claude` CLI"),
     ],
 )
 def test_run_wraps_failures_in_claude_error(monkeypatch, exc, message):

@@ -452,6 +452,43 @@ def test_french_month_dates_are_not_figures():
     assert _bad(tex, cv_md=FR_MD, current_year=2026) == []
 
 
+@pytest.mark.parametrize("date", ["15. marts 2020", "2020. március 15.", "15 mars 2020"])
+def test_danish_hungarian_and_swedish_dates_claim_only_the_year(date):
+    tex = f"<li>Acme, {date}</li>"
+    assert _values(tex, cv_md="", current_year=2026) == ["2020"]
+
+
+@pytest.mark.parametrize("text", ["március 15 projekt", "március 2020. 15 projekt"])
+def test_a_number_after_a_month_without_a_period_is_still_claimed(text):
+    assert "15" in _values(f"<li>{text}</li>", cv_md="", current_year=2026)
+
+
+@pytest.mark.parametrize("date", ["15.03.2020", "2020.03.15.", "2020.03.15", "5.3.2020"])
+def test_dotted_numeric_dates_claim_only_the_year(date):
+    assert _values(f"<li>Acme, {date}</li>", cv_md="", current_year=2026) == ["2020"]
+
+
+@pytest.mark.parametrize("text, value", [("Cut costs by 15.5 percent", "15.5"), ("Raised 3.2 million", "3.2")])
+def test_a_decimal_is_still_a_number(text, value):
+    assert value in _values(f"<li>{text}</li>", cv_md="", current_year=2026)
+
+
+@pytest.mark.parametrize(
+    "date", ["márc. 15. 2020", "15 okt. 2020", "március 15-én 2020", "2020. szept. 3-án", "3. sept. 2020", "15. febr. 2020", "15 sept. 2020"]
+)
+def test_abbreviated_and_suffixed_dates_claim_only_the_year(date):
+    assert _values(f"<li>Acme, {date}</li>", cv_md="", current_year=2026) == ["2020"]
+
+
+def test_us_order_date_claims_only_the_year():
+    assert _values("<li>Started March 15, 2020</li>", cv_md="", current_year=2026) == ["2020"]
+
+
+@pytest.mark.parametrize("date", ["2020-03-15", "03/15/2020", "15/03/2020", "Started March 1st, 2020", "Depuis le 1er mars 2020", "March 15th, 2020"])
+def test_iso_us_and_suffixed_dates_claim_only_the_year(date):
+    assert _values(f"<li>Acme, {date}</li>", cv_md="", current_year=2026) == ["2020"]
+
+
 def test_french_letter_date_line_needs_no_source():
     tex = "<p>Paris, le 29 octobre 2026<br>Objet : candidature</p>"
     assert _bad(tex, file="cover_letter", current_year=2026) == []

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Dispatch, DragEvent } from 'react'
-import { named } from '../AppName'
+import { ErrorBox } from '../AppName'
 import { Hint } from '../Hint'
 import { FromDrive } from './FromDrive'
 import { Frame } from './parts'
@@ -93,7 +93,7 @@ export function Sources({ state, dispatch, onNext, onBack, onPulled }: Props) {
         <Hint label="About the documents">PDF, DOCX, Markdown or text, up to 25 MB each. On LinkedIn: More → Save to PDF.</Hint>
       </div>
       {refused.map((r) => (
-        <p key={r.name} role="alert" className="error small">{named(`${r.name}: ${r.reason}`)}</p>
+        <ErrorBox key={r.name} className="small" text={`${r.name}: ${r.reason}`} />
       ))}
       <div className="field onb-field">
         <div className="onb-url">
@@ -121,11 +121,7 @@ export function Sources({ state, dispatch, onNext, onBack, onPulled }: Props) {
           />
           <Hint label="About the URL">A personal site, GitHub, a publication list: anything public.</Hint>
         </div>
-        {urlError && (
-          <p role="alert" className="error small">
-            {named(urlError)}
-          </p>
-        )}
+        {urlError && <ErrorBox className="small" text={urlError} />}
       </div>
       {chosen.length > 0 && (
         <ul className="chips onb-chips" aria-label="Sources, chosen">

@@ -1,5 +1,6 @@
 // Where a job's prepared files live, and the only way the app names one: a job id
-// plus a fixed file name, never a path from the renderer. Pure (no processes).
+// plus a fixed file name, never a path from the renderer; and the one check of a file
+// picked in a dialog (extension, links, size). No processes.
 import { existsSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
@@ -54,4 +55,43 @@ export function runRecordPath(home: string, startedAt: unknown): string | null {
   if (typeof startedAt !== 'string' || startedAt.length === 0 || startedAt.length > 64) return null
   const path = join(home, 'jobs', 'runs', `${startedAt.replace(/[^A-Za-z0-9_-]/g, '-')}.json`)
   return existsSync(path) ? path : null
+}
+
+/** Whether the name ends in one of `exts` (without the dot, e.g. `pdf`, `tar.gz`), without regard to case. */
+export const hasExtension = (p: string, exts: string[]) => exts.some((e) => p.toLowerCase().endsWith(`.${e}`))
+
+export interface PickedRule {
+  /** Accepted endings without the dot, e.g. `pdf`, `tar.gz`; matched without regard to case. */
+  extensions: string[]
+  /** The size cap and the reason for a file over it, when there is one. */
+  size?: { maxBytes: number; tooBig: string }
+  wrongType: string
+  unreadable?: string
+}
+
+/**
+ * The rule for a file picked in a dialog: the name picked and the file behind it (links resolved) both end in
+ * an accepted extension, and the file is under the size cap; else a reason in words. Returns the real path.
+ */
+export async function checkPicked(
+  path: string,
+  rule: PickedRule,
+  io: { realpath?: (p: string) => Promise<string>; stat?: (p: string) => Promise<{ size: number }> },
+): Promise<{ ok: true; real: string; size: number } | { ok: false; error: string }> {
+  const accepted = (p: string) => hasExtension(p, rule.extensions)
+  if (!accepted(path)) return { ok: false, error: rule.wrongType }
+  let real: string
+  let size = 0
+  try {
+    real = io.realpath ? await io.realpath(path) : path
+    if (!accepted(real)) return { ok: false, error: rule.wrongType }
+    if (rule.size) {
+      if (!io.stat) throw new Error('a size cap needs stat')
+      size = (await io.stat(real)).size
+    }
+  } catch {
+    return { ok: false, error: rule.unreadable ?? 'That file could not be read.' }
+  }
+  if (rule.size && size > rule.size.maxBytes) return { ok: false, error: rule.size.tooBig }
+  return { ok: true, real, size }
 }

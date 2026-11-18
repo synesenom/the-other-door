@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useId, useRef, useState } from 'react'
-import { named } from './AppName'
+import { ErrorBox } from './AppName'
 import { call, errorText } from '../api'
 import { Dialog } from './Dialog'
 import { Markdown } from './Markdown'
@@ -97,9 +97,7 @@ function Expand({ again, pages, blocked, onRead, onClose, onAdded }: { again: bo
     }
   }
   const errorLine = error && (
-    <p role="alert" className="error">
-      {named(error)}
-    </p>
+    <ErrorBox text={error} />
   )
   const label = again ? 'Check your pages again' : 'Add a page'
 
@@ -293,7 +291,7 @@ export function CvEditor({
     }
   }
 
-  if (loadError) return <p role="alert" className="error">{named(loadError)}</p>
+  if (loadError) return <ErrorBox text={loadError} />
   if (!profile) return <Spinner message="Reading your CV…" />
   const keepPages = async (next: string[]) => {
     const before = pages
@@ -353,9 +351,7 @@ export function CvEditor({
       </div>
       {dirty && <p className="small muted">Save or undo your changes before adding from a page.</p>}
       {pagesError && (
-        <p role="alert" className="error">
-          {named(pagesError)}
-        </p>
+        <ErrorBox text={pagesError} />
       )}
       {(panel === 'page' || panel === 'again') && (
         <Expand
@@ -421,9 +417,7 @@ export function CvEditor({
         {saving ? <Spinner message="Saving…" /> : message ? <p className="small">{message}</p> : dirty ? <p className="small muted">Unsaved changes</p> : null}
         {/* no field's error: the box, in the bar on a line of its own, so it is seen from wherever Save was pressed */}
         {error && (
-          <p role="alert" className="error">
-            {named(error)}
-          </p>
+          <ErrorBox text={error} />
         )}
       </div>
     </div>

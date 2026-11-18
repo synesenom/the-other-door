@@ -268,7 +268,7 @@ def test_the_call_is_haiku_at_low_effort_with_no_mcp_servers_and_the_style_featu
     call = asks.calls[0]
     assert call["system"] == style_structure.SYSTEM and "Max Mustermann" in call["text"]
     assert call["model"] == "haiku" and call["feature"] == "style" and call["schema"] == style_structure.SCHEMA
-    assert call["effort"] == "low" and call["strict_mcp"] is True and call["timeout_s"] == 60
+    assert call["effort"] == "low" and call["timeout_s"] == 60
 
 
 def test_the_answer_is_cached_by_the_files_sha256_and_a_second_read_makes_no_call(tmp_path, ask):
