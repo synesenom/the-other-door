@@ -36,7 +36,7 @@ DETECTION: dict[str, Careers] = {
     "successfactors": Careers("https://careers.novonordisk.com", "Copenhagen", "successfactors", "careers.novonordisk.com"),
     "emply": Careers("https://international.au.dk/about/profile/vacant-positions/", "Aarhus", "emply",
                      "https://international.au.dk/about/profile/vacant-positions/"),
-    "recman": Careers("https://stillinger.signo.no", "Oslo", "recman", "stillinger.signo.no"),
+    "recman": Careers("https://stillinger.signo.no", "Oslo", "recman", "signo"),
     "beetween": Careers("https://giboire.nous-recrutons.fr", "Paris", "beetween", "giboire"),
     "digitalrecruiters": Careers("https://recrutement.franprix.fr", "Paris", "digitalrecruiters", "recrutement.franprix.fr"),
     "jobtrain": Careers("https://jobs.crisis.org.uk", "London", "jobtrain", "jobs.crisis.org.uk"),
