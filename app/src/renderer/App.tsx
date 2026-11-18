@@ -62,6 +62,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   const [gate, setGate] = useState<Gate>({ kind: 'loading' })
   const [profile, setProfile] = useState<ShowProfile | null>(null)
   const [sandbox, setSandbox] = useState(false)
+  const [staging, setStaging] = useState(false)
   const [current, setCurrent] = useState<Destination>(start?.destination ?? 'Matches')
   const mainRef = useRef<HTMLElement>(null)
   // Profile opened from a problem line: on the CV.
@@ -199,6 +200,7 @@ export function App({ start }: { start?: AppStart } = {}) {
       if (!live) return
       setDemo(Boolean(info?.demo))
       setSandbox(info?.sandbox === 'onboard')
+      setStaging(info?.sandbox === 'staging')
       setHome(info?.home)
       setRemote(Boolean(info?.remote))
       const wizardAllowed = !info?.demo || info.sandbox === 'onboard'
@@ -217,8 +219,8 @@ export function App({ start }: { start?: AppStart } = {}) {
     }
   }, [])
   useEffect(() => {
-    document.title = sandbox ? 'The other door (onboarding sandbox)' : demo ? 'The other door (demo)' : 'The other door'
-  }, [demo, sandbox])
+    document.title = sandbox ? 'The other door (onboarding sandbox)' : demo ? 'The other door (demo)' : staging ? 'The other door (staging)' : 'The other door'
+  }, [demo, sandbox, staging])
 
   /** Opens the wizard on what is saved now (a fresh read): Profile's "Draft it from your CV file or pages",
    * offered while the CV is the example one or missing. A profile that cannot
@@ -338,12 +340,12 @@ export function App({ start }: { start?: AppStart } = {}) {
     return (
       <div className="shell-bare">
         <main className="main">
-          <Wizard profile={gate.profile} sandbox={sandbox} start={start?.wizard} onFinish={(firstRun) => void finishWizard(firstRun)} onCancel={gate.profile.config ? () => setGate({ kind: 'shell' }) : undefined} />
+          <Wizard profile={gate.profile} sandbox={sandbox} noDrive={staging} start={start?.wizard} onFinish={(firstRun) => void finishWizard(firstRun)} onCancel={gate.profile.config ? () => setGate({ kind: 'shell' }) : undefined} />
         </main>
       </div>
     )
   }
-  const where = sandbox ? 'sandbox' : demo ? 'demo' : 'real'
+  const where = sandbox ? 'sandbox' : demo ? 'demo' : staging ? 'staging' : 'real'
   // What is wrong and needs you (Claude, the Claude plan's window, the CV, Drive, something that keeps going wrong):
   // a short line each at the sidebar's foot (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
   // The other door; a problem report is made there too, so the phone does not say that one.
@@ -395,15 +397,15 @@ export function App({ start }: { start?: AppStart } = {}) {
     <div className={narrow && pushed ? 'shell pushed' : 'shell'}>
       {!(narrow && pushed) && (
       <aside className="sidebar">
-        {demo && (
+        {(demo || staging) && (
           // A small tag; the sentence is its tooltip.
           <p
             role="note"
-            aria-label={sandbox ? 'Onboarding sandbox' : 'Demo data'}
+            aria-label={sandbox ? 'Onboarding sandbox' : staging ? 'Staging' : 'Demo data'}
             className="demo-tag small"
-            title={sandbox ? 'Onboarding sandbox (app/.onboard). Nothing here changes your real data or Drive.' : 'Made-up jobs (app/.demo). Nothing here changes your real data or Drive.'}
+            title={sandbox ? 'Onboarding sandbox (app/.onboard). Nothing here changes your real data or Drive.' : staging ? 'Staging (app/.staging): everything is real but the data, kept apart from yours and from Drive.' : 'Made-up jobs (app/.demo). Nothing here changes your real data or Drive.'}
           >
-            {sandbox ? 'Sandbox' : 'Demo'}
+            {sandbox ? 'Sandbox' : staging ? 'Staging' : 'Demo'}
           </p>
         )}
         <nav aria-label="Main">

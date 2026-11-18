@@ -565,6 +565,14 @@ describe('App, the first-launch gate', () => {
     expect(await screen.findByRole('heading', { name: 'Tell me about yourself' })).toBeInTheDocument()
   })
 
+  it('shows it in staging, with no way to Google Drive', async () => {
+    const { info } = gated(freshProfile)
+    info.mockResolvedValue({ demo: false, sandbox: 'staging' })
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Tell me about yourself' })).toBeInTheDocument()
+    expect(screen.queryByText(/Google Drive/)).toBeNull()
+  })
+
   it('goes to the app when show_profile fails', async () => {
     gated(() => {
       throw new Error('server down')
@@ -579,6 +587,14 @@ describe('App, the first-launch gate', () => {
     render(<App />)
     expect(await screen.findByRole('note', { name: 'Onboarding sandbox' })).toHaveTextContent('Sandbox')
     await waitFor(() => expect(document.title).toBe('The other door (onboarding sandbox)'))
+  })
+
+  it('says in the sidebar and the title that it is staging', async () => {
+    const { info } = gated(profile())
+    info.mockResolvedValue({ demo: false, sandbox: 'staging' })
+    render(<App />)
+    expect(await screen.findByRole('note', { name: 'Staging' })).toHaveTextContent('Staging')
+    await waitFor(() => expect(document.title).toBe('The other door (staging)'))
   })
 
   describe('the lines that need you, at the sidebar\'s foot', () => {

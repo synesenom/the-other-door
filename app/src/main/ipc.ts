@@ -132,7 +132,7 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   build_style: 120_000,
 }
 
-// The demo and the onboarding sandbox run on made-up data: none of it may reach the user's Drive.
+// The demo and the onboarding sandbox run on made-up data, staging on throwaway data: none of it may reach the user's Drive.
 const DRIVE_TOOLS = new Set(['connect_drive', 'sync_data', 'disconnect_drive'])
 const COALESCE_MS = 200
 
@@ -211,7 +211,7 @@ export function registerIpc(
     savePdf?: { showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }>; downloads: string }
     showItemInFolder: (path: string) => void
     /** What the window shows about where its data is: `demo` when it runs on the made-up data. */
-    info?: { demo: boolean; sandbox?: 'onboard'; home?: string }
+    info?: { demo: boolean; sandbox?: 'onboard' | 'staging'; home?: string }
     /** The last run board, for a window that opens (or reloads) while a run is going. */
     currentBoard?: () => RunBoard
     /** Told when a long tool settles (see notices.ts); never allowed to change the answer. */
@@ -268,7 +268,7 @@ export function registerIpc(
     if (typeof tool !== 'string' || !ALLOWED.has(tool)) return refuse('unknown tool')
     const refusal = pathRefusal(tool, isPlainObject(args) ? args : {})
     if (refusal) return refuse(refusal)
-    if (deps.info?.demo && DRIVE_TOOLS.has(tool)) return refuse('Google Drive is not available on made-up data.')
+    if ((deps.info?.demo || deps.info?.sandbox === 'staging') && DRIVE_TOOLS.has(tool)) return refuse('Google Drive is not available on made-up data.')
     const sender = (event as { sender?: { send(channel: string, ...a: unknown[]): void } } | undefined)?.sender
     const options: { onProgress?: (p: Progress) => void; timeout?: number } = {}
     if (tool in TOOL_TIMEOUTS) options.timeout = TOOL_TIMEOUTS[tool]

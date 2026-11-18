@@ -212,6 +212,27 @@ export function resetOnboard(dir: string, repoRoot: string): void {
   mkdirSync(to, { recursive: true })
 }
 
+export type StagingMode = 'keep' | 'fresh'
+
+/** electron-vite's `--mode staging` (`npm run dev:staging`): the real app on a throwaway folder, kept; `staging-fresh` empties it first. */
+export function stagingMode(mode: string | undefined): StagingMode | null {
+  if (mode === 'staging') return 'keep'
+  if (mode === 'staging-fresh') return 'fresh'
+  return null
+}
+
+/** The staging folder: `app/.staging` of the checkout. */
+export function stagingDir(repoRoot: string): string {
+  return join(repoRoot, 'app', '.staging')
+}
+
+/** Makes the staging folder (`fresh` empties it first). Refuses, before deleting anything, a folder that is or holds the checkout's real data. */
+export function prepareStaging(dir: string, repoRoot: string, mode: StagingMode): void {
+  const to = refuseRealData(dir, repoRoot, 'a staging')
+  if (mode === 'fresh') rmSync(to, { recursive: true, force: true })
+  mkdirSync(to, { recursive: true })
+}
+
 /**
  * The server's environment in the onboarding sandbox: the demo's (data and Drive state inside the
  * folder, HOME and PATH yours so the claude CLI is real), plus, with DOOR_ONBOARD_SIGNED_OUT=1, a

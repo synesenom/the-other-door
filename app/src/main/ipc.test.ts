@@ -10,7 +10,7 @@ import type { Notice } from './notices'
 
 type Handler = (event: unknown, ...args: any[]) => Promise<any>
 
-function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<unknown> = async () => ({ ok: 1 }), demoRun?: (args: any, onProgress: any) => any, notifyThrows = false, info: { demo: boolean; sandbox?: 'onboard'; home?: string } = { demo: true }) {
+function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<unknown> = async () => ({ ok: 1 }), demoRun?: (args: any, onProgress: any) => any, notifyThrows = false, info: { demo: boolean; sandbox?: 'onboard' | 'staging'; home?: string } = { demo: true }) {
   const cvSources = {
     pick: vi.fn(async () => ({ files: [{ token: 'tok1', name: 'cv.pdf', size: 10 }], refused: [] })),
     add: vi.fn(async (_paths: string[]) => ({ files: [{ token: 'tok2', name: 'dropped.pdf', size: 10 }], refused: [] })),
@@ -140,8 +140,8 @@ describe('registerIpc', () => {
     expect(server.call.mock.calls[0][2].timeout).toBeGreaterThan(floor)
   })
 
-  it('never lets the demo or the onboarding sandbox reach Drive', async () => {
-    for (const info of [{ demo: true }, { demo: true, sandbox: 'onboard' as const }]) {
+  it('never lets the demo, the onboarding sandbox or staging reach Drive', async () => {
+    for (const info of [{ demo: true }, { demo: true, sandbox: 'onboard' as const }, { demo: false, sandbox: 'staging' as const }]) {
       const { server, invoke } = setup(undefined, undefined, false, info)
       for (const tool of ['connect_drive', 'sync_data', 'disconnect_drive']) {
         expect(await invoke(CHANNELS.call, tool, {})).toEqual({ ok: false, error: 'Google Drive is not available on made-up data.' })
@@ -871,6 +871,12 @@ describe('choosing a CV to copy the style of', () => {
       throw new DoorError('this PDF is a scan: there is no style to copy')
     }, undefined, false, real)
     expect(await two.invoke(CHANNELS.chooseStyleFile)).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
+  })
+
+  it('staging builds a style for real', async () => {
+    const { invoke, server } = setup(async () => ({ started: true }), undefined, false, { demo: false, sandbox: 'staging' })
+    expect(await invoke(CHANNELS.chooseStyleFile)).toEqual({ ok: true, data: { started: true } })
+    expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/my cv.pdf' }, { timeout: 120_000 })
   })
 
   it('made-up data builds nothing and opens no dialog', async () => {

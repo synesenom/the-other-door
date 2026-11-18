@@ -6,7 +6,7 @@ import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, Notification, pr
 import { createArchiveFiles } from './archive-files'
 import { createClaudeLogin } from './claude-login'
 import { createCvSources } from './cv-sources'
-import { demoDir, demoDiscoveryOff, demoEnv, demoModeFor, demoRunMs, onboardDir, onboardEnv, onboardModeFor, resetOnboard, seedDemo } from './demo'
+import { demoDir, demoDiscoveryOff, demoEnv, demoModeFor, demoRunMs, onboardDir, onboardEnv, onboardModeFor, prepareStaging, resetOnboard, seedDemo, stagingDir, stagingMode } from './demo'
 import { startDemoRun } from './demo-run'
 import { doorHome } from './files'
 import { watchForeignEnd } from './foreign-run'
@@ -31,13 +31,17 @@ const repoRoot = packaged ? process.resourcesPath : resolve(app.getAppPath(), '.
 // DOOR_DEMO_DIR (an unpackaged app only) starts the demo in that folder: how the tests run it.
 // `npm run dev:onboard` (or DOOR_ONBOARD_DIR, unpackaged): an empty folder app/.onboard/, made again on
 // every start, to try the first launch; the run there is simulated like the demo's.
-const onboard = onboardModeFor(import.meta.env.MODE, process.env, app.isPackaged)
-const demo = onboard ? null : demoModeFor(import.meta.env.MODE, process.env, app.isPackaged)
-const demoFolder = onboard ? onboardDir(process.env, repoRoot) : demoDir(process.env, repoRoot)
-if (onboard) resetOnboard(demoFolder, repoRoot)
+// `npm run dev:staging`: the real app (real runs, the style build, Prepare) on a throwaway folder, app/.staging/,
+// kept between starts (`dev:staging:fresh` empties it); its data and Drive state stay inside it, Drive refused.
+const staging = packaged ? null : stagingMode(import.meta.env.MODE)
+const onboard = staging ? null : onboardModeFor(import.meta.env.MODE, process.env, app.isPackaged)
+const demo = onboard || staging ? null : demoModeFor(import.meta.env.MODE, process.env, app.isPackaged)
+const demoFolder = staging ? stagingDir(repoRoot) : onboard ? onboardDir(process.env, repoRoot) : demoDir(process.env, repoRoot)
+if (staging) prepareStaging(demoFolder, repoRoot, staging)
+else if (onboard) resetOnboard(demoFolder, repoRoot)
 else if (demo) seedDemo(demoFolder, repoRoot, demo, new Date(), { discoveryOff: demoDiscoveryOff(process.env) })
 const simulated = Boolean(demo || onboard)
-const env = onboard ? onboardEnv(process.env, demoFolder) : demo ? demoEnv(process.env, demoFolder) : process.env
+const env = onboard ? onboardEnv(process.env, demoFolder) : demo || staging ? demoEnv(process.env, demoFolder) : process.env
 // The data folder: DOOR_HOME, else the checkout (from a checkout) or the user's data folder (packaged).
 const home = doorHome(env, packaged ? app.getPath('userData') : repoRoot)
 // What went wrong that the screens do not say (#593): the server's own failures it logs itself; these are the app's.
@@ -189,7 +193,7 @@ app.whenReady().then(() => {
   })
   registerIpc(ipcMain, server, {
     // `home` is for reading only: the window shows where the data is and never sends a path back.
-    info: { ...(onboard ? { demo: true, sandbox: 'onboard' as const } : { demo: Boolean(demo) }), home },
+    info: { ...(onboard ? { demo: true, sandbox: 'onboard' as const } : staging ? { demo: false, sandbox: 'staging' as const } : { demo: Boolean(demo) }), home },
     openExternal: (url) => shell.openExternal(url),
     home,
     savePdf: {

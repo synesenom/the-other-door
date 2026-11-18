@@ -13,6 +13,8 @@
     "dev:demo": "npm run gen-theme && electron-vite dev --mode demo",
     "dev:onboard": "npm run gen-theme && electron-vite dev --mode onboard",
     "dev:demo:fresh": "npm run gen-theme && electron-vite dev --mode demo-fresh",
+    "dev:staging": "npm run gen-theme && electron-vite dev --mode staging",
+    "dev:staging:fresh": "npm run gen-theme && electron-vite dev --mode staging-fresh",
     "dev:preview": "npm run gen-theme && vite --config vite.preview.config.mts",
     "prebuild": "npm run gen-theme",
     "build": "electron-vite build",

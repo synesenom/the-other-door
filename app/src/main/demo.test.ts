@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { JOBS_DATA_VERSION, PROFILE_DATA_VERSION } from './data-versions'
-import { DEMO_JOBS, demoDir, demoEnv, demoMode, demoModeFor, demoRunMs, onboardDir, onboardEnv, onboardMode, onboardModeFor, resetOnboard, seedDemo } from './demo'
+import { DEMO_JOBS, demoDir, demoEnv, demoMode, demoModeFor, demoRunMs, onboardDir, onboardEnv, onboardMode, onboardModeFor, prepareStaging, resetOnboard, seedDemo, stagingDir, stagingMode } from './demo'
 
 describe('demoMode', () => {
   it('reads the electron-vite mode: the demo kept, or built again', () => {
@@ -191,5 +191,41 @@ describe('the onboarding sandbox', () => {
     expect(onboardEnv(base, '/o')).toEqual(demoEnv(base, '/o'))
     expect(onboardEnv(base, '/o')).not.toHaveProperty('CLAUDE_CONFIG_DIR')
     expect(onboardEnv({ ...base, DOOR_ONBOARD_SIGNED_OUT: '1' }, '/o')).toMatchObject({ CLAUDE_CONFIG_DIR: join('/o', '.claude') })
+  })
+})
+
+describe('staging', () => {
+  it('stagingMode reads the electron-vite mode: the folder kept, or emptied first', () => {
+    expect(stagingMode('staging')).toBe('keep')
+    expect(stagingMode('staging-fresh')).toBe('fresh')
+    expect(stagingMode('onboard')).toBeNull()
+    expect(stagingMode(undefined)).toBeNull()
+  })
+
+  it('stagingDir is app/.staging of the checkout', () => {
+    expect(stagingDir('/repo')).toBe(join('/repo', 'app', '.staging'))
+  })
+
+  it('prepareStaging keeps what is there, and fresh empties it', () => {
+    const repo = join(__dirname, '..', '..', '..')
+    const dir = join(mkdtempSync(join(tmpdir(), 'door-staging-')), '.staging')
+    prepareStaging(dir, repo, 'keep')
+    expect(readdirSync(dir)).toEqual([])
+    mkdirSync(join(dir, 'profile'))
+    writeFileSync(join(dir, 'profile', 'config.json'), '{}')
+    prepareStaging(dir, repo, 'keep')
+    expect(existsSync(join(dir, 'profile', 'config.json'))).toBe(true)
+    prepareStaging(dir, repo, 'fresh')
+    expect(readdirSync(dir)).toEqual([])
+  })
+
+  it('prepareStaging refuses the checkout, jobs/ and profile/ before deleting anything', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'door-repo-'))
+    for (const d of ['jobs', 'profile']) mkdirSync(join(repo, d))
+    writeFileSync(join(repo, 'jobs', 'applications.json'), '{}')
+    for (const bad of [repo, join(repo, 'jobs'), join(repo, 'profile'), join(repo, 'jobs', 'x')]) {
+      expect(() => prepareStaging(bad, repo, 'fresh')).toThrow(/staging/)
+    }
+    expect(existsSync(join(repo, 'jobs', 'applications.json'))).toBe(true)
   })
 })

@@ -127,7 +127,8 @@ While your CV is still the example one, "Draft it from your CV file or pages" in
 the same screens with your answers filled in: your sources are read, with new titles to choose
 from. Your answers stay, and Save starts no search.
 
-`npm run dev:onboard` tries all of this on an empty folder (see [`app/README.md`](../app/README.md)).
+`npm run dev:onboard` tries all of this on an empty folder, with a simulated first run; `npm run dev:staging` tries it
+for real (the CV style, real runs, Prepare) on a throwaway folder (see [`app/README.md`](../app/README.md)).
 
 ## Finding new jobs
 

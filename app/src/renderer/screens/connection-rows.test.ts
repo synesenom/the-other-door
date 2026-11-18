@@ -42,8 +42,9 @@ describe('claudeRow', () => {
 const off: DriveStatus = { connected: false, account: null, last_synced: null, last_error: null, configured: true }
 
 describe('driveRow', () => {
-  it('the demo and the sandbox never reach Drive', () => {
+  it('the demo, the sandbox and staging never reach Drive', () => {
     expect(driveRow(off, 'demo')).toEqual({ kind: 'unavailable', why: 'Not available in the demo' })
+    expect(driveRow(off, 'staging')).toEqual({ kind: 'unavailable', why: 'Not available in staging' })
     expect(driveRow(off, 'sandbox')).toEqual({ kind: 'unavailable', why: 'Not available in the onboarding sandbox' })
   })
 

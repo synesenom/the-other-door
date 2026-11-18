@@ -13,6 +13,8 @@ interface Props {
   profile: ShowProfile
   /** The onboarding sandbox: the first run is simulated, nothing real is installed or read from the boards. */
   sandbox: boolean
+  /** Staging: real, but Google Drive is out of reach. */
+  noDrive?: boolean
   /** The wizard is over: back to the app, with the first run started when `run`. */
   onFinish: (run: boolean) => void
   /** A redo can be left at its first step without changing anything. */
@@ -22,7 +24,7 @@ interface Props {
 }
 
 /** The first-launch wizard (and "Set up again"): sources, reading, one review; written only by the review's Save. */
-export function Wizard({ profile: initial, sandbox, onFinish, onCancel, start }: Props) {
+export function Wizard({ profile: initial, sandbox, noDrive = false, onFinish, onCancel, start }: Props) {
   const [state, dispatch] = useReducer(wizardReducer, undefined, () => ({ ...initialState(initial), ...start }))
   const [doctor, setDoctor] = useState<DoctorReport | null>(null)
   const quietInstall = useRef(false)
@@ -46,7 +48,7 @@ export function Wizard({ profile: initial, sandbox, onFinish, onCancel, start }:
   }, [doctor, sandbox])
 
   // A first set-up (no profile) that may reach Google Drive can bring the profile from there instead (issue 616).
-  const pulled = sandbox || initial.config ? undefined : () => onFinish(false)
+  const pulled = sandbox || noDrive || initial.config ? undefined : () => onFinish(false)
   if (doctor === null) return <Splash />
   const connecting = !claudeReady(doctor)
   // Always the three steps of setting up: connecting Claude comes before them, the three still to come.
