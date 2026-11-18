@@ -8,6 +8,7 @@ import click
 import pytest
 
 from door.core.progress import Progress
+from door.core.board_state import BoardState
 from door.pipeline import display
 
 PLAN = Progress("plan", stage="steps", detail="search,discover,follow,collect,match")
@@ -19,7 +20,7 @@ def step(name, outcome, detail=None, total=None):
 
 
 def board(*events, now=100.0):
-    state = display.BoardState()
+    state = BoardState()
     for event in events:
         state.apply(event, now=now)
     return state

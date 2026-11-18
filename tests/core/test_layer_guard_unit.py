@@ -4,7 +4,7 @@
 into it, and `render/` is also under `style/`. `pipeline/` is left out: it is the layer that composes
 the commands' cores (`find`'s five steps). `core/sync.py` is the one named exception: its Drive hooks
 call the archive core lazily; issue #213 removes it, and then EXCEPTIONS goes empty. Nor do they import
-`door.pipeline`, but for `core/progress.py`'s lazy `BoardState` (issue #359 moves it into `core/`).
+`door.pipeline`.
 """
 
 import ast
@@ -13,7 +13,6 @@ from paths import PACKAGE_DIR
 
 LOWER = ("render", "style", "core", "tailoring", "matching", "i18n", "scrapers")
 EXCEPTIONS = {("core/sync.py", "door.commands.archive")}  # remove with #213
-PIPELINE_EXCEPTIONS = {("core/progress.py", "door.pipeline.display.BoardState")}  # remove with #359
 
 
 def _imports(path):
@@ -42,7 +41,7 @@ def test_the_lower_packages_never_import_the_commands():
 
 
 def test_the_lower_packages_never_import_the_pipeline():
-    assert _offenders(LOWER, "door.pipeline") == PIPELINE_EXCEPTIONS
+    assert _offenders(LOWER, "door.pipeline") == set()
 
 
 def test_render_never_imports_style():
