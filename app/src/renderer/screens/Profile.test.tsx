@@ -70,11 +70,11 @@ describe('Profile, the CV photo', () => {
   }
 
   it('is offered where the country\'s CVs may carry one, and saved at once, not with Save', async () => {
-    const h = await openWith(profile('Copenhagen'))
+    const h = await openWith(profile('Copenhagen'), { save_photo: { photo_path: '/p/photo.jpg' } })
     h.pickPhoto.mockResolvedValueOnce({ token: 't1', name: 'me.jpg' })
     h.call.mockClear()
     await userEvent.click(within(about()).getByRole('button', { name: 'Choose a photo…' }))
-    await waitFor(() => expect(h.savePhoto).toHaveBeenCalledWith('t1'))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_photo', {}, undefined, ['t1']))
     expect(h.call).toHaveBeenCalledWith('show_profile', {})
     expect(saveButton()).toBeDisabled()
   })
@@ -87,9 +87,12 @@ describe('Profile, the CV photo', () => {
   })
 
   it('says why a picture was refused, under the field', async () => {
-    const h = await openWith(profile('Copenhagen'))
+    const h = await openWith(profile('Copenhagen'), {
+      save_photo: () => {
+      throw new Error('the picture is too small (50 x 50 px)')
+    },
+    })
     h.pickPhoto.mockResolvedValueOnce({ token: 't1', name: 'tiny.png' })
-    h.savePhoto.mockResolvedValueOnce({ ok: false, error: 'the picture is too small (50 x 50 px)' })
     await userEvent.click(within(about()).getByRole('button', { name: 'Choose a photo…' }))
     expect(await within(about()).findByRole('alert')).toHaveTextContent('too small')
     h.pickPhoto.mockResolvedValueOnce({ error: 'Choose a JPEG or PNG picture.' })
@@ -106,12 +109,12 @@ describe('Profile, the CV photo', () => {
   })
 
   it('keeps what is typed and unsaved when the photo changes', async () => {
-    const h = await openWith(profile('Copenhagen'))
+    const h = await openWith(profile('Copenhagen'), { save_photo: { photo_path: '/p/photo.jpg' } })
     await userEvent.clear(screen.getByLabelText('Name'))
     await userEvent.type(screen.getByLabelText('Name'), 'Ada King')
     h.pickPhoto.mockResolvedValueOnce({ token: 't1', name: 'me.jpg' })
     await userEvent.click(within(about()).getByRole('button', { name: 'Choose a photo…' }))
-    await waitFor(() => expect(h.savePhoto).toHaveBeenCalled())
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_photo', {}, undefined, ['t1']))
     expect(screen.getByLabelText('Name')).toHaveValue('Ada King')
   })
 })

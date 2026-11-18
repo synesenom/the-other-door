@@ -2,9 +2,8 @@
 // report goes (#593). All are chosen
 // in dialogs the main process runs; the window gets the export's path back to show, and for an import only
 // a one-shot token and the file's name, which `take` turns into the real path for import_data.
-import { randomUUID } from 'node:crypto'
 import { basename } from 'node:path'
-import { checkPicked, hasExtension } from './files'
+import { checkPicked, hasExtension, oneShot } from './files'
 
 interface Deps {
   showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }>
@@ -24,8 +23,7 @@ export const defaultReportName = (day: string) => `door-report-${day}.zip`
 
 export function createArchiveFiles(deps: Deps) {
   const today = deps.today ?? (() => new Date().toISOString().slice(0, 10))
-  // One import at a time: a new pick replaces the last.
-  let pending: { token: string; path: string } | null = null
+  const picked = oneShot()
 
   return {
     /** Where to write an export: a new file the user named (export_data never replaces one). */
@@ -54,17 +52,11 @@ export function createArchiveFiles(deps: Deps) {
       const chosen = r.filePaths[0]!
       const checked = await checkPicked(chosen, { extensions: ARCHIVE_EXTENSIONS, wrongType: 'Choose an export, a .tar.gz file.' }, deps)
       if (!checked.ok) return { error: checked.error }
-      pending = { token: randomUUID(), path: checked.real }
-      return { token: pending.token, name: basename(chosen) }
+      return { token: picked.put(checked.real), name: basename(chosen) }
     },
 
     /** The real path of a picked archive, once. */
-    take(token: string): string | null {
-      if (!pending || pending.token !== token) return null
-      const { path } = pending
-      pending = null
-      return path
-    },
+    take: picked.take,
   }
 }
 

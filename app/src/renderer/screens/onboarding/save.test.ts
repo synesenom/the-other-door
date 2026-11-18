@@ -58,10 +58,10 @@ describe('saveProfile', () => {
   })
 
   it('saves a chosen photo by its token after the CV, and a removal through remove_photo', async () => {
-    const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
+    const h = mockDoor({ init_profile: {}, save_cv: {}, save_photo: { photo_path: '/p/photo.jpg' }, show_profile: existingProfile })
     const result = await saveProfile(filled({ cvText: '# Ada\n', photo: { kind: 'new', token: 't1', name: 'me.jpg' } }))
     expect(names(h)).toEqual(['init_profile', 'save_cv', 'save_photo', 'show_profile'])
-    expect(h.savePhoto).toHaveBeenCalledWith('t1')
+    expect(h.call).toHaveBeenCalledWith('save_photo', {}, undefined, ['t1'])
     expect(result.ok).toBe(true)
     const gone = mockDoor({ init_profile: {}, remove_photo: { removed: true }, show_profile: existingProfile })
     await saveProfile(filled({ photo: { kind: 'none' } }))
@@ -69,15 +69,20 @@ describe('saveProfile', () => {
   })
 
   it('a photo the tool refuses is reported as the photo\'s, with the reason', async () => {
-    const h = mockDoor({ init_profile: {}, show_profile: existingProfile })
-    h.savePhoto.mockResolvedValueOnce({ ok: false, error: 'the picture is too small (50 x 50 px)' })
+    mockDoor({
+      init_profile: {},
+      save_photo: () => {
+      throw new Error('the picture is too small (50 x 50 px)')
+    },
+      show_profile: existingProfile,
+    })
     expect(await saveProfile(filled({ photo: { kind: 'new', token: 't1', name: 'me.jpg' } }))).toEqual({ ok: false, kind: 'photo', error: 'the picture is too small (50 x 50 px)' })
   })
 
   it('leaves the photo alone when nothing was chosen', async () => {
     const h = mockDoor({ init_profile: {}, show_profile: existingProfile })
     await saveProfile(filled())
-    expect(h.savePhoto).not.toHaveBeenCalled()
+    expect(names(h)).not.toContain('save_photo')
     expect(names(h)).not.toContain('remove_photo')
   })
 
