@@ -101,15 +101,28 @@ def test_every_github_tool_a_skill_names_is_pinned(path):
     assert not unknown, f"{_id(path)} names GitHub tools not in tests/model/github_tools.json: {sorted(unknown)}"
 
 
-@pytest.mark.parametrize("path", _FILES, ids=_id)
-def test_every_github_argument_and_method_a_skill_passes_exists(path):
+def github_problems(text: str) -> list[tuple[str, str]]:
     wrong = []
-    for tool, arg, value in named_github_calls(path.read_text(encoding="utf-8")):
-        pin = _GITHUB.get(tool)
-        if pin is None:
+    for tool, arg, value in named_github_calls(text):
+        pin = _GITHUB[tool]
+        if "params" not in pin:   # a harness tool: no schema to check against
             continue
         if arg not in pin["params"]:
             wrong.append((tool, arg))
-        elif arg == "method" and "methods" in pin and value not in pin["methods"]:
-            wrong.append((tool, f"method: {value}"))
+        elif value in pin.get("values", {}).get(arg, [value]):
+            continue
+        else:
+            wrong.append((tool, f"{arg}: {value}"))
+    return wrong
+
+
+def test_a_misspelt_github_argument_or_a_wrong_enum_value_fails_the_check():
+    assert github_problems("`mcp__github__sub_issue_write`, `sub_issue_idx: 1`") == [("sub_issue_write", "sub_issue_idx")]
+    assert github_problems("`mcp__github__sub_issue_write`, `sub_issue_id: 1`, `method: add`") == []
+    assert github_problems("`mcp__github__merge_pull_request`, `merge_method: smash`") == [("merge_pull_request", "merge_method: smash")]
+
+
+@pytest.mark.parametrize("path", _FILES, ids=_id)
+def test_every_github_argument_and_enum_value_a_skill_passes_exists(path):
+    wrong = github_problems(path.read_text(encoding="utf-8"))
     assert not wrong, f"{_id(path)} passes what the GitHub tools do not take: {wrong}"

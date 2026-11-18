@@ -38,6 +38,6 @@ Read each one's body and sub-issues (`mcp__github__issue_read`, `method: get_sub
 2. **Else a new epic.** `mcp__github__issue_write`, `method: create`, title `Epic: <the goal in a user's words>`, wide enough that the next issue of its kind belongs there too (`Epic: plain-words errors in the app`, not `Epic: #296`); body: one paragraph on the goal (what a user gets when it is done), then the box `- [ ] #<n> <title>`.
 3. When unsure between them, the `decider` agent picks (CLAUDE.md "Decisions"), given the issue and the candidate epics' goals.
 
-Attach it: `mcp__github__sub_issue_write`, `method: add`, `issue_number` the epic's number, `sub_issue_id` the new issue's `id` (not its number). For an existing epic, also give it its box (`mcp__github__issue_write`, `method: update`, re-reading the body first and changing nothing else): with `epic=`, add ` (#<n>)` to the box the issue came from; otherwise append `- [ ] #<n> <title>`.
+Attach it: `mcp__github__sub_issue_write`, `method: add`, `issue_number: <the epic's number>`, `sub_issue_id: <the new issue's id, not its number>`. For an existing epic, also give it its box (`mcp__github__issue_write`, `method: update`, re-reading the body first and changing nothing else): with `epic=`, add ` (#<n>)` to the box the issue came from; otherwise append `- [ ] #<n> <title>`.
 
 Report one line: `#<n> <title> → epic #<e> (<existing | new>)`.

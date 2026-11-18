@@ -10,9 +10,9 @@ The `issue-researcher` agent has `WebSearch`/`WebFetch` and uses them when the i
 ## Steps
 
 1. **Fetch the issue** — use `mcp__github__issue_read` with:
-   - `owner`: `synesenom`
-   - `repo`: `the-other-door`
-   - `issue_number`: the number from the argument
+   - `owner: synesenom`
+   - `repo: the-other-door`
+   - `issue_number: <the number from the argument>`
 
 2. **Spawn the `issue-researcher` agent** with a prompt that includes:
    ```

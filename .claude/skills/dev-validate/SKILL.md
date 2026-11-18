@@ -8,9 +8,9 @@ You are checking that the suite passes and the current implementation of a GitHu
 ## Steps
 
 1. **Fetch the issue** — use `mcp__github__issue_read` with:
-   - `owner`: `synesenom`
-   - `repo`: `the-other-door`
-   - `issue_number`: the number from the argument
+   - `owner: synesenom`
+   - `repo: the-other-door`
+   - `issue_number: <the number from the argument>`
 
 2. **Determine the base branch** — run `git remote show origin | grep 'HEAD branch'` to find the default branch (typically `main`).
 

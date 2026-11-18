@@ -102,7 +102,7 @@ From these, draft:
 Call `mcp__github__create_pull_request` with:
 - `owner: synesenom`, `repo: the-other-door`
 - `head: <BRANCH>`, `base: <target>` (`main` without `target`)
-- `title` and `body` from Step 4
+- `title: <from Step 4>`, `body: <from Step 4>`
 
 Record the PR number from the response.
 
