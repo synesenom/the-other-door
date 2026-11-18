@@ -35,6 +35,9 @@ def _run_record_filename(started_at: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "-", started_at) + ".json"
 
 
+_NAMED_FAILURES = 5  # failures named in the summary line; the rest are counted
+
+
 def _format_run_summary(record: dict, min_score: float) -> str:
     """Format the one-line summary shared by `find`'s stdout and `jobs/runs/latest.log`.
 
@@ -45,13 +48,16 @@ def _format_run_summary(record: dict, min_score: float) -> str:
     dt = datetime.fromisoformat(record["started_at"])
     ts = dt.strftime("%Y-%m-%dT%H:%M")
     new_count = len(record["new_above_threshold"])
-    n_failures = len(record["failures"])
+    failed = list(dict.fromkeys(record["failures"]))
+    n_failures = len(failed)
+    shown = failed[:_NAMED_FAILURES] + ([f"+{n_failures - _NAMED_FAILURES} more"] if n_failures > _NAMED_FAILURES else [])
+    failures = f"{n_failures} failures" + (f" ({', '.join(shown)})" if shown else "")
     status = "ok" if n_failures == 0 else "failed"
     elapsed = common._format_elapsed(record["elapsed_s"])
 
     line = (
         f"{ts} {status} {runs.postings_scraped(record)} scraped, {runs.scored(record)} scored, "
-        f"{new_count} new >= {min_score:g}, {n_failures} failures, {elapsed}"
+        f"{new_count} new >= {min_score:g}, {failures}, {elapsed}"
     )
     steps = [f"{name}: {record[name].get('summary', '')}" for name in STEPS if record.get(name)]
     if record.get("unsure_on"):  # the sources whose terms forbid automated access that the user turned on

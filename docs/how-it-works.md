@@ -104,7 +104,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    interrupted run left unscored is picked up by the next `find`.
 
 Every run writes `jobs/runs/<timestamp>.json` with one block per step that ran (counts, timing,
-per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/runs/latest.log`.
+per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/runs/latest.log` (a failure count names the failed sites: `2 failures (jobindex, thehub)`).
 
 6. `jobs` — the unapplied matches, best first.
 7. `jobs prepare <job_id>` (or `jobs prepare` alone, for the top match) — run the tailor agent headlessly for one posting.

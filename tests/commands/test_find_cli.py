@@ -407,7 +407,8 @@ def test_a_failed_site_is_named_on_stderr_on_a_pipe(cli_env, monkeypatch):
     result = invoke()
     assert result.exit_code == 2
     assert "jobindex" in result.stderr and "boom" in result.stderr
-    assert "jobindex" not in result.stdout
+    assert "boom" not in result.stdout  # the summary line names the board, not the error
+    assert "1 failures (jobindex)" in result.stdout
 
 
 def test_an_errored_site_is_named_on_stderr_on_a_pipe(cli_env, monkeypatch):
