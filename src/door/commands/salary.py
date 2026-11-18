@@ -14,7 +14,7 @@ from pathlib import Path
 import click
 
 from door.commands import _common as common
-from door.core import claude_cli, lock, salary, selection, workspace
+from door.core import claude_cli, lock, profile_loader, salary, selection, workspace
 from door.core.utils import write_json_atomic
 
 CACHE = "salary.json"
@@ -113,9 +113,9 @@ def _salary_core(job_id: str, refresh: bool = False, *, max_age_days: int | None
     if entry is not None and _fresh(entry, max_age_days):
         return {**head, "found": True, **entry, "cached": True}
 
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     try:
-        cv_text = common._cv_path(config, profile_dir).read_text(encoding="utf-8")
+        cv_text = workspace.cv_path(config, profile_dir).read_text(encoding="utf-8")
     except OSError:
         cv_text = ""
     text = salary.build_input(posting, cv_text, config)

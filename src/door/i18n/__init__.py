@@ -879,6 +879,23 @@ def cv_conventions_for_location(location: str | None) -> CvConventions:
     return country.cv if country else CvConventions()
 
 
+def cv_country(posting: dict, config: dict) -> CountryPack | None:
+    """The country whose CV conventions apply to ``posting``: the one its location names, else the one the
+    profile's own ``location`` names; ``None`` when neither names a country with a file."""
+    for location in (posting.get("location"), config.get("location")):
+        country = country_for_location(location or "")
+        if country is not None:
+            return country
+    return None
+
+
+def cv_conventions(posting: dict, config: dict) -> CvConventions:
+    """How a CV is written for ``posting`` (`cv_country`'s block); the neutral default (no photo, no date of
+    birth, two pages) when there is no country."""
+    country = cv_country(posting, config)
+    return country.cv if country else CvConventions()
+
+
 def known_city(location: str) -> str | None:
     """The known city that ``location`` names, by its canonical name or an alias, written as
     ``known_cities`` writes it; ``None`` when it names none (a country alone names none)."""

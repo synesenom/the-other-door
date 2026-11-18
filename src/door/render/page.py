@@ -24,10 +24,10 @@ PHOTO_FILES = {"jpeg": "photo.jpg", "png": "photo.png"}
 _PHOTO_HTML = '<img class="photo" src="%s" alt="">'
 
 
-def profile_photo(config: dict, conventions: i18n.CvConventions) -> Path | None:
-    """The profile's photo (`config` is the raw config: a photo needs no valid profile around it), when the job's
-    country (its CV `conventions`) lets a CV carry one and the file is a usable picture."""
-    if not isinstance(config.get("photo"), str) or conventions.photo == "no":
+def profile_photo(config: dict, posting: dict) -> Path | None:
+    """The profile's photo (`config` is the raw config: a photo needs no valid profile around it), when the country
+    of `posting` (else the profile's) lets a CV carry one and the file is a usable picture."""
+    if not isinstance(config.get("photo"), str) or i18n.cv_conventions(posting, config).photo == "no":
         return None
     path = Path(config["photo"])
     path = path if path.is_absolute() else workspace.HOME / path

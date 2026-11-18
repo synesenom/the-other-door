@@ -470,5 +470,5 @@ def test_cv_path_resolves_a_relative_cv_against_the_home(tmp_path, monkeypatch):
     from door.core import workspace
 
     monkeypatch.setattr(workspace, "HOME", tmp_path / "home")
-    assert common._cv_path({"cv_content": "profile/cv.md"}, tmp_path) == tmp_path / "home" / "profile" / "cv.md"
-    assert common._cv_path({"cv_content": str(tmp_path / "x.md")}, tmp_path) == tmp_path / "x.md"
+    assert workspace.cv_path({"cv_content": "profile/cv.md"}, tmp_path) == tmp_path / "home" / "profile" / "cv.md"
+    assert workspace.cv_path({"cv_content": str(tmp_path / "x.md")}, tmp_path) == tmp_path / "x.md"

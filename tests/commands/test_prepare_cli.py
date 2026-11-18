@@ -13,7 +13,7 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import prepare as prepare_cmd
-from door.core import workspace
+from door.core import profile_loader, workspace
 from cli_utils import FakeCompleted, TAILOR_OUTPUTS, fake_tailor, result_text, write_list_posting, write_tailor_outputs
 
 
@@ -930,7 +930,7 @@ def test_cv_max_pages_follows_the_postings_country_not_the_profiles(cli_env, mon
     strict = dk.model_copy(update={"cv": dk.cv.model_copy(update={"max_pages": 1})})
     real = i18n.country_for_location
     monkeypatch.setattr(i18n, "country_for_location", lambda loc: strict if "Aarhus" in (loc or "") else real(loc))
-    config = common._load_config_or_defaults(cli_env.profile_dir)
+    config = profile_loader.load_config_or_defaults(cli_env.profile_dir)
     config["location"] = "London, United Kingdom"
     assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == 1
     assert common._cv_max_pages({"location": "London, United Kingdom"}, config) == 2
@@ -1245,7 +1245,7 @@ def test_cv_max_pages_follows_the_postings_country_not_the_profiles(cli_env, mon
     strict = dk.model_copy(update={"cv": dk.cv.model_copy(update={"max_pages": 1})})
     real = i18n.country_for_location
     monkeypatch.setattr(i18n, "country_for_location", lambda loc: strict if "Aarhus" in (loc or "") else real(loc))
-    config = common._load_config_or_defaults(cli_env.profile_dir)
+    config = profile_loader.load_config_or_defaults(cli_env.profile_dir)
     config["location"] = "London, United Kingdom"
     assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == 1
     assert common._cv_max_pages({"location": "London, United Kingdom"}, config) == 2
@@ -1257,7 +1257,7 @@ def test_cv_max_pages_is_the_stricter_of_the_templates_and_the_countrys(cli_env,
 
     (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
     (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
-    config = common._load_config_or_defaults(cli_env.profile_dir)
+    config = profile_loader.load_config_or_defaults(cli_env.profile_dir)
     assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == expected
 
 

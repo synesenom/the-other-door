@@ -10,7 +10,7 @@ import click
 from door.commands import _common as common
 from door.commands import _progress
 from door.commands import _prompts
-from door.core import workspace
+from door.core import profile_loader, workspace
 
 
 # --------------------------------------------------------------------------- #
@@ -209,7 +209,7 @@ def _setup_todo(report: dict, profile_dir: Path, example_dir: Path, skip_profile
     cv = profile_dir / "cv.md"
     if not cv.is_file() or common._is_example_cv(cv, example_dir / "cv.md"):
         todo.append(f"turn your CV into profile/cv.md: {_ONBOARD}")
-    if not common._load_config_or_defaults(profile_dir).get("search_keywords"):
+    if not profile_loader.load_config_or_defaults(profile_dir).get("search_keywords"):
         todo.append("populate search_keywords: ask Claude to \"expand my search keywords\", or run /onboard (optional)")
     return todo
 

@@ -19,7 +19,7 @@ from pathlib import Path
 import click
 
 from door.commands import _common as common
-from door.core import companies as companies_store
+from door.core import companies as companies_store, profile_loader
 from door.core import claude_cli, lock, selection, skill_aliases, workspace
 from door.core.utils import write_json_atomic
 from door.matching import title_fit
@@ -322,7 +322,7 @@ def _market_core(days: int = 30, save: bool = True, *, jobs_dir: Path | None = N
     jobs_dir = Path(jobs_dir if jobs_dir is not None else workspace.JOBS_DIR)
     profile_dir = Path(profile_dir if profile_dir is not None else workspace.PROFILE_DIR)
     now = now or datetime.now(timezone.utc)
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     min_score = config.get("min_score", common._DEFAULT_MIN_SCORE)
 
     postings = (p for _, p in selection.iter_postings(jobs_dir))

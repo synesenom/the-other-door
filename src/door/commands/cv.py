@@ -19,7 +19,7 @@ import click
 from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
-from door.core import claude_cli, migrations, workspace
+from door.core import claude_cli, migrations, profile_loader, workspace
 from door.style import cv_body, style_icons
 
 _DEFAULT_MODEL = "sonnet"
@@ -239,7 +239,7 @@ def _draft_cv_core(
     sources = [s.strip() for s in sources or [] if s and s.strip()]
     if not sources:
         raise ValueError("no source to draft from: give a CV file (PDF, DOCX, Markdown) or a URL")
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     first_setup = not (profile_dir / "config.json").is_file()  # only a first set-up offers the CV's style (no call else)
 
     described = []
@@ -369,7 +369,7 @@ def _infer_basics_core(
     """
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
-    text = (markdown or "").strip() or _onboarding_cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
+    text = (markdown or "").strip() or _onboarding_cv_text(profile_dir, profile_loader.load_config_or_defaults(profile_dir))
     result = {"name": None, "email": None, "location": None, "languages": ["English"], "remote": _DEFAULT_REMOTE, "missing": []}
     if not text:
         return {**result, "missing": ["name", "email", "location"]}

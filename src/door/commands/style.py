@@ -38,7 +38,7 @@ from pypdfium2 import PdfiumError
 
 from door.commands import _common as common
 from door.commands import _progress
-from door.core import lock, phone, templates, tracker, workspace
+from door.core import lock, phone, profile_loader, templates, tracker, workspace
 from door.style import style_build, style_extract, style_preview, style_structure
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
@@ -286,7 +286,7 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
         raise ValueError(f"unknown style {style!r}: like, default or current")
     if rerender and not common._chromium_available():  # before any change: nothing chosen, nothing printed
         raise common.NoChromium
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     style_build.restore(profile_dir)
     if style == "like" and not (kept.is_dir() or (candidate.is_dir() and not rerender)):
         raise ValueError("no CV style is built yet: build one from a CV of yours first")
@@ -304,7 +304,7 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
         fields = {key: None for key in templates.FILES if config.get(key) and templates.points_into(config[key], kept)}
     if fields:
         profile_cmd._init_core(fields, profile_dir=profile_dir, example_dir=workspace.PROFILE_EXAMPLE_DIR)
-    result = {"in_use": templates.in_use(profile_dir, common._load_config_or_defaults(profile_dir))}
+    result = {"in_use": templates.in_use(profile_dir, profile_loader.load_config_or_defaults(profile_dir))}
     jobs = _prepared(workspace.JOBS_DIR)
     result["prepared"] = len(jobs)
     if rerender:
@@ -326,7 +326,7 @@ def _show_core(*, home: Path | None = None, profile_dir: Path | None = None) -> 
     waits, else the style kept in `profile/style/`. A style that could not be printed (no Chromium) is left out."""
     profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
     style_build.restore(profile_dir)
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     shown = style_preview.show(Path(home or workspace.HOME), profile_dir, config)
     shown.update(in_use=templates.in_use(profile_dir, config), candidate=templates.liked(profile_dir).name == templates.CANDIDATE)
     return shown

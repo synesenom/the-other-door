@@ -106,3 +106,10 @@ def move_day_folders(jobs_dir: Path) -> int:
         if not any(day.iterdir()):
             day.rmdir()
     return len(old)
+
+
+def cv_path(config: dict, profile_dir: Path) -> Path:
+    """The CV the profile names (`cv_content`, relative to the data home), else
+    `profile_dir/cv.md`. Whether it exists is the caller's question."""
+    path = Path(config.get("cv_content") or (profile_dir / "cv.md"))
+    return path if path.is_absolute() else HOME / path

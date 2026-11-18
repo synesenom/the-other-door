@@ -258,8 +258,7 @@ def test_a_file_that_is_not_a_pdf_fails_without_asking_the_model(world, tmp_path
 
 def test_the_photo_stress_render_places_the_photo_whatever_a_country_s_cv_rule_says(world, monkeypatch):
     from door import i18n
-    from door.commands import _common
-    monkeypatch.setattr(_common, "_cv_conventions", lambda posting, config: i18n.CvConventions(photo="no"))
+    monkeypatch.setattr(i18n, "cv_conventions", lambda posting, config: i18n.CvConventions(photo="no"))
     world.build("html-word-two-column", Stylist(*GOOD))
     html = next(p["html"] for p in world.prints if p["folder"].name == "photo")
     assert '<img class="photo"' in html
