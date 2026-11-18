@@ -60,6 +60,16 @@ def test_a_tool_that_crashes_is_logged(log, monkeypatch):
     assert "ERROR tool market: RuntimeError: the market fell over" in log.read_text(encoding="utf-8")
 
 
+def test_a_crash_tells_the_client_why_and_dumps_no_traceback(log, monkeypatch, caplog):
+    def broken(*args, **kwargs):
+        raise RuntimeError("the market fell over")
+
+    monkeypatch.setattr(market_cmd, "_market_core", broken)
+    result = _call("market", {})
+    assert result.content[0].text == "Error executing tool market: the market fell over"
+    assert not [r for r in caplog.records if r.exc_info]  # the problem log has it; stderr is the app's small buffer
+
+
 def test_a_warning_a_tool_returns_is_logged(log, monkeypatch):
     monkeypatch.setattr(market_cmd, "_market_core", lambda *a, **k: {"warning": "grouping the skills failed"})
     _call("market", {})

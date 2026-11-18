@@ -55,7 +55,7 @@ import weakref
 from pathlib import Path
 
 from mcp.server.mcpserver import Context, MCPServer
-from mcp.server.mcpserver.exceptions import ToolError
+from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
 from mcp.types import CallToolResult, TextContent
 
 from door import i18n
@@ -165,6 +165,10 @@ class _DoorMCP(MCPServer):
                 result = await super().call_tool(name, arguments, context)
         except Exception as exc:
             problem_log.crash(f"tool {name}", exc.__cause__ or exc)  # MCPServer wraps it
+            if isinstance(exc, UnexpectedToolError):
+                # The client gets the reason (as in mcp 1.x); a plain ToolError is logged by MCPServer as one
+                # line, not as a traceback on stderr (the problem log has the crash).
+                raise ToolError(f"Error executing tool {name}: {exc.__cause__}") from exc.__cause__
             raise
         _log_answer(name, _answer_of(result))
         return result
@@ -190,7 +194,7 @@ class _DoorMCP(MCPServer):
 
 
 # Its version in `initialize`: the desktop app refuses a server of another version (#224).
-mcp = _DoorMCP("door", version=version_mod.VERSION)
+mcp = _DoorMCP("door", version=version_mod.VERSION, log_level="WARNING")  # no line per refused call on stderr
 
 # Every CLI command (sub-commands as "group sub") and the MCP tool(s) that
 # expose it. `status` is two tools because the command is two operations:
