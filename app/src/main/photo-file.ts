@@ -28,7 +28,7 @@ export function createPhotoFile(deps: Deps) {
       const chosen = r.filePaths[0]!
       const checked = await checkPicked(
         chosen,
-        { extensions: PHOTO_EXTENSIONS, maxBytes: MAX_PHOTO_BYTES, wrongType: 'Choose a JPEG or PNG picture.', tooBig: 'That picture is over 10 MB.' },
+        { extensions: PHOTO_EXTENSIONS, size: { maxBytes: MAX_PHOTO_BYTES, tooBig: 'That picture is over 10 MB.' }, wrongType: 'Choose a JPEG or PNG picture.' },
         deps,
       )
       if (!checked.ok) return { error: checked.error }

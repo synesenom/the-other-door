@@ -32,9 +32,8 @@ interface Deps {
 /** The rule for a CV file; the server is handed the real path checked here (a pick later swapped for a link is refused). */
 const CV_RULE = {
   extensions: CV_EXTENSIONS,
-  maxBytes: MAX_CV_BYTES,
+  size: { maxBytes: MAX_CV_BYTES, tooBig: 'That file is over 25 MB.' },
   wrongType: 'Only PDF, DOCX, Markdown and text files can be read.',
-  tooBig: 'That file is over 25 MB.',
 }
 
 export function createCvSources(deps: Deps) {

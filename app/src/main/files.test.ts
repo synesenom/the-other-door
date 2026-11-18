@@ -81,7 +81,7 @@ describe('materialPath', () => {
 })
 
 describe('checkPicked', () => {
-  const rule = { extensions: ['pdf', 'tar.gz'], maxBytes: 10, wrongType: 'wrong', tooBig: 'big', unreadable: 'unread' }
+  const rule = { extensions: ['pdf', 'tar.gz'], size: { maxBytes: 10, tooBig: 'big' }, wrongType: 'wrong', unreadable: 'unread' }
   const io = (real: string, size = 1) => ({ realpath: async () => real, stat: async () => ({ size }) })
   it('accepts a right name, link target and size, returning the real path', async () => {
     expect(await checkPicked('/a/B.PDF', rule, io('/z/c.pdf', 10))).toEqual({ ok: true, real: '/z/c.pdf', size: 10 })

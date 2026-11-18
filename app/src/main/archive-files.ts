@@ -4,7 +4,7 @@
 // a one-shot token and the file's name, which `take` turns into the real path for import_data.
 import { randomUUID } from 'node:crypto'
 import { basename } from 'node:path'
-import { checkPicked } from './files'
+import { checkPicked, hasExtension } from './files'
 
 interface Deps {
   showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }>
@@ -17,7 +17,7 @@ interface Deps {
 
 const ARCHIVE_EXTENSIONS = ['tar.gz', 'tgz']
 const FILTERS = [{ name: 'The other door export', extensions: ARCHIVE_EXTENSIONS }]
-const isArchive = (p: string) => ARCHIVE_EXTENSIONS.some((e) => p.toLowerCase().endsWith(`.${e}`))
+const isArchive = (p: string) => hasExtension(p, ARCHIVE_EXTENSIONS)
 
 export const defaultExportName = (day: string) => `door-export-${day}.tar.gz`
 export const defaultReportName = (day: string) => `door-report-${day}.zip`

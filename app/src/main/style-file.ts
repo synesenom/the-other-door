@@ -3,7 +3,7 @@
 // CV the set-up read, when that file is still there: its path is kept in a small file of the app's own folder
 // (never sent to the window or the server), written when the draft answers.
 import { basename } from 'node:path'
-import { checkPicked } from './files'
+import { checkPicked, hasExtension } from './files'
 
 export const MAX_STYLE_BYTES = 25 * 1024 * 1024
 
@@ -16,7 +16,7 @@ interface Deps {
 }
 
 const STYLE_EXTENSIONS = ['pdf']
-const isPdf = (p: string) => p.toLowerCase().endsWith('.pdf')
+const isPdf = (p: string) => hasExtension(p, STYLE_EXTENSIONS)
 
 export function createStyleFile(deps: Deps) {
   return {
@@ -32,7 +32,7 @@ export function createStyleFile(deps: Deps) {
       const chosen = r.filePaths[0]!
       const checked = await checkPicked(
         chosen,
-        { extensions: STYLE_EXTENSIONS, maxBytes: MAX_STYLE_BYTES, wrongType: 'Choose a CV as a PDF.', tooBig: 'That file is over 25 MB.', unreadable: `${basename(chosen)} could not be read.` },
+        { extensions: STYLE_EXTENSIONS, size: { maxBytes: MAX_STYLE_BYTES, tooBig: 'That file is over 25 MB.' }, wrongType: 'Choose a CV as a PDF.', unreadable: `${basename(chosen)} could not be read.` },
         deps,
       )
       return checked.ok ? { path: checked.real } : { error: checked.error }
