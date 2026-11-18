@@ -533,15 +533,12 @@ details.part > summary + * { margin-top: var(--space-4); }
 .field-error::before { content: '↳ '; color: var(--color-ink-muted); }
 /* The CV (issue 222): the editor on the page colour, the example line a quiet surface strip in words. */
 /* the pages line above the CV: a label, then the pages as chips */
-.cv-file { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; } /* the file's name, its button beside it */
 .cv-pages-list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: var(--size-gap-s); flex-wrap: wrap; min-width: 0; }
 .cv-pages-list .chip { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%; padding-right: var(--size-gap-s); }
 /* the CV's name on the left, the Preview switch on the right; the text right under them */
 .cv-head { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); flex-wrap: wrap; }
-.cv-head .field-name { align-items: baseline; } /* the small Markdown link on the label's line */
-.cv-head .field-name .hint-icon { align-self: center; }
 /* the switch keeps its 44 px to press, hanging 8 px over the space above and below, so the row is the label's height */
-.cv-head > :first-child:not(.cv-written, .switch) { margin-right: auto; } /* "Written in Markdown" on the left; "Saved" and Preview on the right */
+.cv-markdown { margin-right: auto; } /* "Written in Markdown" on the left; "Saved" and Preview on the right */
 .cv-head .switch { margin-block: calc(-1 * var(--space-2)); }
 /* the editor (or the preview) close under its name, past the switch's hanging 8 px; not a part's 28 px */
 .cv-editor .cv-text { min-height: 480px; font-size: var(--text-small-size); line-height: 1.55; }

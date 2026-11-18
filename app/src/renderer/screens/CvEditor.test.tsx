@@ -394,7 +394,6 @@ describe('CvEditor, the CV file', () => {
     await user.click(await screen.findByRole('button', { name: 'Add a CV file…' }))
     expect(await screen.findByRole('heading', { name: 'New' })).toBeInTheDocument()
     expect(h.draftCv).toHaveBeenCalledWith({ files: ['t1'], urls: [] })
-    expect(screen.getByText('Drafted from new.pdf.')).toBeInTheDocument()
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_cv', { markdown: '# Ada\n\n## New\n', backup: true }), { timeout: 3000 })
     expect(h.enrichFile).not.toHaveBeenCalled()
   })
