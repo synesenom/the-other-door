@@ -303,7 +303,7 @@ def _write_cache(file: Path, digest: str, answer: dict) -> None:
 
 def _ask(text: str, feature: str = "style") -> dict:
     """The one model call: Haiku at low effort with no MCP servers (their tool lists would be thousands of tokens)."""
-    return claude_cli.ask(SYSTEM, text, model="haiku", feature=feature, schema=SCHEMA, effort="low", strict_mcp=True,
+    return claude_cli.ask(SYSTEM, text, model="haiku", feature=feature, schema=SCHEMA, effort="low",
                           timeout_s=60)
 
 

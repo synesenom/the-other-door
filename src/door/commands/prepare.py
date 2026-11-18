@@ -181,7 +181,6 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
         "--agent", "tailor",
         "--allowedTools", ",".join(_tailor_tools(job_id, posting_path)),
         "--mcp-config", json.dumps(workspace.mcp_config_entry()),
-        "--strict-mcp-config",
         *claude_cli.STREAM_ARGS,  # the stream carries the run's usage and the plan's limits (#575)
     ]
     for folder in _tailor_folders(posting_path):

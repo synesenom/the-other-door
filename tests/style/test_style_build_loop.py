@@ -77,7 +77,7 @@ def test_every_model_call_is_a_read_only_stylist_run_in_the_work_folder_named_st
     assert {c["cwd"] for c in stylist.calls} == {world.work}
     args = stylist.calls[0]["args"]
     assert args[args.index("--agent") + 1] == "stylist" and "--restricted" in args
-    assert "--strict-mcp-config" in args and "--mcp-config" not in args  # no tool server of the user's reaches it
+    assert "--mcp-config" not in args  # no tool server reaches it (run() adds --strict-mcp-config)
     agents = json.loads(args[args.index("--agents") + 1])
     assert agents == {"stylist": claude_cli.agent_definition("stylist")}
     assert "original_page_1.png" in stylist.calls[0]["input"] and "Page limit: 1" in stylist.calls[0]["input"]
