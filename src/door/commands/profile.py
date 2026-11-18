@@ -14,7 +14,7 @@ from door.commands import _prompts
 from door.core import companies as companies_mod, discovery_sources, workspace
 from door.core import migrations, profile_loader
 from door.core import templates as templates_mod
-from door.core.profile_loader import ConfigError, load_config, read_config_data
+from door.core.profile_loader import ConfigError, read_config_data
 from door.core import sites
 
 
@@ -1024,7 +1024,7 @@ def _show_profile_core(profile_dir: Path | None = None, example_dir: Path | None
     example_dir = Path(example_dir or workspace.PROFILE_EXAMPLE_DIR)
     config, errors = None, []
     try:
-        config = load_config(profile_dir / "config.json")
+        config = profile_loader.load_profile_config(profile_dir)
     except FileNotFoundError:
         errors = [f"{profile_dir / 'config.json'} not found"]
     except ConfigError as exc:

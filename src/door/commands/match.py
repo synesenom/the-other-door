@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 from door.commands import _common as common
+from door.core import profile_loader
 from door.core import progress as progress_mod
 from door.core import selection
 from door.core import workspace
@@ -98,12 +99,6 @@ def _match_core(
     ``no_sponsorship`` / ``permit_required`` is written with score 0.
     Never prints.
 
-    Deliberately does not use `door.core.profile_loader.load_profile`
-    (which requires the template files referenced by `profile/
-    config.json` to exist on disk): matching only needs the raw config
-    dict and the CV text, the same subset `_scrape_core`'s condense pass
-    already reads, so matching has no template-file dependency.
-
     Args:
         jobs_dir: Root directory for scraped postings (defaults to the
             module-level `JOBS_DIR`).
@@ -132,7 +127,7 @@ def _match_core(
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
 
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     common._require_own_cv(config, profile_dir)
 
     if paths is not None:

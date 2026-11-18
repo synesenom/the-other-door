@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.commands import _common as common
+from door.core import profile_loader
 from door.core import candidates, discovery_sources
 from door.core import discovery_state as ds
 from door.pipeline import discover
@@ -63,10 +63,10 @@ def two(env, monkeypatch):
         return result(st.li, requests=2, pages=2)
 
     monkeypatch.setattr(linkedin, "discover_run", li_run)
-    real = common._load_config
+    real = profile_loader.load_profile_config
     extra = {"fake_discovery": True}  # a source runs only once the user turned it on
     st.extra = extra
-    monkeypatch.setattr(common, "_load_config", lambda pd: {**real(pd), **extra})
+    monkeypatch.setattr(profile_loader, "load_profile_config", lambda pd: {**real(pd), **extra})
     write_config(env.profile_dir, {"role_targets": ["data scientist"], "location": "Budapest", "linkedin_discovery": True})
     return st
 

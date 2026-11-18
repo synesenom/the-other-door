@@ -153,7 +153,7 @@ def _find_core(
     if "match" in ran:  # before a run's minutes of reading, not at its end
         common._require_own_cv(profile_loader.load_config_or_defaults(profile_dir), profile_dir)
 
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     min_score = config.get("min_score", common._DEFAULT_MIN_SCORE)
     started_at = datetime.now(timezone.utc).isoformat()
     start = time.monotonic()

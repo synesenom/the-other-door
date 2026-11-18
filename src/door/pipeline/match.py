@@ -19,6 +19,7 @@ from door import pipeline
 from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
+from door.core import profile_loader
 from door.core import companies as store
 from door.core import tracker as tracker_mod
 from door.core import workspace
@@ -103,7 +104,7 @@ def _match_step_core(
     """
     jobs_dir = workspace.JOBS_DIR if jobs_dir is None else jobs_dir
     profile_dir = workspace.PROFILE_DIR if profile_dir is None else profile_dir
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     threshold = config.get("min_score", common._DEFAULT_MIN_SCORE)
     started = time.monotonic()
 

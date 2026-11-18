@@ -76,11 +76,11 @@ def _data_file(path: Path, relative: str) -> str:
 
 
 def check_profile(profile_dir: Path) -> dict:
-    from door.core.profile_loader import ConfigError, load_config
+    from door.core.profile_loader import ConfigError, load_profile_config
 
     path = Path(profile_dir) / "config.json"
     try:
-        load_config(path, check_paths=True)
+        load_profile_config(profile_dir, check_paths=True)
     except FileNotFoundError:
         return _check("profile", False, f"{path} not found", "./door init")
     except ConfigError as exc:
@@ -616,11 +616,11 @@ def run_checks(
         "last_run": {...} | None, "last_scrape": [{"site", "last_success",
         "age_hours"}, ...]}``.
     """
-    from door.core.profile_loader import ConfigError, load_config
+    from door.core import profile_loader
 
     try:
-        config = load_config(Path(profile_dir) / "config.json")
-    except (FileNotFoundError, ConfigError):
+        config = profile_loader.load_profile_config(Path(profile_dir))
+    except (FileNotFoundError, profile_loader.ConfigError):
         config = {}
     try:  # the probes read the followed employers like a scrape does
         config = {**config, **companies.feed_config(profile_dir)}

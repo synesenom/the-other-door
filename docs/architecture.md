@@ -520,7 +520,7 @@ Its user-facing line goes into the release notes. `tests/core/test_stored_unit.p
 | Module | Purpose |
 |--------|---------|
 | `models.py` | `JobPosting`, `make_job_id()`, `load_posting()` / `save_posting()` |
-| `profile_loader.py` | The `Profile` schema; `load_config` validates `config.json` (unknown keys rejected) |
+| `profile_loader.py` | The `Profile` schema; `load_profile_config` validates `config.json` (unknown keys rejected) |
 | `sites.py` | The site registry: `SITES`, `ALL_SITES`, `BOARDS` (what `--boards` may name), `boards_for_location` (the boards `search` reads), `FEED_SITES` |
 | `candidates.py` | The candidates queue, `jobs/candidates.json`: the employers `follow` has yet to look at |
 | `runs.py` | Reading a run record whatever version wrote it (`site_entries`, `postings_scraped`) |

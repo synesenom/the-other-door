@@ -7,7 +7,7 @@ import json
 import pytest
 
 from door.core import companies
-from door.core.profile_loader import ConfigError, load_config
+from door.core.profile_loader import ConfigError, load_profile_config
 from profile_utils import write_config
 
 NOW = "2026-01-02T03:04:05+00:00"

@@ -15,6 +15,7 @@ import click
 from door.commands import _common as common
 from door.commands import _progress
 from door.commands import matches as matches_cmd
+from door.core import profile_loader
 from door.core import claude_cli, workspace
 from door.core import progress as progress_mod
 from door.matching import integrity
@@ -144,7 +145,7 @@ def _skill_gaps_core(
         profile_dir = workspace.PROFILE_DIR
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     cv_path = workspace.cv_path(config, profile_dir)
     if not cv_path.is_file():
         raise FileNotFoundError(f"{cv_path} not found (profile/cv.md): set up the profile first")

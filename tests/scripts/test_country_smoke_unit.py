@@ -13,6 +13,7 @@ import pytest
 
 from door.commands import _common as common
 from door.commands import find as find_cmd
+from door.core import profile_loader
 from door.core import companies, lock, workspace
 from door.matching import scorer
 from paths import REPO_ROOT
@@ -288,7 +289,7 @@ def test_both_languages_search_once_and_copy_jobs(tmp_path, fake_core):
     cfg = json.loads((tmp_path / "hu" / "smoke-sandbox-hu-en-hu" / "profile" / "config.json").read_text())
     assert cfg["languages"] == ["English", "Hungarian"] and cfg["linkedin_discovery"] is False
     assert cfg["profession_discovery"] is False and cfg["jobbsafari_discovery"] is False
-    common._load_config(tmp_path / "hu" / "smoke-sandbox-hu-en" / "profile")  # every key is declared in Profile
+    profile_loader.load_profile_config(tmp_path / "hu" / "smoke-sandbox-hu-en" / "profile")  # every key is declared in Profile
 
 
 def test_failing_search_exits_1(tmp_path, fake_core):

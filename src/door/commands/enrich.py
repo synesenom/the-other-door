@@ -19,6 +19,7 @@ import click
 
 from door.commands import _common as common
 from door.commands import _prompts
+from door.core import profile_loader
 from door.core import claude_cli, workspace
 
 _DEFAULT_MODEL = "sonnet"
@@ -208,7 +209,7 @@ def _enrich_core(
     """
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     if apply or all:
         if urls:
             raise ValueError("pass URLs to propose, or apply/all to add the last proposals, not both")

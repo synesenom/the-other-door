@@ -17,6 +17,7 @@ from pathlib import Path
 from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
+from door.core import profile_loader
 from door.core import candidates, freshness, sites, utils, workspace
 from door.core import companies as store
 from door.core.sites import BOARDS
@@ -29,7 +30,7 @@ def queue_postings(paths, jobs_dir: Path, profile_dir: Path, now: datetime, term
     settled in the employer list: an employer none of whose ads fit is neither queued nor recorded.
     Returns how many employers are new to the queue. Unreadable files are skipped."""
     if terms is None:
-        terms = title_fit.topic_terms(common._load_config(profile_dir))
+        terms = title_fit.topic_terms(profile_loader.load_profile_config(profile_dir))
     items = common._company_items(profile_dir)
     queue = candidates.load(jobs_dir)
     before = len(queue)
@@ -95,7 +96,7 @@ def _search_core(
     """
     jobs_dir = workspace.JOBS_DIR if jobs_dir is None else jobs_dir
     profile_dir = workspace.PROFILE_DIR if profile_dir is None else profile_dir
-    config = common._load_config(profile_dir)
+    config = profile_loader.load_profile_config(profile_dir)
     chosen = list(boards) if boards else sites.boards_for_location(config.get("location", ""))
     unknown = [b for b in chosen if b not in BOARDS]
     if unknown:

@@ -54,6 +54,7 @@ from types import SimpleNamespace
 
 from door import pipeline, scrapers
 from door.commands import _common as common
+from door.core import profile_loader
 from door.core import candidates, discovery_sources, discovery_state, progress, workspace
 from door.core import companies as store
 from door.matching import title_fit
@@ -106,7 +107,7 @@ class Discovery:
 
     def __init__(self, jobs_dir: Path, profile_dir: Path) -> None:
         self.jobs_dir, self.profile_dir = jobs_dir, profile_dir
-        self.config = common._load_config(profile_dir)
+        self.config = profile_loader.load_profile_config(profile_dir)
         self.block = {"step": "discover", "skipped": None, "employers": 0, "details": 0, "pages": 0, "requests": 0,
                       "queued": 0, "easy_apply": 0, "budget": 0, "pause": [0, 0], "mode": "", "mode_switched": False,
                       "search_complete": False, "outcome": None, "stopped": None, "error": None, "elapsed_s": 0.0,

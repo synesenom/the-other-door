@@ -11,6 +11,7 @@ from door.commands import _common as common
 from door.commands import _progress
 from door.commands import matches as matches_cmd
 from door.commands import match as match_cmd
+from door.core import profile_loader
 from door.core import progress as progress_mod
 from door.core import workspace
 from door.core.profile_loader import ConfigError
@@ -237,7 +238,7 @@ def _add_core(
     # The ad's language (and an English title for another one), as the language pass of
     # `find` does; kept whatever the profile's `languages`, the user chose this ad.
     try:
-        config = common._load_config(profile_dir or workspace.PROFILE_DIR)
+        config = profile_loader.load_profile_config(profile_dir or workspace.PROFILE_DIR)
     except (FileNotFoundError, ConfigError):
         config = {}
     _step("reading the language")
