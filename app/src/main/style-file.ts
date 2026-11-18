@@ -2,7 +2,8 @@
 // build itself with the real path (ipc.ts), so the window never names or receives a path. The dialog opens at the
 // CV the set-up read, when that file is still there: its path is kept in a small file of the app's own folder
 // (never sent to the window or the server), written when the draft answers.
-import { basename, extname } from 'node:path'
+import { basename } from 'node:path'
+import { checkPicked } from './files'
 
 export const MAX_STYLE_BYTES = 25 * 1024 * 1024
 
@@ -14,7 +15,7 @@ interface Deps {
   exists: (path: string) => boolean
 }
 
-const isPdf = (p: string) => extname(p).toLowerCase() === '.pdf'
+const isPdf = (p: string) => p.toLowerCase().endsWith('.pdf')
 
 export function createStyleFile(deps: Deps) {
   return {
@@ -28,15 +29,12 @@ export function createStyleFile(deps: Deps) {
       })
       if (r.canceled || r.filePaths.length === 0) return { canceled: true }
       const chosen = r.filePaths[0]!
-      try {
-        // The name picked and the file behind it must both be a PDF: a link to something else is refused.
-        const real = await deps.realpath(chosen)
-        if (!isPdf(chosen) || !isPdf(real)) return { error: 'Choose a CV as a PDF.' }
-        if ((await deps.stat(real)).size > MAX_STYLE_BYTES) return { error: 'That file is over 25 MB.' }
-        return { path: real }
-      } catch {
-        return { error: `${basename(chosen)} could not be read.` }
-      }
+      const checked = await checkPicked(
+        chosen,
+        { extensions: ['pdf'], maxBytes: MAX_STYLE_BYTES, wrongType: 'Choose a CV as a PDF.', tooBig: 'That file is over 25 MB.', unreadable: `${basename(chosen)} could not be read.` },
+        deps,
+      )
+      return checked.ok ? { path: checked.real } : { error: checked.error }
     },
     /** Keep the path of the CV the set-up read, to open the dialog there. */
     async remember(path: string): Promise<void> {

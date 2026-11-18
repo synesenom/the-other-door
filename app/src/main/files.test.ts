@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from
 import { homedir, tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { doorHome, isJobId, isMaterialName, isPngName, materialPath } from './files'
+import { checkPicked, doorHome, isJobId, isMaterialName, isPngName, materialPath } from './files'
 
 describe('doorHome', () => {
   it('prefers a non-empty DOOR_HOME, resolved', () => {
@@ -77,5 +77,31 @@ describe('materialPath', () => {
     writeFileSync(outside, 'secret')
     symlinkSync(outside, join(dir, 'cv_page_1.png'))
     expect(materialPath(h, 'jobindex.123', 'cv_page_1.png')).toBeNull()
+  })
+})
+
+describe('checkPicked', () => {
+  const rule = { extensions: ['pdf', 'tar.gz'], maxBytes: 10, wrongType: 'wrong', tooBig: 'big', unreadable: 'unread' }
+  const io = (real: string, size = 1) => ({ realpath: async () => real, stat: async () => ({ size }) })
+  it('accepts a right name, link target and size, returning the real path', async () => {
+    expect(await checkPicked('/a/B.PDF', rule, io('/z/c.pdf', 10))).toEqual({ ok: true, real: '/z/c.pdf', size: 10 })
+    expect((await checkPicked('/a/x.tar.gz', rule, io('/z/y.tar.gz'))).ok).toBe(true)
+  })
+  it('refuses a wrong name without reading the file', async () => {
+    expect(await checkPicked('/a/b.txt', rule, { stat: async () => { throw new Error('no') } })).toEqual({ ok: false, error: 'wrong' })
+  })
+  it('refuses a link to another type', async () => {
+    expect(await checkPicked('/a/b.pdf', rule, io('/z/c.txt'))).toEqual({ ok: false, error: 'wrong' })
+  })
+  it('refuses a file over the cap', async () => {
+    expect(await checkPicked('/a/b.pdf', rule, io('/z/c.pdf', 11))).toEqual({ ok: false, error: 'big' })
+  })
+  it('says unreadable when the file cannot be read', async () => {
+    const bad = { realpath: async () => { throw new Error('gone') }, stat: async () => ({ size: 1 }) }
+    expect(await checkPicked('/a/b.pdf', rule, bad)).toEqual({ ok: false, error: 'unread' })
+  })
+  it('uses the path itself and no size check without realpath or a cap', async () => {
+    const r = await checkPicked('/a/b.pdf', { extensions: ['pdf'], wrongType: 'w' }, { stat: async () => { throw new Error('no') } })
+    expect(r).toEqual({ ok: true, real: '/a/b.pdf', size: 0 })
   })
 })

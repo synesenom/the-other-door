@@ -55,3 +55,37 @@ export function runRecordPath(home: string, startedAt: unknown): string | null {
   const path = join(home, 'jobs', 'runs', `${startedAt.replace(/[^A-Za-z0-9_-]/g, '-')}.json`)
   return existsSync(path) ? path : null
 }
+
+export interface PickedRule {
+  /** Accepted endings without the dot, e.g. `pdf`, `tar.gz`; matched without regard to case. */
+  extensions: string[]
+  /** The size cap, when there is one. */
+  maxBytes?: number
+  wrongType: string
+  tooBig?: string
+  unreadable?: string
+}
+
+/**
+ * The rule for a file picked in a dialog: the name picked and the file behind it (links resolved) both end in
+ * an accepted extension, and the file is under the size cap; else a reason in words. Returns the real path.
+ */
+export async function checkPicked(
+  path: string,
+  rule: PickedRule,
+  io: { realpath?: (p: string) => Promise<string>; stat: (p: string) => Promise<{ size: number }> },
+): Promise<{ ok: true; real: string; size: number } | { ok: false; error: string }> {
+  const accepted = (p: string) => rule.extensions.some((e) => p.toLowerCase().endsWith(`.${e}`))
+  if (!accepted(path)) return { ok: false, error: rule.wrongType }
+  let real: string
+  let size = 0
+  try {
+    real = io.realpath ? await io.realpath(path) : path
+    if (!accepted(real)) return { ok: false, error: rule.wrongType }
+    if (rule.maxBytes !== undefined) size = (await io.stat(real)).size
+  } catch {
+    return { ok: false, error: rule.unreadable ?? 'That file could not be read.' }
+  }
+  if (rule.maxBytes !== undefined && size > rule.maxBytes) return { ok: false, error: rule.tooBig ?? 'That file is too big.' }
+  return { ok: true, real, size }
+}

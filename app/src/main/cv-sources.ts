@@ -5,6 +5,7 @@
 // the wizard closes. A file choice always goes through one of those two and a token like this.
 import { randomUUID } from 'node:crypto'
 import { basename, extname } from 'node:path'
+import { checkPicked } from './files'
 import { isExternalUrl } from './security'
 
 export const MAX_CV_BYTES = 25 * 1024 * 1024
@@ -28,23 +29,19 @@ interface Deps {
   realpath?(path: string): Promise<string>
 }
 
-/** Why a file cannot be used, or null. */
-async function problem(path: string, deps: Deps): Promise<{ reason: string; size?: number } | { reason: null; size: number; real: string }> {
-  const isCv = (p: string) => CV_EXTENSIONS.includes(extname(p).toLowerCase())
-  if (!isCv(path)) return { reason: 'Only PDF, DOCX, Markdown and text files can be read.' }
-  let real: string
-  let size: number
-  try {
-    // The name picked and the file behind it must both be a CV file: a pick later swapped for a
-    // link to something else is refused, and the server is handed the real path checked here.
-    real = deps.realpath ? await deps.realpath(path) : path
-    if (!isCv(real)) return { reason: 'Only PDF, DOCX, Markdown and text files can be read.' }
-    size = (await deps.stat(real)).size
-  } catch {
-    return { reason: 'That file could not be read.' }
-  }
-  if (size > MAX_CV_BYTES) return { reason: 'That file is over 25 MB.' }
-  return { reason: null, size, real }
+/** Why a file cannot be used, or null; the server is handed the real path checked here (a pick later swapped for a link is refused). */
+async function problem(path: string, deps: Deps): Promise<{ reason: string } | { reason: null; size: number; real: string }> {
+  const checked = await checkPicked(
+    path,
+    {
+      extensions: CV_EXTENSIONS.map((e) => e.slice(1)),
+      maxBytes: MAX_CV_BYTES,
+      wrongType: 'Only PDF, DOCX, Markdown and text files can be read.',
+      tooBig: 'That file is over 25 MB.',
+    },
+    deps,
+  )
+  return checked.ok ? { reason: null, size: checked.size, real: checked.real } : { reason: checked.error }
 }
 
 export function createCvSources(deps: Deps) {

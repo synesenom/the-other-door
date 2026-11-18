@@ -2,7 +2,8 @@
 // one-shot token and the file's name, which `take` turns into the real path for the `save_photo` tool. The
 // server checks the bytes and cleans the picture (EXIF and GPS dropped, scaled); this is the quick look.
 import { randomUUID } from 'node:crypto'
-import { basename, extname } from 'node:path'
+import { basename } from 'node:path'
+import { checkPicked } from './files'
 
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024
 export const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png']
@@ -12,8 +13,6 @@ interface Deps {
   stat: (path: string) => Promise<{ size: number }>
   realpath: (path: string) => Promise<string>
 }
-
-const isPicture = (p: string) => PHOTO_EXTENSIONS.includes(extname(p).toLowerCase().slice(1))
 
 export function createPhotoFile(deps: Deps) {
   // One photo at a time: a new pick replaces the last.
@@ -27,15 +26,13 @@ export function createPhotoFile(deps: Deps) {
       })
       if (r.canceled || r.filePaths.length === 0) return { canceled: true }
       const chosen = r.filePaths[0]!
-      try {
-        // The name picked and the file behind it must both be a picture: a link to something else is refused.
-        const real = await deps.realpath(chosen)
-        if (!isPicture(chosen) || !isPicture(real)) return { error: 'Choose a JPEG or PNG picture.' }
-        if ((await deps.stat(real)).size > MAX_PHOTO_BYTES) return { error: 'That picture is over 10 MB.' }
-        pending = { token: randomUUID(), path: real }
-      } catch {
-        return { error: 'That file could not be read.' }
-      }
+      const checked = await checkPicked(
+        chosen,
+        { extensions: PHOTO_EXTENSIONS, maxBytes: MAX_PHOTO_BYTES, wrongType: 'Choose a JPEG or PNG picture.', tooBig: 'That picture is over 10 MB.' },
+        deps,
+      )
+      if (!checked.ok) return { error: checked.error }
+      pending = { token: randomUUID(), path: checked.real }
       return { token: pending.token, name: basename(chosen) }
     },
     /** The real path of the picked picture, once. */

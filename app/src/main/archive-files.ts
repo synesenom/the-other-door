@@ -4,6 +4,7 @@
 // a one-shot token and the file's name, which `take` turns into the real path for import_data.
 import { randomUUID } from 'node:crypto'
 import { basename } from 'node:path'
+import { checkPicked } from './files'
 
 interface Deps {
   showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }>
@@ -50,11 +51,9 @@ export function createArchiveFiles(deps: Deps) {
       const r = await deps.showOpenDialog({ title: 'Import data', properties: ['openFile'], filters: FILTERS })
       if (r.canceled || r.filePaths.length === 0) return { canceled: true }
       const chosen = r.filePaths[0]!
-      const refused = { error: 'Choose an export, a .tar.gz file.' }
-      if (!isArchive(chosen)) return refused
-      const real = await deps.realpath(chosen)
-      if (!isArchive(real)) return refused
-      pending = { token: randomUUID(), path: real }
+      const checked = await checkPicked(chosen, { extensions: ['tar.gz', 'tgz'], wrongType: 'Choose an export, a .tar.gz file.' }, { realpath: deps.realpath, stat: async () => ({ size: 0 }) })
+      if (!checked.ok) return { error: checked.error }
+      pending = { token: randomUUID(), path: checked.real }
       return { token: pending.token, name: basename(chosen) }
     },
 
