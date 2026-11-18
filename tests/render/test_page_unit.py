@@ -27,12 +27,11 @@ def _photo(tmp_path):
 
 
 def test_profile_photo_needs_a_photo_key_a_country_that_allows_one_and_a_usable_file(tmp_path):
-    from door import i18n
     path = _photo(tmp_path)
-    assert page.profile_photo({}, i18n.CvConventions(photo="optional")) is None
-    assert page.profile_photo({"photo": str(path)}, i18n.CvConventions(photo="no")) is None
-    assert page.profile_photo({"photo": str(path)}, i18n.CvConventions(photo="optional")) == path
-    assert page.profile_photo({"photo": str(tmp_path / "missing.jpg")}, i18n.CvConventions(photo="optional")) is None
+    assert page.profile_photo({"location": "Denmark"}, {}) is None
+    assert page.profile_photo({"photo": str(path), "location": "Denmark"}, {"location": "London, UK"}) is None
+    assert page.profile_photo({"photo": str(path), "location": "Denmark"}, {}) == path
+    assert page.profile_photo({"photo": str(tmp_path / "missing.jpg"), "location": "Denmark"}, {}) is None
 
 
 def test_a_template_with_no_body_slot_cannot_hold_a_page():

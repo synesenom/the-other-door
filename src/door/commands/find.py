@@ -16,7 +16,7 @@ import click
 from door import pipeline
 from door.commands import _common as common
 from door.commands import scrape as scrape_cmd
-from door.core import discovery_sources, problem_log, runs, usage, utils, workspace
+from door.core import discovery_sources, problem_log, profile_loader, runs, usage, utils, workspace
 from door.core.sites import BOARDS
 from door.pipeline import collect as collect_step
 from door.pipeline import discover as discover_step
@@ -151,7 +151,7 @@ def _find_core(
         raise ValueError("skip leaves steps out of a full run; it cannot go with a single step")
     ran = [step] if step else [s for s in STEPS if s not in skip]
     if "match" in ran:  # before a run's minutes of reading, not at its end
-        common._require_own_cv(common._load_config_or_defaults(profile_dir), profile_dir)
+        common._require_own_cv(profile_loader.load_config_or_defaults(profile_dir), profile_dir)
 
     config = common._load_config(profile_dir)
     min_score = config.get("min_score", common._DEFAULT_MIN_SCORE)
@@ -363,7 +363,7 @@ def _execute(ctx: click.Context, step: str | None, **options) -> None:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
-    min_score = common._load_config_or_defaults(workspace.PROFILE_DIR).get("min_score", common._DEFAULT_MIN_SCORE)
+    min_score = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR).get("min_score", common._DEFAULT_MIN_SCORE)
 
     if record["follow"] and (record["follow"]["dry_run"] or (not plain and step == "follow")):
         _echo_follow_results(record["follow"])

@@ -29,7 +29,7 @@ import requests
 
 from door import i18n
 from door.commands import _common as common
-from door.core import ats_detect, sites, wikidata, workspace
+from door.core import ats_detect, profile_loader, sites, wikidata, workspace
 from door.core import companies as store
 from door.scrapers.feeds import hr_manager
 from door.scrapers.http_client import PoliteSession, RobotsBlocked
@@ -640,7 +640,7 @@ def _add_core(
     items = store.load(profile_dir)
     now = store.now_iso()
     results = []
-    location = str(common._load_config_or_defaults(profile_dir).get("location") or "")
+    location = str(profile_loader.load_config_or_defaults(profile_dir).get("location") or "")
     for found in _resolve_core(inputs, probe=probe, location=location)["results"]:
         name = _name_for(found)
         refusal = None

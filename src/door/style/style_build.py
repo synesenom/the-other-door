@@ -21,8 +21,7 @@ from PIL import Image
 from pypdfium2 import PdfiumError
 
 from door import i18n
-from door.commands import _common as common
-from door.core import claude_cli, pinned, progress as progress_mod, templates, utils, workspace
+from door.core import claude_cli, pinned, profile_loader, progress as progress_mod, templates, utils, workspace
 from door.style import fonts
 from door.style import cv_body, font_measure, style_compare, style_extract, style_icons, style_preview, style_structure
 from door.render import html_doc, html_guard, html_pdf, pdf_render, readability
@@ -780,7 +779,7 @@ def _build(pdf_path: Path, work: Path, profile_dir: Path, run, fonts_fetch, cap:
     _write(work / "fonts.css", _font_face_css(plan))
     icon_files, result["dropped_icons"] = write_icons(style["icons"], work / "icons")
     _write(work / "style.json", json.dumps(_agent_style(style, icon_files), ensure_ascii=False, indent=1))
-    cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
+    cv_md = style_preview.cv_text(profile_dir, profile_loader.load_config_or_defaults(profile_dir))
     data = _manifest_data(style, list(dict.fromkeys(f["name"] for e in plan for f in e["files"])), icon_files, cv_md)
     _write(work / templates.MANIFEST_FILE, json.dumps(data, indent=1))
     s = _Session(style, pdf, work, templates.Manifest(**data), run, profile_dir)
@@ -803,7 +802,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
         raise _Stop(f"{cause}the rebuild did not come close to your CV's look in {s.rounds} rounds: its best print "
                     f"scored {best:.2f}, at least {style_compare.FLOOR} is needed")
     template = _clean(template, "cv")
-    cv_md = style_preview.cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
+    cv_md = style_preview.cv_text(profile_dir, profile_loader.load_config_or_defaults(profile_dir))
     if failures := _stress(s, template, cv_md):
         progress_mod.report("one more round for the stress renders", stage="style")
         _write(s.work / _CV_FILE, template)

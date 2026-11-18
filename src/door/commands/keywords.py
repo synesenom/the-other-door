@@ -9,9 +9,8 @@ term-proposal rules live (`/onboard`'s keywords step calls the tool too).
 from pathlib import Path
 
 from door import i18n
-from door.commands import _common as common
 from door.commands import profile as profile_cmd
-from door.core import claude_cli, workspace
+from door.core import claude_cli, profile_loader, workspace
 
 _DEFAULT_MODEL = "haiku"
 
@@ -92,7 +91,7 @@ def _keywords_core(
     """
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     targets = _clean(role_targets if role_targets is not None else config.get("role_targets") or [])
     if not targets:
         raise ValueError("no role targets to propose keywords from: pass some, or set role_targets in profile/config.json")

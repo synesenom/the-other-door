@@ -15,7 +15,7 @@ from door.commands import _prompts
 from door.commands import compile as compile_cmd
 from door.commands import salary as salary_cmd
 from door.commands import status as status_cmd
-from door.core import sites, workspace
+from door.core import profile_loader, sites, workspace
 from door.tailoring import facts as facts_mod
 from door.render import html_doc, readability
 from door.render import page as page_mod
@@ -78,7 +78,7 @@ def _list_core(
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
 
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     if status is not None and status not in _tracker_mod.CANONICAL_STATUSES:
         raise ValueError(f"unknown status {status!r}; one of {', '.join(sorted(_tracker_mod.CANONICAL_STATUSES))}")
     if sum((ongoing, closed, status is not None)) > 1:
@@ -407,7 +407,7 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
     if unsupported is None:
         unsupported = facts_mod.load(output_dir)
 
-    config = common._load_config_or_defaults(workspace.PROFILE_DIR)
+    config = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR)
     cv_max_pages = common._cv_max_pages(posting, config)
     return {
         "output_dir": str(output_dir),

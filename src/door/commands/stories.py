@@ -18,7 +18,7 @@ from door.commands import _common as common
 from door.commands import _prompts
 from door.commands import cv as cv_cmd
 from door.commands import profile as profile_cmd
-from door.core import claude_cli, workspace
+from door.core import claude_cli, profile_loader, workspace
 from door.tailoring import StoryBank, _slug
 
 _DEFAULT_MODEL = "sonnet"
@@ -170,10 +170,10 @@ def _draft_stories_core(text=None, from_cv=False, model=None, *, profile_dir: Pa
     if bool(text) == bool(from_cv):
         raise ValueError("give exactly one source: some text describing the story, or from_cv")
     existing: set[str] = set()
-    cv_path = common._cv_path(common._load_config_or_defaults(profile_dir), profile_dir)
+    cv_path = workspace.cv_path(profile_loader.load_config_or_defaults(profile_dir), profile_dir)
     rules = _RULES
     if from_cv:
-        cv_text = cv_cmd._onboarding_cv_text(profile_dir, common._load_config_or_defaults(profile_dir))
+        cv_text = cv_cmd._onboarding_cv_text(profile_dir, profile_loader.load_config_or_defaults(profile_dir))
         if cv_text is None:
             raise FileNotFoundError(f"{cv_path} not found (profile/cv.md): set up the profile first")
         source = f"The CV:\n<<<\n{cv_text}\n>>>\n"

@@ -126,6 +126,7 @@ A PR you open (by `/dev-pr` or any other way) is yours until it is green: watch 
   `_find_core` in `commands/find.py`. They share the engine `_scrape_core` in `commands/scrape.py`
   (`search` and `collect` call it with their own site list and mode; its `_scrape_passes`
   are run once by the match step) and `_match_core` in `commands/match.py` (scoring).
+- Layers: `commands/` (and `pipeline/`, which composes their cores) sit on top; `render/`, `style/`, `core/`, `tailoring/`, `matching/`, `i18n/` and `scrapers/` never import `door.commands`, and `render/` never imports `style/` (`tests/core/test_layer_guard_unit.py`; `core/sync.py`'s lazy archive hook is its one named exception). What commands and lower packages both need lives below: `workspace.cv_path`, `profile_loader.load_config_or_defaults`, `i18n.cv_country` / `i18n.cv_conventions` (the posting's country, else the profile's).
 - Call into another module through the module, never a name imported from it:
   `from door.commands import scrape as scrape_cmd` then `scrape_cmd._scrape_core(...)`, and
   `workspace.JOBS_DIR` (from `door.core import workspace`), read at call time. Tests patch

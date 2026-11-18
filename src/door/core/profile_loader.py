@@ -216,6 +216,19 @@ def format_validation_error(exc: ValidationError, config_path: Path | str) -> li
     return lines
 
 
+def load_config_or_defaults(profile_dir: Path) -> dict:
+    """Like `load_config` of `profile_dir/config.json`, but a missing file means "all defaults".
+
+    For read-only views over `jobs/` (`list`, `status`, `prepare` without a job) that work on
+    a fresh clone before `init`. A config that exists but is invalid still
+    raises `ConfigError` — it is never silently replaced by defaults.
+    """
+    try:
+        return load_config(profile_dir / "config.json")
+    except FileNotFoundError:
+        return {}
+
+
 def load_config(config_path: Path, check_paths: bool = False) -> dict:
     """Validate ``config_path`` against `Profile`; return it as a plain dict.
 

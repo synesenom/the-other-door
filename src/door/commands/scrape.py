@@ -562,7 +562,7 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
 
             progress_mod.report("condense", stage="condense")
 
-            cv_path = common._cv_path(config, profile_dir)
+            cv_path = workspace.cv_path(config, profile_dir)
             if not cv_path.exists():
                 cv_path = profile_dir / "cv.md"
             cv_md = cv_path.read_text(encoding="utf-8") if cv_path.exists() else ""

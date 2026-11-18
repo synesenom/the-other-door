@@ -132,7 +132,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             raise common.NoChromium
         try:
             columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
-            photo = page_mod.profile_photo(config, common._cv_conventions(posting, config)) if config.get("photo") else None
+            photo = page_mod.profile_photo(config, posting)
             pdf, placed, photo_name = page_mod.print_page(
                 body, template, template_path, language, output_dir, Path(file).stem, columns=columns, photo=photo)
         except (ValueError, html_pdf.PrintError) as exc:

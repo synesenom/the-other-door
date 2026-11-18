@@ -12,7 +12,7 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.core import chromium, companies, installers, progress, templates, workspace
+from door.core import chromium, companies, installers, profile_loader, progress, templates, workspace
 from door.core.lock import ledger_lock
 from door.core.profile_loader import ConfigError, Profile, load_config
 
@@ -57,45 +57,8 @@ def _company_items(profile_dir: Path) -> list:
         raise ConfigError(str(exc).splitlines()) from None
 
 
-def _load_config_or_defaults(profile_dir: Path) -> dict:
-    """Like `_load_config`, but a missing config.json means "all defaults".
-
-    For read-only views over `jobs/` (`list`, `status`, `prepare` without a job) that work on
-    a fresh clone before `init`. A config that exists but is invalid still
-    raises `ConfigError` — it is never silently replaced by defaults.
-    """
-    try:
-        return _load_config(profile_dir)
-    except FileNotFoundError:
-        return {}
-
-
 def _is_url(value: str) -> bool:
     return re.match(r"https?://", value, re.IGNORECASE) is not None
-
-
-def _cv_path(config: dict, profile_dir: Path) -> Path:
-    """The CV the profile names (`cv_content`, relative to the data home), else
-    `profile_dir/cv.md`. Whether it exists is the caller's question."""
-    path = Path(config.get("cv_content") or (profile_dir / "cv.md"))
-    return path if path.is_absolute() else workspace.HOME / path
-
-
-def _cv_country(posting: dict, config: dict) -> i18n.CountryPack | None:
-    """The country whose CV conventions apply to ``posting``: the one its location names, else the one the
-    profile's own ``location`` names; ``None`` when neither names a country with a file."""
-    for location in (posting.get("location"), config.get("location")):
-        country = i18n.country_for_location(location or "")
-        if country is not None:
-            return country
-    return None
-
-
-def _cv_conventions(posting: dict, config: dict) -> i18n.CvConventions:
-    """How a CV is written for ``posting`` (`_cv_country`'s block); the neutral default (no photo, no date of
-    birth, two pages) when there is no country."""
-    country = _cv_country(posting, config)
-    return country.cv if country else i18n.CvConventions()
 
 
 def _cv_manifest(config: dict) -> templates.Manifest | None:
@@ -108,7 +71,7 @@ def _cv_manifest(config: dict) -> templates.Manifest | None:
 
 def _cv_max_pages(posting: dict, config: dict) -> int:
     """The page limit a CV for ``posting`` is made to: the country's `[cv]` max_pages, or the template's own when stricter."""
-    limit = _cv_conventions(posting, config).max_pages
+    limit = i18n.cv_conventions(posting, config).max_pages
     manifest = _cv_manifest(config)
     return min(limit, manifest.max_pages) if manifest and manifest.max_pages else limit
 
@@ -133,7 +96,7 @@ def _is_example_cv(path: Path, example: Path | None = None) -> bool:
 
 def _cv_is_example(config: dict, profile_dir: Path) -> bool:
     """Whether the profile's CV is still the example (`_is_example_cv`)."""
-    return _is_example_cv(_cv_path(config, profile_dir))
+    return _is_example_cv(workspace.cv_path(config, profile_dir))
 
 
 EXAMPLE_CV_MESSAGE = "Your CV is still the example (Jane Doe's). Add your own CV first."
@@ -258,7 +221,7 @@ def _pick_job() -> str | None:
     from door.core.selection import select_matches
 
     jobs_dir = workspace.JOBS_DIR
-    config = _load_config_or_defaults(workspace.PROFILE_DIR)
+    config = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR)
     app_tracker = _tracker_mod.ApplicationTracker(jobs_dir / "applications.json")
     order = {label: i for i, label in enumerate(_tracker_mod.STATUSES)}
     tracked = [s for s in _tracker_mod.STATUSES if s != "unapplied" and s not in _CLOSED_STATUSES]

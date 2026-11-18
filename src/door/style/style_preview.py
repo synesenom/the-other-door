@@ -25,7 +25,6 @@ from pathlib import Path
 import pypdfium2
 
 from door import i18n, version
-from door.commands import _common as common
 from door.core import templates, utils, workspace
 from door.style import cv_body
 from door.render import html_pdf, pdf_render
@@ -51,7 +50,7 @@ def sample_letter(cv_md: str) -> str:
 def cv_text(profile_dir: Path, config: dict) -> str:
     """The CV the previews and the style build's stress renders are made from: the one `config`'s `cv_content` names
     (the profile's `cv.md` by default), else the example CV."""
-    path = common._cv_path(config, profile_dir)
+    path = workspace.cv_path(config, profile_dir)
     return (path if path.is_file() else workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_text(encoding="utf-8")
 
 
@@ -142,7 +141,7 @@ def show(home: Path, profile_dir: Path, config: dict) -> dict:
     root = Path(home) / ".style" / "preview"
     cv_md = cv_text(Path(profile_dir), config)
     lang = _language(cv_md)
-    photo = page_mod.profile_photo(config, i18n.cv_conventions_for_location(config.get("location")))
+    photo = page_mod.profile_photo(config, {})  # no posting: the profile's own country decides
     out: dict[str, dict] = {}
     for style in ("default", "like"):
         folder = root / style

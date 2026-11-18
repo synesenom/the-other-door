@@ -11,9 +11,8 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.commands import _common as common
 from door.commands import cv as cv_cmd
-from door.core import claude_cli, workspace
+from door.core import claude_cli, profile_loader, workspace
 
 _DEFAULT_MODEL = "haiku"
 _MAX_TITLES = 10
@@ -99,7 +98,7 @@ def _titles_core(
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
     own = list(titles or [])
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     cv_text = cv_cmd._onboarding_cv_text(profile_dir, config)
     if not cv_text:
         return {"titles": _clean([], own), "warning": "no CV of yours to suggest titles from yet"}

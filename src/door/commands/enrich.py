@@ -214,7 +214,7 @@ def _enrich_core(
             raise ValueError("pass URLs to propose, or apply/all to add the last proposals, not both")
         return _apply(apply or [], all, profile_dir=profile_dir)
     return _propose(
-        urls, config=config, cv_path=common._cv_path(config, profile_dir), profile_dir=profile_dir,
+        urls, config=config, cv_path=workspace.cv_path(config, profile_dir), profile_dir=profile_dir,
         model=model, timeout_s=timeout_s,
     )
 

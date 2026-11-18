@@ -6,7 +6,7 @@ from pathlib import Path
 
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
-from door.core import claude_cli, workspace
+from door.core import claude_cli, profile_loader, workspace
 from door.matching import integrity
 from door.tailoring import facts as facts_mod
 from door.render import html_doc, html_guard
@@ -138,7 +138,7 @@ def _revise_core(
         if not instruction or not instruction.strip():
             raise ValueError("an instruction is required, e.g. \"tighten the second paragraph\"")
         original = path.read_text(encoding="utf-8")
-        config = common._load_config_or_defaults(profile_dir)
+        config = profile_loader.load_config_or_defaults(profile_dir)
         posting = find_posting(jobs_dir, job_id) or {}
         integrity.ensure(posting)  # a posting stored before the gate: clean in memory
         model = config.get("revise_model") or _DEFAULT_REVISE_MODEL

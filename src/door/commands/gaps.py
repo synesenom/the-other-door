@@ -145,7 +145,7 @@ def _skill_gaps_core(
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
     config = common._load_config(profile_dir)
-    cv_path = common._cv_path(config, profile_dir)
+    cv_path = workspace.cv_path(config, profile_dir)
     if not cv_path.is_file():
         raise FileNotFoundError(f"{cv_path} not found (profile/cv.md): set up the profile first")
     resolved = _resolve_targets(targets or [], top, jobs_dir=jobs_dir, profile_dir=profile_dir, jobs=jobs)

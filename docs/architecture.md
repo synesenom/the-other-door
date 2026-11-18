@@ -573,7 +573,7 @@ jobs/                             # gitignored — created on first scrape
 
 src/door/                           # all pipeline code — run via `./door`
 ├── __main__.py, cli.py           # `./door` → the Click group with every command registered
-├── commands/                     # one module per command: its _<name>_core + Click command; _common.py shared
+├── commands/                     # one module per command: its _<name>_core + Click command; _common.py shared; no lower package imports it (tests/core/test_layer_guard_unit.py)
 ├── pipeline/                     # `find`'s five steps, one module each: search, discover, follow, collect, match (+ display.py)
 ├── mcp_server.py                 # the same cores as typed MCP tools
 ├── core/  scrapers/  matching/  tailoring/  style/  render/   # core/workspace.py: PROFILE_DIR, JOBS_DIR

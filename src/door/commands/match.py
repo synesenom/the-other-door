@@ -145,7 +145,7 @@ def _match_core(
 
     from door.matching import scorer
 
-    cv_path = common._cv_path(config, profile_dir)
+    cv_path = workspace.cv_path(config, profile_dir)
     if not cv_path.exists():
         cv_path = profile_dir / "cv.md"
     cv_md = cv_path.read_text(encoding="utf-8") if cv_path.exists() else ""

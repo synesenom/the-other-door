@@ -13,7 +13,7 @@ import door.core.tracker as _tracker_mod
 from door.commands import _common as common
 from door.commands import _progress, _prompts
 from door.commands import style as style_cmd
-from door.core import companies, drive, lock, progress, recurring, runs, usage, workspace
+from door.core import companies, drive, lock, profile_loader, progress, recurring, runs, usage, workspace
 from door.core import utils
 from door.tailoring import facts as facts_mod
 
@@ -296,7 +296,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
 
-    config = common._load_config_or_defaults(profile_dir)
+    config = profile_loader.load_config_or_defaults(profile_dir)
     min_score = config.get("min_score", common._DEFAULT_MIN_SCORE)
 
     app_tracker = _tracker_mod.ApplicationTracker(jobs_dir / "applications.json")
