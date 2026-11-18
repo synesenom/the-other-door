@@ -24,6 +24,12 @@ const CONFIG_ONLY = 'config'
 
 const REMOTE: Record<string, string> = { hybrid: 'Hybrid', yes: 'Remote only', no: 'On site' }
 /** The minimum score as three words; a value set by hand in config.json shows as a fourth choice. */
+/** The CV part's groups, listed under it beside the page (headings in CvEditor and StyleRow). */
+const CV_GROUPS = [
+  { id: 'profile-cv-sources', label: 'Sources', sub: true },
+  { id: 'profile-cv-style', label: 'CV style', sub: true },
+  { id: 'profile-cv-content', label: 'CV content', sub: true },
+]
 const MATCH: [number, string][] = [[0.5, 'Broad'], [0.65, 'Balanced'], [0.75, 'Strong']]
 
 type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: FieldSpec[] }; config: Record<string, unknown> | null }
@@ -183,7 +189,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
   const shown = LAYOUT.sections.filter((s) => s.id !== CONFIG_ONLY && s.screen !== 'settings' && fieldsOf(s.id).length > 0)
   const aside = (
     <PageSections
-      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'CV' }, { id: 'profile-stories', label: 'Stories' }]}
+      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'CV' }, ...CV_GROUPS.filter((g) => style || g.id !== 'profile-cv-style'), { id: 'profile-stories', label: 'Stories' }]}
     />
   )
 

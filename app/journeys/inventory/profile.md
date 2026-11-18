@@ -157,7 +157,7 @@ One bar for the page: it saves the details and the CV's text. `button "Save"` is
 See the search_keywords row above: nothing on screen; Claude proposes the terms on Save.
 
 ### 2.7 PageSections aside (wide window)
-- `navigation "Sections"` contains `list` → `link "<label>"` for each shown section: "About you", "What to look for", "What to skip", then "CV" and "Stories", scrolled to like the others. "In profile/config.json only" never appears. — ✓ opens with every section and the saved values
+- `navigation "Sections"` contains `list` → `link "<label>"` for each shown section: "About you", "What to look for", "What to skip", then "CV" with its groups indented under it ("Sources", "CV style" only where the style is shown, "CV content"), and "Stories", scrolled to like the others. "In profile/config.json only" never appears. — ✓ opens with every section and the saved values
 - The current part has `aria-current="location"`. It is computed on scroll of `.main`: the last heading above a line that moves from 1/3 down the pane to the bottom as you scroll. — unit: `app/src/renderer/screens/Profile.test.tsx` (marking on scroll: not tested)
 - Click → `preventDefault`, then smooth `scrollIntoView` of the heading. The link is marked current immediately and stays marked until `scrollend` (even when the section is too short to reach the line). It would also open a closed `<details>`, but there are none on Profile. — unit: `app/src/renderer/screens/Profile.test.tsx`
 - **Narrow (<900 px):** `.page-aside{display:none}`, so it is not in the accessibility tree. — ✓ has no sections aside; the form and its save bar work the same

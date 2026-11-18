@@ -231,7 +231,6 @@ export function CvEditor({
   // counts the CV files drafted from here: the style of the user's own is built again from a new one
   const [replaced, setReplaced] = useState(0)
   const editorId = useId()
-  const ids = useId()
   // A preview marker opens the editor with its gap selected, so typing replaces it (as the onboarding review does).
   const box = useRef<HTMLTextAreaElement>(null)
   // the tinted copy behind the editor (what was just added), kept at the editor's scroll
@@ -360,8 +359,8 @@ export function CvEditor({
           profile/cv.md could not be read as text (it may be in another encoding, or not text at all). What you save here replaces it; the file as it is now is kept as cv.md.bak.
         </p>
       )}
-      <section className="part" aria-labelledby={`${ids}-sources`}>
-        <h3 className="label" id={`${ids}-sources`}>
+      <section className="part" aria-labelledby="profile-cv-sources">
+        <h3 className="label" id="profile-cv-sources">
           Sources
         </h3>
         {/* the CV file: named, replaced by drafting from another one */}
@@ -427,8 +426,8 @@ export function CvEditor({
         )}
       </section>
       {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
-      <section className="part" aria-labelledby={`${ids}-content`}>
-        <h3 className="label" id={`${ids}-content`}>
+      <section className="part" aria-labelledby="profile-cv-content">
+        <h3 className="label" id="profile-cv-content">
           Content
         </h3>
         {/* the CV: its name, with the Preview switch on the right, then the text or how it reads */}

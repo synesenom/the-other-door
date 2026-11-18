@@ -394,7 +394,7 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 ## Profile
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
-then your [CV](#your-cv) and your [Stories](#your-stories). The list on the right names its sections, the one you
+then your [CV](#your-cv) and your [Stories](#your-stories). The list on the right names its sections, with the CV's groups (Sources, CV style, CV content) under CV, the one you
 are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). One Save bar at the
 page's foot saves both the settings and the CV's text.
 

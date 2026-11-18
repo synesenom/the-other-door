@@ -203,9 +203,9 @@ export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: {
   }
 
   return (
-    <section className="part" aria-labelledby={`${ids}-heading`}>
+    <section className="part" aria-labelledby="profile-cv-style">
       <div className="part-head part-head-row">
-        <h3 className="label" id={`${ids}-heading`}>
+        <h3 className="label" id="profile-cv-style">
           Style
         </h3>
         {shown !== null && (canBuild || hasLike) && (

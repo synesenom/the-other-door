@@ -127,6 +127,17 @@ describe('Profile, opened at a section', () => {
     await waitFor(() => expect(scrolled).toEqual(['profile-skip']))
   })
 
+  it('the CV\'s groups are listed under it beside the page, the style only where it can be shown', async () => {
+    mockDoor({ show_profile: show(), ...NO_STORIES, show_style: { styles: {}, in_use: 'default', candidate: false } })
+    render(<Profile onSaved={() => {}} onDraft={() => {}} style={{ state: 'none', canBuild: true, onChanged: () => {} }} />)
+    await screen.findByLabelText('Your CV (Markdown)')
+    const links = within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link')
+    expect(links.slice(-5).map((l) => l.textContent)).toEqual(['CV', 'Sources', 'CV style', 'CV content', 'Stories'])
+    // each one jumps to its group's heading
+    for (const [label, heading] of [['Sources', 'Sources'], ['CV style', 'Style'], ['CV content', 'Content']])
+      expect(links.find((l) => l.textContent === label)).toHaveAttribute('href', `#${screen.getByRole('heading', { name: heading, level: 3 }).id}`)
+  })
+
   it('the CV and the Stories are sections of the same page, scrolled to like the rest', async () => {
     const scrolled: string[] = []
     Element.prototype.scrollIntoView = vi.fn(function (this: Element) {
@@ -258,7 +269,7 @@ describe('Profile', () => {
     const names = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     expect(names.slice(-2)).toEqual(['CV', 'Stories'])
     expect(names[0]).toBe('About you')
-    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-2).map((l) => l.textContent)).toEqual(['CV', 'Stories'])
+    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-4).map((l) => l.textContent)).toEqual(['CV', 'Sources', 'CV content', 'Stories'])
     expect(screen.getAllByRole('button', { name: 'Save' })).toHaveLength(1)
   })
 
