@@ -225,7 +225,7 @@ renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-serv
   and nothing else (names checked, symlinks resolved, `Cache-Control: no-store`; the page adds `?v=`
   after a revision). `HOME` follows `workspace.py` (`src/main/files.ts`; an integration test
   compares it with the server's `output_dir`). **Save CV** / **Save letter** is the IPC
-  channel `door:save-material` (job id, `cv` or `cover_letter`, sent or not, the name `show`'s
+  `door:before-close` (main to the page when a window closes or the app quits: the page writes what it holds unsaved, the Master CV's last typing, and answers `door:before-close-done`; main waits 3 s at most, `src/main/close-flush.ts`, the preload's one listener `before-close.ts` answering at once when nothing is registered, and `DoorServer.close(5000)` lets a save in flight finish); channel `door:save-material` (job id, `cv` or `cover_letter`, sent or not, the name `show`'s
   `file_names` offers): the main process runs the save dialog in Downloads and copies the PDF
   where the user chose; the renderer never names a path (on the phone, the browser downloads
   the same file from `/files`). `prepare` waits up to 180 s between progress

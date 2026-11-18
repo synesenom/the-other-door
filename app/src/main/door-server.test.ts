@@ -75,6 +75,17 @@ describe('DoorServer', () => {
     expect(r.ok).toBe(true)
   })
 
+  it('close(graceMs) waits for a call in flight to finish before it ends the child', async () => {
+    const s = make()
+    await s.call('json')
+    let finished = false
+    const slow = s.call('slow', { ms: 400 }).then(() => (finished = true))
+    await new Promise((r) => setTimeout(r, 50))
+    await s.close(3000)
+    expect(finished).toBe(true)
+    await slow
+  })
+
   it('(g) a child that dies on every start: each call fails, one spawn per call', async () => {
     const log = join(mkdtempSync(join(tmpdir(), 'fake-')), 'starts.log')
     const s = make({ FAKE_DIE_ON_START: '1', FAKE_START_LOG: log })

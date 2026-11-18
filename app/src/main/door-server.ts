@@ -146,6 +146,7 @@ interface Connection {
 }
 
 export class DoorServer {
+  private inFlight = new Set<Promise<unknown>>()
   private conn: Connection | null = null
   private connecting: Promise<Connection> | null = null
   private stderr = ''
@@ -171,7 +172,7 @@ export class DoorServer {
     let result
     try {
       const onProgress = options.onProgress
-      result = await conn.client.callTool({ name: tool, arguments: args }, undefined, {
+      const pending = conn.client.callTool({ name: tool, arguments: args }, undefined, {
         timeout: options.timeout ?? 60_000,
         ...(onProgress
           ? {
@@ -185,6 +186,12 @@ export class DoorServer {
             }
           : {}),
       })
+      this.inFlight.add(pending)
+      try {
+        result = await pending
+      } finally {
+        this.inFlight.delete(pending)
+      }
     } catch (e) {
       throw await this.translate(e, conn, tool, options.timeout ?? 60_000)
     }
@@ -216,7 +223,16 @@ export class DoorServer {
     }
   }
 
-  async close(): Promise<void> {
+  /** Ends the child; with `graceMs`, the calls in flight get that long to finish first (the app quitting). */
+  async close(graceMs = 0): Promise<void> {
+    if (graceMs > 0 && this.inFlight.size > 0) {
+      let timer: NodeJS.Timeout | undefined
+      await Promise.race([
+        Promise.allSettled([...this.inFlight]),
+        new Promise((r) => (timer = setTimeout(r, graceMs))),
+      ])
+      clearTimeout(timer)
+    }
     const conn = this.conn
     this.conn = null
     if (conn) await conn.client.close().catch(() => undefined)

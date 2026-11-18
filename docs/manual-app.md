@@ -439,8 +439,8 @@ drafted into it whole. A new CV file is your CV file from then on, and your own 
 
 Under them `profile/cv.md` as it reads, the **Preview** switch on its right on, with each gap (`TODO`) a blue "to fill
 in" pill: a click on one shows the text in an editor ("Written in Markdown" beside it), with that gap selected, as Preview off does;
-an empty CV opens in the editor. There is no Save: what you type is saved a second after you stop, and when you leave
-the editor ("Saving…", then "Saved", beside Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak` (adding from a source keeps the
+an empty CV opens in the editor. There is no Save: what you type is saved a second after you stop, when you leave
+the editor and when you close the app ("Saving…", then "Saved", beside Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak` (adding from a source keeps the
 CV as it was just before the addition instead), so that is one step back; ⌘Z (Ctrl+Z) undoes typing. An empty CV is never saved. With no CV yet, a line above says so
 and offers "Draft it from your CV file or pages", the wizard's screens. A `cv.md` that cannot be read as text
 (another encoding, a Word file renamed) is said above an empty editor; what you write there replaces it, the file

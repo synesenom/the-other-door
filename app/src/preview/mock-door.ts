@@ -328,6 +328,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     cvFile: async () => 'jane-doe-cv.pdf',
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
+    onBeforeClose: () => () => undefined,
     onStyleReading: (cb: () => void) => {
       styleReadingListeners.add(cb)
       return () => styleReadingListeners.delete(cb)

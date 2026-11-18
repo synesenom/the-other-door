@@ -196,6 +196,7 @@ export function createWebDoor(deps: WebDeps) {
     },
     styleFromCvFile: machineOnly,
     onStyleReading: () => () => undefined,
+    onBeforeClose: () => () => undefined,
     claudeLogin: {
       start: machineOnly,
       sendCode: machineOnly,
