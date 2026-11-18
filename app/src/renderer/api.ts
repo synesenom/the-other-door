@@ -359,13 +359,13 @@ export const INTERVIEW_KINDS = [
 export async function call<T>(
   tool: string,
   args: Record<string, unknown> = {},
-  options: { onProgress?: (p: ProgressEvent) => void } = {},
+  options: { onProgress?: (p: ProgressEvent) => void; /** CV files the user picked, by token: draft_cv, enrich, build_style. */ tokens?: string[] } = {},
 ): Promise<T> {
-  const { onProgress } = options
+  const { onProgress, tokens } = options
   const callId = onProgress ? newCallId() : undefined
   const unsubscribe = onProgress && callId ? window.door.onProgress(callId, onProgress) : undefined
   try {
-    const r: Envelope<T> = (await (callId ? window.door.call(tool, args, callId) : window.door.call(tool, args))) as Envelope<T>
+    const r: Envelope<T> = (await (tokens ? window.door.call(tool, args, callId, tokens) : callId ? window.door.call(tool, args, callId) : window.door.call(tool, args))) as Envelope<T>
     if (!r.ok) throw new ApiError(r.error, r.candidates, r.stopped, r.conflict)
     return r.data
   } finally {
@@ -381,11 +381,9 @@ export interface CvDraft {
   todos: string[]
 }
 
-/** A CV draft from picked files (tokens) and web pages; the window never names a path, so this has its own channel. */
-export async function draftCv(payload: { files: string[]; urls: string[] }): Promise<CvDraft> {
-  const r = (await window.door.draftCv(payload)) as Envelope<CvDraft>
-  if (!r.ok) throw new ApiError(r.error, r.candidates, r.stopped, r.conflict)
-  return r.data
+/** A CV draft from picked files (tokens) and web pages; the window never names a path. */
+export function draftCv(payload: { files: string[]; urls: string[] }): Promise<CvDraft> {
+  return call<CvDraft>('draft_cv', { sources: payload.urls }, { tokens: payload.files })
 }
 
 // status_summary is the slow call and several parts of a screen want it at once:

@@ -32,17 +32,12 @@ export const CHANNELS = {
   currentBoard: 'door:current-board',
   pickCvFiles: 'door:pick-cv-files',
   dropCvFiles: 'door:drop-cv-files',
-  draftCv: 'door:draft-cv',
-  /** A CV file chosen in the picker, read by enrich for what it adds to the Master CV (by its token). */
-  enrichFile: 'door:enrich-file',
   /** The CV file's name (Profile → CV's Sources), or null. */
   cvFile: 'door:cv-file',
   clearCvSources: 'door:cv-sources-clear',
   /** The CV photo (photo-file.ts): a picture chosen in main, then saved by its token. */
   pickPhoto: 'door:pick-photo',
   savePhoto: 'door:save-photo',
-  /** The CV style build: a CV file the wizard read, by its token. */
-  buildStyle: 'door:build-style',
   /** A CV chosen from Profile → CV to build a style from: the dialog and the build both run in main (style-file.ts). */
   styleFromCvFile: 'door:style-from-cv-file',
   /** Sent to the window once a file is chosen for it, before its structure is read. */
@@ -145,8 +140,9 @@ const COALESCE_MS = 200
 // a file is chosen in a dialog the main process runs and goes by token (cv-sources.ts now;
 // export and import in #222). `urls` entries (http or https) are the one thing allowed in `sources`.
 // A tool whose parameter could name a file must be here (a test reads tools.json for it).
-export const PATH_ARGS: Record<string, { arg: string; urlsOnly?: true }[]> = {
-  draft_cv: [{ arg: 'sources', urlsOnly: true }],
+// `picked` marks where `door:call` puts the paths of the tokens: all of them in a list, or the one file.
+export const PATH_ARGS: Record<string, { arg: string; urlsOnly?: true; picked?: 'list' | 'one' }[]> = {
+  draft_cv: [{ arg: 'sources', urlsOnly: true, picked: 'list' }],
   import_posting: [{ arg: 'path' }],
   export_data: [{ arg: 'path' }],
   import_data: [{ arg: 'archive' }],
@@ -154,9 +150,9 @@ export const PATH_ARGS: Record<string, { arg: string; urlsOnly?: true }[]> = {
   // the CV photo is chosen in a dialog and saved by token (door:save-photo)
   save_photo: [{ arg: 'path' }],
   // a CV PDF whose look is copied
-  build_style: [{ arg: 'file' }],
-  // enrich reads web pages, and a CV file chosen in a dialog and sent by token (door:enrich-file)
-  enrich: [{ arg: 'urls', urlsOnly: true }, { arg: 'files' }],
+  build_style: [{ arg: 'file', picked: 'one' }],
+  // enrich reads web pages, and a CV file chosen in a dialog and sent by token
+  enrich: [{ arg: 'urls', urlsOnly: true }, { arg: 'files', picked: 'list' }],
 }
 
 /** Why a call from the window is refused for naming a local file, or null. */
@@ -265,16 +261,42 @@ export function registerIpc(
   }
   let runs = 0 // find_jobs calls in flight
   let demo: { stop: () => void } | null = null
-  ipcMain.handle(CHANNELS.call, async (event, tool: unknown, args: unknown, callId?: unknown): Promise<Envelope> => {
-    // A refusal is logged by the tool's name only: what the window sent may be anything.
-    const refuse = (error: string): Envelope => {
-      deps.problemLog?.write(`refused ${typeof tool === 'string' ? tool.slice(0, 64) : 'a call'}`, error)
-      return { ok: false, error }
-    }
+  // A refusal is logged by the tool's name only: what the window sent may be anything.
+  const refused = (tool: unknown, error: string): Envelope => {
+    deps.problemLog?.write(`refused ${typeof tool === 'string' ? tool.slice(0, 64) : 'a call'}`, error)
+    return { ok: false, error }
+  }
+  ipcMain.handle(CHANNELS.call, async (event, tool: unknown, args: unknown, callId?: unknown, tokens?: unknown): Promise<Envelope> => {
+    const refuse = (error: string) => refused(tool, error)
     if (typeof tool !== 'string' || !ALLOWED.has(tool)) return refuse('unknown tool')
     const refusal = pathRefusal(tool, isPlainObject(args) ? args : {})
     if (refusal) return refuse(refusal)
     if (deps.info && deps.info.environment !== 'production' && DRIVE_TOOLS.has(tool)) return refuse('Google Drive is not available in staging or the sandbox.')
+    // Picked CV files come as tokens (draft_cv, enrich, build_style: their `picked` PATH_ARGS rule): the paths go into
+    // that rule's argument, the window never names one.
+    let toolArgs = isPlainObject(args) ? args : {}
+    let paths: string[] = []
+    if (tokens !== undefined) {
+      const rule = PATH_ARGS[tool]?.find((r) => r.picked)
+      if (!rule) return refuse('unknown tool')
+      // only a draft may go without a file (it reads pages); a style builds from exactly one
+      if (!Array.isArray(tokens) || !tokens.every((t) => typeof t === 'string') || (tokens.length === 0 && tool !== 'draft_cv') || (rule.picked === 'one' && tokens.length > 1)) return { ok: false, error: 'Choose the file again.' }
+      if (tool === 'draft_cv') {
+        const urls = toolArgs['sources'] ?? []
+        if (!Array.isArray(urls)) return { ok: false, error: 'nothing to draft from' }
+        if (tokens.length + urls.length === 0) return { ok: false, error: 'Add a file or a web page to draft from.' }
+        const checked = checkUrls(urls)
+        if (!checked.ok) return checked
+      }
+      if (tokens.length > 0) {
+        if (!deps.cvSources) return { ok: false, error: 'files cannot be read here' }
+        const resolved = await deps.cvSources.resolve(tokens)
+        if (!resolved.ok) return resolved
+        paths = resolved.paths
+      }
+      const own = toolArgs[rule.arg]
+      toolArgs = { ...toolArgs, [rule.arg]: rule.picked === 'one' ? paths[0] : [...paths, ...(Array.isArray(own) ? own : [])] }
+    }
     const sender = (event as { sender?: { send(channel: string, ...a: unknown[]): void } } | undefined)?.sender
     const options: { onProgress?: (p: Progress) => void; timeout?: number } = {}
     if (tool in TOOL_TIMEOUTS) options.timeout = TOOL_TIMEOUTS[tool]
@@ -307,7 +329,6 @@ export function registerIpc(
     const isRun = tool === 'find_jobs'
     if (isRun) runs += 1
     try {
-      const toolArgs = isPlainObject(args) ? args : {}
       if (isRun && deps.demoRun) {
         const run = deps.demoRun(toolArgs, options.onProgress ?? (() => undefined))
         demo = run
@@ -315,7 +336,13 @@ export function registerIpc(
         await announce({ kind: 'call', tool, args: toolArgs, result })
         return { ok: true, data: result }
       }
-      const result = await server.call(tool, toolArgs, options)
+      let result = await server.call(tool, toolArgs, options)
+      if (Array.isArray(tokens)) {
+        if (tool === 'draft_cv') {
+          await rememberCvFile(result)
+          result = withTokens(result, tokens as string[])
+        } else if (tool === 'enrich') await deps.styleFile?.remember(paths[0]!) // a newer CV file is the CV file from then on
+      }
       await announce({ kind: 'call', tool, args: toolArgs, result })
       return { ok: true, data: result }
     } catch (e) {
@@ -347,7 +374,7 @@ export function registerIpc(
     }
   })
 
-  // The CV draft: files come as tokens from the picker, pages as urls; the server gets paths only from here.
+  // The CV files: picked and dropped here, kept under tokens; the server gets paths only from here.
   ipcMain.handle(CHANNELS.pickCvFiles, async () => (deps.cvSources ? deps.cvSources.pick() : { files: [], refused: [] }))
   ipcMain.handle(CHANNELS.dropCvFiles, async (_event, paths: unknown) => {
     const strings = Array.isArray(paths) && paths.every((p) => typeof p === 'string')
@@ -356,44 +383,6 @@ export function registerIpc(
   ipcMain.handle(CHANNELS.clearCvSources, async () => {
     deps.cvSources?.clear()
   })
-  ipcMain.handle(CHANNELS.draftCv, async (_event, payload: unknown): Promise<Envelope> => {
-    if (!isPlainObject(payload)) return { ok: false, error: 'nothing to draft from' }
-    const { files, urls } = payload
-    const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string')
-    if (!strings(files) || !strings(urls)) return { ok: false, error: 'nothing to draft from' }
-    if (files.length + urls.length === 0) return { ok: false, error: 'Add a file or a web page to draft from.' }
-    const checked = checkUrls(urls)
-    if (!checked.ok) return checked
-    let paths: string[] = []
-    if (files.length > 0) {
-      if (!deps.cvSources) return { ok: false, error: 'files cannot be read here' }
-      const resolved = await deps.cvSources.resolve(files)
-      if (!resolved.ok) return resolved
-      paths = resolved.paths
-    }
-    try {
-      const data = await server.call('draft_cv', { sources: [...paths, ...urls] }, { timeout: TOOL_TIMEOUTS['draft_cv'] })
-      await rememberCvFile(data)
-      return { ok: true, data: withTokens(data, files) }
-    } catch (e) {
-      return failureEnvelope(e)
-    }
-  })
-
-  // A newer CV file: enrich proposes what it adds to the Master CV, and it is the CV file from then on (the style's)
-  ipcMain.handle(CHANNELS.enrichFile, async (_event, token: unknown): Promise<Envelope> => {
-    if (typeof token !== 'string' || !deps.cvSources) return { ok: false, error: 'Choose the file again.' }
-    const resolved = await deps.cvSources.resolve([token])
-    if (!resolved.ok) return resolved
-    try {
-      const data = await server.call('enrich', { files: resolved.paths }, { timeout: TOOL_TIMEOUTS['enrich'] })
-      await deps.styleFile?.remember(resolved.paths[0]!)
-      return { ok: true, data }
-    } catch (e) {
-      return failureEnvelope(e)
-    }
-  })
-
   // The CV photo: picked in a dialog here, saved by token; the tool gets the real path, the window never names one.
   ipcMain.handle(CHANNELS.pickPhoto, async () => (deps.photoFile ? deps.photoFile.pick() : { error: 'a photo cannot be chosen here' }))
   ipcMain.handle(CHANNELS.savePhoto, async (_event, token: unknown): Promise<Envelope> => {
@@ -424,18 +413,6 @@ export function registerIpc(
     ;(event as { sender?: { send(channel: string): void } } | undefined)?.sender?.send(CHANNELS.styleReading)
     try {
       return { ok: true, data: await server.call('build_style', { file: chosen.path }, { timeout: TOOL_TIMEOUTS['build_style'] }) }
-    } catch (e) {
-      return failureEnvelope(e)
-    }
-  })
-
-  // The CV style build: the CV file the wizard read, by its token (the window never names a path).
-  ipcMain.handle(CHANNELS.buildStyle, async (_event, token: unknown): Promise<Envelope> => {
-    if (typeof token !== 'string' || !deps.cvSources) return { ok: false, error: 'Choose the file again.' }
-    const resolved = await deps.cvSources.resolve([token])
-    if (!resolved.ok) return resolved
-    try {
-      return { ok: true, data: await server.call('build_style', { file: resolved.paths[0] }, { timeout: TOOL_TIMEOUTS['build_style'] }) }
     } catch (e) {
       return failureEnvelope(e)
     }

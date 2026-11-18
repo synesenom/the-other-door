@@ -97,33 +97,29 @@ describe('saveProfile', () => {
       })
 
     it('a ticked box starts the build from the file, after the CV is saved', async () => {
-      const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
-      h.buildStyle.mockImplementation(async () => {
-        expect(names(h)).toEqual(['init_profile', 'save_cv'])
-        return { ok: true, data: { started: true } }
-      })
+      const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile, build_style: () => {
+        expect(names(h)).toEqual(['init_profile', 'save_cv', 'build_style'])
+        return { started: true }
+      } })
       const result = await saveProfile(styled({ style: true }))
-      expect(h.buildStyle).toHaveBeenCalledWith('f1')
+      expect(h.call).toHaveBeenCalledWith('build_style', {}, undefined, ['f1'])
       expect(result.ok).toBe(true)
     })
 
     it('an unticked box starts nothing', async () => {
       const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
       await saveProfile(styled())
-      expect(h.buildStyle).not.toHaveBeenCalled()
+      expect(h.call.mock.calls.some((c) => c[0] === 'build_style')).toBe(false)
     })
 
     it('a tick with no file that has a style starts nothing', async () => {
       const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
       await saveProfile(styled({ style: true, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false, token: 'f1' }] } }))
-      expect(h.buildStyle).not.toHaveBeenCalled()
+      expect(h.call.mock.calls.some((c) => c[0] === 'build_style')).toBe(false)
     })
 
     it('a build that is refused or fails does not fail Save', async () => {
-      const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
-      h.buildStyle.mockResolvedValueOnce({ ok: false, error: 'no style to copy' })
-      expect((await saveProfile(styled({ style: true }))).ok).toBe(true)
-      h.buildStyle.mockRejectedValueOnce(new Error('boom'))
+      mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile, build_style: () => { throw { message: 'no style to copy' } } })
       expect((await saveProfile(styled({ style: true }))).ok).toBe(true)
     })
   })
