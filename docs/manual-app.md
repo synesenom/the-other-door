@@ -426,15 +426,22 @@ never has one. It is not on the phone.
 
 ### Your CV
 
-The pages your CV is read from come first: each page is a chip with a × to forget it, and under them
-**Add a page** and **Check again**. Then `profile/cv.md` in an editor, "Your CV (Markdown)" with the
+Three sections: **Sources**, **Style** and **Content**.
+
+**Sources** names the CV file your CV was last drafted from. **Replace…** (or **Choose a CV file…** when there is
+none) drafts your CV again from another file, one Claude call on your plan (a minute or two): the draft lands in
+the editor under Content, and nothing is saved until you press Save. Under it, the pages your CV is read from:
+each page is a chip with a × to forget it, and under them **Add a page** and **Check again**.
+
+**Content** is `profile/cv.md` in an editor, "Your CV (Markdown)" with the
 Preview switch on its right, which shows how it reads, with each gap (`TODO`) marked "to fill in": a click on a marker opens the editor with that gap selected. Save keeps the previous version as
 `cv.md.bak` (one step back), and "Undo changes" drops what you have not saved; what you typed stays
-while you look at Details. With no CV yet, a line above says so and offers "Draft it from your CV
+while you look at Details. With no CV yet, a line above the sections says so and offers "Draft it from your CV
 file or pages", the wizard's screens. A `cv.md` that cannot be read as text (another encoding, a Word file
 renamed) is said above an empty editor; saving there keeps that file as `cv.md.bak`.
 
-- **Style** (above "Your CV"): how your tailored CVs are printed. The sheet of The other door's style is
+- **Style** (between Sources and Content): how your tailored CVs are printed, each style's first page at half
+  the width so the two can be compared. The sheet of The other door's style is
   there, marked "In use". "Use the style of my CV…" opens a file dialog (a PDF of a CV of yours, starting at
   the one you gave the set-up while it is still there) and builds a template from its look in the
   background (after a short wait, "Reading your CV's look…", while the app reads its look; then 2-5 minutes on your Claude plan, which "Building your style…" says. A file with no look to copy, or one whose look could not be read (Claude unreachable, or its usage limit reached), is said in a line at once; a build that does not work out later is not). The built style waits beside the other one:
@@ -454,7 +461,7 @@ renamed) is said above an empty editor; saving there keeps that file as `cv.md.b
   What the CV already says, even worded or punctuated a little differently, is not proposed again,
   so checking twice adds nothing twice.
 
-Both wait until your unsaved edits are saved or undone, since adding rewrites the file. What was added
+These wait until your unsaved edits are saved or undone, since they rewrite the CV. What was added
 is tinted in the editor and the preview, brought into view, until you next type or save.
 
 ### Your stories

@@ -188,6 +188,9 @@ export function createWebDoor(deps: WebDeps) {
       return { files: [], refused: [] }
     },
     draftCv: machineOnly,
+    async cvFile() {
+      return null
+    },
     async clearCvSources() {},
     async pickPhoto() {
       return { error: ON_THE_MACHINE }

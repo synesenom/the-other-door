@@ -32,6 +32,8 @@ export const CHANNELS = {
   pickCvFiles: 'door:pick-cv-files',
   dropCvFiles: 'door:drop-cv-files',
   draftCv: 'door:draft-cv',
+  /** The CV file's name (Profile → CV's Sources), or null. */
+  cvFile: 'door:cv-file',
   clearCvSources: 'door:cv-sources-clear',
   /** The CV photo (photo-file.ts): a picture chosen in main, then saved by its token. */
   pickPhoto: 'door:pick-photo',
@@ -224,7 +226,7 @@ export function registerIpc(
     /** The CV photo's file (photo-file.ts). */
     photoFile?: Pick<PhotoFile, 'pick' | 'take'>
     /** The CV a style is built from (style-file.ts). */
-    styleFile?: Pick<StyleFile, 'choose' | 'remember'>
+    styleFile?: Pick<StyleFile, 'choose' | 'remember' | 'name'>
     /** The problem log (problem-log.ts): what the window was refused. */
     problemLog?: ProblemLog
     /** The update check (updates.ts). */
@@ -367,7 +369,7 @@ export function registerIpc(
     }
     try {
       const data = await server.call('draft_cv', { sources: [...paths, ...urls] }, { timeout: TOOL_TIMEOUTS['draft_cv'] })
-      await rememberStyleSource(data)
+      await rememberCvFile(data)
       return { ok: true, data: withTokens(data, files) }
     } catch (e) {
       return failureEnvelope(e)
@@ -386,12 +388,15 @@ export function registerIpc(
     }
   })
 
-  // The first file the draft read that has a style to copy: Profile → CV's dialog opens there. Never on made-up data.
-  const rememberStyleSource = async (data: unknown): Promise<void> => {
+  // The CV file: the first file the draft read that has a style to copy, else the first file it read. Profile → CV's
+  // Sources names it and the style dialog opens there. Never on made-up data.
+  const rememberCvFile = async (data: unknown): Promise<void> => {
     if (deps.info?.demo || !deps.styleFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
-    const source = data['sources'].find((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && s['style'] === true)
-    if (isPlainObject(source) && typeof source['source'] === 'string') await deps.styleFile.remember(source['source'])
+    const files = data['sources'].filter((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && typeof s['source'] === 'string') as { source: string; style?: boolean }[]
+    const file = files.find((s) => s.style === true) ?? files[0]
+    if (file) await deps.styleFile.remember(file.source)
   }
+  ipcMain.handle(CHANNELS.cvFile, async (): Promise<string | null> => (deps.info?.demo || !deps.styleFile ? null : deps.styleFile.name()))
 
   // A style built from a CV chosen in Profile → CV: the dialog and the build both here; the window names no path.
   ipcMain.handle(CHANNELS.chooseStyleFile, async (event): Promise<Envelope> => {

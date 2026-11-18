@@ -31,6 +31,7 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
   const styleFile = {
     choose: vi.fn(async (): Promise<{ path: string } | { canceled: true } | { error: string }> => ({ path: '/Users/ada/my cv.pdf' })),
     remember: vi.fn(async (_path: string) => undefined),
+    name: vi.fn(async (): Promise<string | null> => 'my cv.pdf'),
   }
   const problemLog = { write: vi.fn((_where: string, _message: string) => undefined) }
   const claudeLogin = {
@@ -889,5 +890,17 @@ describe('choosing a CV to copy the style of', () => {
     const two = setup(async () => answer, undefined, false, { demo: true })
     await two.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
     expect(two.styleFile.remember).not.toHaveBeenCalled()
+  })
+
+  it('with no file whose style can be copied, the first file the draft read is the CV file', async () => {
+    const answer = { markdown: '# Ada', sources: [{ source: 'https://ada.dev', kind: 'url' }, { source: '/Users/ada/cv.docx', kind: 'file', style: false }, { source: '/Users/ada/other.pdf', kind: 'file' }] }
+    const { invoke, styleFile } = setup(async () => answer, undefined, false, real)
+    await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
+    expect(styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.docx')
+  })
+
+  it('names the CV file to the window, by its name only, and none on made-up data', async () => {
+    expect(await setup(undefined, undefined, false, real).invoke(CHANNELS.cvFile)).toBe('my cv.pdf')
+    expect(await setup(undefined, undefined, false, { demo: true }).invoke(CHANNELS.cvFile)).toBeNull()
   })
 })

@@ -313,6 +313,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     saveMaterial: async (_j: string, _w: string, _s: boolean, name: string) => ({ ok: true, path: `/Users/jane/Downloads/${name}` }),
     pickCvFiles: async () => ({ files: [{ token: 'preview-1', name: 'jane-doe-cv.pdf', size: 184_000 }], refused: [] }),
     dropCvFiles: async (files) => ({ files: files.map((f, i) => ({ token: `preview-drop-${i}`, name: f.name, size: f.size })), refused: [] }),
+    cvFile: async () => 'jane-doe-cv.pdf',
     draftCv: async () => {
       const r = await respond('draft_cv', {})
       if (!r.ok) return r

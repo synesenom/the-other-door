@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('door', {
   // A drop: only Electron can turn a dropped File into a path, here, out of the page's reach.
   dropCvFiles: (files: File[]) => ipcRenderer.invoke('door:drop-cv-files', files.map((f) => webUtils.getPathForFile(f)).filter(Boolean)),
   draftCv: (payload: { files: string[]; urls: string[] }) => ipcRenderer.invoke('door:draft-cv', payload),
+  cvFile: () => ipcRenderer.invoke('door:cv-file'),
   clearCvSources: () => ipcRenderer.invoke('door:cv-sources-clear'),
   // The CV photo: chosen in a dialog the main process runs, saved by the token it hands back.
   pickPhoto: () => ipcRenderer.invoke('door:pick-photo'),

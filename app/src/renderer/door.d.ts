@@ -19,6 +19,8 @@ declare global {
       dropCvFiles(files: File[]): Promise<PickResult>
       /** Drafts a CV from picked files (by token) and web pages. */
       draftCv(payload: { files: string[]; urls: string[] }): Promise<Envelope>
+      /** The CV file a draft last read, by its name, or null (Profile → CV's Sources). */
+      cvFile(): Promise<string | null>
       /** Forgets the picked files (the wizard closed). */
       clearCvSources(): Promise<void>
       /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (save_photo's answer). */

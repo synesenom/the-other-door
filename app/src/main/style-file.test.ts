@@ -46,11 +46,14 @@ describe('createStyleFile', () => {
     await style.choose()
     expect(showOpenDialog.mock.calls[0]![0]).not.toHaveProperty('defaultPath')
   })
-  it('remembers the path it is told, and only a PDF', async () => {
+  it('remembers the CV file it is told, of any kind', async () => {
     const { style, hintStore } = setup(null)
     await style.remember('/a/cv.docx')
-    expect(hintStore.write).not.toHaveBeenCalled()
-    await style.remember('/a/cv.pdf')
-    expect(hintStore.write).toHaveBeenCalledWith('/a/cv.pdf')
+    expect(hintStore.write).toHaveBeenCalledWith('/a/cv.docx')
+  })
+  it('names the remembered CV file while it is there, by its name only', async () => {
+    expect(await setup(null, { hint: '/Users/ada/Documents/my cv.pdf' }).style.name()).toBe('my cv.pdf')
+    expect(await setup(null, { hint: '/Users/ada/cv.pdf', hintExists: false }).style.name()).toBeNull()
+    expect(await setup(null).style.name()).toBeNull()
   })
 })

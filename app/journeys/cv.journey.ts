@@ -24,7 +24,7 @@ test.describe('the editor', () => {
     await openCv(page)
     await cvBox(page).fill(`${world.persona.cv}\n- Danish driving licence B\n`)
     await expect(page.getByText('Unsaved changes', { exact: true })).toBeVisible()
-    await expect(page.getByText('Save or undo your changes before adding from a page.')).toBeVisible()
+    await expect(page.getByText('Save or undo your changes before adding from a page or another file.')).toBeVisible()
     await saveButton(page).click()
     await expect(page.getByText('Saved. The previous version is kept as cv.md.bak.')).toBeVisible()
     expect(readText(world, 'profile/cv.md')).toBe(`${world.persona.cv}\n- Danish driving licence B\n`)
@@ -32,7 +32,7 @@ test.describe('the editor', () => {
     expect(world.toolCalls('save_cv')).toHaveLength(1)
     expect(exists(world, 'profile/cv.draft.md')).toBe(false)
     await expect(saveButton(page)).toBeDisabled()
-    await expect(page.getByText('Save or undo your changes before adding from a page.')).toHaveCount(0)
+    await expect(page.getByText('Save or undo your changes before adding from a page or another file.')).toHaveCount(0)
     // typing again clears the message
     await cvBox(page).press('x')
     await expect(page.getByText('Saved. The previous version is kept as cv.md.bak.')).toHaveCount(0)
@@ -93,7 +93,7 @@ test.describe('no CV yet', () => {
   test('the sidebar line opens the CV, which says there is none', async ({ page, world }) => {
     await started(page)
     await page.getByRole('group', { name: 'Needs you' }).getByRole('button', { name: 'You have no CV yet' }).click()
-    await expect(page.getByRole('note')).toHaveText('You have no CV yet. Write it here, or Draft it from your CV file or pages')
+    await expect(page.getByRole('note')).toHaveText('You have no CV yet. Choose your CV file under Sources, write it under Content, or Draft it from your CV file or pages')
     await expect(cvBox(page)).toHaveValue('')
     await expect(saveButton(page)).toBeDisabled()
     expect(exists(world, 'profile/cv.md')).toBe(false)

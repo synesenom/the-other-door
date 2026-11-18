@@ -1,9 +1,10 @@
-// The CV a style is built from, chosen from Profile → CV. The main process runs the open dialog and starts the
-// build itself with the real path (ipc.ts), so the window never names or receives a path. The dialog opens at the
-// CV the set-up read, when that file is still there: its path is kept in a small file of the app's own folder
-// (never sent to the window or the server), written when the draft answers.
+// The CV file: the one a draft last read (Profile → CV's Sources names it), and the CV a style is built from, chosen
+// from Profile → CV. The main process runs the open dialog and starts the build itself with the real path (ipc.ts),
+// so the window never receives a path, only the file's name. The dialog opens at the CV file while it is still
+// there: its path is kept in a small file of the app's own folder (never sent to the window or the server), written
+// when a draft answers.
 import { basename } from 'node:path'
-import { checkPicked, hasExtension } from './files'
+import { checkPicked } from './files'
 
 export const MAX_STYLE_BYTES = 25 * 1024 * 1024
 
@@ -16,7 +17,6 @@ interface Deps {
 }
 
 const STYLE_EXTENSIONS = ['pdf']
-const isPdf = (p: string) => hasExtension(p, STYLE_EXTENSIONS)
 
 export function createStyleFile(deps: Deps) {
   return {
@@ -37,14 +37,18 @@ export function createStyleFile(deps: Deps) {
       )
       return checked.ok ? { path: checked.real } : { error: checked.error }
     },
-    /** Keep the path of the CV the set-up read, to open the dialog there. */
+    /** Keep the path of the CV file a draft read: Sources names it, and the dialog opens there. */
     async remember(path: string): Promise<void> {
-      if (!isPdf(path)) return
       try {
         await deps.hintStore.write(path)
       } catch {
         // a convenience: nothing to say when it cannot be kept
       }
+    },
+    /** The CV file's name (never its path) while it is still there, else null. */
+    async name(): Promise<string | null> {
+      const hint = await deps.hintStore.read().catch(() => null)
+      return hint && deps.exists(hint) ? basename(hint) : null
     },
   }
 }

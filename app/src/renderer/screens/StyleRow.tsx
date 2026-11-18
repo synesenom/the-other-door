@@ -174,7 +174,6 @@ export function StyleRow({ state, canBuild, onChanged, reload }: { state: 'none'
 
   return (
     <div className="style-row">
-      <span className="field-label">Style</span>
       {shown === null ? (
         <>
           <div className="style-cards">

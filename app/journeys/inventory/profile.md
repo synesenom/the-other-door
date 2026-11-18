@@ -178,7 +178,7 @@ See the search_keywords row above: nothing on screen; Claude proposes the terms 
 
 | Data | Note text | Button |
 |---|---|---|
-| `!cv.exists` | "You have no CV yet. Write it here, or " | inline link `button "Draft it from your CV file or pages"` → onDraft (wizard) | — ✓ the sidebar line opens the CV, which says there is none; ✓ Draft it from your CV file or pages opens the set-up wizard (h1 "Tell me about yourself")
+| `!cv.exists` | "You have no CV yet. Choose your CV file under Sources, write it under Content, or " | inline link `button "Draft it from your CV file or pages"` → onDraft (wizard) | — ✓ the sidebar line opens the CV, which says there is none; ✓ Draft it from your CV file or pages opens the set-up wizard (h1 "Tell me about yourself")
 | own CV (the example CV too: it is never copied in, so no user has it) | no note | — | — ✓ opens on the CV as saved, with no note
 
 Other data-driven variants:
@@ -205,7 +205,11 @@ Other data-driven variants:
   - Transport errors.
 - **save_cv always writes `profile/cv.md`**, but `show_profile` reads `config.cv_content`. With a custom `cv_content` path, a Save "succeeds" and the editor then reloads the **other** file, so the edit appears to vanish. Edge case, needs a custom config. — not tested: needs a custom cv_content path, which the form cannot set
 
-### 4.3 The pages, above the CV
+### 4.3 Sources: the CV file and the pages
+
+The CV part is three sections, `heading "Sources"`, `heading "Style"` (only when the app says how the build stands) and `heading "Content"` (the editor), each a `region` named by its heading. — unit: `CvEditor.test.tsx`
+
+- **The CV file** (label "CV file"): the name of the file a draft last read (`door:cv-file`, from the path the main process keeps; never on made-up data), else "No CV file yet". `button "Replace…"` (or `"Choose a CV file…"`) opens the file dialog (`pickCvFiles`), drafts with `draftCv({files:[token], urls:[]})` (spinner "Reading your CV file (a minute or two)…") and puts the draft in the editor, unsaved, with "Drafted from <name>. Check it below and Save."; a refused file or a failed draft is the error box under it, the CV untouched. Disabled while the editor is dirty. — unit only: `CvEditor.test.tsx`
 
 - **`list "Pages your CV is read from"`** (only with remembered pages, after the label "Pages"): one chip per page, shown without `https://` (the full address on hover), each with `button "Forget <page>"`, which removes it at once (`init_profile`). — ✓ a page is forgotten by its ×
 - Under it, two secondary buttons:
@@ -215,7 +219,7 @@ Other data-driven variants:
 | `button "Add a page"` | Disabled while the editor has unsaved edits | Opens `dialog "Add a page"` (§4.4) | — unit: `app/src/renderer/screens/CvEditor.test.tsx`; ✓ reads the page asked for, remembers it, and proposes what the CV lacks, all ticked
 | `button "Check again"` (only with remembered pages) | Disabled while the editor has unsaved edits | Opens `dialog "Check your pages again"` (§4.4) | — ✓ Check again reads them all and names the page of each proposal
 
-- With the editor dirty, the line "Save or undo your changes before adding from a page." shows under them. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak
+- With the editor dirty, the line "Save or undo your changes before adding from a page or another file." shows under them. — ✓ Save writes cv.md and keeps the previous one as cv.md.bak
 
 ### 4.4 The page dialogs: Add a page, Check your pages again
 
@@ -232,7 +236,7 @@ Other data-driven variants:
 - Add: `enrich({apply})`, the spinner "Adding to your CV…" (Esc does not close it then); the dialog closes, the CV is read again and the added lines are tinted (§4.2). No message. — ✓ Add puts the ticked ones in cv.md, keeps cv.md.bak and marks them in the editor
 - Errors: a `field-error` alert in the dialog (a read: back to the field; an add: "…cv.md changed since the proposals were made; run `enrich` again" when the CV was saved since). — not covered by a journey; the refusal: unit: `tests/commands/test_enrich_cli.py`; the dialog showing it: no test
 
-### 4.5 The Style (StyleRow.tsx, above "Your CV")
+### 4.5 The Style (StyleRow.tsx, between Sources and Content)
 
 Sources: `StyleRow.tsx`, `PageStack.tsx`, `style-file.ts` (main), `commands/style.py` (`_use_core`, `status`, `_show_core`), `style/style_preview.py`. `show_style` answers `{styles: {default, like?}, in_use, candidate}`; `use_style(style: like|default|current, rerender)` answers `{in_use, prepared, rerendered?, failed?}`. Shown only in the app window (the phone has no Profile), and the build actions are not offered on made-up data.
 

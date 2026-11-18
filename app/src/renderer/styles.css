@@ -254,14 +254,15 @@ textarea { resize: none; }
 /* Profile → CV's Style: the sheets side by side, each a button that opens the full pages. The sheet keeps its size
    while the previews are made, so the row does not move. */
 .dialog-wide { width: min(720px, calc(100vw - var(--space-8))); }
-.style-row { --sheet: 160px; display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+/* the two styles side by side, each half the width there is, so they can be compared */
+.style-row { display: flex; flex-direction: column; gap: var(--space-3); align-items: stretch; }
 .style-row .spinner-line { margin-left: 0; margin-right: 0; }
-.style-cards { display: flex; gap: var(--space-6); align-items: flex-start; }
-.style-card { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-width: var(--sheet); }
+.style-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); align-items: start; }
+.style-card { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-width: 0; }
 .style-actions-slot > .secondary { width: max-content; white-space: nowrap; }
-.style-thumb { display: block; width: var(--sheet); padding: 0; background: none; border: 1px solid var(--color-border); border-radius: var(--radius-s); overflow: hidden; cursor: pointer; }
-.style-thumb .paper { border-radius: 0; }
-.style-sheet { box-sizing: border-box; width: var(--sheet); height: calc((var(--sheet) - 2px) * 1.414 + 2px); border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
+.style-thumb { display: block; width: 100%; padding: 0; background: none; border: 1px solid var(--color-border); border-radius: var(--radius-s); overflow: hidden; cursor: pointer; }
+.style-thumb .paper { display: block; width: 100%; border-radius: 0; }
+.style-sheet { box-sizing: border-box; width: 100%; aspect-ratio: 1 / 1.414; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
 .style-caption { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
 .style-mark { color: var(--color-accent); }
 /* the room of up to two choices under a card, and below the cards of one muted line and one button: the row is as
@@ -272,9 +273,8 @@ textarea { resize: none; }
 @media (hover: hover) { .style-thumb:hover { border-color: var(--color-ink); } }
 
 @media (max-width: 899px) {
-  .style-row { --sheet: 136px; }
   .style-cards { gap: var(--space-3); }
-  .style-actions-slot > .secondary { width: var(--sheet); white-space: normal; height: auto; min-height: var(--size-control-height); }
+  .style-actions-slot > .secondary { width: 100%; white-space: normal; height: auto; min-height: var(--size-control-height); }
   .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); }
   .page-aside { display: none; }
   .board-screen { padding: var(--space-6) var(--space-4) var(--space-8); }
