@@ -452,6 +452,12 @@ def test_french_month_dates_are_not_figures():
     assert _bad(tex, cv_md=FR_MD, current_year=2026) == []
 
 
+@pytest.mark.parametrize("date", ["15. marts 2020", "2020. március 15.", "15 mars 2020"])
+def test_danish_hungarian_and_swedish_dates_claim_only_the_year(date):
+    tex = f"<li>Acme, {date}</li>"
+    assert _values(tex, cv_md="", current_year=2026) == ["2020"]
+
+
 def test_french_letter_date_line_needs_no_source():
     tex = "<p>Paris, le 29 octobre 2026<br>Objet : candidature</p>"
     assert _bad(tex, file="cover_letter", current_year=2026) == []

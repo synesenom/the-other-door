@@ -233,7 +233,7 @@ class LanguagePack(_Strict):
     compounds: StrictBool = False         # the language writes compounds as one word (Danish "intensivsygeplejerske")
     plural_suffixes: list[str] = []       # endings a plural or inflected form adds to a word ("er", "e", "r")
     role_nouns: list[str] = []            # generic words of a job title that name no field ("consultant", "partner")
-    months: dict[str, int] = {}           # month names and abbreviations (lower case) -> 1..12, all twelve or none
+    months: dict[str, int] = {}           # extra month forms (abbreviations, unaccented spellings; lower case) -> 1..12; the full names are date.months
     title_tags: list[str] = []            # gender tags a job title carries ("H/F", "m/k"), dropped from stored titles
     typography: Typography = Typography()  # punctuation spacing the printed CV and letter get
     date: DateFormat = DateFormat()        # the letter's date written out, in this language
@@ -267,9 +267,14 @@ class LanguagePack(_Strict):
                 raise ValueError(f"{name!r}: a month name is plain text")
             if not 1 <= number <= 12:
                 raise ValueError(f"{name!r}: month {number} is not 1..12")
-        if v and set(v.values()) != set(range(1, 13)):
-            raise ValueError("months must name each of the twelve months")
         return {name.lower(): number for name, number in v.items()}
+
+    @model_validator(mode="after")
+    def _all_twelve_months(self) -> "LanguagePack":
+        merged = {n: i for i, n in enumerate(self.date.months, 1)} | self.months
+        if merged and set(merged.values()) != set(range(1, 13)):
+            raise ValueError("date.months and months together must name each of the twelve months")
+        return self
 
     @field_validator("seniority")
     @classmethod
@@ -690,6 +695,8 @@ def month_numbers(codes: tuple[str, ...] | None = None) -> dict[str, int]:
     language), for reading a date written out ("25 octobre 2026")."""
     mapping: dict[str, int] = {}
     for pack in _packs(codes):
+        for number, name in enumerate(pack.date.months, 1):
+            mapping.setdefault(name.lower(), number)
         for name, number in pack.months.items():
             mapping.setdefault(name, number)
     return mapping

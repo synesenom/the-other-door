@@ -161,42 +161,30 @@ nav = [
     "home", "apply", "apply now", "sign in", "log in", "search", "search jobs", "job alert", "job alerts",
 ]
 
-# The month names and their abbreviations, for reading a date written out ("13 November 2026").
+# The extra month forms (abbreviations; the full names are [date].months), for reading a date written out ("13 November 2026").
 [months]
-january = 1
 jan = 1
 "jan." = 1
-february = 2
 feb = 2
 "feb." = 2
-march = 3
 mar = 3
 "mar." = 3
-april = 4
 apr = 4
 "apr." = 4
-may = 5
-june = 6
 jun = 6
 "jun." = 6
-july = 7
 jul = 7
 "jul." = 7
-august = 8
 aug = 8
 "aug." = 8
-september = 9
 sep = 9
 "sep." = 9
 sept = 9
 "sept." = 9
-october = 10
 oct = 10
 "oct." = 10
-november = 11
 nov = 11
 "nov." = 11
-december = 12
 dec = 12
 "dec." = 12
 
