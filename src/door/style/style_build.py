@@ -433,7 +433,7 @@ def _ask(run, task: str, work: Path, profile_dir: Path | None) -> str:
     server of the user's) and its reply text."""
     definition = claude_cli.agent_definition(STYLIST)
     args = ["--restricted", "--agents", json.dumps({STYLIST: definition}), "--agent", STYLIST,
-            "--allowedTools", ",".join(definition["tools"]), claude_cli.STRICT_MCP, "--no-session-persistence",
+            "--allowedTools", ",".join(definition["tools"]), "--no-session-persistence",
             *claude_cli.STREAM_ARGS]
     envelope = run(args, feature="style", input=task, timeout_s=TIMEOUT_S, profile_dir=profile_dir, cwd=work)
     return str(claude_cli.envelope_result(envelope))

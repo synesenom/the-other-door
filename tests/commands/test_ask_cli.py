@@ -40,7 +40,6 @@ def test_one_call_with_the_read_tools_only(cli_env, monkeypatch):
     for tool in ("Bash", "Write", "Edit", "Read", "mcp__door__set_status", "mcp__door__find_jobs", "mcp__door__ask", "mcp__door__show"):
         assert tool in disallowed
     # only The other door's server (not the user's own MCP servers or connectors), and no built-in tool at all
-    assert "--strict-mcp-config" in args
     assert args[args.index("--tools") + 1] == ""
 
 

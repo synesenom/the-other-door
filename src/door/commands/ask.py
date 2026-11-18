@@ -79,7 +79,6 @@ def _ask_core(question: str, *, model: str | None = None, jobs_dir: Path | None 
         "--system-prompt", _RULES,
         "--json-schema", json.dumps(_SCHEMA), *claude_cli.STREAM_ARGS,
         "--mcp-config", str(mcp_config),
-        claude_cli.STRICT_MCP,  # The other door's server only: never the user's own MCP servers or connectors
         "--tools", "",  # no built-in tool (shell, files, web): only the MCP tools allowed below
         "--allowedTools", ",".join(f"mcp__door__{t}" for t in ASK_TOOLS),
         "--disallowedTools", ",".join([*_REFUSED, *(f"mcp__door__{t}" for t in [*_writing_tools(), "ask"])]),

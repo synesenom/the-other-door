@@ -141,12 +141,11 @@ def test_ask_adds_no_effort_by_default_but_is_strict(monkeypatch):
     assert "--effort" not in calls[0] and "--strict-mcp-config" in calls[0]
 
 
-def test_run_is_strict_unless_the_caller_already_said_so(monkeypatch):
+def test_run_never_loads_the_users_own_mcp_servers(monkeypatch):
     calls = []
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, "x"))
     claude_cli.run(["--model", "haiku"], feature="revise")
-    claude_cli.run(["--mcp-config", "{}", "--strict-mcp-config"], feature="ask")
-    assert calls[0].count("--strict-mcp-config") == 1 and calls[1].count("--strict-mcp-config") == 1
+    assert calls[0].count("--strict-mcp-config") == 1
 
 
 # --------------------------------------------------------------------------- the call sites record the limits (plan §5)

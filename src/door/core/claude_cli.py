@@ -164,9 +164,7 @@ def run(
     """
     # Never the user's own MCP servers or connectors: their tool lists cost ~34k input tokens a call (#345).
     # A call that needs a server names it with `--mcp-config`, which `--strict-mcp-config` then limits to.
-    if STRICT_MCP not in args:
-        args = [*args, STRICT_MCP]
-    argv = [installers.find_claude() or "claude", "-p", *args]
+    argv = [installers.find_claude() or "claude", "-p", *args, STRICT_MCP]
     try:
         result = subprocess.run(
             argv, capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=cwd or workspace.REPO_ROOT,

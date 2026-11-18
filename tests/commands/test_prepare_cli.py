@@ -177,7 +177,7 @@ def test_tailor_argv_runs_the_tailor_agent_directly(cli_env):
     assert "jobindex-acme-ds" in argv[0]
     assert argv[argv.index("--agent") + 1] == "tailor"
     assert argv[argv.index("--agents") + 1] == str(posting.parent / "agents.json")
-    assert "--restricted" in argv and "--strict-mcp-config" in argv
+    assert "--restricted" in argv
     assert argv[argv.index("--allowedTools") + 1] == ",".join(prepare_cmd._tailor_tools("jobindex-acme-ds", posting))
     assert json.loads(argv[argv.index("--mcp-config") + 1]) == workspace.mcp_config_entry()
 
@@ -226,7 +226,7 @@ def test_run_tailor_passes_the_argv_cwd_and_timeout_to_claude(cli_env, monkeypat
     posting = cli_env.jobs_dir / ".tailor" / "jobindex-acme-ds" / "posting.json"
     posting.parent.mkdir(parents=True)
     assert prepare_cmd._run_tailor("jobindex-acme-ds", posting, timeout_s=12.0) is True
-    assert seen["argv"][1:] == ["-p", *prepare_cmd._tailor_args("jobindex-acme-ds", posting)]
+    assert seen["argv"][1:] == ["-p", *prepare_cmd._tailor_args("jobindex-acme-ds", posting), "--strict-mcp-config"]
     assert seen["kwargs"]["timeout"] == 12.0
     assert seen["kwargs"]["cwd"] == cli_env.jobs_dir / "output" / "jobindex-acme-ds"   # not the checkout
 
