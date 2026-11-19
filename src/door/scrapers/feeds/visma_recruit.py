@@ -65,7 +65,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, career_links, followed_name,
-    host_of, is_job_board, keep_local, make_job_id, name_key, parts, record_entry_error, record_error, record_pushback,
+    host_of, is_job_board, keep_local, split_known, make_job_id, name_key, parts, record_entry_error, record_error, record_pushback,
     report, run_probe, scrape_feeds, unfollowable, workers,
 )
 
@@ -397,7 +397,7 @@ def _list_postings(session: PoliteSession, guid: str, scraped_at: datetime, know
     """Every open ad of one customer's list not in *known_ids*, labelled with the followed *label* when given. An
     ad that cannot be read is recorded and skipped; a refusal is pushback and ends the list."""
     name, rows = _all_rows(session, guid)
-    todo = [r for r in rows if r["guid"] not in known_ids]
+    todo, known = split_known(rows, lambda r: r["guid"], known_ids)
     out: list[dict] = []
     for n, row in enumerate(todo, 1):
         report("detail", n, len(todo))
@@ -416,7 +416,7 @@ def _list_postings(session: PoliteSession, guid: str, scraped_at: datetime, know
             record_error(_SITE, f"ad {row['guid']} of {guid!r} holds no ad")
             continue
         out.append(_to_posting(row, ad, label or name, scraped_at))
-    return out
+    return out + known
 
 
 def _settings(session: PoliteSession, guid: str):
@@ -474,7 +474,7 @@ def _page_postings(session: PoliteSession, url: str, scraped_at: datetime, known
             continue
         if guid is not None and guid not in guids:
             guids.append(guid)
-    todo = [g for g in guids if g not in known_ids]
+    todo, known = split_known(guids, lambda g: g, known_ids)
     out: list[dict] = []
     for n, guid in enumerate(todo, 1):
         report("detail", n, len(todo))
@@ -489,7 +489,7 @@ def _page_postings(session: PoliteSession, url: str, scraped_at: datetime, known
             continue
         if ad is not None:
             out.append(_to_posting({"guid": guid, "title": ad["title"]}, ad, label or ad["organization"], scraped_at))
-    return out
+    return out + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

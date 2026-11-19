@@ -75,7 +75,8 @@ def test_the_detail_is_read_only_for_postings_not_seen_before():
 
     postings = oracle_hcm.scrape({"oracle_hcm_companies": [_ENTRY]}, known)
 
-    assert [p["platform_id"] for p in postings] == [f"{_HOST}-24218", f"{_HOST}-24001"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == [f"{_HOST}-24218", f"{_HOST}-24001"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == [f"{_HOST}-24100"]
     assert sorted(_detail_ids()) == ["24001", "24218"]
 
 

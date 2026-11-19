@@ -61,7 +61,8 @@ def test_known_ids_skip_the_detail_requests():
 
     postings = recman.scrape({"recman_companies": ["pn"]}, known_ids=frozenset({"490875", "477333"}))
 
-    assert [p["platform_id"] for p in postings] == ["429148"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["429148"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["477333", "490875"]
     assert len(responses.calls) == 2
 
 

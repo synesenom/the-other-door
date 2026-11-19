@@ -59,7 +59,8 @@ def test_known_ids_skip_the_detail_request():
     postings = smartrecruiters.scrape({"smartrecruiters_companies": ["interikeagroup"]},
                                       known_ids=frozenset(_IDS[1:]))
 
-    assert [p["platform_id"] for p in postings] == [_IDS[0]]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == [_IDS[0]]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == sorted(_IDS[1:])  # a known ad comes back as a seen_only record
     assert len(responses.calls) == 2  # the listing and one detail
 
 

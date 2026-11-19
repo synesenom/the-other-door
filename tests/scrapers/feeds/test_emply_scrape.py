@@ -156,7 +156,8 @@ def test_a_known_vacancy_costs_no_detail_request(_au):
 
     postings = emply.scrape({"emply_tenants": [_AU_PAGE]}, known)
 
-    assert [p["platform_id"] for p in postings] == ["international.au.dk-45619"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["international.au.dk-45619"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == sorted(known)
     assert len([c for c in responses.calls if "/job/" in c.request.url]) == 1
 
 

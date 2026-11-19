@@ -232,12 +232,13 @@ def _page_postings(session: PoliteSession, page_url: str, scraped_at: datetime, 
         raise ValueError("no embedded Emply vacancy list in the page")
     label = name or _embedded_name(html) or host_of(page_url)
     today = _today()
-    postings = []
+    postings, known = [], []
     for vacancy in vacancies:
         if not _open(vacancy, today):
             continue
         posting = _embedded_posting(vacancy, page_url, label, scraped_at)
         if posting["platform_id"] in known_ids:
+            known.append({"platform_id": posting["platform_id"], "seen_only": True})
             continue
         try:
             text = _embedded_description(session.get(posting["url"], headers={"Accept": "text/html"}).text)
@@ -247,7 +248,7 @@ def _page_postings(session: PoliteSession, page_url: str, scraped_at: datetime, 
         if text:
             posting["description"] = text
         postings.append(posting)
-    return postings
+    return postings + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
