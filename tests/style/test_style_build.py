@@ -14,6 +14,7 @@ from door.core import templates, workspace
 from door.core.downloads import chromium
 from door.style import cv_body, style_build, style_compare, style_extract, style_preview
 from door.render import html_guard, page
+from cv_read_utils import reading
 from pdf_utils import font_names, path_count
 from style_build_utils import BIG, EXAMPLE, STYLES, Stylist, cv_only, cv_round, fake_fonts, letter_round
 from style_structure_utils import extract_with, recorded
@@ -86,8 +87,9 @@ def test_a_built_style_is_what_compile_prints_a_tailored_application_in(tmp_path
     out = tmp_path / "jobs" / "output" / "job"
     out.mkdir(parents=True)
     (out / "posting.json").write_text(json.dumps({"title": "Head of Finance", "company": "Globex", "location": "Aarhus"}))
-    (out / "cv.html").write_text(cv_body.body((EXAMPLE / "cv.md").read_text(encoding="utf-8")), encoding="utf-8")
-    (out / "cover_letter.html").write_text(style_preview.sample_letter((EXAMPLE / "cv.md").read_text(encoding="utf-8")), encoding="utf-8")
+    example = (EXAMPLE / "cv.md").read_text(encoding="utf-8")
+    (out / "cv.html").write_text(cv_body.body(example, reading(example)), encoding="utf-8")
+    (out / "cover_letter.html").write_text(style_preview.sample_letter(example, reading(example)), encoding="utf-8")
     compiled = {r["file"]: r for r in compile_cmd._compile_core("job", jobs_dir=tmp_path / "jobs")["results"]}
     assert compiled["cv.html"]["status"] == "compiled", compiled["cv.html"]
     assert compiled["cover_letter.html"]["status"] == "compiled", compiled["cover_letter.html"]
@@ -101,8 +103,8 @@ def test_a_built_style_is_what_compile_prints_a_tailored_application_in(tmp_path
 def test_a_print_with_the_side_column_on_the_wrong_side_is_found_whatever_its_headings_look_like(tmp_path, extra):
     """#242: a drop cap or wide letter-spacing prints a heading in pieces; the check still finds it."""
     style = extract_with(STYLES / "latex-sidebar.pdf", recorded("latex-sidebar"))  # side column on the left
-    body = ('<header class="cv-header"><h1>Ada Lovelace</h1></header><h2>Education</h2><p>' + "Studied things. " * 8
-            + "</p><h2>Skills</h2><p>Python, SQL</p><h2>Languages</h2><p>English</p>")
+    body = ('<header class="cv-header"><h1>Ada Lovelace</h1></header><h2 class="kind-education">Education</h2><p>' + "Studied things. " * 8
+            + '</p><h2 class="kind-skills">Skills</h2><p>Python, SQL</p><h2 class="kind-languages">Languages</h2><p>English</p>')
     template = ('<!DOCTYPE html><html lang="<<lang>>"><head><meta charset="utf-8"><style>@page { size: A4; margin: 0 } '
                 "body { margin: 40pt; display: grid; grid-template-columns: 1fr 150pt; font-family: serif } "
                 ".cv-header { grid-column: 1 / -1 } .photo { width: 1pt } " + extra + "</style></head><body><<body>></body></html>")
@@ -117,7 +119,7 @@ def test_a_print_with_the_side_column_on_the_wrong_side_is_found_whatever_its_he
                                  "border-radius: 50%; border: 3pt solid #999", "background: #ccc"])
 def test_a_box_drawn_where_the_photo_is_is_found_whatever_its_corners(tmp_path, css):
     """#246: a round or rounded box prints as a path of many segments (no kind); it is found all the same."""
-    body = ('<header class="cv-header"><h1>Ada Lovelace</h1></header><h2>Education</h2><p>'
+    body = ('<header class="cv-header"><h1>Ada Lovelace</h1></header><h2 class="kind-education">Education</h2><p>'
             + "Studied things at a university in a city. " * 30 + "</p>")
     template = ('<!DOCTYPE html><html lang="<<lang>>"><head><meta charset="utf-8"><style>@page { size: A4; margin: 0 } '
                 'body { margin: 40pt } .photo { width: 1pt } .cv-header::before { content: ""; display: block; '

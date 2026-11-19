@@ -21,7 +21,7 @@ from PIL import Image
 from pypdfium2 import PdfiumError
 
 from door import i18n
-from door.core import claude_cli, cv_sections, profile_loader, progress as progress_mod, templates, utils, workspace
+from door.core import claude_cli, cv_read, cv_sections, profile_loader, progress as progress_mod, templates, utils, workspace
 from door.core.downloads import pinned
 from door.style import fonts
 from door.style import cv_body, font_measure, style_compare, style_extract, style_icons, style_preview, style_structure
@@ -436,21 +436,53 @@ Plain text of a paragraph.
 """
 
 
-def _stress_variants(cv_md: str) -> dict[str, dict]:
-    """The CV in `cv_md` made into the texts a template must hold (no model): ``photo`` (the same, printed with a
-    photo), ``fewer`` (one entry a section), ``long_title`` (a very long job title), ``extra_section`` (one more
-    section) and ``french`` (a long French paragraph first, `lang` "fr"), ``shapes`` (every shape the vocabulary has, whatever the
-    CV: every contact kind, an entry heading's parts, levels, lists, bold, italic, a link). Each is ``{"md", "lang", "photo"}``."""
+_SHAPES_READING = {
+    "name": "Ada Example", "email": "ada@example.com", "city": "Example City", "country": None, "languages": [], "skills": [],
+    "sections": [{"heading": "Experience", "kind": "experience"}, {"heading": "Skills", "kind": "skills"},
+                 {"heading": "Languages", "kind": "languages"}, {"heading": "Steps", "kind": "other"}],
+    "contacts": [{"kind": k, "label": label, "value": value} for k, label, value in (
+        ("phone", "Phone", "12 34 56 78"), ("email", "Email", "ada@example.com"), ("web", "Web", "example.com"),
+        ("location", "Location", "Example City"), ("linkedin", "LinkedIn", "example.com/in/ada"),
+        ("github", "GitHub", "example.com/ada"))],
+    "levels": [{"item": item, "level": n} for item, n in (("Python", 4), ("Welding", 1), ("English", 5), ("French", 2))],
+    "entries": [{"heading": "Lead Engineer | Example Company — 2020 - 2023 | Example City", "role": "Lead Engineer",
+                 "org": "Example Company", "dates": "2020 - 2023", "place": "Example City", "start_year": 2020, "end_year": 2023}],
+}
+
+
+def _with(reading: dict, *, sections=None, entries=None) -> dict:
+    return {**reading, "sections": reading["sections"] if sections is None else sections,
+            "entries": reading["entries"] if entries is None else entries}
+
+
+def _stress_variants(cv_md: str, reading: dict) -> dict[str, dict]:
+    """The CV in `cv_md` (read as `reading`, `cv_read.read`) made into the texts a template must hold (no model): ``photo``
+    (the same, printed with a photo), ``fewer`` (one entry a section), ``long_title`` (a very long job title),
+    ``extra_section`` (one more section) and ``french`` (a long French paragraph first, `lang` "fr"), ``shapes`` (every
+    shape the vocabulary has, whatever the CV: every contact kind, an entry heading's parts, levels, lists, bold, italic,
+    a link). Each is ``{"md", "lang", "photo", "reading"}``, its reading made from `reading` by code: a variant changes
+    what the text says, never what a section or an entry is."""
     lines = cv_md.rstrip("\n").splitlines()
     at = _section_at(lines)
+    fewer, long_title = _fewer(lines), _long_title(lines)
+    sections, entries = reading["sections"], reading["entries"]
+    heading = long_title[next(i for i, line in enumerate(long_title) if line.startswith("### ") and _LONG_ROLE in line)][4:].strip()
+    first = entries[0] if entries else {"role": _LONG_ROLE, "org": "Example Company", "dates": "2020 - 2023", "place": None,
+                                        "start_year": 2020, "end_year": 2023}
+    long_entry = {**first, "heading": heading, "role": _LONG_ROLE}
     variants = {
-        "photo": lines, "fewer": _fewer(lines), "long_title": _long_title(lines),
-        "extra_section": [*lines, "", "## Publications", "", "- A study of nightly pipelines (2021)", "- Notes on small steady steps (2019)"],
-        "french": [*lines[:at], "## Profil", "", _FRENCH, "", *lines[at:]],
-        "shapes": _SHAPES.replace("Ada Example", (_NAME.search(cv_md) or [None, "Ada Example"])[1], 1).splitlines(),
+        "photo": (lines, reading),
+        "fewer": (fewer, _with(reading, entries=[e for e in entries if f"### {e['heading']}" in fewer])),
+        "long_title": (long_title, _with(reading, entries=[long_entry, *entries[1:]] if entries else [long_entry],
+                                         sections=sections if entries else [*sections, {"heading": "Experience", "kind": "experience"}])),
+        "extra_section": ([*lines, "", "## Publications", "", "- A study of nightly pipelines (2021)", "- Notes on small steady steps (2019)"],
+                          _with(reading, sections=[*sections, {"heading": "Publications", "kind": "other"}])),
+        "french": ([*lines[:at], "## Profil", "", _FRENCH, "", *lines[at:]],
+                   _with(reading, sections=[{"heading": "Profil", "kind": "summary"}, *sections])),
+        "shapes": (_SHAPES.replace("Ada Example", (_NAME.search(cv_md) or [None, "Ada Example"])[1], 1).splitlines(), _SHAPES_READING),
     }
     return {name: {"md": cv_md if name == "photo" else "\n".join(v) + "\n", "lang": "fr" if name == "french" else "en",
-                   "photo": name == "photo"} for name, v in variants.items()}
+                   "photo": name == "photo", "reading": rd} for name, (v, rd) in variants.items()}
 
 
 # ---------- the loop ----------
@@ -630,6 +662,14 @@ def _list(items: list[str]) -> str:
     return "\n".join(f"- {item}" for item in items[:_LIMIT])
 
 
+def _read(cv_md: str) -> dict:
+    """`cv_md` as `cv_read.read` reads it; a CV the reader cannot read stops the build in the reader's words."""
+    try:
+        return cv_read.read(cv_md)
+    except cv_read.CvReadError as exc:
+        raise _Stop(str(exc)) from None
+
+
 def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, list[float], str | None]:
     """The comparison rounds: the stylist writes a template (and, in the first round that has one, the sample CV, which
     `cv_body` turns into the body, so it has the real bodies' shapes, and whose contact labels go to the manifest),
@@ -653,14 +693,17 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
                 feedback = "Your reply had no ```cv block: the sample CV in one fenced block named cv."
             elif not re.search(r"^#{1,2} \S", sample, re.M):
                 feedback = "Your ```cv block had no name or section in it: write the CV as the task says (# Name, ## Section, ...)."
-            elif bad := body_column_problems(s.style, (candidate := cv_body.body(sample)), s.manifest.columns):
-                feedback = ("Your sample CV puts text under a heading of the other column (text.txt gives each page's "
-                            "text column by column: a section goes on in its own column on the next page):\n" + _list(bad))
             else:
-                body = candidate
-                s.manifest = s.manifest.model_copy(update={"contact_labels": cv_body.contact_labels(sample)})
-                _write(s.work / "sample_body.html", body)
-                _write(s.work / templates.MANIFEST_FILE, s.manifest.model_dump_json(exclude_defaults=True, indent=1))
+                sample_reading = _read(sample)
+                candidate = cv_body.body(sample, sample_reading)
+                if bad := body_column_problems(s.style, candidate, s.manifest.columns):
+                    feedback = ("Your sample CV puts text under a heading of the other column (text.txt gives each page's "
+                                "text column by column: a section goes on in its own column on the next page):\n" + _list(bad))
+                else:
+                    body = candidate
+                    s.manifest = s.manifest.model_copy(update={"contact_labels": cv_body.contact_labels(sample_reading)})
+                    _write(s.work / "sample_body.html", body)
+                    _write(s.work / templates.MANIFEST_FILE, s.manifest.model_dump_json(exclude_defaults=True, indent=1))
             if body is None:
                 continue
         _write(s.work / _CV_FILE, template)
@@ -690,7 +733,7 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
     return (kept[style_compare.best_round(scores)] if scores else None), body, scores, feedback
 
 
-def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
+def _stress(s: _Session, template: str, cv_md: str, reading: dict) -> list[str]:
     """The failures of the template printed with the variants of `cv_md` (`_stress_variants`), through the same placing,
     photo and typography steps `compile` takes, no model: a print that fails, text lost off the page (`readability`'s
     checks, a last page nearly empty excepted), a section in the other column's place (`column_problems`), a box drawn where the original's photo is in a print with
@@ -700,11 +743,11 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     picture = s.work / "stress-photo.jpg"
     Image.new("RGB", (350, 450), "tan").save(picture, "JPEG")
     failures: list[str] = []
-    for variant, v in _stress_variants(cv_md).items():
+    for variant, v in _stress_variants(cv_md, reading).items():
         progress_mod.report(f"stress render: {variant}", stage="style")
         try:
             pdf, placed, photo = page_mod.print_page(
-                cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
+                cv_body.body(v["md"], v["reading"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
                 manifest=s.manifest, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
             render = style_extract.extract(pdf)
@@ -725,7 +768,7 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
     return failures
 
 
-def _letter(s: _Session, template: str, cv_md: str) -> tuple[str | None, list[str]]:
+def _letter(s: _Session, template: str, cv_md: str, reading: dict) -> tuple[str | None, list[str]]:
     """The letter template for the final CV `template`: a second stylist call given the CV template and the default
     letter template, its page guarded, printed with a sample letter (readable, one page); one more call when it fails."""
     shutil.copyfile(workspace.PROFILE_EXAMPLE_DIR / _LETTER_FILE, s.work / f"default.{_LETTER_FILE}")
@@ -733,7 +776,7 @@ def _letter(s: _Session, template: str, cv_md: str) -> tuple[str | None, list[st
     files = (f"Write the cover letter template that matches the CV template. Files here: cv.template.html (the CV template "
              f"you wrote: its fonts, colours, margins and header), default.{_LETTER_FILE} (the default letter template: its "
              f"building blocks and structure), template.json, fonts.css. Read the first two with the Read tool.")
-    body = style_preview.sample_letter(cv_md)
+    body = style_preview.sample_letter(cv_md, reading)
     feedback, problems = None, []
     for _ in range(2):
         progress_mod.report("building the letter template", stage="style")
@@ -851,7 +894,8 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
                     f"scored {best:.2f}, at least {style_compare.FLOOR} is needed")
     template = _clean(template, "cv")
     cv_md = style_preview.cv_text(profile_dir, profile_loader.load_config_or_defaults(profile_dir))
-    if failures := _stress(s, template, cv_md):
+    reading = _read(cv_md)
+    if failures := _stress(s, template, cv_md, reading):
         progress_mod.report("one more round for the stress renders", stage="style")
         _write(s.work / _CV_FILE, template)
         reply = blocks(s.ask(_task(files, "Printed with other texts, your template fails:\n" + _list(failures), _REPLY_NEXT)))
@@ -859,9 +903,9 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
         if problems := (html_guard.template_problems(template, s.manifest) if template else ["no ```template block in the reply"]):
             raise _Stop("the stress renders failed and the extra round's template was refused: " + "; ".join(problems[:3]))
         template = _clean(template, "cv")
-        if failures := _stress(s, template, cv_md):
+        if failures := _stress(s, template, cv_md, reading):
             raise _Stop("the stress renders still fail after the extra round: " + "; ".join(failures[:_LIMIT]))
-    letter, problems = _letter(s, template, cv_md)
+    letter, problems = _letter(s, template, cv_md, reading)
     if letter is None:
         raise _Stop("; ".join(problems))
     _publish(profile_dir, s.work, pdf, template, letter)

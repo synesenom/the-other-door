@@ -7,6 +7,7 @@ import sys
 from door.core import templates
 from door.render import html_guard
 from door.style import cv_body, style_build
+from cv_read_utils import reading
 from paths import REPO_ROOT
 
 STAND_IN = REPO_ROOT / "app" / "test" / "world" / "stylist.py"
@@ -29,7 +30,7 @@ def test_a_cv_call_gets_a_template_and_a_sample_cv_the_builder_accepts(tmp_path)
     got = _answer(tmp_path)
     assert set(got) == {"template", "cv"}
     assert html_guard.template_problems(got["template"], _manifest()) == []
-    assert cv_body.body(got["cv"])
+    assert cv_body.body(got["cv"], reading(got["cv"]))
 
 
 def test_a_letter_call_gets_a_letter_template_the_builder_accepts(tmp_path):
