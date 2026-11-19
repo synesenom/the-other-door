@@ -575,3 +575,12 @@ def test_extract_skill_terms_drops_group_headings_and_bullet_marks():
     terms = extract_skill_terms("# A\n\n## Skills\n\n### Programming\n\n- Python\n- SQL\n", {})
     assert {"python", "sql", "programming"} <= terms
     assert not any(t.startswith(("#", "-")) for t in terms)
+
+
+@pytest.mark.parametrize("heading", ["## My toolbox <!-- kind: skills -->", "## Kompetencer og værktøjer <!-- kind: skills -->"])
+def test_extract_skill_terms_reads_a_skills_section_the_draft_marked(heading):
+    assert "pandas" in extract_skill_terms(f"# Jane\n\n{heading}\n\npandas, Spark\n\n## Profile\n\nNotpandas person\n", {})
+
+
+def test_extract_skill_terms_does_not_guess_an_unmarked_title():
+    assert "pandas" not in extract_skill_terms("## My toolbox\n\npandas\n", {})

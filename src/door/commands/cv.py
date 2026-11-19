@@ -19,7 +19,7 @@ import click
 from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
-from door.core import claude_cli, migrations, profile_loader, utils, workspace
+from door.core import claude_cli, cv_sections, migrations, profile_loader, utils, workspace
 from door.style import cv_body, style_icons
 
 _DEFAULT_MODEL = "sonnet"
@@ -34,7 +34,9 @@ _RULES = (
     "`### Role | Company — dates` headings, bullets; add ` | Location` as a last part, `### Role | Company — dates | Location`, "
     "only when a source gives the place of that role). Every section of the CV is kept as a `## ` section, also one the template "
     "has not. Keep the CV's own section headings word for word, "
-    "in the CV's own language (\"Selected work\", \"Formation\"), never renamed to a standard one, and keep the groups a "
+    "in the CV's own language (\"Selected work\", \"Formation\"), never renamed to a standard one, and end the heading line of "
+    "each section of one of the kinds " + cv_sections.KINDS_TEXT + ", whatever its title, with its kind "
+    "as a comment, `## Technical Skills <!-- kind: skills -->` (no comment on any other section), and keep the groups a "
     "section has: a group's title is a `### Title` line of its own with its items as bullets under it. "
     "The most recent CV is the backbone; "
     "the other sources only add to it — month-level dates, roles it leaves out, years and "
@@ -171,21 +173,15 @@ def _onboarding_cv_text(profile_dir: Path, config: dict) -> str | None:
 def _without_skills_todos(markdown: str, todos: list[str]) -> tuple[str, list[str]]:
     """A CV need not list its skills, so nothing asks for them: `TODO`s go from its skills sections
     with what the model listed about them, and a section with nothing else left goes too."""
-    titles = i18n.cv_section("skills")
-    sections: list[list[str]] = [[]]
-    for line in markdown.splitlines():
-        if line.startswith("## "):
-            sections.append([])
-        sections[-1].append(line)
-
     found = False
     kept: list[str] = []
-    for section in sections:
-        heading = section[0][3:].strip(" *:_").casefold() if section and section[0].startswith("## ") else None
-        if heading not in titles or not any("TODO" in line for line in section):
+    titles = set(i18n.cv_section("skills"))
+    for section in cv_sections.split(markdown):
+        if cv_sections.kind(section, ("skills",)) is None or not any("TODO" in line for line in section):
             kept.extend(section)
             continue
         found = True
+        titles.add(cv_sections.heading(section[0])[0].casefold())
         body = [left for left in map(_skills_line_without_todo, section[1:]) if left is not None]
         if any(line.strip() for line in body):
             kept.extend([section[0], *body])

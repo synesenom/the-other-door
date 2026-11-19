@@ -21,7 +21,7 @@ from PIL import Image
 from pypdfium2 import PdfiumError
 
 from door import i18n
-from door.core import claude_cli, profile_loader, progress as progress_mod, templates, utils, workspace
+from door.core import claude_cli, cv_sections, profile_loader, progress as progress_mod, templates, utils, workspace
 from door.core.downloads import pinned
 from door.style import fonts
 from door.style import cv_body, font_measure, style_compare, style_extract, style_icons, style_preview, style_structure
@@ -127,7 +127,6 @@ def write_icons(icons: list[dict], folder: Path) -> tuple[dict[str, str], list[d
 
 
 _FALLBACK_SIDE = ("skills", "languages", "interests")
-_CV_HEADING = re.compile(r"^##[ \t]+(.+?)[ \t]*$", re.M)
 
 
 def _side_headings(style: dict) -> list[str]:
@@ -146,7 +145,7 @@ def _side_kinds(style: dict, cv_md: str) -> list[str]:
         if kind and kind not in kinds:
             kinds.append(kind)
     if not kinds and _side_headings(style):
-        own = {i18n.cv_section_kind(h, _FALLBACK_SIDE) for h in _CV_HEADING.findall(cv_md)}
+        own = {cv_sections.kind(section, _FALLBACK_SIDE) for section in cv_sections.split(cv_md)}
         kinds = [k for k in _FALLBACK_SIDE if k in own]
     return kinds
 

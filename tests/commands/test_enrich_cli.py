@@ -355,3 +355,22 @@ def test_cli_errors_are_one_line(env, monkeypatch, prompts):
     assert result.exit_code != 0
 
 
+
+
+def test_insert_finds_a_section_whose_heading_records_its_kind():
+    cv = "## Tools I use <!-- kind: skills -->\n\n- Python\n"
+    assert enrich_cmd._insert(cv, "Tools I use", "SQL") == "## Tools I use <!-- kind: skills -->\n\n- Python\n- SQL\n"
+
+
+def test_insert_records_the_kind_of_a_new_section():
+    assert enrich_cmd._insert("## Profile\n\nHi\n", "Toolbox", "SQL", "skills").endswith("## Toolbox <!-- kind: skills -->\n\n- SQL\n")
+
+
+def test_clean_keeps_the_title_and_the_kind_the_model_recorded_apart():
+    [p] = enrich_cmd._clean_proposals([{"section": "Toolbox <!-- kind: skills -->", "text": "SQL", "source": "x"}], "")
+    assert (p["section"], p["kind"]) == ("Toolbox", "skills")
+
+
+def test_insert_records_the_kind_on_an_older_heading_that_has_none():
+    cv = "## Tools I use\n\n- Python\n"
+    assert enrich_cmd._insert(cv, "Tools I use", "SQL", "skills") == "## Tools I use <!-- kind: skills -->\n\n- Python\n- SQL\n"

@@ -28,6 +28,7 @@ import html
 import re
 
 from door import i18n
+from door.core import cv_sections
 
 _LEVELS = {"native": 5, "c2": 5, "fluent": 4, "professional": 4, "c1": 4, "working": 3, "b2": 3,
            "conversational": 2, "b1": 2, "basic": 1, "a1": 1, "a2": 1}
@@ -228,8 +229,8 @@ def body(cv_md: str, lang: str = "en") -> str:
         if stripped.startswith("## "):
             in_header = False
             blocks.close_entry()
-            heading = stripped[3:].strip()
-            blocks.levels = i18n.cv_section_kind(heading, _LEVEL_SECTIONS, (lang, "en")) is not None
+            heading = cv_sections.heading(stripped)[0]
+            blocks.levels = cv_sections.kind([stripped], _LEVEL_SECTIONS, (lang, "en")) is not None
             blocks.out.append(f"<h2>{_inline(heading)}</h2>")
         elif in_header:
             continue

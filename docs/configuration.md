@@ -92,7 +92,10 @@ removed, and named (`Removed from profile/config.json, as it was not valid: …`
 
 Interactive `init` also drafts `profile/cv.md` from your existing CV and public pages and
 proposes `search_keywords` (see [*The other door* from the terminal](manual-cli.md#walkthrough)).
-`enrich` (`/expand`) adds to the CV from public URLs later.
+`enrich` (`/expand`) adds to the CV from public URLs later. A draft or an enrichment records what a skills,
+education, certifications, languages or interests section is on its heading, `## Technical Skills <!-- kind: skills -->`
+(a comment no preview shows), so the scoring, the draft's clean-up and the years of experience read a section titled in
+your own words; a heading with no such comment is read by its standard title (`## Skills`).
 
 To start by hand instead: run `./door init` (it makes `profile/` from `profile.example/`, stamped with the data version) and edit `profile/config.json`. Do not copy `profile.example/` yourself: a `profile/` without its version stamp is read as the first release's data and upgraded.
 
