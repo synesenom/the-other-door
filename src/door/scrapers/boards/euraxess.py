@@ -222,6 +222,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             report(message)
             record_error(_SITE, message)
             break
+        if cards:
+            sdk.record_answered(_SITE)  # a page of offers read, all known or off topic, is a quiet day
         reached_cutoff = stopped = False
         for card in cards:
             if since is not None and card["posted_at"] is not None and card["posted_at"] < since:

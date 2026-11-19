@@ -12,6 +12,7 @@ import types
 from datetime import date
 
 import pytest
+import responses
 from click.testing import CliRunner
 
 from door.cli import cli
@@ -1011,3 +1012,53 @@ def test_a_french_boards_gender_tag_is_stripped_from_the_stored_title(cli_env, m
 
     stored = sorted(json.loads(open(p).read())["title"] for p in result["written"])
     assert stored == ["Chef de service comptable - Paris Centre", "Comptable"]
+
+
+def _serve_board(name: str) -> None:
+    """Serve one board's saved first answer, whatever the query."""
+    import re
+    from pathlib import Path
+
+    fix = Path(__file__).parents[1] / "scrapers" / "boards" / "fixtures" / name
+    files = {"globalnyt": "stilling_list.json", "euraxess": "search_dk_page1.html", "reliefweb": "mel_page.xml"}
+    responses.add(responses.GET, re.compile(".*"), body=(fix / files[name]).read_text(encoding="utf-8"))
+
+
+_ALL_KNOWN = {  # (config, every id of the served answer)
+    "globalnyt": ({"search_keywords": ["programme advisor"], "location": "Copenhagen"},
+                  {"510393", "510291", "508636", "456923"}),
+    "euraxess": ({"search_keywords": ["postdoc physics"], "topic_terms": ["physics", "postdoc", "professor"],
+                  "location": "Copenhagen, Denmark"}, {"476999", "475660"}),
+    "reliefweb": ({"search_keywords": ["monitoring evaluation"], "location": ""},
+                  {"4235001", "4235500", "4235600", "4235700", "4235800", "4236426"}),
+}
+
+
+@pytest.mark.parametrize("name", sorted(_ALL_KNOWN))
+@responses.activate
+def test_scrape_core_a_board_whose_every_ad_is_known_is_ok_not_empty(cli_env, monkeypatch, name):
+    """#418: these boards skip known ids themselves; an answer of only known ads is a quiet day."""
+    import importlib
+
+    module = importlib.import_module(f"door.scrapers.boards.{name}")
+    config, known = _ALL_KNOWN[name]
+    real = module.scrape
+    monkeypatch.setattr(module, "scrape", lambda _config, **kwargs: real(config, **{**kwargs, "known_ids": frozenset(known),
+                                                                                    "since": None}))
+    monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
+    _serve_board(name)
+
+    entry = scrape_cmd._scrape_core([name], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert (entry["outcome"], entry["count"], "warning" in entry) == ("ok", 0, False)
+
+
+def test_scrape_core_a_known_id_from_a_plain_scrape_is_counted_seen(cli_env, monkeypatch):
+    """reed and the other non-streaming boards return `seen_only` records for known ids: counted, not written."""
+    import door.scrapers.boards.jobindex as ji
+
+    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [{"platform_id": "1", "seen_only": True}])
+    monkeypatch.delattr(ji, "iter_scrape", raising=False)
+
+    entry = scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert entry["outcome"] == "ok"
+    assert entry["count"] == 0
