@@ -1,0 +1,99 @@
+{
+ "name": "Freja Skov",
+ "email": "freja.skov@example.com",
+ "city": "Odense",
+ "country": "dk",
+ "working_languages": [
+  "Danish",
+  "English"
+ ],
+ "sections": {
+  "Profil": "summary",
+  "Erhvervserfaring": "experience",
+  "Uddannelse": "education",
+  "Kompetencer": "skills",
+  "Certificeringer": "certifications",
+  "Sprog": "languages",
+  "Interesser": "interests"
+ },
+ "contacts": [
+  {
+   "kind": "phone",
+   "label": "Tlf",
+   "value": "+45 58 71 93 89"
+  },
+  {
+   "kind": "email",
+   "label": "E-mail",
+   "value": "freja.skov@example.com"
+  },
+  {
+   "kind": "web",
+   "label": "Hjemmeside",
+   "value": "example.com/freja.skov"
+  },
+  {
+   "kind": "location",
+   "label": "By",
+   "value": "Odense"
+  }
+ ],
+ "levels": {
+  "Power BI": null,
+  "Figma": null,
+  "TypeScript": null,
+  "Python": null,
+  "SQL": null,
+  "planlægning": null,
+  "Dansk": 5,
+  "Engelsk": 4,
+  "Tysk": 1
+ },
+ "entries": [
+  {
+   "heading": "Leder af analyse | Fjord Software — 2018 - nu | Odense",
+   "role": "Leder af analyse",
+   "org": "Fjord Software",
+   "dates": "2018 - nu",
+   "place": "Odense",
+   "start_year": 2018,
+   "end_year": null
+  },
+  {
+   "heading": "Senioranalytiker | Quill & Co — 2014 - 2018 | Aalborg",
+   "role": "Senioranalytiker",
+   "org": "Quill & Co",
+   "dates": "2014 - 2018",
+   "place": "Aalborg",
+   "start_year": 2014,
+   "end_year": 2018
+  },
+  {
+   "heading": "Dataanalytiker | Ember Studio — 2011 - 2014 | Aarhus",
+   "role": "Dataanalytiker",
+   "org": "Ember Studio",
+   "dates": "2011 - 2014",
+   "place": "Aarhus",
+   "start_year": 2011,
+   "end_year": 2014
+  },
+  {
+   "heading": "Bachelor i matematik | Eksempel Universitet — 2006 - 2009 | Odense",
+   "role": "Bachelor i matematik",
+   "org": "Eksempel Universitet",
+   "dates": "2006 - 2009",
+   "place": "Odense",
+   "start_year": 2006,
+   "end_year": 2009
+  },
+  {
+   "heading": "Cand.scient. i datalogi | Eksempel Universitet — 2009 - 2011 | Odense",
+   "role": "Cand.scient. i datalogi",
+   "org": "Eksempel Universitet",
+   "dates": "2009 - 2011",
+   "place": "Odense",
+   "start_year": 2009,
+   "end_year": 2011
+  }
+ ]
+}

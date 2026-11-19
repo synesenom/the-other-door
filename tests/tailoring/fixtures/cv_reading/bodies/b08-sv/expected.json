@@ -1,0 +1,20 @@
+{
+ "lang": "sv",
+ "plants": [
+  {
+   "kind": "skill",
+   "planted_value": "Apache Spark",
+   "quote": "Apache Spark"
+  },
+  {
+   "kind": "certification",
+   "planted_value": "PMP",
+   "quote": "PMP"
+  },
+  {
+   "kind": "degree",
+   "planted_value": "MBA i strategisk ledning",
+   "quote": "MBA i strategisk ledning"
+  }
+ ]
+}

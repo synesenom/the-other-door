@@ -177,3 +177,121 @@ def test_the_reader_verdict_follows_the_named_thresholds():
     assert rcr.reader_verdict(reader_report(name=0.99)) == "close"
     assert rcr.reader_verdict(reader_report(years=0.94)) == "close"
     assert rcr.reader_verdict(reader_report(years=0.79)) == "no-go"
+
+
+# --- the made-up corpus ------------------------------------------------------------------------------------------
+
+import re  # noqa: E402
+
+from door.render import html_doc  # noqa: E402
+
+
+def literal(md: str, value) -> bool:
+    return str(value) in md
+
+
+def test_every_expected_value_of_a_cv_is_a_literal_of_its_text():
+    for person in rcr.PEOPLE[:15]:
+        md, expected = rcr.render_cv_md(person)
+        for field in ("name", "email", "city"):
+            assert literal(md, expected[field]), (person["name"], field)
+        for heading in expected["sections"]:
+            assert f"## {heading}\n" in md
+        for c in expected["contacts"]:
+            assert literal(md, c["value"]) and (c["label"] is None or literal(md, c["label"]))
+        for item in expected["levels"]:
+            assert literal(md, item)
+        for entry in expected["entries"]:
+            assert f"### {entry['heading']}\n" in md
+            for part in ("role", "org", "dates", "place"):
+                assert entry[part] is None or entry[part] in entry["heading"]
+            assert re.search(rf"\b{entry['start_year']}\b", entry["dates"])
+
+
+def test_the_reader_corpus_has_at_least_twelve_cvs_in_three_languages_and_three_heading_styles():
+    corpus = rcr.build_reader_corpus()
+    assert len(corpus) >= 12 and len({c["lang"] for c in corpus.values()}) >= 3
+    styles = {re.sub(r"[^|,()–—-]", "", e["heading"])[:4] for c in corpus.values() for e in c["expected"]["entries"]}
+    assert len(styles) >= 3
+    assert any(e["end_year"] is None for c in corpus.values() for e in c["expected"]["entries"])
+    assert any(c["label"] is None for c in corpus.values() for c in c["expected"]["contacts"])
+    assert any(v is None for c in corpus.values() for v in c["expected"]["levels"].values())
+
+
+def test_the_body_is_the_cv_in_the_tailors_vocabulary():
+    person = rcr.PEOPLE[1]
+    md, expected = rcr.render_cv_md(person)
+    body = rcr.render_body(person)
+    assert html_doc.headings(body) == list(expected["sections"])
+    assert expected["name"] in html_doc.text(body)
+
+
+def test_planting_changes_one_place_and_says_what_was_planted():
+    person = rcr.PEOPLE[1]
+    body = rcr.render_body(person)
+    for kind in rcr.KINDS:
+        planted, info = rcr.plant(body, kind, person, 0)
+        assert planted != body and info["kind"] == kind and rcr.is_verbatim(info["quote"], planted)
+        assert info["planted_value"] not in rcr.render_cv_md(person)[0]
+    assert rcr.render_body(person) == body  # the original is not touched
+
+
+def test_a_plant_with_no_place_to_stand_is_an_error():
+    import pytest
+    with pytest.raises(ValueError):
+        rcr.plant("<p>nothing here</p>", "employer", rcr.PEOPLE[0], 0)
+
+
+def test_the_body_corpus_has_twenty_planted_bodies_half_in_danish_or_french_and_clean_twins():
+    corpus = rcr.build_body_corpus()
+    planted = {k: v for k, v in corpus.items() if v["plants"]}
+    clean = {k: v for k, v in corpus.items() if not v["plants"]}
+    assert len(planted) >= 20 and len(clean) >= 5
+    assert sum(v["lang"] in ("da", "fr") for v in planted.values()) * 2 >= len(planted)
+    assert all(1 <= len(v["plants"]) <= 3 for v in planted.values())
+    assert {p["kind"] for v in planted.values() for p in v["plants"]} == set(rcr.KINDS)
+    for v in planted.values():
+        assert all(rcr.is_verbatim(p["quote"], v["body"]) for p in v["plants"])
+
+
+def test_a_clean_body_may_hold_a_figure_written_another_way_that_the_cv_backs():
+    clean = [v for v in rcr.build_body_corpus().values() if not v["plants"]]
+    assert any(v["body"] != rcr.render_body(rcr.PEOPLE[v["person"]]) for v in clean)
+
+
+def test_nothing_in_the_corpus_is_a_real_address():
+    for person in rcr.PEOPLE:
+        md, _ = rcr.render_cv_md(person)
+        assert set(re.findall(r"@([\w.-]+\.\w+)", md)) <= {"example.com"}
+
+
+# --- the committed fixtures --------------------------------------------------------------------------------------
+
+import json  # noqa: E402
+
+CASES = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "cv_reading"
+
+
+def test_the_committed_reader_fixtures_are_what_the_builders_make():
+    corpus = rcr.build_reader_corpus()
+    assert sorted(p.name for p in (CASES / "readers").iterdir()) == sorted(corpus)
+    for name, case in corpus.items():
+        folder = CASES / "readers" / name
+        assert (folder / "cv.md").read_text(encoding="utf-8") == case["md"]
+        assert json.loads((folder / "expected.json").read_text(encoding="utf-8")) == case["expected"]
+
+
+def test_the_committed_body_fixtures_are_what_the_builders_make():
+    corpus = rcr.build_body_corpus()
+    assert sorted(p.name for p in (CASES / "bodies").iterdir()) == sorted(corpus)
+    for name, case in corpus.items():
+        folder = CASES / "bodies" / name
+        assert (folder / "cv.md").read_text(encoding="utf-8") == case["md"]
+        assert (folder / "cv.html").read_text(encoding="utf-8") == case["body"]
+        assert json.loads((folder / "expected.json").read_text(encoding="utf-8")) == {"lang": case["lang"], "plants": case["plants"]}
+
+
+def test_no_fixture_holds_an_address_that_is_not_an_example_one():
+    for path in CASES.rglob("*"):
+        if path.is_file() and path.suffix in (".md", ".html", ".json"):
+            assert set(re.findall(r"@([\w-]+\.\w+)", path.read_text(encoding="utf-8"))) <= {"example.com"}, path

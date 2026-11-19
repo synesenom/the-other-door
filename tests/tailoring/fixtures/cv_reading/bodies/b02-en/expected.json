@@ -1,0 +1,20 @@
+{
+ "lang": "en",
+ "plants": [
+  {
+   "kind": "skill",
+   "planted_value": "Apache Spark",
+   "quote": "Apache Spark"
+  },
+  {
+   "kind": "certification",
+   "planted_value": "Certified Kubernetes Administrator",
+   "quote": "Certified Kubernetes Administrator"
+  },
+  {
+   "kind": "degree",
+   "planted_value": "MBA in Strategic Management",
+   "quote": "MBA in Strategic Management"
+  }
+ ]
+}

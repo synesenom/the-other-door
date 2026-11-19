@@ -1,0 +1,15 @@
+{
+ "lang": "fr",
+ "plants": [
+  {
+   "kind": "year",
+   "planted_value": "2012",
+   "quote": "2012 - 2016"
+  },
+  {
+   "kind": "employer",
+   "planted_value": "Umbrella Logistics",
+   "quote": "Umbrella Logistics"
+  }
+ ]
+}

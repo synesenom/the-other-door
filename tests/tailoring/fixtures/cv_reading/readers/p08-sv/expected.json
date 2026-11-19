@@ -1,0 +1,99 @@
+{
+ "name": "Johan Wikström",
+ "email": "johan.wikstrom@example.com",
+ "city": "Uppsala",
+ "country": "se",
+ "working_languages": [
+  "English",
+  "Swedish"
+ ],
+ "sections": {
+  "Profil": "summary",
+  "Arbetslivserfarenhet": "experience",
+  "Utbildning": "education",
+  "Kompetenser": "skills",
+  "Certifieringar": "certifications",
+  "Språk": "languages",
+  "Intressen": "interests",
+  "Volontärarbete": "other"
+ },
+ "contacts": [
+  {
+   "kind": "phone",
+   "label": null,
+   "value": "+46 71 64 58 82"
+  },
+  {
+   "kind": "email",
+   "label": null,
+   "value": "johan.wikstrom@example.com"
+  },
+  {
+   "kind": "web",
+   "label": null,
+   "value": "example.com/johan.wikstrom"
+  },
+  {
+   "kind": "linkedin",
+   "label": null,
+   "value": "https://www.linkedin.com/in/johan.wikstrom"
+  },
+  {
+   "kind": "location",
+   "label": null,
+   "value": "Uppsala"
+  }
+ ],
+ "levels": {
+  "Svenska": 5,
+  "Engelska": 3,
+  "Tyska": 1
+ },
+ "entries": [
+  {
+   "heading": "Tidewater Data, Uppsala – Analyschef (september 2017 – nuvarande)",
+   "role": "Analyschef",
+   "org": "Tidewater Data",
+   "dates": "september 2017 – nuvarande",
+   "place": "Uppsala",
+   "start_year": 2017,
+   "end_year": null
+  },
+  {
+   "heading": "Bluebird Systems, Göteborg – Senioranalytiker (februari 2013 – juli 2017)",
+   "role": "Senioranalytiker",
+   "org": "Bluebird Systems",
+   "dates": "februari 2013 – juli 2017",
+   "place": "Göteborg",
+   "start_year": 2013,
+   "end_year": 2017
+  },
+  {
+   "heading": "Linden Works, Malmö – Dataanalytiker (juli 2010 – december 2013)",
+   "role": "Dataanalytiker",
+   "org": "Linden Works",
+   "dates": "juli 2010 – december 2013",
+   "place": "Malmö",
+   "start_year": 2010,
+   "end_year": 2013
+  },
+  {
+   "heading": "Exempel Universitet, Uppsala – Kandidat i matematik (december 2005 – maj 2008)",
+   "role": "Kandidat i matematik",
+   "org": "Exempel Universitet",
+   "dates": "december 2005 – maj 2008",
+   "place": "Uppsala",
+   "start_year": 2005,
+   "end_year": 2008
+  },
+  {
+   "heading": "Exempel Universitet, Uppsala – Civilingenjör i datateknik (maj 2008 – oktober 2010)",
+   "role": "Civilingenjör i datateknik",
+   "org": "Exempel Universitet",
+   "dates": "maj 2008 – oktober 2010",
+   "place": "Uppsala",
+   "start_year": 2008,
+   "end_year": 2010
+  }
+ ]
+}

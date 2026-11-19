@@ -1,0 +1,15 @@
+{
+ "lang": "da",
+ "plants": [
+  {
+   "kind": "year",
+   "planted_value": "2010",
+   "quote": "2010 - 2014"
+  },
+  {
+   "kind": "employer",
+   "planted_value": "Umbrella Logistics",
+   "quote": "Umbrella Logistics"
+  }
+ ]
+}
