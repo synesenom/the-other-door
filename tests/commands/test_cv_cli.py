@@ -458,3 +458,10 @@ def test_the_structure_call_of_a_draft_is_billed_to_the_draft(env, monkeypatch):
     styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
     cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
     assert features == ["draft_cv"]
+
+
+def test_the_draft_rules_keep_the_cvs_own_section_headings_and_groups():
+    from door.commands import cv as cv_cmd
+
+    assert "word for word" in cv_cmd._RULES and "never renamed" in cv_cmd._RULES
+    assert "`### Title` line of its own" in cv_cmd._RULES
