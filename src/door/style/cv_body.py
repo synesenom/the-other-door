@@ -79,24 +79,46 @@ def _detail(kind: str | None, value: str) -> str:
     return f"<span{cls}>{_inline(value)}</span>"
 
 
-def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
-    """The contact parts of `lines` (split on `|`): the values of the labelled ones by kind, and the parts with no
-    known label whole. A label is one `i18n.contact_kind` knows, followed by a colon or a spaced dash, bold or not, the
-    bold around the label or around the whole part, after any leading symbols: `**Location:** X`, `Location: X`,
-    `**Location: X**`, `\ud83d\udccd Location: X`, `Location - X`. An empty value is dropped."""
-    found: dict[str, list[str]] = {}
-    other: list[str] = []
+def _parts(lines: list[str]) -> list[tuple[str | None, str, str]]:
+    """The contact parts of `lines` (split on `|`) as ``(kind, label, value)``: `kind` is None for a part with no known
+    label (`label` is then ''). A label is one `i18n.contact_kind` knows, followed by a colon or a spaced dash, bold or
+    not, the bold around the label or around the whole part, after any leading symbols: `**Location:** X`,
+    `Location: X`, `**Location: X**`, `\ud83d\udccd Location: X`, `Location - X`; `label` is as written, with its colon
+    when the part has one. An empty value is dropped."""
+    parts: list[tuple[str | None, str, str]] = []
     for line in lines:
         for part in line.split("|"):
             part = part.strip()
-            label = re.match(r"^(.+?)\s*(?::|\s[-\u2013\u2014]\s)\s*(.*)$", re.sub(r"^\W+", "", part.replace("**", "")))
-            kind = i18n.contact_kind(label.group(1)) if label else None
+            m = re.match(r"^(.+?)\s*(:|\s[-\u2013\u2014]\s)\s*(.*)$", re.sub(r"^\W+", "", part.replace("**", "")))
+            kind = i18n.contact_kind(m.group(1)) if m else None
             if kind:
-                if value := label.group(2).strip(" :"):
-                    found.setdefault(kind, []).append(value)
+                if value := m.group(3).strip(" :"):
+                    parts.append((kind, m.group(1).strip() + (":" if m.group(2) == ":" else ""), value))
             elif part:
-                other.append(part)
+                parts.append((None, "", part))
+    return parts
+
+
+def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
+    """The values of the labelled contact parts of `lines` by kind, and the parts with no known label whole."""
+    found: dict[str, list[str]] = {}
+    other: list[str] = []
+    for kind, _, value in _parts(lines):
+        if kind:
+            found.setdefault(kind, []).append(value)
+        else:
+            other.append(value)
     return found, other
+
+
+def contact_labels(cv_md: str) -> dict[str, str]:
+    """The labels `cv_md`'s contact details are written with, by kind, as written (`Tel:`): the first of each kind.
+    The body drops them; a built style keeps them in its manifest and the page writes them again."""
+    labels: dict[str, str] = {}
+    for kind, label, _ in _parts(_header_parts(cv_md)[2]):
+        if kind:
+            labels.setdefault(kind, label)
+    return labels
 
 
 def header(cv_md: str) -> dict:

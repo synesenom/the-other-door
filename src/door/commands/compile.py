@@ -131,10 +131,11 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
         if not common._chromium_available():
             raise common.NoChromium
         try:
-            columns = (templates.manifest(template_path) or templates.Manifest()).columns if file == "cv.html" else None
+            manifest = (templates.manifest(template_path) or templates.Manifest()) if file == "cv.html" else templates.Manifest()
             photo = page_mod.profile_photo(config, posting)
             pdf, placed, photo_name = page_mod.print_page(
-                body, template, template_path, language, output_dir, Path(file).stem, columns=columns, photo=photo)
+                body, template, template_path, language, output_dir, Path(file).stem, columns=manifest.columns,
+                labels=manifest.contact_labels, photo=photo)
         except (ValueError, html_pdf.PrintError) as exc:
             entry.update(status="error", stderr=str(exc))
             results.append(entry)

@@ -217,3 +217,12 @@ def test_the_label_forms_read(part):
     assert cv_body.header(f"# A\n\n{part} | **E-mail:** a@b.example\n")["details"] == {
         "location": ["Aarhus"], "email": ["a@b.example"],
     }
+
+
+def test_contact_labels_are_read_as_written_by_kind_with_their_colon():
+    md = "# A B\n\n**Tel:** 12 34 | E-mail - a@b.c | **Web:** a.b | 12 Some Street\n\n## Skills\n\n- x\n"
+    assert cv_body.contact_labels(md) == {"phone": "Tel:", "email": "E-mail", "web": "Web:"}
+
+
+def test_a_cv_with_no_labels_has_none():
+    assert cv_body.contact_labels("# A B\n\na@b.c | 12 34\n\n## Skills\n") == {}

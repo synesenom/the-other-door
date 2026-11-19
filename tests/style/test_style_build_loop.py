@@ -17,7 +17,7 @@ from door.render import html_guard, html_pdf, readability
 from door.style import style_build, style_compare
 from profile_utils import base_config
 from style_structure_utils import extract_with, recorded
-from style_build_utils import (EXAMPLE, SAMPLE_BODY, STYLES, Stylist, adapt, cv_only, cv_round, fake_fonts, letter_round,
+from style_build_utils import (EXAMPLE, SAMPLE_CV, STYLES, Stylist, adapt, cv_only, cv_round, fake_fonts, letter_round,
                                reply)
 
 
@@ -95,23 +95,14 @@ def test_a_template_the_guard_refuses_is_not_printed_and_the_next_round_is_told_
     result = world.build("html-word-two-column", stylist)
     assert result["state"] == "ready" and result["rounds"] == 2
     assert "guard refused" in stylist.calls[1]["input"] and "<script>" in stylist.calls[1]["input"]
-    assert "```body" not in stylist.calls[1]["input"]  # the body of round 1 was fine: it is fixed
+    assert "```cv" not in stylist.calls[1]["input"]  # the sample of round 1 was fine: it is fixed
     assert not any("<script>" in p["html"] for p in world.prints)
 
 
-def test_a_sample_body_the_guard_refuses_is_asked_for_again_with_the_reason(world):
-    stylist = Stylist(cv_round(body="<p>Hi</p><script>1</script>"), cv_round(), letter_round())
-    result = world.build("html-word-two-column", stylist)
-    assert result["state"] == "ready" and result["rounds"] == 2
-    second = stylist.calls[1]["input"]
-    assert "refused your sample body" in second and "```body" in second  # the body is asked for again
-    assert not (world.prints and "<script>" in world.prints[0]["html"])
-
-
-def test_a_reply_without_a_body_in_the_first_round_is_asked_again(world):
+def test_a_reply_without_a_sample_cv_in_the_first_round_is_asked_again(world):
     stylist = Stylist(cv_only(), cv_round(), letter_round())
     result = world.build("html-word-two-column", stylist)
-    assert result["state"] == "ready" and "no ```body block" in stylist.calls[1]["input"]
+    assert result["state"] == "ready" and "no ```cv block" in stylist.calls[1]["input"]
 
 
 def test_a_print_that_fails_is_told_to_the_next_round(world):
@@ -266,7 +257,7 @@ def test_the_photo_stress_render_places_the_photo_whatever_a_country_s_cv_rule_s
 def test_the_stress_renders_print_the_cv_short_long_with_a_section_in_french_and_with_a_photo(world):
     world.build("html-word-two-column", Stylist(*GOOD))
     stress = [p for p in world.prints if p["folder"].parent.name == "stress"]
-    assert sorted({p["folder"].name for p in stress}) == ["extra_section", "fewer", "french", "long_title", "photo"]
+    assert sorted({p["folder"].name for p in stress}) == ["extra_section", "fewer", "french", "long_title", "photo", "shapes"]
     by_variant = {p["folder"].name: p["html"] for p in stress}
     assert 'lang="fr"' in by_variant["french"] and all('lang="en"' in h for n, h in by_variant.items() if n != "french")
     assert '<img class="photo"' in by_variant["photo"] and '<img class="photo"' not in by_variant["fewer"]
@@ -490,9 +481,8 @@ def test_a_swap_that_was_interrupted_puts_the_style_in_use_back_too(world):
 def test_a_side_band_of_unknown_headings_is_a_column_in_the_template_and_in_the_printed_sample(world):
     heads = [h["text"] for h in extract_with(STYLES / "scrubbed-pages-sidebar-fr.pdf", recorded("scrubbed-pages-sidebar-fr"))["headings"]]
     side = [h for h in heads if h not in ("YENFANCE ATIROIR", "LEUNE YAUTOMNE", "YDIMANCHE")]
-    body = ("<header class=\"cv-header\"><<photo>><h1>A B</h1></header><h2>Parcours</h2><p>x</p>"
-            + "".join(f"<h2>{h}</h2><p>y</p>" for h in side[:2]))
-    world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(body=body), letter_round()))  # its two page original fails the letter
+    sample = "# A B\n\n## Parcours\n\nx\n\n" + "".join(f"## {h}\n\ny\n\n" for h in side[:2])
+    world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(cv=sample), letter_round()))  # its two page original fails the letter
     assert json.loads((world.work / "template.json").read_text())["columns"]["side"]
     printed = world.prints[0]["html"]
     main, side_html = printed.split('<div class="side">')
@@ -528,13 +518,15 @@ def test_the_stylist_reads_the_text_of_a_two_column_cv_column_by_column(world):
     assert "[page 1, side column, on the left]" in (world.work / "text.txt").read_text()
 
 
+_OTHER_COLUMN = ('# A B\n\n## LEUNE YAUTOMNE\n\nx\n\n## AFONTAINE ANUIT\n\n'
+                 'Nid Couleur Jardin Silence: UNE&FRUIT 4888, Feuillage Cabane Aquarelle Dimanche\n')
+
+
 def test_a_sample_body_that_puts_text_under_the_other_column_s_heading_is_asked_for_again(world):
-    line = "<p>Nid Couleur Jardin Silence: UNE&amp;FRUIT 4888, Feuillage Cabane Aquarelle Dimanche</p>"
-    bad = '<header class="cv-header"><h1>A B</h1></header><h2>LEUNE YAUTOMNE</h2><p>x</p><h2>AFONTAINE ANUIT</h2>' + line
-    stylist = Stylist(cv_round(body=bad), cv_round(), letter_round())
+    stylist = Stylist(cv_round(cv=_OTHER_COLUMN), cv_round(), letter_round())
     world.build("scrubbed-pages-sidebar-fr", stylist)
     second = stylist.calls[1]["input"]
-    assert "other column" in second and "Nid Couleur Jardin Silence" in second and "```body" in second
+    assert "other column" in second and "Nid Couleur Jardin Silence" in second and "```cv" in second
     assert world.prints and "Nid Couleur" not in world.prints[0]["html"]  # the refused body was never printed
 
 
@@ -585,24 +577,19 @@ def test_a_build_whose_every_round_prints_the_columns_in_the_wrong_place_fails_a
     assert "columns in the wrong place" in result["problems"][0]
 
 
-def test_a_sample_body_refused_in_every_round_fails_the_build_naming_the_body(world):
-    line = "<p>Nid Couleur Jardin Silence: UNE&amp;FRUIT 4888, Feuillage Cabane Aquarelle Dimanche</p>"
-    bad = '<header class="cv-header"><h1>A B</h1></header><h2>LEUNE YAUTOMNE</h2><p>x</p><h2>AFONTAINE ANUIT</h2>' + line
-    result = world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(body=bad)), cap=2)
+def test_a_sample_cv_refused_in_every_round_fails_the_build_naming_the_body(world):
+    result = world.build("scrubbed-pages-sidebar-fr", Stylist(cv_round(cv=_OTHER_COLUMN)), cap=2)
     assert result["state"] == "failed" and not world.prints
     assert "no sample body of the stylist's was accepted in 2 rounds" in result["problems"][0]
     assert "other column" in result["problems"][0]
 
 
-def test_the_sample_of_a_cv_with_a_photo_is_printed_with_the_originals_photo_and_needs_its_token(world):
+def test_the_sample_of_a_cv_with_a_photo_is_printed_with_the_originals_photo(world):
     """#262: scrubbed-pages-sidebar-fr has a photo (a grey box): the round's print, compared with the original, places
-    the original's own photo (cut from its page), so the box is not counted as a difference the stylist cannot fix; a
-    sample body with no `<<photo>>` is asked for again."""
+    the original's own photo (cut from its page), so the box is not counted as a difference the stylist cannot fix; the
+    code writes the `<<photo>>` token into the sample, the stylist never does."""
     world.print_as = lambda folder: STYLES / "html-plain-single.pdf" if folder.name == "letter" else None  # one page
-    no_photo = SAMPLE_BODY.replace("<<photo>>", "")
-    stylist = Stylist(cv_round(body=no_photo), cv_round(), letter_round())
-    world.build("scrubbed-pages-sidebar-fr", stylist)
-    assert "<<photo>>" in stylist.calls[1]["input"] and "photo" in stylist.calls[1]["input"]
+    world.build("scrubbed-pages-sidebar-fr", Stylist(*GOOD))
     samples = [p for p in world.prints if p["folder"] == world.work]
     assert samples and all('<img class="photo"' in p["html"] for p in samples)
     stand_in = world.work / "original-photo.png"
@@ -640,17 +627,6 @@ def test_a_template_that_draws_a_box_at_the_header_photo_s_place_with_no_photo_f
     assert result["state"] == "failed" and any("img.photo" in p for p in result["problems"])
 
 
-def test_the_sample_of_a_cv_without_a_photo_needs_no_photo_token(world):
-    """#262: only a CV with a photo asks for `<<photo>>`: html-word-two-column has none, so a body without it is kept in
-    round one and printed with no photo."""
-    no_photo = SAMPLE_BODY.replace("<<photo>>", "")
-    result = world.build("html-word-two-column", Stylist(cv_round(body=no_photo), letter_round()))
-    assert result["state"] == "ready" and result["rounds"] == 1
-    assert not (world.work / "original-photo.png").exists()
-    samples = [p for p in world.prints if p["folder"] == world.work]
-    assert samples and not [p for p in samples if '<img class="photo"' in p["html"]]
-
-
 # ---------- letters printed apart (#267) ----------
 
 def test_a_round_whose_sample_print_reads_letters_apart_is_not_kept_and_the_next_is_told_why(world, monkeypatch):
@@ -680,3 +656,29 @@ def test_a_print_of_three_columns_is_judged_not_stopped_as_having_no_text(world,
     result = world.build("html-word-two-column", Stylist(*GOOD), cap=2)
     assert not any("no text to read back" in p for p in result["problems"])
     assert seen and seen[0]["verdict"]["copyable"] and seen[0]["runs"]
+
+
+# ---------- the sample is in the vocabulary's shapes; the original's contact labels ----------
+
+
+def test_the_sample_the_stylist_writes_as_markdown_is_printed_in_the_real_shapes_with_the_originals_labels(world):
+    sample = ("# Ada Example\n\n**Tel:** 12 34 56 78 | **E-mail:** ada@example.com\n\n## Experience\n\n"
+              "### Engineer | Example Co — 2020 - 2023 | Town\n\n- Built **tools** nightly\n\n## Languages\n\n**English** — native\n")
+    result = world.build("html-word-two-column", Stylist(cv_round(cv=sample), letter_round()))
+    assert result["state"] == "ready", result["problems"]
+    manifest = json.loads((world.style / "template.json").read_text())
+    assert manifest["contact_labels"] == {"phone": "Tel:", "email": "E-mail:"}
+    printed = [p["html"] for p in world.prints if p["folder"] == world.work][0]
+    assert '<span class="phone"><span class="label">Tel:</span> 12 34 56 78</span>' in printed
+    assert '<span class="role">Engineer</span>' in printed and "<strong>tools</strong>" in printed
+    assert '<span class="level level-5">native</span>' in printed
+    stress = [p["html"] for p in world.prints if "stress" in p["folder"].parts]
+    assert stress and all('<span class="label">Tel:</span>' in h for h in stress if "<<" not in h and 'class="phone"' in h)
+    letters = [p["html"] for p in world.prints if p["folder"].name == "letter"]
+    assert letters and not [h for h in letters if 'class="label"' in h]
+
+
+def test_a_sample_cv_with_no_contact_label_leaves_the_manifest_without_any(world):
+    result = world.build("html-word-two-column", Stylist(cv_round(cv="# Ada Example\n\n12 34 56 78 | ada@example.com\n\n## Experience\n\nx\n"), letter_round()))
+    assert result["state"] == "ready"
+    assert "contact_labels" not in json.loads((world.style / "template.json").read_text())

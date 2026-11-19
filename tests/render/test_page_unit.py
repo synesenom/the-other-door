@@ -53,3 +53,13 @@ def test_placed_cv_is_the_body_itself_when_the_manifest_cannot_be_read(monkeypat
     monkeypatch.setattr(templates, "manifest", broken)
     body = "<h2>Experience</h2><p>e</p><h2>Skills</h2><p>s</p>"
     assert page.placed_cv(body, {}) == body
+
+
+def test_the_style_s_contact_labels_are_written_in_the_contact_spans_of_their_kinds_only():
+    body = ('<header class="cv-header"><h1>A</h1><p class="contact"><span class="phone">12</span>'
+            '<span class="email"><a href="mailto:a@b.c">a@b.c</a></span><span class="location">X</span></p></header>')
+    out = page._with_labels(body, {"phone": "Tel:", "email": "<b>"})
+    assert '<span class="phone"><span class="label">Tel:</span> 12</span>' in out
+    assert '<span class="email"><span class="label">&lt;b&gt;</span> <a ' in out
+    assert '<span class="location">X</span>' in out
+    assert page._with_labels(body, {}) == body

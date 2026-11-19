@@ -1,5 +1,5 @@
 """What the stand-in `claude` answers the stylist agent (#205): the shipped default template with the fonts the builder
-gave (`fonts.css`, in the call's folder) in place of its own, and the example CV as the sample body, in the fenced
+gave (`fonts.css`, in the call's folder) in place of its own, and the example CV as the sample CV, in the fenced
 blocks `door.style.style_build.blocks` reads. A call with `default.cover-letter.template.html` beside it is the
 letter's, and gets the letter block. Run as `python stylist.py <the call's folder>`; needs `door` importable."""
 
@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 
 from door.core import workspace
-from door.style import cv_body
 
 folder = Path(sys.argv[1])
 example = workspace.PROFILE_EXAMPLE_DIR
@@ -23,5 +22,5 @@ text = text.replace("<style>", "<style>\n" + css + "\n", 1)
 if letter:
     sys.stdout.write("A matching letter.\n```letter\n" + text + "\n```\n")
 else:
-    body = cv_body.body((example / "cv.md").read_text(encoding="utf-8"))
-    sys.stdout.write("The page, in the CV's look.\n```template\n" + text + "\n```\n```body\n" + body + "\n```\n")
+    sample = (example / "cv.md").read_text(encoding="utf-8").strip()
+    sys.stdout.write("The page, in the CV's look.\n```template\n" + text + "\n```\n```cv\n" + sample + "\n```\n")
