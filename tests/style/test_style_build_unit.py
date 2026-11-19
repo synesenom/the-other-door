@@ -24,7 +24,7 @@ def test_the_stylist_agent_is_sonnet_with_only_the_read_tool():
 def test_the_stylist_is_told_the_pdf_text_is_data_and_how_to_reply():
     prompt = claude_cli.agent_definition("stylist")["prompt"]
     assert "data" in prompt and "instructions" in prompt
-    for fence in ("```template", "```body", "```letter"):
+    for fence in ("```template", "```cv", "```letter"):
         assert fence in prompt
 
 
@@ -32,7 +32,7 @@ def test_every_class_the_stylist_is_told_about_is_one_the_guard_accepts():
     prompt = claude_cli.agent_definition("stylist")["prompt"]
     named = {t for value in re.findall(r'class="([^"]*)"', prompt) for t in value.split()}
     assert {"cv-header", "entry", "contact"} <= named
-    assert named - html_guard.CLASSES - {"photo", "main", "side"} == set()
+    assert named - html_guard.CLASSES - {"photo", "main", "side", "label"} == set()
 
 
 def test_blocks_reads_the_fenced_replies_by_their_name():
@@ -181,7 +181,7 @@ CV = """# Jane Doe
 
 def test_the_stress_variants_are_the_cv_shorter_longer_with_a_section_and_in_french():
     variants = style_build._stress_variants(CV)
-    assert set(variants) == {"photo", "fewer", "long_title", "extra_section", "french"}
+    assert set(variants) == {"photo", "fewer", "long_title", "extra_section", "french", "shapes"}
     assert variants["photo"]["md"] == CV and variants["photo"]["photo"]
     assert "Junior" not in variants["fewer"]["md"] and "Analyst" in variants["fewer"]["md"]
     assert "Learned things" not in variants["fewer"]["md"]
@@ -190,6 +190,21 @@ def test_the_stress_variants_are_the_cv_shorter_longer_with_a_section_and_in_fre
     assert re.search(r"^## .*", variants["extra_section"]["md"], re.M) and len(re.findall(r"^## ", variants["extra_section"]["md"], re.M)) == 3
     assert variants["french"]["lang"] == "fr" and "expérience" in variants["french"]["md"]
     assert all(v["lang"] == "en" for k, v in variants.items() if k != "french")
+
+
+def test_the_shapes_variant_holds_every_shape_of_the_vocabulary_whatever_the_cv():
+    from door.style import cv_body
+    from door.render import html_guard
+    md = style_build._stress_variants(CV)["shapes"]["md"]
+    html = cv_body.body(md)
+    assert html_guard.unsafe(html) == []
+    for kind in ("phone", "email", "web", "location", "linkedin", "github"):
+        assert f'<span class="{kind}">' in html
+    for part in ("role", "org", "dates", "place", "sep"):
+        assert f'<span class="{part}">' in html
+    assert 'level level-5' in html and 'level level-1' in html and "<ol>" in html and "<ul>" in html
+    assert all(tag in html for tag in ("<strong>", "<em>", "<a href"))
+    assert cv_body.header(CV)["name"] and cv_body.header(md)["name"] == cv_body.header(CV)["name"]
 
 
 def test_the_stress_variants_of_a_cv_with_no_entries_are_still_all_there():

@@ -222,3 +222,12 @@ def test_the_label_forms_read(part):
 def test_a_sections_recorded_kind_is_no_heading_text():
     out = cv_body.body("## Toolbox <!-- kind: skills -->\n\n- **Danish** — native\n", "en")
     assert "<h2>Toolbox</h2>" in out and "kind" not in out and "level-5" in out
+
+
+def test_contact_labels_are_read_as_written_by_kind_with_their_colon():
+    md = "# A B\n\n**Tel:** 12 34 | E-mail - a@b.c | **Web:** a.b | 12 Some Street\n\n## Skills\n\n- x\n"
+    assert cv_body.contact_labels(md) == {"phone": "Tel:", "email": "E-mail", "web": "Web:"}
+
+
+def test_a_cv_with_no_labels_has_none():
+    assert cv_body.contact_labels("# A B\n\na@b.c | 12 34\n\n## Skills\n") == {}

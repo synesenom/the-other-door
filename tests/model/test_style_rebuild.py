@@ -220,7 +220,7 @@ def test_the_chosen_style_prints_a_photo_in_the_originals_shape_and_place(chosen
     Image.new("RGB", (240, 320), "tan").save(picture, "JPEG")
     template = home / "profile" / "style" / "cv.template.html"
     pdf, _, placed = page.print_page(cv_body.body(CASES[name].cv_md), template.read_text(encoding="utf-8"), template, "en",
-                                            tmp_path / "print", "cv", columns=templates.manifest(template).columns, photo=picture)
+                                            tmp_path / "print", "cv", manifest=templates.manifest(template), photo=picture)
     assert placed, "the photo was not placed"
     photo = style_extract.extract(pdf)["photo"]
     assert photo and photo["shape"] == expected["photo_shape"]

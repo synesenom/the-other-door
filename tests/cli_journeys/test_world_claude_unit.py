@@ -89,4 +89,4 @@ def test_the_stylist_answers_with_the_template_blocks_in_a_priced_envelope(tmp_p
     envelope, _ = claude_cli.read_stream(out.stdout)
     assert usage.weight(envelope) == 0.30
     answer = claude_cli.envelope_result(out.stdout)
-    assert "```template" in answer and "```body" in answer and '"Lato"' in answer
+    assert "```template" in answer and "```cv" in answer and '"Lato"' in answer

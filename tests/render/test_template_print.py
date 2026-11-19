@@ -365,3 +365,32 @@ def test_an_entry_heading_never_starts_a_line_with_its_separator(tmp_path, width
     pdf = page.print_page(body, template, REPO_ROOT / "profile.example" / "cv.template.html", "en", tmp_path, "cv")[0]
     lines = [line.strip() for line in pdf_render.page_texts(pdf)[0].splitlines() if line.strip()]
     assert len(lines) > 1 and not [line for line in lines if line[0] in "|-"], lines
+
+
+def test_a_contact_label_sits_next_to_its_value_though_the_template_spaces_every_span_of_the_contact_line(tmp_path):
+    """The label is written by the page inside the item; a template's rule for the items' gap must not reach it."""
+    from door.style import style_extract
+    template = ("<!doctype html><html lang=\"<<lang>>\"><head><style>@page { size: 400pt 200pt; margin: 10pt; } "
+                "body { font: 12pt sans-serif; } .photo { width: 1pt; } .contact span { margin-right: 14pt; }</style></head><body>\n<<body>>\n</body></html>")
+    body = '<p class="contact"><span class="phone">12345</span><span class="email">a@b.c</span></p>' + "<p>" + "Some words of body text. " * 30 + "</p>"
+    manifest = page.templates.Manifest(contact_labels={"phone": "Tel:"})
+    pdf = page.print_page(body, template, REPO_ROOT / "profile.example" / "cv.template.html", "en", tmp_path, "cv",
+                          manifest=manifest)[0]
+    runs = style_extract.extract(pdf)["runs"]
+    label = next(r for r in runs if "Tel" in r["text"])
+    value = next(r for r in runs if "12345" in r["text"])
+    assert value["bbox"][0] - label["bbox"][2] < 6, (label["bbox"], value["bbox"])
+
+
+def test_a_template_that_spaces_the_label_element_is_told_its_label_is_far_from_its_value(tmp_path):
+    from door.style import style_build, style_extract
+    template = ("<!doctype html><html lang=\"<<lang>>\"><head><style>@page { size: 400pt 200pt; margin: 10pt; } "
+                "body { font: 12pt sans-serif; } .photo { width: 1pt; } %s</style></head><body>\n<<body>>\n</body></html>")
+    body = '<p class="contact"><span class="phone">12345</span></p><p>' + "Some words of body text. " * 30 + "</p>"
+    manifest = page.templates.Manifest(contact_labels={"phone": "Tel:"})
+    problems = {}
+    for name, rule in (("wide", ".contact label { margin-right: 14pt; }"), ("fine", ".contact > span { margin-right: 14pt; }")):
+        pdf = page.print_page(body, template % rule, REPO_ROOT / "profile.example" / "cv.template.html", "en",
+                              tmp_path / name, "cv", manifest=manifest)[0]
+        problems[name] = style_build.label_problems(manifest.contact_labels, style_extract.extract(pdf)["runs"])
+    assert problems["fine"] == [] and len(problems["wide"]) == 1 and ".contact label" in problems["wide"][0]

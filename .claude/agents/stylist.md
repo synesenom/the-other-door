@@ -49,7 +49,7 @@ body { display: grid; grid-template-columns: 150pt 1fr; grid-template-areas: "he
 .cv-header { grid-area: head; } .side { grid-area: side; } .main { grid-area: main; }
 ```
 
-No `position: absolute` for a column: it takes the column out of the page's flow, and a long CV then prints over itself instead of going on to the next page. The builder reads back where each section heading prints: a round whose side sections print in the main column's place (or the other way round) is not kept. A header, name or photo that sits inside a coloured side column in the original needs a CSS grid on `body` (the header, `.main`, `.side` as areas). The code, not you, wraps a body into `.main` and `.side` (and `compile` does the same for a real CV): your sample body holds only the building blocks (header, sections, entries), never a `<div>` with a class; the template's CSS styles `.main` and `.side`. Without `columns`, no `.main` or `.side`.
+No `position: absolute` for a column: it takes the column out of the page's flow, and a long CV then prints over itself instead of going on to the next page. The builder reads back where each section heading prints: a round whose side sections print in the main column's place (or the other way round) is not kept. A header, name or photo that sits inside a coloured side column in the original needs a CSS grid on `body` (the header, `.main`, `.side` as areas). The code, not you, wraps a body into `.main` and `.side` (and `compile` does the same for a real CV); the template's CSS styles `.main` and `.side`. Without `columns`, no `.main` or `.side`.
 
 Match the original where you can measure it: font families and weights (only the given ones), sizes in `pt`, colours, margins, the space between lines and sections, heading case (`text-transform`), the rule under headings, the accent colour, list bullets, the contact line. Nothing in the body may print outside the page: long lines wrap, entries do not break across pages (`break-inside: avoid`), headings stay with what follows. Keep `letter-spacing` in `em`, from -0.02em to 0.1em (another is refused), set on the element whose text it spaces, never on a parent of smaller text (it would be wider there), and no `text-justify: inter-character`, even where the original spaces its headings wider: wider, a PDF reader (an application system) reads the letters apart ("P ro file") and the heading is lost. A print whose text reads back as letters apart, whatever spaced them, is told to you as such and that round is not kept.
 
@@ -61,11 +61,30 @@ Reply with one line on what you see (layout, colours), then two fenced blocks an
 the whole template page
 ```
 
-```body
-a sample body
+```cv
+the sample CV, in markdown
 ```
 
-The sample body is the CV's own text from `text.txt`, written in the building blocks above (headings as `<h2>`, entries as `<div class="entry">` with their `<h3>` in the role/org/dates/place/sep spans, bullets, the contact details with their kind class, the name in `<h1>`, `<<photo>>` first in the header when the CV has a photo: the builder prints the original's own photo there, and a body without it is refused). Every word of `text.txt`, nothing added. For a CV with a side column, `text.txt` gives each page's text in parts (`[page 2, main column, on the right]`): a section of a column goes on in the same column on the next page, so text at the top of page 2's main column belongs to the last main-column section of page 1, never to a side section; a body that puts a line under the other column's heading is refused. The builder prints it in your template and compares it with the original; the body is fixed after this round.
+The sample CV is the CV's own text from `text.txt`, every word and nothing added, written as markdown in the one dialect all CVs are written in; the code turns it into the building blocks above, so you never write the sample's HTML, and a real CV printed in your template has exactly these shapes. Style the shapes of the blocks, not the original's own quirks: where the original sets one thing two ways (a university in plain text under a title in one entry, as a title in another), write it the one way the blocks have and style that.
+
+```
+# Name
+> tagline
+**Phone:** 12 34 56 78 | **Email:** a@b.c | **Web:** a.b | **Location:** City
+## Section
+### Role | Company — dates | Place
+- a bullet, with **a bold word** or *an italic one* inside it
+Plain text is a paragraph.
+- **Danish** — native
+```
+
+- Contact details come first, under the name and tagline, one `**Label:** value` each, in the original's order and with its label word as it writes it (`**Tel:** ...`); with no label in the original (an icon, or the value alone), write the value alone. The label is not part of the body: when the original shows one, the page writes it in front of the value as `<label class="label">Tel:</label>` inside the contact span, so style `.label` (and the rest of the contact line as the original does).
+- An entry heading is `### Role | Company — dates | Place`, whatever the original puts on which line (a school is the Company; leave out a part the original has not). A heading with no ` | ` is a role alone. Its bullets follow it.
+- A list of skills, tools or languages is `- ` items; a language or skill with a level is `**Danish** — native` (a list item; the level word is the original's, and when it is no English word or CEFR level (courant, flydende), the nearest of native, fluent, professional, working, conversational, basic, so that the level is styled), which becomes `<li><strong>Danish</strong> <span class="level level-5">native</span></li>`. Bold words stay `**bold**`: style `strong` as the original styles them.
+- `<<photo>>` is written by the code first in the header when the CV has a name; do not write it.
+- For a CV with a side column, `text.txt` gives each page's text in parts (`[page 2, main column, on the right]`): a section of a column goes on in the same column on the next page, so text at the top of page 2's main column belongs to the last main-column section of page 1, never to a side section; a sample that puts a line under the other column's heading is refused.
+
+The builder prints it in your template and compares it with the original; the sample is fixed after this round.
 
 ## Later rounds
 
