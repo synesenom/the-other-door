@@ -77,21 +77,16 @@ def _candidates(family: str) -> list[str]:
 
 def _lookup(family: str, data: dict) -> tuple[str, str] | None:
     """(source, pinned family) for a font family named as a CV writes it: the pin's own name, else the stand-in
-    its aliases give; a stand-in the pin does not hold (the shipped fonts alone) is none."""
+    its aliases give, else its curated look-alike; one the pin does not hold (the shipped fonts alone) is none."""
     names = {key(n): n for n in data["families"]}
     for candidate in _candidates(family):
         if candidate in names:
             return "name", names[candidate]
         if data["aliases"].get(candidate) in data["families"]:
             return "standin", data["aliases"][candidate]
-    return None
-
-
-def _lookalike(family: str, data: dict) -> str | None:
-    """The free look-alike for a font family named as a CV writes it, if the pin holds it."""
     for candidate in _candidates(family):
         if data["lookalikes"].get(candidate) in data["families"]:
-            return data["lookalikes"][candidate]
+            return "lookalike", data["lookalikes"][candidate]
     return None
 
 
@@ -190,11 +185,9 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
     if found:
         source, resolved = found
         reason = {"name": f"{family}: the pinned {resolved}",
-                  "standin": f"{family}: {resolved} has the same widths and is free"}[source]
+                  "standin": f"{family}: {resolved} has the same widths and is free",
+                  "lookalike": f"{family}: {resolved} looks alike and is free; line widths may differ"}[source]
         return _entry(family, source, resolved, reason, uses, data)
-    like = _lookalike(family, data)
-    if like:
-        return _entry(family, "lookalike", like, f"{family}: {like} looks alike and is free; line widths may differ", uses, data)
     klass = _class_of(group)
     default = CLASS_DEFAULT[klass] if CLASS_DEFAULT[klass] in data["families"] else None
     own = _own_measure(group, measured or {})
