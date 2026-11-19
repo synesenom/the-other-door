@@ -16,7 +16,7 @@ Last checked: 2026-11-19.
 | thehub | ✅ | 2026-11-19 |  |
 | euraxess | ✅ | 2026-11-19 |  |
 | globalnyt | ✅ | 2026-11-19 |  |
-| jobbank | ⛔ | 2026-11-19 | not reached 2 runs in a row; last ✅ 2026-11-13 |
+| jobbank | ❌ | 2026-11-19 | changed: details |
 | reed | ✅ | 2026-11-19 |  |
 | jobs_ac_uk | ✅ | 2026-11-19 |  |
 | nhs_jobs | ✅ | 2026-11-19 |  |
@@ -24,9 +24,9 @@ Last checked: 2026-11-19.
 | arbetsformedlingen | ✅ | 2026-11-19 |  |
 | francetravail | ✅ | 2026-11-19 |  |
 | choisirleservicepublic | ✅ | 2026-11-19 |  |
-| kozigallas | ⛔ | 2026-11-19 | not reached 2 runs in a row; last ✅ 2026-11-13 |
+| kozigallas | ✅ | 2026-11-19 |  |
 | workable | ✅ | 2026-11-19 |  |
-| reliefweb | ⛔ | 2026-11-19 | not reached 1 run in a row; last ✅ 2026-11-19 |
+| reliefweb | ✅ | 2026-11-19 |  |
 
 ## Employer feeds
 
@@ -75,30 +75,30 @@ Last checked: 2026-11-19.
 
 | Name | Status | Checked | Note |
 |------|--------|---------|------|
-| linkedin | ✅ | 2026-11-13 |  |
-| profession | ⛔ | 2026-11-13 | not reached 1 run in a row |
-| hellowork | ✅ | 2026-11-13 |  |
-| jobbsafari | ✅ | 2026-11-13 |  |
+| linkedin | ❌ | 2026-11-19 | changed: employers |
+| profession | ⛔ | 2026-11-19 | not reached 2 runs in a row |
+| hellowork | ✅ | 2026-11-19 |  |
+| jobbsafari | ✅ | 2026-11-19 |  |
 | wikidata | ✅ | 2026-11-19 |  |
 
 ## Matcher
 
-Last checked: 2026-11-01.
+Last checked: 2026-11-19.
 
 | Name | Status | Checked | Note |
 |------|--------|---------|------|
-| obvious-strong-match | ✅ | 2026-11-01 |  |
-| obvious-mismatch | ✅ | 2026-11-01 |  |
-| danish-required | ✅ | 2026-11-01 |  |
-| danish-advantage | ✅ | 2026-11-01 |  |
-| remote-global | ✅ | 2026-11-01 |  |
-| seniority-mismatch-keyword-overlap | ✅ | 2026-11-01 |  |
-| salary-stated | ✅ | 2026-11-01 |  |
-| domain-mismatch | ✅ | 2026-11-01 |  |
-| borderline-partial-skills | ✅ | 2026-11-01 |  |
-| hybrid-aarhus | ✅ | 2026-11-01 |  |
-| exclude-unpaid-fellowship | ✅ | 2026-11-01 |  |
-| obvious-strong-match-leadership | ✅ | 2026-11-01 |  |
-| preference-doubt-travel | ❓ |  |  |
-| preference-ruled-out-bank | ❓ |  |  |
-| preference-wanted-medical | ❓ |  |  |
+| obvious-strong-match | ✅ | 2026-11-19 |  |
+| obvious-mismatch | ✅ | 2026-11-19 |  |
+| danish-required | ✅ | 2026-11-19 |  |
+| danish-advantage | ✅ | 2026-11-19 |  |
+| remote-global | ✅ | 2026-11-19 |  |
+| seniority-mismatch-keyword-overlap | ✅ | 2026-11-19 |  |
+| salary-stated | ✅ | 2026-11-19 |  |
+| domain-mismatch | ✅ | 2026-11-19 |  |
+| borderline-partial-skills | ✅ | 2026-11-19 |  |
+| hybrid-aarhus | ✅ | 2026-11-19 |  |
+| exclude-unpaid-fellowship | ✅ | 2026-11-19 |  |
+| obvious-strong-match-leadership | ✅ | 2026-11-19 |  |
+| preference-doubt-travel | ✅ | 2026-11-19 |  |
+| preference-ruled-out-bank | ✅ | 2026-11-19 |  |
+| preference-wanted-medical | ✅ | 2026-11-19 |  |
