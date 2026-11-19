@@ -1,0 +1,22 @@
+{
+ "answer": [
+  {
+   "kind": "degree",
+   "value": "Doctorat en économie",
+   "context": "Université d'Exemple, Nantes – Doctorat en économie (août 2011 – janvier 2013)",
+   "file": "cv"
+  },
+  {
+   "kind": "skill",
+   "value": "Airflow",
+   "context": "Git, Excel, Power BI, Figma, TypeScript, reporting, Airflow",
+   "file": "cv"
+  },
+  {
+   "kind": "certification",
+   "value": "AWS Certified Solutions Architect",
+   "context": "AWS Certified Solutions Architect",
+   "file": "cv"
+  }
+ ]
+}
