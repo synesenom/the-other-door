@@ -50,7 +50,6 @@ updates:
       day: monday
     cooldown:
       default-days: 7
-      semver-major-days: 14
     groups:
       actions:
         applies-to: version-updates
