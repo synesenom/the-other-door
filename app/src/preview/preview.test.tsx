@@ -258,7 +258,7 @@ describe('scenes', () => {
 
   it('profile-cv-style-building keeps the sheet and says the build runs', async () => {
     mount('profile-cv-style-building')
-    expect(await screen.findByText('Building your style…')).toBeInTheDocument()
+    expect(await screen.findByText('Building your style: drawing it, try 2 of 4…')).toBeInTheDocument()
     expect(screen.getAllByRole('img', { name: /first page/ })).toHaveLength(1)
   })
 

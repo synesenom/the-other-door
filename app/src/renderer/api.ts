@@ -64,6 +64,9 @@ export interface PlanBlock {
   [key: string]: unknown
 }
 
+/** The stage a CV style build is at: its last progress event (`status_summary`'s `style.step`). */
+export type StyleStep = { message: string; done: number | null; total: number | null }
+
 export interface StatusSummary {
   min_score: number
   since_last_review: {
@@ -84,8 +87,9 @@ export interface StatusSummary {
   plan?: PlanBlock | null
   /** Each stage's pass rate of the decided ones; `application`: the applications with an outcome that led to an interview. */
   pass_rates?: Record<string, PassRate>
-  /** The CV style build: `ready` while a built style waits in `profile/style.next/` to be chosen. */
-  style?: { state: 'none' | 'building' | 'ready' | 'failed' }
+  /** The CV style build: `ready` while a built style waits in `profile/style.next/` to be chosen; `step`, the stage a
+   * build is at (its last progress event, a log message that `styleText` puts in words). */
+  style?: { state: 'none' | 'building' | 'ready' | 'failed'; step?: StyleStep }
   /** The application pass rate of the better-scored and the near-minimum half (#90); null until each has enough outcomes. */
   pass_rates_by_score?: ScoreBands | null
 }

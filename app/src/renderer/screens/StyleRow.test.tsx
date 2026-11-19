@@ -65,6 +65,8 @@ describe('StyleRow, no style of your own yet', () => {
     expect(screen.getByRole('switch', { name: 'Use my own style' }).getAttribute('aria-checked')).toBe('true')
     rerender(<StyleRow state="building" canBuild onChanged={onChanged} reload={0} />)
     expect(await screen.findByText('Building your style…')).toBeTruthy()
+    rerender(<StyleRow state="building" step={{ message: 'fetching the fonts', done: null, total: null }} canBuild onChanged={onChanged} reload={0} />)
+    expect(await screen.findByText('Building your style: getting the fonts…')).toBeTruthy()
     h.call.mockImplementation(async (tool: string, args?: Record<string, unknown>) => ({ ok: true, data: tool === 'show_style' ? both({ candidate: true }) : (calls.push(args ?? {}), { in_use: 'like', prepared: 0 }) }))
     rerender(<StyleRow state="ready" canBuild onChanged={onChanged} reload={0} />)
     await waitFor(() => expect(calls).toEqual([{ style: 'like' }]))

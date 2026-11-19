@@ -167,7 +167,9 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         return {
           ...fixtures.status_summary,
           drive,
-          style: { state: style.building ? 'building' : style.candidate || scene.styleReady ? 'ready' : 'none' },
+          style: style.building
+            ? { state: 'building', step: { message: 'building the template, round 2', done: 2, total: 4 } }
+            : { state: style.candidate || scene.styleReady ? 'ready' : 'none' },
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
           ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {}, pass_rates_by_score: null } : {}),
           // the plan's window nearly full: the sidebar's foot says so
