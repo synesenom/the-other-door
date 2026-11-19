@@ -226,6 +226,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         for card in cards:
             if since is not None and card["posted_at"] is not None and card["posted_at"] < since:
                 reached_cutoff = True   # newest first, worldwide: any older card ends the list
+                postings.append(_to_posting(card, "", scraped_at))  # the engine counts it stale; no detail request
                 continue
             if not _card_is_local(card, config):   # the facet is ignored server-side: no detail request abroad
                 if card["id"] not in seen:

@@ -88,8 +88,9 @@ def test_known_ids_since_and_repeats_are_skipped():
     _serve_pages()
     since = datetime(2026, 10, 22, 16, 0, tzinfo=timezone.utc)
     postings = af.scrape(_CFG, known_ids=frozenset({"31668014"}), since=since)
-    # not the known one; not the ones published before 22 Oct 18:00 Stockholm time (31632254 at 13:46, 31632735 at 14:41 local)
-    assert [p["platform_id"] for p in postings] == ["31666374"]
+    # not the known one; the older ones are returned for the engine to count stale
+    ids = [p["platform_id"] for p in postings]
+    assert "31668014" not in ids and "31666374" in ids and "31632254" in ids
     assert _queries()[0]["published-after"] == ["2026-10-22T18:00:00"]
 
 

@@ -11,7 +11,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_answered, drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_non_local, drain_pushback
 from door.scrapers.boards import nhs_jobs
 
 _FIX = Path(__file__).parent / "fixtures" / "nhs_jobs"
@@ -108,9 +108,11 @@ def test_cards_in_another_place_cost_no_ad_request():
     body = _html("p1.html").replace("London SW17 0QT", "Glasgow G1 1AA", 1)
     _serve(_search(), body)
     _serve_details(["C9200-26-1001"])
+    drain_non_local("nhs_jobs")
     out = nhs_jobs.scrape({**_CFG, "max_pages_per_keyword": 1})
     assert [p["platform_id"] for p in out] == ["C9200-26-1001"]
     assert not any("1002" in u for u in _requested())
+    assert drain_non_local("nhs_jobs") == 1
 
 
 @responses.activate
@@ -121,9 +123,11 @@ def test_the_ads_own_place_replaces_the_trusts_and_an_out_of_area_ad_is_dropped(
         'id="employer_county"></p>', 'id="employer_county">West Midlands</p>')
     _serve(_AD + "C9200-26-1002", away)
     _serve(_AD + "C9200-26-1001", here)
+    drain_non_local("nhs_jobs")
     out = nhs_jobs.scrape({**_CFG, "max_pages_per_keyword": 1})
     assert [p["platform_id"] for p in out] == ["C9200-26-1001"]
     assert out[0]["location"] == "London"
+    assert drain_non_local("nhs_jobs") == 1
 
 
 @responses.activate
@@ -140,7 +144,9 @@ def test_the_ads_own_place_is_the_postings_location():
 def test_since_ends_the_keyword_at_the_first_older_ad():
     _serve_search()
     out = nhs_jobs.scrape(_CFG, since=datetime(2026, 11, 4))
-    assert out == []  # newest first: the first card (3 November) is older, so is everything after it
+    # newest first: the first card (3 November) is older, so is everything after it: it alone comes back, dated, for
+    # the engine to count stale
+    assert len(out) == 1 and out[0]["posted_at"] < "2026-11-04"
     assert _requested() == [_search(page=1)]
 
 
@@ -150,6 +156,26 @@ def test_since_keeps_ads_posted_on_that_day():
     _serve_details(_PAGE1)
     out = nhs_jobs.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2026, 11, 3))
     assert [p["platform_id"] for p in out] == _PAGE1
+
+
+@responses.activate
+def test_an_older_ad_comes_back_once_for_two_keywords():
+    _serve(_search("project manager"), _html("p1.html"))
+    _serve(_search("change manager"), _html("p1.html"))
+    out = nhs_jobs.scrape({**_CFG, "search_keywords": ["project manager", "change manager"], "max_pages_per_keyword": 1},
+                          since=datetime(2026, 11, 4))
+    assert len(out) == 1
+
+
+@responses.activate
+def test_a_card_in_another_place_is_counted_once_for_two_keywords():
+    body = _html("p1.html").replace("London SW17 0QT", "Glasgow G1 1AA", 1)
+    _serve(_search("project manager"), body)
+    _serve(_search("change manager"), body)
+    _serve_details(["C9200-26-1001"])
+    drain_non_local("nhs_jobs")
+    nhs_jobs.scrape({**_CFG, "search_keywords": ["project manager", "change manager"], "max_pages_per_keyword": 1})
+    assert drain_non_local("nhs_jobs") == 1
 
 
 @responses.activate

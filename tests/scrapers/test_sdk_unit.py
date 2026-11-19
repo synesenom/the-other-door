@@ -138,6 +138,16 @@ def test_followed_name_ignores_a_blank_name():
     assert sdk.followed_name({"_names": {"k": {"a": "  "}}}, "k", "a", "feed") == "feed"
 
 
+def test_location_fits_records_a_non_local_drop():
+    from door.scrapers import drain_non_local
+    drain_non_local("x")
+    cfg = {"location": "London", "remote": "no"}
+    assert sdk.location_fits("London", cfg, "x")
+    assert drain_non_local("x") == 0
+    assert not sdk.location_fits("Glasgow", cfg, "x")
+    assert drain_non_local("x") == 1
+
+
 def test_keep_local_filters_and_records(monkeypatch):
     recorded = []
     monkeypatch.setattr(sdk, "record_non_local", lambda site, n: recorded.append((site, n)))

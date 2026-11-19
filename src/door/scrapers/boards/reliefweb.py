@@ -142,7 +142,6 @@ def _to_posting(item: dict, scraped_at: datetime) -> dict:
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
     """Return JobPosting dicts from ReliefWeb: one feed per search keyword, newest first."""
     keywords = config.get("search_keywords") or config.get("role_targets") or []
-    since: datetime | None = kwargs.get("since")
     scraped_at = datetime.now(timezone.utc)
     session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY)
     seen: set[str] = set()
@@ -163,8 +162,6 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             if platform_id in seen or platform_id in known_ids:
                 continue
             seen.add(platform_id)
-            if since is not None and item["posted_at"] is not None and item["posted_at"] < since:
-                continue
             postings.append(_to_posting(item, scraped_at))
         log_keyword_results("reliefweb", keyword, postings[keyword_start:])
 

@@ -687,6 +687,19 @@ def test_scrape_core_stale_count_in_done_message(cli_env, monkeypatch):
     assert done.message.endswith(" skipped")
 
 
+def test_scrape_core_a_board_that_returned_only_older_cards_is_ok_not_empty(cli_env, monkeypatch):
+    """A day of only ads older than the cutoff is a quiet day: counted stale, nothing written, not `empty`."""
+    _fake_jobindex(monkeypatch, lambda config, **kw: [
+        _posting(1, posted_at="2001-01-01T00:00:00Z"), _posting(2, posted_at="2001-01-02T00:00:00Z")])
+
+    entry = scrape_cmd._scrape_core(
+        ["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert entry["outcome"] == "ok"
+    assert entry["count"] == 0
+    assert entry["stale"] == 2
+    assert "warning" not in entry
+
+
 def test_scrape_core_skipped_sites_emit_no_events(cli_env):
     from cli_utils import CaptureReporter
 

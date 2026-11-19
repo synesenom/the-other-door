@@ -214,11 +214,15 @@ def known_city(location: str) -> str | None:
     return i18n.known_city(location)
 
 
-def location_fits(posting_location: str, config: dict) -> bool:
+def location_fits(posting_location: str, config: dict, site: str) -> bool:
     """Whether a posting's free-text location suits the profile: it names the profile's city or a town
     of its commute area, is empty, remote or names no known place; or the profile accepts remote work
-    or abroad. The match step's location pre-filter, for a board that cannot filter by place."""
-    return prefilter._is_location_compatible(posting_location, config)
+    or abroad. The match step's location pre-filter, for a board that cannot filter by place; a drop is
+    counted with `record_non_local(site, 1)`."""
+    fits = prefilter._is_location_compatible(posting_location, config)
+    if not fits:
+        record_non_local(site, 1)
+    return fits
 
 
 def city_names(location: str) -> list[str]:

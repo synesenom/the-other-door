@@ -102,6 +102,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         if ad["platform_id"] in known_ids:
             continue
         if since is not None and ad["posted_at"] is not None and ad["posted_at"] < since:
+            postings.append(_to_posting(ad, "", "", scraped_at))  # the engine counts it stale; no detail request
             continue
         company = location = ""
         try:

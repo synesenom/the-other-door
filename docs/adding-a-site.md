@@ -43,7 +43,7 @@ company hosts).
    `tests/scrapers/test_scrapers_probe_contract_unit.py` enforces it).
 
    Read the search terms from `config["search_keywords"]` (falling back to
-   `role_targets`) and `config["location"]`; `kwargs["since"]` is how far back to look.
+   `role_targets`) and `config["location"]`; `kwargs["since"]` is how far back to look: a card older than it is returned as a dated card posting (no ad request), not dropped, and an ad dropped for its place goes through `record_non_local`, or a quiet day is reported `empty`.
    Report progress with `report` from the SDK (`report("'accountant': 12 results")`,
    or `report("detail", i, total)` in a loop) and never `print`: on the MCP server stdout is the
    protocol stream, and `find` shows the events live. When a problem needs the user's attention (a

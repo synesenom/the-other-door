@@ -91,8 +91,19 @@ def test_scrape_drops_postings_older_than_since(_robots_allows_api):
     since = datetime(2026, 7, 20, tzinfo=timezone.utc)
     postings = workable.scrape(_CFG, since=since)
 
-    # page 2 holds one posting from 2026-07-22 and one from 2026-07-14
-    assert [p["company"] for p in postings] == ["Arondite"]
+    # page 2 holds one posting from 2026-07-22 and one from 2026-07-14, which comes back dated for the engine to
+    # count stale
+    assert [p["company"] for p in postings if p["posted_at"] >= "2026-07-20"] == ["Arondite"]
+    assert len(postings) == 2
+
+
+def test_scrape_a_page_of_only_older_postings_comes_back_dated(_robots_allows_api):
+    rsps = _robots_allows_api
+    rsps.add(responses_lib.GET, _URL, body=_fx("search_page2.json"))
+
+    postings = workable.scrape(_CFG, since=datetime(2027, 1, 1, tzinfo=timezone.utc))
+
+    assert len(postings) == 2 and all(p["posted_at"] < "2027-01-01" for p in postings)
 
 
 def test_scrape_falls_back_to_role_targets_and_omits_empty_location(_robots_allows_api):

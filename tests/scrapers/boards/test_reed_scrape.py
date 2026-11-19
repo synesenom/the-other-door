@@ -115,8 +115,29 @@ def test_since_cuts_old_ads_before_their_request():
     _serve_search(("p1.html",))
     _serve_details(["57458959", "57505209"])
     out = reed.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2026, 10, 1))
-    assert [p["platform_id"] for p in out] == ["57458959", "57505209"]  # 57131623 is from July
+    # 57131623 is from July: it comes back as a dated card posting for the engine to count stale, no ad request
+    assert sorted(p["platform_id"] for p in out) == ["57131623", "57458959", "57505209"]
+    assert next(p for p in out if p["platform_id"] == "57131623")["posted_at"] < "2026-10-01"
     assert not any("57131623" in u for u in _requested())
+
+
+@responses.activate
+def test_a_first_page_of_only_older_ads_costs_no_ad_request():
+    _serve_search(("p1.html",))
+    out = reed.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2027, 1, 1))
+    assert [p["platform_id"] for p in out] == _PAGE1
+    assert all(p["posted_at"] < "2027-01-01" for p in out)
+    assert len(_requested()) == 1
+
+
+@responses.activate
+def test_an_older_ad_comes_back_once_for_two_keywords():
+    _serve(_search("project manager"), _html("p1.html"))
+    _serve(_search("project lead"), _html("p1.html"))
+    _serve_details(["57458959", "57505209"])
+    out = reed.scrape({**_CFG, "search_keywords": ["project manager", "project lead"], "max_pages_per_keyword": 1},
+                      since=datetime(2026, 10, 1))
+    assert sorted(p["platform_id"] for p in out) == ["57131623", "57458959", "57505209"]
 
 
 @responses.activate

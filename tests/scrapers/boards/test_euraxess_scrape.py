@@ -71,7 +71,9 @@ def test_the_cutoff_stops_the_paging_and_drops_older_offers():
 
     postings = euraxess.scrape({"location": "Copenhagen, Denmark"}, since=since)
 
-    assert {p["platform_id"] for p in postings} == {"476999", "476522", "476205"}
+    # the older cards come back dated, from the listing alone, for the engine to count stale
+    assert {p["platform_id"] for p in postings if p["posted_at"] >= "2026-10-28"} == {"476999", "476522", "476205"}
+    assert any(p["posted_at"] < "2026-10-28" for p in postings)
     assert not any("page=1" in c.request.url for c in responses.calls)
 
 
@@ -206,5 +208,7 @@ def test_an_older_foreign_card_still_stops_the_paging():
 
     postings = euraxess.scrape({"location": "Stockholm, Sweden"}, since=datetime(2026, 10, 31, tzinfo=timezone.utc))
 
-    assert postings == []
+    # the older card comes back dated, for the engine to count stale; no detail request
+    assert postings and all(p["posted_at"] < "2026-10-31" for p in postings)
     assert not any("page=1" in c.request.url for c in responses.calls)
+    assert not any(re.search(r"/jobs/\d+", c.request.url) for c in responses.calls)

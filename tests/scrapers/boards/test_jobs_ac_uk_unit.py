@@ -94,9 +94,9 @@ def test_detail_without_json_ld_is_none():
 
 def test_location_fit_uses_the_city_and_its_commute_area():
     cfg = {"location": "London", "remote": "no"}
-    assert sdk.location_fits("London", cfg)
-    assert sdk.location_fits("Guildford", cfg)           # the commute area
-    assert sdk.location_fits("Remote", cfg)
-    assert sdk.location_fits("", cfg)
-    assert not sdk.location_fits("Glasgow", cfg)
-    assert sdk.location_fits("Glasgow", {**cfg, "remote": "yes"})
+    assert sdk.location_fits("London", cfg, "x")
+    assert sdk.location_fits("Guildford", cfg, "x")           # the commute area
+    assert sdk.location_fits("Remote", cfg, "x")
+    assert sdk.location_fits("", cfg, "x")
+    assert not sdk.location_fits("Glasgow", cfg, "x")
+    assert sdk.location_fits("Glasgow", {**cfg, "remote": "yes"}, "x")
