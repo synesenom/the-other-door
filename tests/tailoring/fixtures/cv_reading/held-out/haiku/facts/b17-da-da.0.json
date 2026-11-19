@@ -1,0 +1,23 @@
+{
+ "key": "1162800c18a0",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Zapier",
+   "context": "Tableau, Jira, Visio, SharePoint, Alteryx, budgettering, Zapier"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "Cand.jur.",
+   "context": "Prøve Højskole, Kolding – Cand.jur. (2009-04 – 2011-09)"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "Certified Scrum Professional",
+   "context": "Certified Scrum Professional"
+  }
+ ]
+}

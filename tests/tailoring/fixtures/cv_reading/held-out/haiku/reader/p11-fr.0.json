@@ -1,0 +1,144 @@
+{
+ "key": "b1f1d11c8d06",
+ "answer": {
+  "name": "Margaux Renard",
+  "email": "margaux.renard@example.com",
+  "city": "Tours",
+  "country": "fr",
+  "languages": [
+   {
+    "language": "Français",
+    "level": "native"
+   },
+   {
+    "language": "Anglais",
+    "level": "fluent"
+   },
+   {
+    "language": "Allemand",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Emplois",
+    "kind": "experience"
+   },
+   {
+    "heading": "Formation",
+    "kind": "education"
+   },
+   {
+    "heading": "Aptitudes",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Langues",
+    "kind": "languages"
+   },
+   {
+    "heading": "Centres d'intérêt",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tél",
+    "value": "+33 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Courriel",
+    "value": "margaux.renard@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Site",
+    "value": "example.com/margaux.renard"
+   },
+   {
+    "kind": "location",
+    "label": "Lieu",
+    "value": "Tours"
+   }
+  ],
+  "skills": [
+   "Visio",
+   "SharePoint",
+   "Alteryx",
+   "Trello",
+   "Notion",
+   "budget"
+  ],
+  "levels": [
+   {
+    "item": "Français",
+    "level": 5
+   },
+   {
+    "item": "Anglais",
+    "level": 4
+   },
+   {
+    "item": "Allemand",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Alpine Textiles, Tours – Directeur des opérations (décembre 2020 – présent)",
+    "role": "Directeur des opérations",
+    "org": "Alpine Textiles",
+    "dates": "décembre 2020 – présent",
+    "place": "Tours",
+    "start_year": 2020,
+    "end_year": null
+   },
+   {
+    "heading": "Birch Packaging, Rennes – Analyste senior des opérations (octobre 2016 – mars 2020)",
+    "role": "Analyste senior des opérations",
+    "org": "Birch Packaging",
+    "dates": "octobre 2016 – mars 2020",
+    "place": "Rennes",
+    "start_year": 2016,
+    "end_year": 2020
+   },
+   {
+    "heading": "Anchor Marine, Dijon – Analyste des opérations (août 2013 – janvier 2016)",
+    "role": "Analyste des opérations",
+    "org": "Anchor Marine",
+    "dates": "août 2013 – janvier 2016",
+    "place": "Dijon",
+    "start_year": 2013,
+    "end_year": 2016
+   },
+   {
+    "heading": "École d'Essai, Tours – Licence en économie (décembre 2008 – mai 2011)",
+    "role": "Licence en économie",
+    "org": "École d'Essai",
+    "dates": "décembre 2008 – mai 2011",
+    "place": "Tours",
+    "start_year": 2008,
+    "end_year": 2011
+   },
+   {
+    "heading": "École d'Essai, Tours – Master en gestion (octobre 2011 – mars 2013)",
+    "role": "Master en gestion",
+    "org": "École d'Essai",
+    "dates": "octobre 2011 – mars 2013",
+    "place": "Tours",
+    "start_year": 2011,
+    "end_year": 2013
+   }
+  ]
+ }
+}

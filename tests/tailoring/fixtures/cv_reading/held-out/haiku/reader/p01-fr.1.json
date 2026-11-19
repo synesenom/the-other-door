@@ -1,0 +1,144 @@
+{
+ "key": "0f9fcb3fdd99",
+ "answer": {
+  "name": "Baptiste Marchand",
+  "email": "baptiste.marchand@example.com",
+  "city": "Dijon",
+  "country": "fr",
+  "languages": [
+   {
+    "language": "Français",
+    "level": "native"
+   },
+   {
+    "language": "Anglais",
+    "level": "fluent"
+   },
+   {
+    "language": "Allemand",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Expérience professionnelle",
+    "kind": "experience"
+   },
+   {
+    "heading": "Formation",
+    "kind": "education"
+   },
+   {
+    "heading": "Compétences",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Langues",
+    "kind": "languages"
+   },
+   {
+    "heading": "Centres d'intérêt",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tél",
+    "value": "+33 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Courriel",
+    "value": "baptiste.marchand@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Site",
+    "value": "example.com/baptiste.marchand"
+   },
+   {
+    "kind": "location",
+    "label": "Lieu",
+    "value": "Dijon"
+   }
+  ],
+  "skills": [
+   "Tableau",
+   "Jira",
+   "Visio",
+   "SharePoint",
+   "Alteryx",
+   "coaching"
+  ],
+  "levels": [
+   {
+    "item": "Français",
+    "level": 5
+   },
+   {
+    "item": "Anglais",
+    "level": 4
+   },
+   {
+    "item": "Allemand",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Directeur des opérations | Alpine Textiles — 02/2018 – présent | Dijon",
+    "role": "Directeur des opérations",
+    "org": "Alpine Textiles",
+    "dates": "02/2018 – présent",
+    "place": "Dijon",
+    "start_year": 2018,
+    "end_year": null
+   },
+   {
+    "heading": "Analyste senior des opérations | Birch Packaging — 12/2014 – 05/2018 | Tours",
+    "role": "Analyste senior des opérations",
+    "org": "Birch Packaging",
+    "dates": "12/2014 – 05/2018",
+    "place": "Tours",
+    "start_year": 2014,
+    "end_year": 2018
+   },
+   {
+    "heading": "Analyste des opérations | Anchor Marine — 10/2011 – 03/2014 | Rennes",
+    "role": "Analyste des opérations",
+    "org": "Anchor Marine",
+    "dates": "10/2011 – 03/2014",
+    "place": "Rennes",
+    "start_year": 2011,
+    "end_year": 2014
+   },
+   {
+    "heading": "Licence en économie | École d'Essai — 02/2006 – 07/2009 | Dijon",
+    "role": "Licence en économie",
+    "org": "École d'Essai",
+    "dates": "02/2006 – 07/2009",
+    "place": "Dijon",
+    "start_year": 2006,
+    "end_year": 2009
+   },
+   {
+    "heading": "Master en gestion | École d'Essai — 12/2009 – 05/2011 | Dijon",
+    "role": "Master en gestion",
+    "org": "École d'Essai",
+    "dates": "12/2009 – 05/2011",
+    "place": "Dijon",
+    "start_year": 2009,
+    "end_year": 2011
+   }
+  ]
+ }
+}

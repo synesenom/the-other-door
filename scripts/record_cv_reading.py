@@ -436,7 +436,7 @@ def _held_out_pools() -> dict:
                    degrees=["MA in Business Administration", "BA in Economics"], fake_degrees=["MSc in Data Science", "LLB in Law"],
                    interests="Cycling, baking and choir singing.", extra="Chair of a local tenants' association and volunteer driver.",
                    alt=dict(experience="Employment", skills="Competencies")),
-        "da": dict(first=["Karen", "Mikkel", "Signe", "Rasmus", "Astrid", "Emil", "Nanna"], last=["Bruun", "Kj\u00e6r", "Thomsen", "Winther", "Frost", "Lykke", "Nygaard"],
+        "da": dict(first=["Karen", "Mikkel", "Signe", "Rasmus", "Astrid", "Emil", "Nanna"], last=["Bruun", "Kjeldsen", "Thomsen", "Winther", "Frost", "Lykke", "Nygaard"],
                    cities=["Esbjerg", "Roskilde", "Kolding"], school="Pr\u00f8ve H\u00f8jskole", roles=["Driftsanalytiker", "Seniordriftsanalytiker", "Driftschef"],
                    summary="{title}, der foretr\u00e6kker tjeklister, tydelige ansvarlige og rolige morgener.", soft=["forhandling", "coaching", "budgettering"],
                    degrees=["Cand.merc. i erhvervs\u00f8konomi", "Bachelor i \u00f8konomi"], fake_degrees=["Kandidat i dataanalyse", "Cand.jur."],

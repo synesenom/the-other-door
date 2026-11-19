@@ -1,0 +1,172 @@
+{
+ "key": "39b47057fabe",
+ "answer": {
+  "name": "Rasmus Winther",
+  "email": "rasmus.winther@example.com",
+  "city": "Roskilde",
+  "country": "dk",
+  "languages": [
+   {
+    "language": "Dansk",
+    "level": "native"
+   },
+   {
+    "language": "Engelsk",
+    "level": "working"
+   },
+   {
+    "language": "Tysk",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Ansættelser",
+    "kind": "experience"
+   },
+   {
+    "heading": "Uddannelse",
+    "kind": "education"
+   },
+   {
+    "heading": "Færdigheder",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certificeringer",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Sprog",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interesser",
+    "kind": "interests"
+   },
+   {
+    "heading": "Frivilligt arbejde",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tlf",
+    "value": "+45 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "E-mail",
+    "value": "rasmus.winther@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Hjemmeside",
+    "value": "example.com/rasmus.winther"
+   },
+   {
+    "kind": "location",
+    "label": "By",
+    "value": "Roskilde"
+   }
+  ],
+  "skills": [
+   "Jira",
+   "Visio",
+   "SharePoint",
+   "Alteryx",
+   "Trello",
+   "coaching"
+  ],
+  "levels": [
+   {
+    "item": "Jira",
+    "level": null
+   },
+   {
+    "item": "Visio",
+    "level": null
+   },
+   {
+    "item": "SharePoint",
+    "level": null
+   },
+   {
+    "item": "Alteryx",
+    "level": null
+   },
+   {
+    "item": "Trello",
+    "level": null
+   },
+   {
+    "item": "coaching",
+    "level": null
+   },
+   {
+    "item": "Dansk",
+    "level": 5
+   },
+   {
+    "item": "Engelsk",
+    "level": 3
+   },
+   {
+    "item": "Tysk",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Driftschef | Cedar Freight — 11/2019 – nu | Roskilde",
+    "role": "Driftschef",
+    "org": "Cedar Freight",
+    "dates": "11/2019 – nu",
+    "place": "Roskilde",
+    "start_year": 2019,
+    "end_year": null
+   },
+   {
+    "heading": "Seniordriftsanalytiker | Saffron Foods — 09/2015 – 02/2019 | Kolding",
+    "role": "Seniordriftsanalytiker",
+    "org": "Saffron Foods",
+    "dates": "09/2015 – 02/2019",
+    "place": "Kolding",
+    "start_year": 2015,
+    "end_year": 2019
+   },
+   {
+    "heading": "Driftsanalytiker | Willow Print — 07/2012 – 12/2015 | Esbjerg",
+    "role": "Driftsanalytiker",
+    "org": "Willow Print",
+    "dates": "07/2012 – 12/2015",
+    "place": "Esbjerg",
+    "start_year": 2012,
+    "end_year": 2015
+   },
+   {
+    "heading": "Bachelor i økonomi | Prøve Højskole — 11/2007 – 04/2010 | Roskilde",
+    "role": "Bachelor i økonomi",
+    "org": "Prøve Højskole",
+    "dates": "11/2007 – 04/2010",
+    "place": "Roskilde",
+    "start_year": 2007,
+    "end_year": 2010
+   },
+   {
+    "heading": "Cand.merc. i erhvervsøkonomi | Prøve Højskole — 09/2010 – 02/2012 | Roskilde",
+    "role": "Cand.merc. i erhvervsøkonomi",
+    "org": "Prøve Højskole",
+    "dates": "09/2010 – 02/2012",
+    "place": "Roskilde",
+    "start_year": 2010,
+    "end_year": 2012
+   }
+  ]
+ }
+}

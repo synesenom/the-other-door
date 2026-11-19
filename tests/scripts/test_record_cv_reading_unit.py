@@ -522,6 +522,12 @@ def test_every_held_out_record_is_an_answer_to_the_prompt_and_input_of_today():
     for task in ("reader", "facts"):
         _, corpus = held_committed(task)
         paths = sorted((rcr.RECORDED / "held-out" / "haiku" / task).glob("*.json"))
-        assert len(paths) == 3 * len(corpus)
+        assert {p.name.split(".")[0] for p in paths} == set(corpus)  # the reader 3 runs a case, the facts at least 1
         for path in paths:
             assert rcr._recorded_ok(path, rcr._key(task, corpus[path.name.split(".")[0]])), path
+
+
+def test_haiku_is_go_on_the_held_out_corpus_the_prompts_never_saw():
+    reader, _ = held_committed("reader")
+    facts, _ = held_committed("facts")
+    assert (reader["verdict"], facts["verdict"]) == ("go", "go")
