@@ -268,8 +268,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 report(f"no search results block on page (keyword={keyword!r}, page={page})")
                 record_error(_SITE, f"no search results block on page (keyword={keyword!r}, page={page})")
                 break
-            if not cards:
-                record_answered(_SITE)
+            record_answered(_SITE)  # a results page read, whatever its cards are (all known, off topic, none)
 
             for card in cards:
                 placed = _card_date(card)

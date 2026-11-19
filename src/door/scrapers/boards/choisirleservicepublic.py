@@ -282,8 +282,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 break
 
             cards = _parse_cards(html)
-            if not cards:
-                record_answered(_SITE)
+            record_answered(_SITE)  # a results page read, whatever its cards are (all known, off topic, none)
             relevant = [c for c in cards if not topic or on_topic(c["title"], topic)]
             for card in relevant:
                 if card["id"] in seen:

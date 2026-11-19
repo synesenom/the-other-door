@@ -276,3 +276,14 @@ def test_the_portal_is_verified_against_the_system_trust_store(monkeypatch):
 
     assert kozigallas.scrape(_CFG)
     assert mounted
+
+
+@responses.activate
+def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
+    _serve_list({"ápoló": {1: "list_p1.html"}})
+    drain_answered(kozigallas._SITE)
+
+    out = kozigallas.scrape({**_CFG, "topic_terms": ["zzzqqq*"], "max_pages_per_keyword": 1})
+
+    assert out == []
+    assert drain_answered(kozigallas._SITE) is True

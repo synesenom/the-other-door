@@ -247,8 +247,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             if not _is_results_page(html):
                 record_error(_SITE, f"search (keyword={keyword!r}, page={page}): no result list in the answer (the site may have changed)")
                 break
+            record_answered(_SITE)  # a results page read, whatever its cards are (all known, off topic, none)
             if _no_hits(html):
-                record_answered(_SITE)
                 break
 
             cards = _parse_cards(html)

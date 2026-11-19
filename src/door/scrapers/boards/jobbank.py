@@ -241,8 +241,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
                 break
 
-            if not cards and _says_no_hits(html):
-                record_answered(_SITE)
+            if cards or _says_no_hits(html):
+                record_answered(_SITE)  # a page of cards, all known or off topic, or a no-hits page
             for card in cards:
                 if card["id"] in seen or (topic and not on_topic(card["title"], topic)):
                     continue
