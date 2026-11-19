@@ -81,12 +81,11 @@ def test_a_look_alike_is_taken_but_not_said_to_have_the_same_widths(data):
     assert "same widths" not in p["reason"] and "looks alike" in p["reason"] and "may differ" in p["reason"]
 
 
-def test_a_look_alike_comes_after_the_measured_nearest(data):
+def test_a_look_alike_comes_before_the_measured_nearest(data):
     f = font("CenturyGothic", "Century Gothic")
-    [p] = one([f], data, _measure("CenturyGothic", per_char=0.49))       # Arimo and Carlito are within 6%
-    assert p["source"] == "nearest" and p["resolved"] != "Narrow"
-    [p] = one([f], data, _measure("CenturyGothic", per_char=0.8))         # nothing is: the look-alike, not the default
-    assert (p["source"], p["resolved"]) == ("lookalike", "Narrow")
+    for per_char in (0.49, 0.8):     # Arimo and Carlito are within 6% of the first, nothing is of the second
+        [p] = one([f], data, _measure("CenturyGothic", per_char=per_char))
+        assert (p["source"], p["resolved"]) == ("lookalike", "Narrow")
 
 
 def test_an_icon_font_is_not_fetched_and_a_font_with_no_family_is_left_out(data):
@@ -126,9 +125,8 @@ def test_a_bold_the_family_lacks_is_faked_but_a_near_weight_is_not(data):
     assert q["faked"] == r["faked"] == []
 
 
-def test_among_tied_families_the_one_with_the_faces_the_cv_uses_comes_first(data):
-    # Fraunces ties with Crimson on width but is the worse x-height; only Fraunces has an italic
-    data["families"]["Fraunces"] = _family("Fraunces", "serif", italics=(False, True), adv=430, x=0.7)
+def test_a_family_with_the_faces_the_cv_uses_beats_one_whose_x_height_is_a_little_closer(data):
+    data["families"]["Fraunces"] = _family("Fraunces", "serif", italics=(False, True), adv=430, x=0.51)
     fonts_ = [font("Pal-Roma", "Pal", serif=True), font("Pal-Ital", "Pal", serif=True, italic=True)]
     [p] = one(fonts_, data, _measure("Pal-Roma", per_char=0.43, x=0.5))
     assert p["resolved"] == "Fraunces" and p["faked"] == []
@@ -165,12 +163,23 @@ def test_the_class_filter_comes_before_the_width(data):
     assert p["resolved"] != "Narrow" and p["source"] == "none"   # Cousine alone is fixed and it is 50% wider
 
 
-def test_a_tie_in_width_goes_to_the_closer_x_height_then_the_stem(data):
-    data["families"]["Fraunces"]["metrics"]["advance"] = [430] * 63
-    data["families"]["Fraunces"]["metrics"]["x_height"] = 0.44
-    [p] = one([font("Pal-Roma", "Pal", serif=True)], data, _measure("Pal-Roma", per_char=0.43, x=0.44))
+def test_the_look_counts_beside_the_width(data):
+    # a little wider than the font but the same x-height beats the exact width with a much smaller x-height
+    data["families"]["Fraunces"] = _family("Fraunces", "serif", adv=440, x=0.5)
+    data["families"]["Crimson"]["metrics"]["x_height"] = 0.38
+    [p] = one([font("Pal-Roma", "Pal", serif=True)], data, _measure("Pal-Roma", per_char=0.43, x=0.5))
     assert p["resolved"] == "Fraunces"
-    data["families"]["Fraunces"]["metrics"]["x_height"] = 0.7
+
+
+def test_the_stem_counts_less_than_the_x_height(data):
+    data["families"]["Fraunces"] = _family("Fraunces", "serif", adv=430, x=0.5, stem=0.2)
+    data["families"]["Crimson"]["metrics"]["x_height"] = 0.45
+    [p] = one([font("Pal-Roma", "Pal", serif=True)], data, _measure("Pal-Roma", per_char=0.43, x=0.5, stem=0.09))
+    assert p["resolved"] == "Fraunces"
+
+
+def test_a_family_past_the_width_limit_is_never_nearest_whatever_its_look(data):
+    data["families"]["Fraunces"] = _family("Fraunces", "serif", adv=600, x=0.5, stem=0.09)
     [p] = one([font("Pal-Roma", "Pal", serif=True)], data, _measure("Pal-Roma", per_char=0.43, x=0.5))
     assert p["resolved"] == "Crimson"
 
@@ -279,33 +288,47 @@ def test_a_staging_folder_a_killed_fetch_left_is_swept_and_a_fresh_one_kept(data
 
 
 REAL_LOOKALIKES = {"Aptos": "Arimo", "Segoe UI": "Open Sans", "Helvetica Neue": "Arimo", "HelveticaNeue": "Arimo",
-                   "Verdana": "Work Sans", "Garamond": "EB Garamond", "Palatino": "Spectral",
+                   "Verdana": "Open Sans", "Tahoma": "Open Sans", "Trebuchet MS": "Fira Sans", "Gill Sans": "Cabin",
+                   "Century Gothic": "Poppins", "Garamond": "EB Garamond", "Palatino": "Spectral",
                    "Palatino Linotype": "Spectral", "Book Antiqua": "Spectral", "Optima": "Asap",
                    "Avenir": "Lato", "Avenir Next": "Lato",
                    "AdobeGaramondPro": "EB Garamond", "AGaramondPro-Regular": "EB Garamond",
                    "AvenirNextLTPro-Regular": "Lato", "Avenir Next LT Pro": "Lato",
-                   "HelveticaNeueLTStd-Roman": "Arimo", "AptosDisplay": "Arimo", "Aptos Display": "Arimo"}
+                   "HelveticaNeueLTStd-Roman": "Arimo", "AptosDisplay": "Arimo", "Aptos Display": "Arimo",
+                   "Tahoma-Bold": "Open Sans"}
 
 
 @pytest.mark.parametrize("name,family", sorted(REAL_LOOKALIKES.items()))
-def test_the_real_pin_gives_each_unmeasured_commercial_font_a_look_alike(name, family):
+def test_the_real_pin_gives_each_commercial_font_a_look_alike_measured_or_not(name, family):
     serif = family in ("EB Garamond", "Spectral")
-    [p] = fonts.plan([font(name.replace(" ", "") + "-Regular", name, serif=serif)])
-    assert (p["source"], p["resolved"]) == ("lookalike", family)
-    assert "same widths" not in p["reason"] and "may differ" in p["reason"]
+    f = font(name.replace(" ", "") + "-Regular", name, serif=serif)
+    for measured in (None, _measure(f["font"], per_char=0.5)):
+        [p] = fonts.plan([f], measured)
+        assert (p["source"], p["resolved"]) == ("lookalike", family)
+        assert "same widths" not in p["reason"] and "may differ" in p["reason"]
 
 
-def test_on_the_real_pin_a_measured_font_near_a_pinned_family_is_nearest_not_the_look_alike():
+def test_on_the_real_pin_a_look_alike_never_fakes_the_italic_or_bold_of_the_font_it_replaces():
     pin = fonts.pin()
-    adv = pin["families"]["Lato"]["metrics"]["advance"]
-    per = sum(adv) / len(adv) / 1000
-    [p] = fonts.plan([font("Verdana-Regular", "Verdana")], _measure("Verdana-Regular", per_char=per + fonts.BEARING / 6))
-    assert p["source"] == "nearest"
+    for name, target in pin["lookalikes"].items():
+        faces = {(f["weight"], f["italic"]) for f in pin["families"][target]["files"]}
+        assert any(i for _, i in faces) and any(w >= 600 for w, _ in faces), (name, target)
 
 
-def test_on_the_real_pin_a_measured_font_far_from_every_family_gets_the_look_alike_not_the_default():
-    [p] = fonts.plan([font("Verdana-Regular", "Verdana")], _measure("Verdana-Regular", per_char=1.5))
-    assert (p["source"], p["resolved"]) == ("lookalike", "Work Sans")
+def test_on_the_real_pin_a_tahoma_and_verdana_cv_gets_one_family_with_every_face():
+    uses = [font("Tahoma", "Tahoma"), font("Tahoma-Bold", "Tahoma", weight=700), font("Verdana-Italic", "Verdana", italic=True)]
+    plan = fonts.plan(uses)
+    assert {p["resolved"] for p in plan} == {"Open Sans"} and all(p["faked"] == [] for p in plan)
+
+
+def test_on_the_real_pin_a_measured_font_of_no_look_alike_gets_the_nearest_by_width_and_look():
+    pin = fonts.pin()
+    lato = pin["families"]["Lato"]["metrics"]
+    per = sum(lato["advance"]) / len(lato["advance"]) / 1000
+    own = _measure("Mystery-Regular", per_char=per + fonts.BEARING / 6, x=lato["x_height"], stem=lato["stem"])
+    [p] = fonts.plan([font("Mystery-Regular", "Mystery")], own)
+    got = pin["families"][p["resolved"]]["metrics"]
+    assert p["source"] == "nearest" and abs(got["x_height"] - lato["x_height"]) / lato["x_height"] < 0.05
 
 
 def test_a_pin_with_only_some_families_never_names_one_it_lacks():

@@ -5,8 +5,9 @@ still static, with the sha256 of every file and of its licence, so a file is fet
 partly written. Static only: Chromium prints a variable font as nameless Type 3 text. `plan` is pure: the pin, the
 fonts `style_extract` found and, if there are any, their measurements (`style.font_measure`); it picks per
 family, in this order, the family of the same name, a metric-compatible stand-in (Calibri to Carlito, Arial to
-Arimo, ...; `aliases`), the nearest pinned family of the same class by measured width, x-height and stem (within `MAX_WIDTH_ERROR`), a free look-alike
-whose widths may differ (`lookalikes`), else the class default with `source: "none"`. Icon fonts are skipped (#148 traces their glyphs); a symbol font gets nothing.
+Arimo, ...; `aliases`), a curated free look-alike whose widths may differ (`lookalikes`: a family that looks like the
+font, with every face a CV uses, which no width match can promise), the nearest pinned family of the same class by
+measured width and look (within `MAX_WIDTH_ERROR`: width, x-height and stem all count, a faked face costs), else the class default with `source: "none"`. Icon fonts are skipped (#148 traces their glyphs); a symbol font gets nothing.
 The embedded subset in a PDF is only measured, never shipped.
 """
 
@@ -46,7 +47,9 @@ def file_url(family: str, name: str, data: dict) -> str:
 
 CLASS_DEFAULT = {"sans": "Arimo", "serif": "Tinos", "fixed": "Cousine"}
 MAX_WIDTH_ERROR = 0.06    # past this median error in a run's width no pinned family is called near
-TIE = 0.005               # widths this close are a tie, settled by x-height, then stem
+X_WEIGHT = 1.0            # how much a relative x-height gap costs against a relative width error
+STEM_WEIGHT = 0.05        # a relative stem gap: less, the stem is measured off the ink of an `l`, which some faces tail
+FAKED_COST = 0.05         # each face of the CV the family would have to fake
 MIN_RUNS = 3              # runs of the regular face needed to say anything of its widths
 BEARING = 0.08            # em: the ink of a run is this much narrower than the sum of its advances (side bearings)
 ALTERNATIVES = 2
@@ -153,23 +156,19 @@ def _own_measure(group: list[dict], measured: dict) -> dict | None:
 
 
 def _rank(klass: str, own: dict, uses, data: dict) -> list[dict]:
-    """Every pinned family of the class by how near it is to the measured font: width first; families tied on width
-    go by how few of the faces the CV uses they would have to fake, then x-height, then stem."""
+    """Every pinned family of the class, the nearest to the measured font first: those within `MAX_WIDTH_ERROR` by a
+    cost of width error plus x-height and stem gaps plus the faces they would fake, then the rest by width."""
     scored = []
     for name, fam in data["families"].items():
         if fam["class"] != klass:
             continue
         m = fam["metrics"]
         gap = lambda a, b: abs(a - b) / b if a and b else 0.0   # noqa: E731 - a measure that is missing counts for nothing
-        scored.append({"family": name, "error": _width_error(own["runs"], m["advance"]),
-                       "x": gap(m["x_height"], own["x_height"]), "stem": gap(m["stem"], own["stem"]),
-                       "faked": len(_faked(fam["files"], uses))})
-    if not scored:
-        return []
-    best = min(s["error"] for s in scored)
-    tied = sorted((s for s in scored if s["error"] - best <= TIE), key=lambda s: (s["faked"], s["x"], s["stem"]))
-    rest = sorted((s for s in scored if s["error"] - best > TIE), key=lambda s: s["error"])
-    return tied + rest
+        error = _width_error(own["runs"], m["advance"])
+        cost = (error + X_WEIGHT * gap(m["x_height"], own["x_height"]) + STEM_WEIGHT * gap(m["stem"], own["stem"])
+                + FAKED_COST * len(_faked(fam["files"], uses)))
+        scored.append({"family": name, "error": error, "cost": cost})
+    return sorted(scored, key=lambda s: (s["error"] > MAX_WIDTH_ERROR, s["cost"] if s["error"] <= MAX_WIDTH_ERROR else s["error"]))
 
 
 def _entry(family: str, source: str, resolved: str | None, reason: str, uses, data: dict, alternatives=()) -> dict:
@@ -193,15 +192,13 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
         reason = {"name": f"{family}: the pinned {resolved}",
                   "standin": f"{family}: {resolved} has the same widths and is free"}[source]
         return _entry(family, source, resolved, reason, uses, data)
+    like = _lookalike(family, data)
+    if like:
+        return _entry(family, "lookalike", like, f"{family}: {like} looks alike and is free; line widths may differ", uses, data)
     klass = _class_of(group)
     default = CLASS_DEFAULT[klass] if CLASS_DEFAULT[klass] in data["families"] else None
-    like = _lookalike(family, data)
-    like_entry = like and _entry(family, "lookalike", like,
-                                 f"{family}: {like} looks alike and is free; line widths may differ", uses, data)
     own = _own_measure(group, measured or {})
     if own is None:
-        if like:
-            return like_entry
         return _entry(family, "none", default,
                       f"{family}: no free copy, and no measurement of it to compare; {default or 'nothing'} stands in", uses, data)
     ranked = _rank(klass, own, uses, data)
@@ -210,8 +207,6 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
         return _entry(family, "nearest", best["family"],
                       f"{family}: no free copy; nearest is {best['family']} (width within {best['error']:.1%})",
                       uses, data, ranked[1:1 + ALTERNATIVES])
-    if like:
-        return like_entry
     near = f"nearest {ranked[0]['family']}, width off by {ranked[0]['error']:.0%}" if ranked else "no family of its kind"
     return _entry(family, "none", default, f"{family}: no free copy is close enough ({near}); {default or 'nothing'} stands in",
                   uses, data, ranked[:ALTERNATIVES])

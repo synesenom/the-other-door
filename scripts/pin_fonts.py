@@ -87,14 +87,15 @@ ALIASES = {
 LOOKALIKES = {
     "Arimo": ["helveticaneue", "aptos"],
     "Asap": ["optima"],
+    "Cabin": ["gillsans"],
     "EB Garamond": ["garamond"],
     "Lato": ["avenir", "avenirnext"],
     "Libre Baskerville": ["baskerville"],
     "Libre Franklin": ["franklingothic"],
-    "Open Sans": ["segoeui"],
-    "Questrial": ["centurygothic"],
+    "Fira Sans": ["trebuchetms"],
+    "Open Sans": ["segoeui", "tahoma", "verdana"],
+    "Poppins": ["centurygothic"],
     "Spectral": ["palatino", "palatinolinotype", "bookantiqua"],
-    "Work Sans": ["verdana"],
 }
 
 

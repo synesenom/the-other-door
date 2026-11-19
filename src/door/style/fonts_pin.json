@@ -4446,14 +4446,17 @@
   "avenirnext": "Lato",
   "baskerville": "Libre Baskerville",
   "bookantiqua": "Spectral",
-  "centurygothic": "Questrial",
+  "centurygothic": "Poppins",
   "franklingothic": "Libre Franklin",
   "garamond": "EB Garamond",
+  "gillsans": "Cabin",
   "helveticaneue": "Arimo",
   "optima": "Asap",
   "palatino": "Spectral",
   "palatinolinotype": "Spectral",
   "segoeui": "Open Sans",
-  "verdana": "Work Sans"
+  "tahoma": "Open Sans",
+  "trebuchetms": "Fira Sans",
+  "verdana": "Open Sans"
  }
 }
