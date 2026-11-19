@@ -231,6 +231,7 @@ def test_a_prepared_cv_with_no_section_kinds_fails_a_side_column_style_and_keeps
         (out / "cv.pdf").write_text("old pdf")
     result = style_cmd._use_core("like", rerender=True)
     assert _failed(result) == ["a.old"] and result["rerendered"] == ["b.new"]
+    assert result["failed"][0]["title"] == "T" and result["failed"][0]["company"] == "C"
     assert result["failed"][0]["prepare_again"] and "prepare it again or revise it" in result["failed"][0]["reason"]
     assert (home / "jobs" / "output" / "a.old" / "cv.pdf").read_text() == "old pdf"
     assert (home / "jobs" / "output" / "b.new" / "cv.pdf").read_bytes().startswith(b"%PDF")

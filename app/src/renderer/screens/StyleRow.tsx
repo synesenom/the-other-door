@@ -19,10 +19,12 @@ interface Shown {
   styles: Partial<Record<Which, StyleSet>>
   in_use: Which
   candidate: boolean
+  /** the CV could not be read for the previews: no sets, but `in_use` and `candidate` still tell the truth */
+  warning?: string
 }
 type Doc = 'cv' | 'letter'
 /** After a switch: the prepared CVs the new style could be printed on, asked about, being printed, or done. */
-type Rerender = { kind: 'offer'; prepared: number; style: Which } | { kind: 'busy'; prepared: number; style: Which } | { kind: 'done'; printed: number; failed: number; again: number; style: Which }
+type Rerender = { kind: 'offer'; prepared: number; style: Which } | { kind: 'busy'; prepared: number; style: Which } | { kind: 'done'; printed: number; failed: number; again: string[]; style: Which }
 
 const NAMES: Record<Which, string> = { like: 'Your CV', default: 'The other door' }
 const pages = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`
@@ -134,10 +136,10 @@ export function StyleRow({ state, step, canBuild, onChanged, reload, replaced = 
     setError(null)
     setRerender({ kind: 'busy', prepared, style })
     try {
-      const r = await call<{ rerendered?: string[]; failed?: { job: string; reason: string; prepare_again: boolean }[] }>('use_style', { style, rerender: true })
+      const r = await call<{ rerendered?: string[]; failed?: { job: string; title: string | null; company: string | null; reason: string; prepare_again: boolean }[] }>('use_style', { style, rerender: true })
       const failed = r.failed ?? []
       // `again`: prepared before sections had a kind, which a two-column style cannot place: printing again never helps
-      setRerender({ kind: 'done', printed: r.rerendered?.length ?? 0, failed: failed.length, again: failed.filter((f) => f.prepare_again).length, style })
+      setRerender({ kind: 'done', printed: r.rerendered?.length ?? 0, failed: failed.length, again: failed.filter((f) => f.prepare_again).map((f) => [f.title, f.company].filter(Boolean).join(' at ') || f.job), style })
     } catch (e) {
       setRerender({ kind: 'offer', prepared, style }) // the offer stays, to try again
       setError(errorText(e))
@@ -180,7 +182,7 @@ export function StyleRow({ state, step, canBuild, onChanged, reload, replaced = 
     if (!on) {
       setWanted(false)
       void use('default')
-    } else if (hasLike) void use('like')
+    } else if (hasLike || inUse === 'like' || shown?.warning) void use('like') // never a build when a style may be kept
     else {
       setWanted(true)
       void build()
@@ -241,7 +243,7 @@ export function StyleRow({ state, step, canBuild, onChanged, reload, replaced = 
               </div>
             )}
             <div className="style-below">
-              {!hasLike && !building && !reading && canBuild && <p className="small muted">Your tailored CVs printed in the style of your CV file. Building it takes 2–5 minutes in the background.</p>}
+              {!hasLike && !building && !reading && canBuild && !shown?.warning && <p className="small muted">Your tailored CVs printed in the style of your CV file. Building it takes 2–5 minutes in the background.</p>}
               {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
               {(building || reading) && <Spinner message={building ? styleText(step) : "Reading your CV's look…"} />}
             </div>
@@ -258,10 +260,10 @@ export function StyleRow({ state, step, canBuild, onChanged, reload, replaced = 
                 <p role="status" className="small">
                   {`${rerender.printed} printed again.`}
                 </p>
-                {rerender.again > 0 && (
-                  <p className="small muted">{`${noun(rerender.again)} could not be printed in this style: prepare ${rerender.again === 1 ? 'it' : 'them'} again or revise ${rerender.again === 1 ? 'it' : 'them'}.`}</p>
+                {rerender.again.length > 0 && (
+                  <p className="small muted">{`${rerender.again.length === 1 ? 'This CV' : 'These CVs'} could not be printed in this style: ${rerender.again.join(', ')}. Prepare ${rerender.again.length === 1 ? 'it' : 'them'} again or revise ${rerender.again.length === 1 ? 'it' : 'them'}.`}</p>
                 )}
-                {rerender.failed > rerender.again && (
+                {rerender.failed > rerender.again.length && (
                   <button type="button" className="secondary" onClick={() => void printAgain(rerender.style, rerender.printed + rerender.failed)}>
                     Try again
                   </button>

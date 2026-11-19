@@ -78,7 +78,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   // Google Drive as the scene starts it: connect_drive, sync_data and disconnect_drive change it.
   // Profile → CV's Style, as the server would keep it: `use_style` and a build change it.
   const styled = scene.style ?? {}
-  const style = { in_use: styled.in_use ?? 'default', like: Boolean(styled.like), candidate: Boolean(styled.candidate), building: Boolean(styled.building), two_column: Boolean(styled.two_column), failing: styled.failing ?? 0 }
+  const style = { in_use: styled.in_use ?? 'default', like: Boolean(styled.like), candidate: Boolean(styled.candidate), building: Boolean(styled.building), two_column: Boolean(styled.two_column), failing: styled.failing ?? 0, again: Boolean(styled.again), warning: Boolean(styled.warning) }
   const styleSet = (version: string, two_column = false, cv = ['cv_page_1.png', 'cv_page_2.png']) => ({ cv, letter: ['letter_page_1.png'], version, two_column })
   const ACCOUNT = 'jane.doe@example.com'
   const start = scene.drive ?? 'off'
@@ -176,6 +176,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, five_hour: { used: 0.9, resets_at: new Date(Date.now() + 90 * 60_000).toISOString() }, room: { find: 1, prepare: 2 } } } : {}),
         }
       case 'show_style':
+        if (style.warning) return { styles: {}, in_use: style.in_use, candidate: style.candidate, warning: 'Claude could not read your CV. Try again later.' }
         return { styles: { default: styleSet('d'), ...(style.like ? { like: styleSet('l', style.two_column, ['cv_page_1.png']) } : {}) }, in_use: style.in_use, candidate: style.candidate }
       case 'use_style': {
         const pick = String(args['style'] ?? 'like')
@@ -184,9 +185,9 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         style.candidate = false
         const prepared = styled.prepared ?? 0
         const jobs = Array.from({ length: prepared }, (_, i) => `job.${i}`)
-        const failed = args['rerender'] ? jobs.slice(0, style.failing) : []
+        const failed = args['rerender'] ? jobs.slice(0, style.failing).map((job, i) => ({ job, title: ['Data Analyst', 'Finance Controller'][i % 2], company: ['Acme', 'Globex'][i % 2], reason: style.again ? 'this CV has no section kinds: prepare it again or revise it' : 'it could not be printed', prepare_again: style.again })) : []
         if (args['rerender']) style.failing = 0 // the next print works
-        return { in_use: style.in_use, prepared, ...(args['rerender'] ? { rerendered: jobs.filter((j) => !failed.includes(j)), failed } : {}) }
+        return { in_use: style.in_use, prepared, ...(args['rerender'] ? { rerendered: jobs.filter((j) => !failed.some((f) => f.job === j)), failed } : {}) }
       }
       case 'doctor':
         if (!installed) return { ok: false, checks: [{ name: 'claude CLI', status: 'missing', required: true, detail: 'no claude found' }] }

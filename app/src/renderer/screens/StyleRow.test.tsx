@@ -266,7 +266,7 @@ describe('StyleRow, the prepared CVs after a switch', () => {
     mockDoor({
       show_style: both({ candidate: true }),
       use_style: (a: Record<string, unknown>) =>
-        a['rerender'] ? (round++ === 0 ? { in_use: 'like', prepared: 3, rerendered: ['a.1', 'a.2'], failed: [{ job: 'a.3', reason: 'it could not be printed', prepare_again: false }] } : { in_use: 'like', prepared: 3, rerendered: ['a.1', 'a.2', 'a.3'], failed: [] }) : { in_use: 'like', prepared: 3 },
+        a['rerender'] ? (round++ === 0 ? { in_use: 'like', prepared: 3, rerendered: ['a.1', 'a.2'], failed: [{ job: 'a.3', title: 'T', company: 'C', reason: 'it could not be printed', prepare_again: false }] } : { in_use: 'like', prepared: 3, rerendered: ['a.1', 'a.2', 'a.3'], failed: [] }) : { in_use: 'like', prepared: 3 },
     })
     render(<StyleRow state="ready" canBuild onChanged={() => undefined} reload={0} />)
     await ready()
@@ -285,7 +285,7 @@ describe('StyleRow, an old CV in a two-column style', () => {
       show_style: both({ candidate: true }),
       use_style: (a: Record<string, unknown>) =>
         a['rerender']
-          ? { in_use: 'like', prepared: 2, rerendered: ['a.1'], failed: [{ job: 'a.2', reason: 'this CV has no section kinds: prepare it again or revise it', prepare_again: true }] }
+          ? { in_use: 'like', prepared: 2, rerendered: ['a.1'], failed: [{ job: 'a.2', title: 'Data Analyst', company: 'Acme', reason: 'this CV has no section kinds: prepare it again or revise it', prepare_again: true }] }
           : { in_use: 'like', prepared: 2 },
     })
     render(<StyleRow state="ready" canBuild onChanged={() => undefined} reload={0} />)
@@ -293,8 +293,20 @@ describe('StyleRow, an old CV in a two-column style', () => {
     await userEvent.click(screen.getByRole('switch', { name: 'Use my own style' }))
     await userEvent.click(await screen.findByRole('button', { name: /Print 2 prepared/ }))
     expect(await screen.findByText('1 printed again.')).toBeTruthy()
-    expect(await screen.findByText(/prepare it again or revise it/)).toBeTruthy()
+    expect(await screen.findByText('This CV could not be printed in this style: Data Analyst at Acme. Prepare it again or revise it.')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
+  it('says nothing of a build and never starts one when the CV could not be read: the switch chooses', async () => {
+    const calls: Record<string, unknown>[] = []
+    const h = await open({
+      show_style: { styles: {}, in_use: 'default', candidate: false, warning: 'Claude could not read your CV' },
+      use_style: (a: Record<string, unknown>) => (calls.push(a), { in_use: 'like', prepared: 0 }),
+    })
+    await userEvent.click(await screen.findByRole('switch', { name: 'Use my own style' }))
+    expect(screen.queryByText(/Building it takes/)).toBeNull()
+    expect(calls).toEqual([{ style: 'like' }])
+    expect(h.call.mock.calls.some(([tool]) => tool === 'build_style')).toBe(false)
   })
 
   it('keeps the switch where it is when the CV could not be read for the previews', async () => {

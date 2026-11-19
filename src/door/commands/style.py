@@ -23,6 +23,7 @@ app does before an update installs (#215).
 
 from __future__ import annotations
 
+import json
 import os
 import signal
 import sys
@@ -270,6 +271,15 @@ def _prepared(jobs_dir: Path) -> list[str]:
             if ledger.get_status(job) == "prepared" and (jobs_dir / "output" / job / "cv.html").is_file()]
 
 
+def _posting(job: str) -> dict:
+    """The title and company of a job's ad (what the user knows it by), `{}` when its `posting.json` cannot be read."""
+    try:
+        data = json.loads((workspace.JOBS_DIR / "output" / job / "posting.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
     """Choose the CV style: ``like`` (the one built from the user's CV: the candidate moves into `profile/style/`
     and both template keys point at it), ``default`` (both keys cleared, only where they point into `profile/style/`)
@@ -280,7 +290,7 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
     `compile`: no model, a failing job listed and the rest done.
 
     Returns ``{"in_use": "like" | "default", "prepared": N}`` and, with `rerender`, ``"rerendered"`` (job ids) and ``"failed"``
-    (``{"job", "reason", "prepare_again"}`` each, the reason in words). Raises ValueError, in words, when ``like`` has no style built, and `NoChromium` for `rerender` with
+    (``{"job", "title", "company", "reason", "prepare_again"}`` each, the reason in words). Raises ValueError, in words, when ``like`` has no style built, and `NoChromium` for `rerender` with
     nothing to print with, before any change."""
     from door.commands import compile as compile_cmd
     from door.commands import profile as profile_cmd
@@ -325,7 +335,9 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
             if reason is None:
                 result["rerendered"].append(job)
             else:  # `prepare_again`: its CV has no section kinds, which only a new prepare or a revise gives it
-                result["failed"].append({"job": job, "reason": reason, "prepare_again": page_mod.NO_KINDS_HINT in reason})
+                posting = _posting(job)
+                result["failed"].append({"job": job, "title": posting.get("title"), "company": posting.get("company"),
+                                         "reason": reason, "prepare_again": page_mod.NO_KINDS_HINT in reason})
     return result
 
 
