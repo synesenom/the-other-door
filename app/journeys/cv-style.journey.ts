@@ -51,7 +51,7 @@ test('the switch builds the style from the CV file and uses it once ready, print
 
   await chooseCvFile(page, world, os)
   await ownStyle(page).click()
-  await expect(page.getByText('Building your style…')).toBeVisible()
+  await expect(page.getByText(/^Building your style/)).toBeVisible()
   expect(world.toolCalls('build_style')).toHaveLength(1)
   expect(argsOf(world, 'build_style')[0]!['file']).toMatch(/my-cv\.pdf$/)
 
@@ -105,7 +105,7 @@ test('a CV file whose structure the model could not read is refused in words and
   rmSync(join(world.home, '.style', 'structure'), { recursive: true, force: true }) // a cached read would answer without the model
   await ownStyle(page).click()
   await expect(page.getByRole('alert')).toContainText("Claude could not be reached, or Claude's usage limit is reached")
-  await expect(page.getByText('Building your style…')).toHaveCount(0)
+  await expect(page.getByText(/^Building your style/)).toHaveCount(0)
   await expect(ownStyle(page)).toHaveAttribute('aria-checked', 'false')
   expect(exists(world, 'profile/style.next/cv.template.html')).toBe(false)
 })
