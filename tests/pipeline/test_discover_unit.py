@@ -254,6 +254,19 @@ def test_a_keyword_with_an_empty_first_page_keeps_its_cutoff_but_the_rotation_mo
     assert after["rotation"] == 2
 
 
+def test_a_held_back_run_whose_every_first_page_is_empty_keeps_every_cutoff_and_moves_the_rotation(env, fake):
+    write_config(env.profile_dir, {"role_targets": ["a", "b", "c"], "location": "Copenhagen",
+                                   "linkedin_discovery": True})
+    state = ds.load(env.jobs_dir, "linkedin")
+    state.update(mode="rotate", rotation=1, searched={"b": "2026-01-01T00:00:00+00:00"})
+    ds.save(env.jobs_dir, "linkedin", state)
+    fake.extra = {"searched": [], "empty": ["b", "c"], "search_complete": False, "outcome": "budget"}
+
+    run(env)
+    after = ds.load(env.jobs_dir, "linkedin")
+    assert after["searched"] == {"b": "2026-01-01T00:00:00+00:00"} and after["rotation"] == 0
+
+
 def test_a_keyword_cut_short_by_the_budget_is_not_marked_searched_and_comes_back_first(env, fake):
     write_config(env.profile_dir, {"role_targets": ["a", "b", "c", "d"],
                                    "location": "Copenhagen", "linkedin_discovery": True})

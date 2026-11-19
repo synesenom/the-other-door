@@ -478,7 +478,6 @@ def _search(
                     result.update(mode="rotate", mode_switched=True)
                     return all(one_keyword(k) for k in rotation[1:])
                 result["searched"].clear()
-                result["empty"].clear()
                 return True
         return True
     for keyword in rotation:
