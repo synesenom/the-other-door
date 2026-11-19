@@ -267,8 +267,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 report(f"search error (keyword={keyword!r}, offset={offset}): {exc}")
                 record_error(_SITE, f"search error (keyword={keyword!r}, offset={offset}): {exc}")
                 break
-            if not hits and offset == 0:
-                record_answered(_SITE)
+            record_answered(_SITE)  # an answer read, empty or all known, is a quiet day, not a changed site
             for hit in hits:
                 posting = _to_posting(hit, scraped_at) if _is_live(hit) else None
                 if posting is None:

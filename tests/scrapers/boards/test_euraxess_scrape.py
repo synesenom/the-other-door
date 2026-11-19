@@ -221,3 +221,12 @@ def test_an_older_foreign_card_still_stops_the_paging():
     assert postings and all(p["posted_at"] < "2026-10-31" for p in postings)
     assert not any("page=1" in c.request.url for c in responses.calls)
     assert not any(re.search(r"/jobs/\d+", c.request.url) for c in responses.calls)
+
+
+@responses.activate
+def test_a_listing_of_only_off_topic_offers_is_a_quiet_day():
+    _mock_pages()
+    drain_answered("euraxess")
+
+    assert euraxess.scrape({**_CFG, "topic_terms": ["glaciology"], "search_keywords": ["glaciology"]}) == []
+    assert drain_answered("euraxess") is True

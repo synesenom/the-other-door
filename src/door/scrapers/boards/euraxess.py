@@ -222,6 +222,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             report(message)
             record_error(_SITE, message)
             break
+        if cards:
+            sdk.record_answered(_SITE)  # a page of offers read, all known or off topic, is a quiet day
         reached_cutoff = stopped = False
         for card in cards:
             if since is not None and card["posted_at"] is not None and card["posted_at"] < since:
@@ -233,10 +235,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     seen.add(card["id"])
                     record_non_local(_SITE, 1)
                 continue
-            if card["id"] in known_ids:
-                sdk.record_answered(_SITE)  # a known offer is a read result: a quiet day, not a changed site
-                continue
-            if card["id"] in seen or not _relevant(card, terms):
+            if card["id"] in seen or card["id"] in known_ids or not _relevant(card, terms):
                 continue
             seen.add(card["id"])
             try:
