@@ -249,3 +249,19 @@ def _recorded_cvs():
 def test_the_kinds_a_column_or_an_icon_names_come_from_the_reading_kinds():
     assert set(templates.SECTION_KINDS) <= set(cv_read.KINDS)
     assert set(templates.ICON_KINDS) >= set(cv_read.CONTACT_KINDS)
+
+
+def test_the_cache_keeps_only_the_most_recent_answers(asked, tmp_path, monkeypatch):
+    monkeypatch.setattr(cv_read, "_KEEP_CACHED", 3)
+    for n in range(6):
+        cv_read.read(MD + f"\nline {n}\n")
+    assert len(list((tmp_path / "cache").glob("*.json"))) == 3
+
+
+def test_lines_by_kind_gives_each_line_the_kind_of_its_section(asked):
+    reading = cv_read.read(MD)
+    got = list(cv_read.lines_by_kind(MD, reading))
+    assert got[0] == (None, "# Mette Berg")  # the header is in no section
+    assert ("summary", "Dataanalytiker.") in got and ("skills", "Python, SQL, Docker") in got
+    assert ("experience", "### Leder af analyse, Northwind Labs (2017 - nu)") in got
+    assert ("skills", "## Kompetencer") in got  # a heading belongs to its own section

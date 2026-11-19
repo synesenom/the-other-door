@@ -10,16 +10,13 @@ import re
 from datetime import date
 
 from door import i18n
+from door.core import cv_read
 
 _MAX_AD_LINES = 6
 _MAX_CV_CHARS = 6000
 _CODE = re.compile(r"[A-Z]{3}")
 _PERIODS = ("month", "year")
 _POSITIONS = ("below", "within", "above")
-
-
-def _squash(text: str) -> str:
-    return " ".join(str(text).split()).casefold()
 
 
 def years_of_experience(reading: dict, cv_text: str, *, now_year: int | None = None) -> int | None:
@@ -29,27 +26,25 @@ def years_of_experience(reading: dict, cv_text: str, *, now_year: int | None = N
 
     ``None`` when no role has a usable date range."""
     now_year = now_year or date.today().year
-    kinds = [s.get("kind") for s in reading.get("sections") or []]
     unused = list(reading.get("entries") or [])
-    spans, section = [], -1
-    for line in (cv_text or "").splitlines():
-        if line.startswith("## "):
-            section += 1
-        elif line.startswith("### ") and 0 <= section < len(kinds):
-            heading = _squash(line[4:])
-            entry = next((e for e in unused if _squash(e.get("heading") or "") == heading), None)
-            if entry is None:
-                continue
-            unused.remove(entry)
-            if kinds[section] != "experience":
-                continue
-            first, last = entry.get("start_year"), entry.get("end_year")
-            dates = str(entry.get("dates") or "")
-            if first is None or str(first) not in dates or (last is not None and str(last) not in dates):
-                continue
-            last = now_year if last is None else last
-            if last >= first:
-                spans.append((first, min(last, now_year)))
+    spans = []
+    for kind, line in cv_read.lines_by_kind(cv_text, reading):
+        if not line.startswith("### ") or kind is None:
+            continue
+        heading = cv_read.squash(line[4:])
+        entry = next((e for e in unused if cv_read.squash(e.get("heading") or "") == heading), None)
+        if entry is None:
+            continue
+        unused.remove(entry)
+        if kind != "experience":
+            continue
+        first, last = entry.get("start_year"), entry.get("end_year")
+        dates = str(entry.get("dates") or "")
+        if first is None or str(first) not in dates or (last is not None and str(last) not in dates):
+            continue
+        last = now_year if last is None else last
+        if last >= first:
+            spans.append((first, min(last, now_year)))
     if not spans:
         return None
     total, (cur_start, cur_end) = 0, (None, None)
@@ -86,13 +81,7 @@ def _anonymous_cv(cv_text: str, profile: dict, reading: dict) -> str:
     private += [part for part in str(profile.get("name") or "").split() if len(part) > 1]
     private += [str(reading.get(k)) for k in ("name", "email") if reading.get(k)]
     private += [str(c["value"]) for c in reading.get("contacts") or [] if c.get("value")]
-    kinds = [s.get("kind") for s in reading.get("sections") or []]
-    kept, section = [], -1
-    for line in (cv_text or "").splitlines():
-        if line.startswith("## "):
-            section += 1
-        if 0 <= section < len(kinds) and kinds[section] in _SENT_KINDS:
-            kept.append(line)
+    kept = [line for kind, line in cv_read.lines_by_kind(cv_text, reading) if kind in _SENT_KINDS]
     text = "\n".join(kept)
     for value in sorted(set(private), key=len, reverse=True):
         if value.split():

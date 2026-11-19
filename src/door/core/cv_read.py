@@ -22,6 +22,7 @@ PROMPT_VERSION = 2  # bump with the prompt, the schema or the check: a cached an
 COLUMN_KINDS = ("skills", "education", "certifications", "languages", "interests")  # what a template's column can hold
 KINDS = ("summary", "experience", *COLUMN_KINDS, "other")
 CONTACT_KINDS = ("phone", "email", "web", "linkedin", "github", "location")
+_KEEP_CACHED = 20  # answers kept in the cache folder, the most recently written
 LEVELS = ("native", "fluent", "working", "conversational", "basic")
 _MARKER = re.compile(r"\s*<!--.*?-->\s*$")
 
@@ -95,13 +96,24 @@ def _empty() -> dict:
             "contacts": [], "skills": [], "levels": [], "entries": []}
 
 
-def _squash(text: str) -> str:
+def squash(text: str) -> str:
     return " ".join(str(text).split()).casefold()
 
 
 def _lines(md: str, prefix: str) -> list[str]:
     """The text after `prefix` of each line that starts with it (`## `, `### `), a trailing `<!-- -->` comment dropped."""
     return [_MARKER.sub("", line[len(prefix):]).strip() for line in md.split("\n") if line.startswith(prefix)]
+
+
+def lines_by_kind(md: str, reading: dict):
+    """`(kind, line)` for each line of `md`: the kind the reading gives the `## ` section it is in (a heading is in its own),
+    `None` before the first heading or where the reading has no such section."""
+    kinds = [s.get("kind") for s in reading.get("sections") or []]
+    section = -1
+    for line in (md or "").splitlines():
+        if line.startswith("## "):
+            section += 1
+        yield (kinds[section] if 0 <= section < len(kinds) else None), line
 
 
 def check(answer, md: str) -> dict:
@@ -114,7 +126,7 @@ def check(answer, md: str) -> dict:
     Raises:
         CvReadError: it does not hold; `detail` of the message says what.
     """
-    squashed = _squash(md)
+    squashed = squash(md)
 
     def fail(what: str):
         raise CvReadError(f"The reading of your CV did not hold ({what}).")
@@ -122,7 +134,7 @@ def check(answer, md: str) -> dict:
     def text(value, what: str, *, allow_none: bool = True) -> None:
         if value is None and allow_none:
             return
-        if not isinstance(value, str) or not value.strip() or _squash(value) not in squashed:
+        if not isinstance(value, str) or not value.strip() or squash(value) not in squashed:
             fail(f"{what} {str(value)[:40]!r} is not in the CV")
 
     def items(key: str) -> list:
@@ -140,7 +152,7 @@ def check(answer, md: str) -> dict:
         fail("country is not an ISO code")
 
     sections = items("sections")
-    if [_squash(_MARKER.sub("", s.get("heading") or "")) for s in sections] != [_squash(h) for h in _lines(md, "## ")]:
+    if [squash(_MARKER.sub("", s.get("heading") or "")) for s in sections] != [squash(h) for h in _lines(md, "## ")]:
         fail("the sections are not the CV's own `##` lines")
     if any(s.get("kind") not in KINDS for s in sections):
         fail("a section has no kind")
@@ -170,9 +182,9 @@ def check(answer, md: str) -> dict:
         if lang.get("level") not in LEVELS:
             fail("a language has no level")
 
-    real = {_squash(h) for h in _lines(md, "### ")}
+    real = {squash(h) for h in _lines(md, "### ")}
     for entry in items("entries"):
-        if _squash(entry.get("heading") or "") not in real:
+        if squash(entry.get("heading") or "") not in real:
             fail(f"entry {str(entry.get('heading'))[:40]!r} is not a `###` line")
         for key in ("role", "org", "dates", "place"):
             text(entry.get(key), key)
@@ -234,6 +246,12 @@ def read(cv_md: str) -> dict:
         problem_log.failure("cv read", str(exc))
         raise
     utils.write_json_atomic(file, {"version": PROMPT_VERSION, "answer": answer}, indent=None)
+    try:
+        stale = sorted(file.parent.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True)[_KEEP_CACHED:]
+        for old in stale:
+            old.unlink(missing_ok=True)
+    except OSError:
+        pass  # the cache is a convenience: a file that will not go is left
     return answer
 
 

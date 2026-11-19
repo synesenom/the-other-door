@@ -114,8 +114,8 @@ class Manifest(BaseModel):
     @classmethod
     def _labels(cls, v: dict[str, str]) -> dict[str, str]:
         for kind, label in v.items():
-            if kind not in ICON_KINDS[:-1]:
-                raise ValueError(f"{kind!r} is not a contact kind ({', '.join(ICON_KINDS[:-1])})")
+            if kind not in cv_read.CONTACT_KINDS:
+                raise ValueError(f"{kind!r} is not a contact kind ({', '.join(cv_read.CONTACT_KINDS)})")
             if not label.strip():
                 raise ValueError(f"the label of {kind!r} is empty")
         return v

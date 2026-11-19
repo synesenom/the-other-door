@@ -112,8 +112,6 @@ def _cv_reading(config: dict, profile_dir: Path) -> dict:
         cv_read.CvReadError: the CV could not be read; there is no fallback.
     """
     path = workspace.cv_path(config, profile_dir)
-    if not path.exists():
-        path = profile_dir / "cv.md"
     return cv_read.read(path.read_text(encoding="utf-8") if path.exists() else "")
 
 
