@@ -49,6 +49,13 @@ def test_a_local_profile_gets_local_unspecified_and_home_based_jobs_only():
 
 
 @responses.activate
+def test_a_list_of_only_older_jobs_comes_back_dated():
+    _serve()
+    postings = reliefweb.scrape(_ANY, since=datetime(2027, 1, 1, tzinfo=timezone.utc))
+    assert postings and all(p["posted_at"] < "2027-01-01" for p in postings)
+
+
+@responses.activate
 def test_known_ids_and_old_jobs_are_skipped():
     _serve()
     since = datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc)

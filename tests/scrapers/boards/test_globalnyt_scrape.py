@@ -50,6 +50,14 @@ def test_every_ad_is_returned_with_its_employer_from_the_detail_page():
 
 
 @responses.activate
+def test_a_list_of_only_older_ads_costs_no_detail_request():
+    _serve()
+    postings = globalnyt.scrape(_CFG, since=datetime(2027, 1, 1, tzinfo=timezone.utc))
+    assert len(postings) == 4 and all(p["posted_at"] < "2027-01-01" for p in postings)
+    assert len(responses.calls) == 1
+
+
+@responses.activate
 def test_a_known_ad_costs_no_detail_request_and_an_old_one_is_skipped():
     _serve()
     since = datetime(2026, 10, 1, tzinfo=timezone.utc)

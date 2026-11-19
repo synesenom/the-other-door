@@ -99,6 +99,17 @@ def test_scrape_skips_detail_for_known_ids():
 
 
 @responses.activate
+def test_a_page_of_only_older_ads_costs_no_ad_request():
+    from datetime import datetime, timezone
+
+    _search("elektriker", 1, "search_last_page.html")
+    postings = jobmaskinen.scrape(_CFG, since=datetime(2027, 1, 1, tzinfo=timezone.utc))
+    assert sorted(p["platform_id"] for p in postings) == ["6529404", "6530742"]
+    assert all(p["posted_at"] < "2027-01-01" for p in postings)
+    assert not any("jobnet=" in c.request.url for c in responses.calls)
+
+
+@responses.activate
 def test_scrape_old_ads_are_left_alone_when_since_is_given():
     from datetime import datetime, timezone
 

@@ -159,6 +159,26 @@ def test_since_keeps_ads_posted_on_that_day():
 
 
 @responses.activate
+def test_an_older_ad_comes_back_once_for_two_keywords():
+    _serve(_search("project manager"), _html("p1.html"))
+    _serve(_search("change manager"), _html("p1.html"))
+    out = nhs_jobs.scrape({**_CFG, "search_keywords": ["project manager", "change manager"], "max_pages_per_keyword": 1},
+                          since=datetime(2026, 11, 4))
+    assert len(out) == 1
+
+
+@responses.activate
+def test_a_card_in_another_place_is_counted_once_for_two_keywords():
+    body = _html("p1.html").replace("London SW17 0QT", "Glasgow G1 1AA", 1)
+    _serve(_search("project manager"), body)
+    _serve(_search("change manager"), body)
+    _serve_details(["C9200-26-1001"])
+    drain_non_local("nhs_jobs")
+    nhs_jobs.scrape({**_CFG, "search_keywords": ["project manager", "change manager"], "max_pages_per_keyword": 1})
+    assert drain_non_local("nhs_jobs") == 1
+
+
+@responses.activate
 def test_a_page_cap_bounds_the_keyword():
     _serve_search(("p1.html",))
     _serve_details(_PAGE1)

@@ -159,6 +159,35 @@ def test_since_ends_the_keyword_at_the_first_older_ad():
 
 
 @responses.activate
+def test_a_first_page_of_only_older_ads_costs_no_ad_request():
+    _serve_search(("p1.html",))
+    out = jobs_ac_uk.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2026, 11, 10))
+    assert out and all(p["posted_at"] < "2026-11-10" for p in out)
+    assert len(_requested()) == 1
+
+
+@responses.activate
+def test_an_older_ad_comes_back_once_for_two_keywords():
+    _serve(_search("research associate"), _html("p1.html"))
+    _serve(_search("postdoc"), _html("p1.html"))
+    _serve_details(["1093148", "1093143"])
+    out = jobs_ac_uk.scrape({**_CFG, "search_keywords": ["research associate", "postdoc"], "max_pages_per_keyword": 1},
+                            since=datetime(2026, 11, 3))
+    assert [p["platform_id"] for p in out] == ["1093148", "1093143", "1093009"]
+
+
+@responses.activate
+def test_a_card_in_another_place_is_counted_once_for_two_keywords():
+    body = _html("p1.html").replace("Location:\n            London", "Location:\n            Glasgow", 1)
+    _serve(_search("research associate"), body)
+    _serve(_search("postdoc"), body)
+    _serve_details(["1093143", "1093009"])
+    drain_non_local("jobs_ac_uk")
+    jobs_ac_uk.scrape({**_CFG, "search_keywords": ["research associate", "postdoc"], "max_pages_per_keyword": 1})
+    assert drain_non_local("jobs_ac_uk") == 1
+
+
+@responses.activate
 def test_a_page_cap_bounds_the_keyword():
     _serve_search(("p1.html",))
     _serve_details(_PAGE1)

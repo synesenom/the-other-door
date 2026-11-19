@@ -268,18 +268,24 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
 
             for card in cards:
                 placed = card["posted"]
-                if since_day is not None and placed is not None and placed.date() < since_day:
-                    done = True  # newest first: every later card is older too
+                old = since_day is not None and placed is not None and placed.date() < since_day
+                if card["id"] in seen:  # read for an earlier keyword: nothing more to do with it
+                    if old:
+                        done = True  # newest first: every later card is older too
+                        break
+                    continue
+                seen.add(card["id"])
+                if old:
+                    done = True
                     out.append(_posting(card, _card_text(card), placed, scraped_at))  # the engine counts it stale
                     break
-                if card["id"] in seen or (topic and not on_topic(card["title"], topic)):
+                if topic and not on_topic(card["title"], topic):
                     continue
                 if not sdk.location_fits(card["location"], config):
                     record_non_local(_SITE, 1)
                     continue
                 if not sdk.keep_local([{"location": card["location"]}], config, _SITE):
                     continue
-                seen.add(card["id"])
                 if card["id"] in known_ids:
                     out.append({"platform_id": card["id"], "seen_only": True})
                     continue
