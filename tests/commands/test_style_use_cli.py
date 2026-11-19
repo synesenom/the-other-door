@@ -210,6 +210,25 @@ def test_a_job_whose_compile_answers_an_error_is_failed_not_rerendered(home, cli
     assert result["rerendered"] == ["b.1"] and result["failed"] == ["a.err"]
 
 
+def test_a_prepared_cv_with_no_section_kinds_fails_a_side_column_style_and_keeps_its_pdf(home, cli_env, monkeypatch):
+    """The real compile: a body prepared before sections had a kind class cannot be placed in a side column (#431)."""
+    from compile_utils import install
+
+    install(monkeypatch)
+    folder = _folder(cli_env, "style")
+    (folder / "template.json").write_text('{"columns": {"side": ["skills"]}}')
+    _job(home, "a.old", "prepared")
+    _job(home, "b.new", "prepared")
+    for job, cls in (("a.old", ""), ("b.new", ' class="kind-skills"')):
+        out = home / "jobs" / "output" / job
+        (out / "cv.html").write_text(f"<h2{cls}>Skills</h2><p>Python</p>")
+        (out / "cv.pdf").write_text("old pdf")
+    result = style_cmd._use_core("like", rerender=True)
+    assert result["failed"] == ["a.old"] and result["rerendered"] == ["b.new"]
+    assert (home / "jobs" / "output" / "a.old" / "cv.pdf").read_text() == "old pdf"
+    assert (home / "jobs" / "output" / "b.new" / "cv.pdf").read_bytes().startswith(b"%PDF")
+
+
 def test_rerender_never_moves_in_or_ends_a_candidate(home, cli_env, compiled):
     _folder(cli_env, "style", "kept")
     _set_keys(cli_env, *IN_USE)

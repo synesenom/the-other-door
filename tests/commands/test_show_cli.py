@@ -584,8 +584,9 @@ def test_show_reads_a_columns_template_in_its_placed_order(cli_env, one_page):
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
     (cli_env.profile_dir / "cv.template.html").write_text("<html><body><<body>></body></html>")
     (cli_env.profile_dir / "template.json").write_text('{"columns": {"side": ["skills", "languages"]}}')
-    _with_cv(cli_env, "<!-- Keywords: Python -->\n<h2>Profile</h2><h2>Skills</h2><h2>Experience</h2>"
-                      "<h2>Languages</h2><h2>Education</h2>")
+    _with_cv(cli_env, "<!-- Keywords: Python -->\n<h2 class=\"kind-summary\">Profile</h2><h2 class=\"kind-skills\">Skills</h2>"
+                      "<h2 class=\"kind-experience\">Experience</h2><h2 class=\"kind-languages\">Languages</h2>"
+                      "<h2 class=\"kind-education\">Education</h2>")
     _real_pdfs(cli_env, "Jane Doe, Python developer\nProfile\nExperience\nEducation\nSkills\nLanguages")
     assert matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"] == []
 

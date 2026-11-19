@@ -9,7 +9,7 @@ manifest, the fonts and icons it serves, the CV's language and the program's ver
 folder of the call's own and moved in whole, so calls at once do not meet. A set that cannot be printed (no Chromium)
 is left out.
 
-The CV is `cv_body.body(cv.md, language)` with the photo as a prepare places it (the profile's rule, `page.profile_photo`);
+The CV is `cv_body.body(cv.md, reading)` (`cv_read.read`: one cached model call, #431) with the photo as a prepare places it (the profile's rule, `page.profile_photo`);
 the letter is `sample_letter`, in English. `page.print_page` is the one place a body is placed in a template and printed,
 shared with the style build's own renders.
 """
@@ -25,7 +25,7 @@ from pathlib import Path
 import pypdfium2
 
 from door import i18n, version
-from door.core import templates, utils, workspace
+from door.core import cv_read, templates, utils, workspace
 from door.style import cv_body
 from door.render import html_pdf, pdf_render
 from door.render import page as page_mod
@@ -40,10 +40,10 @@ _LETTER = """{header}
 <div class="closing"><p class="signoff">Kind regards,</p><p>{name}</p></div>"""
 
 
-def sample_letter(cv_md: str) -> str:
+def sample_letter(cv_md: str, reading: dict) -> str:
     """The sample letter, its date filled: the header and signature are the name and contact details in `cv_md` (none
     for a CV with no name). The paragraphs are fixed English that claim nothing about anyone."""
-    header, name = cv_body.letter_header(cv_md)
+    header, name = cv_body.letter_header(cv_md, reading)
     return _LETTER.format(header=header, name=html.escape(name, quote=False)).replace("<<date>>", _SAMPLE_DATE)
 
 
@@ -100,29 +100,29 @@ def _fresh(folder: Path, key: str) -> list[str] | None:
     return images
 
 
-def _make(stage: Path, cv_md: str, lang: str, photo: Path | None, cv_template: Path, letter_template: Path) -> list[str]:
+def _make(stage: Path, cv_md: str, reading: dict, lang: str, photo: Path | None, cv_template: Path, letter_template: Path) -> list[str]:
     """Print the CV and the letter into `stage` and the pages of both to images; the file names of the images."""
     manifest = templates.manifest(cv_template) or templates.Manifest()
     pdf, _, picture = page_mod.print_page(
-        cv_body.body(cv_md, lang), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv",
+        cv_body.body(cv_md, reading), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv",
         manifest=manifest, photo=photo)
     images = [p.name for p in pdf_render.render_pdf_pages(pdf, stage)]
     # the letter is printed with the CV template's fonts and icons, as `style_build` checks it
     letter = page_mod.print_page(
-        sample_letter(cv_md), letter_template.read_text(encoding="utf-8"), cv_template, "en", stage, "letter")
+        sample_letter(cv_md, reading), letter_template.read_text(encoding="utf-8"), cv_template, "en", stage, "letter")
     images += [p.name for p in pdf_render.render_pdf_pages(letter[0], stage)]
     if picture:
         (stage / picture).unlink(missing_ok=True)
     return images
 
 
-def _set(root: Path, folder: Path, key: str, cv_md: str, lang: str, photo: Path | None, cv_template: Path,
+def _set(root: Path, folder: Path, key: str, cv_md: str, reading: dict, lang: str, photo: Path | None, cv_template: Path,
          letter_template: Path) -> list[str] | None:
     """Make the set in a staging folder of this call and move it in as `folder`; its image names, None when it could
     not be printed. A call that meets another's set already moved in (the same key, the same files) uses that."""
     try:
         with utils.staging(root, f".{folder.name}.") as stage:
-            images = _make(stage, cv_md, lang, photo, cv_template, letter_template)
+            images = _make(stage, cv_md, reading, lang, photo, cv_template, letter_template)
             (stage / "meta.json").write_text(json.dumps({"key": key, "images": images}), encoding="utf-8")
             shutil.rmtree(folder, ignore_errors=True)
             try:
@@ -138,9 +138,14 @@ def show(home: Path, profile_dir: Path, config: dict) -> dict:
     """The previews, made again where stale: ``{"styles": {"default": {"cv": [png], "letter": [png], "version": key,
     "two_column": bool}, "like": {...}}}`` (absolute paths, page order; `version` changes with the images, for a cache
     buster). `like` is there only when a style is built (`profile/style.next/` or `profile/style/` has `cv.template.html`); a set that could not be printed is left
-    out. Nothing is raised for a print that fails."""
+    out. Nothing is raised for a print that fails. A CV that cannot be read (`cv_read.CvReadError`) is
+    ``{"error": words}`` and nothing is written."""
     root = Path(home) / ".style" / "preview"
     cv_md = cv_text(Path(profile_dir), config)
+    try:
+        reading = cv_read.read(cv_md)
+    except cv_read.CvReadError as exc:
+        return {"error": str(exc)}
     lang = _language(cv_md)
     photo = page_mod.profile_photo(config, {})  # no posting: the profile's own country decides
     out: dict[str, dict] = {}
@@ -155,7 +160,7 @@ def show(home: Path, profile_dir: Path, config: dict) -> dict:
             two_column = bool((templates.manifest(cv_template) or templates.Manifest()).columns)
         except (ValueError, OSError):
             continue
-        images = _fresh(folder, key) or _set(root, folder, key, cv_md, lang, photo, cv_template, letter_template)
+        images = _fresh(folder, key) or _set(root, folder, key, cv_md, reading, lang, photo, cv_template, letter_template)
         if images:
             out[style] = {kind: [str(folder / n) for n in images if n.startswith(f"{kind}_page_")] for kind in ("cv", "letter")}
             out[style].update(version=key, two_column=two_column)

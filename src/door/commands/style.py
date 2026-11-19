@@ -326,12 +326,14 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
 def _show_core(*, home: Path | None = None, profile_dir: Path | None = None) -> dict:
     """The previews of the profile's `cv.md` and a sample letter in the default style and, once one is built, in the
     rebuilt one (`style_preview.show`): ``{"styles": {"default" | "like": {"cv": [png], "letter": [png]}}, "in_use":
-    "like" | "default", "candidate": bool}``, made again only where stale, no model. ``like`` is the candidate when one
-    waits, else the style kept in `profile/style/`. A style that could not be printed (no Chromium) is left out."""
+    "like" | "default", "candidate": bool}``, made again only where stale; the CV is read once by the model (`cv_read.read`, cached), and one it cannot
+    read is ``{"error"}``. ``like`` is the candidate when one waits, else the style kept in `profile/style/`. A style that could not be printed (no Chromium) is left out."""
     profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
     style_build.restore(profile_dir)
     config = profile_loader.load_config_or_defaults(profile_dir)
     shown = style_preview.show(Path(home or workspace.HOME), profile_dir, config)
+    if "error" in shown:
+        return shown
     shown.update(in_use=templates.in_use(profile_dir, config), candidate=templates.liked(profile_dir).name == templates.CANDIDATE)
     return shown
 
@@ -408,8 +410,11 @@ def use_style(style, rerender):
 def show_style():
     """Print your CV and a sample letter in the default style and in the one built from your CV, as page images.
 
-    Made again only when your CV, photo or style changed; no model is used."""
-    styles = _show_core()["styles"]
+    Made again only when your CV, photo or style changed; the CV is read by the model once, then remembered."""
+    shown = _show_core()
+    if "error" in shown:
+        raise click.ClickException(shown["error"])
+    styles = shown["styles"]
     if not styles:
         click.echo(f"Nothing could be printed. {common.INSTALL_HINT}")
         return

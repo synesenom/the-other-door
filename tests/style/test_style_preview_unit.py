@@ -11,10 +11,11 @@ import time
 import pytest
 from PIL import Image
 
-from door.core import workspace
+from door.core import cv_read, workspace
 from door import version
 from door.render import html_pdf
 from door.style import style_preview
+from cv_read_utils import reading
 from paths import REPO_ROOT, TESTS_DIR
 
 PDF = TESTS_DIR / "style" / "fixtures" / "styles" / "html-plain-single.pdf"
@@ -59,14 +60,14 @@ def _show(home, profile, config=None):
 
 
 def test_the_sample_letter_is_the_users_name_and_contact_with_the_date_filled():
-    letter = style_preview.sample_letter(CV)
+    letter = style_preview.sample_letter(CV, reading(CV))
     assert "<h1>Ada Lovelace</h1>" in letter and "ada@example.com" in letter
     assert "<<date>>" not in letter and "Jane Doe" not in letter
     assert letter.rstrip().endswith("<p>Ada Lovelace</p></div>")
 
 
 def test_a_cv_with_no_name_gives_a_letter_with_no_header_and_no_signature(world):
-    letter = style_preview.sample_letter("## Experience\n\n- x\n")
+    letter = style_preview.sample_letter("## Experience\n\n- x\n", reading("## Experience\n\n- x\n"))
     assert "letter-header" not in letter and "Jane Doe" not in letter and "<p></p></div>" in letter
     home, profile, printer = world
     (profile / "cv.md").write_text("## Experience\n\n- x\n", encoding="utf-8")
@@ -76,7 +77,27 @@ def test_a_cv_with_no_name_gives_a_letter_with_no_header_and_no_signature(world)
 
 
 def test_the_sample_letter_escapes_the_name():
-    assert "<b>" not in style_preview.sample_letter("# A <b>x</b>\n\n## S\n")
+    assert "<b>" not in style_preview.sample_letter("# A <b>x</b>\n\n## S\n", reading("# A <b>x</b>\n\n## S\n"))
+
+
+def test_show_reads_the_cv_once_and_a_second_show_of_the_same_cv_asks_nothing(world, monkeypatch):
+    home, profile, printer = world
+    asked = []
+    monkeypatch.setattr(cv_read, "_ask", lambda md: asked.append(md) or reading(md))
+    _show(home, profile)
+    _show(home, profile)
+    assert len(asked) == 1
+
+
+def test_a_cv_that_cannot_be_read_is_an_error_in_words_and_nothing_is_written(world, monkeypatch):
+    home, profile, printer = world
+
+    def fail(md):
+        raise cv_read.CvReadError("Claude could not read your CV: try again")
+    monkeypatch.setattr(cv_read, "_ask", fail)
+    shown = _show(home, profile)
+    assert shown == {"error": "Claude could not read your CV: try again"}
+    assert printer.calls == [] and not (home / ".style").exists()
 
 
 def test_without_a_style_only_the_default_is_shown_and_it_is_written_whole(world):

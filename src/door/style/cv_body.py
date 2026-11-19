@@ -1,24 +1,22 @@
-"""`profile/cv.md` as a body in the tailor's vocabulary, with no model (#204, epic #144).
+"""`profile/cv.md` as a body in the tailor's vocabulary, with no model (#204, epic #144; #431).
 
-`body(cv_md, lang)` is what the stress renders and the previews of a built CV template print: the same shapes the
+`body(cv_md, reading)` is what the stress renders and the previews of a built CV template print: the same shapes the
 tailor agent writes (`html_guard`'s tags and classes; `.claude/agents/tailor.md`'s building blocks), made from the
-markdown that `draft_cv` and `init` write. Nothing is translated, tailored or dropped; text and links are escaped
-and only `https:`, `mailto:` and `#` links are kept.
+markdown that `draft_cv` and `init` write. What the CV means comes from `reading`, the one reading of it
+(`core/cv_read.read`, a dict): no word list of any language is here. Nothing is translated, tailored or dropped; text and
+links are escaped and only `https:`, `mailto:` and `#` links are kept.
 
-- `# Name` is the header's `<h1>`, a `> line` its tagline, the lines before the first `##` its contact details
-  (`**Label:** value`, a plain `Label: value` and the other forms `_details` reads, split on `|`, the label in any
-  supported language; a detail with no known label is a plain `<span>`, an `@` one is an email), written with a kind
-  class in the template's order (phone, email, web, linkedin, github, location). The `<<photo>>` token comes first in the header, as the tailor writes it;
-  `compile` swaps it.
-- `## Heading` is an `<h2>`, whatever it says (a heading the columns do not know stays in the main column).
-- `### Role | Org — dates | Place` is an `<div class="entry">` whose `<h3>` has the parts in `role`, `org`, `dates` and
-  `place` spans with `sep` spans between (` | `, ` - `, ` | `): a heading with no ` | ` is a role alone, and the dates
-  split off at the first spaced em or en dash, else at the first spaced hyphen when a number follows it. Its bullets and paragraphs go inside it.
+- `# Name` is the header's `<h1>`, a `> line` its tagline, the lines before the first `##` its contact details: the
+  reading's `contacts`, one `<span>` each with its kind as a class, in the template's order (phone, email, web,
+  linkedin, github, location), the `<<photo>>` token first in the header, as the tailor writes it (`compile` swaps it);
+  a part of those lines (split on `|`) that holds no contact value is a plain `<span>`.
+- `## Heading` is an `<h2 class="kind-<kind>">`, the kind and the text of the reading's section at the same place.
+- `### Heading` is an `<div class="entry">` whose `<h3>` has the reading's `role`, `org`, `dates` and `place` in spans
+  with `sep` spans between (` | `, ` - `, ` | `); an entry the reading has no parts for is a role alone. Its bullets and
+  paragraphs go inside it.
 - `- item` is an `<li>` of a `<ul>`, `1. item` of an `<ol>`; other lines are a `<p>` (consecutive lines joined).
-- A skill or language with a level, `**Danish** — conversational`, in a Skills or Languages section (the ad's language
-  or English), gets `<span class="level level-N">` around the level word, by the tailor's table: native and C2 are 5;
-  fluent, professional and C1, 4; working and B2, 3; conversational and B1, 2; basic, A1 and A2, 1. A word outside that
-  table (in any language: the table is the tailor's, English and CEFR) gets no level class: a level is never guessed.
+- An item the reading's `levels` lists with a level, `**Danish** — conversational`, gets `<span class="level level-N">`
+  around the level word as written; an item it does not list, or lists with no level, gets none: a level is never guessed.
 - No `<!-- Keywords -->` or `<!-- Tailoring -->` notes: this body is not tailored.
 """
 
@@ -27,17 +25,10 @@ from __future__ import annotations
 import html
 import re
 
-from door import i18n
-from door.core import cv_sections
+from door.core import cv_read
 
-_LEVELS = {"native": 5, "c2": 5, "fluent": 4, "professional": 4, "c1": 4, "working": 3, "b2": 3,
-           "conversational": 2, "b1": 2, "basic": 1, "a1": 1, "a2": 1}
-_LEVEL_SECTIONS = ("skills", "languages")
 _SAFE_URL = re.compile(r"(?:https://|mailto:|#)[^\s<>\"']+$", re.I)
 _INLINE = re.compile(r"\*\*(?P<b>.+?)\*\*|\*(?P<i>[^*\s][^*]*?)\*|\[(?P<t>[^\]]+)\]\((?P<u>(?:[^()\s]|\([^()\s]*\))+)\)")
-_DASH_DATES = re.compile(r"\s+[—–]\s+")
-_HYPHEN_DATES = re.compile(r"\s+-\s+(?=\S*\d)")
-_LEVEL_ITEM = re.compile(r"^(?:\*\*(?P<bold>[^*]+?)\*\*|(?P<plain>[^—–:()*]+?))\s*(?:[—–:]|\()\s*(?P<word>[^()]+?)\)?\s*$")
 _ITEM = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*)$")
 
 
@@ -69,7 +60,7 @@ def _detail(kind: str | None, value: str) -> str:
     cls = f' class="{kind}"' if kind else ""
     plain = re.sub(r"\*\*|\[|\]\(.*?\)", "", value)  # a markdown link or bold in a detail: its text
     mail = re.fullmatch(r"(?:mailto:)?([^\s@<>\"']+@[^\s@<>\"']+)", plain)
-    if mail and kind in ("email", None):
+    if mail and kind == "email":
         address = html.escape(mail.group(1))
         return f'<span class="email"><a href="mailto:{address}">{address}</a></span>'
     if kind in ("web", "linkedin", "github"):
@@ -80,92 +71,68 @@ def _detail(kind: str | None, value: str) -> str:
     return f"<span{cls}>{_inline(value)}</span>"
 
 
-def _parts(lines: list[str]) -> list[tuple[str | None, str, str]]:
-    """The contact parts of `lines` (split on `|`) as ``(kind, label, value)``: `kind` is None for a part with no known
-    label (`label` is then ''). A label is one `i18n.contact_kind` knows, followed by a colon or a spaced dash, bold or
-    not, the bold around the label or around the whole part, after any leading symbols: `**Location:** X`,
-    `Location: X`, `**Location: X**`, `\ud83d\udccd Location: X`, `Location - X`; `label` is as written, with its colon
-    when the part has one. An empty value is dropped."""
-    parts: list[tuple[str | None, str, str]] = []
-    for line in lines:
-        for part in line.split("|"):
-            part = part.strip()
-            m = re.match(r"^(.+?)\s*(:|\s[-\u2013\u2014]\s)\s*(.*)$", re.sub(r"^\W+", "", part.replace("**", "")))
-            kind = i18n.contact_kind(m.group(1)) if m else None
-            if kind:
-                if value := m.group(3).strip(" :"):
-                    parts.append((kind, m.group(1).strip() + (":" if m.group(2) == ":" else ""), value))
-            elif part:
-                parts.append((None, "", part))
-    return parts
-
-
-def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
-    """The values of the labelled contact parts of `lines` by kind, and the parts with no known label whole."""
-    found: dict[str, list[str]] = {}
-    other: list[str] = []
-    for kind, _, value in _parts(lines):
-        if kind:
-            found.setdefault(kind, []).append(value)
-        else:
-            other.append(value)
-    return found, other
-
-
-def contact_labels(cv_md: str) -> dict[str, str]:
-    """The labels `cv_md`'s contact details are written with, by kind, as written (`Tel:`): the first of each kind.
-    The body drops them; a built style keeps them in its manifest and the page writes them again."""
+def contact_labels(reading: dict) -> dict[str, str]:
+    """The labels the CV's contact details are written with, by kind, with a colon (`Tel:`): the first of each kind
+    that has one. The body drops them; a built style keeps them in its manifest and the page writes them again."""
     labels: dict[str, str] = {}
-    for kind, label, _ in _parts(_header_parts(cv_md)[2]):
-        if kind:
-            labels.setdefault(kind, label)
+    for contact in reading["contacts"]:
+        if contact["label"]:
+            labels.setdefault(contact["kind"], contact["label"].rstrip(": ") + ":")
     return labels
 
 
-def _contact(lines: list[str]) -> str:
-    found, other = _details(lines)
-    spans = [_detail(kind, v) for kind in i18n.CONTACT_KINDS for v in found.get(kind, [])] + [_detail(None, p) for p in other]
+def _contact(lines: list[str], reading: dict) -> str:
+    """The contact paragraph: the reading's contacts in the template's order, then each part of `lines` (split on `|`)
+    that holds none of their values as a plain span."""
+    contacts = reading["contacts"]
+    spans = [_detail(kind, c["value"]) for kind in cv_read.CONTACT_KINDS for c in contacts if c["kind"] == kind]
+    values = [cv_read.squash(c["value"]) for c in contacts]
+    for line in lines:
+        for part in line.split("|"):
+            part = part.strip()
+            if part and not any(v in cv_read.squash(part) for v in values):
+                spans.append(_detail(None, part))
     return f'<p class="contact">{"".join(spans)}</p>' if spans else ""
 
 
-def _heading3(text: str) -> str:
-    parts = [p.strip() for p in text.split(" | ")]
-    sep = lambda s: f'<span class="sep">{s}</span>'  # noqa: E731
+def _heading3(text: str, reading: dict) -> str:
+    """An entry's `<h3>`: the reading's parts of the `###` line `text` in spans, a role alone for a line it has none of."""
     span = lambda cls, v: f'<span class="{cls}">{_inline(v)}</span>'  # noqa: E731
-    if len(parts) == 1:
-        return f'<h3>{span("role", parts[0])}</h3>'
-    org, dates = parts[1], None
-    split = _DASH_DATES.search(org) or _HYPHEN_DATES.search(org)  # the first dash is the org's, the dates may hold more
-    if split:
-        org, dates = org[:split.start()], org[split.end():]
-    out = [span("role", parts[0]), sep(" | "), span("org", org)]
-    if dates:
-        out += [sep(" - "), span("dates", dates)]
-    if len(parts) > 2:
-        out += [sep(" | "), span("place", " | ".join(parts[2:]))]
+    entry = next((e for e in reading["entries"] if e["heading"] == text), {})
+    pieces = [(cls, entry[cls], sep) for cls, sep in (("role", ""), ("org", " | "), ("dates", " - "), ("place", " | "))
+              if entry.get(cls)]
+    if not any(cls in ("role", "org") for cls, _, _ in pieces):
+        pieces = [("role", text, "")]
+    out: list[str] = []
+    for i, (cls, value, sep) in enumerate(pieces):
+        if i:
+            out.append(f'<span class="sep">{sep}</span>')
+        out.append(span(cls, value))
     return f"<h3>{''.join(out)}</h3>"
 
 
-def _level_item(text: str) -> str | None:
-    m = _LEVEL_ITEM.match(text.strip())
-    if not m:
-        return None
-    word = m["word"].strip()
-    number = _LEVELS.get(word.casefold())
-    if number is None:
-        return None
-    name = m["bold"] or m["plain"].strip()
-    return f'<li><strong>{_inline(name)}</strong> <span class="level level-{number}">{html.escape(word, quote=False)}</span></li>'
+def _level_item(text: str, levels: dict[str, int]) -> str | None:
+    """The list item `text` as a level item when the reading lists its name with a level: the name, then the level word
+    as written after a separator (`**Danish** — conversational`, `Danish (B2)`), whatever the language."""
+    plain = text.replace("**", "").strip()
+    for item in sorted(levels, key=len, reverse=True):
+        rest = plain[len(item):]
+        if plain.startswith(item) and re.match(r"[\s—–:(-]", rest):
+            word = re.sub(r"[\s)]+$", "", re.sub(r"^[\s—–:(-]+", "", rest))
+            if word:
+                return (f'<li><strong>{_inline(item)}</strong> <span class="level level-{levels[item]}">'
+                        f'{html.escape(word, quote=False)}</span></li>')
+    return None
 
 
 class _Blocks:
     """The body's blocks as `body` reads the lines: a paragraph or list is kept as text until it ends, and is built
     then, so a wrapped list item is whole before it is read for a level."""
 
-    def __init__(self) -> None:
+    def __init__(self, levels: dict[str, int]) -> None:
         self.out: list[str] = []
         self.entry = False
-        self.levels = False  # in a skills or languages section
+        self.levels = levels
         self.para: list[str] = []
         self.tag = ""  # the open list's tag
         self.items: list[str] = []
@@ -175,7 +142,7 @@ class _Blocks:
             self.out.append(f"<p>{_inline(' '.join(self.para))}</p>")
             self.para = []
         if self.items:
-            built = [(_level_item(t) if self.levels else None) or f"<li>{_inline(t)}</li>" for t in self.items]
+            built = [_level_item(t, self.levels) or f"<li>{_inline(t)}</li>" for t in self.items]
             self.out.append(f"<{self.tag}>{''.join(built)}</{self.tag}>")
             self.items = []
 
@@ -209,11 +176,12 @@ def _header_parts(cv_md: str) -> tuple[str | None, str | None, list[str]]:
     return name, tagline, preamble
 
 
-def body(cv_md: str, lang: str = "en") -> str:
-    """The CV in `cv_md` as a body (see the module's docstring); '' for a CV with nothing in it. `lang` is the ad's
-    language, which reads the section headings that tell a skills or languages list (levels)."""
+def body(cv_md: str, reading: dict) -> str:
+    """The CV in `cv_md` as a body (see the module's docstring); '' for a CV with nothing in it. `reading` is
+    `cv_read.read(cv_md)`: its sections, entries, contacts and levels give the body its classes."""
     name, tagline, preamble = _header_parts(cv_md)
-    blocks = _Blocks()
+    blocks = _Blocks({lv["item"]: lv["level"] for lv in reading["levels"] if lv["level"] is not None})
+    sections = iter(reading["sections"])
     in_header = True
     for raw in cv_md.splitlines():
         line = raw.rstrip()
@@ -221,14 +189,13 @@ def body(cv_md: str, lang: str = "en") -> str:
         if stripped.startswith("## "):
             in_header = False
             blocks.close_entry()
-            heading = cv_sections.heading(stripped)[0]
-            blocks.levels = cv_sections.kind([stripped], _LEVEL_SECTIONS, (lang, "en")) is not None
-            blocks.out.append(f"<h2>{_inline(heading)}</h2>")
+            section = next(sections)
+            blocks.out.append(f'<h2 class="kind-{section["kind"]}">{_inline(section["heading"])}</h2>')
         elif in_header:
             continue
         elif stripped.startswith("### "):
             blocks.close_entry()
-            blocks.out.append(f'<div class="entry">{_heading3(stripped[4:].strip())}')
+            blocks.out.append(f'<div class="entry">{_heading3(stripped[4:].strip(), reading)}')
             blocks.entry = True
         elif not stripped:
             blocks.flush()
@@ -246,17 +213,17 @@ def body(cv_md: str, lang: str = "en") -> str:
         header.append(f"<h1>{_inline(name)}</h1>")
     if tagline:
         header.append(f'<p class="tagline">{_inline(tagline)}</p>')
-    contact = _contact(preamble)
+    contact = _contact(preamble, reading)
     if contact:
         header.append(contact)
     head = f'<header class="cv-header"><<photo>>{chr(10).join(header)}</header>' if header else ""
     return "\n".join(x for x in [head, *blocks.out] if x)
 
 
-def letter_header(cv_md: str) -> tuple[str, str]:
+def letter_header(cv_md: str, reading: dict) -> tuple[str, str]:
     """The letter's header from the CV: ``(html, name)``, the CV's name and contact details in the `letter-header`
     shape (what the tailor writes at the top of a letter); ``("", "")`` for a CV with no name. The tagline is left out."""
     name, _, preamble = _header_parts(cv_md)
     if not name:
         return "", ""
-    return f'<header class="letter-header"><h1>{_inline(name)}</h1>{_contact(preamble)}</header>', name
+    return f'<header class="letter-header"><h1>{_inline(name)}</h1>{_contact(preamble, reading)}</header>', name
