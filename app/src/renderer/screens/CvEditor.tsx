@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { ErrorBox } from './AppName'
 import { call, draftCv, errorText } from '../api'
+import type { StyleStep } from '../api'
 import { Dialog } from './Dialog'
 import { Hint } from './Hint'
 import { Markdown } from './Markdown'
@@ -220,7 +221,7 @@ export function CvEditor({
   onSaved?: () => void
   /** The CV style: how its build stands (the sidebar's summary), whether one can be built here (not on made-up data),
    * and what to tell the app when a build starts or a style is chosen. */
-  style?: { state: 'none' | 'building' | 'ready' | 'failed' | null; canBuild: boolean; onChanged: () => void }
+  style?: { state: 'none' | 'building' | 'ready' | 'failed' | null; step?: StyleStep; canBuild: boolean; onChanged: () => void }
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -549,7 +550,7 @@ export function CvEditor({
         {saveError && <p className="field-error" role="alert">{saveError}</p>}
         </div>
       </>)}
-      {style && <StyleRow state={style.state} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
+      {style && <StyleRow state={style.state} step={style.step} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
     </>
   )
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { AppName } from './screens/AppName'
 import { WarningMark } from './screens/CheckMark'
 import { ApiError, call, errorText, findJobs, onOpen, onRunBoard, runBoard, statusSummary, stopRun } from './api'
-import type { Opening, PlanBlock, RunBoard } from './api'
+import type { Opening, PlanBlock, RunBoard, StyleStep } from './api'
 import { TabIcon } from './TabIcon'
 import { Splash } from './Splash'
 import { RemoteContext } from './remote'
@@ -36,7 +36,7 @@ function lastRunText(finishedAt: string | null | undefined): string | null {
 }
 
 /** How often the sidebar reads the summary again while a CV style is being built. */
-const STYLE_POLL_MS = 30_000
+const STYLE_POLL_MS = 5_000
 /** Search and match only on the first run: following and collecting employers wait for the next one. */
 const FIRST_RUN_SKIP = ['discover', 'follow', 'collect']
 
@@ -86,6 +86,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   // The Claude plan's window (status_summary's plan): a sidebar line only when it is nearly full
   const [plan, setPlan] = useState<PlanBlock | null>(null)
   const [styleState, setStyleState] = useState<'none' | 'building' | 'ready' | 'failed' | null>(null)
+  const [styleStep, setStyleStep] = useState<StyleStep | undefined>(undefined)
   // Bumped when a Prepare ends, to read the summary again (refreshKey would remount Matches)
   const [summaryKey, setSummaryKey] = useState(0)
   // The run: what this window asked for (`run`) and what the main process says is going (`board`),
@@ -255,6 +256,7 @@ export function App({ start }: { start?: AppStart } = {}) {
         setRecurring(typeof s.recurring_problem === 'boolean' ? s.recurring_problem : null)
         setPlan(s.plan ?? null)
         setStyleState(s.style?.state ?? null)
+        setStyleStep(s.style?.step)
       },
       () => undefined, // the caption is optional; Matches shows the failure
     )
@@ -465,7 +467,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             key={profileStart?.n ?? 0}
             start={profileStart?.at}
             onDraft={() => void setUpAgain().catch(() => undefined)}
-            style={{ state: styleState, canBuild: !doctor?.checks.some((c) => c.name === 'chromium' && c.status !== 'ok'), onChanged: () => setSummaryKey((k) => k + 1) }}
+            style={{ state: styleState, step: styleStep, canBuild: !doctor?.checks.some((c) => c.name === 'chromium' && c.status !== 'ok'), onChanged: () => setSummaryKey((k) => k + 1) }}
             onSaved={() => {
               void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
               setRefreshKey((k) => k + 1) // the matches may change with the minimum score or the age limit

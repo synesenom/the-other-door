@@ -7,7 +7,8 @@ running, starts `python -m door cv style build <copy>` as a process of its own (
 the server or the app that asked) and returns once started. The intake reads the CV's structure with one model call
 (`style_structure`, up to 60 s cold, cached by the file); a CV whose structure could not be read is refused in plain words
 and nothing starts. Its state is `HOME/.style/run.json` (`pid`, `state`
-building|ready|failed, `started_at`, `result`; the start's pending record names the process it `spawned`), its folder `HOME/.style/work` and its log `HOME/.style/build.log`.
+building|ready|failed, `started_at`, `result`, and while building the `step` it is at (its last `style` progress event:
+`message`, `done`, `total`); the start's pending record names the process it `spawned`), its folder `HOME/.style/work` and its log `HOME/.style/build.log`.
 Both the starter and the build write run.json, on purpose: the starter's `building` (no pid yet) covers the gap until
 the build takes its lock and writes its own. A build is alive while it holds the OS lock `HOME/.style/build.lock`
 (dropped by the OS when it dies, so a record left by a crash or a reboot, or a pid since reused, never reads as a build
@@ -37,6 +38,7 @@ from pypdfium2 import PdfiumError
 from door.commands import _common as common
 from door.commands import _progress
 from door.core import lock, process, profile_loader, templates, utils, workspace
+from door.core import progress as progress_mod
 from door.core.jobs import tracker
 from door.style import style_build, style_extract, style_preview, style_structure
 
@@ -177,6 +179,12 @@ def _build_core(file: str, *, progress=None, home: Path | None = None, profile_d
         if (_read(home) or {}).get("pid") == os.getpid():
             _write(home, state)
 
+    class Step:  # the stage the build is at, in its record, for the app's spinner
+        def report(self, event):
+            if event.stage == "style":
+                record({**run, "step": {"message": event.message, "done": event.done, "total": event.total}})
+
+    reporter = progress_mod.FanOutReporter(*([progress] if progress else []), Step())
     main = threading.current_thread() is threading.main_thread()
     before = signal.signal(signal.SIGTERM, _terminate) if main else None
     try:
@@ -184,7 +192,7 @@ def _build_core(file: str, *, progress=None, home: Path | None = None, profile_d
             _write(home, run)
             try:
                 result = style_build.build(
-                    pdf, work_dir=_style_dir(home) / "work", profile_dir=profile_dir or workspace.PROFILE_DIR, progress=progress)
+                    pdf, work_dir=_style_dir(home) / "work", profile_dir=profile_dir or workspace.PROFILE_DIR, progress=reporter)
             except BaseException as exc:
                 record({**run, "state": "failed", "result": {"problems": [f"{type(exc).__name__}: {exc}"]}})
                 raise
@@ -227,7 +235,8 @@ def _age(started_at: str) -> float:
 def status(home: Path, profile_dir: Path) -> dict:
     """`status_summary`'s `style` block: ``{"state": "building" | "ready" | "failed" | "none", ...}``, in that order.
 
-    building: the build holds its lock (or was started a moment ago and has not taken it yet). ready: a candidate is
+    building: the build holds its lock (or was started a moment ago and has not taken it yet), with the `step` it is at
+    once it reported one. ready: a candidate is
     waiting, `profile/style.next/cv.template.html` exists (``fonts`` and ``dropped_icons`` of the last build's result
     when it was that one's), even when a later build failed. failed: the last build failed (``problems`` say why) or its
     process died before it finished. none: no candidate waits."""
@@ -236,7 +245,7 @@ def status(home: Path, profile_dir: Path) -> dict:
     state = run.get("state")
     if state == "building":
         if lock.held(_lock_path(home)) or _pending(run):
-            return {"state": "building", "started_at": run["started_at"]}
+            return {"state": "building", "started_at": run["started_at"], **({"step": run["step"]} if "step" in run else {})}
         return {"state": "failed", "problems": ["the build stopped before it finished"]}
     if templates.liked(Path(profile_dir)).name == templates.CANDIDATE:
         out = {"state": "ready"}
