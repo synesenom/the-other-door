@@ -95,7 +95,7 @@ def _contact(lines: list[str], reading: dict) -> str:
     return f'<p class="contact">{"".join(spans)}</p>' if spans else ""
 
 
-def _heading3(text: str, reading: dict) -> str:
+def _entry_heading(text: str, reading: dict) -> str:
     """An entry's `<h3>`: the reading's parts of the `###` line `text` in spans, a role alone for a line it has none of."""
     span = lambda cls, v: f'<span class="{cls}">{_inline(v)}</span>'  # noqa: E731
     entry = next((e for e in reading["entries"] if cv_read.squash(e["heading"]) == cv_read.squash(text)), {})
@@ -195,7 +195,7 @@ def body(cv_md: str, reading: dict) -> str:
             continue
         elif stripped.startswith("### "):
             blocks.close_entry()
-            blocks.out.append(f'<div class="entry">{_heading3(stripped[4:].strip(), reading)}')
+            blocks.out.append(f'<div class="entry">{_entry_heading(stripped[4:].strip(), reading)}')
             blocks.entry = True
         elif not stripped:
             blocks.flush()

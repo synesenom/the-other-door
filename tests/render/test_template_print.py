@@ -166,7 +166,7 @@ def test_the_photo_sits_at_the_right_of_the_name_not_under_it(tmp_path, monkeypa
 
 def test_a_french_cv_and_letter_get_french_typography_date_and_links_untouched(tmp_path, monkeypatch):
     cv = (FIXTURES / "french" / "cv_body.html").read_text(encoding="utf-8").replace(
-        "</p>\n\n<h2>Expérience", '</p>\n<p><a href="https://arxiv.org/abs/2408.10754?a=b">arXiv:2408.10754</a></p>\n\n<h2>Expérience', 1)
+        '</p>\n\n<h2 class="kind-experience">Expérience', '</p>\n<p><a href="https://arxiv.org/abs/2408.10754?a=b">arXiv:2408.10754</a></p>\n\n<h2 class="kind-experience">Expérience', 1)
     letter = (FIXTURES / "french" / "letter_body.html").read_text(encoding="utf-8")
     out, results = _setup(tmp_path, monkeypatch, cv=cv, letter=letter, posting={
         "title": "Responsable des ventes", "company": "Soleil Énergie", "location": "Lyon", "language": "fr"})
