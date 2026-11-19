@@ -164,9 +164,7 @@ def _find_core(
         raise ValueError("skip leaves steps out of a full run; it cannot go with a single step")
     ran = [step] if step else [s for s in STEPS if s not in skip]
     if "match" in ran:  # before a run's minutes of reading, not at its end
-        own = profile_loader.load_config_or_defaults(profile_dir)
-        common._require_own_cv(own, profile_dir)
-        common._cv_reading(own, profile_dir)  # one cached call: a CV that cannot be read fails here, not after the scraping
+        common._require_own_cv(profile_loader.load_config_or_defaults(profile_dir), profile_dir)
 
     config = profile_loader.load_profile_config(profile_dir)
     min_score = config.get("min_score", common._DEFAULT_MIN_SCORE)

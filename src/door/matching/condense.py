@@ -21,8 +21,8 @@ Public API
     the first two sentences (role summary) and truncates to ``max_chars``,
     preferring requirement content over responsibilities when cutting.
 
-``extract_skill_terms(cv_md, config)``
-    Tokens from the CV's Skills section plus ``role_targets``/
+``extract_skill_terms(reading, config)``
+    The skills of the CV's reading (``core.cv_read``) plus ``role_targets``/
     ``search_keywords``, lower-cased, deduplicated, >= 3 chars.
 
 ``condense_postings(paths, profile_terms, config)``

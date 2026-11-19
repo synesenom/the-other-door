@@ -103,7 +103,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    (feed found) -> *dormant* (nothing relevant for `retire_after_days`) -> *followed* again (seen
    with an on-topic ad by `search` or `discover`, or `companies add NAME`). `companies` lists dormant
    employers with `·` and the reason, and `companies why NAME` explains.
-5. **`match`** — the passes over today's postings, then scoring:
+5. **`match`** — first Claude reads your CV (one small call, once per change of the CV, cached in `.cv_read/`: its skills, sections and years, in any language; if it cannot, the step is skipped, the run says so and the new jobs stay unscored for the next run), then the passes over today's postings, then scoring:
    drop the ones that can't fit (excluded companies
    or keywords, incompatible locations, duplicates), then rank the rest offline so only the
    plausible ones are scored. Each ad's language is detected from its description (`py3langid`), and ads not

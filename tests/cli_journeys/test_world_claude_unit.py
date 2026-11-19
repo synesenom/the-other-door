@@ -115,7 +115,7 @@ SAP CO (S/4HANA), Power BI, Excel avancé (VBA, Power Query)
 
 def test_the_cv_read_answer_is_a_reading_cv_read_accepts_in_any_language(tmp_path):
     """#430: the world's stand-in reads the CV on stdin, its values are stretches of it, and the world says the rest."""
-    world = {"reading": {"languages": [{"language": "Français", "level": "native"}, {"language": "Anglais", "level": "fluent"}],
+    world = {"reading": {"languages": [{"language": "Français", "code": "fr", "level": "native"}, {"language": "Anglais", "code": "en", "level": "fluent"}],
                          "kinds": {"Expérience professionnelle": "experience", "Compétences": "skills", "Langues": "languages"}}}
     (tmp_path / "world.json").write_text(json.dumps(world))
     argv = [sys.executable, str(CLAUDE), str(tmp_path), "-p", "--model", "haiku", "--system-prompt", cv_read.PROMPT,
@@ -128,5 +128,5 @@ def test_the_cv_read_answer_is_a_reading_cv_read_accepts_in_any_language(tmp_pat
     assert reading["name"] == "Léa Moreau" and reading["city"] == "Lyon" and reading["email"] == "lea@example.com"
     assert [s["kind"] for s in reading["sections"]] == ["experience", "skills", "languages"]
     assert reading["skills"] == ["SAP CO (S/4HANA)", "Power BI", "Excel avancé (VBA, Power Query)"]
-    assert reading["languages"] == [{"language": "Français", "level": "native"}]  # Anglais is not in this CV
+    assert reading["languages"] == [{"language": "Français", "code": "fr", "level": "native"}]  # Anglais is not in this CV
     assert reading["entries"][0]["start_year"] == 2018 and reading["entries"][0]["end_year"] is None

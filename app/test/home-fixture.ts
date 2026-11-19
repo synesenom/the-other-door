@@ -56,7 +56,7 @@ const ANSWERED = [
 ]
 
 /** The plain reading of a CV (what `door.core.cv_read` asks for; every value a stretch of the CV, as its check wants). */
-function plainReading(md: string, languages: { language: string; level: string }[]) {
+function plainReading(md: string, languages: { language: string; code: string; level: string }[]) {
   const location = md.match(/\*\*Location:\*\*\s*([^|\n]+?)\s*(?:\||\n|$)/)
   return {
     name: md.match(/^# (.+)$/m)?.[1].trim() ?? null,
@@ -73,7 +73,7 @@ function plainReading(md: string, languages: { language: string; level: string }
 }
 
 /** Scripts the stand-in claude's onboarding answers: `draft` is the CV it writes and reads back (`languages`: what it reads there). */
-export function answerOnboarding(scratch: string, draft: string, languages: { language: string; level: string }[] = []): void {
+export function answerOnboarding(scratch: string, draft: string, languages: { language: string; code: string; level: string }[] = []): void {
   const dir = join(scratch, 'claude-answers')
   mkdirSync(dir, { recursive: true })
   const envelope = (answer: unknown) => JSON.stringify({ result: JSON.stringify(answer) })

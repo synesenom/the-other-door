@@ -170,28 +170,37 @@ def _onboarding_cv_text(profile_dir: Path, config: dict) -> str | None:
     return text.strip()
 
 
+def _words(text: str) -> str:
+    """`text` as lower-case words alone, for comparing a todo with a line or a title."""
+    return " ".join(re.sub(r"[^\w\s]", " ", text).split()).casefold()
+
+
 def _without_skills_todos(markdown: str, todos: list[str], headings: list[str]) -> tuple[str, list[str]]:
     """A CV need not list its skills, so nothing asks for them: `TODO`s go from the skills sections the model named
-    (`headings`, the `## ` texts it wrote) with what the model listed about them, and a section with nothing else left
-    goes too."""
+    (`headings`, the `## ` texts it wrote), a section with nothing else left goes too, and so do the model's todos about
+    them: one that says what a removed `TODO` line said, or (for a bare `TODO`) names the section."""
     named = {" ".join(h.split()).casefold() for h in headings if h.strip()}
     found = False
     kept: list[str] = []
-    titles: set[str] = set()
+    gone: set[str] = set()  # what each removed TODO line said, and the section's title for a bare one
     for section in cv_sections.split(markdown):
         title = " ".join(cv_sections.heading(section[0])[0].split()).casefold() if section and section[0].startswith("## ") else None
         if title not in named or not any("TODO" in line for line in section):
             kept.extend(section)
             continue
         found = True
-        titles.add(title)
+        gone.add(_words(title))
+        for line in section[1:]:
+            if "TODO" in line and _skills_line_without_todo(line) is None:
+                if said := _words(line.replace("TODO", " ")):
+                    gone.add(said)
         body = [left for left in map(_skills_line_without_todo, section[1:]) if left is not None]
         if any(line.strip() for line in body):
             kept.extend([section[0], *body])
     if not found:
         return markdown, todos
     text = re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip() + "\n"
-    return text, [t for t in todos if not any(title in t.casefold() for title in titles)]
+    return text, [t for t in todos if not any(g in _words(t) for g in gone)]
 
 
 def _skills_line_without_todo(line: str) -> str | None:

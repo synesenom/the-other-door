@@ -146,3 +146,20 @@ def test_parse_of_null_and_junk_is_none():
 def test_parse_keeps_only_valid_sources():
     sources = [{"title": "bad", "url": "ftp://x"}, {"title": "ok", "url": "https://ok.example/p"}]
     assert salary.parse({**GOOD, "sources": sources})["sources"] == [{"title": "ok", "url": "https://ok.example/p"}]
+
+
+def test_sections_that_are_not_about_the_work_never_go_out_references_and_contacts_included():
+    cv = ("# Ada\n\n## Summary\n\nCall me.\n\n## Experience\n\n### Dev — 2020 - 2022\n- Built it\n\n"
+          "## References\n\nBo Berg, 00 00 00 99\n\n## Contact\n\nada@example.org\n\n## Skills\n\nPython\n")
+    kinds = ["summary", "experience", "other", "other", "skills"]
+    sections = [{"heading": h, "kind": k} for h, k in zip(["Summary", "Experience", "References", "Contact", "Skills"], kinds)]
+    text = _input(cv, profile={}, sections=sections)
+    assert "Built it" in text and "Python" in text
+    for gone in ("Bo Berg", "ada@example.org", "Call me"):
+        assert gone not in text
+
+
+def test_a_contact_value_is_removed_however_the_cv_spaces_it():
+    cv = "# Ada\n\n## Experience\n\n### Dev — 2020 - 2022\n- Reach me on +45  00 00\n  00 00 any time\n"
+    text = _input(cv, profile={}, contacts=[{"kind": "phone", "label": None, "value": "+45 00 00 00 00"}])
+    assert "00 00" not in text and "any time" in text

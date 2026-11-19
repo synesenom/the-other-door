@@ -75,18 +75,28 @@ def _experience_lines(description: str) -> list[str]:
     return found[:_MAX_AD_LINES]
 
 
+_SENT_KINDS = ("experience", "education", "skills", "certifications", "languages")  # the rest (a summary, references, contacts) stays home
+
+
 def _anonymous_cv(cv_text: str, profile: dict, reading: dict) -> str:
-    """The CV from its first `## ` line (the title and contact header never go), without the profile's name, email and
-    phone, nor the name, email and contact details the reading found, each taken out as the literal text."""
+    """The CV's sections about the work (`_SENT_KINDS`, by the reading's kinds), without the profile's name, email and
+    phone, nor the name, email and contact details the reading found, each taken out as its literal text, however the CV
+    spaces it."""
     private = [str(profile.get(k)) for k in ("name", "email", "phone") if profile.get(k)]
     private += [part for part in str(profile.get("name") or "").split() if len(part) > 1]
     private += [str(reading.get(k)) for k in ("name", "email") if reading.get(k)]
     private += [str(c["value"]) for c in reading.get("contacts") or [] if c.get("value")]
-    lines = (cv_text or "").splitlines()
-    start = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
-    text = "\n".join(lines[start:])
+    kinds = [s.get("kind") for s in reading.get("sections") or []]
+    kept, section = [], -1
+    for line in (cv_text or "").splitlines():
+        if line.startswith("## "):
+            section += 1
+        if 0 <= section < len(kinds) and kinds[section] in _SENT_KINDS:
+            kept.append(line)
+    text = "\n".join(kept)
     for value in sorted(set(private), key=len, reverse=True):
-        text = re.sub(re.escape(value), "", text, flags=re.IGNORECASE)
+        if value.split():
+            text = re.sub(r"\s+".join(map(re.escape, value.split())), "", text, flags=re.IGNORECASE)
     return text.strip()[:_MAX_CV_CHARS]
 
 

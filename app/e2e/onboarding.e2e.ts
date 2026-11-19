@@ -120,7 +120,7 @@ test('a good CV goes from the sources to the review, Save and a first run, askin
 test('a CV with no city leaves only the city for the review', async () => {
   const fixture = buildEmptyHome()
   test.skip(!fixture.hasPython, `no Python at ${fixture.python} (set DOOR_PYTHON)`)
-  answerOnboarding(fixture.scratch, CV_NO_CITY, [{ language: 'dansk', level: 'fluent' }])
+  answerOnboarding(fixture.scratch, CV_NO_CITY, [{ language: 'dansk', code: 'da', level: 'fluent' }])
   writeFileSync(join(fixture.scratch, 'claude-signed-in'), '')
   const sandbox = join(fixture.scratch, 'onboard')
   const app = await launch(fixture, sandbox)

@@ -484,3 +484,12 @@ def test_draft_keeps_a_todo_under_a_title_the_model_did_not_name_a_skills_one(en
 def test_draft_asks_for_its_skills_headings_and_no_kind_markers():
     assert "skills_headings" in cv_cmd._SCHEMA["required"] and "skills_headings" in cv_cmd._RULES
     assert "<!-- kind:" not in cv_cmd._RULES
+
+
+def test_a_todo_goes_with_the_todo_line_it_was_about(env, monkeypatch):
+    result = _draft_answering(
+        env, monkeypatch, "# Ada\n\n## Technical Skills\n\nTODO: list your tools\n\n## Languages\n\n- English\n",
+        ["List your tools and frameworks", "Add the year of your MSc"], ["Technical Skills"],
+    )
+    assert result["markdown"] == "# Ada\n\n## Languages\n\n- English\n"
+    assert result["todos"] == ["Add the year of your MSc"]
