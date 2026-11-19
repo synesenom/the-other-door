@@ -4,10 +4,11 @@ Opt-in (marked `live`): fetches the real search pages and ads over plain HTTP. R
 A Cloudflare refusal or challenge (`jobbank._Pushback`) is not reached.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from door.matching import locality
 from door.scrapers.boards import jobbank
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
@@ -54,10 +55,15 @@ def test_jobbank_page2_live():
 
 @pytest.mark.live
 def test_jobbank_details_live():
-    """Two ads' pages: their schema.org ``JobPosting`` JSON-LD (description, date, employer, place)."""
+    """Two local ads' pages: their schema.org ``JobPosting`` JSON-LD (description, date, employer, place).
+
+    The cards a run would open: local ones dated within the default 30 days (``scrape`` skips the rest before
+    reading their ad; the search ranks by relevance and lists ads years old)."""
+    since = datetime.now() - timedelta(days=30)
     with probe_sized("jobbank", "details"):
         session = _session()
-        cards = _cards(session, 1)
+        cards = [c for c in _cards(session, 1)
+                 if not locality.location_is_non_local(c["region"], CONFIG) and (c["updated"] or since) >= since]
         assert cards, fail("jobbank", "details", "no results to open")
         now = datetime.now(timezone.utc)
         postings = []
