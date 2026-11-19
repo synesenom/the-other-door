@@ -139,13 +139,13 @@ def show(home: Path, profile_dir: Path, config: dict) -> dict:
     "two_column": bool}, "like": {...}}}`` (absolute paths, page order; `version` changes with the images, for a cache
     buster). `like` is there only when a style is built (`profile/style.next/` or `profile/style/` has `cv.template.html`); a set that could not be printed is left
     out. Nothing is raised for a print that fails. A CV that cannot be read (`cv_read.CvReadError`) is
-    ``{"error": words}`` and nothing is written."""
+    ``{"styles": {}, "warning": words}`` (not an `error`: the caller keeps the rest of its answer) and nothing is written."""
     root = Path(home) / ".style" / "preview"
     cv_md = cv_text(Path(profile_dir), config)
     try:
         reading = cv_read.read(cv_md)
     except cv_read.CvReadError as exc:
-        return {"error": str(exc)}
+        return {"styles": {}, "warning": str(exc)}
     lang = _language(cv_md)
     photo = page_mod.profile_photo(config, {})  # no posting: the profile's own country decides
     out: dict[str, dict] = {}

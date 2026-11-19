@@ -1515,14 +1515,14 @@ async def stop_style_build() -> dict:
 async def show_style() -> dict:
     """Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built
     from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the
-    CV, the photo or a style changed; the CV is read by the model once (remembered), and one it cannot read is an error.
+    CV, the photo or a style changed; the CV is read by the model once (remembered).
 
     Returns:
         ``{"styles": {"default": {"cv": [png paths], "letter": [png paths], "version", "two_column"}, "like": {...}},
         "in_use": "like" | "default", "candidate": whether a style just built waits to be chosen}``:
         ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;
         ``like`` (the candidate when one waits, else the style kept) only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is
-        left out; a CV the model cannot read is ``{"error": words}``.
+        left out; a CV the model cannot read leaves ``styles`` empty with a ``warning`` in words.
     """
     # On a thread: a cold set prints four pages with Chromium, and the other calls must not wait for it.
     return await asyncio.to_thread(style_cmd._show_core)

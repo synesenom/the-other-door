@@ -16,7 +16,6 @@ _BLOCKS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "
 # What is not the candidate's claims: the name (h1), the contact details, the recipient's address, the date, the
 # sign-off. A header's tagline is (#189).
 _NOT_CLAIMS_CLASSES = frozenset({"contact", "recipient", "date", "closing"})
-KIND_PREFIX = "kind-"  # the class of an `<h2>` that says what its section holds (`html_guard.KIND_CLASSES`)
 SECTION = "\x00SECTION "
 MAIN, SIDE = '<div class="main">', '<div class="side">'  # the two columns `page.place_columns` wraps a CV in
 
@@ -53,7 +52,7 @@ class _Reader(HTMLParser):
         if tag in ("h2", "h3"):
             self._cur[tag] = []
         if tag == "h2":
-            self.kinds.append(next((c[len(KIND_PREFIX):] for c in dict(attrs).get("class", "").split() if c.startswith(KIND_PREFIX)), None))
+            self.kinds.append(next((c[len(html_guard.KIND_PREFIX):] for c in dict(attrs).get("class", "").split() if c.startswith(html_guard.KIND_PREFIX)), None))
 
     def handle_startendtag(self, tag, attrs):
         if tag in _BLOCKS:

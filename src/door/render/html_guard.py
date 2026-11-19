@@ -28,7 +28,8 @@ CLASSES = frozenset({
     "role", "org", "dates", "place", "sep", "level", "level-1", "level-2", "level-3", "level-4", "level-5",
 })
 # the kind of a CV section, on its `<h2>` only: the tailor writes it by what the section holds, `place_columns` reads it
-KIND_CLASSES = frozenset(f"kind-{k}" for k in cv_read.KINDS)
+KIND_PREFIX = "kind-"
+KIND_CLASSES = frozenset(f"{KIND_PREFIX}{k}" for k in cv_read.KINDS)
 NOTES = ("Keywords", "Tailoring")
 TOKENS = re.compile(r"<<(?:photo|date|company|title)>>")
 _OPENER = re.compile(r"<[A-Za-z/!?]")

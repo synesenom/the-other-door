@@ -499,7 +499,7 @@ use once ready); off, The other door's style is used again, your style kept. A C
 yet, not a PDF, no look to copy, or a look that could not be read because Claude was unreachable or its usage limit
 reached) is said at once; a build that does not work out later is not. A new CV file builds your style again from
 it. Prepared applications keep their look; after a switch "Print N prepared CVs again" does it (no Claude call; sent
-ones never change; "Try again" appears if some could not be printed). A two-column style may be read less well by
+ones never change; "Try again" appears if some could not be printed; for one prepared before sections had a kind, which a two-column style cannot place, the line says to prepare it again or revise it instead). A two-column style may be read less well by
 application systems, and the section says so.
 
 ### Your stories

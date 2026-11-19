@@ -102,6 +102,7 @@ def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Pat
     return pdf, placed, picture
 
 
+NO_KINDS_HINT = "prepare it again or revise it"
 _H2 = re.compile(r"(?=<h2[\s>])")
 
 
@@ -129,7 +130,7 @@ def place_columns(body: str, columns: templates.Columns | None) -> str:
         kind = (html_doc.kinds(section) or [None])[0]
         if kind is None and columns.side and heading.casefold() not in named_headings:
             raise ValueError(f"this CV's section {heading!r} has no kind, so the style's columns cannot place it: "
-                             "prepare it again or revise it")
+                             + NO_KINDS_HINT)
         named = heading.casefold() in named_headings
         (side if named or kind in columns.side else main).append(section)
     return f'{first}{html_doc.MAIN}{"".join(main)}</div>{html_doc.SIDE}{"".join(side)}</div>'

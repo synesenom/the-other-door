@@ -89,14 +89,14 @@ def test_show_reads_the_cv_once_and_a_second_show_of_the_same_cv_asks_nothing(wo
     assert len(asked) == 1
 
 
-def test_a_cv_that_cannot_be_read_is_an_error_in_words_and_nothing_is_written(world, monkeypatch):
+def test_a_cv_that_cannot_be_read_is_a_warning_in_words_with_no_previews_and_nothing_is_written(world, monkeypatch):
     home, profile, printer = world
 
     def fail(md):
         raise cv_read.CvReadError("Claude could not read your CV: try again")
     monkeypatch.setattr(cv_read, "_ask", fail)
     shown = _show(home, profile)
-    assert shown == {"error": "Claude could not read your CV: try again"}
+    assert shown == {"styles": {}, "warning": "Claude could not read your CV: try again"}
     assert printer.calls == [] and not (home / ".style").exists()
 
 

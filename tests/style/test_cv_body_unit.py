@@ -70,11 +70,18 @@ def test_the_contacts_come_from_the_reading_in_the_templates_order_in_any_langua
     assert cv_body.contact_labels({"contacts": contacts}) == {"location": "Sted:", "phone": "Tlf:"}
 
 
-def test_a_header_part_the_reading_has_no_contact_for_is_a_plain_span():
+def test_only_the_readings_contacts_are_written_even_when_the_header_holds_more():
     md = "# A\n\nx@y.example | Born 1990\n\n## E\n"
-    contacts = [{"kind": "email", "label": None, "value": "x@y.example"}]
-    out = make(md, contacts=contacts, sections=[{"heading": "E", "kind": "other"}])
-    assert '<span class="email"><a href="mailto:x@y.example">x@y.example</a></span><span>Born 1990</span>' in out
+    out = make(md, contacts=[], sections=[{"heading": "E", "kind": "other"}])
+    assert "contact" not in out and "x@y.example" not in out and "Born" not in out
+    contacts = [{"kind": "phone", "label": None, "value": "+45 1"}]
+    assert '<p class="contact"><span class="phone">+45 1</span></p>' in make(md, contacts=contacts, sections=[{"heading": "E", "kind": "other"}])
+
+
+def test_an_indented_section_line_is_no_section_so_the_kinds_keep_their_places():
+    md = "## Skills\n\n  ## not a heading\n\n## Languages\n\nx\n"
+    out = make(md)
+    assert html_doc.kinds(out) == ["skills", "languages"] and "not a heading" in html_doc.text(out)
 
 
 def test_a_label_that_the_reading_found_is_dropped_with_the_value_kept_once():

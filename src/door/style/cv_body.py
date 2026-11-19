@@ -6,10 +6,9 @@ markdown that `draft_cv` and `init` write. What the CV means comes from `reading
 (`core/cv_read.read`, a dict): no word list of any language is here. Nothing is translated, tailored or dropped; text and
 links are escaped and only `https:`, `mailto:` and `#` links are kept.
 
-- `# Name` is the header's `<h1>`, a `> line` its tagline, the lines before the first `##` its contact details: the
-  reading's `contacts`, one `<span>` each with its kind as a class, in the template's order (phone, email, web,
-  linkedin, github, location), the `<<photo>>` token first in the header, as the tailor writes it (`compile` swaps it);
-  a part of those lines (split on `|`) that holds no contact value is a plain `<span>` (an email address in it, a mail link).
+- `# Name` is the header's `<h1>`, a `> line` its tagline, the reading's `contacts` its contact details, one `<span>` each with its kind as a class, in the
+  template's order (phone, email, web, linkedin, github, location), nothing else of the header's lines; the `<<photo>>`
+  token comes first in the header, as the tailor writes it (`compile` swaps it);
 - `## Heading` is an `<h2 class="kind-<kind>">`, the kind and the text of the reading's section at the same place.
 - `### Heading` is an `<div class="entry">` whose `<h3>` has the reading's `role`, `org`, `dates` and `place` in spans
   with `sep` spans between (` | `, ` - `, ` | `); an entry the reading has no parts for is a role alone. Its bullets and
@@ -26,6 +25,7 @@ import html
 import re
 
 from door.core import cv_read
+from door.render import html_guard
 
 _SAFE_URL = re.compile(r"(?:https://|mailto:|#)[^\s<>\"']+$", re.I)
 _INLINE = re.compile(r"\*\*(?P<b>.+?)\*\*|\*(?P<i>[^*\s][^*]*?)\*|\[(?P<t>[^\]]+)\]\((?P<u>(?:[^()\s]|\([^()\s]*\))+)\)")
@@ -56,11 +56,11 @@ def _link(url: str) -> str:
     return url if _SAFE_URL.match(url) else ""
 
 
-def _detail(kind: str | None, value: str) -> str:
-    cls = f' class="{kind}"' if kind else ""
+def _detail(kind: str, value: str) -> str:
+    cls = f' class="{kind}"'
     plain = re.sub(r"\*\*|\[|\]\(.*?\)", "", value)  # a markdown link or bold in a detail: its text
     mail = re.fullmatch(r"(?:mailto:)?([^\s@<>\"']+@[^\s@<>\"']+)", plain)
-    if mail and kind in ("email", None):  # an address is a link, whatever label or kind it came with
+    if mail and kind == "email":
         address = html.escape(mail.group(1))
         return f'<span class="email"><a href="mailto:{address}">{address}</a></span>'
     if kind in ("web", "linkedin", "github"):
@@ -81,17 +81,11 @@ def contact_labels(reading: dict) -> dict[str, str]:
     return labels
 
 
-def _contact(lines: list[str], reading: dict) -> str:
-    """The contact paragraph: the reading's contacts in the template's order, then each part of `lines` (split on `|`)
-    that holds none of their values as a plain span."""
+def _contact(reading: dict) -> str:
+    """The contact paragraph: the reading's contacts, in the template's order. Nothing else of the header's lines is
+    a contact detail: what the reading did not find is not written."""
     contacts = reading["contacts"]
     spans = [_detail(kind, c["value"]) for kind in cv_read.CONTACT_KINDS for c in contacts if c["kind"] == kind]
-    values = [cv_read.squash(c["value"]) for c in contacts]
-    for line in lines:
-        for part in line.split("|"):
-            part = part.strip()
-            if part and not any(v in cv_read.squash(part) for v in values):
-                spans.append(_detail(None, part))
     return f'<p class="contact">{"".join(spans)}</p>' if spans else ""
 
 
@@ -159,41 +153,38 @@ class _Blocks:
         self.items.append(text)
 
 
-def _header_parts(cv_md: str) -> tuple[str | None, str | None, list[str]]:
-    """What is above the first `## ` heading: the name (`# `), the tagline (the first `>` line) and the contact lines."""
+def _header_parts(cv_md: str) -> tuple[str | None, str | None]:
+    """What is above the first `## ` heading: the name (`# `) and the tagline (the first `>` line)."""
     name = tagline = None
-    preamble: list[str] = []
     for raw in cv_md.splitlines():
         stripped = raw.strip()
-        if stripped.startswith("## "):
+        if raw.startswith("## "):
             break
         if stripped.startswith("# ") and name is None:
             name = stripped[2:].strip()
         elif stripped.startswith(">"):
             tagline = tagline or stripped.lstrip("> ").strip() or None
-        elif stripped and not stripped.startswith("#"):
-            preamble.append(stripped)
-    return name, tagline, preamble
+    return name, tagline
 
 
 def body(cv_md: str, reading: dict) -> str:
     """The CV in `cv_md` as a body (see the module's docstring); '' for a CV with nothing in it. `reading` is
     `cv_read.read(cv_md)`: its sections, entries, contacts and levels give the body its classes."""
-    name, tagline, preamble = _header_parts(cv_md)
+    name, tagline = _header_parts(cv_md)
     blocks = _Blocks({lv["item"]: lv["level"] for lv in reading["levels"] if lv["level"] is not None})
     sections = iter(reading["sections"])
     in_header = True
     for raw in cv_md.splitlines():
         line = raw.rstrip()
         stripped = line.strip()
-        if stripped.startswith("## "):
+        if line.startswith("## "):  # the test `cv_read` counts the sections by
             in_header = False
             blocks.close_entry()
             section = next(sections)
-            blocks.out.append(f'<h2 class="kind-{section["kind"]}">{_inline(section["heading"])}</h2>')
+            blocks.out.append(f'<h2 class="{html_guard.KIND_PREFIX}{section["kind"]}">{_inline(section["heading"])}</h2>')
         elif in_header:
             continue
-        elif stripped.startswith("### "):
+        elif line.startswith("### "):
             blocks.close_entry()
             blocks.out.append(f'<div class="entry">{_entry_heading(stripped[4:].strip(), reading)}')
             blocks.entry = True
@@ -213,7 +204,7 @@ def body(cv_md: str, reading: dict) -> str:
         header.append(f"<h1>{_inline(name)}</h1>")
     if tagline:
         header.append(f'<p class="tagline">{_inline(tagline)}</p>')
-    contact = _contact(preamble, reading)
+    contact = _contact(reading)
     if contact:
         header.append(contact)
     head = f'<header class="cv-header"><<photo>>{chr(10).join(header)}</header>' if header else ""
@@ -223,7 +214,7 @@ def body(cv_md: str, reading: dict) -> str:
 def letter_header(cv_md: str, reading: dict) -> tuple[str, str]:
     """The letter's header from the CV: ``(html, name)``, the CV's name and contact details in the `letter-header`
     shape (what the tailor writes at the top of a letter); ``("", "")`` for a CV with no name. The tagline is left out."""
-    name, _, preamble = _header_parts(cv_md)
+    name, _ = _header_parts(cv_md)
     if not name:
         return "", ""
-    return f'<header class="letter-header"><h1>{_inline(name)}</h1>{_contact(preamble, reading)}</header>', name
+    return f'<header class="letter-header"><h1>{_inline(name)}</h1>{_contact(reading)}</header>', name

@@ -650,10 +650,13 @@ def render_body(person: dict, lang: str, *, reformat: bool = False) -> str:
     md, expected = render_cv_md(person, lang, tailor=True)
     # The recorded answers of the facts reader are keyed by this body's bytes and were measured on the body as it was
     # before `cv_body` read a reading (#431); no answer is recorded again, so the reading handed over is what the old
-    # word lists found: no `h2` kind class (removed below), a detail with a label its kind, an entry
+    # word lists found: no `h2` kind class (removed below), a detail with a label its kind (one with none a plain span, written here), an entry
     # heading with a ` | ` its parts, a level word of the tailor's English and CEFR table its level. Drop this when
     # the facts corpus is recorded again.
     contacts = [c for c in expected["contacts"] if c["label"]]
+    unlabelled = "".join(
+        f'<span class="email"><a href="mailto:{c["value"]}">{c["value"]}</a></span>' if c["kind"] == "email"
+        else f"<span>{html.escape(c['value'], quote=False)}</span>" for c in expected["contacts"] if not c["label"])
     levels = []
     for item, level in expected["levels"].items():
         found = re.search(rf"^- (?:\*\*)?{re.escape(item)}(?:\*\*)?\s*(?:[—–:]|\()\s*([^()]+?)\)?\s*$", md, re.M)
@@ -662,6 +665,8 @@ def render_body(person: dict, lang: str, *, reformat: bool = False) -> str:
     reading = {**cv_read._empty(), "sections": [{"heading": h, "kind": k} for h, k in expected["sections"].items()],
                "contacts": contacts, "entries": [e for e in expected["entries"] if " | " in e["heading"]], "levels": levels}
     body = re.sub(r' class="kind-\w+"', "", cv_body.body(md, reading))
+    if unlabelled:  # the old body wrote a detail with no label as a plain span, an address as a mail link
+        body = body.replace("</header>", f'\n<p class="contact">{unlabelled}</p></header>', 1)
     if reformat:
         for ix in person["jobs"][0]["bullets"][:2]:
             _, anchor, same, _ = _BULLETS[lang][ix]
