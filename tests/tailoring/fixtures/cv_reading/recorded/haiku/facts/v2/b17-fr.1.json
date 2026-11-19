@@ -1,0 +1,22 @@
+{
+ "answer": [
+  {
+   "kind": "skill",
+   "value": "Airflow",
+   "context": "SQL, Docker, Git, Excel, Power BI, reporting, Airflow",
+   "file": "cv"
+  },
+  {
+   "kind": "certification",
+   "value": "CISSP",
+   "context": "Prince2 Foundation — 2018 CISSP",
+   "file": "cv"
+  },
+  {
+   "kind": "degree",
+   "value": "Doctorat en économie",
+   "context": "Université d'Exemple, Nantes – Doctorat en économie (février 2009 – juillet 2011)",
+   "file": "cv"
+  }
+ ]
+}

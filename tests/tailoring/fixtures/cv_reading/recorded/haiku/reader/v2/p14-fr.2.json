@@ -1,0 +1,139 @@
+{
+ "answer": {
+  "name": "Camille Roche",
+  "email": "camille.roche@example.com",
+  "city": "Nantes",
+  "country": "fr",
+  "languages": [
+   {
+    "language": "French",
+    "level": "native"
+   },
+   {
+    "language": "English",
+    "level": "fluent"
+   },
+   {
+    "language": "German",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Parcours",
+    "kind": "experience"
+   },
+   {
+    "heading": "Formation",
+    "kind": "education"
+   },
+   {
+    "heading": "Savoir-faire",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Langues",
+    "kind": "languages"
+   },
+   {
+    "heading": "Centres d'intérêt",
+    "kind": "interests"
+   },
+   {
+    "heading": "Bénévolat",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tél",
+    "value": "+33 89 82 64 74"
+   },
+   {
+    "kind": "email",
+    "label": "Courriel",
+    "value": "camille.roche@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Site",
+    "value": "example.com/camille.roche"
+   },
+   {
+    "kind": "location",
+    "label": "Lieu",
+    "value": "Nantes"
+   }
+  ],
+  "levels": [
+   {
+    "item": "Français",
+    "level": 5
+   },
+   {
+    "item": "Anglais",
+    "level": 4
+   },
+   {
+    "item": "Allemand",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Linden Works, Nantes – Responsable analytique (mars 2019 – présent)",
+    "role": "Responsable analytique",
+    "org": "Linden Works",
+    "dates": "mars 2019 – présent",
+    "place": "Nantes",
+    "start_year": 2019,
+    "end_year": null
+   },
+   {
+    "heading": "Maple Robotics, Lyon – Analyste senior (août 2015 – janvier 2019)",
+    "role": "Analyste senior",
+    "org": "Maple Robotics",
+    "dates": "août 2015 – janvier 2019",
+    "place": "Lyon",
+    "start_year": 2015,
+    "end_year": 2019
+   },
+   {
+    "heading": "Northwind Labs, Lille – Analyste de données (janvier 2012 – juin 2015)",
+    "role": "Analyste de données",
+    "org": "Northwind Labs",
+    "dates": "janvier 2012 – juin 2015",
+    "place": "Lille",
+    "start_year": 2012,
+    "end_year": 2015
+   },
+   {
+    "heading": "Université d'Exemple, Nantes – Licence de mathématiques (juin 2007 – novembre 2010)",
+    "role": "Licence de mathématiques",
+    "org": "Université d'Exemple",
+    "dates": "juin 2007 – novembre 2010",
+    "place": "Nantes",
+    "start_year": 2007,
+    "end_year": 2010
+   },
+   {
+    "heading": "Université d'Exemple, Nantes – Master en informatique (novembre 2010 – avril 2012)",
+    "role": "Master en informatique",
+    "org": "Université d'Exemple",
+    "dates": "novembre 2010 – avril 2012",
+    "place": "Nantes",
+    "start_year": 2010,
+    "end_year": 2012
+   }
+  ]
+ }
+}

@@ -1,0 +1,16 @@
+{
+ "answer": [
+  {
+   "kind": "employer",
+   "value": "Vandelay Industries",
+   "context": "Analyste de données | Vandelay Industries - 2009 - 2013",
+   "file": "cv"
+  },
+  {
+   "kind": "year",
+   "value": "2009",
+   "context": "Analyste de données | Vandelay Industries - 2009 - 2013",
+   "file": "cv"
+  }
+ ]
+}

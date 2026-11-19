@@ -1,0 +1,22 @@
+{
+ "answer": [
+  {
+   "kind": "degree",
+   "value": "MBA i strategisk ledning",
+   "context": "Exempel Universitet, Uppsala – MBA i strategisk ledning (maj 2008 – oktober 2010)",
+   "file": "cv"
+  },
+  {
+   "kind": "skill",
+   "value": "Apache Spark",
+   "context": "Python, SQL, Docker, Git, Excel, rapportering, Apache Spark",
+   "file": "cv"
+  },
+  {
+   "kind": "certification",
+   "value": "PMP",
+   "context": "PMP",
+   "file": "cv"
+  }
+ ]
+}

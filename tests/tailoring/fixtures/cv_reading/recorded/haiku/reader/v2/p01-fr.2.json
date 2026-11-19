@@ -1,0 +1,159 @@
+{
+ "answer": {
+  "name": "Julien Fabre",
+  "email": "julien.fabre@example.com",
+  "city": "Lille",
+  "country": "fr",
+  "languages": [
+   {
+    "language": "French",
+    "level": "native"
+   },
+   {
+    "language": "English",
+    "level": "fluent"
+   },
+   {
+    "language": "German",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Expérience professionnelle",
+    "kind": "experience"
+   },
+   {
+    "heading": "Formation",
+    "kind": "education"
+   },
+   {
+    "heading": "Compétences",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Langues",
+    "kind": "languages"
+   },
+   {
+    "heading": "Centres d'intérêt",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tél",
+    "value": "+33 82 47 89 93"
+   },
+   {
+    "kind": "email",
+    "label": "Courriel",
+    "value": "julien.fabre@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Site",
+    "value": "example.com/julien.fabre"
+   },
+   {
+    "kind": "location",
+    "label": "Lieu",
+    "value": "Lille"
+   }
+  ],
+  "levels": [
+   {
+    "item": "Anglais",
+    "level": 4
+   },
+   {
+    "item": "Allemand",
+    "level": 1
+   },
+   {
+    "item": "Français",
+    "level": 5
+   },
+   {
+    "item": "SQL",
+    "level": null
+   },
+   {
+    "item": "Docker",
+    "level": null
+   },
+   {
+    "item": "Git",
+    "level": null
+   },
+   {
+    "item": "Excel",
+    "level": null
+   },
+   {
+    "item": "Power BI",
+    "level": null
+   },
+   {
+    "item": "planification",
+    "level": null
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Responsable analytique | Bluebird Systems — 2018 - présent | Lille",
+    "role": "Responsable analytique",
+    "org": "Bluebird Systems",
+    "dates": "2018 - présent",
+    "place": "Lille",
+    "start_year": 2018,
+    "end_year": null
+   },
+   {
+    "heading": "Analyste senior | Linden Works — 2014 - 2018 | Nantes",
+    "role": "Analyste senior",
+    "org": "Linden Works",
+    "dates": "2014 - 2018",
+    "place": "Nantes",
+    "start_year": 2014,
+    "end_year": 2018
+   },
+   {
+    "heading": "Analyste de données | Maple Robotics — 2011 - 2014 | Lyon",
+    "role": "Analyste de données",
+    "org": "Maple Robotics",
+    "dates": "2011 - 2014",
+    "place": "Lyon",
+    "start_year": 2011,
+    "end_year": 2014
+   },
+   {
+    "heading": "Licence de mathématiques | Université d'Exemple — 2006 - 2009 | Lille",
+    "role": "Licence de mathématiques",
+    "org": "Université d'Exemple",
+    "dates": "2006 - 2009",
+    "place": "Lille",
+    "start_year": 2006,
+    "end_year": 2009
+   },
+   {
+    "heading": "Master en informatique | Université d'Exemple — 2009 - 2011 | Lille",
+    "role": "Master en informatique",
+    "org": "Université d'Exemple",
+    "dates": "2009 - 2011",
+    "place": "Lille",
+    "start_year": 2009,
+    "end_year": 2011
+   }
+  ]
+ }
+}
