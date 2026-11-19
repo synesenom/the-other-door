@@ -341,7 +341,7 @@ if some requests also failed — partial success isn't downgraded). A site that
 returned not a single record — no errors, but nothing new, known or too old
 either, and no recognised zero-hit results page (`sdk.record_answered`: a scraper that read the site's own "no hits" answer, which is a quiet day, `ok`) — is `outcome: "empty"` with a `"warning"`: a flag (the site may have
 changed), not a failure — exit code unchanged, watermark not moved, and listed
-in `status_summary`'s `site_failures`. A per-company feed platform that no followed
+in `status_summary`'s `site_failures`. A site that dropped postings as not local (its `non_local` above 0) answered too: `ok`. A per-company feed platform that no followed
 employer uses is never fetched (`collect` does not even list it unless named): `outcome: "not_configured"`, a quiet skip; a site resting
 after pushback (`Site.cooldown_hours`) is skipped as `outcome: "resting"` with its `until`, also a quiet
 skip. `find`

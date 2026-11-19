@@ -502,6 +502,24 @@ def test_scrape_core_answered_with_no_hits_is_ok_and_moves_the_watermark(cli_env
     assert "jobindex" in freshness.load_scrape_state(cli_env.jobs_dir)
 
 
+def test_scrape_core_a_site_that_dropped_postings_as_not_local_is_ok_not_empty(cli_env, monkeypatch):
+    """A first page all abroad is an answer: the site worked, there was nothing local."""
+    import door.scrapers.boards.jobindex as ji
+    from door.scrapers import record_non_local
+
+    def abroad(config, **kwargs):
+        record_non_local("jobindex", 3)
+        return []
+
+    monkeypatch.setattr(ji, "scrape", abroad)
+    monkeypatch.delattr(ji, "iter_scrape", raising=False)
+
+    entry = scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert entry["outcome"] == "ok"
+    assert entry["non_local"] == 3
+    assert "warning" not in entry
+
+
 def test_scrape_core_answered_with_an_error_is_still_failed(cli_env, monkeypatch):
     import door.scrapers.boards.jobindex as ji
     from door.scrapers import record_answered, record_error

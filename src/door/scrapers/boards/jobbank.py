@@ -204,7 +204,7 @@ def _posting(card: dict, detail: dict, scraped_at: datetime) -> dict:
 
 
 def _card_posting(card: dict, scraped_at: datetime) -> dict:
-    """A posting from a search card alone (the probe's; no description)."""
+    """A posting from a search card alone, no description (the probe's, and a card older than the cutoff)."""
     return _posting(card, {"title": "", "company": "", "location": "", "description": "", "posted_at": None}, scraped_at)
 
 
@@ -250,9 +250,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if card["id"] in known_ids:
                     out.append({"platform_id": card["id"], "seen_only": True})
                     continue
-                if not keep_local([{"location": card["region"]}], config, _SITE) or (
-                        since and card["updated"] and card["updated"] < since):
-                    record_answered(_SITE)  # the page was read: a quiet day, not a changed site
+                if not keep_local([{"location": card["region"]}], config, _SITE):
+                    continue
+                if since and card["updated"] and card["updated"] < since:
+                    out.append(_card_posting(card, scraped_at))  # the engine counts it stale; no ad request
                     continue
                 report(f"'{keyword}' details", len(out) - start + 1, len(cards))
                 try:

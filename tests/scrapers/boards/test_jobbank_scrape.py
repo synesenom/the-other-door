@@ -308,14 +308,16 @@ def test_a_card_older_than_the_cutoff_costs_no_request():
     out = jobbank.scrape({**_CFG, "max_pages_per_keyword": 1}, since=since)
 
     old = ["3119510", "3104812"]
-    assert [p["platform_id"] for p in out] == [i for i in _PAGE1 if i not in old]
+    assert [p["platform_id"] for p in out if p["description"]] == [i for i in _PAGE1 if i not in old]
+    # An old card comes back as a card posting (no description), for the engine to count as stale.
+    assert [p["platform_id"] for p in out if not p["description"]] == old
     assert not any(jobbank._detail_url(i) in _requested() for i in old)
 
 
 @responses.activate
-def test_a_page_of_cards_all_skipped_is_an_answer_not_an_empty_site():
-    """Every on-topic card past the cutoff or abroad: the site answered (a quiet day), it did not change."""
+def test_skipping_cards_does_not_pretend_the_page_said_no_hits():
+    """Only a page that says there are no hits is an answer; skipped cards are the engine's to count."""
     _serve_search(pages=("search_page1.html",))
     drain_answered("jobbank")
-    out = jobbank.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2030, 1, 1, tzinfo=timezone.utc))
-    assert out == [] and drain_answered("jobbank") is True
+    jobbank.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2030, 1, 1, tzinfo=timezone.utc))
+    assert drain_answered("jobbank") is False
