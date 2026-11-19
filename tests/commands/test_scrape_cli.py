@@ -12,6 +12,7 @@ import types
 from datetime import date
 
 import pytest
+import responses
 from click.testing import CliRunner
 
 from door.cli import cli
@@ -1011,3 +1012,24 @@ def test_a_french_boards_gender_tag_is_stripped_from_the_stored_title(cli_env, m
 
     stored = sorted(json.loads(open(p).read())["title"] for p in result["written"])
     assert stored == ["Chef de service comptable - Paris Centre", "Comptable"]
+
+
+@responses.activate
+def test_scrape_core_a_board_whose_every_ad_is_known_is_ok_not_empty(cli_env, monkeypatch):
+    """#418: globalnyt skips known ids itself; a list of only known ads is a quiet day."""
+    from pathlib import Path
+
+    import door.scrapers.boards.globalnyt as gn
+
+    fix = Path(__file__).parents[1] / "scrapers" / "boards" / "fixtures" / "globalnyt"
+    responses.add(responses.GET, gn._LIST_URL, body=(fix / "stilling_list.json").read_text(encoding="utf-8"),
+                  content_type="application/json")
+    real = gn.scrape
+    known = frozenset({"510393", "510291", "508636", "456923"})
+    monkeypatch.setattr(gn, "scrape", lambda config, **kwargs: real(config, **{**kwargs, "known_ids": known}))
+    monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
+
+    entry = scrape_cmd._scrape_core(["globalnyt"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert entry["outcome"] == "ok"
+    assert entry["count"] == 0
+    assert "warning" not in entry
