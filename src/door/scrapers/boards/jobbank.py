@@ -204,7 +204,7 @@ def _posting(card: dict, detail: dict, scraped_at: datetime) -> dict:
 
 
 def _card_posting(card: dict, scraped_at: datetime) -> dict:
-    """A posting from a search card alone (the probe's; no description)."""
+    """A posting from a search card alone, no description (the probe's, and a card older than the cutoff)."""
     return _posting(card, {"title": "", "company": "", "location": "", "description": "", "posted_at": None}, scraped_at)
 
 
