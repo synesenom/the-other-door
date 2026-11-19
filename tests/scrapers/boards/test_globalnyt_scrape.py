@@ -63,7 +63,8 @@ def test_a_known_ad_costs_no_detail_request_and_an_old_one_is_skipped():
     since = datetime(2026, 10, 1, tzinfo=timezone.utc)
     postings = globalnyt.scrape(_CFG, known_ids=frozenset({"510393"}), since=since)
     # the old ad comes back dated for the engine to count stale, from the list alone
-    assert {p["platform_id"] for p in postings} == {"510291", "508636", "456923"}
+    assert {p["platform_id"] for p in postings if not p.get("seen_only")} == {"510291", "508636", "456923"}
+    assert [p for p in postings if p.get("seen_only")] == [{"platform_id": "510393", "seen_only": True}]
     assert next(p for p in postings if p["platform_id"] == "456923")["posted_at"] < "2026-10-01"
     assert not any("mhpss-advisor" in c.request.url for c in responses.calls)
     assert not any("universitetspraktikant" in c.request.url for c in responses.calls)
@@ -99,7 +100,8 @@ def test_a_failing_list_is_an_error():
 def test_a_list_of_only_known_ads_is_a_quiet_day():
     _serve(details=False)
     known = frozenset({"510393", "510291", "508636", "456923"})
-    assert globalnyt.scrape(_CFG, known_ids=known) == []
+    out = globalnyt.scrape(_CFG, known_ids=known)
+    assert {p["platform_id"] for p in out} == known and all(p.get("seen_only") for p in out)
     assert drain_answered("globalnyt") is True
 
 

@@ -273,13 +273,13 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if posting is None:
                     continue
                 platform_id = posting["platform_id"]
-                if platform_id in seen or platform_id in known_ids:
+                if platform_id in seen:
                     continue
                 seen.add(platform_id)
-                postings.append(posting)
+                postings.append({"platform_id": platform_id, "seen_only": True} if platform_id in known_ids else posting)
             if len(hits) < _PAGE_SIZE or offset + len(hits) >= total:
                 break
-        log_keyword_results(_SITE, keyword, postings[start:])
+        log_keyword_results(_SITE, keyword, [p for p in postings[start:] if not p.get("seen_only")])
     return postings
 
 

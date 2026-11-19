@@ -235,7 +235,13 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     seen.add(card["id"])
                     record_non_local(_SITE, 1)
                 continue
-            if card["id"] in seen or card["id"] in known_ids or not _relevant(card, terms):
+            if card["id"] in seen:
+                continue
+            if card["id"] in known_ids:
+                seen.add(card["id"])
+                postings.append({"platform_id": card["id"], "seen_only": True})
+                continue
+            if not _relevant(card, terms):
                 continue
             seen.add(card["id"])
             try:
@@ -250,7 +256,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             postings.append(_to_posting(card, description, scraped_at))
         if stopped or not has_next or reached_cutoff or not cards:
             break
-    log_keyword_results(_SITE, country.upper(), postings)
+    log_keyword_results(_SITE, country.upper(), [p for p in postings if not p.get("seen_only")])
     return postings
 
 

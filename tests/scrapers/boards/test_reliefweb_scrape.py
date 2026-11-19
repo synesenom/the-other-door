@@ -62,6 +62,8 @@ def test_known_ids_and_old_jobs_are_skipped():
     postings = reliefweb.scrape(_ANY, known_ids=frozenset({"4236426"}), since=since)
     # not the known Nepal one; the ones posted before 28 Oct 12:00 (Kenya 26th, Guatemala 27th) come back dated, for
     # the engine to count stale
+    assert [p for p in postings if p.get("seen_only")] == [{"platform_id": "4236426", "seen_only": True}]
+    postings = [p for p in postings if not p.get("seen_only")]
     old = {p["platform_id"] for p in postings if p["posted_at"] < "2026-10-28T12:00"}
     assert {p["platform_id"] for p in postings} - old == {"4235500", "4235700"}
     assert old and "4236426" not in old
@@ -73,7 +75,8 @@ def test_a_feed_of_only_known_jobs_is_a_quiet_day():
     ids = frozenset(p["platform_id"] for p in reliefweb.scrape(_ANY))
     drain_answered("reliefweb")
     _serve()
-    assert reliefweb.scrape(_ANY, known_ids=ids) == []
+    out = reliefweb.scrape(_ANY, known_ids=ids)
+    assert {p["platform_id"] for p in out} == ids and all(p.get("seen_only") for p in out)
     assert drain_answered("reliefweb") is True
 
 
