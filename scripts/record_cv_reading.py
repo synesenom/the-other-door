@@ -22,7 +22,14 @@ from __future__ import annotations
 
 import re
 
-REPO = None  # set below, after the imports a script needs
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
+
+from door.render import html_doc  # noqa: E402
+from door.tailoring import facts  # noqa: E402
 
 
 def _n(value) -> str:
@@ -79,3 +86,78 @@ def score_reader(expected: dict, answer: dict) -> dict:
         for part in ("role", "org", "dates", "place"):
             _count(score, f"heading_{part}", _n(got.get(part)) == _n(want[part]))
     return score
+
+
+# --- scoring the facts check ------------------------------------------------------------------------------------
+
+KINDS = ("number", "year", "employer", "skill", "certification", "degree")
+
+
+def _val(value) -> str:
+    """A claimed value for comparison: ``1,8 M kr`` and ``1.8M kr`` are one."""
+    return re.sub(r"\s+", "", _n(value)).replace(",", ".")
+
+
+def is_verbatim(quote: str, body_html: str) -> bool:
+    """The quote is a stretch of the body's text (spacing squashed, as `facts` squashes it)."""
+    quote = facts._squash(quote or "")
+    return bool(quote) and quote in facts._squash(html_doc.text(body_html))
+
+
+def _findings(answer) -> list[dict]:
+    return [f for f in answer if isinstance(f, dict)] if isinstance(answer, list) else []
+
+
+def _matches(plant: dict, found: dict) -> bool:
+    if found.get("kind") != plant["kind"]:
+        return False
+    context = _val(found.get("context"))
+    return (_val(found.get("value")) == _val(plant["planted_value"]) or _val(plant["planted_value"]) in context
+            or _val(plant["quote"]) in context)
+
+
+def score_facts(plants: list[dict], findings, body_html: str) -> dict:
+    """One body's reading: `per_kind` {kind: {planted, found}} for the kinds planted, `false_flags` (findings that
+    match no plant), `verbatim` (findings whose context is in the body, of all findings). An error answer finds nothing."""
+    found = _findings(findings)
+    per_kind: dict = {}
+    for plant in plants:
+        cell = per_kind.setdefault(plant["kind"], {"planted": 0, "found": 0})
+        cell["planted"] += 1
+        cell["found"] += any(_matches(plant, f) for f in found)
+    false = sum(not any(_matches(p, f) for p in plants) for f in found)
+    return {"per_kind": per_kind, "false_flags": false,
+            "verbatim": (sum(is_verbatim(f.get("context"), body_html) for f in found), len(found))}
+
+
+def stability(runs: dict) -> float:
+    """The share of bodies whose set of (kind, value) flags is the same in every run (`runs`: case to each run's findings)."""
+    same = [len({frozenset((f.get("kind"), _val(f.get("value"))) for f in _findings(r)) for r in rs}) == 1
+            for rs in runs.values()]
+    return sum(same) / len(same) if same else 0.0
+
+
+# --- the go thresholds of #429 ----------------------------------------------------------------------------------
+
+FACTS_GO = {"recall": 0.90, "false_clean_max": 1, "verbatim": 0.98, "stable": 0.95}
+FACTS_NO_GO = {"recall": 0.80, "false_clean_max": 2}
+READER_GO = {"sections": 0.98, "contacts": 0.98, "name": 1.0, "email": 1.0, "years": 0.95}
+READER_NO_GO = 0.80
+
+
+def facts_verdict(report: dict) -> str:
+    """`go`, `no-go` or `close` for a facts report: `per_kind` recall, `false_clean_max` (most false flags on a clean
+    body), `verbatim` and `stable` shares."""
+    recalls = list(report["per_kind"].values())
+    if min(recalls) < FACTS_NO_GO["recall"] or report["false_clean_max"] > FACTS_NO_GO["false_clean_max"]:
+        return "no-go"
+    ok = (min(recalls) >= FACTS_GO["recall"] and report["false_clean_max"] <= FACTS_GO["false_clean_max"]
+          and report["verbatim"] >= FACTS_GO["verbatim"] and report["stable"] >= FACTS_GO["stable"])
+    return "go" if ok else "close"
+
+
+def reader_verdict(report: dict) -> str:
+    """`go`, `no-go` or `close` for a reader report (a share per gated field)."""
+    if any(report[f] < READER_NO_GO for f in READER_GO):
+        return "no-go"
+    return "go" if all(report[f] >= t for f, t in READER_GO.items()) else "close"

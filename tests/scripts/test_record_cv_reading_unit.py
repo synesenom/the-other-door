@@ -96,3 +96,84 @@ def test_working_languages_are_the_set_at_native_fluent_or_working():
 def test_an_error_answer_misses_everything():
     score = rcr.score_reader(EXPECTED, {"error": "timeout"})
     assert score["name"] == {"hit": 0, "total": 1} and score["sections"] == {"hit": 0, "total": 2}
+
+
+# --- the facts check ---------------------------------------------------------------------------------------------
+
+BODY = ('<h2>Erfaring</h2><div class="entry"><h3><span class="role">Analyst</span> | <span class="org">Acme</span>'
+        '</h3><ul><li>Cut costs by 1,8 M kr in two  years.</li></ul></div>')
+
+
+def test_a_quote_is_verbatim_when_the_body_reads_it_squashed():
+    assert rcr.is_verbatim("Cut costs by 1,8 M kr in two years.", BODY)  # nbsp and a double space squashed
+    assert rcr.is_verbatim("Analyst | Acme", BODY)
+    assert not rcr.is_verbatim("Cut costs by 2 M kr", BODY)
+    assert not rcr.is_verbatim("", BODY)
+
+
+PLANTS = [{"kind": "number", "planted_value": "1,8 M kr", "quote": "Cut costs by 1,8 M kr"},
+          {"kind": "employer", "planted_value": "Globex", "quote": "Globex"}]
+
+
+def finding(kind, value, context):
+    return {"kind": kind, "value": value, "context": context, "file": "cv"}
+
+
+def test_a_plant_is_found_by_its_kind_and_value_or_its_quote():
+    found = [finding("number", "1.8M kr", "Cut costs by 1,8 M kr in two years."), finding("employer", "Globex", "Analyst | Globex")]
+    score = rcr.score_facts(PLANTS, found, BODY)
+    assert score["per_kind"] == {"number": {"planted": 1, "found": 1}, "employer": {"planted": 1, "found": 1}}
+    assert score["false_flags"] == 0 and score["verbatim"] == (1, 2)  # "Analyst | Globex" is not in the body
+
+
+def test_the_right_value_under_the_wrong_kind_is_a_miss_and_a_false_flag():
+    score = rcr.score_facts(PLANTS[1:], [finding("skill", "Globex", "Globex")], "Globex")
+    assert score["per_kind"]["employer"] == {"planted": 1, "found": 0} and score["false_flags"] == 1
+
+
+def test_a_flag_that_is_no_plant_is_a_false_flag_and_a_clean_body_has_only_those():
+    score = rcr.score_facts([], [finding("skill", "SQL", "x"), finding("year", "2019", "y")], BODY)
+    assert score["false_flags"] == 2 and score["per_kind"] == {}
+
+
+def test_an_error_answer_finds_nothing():
+    assert rcr.score_facts(PLANTS, {"error": "timeout"}, BODY)["per_kind"]["number"]["found"] == 0
+
+
+def test_stability_is_the_share_of_bodies_with_the_same_flags_in_every_run_whatever_the_order():
+    a, b = finding("skill", "SQL", "x"), finding("year", "2019", "y")
+    same = {"c1": [[a, b], [b, a], [a, b]], "c2": [[], [], []]}
+    assert rcr.stability(same) == 1.0
+    differs = {"c1": [[a, b], [b], [a, b]], "c2": [[], [], []]}
+    assert rcr.stability(differs) == 0.5
+
+
+def facts_report(**changes):
+    base = {"per_kind": {k: 0.95 for k in rcr.KINDS}, "false_clean_max": 1, "verbatim": 0.99, "stable": 0.96}
+    base.update(changes)
+    return base
+
+
+def test_the_facts_verdict_follows_the_named_thresholds():
+    assert rcr.facts_verdict(facts_report()) == "go"
+    assert rcr.facts_verdict(facts_report(per_kind={**facts_report()["per_kind"], "skill": 0.89})) == "close"
+    assert rcr.facts_verdict(facts_report(per_kind={**facts_report()["per_kind"], "skill": 0.9})) == "go"
+    assert rcr.facts_verdict(facts_report(false_clean_max=2)) == "close"
+    assert rcr.facts_verdict(facts_report(false_clean_max=3)) == "no-go"
+    assert rcr.facts_verdict(facts_report(verbatim=0.97)) == "close"
+    assert rcr.facts_verdict(facts_report(stable=0.94)) == "close"
+    assert rcr.facts_verdict(facts_report(per_kind={**facts_report()["per_kind"], "degree": 0.79})) == "no-go"
+
+
+def reader_report(**changes):
+    base = {"sections": 1.0, "contacts": 0.99, "name": 1.0, "email": 1.0, "years": 0.95}
+    base.update(changes)
+    return base
+
+
+def test_the_reader_verdict_follows_the_named_thresholds():
+    assert rcr.reader_verdict(reader_report()) == "go"
+    assert rcr.reader_verdict(reader_report(sections=0.97)) == "close"
+    assert rcr.reader_verdict(reader_report(name=0.99)) == "close"
+    assert rcr.reader_verdict(reader_report(years=0.94)) == "close"
+    assert rcr.reader_verdict(reader_report(years=0.79)) == "no-go"
