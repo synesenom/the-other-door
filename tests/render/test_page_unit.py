@@ -8,11 +8,49 @@ def test_a_heading_inside_the_header_stays_in_the_header_and_the_columns_start_a
     left the columns inside the header, which the template places in its own grid area."""
     from door.core import templates
     body = ('<header class="cv-header"><h1>A B</h1><h2>Contact</h2><p class="contact">x</p></header>'
-            "<h2>Experience</h2><p>e</p><h2>Skills</h2><p>s</p>")
+            '<h2 class="kind-experience">Experience</h2><p>e</p><h2 class="kind-skills">Skills</h2><p>s</p>')
     placed = page.place_columns(body, templates.Columns(side=["skills"]))
     head, rest = placed.split("</header>", 1)
     assert "<h2>Contact</h2>" in head and '<div class="main">' not in head
-    assert rest == '<div class="main"><h2>Experience</h2><p>e</p></div><div class="side"><h2>Skills</h2><p>s</p></div>'
+    assert rest == ('<div class="main"><h2 class="kind-experience">Experience</h2><p>e</p></div>'
+                    '<div class="side"><h2 class="kind-skills">Skills</h2><p>s</p></div>')
+
+
+_SECTIONS = ('<h2 class="kind-summary">Profil</h2><p>p</p><h2 class="kind-experience">Erfahrung</h2><p>e</p>'
+             '<h2 class="kind-languages">Sprachen</h2><p>l</p><h2 class="kind-other">Hobbys</h2><p>o</p>')
+
+
+def test_a_section_goes_to_the_side_by_its_kind_class_whatever_it_says():
+    from door.core import templates
+    placed = page.place_columns(_SECTIONS, templates.Columns(side=["languages", "interests"]))
+    assert placed == ('<div class="main"><h2 class="kind-summary">Profil</h2><p>p</p>'
+                      '<h2 class="kind-experience">Erfahrung</h2><p>e</p><h2 class="kind-other">Hobbys</h2><p>o</p></div>'
+                      '<div class="side"><h2 class="kind-languages">Sprachen</h2><p>l</p></div>')
+
+
+def test_a_heading_named_by_the_template_goes_to_the_side_with_or_without_a_kind():
+    from door.core import templates
+    columns = templates.Columns(side=["skills"], headings=["hobbys"])
+    placed = page.place_columns(_SECTIONS, columns)
+    assert placed.endswith('<div class="side"><h2 class="kind-other">Hobbys</h2><p>o</p></div>')
+    bare = '<h2 class="kind-experience">E</h2><p>e</p><h2>Hobbys</h2><p>o</p>'
+    assert page.place_columns(bare, columns).endswith('<div class="side"><h2>Hobbys</h2><p>o</p></div>')
+
+
+def test_a_section_with_no_kind_class_in_a_side_column_template_is_refused_in_words():
+    import pytest
+
+    from door.core import templates
+    body = '<h2 class="kind-experience">Experience</h2><p>e</p><h2>Skills</h2><p>s</p>'
+    with pytest.raises(ValueError, match="prepare it again or revise it"):
+        page.place_columns(body, templates.Columns(side=["skills"]))
+
+
+def test_a_body_is_left_as_it_is_when_the_template_has_no_side_column():
+    from door.core import templates
+    body = "<h2>Experience</h2><p>e</p><h2>Skills</h2><p>s</p>"
+    assert page.place_columns(body, None) == body
+    assert page.place_columns(body, templates.Columns()) == body
 
 
 def _photo(tmp_path):

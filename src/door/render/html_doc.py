@@ -16,6 +16,7 @@ _BLOCKS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "
 # What is not the candidate's claims: the name (h1), the contact details, the recipient's address, the date, the
 # sign-off. A header's tagline is (#189).
 _NOT_CLAIMS_CLASSES = frozenset({"contact", "recipient", "date", "closing"})
+KIND_PREFIX = "kind-"  # the class of an `<h2>` that says what its section holds (`html_guard.KIND_CLASSES`)
 SECTION = "\x00SECTION "
 MAIN, SIDE = '<div class="main">', '<div class="side">'  # the two columns `page.place_columns` wraps a CV in
 
@@ -27,6 +28,7 @@ class _Reader(HTMLParser):
         self.claims: list[str] = []   # `out` without what is not a claim, an h2 as a section marker
         self.headings: list[str] = []
         self.h3s: list[str] = []
+        self.kinds: list[str | None] = []
         self.comments: list[str] = []
         self._cur: dict[str, list[str]] = {}
         self._skip: tuple[str, int] | None = None   # (tag, nesting) of the element being left out of the claims
@@ -50,6 +52,8 @@ class _Reader(HTMLParser):
             self._emit(" ")
         if tag in ("h2", "h3"):
             self._cur[tag] = []
+        if tag == "h2":
+            self.kinds.append(next((c[len(KIND_PREFIX):] for c in dict(attrs).get("class", "").split() if c.startswith(KIND_PREFIX)), None))
 
     def handle_startendtag(self, tag, attrs):
         if tag in _BLOCKS:
@@ -91,6 +95,11 @@ def _read(body: str) -> _Reader:
 def headings(body: str) -> list[str]:
     """The `<h2>` texts of `body`, in order (entities decoded, inner tags dropped, whitespace collapsed)."""
     return _read(body).headings
+
+
+def kinds(body: str) -> list[str | None]:
+    """The kind of each `<h2>` of `body`, in order: the `kind-<kind>` class it carries, None for one with none."""
+    return _read(body).kinds
 
 
 def columns(body: str) -> tuple[str, str, str] | None:
