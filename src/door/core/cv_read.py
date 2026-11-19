@@ -118,7 +118,7 @@ def lines_by_kind(md: str, reading: dict):
 
 def check(answer, md: str) -> dict:
     """`answer` held to what the code can verify of the CV `md` (normalised): the `## ` headings are the CV's own, in order and
-    none left out, the `### ` headings are real lines, every value is text of the CV, enums and years hold.
+    none left out, the `### ` headings are real lines and each entry's parts sit in its own, every value is text of the CV, enums and years hold.
 
     Returns:
         The answer, unchanged, when it holds.
@@ -188,6 +188,8 @@ def check(answer, md: str) -> dict:
             fail(f"entry {str(entry.get('heading'))[:40]!r} is not a `###` line")
         for key in ("role", "org", "dates", "place"):
             text(entry.get(key), key)
+            if entry.get(key) is not None and squash(entry[key]) not in squash(entry["heading"]):
+                fail(f"entry {key} {str(entry[key])[:40]!r} is not in its own `###` line")
         for key in ("start_year", "end_year"):
             year = entry.get(key)
             if year is None:

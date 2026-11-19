@@ -9,7 +9,7 @@ links are escaped and only `https:`, `mailto:` and `#` links are kept.
 - `# Name` is the header's `<h1>`, a `> line` its tagline, the lines before the first `##` its contact details: the
   reading's `contacts`, one `<span>` each with its kind as a class, in the template's order (phone, email, web,
   linkedin, github, location), the `<<photo>>` token first in the header, as the tailor writes it (`compile` swaps it);
-  a part of those lines (split on `|`) that holds no contact value is a plain `<span>`.
+  a part of those lines (split on `|`) that holds no contact value is a plain `<span>` (an email address in it, a mail link).
 - `## Heading` is an `<h2 class="kind-<kind>">`, the kind and the text of the reading's section at the same place.
 - `### Heading` is an `<div class="entry">` whose `<h3>` has the reading's `role`, `org`, `dates` and `place` in spans
   with `sep` spans between (` | `, ` - `, ` | `); an entry the reading has no parts for is a role alone. Its bullets and
@@ -60,7 +60,7 @@ def _detail(kind: str | None, value: str) -> str:
     cls = f' class="{kind}"' if kind else ""
     plain = re.sub(r"\*\*|\[|\]\(.*?\)", "", value)  # a markdown link or bold in a detail: its text
     mail = re.fullmatch(r"(?:mailto:)?([^\s@<>\"']+@[^\s@<>\"']+)", plain)
-    if mail and kind == "email":
+    if mail and kind in ("email", None):  # an address is a link, whatever label or kind it came with
         address = html.escape(mail.group(1))
         return f'<span class="email"><a href="mailto:{address}">{address}</a></span>'
     if kind in ("web", "linkedin", "github"):
@@ -98,7 +98,7 @@ def _contact(lines: list[str], reading: dict) -> str:
 def _heading3(text: str, reading: dict) -> str:
     """An entry's `<h3>`: the reading's parts of the `###` line `text` in spans, a role alone for a line it has none of."""
     span = lambda cls, v: f'<span class="{cls}">{_inline(v)}</span>'  # noqa: E731
-    entry = next((e for e in reading["entries"] if e["heading"] == text), {})
+    entry = next((e for e in reading["entries"] if cv_read.squash(e["heading"]) == cv_read.squash(text)), {})
     pieces = [(cls, entry[cls], sep) for cls, sep in (("role", ""), ("org", " | "), ("dates", " - "), ("place", " | "))
               if entry.get(cls)]
     if not any(cls in ("role", "org") for cls, _, _ in pieces):

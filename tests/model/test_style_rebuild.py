@@ -27,7 +27,7 @@ from conftest import claude_ready
 from style_build_utils import EXAMPLE, STYLES
 
 from door.commands import style as style_cmd
-from door.core import templates, workspace
+from door.core import cv_read, templates, workspace
 from door.core.downloads import chromium
 from door.style import fonts
 from door.style import cv_body, style_build, style_compare, style_extract, style_structure
@@ -147,7 +147,7 @@ def chosen(builds):
                 assert like["cv"] and like["letter"]
                 assert all(Path(p).is_file() for p in like["cv"] + like["letter"])
                 config = json.loads((profile / "config.json").read_text(encoding="utf-8"))
-                placed = page.placed_cv(cv_body.body(CASES[name].cv_md), config)
+                placed = page.placed_cv(cv_body.body(CASES[name].cv_md, cv_read.read(CASES[name].cv_md)), config)
             done[name] = home / ".style" / "preview" / "like" / "cv.pdf", placed
         return done[name]
 
@@ -219,7 +219,7 @@ def test_the_chosen_style_prints_a_photo_in_the_originals_shape_and_place(chosen
     picture = tmp_path / "photo.jpg"
     Image.new("RGB", (240, 320), "tan").save(picture, "JPEG")
     template = home / "profile" / "style" / "cv.template.html"
-    pdf, _, placed = page.print_page(cv_body.body(CASES[name].cv_md), template.read_text(encoding="utf-8"), template, "en",
+    pdf, _, placed = page.print_page(cv_body.body(CASES[name].cv_md, cv_read.read(CASES[name].cv_md)), template.read_text(encoding="utf-8"), template, "en",
                                             tmp_path / "print", "cv", manifest=templates.manifest(template), photo=picture)
     assert placed, "the photo was not placed"
     photo = style_extract.extract(pdf)["photo"]

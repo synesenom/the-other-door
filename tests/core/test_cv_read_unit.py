@@ -115,6 +115,8 @@ def test_a_reading_keeps_the_languages_as_written_with_their_iso_code(asked):
     {"skills": ["Python", "Kubernetes"]},
     {"city": "Odense"},
     {"entries": [{**READING["entries"][0], "heading": "Invented heading"}]},
+    {"entries": [{**READING["entries"][0], "org": "Quill & Co"}]},  # text of the CV, but of another entry's heading
+    {"entries": [{**READING["entries"][0], "place": "Aarhus"}]},
     {"entries": [{**READING["entries"][0], "start_year": 2016}]},
     {"entries": [{**READING["entries"][0], "end_year": 2020}]},
     {"sections": [*READING["sections"], {"heading": "Not a line", "kind": "other"}]},
