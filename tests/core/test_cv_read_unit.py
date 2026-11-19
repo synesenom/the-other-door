@@ -89,7 +89,7 @@ def test_a_cv_in_an_unlisted_language_gets_its_kinds(asked):
     {"sections": READING["sections"][1:]},
     {"sections": [{**READING["sections"][0], "kind": "hobbies"}, *READING["sections"][1:]]},
     {"contacts": [{"kind": "fax", "label": None, "value": "Aarhus"}]},
-    {"contacts": [{"kind": "phone", "label": "Tlf", "value": "+45 11 11 11 11"}]},
+    {"contacts": [{"kind": "phone", "label": "Tlf", "value": "+44 20 0000 0000"}]},
     {"levels": [{"item": "Dansk", "level": 9}]},
     {"country": "Denmark"},
 ])
@@ -106,7 +106,7 @@ def test_levels_and_country_are_not_substrings(asked):
 
 
 def test_a_bad_first_answer_is_asked_once_more(asked):
-    asked["answers"] = [_broken(email="x@y.com"), copy.deepcopy(READING)]
+    asked["answers"] = [_broken(email="someone@example.com"), copy.deepcopy(READING)]
     assert cv_read.read(MD)["email"] == "mette.berg@example.com"
     assert len(asked["calls"]) == 2
 

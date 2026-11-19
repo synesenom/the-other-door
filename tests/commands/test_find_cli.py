@@ -16,6 +16,7 @@ from door.commands import _common as common
 from door.commands import prepare as prepare_cmd
 from door.commands import find as find_cmd
 from door.core.progress import Progress
+import cv_read_utils
 from cli_utils import CaptureReporter, result_text, stub_blocks, stub_steps
 
 ALL = ["search", "discover", "follow", "collect", "match"]
@@ -526,3 +527,46 @@ def test_no_matches_says_so_and_points_at_the_list(cli_env, monkeypatch):
     assert "No matches at or above 0.65" in text
     assert "./door jobs show " not in text and "./door jobs list" in text
 
+
+
+# --------------------------------------------------------------------------- #
+# the CV is read once, before the run's minutes of reading (#430)
+# --------------------------------------------------------------------------- #
+
+def test_a_run_that_will_match_reads_the_cv_first_and_a_failure_stops_it_before_anything_is_written(cli_env, monkeypatch):
+    from door.core import claude_cli, cv_read
+
+    (cli_env.profile_dir / "_templates" / "cv.md").write_text("# Ada\n\n## Skills\n\nPython\n")
+
+    def boom(md):
+        raise claude_cli.ClaudeError("not logged in")
+    monkeypatch.setattr(cv_read, "_ask", boom)
+    steps = stub_steps(monkeypatch, cli_env.jobs_dir)
+    with pytest.raises(cv_read.CvReadError, match="not logged in"):
+        run_core(cli_env)
+    assert steps.calls == [] and not (cli_env.jobs_dir / "runs").exists()
+
+
+def test_the_cv_is_read_once_for_a_whole_run_and_not_when_match_is_skipped(cli_env, monkeypatch):
+    from door.core import cv_read
+
+    (cli_env.profile_dir / "_templates" / "cv.md").write_text("# Ada\n\n## Skills\n\nPython\n")
+    asked = []
+    monkeypatch.setattr(cv_read, "_ask", lambda md: asked.append(md) or cv_read_utils.plain(md))
+    stub_steps(monkeypatch, cli_env.jobs_dir)
+    run_core(cli_env)
+    run_core(cli_env)
+    assert len(asked) == 1
+    asked.clear()
+    (cli_env.profile_dir / "_templates" / "cv.md").write_text("# Ada\n\n## Skills\n\nPython, Go\n")
+    run_core(cli_env, skip=["match"])
+    assert asked == []
+
+
+def test_a_run_with_no_cv_makes_no_call(cli_env, monkeypatch):
+    from door.core import cv_read
+
+    (cli_env.profile_dir / "_templates" / "cv.md").unlink()
+    monkeypatch.setattr(cv_read, "_ask", lambda md: pytest.fail("there is no CV to read"))
+    stub_steps(monkeypatch, cli_env.jobs_dir)
+    run_core(cli_env)
