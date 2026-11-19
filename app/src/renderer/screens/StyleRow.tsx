@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { ErrorBox, named } from './AppName'
 import { call, errorText, styleUrl } from '../api'
+import type { StyleStep } from '../api'
+import { styleText } from './run-text'
 import { Dialog } from './Dialog'
 import { PageStack } from './PageStack'
 import { Spinner } from './Spinner'
@@ -59,7 +61,7 @@ function Pages({ which, set, onClose }: { which: Which; set: StyleSet; onClose: 
  * saved CV). Nothing is said when the previews cannot be made or a build fails later (the doctor and the sidebar say
  * what the user can act on), but a CV file that cannot be used is named.
  */
-export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: { state: 'none' | 'building' | 'ready' | 'failed' | null; canBuild: boolean; onChanged: () => void; reload: number; replaced?: number }) {
+export function StyleRow({ state, step, canBuild, onChanged, reload, replaced = 0 }: { state: 'none' | 'building' | 'ready' | 'failed' | null; step?: StyleStep; canBuild: boolean; onChanged: () => void; reload: number; replaced?: number }) {
   // null: the first read is still going. A later read keeps what is shown until it answers.
   const [shown, setShown] = useState<Shown | null>(null)
   const [open, setOpen] = useState<Which | null>(null)
@@ -239,7 +241,7 @@ export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: {
             <div className="style-below">
               {!hasLike && !building && !reading && canBuild && <p className="small muted">Your tailored CVs printed in the style of your CV file. Building it takes 2–5 minutes in the background.</p>}
               {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
-              {(building || reading) && <Spinner message={building ? 'Building your style…' : "Reading your CV's look…"} />}
+              {(building || reading) && <Spinner message={building ? styleText(step) : "Reading your CV's look…"} />}
             </div>
             {rerender?.kind === 'offer' && (
               <div className="style-rerender">

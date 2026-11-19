@@ -493,7 +493,8 @@ How your tailored CVs are printed. "The other door" and, once one is built, "You
 at half the width so the two can be compared; the one in use has a blue border, and each opens its full pages (your
 CV and a sample letter) in a dialog. The switch **Use my own style**, at the section's top right, chooses: on, your
 style is used, built first from your CV file (under Master CV) when there is none yet (a PDF; after a short wait,
-"Reading your CV's look…", then 2-5 minutes on your Claude plan, which "Building your style…" says, and it is put in
+"Reading your CV's look…", then 2-5 minutes on your Claude plan, which "Building your style…" says with the step it is
+at, such as "drawing it, try 2 of 4", and it is put in
 use once ready); off, The other door's style is used again, your style kept. A CV file that cannot be used (none
 yet, not a PDF, no look to copy, or a look that could not be read because Claude was unreachable or its usage limit
 reached) is said at once; a build that does not work out later is not. A new CV file builds your style again from

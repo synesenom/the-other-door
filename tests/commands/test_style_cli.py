@@ -215,6 +215,35 @@ def test_the_core_builds_in_its_work_folder_and_records_building_then_the_result
     assert done["state"] == "ready" and done["result"] == READY and done["pid"] == seen["during"]["pid"]
 
 
+def test_the_build_records_the_stage_it_is_at_and_still_reports_it(home, cv_pdf, monkeypatch):
+    from door.core import progress as progress_mod
+    seen, shown = [], []
+
+    def fake_build(pdf, *, progress=None, **kw):
+        with progress_mod.activate(progress):
+            progress_mod.report("fetching the fonts", stage="style")
+            seen.append(_run(home)["step"])
+            progress_mod.report("building the template, round 2", done=2, total=4, stage="style")
+            seen.append(_run(home)["step"])
+            progress_mod.report("printing", stage="compile")  # not a stage of the build
+            seen.append(_run(home)["step"])
+        return dict(READY)
+
+    class Shown:
+        def report(self, event):
+            shown.append(event.message)
+
+    monkeypatch.setattr(style_build, "build", fake_build)
+    style_cmd._build_core(str(cv_pdf), progress=Shown())
+    assert seen == [
+        {"message": "fetching the fonts", "done": None, "total": None},
+        {"message": "building the template, round 2", "done": 2, "total": 4},
+        {"message": "building the template, round 2", "done": 2, "total": 4},
+    ]
+    assert shown == ["fetching the fonts", "building the template, round 2", "printing"]
+    assert "step" not in _run(home)  # a finished build is at no stage
+
+
 def test_a_failed_result_is_recorded_as_failed(home, cv_pdf, monkeypatch):
     monkeypatch.setattr(style_build, "build", lambda *a, **k: {**READY, "state": "failed", "problems": ["no luck"]})
     style_cmd._build_core(str(cv_pdf))
@@ -503,6 +532,13 @@ def test_status_is_building_while_the_build_holds_its_lock(home, cli_env, world)
     _state(home, pid=5, state="building", started_at="t0")
     world.hold(home)
     assert style_cmd.status(home, cli_env.profile_dir) == {"state": "building", "started_at": "t0"}
+
+
+def test_status_says_the_stage_a_building_build_is_at(home, cli_env, world):
+    step = {"message": "building the template, round 2", "done": 2, "total": 4}
+    _state(home, pid=5, state="building", started_at="t0", step=step)
+    world.hold(home)
+    assert style_cmd.status(home, cli_env.profile_dir) == {"state": "building", "started_at": "t0", "step": step}
 
 
 def test_status_is_building_in_the_moment_between_the_start_and_the_builds_first_write(home, cli_env):
