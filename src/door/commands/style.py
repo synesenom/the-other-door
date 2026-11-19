@@ -416,5 +416,5 @@ def show_style():
     for name, sets in styles.items():
         click.echo(f"{'Like your CV' if name == 'like' else 'The default'}:")
         for kind, images in sets.items():
-            for image in images:
+            for image in images if isinstance(images, list) else []:
                 click.echo(f"  {kind}: {common._display_path(Path(image))}")

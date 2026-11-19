@@ -229,13 +229,12 @@ def fetch(plan: list[dict], dest: Path) -> list[Path]:
     Raises:
         FontsError: a download failed or does not match the pinned sha256.
     """
-    wanted: list[tuple[str, str, str]] = []   # (url, file name in dest, sha256)
+    wanted: dict[str, tuple[str, str, str]] = {}   # file name in dest -> (url, name, sha256): families sharing one free copy share its files
     for entry in plan:
-        wanted += [(f["url"], f["name"], f["sha256"]) for f in entry["files"]]
-        if entry["licence"]:
-            wanted.append((entry["licence"]["url"], entry["licence"]["name"], entry["licence"]["sha256"]))
+        for f in [*entry["files"], *([entry["licence"]] if entry["licence"] else [])]:
+            wanted[f["name"]] = (f["url"], f["name"], f["sha256"])
     dest = Path(dest)
-    missing = [w for w in wanted if not (dest / w[1]).is_file() or pinned.sha256(dest / w[1]) != w[2]]
+    missing = [w for w in wanted.values() if not (dest / w[1]).is_file() or pinned.sha256(dest / w[1]) != w[2]]
     if missing:
         try:
             with utils.staging(dest, ".fonts.") as staging:
