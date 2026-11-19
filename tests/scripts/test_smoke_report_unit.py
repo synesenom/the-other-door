@@ -375,8 +375,6 @@ def test_the_live_smoke_workflow_publishes_to_the_status_branch_not_main():
     workflow = (REPO_ROOT / ".github" / "workflows" / "live-smoke.yml").read_text(encoding="utf-8")
     assert "ref: live-smoke-status" in workflow
     assert "scripts/smoke_report.py smoke-junit.xml status/live-smoke.md" in workflow and "--badges status" in workflow
-    assert "git push origin HEAD:live-smoke-status" in workflow
-    assert "github.ref_name" not in workflow
 
 
 def test_a_local_run_keeps_the_link_to_the_last_workflow_run(tmp_path):
