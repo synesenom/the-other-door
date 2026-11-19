@@ -562,3 +562,107 @@ def write_fixtures() -> None:
         (CASES / "bodies" / name / "cv.md").write_text(case["md"], encoding="utf-8")
         (CASES / "bodies" / name / "cv.html").write_text(case["body"], encoding="utf-8")
         _dump(CASES / "bodies" / name / "expected.json", {"lang": case["lang"], "plants": case["plants"]})
+
+
+# --- today's rules, as the baseline ------------------------------------------------------------------------------
+
+_SECTION_KINDS = ("skills", "education", "certifications", "languages", "interests")
+
+
+def baseline_reader(md: str, lang: str) -> dict:
+    """What the rules of today read from `md`, as an answer of the model's shape: the header parse and
+    `_infer_basics_core` (with its model call refused), the section word lists, the level table, `_heading3`'s split."""
+    import tempfile
+    from unittest import mock
+
+    from door import i18n
+    from door.commands import cv as cv_cmd
+    from door.core import claude_cli, cv_sections
+
+    with tempfile.TemporaryDirectory() as tmp, mock.patch.object(claude_cli, "ask", side_effect=claude_cli.ClaudeError("off")):
+        basics = cv_cmd._infer_basics_core(md, profile_dir=Path(tmp))
+    head, labels = cv_body.header(md), cv_body.contact_labels(md)
+    country = i18n.country_for_location(basics["location"] or "")
+    body = cv_body.body(md, lang)
+    levels = [{"item": m[1], "level": int(m[2])} for m in re.finditer(r"<li>(?:<strong>)?(.+?)(?:</strong>)?\s*[\u2014:(][^<]*<span class=\"level level-(\d)", body)]
+    sections = [{"heading": cv_sections.heading(s[0])[0], "kind": cv_sections.kind(s, _SECTION_KINDS, (lang, "en")) or "other"}
+                for s in cv_sections.split(md) if s and s[0].startswith("##")]
+    entries = []
+    for line in md.splitlines():
+        if line.startswith("### "):
+            parts = {m[1]: html.unescape(m[2]) for m in re.finditer(r'<span class="(role|org|dates|place)">(.*?)</span>', cv_body._heading3(line[4:].strip()))}
+            entries.append({"heading": line[4:].strip(), **{k: parts.get(k) for k in ("role", "org", "dates", "place")}, "start_year": None, "end_year": None})
+    return {
+        "name": basics["name"], "email": basics["email"], "city": basics["location"], "country": country.code if country else None,
+        "languages": [{"language": l, "level": "fluent"} for l in basics["languages"]],
+        "sections": sections, "levels": levels, "entries": entries,
+        "contacts": [{"kind": k, "label": labels.get(k, "").rstrip(":") or None, "value": v} for k, vs in head["details"].items() for v in vs],
+    }
+
+
+def baseline_facts(md: str, body: str) -> list[dict]:
+    """What `facts.extract_claims` and `unsupported` flag in `body` against `md`, today, as findings."""
+    return facts.unsupported(facts.extract_claims(body, "cv"), [md], current_year=2026)
+
+
+# --- recorded answers and the report -----------------------------------------------------------------------------
+
+RECORDED = CASES / "recorded"
+
+
+def load_recorded(model: str, task: str, version: int, root: Path = RECORDED) -> dict:
+    """`{case: [answer per run]}` from `<root>/<model>/<task>/v<version>/<case>.<run>.json`; a run that failed is `{"error"}`."""
+    folder = Path(root) / model / task / f"v{version}"
+    runs: dict[str, dict[int, object]] = {}
+    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
+        case, run = path.stem.rsplit(".", 1)
+        data = json.loads(path.read_text(encoding="utf-8"))
+        runs.setdefault(case, {})[int(run)] = data["answer"] if "answer" in data else {"error": data.get("error", "unknown")}
+    return {case: [by_run[r] for r in sorted(by_run)] for case, by_run in runs.items()}
+
+
+def summarize(task: str, answers: dict, corpus: dict) -> dict:
+    """The numbers of one model on one task from `answers` (`{case: [answer per run]}`), with the verdict."""
+    runs = max((len(a) for a in answers.values()), default=0)
+    if task == "reader":
+        total = {f: [0, 0] for f in READER_FIELDS}
+        for case, runs_ in answers.items():
+            for answer in runs_:
+                for field, cell in score_reader(corpus[case]["expected"], answer).items():
+                    total[field][0] += cell["hit"]
+                    total[field][1] += cell["total"]
+        fields = {f: (h / t if t else 0.0) for f, (h, t) in total.items()}
+        return {"cases": len(answers), "runs": runs, "fields": fields, "verdict": reader_verdict(fields)}
+    kinds = {k: [0, 0] for k in KINDS}
+    verbatim, false_clean, false_planted, bodies = [0, 0], [], [], 0
+    for case, runs_ in answers.items():
+        for answer in runs_:
+            score = score_facts(corpus[case]["plants"], answer, corpus[case]["body"])
+            for kind, cell in score["per_kind"].items():
+                kinds[kind][0] += cell["found"]
+                kinds[kind][1] += cell["planted"]
+            verbatim[0] += score["verbatim"][0]
+            verbatim[1] += score["verbatim"][1]
+            (false_planted if corpus[case]["plants"] else false_clean).append(score["false_flags"])
+            bodies += 1
+    report = {
+        "cases": len(answers), "runs": runs, "per_kind": {k: h / t for k, (h, t) in kinds.items() if t},
+        "false_clean_max": max(false_clean, default=0), "false_clean_mean": sum(false_clean) / max(len(false_clean), 1),
+        "false_planted_mean": sum(false_planted) / max(len(false_planted), 1),
+        "verbatim": verbatim[0] / verbatim[1] if verbatim[1] else 1.0,
+        "stable": stability({c: a for c, a in answers.items()}) if runs > 1 else None,
+    }
+    report["verdict"] = facts_verdict({**report, "stable": 1.0 if report["stable"] is None else report["stable"]})
+    return report
+
+
+def to_markdown(task: str, report: dict) -> str:
+    """The report as a markdown table."""
+    pct = lambda x: "n/a" if x is None else f"{100 * x:.0f}%"  # noqa: E731
+    head = f"{report['cases']} cases x {report['runs']} runs, verdict: **{report['verdict']}**\n\n"
+    if task == "reader":
+        return head + "| field | right |\n|---|---|\n" + "".join(f"| {f} | {pct(v)} |\n" for f, v in report["fields"].items())
+    rows = "".join(f"| {k} | {pct(v)} |\n" for k, v in report["per_kind"].items())
+    return (head + "| kind | recall |\n|---|---|\n" + rows +
+            f"\nfalse flags: clean bodies max {report['false_clean_max']}, mean {report['false_clean_mean']:.2f}; planted bodies mean "
+            f"{report['false_planted_mean']:.2f}. verbatim: {pct(report['verbatim'])}. stable: {pct(report['stable'])}.\n")

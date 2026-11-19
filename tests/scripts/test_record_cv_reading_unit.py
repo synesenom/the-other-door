@@ -295,3 +295,52 @@ def test_no_fixture_holds_an_address_that_is_not_an_example_one():
     for path in CASES.rglob("*"):
         if path.is_file() and path.suffix in (".md", ".html", ".json"):
             assert set(re.findall(r"@([\w-]+\.\w+)", path.read_text(encoding="utf-8"))) <= {"example.com"}, path
+
+
+# --- recorded answers, the report and the baseline ---------------------------------------------------------------
+
+def test_recorded_answers_are_read_by_case_and_run_and_an_error_is_kept_as_one(tmp_path):
+    folder = tmp_path / "haiku" / "facts" / "v1"
+    folder.mkdir(parents=True)
+    (folder / "b00-da.0.json").write_text(json.dumps({"answer": [finding("skill", "Rust", "Rust")]}))
+    (folder / "b00-da.1.json").write_text(json.dumps({"error": "timeout"}))
+    got = rcr.load_recorded("haiku", "facts", 1, root=tmp_path)
+    assert got == {"b00-da": [[finding("skill", "Rust", "Rust")], {"error": "timeout"}]}
+    assert rcr.load_recorded("sonnet", "facts", 1, root=tmp_path) == {}
+
+
+def test_the_facts_report_counts_errors_as_misses_and_clean_bodies_apart():
+    corpus = rcr.build_body_corpus()
+    planted = next(n for n, c in corpus.items() if c["plants"])
+    clean = next(n for n, c in corpus.items() if not c["plants"])
+    perfect = [{"kind": p["kind"], "value": p["planted_value"], "context": p["quote"], "file": "cv"} for p in corpus[planted]["plants"]]
+    noisy = [finding("skill", "Rust", "Rust"), finding("skill", "Go", "Go")]
+    report = rcr.summarize("facts", {planted: [perfect, {"error": "x"}], clean: [noisy, noisy]}, corpus)
+    kinds = {p["kind"] for p in corpus[planted]["plants"]}
+    assert {k: report["per_kind"][k] for k in kinds} == {k: 0.5 for k in kinds}
+    assert report["false_clean_max"] == 2 and report["stable"] == 0.5 and report["runs"] == 2
+    assert report["verdict"] == "no-go"
+    assert "| number | 50% |" in rcr.to_markdown("facts", report)
+
+
+def test_the_reader_report_pools_the_fields_over_cases_and_runs():
+    corpus = rcr.build_reader_corpus()
+    name = next(iter(corpus))
+    report = rcr.summarize("reader", {name: [{"error": "x"}]}, corpus)
+    assert report["fields"]["name"] == 0.0 and report["verdict"] == "no-go"
+
+
+def test_the_baseline_reads_the_header_with_todays_rules_and_misses_what_it_has_no_rule_for():
+    corpus = rcr.build_reader_corpus()
+    name = "p01-fr"
+    answer = rcr.baseline_reader(corpus[name]["md"], "fr")
+    score = rcr.score_reader(corpus[name]["expected"], answer)
+    assert score["name"]["hit"] == 1 and score["email"]["hit"] == 1
+    assert score["years"]["hit"] <= 1  # no rule reads a year: only the open end of the present job is right by default
+
+
+def test_the_baseline_fact_check_flags_what_the_rules_see():
+    corpus = rcr.build_body_corpus()
+    name = next(n for n, c in corpus.items() if any(p["kind"] == "employer" for p in c["plants"]))
+    found = rcr.baseline_facts(corpus[name]["md"], corpus[name]["body"])
+    assert any(f["kind"] == "employer" for f in found)
