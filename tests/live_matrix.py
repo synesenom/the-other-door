@@ -112,6 +112,7 @@ FIELD_EXCEPTIONS: dict[str, dict] = {
     "jobbank": {"location_share": 0.5},                                # a Danish search also lists "Udlandet (øvrige)" (abroad) ads
     "euraxess": {"location": False},                                   # the location is "<city>, <country>"; its live test checks the country
     "globalnyt": {"posted_at_share": 0.8, "description_share": 0.8},    # a 2025 test post (/stilling/hej/, last in the list: 7 of 7) is old and its text is 18 characters, under the 80 minimum
-    "kozigallas": {"posted_at_future_days": 14},
-    "hr_manager": {"description_share": 0.8},                         # the newest ads may have no text yet (RegionH, 2026-11-13: 3 of 100, 2 of the first 10)                       # the date can be a planned publication date
+    "kozigallas": {"posted_at_future_days": 14},                       # the date can be a planned publication date
+    "hr_manager": {"description_share": 0.8},                         # the newest ads may have no text yet (RegionH, 2026-11-13: 3 of 100, 2 of the first 10)
+    "reed": {"company_share": 0.7},                                     # Reed's own agency advertises as "Reed", an employer, not the site's name read for one (2026-11-18: 3 of 10 on page 2)
 }
