@@ -1,0 +1,17 @@
+{
+ "key": "1380cbc6e7e8",
+ "answer": [
+  {
+   "kind": "employer",
+   "file": "cv",
+   "value": "Vandelay Industries",
+   "context": "Senior Data Analyst | Vandelay Industries - 09/2013 – 02/2019"
+  },
+  {
+   "kind": "year",
+   "file": "cv",
+   "value": "2013",
+   "context": "Senior Data Analyst | Vandelay Industries - 09/2013 – 02/2019"
+  }
+ ]
+}

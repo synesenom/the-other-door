@@ -1,0 +1,168 @@
+{
+ "key": "a5bc220707e8",
+ "answer": {
+  "name": "Camille Roche",
+  "email": "camille.roche@example.com",
+  "city": "Lille",
+  "country": "fr",
+  "languages": [
+   {
+    "language": "Français",
+    "level": "native"
+   },
+   {
+    "language": "Anglais",
+    "level": "fluent"
+   },
+   {
+    "language": "Allemand",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Parcours",
+    "kind": "experience"
+   },
+   {
+    "heading": "Formation",
+    "kind": "education"
+   },
+   {
+    "heading": "Savoir-faire",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Langues",
+    "kind": "languages"
+   },
+   {
+    "heading": "Centres d'intérêt",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": null,
+    "value": "+33 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": null,
+    "value": "camille.roche@example.com"
+   },
+   {
+    "kind": "web",
+    "label": null,
+    "value": "example.com/camille.roche"
+   },
+   {
+    "kind": "location",
+    "label": null,
+    "value": "Lille"
+   }
+  ],
+  "skills": [
+   "TypeScript",
+   "Python",
+   "SQL",
+   "Docker",
+   "Git",
+   "planification"
+  ],
+  "levels": [
+   {
+    "item": "Français",
+    "level": 5
+   },
+   {
+    "item": "Anglais",
+    "level": 4
+   },
+   {
+    "item": "Allemand",
+    "level": 1
+   },
+   {
+    "item": "TypeScript",
+    "level": null
+   },
+   {
+    "item": "Python",
+    "level": null
+   },
+   {
+    "item": "SQL",
+    "level": null
+   },
+   {
+    "item": "Docker",
+    "level": null
+   },
+   {
+    "item": "Git",
+    "level": null
+   },
+   {
+    "item": "planification",
+    "level": null
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Responsable analytique | Maple Robotics — 8.8.2020 – présent | Lille",
+    "role": "Responsable analytique",
+    "org": "Maple Robotics",
+    "dates": "8.8.2020 – présent",
+    "place": "Lille",
+    "start_year": 2020,
+    "end_year": null
+   },
+   {
+    "heading": "Analyste senior | Northwind Labs — 22.6.2016 – 2.11.2020 | Nantes",
+    "role": "Analyste senior",
+    "org": "Northwind Labs",
+    "dates": "22.6.2016 – 2.11.2020",
+    "place": "Nantes",
+    "start_year": 2016,
+    "end_year": 2020
+   },
+   {
+    "heading": "Analyste de données | Fjord Software — 9.4.2013 – 16.9.2016 | Lyon",
+    "role": "Analyste de données",
+    "org": "Fjord Software",
+    "dates": "9.4.2013 – 16.9.2016",
+    "place": "Lyon",
+    "start_year": 2013,
+    "end_year": 2016
+   },
+   {
+    "heading": "Licence de mathématiques | Université d'Exemple — 23.8.2008 – 3.1.2011 | Lille",
+    "role": "Licence de mathématiques",
+    "org": "Université d'Exemple",
+    "dates": "23.8.2008 – 3.1.2011",
+    "place": "Lille",
+    "start_year": 2008,
+    "end_year": 2011
+   },
+   {
+    "heading": "Master en informatique | Université d'Exemple — 10.6.2011 – 17.11.2013 | Lille",
+    "role": "Master en informatique",
+    "org": "Université d'Exemple",
+    "dates": "10.6.2011 – 17.11.2013",
+    "place": "Lille",
+    "start_year": 2011,
+    "end_year": 2013
+   }
+  ]
+ }
+}

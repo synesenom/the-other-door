@@ -1,0 +1,144 @@
+{
+ "key": "e82ee7e90794",
+ "answer": {
+  "name": "Hannah Clarke",
+  "email": "hannah.clarke@example.com",
+  "city": "Manchester",
+  "country": "gb",
+  "languages": [
+   {
+    "language": "English",
+    "level": "native"
+   },
+   {
+    "language": "French",
+    "level": "fluent"
+   },
+   {
+    "language": "German",
+    "level": "conversational"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profile",
+    "kind": "summary"
+   },
+   {
+    "heading": "Work Experience",
+    "kind": "experience"
+   },
+   {
+    "heading": "Education",
+    "kind": "education"
+   },
+   {
+    "heading": "Skills",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Languages",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interests",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Phone",
+    "value": "+44 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Email",
+    "value": "hannah.clarke@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Web",
+    "value": "example.com/hannah.clarke"
+   },
+   {
+    "kind": "location",
+    "label": "Location",
+    "value": "Manchester"
+   }
+  ],
+  "skills": [
+   "SQL",
+   "Docker",
+   "Git",
+   "Excel",
+   "Power BI",
+   "stakeholder management"
+  ],
+  "levels": [
+   {
+    "item": "English",
+    "level": 5
+   },
+   {
+    "item": "French",
+    "level": 4
+   },
+   {
+    "item": "German",
+    "level": 2
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Analytics Lead, Ember Studio (2018 - present)",
+    "role": "Analytics Lead",
+    "org": "Ember Studio",
+    "dates": "2018 - present",
+    "place": null,
+    "start_year": 2018,
+    "end_year": null
+   },
+   {
+    "heading": "Senior Data Analyst, Kestrel Analytics (2014 - 2018)",
+    "role": "Senior Data Analyst",
+    "org": "Kestrel Analytics",
+    "dates": "2014 - 2018",
+    "place": null,
+    "start_year": 2014,
+    "end_year": 2018
+   },
+   {
+    "heading": "Data Analyst, Harbor Digital (2011 - 2014)",
+    "role": "Data Analyst",
+    "org": "Harbor Digital",
+    "dates": "2011 - 2014",
+    "place": null,
+    "start_year": 2011,
+    "end_year": 2014
+   },
+   {
+    "heading": "BSc in Mathematics, Example University (2006 - 2009)",
+    "role": "BSc in Mathematics",
+    "org": "Example University",
+    "dates": "2006 - 2009",
+    "place": null,
+    "start_year": 2006,
+    "end_year": 2009
+   },
+   {
+    "heading": "MSc in Computer Science, Example University (2009 - 2011)",
+    "role": "MSc in Computer Science",
+    "org": "Example University",
+    "dates": "2009 - 2011",
+    "place": null,
+    "start_year": 2009,
+    "end_year": 2011
+   }
+  ]
+ }
+}

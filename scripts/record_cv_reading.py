@@ -230,7 +230,7 @@ _BULLETS = {
     "da": [
         ("Udviklede og drev tjenester, der bruges af omkring 40 000 mennesker om måneden.", "40 000", "40k", "60k"),
         ("Skar den natlige kørsel ned fra 3 timer til 25 minutter ved at skrive den langsomste del om.", "25 minutter", "25 min.", "12 min."),
-        ("Voksede enhedens årlige omsætning fra 1 200 000 kr. til 1 850 000 kr. på tre år.", "1 850 000 kr.", "1,85 mio. kr.", "2,4 mio. kr."),
+        ("Voksede enhedens årlige omsætning fra 1 200 000 EUR til 1 850 000 EUR på tre år.", "1 850 000 EUR", "1,85 mio. EUR", "2,4 mio. EUR"),
         ("Nedbragte kundefrafaldet fra 12,5 % til 9 %.", "9 %", "9 procent", "5 procent"),
         ("Ledede et team på 14 medarbejdere gennem en migrering uden nedetid.", "14 medarbejdere", "fjorten medarbejdere", "30 medarbejdere"),
         ("Indførte kodegennemgang og automatiske kontroller i 6 repositories.", "6 repositories", "seks repositories", "11 repositories"),
@@ -238,7 +238,7 @@ _BULLETS = {
     "fr": [
         ("Développé et exploité des services utilisés par environ 40 000 personnes par mois.", "40 000", "40k", "60 k"),
         ("Ramené le traitement nocturne de 3 heures à 25 minutes en réécrivant son étape la plus lente.", "25 minutes", "25 min", "12 min"),
-        ("Fait passer le chiffre d'affaires annuel de l'unité de 1 200 000 € à 1 850 000 € en trois ans.", "1 850 000 €", "1,85 M€", "2,4 M€"),
+        ("Fait passer le chiffre d'affaires annuel de l'unité de 1 200 000 EUR à 1 850 000 EUR en trois ans.", "1 850 000 EUR", "1,85 M EUR", "2,4 M EUR"),
         ("Réduit le taux d'attrition de 12,5 % à 9 %.", "9 %", "9 pour cent", "5 pour cent"),
         ("Encadré une équipe de 14 personnes lors d'une migration sans interruption.", "14 personnes", "quatorze personnes", "30 collaborateurs"),
         ("Mis en place la revue de code et des contrôles automatiques sur 6 dépôts.", "6 dépôts", "six dépôts", "11 dépôts"),
@@ -254,7 +254,7 @@ _BULLETS = {
     "sv": [
         ("Byggde och drev tjänster som används av cirka 40 000 personer i månaden.", "40 000", "40k", "60k"),
         ("Kortade den nattliga körningen från 3 timmar till 25 minuter genom att skriva om det långsammaste steget.", "25 minuter", "25 min", "12 min"),
-        ("Ökade enhetens årliga omsättning från 1 200 000 kr till 1 850 000 kr på tre år.", "1 850 000 kr", "1,85 Mkr", "2,4 Mkr"),
+        ("Ökade enhetens årliga omsättning från 1 200 000 EUR till 1 850 000 EUR på tre år.", "1 850 000 EUR", "1,85 MEUR", "2,4 MEUR"),
         ("Minskade kundbortfallet från 12,5 % till 9 %.", "9 %", "9 procent", "5 procent"),
         ("Ledde ett team på 14 personer genom en migrering utan driftstopp.", "14 personer", "fjorton personer", "30 personer"),
         ("Införde kodgranskning och automatiska kontroller i 6 repon.", "6 repon", "sex repon", "11 repon"),
@@ -498,7 +498,9 @@ def render_cv_md(person: dict, lang: str | None = None, *, tailor: bool = False)
     part: dict[str, list[str]] = {}
     part["summary"] = [_EXTRA[lang]["summary2"] if tailor else pack["summary"].format(title=pack["roles"][2]), ""]
     lines = part["experience"] = []
-    for i, job in enumerate(person["jobs"][:2] if tailor else person["jobs"]):
+    for i, job in enumerate(person["jobs"]):
+        if tailor and i == 2:
+            continue
         heading, entry = _entry(person, pack["roles"][job["role_i"]], job["org"], job["place"], job["start"], job["end"], i, lang)
         entries.append(entry)
         texts = [_BULLETS[lang][ix][0] for ix in job["bullets"]]
@@ -508,7 +510,9 @@ def render_cv_md(person: dict, lang: str | None = None, *, tailor: bool = False)
             texts += [_EXTRA[lang]["story_bullet"]] if person["story"] else []
         lines += [f"### {heading}", "", *[f"- {t}" for t in texts], ""]
     lines = part["education"] = []
-    for i, ed in enumerate(person["education"][1:] if tailor else person["education"]):
+    for i, ed in enumerate(person["education"]):
+        if tailor and i == 0:
+            continue
         heading, entry = _entry(person, pack["degrees"][ed["degree_i"]], ed["school"], ed["place"], ed["start"], ed["end"], i + 3, lang)
         entries.append(entry)
         lines += [f"### {heading}", ""]
@@ -750,6 +754,9 @@ PROMPTS = {
         "- A language at the level of a working language (`Arbeitssprache`, `lingua di lavoro`, `working proficiency`) is level 3, "
         "not 4: 4 is for fluent, professional or C1.\n"
         "- `## Key Skills` gives the heading `Key Skills`: the `#` marks are not part of it.\n"
+        "- Every item of a languages list that states a level goes into `levels` as well as into `languages`: `levels` is never "
+        "empty for such a list.\n"
+        "- A value is copied character by character: `+33 00 00 00 00` stays that, with no digit added or dropped.\n"
         "Answer with the JSON only."
     ),
     "facts": (
@@ -780,6 +787,17 @@ PROMPTS = {
         "- Never copy markup into `context`: `<strong>Rust</strong>` is wrong and `Rust` is right; "
         "`<span class=\"dates\">2004 - 2008</span>` is wrong and `Zenith Corp - 2004 - 2008` is right. Copy only words and "
         "figures, as the text of the page reads them.\n"
+        "- A degree translated is the same degree, and so is its local title: `BSc in Physics`, `Licence de physique` and "
+        "`Bachelor i fysik` are one degree, and `MSc in Chemistry`, `Master en chimie` and `Cand.scient. i kemi` are one. "
+        "Compare the level and the field, not the words.\n"
+        "- `value` of a count or an amount is the figure with its unit sign or currency and nothing after it: `7 k`, `12 %`, "
+        "`3 M EUR`; for `a team of 7 people` it is `7`.\n"
+        "- A tool, skill or figure that only the story bank names is supported: a story that says `I used Rust` backs `Rust` in the "
+        "tailored CV.\n"
+        "- For a bold list item `<li><strong>Rust</strong> \u2014 2020</li>` the `context` is `Rust \u2014 2020`: the words of the item, "
+        "no tag.\n"
+        "- A year or date the source gives for a job is supported wherever the tailored text puts it: `(2005)` after a bullet of "
+        "a job the source says began in 2005 is no new year; a year in brackets at the end of a bullet is that date, not a claim.\n"
         "Answer with the JSON only."
     ),
 }

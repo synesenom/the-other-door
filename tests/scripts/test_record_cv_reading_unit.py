@@ -445,3 +445,28 @@ def test_every_committed_record_is_an_answer_to_the_prompt_and_input_of_today():
         for path in sorted((rcr.RECORDED).glob(f"*/{task}/*.json")):
             case = path.name.split(".")[0]
             assert rcr._recorded_ok(path, rcr._key(task, corpus[case])), path
+
+
+def test_haiku_is_go_as_a_reader_and_a_fact_checker_on_the_harder_corpus():
+    reader, check = committed("haiku", "reader"), committed("haiku", "facts")
+    assert reader["verdict"] == "go" and reader["calls"] == 45 and reader["stretches"] == 1.0
+    assert {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.964, "languages": 0.933}
+    assert check["verdict"] == "go" and check["calls"] == 84 and all(v == 1.0 for v in check["per_kind"].values())
+    assert check["false_clean_max"] == 0 and round(check["verbatim"], 3) == 0.984 and check["stable"] == 1.0
+
+
+def test_sonnet_reads_as_well_and_is_close_on_the_facts_for_a_less_stable_check():
+    reader, check = committed("sonnet", "reader"), committed("sonnet", "facts")
+    assert reader["verdict"] == "go" and {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.982}
+    assert check["verdict"] == "close" and round(check["stable"], 3) == 0.857 and round(check["verbatim"], 3) == 0.993
+    assert all(v == 1.0 for v in check["per_kind"].values()) and check["false_clean_max"] == 0
+
+
+def test_the_rules_of_today_are_no_go_on_the_same_cases():
+    for task, corpus in (("reader", rcr.build_reader_corpus()), ("facts", rcr.build_body_corpus())):
+        answers = {n: [rcr.baseline_reader(c["md"], c["lang"]) if task == "reader" else rcr.baseline_facts(c)] for n, c in corpus.items()}
+        assert rcr.summarize(task, answers, corpus)["verdict"] == "no-go"
+
+
+def test_no_record_is_an_error():
+    assert all(rcr._recorded_ok(p) for p in rcr.RECORDED.glob("*/*/*.json"))

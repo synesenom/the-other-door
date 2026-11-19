@@ -1,0 +1,17 @@
+{
+ "key": "d671c2807632",
+ "answer": [
+  {
+   "kind": "number",
+   "file": "cv",
+   "value": "30",
+   "context": "encadré une équipe de 30 collaborateurs lors d'une migration sans interruption (2020-04)"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "Master en informatique",
+   "context": "Master en informatique, Eksempel Universitet (2011-02 – 2013-07)"
+  }
+ ]
+}
