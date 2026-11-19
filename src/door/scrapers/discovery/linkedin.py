@@ -449,17 +449,19 @@ def _search(
     rotation: list[str], since: datetime | None, keyword_since: dict, now: datetime, limit: int,
 ) -> bool:
     """The search phase for the *mode*; returns whether it read everything it set out to read.
-    Fills *cards* and ``result["searched"]`` (rotate: the keywords completed), may switch
+    Fills *cards* and ``result["searched"]`` (rotate: the keywords completed with a card on their
+    first page) and ``result["empty"]`` (completed, first page empty: their cutoff must not move), may switch
     ``result["mode"]`` to ``rotate`` (see `discover_run`)."""
     seen: set[str] = set()
     complete = True
 
     def one_keyword(keyword: str) -> bool:
-        done, _first = _page_through(crawler, '"' + keyword.replace('"', "") + '"', location,
-                                     keyword_since.get(keyword.lower(), since), now, cards, seen, limit,
-                                     stop_when_seen=False)
+        done, first = _page_through(crawler, '"' + keyword.replace('"', "") + '"', location,
+                                    keyword_since.get(keyword.lower(), since), now, cards, seen, limit,
+                                    stop_when_seen=False)
         if done:
-            result["searched"].append(keyword)
+            # An empty first page may be a guest held back, not a quiet window: the cutoff stays.
+            result["searched" if first else "empty"].append(keyword)
         return done
 
     if mode == "combined":
@@ -508,14 +510,14 @@ def discover_run(
 
     Returns ``{"employers": [{"company", "titles", "links", "job_ids", "detailed", "first_seen"}],
     "details", "pages", "requests", "stopped": reason | None, "pushback", "outcome" (``ok``,
-    ``budget``, ``refused``, ``error``, ``cancelled``), "mode", "mode_switched", "searched",
+    ``budget``, ``refused``, ``error``, ``cancelled``), "mode", "mode_switched", "searched", "empty",
     "search_complete", "first_429": {"after_requests", "after_s"} | None, "budget", "pause",
     "seconds"}``. ``links`` is the offsite apply URL (when a job page named one) then the LinkedIn
     job URL.
     """
     result: dict = {"employers": [], "details": 0, "pages": 0, "requests": 0, "stopped": None, "pushback": False,
-                    "outcome": "ok", "mode": mode, "mode_switched": False, "searched": [], "search_complete": False,
-                    "first_429": None, "budget": budget, "pause": [pause[0], pause[1]], "seconds": 0}
+                    "outcome": "ok", "mode": mode, "mode_switched": False, "searched": [], "empty": [],
+                    "search_complete": False, "first_429": None, "budget": budget, "pause": [pause[0], pause[1]], "seconds": 0}
     keywords = sdk.keywords(config)
     if not keywords:
         return result
