@@ -1,7 +1,7 @@
 """Shared polite HTTP client for job-board scrapers.
 
 Provides ``PoliteSession``, a thin wrapper around ``requests.Session`` that adds:
-- A common desktop browser's ``User-Agent`` (`USER_AGENT`).
+- A common desktop Firefox's ``User-Agent`` (`USER_AGENT`).
 - ``robots.txt`` read once per origin per session: RFC 9309 rules for The other door's
   product token (`door.scrapers.robots`), for its ``Sitemap:`` lines and
   ``Crawl-delay``. When `OBEY_ROBOTS` is on (issue #226), every redirect hop is
@@ -37,9 +37,10 @@ from requests.exceptions import RequestException
 
 from door.scrapers import robots
 
-# The User-Agent every request sends: a common desktop Chrome's.
-USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-              "Chrome/141.0.0.0 Safari/537.36")
+# The User-Agent every request sends: a common desktop Firefox's. Not Chrome's: a real Chrome also
+# sends client hints (`Sec-CH-UA`) and its own TLS handshake, so a plain request naming Chrome reads
+# as a faked browser, which profession.hu's firewall blocks; Firefox sends no client hints.
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0"
 _MAX_REDIRECTS = 10
 
 # Whether robots.txt gates requests. Off: the bar is each site's terms. robots.txt is

@@ -316,10 +316,12 @@ class Discovery:
 
         if result["mode_switched"]:
             state["mode"] = result["mode"]
-        if result["mode"] == "rotate" and result["searched"]:
+        if result["mode"] == "rotate":
             for keyword in result["searched"]:
                 discovery_state.mark_searched(state, keyword, now)
-            discovery_state.advance_rotation(state, self.keywords, len(result["searched"]))
+            # A keyword whose first page was empty is passed in the rotation but keeps its cutoff.
+            discovery_state.advance_rotation(state, self.keywords,
+                                             len(result["searched"]) + len(result.get("empty", [])))
         if result["stopped"] is None:
             discovery_state.finish(state, now)
         elif result["pushback"]:

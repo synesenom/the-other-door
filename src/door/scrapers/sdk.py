@@ -312,7 +312,8 @@ class DiscoveryResult(TypedDict, total=False):
     """What a source's ``run`` returns: ``employers``, ``requests``, ``pages``, ``details``,
     ``stopped`` (reason | None), ``pushback`` (a refusal: the source rests a day), ``outcome``
     (``ok``, ``budget``, ``refused``, ``error``, ``cancelled``), ``mode``, ``mode_switched``,
-    ``searched``, ``search_complete``, ``first_429``, ``budget``, ``pause``, ``seconds``."""
+    ``searched`` (the keywords to stamp searched), ``empty`` (keywords completed with an empty first
+    page: passed in the rotation, their cutoff kept), ``search_complete``, ``first_429``, ``budget``, ``pause``, ``seconds``."""
 
     employers: list[Employer]
     requests: int
@@ -324,6 +325,7 @@ class DiscoveryResult(TypedDict, total=False):
     mode: str
     mode_switched: bool
     searched: list[str]
+    empty: list[str]
     search_complete: bool
     first_429: dict | None
     budget: int

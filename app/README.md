@@ -9,6 +9,21 @@ jobs": the five steps live, Stop, a summary card) takes the place of the page du
 prepared job opens "Ready to send" (the pages, Revise and Undo). What each does is in
 [`../docs/manual-app.md`](../docs/manual-app.md). Below 900 px the sidebar becomes a tab bar, which steps aside while a posting is open. The visual design is in [`../docs/design/`](../docs/design/).
 
+<!-- toc -->
+**Contents**
+
+- [Run it](#run-it)
+- [Environments](#environments)
+- [Work on one screen (`npm run dev:preview`)](#work-on-one-screen-npm-run-devpreview)
+- [The bundle a packaged app carries (#223)](#the-bundle-a-packaged-app-carries-223)
+- [Packaging (#223)](#packaging-223)
+- [The install test (#639)](#the-install-test-639)
+- [Releasing (#224)](#releasing-224)
+- [Commands](#commands)
+- [How it is built](#how-it-is-built)
+- [Known gaps](#known-gaps)
+<!-- /toc -->
+
 ## Run it
 
 Needs Node 22 (`.nvmrc`) and the Python environment of the repo (`poetry install`, so

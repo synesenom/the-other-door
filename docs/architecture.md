@@ -4,6 +4,37 @@
 
 Start with [The engine](#the-engine): it explains how `find` works and why. The sections after it are the reference: modules, files, contracts.
 
+<!-- toc -->
+**Contents**
+
+- [The engine](#the-engine)
+  - [The idea](#the-idea)
+  - [The flow](#the-flow)
+  - [The life of an employer](#the-life-of-an-employer)
+  - [On topic: what counts as relevant](#on-topic-what-counts-as-relevant)
+  - [Languages and countries are data](#languages-and-countries-are-data)
+  - [Feed platforms detect themselves](#feed-platforms-detect-themselves)
+  - [Why it is built this way](#why-it-is-built-this-way)
+- [Two modes, one core](#two-modes-one-core)
+  - [Desktop app](#desktop-app)
+  - [CLI / MCP parity](#cli--mcp-parity)
+  - [How the pieces fit](#how-the-pieces-fit)
+  - [Progress](#progress)
+  - [Registering the MCP server](#registering-the-mcp-server)
+- [Run The other door at home (the phone app)](#run-the-other-door-at-home-the-phone-app)
+- [Data model](#data-model)
+  - [Job id convention](#job-id-convention)
+- [Scrapers (`src/door/scrapers/`)](#scrapers-srcdoorscrapers)
+- [Matching (`src/door/matching/`)](#matching-srcdoormatching)
+- [Tailoring, style and rendering (`src/door/tailoring/`, `style/`, `render/`)](#tailoring-style-and-rendering-srcdoortailoring-style-render)
+- [Storage](#storage)
+  - [Data versions and upgrades (#56)](#data-versions-and-upgrades-56)
+- [Supporting modules (`src/door/core/`)](#supporting-modules-srcdoorcore)
+- [Disk layout](#disk-layout)
+- [Tests](#tests)
+- [Adding a new scraper](#adding-a-new-scraper)
+<!-- /toc -->
+
 ## The engine
 
 ### The idea

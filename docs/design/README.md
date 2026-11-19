@@ -10,6 +10,22 @@ change a colour or a size there, not in a component.
 
 ![Style tile: logo, colours, type and controls](screens/style-tile.png)
 
+<!-- toc -->
+**Contents**
+
+- [Principles](#principles)
+- [Colour](#colour)
+- [Type](#type)
+- [Space and shape](#space-and-shape)
+- [The blue dash](#the-blue-dash)
+- [Components](#components)
+- [Layouts](#layouts)
+  - [Phone and narrow windows](#phone-and-narrow-windows)
+- [Dark mode](#dark-mode)
+- [Logo](#logo)
+- [Mockups](#mockups)
+<!-- /toc -->
+
 ## Principles
 
 1. **Paper and ink.** A warm parchment ground, near-black ink text. No gradients, no
