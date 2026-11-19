@@ -16,8 +16,7 @@ _HEADING = re.compile(r"^##\s+(.*?)\s*(?:<!--\s*kind:\s*([a-z]+)\s*-->)?\s*$")
 def heading(line: str) -> tuple[str, str | None]:
     """`(title, recorded kind)` of a `## ` heading line: the title without the marker and its `*`, `_` marks and colon,
     the kind None without a marker or with one that is no section kind."""
-    match = _HEADING.match(line)
-    title, kind = (match.group(1), match.group(2)) if match else (line.removeprefix("##").strip(), None)
+    title, kind = _HEADING.match(line).groups()
     return title.strip(" *_:"), kind if kind in i18n.CvSections.model_fields else None
 
 
@@ -39,4 +38,6 @@ def kind(section: list[str], kinds, codes: tuple[str, ...] | None = None) -> str
     if not head.startswith("## "):
         return None
     title, recorded = heading(head)
-    return recorded if recorded in kinds else None if recorded else i18n.cv_section_kind(title, kinds, codes)
+    if recorded:
+        return recorded if recorded in kinds else None
+    return i18n.cv_section_kind(title, kinds, codes)

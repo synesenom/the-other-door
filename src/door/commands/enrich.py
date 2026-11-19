@@ -95,9 +95,7 @@ def _clean_proposals(raw, cv_text: str) -> list[dict]:
         if key in seen or _in_cv(text, cv_words, cv_lines):
             continue
         seen.add(key)
-        cleaned.append({"n": len(cleaned) + 1, "section": section, "text": text, "source": str(item.get("source") or "")})
-        if kind:
-            cleaned[-1]["kind"] = kind
+        cleaned.append({"n": len(cleaned) + 1, "section": section, "text": text, "source": str(item.get("source") or ""), **({"kind": kind} if kind else {})})
     return cleaned
 
 
