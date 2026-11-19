@@ -70,7 +70,6 @@ def in_use(profile_dir: Path, config: dict) -> str:
 MANIFEST_FILE = "template.json"
 MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
 ICON_KINDS = (*i18n.CONTACT_KINDS, "date")
-MAX_LABEL = 24  # characters of a contact label
 # The section kinds a column can hold: the CV sections `i18n` names.
 SECTION_KINDS = tuple(i18n.CvSections.model_fields)
 
@@ -119,8 +118,8 @@ class Manifest(BaseModel):
         for kind, label in v.items():
             if kind not in i18n.CONTACT_KINDS:
                 raise ValueError(f"{kind!r} is not a contact kind ({', '.join(i18n.CONTACT_KINDS)})")
-            if not label.strip() or len(label) > MAX_LABEL:
-                raise ValueError(f"the label of {kind!r} must be 1 to {MAX_LABEL} characters")
+            if not label.strip():
+                raise ValueError(f"the label of {kind!r} is empty")
         return v
 
     @field_validator("fonts")

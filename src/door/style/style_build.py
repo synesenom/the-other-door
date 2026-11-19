@@ -394,9 +394,9 @@ def _long_title(lines: list[str]) -> list[str]:
     return [*lines, "", "## Experience", "", f"### {_LONG_ROLE} | Example Company — 2020 - 2023", "", "- A bullet.", ""]
 
 
-_SHAPES = """# {name}
+_SHAPES = """# Ada Example
 > A tagline of some length
-**Phone:** 12 34 56 78 | **Email:** ada@example.com | **Web:** example.com | **Location:** Example City | **LinkedIn:** linkedin.com/in/ada | **GitHub:** github.com/ada
+**Phone:** 12 34 56 78 | **Email:** ada@example.com | **Web:** example.com | **Location:** Example City | **LinkedIn:** example.com/in/ada | **GitHub:** example.com/ada
 ## Experience
 ### Lead Engineer | Example Company — 2020 - 2023 | Example City
 - A bullet with **a bold word**, *an italic one* and [a link](https://example.com).
@@ -418,7 +418,7 @@ Plain text of a paragraph.
 def _stress_variants(cv_md: str) -> dict[str, dict]:
     """The CV in `cv_md` made into the texts a template must hold (no model): ``photo`` (the same, printed with a
     photo), ``fewer`` (one entry a section), ``long_title`` (a very long job title), ``extra_section`` (one more
-    section) and ``french`` (a long French paragraph first, `lang` "fr") and ``shapes`` (every shape the vocabulary has, whatever the
+    section) and ``french`` (a long French paragraph first, `lang` "fr"), ``shapes`` (every shape the vocabulary has, whatever the
     CV: every contact kind, an entry heading's parts, levels, lists, bold, italic, a link). Each is ``{"md", "lang", "photo"}``."""
     lines = cv_md.rstrip("\n").splitlines()
     at = _section_at(lines)
@@ -426,7 +426,7 @@ def _stress_variants(cv_md: str) -> dict[str, dict]:
         "photo": lines, "fewer": _fewer(lines), "long_title": _long_title(lines),
         "extra_section": [*lines, "", "## Publications", "", "- A study of nightly pipelines (2021)", "- Notes on small steady steps (2019)"],
         "french": [*lines[:at], "## Profil", "", _FRENCH, "", *lines[at:]],
-        "shapes": _SHAPES.format(name=(_NAME.search(cv_md) or [None, "Ada Example"])[1]).splitlines(),
+        "shapes": _SHAPES.replace("Ada Example", (_NAME.search(cv_md) or [None, "Ada Example"])[1], 1).splitlines(),
     }
     return {name: {"md": cv_md if name == "photo" else "\n".join(v) + "\n", "lang": "fr" if name == "french" else "en",
                    "photo": name == "photo"} for name, v in variants.items()}
