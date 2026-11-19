@@ -220,6 +220,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                         postings.append({"platform_id": platform_id, "seen_only": True})
                         continue
                     if since and card["posted_at"] and card["posted_at"] < since:
+                        postings.append(_posting(card, None, scraped_at))  # the engine counts it stale; no ad request
                         continue
                     detail = None
                     try:

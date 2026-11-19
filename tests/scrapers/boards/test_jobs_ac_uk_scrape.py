@@ -12,7 +12,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_answered, drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_non_local, drain_pushback
 from door.scrapers.boards import jobs_ac_uk
 
 _FIX = Path(__file__).parent / "fixtures" / "jobs_ac_uk"
@@ -130,9 +130,11 @@ def test_cards_in_another_place_cost_no_ad_request():
     assert "Glasgow" in body
     _serve(_search(), body)
     _serve_details(["1093143", "1093009"])
+    drain_non_local("jobs_ac_uk")
     out = jobs_ac_uk.scrape({**_CFG, "max_pages_per_keyword": 1})
     assert [p["platform_id"] for p in out] == ["1093143", "1093009"]
     assert not any("DTN132" in u for u in _requested())
+    assert drain_non_local("jobs_ac_uk") == 1  # said, so a page of only other places is not `empty`
 
 
 @responses.activate
@@ -149,7 +151,10 @@ def test_since_ends_the_keyword_at_the_first_older_ad():
     _serve_search()
     _serve_details(["1093148", "1093143"])
     out = jobs_ac_uk.scrape(_CFG, since=datetime(2026, 11, 3))
-    assert [p["platform_id"] for p in out] == ["1093148", "1093143"]  # 1093009 was placed on 2 Nov
+    # 1093009 was placed on 2 Nov: it comes back as a dated card for the engine to count stale, with no ad request
+    assert [p["platform_id"] for p in out] == ["1093148", "1093143", "1093009"]
+    assert out[-1]["posted_at"] < "2026-11-03"
+    assert not any("1093009" in u for u in _requested())
     assert _searches() == [_search(page=1)]  # newest first: nothing on page 2 can be newer
 
 

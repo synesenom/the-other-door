@@ -54,7 +54,9 @@ def test_a_known_ad_costs_no_detail_request_and_an_old_one_is_skipped():
     _serve()
     since = datetime(2026, 10, 1, tzinfo=timezone.utc)
     postings = globalnyt.scrape(_CFG, known_ids=frozenset({"510393"}), since=since)
-    assert {p["platform_id"] for p in postings} == {"510291", "508636"}
+    # the old ad comes back dated for the engine to count stale, from the list alone
+    assert {p["platform_id"] for p in postings} == {"510291", "508636", "456923"}
+    assert next(p for p in postings if p["platform_id"] == "456923")["posted_at"] < "2026-10-01"
     assert not any("mhpss-advisor" in c.request.url for c in responses.calls)
     assert not any("universitetspraktikant" in c.request.url for c in responses.calls)
 

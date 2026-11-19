@@ -53,8 +53,11 @@ def test_known_ids_and_old_jobs_are_skipped():
     _serve()
     since = datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc)
     postings = reliefweb.scrape(_ANY, known_ids=frozenset({"4236426"}), since=since)
-    # not the known Nepal one; not the ones posted before 28 Oct 12:00 (Kenya 26th, Guatemala 27th, one-health is 30th)
-    assert {p["platform_id"] for p in postings} == {"4235500", "4235700"}
+    # not the known Nepal one; the ones posted before 28 Oct 12:00 (Kenya 26th, Guatemala 27th) come back dated, for
+    # the engine to count stale
+    old = {p["platform_id"] for p in postings if p["posted_at"] < "2026-10-28T12:00"}
+    assert {p["platform_id"] for p in postings} - old == {"4235500", "4235700"}
+    assert old and "4236426" not in old
 
 
 @responses.activate

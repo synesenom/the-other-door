@@ -115,7 +115,9 @@ def test_since_cuts_old_ads_before_their_request():
     _serve_search(("p1.html",))
     _serve_details(["57458959", "57505209"])
     out = reed.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2026, 10, 1))
-    assert [p["platform_id"] for p in out] == ["57458959", "57505209"]  # 57131623 is from July
+    # 57131623 is from July: it comes back as a dated card posting for the engine to count stale, no ad request
+    assert sorted(p["platform_id"] for p in out) == ["57131623", "57458959", "57505209"]
+    assert next(p for p in out if p["platform_id"] == "57131623")["posted_at"] < "2026-10-01"
     assert not any("57131623" in u for u in _requested())
 
 

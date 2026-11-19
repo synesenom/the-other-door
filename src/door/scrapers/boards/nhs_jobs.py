@@ -46,7 +46,7 @@ from bs4 import BeautifulSoup
 from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    on_topic, record_answered, record_error, record_pushback, report, run_probe, topic_terms,
+    on_topic, record_answered, record_error, record_non_local, record_pushback, report, run_probe, topic_terms,
 )
 
 _SITE = "nhs_jobs"
@@ -270,11 +270,14 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 placed = card["posted"]
                 if since_day is not None and placed is not None and placed.date() < since_day:
                     done = True  # newest first: every later card is older too
+                    out.append(_posting(card, _card_text(card), placed, scraped_at))  # the engine counts it stale
                     break
                 if card["id"] in seen or (topic and not on_topic(card["title"], topic)):
                     continue
-                if not sdk.location_fits(card["location"], config) or not sdk.keep_local(
-                        [{"location": card["location"]}], config, _SITE):
+                if not sdk.location_fits(card["location"], config):
+                    record_non_local(_SITE, 1)
+                    continue
+                if not sdk.keep_local([{"location": card["location"]}], config, _SITE):
                     continue
                 seen.add(card["id"])
                 if card["id"] in known_ids:
@@ -298,7 +301,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 own = (detail or {}).get("location") or ""
                 if own:
                     card = {**card, "location": own}
-                    if not sdk.location_fits(own, config) or not sdk.keep_local([{"location": own}], config, _SITE):
+                    if not sdk.location_fits(own, config):
+                        record_non_local(_SITE, 1)
+                        continue
+                    if not sdk.keep_local([{"location": own}], config, _SITE):
                         continue
                 out.append(_posting(card, description, posted, scraped_at))
 

@@ -217,6 +217,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 seen_ids.add(platform_id)
                 posted = parse_iso_date(job.get("created"))
                 if since is not None and posted is not None and posted < since:
+                    keyword_postings.append(_to_posting(job, scraped_at))  # the engine counts it stale
                     continue
                 keyword_postings.append(_to_posting(job, scraped_at))
             page_token = data.get("nextPageToken")

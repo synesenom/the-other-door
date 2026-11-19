@@ -106,7 +106,9 @@ def test_scrape_old_ads_are_left_alone_when_since_is_given():
     _detail("6530742")
     postings = jobmaskinen.scrape(_CFG, since=datetime(2026, 10, 20, tzinfo=timezone.utc))
 
-    assert [p["platform_id"] for p in postings] == ["6530742"]
+    # the older card comes back dated for the engine to count stale, with no ad request
+    assert sorted(p["platform_id"] for p in postings) == ["6529404", "6530742"]
+    assert next(p for p in postings if p["platform_id"] == "6529404")["posted_at"] < "2026-10-20"
     assert not any("6529404" in c.request.url for c in responses.calls)
 
 

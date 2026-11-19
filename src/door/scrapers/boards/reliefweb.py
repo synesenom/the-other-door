@@ -164,6 +164,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 continue
             seen.add(platform_id)
             if since is not None and item["posted_at"] is not None and item["posted_at"] < since:
+                postings.append(_to_posting(item, scraped_at))  # the engine counts it stale
                 continue
             postings.append(_to_posting(item, scraped_at))
         log_keyword_results("reliefweb", keyword, postings[keyword_start:])

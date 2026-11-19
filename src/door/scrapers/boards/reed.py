@@ -229,6 +229,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if card["id"] in seen or (topic and not on_topic(card["title"], topic)):
                     continue
                 if since is not None and card["created"] is not None and card["created"] < since:
+                    out.append(_posting(card, card["snippet"], scraped_at))  # the engine counts it stale; no ad request
                     continue
                 seen.add(card["id"])
                 if card["id"] in known_ids:
