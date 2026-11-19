@@ -13,11 +13,20 @@ from door import i18n
 _HEADING = re.compile(r"^##\s+(.*?)\s*(?:<!--\s*kind:\s*([a-z]+)\s*-->)?\s*$")
 
 
+KINDS = tuple(i18n.CvSections.model_fields)
+KINDS_TEXT = ", ".join(f"`{k}`" for k in KINDS)  # for a prompt that asks the model to record them
+
+
+def mark(kind: str | None) -> str:
+    """What a heading line ends with to record `kind` ('' for none): the form `heading` reads."""
+    return f" <!-- kind: {kind} -->" if kind else ""
+
+
 def heading(line: str) -> tuple[str, str | None]:
     """`(title, recorded kind)` of a `## ` heading line: the title without the marker and its `*`, `_` marks and colon,
     the kind None without a marker or with one that is no section kind."""
     title, kind = _HEADING.match(line).groups()
-    return title.strip(" *_:"), kind if kind in i18n.CvSections.model_fields else None
+    return title.strip(" *_:"), kind if kind in KINDS else None
 
 
 def split(cv_md: str) -> list[list[str]]:

@@ -34,7 +34,7 @@ _RULES = (
     "accurately; never invent, never embellish), that are not already in the CV, and that "
     "are relevant to the role targets. Each proposal has `section` (the `##` section of the "
     "CV it belongs in, its title as written there: an existing one when it fits, otherwise a new short heading; a new "
-    "heading of a skills, education, certifications, languages or interests section ends with its kind as a comment, "
+    "heading of one of the kinds " + cv_sections.KINDS_TEXT + " ends with its kind as a comment, "
     "`Technical Skills <!-- kind: skills -->`; an existing one too when it is of such a kind), `text` "
     "(one bullet ready to paste, without the leading dash) and `source` (the URL it came "
     "from, or the CV file's file name). List every URL you could not fetch under `unreachable`. Answer with the JSON only."
@@ -105,12 +105,11 @@ def _insert(cv_text: str, section: str, text: str, kind: str | None = None) -> s
     lines = cv_text.split("\n")
     start = next((i for i, line in enumerate(lines) if line.startswith("## ") and cv_sections.heading(line)[0].lower() == section.lower()), None)
     bullet = f"- {text}"
-    mark = f" <!-- kind: {kind} -->" if kind else ""
     if start is None:
         body = cv_text.rstrip("\n")
-        return (f"{body}\n\n" if body else "") + f"## {section}{mark}\n\n{bullet}\n"
+        return (f"{body}\n\n" if body else "") + f"## {section}{cv_sections.mark(kind)}\n\n{bullet}\n"
     if kind and cv_sections.heading(lines[start])[1] is None:
-        lines[start] = lines[start].rstrip() + mark  # the kind an older CV's heading never recorded
+        lines[start] = lines[start].rstrip() + cv_sections.mark(kind)  # the kind an older CV's heading never recorded
     end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
     last_bullet = next((i for i in range(end - 1, start, -1) if _BULLET_RE.match(lines[i])), None)
     if last_bullet is not None:
