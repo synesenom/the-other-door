@@ -239,6 +239,16 @@ def test_fetch_writes_each_file_and_the_licence_beside_it_checked_against_the_pi
     assert sorted(p.name for p in (tmp_path / "fonts").iterdir()) == ["Lato-400.ttf", "Lato-700.ttf", "Lato-OFL.txt"]
 
 
+def test_two_families_with_one_free_copy_fetch_each_file_once(data, tmp_path):
+    plan = one([font("Lato-Regular", "Lato"), font("Lato-Regular", "LATO")], data) \
+        + one([font("Lato-Bold", "Lato", weight=700)], data)
+    calls = []
+    paths = _fetch(plan, tmp_path / "fonts", _fake_fetch(calls))
+    assert len(calls) == len(set(calls)) == 3   # two fonts and one licence, not one licence twice
+    assert sorted({p.name for p in paths}) == ["Lato-400.ttf", "Lato-700.ttf"]
+    assert (tmp_path / "fonts" / "Lato-OFL.txt").is_file()
+
+
 def test_a_file_already_there_with_the_pinned_hash_is_not_fetched_again(data, tmp_path):
     plan = one([font("Lato-Regular", "Lato")], data)
     _fetch(plan, tmp_path, _fake_fetch())

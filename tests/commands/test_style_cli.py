@@ -635,6 +635,12 @@ def test_the_show_command_names_each_image(home, cli_env, shown):
     assert "default" in text and "cv_page_1.png" in text and "letter_page_1.png" in text
 
 
+def test_the_show_command_skips_what_is_not_a_page_list(home, cli_env, monkeypatch):
+    monkeypatch.setattr(style_preview, "show", lambda *a: {"styles": {"like": {"cv": ["/x/cv_page_1.png"], "two_column": True}}})
+    result = CliRunner().invoke(cli, ["cv", "style", "show"])
+    assert result.exit_code == 0 and "cv_page_1.png" in result_text(result)
+
+
 def test_the_show_command_says_when_nothing_could_be_printed(home, cli_env, monkeypatch):
     monkeypatch.setattr(style_preview, "show", lambda *a: {"styles": {}})
     result = CliRunner().invoke(cli, ["cv", "style", "show"])
