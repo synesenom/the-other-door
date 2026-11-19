@@ -69,5 +69,8 @@
     "name": "Enys Mones",
     "email": "enys.mones@gmail.com"
   },
-  "homepage": "https://github.com/synesenom/the-other-door"
+  "homepage": "https://github.com/synesenom/the-other-door",
+  "overrides": {
+    "minimatch@>=7.0.0 <11.0.1": "^11.0.1"
+  }
 }
