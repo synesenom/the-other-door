@@ -14,7 +14,9 @@
       <p class="contact"><span class="phone">detail</span>...</p></header>
     The tagline is there only when the CV has one. Each contact span has its kind as a class: phone, email, web,
     location, linkedin or github (the details run in that order; none is written for a detail the CV lacks); any other detail is a plain <span>.
-    <h2>Section</h2>
+    <h2 class="kind-skills">Section</h2>
+    Every <h2> carries one kind class, by what the section holds: kind-summary, kind-experience, kind-skills, kind-education, kind-certifications, kind-languages, kind-interests, kind-other.
+    A template with a side column places the sections by it.
     <div class="entry"><h3>Role | Company - dates</h3><ul><li>...</li></ul></div>
     An entry's heading may be written in parts, so a template can style each: <h3><span class="role">Role</span>
     <span class="sep"> | </span><span class="org">Company</span><span class="sep"> - </span><span class="dates">dates</span>
