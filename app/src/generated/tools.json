@@ -525,7 +525,7 @@
   },
   {
     "name": "infer_basics",
-    "description": "Read the profile basics from the CV: name, email, city, job-ad languages and a `remote` default.\n\n    Onboarding's reading step, right after `draft_cv`. The header is parsed; one `claude -p` call (Haiku by\n    default) reads only what parsing leaves. Works before profile/config.json exists. Ask the user only about\n    the keys in `missing`, one question each; show the rest in the review. Writes nothing.\n\n    Args:\n        markdown: The CV text. Omit for `profile/cv.draft.md`, or `profile/cv.md` when there is no draft.\n        model: Claude model to ask (default: haiku).\n\n    Returns:\n        ``{\"name\", \"email\", \"location\", \"languages\", \"remote\", \"missing\"}`` (`None` for what was not found),\n        plus ``\"unsupported_location\"`` (a place outside the covered countries, to ask about) and ``\"warning\"``\n        (the model call failed, so what it would have read is in `missing`).\n    ",
+    "description": "Read the profile basics from the CV: name, email, city, job-ad languages and a `remote` default.\n\n    Onboarding's reading step, right after `draft_cv`. The CV is read by one cached `claude -p` call (Haiku;\n    the same reading `find` and the salary estimate use). Works before profile/config.json exists. Ask the user\n    only about the keys in `missing`, one question each; show the rest in the review. Writes nothing.\n\n    Args:\n        markdown: The CV text. Omit for `profile/cv.draft.md`, or `profile/cv.md` when there is no draft.\n\n    Returns:\n        ``{\"name\", \"email\", \"location\", \"languages\", \"remote\", \"missing\"}`` (`None` for what was not found),\n        plus ``\"unsupported_location\"`` (a place in a country not covered, to ask about) and ``\"warning\"``\n        (the CV could not be read, so what it would have said is in `missing`).\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -540,18 +540,6 @@
           ],
           "default": null,
           "title": "Markdown"
-        },
-        "model": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Model"
         }
       },
       "title": "infer_basicsArguments"

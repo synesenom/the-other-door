@@ -19,8 +19,8 @@ import click
 from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
-from door.core import claude_cli, cv_sections, migrations, profile_loader, utils, workspace
-from door.style import cv_body, style_icons
+from door.core import claude_cli, cv_read, cv_sections, migrations, profile_loader, utils, workspace
+from door.style import style_icons
 
 _DEFAULT_MODEL = "sonnet"
 _DRAFT_NAME = "cv.draft.md"
@@ -290,59 +290,24 @@ def _draft_cv_core(
     return result
 
 
-_BASICS_MODEL = "haiku"
 _DEFAULT_REMOTE = "hybrid"
-_EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 # A level at which someone works in a language; a language at any other level stays out of `languages`.
 _WORKING_LEVELS = {"native", "fluent", "working"}
 
-_BASICS_RULES = (
-    "You read a job seeker's CV and fill in what it says about them. `name`: their full name. `email`: their "
-    "email address. `city`: the city they live in, from the contact details, else the city of their current "
-    "job; null when the CV does not say. Never guess any of these: null when it is not there. `languages`: "
-    "every spoken language the CV names, each with its `level`: `native`, `fluent` (or professional or "
-    "business), `working`, `conversational` or `basic`. Answer with the JSON only."
-)
 
-_BASICS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "name": {"type": ["string", "null"]},
-        "email": {"type": ["string", "null"]},
-        "city": {"type": ["string", "null"]},
-        "languages": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {"language": {"type": "string"}, "level": {"type": "string"}},
-                "required": ["language", "level"],
-            },
-        },
-    },
-    "required": ["name", "email", "city", "languages"],
-}
-
-
-def _usable(value) -> str | None:
+def _clean(value) -> str | None:
     """`value` as text, or `None` when it is empty or still a `TODO` of the draft."""
     text = " ".join(str(value or "").split())
     return text if text and "TODO" not in text else None
 
 
-def _needs_the_model(text: str, name, email, location) -> bool:
-    """Parsing leaves something to read: a basic it did not find, or a language besides English to judge."""
-    if not (name and email and location):
-        return True
-    others = [word for code, pack in i18n.languages().items() if code != "en" for word in pack.names]
-    return bool(i18n.compile_words(others).search(text))
-
-
-def _working_languages(answered) -> list[str]:
-    """English, plus each supported language the model reads at a working level, by its file's name."""
+def _working_languages(read) -> list[str]:
+    """English, plus each supported language the reading puts at a working level, by its file's name."""
     packs = i18n.languages()
     codes = ["en"]
-    for item in answered if isinstance(answered, list) else []:
-        code = i18n.language_code(str(item.get("language") or "")) if isinstance(item, dict) else None
+    for item in read:
+        written = str(item.get("language") or "")  # as the CV writes it: "Danish", "Dansk"
+        code = i18n.language_code(written) or next((c for c, p in packs.items() if i18n.compile_words(p.names).search(written)), None)
         if code and code not in codes and str(item.get("level") or "").lower() in _WORKING_LEVELS:
             codes.append(code)
     return [packs[c].name for c in codes]
@@ -351,18 +316,16 @@ def _working_languages(answered) -> list[str]:
 def _infer_basics_core(
     markdown: str | None = None,
     *,
-    model: str | None = None,
     profile_dir: Path | None = None,
-    timeout_s: float = 120,
 ) -> dict:
-    """Read the profile basics from the CV: `markdown`, else the draft or the CV on disk. The header is parsed; one
-    `claude -p` call reads only what parsing leaves (a missing basic, a language besides English). Works before the
-    profile exists, and a failed call never stops a flow: what it would have read is `missing`.
+    """Read the profile basics from the CV: `markdown`, else the draft or the CV on disk, through `cv_read.read` (one
+    cached model call per CV text). Works before the profile exists, and a CV that could not be read never stops a
+    flow: what it would have said is `missing`.
 
     Returns:
         ``{"name", "email", "location", "languages", "remote", "missing"}`` (`None` for what was not found;
         `missing` lists the keys to ask about, and is the only reason to ask), plus ``"unsupported_location"`` (a
-        place outside the covered countries: ask) and ``"warning"`` (the model call failed).
+        place in a country The other door does not cover: ask) and ``"warning"`` (the CV could not be read).
 
     Raises:
         ConfigError: an invalid profile/config.json.
@@ -373,40 +336,19 @@ def _infer_basics_core(
     result = {"name": None, "email": None, "location": None, "languages": ["English"], "remote": _DEFAULT_REMOTE, "missing": []}
     if not text:
         return {**result, "missing": ["name", "email", "location"]}
+    try:
+        read = cv_read.read(text)
+    except cv_read.CvReadError as exc:
+        return {**result, "missing": ["name", "email", "location"], "warning": str(exc)}
 
-    # The header (`cv_body.header`, its labels in every supported language), then for an email the whole text but
-    # the tagline.
-    head = cv_body.header(text)
-    name = _usable(head["name"])
-    untagged = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(">"))
-    email = next((m.group(0) for s in [*head["details"].get("email", []), *head["other"], untagged] if (m := _EMAIL_RE.search(s))), None)
-    place = _usable(next(iter(head["details"].get("location", [])), None))
-    location = i18n.known_city(place) if place else None
-    # A place naming a covered country but no known city says too little to search; one naming a place abroad is one
-    # The other door does not cover; anything else (a street address) is left to the model.
-    abroad = place and not location and not i18n.country_for_location(place) and i18n.compile_words(i18n.foreign_places()).search(place)
-    unsupported = place if abroad else None
-
-    if _needs_the_model(text, name, email, location or unsupported):
-        try:
-            answer = claude_cli.ask(
-                _BASICS_RULES, f"CV:\n<<<\n{text}\n>>>\n", model=model or _BASICS_MODEL, feature="infer_basics", schema=_BASICS_SCHEMA,
-                timeout_s=timeout_s, profile_dir=profile_dir,
-            )
-        except claude_cli.ClaudeError as exc:
-            result["warning"] = str(exc)
-        else:
-            # What the model names must be in the CV: a name or an address is never made up.
-            read_name, read_email = _usable(answer.get("name")), _usable(answer.get("email"))
-            name = name or (read_name if read_name and read_name.lower() in text.lower() else None)
-            email = email or (read_email if read_email and read_email in text and _EMAIL_RE.fullmatch(read_email) else None)
-            city = _usable(answer.get("city"))
-            if city and not (location or unsupported):
-                location = i18n.known_city(city)
-                unsupported = city if not location and not i18n.country_for_location(city) else None
-            result["languages"] = _working_languages(answer.get("languages"))
-
-    result.update(name=name, email=email, location=location)
+    city = _clean(read.get("city"))
+    location = i18n.known_city(city) if city else None
+    country = str(read.get("country") or "").lower()
+    # A city in a country The other door does not cover is one to say so about; a country alone, or a city of a
+    # covered country that is not listed, says too little to search and is only asked about.
+    unsupported = city if city and not location and country and country not in i18n.countries() else None
+    result.update(name=_clean(read.get("name")), email=_clean(read.get("email")), location=location,
+                  languages=_working_languages(read.get("languages") or []))
     if unsupported:
         result["unsupported_location"] = unsupported
     result["missing"] = [key for key in ("name", "email", "location") if not result[key]]
