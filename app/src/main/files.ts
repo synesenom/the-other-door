@@ -1,6 +1,7 @@
 // Where a job's prepared files live, and the only way the app names one: a job id
 // plus a fixed file name, never a path from the renderer; and the one check of a file
 // picked in a dialog (extension, links, size). No processes.
+import { randomUUID } from 'node:crypto'
 import { existsSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
@@ -12,6 +13,23 @@ export function doorHome(env: Record<string, string | undefined>, repoRoot: stri
   if (raw === '~') return homedir()
   if (raw.startsWith('~/')) return resolve(join(homedir(), raw.slice(2)))
   return resolve(raw)
+}
+
+/** The one file picked in a dialog, by token: a new `put` replaces the last, `take` gives its path once. */
+export function oneShot() {
+  let pending: { token: string; path: string } | null = null
+  return {
+    put(path: string): string {
+      pending = { token: randomUUID(), path }
+      return pending.token
+    },
+    take(token: string): string | null {
+      if (!pending || pending.token !== token) return null
+      const { path } = pending
+      pending = null
+      return path
+    },
+  }
 }
 
 export function isJobId(v: unknown): v is string {

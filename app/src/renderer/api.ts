@@ -359,7 +359,7 @@ export const INTERVIEW_KINDS = [
 export async function call<T>(
   tool: string,
   args: Record<string, unknown> = {},
-  options: { onProgress?: (p: ProgressEvent) => void; /** CV files the user picked, by token: draft_cv, enrich, build_style. */ tokens?: string[] } = {},
+  options: { onProgress?: (p: ProgressEvent) => void; /** files the user picked, by token: CV files (draft_cv, enrich, build_style), the photo (save_photo) and an archive (import_data), the last two good once. */ tokens?: string[] } = {},
 ): Promise<T> {
   const { onProgress, tokens } = options
   const callId = onProgress ? newCallId() : undefined

@@ -313,6 +313,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     call: async (tool, args = {}, _callId, tokens) => {
       if (!tokens) return respond(tool, args)
       if (tool === 'build_style') return { ok: true, data: { started: true } }
+      if (tool === 'save_photo') return { ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }
+      if (tool === 'import_data') return { ok: false, error: 'Nothing is imported in the preview.' }
       if (tool === 'enrich') return respond('enrich', { files: ['jane-doe-cv.pdf'] })
       const r = await respond('draft_cv', {})
       if (!r.ok) return r
@@ -326,7 +328,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     cvFile: async () => 'jane-doe-cv.pdf',
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
-    savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
     onBeforeClose: () => () => undefined,
     onStyleReading: (cb: () => void) => {
       styleReadingListeners.add(cb)
@@ -371,7 +372,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     pageUrl,
     exportData: async () => (scene.fails?.exportData ? { ok: false, error: scene.fails.exportData } : { ok: false, canceled: true }),
     pickArchive: async () => ({ canceled: true }),
-    importData: async () => ({ ok: false, error: 'Nothing is imported in the preview.' }),
     reportProblem: async () => (scene.fails?.reportProblem ? { ok: false, error: scene.fails.reportProblem } : { ok: false, canceled: true }),
     showHome: done,
     checkUpdate: async () => ({ enabled: false as const }),

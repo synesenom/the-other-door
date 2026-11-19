@@ -194,7 +194,6 @@ export function createWebDoor(deps: WebDeps) {
     async pickPhoto() {
       return { error: ON_THE_MACHINE }
     },
-    savePhoto: machineOnly,
     styleFromCvFile: machineOnly,
     onStyleReading: () => () => undefined,
     onBeforeClose: () => () => undefined,
@@ -217,7 +216,6 @@ export function createWebDoor(deps: WebDeps) {
     async pickArchive() {
       return { error: ON_THE_MACHINE }
     },
-    importData: machineOnly,
     reportProblem: machineOnly,
     async showHome() {
       return { ok: false }

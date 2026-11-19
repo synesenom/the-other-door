@@ -10,7 +10,7 @@ const writers = new Set<() => Promise<void>>()
 ipcRenderer.on('door:before-close', beforeCloseHandler(writers, () => ipcRenderer.send('door:before-close-done')))
 
 contextBridge.exposeInMainWorld('door', {
-  // `tokens`: the CV files the user picked (draft_cv, enrich, build_style); main puts their paths into the tool's argument.
+  // `tokens`: the files the user picked (CV files for draft_cv, enrich, build_style; the photo for save_photo, an archive for import_data, one-shot); main puts their paths into the tool's argument.
   call: (tool: string, args?: Record<string, unknown>, callId?: string, tokens?: string[]) =>
     ipcRenderer.invoke('door:call', tool, args ?? {}, callId, tokens),
   onProgress: (callId: string, cb: (p: { progress: number; total?: number; message: string }) => void) => {
@@ -30,9 +30,8 @@ contextBridge.exposeInMainWorld('door', {
   dropCvFiles: (files: File[]) => ipcRenderer.invoke('door:drop-cv-files', files.map((f) => webUtils.getPathForFile(f)).filter(Boolean)),
   cvFile: () => ipcRenderer.invoke('door:cv-file'),
   clearCvSources: () => ipcRenderer.invoke('door:cv-sources-clear'),
-  // The CV photo: chosen in a dialog the main process runs, saved by the token it hands back.
+  // The CV photo: chosen in a dialog the main process runs, saved by the token it hands back (`call`'s tokens).
   pickPhoto: () => ipcRenderer.invoke('door:pick-photo'),
-  savePhoto: (token: string) => ipcRenderer.invoke('door:save-photo', token),
   styleFromCvFile: () => ipcRenderer.invoke('door:style-from-cv-file'),
   // A file was chosen for it: its structure is now being read.
   onStyleReading: (cb: () => void) => {
@@ -79,7 +78,6 @@ contextBridge.exposeInMainWorld('door', {
   // Moving the data: the files are chosen in dialogs the main process runs.
   exportData: () => ipcRenderer.invoke('door:export-data'),
   pickArchive: () => ipcRenderer.invoke('door:pick-archive'),
-  importData: (token: string) => ipcRenderer.invoke('door:import-data', token),
   // Save logs…: the report is written where a save dialog the main process runs says.
   reportProblem: () => ipcRenderer.invoke('door:report-problem'),
   stopRun: () => ipcRenderer.invoke('door:stop-run'),

@@ -2,7 +2,21 @@ import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from
 import { homedir, tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { checkPicked, doorHome, isJobId, isMaterialName, isPngName, materialPath } from './files'
+import { checkPicked, doorHome, isJobId, isMaterialName, isPngName, materialPath, oneShot } from './files'
+
+describe('oneShot', () => {
+  it('hands a path over once, for the token it gave out, and a new put replaces the last', () => {
+    const store = oneShot()
+    const one = store.put('/a/one.png')
+    expect(store.take('nope')).toBeNull()
+    expect(store.take(one)).toBe('/a/one.png')
+    expect(store.take(one)).toBeNull()
+    const two = store.put('/a/two.png')
+    const three = store.put('/a/three.png')
+    expect(store.take(two)).toBeNull()
+    expect(store.take(three)).toBe('/a/three.png')
+  })
+})
 
 describe('doorHome', () => {
   it('prefers a non-empty DOOR_HOME, resolved', () => {
