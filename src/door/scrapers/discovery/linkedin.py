@@ -430,6 +430,8 @@ def _page_through(
         page = _parse_cards(html)
         if not page and (wall := sdk.wall_page(html)):
             raise _Stop(f"{wall} instead of the results", pushback=True)
+        if not page and "<li" in html:
+            raise _Stop("a page of results with no card the scraper reads (the page changed)")
         first = len(page) if first is None else first
         new = [c for c in page if c["platform_id"] not in seen]
         seen.update(c["platform_id"] for c in new)

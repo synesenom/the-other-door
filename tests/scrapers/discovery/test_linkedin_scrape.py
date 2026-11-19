@@ -223,6 +223,15 @@ def test_it_stops_paging_at_an_empty_page(session):
     assert len(_searches(session)) == 2 and result["search_complete"]
 
 
+def test_a_page_of_results_with_no_card_it_reads_stops_the_run_as_a_change(session):
+    """Items where the cards should be, none of them read: the page changed, not a day without jobs."""
+    changed = '<!DOCTYPE html><li><div class="job-card" data-urn="urn:li:job:1"><h3>Data Scientist</h3></div></li>'
+    _search_pages(session, changed)
+    result = _run()
+    assert result["outcome"] == "error" and result["pushback"] is False
+    assert "no card" in result["stopped"] and "no card" in " ".join(drain_errors()["linkedin"])
+
+
 def test_it_stops_paging_once_a_card_is_older_than_since_and_drops_it(session):
     page = _cards((1, "Data Scientist", "New Co", "2026-10-10"), (2, "Data Scientist", "Old Co", "2026-10-01"))
     _search_pages(session, page, _cards((3, "Data Scientist", "Older Co", "2026-09-20")))
