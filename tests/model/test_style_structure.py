@@ -103,5 +103,6 @@ def test_the_icons_beside_contact_lines_get_a_kind_from_the_model(read, name):
 
 
 def test_the_page_footer_of_a_designed_cv_is_named_a_footer_not_content(read):
-    margins = read("en-designed-with-page-footer")["page"]["margins"]
-    assert margins["bottom"] > 0
+    style = read("en-designed-with-page-footer")
+    body = max(r["bbox"][3] for r in style["runs"] if r["page"] == 1 and not r["icon"])
+    assert 0 < style["page"]["margins"]["bottom"] <= style["page"]["size"][1] - body + 0.5

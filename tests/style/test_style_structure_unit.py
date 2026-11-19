@@ -203,14 +203,14 @@ def test_the_models_kind_for_a_heading_is_kept_whatever_the_words(cv):
     assert [h["kind"] for h in style_structure.check(a, rows, pages)["headings"]] == ["skills", "other", "languages"]
 
 
-def test_the_contact_lines_and_footers_are_carried_in_the_structure(cv):
-    pages, rows = cv
+def test_the_contact_lines_and_footers_are_carried_in_the_structure(tmp_path):
+    pages, rows, _ = read(pdf_of(tmp_path, one_column() + put("F1", 8, 270, 30, "Page 1 of 1")))
     ids = ids_by_text(rows)
     a = answer(rows, contacts=[{"id": ids["max@example.com +49 30 1234567"], "kind": "email", "label": " E-mail: "}],
-               footers=[ids["Experience"]])
+               footers=[ids["Page 1 of 1"]])
     s = style_structure.check(a, rows, pages)
     assert [(c["row"]["id"], c["kind"], c["label"]) for c in s["contacts"]] == [(ids["max@example.com +49 30 1234567"], "email", "E-mail:")]
-    assert [r["id"] for r in s["footers"]] == [ids["Experience"]]
+    assert [r["id"] for r in s["footers"]] == [ids["Page 1 of 1"]]
 
 
 @pytest.mark.parametrize("break_it", [
@@ -565,39 +565,44 @@ def test_an_icon_with_no_structure_has_no_kind(tmp_path):
     assert [i["kind"] for i in style["icons"]] == [None]
 
 
-def _page_numbered(n=3):
-    return [one_column() + put("F1", 8, 290, 30, str(i + 1)) for i in range(n)]
-
-
 def test_the_footers_the_model_names_are_left_out_of_the_margins(tmp_path):
-    pages, rows, _ = read(pdf_of(tmp_path, [one_column(), one_column() + put("F1", 8, 290, 30, "Page 2 of 2")]))
-    a = answer(rows, footers=[next(r["id"] for r in rows if r["text"] == "Page 2 of 2")])
+    pages, rows, _ = read(pdf_of(tmp_path, [one_column() + put("F1", 8, 290, 30, "Page 1 of 2"), one_column()]))
+    footer = next(r["id"] for r in rows if r["text"] == "Page 1 of 2")
+    body_bottom = max(r["bbox"][3] for r in pages[0]["runs"] if "Page" not in r["text"])
+    expected = round((pages[0]["size"][1] - body_bottom) * 2) / 2
+    s = style_structure.check(answer(rows, footers=[footer]), rows, pages)
+    assert style_extract.margins(pages, s)["bottom"] == expected
+    assert style_extract.margins(pages)["bottom"] < 40 < expected  # no structure, no footers: the foot line counts
+
+
+def test_a_footer_the_model_names_in_the_middle_of_a_page_is_dropped(tmp_path):
+    pages, rows, _ = read(pdf_of(tmp_path, one_column() + put("F1", 8, 270, 30, "Page 1 of 1")))
+    ids = ids_by_text(rows)
+    a = answer(rows, linkedin_export=True, footers=[ids["Page 1 of 1"], ids["Education"]])
     s = style_structure.check(a, rows, pages)
-    assert style_extract.margins(pages, s)["bottom"] > 200
-    assert style_extract.margins(pages)["bottom"] > 200  # same y on one page of two: no footer, but the bottom needs a next page
+    assert [r["text"] for r in s["footers"]] == ["Page 1 of 1"]
+    a = answer(rows, linkedin_export=True, footers=[ids["Education"]])
+    s = style_structure.check(a, rows, pages)
+    assert s["footers"] == [] and s["linkedin"] is False
 
 
-def test_with_no_structure_a_line_at_the_same_foot_y_on_every_page_is_a_footer(tmp_path):
-    pages = style_extract.read_pages(pdf_of(tmp_path, _page_numbered()))
-    assert [r["text"] for r in style_extract.footer_runs(pages, None)] == ["1", "2", "3"]
-
-
-def test_with_no_structure_a_bottom_line_of_a_one_page_cv_is_no_footer(tmp_path):
-    pages = style_extract.read_pages(pdf_of(tmp_path, [one_column() + put("F1", 8, 290, 30, "1")]))
+def test_with_no_structure_there_are_no_footers(tmp_path):
+    pages = style_extract.read_pages(pdf_of(tmp_path, [one_column() + put("F1", 8, 290, 30, str(i)) for i in (1, 2)]))
     assert style_extract.footer_runs(pages, None) == []
 
 
-def test_with_no_structure_a_foot_line_on_only_one_page_is_no_footer(tmp_path):
-    pages = style_extract.read_pages(pdf_of(tmp_path, [one_column() + put("F1", 8, 290, 30, "Page 1"), one_column()]))
-    assert style_extract.footer_runs(pages, None) == []
+def test_an_icon_whose_label_and_value_are_rows_of_their_own_gets_the_value_s_kind(tmp_path):
+    import math
 
-
-def test_the_stand_in_names_the_contact_lines_and_footers_by_a_plain_rule_and_its_answer_holds(tmp_path):
-    from style_structure_utils import fake_ask
-
-    pages, rows, text = read(pdf_of(tmp_path, one_column() + put("F1", 8, 290, 30, "Page 1 of 1")))
-    got = fake_ask(text)
-    kinds = {r["id"]: c["kind"] for c in got["contacts"] for r in rows if r["id"] == c["id"]}
-    assert set(kinds.values()) == {"email", "date"}
-    assert [rows[i - 1]["text"] for i in got["footers"]] == ["Page 1 of 1"]
-    style_structure.check(got, rows, pages)
+    star = "1 0 0 rg " + " ".join(
+        f"{55 + (5 if i % 2 == 0 else 2) * math.sin(i * math.pi / 5):.2f} {785 + (5 if i % 2 == 0 else 2) * math.cos(i * math.pi / 5):.2f} {'m' if i == 0 else 'l'}"
+        for i in range(10)) + " f\n"
+    header = put("F2", 20, 50, 800, "Max Mustermann")
+    content = header + star + put("F1", 10, 70, 782, "Telefon") + put("F1", 10, 200, 782, "+45 12 34 56 78") + one_column()[len(
+        header + put("F1", 10, 50, 782, "max@example.com +49 30 1234567")):]
+    path = pdf_of(tmp_path, content)
+    pages, rows, _ = read(path)
+    ids = ids_by_text(rows)
+    contacts = [{"id": ids["+45 12 34 56 78"], "kind": "phone", "label": "Telefon"}]
+    style = style_extract.extract(path, structure=style_structure.check(answer(rows, contacts=contacts), rows, pages))
+    assert [i["kind"] for i in style["icons"]] == ["phone"]

@@ -28,6 +28,7 @@ _STRAY = 2  # rows at the far side of a side column that are still no column
 _SIDE_SHARE = 0.6  # a side column is narrower than this share of the text's width
 _NEAR = 2.0  # pt of slack where a box is compared with a column
 _CONTINUES = 1.6  # a heading's next line is its second line within this many sizes below
+_FURNITURE_BAND = 0.08  # share of the page height at its top and foot where a footer or header can be
 _KEEP_CACHED = 20  # answers kept in the cache folder, the most recently written
 
 SYSTEM = """You read the structure of a CV from its text lines, as a typesetter would. The input lists each text style (font family, size in pt, weight, italic, colour, characters set in it) and each visual line of text with its page, baseline y, left and right x and style. Most text is body text in the most used style.
@@ -160,6 +161,13 @@ def _contacts(given, rows_by_id: dict) -> list[dict]:
     return out
 
 
+def _in_foot_or_head(row: dict, pages: list[dict]) -> bool:
+    """Whether the row sits in the top or bottom `_FURNITURE_BAND` of its page: page furniture stands nowhere else, so
+    a footer the model names in the body is dropped."""
+    height = pages[row["page"] - 1]["size"][1]
+    return row["bbox"][3] <= _FURNITURE_BAND * height or row["bbox"][1] >= (1 - _FURNITURE_BAND) * height
+
+
 def _number(value) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
@@ -224,7 +232,7 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
 
     ``{linkedin, columns: "one" | "two" | "three", side_range: (x0, x1) | None, name, headings: [{kind, column,
     row, text, bbox}], entry_titles: [id], contacts: [{row, kind, label}], footers: [row]}``, `name`, each heading's,
-    contact's and footer's `row` the rows of `rows_list`. A heading's column is worked out from its x and the side range
+    contact's and footer's `row` the rows of `rows_list` (a footer outside the top and bottom 8% of its page is dropped). A heading's column is worked out from its x and the side range
     (the model's is not used), its `kind` is the model's, and a heading that wraps takes its second line in. LinkedIn
     is believed only with a footer line the model named on every page.
 
@@ -259,7 +267,8 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
     side = _side_range(layout, rows_list, pages[0]["size"]) if columns == "two" else None
     if side is not None and _text_both_sides(rows_list, side):
         columns, side = "three", None
-    footer_rows = [by_id[i] for i in _ids(answer.get("footers"), by_id, "the footers")]
+    footer_rows = [r for r in (by_id[i] for i in _ids(answer.get("footers"), by_id, "the footers"))
+                   if _in_foot_or_head(r, pages)]
     footers = all(any(r["page"] == n for r in footer_rows) for n in range(1, len(pages) + 1))
     contacts = _contacts(answer.get("contacts"), by_id)
     body = _body_style(rows_list)

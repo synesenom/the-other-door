@@ -179,20 +179,17 @@ def _nearest(box: list[float], runs: list[dict]) -> tuple[dict, str] | None:
     return None
 
 
-def near(box: list[float], runs: list[dict]) -> dict | None:
-    """The text an icon belongs to (`_nearest`): ``{text, side}``."""
-    found = _nearest(box, runs)
-    return {"text": found[0]["text"], "side": found[1]} if found else None
-
-
-def kind_of(box: list[float], runs: list[dict], structure: dict | None) -> str | None:
-    """The kind of icon (one of `templates.ICON_KINDS`) of an icon at `box`: the `kind` the model gave the line of
-    `structure["contacts"]` that holds the text it sits beside; None when that text is on no such line (or there is no
-    structure)."""
-    found = _nearest(box, runs)
-    if not structure or not found:
+def kind_of(box: list[float], page: int, structure: dict | None) -> str | None:
+    """The kind of icon (one of `templates.ICON_KINDS`) at `box` on `page`: the `kind` the model gave the contact line
+    (`structure["contacts"]`) on the icon's own line, the nearest in x when several (a label and its value are rows of
+    their own); None when no contact line is on it (or there is no structure)."""
+    if not structure:
         return None
-    return next((c["kind"] for c in structure["contacts"] if in_row(found[0], c["row"])), None)
+    mid = (box[1] + box[3]) / 2
+    on_line = [c for c in structure["contacts"]
+               if c["row"]["page"] == page and c["row"]["bbox"][1] - 0.5 <= mid <= c["row"]["bbox"][3] + 0.5]
+    gap = lambda c: max(c["row"]["bbox"][0] - box[2], box[0] - c["row"]["bbox"][2], 0)  # noqa: E731
+    return min(on_line, key=gap)["kind"] if on_line else None
 
 
 def in_row(run: dict, row: dict) -> bool:
@@ -212,9 +209,11 @@ def _icon(page, number: int, box: list[float], color: str | None, source: str, f
     px = traced["bbox"]
     bbox = [round(shown[0] + px[0] / scale, 1), round(shown[1] + px[1] / scale, 1),
             round(shown[0] + px[2] / scale, 1), round(shown[1] + px[3] / scale, 1)]
+    found = _nearest(bbox, runs)
     return {"page": number, "bbox": bbox, "source": source, "font": font, "color": color or traced["color"],
-            "viewBox": traced["viewBox"], "d": traced["d"], "fill_rule": FILL_RULE, "near": near(bbox, runs),
-            "kind": kind_of(bbox, runs, structure)}
+            "viewBox": traced["viewBox"], "d": traced["d"], "fill_rule": FILL_RULE,
+            "near": {"text": found[0]["text"], "side": found[1]} if found else None,
+            "kind": kind_of(bbox, number, structure)}
 
 
 def find_icons(doc, pages: list[dict], structure: dict | None = None) -> list[dict]:

@@ -392,16 +392,10 @@ def find_photo(page, images: list[dict], size: list[float], background: str | No
 # ---------- margins ----------
 
 def footer_runs(pages: list[dict], structure: dict | None) -> list[dict]:
-    """The runs that are page furniture: those in the lines the structure names as footers; with no structure, the runs
-    in the bottom 6% of the page whose baseline is the same on every page (a page number), which needs two pages (a
-    last line of one page is the text's)."""
-    if structure:
-        return [r for p in pages for r in p["runs"] if any(style_icons.in_row(r, f) for f in structure["footers"])]
-    if len(pages) < 2:
+    """The runs that are page furniture: those in the lines the structure names as footers (none without a structure)."""
+    if not structure:
         return []
-    low = [[r for r in p["runs"] if r["bbox"][3] > p["size"][1] * 0.94 and not r["rotated"] and not r["icon"]] for p in pages]
-    shared = set.intersection(*({round(r["baseline"]) for r in runs} for runs in low))
-    return [r for runs in low for r in runs if round(r["baseline"]) in shared]
+    return [r for p in pages for r in p["runs"] if any(style_icons.in_row(r, f) for f in structure["footers"])]
 
 
 def margins(pages: list[dict], structure: dict | None = None) -> dict:

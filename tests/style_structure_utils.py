@@ -4,7 +4,8 @@
 ids and kinds only; `scripts/record_structure.py` records them again) and `fake_ask(text)` the stand-in the autouse
 fixture of `tests/conftest.py` puts where `style_structure` asks: it reads the same input the model gets and answers by
 a plain rule (the name is the largest text of the first page, the headings are the lines of at most six words set
-unlike the body that a section kind names, one column, not LinkedIn), so a test that reads any PDF finds the
+unlike the body that a section kind names, one column, not LinkedIn, the contact lines those that look like an email,
+a link, a phone number or a period, the footers the page numbers), so a test that reads any PDF finds the
 structure it expects without a model; the corpus CVs get their recorded answers.
 """
 
