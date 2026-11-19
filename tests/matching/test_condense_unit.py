@@ -569,3 +569,9 @@ def test_british_work_permit_sentence_survives_condensing(sentence, language):
 def test_condense_keeps_a_british_salary_line():
     ad = "Intro one.\nIntro two.\n\nDetails\nSalary: GBP 45,000 per annum, pro rata.\nWe like tea."
     assert "per annum" in condense_description(ad, language="en")
+
+
+def test_extract_skill_terms_drops_group_headings_and_bullet_marks():
+    terms = extract_skill_terms("# A\n\n## Skills\n\n### Programming\n\n- Python\n- SQL\n", {})
+    assert {"python", "sql", "programming"} <= terms
+    assert not any(t.startswith(("#", "-")) for t in terms)

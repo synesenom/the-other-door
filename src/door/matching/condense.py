@@ -293,7 +293,7 @@ def extract_skill_terms(cv_md: str, config: dict) -> set[str]:
 
     skills_text = _extract_skills_section(cv_md)
     for token in re.split(r"[,\n;/()]+", skills_text):
-        token = token.strip().lower()
+        token = token.strip().lstrip("#-*• ").lower()
         if len(token) >= 3:
             terms.add(token)
 
