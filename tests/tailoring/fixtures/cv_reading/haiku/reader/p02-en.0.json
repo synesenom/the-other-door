@@ -1,5 +1,5 @@
 {
- "key": "b5308317e9b8",
+ "key": "3123590354e1",
  "answer": {
   "name": "Hannah Clarke",
   "email": "hannah.clarke@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "English",
+    "code": "en",
     "level": "native"
    },
    {
     "language": "French",
-    "level": "working proficiency"
+    "code": "fr",
+    "level": "working"
    },
    {
     "language": "German",
+    "code": "de",
     "level": "basic"
    }
   ],
@@ -143,7 +146,6 @@
     "start_year": 2010,
     "end_year": 2012
    }
-  ],
-  "config": "null"
+  ]
  }
 }

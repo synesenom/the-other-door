@@ -377,16 +377,6 @@ def test_the_reader_report_pools_the_fields_over_cases_and_runs_and_counts_stret
     name = next(iter(corpus))
     report = rcr.summarize("reader", {name: [{"error": "x"}]}, corpus)
     assert report["fields"]["name"] == 0.0 and report["verdict"] == "no-go" and report["calls"] == 1
-    right = rcr.baseline_reader(corpus[name]["md"], corpus[name]["lang"])
-    assert rcr.summarize("reader", {name: [right]}, corpus)["stretches"] == 1.0 or rcr.stretches(corpus[name]["md"], right)[1] > 0
-
-
-def test_the_baseline_reads_the_header_with_todays_rules_and_misses_what_it_has_no_rule_for():
-    corpus = rcr.build_reader_corpus()
-    name = "p01-fr"
-    score = rcr.score_reader(corpus[name]["expected"], rcr.baseline_reader(corpus[name]["md"], "fr"))
-    assert score["name"]["hit"] == 1 and score["email"]["hit"] == 1
-    assert score["skills"]["hit"] == 0 and score["years"]["hit"] <= 1  # no rule reads a skill or a year
 
 
 def test_the_baseline_fact_check_flags_what_the_rules_see_and_reads_the_story_bank_and_the_posting():
@@ -448,24 +438,23 @@ def test_every_committed_record_is_an_answer_to_the_prompt_and_input_of_today():
 
 
 def test_haiku_is_go_as_a_reader_and_a_fact_checker_on_the_harder_corpus():
-    reader, check = committed("haiku", "reader"), committed("haiku", "facts")
-    assert reader["verdict"] == "go" and reader["calls"] == 45 and reader["stretches"] == 1.0
-    assert {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.964, "languages": 0.933}
+    reader, check = committed("haiku", "reader"), committed("haiku", "facts")  # the reader: one run a case, recorded again with #430's prompt
+    assert reader["verdict"] == "go" and reader["calls"] == 15 and reader["stretches"] == 1.0
+    assert {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.987}
     assert check["verdict"] == "go" and check["calls"] == 84 and all(v == 1.0 for v in check["per_kind"].values())
     assert check["false_clean_max"] == 0 and round(check["verbatim"], 3) == 0.984 and check["stable"] == 1.0
 
 
-def test_sonnet_reads_as_well_and_is_close_on_the_facts_for_a_less_stable_check():
-    reader, check = committed("sonnet", "reader"), committed("sonnet", "facts")
-    assert reader["verdict"] == "go" and {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.982}
+def test_sonnet_is_close_on_the_facts_for_a_less_stable_check():
+    check = committed("sonnet", "facts")  # its reader records went stale with #430's prompt and were not recorded again
     assert check["verdict"] == "close" and round(check["stable"], 3) == 0.857 and round(check["verbatim"], 3) == 0.993
     assert all(v == 1.0 for v in check["per_kind"].values()) and check["false_clean_max"] == 0
 
 
-def test_the_rules_of_today_are_no_go_on_the_same_cases():
-    for task, corpus in (("reader", rcr.build_reader_corpus()), ("facts", rcr.build_body_corpus())):
-        answers = {n: [rcr.baseline_reader(c["md"], c["lang"]) if task == "reader" else rcr.baseline_facts(c)] for n, c in corpus.items()}
-        assert rcr.summarize(task, answers, corpus)["verdict"] == "no-go"
+def test_the_fact_rules_of_today_are_no_go_on_the_same_cases():
+    corpus = rcr.build_body_corpus()
+    answers = {n: [rcr.baseline_facts(c)] for n, c in corpus.items()}
+    assert rcr.summarize("facts", answers, corpus)["verdict"] == "no-go"
 
 
 def test_no_record_is_an_error():
@@ -522,7 +511,7 @@ def test_every_held_out_record_is_an_answer_to_the_prompt_and_input_of_today():
     for task in ("reader", "facts"):
         _, corpus = held_committed(task)
         paths = sorted((rcr.RECORDED / "held-out" / "haiku" / task).glob("*.json"))
-        assert {p.name.split(".")[0] for p in paths} == set(corpus)  # the reader 3 runs a case, the facts at least 1
+        assert {p.name.split(".")[0] for p in paths} == set(corpus)  # the reader 1 run a case, the facts at least 1
         for path in paths:
             assert rcr._recorded_ok(path, rcr._key(task, corpus[path.name.split(".")[0]])), path
 

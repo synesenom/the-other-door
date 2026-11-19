@@ -21,8 +21,8 @@ Public API
     the first two sentences (role summary) and truncates to ``max_chars``,
     preferring requirement content over responsibilities when cutting.
 
-``extract_skill_terms(cv_md, config)``
-    Tokens from the CV's Skills section plus ``role_targets``/
+``extract_skill_terms(reading, config)``
+    The skills of the CV's reading (``core.cv_read``) plus ``role_targets``/
     ``search_keywords``, lower-cased, deduplicated, >= 3 chars.
 
 ``condense_postings(paths, profile_terms, config)``
@@ -40,7 +40,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from door.core import cv_sections, utils
+from door.core import utils
 from door import i18n
 
 # ---------------------------------------------------------------------------
@@ -266,26 +266,18 @@ def condense_description(
     return result[: max_chars - len(_TRUNCATION_MARKER)].rstrip() + _TRUNCATION_MARKER
 
 
-def _extract_skills_section(cv_md: str) -> str:
-    """Return the raw text of the CV's skills sections, under any name in any language (empty if none)."""
-    return "\n".join(
-        line for section in cv_sections.split(cv_md) if cv_sections.kind(section, ("skills",)) for line in section[1:]
-    )
-
-
-def extract_skill_terms(cv_md: str, config: dict) -> set[str]:
+def extract_skill_terms(reading: dict, config: dict) -> set[str]:
     """Return a lower-cased, deduplicated set of skill/role tokens (>= 3 chars).
 
-    Pulled from the CV's skills sections (``core.cv_sections``) plus ``role_targets`` and
+    The CV's skills as `core.cv_read` read them (``reading["skills"]``), plus ``role_targets`` and
     ``search_keywords`` (whole phrases and individual words).
     """
     terms: set[str] = set()
 
-    skills_text = _extract_skills_section(cv_md)
-    for token in re.split(r"[,\n;/()]+", skills_text):
-        token = token.strip().lstrip("#-*• ").lower()
-        if len(token) >= 3:
-            terms.add(token)
+    for skill in reading.get("skills") or []:
+        skill = skill.strip().lower()
+        if len(skill) >= 3:
+            terms.add(skill)
 
     for key in ("role_targets", "search_keywords"):
         for phrase in config.get(key) or []:

@@ -526,3 +526,31 @@ def test_no_matches_says_so_and_points_at_the_list(cli_env, monkeypatch):
     assert "No matches at or above 0.65" in text
     assert "./door jobs show " not in text and "./door jobs list" in text
 
+
+
+# --------------------------------------------------------------------------- #
+# a CV that cannot be read stops the match step only (#430)
+# --------------------------------------------------------------------------- #
+
+def test_a_cv_that_cannot_be_read_skips_the_match_step_and_the_run_still_searches(cli_env, monkeypatch):
+    from door.core import claude_cli, cv_read
+
+    (cli_env.profile_dir / "_templates" / "cv.md").write_text("# Ada\n\n## Skills\n\nPython\n")
+
+    def boom(md):
+        raise claude_cli.ClaudeError("not logged in")
+    monkeypatch.setattr(cv_read, "_ask", boom)
+    steps = stub_steps(monkeypatch, cli_env.jobs_dir, real=("match",))
+    record = run_core(cli_env)
+    assert steps.order() == ["discover", "search", "follow", "collect"]
+    assert record["steps"] == ["search", "discover", "follow", "collect"]
+    assert record["skipped"] == {"match": "Claude could not read your CV, so the new jobs were not scored; they will be on the next run."}
+    assert record["new_above_threshold"] == [] and list((cli_env.jobs_dir / "runs").glob("*.json"))
+
+
+def test_a_run_that_leaves_match_out_never_reads_the_cv(cli_env, monkeypatch):
+    from door.core import cv_read
+
+    monkeypatch.setattr(cv_read, "_ask", lambda md: pytest.fail("nothing is scored, nothing is read"))
+    stub_steps(monkeypatch, cli_env.jobs_dir)
+    run_core(cli_env, skip=["match"])

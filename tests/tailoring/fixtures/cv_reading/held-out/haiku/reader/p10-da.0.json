@@ -1,5 +1,5 @@
 {
- "key": "39b47057fabe",
+ "key": "7469f03837be",
  "answer": {
   "name": "Rasmus Winther",
   "email": "rasmus.winther@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Dansk",
+    "code": "da",
     "level": "native"
    },
    {
     "language": "Engelsk",
+    "code": "en",
     "level": "working"
    },
    {
     "language": "Tysk",
+    "code": "de",
     "level": "basic"
    }
   ],
@@ -84,30 +87,6 @@
    "coaching"
   ],
   "levels": [
-   {
-    "item": "Jira",
-    "level": null
-   },
-   {
-    "item": "Visio",
-    "level": null
-   },
-   {
-    "item": "SharePoint",
-    "level": null
-   },
-   {
-    "item": "Alteryx",
-    "level": null
-   },
-   {
-    "item": "Trello",
-    "level": null
-   },
-   {
-    "item": "coaching",
-    "level": null
-   },
    {
     "item": "Dansk",
     "level": 5

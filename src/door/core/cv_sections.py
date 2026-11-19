@@ -14,12 +14,6 @@ _HEADING = re.compile(r"^##\s+(.*?)\s*(?:<!--\s*kind:\s*([a-z]+)\s*-->)?\s*$")
 
 
 KINDS = tuple(i18n.CvSections.model_fields)
-KINDS_TEXT = ", ".join(f"`{k}`" for k in KINDS)  # for a prompt that asks the model to record them
-
-
-def mark(kind: str | None) -> str:
-    """What a heading line ends with to record `kind` ('' for none): the form `heading` reads."""
-    return f" <!-- kind: {kind} -->" if kind else ""
 
 
 def heading(line: str) -> tuple[str, str | None]:

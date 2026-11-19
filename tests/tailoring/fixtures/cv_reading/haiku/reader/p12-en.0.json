@@ -1,5 +1,5 @@
 {
- "key": "59599aa3e1f5",
+ "key": "6b0fd9c2fec5",
  "answer": {
   "name": "Thomas Bennett",
   "email": "thomas.bennett@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "English",
+    "code": "en",
     "level": "native"
    },
    {
     "language": "French",
+    "code": "fr",
     "level": "working"
    },
    {
     "language": "German",
+    "code": "de",
     "level": "conversational"
    }
   ],

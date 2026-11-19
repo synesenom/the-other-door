@@ -1,5 +1,5 @@
 {
- "key": "2d9c2e15e746",
+ "key": "ca87417d685b",
  "answer": {
   "name": "Théo Lacroix",
   "email": "theo.lacroix@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Français",
+    "code": "fr",
     "level": "native"
    },
    {
     "language": "Anglais",
+    "code": "en",
     "level": "fluent"
    },
    {
     "language": "Allemand",
+    "code": "de",
     "level": "conversational"
    }
   ],

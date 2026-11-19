@@ -279,7 +279,7 @@ def test_scrape_core_surviving_paths_reflect_dedup_output(tmp_path, monkeypatch)
     # here — this test is only about the prefilter -> dedup wiring.
     condense_mod = types.ModuleType("door.matching.condense")
     condense_mod.condense_postings = lambda paths, terms, config: {"count": len(paths), "avg_ratio": None}
-    condense_mod.extract_skill_terms = lambda cv_md, config: set()
+    condense_mod.extract_skill_terms = lambda reading, config: set()
     monkeypatch.setitem(sys.modules, "door.matching.condense", condense_mod)
 
     prescreen_mod = types.ModuleType("door.matching.prescreen")

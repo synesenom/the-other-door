@@ -1,5 +1,5 @@
 {
- "key": "58670fd76b25",
+ "key": "684b520b4d78",
  "answer": {
   "name": "Priya Whitfield",
   "email": "priya.whitfield@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "English",
+    "code": "en",
     "level": "native"
    },
    {
     "language": "French",
-    "level": "working proficiency"
+    "code": "fr",
+    "level": "working"
    },
    {
     "language": "German",
+    "code": "de",
     "level": "basic"
    }
   ],

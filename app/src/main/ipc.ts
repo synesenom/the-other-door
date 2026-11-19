@@ -110,7 +110,7 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   import_data: 180_000,
   keywords: 150_000,
   suggest_titles: 150_000,
-  infer_basics: 150_000,
+  infer_basics: 300_000, // one read of the CV, asked again once when its answer does not hold (2 x 120 s)
   // setup installs Chromium or claude, or (a developer action) runs the scraper fixer, tests and a probe.
   setup: 1_800_000,
   // connect_drive waits up to five minutes for the browser; sync_data moves one archive.

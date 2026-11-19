@@ -1,5 +1,5 @@
 {
- "key": "3f593af4e644",
+ "key": "406084e7bed8",
  "answer": {
   "name": "Karen Kjeldsen",
   "email": "karen.kjeldsen@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Dansk",
+    "code": "da",
     "level": "native"
    },
    {
     "language": "Engelsk",
+    "code": "en",
     "level": "fluent"
    },
    {
     "language": "Tysk",
+    "code": "de",
     "level": "basic"
    }
   ],
@@ -81,6 +84,18 @@
   ],
   "levels": [
    {
+    "item": "Dansk",
+    "level": 5
+   },
+   {
+    "item": "Engelsk",
+    "level": 4
+   },
+   {
+    "item": "Tysk",
+    "level": 1
+   },
+   {
     "item": "Notion",
     "level": null
    },
@@ -103,18 +118,6 @@
    {
     "item": "coaching",
     "level": null
-   },
-   {
-    "item": "Dansk",
-    "level": 5
-   },
-   {
-    "item": "Engelsk",
-    "level": 4
-   },
-   {
-    "item": "Tysk",
-    "level": 1
    }
   ],
   "entries": [

@@ -1,5 +1,5 @@
 {
- "key": "0f9fcb3fdd99",
+ "key": "990271ec18f2",
  "answer": {
   "name": "Baptiste Marchand",
   "email": "baptiste.marchand@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Français",
+    "code": "fr",
     "level": "native"
    },
    {
     "language": "Anglais",
+    "code": "en",
     "level": "fluent"
    },
    {
     "language": "Allemand",
+    "code": "de",
     "level": "basic"
    }
   ],

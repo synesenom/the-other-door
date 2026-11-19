@@ -1,5 +1,5 @@
 {
- "key": "a5bc220707e8",
+ "key": "09c6837af56e",
  "answer": {
   "name": "Camille Roche",
   "email": "camille.roche@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Français",
+    "code": "fr",
     "level": "native"
    },
    {
     "language": "Anglais",
+    "code": "en",
     "level": "fluent"
    },
    {
     "language": "Allemand",
+    "code": "de",
     "level": "basic"
    }
   ],

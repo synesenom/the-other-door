@@ -17,8 +17,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from door import i18n
-from door.core import workspace
+from door.core import cv_read, workspace
 
 # The config key of each template and the file it defaults to.
 FILES = {"cv_template": "cv.template.html", "cover_letter_template": "cover-letter.template.html"}
@@ -69,9 +68,8 @@ def in_use(profile_dir: Path, config: dict) -> str:
 
 MANIFEST_FILE = "template.json"
 MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
-ICON_KINDS = (*i18n.CONTACT_KINDS, "date")
-# The section kinds a column can hold: the CV sections `i18n` names.
-SECTION_KINDS = tuple(i18n.CvSections.model_fields)
+ICON_KINDS = (*cv_read.CONTACT_KINDS, "date")
+SECTION_KINDS = cv_read.COLUMN_KINDS  # the section kinds a column can hold
 
 
 def _bare_name(name: str, suffix: str) -> str:
@@ -116,8 +114,8 @@ class Manifest(BaseModel):
     @classmethod
     def _labels(cls, v: dict[str, str]) -> dict[str, str]:
         for kind, label in v.items():
-            if kind not in i18n.CONTACT_KINDS:
-                raise ValueError(f"{kind!r} is not a contact kind ({', '.join(i18n.CONTACT_KINDS)})")
+            if kind not in cv_read.CONTACT_KINDS:
+                raise ValueError(f"{kind!r} is not a contact kind ({', '.join(cv_read.CONTACT_KINDS)})")
             if not label.strip():
                 raise ValueError(f"the label of {kind!r} is empty")
         return v

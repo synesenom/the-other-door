@@ -19,7 +19,7 @@ from door import pipeline
 from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
-from door.core import lock, profile_loader
+from door.core import cv_read, lock, profile_loader
 from door.core.employers import companies as store
 from door.core.jobs import tracker as tracker_mod
 from door.core import workspace
@@ -84,6 +84,21 @@ def _run_passes(today: Path, jobs_dir: Path, config: dict, profile_dir: Path) ->
     return total
 
 
+CV_UNREAD = "Claude could not read your CV, so the new jobs were not scored; they will be on the next run."
+
+
+def _skipped_block(jobs_dir: Path, config: dict, threshold: float, started: float) -> dict:
+    """The block of a step that scored nothing because the CV could not be read: the postings stay unscored, so the next
+    run (which reads the CV again) scores them."""
+    pipeline.skipped("match", CV_UNREAD)
+    elapsed = time.monotonic() - started
+    return {
+        "step": "match", "skipped": CV_UNREAD, "summary": CV_UNREAD, "passes": {}, "min_score": threshold,
+        "new_above_threshold": [], "top": [], "scored": 0, "failed": [], "above_threshold": 0,
+        "unscored_before": len(_unscored_ids(jobs_dir, config)), "scoring_s": 0.0, "elapsed_s": elapsed,
+    }
+
+
 @lock.locked("match")
 def _match_step_core(
     *, jobs_dir: Path | None = None, profile_dir: Path | None = None, progress=None,
@@ -107,6 +122,11 @@ def _match_step_core(
     config = profile_loader.load_profile_config(profile_dir)
     threshold = config.get("min_score", common._DEFAULT_MIN_SCORE)
     started = time.monotonic()
+
+    try:
+        common._cv_reading(config, profile_dir)  # once, here: every day folder's passes after it find the reading cached
+    except cv_read.CvReadError:
+        return _skipped_block(jobs_dir, config, threshold, started)
 
     today = workspace.day_dir(jobs_dir, date.today().isoformat())
     today.mkdir(parents=True, exist_ok=True)  # a run that wrote nothing still has a day to score

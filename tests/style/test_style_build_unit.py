@@ -204,7 +204,7 @@ def test_the_shapes_variant_holds_every_shape_of_the_vocabulary_whatever_the_cv(
         assert f'<span class="{part}">' in html
     assert 'level level-5' in html and 'level level-1' in html and "<ol>" in html and "<ul>" in html
     assert all(tag in html for tag in ("<strong>", "<em>", "<a href"))
-    assert cv_body.header(CV)["name"] and cv_body.header(md)["name"] == cv_body.header(CV)["name"]
+    assert cv_body.body(md).count("<h1>") == 1 and cv_body.body(CV).count("<h1>") == 1
 
 
 def test_the_stress_variants_of_a_cv_with_no_entries_are_still_all_there():
