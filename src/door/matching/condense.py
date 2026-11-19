@@ -276,7 +276,7 @@ def _extract_skills_section(cv_md: str) -> str:
 def extract_skill_terms(cv_md: str, config: dict) -> set[str]:
     """Return a lower-cased, deduplicated set of skill/role tokens (>= 3 chars).
 
-    Pulled from the CV's skills sections (``i18n.cv_section``) plus ``role_targets`` and
+    Pulled from the CV's skills sections (``core.cv_sections``) plus ``role_targets`` and
     ``search_keywords`` (whole phrases and individual words).
     """
     terms: set[str] = set()

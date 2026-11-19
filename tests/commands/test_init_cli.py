@@ -1396,3 +1396,7 @@ def test_a_refused_build_is_one_line_and_the_save_still_succeeds(init_env, promp
     assert result.output.count("is not a PDF The other door can read") == 1
     assert "building in the background" not in result.output
     assert (init_env.profile_dir / "cv.md").read_text() == _CV
+
+
+def test_parse_cv_titles_carry_no_recorded_kind():
+    assert profile_cmd._parse_cv("# A\n\n## Toolbox <!-- kind: skills -->\n\n- x\n")["sections"][0]["title"] == "Toolbox"

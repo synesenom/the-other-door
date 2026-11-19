@@ -369,3 +369,8 @@ def test_insert_records_the_kind_of_a_new_section():
 def test_clean_keeps_the_title_and_the_kind_the_model_recorded_apart():
     [p] = enrich_cmd._clean_proposals([{"section": "Toolbox <!-- kind: skills -->", "text": "SQL", "source": "x"}], "")
     assert (p["section"], p["kind"]) == ("Toolbox", "skills")
+
+
+def test_insert_records_the_kind_on_an_older_heading_that_has_none():
+    cv = "## Tools I use\n\n- Python\n"
+    assert enrich_cmd._insert(cv, "Tools I use", "SQL", "skills") == "## Tools I use <!-- kind: skills -->\n\n- Python\n- SQL\n"

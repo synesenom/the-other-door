@@ -392,3 +392,8 @@ def test_a_line_the_pdf_prints_with_a_ligature_is_found_in_the_body_spelt_out():
             "<h2>Skills</h2><p>Python</p>")
     problems = style_build.body_column_problems(style, body, templates.Columns(side=["skills"]))
     assert len(problems) == 1 and "side column of the original" in problems[0]
+
+
+def test_side_kinds_fall_back_to_the_kinds_a_draft_recorded_on_own_titles():
+    style = _style(_SIDE, [("Logiciels", 395), ("EXPERIENCE", 31)])
+    assert style_build._side_kinds(style, "# A\n\n## Mes outils <!-- kind: skills -->\n\n## Parcours\n") == ["skills"]
