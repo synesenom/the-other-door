@@ -96,6 +96,14 @@ def test_a_failing_list_is_an_error():
 
 
 @responses.activate
+def test_a_list_of_only_known_ads_is_a_quiet_day():
+    _serve(details=False)
+    known = frozenset({"510393", "510291", "508636", "456923"})
+    assert globalnyt.scrape(_CFG, known_ids=known) == []
+    assert drain_answered("globalnyt") is True
+
+
+@responses.activate
 def test_an_empty_list_is_a_quiet_day():
     responses.add(responses.GET, globalnyt._LIST_URL, body=_text("stilling_list_empty.json"), content_type="application/json")
     assert globalnyt.scrape(_CFG) == []

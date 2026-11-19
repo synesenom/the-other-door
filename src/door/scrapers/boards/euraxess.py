@@ -233,7 +233,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     seen.add(card["id"])
                     record_non_local(_SITE, 1)
                 continue
-            if card["id"] in seen or card["id"] in known_ids or not _relevant(card, terms):
+            if card["id"] in known_ids:
+                sdk.record_answered(_SITE)  # a known offer is a read result: a quiet day, not a changed site
+                continue
+            if card["id"] in seen or not _relevant(card, terms):
                 continue
             seen.add(card["id"])
             try:

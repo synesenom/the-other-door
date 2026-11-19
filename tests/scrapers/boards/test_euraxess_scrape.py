@@ -9,7 +9,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_pushback
 from door.scrapers.boards import euraxess
 
 _FIX = Path(__file__).parent / "fixtures" / "euraxess"
@@ -62,6 +62,15 @@ def test_a_known_offer_costs_no_job_page_request():
     postings = euraxess.scrape(_CFG, frozenset({"476999"}))
 
     assert [p["platform_id"] for p in postings] == ["475660"]
+
+
+@responses.activate
+def test_a_listing_of_only_known_offers_is_a_quiet_day():
+    _mock_pages()
+    drain_answered("euraxess")
+
+    assert euraxess.scrape(_CFG, frozenset({"476999", "475660"})) == []
+    assert drain_answered("euraxess") is True
 
 
 @responses.activate
