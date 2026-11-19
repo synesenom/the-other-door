@@ -722,7 +722,7 @@ def skill_stop_words(codes: tuple[str, ...] | None = None) -> list[str]:
 
 
 def cv_section(kind: str, codes: tuple[str, ...] | None = None) -> list[str]:
-    """Titles of the CV section ``kind`` (skills / education / certifications / languages / interests)."""
+    """Titles of the CV section ``kind`` (skills / education / certifications / languages / interests / experience)."""
     if kind not in CvSections.model_fields:
         raise ValueError(f"unknown CV section {kind!r}; use one of {tuple(CvSections.model_fields)}")
     return _union(getattr(p.cv_sections, kind) for p in _packs(codes))

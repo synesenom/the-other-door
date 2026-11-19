@@ -59,7 +59,7 @@ career_site_words = ["karriere", "job", "jobs", "ledige stillinger", "stillinger
 "ø" = "o"
 "å" = "aa"
 
-# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
+# Titles of the CV sections the readers look for (a whole heading, or whole words inside one the user wrote; case-insensitive).
 [cv_sections]
 skills = ["kompetencer", "færdigheder", "it-kompetencer", "nøglekompetencer", "værktøjer", "programmeringssprog"]
 education = ["uddannelse", "uddannelser", "uddannelse og kurser"]
