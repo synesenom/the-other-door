@@ -6,7 +6,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
+from door.scrapers import drain_answered, drain_errors
 from door.scrapers.feeds import dayforce
 from paths import TESTS_DIR
 
@@ -70,7 +70,19 @@ def test_known_ids_are_left_out():
 
     postings = dayforce.scrape(_CONFIG, known_ids=frozenset({"natus-3518", "natus-3555"}))
 
-    assert [p["platform_id"] for p in postings] == ["natus-3288"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["natus-3288"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["natus-3518", "natus-3555"]
+
+
+@responses.activate
+def test_a_portal_whose_ads_are_all_known_is_answered():
+    _mock()
+    drain_answered("dayforce")
+
+    postings = dayforce.scrape(_CONFIG, known_ids=frozenset(('natus-3518', 'natus-3555', 'natus-3288')))
+
+    assert all(p.get("seen_only") for p in postings) and len(postings) == 3
+    assert drain_answered("dayforce") is True
 
 
 @responses.activate

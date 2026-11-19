@@ -54,7 +54,7 @@ from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, RobotsBlocked, ad_links,
     career_apply_words, career_nav_words, career_path_stems, career_site_words, followed_name, generic_host_labels, tld_labels, host_of, keep_local, local_names, location_filter,
     log_keyword_results, make_job_id, map_by_group, name_pattern, parse_iso_date, probe_failure, record_entry_error,
-    record_non_local, report, split_urls, squash, topic_words, workers,
+    record_answered, record_non_local, report, split_known, split_urls, squash, topic_words, workers,
 )
 from door.scrapers.sdk import Detection, parts
 
@@ -625,12 +625,16 @@ def _scrape_site(session: PoliteSession, entry: str, config: dict, known_ids: fr
     marked = False                                     # a page with JobPosting markup was seen
     text_pages = bool(_listing_entry(entry))           # pages without markup are read from their text
     held: list[tuple[str, requests.Response]] = []     # unmarked pages, until text reading is decided
+    known: list[dict] = []                             # `seen_only` records of the pages already known
     try:
         all_urls, dated, from_listing = _site_urls(session, entry, base, since, config)
         text_pages = text_pages and from_listing
         # Pages of a sitemap read as text (no listing vouches for them) must show they are job ads.
         signals = not text_pages
-        ranked, (n_both, n_local, n_topic, _) = _rank_urls([u for u in all_urls if _page_id(u) not in known_ids], config)
+        if all_urls:
+            record_answered(_SITE)  # a sitemap or listing that names ads was read, even if every one is known
+        fresh_urls, known = split_known(all_urls, _page_id, known_ids)
+        ranked, (n_both, n_local, n_topic, _) = _rank_urls(fresh_urls, config)
         urls = ranked[:_MAX_PAGES]
         report(f"{host}: {len(ranked)} pages, ranked first: {n_both} local and on topic, {n_local} local, "
                f"{n_topic} on topic; {max(len(ranked) - _MAX_PAGES, 0)} cut by the {_MAX_PAGES}-page cap")
@@ -678,7 +682,7 @@ def _scrape_site(session: PoliteSession, entry: str, config: dict, known_ids: fr
     except (requests.RequestException, RobotsBlocked) as exc:
         report(f"{host}: {exc}")
         record_entry_error(_SITE, entry, f"{host}: {exc}")
-    return postings
+    return postings + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
@@ -701,7 +705,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
     seen: set[str] = set()
     for entry, found in zip(entries, scraped):
         site_postings = [p for p in found if p["platform_id"] not in seen and not seen.add(p["platform_id"])]
-        log_keyword_results(_SITE, _base(entry), site_postings)
+        log_keyword_results(_SITE, _base(entry), [p for p in site_postings if not p.get("seen_only")])
         postings.extend(site_postings)
     return postings
 

@@ -34,7 +34,7 @@ from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
     map_by_group, record_entry_error, record_error, report, run_probe, strip_html, workers, followed_name,
 )
-from door.scrapers.sdk import Detection, parts
+from door.scrapers.sdk import Detection, parts, record_answered, split_known
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
 PLATFORM_DOMAINS = ("signatur.dk",)
@@ -139,7 +139,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             record_entry_error(_SITE, entry, f"error fetching jobs for {entry!r}: {exc}")
             return None
         company = followed_name(config, "signatur_companies", entry, company or f"Signatur {client}")
-        fresh = [j for j in jobs if f"{client}-{j['id']}" not in known_ids]
+        record_answered(_SITE)  # the list was read, whatever it held
+        fresh, known = split_known(jobs, lambda j: f"{client}-{j['id']}", known_ids)
         out: list[dict] = []
         for n, job in enumerate(fresh, 1):
             report("detail", n, len(fresh))
@@ -149,7 +150,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 record_error(_SITE, f"error fetching job {job['id']} of {entry!r}: {exc}")
                 detail = None
             out.append(_to_posting(job, detail, client, company, scraped_at))
-        return out
+        return out + known
 
     fetched = map_by_group(entries, lambda e: _HOST, fetch, workers(config))
     seen: set[str] = set()
@@ -159,7 +160,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             continue
         fresh = [p for p in company_postings if p["platform_id"] not in seen]
         seen.update(p["platform_id"] for p in fresh)
-        log_keyword_results(_SITE, entry.strip(), fresh)
+        log_keyword_results(_SITE, entry.strip(), [p for p in fresh if not p.get("seen_only")])
         postings.extend(fresh)
     return postings
 
