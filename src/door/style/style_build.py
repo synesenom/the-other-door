@@ -325,6 +325,28 @@ def body_column_problems(style: dict, body: str, columns: templates.Columns | No
     return found
 
 
+_LABEL_GAP = 0.6  # of the label's size: a normal word space is about a third of it
+
+
+def label_problems(labels: dict[str, str], runs: list[dict]) -> list[str]:
+    """Each contact label (`labels`, as the page writes it) of a print (`runs`, `style_extract`'s) that stands apart from
+    the value after it by more than a word space: the template's rule for the contact items (`.contact *`, `.contact label`, ...) reaches the label too. The value is the next run to its right on the same line. `[]` when each label sits
+    next to its value, or is one run with it."""
+    found = []
+    for kind, label in labels.items():
+        for run in runs:
+            if run["text"].strip() != label.strip():
+                continue
+            after = [r for r in runs if r["page"] == run["page"] and r["bbox"][0] >= run["bbox"][2] - 1
+                     and abs(r["bbox"][3] - run["bbox"][3]) <= 0.3 * run["size"]]
+            if after and (gap := min(r["bbox"][0] for r in after) - run["bbox"][2]) > _LABEL_GAP * run["size"]:
+                found.append(f'the {kind} label "{label}" is {gap:.0f} pt from its value: a rule of your CSS for the contact '
+                             f'items (such as `.contact *` or `.contact label`) also spaces the label; the label is '
+                             f'`<label class="label">` inside the item and sits one word space before the value')
+                break
+    return found
+
+
 def photo_box_problems(style: dict, painted: list[dict]) -> list[str]:
     """A box a print with no photo (`painted`, `style_extract.painted` of it) draws where the original's photo is
     (#246): a path on its page, of any kind (a disc or a rounded box too), that covers half the photo's box or more,
@@ -686,8 +708,11 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
                 manifest=s.manifest, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
-            found += column_problems(s.style, style_extract.extract(pdf), placed) + (
+            render = style_extract.extract(pdf)
+            found += column_problems(s.style, render, placed) + (
                 [] if v["photo"] else photo_box_problems(s.style, style_extract.painted(pdf)))
+            if variant == "shapes":
+                found += label_problems(s.manifest.contact_labels, render.get("runs", []))
             pages = pdf_render.get_page_count(pdf)
         except (html_pdf.PrintError, ValueError) as exc:
             failures.append(f"{variant}: printing failed: {exc}")
