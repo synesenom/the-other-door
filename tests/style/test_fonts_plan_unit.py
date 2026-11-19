@@ -308,7 +308,7 @@ def test_the_real_pin_gives_each_commercial_font_a_look_alike_measured_or_not(na
         assert "same widths" not in p["reason"] and "may differ" in p["reason"]
 
 
-def test_on_the_real_pin_a_look_alike_never_fakes_the_italic_or_bold_of_the_font_it_replaces():
+def test_on_the_real_pin_each_look_alike_target_has_an_italic_and_a_bold_file():
     pin = fonts.pin()
     for name, target in pin["lookalikes"].items():
         faces = {(f["weight"], f["italic"]) for f in pin["families"][target]["files"]}
@@ -344,3 +344,22 @@ def test_a_pin_with_only_some_families_never_names_one_it_lacks():
 def test_a_name_that_only_starts_with_a_lowercase_a_is_not_read_as_adobes_prefix(name):
     [p] = fonts.plan([font(name + "-Regular", name)])
     assert p["source"] == "none"
+
+
+def test_on_the_real_pin_a_font_left_out_of_it_gets_a_family_of_a_like_look():
+    # each pinned family measured as a CV's unknown font, with itself taken out: the nearest must be of its class and,
+    # for nearly all, within 6% of its x-height (a few faces, like Josefin Sans, have no near neighbour)
+    pin = fonts.pin()
+    uses = [(400, False), (700, False), (400, True)]
+    far = 0
+    for name, fam in pin["families"].items():
+        m = fam["metrics"]
+        table = dict(zip(fonts.ADVANCE_CHARS, m["advance"]))
+        text = "abcdefghijklmnopqrstuvwxyz"
+        width = (sum(table[c] for c in text) / 1000 - fonts.BEARING) * 10
+        own = {"runs": [(text, width, 10)] * 6, "x_height": m["x_height"], "stem": m["stem"]}
+        rest = {**pin, "families": {k: v for k, v in pin["families"].items() if k != name}}
+        got = fonts._rank(fam["class"], own, uses, rest)[0]
+        assert got["error"] <= fonts.MAX_WIDTH_ERROR, name
+        far += abs(rest["families"][got["family"]]["metrics"]["x_height"] - m["x_height"]) / m["x_height"] > 0.06
+    assert far <= 3
