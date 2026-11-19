@@ -1,7 +1,7 @@
 """Turn the live smoke run's JUnit XML into a status page, one list per dimension.
 
 The live-smoke workflow runs ``./scripts/run-test.sh --live --junitxml=...``
-and then this script, which writes docs/badges/live-smoke.md. Each dimension is checked on its own,
+and then this script, which writes live-smoke.md on the `live-smoke-status` branch. Each dimension is checked on its own,
 so each has its own list:
 
 - **Boards:** the boards (``Site.board``);

@@ -82,6 +82,6 @@ class ByName(NamedTuple):
 # Employers a board names, looked up on Wikidata and followed to their feed through their website (#566).
 BY_NAME: list[ByName] = [
     ByName("H & M Hennes & Mauritz Sverige AB", "Stockholm", "hm.com", "smartrecruiters", "https://career.hm.com/"),
-    ByName("Telia Sverige AB", "Stockholm", "telia.se", "career_sites", "https://www.teliacompany.com/"),
+    ByName("Volvo Personvagnar AB", "Stockholm", "volvocars.", "successfactors", "https://jobs.volvocars.com/"),
     ByName("Hilti Svenska Aktiebolag", "Stockholm", "hilti.", "career_sites", "https://careers.hilti.group/en"),
 ]

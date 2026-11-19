@@ -5,10 +5,10 @@
 <img src="docs/logo/door.svg" alt="The other door logo" width="120" align="right">
 
 ![coverage](docs/badges/coverage.svg)
-[![boards](docs/badges/live-boards.svg)](docs/badges/live-smoke.md#boards)
-[![employer feeds](docs/badges/live-feeds.svg)](docs/badges/live-smoke.md#employer-feeds)
-[![employer discovery](docs/badges/live-discovery.svg)](docs/badges/live-smoke.md#employer-discovery)
-[![matcher](docs/badges/live-matcher.svg)](docs/badges/live-smoke.md#matcher)
+[![boards](https://raw.githubusercontent.com/synesenom/the-other-door/live-smoke-status/live-boards.svg)](https://github.com/synesenom/the-other-door/blob/live-smoke-status/live-smoke.md#boards)
+[![employer feeds](https://raw.githubusercontent.com/synesenom/the-other-door/live-smoke-status/live-feeds.svg)](https://github.com/synesenom/the-other-door/blob/live-smoke-status/live-smoke.md#employer-feeds)
+[![employer discovery](https://raw.githubusercontent.com/synesenom/the-other-door/live-smoke-status/live-discovery.svg)](https://github.com/synesenom/the-other-door/blob/live-smoke-status/live-smoke.md#employer-discovery)
+[![matcher](https://raw.githubusercontent.com/synesenom/the-other-door/live-smoke-status/live-matcher.svg)](https://github.com/synesenom/the-other-door/blob/live-smoke-status/live-smoke.md#matcher)
 
 A job search that runs on your computer: it gathers new job ads from public job boards and
 employers' own job feeds, scores each one against your CV, and writes a tailored CV and cover
