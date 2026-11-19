@@ -127,7 +127,7 @@ _answered: set[str] = set()
 
 def record_answered(source: str) -> None:
     """Mark that *source* read a results page or list it recognises this run: no hits, or only ads it skips
-    itself (off topic) or returns as ``seen_only`` records (known ids).
+    itself (off topic) or returns as ``seen_only`` records (known ads).
 
     A scraper that can tell "the search found nothing new" from "the page is not what I know" calls it
     for the first. `_scrape_core` drains it when the site finishes: no postings, no errors and this

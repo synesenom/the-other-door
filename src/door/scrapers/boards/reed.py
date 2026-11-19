@@ -222,7 +222,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 break
             count, jobs = parsed
             cards = [c for c in (_card(j) for j in jobs) if c]
-            record_answered(_SITE)  # a results page read, whatever its cards are (all known, off topic, none)
+            if cards or not jobs:
+                record_answered(_SITE)  # cards read, all known or off topic, or a page with no jobs
 
             for card in cards:
                 if card["id"] in seen or (topic and not on_topic(card["title"], topic)):

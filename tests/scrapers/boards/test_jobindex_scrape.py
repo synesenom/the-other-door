@@ -730,4 +730,3 @@ def test_only_on_topic_titles_get_a_detail_request_the_rest_keep_their_teaser():
     by_id = {p["platform_id"]: p for p in postings}
     off = by_id["h1673246"]  # "Domain Architect - Datacenter Connectivity"
     assert off["title"].startswith("Domain Architect") and off["description"]  # the teaser
-

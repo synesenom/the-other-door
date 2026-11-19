@@ -101,7 +101,9 @@ def _fetch_board(session: PoliteSession, base: str) -> dict:
     Raises on HTTP errors or robots.txt disallow (of the first page).
     """
     first = session.get(f"{base}/jobs.json", headers=_HEADERS).json()
-    items = list(first.get("items") or [])
+    if not isinstance(first, dict) or not isinstance(first.get("items"), list):
+        raise ValueError("no `items` list in Teamtailor's JSON Feed")
+    items = list(first["items"])
     seen = {_platform_id(i) for i in items}
     for page in range(2, _MAX_PAGES + 1):
         if not items:

@@ -7,7 +7,6 @@ the script and the keys read, the ad text rewritten) and pages built here around
 `detail_*.json`) for pagination, dedup and the failure paths. No network, no browser.
 """
 
-import re
 import json
 from pathlib import Path
 
@@ -281,15 +280,3 @@ def test_a_page_robots_disallows_is_never_loaded():
     assert [c.request.url for c in responses.calls] == ["https://thehub.io/robots.txt"]
     [error] = drain_errors()["thehub"]
     assert "robots.txt disallows" in error
-
-
-@responses.activate
-def test_a_page_whose_every_ad_page_fails_is_answered_not_empty():
-    _serve(thehub._listing_url("data scientist", "DK", 1), _listing(_fx("listing_page1.json")))
-    _serve(thehub._listing_url("data scientist", "DK", 2), _listing(_fx("listing_page2.json")))
-    responses.add(responses.GET, re.compile(re.escape(thehub._job_url("")) + ".+"), status=500)
-    drain_answered("thehub")
-
-    thehub.scrape(_CFG)
-
-    assert drain_answered("thehub") is True

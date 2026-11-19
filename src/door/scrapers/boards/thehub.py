@@ -229,7 +229,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 break
 
             docs, has_next = _parse_listing_payload(jobs_obj)
-            record_answered("thehub")  # a listing read, whatever becomes of its ads
+            if not docs and page_num == 1:
+                record_answered("thehub")
 
             for doc in docs:
                 platform_id = str(doc.get("id") or "")

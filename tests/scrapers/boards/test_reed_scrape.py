@@ -302,3 +302,13 @@ def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
 
     assert out == []
     assert drain_answered(reed._SITE) is True
+
+
+@responses.activate
+def test_a_page_whose_jobs_all_fail_to_read_is_not_answered(monkeypatch):
+    _serve_search(("p1.html",))
+    monkeypatch.setattr(reed, "_card", lambda raw: None)
+    drain_answered(reed._SITE)
+
+    assert reed.scrape({**_CFG, "max_pages_per_keyword": 1}) == []
+    assert drain_answered(reed._SITE) is False

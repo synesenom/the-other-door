@@ -94,7 +94,10 @@ def _published(offers) -> list[dict]:
 def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, name: str = "") -> list[dict]:
     """The published offers of one ``recruitee_companies`` entry, labelled with the followed *name*
     when given. Raises on HTTP errors."""
-    offers = session.get(f"{_careers_base(entry)}/api/offers/", headers=_HEADERS).json().get("offers") or []
+    answer = session.get(f"{_careers_base(entry)}/api/offers/", headers=_HEADERS).json()
+    offers = answer.get("offers") if isinstance(answer, dict) else None
+    if not isinstance(offers, list):
+        raise ValueError("no `offers` list in Recruitee's answer")
     return [_to_posting(offer, entry, scraped_at, name) for offer in _published(offers)]
 
 

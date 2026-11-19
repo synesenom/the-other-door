@@ -62,7 +62,11 @@ def _fetch_board(session: PoliteSession, token: str, scraped_at: datetime, name:
     """The postings of board *token* (each job carries its ``company_name``; the followed *name*
     wins over it). Raises on HTTP errors."""
     resp = session.get(f"{_API_BASE}/{token}/jobs", headers=_HEADERS, params={"content": "true"})
-    return [_to_posting(job, token, scraped_at, name) for job in resp.json().get("jobs") or [] if job.get("id")]
+    data = resp.json()
+    jobs = data.get("jobs") if isinstance(data, dict) else None
+    if not isinstance(jobs, list):
+        raise ValueError("no `jobs` list in Greenhouse's answer")
+    return [_to_posting(job, token, scraped_at, name) for job in jobs if job.get("id")]
 
 
 def _to_posting(job: dict, token: str, scraped_at: datetime, name: str = "") -> dict:

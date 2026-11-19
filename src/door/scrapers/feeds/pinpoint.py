@@ -90,7 +90,10 @@ def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, 
     when given. Raises on HTTP errors."""
     base = _careers_base(entry)
     company = name or _company_name(entry if "." not in entry else urlparse(base).netloc)
-    data = session.get(f"{base}/postings.json", headers=_HEADERS).json().get("data") or []
+    answer = session.get(f"{base}/postings.json", headers=_HEADERS).json()
+    data = answer.get("data") if isinstance(answer, dict) else None
+    if not isinstance(data, list):
+        raise ValueError("no `data` list in Pinpoint's answer")
     return [_to_posting(item, company, base, scraped_at) for item in _items(data)]
 
 
