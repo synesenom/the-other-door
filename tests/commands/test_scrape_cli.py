@@ -9,7 +9,7 @@ shared `cli_env` fixture is in tests/commands/conftest.py, helpers in tests/cli_
 import json
 import sys
 import types
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 import responses
@@ -1062,3 +1062,25 @@ def test_scrape_core_a_known_id_from_a_plain_scrape_is_counted_seen(cli_env, mon
     entry = scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
     assert entry["outcome"] == "ok"
     assert entry["count"] == 0
+
+
+def test_collect_a_feed_whose_every_ad_is_known_is_ok_and_refreshes_last_seen(cli_env, monkeypatch):
+    """#434: a feed returns `seen_only` records for the ads it already has: `ok`, no warning, `last_seen` touched."""
+    import door.scrapers.feeds.lever as lever
+    from door.core.jobs import history
+
+    write_config(cli_env.profile_dir, {})
+    _follow(cli_env.profile_dir, "lever", "acme")
+    store = history.HistoryStore(cli_env.jobs_dir / "history.json")
+    for pid in ("a1", "a2"):
+        store.record(f"lever.{pid}", pid, f"https://x/{pid}", "lever", now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+    store.save()
+    monkeypatch.setattr(lever, "scrape", lambda config, **kw: [{"platform_id": p, "seen_only": True} for p in ("a1", "a2")])
+    monkeypatch.delattr(lever, "iter_scrape", raising=False)
+
+    entry = scrape_cmd._scrape_core(["lever"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir,
+                                    mode="collect")["sites"][0]
+
+    assert (entry["outcome"], entry["count"], "warning" in entry) == ("ok", 0, False)
+    data = json.loads((cli_env.jobs_dir / "history.json").read_text())
+    assert all(not data[j]["last_seen"].startswith("2026-01-01") for j in ("lever.a1", "lever.a2"))

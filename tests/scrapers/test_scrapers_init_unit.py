@@ -12,7 +12,7 @@ Pure and offline — no network.
 import pytest
 
 from door.core.progress import Progress
-from door.scrapers import drain_errors, log_keyword_results, record_error, report, scrape_feeds, strip_html, tracked
+from door.scrapers import drain_answered, drain_errors, log_keyword_results, record_error, report, scrape_feeds, strip_html, tracked
 
 
 @pytest.fixture(autouse=True)
@@ -286,3 +286,32 @@ def test_scrape_feeds_records_a_failed_entry_when_run_side_by_side():
     postings = scrape_feeds("acmeats", ["bad.example", "ok.example"], fetch, group=lambda e: e, max_workers=2)
     assert [p["platform_id"] for p in postings] == ["ok.example"]
     assert drain_errors("acmeats") == {"acmeats": ["error fetching 'bad.example': boom"]}
+
+
+def test_scrape_feeds_a_fetch_that_returns_normally_answered_even_with_no_ads():
+    drain_answered("acmeats")
+    assert scrape_feeds("acmeats", ["a"], lambda session, entry, at: []) == []
+    assert drain_answered("acmeats") is True
+
+
+def test_scrape_feeds_seen_only_records_answer_and_are_not_counted_as_results(progress_events):
+    drain_answered("acmeats")
+
+    def fetch(session, entry, scraped_at):
+        return [{"platform_id": "k1", "seen_only": True}, _posting("n1")]
+
+    postings = scrape_feeds("acmeats", ["a"], fetch)
+    assert [p["platform_id"] for p in postings] == ["k1", "n1"]
+    assert drain_answered("acmeats") is True
+    assert ("'a': 1 results", "keyword") in [(e.message, e.stage) for e in progress_events]
+
+
+def test_scrape_feeds_a_fetch_that_raises_is_not_answered():
+    drain_answered("acmeats")
+
+    def fetch(session, entry, scraped_at):
+        raise ValueError("boom")
+
+    scrape_feeds("acmeats", ["a"], fetch)
+    drain_errors("acmeats")
+    assert drain_answered("acmeats") is False

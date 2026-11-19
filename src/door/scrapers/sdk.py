@@ -102,7 +102,7 @@ __all__ = [
     "ProbeResult", "run_probe", "probe_failure", "scrape_feeds", "strip_html", "parse_iso_date",
     "host_of", "map_by_group", "workers",
     "on_topic", "topic_terms", "topic_words", "keywords", "squash", "name_pattern",
-    "location_filter", "split_urls", "keep_local", "is_remote", "local_names", "country_is_non_local",
+    "location_filter", "split_urls", "keep_local", "split_known", "is_remote", "local_names", "country_is_non_local",
     "career_site_words", "generic_host_labels", "tld_labels", "career_nav_words", "career_apply_words", "career_path_stems", "city_names", "compile_words",
     "seniority_words", "stop_words", "transliteration", "word_pattern", "country_name",
     "ad_links", "from_url", "country", "look_back_days", "followed_name",
@@ -160,6 +160,22 @@ def keep_local(postings: list[dict], config: dict, site: str) -> list[dict]:
     if dropped:
         record_non_local(site, dropped)
     return kept
+
+
+def split_known(rows: list, pid_of, known_ids) -> tuple[list, list[dict]]:
+    """`rows` split into those whose id `pid_of(row)` is not in `known_ids`, and a ``seen_only`` record
+    (`{"platform_id", "seen_only": True}`) for each that is, so the engine counts the ad as seen and
+    refreshes its `last_seen` without a detail request. `pid_of` must give the id the ledger stores
+    (tenant-folded where the feed folds it)."""
+    fresh: list = []
+    seen_only: list[dict] = []
+    for row in rows:
+        pid = pid_of(row)
+        if pid in known_ids:
+            seen_only.append({"platform_id": pid, "seen_only": True})
+        else:
+            fresh.append(row)
+    return fresh, seen_only
 
 
 def is_remote(text: str) -> bool:

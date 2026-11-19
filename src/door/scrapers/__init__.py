@@ -268,7 +268,8 @@ def scrape_feeds(site: str, entries, fetch, *, key=lambda p: p["platform_id"], l
     With *group* (an entry's host) and *max_workers* above 1, entries on different hosts are
     fetched side by side (`_parallel.map_by_group`); the output never depends on timing.
     An entry that raises is reported and recorded as an error of *site*, and the rest go on;
-    each entry's count is reported like a keyword's.
+    each entry's count is reported like a keyword's (``seen_only`` records not counted). An entry whose
+    fetch returned, even with no ads or only known ones, marks *site* answered (`record_answered`).
     """
     from door.scrapers._parallel import map_by_group
     from door.scrapers.http_client import FEED_DELAY, PoliteSession
@@ -291,12 +292,13 @@ def scrape_feeds(site: str, entries, fetch, *, key=lambda p: p["platform_id"], l
     for entry, found in zip(entries, fetched):
         if found is None:
             continue
+        record_answered(site)  # the entry's list was read, whatever it held: all known is a quiet day
         fresh = []
         for posting in found:
             if key(posting) and key(posting) not in seen:
                 seen.add(key(posting))
                 fresh.append(posting)
-        log_keyword_results(site, label(entry), fresh)
+        log_keyword_results(site, label(entry), [p for p in fresh if not p.get("seen_only")])
         postings.extend(fresh)
     return postings
 
