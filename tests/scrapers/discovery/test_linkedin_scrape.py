@@ -524,7 +524,7 @@ def test_an_empty_combined_search_is_checked_with_one_keyword_and_switches_to_ro
     qs = [q["keywords"][0] for q in _searches(session)]
     assert qs[0].count(" OR ") == 2 and qs[1] == '"data scientist"'
     assert result["mode"] == "rotate" and result["mode_switched"] is True
-    assert result["searched"] == ["data scientist", "ml engineer"]
+    assert result["searched"] == ["data scientist"] and result["empty"] == ["ml engineer"]
     assert [e["company"] for e in result["employers"]] == ["A"]
 
 
@@ -544,7 +544,16 @@ def test_rotate_mode_searches_only_the_rotation_keywords_each_back_to_its_own_cu
     queries = _searches(session)
     assert [q["keywords"][0] for q in queries] == ['"ml engineer"', '"head of ai"']
     assert queries[0]["f_TPR"] == ["r259200"] and "f_TPR" not in queries[1]
-    assert result["mode"] == "rotate" and result["searched"] == ["ml engineer", "head of ai"]
+    assert result["mode"] == "rotate" and result["searched"] == [] and result["empty"] == ["ml engineer", "head of ai"]
+
+
+def test_an_empty_first_page_does_not_mark_the_keyword_searched_but_cards_then_an_empty_page_do(session):
+    session.page.add(_SEARCH, _EMPTY)  # keyword 1: held back or quiet
+    session.page.add(_SEARCH, _cards((1, "Data Scientist", "A", "2026-10-10")))
+    session.page.add(_SEARCH, _EMPTY)  # keyword 2: cards, then the end
+    result = _run({**_CONFIG, "search_keywords": _ROT}, mode="rotate", rotation=["ml engineer", "head of ai"],
+                  keyword_since={})
+    assert result["searched"] == ["head of ai"] and result["empty"] == ["ml engineer"]
 
 
 def test_rotate_mode_keeps_the_title_gate_of_all_keywords(session):

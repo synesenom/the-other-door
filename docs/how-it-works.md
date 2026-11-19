@@ -44,7 +44,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    (`jobbsafari_discovery`), HelloWork in France (`hellowork_discovery`), and LinkedIn
    anywhere. LinkedIn's logged-out search cards (`linkedin_discovery`): one quoted search per keyword, newest first, the last 7 days, each paged
    to its end (150 requests a run at most, 2 to 4 s apart; the budget and pause adapt to
-   what LinkedIn tolerated; a keyword the budget did not reach comes first next run). Each employer is queued with its LinkedIn link and no job page is
+   what LinkedIn tolerated; a keyword the budget did not reach comes first next run; a keyword whose first page comes back empty, which LinkedIn also answers a guest it holds back, keeps its cutoff and is searched again from it). Each employer is queued with its LinkedIn link and no job page is
    fetched for it: `follow` tries it by name first (the feeds' public endpoints, then its own website as Wikidata names it), and only the employers it could not resolve
    have their job page read here on a later run, for the offsite apply link (Easy Apply employers
    are remembered 90 days and not queued). Only cards whose title is on topic count. Skipped while
