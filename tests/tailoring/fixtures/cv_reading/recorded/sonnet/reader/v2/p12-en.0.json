@@ -1,0 +1,144 @@
+{
+ "answer": {
+  "name": "Thomas Bennett",
+  "email": "thomas.bennett@example.com",
+  "city": "Manchester",
+  "country": "gb",
+  "languages": [
+   {
+    "language": "English",
+    "level": "native"
+   },
+   {
+    "language": "French",
+    "level": "working"
+   },
+   {
+    "language": "German",
+    "level": "conversational"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profile",
+    "kind": "summary"
+   },
+   {
+    "heading": "Work Experience",
+    "kind": "experience"
+   },
+   {
+    "heading": "Education",
+    "kind": "education"
+   },
+   {
+    "heading": "Skills",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Languages",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interests",
+    "kind": "interests"
+   },
+   {
+    "heading": "Volunteering",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Phone",
+    "value": "+44 47 74 82 58"
+   },
+   {
+    "kind": "email",
+    "label": "Email",
+    "value": "thomas.bennett@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Web",
+    "value": "example.com/thomas.bennett"
+   },
+   {
+    "kind": "linkedin",
+    "label": "LinkedIn",
+    "value": "https://www.linkedin.com/in/thomas.bennett"
+   },
+   {
+    "kind": "location",
+    "label": "Location",
+    "value": "Manchester"
+   }
+  ],
+  "levels": [
+   {
+    "item": "English",
+    "level": 5
+   },
+   {
+    "item": "French",
+    "level": 3
+   },
+   {
+    "item": "German",
+    "level": 2
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Analytics Lead, Kestrel Analytics (2017 - present)",
+    "role": "Analytics Lead",
+    "org": "Kestrel Analytics",
+    "dates": "2017 - present",
+    "place": null,
+    "start_year": 2017,
+    "end_year": null
+   },
+   {
+    "heading": "Senior Data Analyst, Harbor Digital (2013 - 2017)",
+    "role": "Senior Data Analyst",
+    "org": "Harbor Digital",
+    "dates": "2013 - 2017",
+    "place": null,
+    "start_year": 2013,
+    "end_year": 2017
+   },
+   {
+    "heading": "Data Analyst, Tidewater Data (2010 - 2013)",
+    "role": "Data Analyst",
+    "org": "Tidewater Data",
+    "dates": "2010 - 2013",
+    "place": null,
+    "start_year": 2010,
+    "end_year": 2013
+   },
+   {
+    "heading": "BSc in Mathematics, Example University (2005 - 2008)",
+    "role": "BSc in Mathematics",
+    "org": "Example University",
+    "dates": "2005 - 2008",
+    "place": null,
+    "start_year": 2005,
+    "end_year": 2008
+   },
+   {
+    "heading": "MSc in Computer Science, Example University (2008 - 2010)",
+    "role": "MSc in Computer Science",
+    "org": "Example University",
+    "dates": "2008 - 2010",
+    "place": null,
+    "start_year": 2008,
+    "end_year": 2010
+   }
+  ]
+ }
+}

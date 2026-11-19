@@ -725,6 +725,9 @@ EXAMPLES: dict[str, list[tuple[int, str]]] = {
         (2, "`value` is the claimed item alone, as the CV writes it: a figure with its unit (`3 k`, `7 percent`), the name of an "
             "employer, skill, certification or degree. For a changed date range `2004 - 2008` the kind is `year` and the value the one "
             "year that differs (`2004`), not the range."),
+        # Round 3 (after Sonnet's check: the tags of a one-element quote still copied)
+        (3, "Never copy markup into `context`: `<strong>Rust</strong>` is wrong and `Rust` is right; `<span class=\"dates\">2004 - 2008</span>` "
+            "is wrong and `Zenith Corp - 2004 - 2008` is right. Copy only words and figures, as the text of the page reads them."),
     ],
 }
 

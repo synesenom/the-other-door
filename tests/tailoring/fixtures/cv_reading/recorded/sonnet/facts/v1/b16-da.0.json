@@ -1,0 +1,16 @@
+{
+ "answer": [
+  {
+   "kind": "employer",
+   "value": "Vandelay Industries",
+   "context": "<span class=\"org\">Vandelay Industries</span>",
+   "file": "cv"
+  },
+  {
+   "kind": "year",
+   "value": "2009",
+   "context": "<span class=\"dates\">2009 - 2013</span>",
+   "file": "cv"
+  }
+ ]
+}
