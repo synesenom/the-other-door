@@ -377,16 +377,6 @@ def test_the_reader_report_pools_the_fields_over_cases_and_runs_and_counts_stret
     name = next(iter(corpus))
     report = rcr.summarize("reader", {name: [{"error": "x"}]}, corpus)
     assert report["fields"]["name"] == 0.0 and report["verdict"] == "no-go" and report["calls"] == 1
-    right = rcr.baseline_reader(corpus[name]["md"], corpus[name]["lang"])
-    assert rcr.summarize("reader", {name: [right]}, corpus)["stretches"] == 1.0 or rcr.stretches(corpus[name]["md"], right)[1] > 0
-
-
-def test_the_baseline_reads_the_header_with_todays_rules_and_misses_what_it_has_no_rule_for():
-    corpus = rcr.build_reader_corpus()
-    name = "p01-fr"
-    score = rcr.score_reader(corpus[name]["expected"], rcr.baseline_reader(corpus[name]["md"], "fr"))
-    assert score["name"]["hit"] == 1 and score["email"]["hit"] == 1
-    assert score["skills"]["hit"] == 0 and score["years"]["hit"] <= 1  # no rule reads a skill or a year
 
 
 def test_the_baseline_fact_check_flags_what_the_rules_see_and_reads_the_story_bank_and_the_posting():
@@ -462,10 +452,10 @@ def test_sonnet_reads_as_well_and_is_close_on_the_facts_for_a_less_stable_check(
     assert all(v == 1.0 for v in check["per_kind"].values()) and check["false_clean_max"] == 0
 
 
-def test_the_rules_of_today_are_no_go_on_the_same_cases():
-    for task, corpus in (("reader", rcr.build_reader_corpus()), ("facts", rcr.build_body_corpus())):
-        answers = {n: [rcr.baseline_reader(c["md"], c["lang"]) if task == "reader" else rcr.baseline_facts(c)] for n, c in corpus.items()}
-        assert rcr.summarize(task, answers, corpus)["verdict"] == "no-go"
+def test_the_fact_rules_of_today_are_no_go_on_the_same_cases():
+    corpus = rcr.build_body_corpus()
+    answers = {n: [rcr.baseline_facts(c)] for n, c in corpus.items()}
+    assert rcr.summarize("facts", answers, corpus)["verdict"] == "no-go"
 
 
 def test_no_record_is_an_error():

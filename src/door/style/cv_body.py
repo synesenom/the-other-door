@@ -9,7 +9,7 @@ and only `https:`, `mailto:` and `#` links are kept.
   (`**Label:** value`, a plain `Label: value` and the other forms `_details` reads, split on `|`, the label in any
   supported language; a detail with no known label is a plain `<span>`, an `@` one is an email), written with a kind
   class in the template's order (phone, email, web, linkedin, github, location). The `<<photo>>` token comes first in the header, as the tailor writes it;
-  `compile` swaps it. `header(cv_md)` is the same header as data, which `infer_basics` reads too (#208).
+  `compile` swaps it.
 - `## Heading` is an `<h2>`, whatever it says (a heading the columns do not know stays in the main column).
 - `### Role | Org — dates | Place` is an `<div class="entry">` whose `<h3>` has the parts in `role`, `org`, `dates` and
   `place` spans with `sep` spans between (` | `, ` - `, ` | `): a heading with no ` | ` is a role alone, and the dates
@@ -120,14 +120,6 @@ def contact_labels(cv_md: str) -> dict[str, str]:
         if kind:
             labels.setdefault(kind, label)
     return labels
-
-
-def header(cv_md: str) -> dict:
-    """The CV's header as data: ``{"name", "details", "other"}``, `details` the contact values by kind (read in every
-    supported language's labels) and `other` the parts with no known label; what `infer_basics` reads."""
-    name, _, preamble = _header_parts(cv_md)
-    details, other = _details(preamble)
-    return {"name": name, "details": details, "other": other}
 
 
 def _contact(lines: list[str]) -> str:

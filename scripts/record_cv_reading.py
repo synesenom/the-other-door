@@ -11,11 +11,11 @@ The facts corpus is meant to be hard: a body in another language than its source
 words translated, names, employers and figures kept), a tailor's rewording (new summary, merged and dropped bullets and
 entries, reordered sections, a skill named by a synonym the CV backs), numeric and day-month dates, claims backed only
 by a story bank, a letter echoing the posting, and fabrications in a letter. The rules of today (`facts.extract_claims`
-and `unsupported`, `cv_body.header`, `_heading3`) are scored on the same cases as the baseline. A miss becomes a made-up
+and `unsupported`) are scored on the same cases as the baseline (the reader's word rules were deleted with #430: no baseline). A miss becomes a made-up
 example in the prompt, never a rule in Python.
 
     poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet [--runs 3] [--held-out]
-    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet|baseline --report
+    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet|baseline --report  (baseline: facts only)
 
 `--held-out` builds a second corpus from other pools (names, employers, schools, places, degrees, skills, certifications, figures, story
 bank and posting) that the prompts were never tuned on; its records are under `held-out/`.
@@ -24,7 +24,7 @@ A record is `tests/tailoring/fixtures/cv_reading/<model>/<task>/<case>.<run>.jso
 prompt and input it answered (a record of other text is not read, and a test fails for one). A failed call is recorded
 as an error and counts as a miss; run again and only the errors are asked again (a plan's limit is waited out that way).
 Calls go through `claude_cli.ask` on the local claude's plan (never an API key); the usage feature keys are
-`infer_basics` (the reader) and `revise` (the fact check), the nearest existing ones: this spike adds none.
+`cv_read` (the reader) and `revise` (the fact check, the nearest existing one).
 """
 
 from __future__ import annotations
@@ -41,6 +41,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from door.core import cv_read  # noqa: E402
 from door.render import html_doc  # noqa: E402
 from door.style import cv_body  # noqa: E402
 from door.tailoring import facts  # noqa: E402
@@ -772,40 +773,7 @@ def build_body_corpus() -> dict:
     return corpus
 
 
-# --- today's rules, as the baseline ------------------------------------------------------------------------------
-
-def baseline_reader(md: str, lang: str) -> dict:
-    """What the rules of today read from `md`, as an answer of the model's shape: the header parse and
-    `_infer_basics_core` (with its model call refused), the section word lists, the level table, `_heading3`'s split.
-    No rule reads skills."""
-    import tempfile
-    from unittest import mock
-
-    from door import i18n
-    from door.commands import cv as cv_cmd
-    from door.core import claude_cli, cv_sections
-
-    with tempfile.TemporaryDirectory() as tmp, mock.patch.object(claude_cli, "ask", side_effect=claude_cli.ClaudeError("off")):
-        basics = cv_cmd._infer_basics_core(md, profile_dir=Path(tmp))
-    head, labels = cv_body.header(md), cv_body.contact_labels(md)
-    country = i18n.country_for_location(basics["location"] or "")
-    body = cv_body.body(md, lang)
-    levels = [{"item": m[1], "level": int(m[2])} for m in re.finditer(r"<li>(?:<strong>)?(.+?)(?:</strong>)?\s*[—:(][^<]*<span class=\"level level-(\d)", body)]
-    kinds = ("skills", "education", "certifications", "languages", "interests")
-    sections = [{"heading": cv_sections.heading(s[0])[0], "kind": cv_sections.kind(s, kinds, (lang, "en")) or "other"}
-                for s in cv_sections.split(md) if s and s[0].startswith("##")]
-    entries = []
-    for line in md.splitlines():
-        if line.startswith("### "):
-            parts = {m[1]: html.unescape(m[2]) for m in re.finditer(r'<span class="(role|org|dates|place)">(.*?)</span>', cv_body._heading3(line[4:].strip()))}
-            entries.append({"heading": line[4:].strip(), **{k: parts.get(k) for k in ("role", "org", "dates", "place")}, "start_year": None, "end_year": None})
-    return {
-        "name": basics["name"], "email": basics["email"], "city": basics["location"], "country": country.code if country else None,
-        "languages": [{"language": l, "level": "fluent"} for l in basics["languages"]], "skills": [],
-        "sections": sections, "levels": levels, "entries": entries,
-        "contacts": [{"kind": k, "label": labels.get(k, "").rstrip(":") or None, "value": v} for k, vs in head["details"].items() for v in vs],
-    }
-
+# --- today's fact-check rules, as the baseline ------------------------------------------------------------------------------
 
 def baseline_facts(case: dict) -> list[dict]:
     """What `facts.extract_claims` and `unsupported` flag in the case's documents, today, as findings: the story bank is
@@ -817,41 +785,12 @@ def baseline_facts(case: dict) -> list[dict]:
 
 
 # --- the prompts ------------------------------------------------------------------------------------------------
-# Spike-local: if a model is chosen they move to the CV reader (`core/cv_read.py`) and to the facts check. The examples
-# in them are made up (never a person or a text of the corpus) and each answers a miss of an earlier measurement; the
+# The reader's prompt and schema are `core/cv_read.py`'s (#430): what is recorded here is what the app asks. The facts
+# prompt is spike-local until a model is chosen for the check. The examples in them are made up (never a person or a text of the corpus) and each answers a miss of an earlier measurement; the
 # history is in the issue.
 
 PROMPTS = {
-    "reader": (
-        "You read a job seeker's CV (markdown, in any language) and report what it says as JSON. Copy text exactly as "
-        "written; never guess: null when the CV does not say.\n"
-        "- `name`, `email`, `city`: as written (the city where they live, from the contact details, else of their current "
-        "job). `country`: the ISO 3166-1 alpha-2 code, lower case, of that city's country.\n"
-        "- `languages`: every spoken language the CV names, `language` as the CV writes it and `level` one of native, fluent "
-        "(professional, business, C1), working (B2), conversational (B1) or basic (A1, A2). C2 is native.\n"
-        "- `sections`: every `##` heading, `heading` exactly as written, `kind` one of summary (the profile or the "
-        "introduction), experience (the jobs), education, skills, certifications, languages, interests or other. The kind "
-        "is by what the section holds, whatever the heading says or the language is.\n"
-        "- `contacts`: each contact detail of the header: `kind` (phone, email, web, linkedin, github, location), `label` "
-        "the word written before it (`Tlf`, without the colon) or null when it has none, `value` as written.\n"
-        "- `skills`: every skill, tool or method named in the skills section, each as written and by its name alone.\n"
-        "- `levels`: every item of a skills or languages list that states a level, `item` as written and `level` 1 to 5 "
-        "(5 native or C2, 4 fluent or C1, 3 working or B2, 2 conversational or B1, 1 basic, A1 or A2); null when the "
-        "stated word is not one of these (a skill that is `advanced` has no level).\n"
-        "- `entries`: every `###` heading, `heading` exactly as written after the `###`, and its parts: `role` (a job "
-        "title or a degree), `org` (the employer or the school), `dates` as written, `place` (null when the heading has "
-        "none), `start_year` and `end_year` (integers; `end_year` null when the end is the present).\n"
-        "Examples (made up):\n"
-        "- `- **Italian** — fluent` gives item `Italian` with level 4, and `- Spanish (B2)` gives item `Spanish` with level 3: "
-        "the item is the name alone, never with its level word.\n"
-        "- A language at the level of a working language (`Arbeitssprache`, `lingua di lavoro`, `working proficiency`) is level 3, "
-        "not 4: 4 is for fluent, professional or C1.\n"
-        "- `## Key Skills` gives the heading `Key Skills`: the `#` marks are not part of it.\n"
-        "- Every item of a languages list that states a level goes into `levels` as well as into `languages`: `levels` is never "
-        "empty for such a list.\n"
-        "- A value is copied character by character: `+33 00 00 00 00` stays that, with no digit added or dropped.\n"
-        "Answer with the JSON only."
-    ),
+    "reader": cv_read.PROMPT,
     "facts": (
         "You check a tailored CV and cover letter against the candidate's own sources. You get the SOURCE CV (markdown), "
         "the STORY BANK (stories of the candidate, or none), the POSTING (the job ad, or none), the TAILORED CV (HTML) and "
@@ -895,28 +834,8 @@ PROMPTS = {
     ),
 }
 
-_STR_OR_NULL = {"type": ["string", "null"]}
-_INT_OR_NULL = {"type": ["integer", "null"]}
 SCHEMAS = {
-    "reader": {
-        "type": "object",
-        "properties": {
-            "name": _STR_OR_NULL, "email": _STR_OR_NULL, "city": _STR_OR_NULL, "country": _STR_OR_NULL,
-            "languages": {"type": "array", "items": {"type": "object", "properties": {"language": {"type": "string"}, "level": {"type": "string"}},
-                                                     "required": ["language", "level"]}},
-            "sections": {"type": "array", "items": {"type": "object", "properties": {"heading": {"type": "string"}, "kind": {"type": "string"}},
-                                                    "required": ["heading", "kind"]}},
-            "contacts": {"type": "array", "items": {"type": "object", "properties": {"kind": {"type": "string"}, "label": _STR_OR_NULL, "value": {"type": "string"}},
-                                                    "required": ["kind", "label", "value"]}},
-            "skills": {"type": "array", "items": {"type": "string"}},
-            "levels": {"type": "array", "items": {"type": "object", "properties": {"item": {"type": "string"}, "level": _INT_OR_NULL},
-                                                  "required": ["item", "level"]}},
-            "entries": {"type": "array", "items": {"type": "object", "properties": {
-                "heading": {"type": "string"}, "role": _STR_OR_NULL, "org": _STR_OR_NULL, "dates": _STR_OR_NULL, "place": _STR_OR_NULL,
-                "start_year": _INT_OR_NULL, "end_year": _INT_OR_NULL}, "required": ["heading", "role", "org", "dates", "place", "start_year", "end_year"]}},
-        },
-        "required": ["name", "email", "city", "country", "languages", "sections", "contacts", "skills", "levels", "entries"],
-    },
+    "reader": cv_read.SCHEMA,
     "facts": {
         "type": "object",
         "properties": {"findings": {"type": "array", "items": {"type": "object", "properties": {
@@ -947,7 +866,7 @@ def ask_case(task: str, model: str, case: dict):
     Plan quota through `claude_cli.ask`; the feature keys are the nearest existing ones (see the module's docstring)."""
     from door.core import claude_cli
 
-    answer = claude_cli.ask(PROMPTS[task], case_input(task, case), model=model, feature="infer_basics" if task == "reader" else "revise",
+    answer = claude_cli.ask(PROMPTS[task], case_input(task, case), model=model, feature="cv_read" if task == "reader" else "revise",
                             schema=SCHEMAS[task], effort="low", timeout_s=240)
     return answer if task == "reader" else [f for f in answer.get("findings") or [] if isinstance(f, dict)]
 
@@ -1079,7 +998,9 @@ def _main(args, root: Path) -> None:
     if not args.report:
         run(args.task, args.model, corpus, runs=args.runs, root=root)
     elif args.model == "baseline":
-        answers = {n: [baseline_reader(c["md"], c["lang"]) if args.task == "reader" else baseline_facts(c)] for n, c in corpus.items()}
+        if args.task == "reader":
+            raise SystemExit("the word rules the reader's baseline measured were deleted (#430)")
+        answers = {n: [baseline_facts(c)] for n, c in corpus.items()}
         print(to_markdown(args.task, summarize(args.task, answers, corpus)))
     else:
         print(to_markdown(args.task, summarize(args.task, load_recorded(args.model, args.task, corpus, root), corpus)))
