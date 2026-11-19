@@ -1,0 +1,153 @@
+{
+ "key": "1c00c1fc469f",
+ "answer": {
+  "name": "Johan Wikström",
+  "email": "johan.wikstrom@example.com",
+  "city": "Uppsala",
+  "country": "se",
+  "languages": [
+   {
+    "language": "Svenska",
+    "level": "native"
+   },
+   {
+    "language": "Engelska",
+    "level": "fluent"
+   },
+   {
+    "language": "Tyska",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Arbetslivserfarenhet",
+    "kind": "experience"
+   },
+   {
+    "heading": "Utbildning",
+    "kind": "education"
+   },
+   {
+    "heading": "Kompetenser",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifieringar",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Språk",
+    "kind": "languages"
+   },
+   {
+    "heading": "Intressen",
+    "kind": "interests"
+   },
+   {
+    "heading": "Volontärarbete",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": null,
+    "value": "+46 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": null,
+    "value": "johan.wikstrom@example.com"
+   },
+   {
+    "kind": "web",
+    "label": null,
+    "value": "example.com/johan.wikstrom"
+   },
+   {
+    "kind": "linkedin",
+    "label": null,
+    "value": "https://www.linkedin.com/in/johan.wikstrom"
+   },
+   {
+    "kind": "location",
+    "label": null,
+    "value": "Uppsala"
+   }
+  ],
+  "skills": [
+   "Python",
+   "SQL",
+   "Docker",
+   "Git",
+   "Excel",
+   "rapportering"
+  ],
+  "levels": [
+   {
+    "item": "Svenska",
+    "level": 5
+   },
+   {
+    "item": "Engelska",
+    "level": 4
+   },
+   {
+    "item": "Tyska",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Tidewater Data, Uppsala – Analyschef (2017-09 – nuvarande)",
+    "role": "Analyschef",
+    "org": "Tidewater Data",
+    "dates": "2017-09 – nuvarande",
+    "place": "Uppsala",
+    "start_year": 2017,
+    "end_year": null
+   },
+   {
+    "heading": "Bluebird Systems, Göteborg – Senioranalytiker (2013-07 – 2017-12)",
+    "role": "Senioranalytiker",
+    "org": "Bluebird Systems",
+    "dates": "2013-07 – 2017-12",
+    "place": "Göteborg",
+    "start_year": 2013,
+    "end_year": 2017
+   },
+   {
+    "heading": "Linden Works, Malmö – Dataanalytiker (2010-05 – 2013-10)",
+    "role": "Dataanalytiker",
+    "org": "Linden Works",
+    "dates": "2010-05 – 2013-10",
+    "place": "Malmö",
+    "start_year": 2010,
+    "end_year": 2013
+   },
+   {
+    "heading": "Exempel Universitet, Uppsala – Kandidat i matematik (2005-09 – 2008-02)",
+    "role": "Kandidat i matematik",
+    "org": "Exempel Universitet",
+    "dates": "2005-09 – 2008-02",
+    "place": "Uppsala",
+    "start_year": 2005,
+    "end_year": 2008
+   },
+   {
+    "heading": "Exempel Universitet, Uppsala – Civilingenjör i datateknik (2008-07 – 2010-12)",
+    "role": "Civilingenjör i datateknik",
+    "org": "Exempel Universitet",
+    "dates": "2008-07 – 2010-12",
+    "place": "Uppsala",
+    "start_year": 2008,
+    "end_year": 2010
+   }
+  ]
+ }
+}

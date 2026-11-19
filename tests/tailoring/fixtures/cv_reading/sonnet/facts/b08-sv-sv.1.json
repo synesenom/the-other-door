@@ -1,0 +1,23 @@
+{
+ "key": "a4bd1e7295eb",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Apache Spark",
+   "context": "Microsoft Excel, rapportering, Apache Spark"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "MBA i strategisk ledning",
+   "context": "Exempel Universitet, Uppsala – MBA i strategisk ledning (2008-07 – 2010-12)"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "PMP",
+   "context": "<strong>PMP</strong>"
+  }
+ ]
+}

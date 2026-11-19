@@ -1,0 +1,144 @@
+{
+ "key": "d4ff078e610f",
+ "answer": {
+  "name": "Márton Varga",
+  "email": "marton.varga@example.com",
+  "city": "Pécs",
+  "country": "hu",
+  "languages": [
+   {
+    "language": "Magyar",
+    "level": "native"
+   },
+   {
+    "language": "Angol",
+    "level": "fluent"
+   },
+   {
+    "language": "Német",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Szakmai tapasztalat",
+    "kind": "experience"
+   },
+   {
+    "heading": "Tanulmányok",
+    "kind": "education"
+   },
+   {
+    "heading": "Készségek",
+    "kind": "skills"
+   },
+   {
+    "heading": "Tanúsítványok",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Nyelvek",
+    "kind": "languages"
+   },
+   {
+    "heading": "Érdeklődési kör",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Telefon",
+    "value": "+36 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "E-mail",
+    "value": "marton.varga@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Weboldal",
+    "value": "example.com/marton.varga"
+   },
+   {
+    "kind": "location",
+    "label": "Város",
+    "value": "Pécs"
+   }
+  ],
+  "skills": [
+   "Power BI",
+   "Figma",
+   "TypeScript",
+   "Python",
+   "SQL",
+   "riportolás"
+  ],
+  "levels": [
+   {
+    "item": "Magyar",
+    "level": 5
+   },
+   {
+    "item": "Angol",
+    "level": 4
+   },
+   {
+    "item": "Német",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Harbor Digital, Pécs – Elemzési vezető (2018 - jelenleg)",
+    "role": "Elemzési vezető",
+    "org": "Harbor Digital",
+    "dates": "2018 - jelenleg",
+    "place": "Pécs",
+    "start_year": 2018,
+    "end_year": null
+   },
+   {
+    "heading": "Tidewater Data, Debrecen – Vezető adatelemző (2014 - 2018)",
+    "role": "Vezető adatelemző",
+    "org": "Tidewater Data",
+    "dates": "2014 - 2018",
+    "place": "Debrecen",
+    "start_year": 2014,
+    "end_year": 2018
+   },
+   {
+    "heading": "Bluebird Systems, Szeged – Adatelemző (2011 - 2014)",
+    "role": "Adatelemző",
+    "org": "Bluebird Systems",
+    "dates": "2011 - 2014",
+    "place": "Szeged",
+    "start_year": 2011,
+    "end_year": 2014
+   },
+   {
+    "heading": "Példa Egyetem, Pécs – Matematika BSc (2006 - 2009)",
+    "role": "Matematika BSc",
+    "org": "Példa Egyetem",
+    "dates": "2006 - 2009",
+    "place": "Pécs",
+    "start_year": 2006,
+    "end_year": 2009
+   },
+   {
+    "heading": "Példa Egyetem, Pécs – Informatikus MSc (2009 - 2011)",
+    "role": "Informatikus MSc",
+    "org": "Példa Egyetem",
+    "dates": "2009 - 2011",
+    "place": "Pécs",
+    "start_year": 2009,
+    "end_year": 2011
+   }
+  ]
+ }
+}

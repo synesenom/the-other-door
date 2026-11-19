@@ -1,0 +1,168 @@
+{
+ "key": "194c5e4d4ed5",
+ "answer": {
+  "name": "Freja Skov",
+  "email": "freja.skov@example.com",
+  "city": "Odense",
+  "country": "dk",
+  "languages": [
+   {
+    "language": "Dansk",
+    "level": "native"
+   },
+   {
+    "language": "Engelsk",
+    "level": "fluent"
+   },
+   {
+    "language": "Tysk",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Erhvervserfaring",
+    "kind": "experience"
+   },
+   {
+    "heading": "Uddannelse",
+    "kind": "education"
+   },
+   {
+    "heading": "Kompetencer",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certificeringer",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Sprog",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interesser",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tlf",
+    "value": "+45 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "E-mail",
+    "value": "freja.skov@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Hjemmeside",
+    "value": "example.com/freja.skov"
+   },
+   {
+    "kind": "location",
+    "label": "By",
+    "value": "Odense"
+   }
+  ],
+  "skills": [
+   "Power BI",
+   "Figma",
+   "TypeScript",
+   "Python",
+   "SQL",
+   "planlægning"
+  ],
+  "levels": [
+   {
+    "item": "Power BI",
+    "level": null
+   },
+   {
+    "item": "Figma",
+    "level": null
+   },
+   {
+    "item": "TypeScript",
+    "level": null
+   },
+   {
+    "item": "Python",
+    "level": null
+   },
+   {
+    "item": "SQL",
+    "level": null
+   },
+   {
+    "item": "planlægning",
+    "level": null
+   },
+   {
+    "item": "Dansk",
+    "level": 5
+   },
+   {
+    "item": "Engelsk",
+    "level": 4
+   },
+   {
+    "item": "Tysk",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Leder af analyse | Fjord Software — 14. februar 2018 – nu | Odense",
+    "role": "Leder af analyse",
+    "org": "Fjord Software",
+    "dates": "14. februar 2018 – nu",
+    "place": "Odense",
+    "start_year": 2018,
+    "end_year": null
+   },
+   {
+    "heading": "Senioranalytiker | Quill & Co — 1. december 2014 – 8. maj 2018 | Aalborg",
+    "role": "Senioranalytiker",
+    "org": "Quill & Co",
+    "dates": "1. december 2014 – 8. maj 2018",
+    "place": "Aalborg",
+    "start_year": 2014,
+    "end_year": 2018
+   },
+   {
+    "heading": "Dataanalytiker | Ember Studio — 15. oktober 2011 – 22. marts 2014 | Aarhus",
+    "role": "Dataanalytiker",
+    "org": "Ember Studio",
+    "dates": "15. oktober 2011 – 22. marts 2014",
+    "place": "Aarhus",
+    "start_year": 2011,
+    "end_year": 2014
+   },
+   {
+    "heading": "Bachelor i matematik | Eksempel Universitet — 2. februar 2006 – 9. juli 2009 | Odense",
+    "role": "Bachelor i matematik",
+    "org": "Eksempel Universitet",
+    "dates": "2. februar 2006 – 9. juli 2009",
+    "place": "Odense",
+    "start_year": 2006,
+    "end_year": 2009
+   },
+   {
+    "heading": "Cand.scient. i datalogi | Eksempel Universitet — 16. december 2009 – 23. maj 2011 | Odense",
+    "role": "Cand.scient. i datalogi",
+    "org": "Eksempel Universitet",
+    "dates": "16. december 2009 – 23. maj 2011",
+    "place": "Odense",
+    "start_year": 2009,
+    "end_year": 2011
+   }
+  ]
+ }
+}

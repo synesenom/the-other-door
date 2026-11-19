@@ -1,0 +1,17 @@
+{
+ "key": "22783d8f55c4",
+ "answer": [
+  {
+   "kind": "employer",
+   "file": "cv",
+   "value": "Umbrella Logistics",
+   "context": "Senior Data Analyst | Umbrella Logistics"
+  },
+  {
+   "kind": "year",
+   "file": "cv",
+   "value": "2014",
+   "context": "22.6.2014 – 2.11.2020"
+  }
+ ]
+}

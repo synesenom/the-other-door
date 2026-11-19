@@ -1,0 +1,148 @@
+{
+ "key": "58670fd76b25",
+ "answer": {
+  "name": "Priya Whitfield",
+  "email": "priya.whitfield@example.com",
+  "city": "Exeter",
+  "country": "gb",
+  "languages": [
+   {
+    "language": "English",
+    "level": "native"
+   },
+   {
+    "language": "French",
+    "level": "working proficiency"
+   },
+   {
+    "language": "German",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profile",
+    "kind": "summary"
+   },
+   {
+    "heading": "Employment",
+    "kind": "experience"
+   },
+   {
+    "heading": "Education",
+    "kind": "education"
+   },
+   {
+    "heading": "Competencies",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Languages",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interests",
+    "kind": "interests"
+   },
+   {
+    "heading": "Volunteering",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Phone",
+    "value": "+44 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Email",
+    "value": "priya.whitfield@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Web",
+    "value": "example.com/priya.whitfield"
+   },
+   {
+    "kind": "location",
+    "label": "Location",
+    "value": "Exeter"
+   }
+  ],
+  "skills": [
+   "Jira",
+   "Visio",
+   "SharePoint",
+   "Alteryx",
+   "Trello",
+   "budgeting"
+  ],
+  "levels": [
+   {
+    "item": "English",
+    "level": 5
+   },
+   {
+    "item": "French",
+    "level": 3
+   },
+   {
+    "item": "German",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Granite Logistics, Exeter – Head of Operations (March 2019 – present)",
+    "role": "Head of Operations",
+    "org": "Granite Logistics",
+    "dates": "March 2019 – present",
+    "place": "Exeter",
+    "start_year": 2019,
+    "end_year": null
+   },
+   {
+    "heading": "Copper Mills, Norwich – Senior Operations Analyst (January 2015 – June 2019)",
+    "role": "Senior Operations Analyst",
+    "org": "Copper Mills",
+    "dates": "January 2015 – June 2019",
+    "place": "Norwich",
+    "start_year": 2015,
+    "end_year": 2019
+   },
+   {
+    "heading": "Summit Tools, Leicester – Operations Analyst (November 2012 – April 2015)",
+    "role": "Operations Analyst",
+    "org": "Summit Tools",
+    "dates": "November 2012 – April 2015",
+    "place": "Leicester",
+    "start_year": 2012,
+    "end_year": 2015
+   },
+   {
+    "heading": "Sample College, Exeter – BA in Economics (March 2007 – August 2010)",
+    "role": "BA in Economics",
+    "org": "Sample College",
+    "dates": "March 2007 – August 2010",
+    "place": "Exeter",
+    "start_year": 2007,
+    "end_year": 2010
+   },
+   {
+    "heading": "Sample College, Exeter – MA in Business Administration (January 2010 – June 2012)",
+    "role": "MA in Business Administration",
+    "org": "Sample College",
+    "dates": "January 2010 – June 2012",
+    "place": "Exeter",
+    "start_year": 2010,
+    "end_year": 2012
+   }
+  ]
+ }
+}
