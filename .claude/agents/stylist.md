@@ -34,13 +34,13 @@ The body is written later by another agent in these building blocks only; style 
 ```
 <header class="cv-header"><<photo>><h1>Name</h1><p class="tagline">tagline</p>
 <p class="contact"><span class="phone">..</span><span class="email"><a href="mailto:..">..</a></span><span class="web">..</span><span class="location">..</span><span class="linkedin">..</span><span class="github">..</span></p></header>
-<h2>Section</h2>
+<h2 class="kind-skills">Section</h2>   (an h2 carries one kind class by what the section holds)
 <div class="entry"><h3><span class="role">Role</span><span class="sep"> | </span><span class="org">Company</span><span class="sep"> - </span><span class="dates">dates</span><span class="sep"> | </span><span class="place">City</span></h3><ul><li>a bullet</li></ul></div>
 <p>text</p> <ul><li>..</li></ul> <ol><li>..</li></ol> <strong> <em> <a href="https://..">
 <li><strong>Danish</strong> <span class="level level-5">native</span></li>   (level-1 basic to level-5 native: draw dots or a bar if the CV does)
 ```
 
-Classes: cv-header, contact, tagline, phone, email, web, location, linkedin, github, entry, role, org, dates, place, sep, level, level-1, level-2, level-3, level-4, level-5.
+Classes: cv-header, contact, tagline, phone, email, web, location, linkedin, github, entry, role, org, dates, place, sep, level, level-1, level-2, level-3, level-4, level-5, and on an `h2` only: kind-summary, kind-experience, kind-skills, kind-education, kind-certifications, kind-languages, kind-interests, kind-other (style `h2.kind-*` as you need; the columns read the kind, never the heading text).
 
 Columns: when `template.json` has `columns.side`, a body comes as the header, then `<div class="main">` and `<div class="side">` holding the sections (the side one the kinds listed), in that order. The task says on which side each column is in the original and at which x. Place them with CSS (a flex row or grid; give the side column its background, full height, with a background on `html`/`body` or a grid area that fills the page). For a side column on the left, the side comes first on the page although it comes second in the body:
 

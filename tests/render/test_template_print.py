@@ -122,7 +122,7 @@ def test_the_letter_prints_its_date_and_sign_off(example):
 _HEADER = ('<header class="cv-header"><<photo>><h1>Jane Doe</h1><p class="contact"><span>+45 00 00 00 00</span>'
            '<span><a href="mailto:jane.doe@example.com">jane.doe@example.com</a></span>'
            '<span><a href="https://janedoe.example.com">janedoe.example.com</a></span><span>Copenhagen</span></p></header>'
-           "<h2>Profile</h2><p>Jane Doe is a financial controller with a long record in group reporting.</p>")
+           "<h2 class=\"kind-summary\">Profile</h2><p>Jane Doe is a financial controller with a long record in group reporting.</p>")
 _LETTER = '<header class="letter-header"><h1>Jane Doe</h1></header><p>Dear team, Jane Doe writes about the role.</p>'
 
 
@@ -166,7 +166,7 @@ def test_the_photo_sits_at_the_right_of_the_name_not_under_it(tmp_path, monkeypa
 
 def test_a_french_cv_and_letter_get_french_typography_date_and_links_untouched(tmp_path, monkeypatch):
     cv = (FIXTURES / "french" / "cv_body.html").read_text(encoding="utf-8").replace(
-        "</p>\n\n<h2>Expérience", '</p>\n<p><a href="https://arxiv.org/abs/2408.10754?a=b">arXiv:2408.10754</a></p>\n\n<h2>Expérience', 1)
+        '</p>\n\n<h2 class="kind-experience">Expérience', '</p>\n<p><a href="https://arxiv.org/abs/2408.10754?a=b">arXiv:2408.10754</a></p>\n\n<h2 class="kind-experience">Expérience', 1)
     letter = (FIXTURES / "french" / "letter_body.html").read_text(encoding="utf-8")
     out, results = _setup(tmp_path, monkeypatch, cv=cv, letter=letter, posting={
         "title": "Responsable des ventes", "company": "Soleil Énergie", "location": "Lyon", "language": "fr"})
@@ -320,10 +320,10 @@ def test_a_plain_entry_heading_prints_the_same_text_as_the_span_one(tmp_path, mo
 
 # --- two columns (#147) -----------------------------------------------------------------------------------------
 
-_TWO_COLUMNS = (_HEADER + '<h2>Experience</h2><div class="entry"><h3>Controller | Globex Energy - 2021</h3>'
+_TWO_COLUMNS = (_HEADER + '<h2 class="kind-experience">Experience</h2><div class="entry"><h3>Controller | Globex Energy - 2021</h3>'
                 '<ul><li>Closed the books in four days.</li></ul></div>'
-                '<h2>Skills</h2><p>IFRS, SQL</p><h2>Education</h2><p>MSc, CBS</p>'
-                '<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>')
+                '<h2 class="kind-skills">Skills</h2><p>IFRS, SQL</p><h2 class="kind-education">Education</h2><p>MSc, CBS</p>'
+                '<h2 class="kind-languages">Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>')
 
 
 def test_a_two_column_template_prints_every_heading_on_a_line_and_the_side_after_the_main(tmp_path, monkeypatch):

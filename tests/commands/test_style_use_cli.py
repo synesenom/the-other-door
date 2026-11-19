@@ -175,6 +175,10 @@ def compiled(monkeypatch):
     return calls
 
 
+def _failed(result):
+    return [f["job"] for f in result["failed"]]
+
+
 def test_prepared_jobs_are_counted_whether_or_not_they_are_rerendered(home, cli_env, compiled):
     _folder(cli_env, "style.next")
     _job(home, "a.1", "prepared")
@@ -199,7 +203,8 @@ def test_a_job_that_fails_to_print_is_listed_and_the_rest_go_on(home, cli_env, c
     _job(home, "a.bad", "prepared")
     _job(home, "b.1", "prepared")
     result = style_cmd._use_core("like", rerender=True)
-    assert result["rerendered"] == ["b.1"] and result["failed"] == ["a.bad"]
+    assert result["rerendered"] == ["b.1"] and _failed(result) == ["a.bad"]
+    assert result["failed"][0]["reason"] == "no way" and not result["failed"][0]["prepare_again"]
 
 
 def test_a_job_whose_compile_answers_an_error_is_failed_not_rerendered(home, cli_env, compiled):
@@ -207,7 +212,29 @@ def test_a_job_whose_compile_answers_an_error_is_failed_not_rerendered(home, cli
     _job(home, "a.err", "prepared")
     _job(home, "b.1", "prepared")
     result = style_cmd._use_core("like", rerender=True)
-    assert result["rerendered"] == ["b.1"] and result["failed"] == ["a.err"]
+    assert result["rerendered"] == ["b.1"] and _failed(result) == ["a.err"]
+    assert result["failed"][0]["reason"] == "refused" and not result["failed"][0]["prepare_again"]
+
+
+def test_a_prepared_cv_with_no_section_kinds_fails_a_side_column_style_and_keeps_its_pdf(home, cli_env, monkeypatch):
+    """The real compile: a body prepared before sections had a kind class cannot be placed in a side column (#431)."""
+    from compile_utils import install
+
+    install(monkeypatch)
+    folder = _folder(cli_env, "style")
+    (folder / "template.json").write_text('{"columns": {"side": ["skills"]}}')
+    _job(home, "a.old", "prepared")
+    _job(home, "b.new", "prepared")
+    for job, cls in (("a.old", ""), ("b.new", ' class="kind-skills"')):
+        out = home / "jobs" / "output" / job
+        (out / "cv.html").write_text(f"<h2{cls}>Skills</h2><p>Python</p>")
+        (out / "cv.pdf").write_text("old pdf")
+    result = style_cmd._use_core("like", rerender=True)
+    assert _failed(result) == ["a.old"] and result["rerendered"] == ["b.new"]
+    assert result["failed"][0]["title"] == "T" and result["failed"][0]["company"] == "C"
+    assert result["failed"][0]["prepare_again"] and "prepare it again or revise it" in result["failed"][0]["reason"]
+    assert (home / "jobs" / "output" / "a.old" / "cv.pdf").read_text() == "old pdf"
+    assert (home / "jobs" / "output" / "b.new" / "cv.pdf").read_bytes().startswith(b"%PDF")
 
 
 def test_rerender_never_moves_in_or_ends_a_candidate(home, cli_env, compiled):
@@ -349,3 +376,27 @@ def test_the_command_with_rerender_and_no_chromium_names_the_fix_and_chooses_not
     assert result.exit_code == 1
     assert str(common.NoChromium()) in result_text(result) and chromium.INSTALL_HINT in result_text(result)
     assert compiled == [] and (cli_env.profile_dir / "style.next").is_dir()
+
+
+def test_the_command_says_why_a_job_could_not_be_printed(home, cli_env, compiled):
+    _folder(cli_env, "style")
+    _job(home, "a.err", "prepared")
+    result = CliRunner().invoke(cli, ["cv", "style", "use", "like", "--rerender"])
+    assert "a.err" in result_text(result) and "refused" in result_text(result)
+
+
+def test_show_with_an_unreadable_cv_still_says_which_style_is_in_use_and_whether_one_waits(home, cli_env, monkeypatch):
+    from door.core import cv_read
+
+    def fail(md):
+        raise cv_read.CvReadError("Claude could not read your CV: try again")
+    monkeypatch.setattr(cv_read, "_ask", fail)
+    (cli_env.profile_dir / "cv.md").write_text("# A\n\n## Skills\n\nx\n", encoding="utf-8")
+    _folder(cli_env, "style.next")
+    _folder(cli_env, "style")
+    _set_keys(cli_env, *IN_USE)
+    shown = style_cmd._show_core(home=home)
+    assert shown["styles"] == {} and "could not read" in shown["warning"] and "error" not in shown
+    assert shown["in_use"] == "like" and shown["candidate"] is True
+    result = CliRunner().invoke(cli, ["cv", "style", "show"])
+    assert result.exit_code != 0 and "could not read your CV" in result_text(result)

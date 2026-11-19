@@ -21,6 +21,13 @@ export function cvKeywords(cv: string): string {
     .join(', ')
 }
 
+/** The kind of each heading the world's own CVs use; any other is `other`. */
+const KINDS: Record<string, string> = {
+  profile: 'summary', summary: 'summary', experience: 'experience', 'work experience': 'experience', education: 'education',
+  skills: 'skills', certifications: 'certifications', languages: 'languages', interests: 'interests',
+}
+const kindOf = (heading: string) => KINDS[heading.trim().toLowerCase()] ?? 'other'
+
 /** The CV body: every section of cv.md, headings as `<h2>` and bullets as list items. */
 export function cvHtml(persona: Persona): string {
   const lines = persona.cv.split('\n')
@@ -37,7 +44,7 @@ export function cvHtml(persona: Persona): string {
       out.push(`<header class="cv-header"><h1>${esc(line.slice(2))}</h1></header>`, '')
     } else if (line.startsWith('## ')) {
       close()
-      out.push(`<h2>${esc(line.slice(3))}</h2>`, '')
+      out.push(`<h2 class="kind-${kindOf(line.slice(3))}">${esc(line.slice(3))}</h2>`, '')
     } else if (line.startsWith('### ')) {
       close()
       out.push(`<h3>${esc(line.slice(4))}</h3>`, '')

@@ -28,7 +28,8 @@ Apply this instruction from the candidate, and change nothing else:
 
 Rules:
 - Return ONLY the revised body: the fragment of tags that goes inside the page. No <html>, <head>, <body> or <style>, no markdown fences, no commentary.
-- Write only these tags: header, h1, h2, h3, p, ul, ol, li, div, span, strong, em, a, br. The only attributes are class (only the classes the body already uses) and href on a (https:, mailto: or #).
+- Write only these tags: header, h1, h2, h3, p, ul, ol, li, div, span, strong, em, a, br. The only attributes are class (only the classes the body already uses, and for a CV the kind classes of an h2) and href on a (https:, mailto: or #).
+- In a CV every h2 carries one kind class by what the section holds: kind-summary, kind-experience, kind-skills, kind-education, kind-certifications, kind-languages, kind-interests, kind-other. Give an h2 that has none its class; never write the classes main or side.
 - Keep the <!-- Keywords: ... --> and <!-- Tailoring: ... --> comments, and the <<photo>>, <<company>>, <<title>> and <<date>> tokens, as they are. Write & as &amp; and < as &lt; in text.
 - Never invent experience, employers, dates, numbers or skills that are not already in the body.
 

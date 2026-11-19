@@ -641,10 +641,32 @@ def render_cv_md(person: dict, lang: str | None = None, *, tailor: bool = False)
     return "\n".join(out), expected
 
 
+_LEVEL_WORDS = frozenset("native c2 fluent professional c1 working b2 conversational b1 basic a1 a2".split())
+
+
 def render_body(person: dict, lang: str, *, reformat: bool = False) -> str:
-    """The tailored CV in `lang` as a body in the tailor's vocabulary (`cv_body.body`: no model). `reformat` tells two
+    """The tailored CV in `lang` as a body in the tailor's vocabulary (`cv_body.body` on the reading `render_cv_md` expects: no model). `reformat` tells two
     figures of the first job another way (the same value: `40 000` as `40k`), which the CV backs."""
-    body = cv_body.body(render_cv_md(person, lang, tailor=True)[0], lang)
+    md, expected = render_cv_md(person, lang, tailor=True)
+    # The recorded answers of the facts reader are keyed by this body's bytes and were measured on the body as it was
+    # before `cv_body` read a reading (#431); no answer is recorded again, so the reading handed over is what the old
+    # word lists found: no `h2` kind class (removed below), a detail with a label its kind (one with none a plain span, written here), an entry
+    # heading with a ` | ` its parts, a level word of the tailor's English and CEFR table its level. Drop this when
+    # the facts corpus is recorded again.
+    contacts = [c for c in expected["contacts"] if c["label"]]
+    unlabelled = "".join(
+        f'<span class="email"><a href="mailto:{c["value"]}">{c["value"]}</a></span>' if c["kind"] == "email"
+        else f"<span>{html.escape(c['value'], quote=False)}</span>" for c in expected["contacts"] if not c["label"])
+    levels = []
+    for item, level in expected["levels"].items():
+        found = re.search(rf"^- (?:\*\*)?{re.escape(item)}(?:\*\*)?\s*(?:[—–:]|\()\s*([^()]+?)\)?\s*$", md, re.M)
+        if found and found.group(1).strip().casefold() in _LEVEL_WORDS:
+            levels.append({"item": item, "level": level})
+    reading = {**cv_read._empty(), "sections": [{"heading": h, "kind": k} for h, k in expected["sections"].items()],
+               "contacts": contacts, "entries": [e for e in expected["entries"] if " | " in e["heading"]], "levels": levels}
+    body = re.sub(r' class="kind-\w+"', "", cv_body.body(md, reading))
+    if unlabelled:  # the old body wrote a detail with no label as a plain span, an address as a mail link
+        body = body.replace("</header>", f'\n<p class="contact">{unlabelled}</p></header>', 1)
     if reformat:
         for ix in person["jobs"][0]["bullets"][:2]:
             _, anchor, same, _ = _BULLETS[lang][ix]
@@ -672,11 +694,12 @@ def _esc(text: str) -> str:
 
 def _insert_in_section(body: str, heading: str, snippet_ul: str, snippet_p: str) -> str:
     """Add to the end of the list or paragraph that follows `heading` (its `<h2>`)."""
-    start = body.find(f"<h2>{_esc(heading)}</h2>")
+    start = re.search(rf'<h2(?: class="kind-\w+")?>{re.escape(_esc(heading))}</h2>', body)
+    start = start.start() if start else -1
     if start < 0:
         raise ValueError(f"no section {heading!r} to plant in")
     ul, p = body.find("</ul>", start), body.find("</p>", start)
-    nxt = body.find("<h2>", start + 1)
+    nxt = body.find("<h2", start + 1)
     nxt = len(body) if nxt < 0 else nxt
     if 0 <= ul < nxt and (p < 0 or ul < p):
         return body[:ul] + snippet_ul + body[ul:]

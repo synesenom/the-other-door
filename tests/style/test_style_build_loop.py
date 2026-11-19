@@ -661,7 +661,24 @@ def test_a_print_of_three_columns_is_judged_not_stopped_as_having_no_text(world,
 # ---------- the sample is in the vocabulary's shapes; the original's contact labels ----------
 
 
-def test_the_sample_the_stylist_writes_as_markdown_is_printed_in_the_real_shapes_with_the_originals_labels(world):
+def _read_sample(monkeypatch):
+    """The reader's answer for the sample CV below: its Danish-style labels, entry parts and level (no model)."""
+    from door.core import cv_read
+    from cv_read_utils import reading
+
+    def ask(md):
+        if "Tel:" not in md:
+            return reading(md)
+        return reading(md, contacts=[{"kind": "phone", "label": "Tel", "value": "12 34 56 78"},
+                                     {"kind": "email", "label": "E-mail", "value": "ada@example.com"}],
+                       levels=[{"item": "English", "level": 5}],
+                       entries=[{"heading": "Engineer | Example Co — 2020 - 2023 | Town", "role": "Engineer", "org": "Example Co",
+                                 "dates": "2020 - 2023", "place": "Town", "start_year": 2020, "end_year": 2023}])
+    monkeypatch.setattr(cv_read, "_ask", ask)
+
+
+def test_the_sample_the_stylist_writes_as_markdown_is_printed_in_the_real_shapes_with_the_originals_labels(world, monkeypatch):
+    _read_sample(monkeypatch)
     sample = ("# Ada Example\n\n**Tel:** 12 34 56 78 | **E-mail:** ada@example.com\n\n## Experience\n\n"
               "### Engineer | Example Co — 2020 - 2023 | Town\n\n- Built **tools** nightly\n\n## Languages\n\n- **English** — native\n")
     result = world.build("html-word-two-column", Stylist(cv_round(cv=sample), letter_round()))
@@ -677,6 +694,17 @@ def test_the_sample_the_stylist_writes_as_markdown_is_printed_in_the_real_shapes
     assert any('<span class="phone"><label class="label">Tel:</label>' in h for h in stress)
     letters = [p["html"] for p in world.prints if p["folder"].name == "letter"]
     assert letters and not [h for h in letters if 'class="label"' in h]
+
+
+def test_a_sample_cv_the_reader_cannot_read_fails_the_build_in_words_and_writes_nothing(world, monkeypatch):
+    from door.core import cv_read
+
+    def fail(md):
+        raise cv_read.CvReadError("Claude could not read the CV: try again")
+    monkeypatch.setattr(cv_read, "_ask", fail)
+    result = world.build("html-word-two-column", Stylist(cv_round(), letter_round()))
+    assert result["state"] == "failed" and "Claude could not read the CV" in result["problems"][0]
+    assert not world.style.exists()
 
 
 def test_a_sample_cv_with_no_contact_label_leaves_the_manifest_without_any(world):

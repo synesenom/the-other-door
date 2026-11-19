@@ -126,8 +126,10 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   ask: 240_000,
   // draft_stories: one sonnet call (300 s on the server), no progress.
   draft_stories: 360_000,
-  // show_style prints up to four pages cold; use_style with rerender prints each prepared application again.
-  show_style: 180_000,
+  // show_style reads the CV (one Haiku call of up to 120 s, asked once more when its answer does not hold: 240 s) and
+  // then prints up to four pages cold.
+  show_style: 360_000,
+  // use_style with rerender prints each prepared application again.
   use_style: 600_000,
   // build_style reads the CV's structure with one Haiku call (60 s on the server) before it starts the build.
   build_style: 120_000,

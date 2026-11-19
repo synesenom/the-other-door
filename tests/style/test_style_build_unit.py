@@ -12,6 +12,7 @@ from door.render import html_guard, pdf_render
 from door.style import style_build
 from style_build_utils import STYLES
 from style_structure_utils import extract_with, recorded
+from cv_read_utils import reading
 
 
 def test_the_stylist_agent_is_sonnet_with_only_the_read_tool():
@@ -32,7 +33,7 @@ def test_every_class_the_stylist_is_told_about_is_one_the_guard_accepts():
     prompt = claude_cli.agent_definition("stylist")["prompt"]
     named = {t for value in re.findall(r'class="([^"]*)"', prompt) for t in value.split()}
     assert {"cv-header", "entry", "contact"} <= named
-    assert named - html_guard.CLASSES - {"photo", "main", "side", "label"} == set()
+    assert named - html_guard.CLASSES - html_guard.KIND_CLASSES - {"photo", "main", "side", "label"} == set()
 
 
 def test_blocks_reads_the_fenced_replies_by_their_name():
@@ -179,8 +180,50 @@ CV = """# Jane Doe
 """
 
 
+CV_READING = reading(CV, entries=[
+    {"heading": "Analyst | Acme — 2020 - 2023", "role": "Analyst", "org": "Acme", "dates": "2020 - 2023", "place": None,
+     "start_year": 2020, "end_year": 2023},
+    {"heading": "Junior | Beta — 2018 - 2020", "role": "Junior", "org": "Beta", "dates": "2018 - 2020", "place": None,
+     "start_year": 2018, "end_year": 2020}])
+
+
+def _variants(md=CV, read=None):
+    return style_build._stress_variants(md, read or reading(md))
+
+
+def _agree(variant):
+    """A variant's reading has as many sections as its text has `##` lines and an entry for each `###` line."""
+    md, rd = variant["md"], variant["reading"]
+    assert [s["heading"] for s in rd["sections"]] == [ln[3:].strip() for ln in md.splitlines() if ln.startswith("## ")]
+    assert [e["heading"] for e in rd["entries"]] == [ln[4:].strip() for ln in md.splitlines() if ln.startswith("### ")]
+
+
+def test_every_variant_has_a_reading_that_agrees_with_its_text():
+    for md, rd in ((CV, CV_READING), ("# Jane Doe\n\n## Profile\n\nA text.\n", reading("# Jane Doe\n\n## Profile\n\nA text.\n"))):
+        for name, variant in _variants(md, rd).items():
+            _agree(variant)
+
+
+def test_the_derived_readings_keep_the_kinds_and_add_the_variants_own_sections():
+    variants = _variants(CV, CV_READING)
+    kinds = lambda v: [s["kind"] for s in variants[v]["reading"]["sections"]]  # noqa: E731
+    assert kinds("photo") == ["experience", "skills"] == kinds("fewer")
+    assert kinds("extra_section") == ["experience", "skills", "other"]
+    assert kinds("french") == ["summary", "experience", "skills"]
+    assert [e["role"] for e in variants["fewer"]["reading"]["entries"]] == ["Analyst"]
+    long = variants["long_title"]["reading"]["entries"][0]
+    assert long["role"] == style_build._LONG_ROLE and long["org"] == "Acme" and long["heading"].startswith("Senior Principal")
+
+
+def test_the_long_title_of_a_cv_with_no_entry_is_an_added_experience_section_with_its_entry():
+    md = "# Jane Doe\n\n## Profile\n\nA text.\n"
+    variant = _variants(md)["long_title"]
+    assert [s["kind"] for s in variant["reading"]["sections"]] == ["summary", "experience"]
+    assert variant["reading"]["entries"][0]["role"] == style_build._LONG_ROLE
+
+
 def test_the_stress_variants_are_the_cv_shorter_longer_with_a_section_and_in_french():
-    variants = style_build._stress_variants(CV)
+    variants = _variants(CV, CV_READING)
     assert set(variants) == {"photo", "fewer", "long_title", "extra_section", "french", "shapes"}
     assert variants["photo"]["md"] == CV and variants["photo"]["photo"]
     assert "Junior" not in variants["fewer"]["md"] and "Analyst" in variants["fewer"]["md"]
@@ -195,8 +238,8 @@ def test_the_stress_variants_are_the_cv_shorter_longer_with_a_section_and_in_fre
 def test_the_shapes_variant_holds_every_shape_of_the_vocabulary_whatever_the_cv():
     from door.style import cv_body
     from door.render import html_guard
-    md = style_build._stress_variants(CV)["shapes"]["md"]
-    html = cv_body.body(md)
+    shapes = _variants(CV, CV_READING)["shapes"]
+    md, html = shapes["md"], cv_body.body(shapes["md"], shapes["reading"])
     assert html_guard.unsafe(html) == []
     for kind in ("phone", "email", "web", "location", "linkedin", "github"):
         assert f'<span class="{kind}">' in html
@@ -204,11 +247,11 @@ def test_the_shapes_variant_holds_every_shape_of_the_vocabulary_whatever_the_cv(
         assert f'<span class="{part}">' in html
     assert 'level level-5' in html and 'level level-1' in html and "<ol>" in html and "<ul>" in html
     assert all(tag in html for tag in ("<strong>", "<em>", "<a href"))
-    assert cv_body.body(md).count("<h1>") == 1 and cv_body.body(CV).count("<h1>") == 1
+    assert html.count("<h1>") == 1 and cv_body.body(CV, CV_READING).count("<h1>") == 1
 
 
 def test_the_stress_variants_of_a_cv_with_no_entries_are_still_all_there():
-    variants = style_build._stress_variants("# Jane Doe\n\n## Profile\n\nA text.\n")
+    variants = _variants("# Jane Doe\n\n## Profile\n\nA text.\n")
     assert variants["fewer"]["md"] == variants["photo"]["md"]
     assert variants["long_title"]["md"] != variants["photo"]["md"]
 
@@ -403,8 +446,8 @@ def test_a_line_the_pdf_prints_with_a_ligature_is_found_in_the_body_spelt_out():
     bands = [{"x0": 20, "x1": 160, "kind": "side"}, {"x0": 180, "x1": 575, "kind": "main"}]
     style = {"columns": {"bands": bands},
              "runs": [{"page": 1, "text": "Certi\ufb01ed scienti\ufb01c of\ufb01cer", "bbox": [30, 100, 150, 110], "size": 9.0}]}
-    body = ('<header class="cv-header"><h1>A B</h1></header><h2>Experience</h2><p>Certified scientific officer</p>'
-            "<h2>Skills</h2><p>Python</p>")
+    body = ('<header class="cv-header"><h1>A B</h1></header><h2 class="kind-experience">Experience</h2>'
+            '<p>Certified scientific officer</p><h2 class="kind-skills">Skills</h2><p>Python</p>')
     problems = style_build.body_column_problems(style, body, templates.Columns(side=["skills"]))
     assert len(problems) == 1 and "side column of the original" in problems[0]
 

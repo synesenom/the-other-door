@@ -23,6 +23,7 @@ app does before an update installs (#215).
 
 from __future__ import annotations
 
+import json
 import os
 import signal
 import sys
@@ -40,6 +41,7 @@ from door.commands import _progress
 from door.core import lock, process, profile_loader, templates, utils, workspace
 from door.core import progress as progress_mod
 from door.core.jobs import tracker
+from door.render import page as page_mod
 from door.style import style_build, style_extract, style_preview, style_structure
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
@@ -269,6 +271,15 @@ def _prepared(jobs_dir: Path) -> list[str]:
             if ledger.get_status(job) == "prepared" and (jobs_dir / "output" / job / "cv.html").is_file()]
 
 
+def _posting(job: str) -> dict:
+    """The title and company of a job's ad (what the user knows it by), `{}` when its `posting.json` cannot be read."""
+    try:
+        data = json.loads((workspace.JOBS_DIR / "output" / job / "posting.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = None) -> dict:
     """Choose the CV style: ``like`` (the one built from the user's CV: the candidate moves into `profile/style/`
     and both template keys point at it), ``default`` (both keys cleared, only where they point into `profile/style/`)
@@ -278,8 +289,8 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
     With `rerender` the candidate is left alone (choosing it is a call of its own), and the prepared applications (status ``prepared``, not sent) are printed again in the style in use by
     `compile`: no model, a failing job listed and the rest done.
 
-    Returns ``{"in_use": "like" | "default", "prepared": N}`` and, with `rerender`, ``"rerendered"`` and ``"failed"``
-    (job ids). Raises ValueError, in words, when ``like`` has no style built, and `NoChromium` for `rerender` with
+    Returns ``{"in_use": "like" | "default", "prepared": N}`` and, with `rerender`, ``"rerendered"`` (job ids) and ``"failed"``
+    (``{"job", "title", "company", "reason", "prepare_again"}`` each, the reason in words). Raises ValueError, in words, when ``like`` has no style built, and `NoChromium` for `rerender` with
     nothing to print with, before any change."""
     from door.commands import compile as compile_cmd
     from door.commands import profile as profile_cmd
@@ -314,20 +325,27 @@ def _use_core(style: str, rerender: bool = False, *, profile_dir: Path | None = 
     if rerender:
         result.update(rerendered=[], failed=[])
         for job in jobs:
+            reason = None
             try:
                 done = compile_cmd._compile_core(job, render=True)
-                ok = not any(r.get("status") == "error" for r in done.get("results", []))
-            except Exception:  # noqa: BLE001 - one job that cannot print is listed, the others go on
-                ok = False
-            result["rerendered" if ok else "failed"].append(job)
+                reason = next((r.get("stderr") or "it could not be printed" for r in done.get("results", [])
+                               if r.get("status") == "error"), None)
+            except Exception as exc:  # noqa: BLE001 - one job that cannot print is listed, the others go on
+                reason = str(exc) or type(exc).__name__
+            if reason is None:
+                result["rerendered"].append(job)
+            else:  # `prepare_again`: its CV has no section kinds, which only a new prepare or a revise gives it
+                posting = _posting(job)
+                result["failed"].append({"job": job, "title": posting.get("title"), "company": posting.get("company"),
+                                         "reason": reason, "prepare_again": page_mod.NO_KINDS_HINT in reason})
     return result
 
 
 def _show_core(*, home: Path | None = None, profile_dir: Path | None = None) -> dict:
     """The previews of the profile's `cv.md` and a sample letter in the default style and, once one is built, in the
     rebuilt one (`style_preview.show`): ``{"styles": {"default" | "like": {"cv": [png], "letter": [png]}}, "in_use":
-    "like" | "default", "candidate": bool}``, made again only where stale, no model. ``like`` is the candidate when one
-    waits, else the style kept in `profile/style/`. A style that could not be printed (no Chromium) is left out."""
+    "like" | "default", "candidate": bool}``, made again only where stale; the CV is read once by the model (`cv_read.read`, cached), and one it cannot
+    read leaves ``styles`` empty with a ``warning`` in words (``in_use`` and ``candidate`` are still there). ``like`` is the candidate when one waits, else the style kept in `profile/style/`. A style that could not be printed (no Chromium) is left out."""
     profile_dir = Path(profile_dir or workspace.PROFILE_DIR)
     style_build.restore(profile_dir)
     config = profile_loader.load_config_or_defaults(profile_dir)
@@ -399,7 +417,8 @@ def use_style(style, rerender):
     if rerender:
         click.echo(f"{len(result['rerendered'])} of {result['prepared']} prepared applications printed again.")
         if result["failed"]:
-            click.echo(f"Could not print: {', '.join(result['failed'])}", err=True)
+            for failed in result["failed"]:
+                click.echo(f"Could not print {failed['job']}: {failed['reason']}", err=True)
     elif result["prepared"]:
         click.echo(f"{result['prepared']} prepared applications keep their look; --rerender prints them again.")
 
@@ -408,8 +427,11 @@ def use_style(style, rerender):
 def show_style():
     """Print your CV and a sample letter in the default style and in the one built from your CV, as page images.
 
-    Made again only when your CV, photo or style changed; no model is used."""
-    styles = _show_core()["styles"]
+    Made again only when your CV, photo or style changed; the CV is read by the model once, then remembered."""
+    shown = _show_core()
+    if shown.get("warning"):
+        raise click.ClickException(shown["warning"])
+    styles = shown["styles"]
     if not styles:
         click.echo(f"Nothing could be printed. {common.INSTALL_HINT}")
         return

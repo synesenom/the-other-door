@@ -739,7 +739,8 @@ def contact_kind(label: str) -> str | None:
 
 def cv_section_kind(title: str, kinds, codes: tuple[str, ...] | None = None) -> str | None:
     """The one of `kinds` whose titles hold `title` as a whole heading (spaces squashed, without case or a trailing
-    colon), or None: how the facts check and the column placement read a CV heading."""
+    colon), or None: how the facts check reads a CV heading (the column placement reads the `kind-*` class of an
+    `<h2>`, not its title)."""
     key = " ".join(title.split()).casefold().strip(" :")
     return next((kind for kind in kinds if key in {t.casefold() for t in cv_section(kind, codes)}), None)
 
