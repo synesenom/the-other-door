@@ -127,6 +127,9 @@ Every request *The other door* makes, by any scraper, follows the same rules:
   `*.teamtailor.com`, `*.myworkdayjobs.com`, `*.recruitee.com`) are fetched at most four at
   a time.
 - **Plain HTTP, logged out:** no browser, no CAPTCHA solving, no proxies, no logins.
+- **A common browser's User-Agent, Firefox's** (`http_client.USER_AGENT`), naming no project. Not
+  Chrome's: a real Chrome also sends client hints and its own TLS handshake, so a plain request naming
+  Chrome reads as a faked browser, which some firewalls block (profession.hu's search listing did).
 - **Terms first, one verdict per source.** Every source (a board, an employer-feed platform or a
   discovery source) has a terms verdict, recorded when it is added: `verdict` and `terms_summary` on its
   `Site` (`src/door/core/sites.py`), `VERDICT`, `TERMS_URL` and `TERMS_SUMMARY` in a discovery source's

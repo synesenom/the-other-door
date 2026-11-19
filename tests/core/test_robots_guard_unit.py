@@ -18,7 +18,7 @@ def test_the_fetch_policy_is_pinned():
     """Changing either is a deliberate decision: see docs/job-sites.md, How The other door fetches."""
     ua = http_client.USER_AGENT
     assert http_client.OBEY_ROBOTS is False, "robots.txt does not gate requests; see docs/job-sites.md, How The other door fetches"
-    assert ua.startswith("Mozilla/5.0 (") and "Chrome/" in ua, "the User-Agent is a common browser's; see docs/job-sites.md, How The other door fetches"
+    assert ua.startswith("Mozilla/5.0 (") and "Firefox/" in ua, "the User-Agent is a common browser's; see docs/job-sites.md, How The other door fetches"
     assert "door" not in ua.lower() and "github" not in ua.lower(), "the User-Agent does not name The other door; see docs/job-sites.md, How The other door fetches"
     session = PoliteSession()
     assert session.obey_robots is False and session._session.headers["User-Agent"] == ua
