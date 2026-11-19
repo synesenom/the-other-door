@@ -46,7 +46,7 @@ from bs4 import BeautifulSoup
 from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    on_topic, record_answered, record_error, record_non_local, record_pushback, report, run_probe, topic_terms,
+    on_topic, record_answered, record_error, record_pushback, report, run_probe, topic_terms,
 )
 
 _SITE = "nhs_jobs"
@@ -281,10 +281,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     break
                 if topic and not on_topic(card["title"], topic):
                     continue
-                if not sdk.location_fits(card["location"], config):
-                    record_non_local(_SITE, 1)
-                    continue
-                if not sdk.keep_local([{"location": card["location"]}], config, _SITE):
+                if (not sdk.location_fits(card["location"], config, _SITE)
+                        or not sdk.keep_local([{"location": card["location"]}], config, _SITE)):
                     continue
                 if card["id"] in known_ids:
                     out.append({"platform_id": card["id"], "seen_only": True})
@@ -307,10 +305,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 own = (detail or {}).get("location") or ""
                 if own:
                     card = {**card, "location": own}
-                    if not sdk.location_fits(own, config):
-                        record_non_local(_SITE, 1)
-                        continue
-                    if not sdk.keep_local([{"location": own}], config, _SITE):
+                    if (not sdk.location_fits(own, config, _SITE)
+                            or not sdk.keep_local([{"location": own}], config, _SITE)):
                         continue
                 out.append(_posting(card, description, posted, scraped_at))
 

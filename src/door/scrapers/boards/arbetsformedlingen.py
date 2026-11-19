@@ -277,9 +277,6 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if platform_id in seen or platform_id in known_ids:
                     continue
                 seen.add(platform_id)
-                posted = _parse_date(hit.get("publication_date"))
-                if since is not None and posted is not None and posted < (since if since.tzinfo else since.replace(tzinfo=timezone.utc)):
-                    continue
                 postings.append(posting)
             if len(hits) < _PAGE_SIZE or offset + len(hits) >= total:
                 break
