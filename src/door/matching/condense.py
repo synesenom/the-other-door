@@ -268,8 +268,6 @@ def condense_description(
 
 def _extract_skills_section(cv_md: str) -> str:
     """Return the raw text of the CV's skills sections, under any name in any language (empty if none)."""
-    if not cv_md:
-        return ""
     return "\n".join(
         line for section in cv_sections.split(cv_md) if cv_sections.kind(section, ("skills",)) for line in section[1:]
     )

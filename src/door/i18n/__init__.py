@@ -744,17 +744,15 @@ def cv_section_kind(title: str, kinds, codes: tuple[str, ...] | None = None) -> 
     return next((kind for kind in kinds if key in {t.casefold() for t in cv_section(kind, codes)}), None)
 
 
-def cv_heading_kind(title: str, kinds, codes: tuple[str, ...] | None = None) -> str | None:
+def cv_heading_kind(title: str, kinds) -> str | None:
     """The one of `kinds` a CV heading the user wrote in their own words is about: the heading as a whole title of
-    a kind (`cv_section_kind`), else the kind of the longest title that stands in it as whole words ("Technical &
+    a kind, else the kind of the longest title that stands in it as whole words ("Technical &
     Programming Skills" holds "skills", "Language Skills" holds the longer "language skills"), or None. Every kind
     competes, so "Language Skills" is no skills section when only skills are asked for."""
     words = re.findall(r"\w+", title.casefold())
-    if (kind := cv_section_kind(" ".join(words), CvSections.model_fields, codes)) is not None:
-        return kind if kind in kinds else None
     best: tuple[int, str] | None = None
     for kind in CvSections.model_fields:
-        for t in cv_section(kind, codes):
+        for t in cv_section(kind):
             tw = re.findall(r"\w+", t.casefold())
             n = len(tw)
             if tw and any(words[i:i + n] == tw for i in range(len(words) - n + 1)) and (best is None or n > best[0]):
