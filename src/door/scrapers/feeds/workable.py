@@ -20,8 +20,8 @@ API endpoint used (public, unauthenticated, not disallowed by robots.txt):
       (``nextPageToken`` is absent on the last page)
 
 Results are ordered by relevance rather than date, so every page up to
-``max_pages_per_keyword`` (default ``_MAX_PAGES``) is read and postings older
-than ``since`` are dropped here.
+``max_pages_per_keyword`` (default ``_MAX_PAGES``) is read; the engine drops the
+postings older than the cutoff.
 
 Terms: https://www.workable.com/terms — nothing on scraping. jobs.workable.com's
 robots.txt allows the API (`ai-input=yes`); apply.workable.com's is read at run time.
@@ -191,7 +191,6 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         return []
     location = (config.get("location") or "").strip()
     max_pages = config.get("max_pages_per_keyword") or _MAX_PAGES
-    since: datetime | None = kwargs.get("since")
 
     scraped_at = datetime.now(timezone.utc)
     session = PoliteSession(min_delay=FEED_DELAY[0], max_delay=FEED_DELAY[1], timeout=30, headers=_HEADERS)
@@ -215,10 +214,6 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if not platform_id or platform_id in seen_ids:
                     continue
                 seen_ids.add(platform_id)
-                posted = parse_iso_date(job.get("created"))
-                if since is not None and posted is not None and posted < since:
-                    keyword_postings.append(_to_posting(job, scraped_at))  # the engine counts it stale
-                    continue
                 keyword_postings.append(_to_posting(job, scraped_at))
             page_token = data.get("nextPageToken")
             if not page_token:
