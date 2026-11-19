@@ -101,7 +101,7 @@ class Columns(BaseModel):
 class Manifest(BaseModel):
     """`template.json`: ``fonts`` (TrueType files in `fonts/` beside it), ``icons`` (kind to an SVG in `icons/`),
     ``max_pages`` (the template's own limit, 1 to 3), ``columns`` (absent: one column) and ``contact_labels`` (contact
-    kind to the label the style's CV prints before it, `Tel:`; `render/page.py` writes each as `<span class="label">` in
+    kind to the label the style's CV prints before it, `Tel:`; `render/page.py` writes each as `<label class="label">` in
     the contact span, the body having none)."""
 
     model_config = ConfigDict(extra="forbid")

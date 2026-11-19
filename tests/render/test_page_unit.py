@@ -59,7 +59,7 @@ def test_the_style_s_contact_labels_are_written_in_the_contact_spans_of_their_ki
     body = ('<header class="cv-header"><h1>A</h1><p class="contact"><span class="phone">12</span>'
             '<span class="email"><a href="mailto:a@b.c">a@b.c</a></span><span class="location">X</span></p></header>')
     out = page._with_labels(body, {"phone": "Tel:", "email": "<b>"})
-    assert '<span class="phone"><span class="label">Tel:</span> 12</span>' in out
-    assert '<span class="email"><span class="label">&lt;b&gt;</span> <a ' in out
+    assert '<span class="phone"><label class="label">Tel:</label> 12</span>' in out
+    assert '<span class="email"><label class="label">&lt;b&gt;</label> <a ' in out
     assert '<span class="location">X</span>' in out
     assert page._with_labels(body, {}) == body

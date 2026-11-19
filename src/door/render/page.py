@@ -53,11 +53,11 @@ _CONTACT = re.compile(r'<span class="(%s)">' % "|".join(i18n.CONTACT_KINDS))
 
 
 def _with_labels(body: str, labels: dict[str, str]) -> str:
-    """`body` with each contact span of a kind in `labels` opened by `<span class="label">` (the style's label for it,
+    """`body` with each contact span of a kind in `labels` opened by `<label class="label">` (not a `span`: a template spaces the contact items with `.contact span`, and the label is no item) (the style's label for it,
     escaped). The body is written with none (the guard knows no `label` class); the page adds them, so a built style
     whose CV prints `Tel:` before the number prints it on every CV."""
     return _CONTACT.sub(
-        lambda m: m.group(0) + f'<span class="label">{html.escape(labels[m.group(1)], quote=False)}</span> '
+        lambda m: m.group(0) + f'<label class="label">{html.escape(labels[m.group(1)], quote=False)}</label> '
         if m.group(1) in labels else m.group(0), body)
 
 

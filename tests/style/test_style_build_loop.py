@@ -669,12 +669,12 @@ def test_the_sample_the_stylist_writes_as_markdown_is_printed_in_the_real_shapes
     manifest = json.loads((world.style / "template.json").read_text())
     assert manifest["contact_labels"] == {"phone": "Tel:", "email": "E-mail:"}
     printed = [p["html"] for p in world.prints if p["folder"] == world.work][0]
-    assert '<span class="phone"><span class="label">Tel:</span> 12 34 56 78</span>' in printed
+    assert '<span class="phone"><label class="label">Tel:</label> 12 34 56 78</span>' in printed
     assert '<span class="role">Engineer</span>' in printed and "<strong>tools</strong>" in printed
     body = (world.work / "sample_body.html").read_text()
     assert '<li><strong>English</strong> <span class="level level-5">native</span></li>' in body
     stress = [p["html"] for p in world.prints if "stress" in p["folder"].parts]
-    assert any('<span class="phone"><span class="label">Tel:</span>' in h for h in stress)
+    assert any('<span class="phone"><label class="label">Tel:</label>' in h for h in stress)
     letters = [p["html"] for p in world.prints if p["folder"].name == "letter"]
     assert letters and not [h for h in letters if 'class="label"' in h]
 
