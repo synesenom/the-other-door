@@ -344,3 +344,31 @@ def test_the_baseline_fact_check_flags_what_the_rules_see():
     name = next(n for n, c in corpus.items() if any(p["kind"] == "employer" for p in c["plants"]))
     found = rcr.baseline_facts(corpus[name]["md"], corpus[name]["body"])
     assert any(f["kind"] == "employer" for f in found)
+
+
+# --- the prompts and the runner ----------------------------------------------------------------------------------
+
+def test_a_prompt_holds_the_examples_up_to_its_version_only():
+    rcr.EXAMPLES["facts"].append((99, "EXAMPLE-OF-ROUND-99"))
+    try:
+        assert "EXAMPLE-OF-ROUND-99" in rcr.prompt("facts", 99)
+        assert "EXAMPLE-OF-ROUND-99" not in rcr.prompt("facts", 1)
+    finally:
+        rcr.EXAMPLES["facts"].pop()
+
+
+def test_the_runner_records_each_case_once_and_asks_again_only_for_an_error(tmp_path, monkeypatch):
+    calls = []
+
+    def fake(task, model, case, version):
+        calls.append(case["name"])
+        return {"error": "timeout"} if len(calls) == 1 else [finding("skill", "Rust", "Rust")]
+
+    monkeypatch.setattr(rcr, "ask_case", fake)
+    corpus = {"b00-da": {"name": "b00-da"}, "b01-fr": {"name": "b01-fr"}}
+    rcr.run("facts", "haiku", corpus, runs=1, version=1, root=tmp_path, workers=1)
+    assert sorted(calls) == ["b00-da", "b01-fr"]
+    rcr.run("facts", "haiku", corpus, runs=1, version=1, root=tmp_path, workers=1)
+    assert len(calls) == 3  # only the error is asked again
+    got = rcr.load_recorded("haiku", "facts", 1, root=tmp_path)
+    assert all(isinstance(a[0], list) for a in got.values())

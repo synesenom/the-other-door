@@ -666,3 +666,155 @@ def to_markdown(task: str, report: dict) -> str:
     return (head + "| kind | recall |\n|---|---|\n" + rows +
             f"\nfalse flags: clean bodies max {report['false_clean_max']}, mean {report['false_clean_mean']:.2f}; planted bodies mean "
             f"{report['false_planted_mean']:.2f}. verbatim: {pct(report['verbatim'])}. stable: {pct(report['stable'])}.\n")
+
+
+# --- the prompts ------------------------------------------------------------------------------------------------
+# Spike-local: if the model is chosen, they move to the CV reader (`core/cv_read.py`) and to the facts check. A miss
+# becomes an example here, made up from a person other than the case that missed (never a Python rule); `EXAMPLES`
+# holds each with the round that added it, so an older round can be measured again as it was.
+
+_READER_PROMPT = (
+    "You read a job seeker's CV (markdown, in any language) and report what it says as JSON. Copy text exactly as "
+    "written; never guess: null when the CV does not say.\n"
+    "- `name`, `email`: as written. `city`: where they live (the contact details), else the city of their current job. "
+    "`country`: the ISO 3166-1 alpha-2 code, lower case, of that city's country.\n"
+    "- `languages`: every spoken language the CV names, `language` its English name and `level` one of native, fluent "
+    "(professional, business, C1), working (B2), conversational (B1) or basic (A1, A2). C2 is native.\n"
+    "- `sections`: every `##` heading, `heading` exactly as written, `kind` one of summary (the profile or the "
+    "introduction), experience (the jobs), education, skills, certifications, languages, interests or other. The kind "
+    "is by what the section holds, whatever the heading says or the language is.\n"
+    "- `contacts`: each contact detail of the header: `kind` (phone, email, web, linkedin, github, location), `label` "
+    "the word written before it (`Tlf`, without the colon) or null when it has none, `value` as written.\n"
+    "- `levels`: every item of a skills or languages list that states a level, `item` as written and `level` 1 to 5 "
+    "(5 native or C2, 4 fluent or C1, 3 working or B2, 2 conversational or B1, 1 basic, A1 or A2); null when the "
+    "stated word is not one of these (a skill that is `advanced` has no level).\n"
+    "- `entries`: every `###` heading, `heading` exactly as written after the `###`, and its parts: `role` (a job "
+    "title or a degree), `org` (the employer or the school), `dates` as written, `place` (null when the heading has "
+    "none), `start_year` and `end_year` (integers; `end_year` null when the end is the present).\n"
+    "Answer with the JSON only."
+)
+
+_FACTS_PROMPT = (
+    "You check a tailored CV against the candidate's own CV. You get the SOURCE (markdown) and the TAILORED CV (HTML). "
+    "The tailored CV may drop, reorder, shorten and reword; it must not add a fact the source does not back. List every "
+    "claim in the tailored CV that the source does not support:\n"
+    "- `number`: a figure, amount, percentage or count whose VALUE differs from the source's; a figure told another way "
+    "with the same value (`1 200 000 EUR` and `1,2 M EUR`, `40 000` and `40k`, `9 %` and `9 percent`, a number written "
+    "in words) is supported.\n"
+    "- `year`: a year, or a year of a date range, that differs from the source's.\n"
+    "- `employer`: an employer the source does not name. `skill`: a tool, technology or method the source does not "
+    "name. `certification`, `degree`: one the source does not name.\n"
+    "Ignore the header and contact details. `value`: the claimed value. `context`: a stretch of the tailored CV's text, "
+    "copied exactly as it reads (at most 15 words) that holds it. List nothing the source supports: an empty list is a "
+    "clean CV. Answer with the JSON only."
+)
+
+EXAMPLES: dict[str, list[tuple[int, str]]] = {"reader": [], "facts": []}
+
+
+def prompt(task: str, version: int) -> str:
+    """The system prompt of `task` as of round `version`: the base text and the examples added up to that round."""
+    base = _READER_PROMPT if task == "reader" else _FACTS_PROMPT
+    examples = [text for since, text in EXAMPLES[task] if since <= version]
+    return base + ("\nExamples (made up):\n" + "\n".join(f"- {e}" for e in examples) if examples else "")
+
+
+_STR_OR_NULL = {"type": ["string", "null"]}
+_INT_OR_NULL = {"type": ["integer", "null"]}
+READER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "name": _STR_OR_NULL, "email": _STR_OR_NULL, "city": _STR_OR_NULL, "country": _STR_OR_NULL,
+        "languages": {"type": "array", "items": {"type": "object", "properties": {"language": {"type": "string"}, "level": {"type": "string"}},
+                                                 "required": ["language", "level"]}},
+        "sections": {"type": "array", "items": {"type": "object", "properties": {"heading": {"type": "string"}, "kind": {"type": "string"}},
+                                                "required": ["heading", "kind"]}},
+        "contacts": {"type": "array", "items": {"type": "object", "properties": {"kind": {"type": "string"}, "label": _STR_OR_NULL, "value": {"type": "string"}},
+                                                "required": ["kind", "label", "value"]}},
+        "levels": {"type": "array", "items": {"type": "object", "properties": {"item": {"type": "string"}, "level": _INT_OR_NULL},
+                                              "required": ["item", "level"]}},
+        "entries": {"type": "array", "items": {"type": "object", "properties": {
+            "heading": {"type": "string"}, "role": _STR_OR_NULL, "org": _STR_OR_NULL, "dates": _STR_OR_NULL, "place": _STR_OR_NULL,
+            "start_year": _INT_OR_NULL, "end_year": _INT_OR_NULL}, "required": ["heading", "role", "org", "dates", "place", "start_year", "end_year"]}},
+    },
+    "required": ["name", "email", "city", "country", "languages", "sections", "contacts", "levels", "entries"],
+}
+FACTS_SCHEMA = {
+    "type": "object",
+    "properties": {"findings": {"type": "array", "items": {"type": "object", "properties": {
+        "kind": {"type": "string", "enum": list(KINDS)}, "value": {"type": "string"}, "context": {"type": "string"}},
+        "required": ["kind", "value", "context"]}}},
+    "required": ["findings"],
+}
+
+MODELS = ("haiku", "sonnet")
+
+
+def ask_case(task: str, model: str, case: dict, version: int):
+    """One call to the model for `case`: the reader's answer (a dict) or the facts check's findings (a list).
+    Plan quota through `claude_cli.ask`; the feature keys are the nearest existing ones (see the module's docstring)."""
+    from door.core import claude_cli
+
+    if task == "reader":
+        return claude_cli.ask(prompt("reader", version), f"CV:\n<<<\n{case['md']}\n>>>\n", model=model, feature="infer_basics",
+                              schema=READER_SCHEMA, effort="low", timeout_s=240)
+    text = f"SOURCE:\n<<<\n{case['md']}\n>>>\n\nTAILORED CV:\n<<<\n{case['body']}\n>>>\n"
+    answer = claude_cli.ask(prompt("facts", version), text, model=model, feature="revise", schema=FACTS_SCHEMA, effort="low", timeout_s=240)
+    return [{**f, "file": "cv"} for f in answer.get("findings") or [] if isinstance(f, dict)]
+
+
+def run(task: str, model: str, corpus: dict, *, runs: int, version: int, root: Path = RECORDED, workers: int = 4) -> None:
+    """Ask for every (case, run) with no recorded answer (a recorded error is asked again) and record it as raw JSON."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    folder = Path(root) / model / task / f"v{version}"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    def one(job):
+        name, run_no = job
+        path = folder / f"{name}.{run_no}.json"
+        try:
+            record = {"answer": ask_case(task, model, {"name": name, **corpus[name]}, version)}
+            if isinstance(record["answer"], dict) and "error" in record["answer"]:
+                record = record["answer"]
+        except Exception as exc:  # noqa: BLE001 - a failed call is a miss to count, not a stop
+            record = {"error": str(exc)[:300]}
+        path.write_text(json.dumps(record, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        return name, run_no, "error" in record
+
+    def done(path: Path) -> bool:
+        return path.is_file() and "error" not in json.loads(path.read_text(encoding="utf-8"))
+
+    jobs = [(n, r) for n in sorted(corpus) for r in range(runs) if not done(folder / f"{n}.{r}.json")]
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for name, run_no, failed in pool.map(one, jobs):
+            print(f"{model} {task} v{version} {name}.{run_no}: {'ERROR' if failed else 'recorded'}", file=sys.stderr)
+
+
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--write-fixtures", action="store_true")
+    ap.add_argument("--task", choices=("reader", "facts", "report-reader", "report-facts"))
+    ap.add_argument("--model", choices=(*MODELS, "baseline"), default="haiku")
+    ap.add_argument("--runs", type=int, default=1)
+    ap.add_argument("--version", type=int, default=1, help="the prompt round (EXAMPLES say what each added)")
+    args = ap.parse_args(argv)
+    if args.write_fixtures:
+        write_fixtures()
+        return
+    task = (args.task or "").removeprefix("report-")
+    corpus = build_reader_corpus() if task == "reader" else build_body_corpus()
+    if args.task in ("reader", "facts"):
+        run(task, args.model, corpus, runs=args.runs, version=args.version)
+        return
+    if args.model == "baseline":
+        answers = {n: [baseline_reader(c["md"], c["lang"]) if task == "reader" else baseline_facts(c["md"], c["body"])] for n, c in corpus.items()}
+    else:
+        answers = load_recorded(args.model, task, args.version)
+    print(to_markdown(task, summarize(task, answers, corpus)))
+
+
+if __name__ == "__main__":
+    main()
