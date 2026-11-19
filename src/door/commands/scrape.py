@@ -296,11 +296,11 @@ def _scrape_core(
         # site may have changed under the scraper. Only known/old records
         # -> genuinely nothing new ("ok"). A site with count > 0 is never
         # downgraded, even if some requests also failed (partial success). A site
-        # that read a recognised results page with no hits (`record_answered`) is a
-        # quiet day ("ok") too.
+        # that read a recognised results page with no hits (`record_answered`) or
+        # that dropped postings as not local (`non_local`) answered: a quiet day ("ok") too.
         if run.count == 0 and site_errors:
             outcome = "failed"
-        elif run.seen == 0 and not answered:
+        elif run.seen == 0 and not answered and not non_local:
             outcome = "empty"
         else:
             outcome = "ok"
