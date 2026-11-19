@@ -141,6 +141,7 @@ class CvSections(_Strict):
     certifications: list[str] = []
     languages: list[str] = []
     interests: list[str] = []
+    experience: list[str] = []  # read to tell a mixed heading ("Experience & Skills") from a skills one; no template places it
 
     @field_validator("*")
     @classmethod
@@ -747,17 +748,19 @@ def cv_section_kind(title: str, kinds, codes: tuple[str, ...] | None = None) -> 
 def cv_heading_kind(title: str, kinds) -> str | None:
     """The one of `kinds` a CV heading the user wrote in their own words is about: the heading as a whole title of
     a kind, else the kind of the longest title that stands in it as whole words ("Technical &
-    Programming Skills" holds "skills", "Language Skills" holds the longer "language skills"), or None. Every kind
+    Programming Skills" holds "skills", "Language Skills" holds the longer "language skills"), or None, also for a
+    heading whose longest titles are of two kinds ("Experience & Skills"). Every kind
     competes, so "Language Skills" is no skills section when only skills are asked for."""
     words = re.findall(r"\w+", title.casefold())
-    best: tuple[int, str] | None = None
+    longest, found = 0, set()
     for kind in CvSections.model_fields:
         for t in cv_section(kind):
             tw = re.findall(r"\w+", t.casefold())
             n = len(tw)
-            if tw and any(words[i:i + n] == tw for i in range(len(words) - n + 1)) and (best is None or n > best[0]):
-                best = (n, kind)
-    return best[1] if best and best[1] in kinds else None
+            if tw and n >= longest and any(words[i:i + n] == tw for i in range(len(words) - n + 1)):
+                found = (found if n == longest else set()) | {kind}
+                longest = n
+    return next(iter(found)) if len(found) == 1 and found <= set(kinds) else None
 
 
 def _ascii_only(text: str) -> str:

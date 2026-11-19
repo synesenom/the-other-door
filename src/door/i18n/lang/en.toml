@@ -42,11 +42,12 @@ career_site_words = ["careers", "career", "jobs", "job", "vacancies", "open posi
 
 # Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
 [cv_sections]
-skills = ["skills", "key skills", "technical skills", "core competencies", "competencies", "tools", "technologies"]
+skills = ["skills", "key skills", "technical skills", "core competencies", "competencies", "tools", "technologies", "programming languages"]
 education = ["education", "education and training", "academic background"]
 certifications = ["certifications", "certificates", "licences", "licenses", "certifications and licences", "certifications and licenses", "courses"]
 languages = ["languages", "language skills"]
 interests = ["interests", "hobbies", "hobbies and interests", "interests and hobbies"]
+experience = ["experience", "work experience", "professional experience", "employment", "employment history", "work history", "career", "projects", "profile", "summary"]
 
 [contact_labels]
 phone = ["phone", "tel", "telephone", "mobile", "cell"]

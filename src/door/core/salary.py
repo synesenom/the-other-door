@@ -29,7 +29,7 @@ def years_of_experience(cv_text: str, *, now_year: int | None = None) -> int | N
     first year ("present") means the role goes on. ``None`` when no role has a date range."""
     now_year = now_year or date.today().year
     spans = []
-    for section in cv_sections.split(cv_text):
+    for section in cv_sections.split(cv_text)[1:]:  # what comes before the first heading is no role
         if cv_sections.kind(section, ("education", "certifications", "skills")):
             continue
         for start, end in _RANGE.findall("\n".join(section)):

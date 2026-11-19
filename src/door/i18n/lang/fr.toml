@@ -76,11 +76,12 @@ decembre = 12
 
 # Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
 [cv_sections]
-skills = ["compétences", "competences", "compétences clés", "compétences techniques", "outils", "technologies"]
+skills = ["compétences", "competences", "compétences clés", "compétences techniques", "outils", "technologies", "langages de programmation"]
 education = ["formation", "formations", "éducation", "diplômes", "parcours académique", "formation et diplômes"]
 certifications = ["certifications", "certificats", "habilitations", "certifications et formations"]
 languages = ["langues", "compétences linguistiques"]
 interests = ["centres d'intérêt", "centres d’intérêt", "loisirs", "intérêts"]
+experience = ["expérience", "expériences", "expérience professionnelle", "expériences professionnelles", "parcours professionnel", "projets", "profil", "résumé"]
 
 [contact_labels]
 phone = ["téléphone", "tél", "mobile"]

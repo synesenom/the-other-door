@@ -586,3 +586,8 @@ def test_extract_skill_terms_drops_group_headings_and_bullet_marks():
     terms = extract_skill_terms("# A\n\n## Skills\n\n### Programming\n\n- Python\n- SQL\n", {})
     assert {"python", "sql", "programming"} <= terms
     assert not any(t.startswith(("#", "-")) for t in terms)
+
+
+def test_extract_skill_terms_reads_programming_languages_as_skills_and_not_a_mixed_heading():
+    assert "python" in extract_skill_terms("## Programming Languages\n\nPython, SQL\n", {})
+    assert "built x" not in extract_skill_terms("## Experience & Skills\n\nBuilt X\n", {})
