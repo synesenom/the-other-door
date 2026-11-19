@@ -50,18 +50,35 @@ function preparePrepared(home: string, jobId: string, row: unknown): void {
 /** Words of each onboarding call's system prompt, and the file its answer is in. */
 const ANSWERED = [
   ["You draft a job seeker's CV", 'draft.json'],
-  ["You read a job seeker's CV", 'basics.json'],
+  ["You read a job seeker's CV", 'cv_read.json'],
   ['You suggest the job titles', 'titles.json'],
   ['You propose search terms', 'keywords.json'],
 ]
 
-/** Scripts the stand-in claude's onboarding answers: `draft` is the CV it writes, and `city` what it reads there. */
-export function answerOnboarding(scratch: string, draft: string, city: string | null): void {
+/** The plain reading of a CV (what `door.core.cv_read` asks for; every value a stretch of the CV, as its check wants). */
+function plainReading(md: string, languages: { language: string; level: string }[]) {
+  const location = md.match(/\*\*Location:\*\*\s*([^|\n]+?)\s*(?:\||\n|$)/)
+  return {
+    name: md.match(/^# (.+)$/m)?.[1].trim() ?? null,
+    email: md.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/)?.[0] ?? null,
+    city: location?.[1] ?? null,
+    country: null,
+    languages,
+    sections: [...md.matchAll(/^## (.+)$/gm)].map((m) => ({ heading: m[1].trim(), kind: 'other' })),
+    contacts: [],
+    skills: [],
+    levels: [],
+    entries: [],
+  }
+}
+
+/** Scripts the stand-in claude's onboarding answers: `draft` is the CV it writes and reads back (`languages`: what it reads there). */
+export function answerOnboarding(scratch: string, draft: string, languages: { language: string; level: string }[] = []): void {
   const dir = join(scratch, 'claude-answers')
   mkdirSync(dir, { recursive: true })
   const envelope = (answer: unknown) => JSON.stringify({ result: JSON.stringify(answer) })
   writeFileSync(join(dir, 'draft.json'), envelope({ cv_markdown: draft, provenance: [{ source: 'https://ada.dev', contributed: 'two projects' }], todos: ['phone number'] }))
-  writeFileSync(join(dir, 'basics.json'), envelope({ name: null, email: null, city, languages: [{ language: 'English', level: 'native' }, { language: 'Danish', level: 'fluent' }] }))
+  writeFileSync(join(dir, 'cv_read.json'), envelope(plainReading(draft, languages)))
   writeFileSync(join(dir, 'titles.json'), envelope({ titles: [{ title: 'Data Scientist', reason: 'your latest title', recommended: true }, { title: 'Quant', reason: 'your maths', recommended: false }] }))
   writeFileSync(join(dir, 'keywords.json'), envelope({ keywords: ['data scientist', 'ml engineer'], topic_terms: ['data'] }))
 }

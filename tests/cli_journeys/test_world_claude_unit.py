@@ -9,7 +9,7 @@ import sys
 import pytest
 
 from door.commands import gaps
-from door.core import claude_cli, usage
+from door.core import claude_cli, cv_read, usage
 from paths import REPO_ROOT
 
 CLAUDE = REPO_ROOT / "app" / "test" / "world" / "claude.py"
@@ -35,6 +35,7 @@ _PRICED = {
     "market": ("You group skill names.", json.dumps({"names": ["Python"]}), 0.01),
     "revise": ("", "You are revising the body of an HTML letter.\nCurrent body:\nOne.\n\nTwo.\n\nThree.", 0.05),
     "gaps": (gaps._RULES, "the CV and the targets", 0.03),
+    "cv_read": (cv_read.PROMPT, "CV:\n<<<\n# A\n\n## Skills\n\nPython\n>>>\n", 0.01),
 }
 
 
@@ -90,3 +91,42 @@ def test_the_stylist_answers_with_the_template_blocks_in_a_priced_envelope(tmp_p
     assert usage.weight(envelope) == 0.30
     answer = claude_cli.envelope_result(out.stdout)
     assert "```template" in answer and "```cv" in answer and '"Lato"' in answer
+
+
+CV = """# Léa Moreau
+
+**Téléphone :** +33 6 00 00 00 00 | **Email :** lea@example.com | **Location :** Lyon
+
+## Expérience professionnelle
+
+### Contrôleuse de gestion | Acme — 2018 - présent
+
+- Budget.
+
+## Compétences
+
+SAP CO (S/4HANA), Power BI, Excel avancé (VBA, Power Query)
+
+## Langues
+
+- **Français** — langue maternelle
+"""
+
+
+def test_the_cv_read_answer_is_a_reading_cv_read_accepts_in_any_language(tmp_path):
+    """#430: the world's stand-in reads the CV on stdin, its values are stretches of it, and the world says the rest."""
+    world = {"reading": {"languages": [{"language": "Français", "level": "native"}, {"language": "Anglais", "level": "fluent"}],
+                         "kinds": {"Expérience professionnelle": "experience", "Compétences": "skills", "Langues": "languages"}}}
+    (tmp_path / "world.json").write_text(json.dumps(world))
+    argv = [sys.executable, str(CLAUDE), str(tmp_path), "-p", "--model", "haiku", "--system-prompt", cv_read.PROMPT,
+            *claude_cli.STREAM_ARGS, "--tools", "", "--no-session-persistence"]
+    out = subprocess.run(argv, input=f"CV:\n<<<\n{CV.strip()}\n>>>\n", capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    reading = claude_cli.envelope_result(out.stdout)
+    reading = json.loads(reading) if isinstance(reading, str) else reading
+    cv_read.check(reading, CV.strip())
+    assert reading["name"] == "Léa Moreau" and reading["city"] == "Lyon" and reading["email"] == "lea@example.com"
+    assert [s["kind"] for s in reading["sections"]] == ["experience", "skills", "languages"]
+    assert reading["skills"] == ["SAP CO (S/4HANA)", "Power BI", "Excel avancé (VBA, Power Query)"]
+    assert reading["languages"] == [{"language": "Français", "level": "native"}]  # Anglais is not in this CV
+    assert reading["entries"][0]["start_year"] == 2018 and reading["entries"][0]["end_year"] is None

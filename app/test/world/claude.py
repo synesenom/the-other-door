@@ -49,7 +49,7 @@ def arg(name: str) -> str | None:
 
 # What each kind of answer costs at API prices (`total_cost_usd`, #67): fixed, round figures, so
 # `status_summary`'s `cost` and Analytics' Claude usage read the same in every run.
-COST_USD = {"structure": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "stylist": 0.30}
+COST_USD = {"cv_read": 0.01, "structure": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "stylist": 0.30}
 OTHER_COST_USD = 0.03
 
 
@@ -100,13 +100,13 @@ STDIN = sys.stdin.read() if not sys.stdin.isatty() and arg("--agent") is None el
 TEXT = SYSTEM + "\n" + STDIN
 
 KINDS = [
+    ("cv_read", "You read a job seeker's CV (markdown"),
     ("score", "job-matching scorer"),
     ("translate", "You translate job titles into English"),
     ("read_ad", "You read a job ad."),
     ("enrich", "You enrich a job seeker's CV"),
     ("draft", "You draft a job seeker's CV"),
     ("stories", "You draft CARL stories"),
-    ("basics", "You read a job seeker's CV and fill in"),
     ("keywords", "You propose search terms"),
     ("titles", "You suggest the job titles"),
     ("gaps", "You write a skill-gap analysis"),
@@ -200,6 +200,18 @@ elif kind == "tailor":
         sys.stderr.write(compiled.stderr)
         sys.exit(1)
     envelope("Tailored the CV and the cover letter.")
+elif kind == "cv_read":
+    import subprocess
+
+    read = subprocess.run(
+        [os.environ.get("DOOR_WORLD_PYTHON", sys.executable), str(Path(__file__).resolve().parent / "cv_read.py"),
+         json.dumps(W.get("reading", {}))],
+        input=STDIN, capture_output=True, text=True,
+    )
+    if read.returncode != 0:
+        sys.stderr.write(read.stderr)
+        sys.exit(1)
+    envelope(said.get("answer") or json.loads(read.stdout))
 elif kind == "structure":
     import subprocess
 
