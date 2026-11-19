@@ -12,6 +12,35 @@ signs you in when it is missing. From a checkout, `./door doctor` checks them al
 the same, Prepare and Revise say "The browser that prints your CVs is not installed yet." and change nothing;
 `./door doctor --fix` installs it. Should Claude be missing, Prepare and Revise say "Claude is not installed yet." and change nothing; from a shell, `jobs prepare` adds the `./door doctor --fix` line.
 
+<!-- toc -->
+**Contents**
+
+- [Installing the app](#installing-the-app)
+  - [Opening it on macOS the first time](#opening-it-on-macos-the-first-time)
+- [First launch](#first-launch)
+- [Finding new jobs](#finding-new-jobs)
+  - [Stop](#stop)
+  - [A run started somewhere else](#a-run-started-somewhere-else)
+  - [When the run is done](#when-the-run-is-done)
+  - [In the sandbox](#in-the-sandbox)
+- [Matches](#matches)
+- [A posting](#a-posting)
+- [Prepare](#prepare)
+- [Ready to send](#ready-to-send)
+- [Revise and Undo](#revise-and-undo)
+- [Status](#status)
+- [Add a job](#add-a-job)
+- [Applications](#applications)
+- [Notifications](#notifications)
+- [Profile](#profile)
+  - [Master CV](#master-cv)
+  - [CV style](#cv-style)
+  - [Your stories](#your-stories)
+- [Settings](#settings)
+- [Analytics](#analytics)
+- [On your phone](#on-your-phone)
+<!-- /toc -->
+
 ## Installing the app
 
 The installer carries everything *The other door* needs except Claude: its own Python with the pipeline's packages,
