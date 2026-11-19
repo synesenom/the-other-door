@@ -1,0 +1,135 @@
+{
+ "answer": {
+  "name": "Jens Dahl",
+  "email": "jens.dahl@example.com",
+  "city": "Aarhus",
+  "country": "dk",
+  "languages": [
+   {
+    "language": "Danish",
+    "level": "native"
+   },
+   {
+    "language": "English",
+    "level": "fluent"
+   },
+   {
+    "language": "German",
+    "level": "conversational"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Karriere",
+    "kind": "experience"
+   },
+   {
+    "heading": "Uddannelse",
+    "kind": "education"
+   },
+   {
+    "heading": "Nøglekompetencer",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certificeringer",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Sprog",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interesser",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tlf",
+    "value": "+45 64 89 71 47"
+   },
+   {
+    "kind": "email",
+    "label": "E-mail",
+    "value": "jens.dahl@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Hjemmeside",
+    "value": "example.com/jens.dahl"
+   },
+   {
+    "kind": "location",
+    "label": "By",
+    "value": "Aarhus"
+   }
+  ],
+  "levels": [
+   {
+    "item": "Dansk",
+    "level": 5
+   },
+   {
+    "item": "Engelsk (C1)",
+    "level": 4
+   },
+   {
+    "item": "Tysk (B1)",
+    "level": 2
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Leder af analyse, Fjord Software (2020 - nu)",
+    "role": "Leder af analyse",
+    "org": "Fjord Software",
+    "dates": "2020 - nu",
+    "place": null,
+    "start_year": 2020,
+    "end_year": null
+   },
+   {
+    "heading": "Senioranalytiker, Quill & Co (2016 - 2020)",
+    "role": "Senioranalytiker",
+    "org": "Quill & Co",
+    "dates": "2016 - 2020",
+    "place": null,
+    "start_year": 2016,
+    "end_year": 2020
+   },
+   {
+    "heading": "Dataanalytiker, Ember Studio (2013 - 2016)",
+    "role": "Dataanalytiker",
+    "org": "Ember Studio",
+    "dates": "2013 - 2016",
+    "place": null,
+    "start_year": 2013,
+    "end_year": 2016
+   },
+   {
+    "heading": "Bachelor i matematik, Eksempel Universitet (2008 - 2011)",
+    "role": "Bachelor i matematik",
+    "org": "Eksempel Universitet",
+    "dates": "2008 - 2011",
+    "place": null,
+    "start_year": 2008,
+    "end_year": 2011
+   },
+   {
+    "heading": "Cand.scient. i datalogi, Eksempel Universitet (2011 - 2013)",
+    "role": "Cand.scient. i datalogi",
+    "org": "Eksempel Universitet",
+    "dates": "2011 - 2013",
+    "place": null,
+    "start_year": 2011,
+    "end_year": 2013
+   }
+  ]
+ }
+}

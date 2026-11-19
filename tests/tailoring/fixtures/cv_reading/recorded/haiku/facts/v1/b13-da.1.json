@@ -1,0 +1,16 @@
+{
+ "answer": [
+  {
+   "kind": "employer",
+   "value": "Umbrella Logistics",
+   "context": "Umbrella Logistics",
+   "file": "cv"
+  },
+  {
+   "kind": "year",
+   "value": "2010",
+   "context": "2010 - 2014",
+   "file": "cv"
+  }
+ ]
+}

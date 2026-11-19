@@ -1,0 +1,163 @@
+{
+ "answer": {
+  "name": "Jens Dahl",
+  "email": "jens.dahl@example.com",
+  "city": "Odense",
+  "country": "dk",
+  "languages": [
+   {
+    "language": "Danish",
+    "level": "native"
+   },
+   {
+    "language": "English",
+    "level": "fluent"
+   },
+   {
+    "language": "German",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Karriere",
+    "kind": "experience"
+   },
+   {
+    "heading": "Uddannelse",
+    "kind": "education"
+   },
+   {
+    "heading": "Nøglekompetencer",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certificeringer",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Sprog",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interesser",
+    "kind": "interests"
+   },
+   {
+    "heading": "Frivilligt arbejde",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tlf",
+    "value": "+45 93 58 74 64"
+   },
+   {
+    "kind": "email",
+    "label": "E-mail",
+    "value": "jens.dahl@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Hjemmeside",
+    "value": "example.com/jens.dahl"
+   },
+   {
+    "kind": "location",
+    "label": "By",
+    "value": "Odense"
+   }
+  ],
+  "levels": [
+   {
+    "item": "Docker — avanceret",
+    "level": null
+   },
+   {
+    "item": "Git — avanceret",
+    "level": null
+   },
+   {
+    "item": "Excel — avanceret",
+    "level": null
+   },
+   {
+    "item": "Power BI — avanceret",
+    "level": null
+   },
+   {
+    "item": "Figma — avanceret",
+    "level": null
+   },
+   {
+    "item": "planlægning — avanceret",
+    "level": null
+   },
+   {
+    "item": "Dansk — modersmål",
+    "level": 5
+   },
+   {
+    "item": "Engelsk — arbejdssprog",
+    "level": 4
+   },
+   {
+    "item": "Tysk — grundlæggende",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Leder af analyse | Northwind Labs — 2019 - nu | Odense",
+    "role": "Leder af analyse",
+    "org": "Northwind Labs",
+    "dates": "2019 - nu",
+    "place": "Odense",
+    "start_year": 2019,
+    "end_year": null
+   },
+   {
+    "heading": "Senioranalytiker | Fjord Software — 2015 - 2019 | Aalborg",
+    "role": "Senioranalytiker",
+    "org": "Fjord Software",
+    "dates": "2015 - 2019",
+    "place": "Aalborg",
+    "start_year": 2015,
+    "end_year": 2019
+   },
+   {
+    "heading": "Dataanalytiker | Quill & Co — 2012 - 2015 | Aarhus",
+    "role": "Dataanalytiker",
+    "org": "Quill & Co",
+    "dates": "2012 - 2015",
+    "place": "Aarhus",
+    "start_year": 2012,
+    "end_year": 2015
+   },
+   {
+    "heading": "Bachelor i matematik | Eksempel Universitet — 2007 - 2010 | Odense",
+    "role": "Bachelor i matematik",
+    "org": "Eksempel Universitet",
+    "dates": "2007 - 2010",
+    "place": "Odense",
+    "start_year": 2007,
+    "end_year": 2010
+   },
+   {
+    "heading": "Cand.scient. i datalogi | Eksempel Universitet — 2010 - 2012 | Odense",
+    "role": "Cand.scient. i datalogi",
+    "org": "Eksempel Universitet",
+    "dates": "2010 - 2012",
+    "place": "Odense",
+    "start_year": 2010,
+    "end_year": 2012
+   }
+  ]
+ }
+}

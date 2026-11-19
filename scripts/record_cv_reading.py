@@ -709,7 +709,24 @@ _FACTS_PROMPT = (
     "clean CV. Answer with the JSON only."
 )
 
-EXAMPLES: dict[str, list[tuple[int, str]]] = {"reader": [], "facts": []}
+EXAMPLES: dict[str, list[tuple[int, str]]] = {
+    "reader": [
+        # Round 2 (after Haiku's first reading: a level's word kept in the item, `##` kept in a heading, `working` read as fluent)
+        (2, "`- **Italian** \u2014 fluent` gives item `Italian` with level 4, and `- Spanish (B2)` gives item `Spanish` with level 3: "
+            "the item is the name alone, never with its level word."),
+        (2, "A language at the level of a working language (`Arbeitssprache`, `lingua di lavoro`, `working proficiency`) is level 3, not 4: "
+            "4 is for fluent, professional or C1."),
+        (2, "`## Key Skills` gives the heading `Key Skills`: the `#` marks are not part of it."),
+    ],
+    "facts": [
+        # Round 2 (after Haiku's first check: the HTML tags quoted, the same plant valued three ways)
+        (2, "`context` is plain text with no HTML tag in it: for `<li><strong>Rust</strong></li>` it is `Rust`, for a heading "
+            "`<span class=\"role\">Analyst</span> | <span class=\"org\">Zenith Corp</span>` it is `Analyst | Zenith Corp`."),
+        (2, "`value` is the claimed item alone, as the CV writes it: a figure with its unit (`3 k`, `7 percent`), the name of an "
+            "employer, skill, certification or degree. For a changed date range `2004 - 2008` the kind is `year` and the value the one "
+            "year that differs (`2004`), not the range."),
+    ],
+}
 
 
 def prompt(task: str, version: int) -> str:
