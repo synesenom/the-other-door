@@ -12,6 +12,12 @@ Python.
     poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet [--runs 3] [--version N]
     poetry run python scripts/record_cv_reading.py --task report --model haiku|sonnet|baseline [--version N]
 
+Result (made-up data, 15 CVs x 3 runs for the reader, 28 bodies x 3 runs for the fact check): Haiku is go on both
+tasks with the prompts of round 2 (reader) and round 3 (facts), `CHOSEN_MODEL`; Sonnet is go too, a little less stable on
+the facts. `FINAL_VERSION` names the rounds `test_record_cv_reading_unit.py` pins; the earlier rounds' answers stay
+recorded beside them (`v1` is the prompt with no example).
+`--version` picks a prompt round: `EXAMPLES` holds each made-up example with the round that added it.
+
 Answers are recorded under `tests/tailoring/fixtures/cv_reading/recorded/<model>/<task>/v<version>/<case>.<run>.json`
 (raw, so the scoring unit test reads them offline). Calls go through `claude_cli.ask` on the local claude's plan (never
 an API key); the usage feature keys are `infer_basics` (the reader) and `revise` (the fact check), the nearest
@@ -178,7 +184,6 @@ CEFR = {"fluent": "C1", "working": "B2", "conversational": "B1", "basic": "A2"}
 _TOOLS = ["Python", "SQL", "Docker", "Git", "Excel", "Power BI", "Figma", "TypeScript"]
 _ORGS = ["Northwind Labs", "Bluebird Systems", "Kestrel Analytics", "Fjord Software", "Linden Works", "Harbor Digital",
          "Quill & Co", "Maple Robotics", "Tidewater Data", "Ember Studio"]
-_PHONE = ["71", "82", "93", "64", "47", "58", "89", "74"]
 _CERTS = ["Scrum Master (PSM I)", "ITIL 4 Foundation", "Prince2 Foundation", "Google Data Analytics"]
 _FAKE_ORGS = ["Globex Nordic", "Initech Europe", "Umbrella Logistics", "Stark Analytics", "Hooli Cloud", "Vandelay Industries"]
 _FAKE_SKILLS = ["Kubernetes", "Terraform", "Apache Spark", "Rust", "Snowflake", "Airflow"]
@@ -334,7 +339,7 @@ def make_person(n: int) -> dict:
     spoken = [own, ("en" if lang != "en" else "fr", "fluent" if n % 2 else "working"), (pack["third"], "basic" if n % 3 else "conversational")]
     return {
         "n": n, "lang": lang, "name": f"{first} {last}", "title": pack["roles"][2], "city": pack["cities"][n % 3], "country": pack["country"],
-        "phone": f"{pack['phone']} {_PHONE[n % 8]} {_PHONE[(n + 3) % 8]} {_PHONE[(n + 5) % 8]} {_PHONE[(n + 1) % 8]}",
+        "phone": f"{pack['phone']} 00 00 00 00",  # the number the privacy guard knows as made up
         "email": f"{_ascii(first)}.{_ascii(last)}@example.com", "slug": f"{_ascii(first)}.{_ascii(last)}",
         "style": n % 3, "contact_style": (n // 3) % 3, "level_style": n % 2, "variant": (n // 2) % 2,
         "skill_levels": n % 3 == 1, "extra": n % 2 == 0, "linkedin": n % 4 == 0,
@@ -768,6 +773,8 @@ FACTS_SCHEMA = {
 }
 
 MODELS = ("haiku", "sonnet")
+CHOSEN_MODEL = "haiku"  # go on both tasks (see the module's docstring), and the cheaper of two that are within noise of each other
+FINAL_VERSION = {"reader": 2, "facts": 3}  # the prompt round of the answers the report of #429 is made from
 
 
 def ask_case(task: str, model: str, case: dict, version: int):

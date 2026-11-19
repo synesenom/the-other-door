@@ -15,7 +15,7 @@
   {
    "kind": "certification",
    "value": "Certified Kubernetes Administrator",
-   "context": "<li><strong>Certified Kubernetes Administrator</strong></li>",
+   "context": "Certified Kubernetes Administrator",
    "file": "cv"
   }
  ]

@@ -2,7 +2,7 @@
 
 > Leder af analyse
 
-+45 89 82 64 74 | freja.skov@example.com | example.com/freja.skov | Aarhus
++45 00 00 00 00 | freja.skov@example.com | example.com/freja.skov | Aarhus
 
 ## Profil
 

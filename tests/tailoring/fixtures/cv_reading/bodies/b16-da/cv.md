@@ -2,7 +2,7 @@
 
 > Leder af analyse
 
-+45 71 64 58 82 | sofie.holm@example.com | example.com/sofie.holm | https://www.linkedin.com/in/sofie.holm | Odense
++45 00 00 00 00 | sofie.holm@example.com | example.com/sofie.holm | https://www.linkedin.com/in/sofie.holm | Odense
 
 ## Profil
 

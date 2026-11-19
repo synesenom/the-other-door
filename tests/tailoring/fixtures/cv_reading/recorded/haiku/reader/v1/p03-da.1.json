@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": "Tlf",
-    "value": "+45 64 89 71 47"
+    "value": "+45 00 00 00 00"
    },
    {
     "kind": "email",
@@ -76,11 +76,11 @@
     "level": 5
    },
    {
-    "item": "Engelsk (C1)",
+    "item": "Engelsk",
     "level": 4
    },
    {
-    "item": "Tysk (B1)",
+    "item": "Tysk",
     "level": 2
    }
   ],
@@ -130,6 +130,7 @@
     "start_year": 2011,
     "end_year": 2013
    }
-  ]
+  ],
+  "sections_note": "unused"
  }
 }

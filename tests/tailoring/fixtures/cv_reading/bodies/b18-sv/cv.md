@@ -2,7 +2,7 @@
 
 > Analyschef
 
-**Tel:** +46 93 58 74 64 | **E-post:** sara.aberg@example.com | **Webbplats:** example.com/sara.aberg | **Ort:** Göteborg
+**Tel:** +46 00 00 00 00 | **E-post:** sara.aberg@example.com | **Webbplats:** example.com/sara.aberg | **Ort:** Göteborg
 
 ## Profil
 

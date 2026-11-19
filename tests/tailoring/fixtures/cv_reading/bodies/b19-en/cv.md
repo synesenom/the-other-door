@@ -2,7 +2,7 @@
 
 > Analytics Lead
 
-**Phone:** +44 64 89 71 47 | **Email:** thomas.bennett@example.com | **Web:** example.com/thomas.bennett | **Location:** Bristol
+**Phone:** +44 00 00 00 00 | **Email:** thomas.bennett@example.com | **Web:** example.com/thomas.bennett | **Location:** Bristol
 
 ## Profile
 

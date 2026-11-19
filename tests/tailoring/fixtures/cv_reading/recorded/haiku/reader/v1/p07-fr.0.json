@@ -20,31 +20,31 @@
   ],
   "sections": [
    {
-    "heading": "## Profil",
+    "heading": "Profil",
     "kind": "summary"
    },
    {
-    "heading": "## Parcours",
+    "heading": "Parcours",
     "kind": "experience"
    },
    {
-    "heading": "## Formation",
+    "heading": "Formation",
     "kind": "education"
    },
    {
-    "heading": "## Savoir-faire",
+    "heading": "Savoir-faire",
     "kind": "skills"
    },
    {
-    "heading": "## Certifications",
+    "heading": "Certifications",
     "kind": "certifications"
    },
    {
-    "heading": "## Langues",
+    "heading": "Langues",
     "kind": "languages"
    },
    {
-    "heading": "## Centres d'intérêt",
+    "heading": "Centres d'intérêt",
     "kind": "interests"
    }
   ],
@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": null,
-    "value": "+33 74 93 47 71"
+    "value": "+33 00 00 00 00"
    },
    {
     "kind": "email",
@@ -72,39 +72,39 @@
   ],
   "levels": [
    {
-    "item": "TypeScript — avancé",
+    "item": "TypeScript",
     "level": null
    },
    {
-    "item": "Python — avancé",
+    "item": "Python",
     "level": null
    },
    {
-    "item": "SQL — avancé",
+    "item": "SQL",
     "level": null
    },
    {
-    "item": "Docker — avancé",
+    "item": "Docker",
     "level": null
    },
    {
-    "item": "Git — avancé",
+    "item": "Git",
     "level": null
    },
    {
-    "item": "planification — avancé",
+    "item": "planification",
     "level": null
    },
    {
-    "item": "Français — langue maternelle",
+    "item": "Français",
     "level": 5
    },
    {
-    "item": "Anglais (C1)",
+    "item": "Anglais",
     "level": 4
    },
    {
-    "item": "Allemand (A2)",
+    "item": "Allemand",
     "level": 1
    }
   ],

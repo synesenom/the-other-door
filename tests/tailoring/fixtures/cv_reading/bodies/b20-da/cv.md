@@ -2,7 +2,7 @@
 
 > Leder af analyse
 
-**Tlf:** +45 47 74 82 58 | **E-mail:** freja.skov@example.com | **Hjemmeside:** example.com/freja.skov | **LinkedIn:** https://www.linkedin.com/in/freja.skov | **By:** Aalborg
+**Tlf:** +45 00 00 00 00 | **E-mail:** freja.skov@example.com | **Hjemmeside:** example.com/freja.skov | **LinkedIn:** https://www.linkedin.com/in/freja.skov | **By:** Aalborg
 
 ## Profil
 

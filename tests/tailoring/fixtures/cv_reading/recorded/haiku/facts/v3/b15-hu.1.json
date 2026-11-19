@@ -2,7 +2,7 @@
  "answer": [
   {
    "kind": "number",
-   "value": "5 százalékra",
+   "value": "5 százalék",
    "context": "Az ügyfélelvándorlást 12,5 %-ról 5 százalékra csökkentettem.",
    "file": "cv"
   }

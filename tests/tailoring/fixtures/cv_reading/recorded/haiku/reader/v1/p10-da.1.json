@@ -56,7 +56,7 @@
    {
     "kind": "phone",
     "label": "Tlf",
-    "value": "+45 93 58 74 64"
+    "value": "+45 00 00 00 00"
    },
    {
     "kind": "email",
@@ -76,39 +76,39 @@
   ],
   "levels": [
    {
-    "item": "Docker — avanceret",
+    "item": "Docker",
     "level": null
    },
    {
-    "item": "Git — avanceret",
+    "item": "Git",
     "level": null
    },
    {
-    "item": "Excel — avanceret",
+    "item": "Excel",
     "level": null
    },
    {
-    "item": "Power BI — avanceret",
+    "item": "Power BI",
     "level": null
    },
    {
-    "item": "Figma — avanceret",
+    "item": "Figma",
     "level": null
    },
    {
-    "item": "planlægning — avanceret",
+    "item": "planlægning",
     "level": null
    },
    {
-    "item": "Dansk — modersmål",
+    "item": "Dansk",
     "level": 5
    },
    {
-    "item": "Engelsk — arbejdssprog",
-    "level": 4
+    "item": "Engelsk",
+    "level": null
    },
    {
-    "item": "Tysk — grundlæggende",
+    "item": "Tysk",
     "level": 1
    }
   ],

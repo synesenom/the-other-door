@@ -2,7 +2,7 @@
 
 > Responsable analytique
 
-**Tél:** +33 64 89 71 47 | **Courriel:** chloe.girard@example.com | **Site:** example.com/chloe.girard | **Lieu:** Nantes
+**Tél:** +33 00 00 00 00 | **Courriel:** chloe.girard@example.com | **Site:** example.com/chloe.girard | **Lieu:** Nantes
 
 ## Profil
 

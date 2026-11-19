@@ -1,3 +1,10 @@
 {
- "answer": []
+ "answer": [
+  {
+   "kind": "number",
+   "value": "1,85 mio. kr.",
+   "context": "Voksede enhedens årlige omsætning fra 1 200 000 kr. til 1,85 mio. kr. på tre år.",
+   "file": "cv"
+  }
+ ]
 }

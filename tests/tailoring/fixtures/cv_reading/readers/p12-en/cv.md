@@ -2,7 +2,7 @@
 
 > Analytics Lead
 
-Phone: +44 47 74 82 58
+Phone: +44 00 00 00 00
 Email: thomas.bennett@example.com
 Web: example.com/thomas.bennett
 LinkedIn: https://www.linkedin.com/in/thomas.bennett

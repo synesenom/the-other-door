@@ -56,7 +56,7 @@
    {
     "kind": "phone",
     "label": null,
-    "value": "+45 89 82 64 74"
+    "value": "+45 00 00 00 00"
    },
    {
     "kind": "email",
@@ -76,15 +76,15 @@
   ],
   "levels": [
    {
-    "item": "Dansk",
+    "item": "Dansk: modersmål",
     "level": 5
    },
    {
-    "item": "Engelsk",
+    "item": "Engelsk: arbejdssprog",
     "level": 4
    },
    {
-    "item": "Tysk",
+    "item": "Tysk: samtaleniveau",
     "level": 2
    }
   ],

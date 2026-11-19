@@ -56,7 +56,7 @@
    {
     "kind": "phone",
     "label": "Tlf",
-    "value": "+45 71 64 58 82"
+    "value": "+45 00 00 00 00"
    },
    {
     "kind": "email",
@@ -81,15 +81,15 @@
   ],
   "levels": [
    {
-    "item": "Dansk",
+    "item": "Dansk: modersmål",
     "level": 5
    },
    {
-    "item": "Engelsk",
+    "item": "Engelsk: arbejdssprog",
     "level": 4
    },
    {
-    "item": "Tysk",
+    "item": "Tysk: samtaleniveau",
     "level": 2
    }
   ],

@@ -48,40 +48,19 @@
     "kind": "interests"
    }
   ],
-  "contacts": [
-   {
-    "kind": "phone",
-    "label": "Telefon",
-    "value": "+36 58 71 93 89"
-   },
-   {
-    "kind": "email",
-    "label": "E-mail",
-    "value": "marton.varga@example.com"
-   },
-   {
-    "kind": "web",
-    "label": "Weboldal",
-    "value": "example.com/marton.varga"
-   },
-   {
-    "kind": "location",
-    "label": "Város",
-    "value": "Pécs"
-   }
-  ],
+  "contacts": [],
   "levels": [
    {
-    "item": "Magyar",
-    "level": 5
-   },
-   {
-    "item": "Angol",
+    "item": "Angol (C1)",
     "level": 4
    },
    {
-    "item": "Német",
+    "item": "Német (A2)",
     "level": 1
+   },
+   {
+    "item": "Magyar — anyanyelv",
+    "level": 5
    }
   ],
   "entries": [

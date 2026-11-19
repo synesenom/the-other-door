@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": "Tlf",
-    "value": "+45 58 71 93 89"
+    "value": "+45 00 00 00 00"
    },
    {
     "kind": "email",
@@ -72,39 +72,39 @@
   ],
   "levels": [
    {
-    "item": "Power BI — avanceret",
+    "item": "Power BI",
     "level": null
    },
    {
-    "item": "Figma — avanceret",
+    "item": "Figma",
     "level": null
    },
    {
-    "item": "TypeScript — avanceret",
+    "item": "TypeScript",
     "level": null
    },
    {
-    "item": "Python — avanceret",
+    "item": "Python",
     "level": null
    },
    {
-    "item": "SQL — avanceret",
+    "item": "SQL",
     "level": null
    },
    {
-    "item": "planlægning — avanceret",
+    "item": "planlægning",
     "level": null
    },
    {
-    "item": "Dansk — modersmål",
+    "item": "Dansk",
     "level": 5
    },
    {
-    "item": "Engelsk (C1)",
+    "item": "Engelsk",
     "level": 4
    },
    {
-    "item": "Tysk (A2)",
+    "item": "Tysk",
     "level": 1
    }
   ],

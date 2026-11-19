@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": "Phone",
-    "value": "+44 82 47 89 93"
+    "value": "+44 00 00 00 00"
    },
    {
     "kind": "email",
@@ -72,15 +72,15 @@
   ],
   "levels": [
    {
-    "item": "English",
+    "item": "English: native",
     "level": 5
    },
    {
-    "item": "French",
+    "item": "French (C1)",
     "level": 4
    },
    {
-    "item": "German",
+    "item": "German (B1)",
     "level": 2
    }
   ],

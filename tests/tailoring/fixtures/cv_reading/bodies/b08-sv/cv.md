@@ -2,7 +2,7 @@
 
 > Analyschef
 
-+46 71 64 58 82 | johan.wikstrom@example.com | example.com/johan.wikstrom | https://www.linkedin.com/in/johan.wikstrom | Uppsala
++46 00 00 00 00 | johan.wikstrom@example.com | example.com/johan.wikstrom | https://www.linkedin.com/in/johan.wikstrom | Uppsala
 
 ## Profil
 

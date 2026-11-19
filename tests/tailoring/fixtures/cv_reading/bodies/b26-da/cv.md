@@ -2,7 +2,7 @@
 
 > Leder af analyse
 
-+45 93 58 74 64 | anders.lund@example.com | example.com/anders.lund | Aalborg
++45 00 00 00 00 | anders.lund@example.com | example.com/anders.lund | Aalborg
 
 ## Profil
 

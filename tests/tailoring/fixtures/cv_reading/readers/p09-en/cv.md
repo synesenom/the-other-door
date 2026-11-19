@@ -2,7 +2,7 @@
 
 > Analytics Lead
 
-**Phone:** +44 82 47 89 93 | **Email:** hannah.clarke@example.com | **Web:** example.com/hannah.clarke | **Location:** Manchester
+**Phone:** +44 00 00 00 00 | **Email:** hannah.clarke@example.com | **Web:** example.com/hannah.clarke | **Location:** Manchester
 
 ## Profile
 

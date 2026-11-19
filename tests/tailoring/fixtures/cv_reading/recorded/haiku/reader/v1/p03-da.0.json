@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": "Tlf",
-    "value": "+45 64 89 71 47"
+    "value": "+45 00 00 00 00"
    },
    {
     "kind": "email",
@@ -72,20 +72,16 @@
   ],
   "levels": [
    {
-    "item": "Engelsk (C1)",
-    "level": 4
-   },
-   {
-    "item": "Tysk (B1)",
-    "level": 2
-   },
-   {
-    "item": "Dansk: modersmål",
+    "item": "Dansk",
     "level": 5
    },
    {
-    "item": "Google Data Analytics",
-    "level": null
+    "item": "Engelsk",
+    "level": 4
+   },
+   {
+    "item": "Tysk",
+    "level": 2
    }
   ],
   "entries": [

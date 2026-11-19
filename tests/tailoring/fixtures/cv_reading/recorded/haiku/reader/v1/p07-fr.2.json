@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": null,
-    "value": "+33 74 93 47 71"
+    "value": "+33 00 00 00 00"
    },
    {
     "kind": "email",
@@ -72,39 +72,39 @@
   ],
   "levels": [
    {
-    "item": "TypeScript",
+    "item": "TypeScript — avancé",
     "level": null
    },
    {
-    "item": "Python",
+    "item": "Python — avancé",
     "level": null
    },
    {
-    "item": "SQL",
+    "item": "SQL — avancé",
     "level": null
    },
    {
-    "item": "Docker",
+    "item": "Docker — avancé",
     "level": null
    },
    {
-    "item": "Git",
+    "item": "Git — avancé",
     "level": null
    },
    {
-    "item": "planification",
+    "item": "planification — avancé",
     "level": null
    },
    {
-    "item": "Français",
+    "item": "Français — langue maternelle",
     "level": 5
    },
    {
-    "item": "Anglais",
+    "item": "Anglais (C1)",
     "level": 4
    },
    {
-    "item": "Allemand",
+    "item": "Allemand (A2)",
     "level": 1
    }
   ],

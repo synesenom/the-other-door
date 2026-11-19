@@ -2,7 +2,7 @@
 
 > Elemzési vezető
 
-Telefon: +36 58 71 93 89
+Telefon: +36 00 00 00 00
 E-mail: marton.varga@example.com
 Weboldal: example.com/marton.varga
 Város: Pécs

@@ -1,14 +1,14 @@
 {
  "answer": [
   {
-   "kind": "year",
-   "value": "2009",
+   "kind": "employer",
+   "value": "Vandelay Industries",
    "context": "Dataanalytiker | Vandelay Industries - 2009 - 2013 | Aarhus",
    "file": "cv"
   },
   {
-   "kind": "employer",
-   "value": "Vandelay Industries",
+   "kind": "year",
+   "value": "2009",
    "context": "Dataanalytiker | Vandelay Industries - 2009 - 2013 | Aarhus",
    "file": "cv"
   }

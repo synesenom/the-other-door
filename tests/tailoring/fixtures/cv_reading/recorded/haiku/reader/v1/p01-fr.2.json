@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": "Tél",
-    "value": "+33 82 47 89 93"
+    "value": "+33 00 00 00 00"
    },
    {
     "kind": "email",
@@ -72,39 +72,39 @@
   ],
   "levels": [
    {
-    "item": "SQL",
+    "item": "SQL — avancé",
     "level": null
    },
    {
-    "item": "Docker",
+    "item": "Docker — avancé",
     "level": null
    },
    {
-    "item": "Git",
+    "item": "Git — avancé",
     "level": null
    },
    {
-    "item": "Excel",
+    "item": "Excel — avancé",
     "level": null
    },
    {
-    "item": "Power BI",
+    "item": "Power BI — avancé",
     "level": null
    },
    {
-    "item": "planification",
+    "item": "planification — avancé",
     "level": null
    },
    {
-    "item": "Français",
+    "item": "Français — langue maternelle",
     "level": 5
    },
    {
-    "item": "Anglais",
+    "item": "Anglais (C1)",
     "level": 4
    },
    {
-    "item": "Allemand",
+    "item": "Allemand (A2)",
     "level": 1
    }
   ],

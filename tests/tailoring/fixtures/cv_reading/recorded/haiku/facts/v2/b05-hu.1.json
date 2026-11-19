@@ -1,9 +1,9 @@
 {
  "answer": [
   {
-   "kind": "degree",
-   "value": "Közgazdaságtan PhD",
-   "context": "Példa Egyetem, Pécs – Közgazdaságtan PhD (február 2009 – július 2011)",
+   "kind": "certification",
+   "value": "CISSP",
+   "context": "CISSP",
    "file": "cv"
   },
   {
@@ -13,9 +13,9 @@
    "file": "cv"
   },
   {
-   "kind": "certification",
-   "value": "CISSP",
-   "context": "CISSP",
+   "kind": "degree",
+   "value": "Közgazdaságtan PhD",
+   "context": "Példa Egyetem, Pécs – Közgazdaságtan PhD (február 2009 – július 2011)",
    "file": "cv"
   }
  ]

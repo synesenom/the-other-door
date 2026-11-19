@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": "Tlf",
-    "value": "+45 58 71 93 89"
+    "value": "+45 00 00 00 00"
    },
    {
     "kind": "email",
@@ -71,18 +71,6 @@
    }
   ],
   "levels": [
-   {
-    "item": "Dansk",
-    "level": 5
-   },
-   {
-    "item": "Engelsk",
-    "level": 4
-   },
-   {
-    "item": "Tysk",
-    "level": 1
-   },
    {
     "item": "Power BI",
     "level": null
@@ -106,6 +94,18 @@
    {
     "item": "planlægning",
     "level": null
+   },
+   {
+    "item": "Dansk",
+    "level": 5
+   },
+   {
+    "item": "Engelsk",
+    "level": 4
+   },
+   {
+    "item": "Tysk",
+    "level": 1
    }
   ],
   "entries": [

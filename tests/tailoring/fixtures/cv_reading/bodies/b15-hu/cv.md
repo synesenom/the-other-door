@@ -2,7 +2,7 @@
 
 > Elemzési vezető
 
-+36 74 93 47 71 | gabor.fekete@example.com | example.com/gabor.fekete | Debrecen
++36 00 00 00 00 | gabor.fekete@example.com | example.com/gabor.fekete | Debrecen
 
 ## Profil
 

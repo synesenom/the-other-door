@@ -1,12 +1,6 @@
 {
  "answer": [
   {
-   "kind": "degree",
-   "value": "Közgazdaságtan PhD",
-   "context": "Példa Egyetem, Pécs – Közgazdaságtan PhD (február 2009 – július 2011)",
-   "file": "cv"
-  },
-  {
    "kind": "skill",
    "value": "Airflow",
    "context": "Power BI, Figma, TypeScript, Python, SQL, riportolás, Airflow",
@@ -15,7 +9,13 @@
   {
    "kind": "certification",
    "value": "CISSP",
-   "context": "Prince2 Foundation — 2022 CISSP",
+   "context": "<li><strong>CISSP</strong></li>",
+   "file": "cv"
+  },
+  {
+   "kind": "degree",
+   "value": "Közgazdaságtan PhD",
+   "context": "Példa Egyetem, Pécs – Közgazdaságtan PhD (február 2009 – július 2011)",
    "file": "cv"
   }
  ]

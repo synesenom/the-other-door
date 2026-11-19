@@ -2,7 +2,7 @@
 
 > Responsable analytique
 
-Tél: +33 47 74 82 58
+Tél: +33 00 00 00 00
 Courriel: chloe.girard@example.com
 Site: example.com/chloe.girard
 LinkedIn: https://www.linkedin.com/in/chloe.girard

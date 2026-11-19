@@ -2,7 +2,7 @@
 
 > Leder af analyse
 
-Tlf: +45 58 71 93 89
+Tlf: +45 00 00 00 00
 E-mail: freja.skov@example.com
 Hjemmeside: example.com/freja.skov
 By: Odense

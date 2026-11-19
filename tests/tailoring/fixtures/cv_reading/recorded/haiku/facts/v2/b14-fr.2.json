@@ -1,12 +1,6 @@
 {
  "answer": [
   {
-   "kind": "degree",
-   "value": "MBA en management stratégique",
-   "context": "Université d'Exemple, Nantes – MBA en management stratégique (novembre 2010 – avril 2012)",
-   "file": "cv"
-  },
-  {
    "kind": "skill",
    "value": "Apache Spark",
    "context": "Figma, TypeScript, Python, SQL, Docker, reporting, Apache Spark",
@@ -16,6 +10,12 @@
    "kind": "certification",
    "value": "Certified Kubernetes Administrator",
    "context": "Certified Kubernetes Administrator",
+   "file": "cv"
+  },
+  {
+   "kind": "degree",
+   "value": "MBA en management stratégique",
+   "context": "Université d'Exemple, Nantes – MBA en management stratégique (novembre 2010 – avril 2012)",
    "file": "cv"
   }
  ]

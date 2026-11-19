@@ -56,7 +56,7 @@
    {
     "kind": "phone",
     "label": null,
-    "value": "+46 71 64 58 82"
+    "value": "+46 00 00 00 00"
    },
    {
     "kind": "email",
@@ -81,15 +81,15 @@
   ],
   "levels": [
    {
-    "item": "Svenska",
+    "item": "Svenska — modersmål",
     "level": 5
    },
    {
-    "item": "Engelska",
+    "item": "Engelska — arbetsspråk",
     "level": 4
    },
    {
-    "item": "Tyska",
+    "item": "Tyska — grundläggande",
     "level": 1
    }
   ],

@@ -1,12 +1,6 @@
 {
  "answer": [
   {
-   "kind": "degree",
-   "value": "MBA in Strategic Management",
-   "context": "Example University, Leeds – MBA in Strategic Management (November 2010 – April 2012)",
-   "file": "cv"
-  },
-  {
    "kind": "skill",
    "value": "Apache Spark",
    "context": "Docker, Git, Excel, Power BI, Figma, reporting, Apache Spark",
@@ -16,6 +10,12 @@
    "kind": "certification",
    "value": "Certified Kubernetes Administrator",
    "context": "Certified Kubernetes Administrator",
+   "file": "cv"
+  },
+  {
+   "kind": "degree",
+   "value": "MBA in Strategic Management",
+   "context": "Example University, Leeds – MBA in Strategic Management (November 2010 – April 2012)",
    "file": "cv"
   }
  ]

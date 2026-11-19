@@ -2,7 +2,7 @@
 
 > Elemzési vezető
 
-+36 82 47 89 93 | reka.balogh@example.com | example.com/reka.balogh | Szeged
++36 00 00 00 00 | reka.balogh@example.com | example.com/reka.balogh | Szeged
 
 ## Profil
 

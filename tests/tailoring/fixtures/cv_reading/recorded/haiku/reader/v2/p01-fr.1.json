@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": "Tél",
-    "value": "+33 82 47 89 93"
+    "value": "+33 00 00 00 00"
    },
    {
     "kind": "email",
@@ -94,6 +94,10 @@
    {
     "item": "planification",
     "level": null
+   },
+   {
+    "item": "Français",
+    "level": 5
    },
    {
     "item": "Anglais",

@@ -18,7 +18,7 @@ EXPECTED = {
     "name": "Anna Berg", "email": "anna.berg@example.com", "city": "Aarhus", "country": "dk",
     "working_languages": ["Danish", "English"],
     "sections": {"Erfaring": "experience", "Sprog": "languages"},
-    "contacts": [{"kind": "phone", "label": "Tlf", "value": "+45 20 30 40 50"},
+    "contacts": [{"kind": "phone", "label": "Tlf", "value": "+45 00 00 00 00"},
                  {"kind": "email", "label": None, "value": "anna.berg@example.com"}],
     "levels": {"Dansk": 5, "SQL": None},
     "entries": [ENTRY],
@@ -31,7 +31,7 @@ def answer(**changes):
         "languages": [{"language": "Danish", "level": "native"}, {"language": "English", "level": "fluent"},
                       {"language": "French", "level": "basic"}],
         "sections": [{"heading": "Erfaring", "kind": "experience"}, {"heading": "Sprog", "kind": "languages"}],
-        "contacts": [{"kind": "phone", "label": "Tlf", "value": "+45 20 30 40 50"},
+        "contacts": [{"kind": "phone", "label": "Tlf", "value": "+45 00 00 00 00"},
                      {"kind": "email", "label": None, "value": "anna.berg@example.com"}],
         "levels": [{"item": "Dansk", "level": 5}, {"item": "SQL", "level": None}],
         "entries": [dict(ENTRY)],
@@ -77,7 +77,7 @@ def test_heading_parts_are_scored_one_by_one_and_dashes_and_spaces_do_not_matter
 
 
 def test_a_contact_needs_its_kind_label_and_value():
-    wrong = answer(contacts=[{"kind": "phone", "label": "Telefon", "value": "+45 20 30 40 50"},
+    wrong = answer(contacts=[{"kind": "phone", "label": "Telefon", "value": "+45 00 00 00 00"},
                              {"kind": "email", "label": None, "value": "anna.berg@example.com"}])
     assert rcr.score_reader(EXPECTED, wrong)["contacts"] == {"hit": 1, "total": 2}
 
@@ -372,3 +372,41 @@ def test_the_runner_records_each_case_once_and_asks_again_only_for_an_error(tmp_
     assert len(calls) == 3  # only the error is asked again
     got = rcr.load_recorded("haiku", "facts", 1, root=tmp_path)
     assert all(isinstance(a[0], list) for a in got.values())
+
+
+# --- the numbers reported in #429, from the committed final answers ----------------------------------------------
+
+def final(model, task):
+    corpus = rcr.build_reader_corpus() if task == "reader" else rcr.build_body_corpus()
+    return rcr.summarize(task, rcr.load_recorded(model, task, rcr.FINAL_VERSION[task]), corpus)
+
+
+def test_haiku_is_go_as_a_reader_and_a_fact_checker_on_the_final_prompts():
+    reader, check = final("haiku", "reader"), final("haiku", "facts")
+    assert reader["verdict"] == "go" and reader["cases"] == 15 and reader["runs"] == 3
+    assert {f: round(v, 2) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.99}
+    assert check["verdict"] == "go" and check["cases"] == 28 and check["runs"] == 3
+    assert all(v == 1.0 for v in check["per_kind"].values()) and check["false_clean_max"] == 0
+    assert round(check["verbatim"], 3) == 0.991 and check["stable"] == 1.0
+
+
+def test_sonnet_is_go_too_a_little_less_stable_on_the_facts():
+    reader, check = final("sonnet", "reader"), final("sonnet", "facts")
+    assert reader["verdict"] == "go" and {f: round(v, 2) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.99}
+    assert check["verdict"] == "go" and round(check["verbatim"], 3) == 0.983 and round(check["stable"], 3) == 0.964
+
+
+def test_the_first_prompts_were_close_not_go():
+    assert rcr.summarize("reader", rcr.load_recorded("haiku", "reader", 1), rcr.build_reader_corpus())["verdict"] == "close"
+    assert rcr.summarize("facts", rcr.load_recorded("haiku", "facts", 1), rcr.build_body_corpus())["verdict"] == "close"
+
+
+def test_the_rules_of_today_are_no_go_on_the_same_cases():
+    for task, corpus in (("reader", rcr.build_reader_corpus()), ("facts", rcr.build_body_corpus())):
+        answers = {n: [rcr.baseline_reader(c["md"], c["lang"]) if task == "reader" else rcr.baseline_facts(c["md"], c["body"])]
+                   for n, c in corpus.items()}
+        assert rcr.summarize(task, answers, corpus)["verdict"] == "no-go"
+
+
+def test_no_recorded_answer_is_an_error():
+    assert not [p for p in (CASES / "recorded").rglob("*.json") if "error" in json.loads(p.read_text(encoding="utf-8"))]

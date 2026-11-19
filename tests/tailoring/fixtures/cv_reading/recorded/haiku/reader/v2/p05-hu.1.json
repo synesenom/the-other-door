@@ -52,7 +52,7 @@
    {
     "kind": "phone",
     "label": "Telefon",
-    "value": "+36 58 71 93 89"
+    "value": "+36 00 00 00 00"
    },
    {
     "kind": "email",
@@ -72,16 +72,16 @@
   ],
   "levels": [
    {
-    "item": "Magyar",
-    "level": 5
-   },
-   {
-    "item": "Angol",
+    "item": "Angol (C1)",
     "level": 4
    },
    {
-    "item": "Német",
+    "item": "Német (A2)",
     "level": 1
+   },
+   {
+    "item": "Magyar — anyanyelv",
+    "level": 5
    }
   ],
   "entries": [

@@ -1,9 +1,9 @@
 {
  "answer": [
   {
-   "kind": "certification",
-   "value": "AWS Certified Solutions Architect",
-   "context": "Certifications: AWS Certified Solutions Architect",
+   "kind": "degree",
+   "value": "Doctorat en économie",
+   "context": "Université d'Exemple, Nantes – Doctorat en économie (août 2011 – janvier 2013)",
    "file": "cv"
   },
   {
@@ -13,9 +13,9 @@
    "file": "cv"
   },
   {
-   "kind": "degree",
-   "value": "Doctorat en économie",
-   "context": "Université d'Exemple, Nantes – Doctorat en économie (août 2011 – janvier 2013)",
+   "kind": "certification",
+   "value": "AWS Certified Solutions Architect",
+   "context": "AWS Certified Solutions Architect",
    "file": "cv"
   }
  ]
