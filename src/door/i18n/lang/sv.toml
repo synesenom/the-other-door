@@ -45,14 +45,13 @@ career_site_words = ["karriär", "karriar", "jobb", "lediga jobb", "lediga tjän
 [transliterate]
 "å" = "aa"
 
-# Titles of the CV sections the readers look for (a whole heading, or whole words inside one the user wrote; case-insensitive).
+# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
 [cv_sections]
-skills = ["kompetenser", "färdigheter", "it-kompetens", "teknisk kompetens", "nyckelkompetenser", "verktyg", "programmeringsspråk"]
+skills = ["kompetenser", "färdigheter", "it-kompetens", "teknisk kompetens", "nyckelkompetenser", "verktyg"]
 education = ["utbildning", "utbildningar", "utbildning och kurser"]
 certifications = ["certifieringar", "certifikat", "kurser", "certifieringar och kurser"]
 languages = ["språk", "språkkunskaper"]
 interests = ["intressen", "fritidsintressen"]
-experience = ["erfarenhet", "arbetslivserfarenhet", "yrkeserfarenhet", "karriär", "projekt", "profil", "sammanfattning"]
 
 [contact_labels]
 phone = ["telefon", "mobil"]

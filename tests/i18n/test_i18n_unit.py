@@ -914,18 +914,3 @@ def test_a_month_extra_beside_the_date_names_completes_them(tmp_path):
 def test_numeric_date_formats_and_day_suffixes_come_from_the_data():
     assert {"DD.MM.YYYY", "YYYY.MM.DD.", "YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY"} <= set(i18n.numeric_date_formats())
     assert {"er", "st", "th", "-én"} <= set(i18n.day_suffixes())
-
-
-@pytest.mark.parametrize("title, kind", [
-    ("Skills", "skills"), ("Technical & Programming Skills", "skills"), ("Kompetencer og værktøjer", "skills"),
-    ("Programming Languages", "skills"), ("Language Skills", "languages"), ("Languages", "languages"),
-    ("Work Experience and Skills", "experience"), ("Experience & Skills", None), ("Hobbies", "interests"),
-    ("Something else", None), ("", None),
-])
-def test_cv_heading_kind_reads_a_title_in_the_users_own_words(title, kind):
-    assert i18n.cv_heading_kind(title, i18n.CvSections.model_fields) == kind
-
-
-def test_cv_heading_kind_answers_only_for_the_kinds_asked():
-    assert i18n.cv_heading_kind("Languages", ("skills",)) is None
-    assert i18n.cv_heading_kind("Skills", ("skills",)) == "skills"

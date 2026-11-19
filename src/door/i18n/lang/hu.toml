@@ -27,12 +27,11 @@ career_site_words = ["karrier", "állások", "állás", "állásajánlatok", "ny
 
 # The titles of a CV's sections: the facts check reads them, and a template can place them in a column.
 [cv_sections]
-skills = ["készségek", "kompetenciák", "szakmai készségek", "ismeretek", "programozási nyelvek"]
+skills = ["készségek", "kompetenciák", "szakmai készségek", "ismeretek"]
 education = ["tanulmányok", "végzettség", "oktatás", "képzettség"]
 certifications = ["tanúsítványok", "képesítések", "bizonyítványok", "tanfolyamok"]
 languages = ["nyelvek", "nyelvismeret", "nyelvtudás"]
 interests = ["érdeklődési kör", "érdeklődési körök", "hobbi", "hobbik", "érdeklődés"]
-experience = ["tapasztalat", "munkatapasztalat", "szakmai tapasztalat", "pályafutás", "projektek", "profil", "összefoglaló"]
 
 [contact_labels]
 phone = ["telefon", "mobil"]

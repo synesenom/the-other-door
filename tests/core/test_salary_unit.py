@@ -102,11 +102,6 @@ def test_parse_keeps_only_valid_sources():
     assert salary.parse({**GOOD, "sources": sources})["sources"] == [{"title": "ok", "url": "https://ok.example/p"}]
 
 
-def test_years_ignores_a_skills_section_under_the_users_own_title():
-    cv = "## Experience\n\nAnalyst 2018 - 2020\n\n## Technical & Programming Skills\n\nPython 2010 - 2024\n"
+def test_years_ignores_a_marked_skills_section_and_dates_before_the_first_heading():
+    cv = "Freelance 2010 - present\n\n## Experience\n\nAnalyst 2018 - 2020\n\n## Toolbox <!-- kind: skills -->\n\nPython 2010 - 2024\n"
     assert salary.years_of_experience(cv, now_year=2025) == 2
-
-
-def test_years_ignores_dates_before_the_first_heading_and_in_a_mixed_experience_heading():
-    assert salary.years_of_experience("Freelance 2010 - present\n\n## Experience\n\nAnalyst 2018 - 2020\n", now_year=2025) == 2
-    assert salary.years_of_experience("## Work Experience and Skills\n\nAnalyst 2018 - 2020\n", now_year=2025) == 2

@@ -217,3 +217,8 @@ def test_the_label_forms_read(part):
     assert cv_body.header(f"# A\n\n{part} | **E-mail:** a@b.example\n")["details"] == {
         "location": ["Aarhus"], "email": ["a@b.example"],
     }
+
+
+def test_a_sections_recorded_kind_is_no_heading_text():
+    out = cv_body.body("## Toolbox <!-- kind: skills -->\n\n- **Danish** — native\n", "en")
+    assert "<h2>Toolbox</h2>" in out and "kind" not in out and "level-5" in out

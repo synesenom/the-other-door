@@ -71,7 +71,7 @@ MANIFEST_FILE = "template.json"
 MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
 ICON_KINDS = (*i18n.CONTACT_KINDS, "date")
 # The section kinds a column can hold: the CV sections `i18n` names.
-SECTION_KINDS = tuple(k for k in i18n.CvSections.model_fields if k != "experience")
+SECTION_KINDS = tuple(i18n.CvSections.model_fields)
 
 
 def _bare_name(name: str, suffix: str) -> str:

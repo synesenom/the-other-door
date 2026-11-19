@@ -40,14 +40,13 @@ skill_stop_words = [
 # Generic words around an employer's name in a careers site's title.
 career_site_words = ["careers", "career", "jobs", "job", "vacancies", "open positions", "career opportunities"]
 
-# Titles of the CV sections the readers look for (a whole heading, or whole words inside one the user wrote; case-insensitive).
+# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
 [cv_sections]
-skills = ["skills", "key skills", "technical skills", "core competencies", "competencies", "tools", "technologies", "programming languages"]
+skills = ["skills", "key skills", "technical skills", "core competencies", "competencies", "tools", "technologies"]
 education = ["education", "education and training", "academic background"]
 certifications = ["certifications", "certificates", "licences", "licenses", "certifications and licences", "certifications and licenses", "courses"]
 languages = ["languages", "language skills"]
 interests = ["interests", "hobbies", "hobbies and interests", "interests and hobbies"]
-experience = ["experience", "work experience", "professional experience", "employment", "employment history", "work history", "career", "projects", "profile", "summary"]
 
 [contact_labels]
 phone = ["phone", "tel", "telephone", "mobile", "cell"]

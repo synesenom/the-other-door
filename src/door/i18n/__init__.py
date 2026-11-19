@@ -141,7 +141,6 @@ class CvSections(_Strict):
     certifications: list[str] = []
     languages: list[str] = []
     interests: list[str] = []
-    experience: list[str] = []  # read to tell a mixed heading ("Experience & Skills") from a skills one; no template places it
 
     @field_validator("*")
     @classmethod
@@ -722,7 +721,7 @@ def skill_stop_words(codes: tuple[str, ...] | None = None) -> list[str]:
 
 
 def cv_section(kind: str, codes: tuple[str, ...] | None = None) -> list[str]:
-    """Titles of the CV section ``kind`` (skills / education / certifications / languages / interests / experience)."""
+    """Titles of the CV section ``kind`` (skills / education / certifications / languages / interests)."""
     if kind not in CvSections.model_fields:
         raise ValueError(f"unknown CV section {kind!r}; use one of {tuple(CvSections.model_fields)}")
     return _union(getattr(p.cv_sections, kind) for p in _packs(codes))
@@ -743,24 +742,6 @@ def cv_section_kind(title: str, kinds, codes: tuple[str, ...] | None = None) -> 
     colon), or None: how the facts check and the column placement read a CV heading."""
     key = " ".join(title.split()).casefold().strip(" :")
     return next((kind for kind in kinds if key in {t.casefold() for t in cv_section(kind, codes)}), None)
-
-
-def cv_heading_kind(title: str, kinds) -> str | None:
-    """The one of `kinds` a CV heading the user wrote in their own words is about: the heading as a whole title of
-    a kind, else the kind of the longest title that stands in it as whole words ("Technical &
-    Programming Skills" holds "skills", "Language Skills" holds the longer "language skills"), or None, also for a
-    heading whose longest titles are of two kinds ("Experience & Skills"). Every kind
-    competes, so "Language Skills" is no skills section when only skills are asked for."""
-    words = re.findall(r"\w+", title.casefold())
-    longest, found = 0, set()
-    for kind in CvSections.model_fields:
-        for t in cv_section(kind):
-            tw = re.findall(r"\w+", t.casefold())
-            n = len(tw)
-            if tw and n >= longest and any(words[i:i + n] == tw for i in range(len(words) - n + 1)):
-                found = (found if n == longest else set()) | {kind}
-                longest = n
-    return next(iter(found)) if len(found) == 1 and found <= set(kinds) else None
 
 
 def _ascii_only(text: str) -> str:
