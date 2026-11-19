@@ -130,10 +130,10 @@ def place_columns(body: str, columns: templates.Columns | None) -> str:
 def placed_cv(body: str, config: dict) -> str:
     """The CV `body` as its printed page reads it (`place_columns` by the resolved CV template's manifest); `body` itself when the template has no side column or cannot be read."""
     try:
-        columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns
+        manifest = templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()
     except (OSError, ValueError):
-        columns = None
-    return place_columns(body, columns)
+        manifest = templates.Manifest()
+    return place_columns(_with_labels(body, manifest.contact_labels), manifest.columns)
 
 
 def _wrap(template: str, body: str, language: str) -> str:

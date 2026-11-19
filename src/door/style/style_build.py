@@ -5,7 +5,7 @@ icons as SVG files, and runs the stylist agent (`.claude/agents/stylist.md`) rou
 page, the builder checks it (`html_guard.template_problems`), prints a sample body in it with the pinned Chromium, reads
 the print back and compares it with the original (`style_compare`) until the loop's rule says stop. A best round that scored under
 `style_compare.FLOOR` does not look like the CV: the build fails there. Otherwise it is
-stress-rendered with `profile/cv.md` made shorter, longer, French and with a photo (no model: `cv_body`), one more
+stress-rendered with `profile/cv.md` made shorter, longer, French, with every shape of a body and with a photo (no model: `cv_body`), one more
 round when that fails, and a second call writes the matching letter template. Only a build that passes is written, whole,
 to `profile/style.next/`, the candidate; a failed one writes nothing there.
 """
@@ -33,7 +33,7 @@ _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
 
 
 def blocks(reply: str) -> dict[str, str]:
-    """The fenced blocks of a stylist's reply by their name (```` ```template ````, ``body``, ``letter``): the first of
+    """The fenced blocks of a stylist's reply by their name (```` ```template ````, ``cv``, ``letter``): the first of
     each name. A block cut off before its closing fence is not one."""
     found: dict[str, str] = {}
     for name, text in _BLOCK.findall(reply):
@@ -590,7 +590,7 @@ def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
             parts.append("the sections headed " + ", ".join(cols.headings))
         columns = (
             " and ".join(parts) + " (the code wraps the sections into div.main and div.side and your CSS styles them; "
-            "the sample body is plain sections with no div, no class on a div). The page has div.main first, then "
+            "the sample CV has no div and no class). The page has div.main first, then "
             "div.side; in the original, " + ", ".join(f'the {_where(b, s.style["columns"]["bands"])} is at x '
                                                        f'{b["x0"]:.0f}-{b["x1"]:.0f} pt' for b in s.style["columns"]["bands"])
             + ": place each there with CSS"
@@ -631,9 +631,9 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
             sample = reply.get("cv")
             if sample is None:
                 feedback = "Your reply had no ```cv block: the sample CV in one fenced block named cv."
-            elif not (candidate := cv_body.body(sample)):
+            elif not re.search(r"^#{1,2} \S", sample, re.M):
                 feedback = "Your ```cv block had no name or section in it: write the CV as the task says (# Name, ## Section, ...)."
-            elif bad := body_column_problems(s.style, candidate, s.manifest.columns):
+            elif bad := body_column_problems(s.style, (candidate := cv_body.body(sample)), s.manifest.columns):
                 feedback = ("Your sample CV puts text under a heading of the other column (text.txt gives each page's "
                             "text column by column: a section goes on in its own column on the next page):\n" + _list(bad))
             else:

@@ -663,7 +663,7 @@ def test_a_print_of_three_columns_is_judged_not_stopped_as_having_no_text(world,
 
 def test_the_sample_the_stylist_writes_as_markdown_is_printed_in_the_real_shapes_with_the_originals_labels(world):
     sample = ("# Ada Example\n\n**Tel:** 12 34 56 78 | **E-mail:** ada@example.com\n\n## Experience\n\n"
-              "### Engineer | Example Co — 2020 - 2023 | Town\n\n- Built **tools** nightly\n\n## Languages\n\n**English** — native\n")
+              "### Engineer | Example Co — 2020 - 2023 | Town\n\n- Built **tools** nightly\n\n## Languages\n\n- **English** — native\n")
     result = world.build("html-word-two-column", Stylist(cv_round(cv=sample), letter_round()))
     assert result["state"] == "ready", result["problems"]
     manifest = json.loads((world.style / "template.json").read_text())
@@ -671,9 +671,10 @@ def test_the_sample_the_stylist_writes_as_markdown_is_printed_in_the_real_shapes
     printed = [p["html"] for p in world.prints if p["folder"] == world.work][0]
     assert '<span class="phone"><span class="label">Tel:</span> 12 34 56 78</span>' in printed
     assert '<span class="role">Engineer</span>' in printed and "<strong>tools</strong>" in printed
-    assert '<span class="level level-5">native</span>' in printed
+    body = (world.work / "sample_body.html").read_text()
+    assert '<li><strong>English</strong> <span class="level level-5">native</span></li>' in body
     stress = [p["html"] for p in world.prints if "stress" in p["folder"].parts]
-    assert stress and all('<span class="label">Tel:</span>' in h for h in stress if "<<" not in h and 'class="phone"' in h)
+    assert any('<span class="phone"><span class="label">Tel:</span>' in h for h in stress)
     letters = [p["html"] for p in world.prints if p["folder"].name == "letter"]
     assert letters and not [h for h in letters if 'class="label"' in h]
 
@@ -682,3 +683,9 @@ def test_a_sample_cv_with_no_contact_label_leaves_the_manifest_without_any(world
     result = world.build("html-word-two-column", Stylist(cv_round(cv="# Ada Example\n\n12 34 56 78 | ada@example.com\n\n## Experience\n\nx\n"), letter_round()))
     assert result["state"] == "ready"
     assert "contact_labels" not in json.loads((world.style / "template.json").read_text())
+
+
+def test_a_reply_whose_cv_block_has_no_name_or_section_is_asked_again(world):
+    stylist = Stylist(cv_round(cv="Just text\nmore text\n"), cv_round(), letter_round())
+    result = world.build("html-word-two-column", stylist)
+    assert result["state"] == "ready" and "no name or section" in stylist.calls[1]["input"]

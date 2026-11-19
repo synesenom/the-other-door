@@ -75,12 +75,12 @@ The sample CV is the CV's own text from `text.txt`, every word and nothing added
 ### Role | Company — dates | Place
 - a bullet, with **a bold word** or *an italic one* inside it
 Plain text is a paragraph.
-**Danish** — native
+- **Danish** — native
 ```
 
 - Contact details come first, under the name and tagline, one `**Label:** value` each, in the original's order and with its label word as it writes it (`**Tel:** ...`); with no label in the original (an icon, or the value alone), write the value alone. The label is not part of the body: when the original shows one, the page writes it in front of the value as `<span class="label">Tel:</span>` inside the contact span, so style `.label` (and the rest of the contact line as the original does).
 - An entry heading is `### Role | Company — dates | Place`, whatever the original puts on which line (a school is the Company; leave out a part the original has not). A heading with no ` | ` is a role alone. Its bullets follow it.
-- A list of skills, tools or languages is `- ` items; a language or skill with a level is `**Danish** — native` (the level word as the original writes it) as a list item, which becomes `<li><strong>Danish</strong> <span class="level level-5">native</span></li>`. Bold words stay `**bold**`: style `strong` as the original styles them.
+- A list of skills, tools or languages is `- ` items; a language or skill with a level is `**Danish** — native` (a list item; the level word is the original's, and when it is no English word or CEFR level (courant, flydende), the nearest of native, fluent, professional, working, conversational, basic, so that the level is styled), which becomes `<li><strong>Danish</strong> <span class="level level-5">native</span></li>`. Bold words stay `**bold**`: style `strong` as the original styles them.
 - `<<photo>>` is written by the code first in the header when the CV has a name; do not write it.
 - For a CV with a side column, `text.txt` gives each page's text in parts (`[page 2, main column, on the right]`): a section of a column goes on in the same column on the next page, so text at the top of page 2's main column belongs to the last main-column section of page 1, never to a side section; a sample that puts a line under the other column's heading is refused.
 

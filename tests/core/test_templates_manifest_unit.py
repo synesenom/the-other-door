@@ -65,3 +65,10 @@ def test_an_icon_kind_is_a_contact_kind_the_guard_lets_through_or_the_entry_date
     from door.render import html_guard
 
     assert set(templates.ICON_KINDS) - {"date"} <= html_guard.CLASSES  # a kind the tailor may write is one a template may draw
+
+
+def test_a_manifest_names_contact_labels_only_for_contact_kinds_and_not_empty():
+    assert templates.Manifest(contact_labels={"phone": "Tel:"}).contact_labels == {"phone": "Tel:"}
+    for bad in ({"fax": "Fax"}, {"phone": " "}):
+        with pytest.raises(ValueError):
+            templates.Manifest(contact_labels=bad)
