@@ -105,7 +105,7 @@ def _make(stage: Path, cv_md: str, lang: str, photo: Path | None, cv_template: P
     manifest = templates.manifest(cv_template) or templates.Manifest()
     pdf, _, picture = page_mod.print_page(
         cv_body.body(cv_md, lang), cv_template.read_text(encoding="utf-8"), cv_template, lang, stage, "cv",
-        columns=manifest.columns, labels=manifest.contact_labels, photo=photo)
+        manifest=manifest, photo=photo)
     images = [p.name for p in pdf_render.render_pdf_pages(pdf, stage)]
     # the letter is printed with the CV template's fonts and icons, as `style_build` checks it
     letter = page_mod.print_page(

@@ -549,8 +549,7 @@ class _Session:
             _Stop: the print has no text to read back.
         """
         pdf, placed, _ = page_mod.print_page(
-            body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns,
-            labels=self.manifest.contact_labels, photo=self.photo)
+            body, template, self.work / _CV_FILE, "en", self.work, "render", manifest=self.manifest, photo=self.photo)
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
@@ -685,7 +684,7 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
         try:
             pdf, placed, photo = page_mod.print_page(
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
-                columns=s.manifest.columns, labels=s.manifest.contact_labels, photo=picture if v["photo"] else None)
+                manifest=s.manifest, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
             found += column_problems(s.style, style_extract.extract(pdf), placed) + (
                 [] if v["photo"] else photo_box_problems(s.style, style_extract.painted(pdf)))
