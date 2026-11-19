@@ -202,3 +202,25 @@ def test_jobs_show_prints_the_cached_salary(env):
     result = CliRunner().invoke(cli, ["jobs", "show", "trustpilot"])
     assert result.exit_code == 0, result.output
     assert "55,000–70,000 DKK per month" in result.output
+
+
+def test_a_cv_that_cannot_be_read_is_an_error_and_nothing_is_sent(env, monkeypatch):
+    from door.core import cv_read
+
+    jobs, calls, profile = env
+
+    def boom(md):
+        raise claude_cli.ClaudeError("not logged in")
+
+    monkeypatch.setattr(cv_read, "_ask", boom)
+    (profile / "_templates" / "cv.md").write_text("# Jane Doe\n\n## Work Experience\n\n### Controller | Acme — 2016 - present\n")
+    with pytest.raises(cv_read.CvReadError, match="not logged in"):
+        salary_cmd._salary_core("trustpilot", jobs_dir=jobs, profile_dir=profile)
+    assert calls == [] and not (jobs / "salary.json").exists()
+
+
+def test_the_question_carries_the_years_counted_from_the_reading(env):
+    jobs, calls, profile = env
+    (profile / "_templates" / "cv.md").write_text("# Jane Doe\n\n## Work Experience\n\n### Controller | Acme — 2016 - 2020\n")
+    salary_cmd._salary_core("trustpilot", jobs_dir=jobs, profile_dir=profile)
+    assert "4 years" in calls[0]["text"] and "Jane" not in calls[0]["text"]

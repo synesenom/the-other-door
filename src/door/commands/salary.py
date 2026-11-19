@@ -14,7 +14,7 @@ from pathlib import Path
 import click
 
 from door.commands import _common as common
-from door.core import claude_cli, lock, profile_loader, salary, workspace
+from door.core import claude_cli, cv_read, lock, profile_loader, salary, workspace
 from door.core.jobs import selection
 from door.core.utils import write_json_atomic
 
@@ -99,7 +99,7 @@ def _salary_core(job_id: str, refresh: bool = False, *, max_age_days: int | None
     older (`prepare` passes `STALE_AFTER_DAYS`; a user's own ask shows an old one as it is).
 
     Raises:
-        ValueError / LookupError: no such job, or several (``candidates``).
+        ValueError / LookupError: no such job, or several (``candidates``); the CV could not be read (`cv_read.CvReadError`).
         claude_cli.ClaudeError: the call failed; nothing is cached.
     """
     jobs_dir = Path(jobs_dir if jobs_dir is not None else workspace.JOBS_DIR)
@@ -119,7 +119,7 @@ def _salary_core(job_id: str, refresh: bool = False, *, max_age_days: int | None
         cv_text = workspace.cv_path(config, profile_dir).read_text(encoding="utf-8")
     except OSError:
         cv_text = ""
-    text = salary.build_input(posting, cv_text, config)
+    text = salary.build_input(posting, cv_text, config, cv_read.read(cv_text))  # a CV that cannot be read is never sent as it is
     answer = claude_cli.ask(_SYSTEM_PROMPT, text, model=model or _DEFAULT_MODEL, feature="salary",
                             schema=_SCHEMA, allowed_tools=("WebSearch",), timeout_s=180, profile_dir=profile_dir)
     parsed = salary.parse(answer)

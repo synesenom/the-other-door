@@ -2,7 +2,7 @@
 
 `build_input` condenses the ad and the CV's experience into the text of one question (no name, email or
 phone); `parse` accepts an answer only when it has a sane range, a currency code and a source with a URL;
-`years_of_experience` counts the CV's dated roles so the model need not guess. No network, no model call:
+`years_of_experience` does the overlap arithmetic over the role years `core.cv_read` read, so the model need not guess. No network, no model call:
 `commands/salary.py` asks.
 """
 
@@ -10,30 +10,44 @@ import re
 from datetime import date
 
 from door import i18n
-from door.core import cv_sections
 
 _MAX_AD_LINES = 6
 _MAX_CV_CHARS = 6000
-_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-_PHONE = re.compile(r"\+?\d[\d ().-]{6,}\d")
-_RANGE = re.compile(r"\b((?:19|20)\d\d)\s*[-–—]\s*((?:19|20)\d\d|[^\W\d_]+)", re.UNICODE)
 _CODE = re.compile(r"[A-Z]{3}")
 _PERIODS = ("month", "year")
 _POSITIONS = ("below", "within", "above")
 
 
-def years_of_experience(cv_text: str, *, now_year: int | None = None) -> int | None:
-    """Years covered by the CV's dated roles (``2018 - 2021``, ``2021 - present``), overlaps counted once.
+def _squash(text: str) -> str:
+    return " ".join(str(text).split()).casefold()
 
-    Only the sections that are not education, certifications or skills count; a word after the
-    first year ("present") means the role goes on. ``None`` when no role has a date range."""
+
+def years_of_experience(reading: dict, cv_text: str, *, now_year: int | None = None) -> int | None:
+    """Years covered by the CV's dated roles, overlaps counted once: the `###` entries under a section the reading
+    calls `experience`, each with the start and end year the reading gave (an end it left out runs to `now_year`).
+    A year the entry's dates do not contain is not trusted and the entry does not count.
+
+    ``None`` when no role has a usable date range."""
     now_year = now_year or date.today().year
-    spans = []
-    for section in cv_sections.split(cv_text)[1:]:  # what comes before the first heading is no role
-        if cv_sections.kind(section, ("education", "certifications", "skills")):
-            continue
-        for start, end in _RANGE.findall("\n".join(section)):
-            first, last = int(start), int(end) if end.isdigit() else now_year
+    kinds = [s.get("kind") for s in reading.get("sections") or []]
+    unused = list(reading.get("entries") or [])
+    spans, section = [], -1
+    for line in (cv_text or "").splitlines():
+        if line.startswith("## "):
+            section += 1
+        elif line.startswith("### ") and 0 <= section < len(kinds):
+            heading = _squash(line[4:])
+            entry = next((e for e in unused if _squash(e.get("heading") or "") == heading), None)
+            if entry is None:
+                continue
+            unused.remove(entry)
+            if kinds[section] != "experience":
+                continue
+            first, last = entry.get("start_year"), entry.get("end_year")
+            dates = str(entry.get("dates") or "")
+            if first is None or str(first) not in dates or (last is not None and str(last) not in dates):
+                continue
+            last = now_year if last is None else last
             if last >= first:
                 spans.append((first, min(last, now_year)))
     if not spans:
@@ -61,23 +75,24 @@ def _experience_lines(description: str) -> list[str]:
     return found[:_MAX_AD_LINES]
 
 
-def _anonymous_cv(cv_text: str, profile: dict) -> str:
-    """The CV without its title line, contact lines and the profile's name, email and phone."""
+def _anonymous_cv(cv_text: str, profile: dict, reading: dict) -> str:
+    """The CV from its first `## ` line (the title and contact header never go), without the profile's name, email and
+    phone, nor the name, email and contact details the reading found, each taken out as the literal text."""
     private = [str(profile.get(k)) for k in ("name", "email", "phone") if profile.get(k)]
     private += [part for part in str(profile.get("name") or "").split() if len(part) > 1]
-    lines = []
-    for line in (cv_text or "").splitlines():
-        if line.startswith("# ") or _EMAIL.search(line) or (_PHONE.search(line) and not _RANGE.search(line)):
-            continue
-        for value in private:
-            line = re.sub(re.escape(value), "", line, flags=re.IGNORECASE)
-        lines.append(line)
-    return "\n".join(lines).strip()[:_MAX_CV_CHARS]
+    private += [str(reading.get(k)) for k in ("name", "email") if reading.get(k)]
+    private += [str(c["value"]) for c in reading.get("contacts") or [] if c.get("value")]
+    lines = (cv_text or "").splitlines()
+    start = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
+    text = "\n".join(lines[start:])
+    for value in sorted(set(private), key=len, reverse=True):
+        text = re.sub(re.escape(value), "", text, flags=re.IGNORECASE)
+    return text.strip()[:_MAX_CV_CHARS]
 
 
-def build_input(posting: dict, cv_text: str, profile: dict, *, now_year: int | None = None) -> str:
+def build_input(posting: dict, cv_text: str, profile: dict, reading: dict, *, now_year: int | None = None) -> str:
     """The question's text: the ad (title, company, place, country and currency, the ad's own salary
-    and experience lines) and the candidate's experience (counted years, the CV without contact details)."""
+    and experience lines) and the candidate's experience (years counted from the reading `reading` of the CV, the CV without contact details)."""
     place = posting.get("location") or profile.get("location") or ""
     country = i18n.country_for_location(place) or i18n.country_for_location(str(profile.get("location") or ""))
     out = ["# The job", f"Title: {posting.get('title', '')}", f"Company: {posting.get('company', '')}",
@@ -91,11 +106,11 @@ def build_input(posting: dict, cv_text: str, profile: dict, *, now_year: int | N
     if asked:
         out.append("What the ad asks for:")
         out += [f"- {ln}" for ln in asked]
-    years = years_of_experience(cv_text, now_year=now_year)
+    years = years_of_experience(reading, cv_text, now_year=now_year)
     out += ["", "# The candidate",
             f"Years of experience counted from the dated roles: {years} years" if years is not None
             else "Years of experience: not countable from the CV"]
-    cv = _anonymous_cv(cv_text, profile)
+    cv = _anonymous_cv(cv_text, profile, reading)
     if cv:
         out += ["CV (contact details removed):", cv]
     return "\n".join(out)
