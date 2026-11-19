@@ -1,36 +1,37 @@
 """Spike of #429 (epic #428): how well does a small model read a CV and check a tailored CV's facts?
 
-Measures Haiku, then Sonnet, on made-up data only (never a real CV): a *reader* task (cv.md in, what the CV says out:
-section kinds, contacts, skill and language levels, name, email, city, country, working languages, role years, the
-parts of each entry heading) and a *facts* task (a source cv.md and a tailored CV body with fabrications planted in
-it; the model lists the claims the source does not back). Ground truth is built in: the corpus is generated from
-made-up people, so every expected value is a literal of the text. The rules of today (`facts.check`, `cv_body.header`,
-`_heading3`) are scored on the same cases as the baseline. A miss becomes a made-up prompt example, never a rule in
-Python.
+Measures Haiku and Sonnet on made-up data only (never a real CV): a *reader* task (cv.md in, what the CV says out:
+section kinds, contacts, skills, skill and language levels, name, email, city, country, working languages, role years,
+the parts of each entry heading; every value but the country and the levels' numbers a stretch of the CV) and a *facts*
+task (the source cv.md, a story bank, a posting, a tailored CV body and a cover letter body with fabrications planted in
+them; the model lists the claims the sources do not back). Ground truth is built in: the corpus is generated from made-up
+people, so every expected value is a literal of the text, and nothing of it is stored but the models' answers.
 
-    poetry run python scripts/record_cv_reading.py --write-fixtures
-    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet [--runs 3] [--version N]
-    poetry run python scripts/record_cv_reading.py --task report --model haiku|sonnet|baseline [--version N]
+The facts corpus is meant to be hard: a body in another language than its source (headings, degrees, months and level
+words translated, names, employers and figures kept), a tailor's rewording (new summary, merged and dropped bullets and
+entries, reordered sections, a skill named by a synonym the CV backs), numeric and day-month dates, claims backed only
+by a story bank, a letter echoing the posting, and fabrications in a letter. The rules of today (`facts.extract_claims`
+and `unsupported`, `cv_body.header`, `_heading3`) are scored on the same cases as the baseline. A miss becomes a made-up
+example in the prompt, never a rule in Python.
 
-Result (made-up data, 15 CVs x 3 runs for the reader, 28 bodies x 3 runs for the fact check): Haiku is go on both
-tasks with the prompts of round 2 (reader) and round 3 (facts), `CHOSEN_MODEL`; Sonnet is go too, a little less stable on
-the facts. `FINAL_VERSION` names the rounds `test_record_cv_reading_unit.py` pins; the earlier rounds' answers stay
-recorded beside them (`v1` is the prompt with no example).
-`--version` picks a prompt round: `EXAMPLES` holds each made-up example with the round that added it.
+    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet [--runs 3]
+    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet|baseline --report
 
-Answers are recorded under `tests/tailoring/fixtures/cv_reading/recorded/<model>/<task>/v<version>/<case>.<run>.json`
-(raw, so the scoring unit test reads them offline). Calls go through `claude_cli.ask` on the local claude's plan (never
-an API key); the usage feature keys are `infer_basics` (the reader) and `revise` (the fact check), the nearest
-existing ones: this spike adds none.
+A record is `tests/tailoring/fixtures/cv_reading/<model>/<task>/<case>.<run>.json`: the raw answer and a key of the
+prompt and input it answered (a record of other text is not read, and a test fails for one). A failed call is recorded
+as an error and counts as a miss; run again and only the errors are asked again (a plan's limit is waited out that way).
+Calls go through `claude_cli.ask` on the local claude's plan (never an API key); the usage feature keys are
+`infer_basics` (the reader) and `revise` (the fact check), the nearest existing ones: this spike adds none.
 """
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import re
-
 import sys
+import unicodedata
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -50,7 +51,7 @@ def _n(value) -> str:
 
 # --- scoring the reader -----------------------------------------------------------------------------------------
 
-READER_FIELDS = ("sections", "contacts", "levels", "name", "email", "city", "country", "languages", "years",
+READER_FIELDS = ("sections", "contacts", "skills", "levels", "name", "email", "city", "country", "languages", "years",
                  "heading_role", "heading_org", "heading_dates", "heading_place")
 _WORKING = {"native", "fluent", "working"}
 
@@ -81,12 +82,15 @@ def score_reader(expected: dict, answer: dict) -> dict:
         _count(score, "contacts", any(
             a.get("kind") == c["kind"] and _n(a.get("label")) == _n(c["label"]) and _n(a.get("value")) == _n(c["value"])
             for a in contacts))
+    skills = {_n(s) for s in answer.get("skills") or []}
+    for skill in expected["skills"]:
+        _count(score, "skills", _n(skill) in skills)
     levels = {_n(i.get("item")): i.get("level") for i in answer.get("levels") or [] if isinstance(i, dict)}
     for item, level in expected["levels"].items():
         _count(score, "levels", levels.get(_n(item)) == level)
-    working = {l.get("language") for l in answer.get("languages") or []
+    working = {_n(l.get("language")) for l in answer.get("languages") or []
                if isinstance(l, dict) and str(l.get("level")).lower() in _WORKING}
-    _count(score, "languages", working == set(expected["working_languages"]))
+    _count(score, "languages", working == {_n(x) for x in expected["working_languages"]})
     entries = {_n(e.get("heading")): e for e in answer.get("entries") or [] if isinstance(e, dict)}
     for want in expected["entries"]:
         got = entries.get(_n(want["heading"]), {})
@@ -95,6 +99,23 @@ def score_reader(expected: dict, answer: dict) -> dict:
         for part in ("role", "org", "dates", "place"):
             _count(score, f"heading_{part}", _n(got.get(part)) == _n(want[part]))
     return score
+
+
+def stretches(md: str, answer) -> tuple[int, int]:
+    """How many of the text values of a reader's `answer` (all but `country`, which is a code, and the levels' numbers)
+    are a stretch of the CV `md`, of all it returned: what #430 needs to check an answer against the CV."""
+    if not isinstance(answer, dict) or "error" in answer:
+        return 0, 0
+    text, values = _n(md), []
+    values += [answer.get(k) for k in ("name", "email", "city")]
+    values += [l.get("language") for l in answer.get("languages") or [] if isinstance(l, dict)]
+    values += [s.get("heading") for s in answer.get("sections") or [] if isinstance(s, dict)]
+    values += [c.get(k) for c in answer.get("contacts") or [] if isinstance(c, dict) for k in ("label", "value")]
+    values += list(answer.get("skills") or [])
+    values += [i.get("item") for i in answer.get("levels") or [] if isinstance(i, dict)]
+    values += [e.get(k) for e in answer.get("entries") or [] if isinstance(e, dict) for k in ("heading", "role", "org", "dates", "place")]
+    values = [v for v in values if v]
+    return sum(_n(v) in text for v in values), len(values)
 
 
 # --- scoring the facts check ------------------------------------------------------------------------------------
@@ -107,10 +128,10 @@ def _val(value) -> str:
     return re.sub(r"\s+", "", _n(value)).replace(",", ".")
 
 
-def is_verbatim(quote: str, body_html: str) -> bool:
-    """The quote is a stretch of the body's text (spacing squashed, as `facts` squashes it)."""
+def is_verbatim(quote: str, *bodies: str) -> bool:
+    """The quote is a stretch of the text of one of the bodies (spacing squashed, as `facts` squashes it)."""
     quote = facts._squash(quote or "")
-    return bool(quote) and quote in facts._squash(html_doc.text(body_html))
+    return bool(quote) and any(quote in facts._squash(html_doc.text(b)) for b in bodies if b)
 
 
 def _findings(answer) -> list[dict]:
@@ -118,16 +139,16 @@ def _findings(answer) -> list[dict]:
 
 
 def _matches(plant: dict, found: dict) -> bool:
-    if found.get("kind") != plant["kind"]:
+    if found.get("kind") != plant["kind"] or found.get("file", "cv") != plant.get("file", "cv"):
         return False
     context = _val(found.get("context"))
     return (_val(found.get("value")) == _val(plant["planted_value"]) or _val(plant["planted_value"]) in context
             or _val(plant["quote"]) in context)
 
 
-def score_facts(plants: list[dict], findings, body_html: str) -> dict:
-    """One body's reading: `per_kind` {kind: {planted, found}} for the kinds planted, `false_flags` (findings that
-    match no plant), `verbatim` (findings whose context is in the body, of all findings). An error answer finds nothing."""
+def score_facts(plants: list[dict], findings, *bodies: str) -> dict:
+    """One case's reading: `per_kind` {kind: {planted, found}} for the kinds planted, `false_flags` (findings that
+    match no plant), `verbatim` (findings whose context is in a body, of all findings). An error answer finds nothing."""
     found = _findings(findings)
     per_kind: dict = {}
     for plant in plants:
@@ -136,13 +157,13 @@ def score_facts(plants: list[dict], findings, body_html: str) -> dict:
         cell["found"] += any(_matches(plant, f) for f in found)
     false = sum(not any(_matches(p, f) for p in plants) for f in found)
     return {"per_kind": per_kind, "false_flags": false,
-            "verbatim": (sum(is_verbatim(f.get("context"), body_html) for f in found), len(found))}
+            "verbatim": (sum(is_verbatim(f.get("context"), *bodies) for f in found), len(found))}
 
 
-def stability(runs: dict) -> float:
-    """The share of bodies whose set of (kind, value) flags is the same in every run (`runs`: case to each run's findings)."""
-    same = [len({frozenset((f.get("kind"), _val(f.get("value"))) for f in _findings(r)) for r in rs}) == 1
-            for rs in runs.values()]
+def stability(answers: dict) -> float:
+    """The share of cases whose set of (kind, value) flags is the same in every run (`answers`: case to each run's findings)."""
+    same = [len({frozenset((f.get("kind"), _val(f.get("value"))) for f in _findings(r)) for r in runs}) == 1
+            for runs in answers.values()]
     return sum(same) / len(same) if same else 0.0
 
 
@@ -157,7 +178,7 @@ READER_NO_GO = 0.80
 def facts_verdict(report: dict) -> str:
     """`go`, `no-go` or `close` for a facts report: `per_kind` recall, `false_clean_max` (most false flags on a clean
     body), `verbatim` and `stable` shares."""
-    recalls = list(report["per_kind"].values())
+    recalls = list(report["per_kind"].values()) or [0.0]  # nothing recorded is no reading
     if min(recalls) < FACTS_NO_GO["recall"] or report["false_clean_max"] > FACTS_NO_GO["false_clean_max"]:
         return "no-go"
     ok = (min(recalls) >= FACTS_GO["recall"] and report["false_clean_max"] <= FACTS_GO["false_clean_max"]
@@ -319,32 +340,79 @@ _PACK = {
 }
 
 
+# What only the tailored documents need, per language: a rewritten summary, the posting a letter echoes, the letter's
+# words, and the one claim a story bank backs (the figure `4 000` and the tool `dbt` are in no CV).
+_EXTRA = {
+    "en": dict(summary2="I turn messy data into plans a team can act on, and I keep the reporting calm and readable.",
+               recipient="Hiring team", greeting="Dear hiring team,", closing="Kind regards,",
+               posting="Data Analyst at Orchid Energy. We are a company active in 120 countries and need an analyst who knows Looker.",
+               echo="Your posting asks for Looker and for someone ready to support a company active in 120 countries.",
+               letter_skill="I also work with {x}.",
+               story_bullet="Automated invoice matching in dbt, clearing a backlog of 4 000 invoices a month."),
+    "da": dict(summary2="Jeg gør rodede data til planer, et team kan handle på, og holder rapporteringen rolig og læsbar.",
+               recipient="Rekrutteringsteamet", greeting="Kære rekrutteringsteam,", closing="Med venlig hilsen",
+               posting="Dataanalytiker hos Orchid Energy. Vi er en virksomhed i 120 lande og søger en analytiker, der kender Looker.",
+               echo="Jeres opslag beder om Looker og en, der vil støtte en virksomhed i 120 lande.",
+               letter_skill="Jeg arbejder også med {x}.",
+               story_bullet="Automatiserede fakturaafstemning i dbt og fik ryddet en bunke på 4 000 fakturaer om måneden."),
+    "fr": dict(summary2="Je transforme des données brouillonnes en plans exploitables par une équipe et je garde le reporting clair et lisible.",
+               recipient="Équipe de recrutement", greeting="Madame, Monsieur,", closing="Cordialement,",
+               posting="Analyste de données chez Orchid Energy. Nous sommes présents dans 120 pays et cherchons un analyste qui connaît Looker.",
+               echo="Votre annonce demande Looker et quelqu'un prêt à soutenir une entreprise présente dans 120 pays.",
+               letter_skill="Je travaille aussi avec {x}.",
+               story_bullet="Automatisé le rapprochement des factures dans dbt, résorbant un arriéré de 4 000 factures par mois."),
+    "hu": dict(summary2="A rendetlen adatból olyan terveket készítek, amelyekre egy csapat építeni tud, és a riportolást áttekinthetően tartom.",
+               recipient="Toborzó csapat", greeting="Tisztelt Toborzó Csapat!", closing="Üdvözlettel,",
+               posting="Adatelemző az Orchid Energy-nél. 120 országban vagyunk jelen, és olyan elemzőt keresünk, aki ismeri a Looker-t.",
+               echo="Hirdetésük szerint Looker-ismeret kell egy 120 országban jelen lévő cég támogatásához.",
+               letter_skill="Emellett {x}-t is használok.",
+               story_bullet="Automatizáltam a számlaegyeztetést dbt-ben, havi 4 000 számla elmaradását pótolva."),
+    "sv": dict(summary2="Jag gör rörig data till planer som ett team kan agera på och håller rapporteringen lugn och läsbar.",
+               recipient="Rekryteringsteamet", greeting="Hej rekryteringsteam,", closing="Vänliga hälsningar,",
+               posting="Dataanalytiker hos Orchid Energy. Vi finns i 120 länder och söker en analytiker som kan Looker.",
+               echo="Er annons efterfrågar Looker och någon som vill stödja ett företag i 120 länder.",
+               letter_skill="Jag arbetar också med {x}.",
+               story_bullet="Automatiserade fakturaavstämning i dbt och arbetade av en kö på 4 000 fakturor i månaden."),
+}
+STORY_BANK = (
+    "## Invoice matching\n\n**Context:** The finance team matched supplier invoices by hand every month.\n\n"
+    "**Action:** I built an automated matching job in dbt and wrote the checks for it.\n\n"
+    "**Result:** It cleared a backlog of 4 000 invoices a month.\n\n"
+    "**Learning:** Small checks written early save the most time.\n"
+)
+_SYNONYM = {"Excel": "Microsoft Excel", "Power BI": "PowerBI"}  # a skill the CV backs, named another way
+DFMT = ("year", "mm/yyyy", "month", "d.m.yyyy", "yyyy-mm", "day")
+# The language a body is written in when it is not its source's: one table to Danish or French, one to the others.
+_CROSS_A = {"en": "da", "da": "fr", "fr": "da", "hu": "fr", "sv": "da"}
+_CROSS_B = {"en": "fr", "da": "en", "fr": "en", "hu": "da", "sv": "fr"}
+
+
 def _ascii(text: str) -> str:
-    import unicodedata
     return "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)).lower()
 
 
 def make_person(n: int) -> dict:
-    """The made-up person number *n*: language, name, jobs, schooling, skills, languages; every choice a function of *n*."""
+    """The made-up person number *n*: language, name, jobs, schooling, skills, languages, how dates are written; every
+    choice a function of *n*. Texts are not stored but looked up in a language's pack when rendered, so one person can
+    be written in any language (names, employers, schools, places and figures stay)."""
     lang = LANG_PATTERN[n % 10]
     pack = _PACK[lang]
     first, last = pack["first"][n % 7], pack["last"][(n * 3 + 1) % 7]
     base = 2008 + n % 4
     spans = [(base + 9, None), (base + 5, base + 9), (base + 2, base + 5)]
-    jobs = [{"role": pack["roles"][2 - i], "org": _ORGS[(n + i * 3) % 10], "place": pack["cities"][(n + i) % 3], "start": a, "end": b,
-             "bullets": [_BULLETS[lang][(n + i + j) % 6] for j in range(3)]} for i, (a, b) in enumerate(spans)]
-    edu = [{"degree": pack["degrees"][1], "school": pack["school"], "place": pack["cities"][n % 3], "start": base - 3, "end": base},
-           {"degree": pack["degrees"][0], "school": pack["school"], "place": pack["cities"][n % 3], "start": base, "end": base + 2}]
-    own = (lang, "native")
-    spoken = [own, ("en" if lang != "en" else "fr", "fluent" if n % 2 else "working"), (pack["third"], "basic" if n % 3 else "conversational")]
+    jobs = [{"role_i": 2 - i, "org": _ORGS[(n + i * 3) % 10], "place": pack["cities"][(n + i) % 3], "start": a, "end": b,
+             "bullets": [(n + i + j) % 6 for j in range(3)]} for i, (a, b) in enumerate(spans)]
+    edu = [{"degree_i": 1, "school": pack["school"], "place": pack["cities"][n % 3], "start": base - 3, "end": base},
+           {"degree_i": 0, "school": pack["school"], "place": pack["cities"][n % 3], "start": base, "end": base + 2}]
+    spoken = [(lang, "native"), ("en" if lang != "en" else "fr", "fluent" if n % 2 else "working"),
+              (pack["third"], "basic" if n % 3 else "conversational")]
     return {
-        "n": n, "lang": lang, "name": f"{first} {last}", "title": pack["roles"][2], "city": pack["cities"][n % 3], "country": pack["country"],
+        "n": n, "lang": lang, "name": f"{first} {last}", "city": pack["cities"][n % 3], "country": pack["country"],
         "phone": f"{pack['phone']} 00 00 00 00",  # the number the privacy guard knows as made up
         "email": f"{_ascii(first)}.{_ascii(last)}@example.com", "slug": f"{_ascii(first)}.{_ascii(last)}",
-        "style": n % 3, "contact_style": (n // 3) % 3, "level_style": n % 2, "variant": (n // 2) % 2,
-        "skill_levels": n % 3 == 1, "extra": n % 2 == 0, "linkedin": n % 4 == 0,
-        "jobs": jobs, "education": edu,
-        "skills": [_TOOLS[(n + i) % 8] for i in range(5)] + [pack["soft"][n % 3]],
+        "style": n % 3, "dfmt": DFMT[(n + n // 3) % 6], "contact_style": (n // 3) % 3, "level_style": n % 2, "variant": (n // 2) % 2,
+        "skill_levels": n % 3 == 1, "extra": n % 2 == 0, "linkedin": n % 4 == 0, "story": n % 2 == 0, "letter": n % 4 == 0,
+        "jobs": jobs, "education": edu, "tools": [_TOOLS[(n + i) % 8] for i in range(5)], "soft_i": n % 3,
         "certs": [(_CERTS[(n + i) % 4], 2016 + (n + i) % 8) for i in range(2)],
         "languages": spoken, "months": [(n + i * 5) % 12 for i in range(6)],
     }
@@ -353,27 +421,47 @@ def make_person(n: int) -> dict:
 PEOPLE = [make_person(n) for n in range(28)]
 
 
+def body_lang(person: dict) -> str:
+    """The language the person's tailored documents are written in: another than their CV's for two in three."""
+    lang = person["lang"]
+    return (_CROSS_A, _CROSS_B, {lang: lang})[person["n"] % 3][lang]
+
+
 # --- the CV as markdown, with what it says built in --------------------------------------------------------------
 
-def _dates(person: dict, start, end, i: int) -> str:
-    pack = _PACK[person["lang"]]
-    if person["style"] != 2:
-        return f"{start} - {end or pack['present']}"
-    months = _MONTHS[person["lang"]].split()
-    m1 = months[person["months"][i % 6]]
-    tail = pack["present"] if end is None else f"{months[person['months'][(i + 1) % 6]]} {end}"
-    return f"{m1} {start} \u2013 {tail}"
+def _when(person: dict, year: int, k: int, lang: str) -> str:
+    """A date of `year` as the person writes dates, in `lang` (`k` picks its month and day)."""
+    f, m, d = person["dfmt"], person["months"][k % 6], (person["n"] + k * 7) % 27 + 1
+    name = _MONTHS[lang].split()[m]
+    if f == "year":
+        return str(year)
+    if f == "month":
+        return f"{name} {year}"
+    if f == "mm/yyyy":
+        return f"{m + 1:02d}/{year}"
+    if f == "d.m.yyyy":
+        return f"{d}.{m + 1}.{year}"
+    if f == "yyyy-mm":
+        return f"{year}-{m + 1:02d}"
+    if lang == "en":
+        return f"{d}{'th' if 10 <= d % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(d % 10, 'th')} {name} {year}"
+    return {"hu": f"{year}. {name} {d}.", "da": f"{d}. {name} {year}"}.get(lang, f"{d} {name} {year}")
 
 
-def _entry(person: dict, role: str, org: str, place: str, start, end, i: int) -> tuple[str, dict]:
-    dates = _dates(person, start, end, i)
+def _dates(person: dict, start: int, end, i: int, lang: str) -> str:
+    tail = _PACK[lang]["present"] if end is None else _when(person, end, 2 * i + 1, lang)
+    return f"{_when(person, start, 2 * i, lang)} {'-' if person['dfmt'] == 'year' else chr(0x2013)} {tail}"
+
+
+def _entry(person: dict, role: str, org: str, place: str, start, end, i: int, lang: str) -> tuple[str, dict]:
+    dates = _dates(person, start, end, i, lang)
     style = person["style"]
     if style == 0:
         heading, place = f"{role}, {org} ({dates})", None
     elif style == 1:
-        heading = f"{role} | {org} \u2014 {dates} | {place}"
+        heading = f"{role} | {org} — {dates} | {place}"
     else:
-        heading = f"{org}, {place} \u2013 {role} ({dates})"
+        heading = f"{org}, {place} – {role} ({dates})"
     return heading, {"heading": heading, "role": role, "org": org, "dates": dates, "place": place, "start_year": start, "end_year": end}
 
 
@@ -391,70 +479,91 @@ def _contact_block(person: dict, labels: dict) -> tuple[str, list[dict]]:
     return " | ".join(v for _, v in items), contacts
 
 
-def render_cv_md(person: dict) -> tuple[str, dict]:
-    """The person's cv.md and `expected` (what a reader should find in it): every expected value is a literal of the text."""
-    pack, lang = _PACK[person["lang"]], person["lang"]
-    heads = {**pack["headings"], **(pack["alt"] if person["variant"] else {})}
+def _heads(person: dict, lang: str) -> dict:
+    pack = _PACK[lang]
+    return {**pack["headings"], **(pack["alt"] if person["variant"] else {})}
+
+
+def render_cv_md(person: dict, lang: str | None = None, *, tailor: bool = False) -> tuple[str, dict]:
+    """The person's cv.md in `lang` (their own by default) and `expected` (what a reader should find in it): every
+    expected value is a literal of the text. `tailor` writes what a tailor makes of it: a new summary, the first two
+    bullets of the latest job merged with its start date after them, the oldest job, degree and second certification and
+    the interests dropped, skills before experience, a skill named by a synonym, and the story bank's claim added."""
+    lang = lang or person["lang"]
+    pack, heads = _PACK[lang], _heads(person, lang)
+    skills = [*person["tools"], pack["soft"][person["soft_i"]]]
     sections: dict[str, str] = {}
     entries: list[dict] = []
     levels: dict = {}
-    out = [f"# {person['name']}", "", f"> {person['title']}", ""]
-    block, contacts = _contact_block(person, pack["labels"])
-    out += [block, ""]
-
-    def section(kind: str) -> None:
-        sections[heads[kind]] = kind
-        out.extend([f"## {heads[kind]}", ""])
-
-    section("summary")
-    out += [pack["summary"].format(title=person["title"]), ""]
-    section("experience")
-    for i, job in enumerate(person["jobs"]):
-        heading, entry = _entry(person, job["role"], job["org"], job["place"], job["start"], job["end"], i)
+    part: dict[str, list[str]] = {}
+    part["summary"] = [_EXTRA[lang]["summary2"] if tailor else pack["summary"].format(title=pack["roles"][2]), ""]
+    lines = part["experience"] = []
+    for i, job in enumerate(person["jobs"][:2] if tailor else person["jobs"]):
+        heading, entry = _entry(person, pack["roles"][job["role_i"]], job["org"], job["place"], job["start"], job["end"], i, lang)
         entries.append(entry)
-        out += [f"### {heading}", "", *[f"- {b[0]}" for b in job["bullets"]], ""]
-    section("education")
-    for i, ed in enumerate(person["education"]):
-        heading, entry = _entry(person, ed["degree"], ed["school"], ed["place"], ed["start"], ed["end"], i + 3)
+        texts = [_BULLETS[lang][ix][0] for ix in job["bullets"]]
+        if tailor and i == 0:
+            merged = texts[0].rstrip(".") + "; " + texts[1][0].lower() + texts[1][1:]
+            texts = [f"{merged.rstrip('.')} ({_when(person, job['start'], 0, lang)}).", texts[2]]
+            texts += [_EXTRA[lang]["story_bullet"]] if person["story"] else []
+        lines += [f"### {heading}", "", *[f"- {t}" for t in texts], ""]
+    lines = part["education"] = []
+    for i, ed in enumerate(person["education"][1:] if tailor else person["education"]):
+        heading, entry = _entry(person, pack["degrees"][ed["degree_i"]], ed["school"], ed["place"], ed["start"], ed["end"], i + 3, lang)
         entries.append(entry)
-        out += [f"### {heading}", ""]
-    section("skills")
+        lines += [f"### {heading}", ""]
     if person["skill_levels"]:
-        out += [f"- {s} \u2014 {pack['skill_word']}" for s in person["skills"]] + [""]
-        levels.update({s: None for s in person["skills"]})
+        part["skills"] = [f"- {_SYNONYM.get(s, s) if tailor else s} — {pack['skill_word']}" for s in skills] + [""]
+        levels.update({s: None for s in skills})
     else:
-        out += [", ".join(person["skills"]), ""]
-    section("certifications")
-    out += [f"- **{name}** \u2014 {year}" for name, year in person["certs"]] + [""]
-    section("languages")
+        part["skills"] = [", ".join(_SYNONYM.get(s, s) if tailor else s for s in skills), ""]
+    part["certifications"] = [f"- **{name}** — {year}" for name, year in person["certs"][:1 if tailor else 2]] + [""]
+    lines = part["languages"] = []
     working = []
     for code, level in person["languages"]:
         name, cefr = pack["langs"][code], person["level_style"] == 1 and level != "native"
         word = CEFR[level] if cefr else pack["levels"][level]
-        out.append(f"- **{name}** ({word})" if cefr else (f"- **{name}** \u2014 {word}" if person["n"] % 3 else f"- {name}: {word}"))
+        lines.append(f"- **{name}** ({word})" if cefr else (f"- **{name}** — {word}" if person["n"] % 3 else f"- {name}: {word}"))
         levels[name] = LEVEL_NUMBER[level]
         if LEVEL_NUMBER[level] >= 3:
-            working.append(ENGLISH_NAME[code])
-    out.append("")
-    section("interests")
-    out += [pack["interests"], ""]
-    if person["extra"]:
-        section("other")
-        out += [pack["extra"], ""]
-    md = "\n".join(out)
+            working.append(name)
+    lines.append("")
+    part["interests"] = [pack["interests"], ""]
+    part["other"] = [pack["extra"], ""]
+    order = ["summary", "skills", "experience", "education", "certifications", "languages"] if tailor else \
+        ["summary", "experience", "education", "skills", "certifications", "languages", "interests", *(["other"] if person["extra"] else [])]
+    block, contacts = _contact_block(person, pack["labels"])
+    out = [f"# {person['name']}", "", f"> {pack['roles'][2]}", "", block, ""]
+    for kind in order:
+        sections[heads[kind]] = kind
+        out += [f"## {heads[kind]}", "", *part[kind]]
     expected = {"name": person["name"], "email": person["email"], "city": person["city"], "country": pack["country"],
-                "working_languages": sorted(working), "sections": sections, "contacts": contacts, "levels": levels, "entries": entries}
-    return md, expected
+                "working_languages": sorted(working), "sections": sections, "contacts": contacts, "levels": levels,
+                "skills": skills, "entries": entries}
+    return "\n".join(out), expected
 
 
-def render_body(person: dict, *, reformat: bool = False) -> str:
-    """The CV as a tailored body in the tailor's vocabulary (`cv_body.body`: no model). `reformat` tells two figures of
-    the first job another way (the same value: `40 000` as `40k`), which the CV backs."""
-    body = cv_body.body(render_cv_md(person)[0], person["lang"])
+def render_body(person: dict, lang: str, *, reformat: bool = False) -> str:
+    """The tailored CV in `lang` as a body in the tailor's vocabulary (`cv_body.body`: no model). `reformat` tells two
+    figures of the first job another way (the same value: `40 000` as `40k`), which the CV backs."""
+    body = cv_body.body(render_cv_md(person, lang, tailor=True)[0], lang)
     if reformat:
-        for _, anchor, same, _ in person["jobs"][0]["bullets"][:2]:
+        for ix in person["jobs"][0]["bullets"][:2]:
+            _, anchor, same, _ = _BULLETS[lang][ix]
             body = body.replace(html.escape(anchor, quote=False), html.escape(same, quote=False), 1)
     return body
+
+
+def render_letter(person: dict, lang: str) -> str:
+    """The cover letter in `lang`: it echoes the posting, and says one thing of the latest job that the CV backs."""
+    extra, job = _EXTRA[lang], person["jobs"][0]
+    claim = _BULLETS[lang][job["bullets"][0]][0]
+    e = lambda t: html.escape(t, quote=False)  # noqa: E731
+    return (f'<header class="letter-header"><h1>{e(person["name"])}</h1>\n<p class="contact"><span class="phone">{person["phone"]}</span>'
+            f'<span class="email"><a href="mailto:{person["email"]}">{person["email"]}</a></span><span class="location">{e(person["city"])}</span></p></header>\n'
+            f'<div class="recipient"><p>{e(extra["recipient"])}</p><p>Orchid Energy</p></div>\n<p class="date"><<date>></p>\n'
+            f'<p>{e(extra["greeting"])}</p>\n<p>{e(extra["echo"])}</p>\n<p>{e(job["org"])}: {e(claim)}</p>\n'
+            f'<div class="closing"><p class="signoff">{e(extra["closing"])}</p><p>{e(person["name"])}</p></div>')
 
 
 # --- planting fabrications --------------------------------------------------------------------------------------
@@ -484,42 +593,55 @@ def _swap(body: str, old: str, new: str) -> str:
     return body.replace(old, new, 1)
 
 
-def plant(body: str, kind: str, person: dict, pick: int) -> tuple[str, dict]:
-    """`body` with one fabrication of `kind` planted by an anchored replacement, and what was planted:
-    `{kind, planted_value, quote}` (`quote` is a stretch of the new body's text). Raises ValueError with no anchor."""
-    pack, source = _PACK[person["lang"]], render_cv_md(person)[0]
-    heads = {**pack["headings"], **(pack["alt"] if person["variant"] else {})}
+def plant(body: str, kind: str, person: dict, lang: str, pick: int, source: str) -> tuple[str, dict]:
+    """`body` (the tailored CV in `lang`) with one fabrication of `kind` planted by an anchored replacement, and what
+    was planted: `{kind, planted_value, quote, file}` (`quote` is a stretch of the new body's text). `source` is the
+    CV it is made of, which a year is not taken from. Raises ValueError with no anchor."""
+    pack, heads = _PACK[lang], _heads(person, lang)
+    info = lambda value, quote: {"kind": kind, "planted_value": value, "quote": quote, "file": "cv"}  # noqa: E731
     if kind == "number":
-        _, anchor, _, fake = person["jobs"][pick % 3]["bullets"][pick % 3]
-        return _swap(body, _esc(anchor), _esc(fake)), {"kind": kind, "planted_value": fake, "quote": fake}
+        _, anchor, _, fake = _BULLETS[lang][person["jobs"][pick % 2]["bullets"][pick % 3]]
+        return _swap(body, _esc(anchor), _esc(fake)), info(fake, fake)
     if kind == "year":
-        job = person["jobs"][2]
-        old = _dates(person, job["start"], job["end"], 2)
+        job = person["jobs"][1]
+        old = _dates(person, job["start"], job["end"], 1, lang)
         fake_year = next(y for y in (job["start"] - 2, job["start"] - 1, job["start"] - 3, job["start"] + 3) if str(y) not in source)
         new = old.replace(str(job["start"]), str(fake_year), 1)
-        return _swap(body, _esc(old), _esc(new)), {"kind": kind, "planted_value": str(fake_year), "quote": new}
+        return _swap(body, _esc(old), _esc(new)), info(str(fake_year), new)
     if kind == "employer":
         fake = _FAKE_ORGS[pick % len(_FAKE_ORGS)]
-        return _swap(body, _esc(person["jobs"][2]["org"]), _esc(fake)), {"kind": kind, "planted_value": fake, "quote": fake}
+        return _swap(body, _esc(person["jobs"][1]["org"]), _esc(fake)), info(fake, fake)
     if kind == "degree":
         fake = pack["fake_degrees"][pick % 2]
-        return _swap(body, _esc(person["education"][1]["degree"]), _esc(fake)), {"kind": kind, "planted_value": fake, "quote": fake}
+        return _swap(body, _esc(pack["degrees"][person["education"][1]["degree_i"]]), _esc(fake)), info(fake, fake)
     if kind == "skill":
         fake = _FAKE_SKILLS[pick % len(_FAKE_SKILLS)]
-        return (_insert_in_section(body, heads["skills"], f"<li>{fake}</li>", f", {fake}"),
-                {"kind": kind, "planted_value": fake, "quote": fake})
+        return _insert_in_section(body, heads["skills"], f"<li>{fake}</li>", f", {fake}"), info(fake, fake)
     if kind == "certification":
         fake = _FAKE_CERTS[pick % len(_FAKE_CERTS)]
-        return (_insert_in_section(body, heads["certifications"], f"<li><strong>{fake}</strong></li>", f" {fake}"),
-                {"kind": kind, "planted_value": fake, "quote": fake})
+        return _insert_in_section(body, heads["certifications"], f"<li><strong>{fake}</strong></li>", f" {fake}"), info(fake, fake)
     raise ValueError(f"unknown kind {kind!r}")
+
+
+def plant_letter(letter: str, kind: str, person: dict, lang: str, pick: int) -> tuple[str, dict]:
+    """The cover letter with a `number` (the figure it tells of the latest job changed) or a `skill` (a sentence naming
+    a tool the CV does not) planted, as `plant` does."""
+    if kind == "number":
+        _, anchor, _, fake = _BULLETS[lang][person["jobs"][0]["bullets"][0]]
+        return _swap(letter, _esc(anchor), _esc(fake)), {"kind": kind, "planted_value": fake, "quote": fake, "file": "letter"}
+    if kind == "skill":
+        fake = _FAKE_SKILLS[pick % len(_FAKE_SKILLS)]
+        sentence = _EXTRA[lang]["letter_skill"].format(x=fake)
+        return (_swap(letter, '<div class="closing">', f'<p>{_esc(sentence)}</p>\n<div class="closing">'),
+                {"kind": kind, "planted_value": fake, "quote": fake, "file": "letter"})
+    raise ValueError(f"unknown letter kind {kind!r}")
 
 
 # --- the two corpora ---------------------------------------------------------------------------------------------
 
 def build_reader_corpus() -> dict:
-    """The CVs the reader reads: `{name: {lang, md, expected}}` for the first 15 people (every language, every heading
-    and contact style, levels in words and in CEFR, a level word outside the table, headings no word list knows)."""
+    """The CVs the reader reads: `{name: {lang, md, expected}}` for the first 15 people (every language, every heading,
+    contact and date style, levels in words and in CEFR, a level word outside the table, headings no word list knows)."""
     corpus = {}
     for person in PEOPLE[:15]:
         md, expected = render_cv_md(person)
@@ -528,55 +650,37 @@ def build_reader_corpus() -> dict:
 
 
 def build_body_corpus() -> dict:
-    """The tailored bodies the fact check reads: `{name: {lang, person, md, body, plants}}`; the first 20 people's with
-    one to three fabrications each (every kind planted), then 8 clean twins with a figure told another way."""
+    """The cases of the fact check: `{name: {lang, body_lang, md, story, posting, body, letter, plants}}`. The first 20
+    people's tailored documents carry one to three fabrications each (every kind, in the CV and, for two, in the letter);
+    the other 8 are clean, with a figure told another way. Every other person has a story bank and every fourth a letter
+    with its posting."""
     corpus, cursor = {}, 0
-    for n, person in enumerate(PEOPLE[:28]):
-        body, plants = render_body(person, reformat=n >= 20), []
+    for n, person in enumerate(PEOPLE):
+        lang, blang = person["lang"], body_lang(person)
+        md = render_cv_md(person)[0]
+        body, letter, plants = render_body(person, blang, reformat=n >= 20), "", []
+        if person["letter"]:
+            letter = render_letter(person, blang)
         if n < 20:
             for c in range(1 + n % 3):
-                body, info = plant(body, KINDS[(cursor + c) % len(KINDS)], person, n + c)
+                body, info = plant(body, KINDS[(cursor + c) % len(KINDS)], person, blang, n + c, md)
                 plants.append(info)
             cursor += 1 + n % 3
-        corpus[f"b{n:02d}-{person['lang']}"] = {"lang": person["lang"], "person": n, "md": render_cv_md(person)[0], "body": body, "plants": plants}
+            if n in (4, 12):
+                letter, info = plant_letter(letter, ("number", "skill")[n // 8], person, blang, n)
+                plants.append(info)
+        corpus[f"b{n:02d}-{lang}-{blang}"] = {
+            "lang": lang, "body_lang": blang, "md": md, "story": STORY_BANK if person["story"] else "",
+            "posting": _EXTRA[blang]["posting"] if person["letter"] else "", "body": body, "letter": letter, "plants": plants}
     return corpus
-
-
-# --- the fixtures on disk ---------------------------------------------------------------------------------------
-
-CASES = REPO / "tests" / "tailoring" / "fixtures" / "cv_reading"
-
-
-def _dump(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-
-
-def write_fixtures() -> None:
-    """Write the corpora to `tests/tailoring/fixtures/cv_reading/{readers,bodies}/<case>/`; a test checks the files
-    are what the builders make, so run this after changing them and read the diff."""
-    import shutil
-    for folder in ("readers", "bodies"):
-        shutil.rmtree(CASES / folder, ignore_errors=True)
-    for name, case in build_reader_corpus().items():
-        (CASES / "readers" / name).mkdir(parents=True, exist_ok=True)
-        (CASES / "readers" / name / "cv.md").write_text(case["md"], encoding="utf-8")
-        _dump(CASES / "readers" / name / "expected.json", case["expected"])
-    for name, case in build_body_corpus().items():
-        (CASES / "bodies" / name).mkdir(parents=True, exist_ok=True)
-        (CASES / "bodies" / name / "cv.md").write_text(case["md"], encoding="utf-8")
-        (CASES / "bodies" / name / "cv.html").write_text(case["body"], encoding="utf-8")
-        _dump(CASES / "bodies" / name / "expected.json", {"lang": case["lang"], "plants": case["plants"]})
 
 
 # --- today's rules, as the baseline ------------------------------------------------------------------------------
 
-_SECTION_KINDS = ("skills", "education", "certifications", "languages", "interests")
-
-
 def baseline_reader(md: str, lang: str) -> dict:
     """What the rules of today read from `md`, as an answer of the model's shape: the header parse and
-    `_infer_basics_core` (with its model call refused), the section word lists, the level table, `_heading3`'s split."""
+    `_infer_basics_core` (with its model call refused), the section word lists, the level table, `_heading3`'s split.
+    No rule reads skills."""
     import tempfile
     from unittest import mock
 
@@ -589,8 +693,9 @@ def baseline_reader(md: str, lang: str) -> dict:
     head, labels = cv_body.header(md), cv_body.contact_labels(md)
     country = i18n.country_for_location(basics["location"] or "")
     body = cv_body.body(md, lang)
-    levels = [{"item": m[1], "level": int(m[2])} for m in re.finditer(r"<li>(?:<strong>)?(.+?)(?:</strong>)?\s*[\u2014:(][^<]*<span class=\"level level-(\d)", body)]
-    sections = [{"heading": cv_sections.heading(s[0])[0], "kind": cv_sections.kind(s, _SECTION_KINDS, (lang, "en")) or "other"}
+    levels = [{"item": m[1], "level": int(m[2])} for m in re.finditer(r"<li>(?:<strong>)?(.+?)(?:</strong>)?\s*[—:(][^<]*<span class=\"level level-(\d)", body)]
+    kinds = ("skills", "education", "certifications", "languages", "interests")
+    sections = [{"heading": cv_sections.heading(s[0])[0], "kind": cv_sections.kind(s, kinds, (lang, "en")) or "other"}
                 for s in cv_sections.split(md) if s and s[0].startswith("##")]
     entries = []
     for line in md.splitlines():
@@ -599,63 +704,230 @@ def baseline_reader(md: str, lang: str) -> dict:
             entries.append({"heading": line[4:].strip(), **{k: parts.get(k) for k in ("role", "org", "dates", "place")}, "start_year": None, "end_year": None})
     return {
         "name": basics["name"], "email": basics["email"], "city": basics["location"], "country": country.code if country else None,
-        "languages": [{"language": l, "level": "fluent"} for l in basics["languages"]],
+        "languages": [{"language": l, "level": "fluent"} for l in basics["languages"]], "skills": [],
         "sections": sections, "levels": levels, "entries": entries,
         "contacts": [{"kind": k, "label": labels.get(k, "").rstrip(":") or None, "value": v} for k, vs in head["details"].items() for v in vs],
     }
 
 
-def baseline_facts(md: str, body: str) -> list[dict]:
-    """What `facts.extract_claims` and `unsupported` flag in `body` against `md`, today, as findings."""
-    return facts.unsupported(facts.extract_claims(body, "cv"), [md], current_year=2026)
+def baseline_facts(case: dict) -> list[dict]:
+    """What `facts.extract_claims` and `unsupported` flag in the case's documents, today, as findings: the story bank is
+    a source of the CV (as `check` reads it), the posting only of the letter."""
+    claims = facts.extract_claims(case["body"], "cv") + (facts.extract_claims(case["letter"], "cover_letter") if case["letter"] else [])
+    sources = [case["md"], case["story"]]
+    found = facts.unsupported(claims, sources, sources + [case["posting"]], current_year=2026)
+    return [{**f, "file": "letter" if f["file"] == "cover_letter" else "cv"} for f in found]
+
+
+# --- the prompts ------------------------------------------------------------------------------------------------
+# Spike-local: if a model is chosen they move to the CV reader (`core/cv_read.py`) and to the facts check. The examples
+# in them are made up (never a person or a text of the corpus) and each answers a miss of an earlier measurement; the
+# history is in the issue.
+
+PROMPTS = {
+    "reader": (
+        "You read a job seeker's CV (markdown, in any language) and report what it says as JSON. Copy text exactly as "
+        "written; never guess: null when the CV does not say.\n"
+        "- `name`, `email`, `city`: as written (the city where they live, from the contact details, else of their current "
+        "job). `country`: the ISO 3166-1 alpha-2 code, lower case, of that city's country.\n"
+        "- `languages`: every spoken language the CV names, `language` as the CV writes it and `level` one of native, fluent "
+        "(professional, business, C1), working (B2), conversational (B1) or basic (A1, A2). C2 is native.\n"
+        "- `sections`: every `##` heading, `heading` exactly as written, `kind` one of summary (the profile or the "
+        "introduction), experience (the jobs), education, skills, certifications, languages, interests or other. The kind "
+        "is by what the section holds, whatever the heading says or the language is.\n"
+        "- `contacts`: each contact detail of the header: `kind` (phone, email, web, linkedin, github, location), `label` "
+        "the word written before it (`Tlf`, without the colon) or null when it has none, `value` as written.\n"
+        "- `skills`: every skill, tool or method named in the skills section, each as written and by its name alone.\n"
+        "- `levels`: every item of a skills or languages list that states a level, `item` as written and `level` 1 to 5 "
+        "(5 native or C2, 4 fluent or C1, 3 working or B2, 2 conversational or B1, 1 basic, A1 or A2); null when the "
+        "stated word is not one of these (a skill that is `advanced` has no level).\n"
+        "- `entries`: every `###` heading, `heading` exactly as written after the `###`, and its parts: `role` (a job "
+        "title or a degree), `org` (the employer or the school), `dates` as written, `place` (null when the heading has "
+        "none), `start_year` and `end_year` (integers; `end_year` null when the end is the present).\n"
+        "Examples (made up):\n"
+        "- `- **Italian** — fluent` gives item `Italian` with level 4, and `- Spanish (B2)` gives item `Spanish` with level 3: "
+        "the item is the name alone, never with its level word.\n"
+        "- A language at the level of a working language (`Arbeitssprache`, `lingua di lavoro`, `working proficiency`) is level 3, "
+        "not 4: 4 is for fluent, professional or C1.\n"
+        "- `## Key Skills` gives the heading `Key Skills`: the `#` marks are not part of it.\n"
+        "Answer with the JSON only."
+    ),
+    "facts": (
+        "You check a tailored CV and cover letter against the candidate's own sources. You get the SOURCE CV (markdown), "
+        "the STORY BANK (stories of the candidate, or none), the POSTING (the job ad, or none), the TAILORED CV (HTML) and "
+        "the COVER LETTER (HTML, or none). The tailored documents may drop, reorder, merge, shorten and reword, and may be "
+        "written in another language than the source (headings, degrees, months and level words translated; names, employers "
+        "and figures are not); they must not add a fact the sources do not back. A fact the story bank backs is supported; "
+        "the cover letter may also echo the posting's words, figures and skills. List every claim the sources do not "
+        "support:\n"
+        "- `number`: a figure, amount, percentage or count whose VALUE differs from the sources'; a figure told another way "
+        "with the same value (`1 200 000 EUR` and `1,2 M EUR`, `40 000` and `40k`, `9 %` and `9 percent`, a number written "
+        "in words) is supported. The day and month of a date are not figures.\n"
+        "- `year`: a year, or a year of a date range, that differs from the source's; a date written another way "
+        "(`03/2019`, `1.3.2019`, `2019-03`, `1st March 2019`) is the same date.\n"
+        "- `employer`: an employer the sources do not name. `skill`: a tool, technology or method they do not name; a name of "
+        "one the source backs written another way (`PowerBI` for `Power BI`) is supported. `certification`, `degree`: one "
+        "they do not name, in whatever language it is written.\n"
+        "Ignore the header, the contact details, the recipient, the date, the greeting and the closing. `file`: `cv` or "
+        "`letter`. `value`: the claimed value. `context`: a stretch of that document's text, copied exactly as it reads (at "
+        "most 15 words) that holds it. List nothing the sources support: an empty list is a clean document.\n"
+        "Examples (made up):\n"
+        "- `context` is plain text with no HTML tag in it: for `<li><strong>Rust</strong></li>` it is `Rust`, for a heading "
+        "`<span class=\"role\">Analyst</span> | <span class=\"org\">Zenith Corp</span>` it is `Analyst | Zenith Corp`.\n"
+        "- `value` is the claimed item alone, as the document writes it: a figure with its unit (`3 k`, `7 percent`), the name "
+        "of an employer, skill, certification or degree. For a changed date range `2004 - 2008` the kind is `year` and the "
+        "value the one year that differs (`2004`), not the range.\n"
+        "- Never copy markup into `context`: `<strong>Rust</strong>` is wrong and `Rust` is right; "
+        "`<span class=\"dates\">2004 - 2008</span>` is wrong and `Zenith Corp - 2004 - 2008` is right. Copy only words and "
+        "figures, as the text of the page reads them.\n"
+        "Answer with the JSON only."
+    ),
+}
+
+_STR_OR_NULL = {"type": ["string", "null"]}
+_INT_OR_NULL = {"type": ["integer", "null"]}
+SCHEMAS = {
+    "reader": {
+        "type": "object",
+        "properties": {
+            "name": _STR_OR_NULL, "email": _STR_OR_NULL, "city": _STR_OR_NULL, "country": _STR_OR_NULL,
+            "languages": {"type": "array", "items": {"type": "object", "properties": {"language": {"type": "string"}, "level": {"type": "string"}},
+                                                     "required": ["language", "level"]}},
+            "sections": {"type": "array", "items": {"type": "object", "properties": {"heading": {"type": "string"}, "kind": {"type": "string"}},
+                                                    "required": ["heading", "kind"]}},
+            "contacts": {"type": "array", "items": {"type": "object", "properties": {"kind": {"type": "string"}, "label": _STR_OR_NULL, "value": {"type": "string"}},
+                                                    "required": ["kind", "label", "value"]}},
+            "skills": {"type": "array", "items": {"type": "string"}},
+            "levels": {"type": "array", "items": {"type": "object", "properties": {"item": {"type": "string"}, "level": _INT_OR_NULL},
+                                                  "required": ["item", "level"]}},
+            "entries": {"type": "array", "items": {"type": "object", "properties": {
+                "heading": {"type": "string"}, "role": _STR_OR_NULL, "org": _STR_OR_NULL, "dates": _STR_OR_NULL, "place": _STR_OR_NULL,
+                "start_year": _INT_OR_NULL, "end_year": _INT_OR_NULL}, "required": ["heading", "role", "org", "dates", "place", "start_year", "end_year"]}},
+        },
+        "required": ["name", "email", "city", "country", "languages", "sections", "contacts", "skills", "levels", "entries"],
+    },
+    "facts": {
+        "type": "object",
+        "properties": {"findings": {"type": "array", "items": {"type": "object", "properties": {
+            "kind": {"type": "string", "enum": list(KINDS)}, "file": {"type": "string", "enum": ["cv", "letter"]},
+            "value": {"type": "string"}, "context": {"type": "string"}}, "required": ["kind", "file", "value", "context"]}}},
+        "required": ["findings"],
+    },
+}
+
+MODELS = ("haiku", "sonnet")
+
+
+def case_input(task: str, case: dict) -> str:
+    """What the model is shown for `case`."""
+    if task == "reader":
+        return f"CV:\n<<<\n{case['md']}\n>>>\n"
+    return (f"SOURCE CV:\n<<<\n{case['md']}\n>>>\n\nSTORY BANK:\n<<<\n{case['story'] or 'none'}\n>>>\n\nPOSTING:\n<<<\n{case['posting'] or 'none'}\n>>>\n\n"
+            f"TAILORED CV:\n<<<\n{case['body']}\n>>>\n\nCOVER LETTER:\n<<<\n{case['letter'] or 'none'}\n>>>\n")
+
+
+def _key(task: str, case: dict) -> str:
+    """Names the prompt and input an answer is for, so a record of other text is not read."""
+    return hashlib.sha256((PROMPTS[task] + "\0" + case_input(task, case)).encode()).hexdigest()[:12]
+
+
+def ask_case(task: str, model: str, case: dict):
+    """One call to the model for `case`: the reader's answer (a dict) or the facts check's findings (a list).
+    Plan quota through `claude_cli.ask`; the feature keys are the nearest existing ones (see the module's docstring)."""
+    from door.core import claude_cli
+
+    answer = claude_cli.ask(PROMPTS[task], case_input(task, case), model=model, feature="infer_basics" if task == "reader" else "revise",
+                            schema=SCHEMAS[task], effort="low", timeout_s=240)
+    return answer if task == "reader" else [f for f in answer.get("findings") or [] if isinstance(f, dict)]
 
 
 # --- recorded answers and the report -----------------------------------------------------------------------------
 
-RECORDED = CASES / "recorded"
+RECORDED = REPO / "tests" / "tailoring" / "fixtures" / "cv_reading"
 
 
-def load_recorded(model: str, task: str, version: int, root: Path = RECORDED) -> dict:
-    """`{case: [answer per run]}` from `<root>/<model>/<task>/v<version>/<case>.<run>.json`; a run that failed is `{"error"}`."""
-    folder = Path(root) / model / task / f"v{version}"
-    runs: dict[str, dict[int, object]] = {}
-    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
-        case, run = path.stem.rsplit(".", 1)
-        data = json.loads(path.read_text(encoding="utf-8"))
-        runs.setdefault(case, {})[int(run)] = data["answer"] if "answer" in data else {"error": data.get("error", "unknown")}
-    return {case: [by_run[r] for r in sorted(by_run)] for case, by_run in runs.items()}
+def _recorded_ok(path: Path, key: str | None = None) -> bool:
+    """The record at `path` is an answer (not an error) and, when `key` is given, one of that prompt and input."""
+    if not path.is_file():
+        return False
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return "answer" in data and (key is None or data.get("key") == key)
+
+
+def load_recorded(model: str, task: str, corpus: dict, root: Path = RECORDED) -> dict:
+    """`{case: [answer per run]}` from `<root>/<model>/<task>/<case>.<run>.json`; an error, or a record of another
+    prompt or input, is `{"error"}` (a miss)."""
+    folder = Path(root) / model / task
+    answers = {}
+    for case, data in corpus.items():
+        runs = sorted(folder.glob(f"{case}.*.json"), key=lambda p: int(p.stem.rsplit(".", 1)[1]))
+        if runs:
+            answers[case] = [json.loads(p.read_text(encoding="utf-8"))["answer"] if _recorded_ok(p, _key(task, data))
+                             else {"error": "failed, or recorded for another prompt or input"} for p in runs]
+    return answers
+
+
+def run(task: str, model: str, corpus: dict, *, runs: int = 3, root: Path = RECORDED, workers: int = 4) -> None:
+    """Ask for every (case, run) with no recorded answer (an error, or a record of other text, is asked again) and
+    record it as raw JSON with its key."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    folder = Path(root) / model / task
+    folder.mkdir(parents=True, exist_ok=True)
+
+    def one(job):
+        name, run_no = job
+        try:
+            record = {"key": _key(task, corpus[name]), "answer": ask_case(task, model, corpus[name])}
+        except Exception as exc:  # noqa: BLE001 - a failed call is a miss to count, not a stop
+            record = {"error": str(exc)[:300]}
+        (folder / f"{name}.{run_no}.json").write_text(json.dumps(record, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        return name, run_no, "error" in record
+
+    jobs = [(n, r) for n in sorted(corpus) for r in range(runs) if not _recorded_ok(folder / f"{n}.{r}.json", _key(task, corpus[n]))]
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for name, run_no, failed in pool.map(one, jobs):
+            print(f"{model} {task} {name}.{run_no}: {'ERROR' if failed else 'recorded'}", file=sys.stderr)
 
 
 def summarize(task: str, answers: dict, corpus: dict) -> dict:
-    """The numbers of one model on one task from `answers` (`{case: [answer per run]}`), with the verdict."""
+    """The numbers of one model on one task from `answers` (`{case: [answer per run]}`), with the verdict; `calls` is
+    what every figure rests on (a case and a run each), a failed one a miss."""
+    calls = sum(len(a) for a in answers.values())
     runs = max((len(a) for a in answers.values()), default=0)
     if task == "reader":
         total = {f: [0, 0] for f in READER_FIELDS}
+        stretch = [0, 0]
         for case, runs_ in answers.items():
             for answer in runs_:
                 for field, cell in score_reader(corpus[case]["expected"], answer).items():
                     total[field][0] += cell["hit"]
                     total[field][1] += cell["total"]
+                hit, all_ = stretches(corpus[case]["md"], answer)
+                stretch[0] += hit
+                stretch[1] += all_
         fields = {f: (h / t if t else 0.0) for f, (h, t) in total.items()}
-        return {"cases": len(answers), "runs": runs, "fields": fields, "verdict": reader_verdict(fields)}
+        return {"cases": len(answers), "runs": runs, "calls": calls, "fields": fields, "verdict": reader_verdict(fields),
+                "stretches": stretch[0] / stretch[1] if stretch[1] else 0.0}
     kinds = {k: [0, 0] for k in KINDS}
-    verbatim, false_clean, false_planted, bodies = [0, 0], [], [], 0
+    verbatim, false_clean, false_planted = [0, 0], [], []
     for case, runs_ in answers.items():
+        c = corpus[case]
         for answer in runs_:
-            score = score_facts(corpus[case]["plants"], answer, corpus[case]["body"])
+            score = score_facts(c["plants"], answer, c["body"], c["letter"])
             for kind, cell in score["per_kind"].items():
                 kinds[kind][0] += cell["found"]
                 kinds[kind][1] += cell["planted"]
             verbatim[0] += score["verbatim"][0]
             verbatim[1] += score["verbatim"][1]
-            (false_planted if corpus[case]["plants"] else false_clean).append(score["false_flags"])
-            bodies += 1
+            (false_planted if c["plants"] else false_clean).append(score["false_flags"])
     report = {
-        "cases": len(answers), "runs": runs, "per_kind": {k: h / t for k, (h, t) in kinds.items() if t},
+        "cases": len(answers), "runs": runs, "calls": calls, "per_kind": {k: h / t for k, (h, t) in kinds.items() if t},
+        "planted": {k: t // max(runs, 1) for k, (_, t) in kinds.items() if t},
         "false_clean_max": max(false_clean, default=0), "false_clean_mean": sum(false_clean) / max(len(false_clean), 1),
         "false_planted_mean": sum(false_planted) / max(len(false_planted), 1),
         "verbatim": verbatim[0] / verbatim[1] if verbatim[1] else 1.0,
-        "stable": stability({c: a for c, a in answers.items()}) if runs > 1 else None,
+        "stable": stability(answers) if runs > 1 else None,
     }
     report["verdict"] = facts_verdict({**report, "stable": 1.0 if report["stable"] is None else report["stable"]})
     return report
@@ -663,184 +935,35 @@ def summarize(task: str, answers: dict, corpus: dict) -> dict:
 
 def to_markdown(task: str, report: dict) -> str:
     """The report as a markdown table."""
-    pct = lambda x: "n/a" if x is None else f"{100 * x:.0f}%"  # noqa: E731
-    head = f"{report['cases']} cases x {report['runs']} runs, verdict: **{report['verdict']}**\n\n"
+    pct = lambda x: "n/a" if x is None else f"{100 * x:.1f}%"  # noqa: E731
+    head = f"{report['cases']} cases, up to {report['runs']} runs each, {report['calls']} calls: verdict **{report['verdict']}**\n\n"
     if task == "reader":
-        return head + "| field | right |\n|---|---|\n" + "".join(f"| {f} | {pct(v)} |\n" for f, v in report["fields"].items())
-    rows = "".join(f"| {k} | {pct(v)} |\n" for k, v in report["per_kind"].items())
-    return (head + "| kind | recall |\n|---|---|\n" + rows +
+        return (head + "| field | right |\n|---|---|\n" + "".join(f"| {f} | {pct(v)} |\n" for f, v in report["fields"].items()) +
+                f"\nvalues that are a stretch of the CV: {pct(report['stretches'])} (the country is an ISO code and the levels are "
+                "numbers, so neither can be; the country is scored apart and no verdict rests on it).\n")
+    rows = "".join(f"| {k} | {pct(v)} | {report['planted'][k]} |\n" for k, v in report["per_kind"].items())
+    return (head + "| kind | recall | planted per run |\n|---|---|---|\n" + rows +
             f"\nfalse flags: clean bodies max {report['false_clean_max']}, mean {report['false_clean_mean']:.2f}; planted bodies mean "
             f"{report['false_planted_mean']:.2f}. verbatim: {pct(report['verbatim'])}. stable: {pct(report['stable'])}.\n")
-
-
-# --- the prompts ------------------------------------------------------------------------------------------------
-# Spike-local: if the model is chosen, they move to the CV reader (`core/cv_read.py`) and to the facts check. A miss
-# becomes an example here, made up from a person other than the case that missed (never a Python rule); `EXAMPLES`
-# holds each with the round that added it, so an older round can be measured again as it was.
-
-_READER_PROMPT = (
-    "You read a job seeker's CV (markdown, in any language) and report what it says as JSON. Copy text exactly as "
-    "written; never guess: null when the CV does not say.\n"
-    "- `name`, `email`: as written. `city`: where they live (the contact details), else the city of their current job. "
-    "`country`: the ISO 3166-1 alpha-2 code, lower case, of that city's country.\n"
-    "- `languages`: every spoken language the CV names, `language` its English name and `level` one of native, fluent "
-    "(professional, business, C1), working (B2), conversational (B1) or basic (A1, A2). C2 is native.\n"
-    "- `sections`: every `##` heading, `heading` exactly as written, `kind` one of summary (the profile or the "
-    "introduction), experience (the jobs), education, skills, certifications, languages, interests or other. The kind "
-    "is by what the section holds, whatever the heading says or the language is.\n"
-    "- `contacts`: each contact detail of the header: `kind` (phone, email, web, linkedin, github, location), `label` "
-    "the word written before it (`Tlf`, without the colon) or null when it has none, `value` as written.\n"
-    "- `levels`: every item of a skills or languages list that states a level, `item` as written and `level` 1 to 5 "
-    "(5 native or C2, 4 fluent or C1, 3 working or B2, 2 conversational or B1, 1 basic, A1 or A2); null when the "
-    "stated word is not one of these (a skill that is `advanced` has no level).\n"
-    "- `entries`: every `###` heading, `heading` exactly as written after the `###`, and its parts: `role` (a job "
-    "title or a degree), `org` (the employer or the school), `dates` as written, `place` (null when the heading has "
-    "none), `start_year` and `end_year` (integers; `end_year` null when the end is the present).\n"
-    "Answer with the JSON only."
-)
-
-_FACTS_PROMPT = (
-    "You check a tailored CV against the candidate's own CV. You get the SOURCE (markdown) and the TAILORED CV (HTML). "
-    "The tailored CV may drop, reorder, shorten and reword; it must not add a fact the source does not back. List every "
-    "claim in the tailored CV that the source does not support:\n"
-    "- `number`: a figure, amount, percentage or count whose VALUE differs from the source's; a figure told another way "
-    "with the same value (`1 200 000 EUR` and `1,2 M EUR`, `40 000` and `40k`, `9 %` and `9 percent`, a number written "
-    "in words) is supported.\n"
-    "- `year`: a year, or a year of a date range, that differs from the source's.\n"
-    "- `employer`: an employer the source does not name. `skill`: a tool, technology or method the source does not "
-    "name. `certification`, `degree`: one the source does not name.\n"
-    "Ignore the header and contact details. `value`: the claimed value. `context`: a stretch of the tailored CV's text, "
-    "copied exactly as it reads (at most 15 words) that holds it. List nothing the source supports: an empty list is a "
-    "clean CV. Answer with the JSON only."
-)
-
-EXAMPLES: dict[str, list[tuple[int, str]]] = {
-    "reader": [
-        # Round 2 (after Haiku's first reading: a level's word kept in the item, `##` kept in a heading, `working` read as fluent)
-        (2, "`- **Italian** \u2014 fluent` gives item `Italian` with level 4, and `- Spanish (B2)` gives item `Spanish` with level 3: "
-            "the item is the name alone, never with its level word."),
-        (2, "A language at the level of a working language (`Arbeitssprache`, `lingua di lavoro`, `working proficiency`) is level 3, not 4: "
-            "4 is for fluent, professional or C1."),
-        (2, "`## Key Skills` gives the heading `Key Skills`: the `#` marks are not part of it."),
-    ],
-    "facts": [
-        # Round 2 (after Haiku's first check: the HTML tags quoted, the same plant valued three ways)
-        (2, "`context` is plain text with no HTML tag in it: for `<li><strong>Rust</strong></li>` it is `Rust`, for a heading "
-            "`<span class=\"role\">Analyst</span> | <span class=\"org\">Zenith Corp</span>` it is `Analyst | Zenith Corp`."),
-        (2, "`value` is the claimed item alone, as the CV writes it: a figure with its unit (`3 k`, `7 percent`), the name of an "
-            "employer, skill, certification or degree. For a changed date range `2004 - 2008` the kind is `year` and the value the one "
-            "year that differs (`2004`), not the range."),
-        # Round 3 (after Sonnet's check: the tags of a one-element quote still copied)
-        (3, "Never copy markup into `context`: `<strong>Rust</strong>` is wrong and `Rust` is right; `<span class=\"dates\">2004 - 2008</span>` "
-            "is wrong and `Zenith Corp - 2004 - 2008` is right. Copy only words and figures, as the text of the page reads them."),
-    ],
-}
-
-
-def prompt(task: str, version: int) -> str:
-    """The system prompt of `task` as of round `version`: the base text and the examples added up to that round."""
-    base = _READER_PROMPT if task == "reader" else _FACTS_PROMPT
-    examples = [text for since, text in EXAMPLES[task] if since <= version]
-    return base + ("\nExamples (made up):\n" + "\n".join(f"- {e}" for e in examples) if examples else "")
-
-
-_STR_OR_NULL = {"type": ["string", "null"]}
-_INT_OR_NULL = {"type": ["integer", "null"]}
-READER_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "name": _STR_OR_NULL, "email": _STR_OR_NULL, "city": _STR_OR_NULL, "country": _STR_OR_NULL,
-        "languages": {"type": "array", "items": {"type": "object", "properties": {"language": {"type": "string"}, "level": {"type": "string"}},
-                                                 "required": ["language", "level"]}},
-        "sections": {"type": "array", "items": {"type": "object", "properties": {"heading": {"type": "string"}, "kind": {"type": "string"}},
-                                                "required": ["heading", "kind"]}},
-        "contacts": {"type": "array", "items": {"type": "object", "properties": {"kind": {"type": "string"}, "label": _STR_OR_NULL, "value": {"type": "string"}},
-                                                "required": ["kind", "label", "value"]}},
-        "levels": {"type": "array", "items": {"type": "object", "properties": {"item": {"type": "string"}, "level": _INT_OR_NULL},
-                                              "required": ["item", "level"]}},
-        "entries": {"type": "array", "items": {"type": "object", "properties": {
-            "heading": {"type": "string"}, "role": _STR_OR_NULL, "org": _STR_OR_NULL, "dates": _STR_OR_NULL, "place": _STR_OR_NULL,
-            "start_year": _INT_OR_NULL, "end_year": _INT_OR_NULL}, "required": ["heading", "role", "org", "dates", "place", "start_year", "end_year"]}},
-    },
-    "required": ["name", "email", "city", "country", "languages", "sections", "contacts", "levels", "entries"],
-}
-FACTS_SCHEMA = {
-    "type": "object",
-    "properties": {"findings": {"type": "array", "items": {"type": "object", "properties": {
-        "kind": {"type": "string", "enum": list(KINDS)}, "value": {"type": "string"}, "context": {"type": "string"}},
-        "required": ["kind", "value", "context"]}}},
-    "required": ["findings"],
-}
-
-MODELS = ("haiku", "sonnet")
-CHOSEN_MODEL = "haiku"  # go on both tasks (see the module's docstring), and the cheaper of two that are within noise of each other
-FINAL_VERSION = {"reader": 2, "facts": 3}  # the prompt round of the answers the report of #429 is made from
-
-
-def ask_case(task: str, model: str, case: dict, version: int):
-    """One call to the model for `case`: the reader's answer (a dict) or the facts check's findings (a list).
-    Plan quota through `claude_cli.ask`; the feature keys are the nearest existing ones (see the module's docstring)."""
-    from door.core import claude_cli
-
-    if task == "reader":
-        return claude_cli.ask(prompt("reader", version), f"CV:\n<<<\n{case['md']}\n>>>\n", model=model, feature="infer_basics",
-                              schema=READER_SCHEMA, effort="low", timeout_s=240)
-    text = f"SOURCE:\n<<<\n{case['md']}\n>>>\n\nTAILORED CV:\n<<<\n{case['body']}\n>>>\n"
-    answer = claude_cli.ask(prompt("facts", version), text, model=model, feature="revise", schema=FACTS_SCHEMA, effort="low", timeout_s=240)
-    return [{**f, "file": "cv"} for f in answer.get("findings") or [] if isinstance(f, dict)]
-
-
-def run(task: str, model: str, corpus: dict, *, runs: int, version: int, root: Path = RECORDED, workers: int = 4) -> None:
-    """Ask for every (case, run) with no recorded answer (a recorded error is asked again) and record it as raw JSON."""
-    from concurrent.futures import ThreadPoolExecutor
-
-    folder = Path(root) / model / task / f"v{version}"
-    folder.mkdir(parents=True, exist_ok=True)
-
-    def one(job):
-        name, run_no = job
-        path = folder / f"{name}.{run_no}.json"
-        try:
-            record = {"answer": ask_case(task, model, {"name": name, **corpus[name]}, version)}
-            if isinstance(record["answer"], dict) and "error" in record["answer"]:
-                record = record["answer"]
-        except Exception as exc:  # noqa: BLE001 - a failed call is a miss to count, not a stop
-            record = {"error": str(exc)[:300]}
-        path.write_text(json.dumps(record, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        return name, run_no, "error" in record
-
-    def done(path: Path) -> bool:
-        return path.is_file() and "error" not in json.loads(path.read_text(encoding="utf-8"))
-
-    jobs = [(n, r) for n in sorted(corpus) for r in range(runs) if not done(folder / f"{n}.{r}.json")]
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        for name, run_no, failed in pool.map(one, jobs):
-            print(f"{model} {task} v{version} {name}.{run_no}: {'ERROR' if failed else 'recorded'}", file=sys.stderr)
 
 
 def main(argv: list[str] | None = None) -> None:
     import argparse
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--write-fixtures", action="store_true")
-    ap.add_argument("--task", choices=("reader", "facts", "report-reader", "report-facts"))
+    ap.add_argument("--task", choices=("reader", "facts"), required=True)
     ap.add_argument("--model", choices=(*MODELS, "baseline"), default="haiku")
-    ap.add_argument("--runs", type=int, default=1)
-    ap.add_argument("--version", type=int, default=1, help="the prompt round (EXAMPLES say what each added)")
+    ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--report", action="store_true", help="print the numbers of the recorded answers (or of today's rules)")
     args = ap.parse_args(argv)
-    if args.write_fixtures:
-        write_fixtures()
-        return
-    task = (args.task or "").removeprefix("report-")
-    corpus = build_reader_corpus() if task == "reader" else build_body_corpus()
-    if args.task in ("reader", "facts"):
-        run(task, args.model, corpus, runs=args.runs, version=args.version)
-        return
-    if args.model == "baseline":
-        answers = {n: [baseline_reader(c["md"], c["lang"]) if task == "reader" else baseline_facts(c["md"], c["body"])] for n, c in corpus.items()}
+    corpus = build_reader_corpus() if args.task == "reader" else build_body_corpus()
+    if not args.report:
+        run(args.task, args.model, corpus, runs=args.runs)
+    elif args.model == "baseline":
+        answers = {n: [baseline_reader(c["md"], c["lang"]) if args.task == "reader" else baseline_facts(c)] for n, c in corpus.items()}
+        print(to_markdown(args.task, summarize(args.task, answers, corpus)))
     else:
-        answers = load_recorded(args.model, task, args.version)
-    print(to_markdown(task, summarize(task, answers, corpus)))
+        print(to_markdown(args.task, summarize(args.task, load_recorded(args.model, args.task, corpus), corpus)))
 
 
 if __name__ == "__main__":

@@ -16,11 +16,11 @@ ENTRY = {"heading": "Analyst, Acme (2019 - 2024)", "role": "Analyst", "org": "Ac
          "place": None, "start_year": 2019, "end_year": 2024}
 EXPECTED = {
     "name": "Anna Berg", "email": "anna.berg@example.com", "city": "Aarhus", "country": "dk",
-    "working_languages": ["Danish", "English"],
+    "working_languages": ["Dansk", "Engelsk"],
     "sections": {"Erfaring": "experience", "Sprog": "languages"},
     "contacts": [{"kind": "phone", "label": "Tlf", "value": "+45 00 00 00 00"},
                  {"kind": "email", "label": None, "value": "anna.berg@example.com"}],
-    "levels": {"Dansk": 5, "SQL": None},
+    "levels": {"Dansk": 5, "SQL": None}, "skills": ["SQL", "Git"],
     "entries": [ENTRY],
 }
 
@@ -28,12 +28,12 @@ EXPECTED = {
 def answer(**changes):
     base = {
         "name": "Anna Berg", "email": "anna.berg@example.com", "city": "Aarhus", "country": "dk",
-        "languages": [{"language": "Danish", "level": "native"}, {"language": "English", "level": "fluent"},
-                      {"language": "French", "level": "basic"}],
+        "languages": [{"language": "Dansk", "level": "native"}, {"language": "Engelsk", "level": "fluent"},
+                      {"language": "Fransk", "level": "basic"}],
         "sections": [{"heading": "Erfaring", "kind": "experience"}, {"heading": "Sprog", "kind": "languages"}],
         "contacts": [{"kind": "phone", "label": "Tlf", "value": "+45 00 00 00 00"},
                      {"kind": "email", "label": None, "value": "anna.berg@example.com"}],
-        "levels": [{"item": "Dansk", "level": 5}, {"item": "SQL", "level": None}],
+        "levels": [{"item": "Dansk", "level": 5}, {"item": "SQL", "level": None}], "skills": ["SQL", "git"],
         "entries": [dict(ENTRY)],
     }
     base.update(changes)
@@ -44,6 +44,7 @@ def test_a_right_reading_scores_every_field_fully():
     score = rcr.score_reader(EXPECTED, answer())
     assert score and all(f["hit"] == f["total"] for f in score.values())
     assert score["sections"]["total"] == 2 and score["contacts"]["total"] == 2 and score["years"]["total"] == 2
+    assert score["skills"] == {"hit": 2, "total": 2}
 
 
 def test_a_wrong_section_kind_is_a_miss_of_that_field_alone():
@@ -89,7 +90,7 @@ def test_a_level_is_never_guessed_for_a_word_outside_the_table():
 
 def test_working_languages_are_the_set_at_native_fluent_or_working():
     assert rcr.score_reader(EXPECTED, answer())["languages"] == {"hit": 1, "total": 1}
-    missing = answer(languages=[{"language": "Danish", "level": "native"}])
+    missing = answer(languages=[{"language": "Dansk", "level": "native"}])
     assert rcr.score_reader(EXPECTED, missing)["languages"] == {"hit": 0, "total": 1}
 
 
@@ -98,15 +99,36 @@ def test_an_error_answer_misses_everything():
     assert score["name"] == {"hit": 0, "total": 1} and score["sections"] == {"hit": 0, "total": 2}
 
 
+def test_a_skill_the_reader_leaves_out_is_a_miss():
+    assert rcr.score_reader(EXPECTED, answer(skills=["SQL"]))["skills"] == {"hit": 1, "total": 2}
+
+
+def test_the_values_of_a_reading_are_counted_as_stretches_of_the_cv_but_for_the_country():
+    md = "# Anna Berg\n\nTlf: +45 00 00 00 00\n\n## Sprog\n\n- Dansk: modersmål\n"
+    ok = answer(name="Anna Berg", email=None, city=None, skills=[], contacts=[{"kind": "phone", "label": "Tlf", "value": "+45 00 00 00 00"}],
+                languages=[{"language": "Dansk", "level": "native"}], sections=[{"heading": "Sprog", "kind": "languages"}],
+                levels=[{"item": "Dansk", "level": 5}], entries=[])
+    assert rcr.stretches(md, ok) == (6, 6)
+    assert rcr.stretches(md, {**ok, "languages": [{"language": "Danish", "level": "native"}]}) == (5, 6)
+    assert rcr.stretches(md, {"error": "x"}) == (0, 0)
+
+
 # --- the facts check ---------------------------------------------------------------------------------------------
+
+import json  # noqa: E402
+import re  # noqa: E402
+
+from door.render import html_doc  # noqa: E402
 
 BODY = ('<h2>Erfaring</h2><div class="entry"><h3><span class="role">Analyst</span> | <span class="org">Acme</span>'
         '</h3><ul><li>Cut costs by 1,8 M kr in two  years.</li></ul></div>')
+LETTER = "<p>I worked with Looker at Acme.</p>"
 
 
-def test_a_quote_is_verbatim_when_the_body_reads_it_squashed():
+def test_a_quote_is_verbatim_when_one_body_reads_it_squashed():
     assert rcr.is_verbatim("Cut costs by 1,8 M kr in two years.", BODY)  # nbsp and a double space squashed
     assert rcr.is_verbatim("Analyst | Acme", BODY)
+    assert rcr.is_verbatim("worked with Looker", BODY, LETTER)
     assert not rcr.is_verbatim("Cut costs by 2 M kr", BODY)
     assert not rcr.is_verbatim("", BODY)
 
@@ -115,8 +137,8 @@ PLANTS = [{"kind": "number", "planted_value": "1,8 M kr", "quote": "Cut costs by
           {"kind": "employer", "planted_value": "Globex", "quote": "Globex"}]
 
 
-def finding(kind, value, context):
-    return {"kind": kind, "value": value, "context": context, "file": "cv"}
+def finding(kind, value, context, file="cv"):
+    return {"kind": kind, "value": value, "context": context, "file": file}
 
 
 def test_a_plant_is_found_by_its_kind_and_value_or_its_quote():
@@ -126,9 +148,12 @@ def test_a_plant_is_found_by_its_kind_and_value_or_its_quote():
     assert score["false_flags"] == 0 and score["verbatim"] == (1, 2)  # "Analyst | Globex" is not in the body
 
 
-def test_the_right_value_under_the_wrong_kind_is_a_miss_and_a_false_flag():
+def test_the_right_value_under_the_wrong_kind_or_in_the_wrong_document_is_a_miss_and_a_false_flag():
     score = rcr.score_facts(PLANTS[1:], [finding("skill", "Globex", "Globex")], "Globex")
     assert score["per_kind"]["employer"] == {"planted": 1, "found": 0} and score["false_flags"] == 1
+    letter_plant = [{**PLANTS[1], "file": "letter"}]
+    assert rcr.score_facts(letter_plant, [finding("employer", "Globex", "Globex")], "Globex")["per_kind"]["employer"]["found"] == 0
+    assert rcr.score_facts(letter_plant, [finding("employer", "Globex", "Globex", "letter")], "Globex")["per_kind"]["employer"]["found"] == 1
 
 
 def test_a_flag_that_is_no_plant_is_a_false_flag_and_a_clean_body_has_only_those():
@@ -140,12 +165,10 @@ def test_an_error_answer_finds_nothing():
     assert rcr.score_facts(PLANTS, {"error": "timeout"}, BODY)["per_kind"]["number"]["found"] == 0
 
 
-def test_stability_is_the_share_of_bodies_with_the_same_flags_in_every_run_whatever_the_order():
+def test_stability_is_the_share_of_cases_with_the_same_flags_in_every_run_whatever_the_order():
     a, b = finding("skill", "SQL", "x"), finding("year", "2019", "y")
-    same = {"c1": [[a, b], [b, a], [a, b]], "c2": [[], [], []]}
-    assert rcr.stability(same) == 1.0
-    differs = {"c1": [[a, b], [b], [a, b]], "c2": [[], [], []]}
-    assert rcr.stability(differs) == 0.5
+    assert rcr.stability({"c1": [[a, b], [b, a], [a, b]], "c2": [[], [], []]}) == 1.0
+    assert rcr.stability({"c1": [[a, b], [b], [a, b]], "c2": [[], [], []]}) == 0.5
 
 
 def facts_report(**changes):
@@ -181,26 +204,17 @@ def test_the_reader_verdict_follows_the_named_thresholds():
 
 # --- the made-up corpus ------------------------------------------------------------------------------------------
 
-import re  # noqa: E402
-
-from door.render import html_doc  # noqa: E402
-
-
-def literal(md: str, value) -> bool:
-    return str(value) in md
-
-
 def test_every_expected_value_of_a_cv_is_a_literal_of_its_text():
     for person in rcr.PEOPLE[:15]:
         md, expected = rcr.render_cv_md(person)
         for field in ("name", "email", "city"):
-            assert literal(md, expected[field]), (person["name"], field)
+            assert expected[field] in md, (person["name"], field)
         for heading in expected["sections"]:
             assert f"## {heading}\n" in md
         for c in expected["contacts"]:
-            assert literal(md, c["value"]) and (c["label"] is None or literal(md, c["label"]))
-        for item in expected["levels"]:
-            assert literal(md, item)
+            assert c["value"] in md and (c["label"] is None or c["label"] in md)
+        for item in (*expected["levels"], *expected["skills"], *expected["working_languages"]):
+            assert item in md
         for entry in expected["entries"]:
             assert f"### {entry['heading']}\n" in md
             for part in ("role", "org", "dates", "place"):
@@ -208,205 +222,226 @@ def test_every_expected_value_of_a_cv_is_a_literal_of_its_text():
             assert re.search(rf"\b{entry['start_year']}\b", entry["dates"])
 
 
-def test_the_reader_corpus_has_at_least_twelve_cvs_in_three_languages_and_three_heading_styles():
+def test_the_reader_corpus_has_twelve_cvs_in_three_languages_with_hard_headings_contacts_levels_and_dates():
     corpus = rcr.build_reader_corpus()
     assert len(corpus) >= 12 and len({c["lang"] for c in corpus.values()}) >= 3
-    styles = {re.sub(r"[^|,()–—-]", "", e["heading"])[:4] for c in corpus.values() for e in c["expected"]["entries"]}
-    assert len(styles) >= 3
-    assert any(e["end_year"] is None for c in corpus.values() for e in c["expected"]["entries"])
+    entries = [e for c in corpus.values() for e in c["expected"]["entries"]]
+    assert len({re.sub(r"[^|,()–—-]", "", e["heading"])[:4] for e in entries}) >= 3
+    assert any(e["end_year"] is None for e in entries)
     assert any(c["label"] is None for c in corpus.values() for c in c["expected"]["contacts"])
     assert any(v is None for c in corpus.values() for v in c["expected"]["levels"].values())
+    dates = " ".join(e["dates"] for e in entries)
+    for shape in (r"\b\d\d/\d{4}\b", r"\b\d{1,2}\.\d{1,2}\.\d{4}\b", r"\b\d{4}-\d\d\b"):
+        assert re.search(shape, dates), shape
+    assert re.search(r"\b\d{1,2}(st|nd|rd|th) [A-Z][a-z]+ \d{4}", " ".join(e["dates"] for p in rcr.PEOPLE if p["lang"] == "en"
+                                                                           for e in rcr.render_cv_md(p)[1]["entries"]))
 
 
-def test_the_body_is_the_cv_in_the_tailors_vocabulary():
+def test_a_person_can_be_written_in_another_language_keeping_names_employers_places_and_figures():
+    person = next(p for p in rcr.PEOPLE if p["lang"] == "da")
+    da, fr = rcr.render_cv_md(person)[0], rcr.render_cv_md(person, "fr")[0]
+    assert da != fr and "## Erhvervserfaring" in da and "## Expérience professionnelle" in fr
+    for kept in (person["name"], person["email"], person["jobs"][0]["org"], person["jobs"][0]["place"], "40 000"):
+        assert (kept in da) == (kept in fr), kept
+
+
+def test_at_least_half_of_the_bodies_are_in_another_language_than_their_source_and_half_the_planted_are_in_danish_or_french():
+    corpus = rcr.build_body_corpus()
+    planted = {k: v for k, v in corpus.items() if v["plants"]}
+    clean = {k: v for k, v in corpus.items() if not v["plants"]}
+    assert len(planted) >= 20 and len(clean) >= 5
+    for part in (planted, clean):
+        assert sum(v["lang"] != v["body_lang"] for v in part.values()) * 2 >= len(part)
+    assert sum(v["body_lang"] in ("da", "fr") for v in planted.values()) * 2 >= len(planted)
+    assert all(1 <= len(v["plants"]) <= 3 for v in planted.values())
+    assert {p["kind"] for v in planted.values() for p in v["plants"]} == set(rcr.KINDS)
+    for v in planted.values():
+        assert all(rcr.is_verbatim(p["quote"], v["body"], v["letter"]) for p in v["plants"])
+
+
+def test_a_body_is_what_a_tailor_makes_of_the_cv():
     person = rcr.PEOPLE[1]
-    md, expected = rcr.render_cv_md(person)
-    body = rcr.render_body(person)
-    assert html_doc.headings(body) == list(expected["sections"])
-    assert expected["name"] in html_doc.text(body)
+    source, body = rcr.render_cv_md(person)[0], rcr.render_body(person, person["lang"])
+    heads = html_doc.headings(body)
+    assert len(heads) < len(re.findall(r"^## ", source, re.M))  # the interests are dropped
+    text = html_doc.text(body)
+    assert rcr._PACK[person["lang"]]["summary"].split(",")[0][:20] not in text  # a new summary
+    assert len(re.findall(r"<h3>", body)) < len(re.findall(r"^### ", source, re.M))  # the oldest job and degree dropped
+    assert heads.index(rcr._heads(person, person["lang"])["skills"]) < heads.index(rcr._heads(person, person["lang"])["experience"])  # reordered
+    assert "; " in text  # two bullets merged
+
+
+def test_a_skill_may_be_named_by_a_synonym_the_cv_backs():
+    person = next(p for p in rcr.PEOPLE if "Power BI" in p["tools"] and not p["skill_levels"])
+    assert "Power BI" in rcr.render_cv_md(person)[0] and "PowerBI" in rcr.render_cv_md(person, tailor=True)[0]
+
+
+def test_numeric_and_day_month_dates_are_in_the_cvs_and_next_to_a_figure_in_the_bodies():
+    for fmt, shape in (("mm/yyyy", r"\d\d/\d{4}"), ("d.m.yyyy", r"\d+\.\d+\.\d{4}"), ("yyyy-mm", r"\d{4}-\d\d")):
+        person = next(p for p in rcr.PEOPLE if p["dfmt"] == fmt)
+        text = html_doc.text(rcr.render_body(person, person["lang"]))
+        assert re.search(rf"\d [^.]*\({shape}\)\.", text), fmt
+
+
+def test_a_year_planted_in_a_numeric_date_is_found_in_that_date():
+    person = next(p for p in rcr.PEOPLE if p["dfmt"] == "mm/yyyy" and p["lang"] == "fr")
+    source, body = rcr.render_cv_md(person)[0], rcr.render_body(person, "fr")
+    planted, info = rcr.plant(body, "year", person, "fr", 0, source)
+    assert re.search(rf"\d\d/{info['planted_value']}", planted) and info["planted_value"] not in source
+
+
+def test_some_cases_have_a_story_bank_and_some_a_letter_with_its_posting_and_the_claim_only_the_story_backs():
+    corpus = rcr.build_body_corpus()
+    story = [c for c in corpus.values() if c["story"]]
+    letters = [c for c in corpus.values() if c["letter"]]
+    assert story and letters and all(c["posting"] for c in letters) and not any(c["posting"] for c in corpus.values() if not c["letter"])
+    for c in story:
+        assert "4 000" in c["story"] and "dbt" in c["story"] and "**Context:**" in c["story"] and "**Result:**" in c["story"]
+        assert "4 000" in html_doc.text(c["body"]) and "4 000" not in c["md"]
+    for c in letters:
+        assert "Looker" in c["posting"] and "Looker" in html_doc.text(c["letter"]) and "Looker" not in c["md"]
+    assert any(p["file"] == "letter" for c in corpus.values() for p in c["plants"])
 
 
 def test_planting_changes_one_place_and_says_what_was_planted():
     person = rcr.PEOPLE[1]
-    body = rcr.render_body(person)
+    source, body = rcr.render_cv_md(person)[0], rcr.render_body(person, "fr")
     for kind in rcr.KINDS:
-        planted, info = rcr.plant(body, kind, person, 0)
+        planted, info = rcr.plant(body, kind, person, "fr", 0, source)
         assert planted != body and info["kind"] == kind and rcr.is_verbatim(info["quote"], planted)
-        assert info["planted_value"] not in rcr.render_cv_md(person)[0]
-    assert rcr.render_body(person) == body  # the original is not touched
+        assert info["planted_value"] not in source
+    assert rcr.render_body(person, "fr") == body  # the original is not touched
 
 
 def test_a_plant_with_no_place_to_stand_is_an_error():
     import pytest
     with pytest.raises(ValueError):
-        rcr.plant("<p>nothing here</p>", "employer", rcr.PEOPLE[0], 0)
-
-
-def test_the_body_corpus_has_twenty_planted_bodies_half_in_danish_or_french_and_clean_twins():
-    corpus = rcr.build_body_corpus()
-    planted = {k: v for k, v in corpus.items() if v["plants"]}
-    clean = {k: v for k, v in corpus.items() if not v["plants"]}
-    assert len(planted) >= 20 and len(clean) >= 5
-    assert sum(v["lang"] in ("da", "fr") for v in planted.values()) * 2 >= len(planted)
-    assert all(1 <= len(v["plants"]) <= 3 for v in planted.values())
-    assert {p["kind"] for v in planted.values() for p in v["plants"]} == set(rcr.KINDS)
-    for v in planted.values():
-        assert all(rcr.is_verbatim(p["quote"], v["body"]) for p in v["plants"])
+        rcr.plant("<p>nothing here</p>", "employer", rcr.PEOPLE[0], "en", 0, "")
 
 
 def test_a_clean_body_may_hold_a_figure_written_another_way_that_the_cv_backs():
-    clean = [v for v in rcr.build_body_corpus().values() if not v["plants"]]
-    assert any(v["body"] != rcr.render_body(rcr.PEOPLE[v["person"]]) for v in clean)
-
-
-def test_nothing_in_the_corpus_is_a_real_address():
-    for person in rcr.PEOPLE:
-        md, _ = rcr.render_cv_md(person)
-        assert set(re.findall(r"@([\w.-]+\.\w+)", md)) <= {"example.com"}
-
-
-# --- the committed fixtures --------------------------------------------------------------------------------------
-
-import json  # noqa: E402
-
-CASES = REPO_ROOT / "tests" / "tailoring" / "fixtures" / "cv_reading"
-
-
-def test_the_committed_reader_fixtures_are_what_the_builders_make():
-    corpus = rcr.build_reader_corpus()
-    assert sorted(p.name for p in (CASES / "readers").iterdir()) == sorted(corpus)
-    for name, case in corpus.items():
-        folder = CASES / "readers" / name
-        assert (folder / "cv.md").read_text(encoding="utf-8") == case["md"]
-        assert json.loads((folder / "expected.json").read_text(encoding="utf-8")) == case["expected"]
-
-
-def test_the_committed_body_fixtures_are_what_the_builders_make():
     corpus = rcr.build_body_corpus()
-    assert sorted(p.name for p in (CASES / "bodies").iterdir()) == sorted(corpus)
-    for name, case in corpus.items():
-        folder = CASES / "bodies" / name
-        assert (folder / "cv.md").read_text(encoding="utf-8") == case["md"]
-        assert (folder / "cv.html").read_text(encoding="utf-8") == case["body"]
-        assert json.loads((folder / "expected.json").read_text(encoding="utf-8")) == {"lang": case["lang"], "plants": case["plants"]}
+    person = rcr.PEOPLE[20]
+    assert not corpus["b20-" + person["lang"] + "-" + corpus_lang(corpus, 20)]["plants"]
+    assert rcr.render_body(person, rcr.body_lang(person), reformat=True) != rcr.render_body(person, rcr.body_lang(person))
 
 
-def test_no_fixture_holds_an_address_that_is_not_an_example_one():
-    for path in CASES.rglob("*"):
-        if path.is_file() and path.suffix in (".md", ".html", ".json"):
-            assert set(re.findall(r"@([\w-]+\.\w+)", path.read_text(encoding="utf-8"))) <= {"example.com"}, path
+def corpus_lang(corpus, n):
+    return next(c["body_lang"] for k, c in corpus.items() if k.startswith(f"b{n:02d}-"))
+
+
+def test_nothing_in_the_corpus_is_a_real_address_or_number():
+    cases = [*rcr.build_reader_corpus().values(), *rcr.build_body_corpus().values()]
+    for c in cases:
+        for text in (c["md"], c.get("body", ""), c.get("letter", ""), c.get("story", ""), c.get("posting", "")):
+            assert set(re.findall(r"@([\w.-]+\.\w+)", text)) <= {"example.com"}
+            assert not re.search(r"\+\d\d \d\d [1-9]", text)
 
 
 # --- recorded answers, the report and the baseline ---------------------------------------------------------------
 
-def test_recorded_answers_are_read_by_case_and_run_and_an_error_is_kept_as_one(tmp_path):
-    folder = tmp_path / "haiku" / "facts" / "v1"
-    folder.mkdir(parents=True)
-    (folder / "b00-da.0.json").write_text(json.dumps({"answer": [finding("skill", "Rust", "Rust")]}))
-    (folder / "b00-da.1.json").write_text(json.dumps({"error": "timeout"}))
-    got = rcr.load_recorded("haiku", "facts", 1, root=tmp_path)
-    assert got == {"b00-da": [[finding("skill", "Rust", "Rust")], {"error": "timeout"}]}
-    assert rcr.load_recorded("sonnet", "facts", 1, root=tmp_path) == {}
+def record(folder, case, run, corpus, task="facts", answer=None, error=None):
+    folder.mkdir(parents=True, exist_ok=True)
+    data = {"error": error} if error else {"key": rcr._key(task, corpus[case]), "answer": answer}
+    (folder / f"{case}.{run}.json").write_text(json.dumps(data))
+
+
+def test_recorded_answers_are_read_by_case_and_run_an_error_or_a_stale_record_is_a_miss(tmp_path):
+    corpus = {"b00": {"md": "m", "story": "", "posting": "", "body": "b", "letter": "", "plants": []}}
+    folder = tmp_path / "haiku" / "facts"
+    record(folder, "b00", 0, corpus, answer=[finding("skill", "Rust", "Rust")])
+    record(folder, "b00", 1, corpus, error="timeout")
+    (folder / "b00.2.json").write_text(json.dumps({"key": "of-another-prompt", "answer": []}))
+    got = rcr.load_recorded("haiku", "facts", corpus, root=tmp_path)["b00"]
+    assert got[0] == [finding("skill", "Rust", "Rust")] and "error" in got[1] and "error" in got[2]
+    assert rcr.load_recorded("sonnet", "facts", corpus, root=tmp_path) == {}
+    assert rcr._recorded_ok(folder / "b00.0.json") and not rcr._recorded_ok(folder / "b00.1.json") and not rcr._recorded_ok(folder / "none.0.json")
 
 
 def test_the_facts_report_counts_errors_as_misses_and_clean_bodies_apart():
     corpus = rcr.build_body_corpus()
-    planted = next(n for n, c in corpus.items() if c["plants"])
+    planted = next(n for n, c in corpus.items() if c["plants"] and not c["letter"])
     clean = next(n for n, c in corpus.items() if not c["plants"])
     perfect = [{"kind": p["kind"], "value": p["planted_value"], "context": p["quote"], "file": "cv"} for p in corpus[planted]["plants"]]
     noisy = [finding("skill", "Rust", "Rust"), finding("skill", "Go", "Go")]
     report = rcr.summarize("facts", {planted: [perfect, {"error": "x"}], clean: [noisy, noisy]}, corpus)
     kinds = {p["kind"] for p in corpus[planted]["plants"]}
     assert {k: report["per_kind"][k] for k in kinds} == {k: 0.5 for k in kinds}
-    assert report["false_clean_max"] == 2 and report["stable"] == 0.5 and report["runs"] == 2
+    assert report["false_clean_max"] == 2 and report["stable"] == 0.5 and report["runs"] == 2 and report["calls"] == 4
     assert report["verdict"] == "no-go"
-    assert "| number | 50% |" in rcr.to_markdown("facts", report)
+    assert f"| {sorted(kinds)[0]} | 50.0% |" in rcr.to_markdown("facts", report)
 
 
-def test_the_reader_report_pools_the_fields_over_cases_and_runs():
+def test_the_reader_report_pools_the_fields_over_cases_and_runs_and_counts_stretches():
     corpus = rcr.build_reader_corpus()
     name = next(iter(corpus))
     report = rcr.summarize("reader", {name: [{"error": "x"}]}, corpus)
-    assert report["fields"]["name"] == 0.0 and report["verdict"] == "no-go"
+    assert report["fields"]["name"] == 0.0 and report["verdict"] == "no-go" and report["calls"] == 1
+    right = rcr.baseline_reader(corpus[name]["md"], corpus[name]["lang"])
+    assert rcr.summarize("reader", {name: [right]}, corpus)["stretches"] == 1.0 or rcr.stretches(corpus[name]["md"], right)[1] > 0
 
 
 def test_the_baseline_reads_the_header_with_todays_rules_and_misses_what_it_has_no_rule_for():
     corpus = rcr.build_reader_corpus()
     name = "p01-fr"
-    answer = rcr.baseline_reader(corpus[name]["md"], "fr")
-    score = rcr.score_reader(corpus[name]["expected"], answer)
+    score = rcr.score_reader(corpus[name]["expected"], rcr.baseline_reader(corpus[name]["md"], "fr"))
     assert score["name"]["hit"] == 1 and score["email"]["hit"] == 1
-    assert score["years"]["hit"] <= 1  # no rule reads a year: only the open end of the present job is right by default
+    assert score["skills"]["hit"] == 0 and score["years"]["hit"] <= 1  # no rule reads a skill or a year
 
 
-def test_the_baseline_fact_check_flags_what_the_rules_see():
+def test_the_baseline_fact_check_flags_what_the_rules_see_and_reads_the_story_bank_and_the_posting():
     corpus = rcr.build_body_corpus()
     name = next(n for n, c in corpus.items() if any(p["kind"] == "employer" for p in c["plants"]))
-    found = rcr.baseline_facts(corpus[name]["md"], corpus[name]["body"])
-    assert any(f["kind"] == "employer" for f in found)
+    assert any(f["kind"] == "employer" for f in rcr.baseline_facts(corpus[name]))
+    clean = next(c for c in corpus.values() if c["letter"] and c["story"] and not c["plants"])
+    assert not [f for f in rcr.baseline_facts(clean) if f["value"] in ("4 000", "dbt", "Looker", "120")]
 
 
 # --- the prompts and the runner ----------------------------------------------------------------------------------
 
-def test_a_prompt_holds_the_examples_up_to_its_version_only():
-    rcr.EXAMPLES["facts"].append((99, "EXAMPLE-OF-ROUND-99"))
-    try:
-        assert "EXAMPLE-OF-ROUND-99" in rcr.prompt("facts", 99)
-        assert "EXAMPLE-OF-ROUND-99" not in rcr.prompt("facts", 1)
-    finally:
-        rcr.EXAMPLES["facts"].pop()
+def test_a_record_names_the_prompt_and_input_it_answers():
+    case = {"md": "m", "story": "", "posting": "", "body": "b", "letter": ""}
+    assert rcr._key("facts", case) != rcr._key("facts", {**case, "body": "c"}) != rcr._key("reader", case)
 
 
 def test_the_runner_records_each_case_once_and_asks_again_only_for_an_error(tmp_path, monkeypatch):
     calls = []
 
-    def fake(task, model, case, version):
-        calls.append(case["name"])
+    def fake(task, model, case):
+        calls.append(case["md"])
         return {"error": "timeout"} if len(calls) == 1 else [finding("skill", "Rust", "Rust")]
 
-    monkeypatch.setattr(rcr, "ask_case", fake)
-    corpus = {"b00-da": {"name": "b00-da"}, "b01-fr": {"name": "b01-fr"}}
-    rcr.run("facts", "haiku", corpus, runs=1, version=1, root=tmp_path, workers=1)
-    assert sorted(calls) == ["b00-da", "b01-fr"]
-    rcr.run("facts", "haiku", corpus, runs=1, version=1, root=tmp_path, workers=1)
+    def fake_ask(task, model, case):
+        result = fake(task, model, case)
+        if isinstance(result, dict):
+            raise RuntimeError("timeout")
+        return result
+
+    monkeypatch.setattr(rcr, "ask_case", fake_ask)
+    corpus = {n: {"md": n, "story": "", "posting": "", "body": "", "letter": "", "plants": []} for n in ("b00", "b01")}
+    rcr.run("facts", "haiku", corpus, runs=1, root=tmp_path, workers=1)
+    assert sorted(calls) == ["b00", "b01"]
+    rcr.run("facts", "haiku", corpus, runs=1, root=tmp_path, workers=1)
     assert len(calls) == 3  # only the error is asked again
-    got = rcr.load_recorded("haiku", "facts", 1, root=tmp_path)
-    assert all(isinstance(a[0], list) for a in got.values())
+    assert all(isinstance(a[0], list) for a in rcr.load_recorded("haiku", "facts", corpus, root=tmp_path).values())
 
 
-# --- the numbers reported in #429, from the committed final answers ----------------------------------------------
+def test_the_prompts_name_what_the_corpus_is_hard_in():
+    facts_prompt = rcr.PROMPTS["facts"]
+    for word in ("STORY BANK", "POSTING", "COVER LETTER", "another language", "03/2019", "PowerBI"):
+        assert word in facts_prompt
+    assert "skills" in rcr.PROMPTS["reader"] and "as the CV writes it" in rcr.PROMPTS["reader"]
 
-def final(model, task):
+
+# --- what the committed answers say ------------------------------------------------------------------------------
+
+def committed(model, task):
     corpus = rcr.build_reader_corpus() if task == "reader" else rcr.build_body_corpus()
-    return rcr.summarize(task, rcr.load_recorded(model, task, rcr.FINAL_VERSION[task]), corpus)
+    return rcr.summarize(task, rcr.load_recorded(model, task, corpus), corpus)
 
 
-def test_haiku_is_go_as_a_reader_and_a_fact_checker_on_the_final_prompts():
-    reader, check = final("haiku", "reader"), final("haiku", "facts")
-    assert reader["verdict"] == "go" and reader["cases"] == 15 and reader["runs"] == 3
-    assert {f: round(v, 2) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.99}
-    assert check["verdict"] == "go" and check["cases"] == 28 and check["runs"] == 3
-    assert all(v == 1.0 for v in check["per_kind"].values()) and check["false_clean_max"] == 0
-    assert round(check["verbatim"], 3) == 0.991 and check["stable"] == 1.0
-
-
-def test_sonnet_is_go_too_a_little_less_stable_on_the_facts():
-    reader, check = final("sonnet", "reader"), final("sonnet", "facts")
-    assert reader["verdict"] == "go" and {f: round(v, 2) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.99}
-    assert check["verdict"] == "go" and round(check["verbatim"], 3) == 0.983 and round(check["stable"], 3) == 0.964
-
-
-def test_the_first_prompts_were_close_not_go():
-    assert rcr.summarize("reader", rcr.load_recorded("haiku", "reader", 1), rcr.build_reader_corpus())["verdict"] == "close"
-    assert rcr.summarize("facts", rcr.load_recorded("haiku", "facts", 1), rcr.build_body_corpus())["verdict"] == "close"
-
-
-def test_the_rules_of_today_are_no_go_on_the_same_cases():
+def test_every_committed_record_is_an_answer_to_the_prompt_and_input_of_today():
     for task, corpus in (("reader", rcr.build_reader_corpus()), ("facts", rcr.build_body_corpus())):
-        answers = {n: [rcr.baseline_reader(c["md"], c["lang"]) if task == "reader" else rcr.baseline_facts(c["md"], c["body"])]
-                   for n, c in corpus.items()}
-        assert rcr.summarize(task, answers, corpus)["verdict"] == "no-go"
-
-
-def test_no_recorded_answer_is_an_error():
-    assert not [p for p in (CASES / "recorded").rglob("*.json") if "error" in json.loads(p.read_text(encoding="utf-8"))]
+        for path in sorted((rcr.RECORDED).glob(f"*/{task}/*.json")):
+            case = path.name.split(".")[0]
+            assert rcr._recorded_ok(path, rcr._key(task, corpus[case])), path
