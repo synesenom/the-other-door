@@ -99,3 +99,18 @@ def test_the_id_is_the_site_and_the_platform_id(site):
 
     posting = _per_tenant_postings(site, "one.example.com")
     assert posting["id"] == make_job_id(site, posting["platform_id"])
+
+
+def test_a_scraper_that_reads_known_ids_returns_seen_only_records_for_them():
+    """#434: a feed or board that skips known ids itself must still hand each one to the engine (`seen_only` /
+    `sdk.split_known`), or a quiet run is `empty` and the ad's `last_seen` is never refreshed."""
+    import ast
+
+    root = REPO_ROOT / "src" / "door" / "scrapers"
+    offenders = []
+    for path in sorted([*(root / "feeds").glob("*.py"), *(root / "boards").glob("*.py")]):
+        source = path.read_text(encoding="utf-8")
+        uses = any(isinstance(n, ast.Name) and n.id == "known_ids" for n in ast.walk(ast.parse(source)))
+        if uses and "seen_only" not in source and "split_known" not in source:
+            offenders.append(path.name)
+    assert offenders == []
