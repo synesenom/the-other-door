@@ -150,7 +150,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             continue
         fresh = [p for p in company_postings if p["platform_id"] not in seen]
         seen.update(p["platform_id"] for p in fresh)
-        log_keyword_results(_SITE, entry.strip(), [p for p in fresh if not p.get("seen_only")])
+        log_keyword_results(_SITE, entry.strip(), fresh)
         postings.extend(fresh)
     return postings
 

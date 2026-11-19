@@ -233,13 +233,14 @@ def strip_html(raw: str | None, *, encoded: bool = False) -> str:
 
 
 def log_keyword_results(source: str, keyword: str, postings: list) -> None:
-    """Report the number of results found for *keyword*.
+    """Report the number of results found for *keyword*: the postings, not the known ads (`seen_only`).
 
     Always reports so the user can see per-keyword counts and distinguish
     genuine zero results from scraper errors (which are reported separately
     when the HTTP request or parse step raises).
     """
-    report(f"'{keyword}': {len(postings)} results", site=source, stage="keyword")
+    count = sum(1 for p in postings if not p.get("seen_only"))
+    report(f"'{keyword}': {count} results", site=source, stage="keyword")
 
 
 def tracked(entries, label=str):
@@ -298,7 +299,7 @@ def scrape_feeds(site: str, entries, fetch, *, key=lambda p: p["platform_id"], l
             if key(posting) and key(posting) not in seen:
                 seen.add(key(posting))
                 fresh.append(posting)
-        log_keyword_results(site, label(entry), [p for p in fresh if not p.get("seen_only")])
+        log_keyword_results(site, label(entry), fresh)
         postings.extend(fresh)
     return postings
 

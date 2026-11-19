@@ -256,7 +256,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             postings.append(_to_posting(card, description, scraped_at))
         if stopped or not has_next or reached_cutoff or not cards:
             break
-    log_keyword_results(_SITE, country.upper(), [p for p in postings if not p.get("seen_only")])
+    log_keyword_results(_SITE, country.upper(), postings)
     return postings
 
 

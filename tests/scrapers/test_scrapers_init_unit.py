@@ -35,6 +35,11 @@ def test_log_keyword_results_zero_results_reports_0_results(progress_events):
     assert [e.message for e in progress_events] == ["'analyst': 0 results"]
 
 
+def test_log_keyword_results_does_not_count_known_ads(progress_events):
+    log_keyword_results("reed", "analyst", [{"id": "1"}, {"platform_id": "2", "seen_only": True}])
+    assert [e.message for e in progress_events] == ["'analyst': 1 results"]
+
+
 def test_report_forwards_to_core_channel_with_site_and_detail(progress_events):
     report("detail", 2, 5, site="thehub")
     assert progress_events == [Progress("detail", 2, 5, site="thehub")]

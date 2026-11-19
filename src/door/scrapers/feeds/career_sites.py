@@ -705,7 +705,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
     seen: set[str] = set()
     for entry, found in zip(entries, scraped):
         site_postings = [p for p in found if p["platform_id"] not in seen and not seen.add(p["platform_id"])]
-        log_keyword_results(_SITE, _base(entry), [p for p in site_postings if not p.get("seen_only")])
+        log_keyword_results(_SITE, _base(entry), site_postings)
         postings.extend(site_postings)
     return postings
 

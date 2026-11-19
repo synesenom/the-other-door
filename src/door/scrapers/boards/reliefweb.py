@@ -163,7 +163,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             seen.add(platform_id)
             postings.append({"platform_id": platform_id, "seen_only": True} if platform_id in known_ids
                             else _to_posting(item, scraped_at))
-        log_keyword_results("reliefweb", keyword, [p for p in postings[keyword_start:] if not p.get("seen_only")])
+        log_keyword_results("reliefweb", keyword, postings[keyword_start:])
 
     return sdk.keep_local(postings, config, "reliefweb")
 

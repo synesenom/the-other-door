@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
-    Detection, FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local, split_known, make_job_id,
+    Detection, FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local, make_job_id,
     parse_iso_date, parts, record_error, report, run_probe, scrape_feeds, strip_html, tenant_platform_id, unfollowable,
 )
 
@@ -164,11 +164,14 @@ def _site_postings(session: PoliteSession, config: dict, entry: str, scraped_at:
         items.extend(page)
         offset += len(page)
     base = f"https://{host}"
-    new, known = split_known(items, lambda item: tenant_platform_id(base, str(item["Id"])), known_ids)
     ids = {}   # platform id -> requisition number, for the detail request
-    fresh = []
-    for item in new:
-        ids[tenant_platform_id(base, str(item["Id"]))] = str(item["Id"])
+    fresh, known = [], []
+    for item in items:
+        platform_id = tenant_platform_id(base, str(item["Id"]))
+        if platform_id in known_ids:
+            known.append({"platform_id": platform_id, "seen_only": True})
+            continue
+        ids[platform_id] = str(item["Id"])
         fresh.append(_to_posting(item, host, site, name, scraped_at))
     postings = keep_local(fresh, config, _SITE)  # before the detail requests: the others are never read
     for posting in postings:

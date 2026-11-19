@@ -112,7 +112,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             report(f"detail error ({ad['url']}): {exc}")
             record_error("globalnyt", f"detail error ({ad['url']}): {exc}")
         postings.append(_to_posting(ad, company, location, scraped_at))
-    log_keyword_results("globalnyt", "all ads", [p for p in postings if not p.get("seen_only")])
+    log_keyword_results("globalnyt", "all ads", postings)
     return postings
 
 
