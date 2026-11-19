@@ -167,19 +167,43 @@ def vector_icons(drawings: list[dict]) -> list[tuple[list[float], str]]:
             if g["bbox"][2] - g["bbox"][0] <= _ICON_SIZE and g["bbox"][3] - g["bbox"][1] <= _ICON_SIZE]
 
 
-def near(box: list[float], runs: list[dict]) -> dict | None:
-    """The text an icon belongs to: the nearest run on its line, to its right first, else to its left."""
+def _nearest(box: list[float], runs: list[dict]) -> tuple[dict, str] | None:
+    """The run an icon belongs to and its side: the nearest run on its line, to its right first, else to its left."""
     mid = (box[1] + box[3]) / 2
     line = [r for r in runs if not r["icon"] and not r["rotated"] and r["bbox"][1] - 0.5 * r["size"] <= mid <= r["bbox"][3] + 0.5 * r["size"]]
     right = sorted((r for r in line if r["bbox"][0] >= box[2] - 1), key=lambda r: r["bbox"][0] - box[2])
     left = sorted((r for r in line if r["bbox"][2] <= box[0] + 1), key=lambda r: box[0] - r["bbox"][2])
     for side, found in (("right", right), ("left", left)):
         if found:
-            return {"text": found[0]["text"], "side": side}
+            return found[0], side
     return None
 
 
-def _icon(page, number: int, box: list[float], color: str | None, source: str, font: str | None, runs: list[dict]) -> dict | None:
+def near(box: list[float], runs: list[dict]) -> dict | None:
+    """The text an icon belongs to (`_nearest`): ``{text, side}``."""
+    found = _nearest(box, runs)
+    return {"text": found[0]["text"], "side": found[1]} if found else None
+
+
+def kind_of(box: list[float], runs: list[dict], structure: dict | None) -> str | None:
+    """The kind of icon (one of `templates.ICON_KINDS`) of an icon at `box`: the `kind` the model gave the line of
+    `structure["contacts"]` that holds the text it sits beside; None when that text is on no such line (or there is no
+    structure)."""
+    found = _nearest(box, runs)
+    if not structure or not found:
+        return None
+    return next((c["kind"] for c in structure["contacts"] if in_row(found[0], c["row"])), None)
+
+
+def in_row(run: dict, row: dict) -> bool:
+    """Whether `run` is a piece of the structure's `row` (the same page, its centre inside the row's box)."""
+    x0, y0, x1, y1 = row["bbox"]
+    cx, cy = (run["bbox"][0] + run["bbox"][2]) / 2, (run["bbox"][1] + run["bbox"][3]) / 2
+    return run["page"] == row["page"] and x0 - 0.5 <= cx <= x1 + 0.5 and y0 - 0.5 <= cy <= y1 + 0.5
+
+
+def _icon(page, number: int, box: list[float], color: str | None, source: str, font: str | None, runs: list[dict],
+          structure: dict | None) -> dict | None:
     image, shown = pdf_render.render_box(page, box, _SCALE, pad=1.0)
     scale = image.width / (shown[2] - shown[0])
     traced = style_trace.trace(image, scale)
@@ -189,12 +213,14 @@ def _icon(page, number: int, box: list[float], color: str | None, source: str, f
     bbox = [round(shown[0] + px[0] / scale, 1), round(shown[1] + px[1] / scale, 1),
             round(shown[0] + px[2] / scale, 1), round(shown[1] + px[3] / scale, 1)]
     return {"page": number, "bbox": bbox, "source": source, "font": font, "color": color or traced["color"],
-            "viewBox": traced["viewBox"], "d": traced["d"], "fill_rule": FILL_RULE, "near": near(bbox, runs)}
+            "viewBox": traced["viewBox"], "d": traced["d"], "fill_rule": FILL_RULE, "near": near(bbox, runs),
+            "kind": kind_of(bbox, runs, structure)}
 
 
-def find_icons(doc, pages: list[dict]) -> list[dict]:
+def find_icons(doc, pages: list[dict], structure: dict | None = None) -> list[dict]:
     """The icons of the document, in reading order: each page's icon-font runs, small drawings and small pictures
-    that are not its photo (`photo_box` is the picture's own box, before what it shows of it was cut)."""
+    that are not its photo (`photo_box` is the picture's own box, before what it shows of it was cut). Each has its
+    `kind` from the structure's contact lines (`kind_of`)."""
     icons = []
     for number, (page, data) in enumerate(zip(doc, pages), 1):
         found = [(r["bbox"], r["color"], "font", r["font"]) for r in data["runs"] if r["icon"]]
@@ -204,7 +230,7 @@ def find_icons(doc, pages: list[dict]) -> list[dict]:
             if image["bbox"] != data.get("photo_box") and 3 <= min(w, h) and max(w, h) <= _PICTURE_SIZE and 0.5 <= w / h <= 2:
                 found.append((image["bbox"], None, "image", None))
         for box, color, source, font in found:
-            icon = _icon(page, number, box, color, source, font, data["runs"])
+            icon = _icon(page, number, box, color, source, font, data["runs"], structure)
             if icon:
                 icons.append(icon)
     return sorted(icons, key=lambda i: (i["page"], i["bbox"][1], i["bbox"][0]))

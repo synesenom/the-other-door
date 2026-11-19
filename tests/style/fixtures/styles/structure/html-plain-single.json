@@ -28,9 +28,45 @@
  ],
  "entry_titles": [
   6,
+  8,
   12,
+  14,
   18,
+  20,
   25,
   27
- ]
+ ],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 7,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 13,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 19,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 26,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 28,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

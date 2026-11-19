@@ -892,12 +892,6 @@ def test_a_heading_is_the_section_kind_whose_title_it_is_whole_without_case_or_a
     assert i18n.cv_section_kind("Education", ("skills",)) is None  # only the kinds asked for
 
 
-@pytest.mark.parametrize("code", ["en", "da", "fr", "hu", "sv"])
-@pytest.mark.parametrize("kind", ["phone", "email", "web", "location"])
-def test_every_supported_language_labels_the_everyday_contact_details(code, kind):
-    assert getattr(i18n._packs((code,))[0].contact_labels, kind)
-
-
 def test_each_languages_written_months_are_read_as_dates():
     for code, name, number in (("da", "marts", 3), ("hu", "március", 3), ("sv", "mars", 3), ("en", "March", 3), ("fr", "août", 8)):
         assert i18n.month_numbers((code,))[name.lower()] == number

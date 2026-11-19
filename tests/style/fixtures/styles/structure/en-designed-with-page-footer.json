@@ -35,5 +35,76 @@
   53,
   58,
   63
+ ],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 5,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 10,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 15,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 21,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 26,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 31,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 38,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 43,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 48,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 54,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 59,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 64,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": [
+  35,
+  68
  ]
 }

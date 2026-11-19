@@ -3,7 +3,7 @@ header comments. A class named in either of the last two that the guard refuses 
 
 import re
 
-from door import i18n
+from door.core import cv_read
 from door.commands import revise
 from door.render import html_guard
 from paths import REPO_ROOT
@@ -38,7 +38,7 @@ def test_every_class_a_templates_header_comment_names_is_one_the_guard_accepts()
         assert named - html_guard.CLASSES - html_guard.KIND_CLASSES - {"photo"} == set(), name
 
 
-KINDS = set(i18n.CONTACT_KINDS)
+KINDS = set(cv_read.CONTACT_KINDS)
 
 
 def test_the_tailor_is_told_the_tagline_and_every_contact_kind():

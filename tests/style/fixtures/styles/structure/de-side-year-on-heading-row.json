@@ -22,10 +22,28 @@
    "kind": "other"
   }
  ],
- "entry_titles": [
-  3,
-  8,
-  13,
-  18
- ]
+ "entry_titles": [],
+ "contacts": [
+  {
+   "id": 3,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 8,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 13,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 18,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

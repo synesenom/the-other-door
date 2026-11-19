@@ -44,7 +44,6 @@ _FLAG_FIXED, _FLAG_SERIF, _FLAG_ITALIC, _FLAG_FORCE_BOLD = 0x1, 0x2, 0x40, 0x400
 _RULE_MAX, _RULE_MIN_LENGTH, _DOT_MAX = 3.5, 20.0, 10.0
 
 # nothing to copy
-PAGE_FOOTER = re.compile(r"page \d+ of \d+", re.I)
 _MIN_CHARS = 50
 
 
@@ -392,18 +391,27 @@ def find_photo(page, images: list[dict], size: list[float], background: str | No
 
 # ---------- margins ----------
 
-def _is_footer(run: dict, size: list[float]) -> bool:
-    low = run["bbox"][3] > size[1] * 0.94
-    return low and (run["text"].strip().isdigit() or bool(PAGE_FOOTER.fullmatch(run["text"].strip())))
+def footer_runs(pages: list[dict], structure: dict | None) -> list[dict]:
+    """The runs that are page furniture: those in the lines the structure names as footers; with no structure, the runs
+    in the bottom 6% of the page whose baseline is the same on every page (a page number), which needs two pages (a
+    last line of one page is the text's)."""
+    if structure:
+        return [r for p in pages for r in p["runs"] if any(style_icons.in_row(r, f) for f in structure["footers"])]
+    if len(pages) < 2:
+        return []
+    low = [[r for r in p["runs"] if r["bbox"][3] > p["size"][1] * 0.94 and not r["rotated"] and not r["icon"]] for p in pages]
+    shared = set.intersection(*({round(r["baseline"]) for r in runs} for runs in low))
+    return [r for runs in low for r in runs if round(r["baseline"]) in shared]
 
 
-def margins(pages: list[dict]) -> dict:
-    """The space between the page edge and the text, the smallest over the pages (to 0.5 pt): a page number or
-    `Page N of M` in the foot, rotated text and icons are not counted. The bottom one is read only from a page
+def margins(pages: list[dict], structure: dict | None = None) -> dict:
+    """The space between the page edge and the text, the smallest over the pages (to 0.5 pt): the footers
+    (`footer_runs`), rotated text and icons are not counted. The bottom one is read only from a page
     with another after it (a last page ends where its text does); with none, it is the top margin."""
     out = {"top": [], "right": [], "bottom": [], "left": []}
+    furniture = {id(r) for r in footer_runs(pages, structure)}
     for i, page in enumerate(pages):
-        runs = [r for r in page["runs"] if not r["rotated"] and not r["icon"] and not _is_footer(r, page["size"])]
+        runs = [r for r in page["runs"] if not r["rotated"] and not r["icon"] and id(r) not in furniture]
         if not runs:
             continue
         w, h = page["size"]
@@ -680,7 +688,7 @@ def extract(pdf_path: Path, structure: dict | None = None) -> dict:
         style_icons.mark_icon_runs([r for p in pages for r in p["runs"]])
         runs = [r for p in pages for r in p["runs"]]
         shapes = [s for p in pages for s in p["shapes"]]
-        page = {"size": pages[0]["size"], "background": pages[0]["background"], "margins": margins(pages),
+        page = {"size": pages[0]["size"], "background": pages[0]["background"], "margins": margins(pages, structure),
                 "bleed": _bleed(shapes, pages[0]["size"])}
         columns, name, headings = {"count": 0, "bands": []}, None, []
         if structure:
@@ -692,6 +700,6 @@ def extract(pdf_path: Path, structure: dict | None = None) -> dict:
         return {**head, "page": page, "fonts": _fonts_used(runs), "colors": colors(runs, shapes), "name": name,
                 "columns": columns, "headings": headings, "heading_style": heading_style(headings),
                 "runs": [{k: v for k, v in r.items() if k not in _INTERNAL} for r in runs], "shapes": shapes,
-                "icons": style_icons.find_icons(doc, pages), "photo": pages[0]["photo"]}
+                "icons": style_icons.find_icons(doc, pages, structure), "photo": pages[0]["photo"]}
     finally:
         doc.close()

@@ -58,7 +58,7 @@ def ids_by_text(rows):
 def answer(rows, name="Max Mustermann", heads=("Experience", "Education", "Skills"), layout=None, **extra):
     ids = ids_by_text(rows)
     return {"linkedin_export": False, "layout": layout or {"columns": "one"}, "name": ids[name],
-            "headings": [{"id": ids[h], "kind": "other"} for h in heads], "entry_titles": [], **extra}
+            "headings": [{"id": ids[h], "kind": "other"} for h in heads], "entry_titles": [], "contacts": [], "footers": [], **extra}
 
 
 # ---------- the input ----------
@@ -149,7 +149,7 @@ def test_the_model_s_column_for_a_heading_is_ignored_and_worked_out_from_its_x(t
     pages, rows, _ = read(pdf_of(tmp_path, two_columns()))
     ids = ids_by_text(rows)
     a = {"linkedin_export": False, "layout": {"columns": "two", "side_x0": 38, "side_x1": 120},
-         "name": ids["Max Mustermann"], "entry_titles": [],
+         "name": ids["Max Mustermann"], "entry_titles": [], "contacts": [], "footers": [],
          "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Education", "Skills", "Languages")]}
     s = style_structure.check(a, rows, pages)
     assert {h["text"]: h["column"] for h in s["headings"]} == {"Experience": "main", "Education": "main", "Skills": "side", "Languages": "side"}
@@ -165,7 +165,7 @@ def test_the_model_s_column_for_a_heading_is_ignored_and_worked_out_from_its_x(t
 def test_two_columns_need_a_side_range_that_fits_the_page_and_the_text(tmp_path, layout, why):
     pages, rows, _ = read(pdf_of(tmp_path, two_columns()))
     ids = ids_by_text(rows)
-    a = {"linkedin_export": False, "layout": layout, "name": ids["Max Mustermann"], "entry_titles": [],
+    a = {"linkedin_export": False, "layout": layout, "name": ids["Max Mustermann"], "entry_titles": [], "contacts": [], "footers": [],
          "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Skills")]}
     with pytest.raises(StructureError) as refused:
         style_structure.check(a, rows, pages)
@@ -184,23 +184,51 @@ def test_linkedin_is_believed_only_with_a_page_footer_on_every_page(tmp_path):
     assert style_structure.check(answer(rows, linkedin_export=True), rows, pages)["linkedin"] is False
     footed = one_column() + put("F1", 8, 270, 30, "Page 1 of 1")
     pages, rows, _ = read(pdf_of(tmp_path, footed, "footed.pdf"))
-    s = style_structure.check(answer(rows, linkedin_export=True), rows, pages)
+    s = style_structure.check(answer(rows, linkedin_export=True, footers=[ids_by_text(rows)["Page 1 of 1"]]), rows, pages)
     assert s["linkedin"] is True and style_extract.structure_verdict(s)["reason"] == "linkedin"
 
 
 def test_a_footer_on_one_page_of_two_is_no_linkedin_export(tmp_path):
     pages = [one_column() + put("F1", 8, 270, 30, "Page 1 of 2"), filler(50, 700)]
     pages_, rows, _ = read(pdf_of(tmp_path, pages))
-    assert style_structure.check(answer(rows, linkedin_export=True), rows, pages_)["linkedin"] is False
+    a = answer(rows, linkedin_export=True, footers=[ids_by_text(rows)["Page 1 of 2"]])
+    assert style_structure.check(a, rows, pages_)["linkedin"] is False
 
 
-def test_the_kind_i18n_knows_wins_over_the_models(cv):
+def test_the_models_kind_for_a_heading_is_kept_whatever_the_words(cv):
     pages, rows = cv
     a = answer(rows)
-    a["headings"][0]["kind"] = "skills"  # Experience is no section kind i18n names: the model's stays
-    a["headings"][2]["kind"] = "languages"  # Skills is known: the model is overruled
-    kinds = [h["kind"] for h in style_structure.check(a, rows, pages)["headings"]]
-    assert kinds == ["skills", "education", "skills"]
+    a["headings"][0]["kind"] = "skills"
+    a["headings"][2]["kind"] = "languages"
+    assert [h["kind"] for h in style_structure.check(a, rows, pages)["headings"]] == ["skills", "other", "languages"]
+
+
+def test_the_contact_lines_and_footers_are_carried_in_the_structure(cv):
+    pages, rows = cv
+    ids = ids_by_text(rows)
+    a = answer(rows, contacts=[{"id": ids["max@example.com +49 30 1234567"], "kind": "email", "label": " E-mail: "}],
+               footers=[ids["Experience"]])
+    s = style_structure.check(a, rows, pages)
+    assert [(c["row"]["id"], c["kind"], c["label"]) for c in s["contacts"]] == [(ids["max@example.com +49 30 1234567"], "email", "E-mail:")]
+    assert [r["id"] for r in s["footers"]] == [ids["Experience"]]
+
+
+@pytest.mark.parametrize("break_it", [
+    lambda a, ids: a["contacts"].append({"id": 999, "kind": "phone", "label": ""}),
+    lambda a, ids: a["contacts"].append({"id": ids["Experience"], "kind": "fax", "label": ""}),
+    lambda a, ids: a["contacts"].append({"id": ids["Experience"], "kind": "phone"}),
+    lambda a, ids: a.update(contacts=[{"id": ids["Experience"], "kind": "phone", "label": ""}] * 2),
+    lambda a, ids: a.update(contacts="x"),
+    lambda a, ids: a.update(footers=[999]),
+    lambda a, ids: a.pop("footers"),
+    lambda a, ids: a.pop("contacts"),
+])
+def test_contacts_and_footers_that_do_not_hold_are_refused(cv, break_it):
+    pages, rows = cv
+    a = answer(rows)
+    break_it(a, ids_by_text(rows))
+    with pytest.raises(StructureError):
+        style_structure.check(a, rows, pages)
 
 
 def test_a_heading_that_wraps_takes_its_second_line_in(tmp_path):
@@ -253,7 +281,7 @@ def good(text):
                for row in text.split("lines (", 1)[1].splitlines()[1:]}
     return {"linkedin_export": False, "layout": {"columns": "one"}, "name": by_text["Max Mustermann"],
             "headings": [{"id": by_text[h], "kind": "other"} for h in ("Experience", "Education", "Skills")],
-            "entry_titles": []}
+            "entry_titles": [], "contacts": [], "footers": []}
 
 
 def test_a_scan_is_not_asked_about(tmp_path, ask):
@@ -441,7 +469,7 @@ def test_two_columns_are_a_side_band_and_a_main_band_left_to_right_with_the_head
     path, pages, rows = structured(tmp_path, two_columns())
     ids = ids_by_text(rows)
     a = {"linkedin_export": False, "layout": {"columns": "two", "side_x0": 38, "side_x1": 120},
-         "name": ids["Max Mustermann"], "entry_titles": [],
+         "name": ids["Max Mustermann"], "entry_titles": [], "contacts": [], "footers": [],
          "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Education", "Skills", "Languages")]}
     style = style_extract.extract(path, structure=style_structure.check(a, rows, pages))
     assert [b["kind"] for b in style["columns"]["bands"]] == ["side", "main"] and style["columns"]["count"] == 2
@@ -453,7 +481,7 @@ def test_a_side_band_on_a_box_has_its_background(tmp_path):
     path, pages, rows = structured(tmp_path, box + two_columns())
     ids = ids_by_text(rows)
     a = {"linkedin_export": False, "layout": {"columns": "two", "side_x0": 38, "side_x1": 120},
-         "name": ids["Max Mustermann"], "entry_titles": [],
+         "name": ids["Max Mustermann"], "entry_titles": [], "contacts": [], "footers": [],
          "headings": [{"id": ids[h], "kind": "other"} for h in ("Experience", "Skills")]}
     bands = style_extract.extract(path, structure=style_structure.check(a, rows, pages))["columns"]["bands"]
     assert bands[0]["background"] == "#e6e6cc" and bands[1]["background"] is None
@@ -468,7 +496,8 @@ def test_three_columns_refuse_with_the_layout_verdict_and_keep_the_rest(tmp_path
 
 def test_a_linkedin_export_has_only_the_verdict(tmp_path):
     path, pages, rows = structured(tmp_path, one_column() + put("F1", 8, 270, 30, "Page 1 of 1"))
-    style = style_extract.extract(path, structure=style_structure.check(answer(rows, linkedin_export=True), rows, pages))
+    a = answer(rows, linkedin_export=True, footers=[ids_by_text(rows)["Page 1 of 1"]])
+    style = style_extract.extract(path, structure=style_structure.check(a, rows, pages))
     assert style["verdict"]["reason"] == "linkedin" and "runs" not in style
 
 
@@ -499,3 +528,76 @@ def test_a_sidebar_with_one_stray_row_beyond_it_stays_two_columns(tmp_path):
     a = answer(rows, heads=("Experience", "Skills"), layout={"columns": "two", "side_x0": 398, "side_x1": 460})
     s = style_structure.check(a, rows, pages)
     assert s["columns"] == "two"
+
+
+# ---------- icons, kinds and footers from the structure ----------
+
+def _icon_cv(lines):
+    """A one-column CV with a small star drawn before each of `lines`, (text, y) in the header."""
+    import math
+
+    def star(cx, cy, r):
+        pts = [(cx + (r if i % 2 == 0 else r * 0.4) * math.sin(i * math.pi / 5),
+                cy + (r if i % 2 == 0 else r * 0.4) * math.cos(i * math.pi / 5)) for i in range(10)]
+        return "1 0 0 rg " + f"{pts[0][0]:.2f} {pts[0][1]:.2f} m " + " ".join(f"{x:.2f} {y:.2f} l" for x, y in pts[1:]) + " f\n"
+
+    out = put("F2", 20, 50, 800, "Max Mustermann")
+    for label, y in lines:
+        out += star(55, y + 3, 5) + put("F1", 10, 70, y, label)
+    header = put("F2", 20, 50, 800, "Max Mustermann") + put("F1", 10, 50, 782, "max@example.com +49 30 1234567")
+    return out + one_column()[len(header):]
+
+
+def test_an_icon_gets_its_kind_from_the_model_s_contact_line_in_a_language_no_table_knows(tmp_path):
+    path = pdf_of(tmp_path, _icon_cv([("Puhelin 040 1234567", 782), ("Helsinki", 765), ("1999 - 2003", 748), ("Reading", 731)]))
+    pages, rows, _ = read(path)
+    ids = ids_by_text(rows)
+    contacts = [{"id": ids["Puhelin 040 1234567"], "kind": "phone", "label": "Puhelin"},
+                {"id": ids["Helsinki"], "kind": "location", "label": ""},
+                {"id": ids["1999 - 2003"], "kind": "date", "label": ""}]
+    style = style_extract.extract(path, structure=style_structure.check(answer(rows, contacts=contacts), rows, pages))
+    assert [(i["near"]["text"], i["kind"]) for i in style["icons"]] == [
+        ("Puhelin 040 1234567", "phone"), ("Helsinki", "location"), ("1999 - 2003", "date"), ("Reading", None)]
+
+
+def test_an_icon_with_no_structure_has_no_kind(tmp_path):
+    style = style_extract.extract(pdf_of(tmp_path, _icon_cv([("a@example.com", 782)])))
+    assert [i["kind"] for i in style["icons"]] == [None]
+
+
+def _page_numbered(n=3):
+    return [one_column() + put("F1", 8, 290, 30, str(i + 1)) for i in range(n)]
+
+
+def test_the_footers_the_model_names_are_left_out_of_the_margins(tmp_path):
+    pages, rows, _ = read(pdf_of(tmp_path, [one_column(), one_column() + put("F1", 8, 290, 30, "Page 2 of 2")]))
+    a = answer(rows, footers=[next(r["id"] for r in rows if r["text"] == "Page 2 of 2")])
+    s = style_structure.check(a, rows, pages)
+    assert style_extract.margins(pages, s)["bottom"] > 200
+    assert style_extract.margins(pages)["bottom"] > 200  # same y on one page of two: no footer, but the bottom needs a next page
+
+
+def test_with_no_structure_a_line_at_the_same_foot_y_on_every_page_is_a_footer(tmp_path):
+    pages = style_extract.read_pages(pdf_of(tmp_path, _page_numbered()))
+    assert [r["text"] for r in style_extract.footer_runs(pages, None)] == ["1", "2", "3"]
+
+
+def test_with_no_structure_a_bottom_line_of_a_one_page_cv_is_no_footer(tmp_path):
+    pages = style_extract.read_pages(pdf_of(tmp_path, [one_column() + put("F1", 8, 290, 30, "1")]))
+    assert style_extract.footer_runs(pages, None) == []
+
+
+def test_with_no_structure_a_foot_line_on_only_one_page_is_no_footer(tmp_path):
+    pages = style_extract.read_pages(pdf_of(tmp_path, [one_column() + put("F1", 8, 290, 30, "Page 1"), one_column()]))
+    assert style_extract.footer_runs(pages, None) == []
+
+
+def test_the_stand_in_names_the_contact_lines_and_footers_by_a_plain_rule_and_its_answer_holds(tmp_path):
+    from style_structure_utils import fake_ask
+
+    pages, rows, text = read(pdf_of(tmp_path, one_column() + put("F1", 8, 290, 30, "Page 1 of 1")))
+    got = fake_ask(text)
+    kinds = {r["id"]: c["kind"] for c in got["contacts"] for r in rows if r["id"] == c["id"]}
+    assert set(kinds.values()) == {"email", "date"}
+    assert [rows[i - 1]["text"] for i in got["footers"]] == ["Page 1 of 1"]
+    style_structure.check(got, rows, pages)

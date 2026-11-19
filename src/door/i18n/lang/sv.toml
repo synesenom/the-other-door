@@ -53,12 +53,6 @@ certifications = ["certifieringar", "certifikat", "kurser", "certifieringar och 
 languages = ["språk", "språkkunskaper"]
 interests = ["intressen", "fritidsintressen"]
 
-[contact_labels]
-phone = ["telefon", "mobil"]
-email = ["e-post", "epost"]
-web = ["webbplats", "hemsida"]
-location = ["ort", "stad", "adress"]
-
 [headings]
 requirement = [
     "vi söker dig", "kvalifikationer", "krav", "vem är du", "din profil", "meriterande",
@@ -96,7 +90,6 @@ advantage = [
     "kunskaper i svenska är en fördel", "meriterande med svenska",
     "Swedish is a plus", "Swedish is an advantage", "Swedish is preferred",
 ]
-
 
 [work_permit]
 no_sponsorship = [

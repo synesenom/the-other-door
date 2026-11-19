@@ -16,20 +16,16 @@
    "kind": "experience"
   },
   {
-   "id": 157,
-   "kind": "other"
-  },
-  {
    "id": 13,
-   "kind": "other"
+   "kind": "skills"
   },
   {
    "id": 32,
-   "kind": "other"
+   "kind": "languages"
   },
   {
    "id": 50,
-   "kind": "other"
+   "kind": "interests"
   },
   {
    "id": 75,
@@ -38,19 +34,52 @@
   {
    "id": 110,
    "kind": "other"
+  },
+  {
+   "id": 157,
+   "kind": "education"
   }
  ],
  "entry_titles": [
-  8,
-  19,
-  41,
-  58,
-  89,
-  101,
-  119,
+  9,
+  21,
+  43,
+  60,
+  91,
+  103,
+  122,
   147,
-  158,
-  160,
-  161
+  149
+ ],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 118,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 130,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 145,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 155,
+   "kind": "email",
+   "label": ""
+  }
+ ],
+ "footers": [
+  74,
+  163
  ]
 }

@@ -36,7 +36,6 @@ skill_stop_words = [
     "present", "current", "fluent", "native", "conversational", "advanced", "basic",
 ]
 
-
 # Generic words around an employer's name in a careers site's title.
 career_site_words = ["careers", "career", "jobs", "job", "vacancies", "open positions", "career opportunities"]
 
@@ -47,14 +46,6 @@ education = ["education", "education and training", "academic background"]
 certifications = ["certifications", "certificates", "licences", "licenses", "certifications and licences", "certifications and licenses", "courses"]
 languages = ["languages", "language skills"]
 interests = ["interests", "hobbies", "hobbies and interests", "interests and hobbies"]
-
-[contact_labels]
-phone = ["phone", "tel", "telephone", "mobile", "cell"]
-email = ["email", "e-mail", "mail"]
-web = ["web", "website", "site", "portfolio"]
-linkedin = ["linkedin"]
-github = ["github"]
-location = ["location", "city", "address"]
 
 [headings]
 requirement = ["requirements", "qualifications", "who you are", "nice to have"]

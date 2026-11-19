@@ -195,23 +195,6 @@ class DateFormat(_Strict):
         return v
 
 
-class ContactLabels(_Strict):
-    """What a CV's contact line calls each kind of detail (`**Telefon:** ...`), matched as a whole label. The fields
-    are the kinds, in the order the tailor writes them."""
-
-    phone: list[str] = []
-    email: list[str] = []
-    web: list[str] = []
-    linkedin: list[str] = []
-    github: list[str] = []
-    location: list[str] = []
-
-    @field_validator("*")
-    @classmethod
-    def _words(cls, v: list[str]) -> list[str]:
-        return _check_words(v)
-
-
 class LanguagePack(_Strict):
     code: str
     name: str
@@ -223,7 +206,6 @@ class LanguagePack(_Strict):
     stop_words: list[str] = []
     skill_stop_words: list[str] = []
     cv_sections: CvSections = CvSections()
-    contact_labels: ContactLabels = ContactLabels()
     headings: Headings = Headings()
     markers: Markers = Markers()
     seniority: dict[str, list[str]] = {}
@@ -725,16 +707,6 @@ def cv_section(kind: str, codes: tuple[str, ...] | None = None) -> list[str]:
     if kind not in CvSections.model_fields:
         raise ValueError(f"unknown CV section {kind!r}; use one of {tuple(CvSections.model_fields)}")
     return _union(getattr(p.cv_sections, kind) for p in _packs(codes))
-
-
-CONTACT_KINDS = tuple(ContactLabels.model_fields)
-
-
-def contact_kind(label: str) -> str | None:
-    """The kind of contact detail (one of `CONTACT_KINDS`) that `label` names in any supported language (spaces
-    squashed, without case or a trailing colon), or None."""
-    key = " ".join(label.split()).casefold().strip(" :")
-    return next((k for k in CONTACT_KINDS if any(key == w.casefold() for p in _packs(None) for w in getattr(p.contact_labels, k))), None)
 
 
 def cv_section_kind(title: str, kinds, codes: tuple[str, ...] | None = None) -> str | None:

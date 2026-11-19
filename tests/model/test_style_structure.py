@@ -93,3 +93,15 @@ def test_a_rerun_of_the_model_finds_the_same_headings(read, name, tmp_path):
         mp.setattr(style_structure, "_cache_dir", lambda: tmp_path / "again")
         again = style_extract.extract(STYLES / f"{name}.pdf", structure=style_structure.structure_for(STYLES / f"{name}.pdf"))
     assert sorted(h["text"] for h in again["headings"]) == first
+
+
+@pytest.mark.parametrize("name", ["html-canva-icons", "scrubbed-altacv-icons-fr", "scrubbed-pages-header-en"])
+def test_the_icons_beside_contact_lines_get_a_kind_from_the_model(read, name):
+    """The model names the contact lines and their kinds in any language: an icon beside one has its kind."""
+    kinds = {i["kind"] for i in read(name)["icons"]}
+    assert kinds - {None} and kinds <= {None, *style_structure.templates.ICON_KINDS}
+
+
+def test_the_page_footer_of_a_designed_cv_is_named_a_footer_not_content(read):
+    margins = read("en-designed-with-page-footer")["page"]["margins"]
+    assert margins["bottom"] > 0

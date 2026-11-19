@@ -30,5 +30,48 @@
   18,
   22,
   25
- ]
+ ],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 4,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 7,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 11,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 14,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 18,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 22,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 25,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }
