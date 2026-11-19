@@ -1,5 +1,5 @@
 {
- "key": "dd2e54e82960",
+ "key": "56811aed82a9",
  "answer": {
   "name": "Mette Berg",
   "email": "mette.berg@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Dansk",
+    "code": "da",
     "level": "native"
    },
    {
     "language": "Engelsk",
+    "code": "en",
     "level": "working"
    },
    {
     "language": "Tysk",
+    "code": "de",
     "level": "conversational"
    }
   ],

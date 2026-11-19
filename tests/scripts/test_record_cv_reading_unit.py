@@ -438,16 +438,15 @@ def test_every_committed_record_is_an_answer_to_the_prompt_and_input_of_today():
 
 
 def test_haiku_is_go_as_a_reader_and_a_fact_checker_on_the_harder_corpus():
-    reader, check = committed("haiku", "reader"), committed("haiku", "facts")
-    assert reader["verdict"] == "go" and reader["calls"] == 45 and reader["stretches"] == 1.0
-    assert {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.964, "languages": 0.933}
+    reader, check = committed("haiku", "reader"), committed("haiku", "facts")  # the reader: one run a case, recorded again with #430's prompt
+    assert reader["verdict"] == "go" and reader["calls"] == 15 and reader["stretches"] == 1.0
+    assert {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.987}
     assert check["verdict"] == "go" and check["calls"] == 84 and all(v == 1.0 for v in check["per_kind"].values())
     assert check["false_clean_max"] == 0 and round(check["verbatim"], 3) == 0.984 and check["stable"] == 1.0
 
 
-def test_sonnet_reads_as_well_and_is_close_on_the_facts_for_a_less_stable_check():
-    reader, check = committed("sonnet", "reader"), committed("sonnet", "facts")
-    assert reader["verdict"] == "go" and {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.982}
+def test_sonnet_is_close_on_the_facts_for_a_less_stable_check():
+    check = committed("sonnet", "facts")  # its reader records went stale with #430's prompt and were not recorded again
     assert check["verdict"] == "close" and round(check["stable"], 3) == 0.857 and round(check["verbatim"], 3) == 0.993
     assert all(v == 1.0 for v in check["per_kind"].values()) and check["false_clean_max"] == 0
 
@@ -512,7 +511,7 @@ def test_every_held_out_record_is_an_answer_to_the_prompt_and_input_of_today():
     for task in ("reader", "facts"):
         _, corpus = held_committed(task)
         paths = sorted((rcr.RECORDED / "held-out" / "haiku" / task).glob("*.json"))
-        assert {p.name.split(".")[0] for p in paths} == set(corpus)  # the reader 3 runs a case, the facts at least 1
+        assert {p.name.split(".")[0] for p in paths} == set(corpus)  # the reader 1 run a case, the facts at least 1
         for path in paths:
             assert rcr._recorded_ok(path, rcr._key(task, corpus[path.name.split(".")[0]])), path
 

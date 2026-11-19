@@ -1,5 +1,5 @@
 {
- "key": "df797ecebd5d",
+ "key": "5726d0e5b389",
  "answer": {
   "name": "Julien Fabre",
   "email": "julien.fabre@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Français",
+    "code": "fr",
     "level": "native"
    },
    {
     "language": "Anglais",
+    "code": "en",
     "level": "fluent"
    },
    {
     "language": "Allemand",
+    "code": "de",
     "level": "basic"
    }
   ],
@@ -80,6 +83,30 @@
    "planification"
   ],
   "levels": [
+   {
+    "item": "SQL",
+    "level": null
+   },
+   {
+    "item": "Docker",
+    "level": null
+   },
+   {
+    "item": "Git",
+    "level": null
+   },
+   {
+    "item": "Excel",
+    "level": null
+   },
+   {
+    "item": "Power BI",
+    "level": null
+   },
+   {
+    "item": "planification",
+    "level": null
+   },
    {
     "item": "Français",
     "level": 5

@@ -17,7 +17,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from door.core import workspace
+from door.core import cv_read, workspace
 
 # The config key of each template and the file it defaults to.
 FILES = {"cv_template": "cv.template.html", "cover_letter_template": "cover-letter.template.html"}
@@ -68,9 +68,8 @@ def in_use(profile_dir: Path, config: dict) -> str:
 
 MANIFEST_FILE = "template.json"
 MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
-ICON_KINDS = ("phone", "email", "web", "linkedin", "github", "location", "date")
-# The section kinds a column can hold (`core.cv_read.KINDS` has these and three more).
-SECTION_KINDS = ("skills", "education", "certifications", "languages", "interests")
+ICON_KINDS = (*cv_read.CONTACT_KINDS, "date")
+SECTION_KINDS = cv_read.COLUMN_KINDS  # the section kinds a column can hold
 
 
 def _bare_name(name: str, suffix: str) -> str:

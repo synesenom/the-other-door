@@ -1,5 +1,5 @@
 {
- "key": "cb4cac2949d6",
+ "key": "9013de445d6e",
  "answer": {
   "name": "Chloé Girard",
   "email": "chloe.girard@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Français",
+    "code": "fr",
     "level": "native"
    },
    {
     "language": "Anglais",
+    "code": "en",
     "level": "fluent"
    },
    {
     "language": "Allemand",
+    "code": "de",
     "level": "basic"
    }
   ],

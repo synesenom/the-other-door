@@ -18,9 +18,11 @@ from pathlib import Path
 
 from door.core import claude_cli, problem_log, utils, workspace
 
-PROMPT_VERSION = 1  # bump with the prompt, the schema or the check: a cached answer of another version is asked again
-KINDS = ("summary", "experience", "education", "skills", "certifications", "languages", "interests", "other")
+PROMPT_VERSION = 2  # bump with the prompt, the schema or the check: a cached answer of another version is asked again
+COLUMN_KINDS = ("skills", "education", "certifications", "languages", "interests")  # what a template's column can hold
+KINDS = ("summary", "experience", *COLUMN_KINDS, "other")
 CONTACT_KINDS = ("phone", "email", "web", "linkedin", "github", "location")
+LEVELS = ("native", "fluent", "working", "conversational", "basic")
 _MARKER = re.compile(r"\s*<!--.*?-->\s*$")
 
 PROMPT = (
@@ -28,7 +30,8 @@ PROMPT = (
     "written; never guess: null when the CV does not say.\n"
     "- `name`, `email`, `city`: as written (the city where they live, from the contact details, else of their current "
     "job). `country`: the ISO 3166-1 alpha-2 code, lower case, of that city's country.\n"
-    "- `languages`: every spoken language the CV names, `language` as the CV writes it and `level` one of native, fluent "
+    "- `languages`: every spoken language the CV names, `language` as the CV writes it, `code` its ISO 639-1 code (lower case) "
+    "and `level` one of native, fluent "
     "(professional, business, C1), working (B2), conversational (B1) or basic (A1, A2). C2 is native.\n"
     "- `sections`: every `##` heading, `heading` exactly as written, `kind` one of summary (the profile or the "
     "introduction), experience (the jobs), education, skills, certifications, languages, interests or other. The kind "
@@ -60,8 +63,8 @@ SCHEMA = {
     "type": "object",
     "properties": {
         "name": _STR_OR_NULL, "email": _STR_OR_NULL, "city": _STR_OR_NULL, "country": _STR_OR_NULL,
-        "languages": {"type": "array", "items": {"type": "object", "properties": {"language": {"type": "string"}, "level": {"type": "string"}},
-                                                 "required": ["language", "level"]}},
+        "languages": {"type": "array", "items": {"type": "object", "properties": {"language": {"type": "string"}, "code": {"type": "string"}, "level": {"enum": list(LEVELS)}},
+                                                 "required": ["language", "code", "level"]}},
         "sections": {"type": "array", "items": {"type": "object", "properties": {"heading": {"type": "string"}, "kind": {"type": "string"}},
                                                 "required": ["heading", "kind"]}},
         "contacts": {"type": "array", "items": {"type": "object", "properties": {"kind": {"type": "string"}, "label": _STR_OR_NULL, "value": {"type": "string"}},
@@ -81,12 +84,12 @@ class CvReadError(ValueError):
     """The CV could not be read: the call failed or its answer did not hold. The message is in plain words."""
 
 
-def normalise(cv_md: str) -> str:
+def _normalise(cv_md: str) -> str:
     """The CV as it is read and cached: line endings made `\\n`, the text stripped, each line's trailing space dropped."""
     return "\n".join(line.rstrip() for line in (cv_md or "").replace("\r\n", "\n").replace("\r", "\n").strip().split("\n"))
 
 
-def empty() -> dict:
+def _empty() -> dict:
     """The reading of a CV with nothing in it."""
     return {"name": None, "email": None, "city": None, "country": None, "languages": [], "sections": [],
             "contacts": [], "skills": [], "levels": [], "entries": []}
@@ -137,7 +140,7 @@ def check(answer, md: str) -> dict:
         fail("country is not an ISO code")
 
     sections = items("sections")
-    if [_squash(s.get("heading") or "") for s in sections] != [_squash(h) for h in _lines(md, "## ")]:
+    if [_squash(_MARKER.sub("", s.get("heading") or "")) for s in sections] != [_squash(h) for h in _lines(md, "## ")]:
         fail("the sections are not the CV's own `##` lines")
     if any(s.get("kind") not in KINDS for s in sections):
         fail("a section has no kind")
@@ -162,7 +165,9 @@ def check(answer, md: str) -> dict:
 
     for lang in items("languages"):
         text(lang.get("language"), "language", allow_none=False)
-        if not isinstance(lang.get("level"), str):
+        if not (isinstance(lang.get("code"), str) and re.fullmatch(r"[a-z]{2}", lang["code"])):
+            fail("a language has no ISO code")
+        if lang.get("level") not in LEVELS:
             fail("a language has no level")
 
     real = {_squash(h) for h in _lines(md, "### ")}
@@ -203,7 +208,7 @@ def _read_cache(file: Path) -> dict | None:
 def _ask(md: str) -> dict:
     """The one model call: Haiku at low effort with no MCP servers."""
     return claude_cli.ask(PROMPT, f"CV:\n<<<\n{md}\n>>>\n", model="haiku", feature="cv_read", schema=SCHEMA,
-                          effort="low", timeout_s=240)
+                          effort="low", timeout_s=120)
 
 
 def read(cv_md: str) -> dict:
@@ -214,9 +219,9 @@ def read(cv_md: str) -> dict:
     Raises:
         CvReadError: the call failed or its answer did not hold; nothing is cached then. There is no fallback.
     """
-    md = normalise(cv_md)
+    md = _normalise(cv_md)
     if not md:
-        return empty()
+        return _empty()
     file = _cache_file(md)
     if (cached := _read_cache(file)) is not None:
         try:
@@ -224,19 +229,21 @@ def read(cv_md: str) -> dict:
         except CvReadError:
             file.unlink(missing_ok=True)
     try:
-        for attempt in (1, 2):
-            try:
-                answer = _ask(md)
-            except claude_cli.ClaudeError as exc:
-                raise CvReadError(f"Your CV could not be read: {exc}") from None
-            try:
-                check(answer, md)
-                break
-            except CvReadError:
-                if attempt == 2:
-                    raise
+        answer = _asked(md)
     except CvReadError as exc:
         problem_log.failure("cv read", str(exc))
         raise
     utils.write_json_atomic(file, {"version": PROMPT_VERSION, "answer": answer}, indent=None)
     return answer
+
+
+def _asked(md: str) -> dict:
+    """One call whose answer holds, the model's answers varying: an answer that does not hold is asked once more."""
+    for attempt in (1, 2):
+        try:
+            return check(_ask(md), md)
+        except claude_cli.ClaudeError as exc:
+            raise CvReadError(f"Your CV could not be read: {exc}") from None
+        except CvReadError:
+            if attempt == 2:
+                raise

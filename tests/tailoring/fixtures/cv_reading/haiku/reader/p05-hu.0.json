@@ -1,5 +1,5 @@
 {
- "key": "d4ff078e610f",
+ "key": "a7fa9c77dfb2",
  "answer": {
   "name": "Márton Varga",
   "email": "marton.varga@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Magyar",
+    "code": "hu",
     "level": "native"
    },
    {
     "language": "Angol",
+    "code": "en",
     "level": "fluent"
    },
    {
     "language": "Német",
+    "code": "de",
     "level": "basic"
    }
   ],

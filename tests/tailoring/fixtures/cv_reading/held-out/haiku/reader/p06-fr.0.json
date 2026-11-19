@@ -1,5 +1,5 @@
 {
- "key": "adb35bbfc49d",
+ "key": "59dd5e910605",
  "answer": {
   "name": "Zoé Dupuis",
   "email": "zoe.dupuis@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Français",
+    "code": "fr",
     "level": "native"
    },
    {
     "language": "Anglais",
+    "code": "en",
     "level": "working"
    },
    {
     "language": "Allemand",
+    "code": "de",
     "level": "conversational"
    }
   ],

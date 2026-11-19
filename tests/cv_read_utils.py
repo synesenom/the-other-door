@@ -44,7 +44,7 @@ def _key(md: str) -> str:
 def plain(md: str) -> dict:
     """The plain-format reading of the normalised CV `md`."""
     lines = md.split("\n")
-    reading = cv_read.empty()
+    reading = cv_read._empty()
     reading["name"] = next((ln[2:].strip() for ln in lines if ln.startswith("# ")), None)
     reading["email"] = next((m.group(0) for ln in lines if not ln.startswith(">") and (m := _EMAIL.search(ln))), None)
     kind = None
@@ -80,4 +80,4 @@ def fake_ask(md: str) -> dict:
 
 def reading(md: str, **replace) -> dict:
     """The plain (or recorded) reading of `md`, with the keys in `replace` set."""
-    return {**fake_ask(cv_read.normalise(md)), **replace}
+    return {**fake_ask(cv_read._normalise(md)), **replace}

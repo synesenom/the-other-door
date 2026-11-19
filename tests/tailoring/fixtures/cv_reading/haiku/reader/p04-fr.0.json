@@ -1,5 +1,5 @@
 {
- "key": "51e6f78e8b0e",
+ "key": "44a6219182b7",
  "answer": {
   "name": "Chloé Girard",
   "email": "chloe.girard@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Français",
+    "code": "fr",
     "level": "native"
    },
    {
     "language": "Anglais",
-    "level": "fluent"
+    "code": "en",
+    "level": "working"
    },
    {
     "language": "Allemand",
+    "code": "de",
     "level": "basic"
    }
   ],
@@ -90,30 +93,6 @@
   ],
   "levels": [
    {
-    "item": "Excel",
-    "level": 4
-   },
-   {
-    "item": "Power BI",
-    "level": 4
-   },
-   {
-    "item": "Figma",
-    "level": 4
-   },
-   {
-    "item": "TypeScript",
-    "level": 4
-   },
-   {
-    "item": "Python",
-    "level": 4
-   },
-   {
-    "item": "planification",
-    "level": 4
-   },
-   {
     "item": "Français",
     "level": 5
    },
@@ -124,6 +103,30 @@
    {
     "item": "Allemand",
     "level": 1
+   },
+   {
+    "item": "Excel",
+    "level": null
+   },
+   {
+    "item": "Power BI",
+    "level": null
+   },
+   {
+    "item": "Figma",
+    "level": null
+   },
+   {
+    "item": "TypeScript",
+    "level": null
+   },
+   {
+    "item": "Python",
+    "level": null
+   },
+   {
+    "item": "planification",
+    "level": null
    }
   ],
   "entries": [

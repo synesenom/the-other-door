@@ -1,5 +1,5 @@
 {
- "key": "1c00c1fc469f",
+ "key": "5b104c06dbaa",
  "answer": {
   "name": "Johan Wikström",
   "email": "johan.wikstrom@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "Svenska",
+    "code": "sv",
     "level": "native"
    },
    {
     "language": "Engelska",
+    "code": "en",
     "level": "working"
    },
    {
     "language": "Tyska",
+    "code": "de",
     "level": "basic"
    }
   ],

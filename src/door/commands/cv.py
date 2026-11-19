@@ -294,25 +294,20 @@ def _draft_cv_core(
 
 
 _DEFAULT_REMOTE = "hybrid"
-# A level at which someone works in a language; a language at any other level stays out of `languages`.
-_WORKING_LEVELS = {"native", "fluent", "working"}
 
-
-def _clean(value) -> str | None:
+def _usable(value) -> str | None:
     """`value` as text, or `None` when it is empty or still a `TODO` of the draft."""
     text = " ".join(str(value or "").split())
     return text if text and "TODO" not in text else None
 
 
 def _working_languages(read) -> list[str]:
-    """English, plus each supported language the reading puts at a working level, by its file's name."""
+    """English, plus each supported language the reading puts at a working level (by its ISO code), by its file's name."""
     packs = i18n.languages()
     codes = ["en"]
     for item in read:
-        written = str(item.get("language") or "")  # as the CV writes it: "Danish", "Dansk"
-        code = i18n.language_code(written) or next((c for c, p in packs.items() if i18n.compile_words(p.names).search(written)), None)
-        if code and code not in codes and str(item.get("level") or "").lower() in _WORKING_LEVELS:
-            codes.append(code)
+        if item.get("code") in packs and item["code"] not in codes and item.get("level") in cv_read.LEVELS[:3]:  # native, fluent, working
+            codes.append(item["code"])
     return [packs[c].name for c in codes]
 
 
@@ -344,13 +339,13 @@ def _infer_basics_core(
     except cv_read.CvReadError as exc:
         return {**result, "missing": ["name", "email", "location"], "warning": str(exc)}
 
-    city = _clean(read.get("city"))
+    city = _usable(read.get("city"))
     location = i18n.known_city(city) if city else None
     country = str(read.get("country") or "").lower()
     # A city in a country The other door does not cover is one to say so about; a country alone, or a city of a
     # covered country that is not listed, says too little to search and is only asked about.
     unsupported = city if city and not location and country and country not in i18n.countries() else None
-    result.update(name=_clean(read.get("name")), email=_clean(read.get("email")), location=location,
+    result.update(name=_usable(read.get("name")), email=_usable(read.get("email")), location=location,
                   languages=_working_languages(read.get("languages") or []))
     if unsupported:
         result["unsupported_location"] = unsupported

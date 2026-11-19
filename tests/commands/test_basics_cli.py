@@ -94,17 +94,18 @@ def test_the_city_of_the_current_job_is_taken_when_the_header_has_none(env, monk
 
 def test_languages_at_a_working_level_count_and_english_is_always_in(env, monkeypatch):
     _reading(monkeypatch, languages=[
-        {"language": "Danish", "level": "fluent"}, {"language": "Hungarian", "level": "basic"},
-        {"language": "German", "level": "native"}, {"language": "Swedish", "level": "working"},
+        {"language": "Danish", "code": "da", "level": "fluent"}, {"language": "Hungarian", "code": "hu", "level": "basic"},
+        {"language": "German", "code": "de", "level": "native"}, {"language": "Swedish", "code": "sv", "level": "working"},
+        {"language": "Italian", "code": "it", "level": "conversational"},
     ])
-    result = _infer(env, HEADER + "## Languages\n\nDanish (fluent), Hungarian (basic), German (native), Swedish (working)\n")
+    result = _infer(env, HEADER + "## Languages\n\nDanish (fluent), Hungarian (basic), German (native), Swedish (working), Italian (conversational)\n")
     assert result["languages"] == ["English", "Danish", "Swedish"]
 
 
-@pytest.mark.parametrize("language, level, shown", [("Dansk", "native", "Danish"), ("Français", "fluent", "French"),
-                                                    ("magyar", "working", "Hungarian"), ("Svenska", "fluent", "Swedish")])
-def test_a_cv_in_another_supported_language_is_read_the_same_way(env, monkeypatch, language, level, shown):
-    _reading(monkeypatch, languages=[{"language": language, "level": level}])
+@pytest.mark.parametrize("language, code, level, shown", [("Dansk", "da", "native", "Danish"), ("Français", "fr", "fluent", "French"),
+                                                          ("magyar", "hu", "working", "Hungarian"), ("Svenska", "sv", "fluent", "Swedish")])
+def test_a_cv_in_another_supported_language_is_read_the_same_way(env, monkeypatch, language, code, level, shown):
+    _reading(monkeypatch, languages=[{"language": language, "code": code, "level": level}])
     result = _infer(env, HEADER + f"## Sprog\n\n- {language}: {level}\n")
     assert result["languages"] == ["English", shown]
 

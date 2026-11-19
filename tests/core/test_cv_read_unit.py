@@ -32,7 +32,7 @@ Python, SQL, Docker
 
 READING = {
     "name": "Mette Berg", "email": "mette.berg@example.com", "city": "Aarhus", "country": "dk",
-    "languages": [{"language": "Dansk", "level": "native"}, {"language": "Engelsk", "level": "working"}],
+    "languages": [{"language": "Dansk", "code": "da", "level": "native"}, {"language": "Engelsk", "code": "en", "level": "working"}],
     "sections": [{"heading": "Profil", "kind": "summary"}, {"heading": "Erhvervserfaring", "kind": "experience"},
                  {"heading": "Kompetencer", "kind": "skills"}, {"heading": "Sprog", "kind": "languages"}],
     "contacts": [{"kind": "phone", "label": "Tlf", "value": "+45 00 00 00 00"},
@@ -70,11 +70,43 @@ def _broken(**change):
     return {**copy.deepcopy(READING), **change}
 
 
+GERMAN = """# Anna Weiss
+
+**Tel:** +49 00 000 0000 | **E-Mail:** anna.weiss@example.com | **Ort:** Hamburg
+
+## Berufserfahrung
+### Datenanalystin, Nordlicht GmbH (2015 - heute)
+- Berichte.
+
+## Fähigkeiten
+Python, SQL
+
+## Sprachen
+- Deutsch — Muttersprache
+"""
+
+GERMAN_READING = {
+    "name": "Anna Weiss", "email": "anna.weiss@example.com", "city": "Hamburg", "country": "de",
+    "languages": [{"language": "Deutsch", "code": "de", "level": "native"}],
+    "sections": [{"heading": "Berufserfahrung", "kind": "experience"}, {"heading": "Fähigkeiten", "kind": "skills"},
+                 {"heading": "Sprachen", "kind": "languages"}],
+    "contacts": [{"kind": "phone", "label": "Tel", "value": "+49 00 000 0000"}], "skills": ["Python", "SQL"],
+    "levels": [{"item": "Deutsch", "level": 5}],
+    "entries": [{"heading": "Datenanalystin, Nordlicht GmbH (2015 - heute)", "role": "Datenanalystin", "org": "Nordlicht GmbH",
+                 "dates": "2015 - heute", "place": None, "start_year": 2015, "end_year": None}],
+}
+
+
 def test_a_cv_in_an_unlisted_language_gets_its_kinds(asked):
-    reading = cv_read.read(MD)
+    asked["answers"] = [copy.deepcopy(GERMAN_READING)]
+    reading = cv_read.read(GERMAN)
     assert [(s["heading"], s["kind"]) for s in reading["sections"]] == [
-        ("Profil", "summary"), ("Erhvervserfaring", "experience"), ("Kompetencer", "skills"), ("Sprog", "languages")]
-    assert reading["skills"] == ["Python", "SQL", "Docker"]
+        ("Berufserfahrung", "experience"), ("Fähigkeiten", "skills"), ("Sprachen", "languages")]
+    assert reading["skills"] == ["Python", "SQL"]
+
+
+def test_a_reading_keeps_the_languages_as_written_with_their_iso_code(asked):
+    assert cv_read.read(MD)["languages"][0] == {"language": "Dansk", "code": "da", "level": "native"}
 
 
 @pytest.mark.parametrize("change", [
@@ -92,6 +124,10 @@ def test_a_cv_in_an_unlisted_language_gets_its_kinds(asked):
     {"contacts": [{"kind": "phone", "label": "Tlf", "value": "+44 20 0000 0000"}]},
     {"levels": [{"item": "Dansk", "level": 9}]},
     {"country": "Denmark"},
+    {"languages": [{"language": "Dansk", "code": "dan", "level": "native"}]},
+    {"languages": [{"language": "Dansk", "code": "DA", "level": "native"}]},
+    {"languages": [{"language": "Dansk", "level": "native"}]},
+    {"languages": [{"language": "Dansk", "code": "da", "level": "fluentish"}]},
 ])
 def test_an_answer_that_does_not_hold_is_refused_and_not_cached(asked, tmp_path, change):
     asked["answers"] = [_broken(**change)]
@@ -172,6 +208,14 @@ def test_a_heading_with_a_kind_marker_still_matches(asked):
     assert cv_read.read(md)["sections"][2]["kind"] == "skills"
 
 
+def test_an_answer_that_writes_the_marker_in_the_heading_holds_too(asked):
+    md = MD.replace("## Kompetencer", "## Kompetencer <!-- kind: skills -->")
+    answer = copy.deepcopy(READING)
+    answer["sections"][2]["heading"] = "Kompetencer <!-- kind: skills -->"
+    asked["answers"] = [answer]
+    assert cv_read.read(md)["sections"][2]["kind"] == "skills"
+
+
 def test_the_recorded_answers_pass_the_check():
     """The spike's recorded Haiku readings (made-up CVs) are valid answers; the key is the prompt and input's hash."""
     from paths import TESTS_DIR
@@ -202,5 +246,6 @@ def _recorded_cvs():
     return [c["md"] for c in module.build_reader_corpus().values()]
 
 
-def test_section_kinds_of_a_column_are_among_the_reading_kinds():
+def test_the_kinds_a_column_or_an_icon_names_come_from_the_reading_kinds():
     assert set(templates.SECTION_KINDS) <= set(cv_read.KINDS)
+    assert set(templates.ICON_KINDS) >= set(cv_read.CONTACT_KINDS)

@@ -1,5 +1,5 @@
 {
- "key": "142c0480ef14",
+ "key": "793260eb9cd3",
  "answer": {
   "name": "Nathan Lindgren",
   "email": "nathan.lindgren@example.com",
@@ -8,14 +8,17 @@
   "languages": [
    {
     "language": "English",
+    "code": "en",
     "level": "native"
    },
    {
     "language": "French",
+    "code": "fr",
     "level": "fluent"
    },
    {
     "language": "German",
+    "code": "de",
     "level": "basic"
    }
   ],
