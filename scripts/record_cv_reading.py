@@ -14,8 +14,11 @@ by a story bank, a letter echoing the posting, and fabrications in a letter. The
 and `unsupported`, `cv_body.header`, `_heading3`) are scored on the same cases as the baseline. A miss becomes a made-up
 example in the prompt, never a rule in Python.
 
-    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet [--runs 3]
+    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet [--runs 3] [--held-out]
     poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet|baseline --report
+
+`--held-out` builds a second corpus from other pools (names, employers, schools, places, degrees, skills, certifications, figures, story
+bank and posting) that the prompts were never tuned on; its records are under `held-out/`.
 
 A record is `tests/tailoring/fixtures/cv_reading/<model>/<task>/<case>.<run>.json`: the raw answer and a key of the
 prompt and input it answered (a record of other text is not read, and a test fails for one). A failed call is recorded
@@ -32,6 +35,7 @@ import json
 import re
 import sys
 import unicodedata
+from contextlib import contextmanager
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -421,6 +425,95 @@ def make_person(n: int) -> dict:
 PEOPLE = [make_person(n) for n in range(28)]
 
 
+def _held_out_pools() -> dict:
+    """The pools of the held-out corpus (#429): other names, employers, schools, places, degrees, skills, certifications,
+    figures (and currency), story bank and posting, in three languages. The languages' own words (headings, labels, month
+    names, level words) are the same: a language has one set."""
+    over = {
+        "en": dict(first=["Isabel", "Callum", "Priya", "Marcus", "Freya", "Nathan", "Olive"], last=["Whitfield", "Okafor", "Lindgren", "Barrow", "Hartley", "Quinn", "Ashby"],
+                   cities=["Norwich", "Leicester", "Exeter"], school="Sample College", roles=["Operations Analyst", "Senior Operations Analyst", "Head of Operations"],
+                   summary="{title} who prefers checklists, clear owners and quiet mornings.", soft=["negotiation", "coaching", "budgeting"],
+                   degrees=["MA in Business Administration", "BA in Economics"], fake_degrees=["MSc in Data Science", "LLB in Law"],
+                   interests="Cycling, baking and choir singing.", extra="Chair of a local tenants' association and volunteer driver.",
+                   alt=dict(experience="Employment", skills="Competencies")),
+        "da": dict(first=["Karen", "Mikkel", "Signe", "Rasmus", "Astrid", "Emil", "Nanna"], last=["Bruun", "Kj\u00e6r", "Thomsen", "Winther", "Frost", "Lykke", "Nygaard"],
+                   cities=["Esbjerg", "Roskilde", "Kolding"], school="Pr\u00f8ve H\u00f8jskole", roles=["Driftsanalytiker", "Seniordriftsanalytiker", "Driftschef"],
+                   summary="{title}, der foretr\u00e6kker tjeklister, tydelige ansvarlige og rolige morgener.", soft=["forhandling", "coaching", "budgettering"],
+                   degrees=["Cand.merc. i erhvervs\u00f8konomi", "Bachelor i \u00f8konomi"], fake_degrees=["Kandidat i dataanalyse", "Cand.jur."],
+                   interests="Cykling, bagning og korsang.", extra="Formand for en lokal lejerforening og frivillig chauff\u00f8r.",
+                   alt=dict(experience="Ans\u00e6ttelser", skills="F\u00e6rdigheder")),
+        "fr": dict(first=["\u00c9lodie", "Baptiste", "In\u00e8s", "Th\u00e9o", "Margaux", "Romain", "Zo\u00e9"], last=["Perrin", "Colin", "Benoit", "Lacroix", "Marchand", "Dupuis", "Renard"],
+                   cities=["Rennes", "Dijon", "Tours"], school="\u00c9cole d'Essai", roles=["Analyste des op\u00e9rations", "Analyste senior des op\u00e9rations", "Directeur des op\u00e9rations"],
+                   summary="{title} qui pr\u00e9f\u00e8re les listes de contr\u00f4le, des responsables clairs et des matin\u00e9es calmes.", soft=["n\u00e9gociation", "coaching", "budget"],
+                   degrees=["Master en gestion", "Licence en \u00e9conomie"], fake_degrees=["Master en science des donn\u00e9es", "Licence de droit"],
+                   interests="Cyclisme, p\u00e2tisserie et chorale.", extra="Pr\u00e9sidente d'une association locale de locataires et conductrice b\u00e9n\u00e9vole.",
+                   alt=dict(experience="Emplois", skills="Aptitudes")),
+    }
+    bullets = {
+        "en": [("Managed a portfolio of 85 client accounts worth 3,2 M CHF in yearly billings.", "85 client accounts", "eighty-five client accounts", "120 client accounts"),
+               ("Shortened the monthly close from 9 days to 4 days with a new checklist.", "4 days", "four days", "2 days"),
+               ("Raised customer satisfaction from 71 % to 88 % over two years.", "88 %", "88 percent", "94 percent"),
+               ("Trained a group of 23 new hires in the first quarter.", "23 new hires", "twenty-three new hires", "40 new hires"),
+               ("Cut warehouse costs by 340 000 CHF a year by renegotiating three contracts.", "340 000 CHF", "340k CHF", "520k CHF"),
+               ("Ran weekly reviews with 17 regional managers.", "17 regional managers", "seventeen regional managers", "26 regional managers")],
+        "da": [("Styrede en portef\u00f8lje p\u00e5 85 kundekonti med en \u00e5rlig fakturering p\u00e5 3,2 mio. CHF.", "85 kundekonti", "femogfirs kundekonti", "120 kundekonti"),
+               ("Forkortede m\u00e5nedsafslutningen fra 9 dage til 4 dage med en ny tjekliste.", "4 dage", "fire dage", "2 dage"),
+               ("H\u00e6vede kundetilfredsheden fra 71 % til 88 % over to \u00e5r.", "88 %", "88 procent", "94 procent"),
+               ("Opl\u00e6rte en gruppe p\u00e5 23 nye medarbejdere i f\u00f8rste kvartal.", "23 nye medarbejdere", "treogtyve nye medarbejdere", "40 nye medarbejdere"),
+               ("Sparede 340 000 CHF om \u00e5ret p\u00e5 lageret ved at genforhandle tre kontrakter.", "340 000 CHF", "340k CHF", "520k CHF"),
+               ("Holdt ugentlige gennemgange med 17 regionale ledere.", "17 regionale ledere", "sytten regionale ledere", "26 regionale ledere")],
+        "fr": [("G\u00e9r\u00e9 un portefeuille de 85 comptes clients pour 3,2 M CHF de facturation annuelle.", "85 comptes clients", "quatre-vingt-cinq comptes clients", "120 comptes clients"),
+               ("Raccourci la cl\u00f4ture mensuelle de 9 jours \u00e0 4 jours gr\u00e2ce \u00e0 une nouvelle liste de contr\u00f4le.", "4 jours", "quatre jours", "2 jours"),
+               ("Fait passer la satisfaction client de 71 % \u00e0 88 % en deux ans.", "88 %", "88 pour cent", "94 pour cent"),
+               ("Form\u00e9 un groupe de 23 nouvelles recrues au premier trimestre.", "23 nouvelles recrues", "vingt-trois nouvelles recrues", "40 nouvelles recrues"),
+               ("\u00c9conomis\u00e9 340 000 CHF par an sur l'entrep\u00f4t en ren\u00e9gociant trois contrats.", "340 000 CHF", "340k CHF", "520k CHF"),
+               ("Anim\u00e9 des revues hebdomadaires avec 17 responsables r\u00e9gionaux.", "17 responsables r\u00e9gionaux", "dix-sept responsables r\u00e9gionaux", "26 responsables r\u00e9gionaux")],
+    }
+    extra = {
+        "en": dict(summary2="I make operations predictable: clear owners, written checklists and no surprises on Monday.", company="Marlow Freight",
+                   posting="Operations Analyst at Marlow Freight. We run 45 sites and need an analyst who knows Metabase.",
+                   echo="Your posting asks for Metabase and for someone ready to support 45 sites.",
+                   story_bullet="Automated order routing in n8n, handling 1 800 orders a week without manual sorting."),
+        "da": dict(summary2="Jeg g\u00f8r drift forudsigelig: tydelige ansvarlige, skrevne tjeklister og ingen overraskelser mandag.", company="Marlow Freight",
+                   posting="Driftsanalytiker hos Marlow Freight. Vi driver 45 lokationer og s\u00f8ger en analytiker, der kender Metabase.",
+                   echo="Jeres opslag beder om Metabase og en, der vil st\u00f8tte 45 lokationer.",
+                   story_bullet="Automatiserede ordrerouting i n8n og h\u00e5ndterede 1 800 ordrer om ugen uden manuel sortering."),
+        "fr": dict(summary2="Je rends les op\u00e9rations pr\u00e9visibles : des responsables clairs, des listes \u00e9crites et aucune surprise le lundi.", company="Marlow Freight",
+                   posting="Analyste des op\u00e9rations chez Marlow Freight. Nous g\u00e9rons 45 sites et cherchons un analyste qui conna\u00eet Metabase.",
+                   echo="Votre annonce demande Metabase et quelqu'un pr\u00eat \u00e0 soutenir 45 sites.",
+                   story_bullet="Automatis\u00e9 le routage des commandes dans n8n, soit 1 800 commandes par semaine sans tri manuel."),
+    }
+    return {
+        "LANG_PATTERN": ("da", "fr", "en", "fr", "da", "en", "fr", "da", "en", "fr"),
+        "_CROSS_A": {"en": "da", "da": "fr", "fr": "da"}, "_CROSS_B": {"en": "fr", "da": "en", "fr": "en"},
+        "_PACK": {l: {**_PACK[l], **{k: v for k, v in o.items() if k != "alt"}, "alt": {**_PACK[l]["alt"], **o["alt"]}} for l, o in over.items()},
+        "_BULLETS": bullets, "_EXTRA": {l: {**_EXTRA[l], **o} for l, o in extra.items()},
+        "STORY_BANK": ("## Order routing\n\n**Context:** Orders from the web shop were sorted by hand every morning.\n\n"
+                       "**Action:** I built a routing flow in n8n and wrote the tests for it.\n\n"
+                       "**Result:** It handled 1 800 orders a week without manual sorting.\n\n**Learning:** Test the awkward orders first.\n"),
+        "_ORGS": ["Cedar Freight", "Alpine Textiles", "Granite Logistics", "Saffron Foods", "Birch Packaging", "Copper Mills", "Willow Print", "Anchor Marine", "Summit Tools", "Heron Supply"],
+        "_TOOLS": ["SAP", "Tableau", "Jira", "Visio", "SharePoint", "Alteryx", "Trello", "Notion"],
+        "_CERTS": ["Six Sigma Green Belt", "CIPD Level 5", "Lean Practitioner", "PRINCE2 Agile"],
+        "_FAKE_ORGS": ["Dunmore Holdings", "Veridian Group", "Redwood Capital", "Pinnacle Retail", "Solace Pharma", "Zephyr Air"],
+        "_FAKE_SKILLS": ["Power Automate", "Qlik", "Hadoop", "Scala", "Databricks", "Zapier"],
+        "_FAKE_CERTS": ["CFA Level 1", "CPA", "Certified Scrum Professional", "Azure Fundamentals"],
+    }
+
+
+@contextmanager
+def held_out():
+    """Within it the corpus builders build the held-out corpus (#429), made from other pools than the one the prompts
+    were tuned on: nothing is shared but a language's own words."""
+    pools = _held_out_pools()
+    saved = {k: globals()[k] for k in (*pools, "PEOPLE")}
+    globals().update(pools)
+    globals()["PEOPLE"] = [make_person(n) for n in range(28)]
+    try:
+        yield
+    finally:
+        globals().update(saved)
+
+
 def body_lang(person: dict) -> str:
     """The language the person's tailored documents are written in: another than their CV's for two in three."""
     lang = person["lang"]
@@ -565,7 +658,7 @@ def render_letter(person: dict, lang: str) -> str:
     e = lambda t: html.escape(t, quote=False)  # noqa: E731
     return (f'<header class="letter-header"><h1>{e(person["name"])}</h1>\n<p class="contact"><span class="phone">{person["phone"]}</span>'
             f'<span class="email"><a href="mailto:{person["email"]}">{person["email"]}</a></span><span class="location">{e(person["city"])}</span></p></header>\n'
-            f'<div class="recipient"><p>{e(extra["recipient"])}</p><p>Orchid Energy</p></div>\n<p class="date"><<date>></p>\n'
+            f'<div class="recipient"><p>{e(extra["recipient"])}</p><p>{e(extra.get("company", "Orchid Energy"))}</p></div>\n<p class="date"><<date>></p>\n'
             f'<p>{e(extra["greeting"])}</p>\n<p>{e(extra["echo"])}</p>\n<p>{e(job["org"])}: {e(claim)}</p>\n'
             f'<div class="closing"><p class="signoff">{e(extra["closing"])}</p><p>{e(person["name"])}</p></div>')
 
@@ -973,15 +1066,23 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--model", choices=(*MODELS, "baseline"), default="haiku")
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--report", action="store_true", help="print the numbers of the recorded answers (or of today's rules)")
+    ap.add_argument("--held-out", action="store_true", help="the held-out corpus, recorded under its own folder (the prompts were not tuned on it)")
     args = ap.parse_args(argv)
+    if args.held_out:
+        with held_out():
+            return _main(args, RECORDED / "held-out")
+    _main(args, RECORDED)
+
+
+def _main(args, root: Path) -> None:
     corpus = build_reader_corpus() if args.task == "reader" else build_body_corpus()
     if not args.report:
-        run(args.task, args.model, corpus, runs=args.runs)
+        run(args.task, args.model, corpus, runs=args.runs, root=root)
     elif args.model == "baseline":
         answers = {n: [baseline_reader(c["md"], c["lang"]) if args.task == "reader" else baseline_facts(c)] for n, c in corpus.items()}
         print(to_markdown(args.task, summarize(args.task, answers, corpus)))
     else:
-        print(to_markdown(args.task, summarize(args.task, load_recorded(args.model, args.task, corpus), corpus)))
+        print(to_markdown(args.task, summarize(args.task, load_recorded(args.model, args.task, corpus, root), corpus)))
 
 
 if __name__ == "__main__":

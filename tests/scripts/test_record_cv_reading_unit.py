@@ -470,3 +470,58 @@ def test_the_rules_of_today_are_no_go_on_the_same_cases():
 
 def test_no_record_is_an_error():
     assert all(rcr._recorded_ok(p) for p in rcr.RECORDED.glob("*/*/*.json"))
+
+
+# --- the held-out corpus: other pools, the same mix --------------------------------------------------------------
+
+def held():
+    with rcr.held_out():
+        return rcr.build_reader_corpus(), rcr.build_body_corpus()
+
+
+def test_the_held_out_corpus_shares_no_name_employer_tool_degree_or_figure_with_the_tuned_one():
+    tuned = [*rcr.build_reader_corpus().values(), *rcr.build_body_corpus().values()]
+    held_reader, held_bodies = held()
+    text = lambda cases: " ".join(c["md"] + c.get("body", "") + c.get("letter", "") + c.get("story", "") + c.get("posting", "") for c in cases)  # noqa: E731
+    old, new = text(tuned), text([*held_reader.values(), *held_bodies.values()])
+    with rcr.held_out():
+        names = [p["name"] for p in rcr.PEOPLE]
+        pools = [*rcr._ORGS, *rcr._TOOLS, *rcr._CERTS, *rcr._FAKE_ORGS, *rcr._FAKE_SKILLS, *rcr._FAKE_CERTS]
+        figures = [a for lang in rcr._BULLETS.values() for _, a, _, f in lang for a in (a, f)]
+    for name in names + pools + figures:
+        assert name not in old, name
+    for token in ("dbt", "Looker", "4 000", "120 countries", "Orchid", "Kubernetes"):
+        assert token not in new, token
+    assert set(rcr.PEOPLE[0]["name"].split()) & set(" ".join(names).split()) == set()  # the tuned corpus is restored afterwards
+
+
+def test_the_held_out_corpus_has_the_same_mix_of_hard_cases():
+    reader, bodies = held()
+    assert len(reader) >= 12 and len(bodies) == 28
+    planted = {k: v for k, v in bodies.items() if v["plants"]}
+    assert {p["kind"] for v in planted.values() for p in v["plants"]} == set(rcr.KINDS)
+    assert any(p["file"] == "letter" for v in planted.values() for p in v["plants"])
+    assert sum(v["lang"] != v["body_lang"] for v in bodies.values()) * 2 >= len(bodies)
+    assert sum(bool(v["story"]) for v in bodies.values()) >= 10 and sum(bool(v["letter"]) for v in bodies.values()) >= 5
+    for v in planted.values():
+        assert all(rcr.is_verbatim(p["quote"], v["body"], v["letter"]) for p in v["plants"])
+    dates = " ".join(e["dates"] for c in reader.values() for e in c["expected"]["entries"])
+    for shape in (r"\b\d\d/\d{4}\b", r"\b\d{1,2}\.\d{1,2}\.\d{4}\b", r"\b\d{4}-\d\d\b"):
+        assert re.search(shape, dates), shape
+    for c in reader.values():
+        assert set(re.findall(r"@([\w.-]+\.\w+)", c["md"])) <= {"example.com"}
+
+
+def held_committed(task):
+    with rcr.held_out():
+        corpus = rcr.build_reader_corpus() if task == "reader" else rcr.build_body_corpus()
+        return rcr.summarize(task, rcr.load_recorded("haiku", task, corpus, rcr.RECORDED / "held-out"), corpus), corpus
+
+
+def test_every_held_out_record_is_an_answer_to_the_prompt_and_input_of_today():
+    for task in ("reader", "facts"):
+        _, corpus = held_committed(task)
+        paths = sorted((rcr.RECORDED / "held-out" / "haiku" / task).glob("*.json"))
+        assert len(paths) == 3 * len(corpus)
+        for path in paths:
+            assert rcr._recorded_ok(path, rcr._key(task, corpus[path.name.split(".")[0]])), path
