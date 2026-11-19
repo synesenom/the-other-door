@@ -268,6 +268,13 @@ def test_draft_keeps_the_skills_it_found_beside_a_todo(env, monkeypatch):
     assert result["markdown"] == "## Kompetencer\n\nPython, SQL\n- Excel\n"
 
 
+@pytest.mark.parametrize("title", ["Technical & Programming Skills", "Kompetencer og værktøjer"])
+def test_draft_drops_a_skills_todo_under_the_users_own_title(env, monkeypatch, title):
+    result = _draft_answering(env, monkeypatch, f"# Ada\n\n## {title}\n\nTODO\n\n## Languages\n\n- English\n", ["Add your skills"])
+    assert result["markdown"] == "# Ada\n\n## Languages\n\n- English\n"
+    assert result["todos"] == []
+
+
 def test_draft_keeps_a_todo_in_any_other_section(env, monkeypatch):
     result = _draft_answering(env, monkeypatch, "## Skills\n\nPython\n\n## Education\n\nMSc, TODO year\n", ["Add your skills list", "x"])
     assert "MSc, TODO year" in result["markdown"]

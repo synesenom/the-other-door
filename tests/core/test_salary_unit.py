@@ -100,3 +100,8 @@ def test_parse_of_null_and_junk_is_none():
 def test_parse_keeps_only_valid_sources():
     sources = [{"title": "bad", "url": "ftp://x"}, {"title": "ok", "url": "https://ok.example/p"}]
     assert salary.parse({**GOOD, "sources": sources})["sources"] == [{"title": "ok", "url": "https://ok.example/p"}]
+
+
+def test_years_ignores_a_skills_section_under_the_users_own_title():
+    cv = "## Experience\n\nAnalyst 2018 - 2020\n\n## Technical & Programming Skills\n\nPython 2010 - 2024\n"
+    assert salary.years_of_experience(cv, now_year=2025) == 2

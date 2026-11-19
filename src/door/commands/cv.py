@@ -19,7 +19,7 @@ import click
 from door import i18n
 from door.commands import _common as common
 from door.commands import style as style_cmd
-from door.core import claude_cli, migrations, profile_loader, utils, workspace
+from door.core import claude_cli, cv_sections, migrations, profile_loader, utils, workspace
 from door.style import cv_body, style_icons
 
 _DEFAULT_MODEL = "sonnet"
@@ -171,18 +171,12 @@ def _onboarding_cv_text(profile_dir: Path, config: dict) -> str | None:
 def _without_skills_todos(markdown: str, todos: list[str]) -> tuple[str, list[str]]:
     """A CV need not list its skills, so nothing asks for them: `TODO`s go from its skills sections
     with what the model listed about them, and a section with nothing else left goes too."""
-    titles = i18n.cv_section("skills")
-    sections: list[list[str]] = [[]]
-    for line in markdown.splitlines():
-        if line.startswith("## "):
-            sections.append([])
-        sections[-1].append(line)
+    sections = cv_sections.split(markdown)
 
     found = False
     kept: list[str] = []
     for section in sections:
-        heading = section[0][3:].strip(" *:_").casefold() if section and section[0].startswith("## ") else None
-        if heading not in titles or not any("TODO" in line for line in section):
+        if cv_sections.kind(section, ("skills",)) is None or not any("TODO" in line for line in section):
             kept.extend(section)
             continue
         found = True
@@ -192,6 +186,7 @@ def _without_skills_todos(markdown: str, todos: list[str]) -> tuple[str, list[st
     if not found:
         return markdown, todos
     text = re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip() + "\n"
+    titles = i18n.cv_section("skills")
     return text, [t for t in todos if not any(title in t.casefold() for title in titles)]
 
 

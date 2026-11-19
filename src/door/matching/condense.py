@@ -40,7 +40,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from door.core import utils
+from door.core import cv_sections, utils
 from door import i18n
 
 # ---------------------------------------------------------------------------
@@ -270,17 +270,9 @@ def _extract_skills_section(cv_md: str) -> str:
     """Return the raw text of the CV's skills sections, under any name in any language (empty if none)."""
     if not cv_md:
         return ""
-    titles = i18n.cv_section("skills")
-    capturing = False
-    collected: list[str] = []
-    for line in cv_md.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("## "):
-            capturing = stripped[3:].strip(" *:_").casefold() in titles
-            continue
-        if capturing:
-            collected.append(line)
-    return "\n".join(collected)
+    return "\n".join(
+        line for section in cv_sections.split(cv_md) if cv_sections.kind(section, ("skills",)) for line in section[1:]
+    )
 
 
 def extract_skill_terms(cv_md: str, config: dict) -> set[str]:

@@ -10,6 +10,7 @@ import re
 from datetime import date
 
 from door import i18n
+from door.core import cv_sections
 
 _MAX_AD_LINES = 6
 _MAX_CV_CHARS = 6000
@@ -21,24 +22,17 @@ _PERIODS = ("month", "year")
 _POSITIONS = ("below", "within", "above")
 
 
-def _sections(cv_text: str) -> list[tuple[str, str]]:
-    """``[(heading, body)]`` for each ``## `` section of the CV."""
-    parts = re.split(r"^##\s+(.+)$", cv_text or "", flags=re.MULTILINE)
-    return list(zip(parts[1::2], parts[2::2]))
-
-
 def years_of_experience(cv_text: str, *, now_year: int | None = None) -> int | None:
     """Years covered by the CV's dated roles (``2018 - 2021``, ``2021 - present``), overlaps counted once.
 
     Only the sections that are not education, certifications or skills count; a word after the
     first year ("present") means the role goes on. ``None`` when no role has a date range."""
     now_year = now_year or date.today().year
-    skip = {w.lower() for kind in ("education", "certifications", "skills") for w in i18n.cv_section(kind)}
     spans = []
-    for heading, body in _sections(cv_text):
-        if heading.strip().lower() in skip:
+    for section in cv_sections.split(cv_text):
+        if cv_sections.kind(section, ("education", "certifications", "skills")):
             continue
-        for start, end in _RANGE.findall(body):
+        for start, end in _RANGE.findall("\n".join(section)):
             first, last = int(start), int(end) if end.isdigit() else now_year
             if last >= first:
                 spans.append((first, min(last, now_year)))

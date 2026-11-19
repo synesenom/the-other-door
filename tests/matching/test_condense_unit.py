@@ -542,6 +542,17 @@ def test_extract_skill_terms_reads_a_skills_section_under_any_of_its_names(headi
     assert "pandas" in extract_skill_terms(f"# Jane\n\n{heading}\n\npandas, Spark\n\n## Profile\n\nNotpandas person\n", {})
 
 
+@pytest.mark.parametrize("heading", [
+    "## Technical & Programming Skills", "## Kompetencer og værktøjer", "## Core Skills (2024)", "## Færdigheder og it",
+])
+def test_extract_skill_terms_reads_a_skills_section_under_the_users_own_title(heading):
+    assert "pandas" in extract_skill_terms(f"# Jane\n\n{heading}\n\npandas, Spark\n\n## Profile\n\nNotpandas person\n", {})
+
+
+def test_extract_skill_terms_does_not_read_language_skills_as_skills():
+    assert "danish" not in extract_skill_terms("## Language Skills\n\nDanish\n", {})
+
+
 def test_extract_skill_terms_reads_every_skills_section_and_nothing_else():
     terms = extract_skill_terms("## Skills\n\npandas\n\n## Profile\n\nleadership\n\n## Tools\n\nSpark\n", {})
     assert {"pandas", "spark"} <= terms
