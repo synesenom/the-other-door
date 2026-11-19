@@ -34,9 +34,7 @@ _RULES = (
     "`### Role | Company — dates` headings, bullets; add ` | Location` as a last part, `### Role | Company — dates | Location`, "
     "only when a source gives the place of that role). Every section of the CV is kept as a `## ` section, also one the template "
     "has not. Keep the CV's own section headings word for word, "
-    "in the CV's own language (\"Selected work\", \"Formation\"), never renamed to a standard one, and end the heading line of "
-    "each section of one of the kinds " + cv_sections.KINDS_TEXT + ", whatever its title, with its kind "
-    "as a comment, `## Technical Skills <!-- kind: skills -->` (no comment on any other section), and keep the groups a "
+    "in the CV's own language (\"Selected work\", \"Formation\"), never renamed to a standard one, and keep the groups a "
     "section has: a group's title is a `### Title` line of its own with its items as bullets under it. "
     "The most recent CV is the backbone; "
     "the other sources only add to it — month-level dates, roles it leaves out, years and "
@@ -47,7 +45,8 @@ _RULES = (
     "its profile links), never invent one, and never a `TODO` for them: leave them out. Fill the CV's skills section (the template's Skills when the CV has none; a skills section keeps its own title) with the skills the sources "
     "show, also those that appear only in job descriptions; if they show none, leave the section "
     "out: never a `TODO` for skills. Under `provenance`, say what each source besides the "
-    "backbone contributed. Answer with the JSON only."
+    "backbone contributed. Under `skills_headings`, give the heading of each skills section you wrote, exactly as you "
+    "wrote it after the `## ` (none when the CV has no skills section). Answer with the JSON only."
 )
 
 _SCHEMA = {
@@ -63,8 +62,9 @@ _SCHEMA = {
             },
         },
         "todos": {"type": "array", "items": {"type": "string"}},
+        "skills_headings": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["cv_markdown", "provenance", "todos"],
+    "required": ["cv_markdown", "provenance", "todos", "skills_headings"],
 }
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -170,18 +170,21 @@ def _onboarding_cv_text(profile_dir: Path, config: dict) -> str | None:
     return text.strip()
 
 
-def _without_skills_todos(markdown: str, todos: list[str]) -> tuple[str, list[str]]:
-    """A CV need not list its skills, so nothing asks for them: `TODO`s go from its skills sections
-    with what the model listed about them, and a section with nothing else left goes too."""
+def _without_skills_todos(markdown: str, todos: list[str], headings: list[str]) -> tuple[str, list[str]]:
+    """A CV need not list its skills, so nothing asks for them: `TODO`s go from the skills sections the model named
+    (`headings`, the `## ` texts it wrote) with what the model listed about them, and a section with nothing else left
+    goes too."""
+    named = {" ".join(h.split()).casefold() for h in headings if h.strip()}
     found = False
     kept: list[str] = []
-    titles = set(i18n.cv_section("skills"))
+    titles: set[str] = set()
     for section in cv_sections.split(markdown):
-        if cv_sections.kind(section, ("skills",)) is None or not any("TODO" in line for line in section):
+        title = " ".join(cv_sections.heading(section[0])[0].split()).casefold() if section and section[0].startswith("## ") else None
+        if title not in named or not any("TODO" in line for line in section):
             kept.extend(section)
             continue
         found = True
-        titles.add(cv_sections.heading(section[0])[0].casefold())
+        titles.add(title)
         body = [left for left in map(_skills_line_without_todo, section[1:]) if left is not None]
         if any(line.strip() for line in body):
             kept.extend([section[0], *body])
@@ -273,7 +276,7 @@ def _draft_cv_core(
     markdown = markdown.strip() + "\n"
     provenance = [p for p in answer.get("provenance") or [] if isinstance(p, dict)]
     todos = [str(t) for t in answer.get("todos") or []]
-    markdown, todos = _without_skills_todos(markdown, todos)
+    markdown, todos = _without_skills_todos(markdown, todos, [str(h) for h in answer.get("skills_headings") or []])
 
     migrations.ensure_folder(profile_dir, "profile")
     draft_path = profile_dir / _DRAFT_NAME
