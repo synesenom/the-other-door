@@ -5,7 +5,6 @@ import json
 import re
 import shutil
 
-from door.style import cv_body
 from paths import REPO_ROOT, TESTS_DIR
 
 STYLES = TESTS_DIR / "style" / "fixtures" / "styles"
@@ -14,7 +13,7 @@ BIG = "body { font-size: 30pt !important; }"  # makes the compact stress variant
 # the shipped template is one column: the canned stylist places a corpus CV's side column on the right, as
 # html-word-two-column has it (a print with its side sections under the main ones is refused, #242)
 COLUMNS = "body { display: grid; grid-template-columns: 1fr 34%; column-gap: 1.2em; } body > .cv-header { grid-column: 1 / -1; }"
-SAMPLE_BODY = cv_body.body((EXAMPLE / "cv.md").read_text(encoding="utf-8"))
+SAMPLE_CV = (EXAMPLE / "cv.md").read_text(encoding="utf-8")
 
 
 class Stylist:
@@ -40,17 +39,17 @@ def adapt(path, css, extra=""):
     return text.replace("<style>", "<style>\n" + css + "\n", 1).replace("</style>", extra + "\n</style>", 1)
 
 
-def reply(template, body=None):
+def reply(template, cv=None):
     text = "I see a page.\n```template\n" + template + "\n```\n"
-    return text + (f"```body\n{body}\n```\n" if body else "")
+    return text + (f"```cv\n{cv}\n```\n" if cv else "")
 
 
 def _cv(cwd, extra, edit):
     return edit(adapt("cv.template.html", (cwd / "fonts.css").read_text(), COLUMNS + "\n" + extra))
 
 
-def cv_round(extra="", body=SAMPLE_BODY, edit=lambda t: t):
-    return lambda cwd: reply(_cv(cwd, extra, edit), body)
+def cv_round(extra="", cv=SAMPLE_CV, edit=lambda t: t):
+    return lambda cwd: reply(_cv(cwd, extra, edit), cv)
 
 
 def cv_only(extra="", edit=lambda t: t):

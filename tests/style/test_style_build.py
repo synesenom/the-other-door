@@ -107,7 +107,7 @@ def test_a_print_with_the_side_column_on_the_wrong_side_is_found_whatever_its_he
                 "body { margin: 40pt; display: grid; grid-template-columns: 1fr 150pt; font-family: serif } "
                 ".cv-header { grid-column: 1 / -1 } .photo { width: 1pt } " + extra + "</style></head><body><<body>></body></html>")
     pdf, placed, _ = page.print_page(body, template, EXAMPLE / "cv.template.html", "en", tmp_path, "r",
-                                            columns=templates.Columns(side=["skills", "languages"]))
+                                            manifest=templates.Manifest(columns=templates.Columns(side=["skills", "languages"])))
     problems = style_build.column_problems(style, style_extract.extract(pdf), placed)
     assert any('"Skills"' in p for p in problems) and any('"Languages"' in p for p in problems), problems
 

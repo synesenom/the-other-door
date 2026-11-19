@@ -4,6 +4,7 @@ typography, the body wrapped in the template and printed with the pinned Chromiu
 body through this module.
 """
 
+import html
 import re
 from pathlib import Path
 
@@ -48,17 +49,28 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-def _page(body: str, template: str, folder: Path, *, photo: Path | None, columns: templates.Columns | None,
-         language: str) -> tuple[str, str, str | None]:
+_CONTACT = re.compile(r'<span class="(%s)">' % "|".join(i18n.CONTACT_KINDS))
+
+
+def _with_labels(body: str, labels: dict[str, str]) -> str:
+    """`body` with each contact span of a kind in `labels` opened by `<label class="label">` (not a `span`: a template spaces the contact items with `.contact span`, and the label is no item) (the style's label for it,
+    escaped). The body is written with none (the guard knows no `label` class); the page adds them, so a built style
+    whose CV prints `Tel:` before the number prints it on every CV."""
+    return _CONTACT.sub(
+        lambda m: m.group(0) + f'<label class="label">{html.escape(labels[m.group(1)], quote=False)}</label> '
+        if m.group(1) in labels else m.group(0), body)
+
+
+def _page(body: str, template: str, folder: Path, *, photo: Path | None, manifest: templates.Manifest, language: str) -> tuple[str, str, str | None]:
     """The page `print_page` prints for a body: the photo placed (copied into `folder`), the two columns, the language's
-    typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
+    typography, the contact labels, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
     the body as placed and the photo's file name (None when it was not placed).
 
     Raises:
         ValueError: the template cannot hold the body.
     """
     built, name = _with_photo(body, template, folder, photo)
-    placed = place_columns(built, columns)
+    placed = _placed(built, manifest)
     return _wrap(template, _glue_separators(typography.apply(placed, language)), language), placed, name
 
 
@@ -72,7 +84,7 @@ def _glue_separators(body: str) -> str:
 
 
 def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,
-               columns: templates.Columns | None = None, photo: Path | None = None) -> tuple[Path, str, str | None]:
+               manifest: templates.Manifest | None = None, photo: Path | None = None) -> tuple[Path, str, str | None]:
     """`body` placed in `template` (its text) by `_page` and printed to `folder/<name>.pdf` with the pinned Chromium,
     the fonts and icons that the template file `assets_of` names served. Returns the pdf, the body as placed and the
     photo's file name in `folder` (None when it was not placed).
@@ -83,7 +95,8 @@ def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Pat
     """
     folder.mkdir(parents=True, exist_ok=True)
     assets = templates.assets(assets_of)
-    html_text, placed, picture = _page(body, template, folder, photo=photo, language=lang, columns=columns)
+    html_text, placed, picture = _page(body, template, folder, photo=photo, language=lang,
+                                        manifest=manifest or templates.Manifest())
     pdf = folder / f"{name}.pdf"
     html_pdf.print_html(folder, html_text, pdf, assets=assets)
     return pdf, placed, picture
@@ -113,13 +126,18 @@ def place_columns(body: str, columns: templates.Columns | None) -> str:
     return f'{first}{html_doc.MAIN}{"".join(main)}</div>{html_doc.SIDE}{"".join(side)}</div>'
 
 
+def _placed(body: str, manifest: templates.Manifest) -> str:
+    """`body` with the style's contact labels written and its sections in the manifest's columns."""
+    return place_columns(_with_labels(body, manifest.contact_labels), manifest.columns)
+
+
 def placed_cv(body: str, config: dict) -> str:
     """The CV `body` as its printed page reads it (`place_columns` by the resolved CV template's manifest); `body` itself when the template has no side column or cannot be read."""
     try:
-        columns = (templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()).columns
+        manifest = templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()
     except (OSError, ValueError):
-        columns = None
-    return place_columns(body, columns)
+        manifest = templates.Manifest()
+    return _placed(body, manifest)
 
 
 def _wrap(template: str, body: str, language: str) -> str:

@@ -6,7 +6,7 @@ import sys
 
 from door.core import templates
 from door.render import html_guard
-from door.style import style_build
+from door.style import cv_body, style_build
 from paths import REPO_ROOT
 
 STAND_IN = REPO_ROOT / "app" / "test" / "world" / "stylist.py"
@@ -24,12 +24,12 @@ def _manifest():
     return templates.Manifest(fonts=["Lato-Regular.ttf"])
 
 
-def test_a_cv_call_gets_a_template_and_a_sample_body_the_builder_accepts(tmp_path):
+def test_a_cv_call_gets_a_template_and_a_sample_cv_the_builder_accepts(tmp_path):
     (tmp_path / "fonts.css").write_text(CSS)
     got = _answer(tmp_path)
-    assert set(got) == {"template", "body"}
+    assert set(got) == {"template", "cv"}
     assert html_guard.template_problems(got["template"], _manifest()) == []
-    assert html_guard.unsafe(got["body"]) == []
+    assert cv_body.body(got["cv"])
 
 
 def test_a_letter_call_gets_a_letter_template_the_builder_accepts(tmp_path):

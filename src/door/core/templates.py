@@ -100,7 +100,9 @@ class Columns(BaseModel):
 
 class Manifest(BaseModel):
     """`template.json`: ``fonts`` (TrueType files in `fonts/` beside it), ``icons`` (kind to an SVG in `icons/`),
-    ``max_pages`` (the template's own limit, 1 to 3) and ``columns`` (absent: one column)."""
+    ``max_pages`` (the template's own limit, 1 to 3), ``columns`` (absent: one column) and ``contact_labels`` (contact
+    kind to the label the style's CV prints before it, `Tel:`; `render/page.py` writes each as `<label class="label">` in
+    the contact span, the body having none)."""
 
     model_config = ConfigDict(extra="forbid")
     version: Literal[1] = 1
@@ -108,6 +110,17 @@ class Manifest(BaseModel):
     icons: dict[str, str] = {}
     max_pages: int | None = Field(default=None, ge=1, le=MAX_PAGES)
     columns: Columns | None = None
+    contact_labels: dict[str, str] = {}
+
+    @field_validator("contact_labels")
+    @classmethod
+    def _labels(cls, v: dict[str, str]) -> dict[str, str]:
+        for kind, label in v.items():
+            if kind not in i18n.CONTACT_KINDS:
+                raise ValueError(f"{kind!r} is not a contact kind ({', '.join(i18n.CONTACT_KINDS)})")
+            if not label.strip():
+                raise ValueError(f"the label of {kind!r} is empty")
+        return v
 
     @field_validator("fonts")
     @classmethod

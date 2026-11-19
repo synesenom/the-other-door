@@ -5,7 +5,7 @@ icons as SVG files, and runs the stylist agent (`.claude/agents/stylist.md`) rou
 page, the builder checks it (`html_guard.template_problems`), prints a sample body in it with the pinned Chromium, reads
 the print back and compares it with the original (`style_compare`) until the loop's rule says stop. A best round that scored under
 `style_compare.FLOOR` does not look like the CV: the build fails there. Otherwise it is
-stress-rendered with `profile/cv.md` made shorter, longer, French and with a photo (no model: `cv_body`), one more
+stress-rendered with `profile/cv.md` made shorter, longer, French, with every shape of a body and with a photo (no model: `cv_body`), one more
 round when that fails, and a second call writes the matching letter template. Only a build that passes is written, whole,
 to `profile/style.next/`, the candidate; a failed one writes nothing there.
 """
@@ -33,7 +33,7 @@ _BLOCK = re.compile(r"^```(\w+)[ \t]*\n(.*?)\n```[ \t]*$", re.S | re.M)
 
 
 def blocks(reply: str) -> dict[str, str]:
-    """The fenced blocks of a stylist's reply by their name (```` ```template ````, ``body``, ``letter``): the first of
+    """The fenced blocks of a stylist's reply by their name (```` ```template ````, ``cv``, ``letter``): the first of
     each name. A block cut off before its closing fence is not one."""
     found: dict[str, str] = {}
     for name, text in _BLOCK.findall(reply):
@@ -325,6 +325,28 @@ def body_column_problems(style: dict, body: str, columns: templates.Columns | No
     return found
 
 
+_LABEL_GAP = 0.6  # of the label's size: a normal word space is about a third of it
+
+
+def label_problems(labels: dict[str, str], runs: list[dict]) -> list[str]:
+    """Each contact label (`labels`, as the page writes it) of a print (`runs`, `style_extract`'s) that stands apart from
+    the value after it by more than a word space: the template's rule for the contact items (`.contact *`, `.contact label`, ...) reaches the label too. The value is the next run to its right on the same line. `[]` when each label sits
+    next to its value, or is one run with it."""
+    found = []
+    for kind, label in labels.items():
+        for run in runs:
+            if run["text"].strip() != label.strip():
+                continue
+            after = [r for r in runs if r["page"] == run["page"] and r["bbox"][0] >= run["bbox"][2] - 1
+                     and abs(r["bbox"][3] - run["bbox"][3]) <= 0.3 * run["size"]]
+            if after and (gap := min(r["bbox"][0] for r in after) - run["bbox"][2]) > _LABEL_GAP * run["size"]:
+                found.append(f'the {kind} label "{label}" is {gap:.0f} pt from its value: a rule of your CSS for the contact '
+                             f'items (such as `.contact *` or `.contact label`) also spaces the label; the label is '
+                             f'`<label class="label">` inside the item and sits one word space before the value')
+                break
+    return found
+
+
 def photo_box_problems(style: dict, painted: list[dict]) -> list[str]:
     """A box a print with no photo (`painted`, `style_extract.painted` of it) draws where the original's photo is
     (#246): a path on its page, of any kind (a disc or a rounded box too), that covers half the photo's box or more,
@@ -394,16 +416,39 @@ def _long_title(lines: list[str]) -> list[str]:
     return [*lines, "", "## Experience", "", f"### {_LONG_ROLE} | Example Company — 2020 - 2023", "", "- A bullet.", ""]
 
 
+_SHAPES = """# Ada Example
+> A tagline of some length
+**Phone:** 12 34 56 78 | **Email:** ada@example.com | **Web:** example.com | **Location:** Example City | **LinkedIn:** example.com/in/ada | **GitHub:** example.com/ada
+## Experience
+### Lead Engineer | Example Company — 2020 - 2023 | Example City
+- A bullet with **a bold word**, *an italic one* and [a link](https://example.com).
+- A second bullet.
+## Skills
+- **Python** — fluent
+- **Welding** — basic
+- A skill with no level
+## Languages
+- **English** — native
+- **French** — conversational
+## Steps
+1. A numbered item
+2. Another one
+Plain text of a paragraph.
+"""
+
+
 def _stress_variants(cv_md: str) -> dict[str, dict]:
     """The CV in `cv_md` made into the texts a template must hold (no model): ``photo`` (the same, printed with a
     photo), ``fewer`` (one entry a section), ``long_title`` (a very long job title), ``extra_section`` (one more
-    section) and ``french`` (a long French paragraph first, `lang` "fr"). Each is ``{"md", "lang", "photo"}``."""
+    section) and ``french`` (a long French paragraph first, `lang` "fr"), ``shapes`` (every shape the vocabulary has, whatever the
+    CV: every contact kind, an entry heading's parts, levels, lists, bold, italic, a link). Each is ``{"md", "lang", "photo"}``."""
     lines = cv_md.rstrip("\n").splitlines()
     at = _section_at(lines)
     variants = {
         "photo": lines, "fewer": _fewer(lines), "long_title": _long_title(lines),
         "extra_section": [*lines, "", "## Publications", "", "- A study of nightly pipelines (2021)", "- Notes on small steady steps (2019)"],
         "french": [*lines[:at], "## Profil", "", _FRENCH, "", *lines[at:]],
+        "shapes": _SHAPES.replace("Ada Example", (_NAME.search(cv_md) or [None, "Ada Example"])[1], 1).splitlines(),
     }
     return {name: {"md": cv_md if name == "photo" else "\n".join(v) + "\n", "lang": "fr" if name == "french" else "en",
                    "photo": name == "photo"} for name, v in variants.items()}
@@ -526,7 +571,7 @@ class _Session:
             _Stop: the print has no text to read back.
         """
         pdf, placed, _ = page_mod.print_page(
-            body, template, self.work / _CV_FILE, "en", self.work, "render", columns=self.manifest.columns, photo=self.photo)
+            body, template, self.work / _CV_FILE, "en", self.work, "render", manifest=self.manifest, photo=self.photo)
         render = style_extract.extract(pdf)
         if not render["verdict"]["copyable"]:
             raise _Stop("the print has no text to read back")
@@ -536,7 +581,7 @@ class _Session:
         return diffs, score, style_compare.worst_offset_pt(diffs), column_problems(self.style, render, placed), spaced
 
 
-_REPLY_FIRST = ("Reply with one line on what you see (layout, colours), then the ```template block and the ```body block, "
+_REPLY_FIRST = ("Reply with one line on what you see (layout, colours), then the ```template block and the ```cv block, "
                 "nothing after them.")
 _REPLY_NEXT = "Reply with one line on what you changed and the whole new template in one ```template block, nothing after it."
 _REPLY_LETTER = "Reply with one line and the whole letter template in one ```letter block, nothing after it."
@@ -566,7 +611,7 @@ def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
             parts.append("the sections headed " + ", ".join(cols.headings))
         columns = (
             " and ".join(parts) + " (the code wraps the sections into div.main and div.side and your CSS styles them; "
-            "the sample body is plain sections with no div, no class on a div). The page has div.main first, then "
+            "the sample CV has no div and no class). The page has div.main first, then "
             "div.side; in the original, " + ", ".join(f'the {_where(b, s.style["columns"]["bands"])} is at x '
                                                        f'{b["x0"]:.0f}-{b["x1"]:.0f} pt' for b in s.style["columns"]["bands"])
             + ": place each there with CSS"
@@ -587,7 +632,8 @@ def _list(items: list[str]) -> str:
 
 
 def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, list[float], str | None]:
-    """The comparison rounds: the stylist writes a template (and, in the first round that has one, the sample body),
+    """The comparison rounds: the stylist writes a template (and, in the first round that has one, the sample CV, which
+    `cv_body` turns into the body, so it has the real bodies' shapes, and whose contact labels go to the manifest),
     the guard reads it, it is printed and compared. A round whose print puts a section in the other column's place
     (`column_problems`) is not kept. Returns the best template (None when none was kept), the sample body, the blurred
     scores of the rounds kept and the last feedback."""
@@ -603,20 +649,19 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
             feedback = "Your reply had no ```template block: the whole page in one fenced block named template."
             continue
         if first:
-            sample = reply.get("body")
+            sample = reply.get("cv")
             if sample is None:
-                feedback = "Your reply had no ```body block: the sample body in one fenced block named body."
-            elif bad := html_guard.unsafe(sample):
-                feedback = "The guard refused your sample body (it may hold only the building blocks):\n" + _list(bad)
-            elif bad := body_column_problems(s.style, sample, s.manifest.columns):
-                feedback = ("Your sample body puts text under a heading of the other column (text.txt gives each page's "
+                feedback = "Your reply had no ```cv block: the sample CV in one fenced block named cv."
+            elif not re.search(r"^#{1,2} \S", sample, re.M):
+                feedback = "Your ```cv block had no name or section in it: write the CV as the task says (# Name, ## Section, ...)."
+            elif bad := body_column_problems(s.style, (candidate := cv_body.body(sample)), s.manifest.columns):
+                feedback = ("Your sample CV puts text under a heading of the other column (text.txt gives each page's "
                             "text column by column: a section goes on in its own column on the next page):\n" + _list(bad))
-            elif s.photo and "<<photo>>" not in sample:
-                feedback = ("Your sample body has no <<photo>>: the original has a photo, so the token goes first in "
-                            "the header (the print puts the original's photo there).")
             else:
-                body = sample
+                body = candidate
+                s.manifest = s.manifest.model_copy(update={"contact_labels": cv_body.contact_labels(sample)})
                 _write(s.work / "sample_body.html", body)
+                _write(s.work / templates.MANIFEST_FILE, s.manifest.model_dump_json(exclude_defaults=True, indent=1))
             if body is None:
                 continue
         _write(s.work / _CV_FILE, template)
@@ -661,10 +706,13 @@ def _stress(s: _Session, template: str, cv_md: str) -> list[str]:
         try:
             pdf, placed, photo = page_mod.print_page(
                 cv_body.body(v["md"], v["lang"]), template, s.work / _CV_FILE, v["lang"], s.work / "stress" / variant, "cv",
-                columns=s.manifest.columns, photo=picture if v["photo"] else None)
+                manifest=s.manifest, photo=picture if v["photo"] else None)
             found = [f"{p['kind']}: {p['detail']}" for p in readability.check_pdf(pdf, placed, name, cv=True) if p["kind"] != "sparse"]
-            found += column_problems(s.style, style_extract.extract(pdf), placed) + (
+            render = style_extract.extract(pdf)
+            found += column_problems(s.style, render, placed) + (
                 [] if v["photo"] else photo_box_problems(s.style, style_extract.painted(pdf)))
+            if variant == "shapes":
+                found += label_problems(s.manifest.contact_labels, render.get("runs", []))
             pages = pdf_render.get_page_count(pdf)
         except (html_pdf.PrintError, ValueError) as exc:
             failures.append(f"{variant}: printing failed: {exc}")
