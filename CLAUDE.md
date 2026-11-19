@@ -392,7 +392,8 @@ an implementation adds user-facing behaviour, update the matching doc: a CLI com
 `docs/manual-cli.md` and `docs/manual-claude.md`; a config key → `docs/configuration.md`; a
 scraper → `docs/job-sites.md` (and `docs/architecture.md`'s Scrapers table); a skill →
 `docs/skills.md`; a change to how data is stored → `docs/how-it-works.md` or
-`docs/architecture.md`. Touch README only when the get-started steps change. Do not update
+`docs/architecture.md`. Touch README only when the get-started steps change. A doc of 200 lines or more keeps a contents list
+between `<!-- toc -->` markers: run `python scripts/toc.py` after changing its headings (`tests/scripts/test_toc_unit.py` fails until then). Do not update
 docs for internal refactors, test additions, or changes with no user-visible effect.
 
 ## Claude agents and skills

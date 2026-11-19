@@ -23,6 +23,20 @@
 Actually submitting the application is left to you: the pipeline prepares the materials and
 tracks status, but does not fill or submit live application forms. See [Status](#status) for why.
 
+<!-- toc -->
+**Contents**
+
+- [The pipeline step by step](#the-pipeline-step-by-step)
+  - [The five steps](#the-five-steps)
+- [Your CV's style](#your-cvs-style)
+- [The ad is untrusted input](#the-ad-is-untrusted-input)
+- [Plan usage](#plan-usage)
+  - [How much of the plan is left](#how-much-of-the-plan-is-left)
+  - [What Claude's work costs](#what-claudes-work-costs)
+- [Getting only what's new](#getting-only-whats-new)
+- [Status](#status)
+<!-- /toc -->
+
 ## The pipeline step by step
 
 ### The five steps

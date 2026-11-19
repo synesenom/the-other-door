@@ -18,6 +18,27 @@ Move        data [export|import|connect|sync|disconnect]
 `find` is the automatic part; `jobs` and `companies` are your two lists, viewed and edited by
 hand with the same verbs (`jobs` and `companies` alone list them).
 
+<!-- toc -->
+**Contents**
+
+- [Walkthrough](#walkthrough)
+- [Running without a conversation](#running-without-a-conversation)
+- [Command reference](#command-reference)
+  - [Setup](#setup)
+  - [Your CV over time: `cv`](#your-cv-over-time-cv)
+  - [What the ads ask for: `market`](#what-the-ads-ask-for-market)
+  - [Asking about your data: `ask` and `jobs query`](#asking-about-your-data-ask-and-jobs-query)
+  - [Following employers: `companies`](#following-employers-companies)
+  - [Moving to another computer: `data`](#moving-to-another-computer-data)
+  - [Your phone: `serve`](#your-phone-serve)
+  - [Finding and your postings: `find` and `jobs`](#finding-and-your-postings-find-and-jobs)
+  - [Working a posting](#working-a-posting)
+  - [Useful options](#useful-options)
+  - [Live progress](#live-progress)
+  - [Exit codes](#exit-codes)
+  - [Where things are written](#where-things-are-written)
+<!-- /toc -->
+
 ## Walkthrough
 
 Set up as in [Getting started](../README.md#getting-started) (`./scripts/setup.sh`, then

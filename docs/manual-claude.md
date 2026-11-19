@@ -6,6 +6,17 @@ conversation in this repo: you say what you want in plain sentences and Claude c
 [MCP](https://modelcontextprotocol.io) server that makes it work. Everything here is also a
 [shell command](manual-cli.md) with the same options.
 
+<!-- toc -->
+**Contents**
+
+- [Onboarding](#onboarding)
+- [A typical review session](#a-typical-review-session)
+- [The MCP server behind it](#the-mcp-server-behind-it)
+  - [Registering it](#registering-it)
+  - [Tools](#tools)
+  - [Long-running tools](#long-running-tools)
+<!-- /toc -->
+
 ## Onboarding
 
 After `./scripts/setup.sh` and `claude auth login` ([Getting started](../README.md#getting-started)),

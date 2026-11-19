@@ -1,5 +1,19 @@
 # Job sites
 
+<!-- toc -->
+**Contents**
+
+- [Supported countries](#supported-countries)
+- [All sites](#all-sites)
+- [How The other door fetches](#how-the-other-door-fetches)
+- [Universities](#universities)
+- [Per-company feeds](#per-company-feeds)
+- [Career sites](#career-sites)
+- [Following an employer (`follow`)](#following-an-employer-follow)
+- [When a site changes](#when-a-site-changes)
+- [Discovery sources](#discovery-sources)
+<!-- /toc -->
+
 ## Supported countries
 
 | Where | Sites |
