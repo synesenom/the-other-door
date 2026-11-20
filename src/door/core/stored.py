@@ -39,7 +39,7 @@ class Stored:
 INVENTORY: tuple[Stored, ...] = (
     # --- profile/ ---
     Stored("profile/config.json", CONFIG, "door.core.profile_loader.Profile (extra=forbid)"),
-    Stored("profile/cv.md", DATA, "Markdown CV; a `## ` heading may end in `<!-- kind: skills|education|certifications|languages|interests -->` (door.core.cv_sections)"),
+    Stored("profile/cv.md", DATA, "Markdown CV; a `## ` heading may end in `<!-- kind: skills|education|certifications|languages|interests -->` (door.core.cv_sections); no marker, no kind there"),
     Stored("profile/companies.json", LEDGER, "door.core.employers.companies: {version: 1, companies: [entry]}", "has its own internal version"),
     Stored("profile/story_bank.md", DATA, "door.tailoring.story_bank.StoryBank: one `##` story per CARL (Context, Action, Result, Learning)"),
     Stored("profile/photo.jpg", DATA, "JPEG written by door.core.photo.save (EXIF dropped, scaled)"),

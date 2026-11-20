@@ -20,7 +20,7 @@ from pathlib import Path
 from PIL import Image
 from pypdfium2 import PdfiumError
 
-from door.core import claude_cli, cv_read, cv_sections, profile_loader, progress as progress_mod, templates, utils, workspace
+from door.core import claude_cli, cv_read, profile_loader, progress as progress_mod, templates, utils, workspace
 from door.core.downloads import pinned
 from door.style import fonts
 from door.style import cv_body, font_measure, style_compare, style_extract, style_icons, style_preview, style_structure
@@ -114,7 +114,7 @@ def _side_kinds(style: dict, cv_md: str) -> list[str]:
         if kind and kind not in kinds:
             kinds.append(kind)
     if not kinds and _side_headings(style):
-        own = {cv_sections.kind(section, _FALLBACK_SIDE) for section in cv_sections.split(cv_md)}
+        own = {section["kind"] for section in cv_read.read(cv_md)["sections"]}
         kinds = [k for k in _FALLBACK_SIDE if k in own]
     return kinds
 

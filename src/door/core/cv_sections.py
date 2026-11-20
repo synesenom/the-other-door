@@ -1,19 +1,19 @@
 """A cv.md's `## ` sections and their kinds: the one reader of a section heading.
 
 The model that drafts a CV records each section's kind on its heading line, `## Technical Skills <!-- kind: skills -->`
-(one of `i18n.CvSections`' kinds, whatever the title), so a reader needs no guess at a title written in the user's own
-words. A heading with no marker is of the kind its whole title names (`i18n.cv_section_kind`: a hand-typed `## Skills`),
-else of none. The marker is a comment: no renderer shows it.
+(one of the kinds a template's column can hold, whatever the title), so a reader needs no guess at a title written in
+the user's own words; a heading with no marker has no kind here (`cv_read` reads it). The marker is a comment: no
+renderer shows it.
 """
 
 import re
 
-from door import i18n
+from door.core import cv_read
 
 _HEADING = re.compile(r"^##\s+(.*?)\s*(?:<!--\s*kind:\s*([a-z]+)\s*-->)?\s*$")
 
 
-KINDS = tuple(i18n.CvSections.model_fields)
+KINDS = cv_read.COLUMN_KINDS
 
 
 def heading(line: str) -> tuple[str, str | None]:
@@ -32,15 +32,3 @@ def split(cv_md: str) -> list[list[str]]:
             sections.append([])
         sections[-1].append(line)
     return sections
-
-
-def kind(section: list[str], kinds, codes: tuple[str, ...] | None = None) -> str | None:
-    """The one of `kinds` the section is of: the kind recorded on its heading, else the kind its whole title names
-    in the languages `codes` (None: all)."""
-    head = section[0] if section else ""
-    if not head.startswith("## "):
-        return None
-    title, recorded = heading(head)
-    if recorded:
-        return recorded if recorded in kinds else None
-    return i18n.cv_section_kind(title, kinds, codes)

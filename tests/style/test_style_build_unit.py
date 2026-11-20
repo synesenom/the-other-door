@@ -6,8 +6,7 @@ import re
 
 import pytest
 
-from door import i18n
-from door.core import claude_cli, templates
+from door.core import claude_cli, cv_read, templates
 from door.render import html_guard, pdf_render
 from door.style import style_build
 from style_build_utils import STYLES
@@ -85,9 +84,12 @@ def test_icon_files_are_accepted_by_the_manifest(tmp_path):
 
 # ---------- the manifest ----------
 
+_KINDS = {"compétences": "skills", "languages": "languages", "skills": "skills", "education": "education"}
+
+
 def _style(bands, headings, pages=1):
     return {"page_count": pages, "columns": {"count": len(bands), "bands": bands},
-            "headings": [{"text": t, "bbox": [x, 100, x + 50, 110], "kind": i18n.cv_section_kind(t, templates.SECTION_KINDS) or "other",
+            "headings": [{"text": t, "bbox": [x, 100, x + 50, 110], "kind": _KINDS.get(t.lower(), "other"),
                           "band": next((b["kind"] for b in bands if b["x0"] - 2 <= x + 25 <= b["x1"] + 2), None)}
                          for t, x in headings]}
 
@@ -105,9 +107,16 @@ def test_no_side_band_means_one_column():
 _SIDE = [{"x0": 30, "x1": 370, "kind": "main"}, {"x0": 394, "x1": 515, "kind": "side"}]
 
 
-def test_a_side_band_of_unknown_headings_falls_back_to_the_kinds_the_cv_has():
+def _reads(monkeypatch, **kinds):
+    """The model's reading of the CV: its sections, by heading, with these kinds."""
+    sections = [{"heading": h, "kind": k} for h, k in kinds.items()]
+    monkeypatch.setattr(cv_read, "read", lambda md: {**cv_read._empty(), "sections": sections})
+
+
+def test_a_side_band_of_unknown_headings_falls_back_to_the_kinds_the_cv_has(monkeypatch):
     style = _style(_SIDE, [("Logiciels", 395), ("Savoir-être", 400), ("EXPERIENCE", 31)])
     cv_md = "# A\n\n## Expérience\n\n## Langues\n\n## Compétences\n\n## Loisirs\n"
+    _reads(monkeypatch, Expérience="experience", Langues="languages", Compétences="skills", Loisirs="interests")
     assert style_build._side_kinds(style, cv_md) == ["skills", "languages", "interests"]
     assert style_build._manifest_data(style, [], {}, cv_md)["columns"] == {
         "side": ["skills", "languages", "interests"], "headings": ["Logiciels", "Savoir-être"]}
@@ -443,6 +452,7 @@ def test_a_line_the_pdf_prints_with_a_ligature_is_found_in_the_body_spelt_out():
     assert len(problems) == 1 and "side column of the original" in problems[0]
 
 
-def test_side_kinds_fall_back_to_the_kinds_a_draft_recorded_on_own_titles():
+def test_side_kinds_fall_back_to_the_kinds_the_model_read_on_own_titles(monkeypatch):
     style = _style(_SIDE, [("Logiciels", 395), ("EXPERIENCE", 31)])
+    _reads(monkeypatch, **{"Mes outils": "skills", "Parcours": "experience"})
     assert style_build._side_kinds(style, "# A\n\n## Mes outils <!-- kind: skills -->\n\n## Parcours\n") == ["skills"]

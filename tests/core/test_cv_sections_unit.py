@@ -15,11 +15,5 @@ def test_heading_reads_the_recorded_kind_and_strips_it_from_the_title(line, titl
     assert cv_sections.heading(line) == (title, kind)
 
 
-def test_kind_is_the_marker_else_a_whole_standard_title_else_none():
-    kinds = ("skills", "education")
-    assert cv_sections.kind(["## Tools I use <!-- kind: skills -->"], kinds) == "skills"
-    assert cv_sections.kind(["## Skills"], kinds) == "skills"
-    assert cv_sections.kind(["## Technical Skills"], kinds) == "skills"  # a standard title
-    assert cv_sections.kind(["## Tools I use"], kinds) is None
-    assert cv_sections.kind(["## Tools I use <!-- kind: education -->"], ("skills",)) is None
-    assert cv_sections.kind(["# Jane", "text"], kinds) is None
+def test_the_kinds_are_the_ones_a_column_can_hold():
+    assert cv_sections.KINDS == ("skills", "education", "certifications", "languages", "interests")

@@ -33,36 +33,11 @@ false_friends = ["stage", "chef", "cadre", "poste", "sale", "car", "formation"]
 # of "d'expérience" and "l’équipe": a title is split at the apostrophe, whichever it is.
 stop_words = ["et", "ou", "de", "du", "des", "d", "la", "le", "les", "l", "en", "pour", "au", "aux", "à", "un", "une", "dans", "sur", "avec"]
 
-# Generic words that are not a skill, tool or certification by themselves: soft skills, months, weekdays.
-# The facts check never claims them.
-skill_stop_words = [
-    "communication", "leadership", "organisation", "autonomie", "rigueur", "courant", "bilingue", "natif",
-    "débutant", "confirmé", "janvier", "février", "fevrier", "mars", "avril", "mai", "juin", "juillet",
-    "août", "aout", "septembre", "octobre", "novembre", "décembre", "decembre",
-    "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche",
-]
-
 # Generic words around an employer's name in a careers site's title (also guessed as a career host).
 career_site_words = [
     "carrieres", "carrières", "recrutement", "emploi", "emplois", "offres d'emploi", "offres d’emploi",
     "nos offres", "nous rejoindre", "rejoignez-nous",
 ]
-
-# The extra month forms (abbreviations, unaccented spellings; the full names are [date].months), for reading a date written out ("En ligne depuis le 25 octobre 2026").
-[months]
-"janv." = 1
-fevrier = 2
-"févr." = 2
-"fevr." = 2
-"avr." = 4
-"juil." = 7
-aout = 8
-"sept." = 9
-"oct." = 10
-"nov." = 11
-decembre = 12
-"déc." = 12
-"dec." = 12
 
 # ASCII spelling of the ligature the accent folding leaves alone (the accents themselves fold to their
 # base letter). "ü" is not here: the German spelling "ue" is common.toml's.
@@ -73,14 +48,6 @@ decembre = 12
 [slug_fold]
 "œ" = "oe"
 "æ" = "ae"
-
-# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
-[cv_sections]
-skills = ["compétences", "competences", "compétences clés", "compétences techniques", "outils", "technologies"]
-education = ["formation", "formations", "éducation", "diplômes", "parcours académique", "formation et diplômes"]
-certifications = ["certifications", "certificats", "habilitations", "certifications et formations"]
-languages = ["langues", "compétences linguistiques"]
-interests = ["centres d'intérêt", "centres d’intérêt", "loisirs", "intérêts"]
 
 [headings]
 requirement = [
@@ -200,7 +167,6 @@ nav = [
 pattern = "{day} {month} {year}"
 first = "1er {month} {year}"
 months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
-day_suffixes = ["er", "re", "e"]
 
 # French typography at compile time: a narrow no-break space before these marks and inside guillemets.
 [typography]

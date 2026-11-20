@@ -114,50 +114,6 @@ def _window(line: str, raw: str) -> str:
     return ("…" if lo else "") + line[lo:hi] + ("…" if hi < len(line) else "")
 
 
-def extract_claims(body: str, file: str) -> list[dict]:
-    """The checkable claims of one document (a CV or letter body): numbers, years, (CV only) employers, skills,
-    certifications and degrees, and each `TODO`, a gap of cv.md's that must not reach a document."""
-    claims: list[dict] = [
-        # Read off the whole text, header included: a TODO in the contact details is still a gap.
-        {"kind": "placeholder", "value": "TODO", "context": _window(line, "TODO"), "file": file}
-        for line in map(_squash, html_doc.text(body).splitlines()) if _TODO_RE.search(line)
-    ]
-    if file == "cv":
-        for head in html_doc.h3s(body):
-            head = _squash(_dashes(head))
-            if " | " not in head:
-                continue
-            company = head.split(" | ", 1)[1].split(" | ", 1)[0]  # the place after the company is not part of it
-            company = re.split(r"\s[-–—]{1,3}\s", company, maxsplit=1)[0].strip()
-            if company:
-                claims.append({"kind": "employer", "value": company, "context": head, "file": file})
-    text = _dashes(html_doc.claim_text(body))
-    for line in text.splitlines():
-        if line.startswith(html_doc.SECTION):
-            continue
-        shown = line
-        line = _strip_dates(line)
-        for match in _NUM_RE.finditer(line):
-            raw = match.group(0)
-            value = _canon(raw)
-            if re.fullmatch(r"\d", value):
-                continue
-            kind = "year" if re.fullmatch(r"(19|20)\d\d", value) else "number"
-            claims.append({"kind": kind, "value": value, "context": _window(shown, raw), "file": file})
-    return claims + extract_term_claims(text, file)
-
-
-# --- skills, tools, certifications and degrees --------------------------------
-
-_PAREN_RE = re.compile(r"\([^)]*\)")
-_SPLIT_RE = re.compile(r"[,;•|]")
-_SKILL_MAX_WORDS = 4
-_TEXT_MAX_WORDS = 10
-_TERM_SPLIT_RE = re.compile(r"[\s,;:()\[\]{}\"“”‘’*|•<>=!?]+")
-_ABBREV_RE = re.compile(r"(?:[A-Za-z]\.){1,}[A-Za-z]?")
-
-
-
 def _placeholders(body: str, file: str) -> list[dict]:
     """Each `TODO` in the text of `body`, the header included: a gap of cv.md's that must not reach a document."""
     return [{"kind": "placeholder", "value": "TODO", "context": _window(line, "TODO"), "file": file}

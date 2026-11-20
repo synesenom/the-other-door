@@ -22,30 +22,8 @@ role_nouns = [
 # Filler words with no topic, left out of the search keywords' content words.
 stop_words = ["and", "or", "of", "the", "a", "an", "in", "for", "to", "with", "at", "on", "as"]
 
-# Generic words that are not a skill, tool or certification by themselves: soft skills,
-# months, weekdays. The facts check never claims them.
-skill_stop_words = [
-    "communication", "leadership", "teamwork", "collaboration", "creativity", "adaptability",
-    "initiative", "ownership", "commitment", "motivation", "flexibility", "responsibility",
-    "problem solving", "time management", "stakeholder management", "management", "analytical",
-    "january", "february", "march", "april", "may", "june", "july", "august", "september",
-    "october", "november", "december",
-    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-    "cv", "pdf", "ceo", "cfo", "cto", "coo", "hr", "pr", "kpi", "roi", "vat", "fte", "ok", "linkedin", "jobindex",
-    "eu", "uk", "us", "usa", "dk", "dkk", "eur", "usd", "gbp", "nok", "sek", "covid",
-    "present", "current", "fluent", "native", "conversational", "advanced", "basic",
-]
-
 # Generic words around an employer's name in a careers site's title.
 career_site_words = ["careers", "career", "jobs", "job", "vacancies", "open positions", "career opportunities"]
-
-# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
-[cv_sections]
-skills = ["skills", "key skills", "technical skills", "core competencies", "competencies", "tools", "technologies"]
-education = ["education", "education and training", "academic background"]
-certifications = ["certifications", "certificates", "licences", "licenses", "certifications and licences", "certifications and licenses", "courses"]
-languages = ["languages", "language skills"]
-interests = ["interests", "hobbies", "hobbies and interests", "interests and hobbies"]
 
 [headings]
 requirement = ["requirements", "qualifications", "who you are", "nice to have"]
@@ -152,35 +130,7 @@ nav = [
     "home", "apply", "apply now", "sign in", "log in", "search", "search jobs", "job alert", "job alerts",
 ]
 
-# The extra month forms (abbreviations; the full names are [date].months), for reading a date written out ("13 November 2026").
-[months]
-jan = 1
-"jan." = 1
-feb = 2
-"feb." = 2
-mar = 3
-"mar." = 3
-apr = 4
-"apr." = 4
-jun = 6
-"jun." = 6
-jul = 7
-"jul." = 7
-aug = 8
-"aug." = 8
-sep = 9
-"sep." = 9
-sept = 9
-"sept." = 9
-oct = 10
-"oct." = 10
-nov = 11
-"nov." = 11
-dec = 12
-"dec." = 12
-
 # The letter's date written out (filled by `compile`; the tailor writes <<date>>).
 [date]
 pattern = "{month} {day}, {year}"
 months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-day_suffixes = ["st", "nd", "rd", "th"]
