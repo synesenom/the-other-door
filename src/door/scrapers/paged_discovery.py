@@ -142,7 +142,8 @@ def _stop(name: str, stop: _Stop) -> None:
 
 def discover(
     config: dict, *, name: str, search_url: Callable[[str, int, dict], str], parse_cards: Callable[[str], list[dict]],
-    is_wall: Callable[[str], bool], page_cap: int, full_page: int, max_budget: int, min_pause: tuple[float, float],
+    is_wall: Callable[[str], bool], full_page: int, page_cap: int = 3, max_budget: int = 30,
+    min_pause: tuple[float, float] = (3.0, 6.0),
     budget: int | None = None, pause: tuple[float, float] | None = None, rotation=(),
     stop: threading.Event | None = None, **_ignored,
 ) -> dict:
@@ -151,8 +152,8 @@ def discover(
 
     The source gives *search_url* (keyword, page number from 1 and config to a URL), *parse_cards* (a
     result page to ``{platform_id, title, company, location, url}`` cards), *is_wall* (a final URL that is
-    not the listing) and its limits
-    (*page_cap*, *full_page*, *max_budget*, *min_pause*). The *rotation* keywords are searched one at a
+    not the listing) and *full_page*; *page_cap*, *max_budget* and *min_pause* are the same for every source so
+    far. The *rotation* keywords are searched one at a
     time; the ones the budget did not reach are in no ``searched`` and wait for the next run. *budget* and
     *pause* are the engine's, held to the source's limits (the engine's defaults are made for LinkedIn). The
     rest of what the engine passes (``since``, ``known_companies``, ``mode``, ...) is not used: the search has

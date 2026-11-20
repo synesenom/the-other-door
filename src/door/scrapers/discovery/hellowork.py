@@ -8,8 +8,8 @@ stored, scored or tailored from it. What it is good for is telling WHICH employe
 keywords: the employers whose ad title is on topic are queued with the ad link, for `follow` to look for
 their own feed by name. The crawl (pacing, budget, pushback, wall pages) is `sdk.paged_discovery`'s.
 
-URL: one search per keyword, ``/fr-fr/emploi/recherche.html?k=<keyword>&l=<city>[&p=<n>]``; `_PAGE_CAP` pages
-of `_FULL_PAGE` ads at most, `_MAX_BUDGET` requests a run, `_MIN_PAUSE` between two.
+URL: one search per keyword, ``/fr-fr/emploi/recherche.html?k=<keyword>&l=<city>[&p=<n>]``; pages of `_FULL_PAGE` ads
+(the engine's page cap, budget and pause).
 
 Terms (https://www.hellowork-group.com/fr/legal/cgu-hellowork/, read 2026-10-31): art. 8.2 and 9.3 as quoted above; a verdict of `unsure`.
 robots.txt (checked 2026-10-31) disallows any URL with a query and ``/fr-fr/emploi/recherche.html``
@@ -41,10 +41,7 @@ TERMS_SUMMARY = "its terms (CGU art. 8.2 and 9.3) ban automated systems and soft
 
 _HOST = "www.hellowork.com"
 _BASE = "https://" + _HOST
-_PAGE_CAP = 3  # pages read for one keyword
 _FULL_PAGE = 30  # ads a full result page lists; a page with fewer is the last one
-_MAX_BUDGET = 30  # requests a run, whatever the engine allows
-_MIN_PAUSE = (3.0, 6.0)  # seconds between two requests, at least
 _LISTING_PATH = re.compile(r"^/fr-fr/emplois?(/|\.|$)")  # where a search or an ad lives; anything else is a wall
 
 
@@ -108,4 +105,4 @@ def run(config: dict, **kwargs) -> "sdk.DiscoveryResult":
     """The shared paged crawl (`sdk.paged_discovery`) over this source's URLs and cards."""
     return sdk.paged_discovery(
         config, name=NAME, search_url=_search_url, parse_cards=_parse_cards, is_wall=_is_wall,
-        page_cap=_PAGE_CAP, full_page=_FULL_PAGE, max_budget=_MAX_BUDGET, min_pause=_MIN_PAUSE, **kwargs)
+        full_page=_FULL_PAGE, **kwargs)

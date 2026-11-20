@@ -8,8 +8,8 @@ page, which `follow` can resolve to the employer's feed. The employers whose ad 
 queued with that apply link (ads applied for by email have none; the tracking query is dropped). The crawl
 (pacing, budget, pushback, wall pages) is `sdk.paged_discovery`'s.
 
-URL: one search per keyword, ``/lediga-jobb?sok=<keyword>[&page=N]``; `_PAGE_CAP` pages of `_FULL_PAGE` ads
-at most, `_MAX_BUDGET` requests a run, `_MIN_PAUSE` between two. No `/jobb/<slug>` page is opened.
+URL: one search per keyword, ``/lediga-jobb?sok=<keyword>[&page=N]``; pages of `_FULL_PAGE` ads (the engine's page cap,
+budget and pause). No `/jobb/<slug>` page is opened.
 
 Terms (https://jobbsafari.se/compliance/allmanna-villkor, read 2026-10-31): "Användaren får inte lagra,
 arkivera, skrapa eller på annat sätt systematiskt kopiera innehållet i Tjänsten" and may not use the
@@ -43,10 +43,7 @@ TERMS_SUMMARY = "its terms ban storing, scraping or systematically copying the c
 
 _HOST = "jobbsafari.se"
 _BASE = "https://" + _HOST
-_PAGE_CAP = 3  # pages read for one keyword
 _FULL_PAGE = 30  # ads a full result page lists; a page with fewer is the last one
-_MAX_BUDGET = 30  # requests a run, whatever the engine allows
-_MIN_PAUSE = (3.0, 6.0)  # seconds between two requests, at least
 _LISTING_PATH = re.compile(r"^/lediga-jobb(/|$)")  # where a search lives; anything else is a wall
 JOB_BOARD_HOSTS = ("jobbsafari.",)
 
@@ -124,4 +121,4 @@ def run(config: dict, **kwargs) -> "sdk.DiscoveryResult":
     """The shared paged crawl (`sdk.paged_discovery`) over this source's URLs and cards."""
     return sdk.paged_discovery(
         config, name=NAME, search_url=_search_url, parse_cards=_parse_cards, is_wall=_is_wall,
-        page_cap=_PAGE_CAP, full_page=_FULL_PAGE, max_budget=_MAX_BUDGET, min_pause=_MIN_PAUSE, **kwargs)
+        full_page=_FULL_PAGE, **kwargs)

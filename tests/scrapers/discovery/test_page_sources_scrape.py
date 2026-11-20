@@ -235,7 +235,7 @@ def test_a_full_page_then_a_short_one_end_the_keyword_and_queue_the_on_topic_emp
 def test_a_keyword_stops_at_the_page_cap(src, session):
     _pages(src, session, *(_full(src, k) for k in range(4)))
     result = _run(src)
-    assert len(session.page.calls) == src.module._PAGE_CAP == 3
+    assert len(session.page.calls) == 3
     assert result["search_complete"] and result["outcome"] == "ok"
 
 
@@ -254,7 +254,7 @@ def test_a_small_budget_ends_the_run_and_the_unreached_keywords_wait(src, sessio
 def test_the_budget_and_pause_of_the_engine_are_clamped_to_this_sources_own_limits(src, session):
     _pages(src, session, src.fx(src.page2_fixture))
     result = _run(src, budget=150, pause=(2.0, 4.0))
-    assert result["budget"] == src.module._MAX_BUDGET == 30 and result["pause"] == [3.0, 6.0]
+    assert result["budget"] == 30 and result["pause"] == [3.0, 6.0]
     assert _run(src, budget=150, pause=(8.0, 16.0))["pause"] == [8.0, 16.0]
 
 
