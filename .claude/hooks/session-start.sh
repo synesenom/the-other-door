@@ -9,6 +9,34 @@
 # sessions are left alone: ./scripts/setup.sh is the install there.
 set -euo pipefail
 
+# Open PRs of the user that need attention, one line each, so every session
+# starts on them. Silent when gh is missing, signed out or offline (5 s cap).
+if command -v gh >/dev/null 2>&1 && command -v perl >/dev/null 2>&1; then
+  prs=$(perl -e 'alarm 5; exec @ARGV' gh pr list --author @me --state open \
+    --json number,title,mergeable,statusCheckRollup,body --jq '
+    .[] | "#\(.number)" as $n | (.statusCheckRollup // []) as $r
+    | ([$r[] | select(.conclusion == "FAILURE" or .conclusion == "TIMED_OUT" or .conclusion == "CANCELLED" or .conclusion == "STARTUP_FAILURE" or .conclusion == "ACTION_REQUIRED")][0]) as $bad
+    | ([$r[] | select(.context == "verify")][0].state) as $v
+    | (if .mergeable == "CONFLICTING" then ["\($n) conflicts with main"] else [] end)
+    + (if $bad then ["\($n): \($bad.name) failed"] else [] end)
+    + (if ($r | length) == 0 then ["\($n): no checks ran"] else [] end)
+    + (if $v == "FAILURE" or $v == "ERROR" then ["\($n): verify failed"] else [] end)
+    + ((.body // "" | split("\n")
+        | reduce .[] as $l ({f: false, r: []};
+            if ($l | test("^\\s*(```|~~~)")) then .f = (.f | not)
+            elif .f then .
+            elif ($l | test("^\\s*([-*+]\\s+)?\\**Needs the maintainer:")) then
+              .r += [$l | sub("^\\s*([-*+]\\s+)?\\**Needs the maintainer:\\**\\s*"; "")]
+            else . end) | .r)
+       | map("\($n): needs the maintainer: \(.)"))
+    + (if $v == "SUCCESS" then ["\($n): verified, not merged"] else [] end)
+    | .[]' 2>/dev/null) || prs=""
+  if [ -n "$prs" ]; then
+    echo "Open PRs that need you:"
+    echo "$prs"
+  fi
+fi
+
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
