@@ -99,7 +99,7 @@ def _titles_core(
     )
     try:
         answer = claude_cli.ask(
-            claude_cli.prompt("titles"), prompt, model=model or claude_cli.model_of("titles"), feature="suggest_titles", schema=_SCHEMA, timeout_s=timeout_s,
+            "titles", prompt, model=model, feature="suggest_titles", schema=_SCHEMA, timeout_s=timeout_s,
             profile_dir=profile_dir,
         )
     except claude_cli.ClaudeError as exc:

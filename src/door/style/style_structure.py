@@ -292,7 +292,7 @@ def _cache_dir() -> Path:
 
 def _ask(text: str, feature: str = "style") -> dict:
     """The one model call: Haiku at low effort with no MCP servers (their tool lists would be thousands of tokens)."""
-    return claude_cli.ask(claude_cli.prompt("cv-structure"), text, model=claude_cli.model_of("cv-structure"), feature=feature, schema=SCHEMA, effort="low",
+    return claude_cli.ask("cv-structure", text, feature=feature, schema=SCHEMA, effort="low",
                           timeout_s=60)
 
 

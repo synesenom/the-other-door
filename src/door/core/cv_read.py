@@ -174,7 +174,7 @@ def _cache_dir() -> Path:
 
 def _ask(md: str) -> dict:
     """The one model call: Haiku at low effort with no MCP servers."""
-    return claude_cli.ask(claude_cli.prompt("cv-reader"), f"CV:\n<<<\n{md}\n>>>\n", model=claude_cli.model_of("cv-reader"), feature="cv_read", schema=SCHEMA,
+    return claude_cli.ask("cv-reader", f"CV:\n<<<\n{md}\n>>>\n", feature="cv_read", schema=SCHEMA,
                           effort="low", timeout_s=120)
 
 

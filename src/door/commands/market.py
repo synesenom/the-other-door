@@ -138,7 +138,7 @@ def _ask_aliases(unknown: list[str], known: list[str], profile_dir: Path) -> tup
         chunk = unknown[start:start + _CHUNK]
         payload = json.dumps({"names": chunk, "known_canonical": context[:_CONTEXT]}, ensure_ascii=False)
         try:
-            answer = claude_cli.ask(claude_cli.prompt("skill-grouper"), payload, model=claude_cli.model_of("skill-grouper"), feature="market_aliases",
+            answer = claude_cli.ask("skill-grouper", payload, feature="market_aliases",
                                     schema=_SCHEMA, timeout_s=120, profile_dir=profile_dir)
             groups = answer.get("groups") if isinstance(answer, dict) else None
             if not isinstance(groups, list) or not all(

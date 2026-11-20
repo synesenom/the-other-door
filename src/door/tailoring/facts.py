@@ -60,7 +60,7 @@ def input_text(cv_md: str, story: str, posting: str, cv_html: str, letter_html: 
 
 def _ask(inputs: str) -> dict:
     """The one model call: Haiku at low effort with no MCP servers."""
-    return claude_cli.ask(claude_cli.prompt("fact-checker"), inputs, model=claude_cli.model_of("fact-checker"), feature="facts", schema=SCHEMA, effort="low", timeout_s=120)
+    return claude_cli.ask("fact-checker", inputs, feature="facts", schema=SCHEMA, effort="low", timeout_s=120)
 
 
 def _placeholders(body: str, file: str) -> list[dict]:

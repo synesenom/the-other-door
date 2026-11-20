@@ -129,8 +129,8 @@ def _propose(urls, files, *, config, cv_path, profile_dir, model, timeout_s) -> 
         + ("Read these pages:\n" + "\n".join(urls) + "\n" if urls else "")
     )
     answer = claude_cli.ask(
-        claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES), prompt, model=model or claude_cli.model_of("cv-enricher"), feature="enrich", schema=_SCHEMA,
-        allowed_tools=claude_cli.tools_of("cv-enricher") if urls else (), timeout_s=timeout_s, profile_dir=profile_dir,
+        "cv-enricher", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="enrich", schema=_SCHEMA,
+        allowed_tools=None if urls else (), timeout_s=timeout_s, profile_dir=profile_dir,
     )
     if not isinstance(answer.get("proposals"), list):
         raise claude_cli.ClaudeError("claude's answer has no `proposals` list")

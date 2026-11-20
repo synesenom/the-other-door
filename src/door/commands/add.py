@@ -73,7 +73,7 @@ def _read_ad(text: str, url: str) -> dict:
     from door.core import claude_cli
 
     try:
-        answer = claude_cli.ask(claude_cli.prompt("posting-reader"), text[:_READ_MAX_CHARS], model=claude_cli.model_of("posting-reader"), feature="import_posting",
+        answer = claude_cli.ask("posting-reader", text[:_READ_MAX_CHARS], feature="import_posting",
                                 schema=_READ_SCHEMA, timeout_s=120)
     except claude_cli.ClaudeError as exc:
         raise ValueError(f"could not read the title and company from {url} ({exc}) — pass --title and --company") from None

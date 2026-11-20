@@ -71,8 +71,8 @@ def _keywords_core(
     codes = [c for c in (i18n.language_code(v) for v in wanted) if c]
     ad_languages = [packs[c].name for c in dict.fromkeys(["en", *codes]) if c in packs]
     answer = claude_cli.ask(
-        claude_cli.prompt("keywords"), "Role targets: " + "; ".join(targets) + "\nAd languages: " + ", ".join(ad_languages),
-        model=model or claude_cli.model_of("keywords"), feature="keywords", schema=_SCHEMA, timeout_s=timeout_s,
+        "keywords", "Role targets: " + "; ".join(targets) + "\nAd languages: " + ", ".join(ad_languages),
+        model=model, feature="keywords", schema=_SCHEMA, timeout_s=timeout_s,
         profile_dir=profile_dir,
     )
     if not isinstance(answer.get("keywords"), list):

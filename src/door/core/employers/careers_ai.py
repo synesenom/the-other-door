@@ -30,7 +30,7 @@ def ask_careers_url(name: str, title: str | None, location: str, *, profile_dir=
     when it finds none or the call fails."""
     prompt = f"Employer: {name}\nA job it advertised: {title or 'unknown'}\nWhere I am looking: {location or 'unknown'}"
     try:
-        answer = claude_cli.ask(claude_cli.prompt("careers-finder"), prompt, model=claude_cli.model_of("careers-finder"), feature="careers_lookup", schema=_SCHEMA, allowed_tools=claude_cli.tools_of("careers-finder"),
+        answer = claude_cli.ask("careers-finder", prompt, feature="careers_lookup", schema=_SCHEMA,
                                 timeout_s=120, profile_dir=profile_dir)
     except claude_cli.ClaudeError:
         return None

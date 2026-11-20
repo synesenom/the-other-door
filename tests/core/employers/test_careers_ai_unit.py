@@ -22,7 +22,7 @@ def test_one_question_with_web_search_on_the_plan(monkeypatch):
 
     monkeypatch.setattr(claude_cli, "ask", ask)
     assert careers_ai.ask_careers_url("HK", "Advokatsekretær", "Copenhagen") == "https://hk.dk/job"
-    assert seen["model"] == "haiku" and seen["allowed_tools"] == ("WebSearch",) and seen["schema"]
+    assert seen["system"] == "careers-finder" and claude_cli.model_of("careers-finder") == "haiku" and claude_cli.tools_of("careers-finder") == ("WebSearch",) and seen["schema"]
     assert "HK" in seen["text"] and "Advokatsekretær" in seen["text"] and "Copenhagen" in seen["text"]
 
 

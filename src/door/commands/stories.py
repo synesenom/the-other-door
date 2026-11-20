@@ -167,7 +167,7 @@ def _draft_stories_core(text=None, from_cv=False, model=None, *, profile_dir: Pa
             source += f"\nThe CV (for facts the text leaves out; where it differs from the text, the text wins):\n<<<\n{cv_path.read_text(encoding='utf-8')}\n>>>\n"
 
     answer = claude_cli.ask(
-        claude_cli.prompt(prompt), source, feature="draft_stories", model=model or claude_cli.model_of(prompt), schema=_SCHEMA, timeout_s=300,
+        prompt, source, feature="draft_stories", model=model, schema=_SCHEMA, timeout_s=300,
         profile_dir=profile_dir,
     )
     if not isinstance(answer.get("stories"), list):

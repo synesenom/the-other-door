@@ -253,7 +253,7 @@ def _draft_cv_core(
         + ("\n\nPages to read:\n" + "\n".join(urls) + "\n" if urls else "\n")
     )
     answer = claude_cli.ask(
-        claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES), prompt, model=model or claude_cli.model_of("cv-drafter"), feature="draft_cv", schema=_SCHEMA, allowed_tools=claude_cli.tools_of("cv-drafter"),
+        "cv-drafter", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="draft_cv", schema=_SCHEMA,
         timeout_s=timeout_s, profile_dir=profile_dir,
     )
     markdown = answer.get("cv_markdown")

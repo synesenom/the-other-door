@@ -121,7 +121,7 @@ def _revise_core(
         config = profile_loader.load_config_or_defaults(profile_dir)
         posting = find_posting(jobs_dir, job_id) or {}
         integrity.ensure(posting)  # a posting stored before the gate: clean in memory
-        model = config.get("revise_model") or claude_cli.model_of("reviser")
+        model = config.get("revise_model")
         prompt = _REVISE_MESSAGE.format(
             what="CV" if file == "cv" else "cover letter",
             instruction=instruction.strip(),
@@ -131,7 +131,7 @@ def _revise_core(
             body=original.strip(),
         )
         try:
-            answer = claude_cli.ask(claude_cli.prompt("reviser"), prompt, model=model, feature="revise", schema=_REVISE_SCHEMA,
+            answer = claude_cli.ask("reviser", prompt, model=model, feature="revise", schema=_REVISE_SCHEMA,
                                     timeout_s=timeout_s, profile_dir=profile_dir)
         except claude_cli.ClaudeError as exc:
             raise ReviseError(f"{str(exc).rstrip('.')}; file left unchanged") from None

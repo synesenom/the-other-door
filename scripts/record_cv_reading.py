@@ -780,6 +780,7 @@ def build_body_corpus() -> dict:
 # recorded here is what the app asks. The examples in them are made up (never a person or a text of the corpus) and each answers a miss of an earlier measurement; the
 # history is in the issue.
 
+AGENTS = {"reader": "cv-reader", "facts": "fact-checker"}   # the agent file of each task
 PROMPTS = {
     "reader": claude_cli.prompt("cv-reader"),
     "facts": claude_cli.prompt("fact-checker"),
@@ -810,7 +811,7 @@ def ask_case(task: str, model: str, case: dict):
     Plan quota through `claude_cli.ask`; the feature keys are the nearest existing ones (see the module's docstring)."""
     from door.core import claude_cli
 
-    answer = claude_cli.ask(PROMPTS[task], case_input(task, case), model=model, feature="cv_read" if task == "reader" else "facts",
+    answer = claude_cli.ask(AGENTS[task], case_input(task, case), model=model, feature="cv_read" if task == "reader" else "facts",
                             schema=SCHEMAS[task], effort="low", timeout_s=240)
     return answer if task == "reader" else [f for f in answer.get("findings") or [] if isinstance(f, dict)]
 

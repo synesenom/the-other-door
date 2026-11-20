@@ -119,7 +119,7 @@ def _skill_gaps_core(
     progress_mod.report(f"analysing {len(resolved)} target(s) with {model} and WebSearch (minutes)", stage="gaps")
     try:
         report = claude_cli.ask(
-            claude_cli.prompt("skill-gaps"), prompt, model=model, feature="skill_gaps", allowed_tools=claude_cli.tools_of("skill-gaps"),
+            "skill-gaps", prompt, model=model, feature="skill_gaps",
             timeout_s=timeout_s, profile_dir=profile_dir,
         )
         if not report:

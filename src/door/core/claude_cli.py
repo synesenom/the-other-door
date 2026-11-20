@@ -269,19 +269,21 @@ def json_result(stdout: str):
 
 
 def ask(
-    system_prompt: str,
+    agent: str,
     input: str,
     *,
-    model: str,
     feature: str,
+    model: str | None = None,
+    fields: dict[str, str] | None = None,
+    allowed_tools: tuple[str, ...] | None = None,
     schema: dict | None = None,
-    allowed_tools: tuple[str, ...] = (),
     timeout_s: float | None = None,
     profile_dir: Path | None = None,
     effort: str | None = None,
 ):
-    """One question to the model: `system_prompt` as the system prompt, `input`
-    on stdin, no tools unless `allowed_tools` names some, no session kept.
+    """One question to the model: the body of `.claude/agents/<agent>.md` as the system prompt (`fields`
+    filled in, see `prompt`), `input` on stdin, no session kept. The model and the tools are the file's
+    unless `model` or `allowed_tools` (`()` for none) says otherwise.
 
     With `schema`, the answer is asked for as JSON of that shape and returned
     as a dict; without, the answer text is returned stripped. Either way the
@@ -292,7 +294,9 @@ def ask(
         ClaudeError: as `run()`, or an answer that is not a JSON object when a
             schema was given.
     """
-    args = ["--model", model, "--system-prompt", system_prompt]
+    if allowed_tools is None:
+        allowed_tools = tools_of(agent)
+    args = ["--model", model or model_of(agent), "--system-prompt", prompt(agent, **(fields or {}))]
     if schema is not None:
         args += ["--json-schema", json.dumps(schema)]
     args += STREAM_ARGS

@@ -108,8 +108,8 @@ def _salary_core(job_id: str, refresh: bool = False, *, max_age_days: int | None
     except OSError:
         cv_text = ""
     text = salary.build_input(posting, cv_text, config, common._cv_reading(config, profile_dir))  # a CV that cannot be read is never sent as it is
-    answer = claude_cli.ask(claude_cli.prompt("salary"), text, model=model or claude_cli.model_of("salary"), feature="salary",
-                            schema=_SCHEMA, allowed_tools=claude_cli.tools_of("salary"), timeout_s=180, profile_dir=profile_dir)
+    answer = claude_cli.ask("salary", text, model=model, feature="salary",
+                            schema=_SCHEMA, timeout_s=180, profile_dir=profile_dir)
     parsed = salary.parse(answer)
     if parsed is None:
         return {**head, "found": False, "message": _NO_SOURCE}
