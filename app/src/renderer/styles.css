@@ -694,6 +694,7 @@ details[open] > summary::before { transform: rotate(90deg); }
 .style-pick:has(.style-font) { display: grid; justify-items: center; }
 .style-name { display: block; margin-top: 6px; font-size: var(--text-small-size); color: var(--color-ink-muted); text-align: center; white-space: nowrap; margin-inline: calc(-1 * var(--space-3)); }
 .style-pick input:checked ~ .style-name { color: var(--color-ink); }
+.style-name .app-name { font-size: 0.88em; } /* the display face runs wide: at the other names' visual size */
 /* the CV's first page, a fixed height that fades at its foot: a sample, not the whole CV */
 .style-sample { position: relative; height: 380px; padding: 32px 32px 0; box-sizing: border-box; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-paper); }
 /* a close-up: the top of a narrow page, fitted to the box's inner width with even margins (text about 11.5 px at 390 px), cropped by the box at its foot only */
