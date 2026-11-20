@@ -293,8 +293,8 @@ def test_the_call_is_haiku_at_low_effort_with_no_mcp_servers_and_the_style_featu
     asks = ask(good)
     style_structure.structure_for(pdf_of(tmp_path, one_column()))
     call = asks.calls[0]
-    assert call["system"] == style_structure.SYSTEM and "Max Mustermann" in call["text"]
-    assert call["model"] == "haiku" and call["feature"] == "style" and call["schema"] == style_structure.SCHEMA
+    assert call["system"] == "cv-structure" and "Max Mustermann" in call["text"]
+    assert claude_cli.model_of("cv-structure") == "haiku" and call["feature"] == "style" and call["schema"] == style_structure.SCHEMA
     assert call["effort"] == "low" and call["timeout_s"] == 60
 
 

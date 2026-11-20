@@ -120,7 +120,7 @@ def test_ask_reads_a_stream(monkeypatch):
     calls = []
     stdout = _stream({"type": "system"}, _result(result=json.dumps({"a": 1}), structured_output={"a": 1}))
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, stdout))
-    assert claude_cli.ask("sys", "q", model="haiku", feature="keywords", schema={"type": "object"}) == {"a": 1}
+    assert claude_cli.ask("keywords", "q", feature="keywords", schema={"type": "object"}) == {"a": 1}
     argv = calls[0]
     assert argv[argv.index("--output-format") + 1] == "stream-json" and "--verbose" in argv
 
@@ -129,7 +129,7 @@ def test_ask_passes_effort_when_asked_and_always_no_user_mcp_servers(monkeypatch
     calls = []
     stdout = _stream(_result(result="{}", structured_output={}))
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, stdout))
-    claude_cli.ask("sys", "q", model="haiku", feature="style", schema={"type": "object"}, effort="low")
+    claude_cli.ask("cv-structure", "q", feature="style", schema={"type": "object"}, effort="low")
     argv = calls[0]
     assert argv[argv.index("--effort") + 1] == "low" and argv.count("--strict-mcp-config") == 1
 
@@ -137,7 +137,7 @@ def test_ask_passes_effort_when_asked_and_always_no_user_mcp_servers(monkeypatch
 def test_ask_adds_no_effort_by_default_but_is_strict(monkeypatch):
     calls = []
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
-    claude_cli.ask("sys", "q", model="haiku", feature="keywords")
+    claude_cli.ask("keywords", "q", feature="keywords")
     assert "--effort" not in calls[0] and "--strict-mcp-config" in calls[0]
 
 
@@ -164,3 +164,15 @@ def test_run_records_the_limits(monkeypatch):
     assert _reading(usage.read()[0]) == _READING
 
 
+
+
+def test_ask_reads_the_prompt_model_and_tools_from_the_agent_file_unless_told_otherwise(monkeypatch):
+    calls = []
+    monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
+    claude_cli.ask("cv-drafter", "q", feature="draft_cv", fields={"webfetch_rules": "FETCH ALL"})
+    argv = calls[0]
+    assert argv[argv.index("--model") + 1] == "sonnet" and argv[argv.index("--allowedTools") + 1] == "WebFetch"
+    assert "FETCH ALL" in argv[argv.index("--system-prompt") + 1]
+    claude_cli.ask("cv-drafter", "q", feature="draft_cv", model="haiku", allowed_tools=())
+    argv = calls[1]
+    assert argv[argv.index("--model") + 1] == "haiku" and argv[argv.index("--tools") + 1] == ""

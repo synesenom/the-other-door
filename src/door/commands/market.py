@@ -33,21 +33,6 @@ _SKILLS, _NEAR_ROWS, _TITLES, _COMPANIES = 15, 10, 10, 10
 _NOT_SCORED = ("duplicate", "excluded", "prefilter:", "prescreen:")
 _CHUNK = 200  # names per Haiku call
 _CONTEXT = 300  # existing canonical names shown to the model
-_DEFAULT_MODEL = "haiku"
-_SYSTEM_PROMPT = (
-    "You group skill names taken from job ads. Input is JSON: `names` (the names to "
-    "classify) and `known_canonical` (canonical names already in use). For every name in "
-    "`names` answer one group {variant, canonical, skill}, with `variant` copied exactly.\n"
-    "- Group spellings, abbreviations, translations and parenthetical detail of the same "
-    "skill under one canonical name (\"Microsoft Excel\", \"Excel (pivot tables)\" -> \"Excel\"). "
-    "Reuse a name from `known_canonical` when it is the same skill.\n"
-    "- Never merge different tools, methods or qualifications (SAP is not Oracle; Excel is not "
-    "Power BI; a forklift licence is not a truck licence).\n"
-    "- Set `skill` to false, with an empty `canonical`, for anything that is not a skill: a "
-    "location or work arrangement (\"Copenhagen hybrid location\"), a spoken language "
-    "(\"Fluent English\"), seniority or scope (\"Lead or manager scope\").\n"
-    "- Keep canonical names short, in the usual written form of the tool."
-)
 _SCHEMA = {
     "type": "object",
     "properties": {
@@ -153,7 +138,7 @@ def _ask_aliases(unknown: list[str], known: list[str], profile_dir: Path) -> tup
         chunk = unknown[start:start + _CHUNK]
         payload = json.dumps({"names": chunk, "known_canonical": context[:_CONTEXT]}, ensure_ascii=False)
         try:
-            answer = claude_cli.ask(_SYSTEM_PROMPT, payload, model=_DEFAULT_MODEL, feature="market_aliases",
+            answer = claude_cli.ask("skill-grouper", payload, feature="market_aliases",
                                     schema=_SCHEMA, timeout_s=120, profile_dir=profile_dir)
             groups = answer.get("groups") if isinstance(answer, dict) else None
             if not isinstance(groups, list) or not all(

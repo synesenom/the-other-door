@@ -75,11 +75,11 @@ def test_core_writes_the_report_for_a_role(env, monkeypatch):
 
     args = calls[0]["args"]
     assert args[args.index("--allowedTools") + 1] == "WebSearch"
-    assert args[args.index("--system-prompt") + 1] == gaps_cmd._RULES
-    assert args[args.index("--model") + 1] == gaps_cmd._DEFAULT_MODEL
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("skill-gaps")
+    assert args[args.index("--model") + 1] == claude_cli.model_of("skill-gaps")
     assert "--json-schema" not in args
-    assert "WebSearch" in gaps_cmd._RULES and "never invent" in gaps_cmd._RULES.lower()
-    assert "Pass 1" in gaps_cmd._RULES and "Pass 2" in gaps_cmd._RULES and "Skipped gaps" in gaps_cmd._RULES
+    assert "WebSearch" in claude_cli.prompt("skill-gaps") and "never invent" in claude_cli.prompt("skill-gaps").lower()
+    assert "Pass 1" in claude_cli.prompt("skill-gaps") and "Pass 2" in claude_cli.prompt("skill-gaps") and "Skipped gaps" in claude_cli.prompt("skill-gaps")
     assert "Python, SQL." in calls[0]["input"]
     assert "Role: Senior Data Engineer" in calls[0]["input"]
     assert gaps_cmd._today() in calls[0]["input"]

@@ -234,7 +234,7 @@ def test_the_recorded_answers_pass_the_check():
     folder = TESTS_DIR / "tailoring" / "fixtures" / "cv_reading" / "haiku" / "reader"
     files = sorted(folder.glob("*.json"))
     assert files
-    keys = {hashlib.sha256((cv_read.PROMPT + "\0" + f"CV:\n<<<\n{md}\n>>>\n").encode()).hexdigest()[:12]: md
+    keys = {hashlib.sha256((claude_cli.prompt("cv-reader") + "\0" + f"CV:\n<<<\n{md}\n>>>\n").encode()).hexdigest()[:12]: md
             for md in _recorded_cvs()}
     held = 0
     for f in files:

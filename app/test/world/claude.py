@@ -110,7 +110,7 @@ KINDS = [
     ("keywords", "You propose search terms"),
     ("titles", "You suggest the job titles"),
     ("gaps", "You write a skill-gap analysis"),
-    ("revise", "You are revising the body of an HTML"),
+    ("revise", "You revise the body of an HTML CV or cover letter"),
     ("facts", "You check a tailored CV and cover letter"),
     ("market", "You group skill names"),
     ("ask", "You answer one question about the user's job search"),

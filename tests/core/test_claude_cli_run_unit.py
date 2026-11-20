@@ -126,7 +126,7 @@ def test_ask_without_a_schema_reads_the_envelope_text(monkeypatch):
     from door.core import usage
     calls = []
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, stdout=_env(result="  the report \n")))
-    assert claude_cli.ask("sys", "q", model="sonnet", feature="skill_gaps") == "the report"
+    assert claude_cli.ask("skill-gaps", "q", feature="skill_gaps") == "the report"
     argv = calls[0][0]
     assert argv[argv.index("--output-format") + 1] == "stream-json" and "--verbose" in argv
     assert "--json-schema" not in argv

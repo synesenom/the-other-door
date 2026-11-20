@@ -13,7 +13,7 @@ import hashlib
 import json
 import re
 
-from door.core import cv_read
+from door.core import claude_cli, cv_read
 from paths import TESTS_DIR
 
 RECORDED = TESTS_DIR / "tailoring" / "fixtures" / "cv_reading"
@@ -38,7 +38,7 @@ def _recorded() -> dict:
 
 
 def _key(md: str) -> str:
-    return hashlib.sha256((cv_read.PROMPT + "\0" + f"CV:\n<<<\n{md}\n>>>\n").encode()).hexdigest()[:12]
+    return hashlib.sha256((claude_cli.prompt("cv-reader") + "\0" + f"CV:\n<<<\n{md}\n>>>\n").encode()).hexdigest()[:12]
 
 
 def plain(md: str) -> dict:

@@ -49,15 +49,15 @@ def test_core_asks_claude_with_the_rules_the_cv_and_the_languages(env, monkeypat
 
     assert result == {"titles": [_title("Team Lead")]}
     args, prompt = calls[0]["args"], calls[0]["input"]
-    assert args[args.index("--system-prompt") + 1] == titles_cmd._RULES
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("titles")
     assert json.loads(args[args.index("--json-schema") + 1]) == titles_cmd._SCHEMA
-    assert args[args.index("--model") + 1] == titles_cmd._DEFAULT_MODEL
+    assert args[args.index("--model") + 1] == claude_cli.model_of("titles")
     assert args[args.index("--tools") + 1] == ""
     assert calls[0]["profile_dir"] == env.profile_dir
     assert CV.strip() in prompt
     assert "English, Danish" in prompt and "something with people" in prompt
     for rule in ("latest title", "progression", "seniority"):
-        assert rule in titles_cmd._RULES
+        assert rule in claude_cli.prompt("titles")
 
 
 def test_core_reads_the_cv_when_no_draft_is_left(env, monkeypatch):

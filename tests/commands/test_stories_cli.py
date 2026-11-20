@@ -158,7 +158,7 @@ def test_remove_on_the_example_bank_is_refused(env):
 def _model(monkeypatch, stories, calls=None):
     def fake_ask(system, input, **kwargs):
         if calls is not None:
-            calls.append({"system": system, "input": input, **kwargs})
+            calls.append({"agent": system, "input": input, **kwargs})
         return {"stories": stories}
     monkeypatch.setattr(claude_cli, "ask", fake_ask)
 
@@ -182,7 +182,7 @@ def test_draft_from_text_asks_sonnet_without_tools_and_writes_nothing(env, monke
     _model(monkeypatch, [{**STORY, "missing": []}], calls)
     result = stories_cmd._draft_stories_core("I cut the build time.", profile_dir=env.profile_dir)
     assert result["outcome"] == "proposed" and result["stories"][0]["title"] == STORY["title"]
-    assert calls[0]["model"] == "sonnet" and not calls[0].get("allowed_tools")
+    assert claude_cli.model_of(calls[0]["agent"]) == "sonnet" and not calls[0].get("allowed_tools")
     assert calls[0]["schema"] == stories_cmd._SCHEMA
     assert "I cut the build time." in calls[0]["input"]
     assert not (env.profile_dir / "story_bank.md").exists()
@@ -208,8 +208,8 @@ def test_draft_from_text_is_the_one_story_the_text_tells(env, monkeypatch):
     _model(monkeypatch, [{**STORY}, {**OTHER}, {**STORY, "title": "A third"}], calls)
     result = stories_cmd._draft_stories_core("I cut the build time.", profile_dir=env.profile_dir)
     assert [s["title"] for s in result["stories"]] == ["Cut the build time"]
-    assert "exactly one story" in calls[0]["system"]
-    assert "one story per distinct achievement" not in calls[0]["system"]
+    assert "exactly one story" in claude_cli.prompt(calls[0]["agent"])
+    assert "one story per distinct achievement" not in claude_cli.prompt(calls[0]["agent"])
 
 
 def test_draft_from_cv_is_one_story_to_show_what_a_story_is(env, monkeypatch):
@@ -220,7 +220,7 @@ def test_draft_from_cv_is_one_story_to_show_what_a_story_is(env, monkeypatch):
     _model(monkeypatch, [{**OTHER}, {**STORY}, {**STORY, "title": "A third"}], calls)
     result = stories_cmd._draft_stories_core(from_cv=True, profile_dir=env.profile_dir)
     assert [s["title"] for s in result["stories"]] == ["Cut the build time"]  # the bank's own left out, then the first
-    assert "exactly one story" in calls[0]["system"]
+    assert "exactly one story" in claude_cli.prompt(calls[0]["agent"])
 
 
 def test_draft_from_cv_reads_the_onboarding_draft(env, monkeypatch):
@@ -347,7 +347,7 @@ def test_draft_from_text_also_reads_the_cv_as_data(env, monkeypatch):
     _model(monkeypatch, [{**STORY, "conflicts": []}], calls)
     stories_cmd._draft_stories_core("I cut the build time.", profile_dir=env.profile_dir)
     assert "I cut the build time." in calls[0]["input"] and "Cut the build time at Acme" in calls[0]["input"]
-    assert "text wins" in calls[0]["system"].lower() or "text is right" in calls[0]["system"].lower()
+    assert "text wins" in claude_cli.prompt(calls[0]["agent"]).lower() or "text is right" in claude_cli.prompt(calls[0]["agent"]).lower()
 
 
 def test_draft_from_text_without_a_cv_uses_the_text_only(env, monkeypatch):

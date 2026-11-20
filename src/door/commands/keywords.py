@@ -12,37 +12,7 @@ from door import i18n
 from door.commands import profile as profile_cmd
 from door.core import claude_cli, profile_loader, workspace
 
-_DEFAULT_MODEL = "haiku"
 
-_RULES = (
-    "You propose search terms for job boards. The user gives you the job titles they are "
-    "looking for (their role targets). Propose 8-15 short, job-board-friendly search terms: "
-    "each target verbatim, its noun form (\"accountant\" -> \"accounting\"), common "
-    "abbreviations (\"human resources\" -> \"HR\"), seniority variants (senior, lead, head of, "
-    "manager) and close synonyms boards use. The user also names the languages of the "
-    "job ads they read: give the terms in each ad language, as that language's job boards write "
-    "them (\"nurse\" and Danish \"sygeplejerske\"), 8-15 per language; with English only, "
-    "English terms only. No duplicates, no punctuation, "
-    "lower case except abbreviations. "
-    "Also give topic_terms, 15-30 per language: the words whose presence in a job title makes the job "
-    "relevant to this person. Mostly single words: the field's own word even when it is short or broad "
-    "(\"finance\", \"care\", \"data\"), its common abbreviations (\"HR\", \"ML\", \"BI\"), its subjects "
-    "and tools, and the neighbouring fields this person would also take a job in (for an accountant: "
-    "accounting, finance, audit, tax, payroll, controlling, bookkeeping; for a nurse: nurse, nursing, "
-    "care, ward, clinical, patient). Never a bare role noun or seniority word that any field uses "
-    "(analyst, engineer, manager, specialist, consultant, assistant, senior), and no word that mostly "
-    "means something else alone: keep a field of several words together (\"machine learning\", "
-    "\"data warehouse\", \"intensive care\"), never split. Give plain field words: the "
-    "matcher itself finds a word of six letters or more inside a compound (Danish \"intensivsygeplejerske\" "
-    "for \"sygeplejerske\") and in its plural, so no stems are needed; use \"x*\" (starts a word) or \"*x\" "
-    "(ends one) only for a short stem or a word the plain form would miss. Keep an all-caps abbreviation that "
-    "is also an ordinary word (\"MEAL\", a meal) in capitals, which the matcher reads case-sensitively, or pair it "
-    "with its field words. For an academic field, the names of "
-    "its institutes and departments in each ad language are topic terms too, since an academic title often "
-    "names only the rank and the institute (\"Niels Bohr Institute\", \"Institut for Fysik og Astronomi\", "
-    "\"DTU Physics\"); an institute or department is a valid topic term, a rank alone (professor, postdoc) is not. "
-    "Answer with the JSON only."
-)
 
 _SCHEMA = {
     "type": "object",
@@ -101,8 +71,8 @@ def _keywords_core(
     codes = [c for c in (i18n.language_code(v) for v in wanted) if c]
     ad_languages = [packs[c].name for c in dict.fromkeys(["en", *codes]) if c in packs]
     answer = claude_cli.ask(
-        _RULES, "Role targets: " + "; ".join(targets) + "\nAd languages: " + ", ".join(ad_languages),
-        model=model or _DEFAULT_MODEL, feature="keywords", schema=_SCHEMA, timeout_s=timeout_s,
+        "keywords", "Role targets: " + "; ".join(targets) + "\nAd languages: " + ", ".join(ad_languages),
+        model=model, feature="keywords", schema=_SCHEMA, timeout_s=timeout_s,
         profile_dir=profile_dir,
     )
     if not isinstance(answer.get("keywords"), list):

@@ -45,7 +45,7 @@ def test_asks_haiku_with_web_search_and_caches(env):
     result = salary_cmd._salary_core("trustpilot", jobs_dir=jobs, profile_dir=profile)
     assert result["found"] and result["low"] == 55000 and result["job_id"] == "jobindex.1"
     assert result["cached"] is False
-    assert calls[0]["model"] == "haiku" and calls[0]["allowed_tools"] == ("WebSearch",)
+    assert calls[0]["system"] == "salary" and claude_cli.model_of("salary") == "haiku" and claude_cli.tools_of("salary") == ("WebSearch",)
     cache = json.loads((jobs / "salary.json").read_text())
     assert cache["jobindex.1"]["high"] == 70000 and "as_of" in cache["jobindex.1"]
 

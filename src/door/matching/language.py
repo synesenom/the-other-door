@@ -35,7 +35,6 @@ from door.core import claude_cli, usage, utils
 from door.core.downloads import installers
 from door.matching import scorer
 
-DEFAULT_MODEL = "haiku"
 BATCH_SIZE = 50
 _TIMEOUT_S = 300
 
@@ -56,19 +55,10 @@ TITLES_SCHEMA: dict = {
     "additionalProperties": False,
 }
 
-SYSTEM_PROMPT = (
-    "You translate job titles into English. The next message is a JSON list of "
-    "job postings, each with an id, a title and the ISO 639-1 code of the "
-    "language it is written in. For each one, return the title an English-"
-    "language job board would use for the same role. Keep company, product and "
-    "technology names unchanged, and do not add seniority, specialisms or other "
-    "details that are not in the original. Return every id exactly once. "
-    "Respond only with structured output matching the provided JSON schema."
-)
 
 
 def build_argv(model: str) -> list[str]:
-    return scorer.build_claude_argv(SYSTEM_PROMPT, model, TITLES_SCHEMA)
+    return scorer.build_claude_argv(claude_cli.prompt("title-translator"), model, TITLES_SCHEMA)
 
 
 def parse_output(stdout: str) -> dict[str, str]:
@@ -146,7 +136,7 @@ def _translate_titles(
     translated = 0
     failed_batches = 0
     if pending and config.get("translate_titles", True):
-        argv = build_argv(config.get("translate_model") or DEFAULT_MODEL)
+        argv = build_argv(config.get("translate_model") or claude_cli.model_of("title-translator"))
         for start in range(0, len(pending), BATCH_SIZE):
             batch = pending[start : start + BATCH_SIZE]
             items = [

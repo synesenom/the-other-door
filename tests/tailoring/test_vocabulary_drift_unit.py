@@ -3,8 +3,8 @@ header comments. A class named in either of the last two that the guard refuses 
 
 import re
 
+from door.core import claude_cli
 from door.core import cv_read
-from door.commands import revise
 from door.render import html_guard
 from paths import REPO_ROOT
 
@@ -75,5 +75,5 @@ def test_the_cv_templates_header_comment_names_every_section_kind_class():
 
 
 def test_the_revise_prompt_tells_to_give_a_heading_without_one_its_kind_class():
-    assert "kind-" in revise._REVISE_PROMPT
-    assert html_guard.KIND_CLASSES <= _named_kinds(revise._REVISE_PROMPT)
+    assert "kind-" in claude_cli.prompt("reviser")
+    assert html_guard.KIND_CLASSES <= _named_kinds(claude_cli.prompt("reviser"))

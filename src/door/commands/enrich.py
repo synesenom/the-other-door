@@ -23,20 +23,8 @@ from door.commands import cv as cv_cmd
 from door.core import profile_loader
 from door.core import claude_cli, cv_sections, utils, workspace
 
-_DEFAULT_MODEL = "sonnet"
 _PROPOSALS_FILE = ".enrich_proposals.json"
 
-_RULES = (
-    "You enrich a job seeker's CV (Markdown) from their public pages and newer CV files. " + common._WEBFETCH_RULES + " "
-    "A CV file is given in the message as `CV file <file name>:` with its text between <<< and >>>; it is "
-    "read, not fetched. "
-    "Propose additions that are directly evidenced in the fetched or given text (quote or paraphrase "
-    "accurately; never invent, never embellish), that are not already in the CV, and that "
-    "are relevant to the role targets. Each proposal has `section` (the `##` section of the "
-    "CV it belongs in, its title as written there: an existing one when it fits, otherwise a new short heading), `text` "
-    "(one bullet ready to paste, without the leading dash) and `source` (the URL it came "
-    "from, or the CV file's file name). List every URL you could not fetch under `unreachable`. Answer with the JSON only."
-)
 
 _SCHEMA = {
     "type": "object",
@@ -141,8 +129,8 @@ def _propose(urls, files, *, config, cv_path, profile_dir, model, timeout_s) -> 
         + ("Read these pages:\n" + "\n".join(urls) + "\n" if urls else "")
     )
     answer = claude_cli.ask(
-        _RULES, prompt, model=model or _DEFAULT_MODEL, feature="enrich", schema=_SCHEMA,
-        allowed_tools=("WebFetch",) if urls else (), timeout_s=timeout_s, profile_dir=profile_dir,
+        "cv-enricher", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="enrich", schema=_SCHEMA,
+        allowed_tools=None if urls else (), timeout_s=timeout_s, profile_dir=profile_dir,
     )
     if not isinstance(answer.get("proposals"), list):
         raise claude_cli.ClaudeError("claude's answer has no `proposals` list")
@@ -271,7 +259,7 @@ def _echo_applied(result: dict) -> None:
 )
 @click.option("--all", "all_", is_flag=True, default=False, help="Add every proposal from the last run.")
 @click.option("--file", "files", multiple=True, type=click.Path(), help="A CV file (PDF, DOCX, Markdown) to read too; repeat for more.")
-@click.option("--model", default=None, help=f"Claude model to read the pages with (default: {_DEFAULT_MODEL}).")
+@click.option("--model", default=None, help=f"Claude model to read the pages with (default: {claude_cli.model_of('cv-enricher')}).")
 def enrich(urls: tuple[str, ...], apply: list[int] | None, all_: bool, files: tuple[str, ...], model: str | None):
     """Propose additions to profile/cv.md from public URLS and CV files
     (--file; with neither, the profile's enrich_sources), then add the ones

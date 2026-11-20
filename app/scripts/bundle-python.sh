@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds what a packaged app carries (#223) for this computer's system and processor, into app/resources/:
 #   python/   python-build-standalone 3.12 with The other door's locked packages installed into it (by hash, wheels only)
-#   door/   src/, .claude/agents/{tailor,reviewer,matcher}.md and profile.example/, as in a checkout
+#   door/   src/, .claude/agents/ (the files src/door names) and profile.example/, as in a checkout
 #   bin/      chromium/ (the Chromium headless shell that prints CVs, #165)
 # Pinned in scripts/bundle.lock.json (Chromium: src/door/core/downloads/chromium_pin.json, the pin `doctor --fix` installs from too); downloads are cached in app/.bundle-cache/ (DOOR_BUNDLE_CACHE).
 # No cross-building: run it on each system. Windows: bundle-python.ps1 (#355). Then: scripts/check-bundle.sh.
@@ -60,7 +60,9 @@ PIP_CACHE_DIR="$CACHE/pip" "$PY" -s -m pip install --quiet --disable-pip-version
 
 # 3. The other door itself, laid out as in a checkout (REPO_ROOT = door/)
 rsync -a --exclude '__pycache__' "$REPO/src/" "$OUT/door/src/"
-cp "$REPO/.claude/agents/tailor.md" "$REPO/.claude/agents/reviewer.md" "$REPO/.claude/agents/matcher.md" "$OUT/door/.claude/agents/"
+# the agent files src/door names (tests/core/test_prompts_unit.py checks)
+AGENTS=(ask careers-finder cv-drafter cv-enricher cv-reader cv-structure fact-checker keywords matcher posting-reader reviewer reviser salary scorer scraper-fixer skill-gaps skill-grouper story-from-cv story-from-text stylist tailor title-translator titles)
+for a in "${AGENTS[@]}"; do cp "$REPO/.claude/agents/$a.md" "$OUT/door/.claude/agents/"; done
 rsync -a "$REPO/profile.example/" "$OUT/door/profile.example/"
 
 # 4. the Chromium headless shell, unpacked as bin/chromium/chrome-headless-shell-<key>/ (what core/downloads/chromium.find_chromium reads)

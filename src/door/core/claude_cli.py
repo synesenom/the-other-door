@@ -9,6 +9,7 @@ The other door runs from a conversation, a terminal or cron.
 
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -190,12 +191,12 @@ def run(
     return envelope if envelope is not None else result.stdout
 
 
-def agent_definition(name: str) -> dict:
-    """`.claude/agents/<name>.md` as an `--agents` entry: its frontmatter's description,
-    model and tools, and its body as the prompt."""
+def _agent_file(name: str) -> tuple[dict, str]:
+    """`.claude/agents/<name>.md` as its frontmatter's `description`, `model` and `tools` and its raw body
+    (everything after the closing `---` line)."""
     text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
     _, front, body = text.split("---", 2)
-    entry: dict = {"prompt": body.strip()}
+    entry: dict = {}
     key = None
     for line in front.splitlines():
         if line.lstrip().startswith("- ") and key == "tools":
@@ -206,7 +207,30 @@ def agent_definition(name: str) -> dict:
                 entry["tools"] = []
             elif key in ("description", "model"):
                 entry[key] = value
-    return entry
+    return entry, body
+
+
+def agent_definition(name: str) -> dict:
+    """`.claude/agents/<name>.md` as an `--agents` entry: its frontmatter's description,
+    model and tools, and its body as the prompt."""
+    entry, body = _agent_file(name)
+    return {"prompt": body.strip(), **entry}
+
+
+def prompt(name: str, **fields: str) -> str:
+    """The system prompt in `.claude/agents/<name>.md`: its body, with each `{field}` given replaced by its value
+    in one pass (a value is never read for fields, and a prompt's other braces need no escaping)."""
+    return re.sub(r"\{(\w+)\}", lambda m: fields.get(m[1], m[0]), _agent_file(name)[1].strip())
+
+
+def model_of(name: str) -> str:
+    """The model in `.claude/agents/<name>.md`'s frontmatter."""
+    return _agent_file(name)[0]["model"]
+
+
+def tools_of(name: str) -> tuple[str, ...]:
+    """The tools in `.claude/agents/<name>.md`'s frontmatter: what the call allows, none when it has no `tools`."""
+    return tuple(_agent_file(name)[0].get("tools", ()))
 
 
 def envelope_result(stdout: str):
@@ -245,19 +269,21 @@ def json_result(stdout: str):
 
 
 def ask(
-    system_prompt: str,
+    agent: str,
     input: str,
     *,
-    model: str,
     feature: str,
+    model: str | None = None,
+    fields: dict[str, str] | None = None,
+    allowed_tools: tuple[str, ...] | None = None,
     schema: dict | None = None,
-    allowed_tools: tuple[str, ...] = (),
     timeout_s: float | None = None,
     profile_dir: Path | None = None,
     effort: str | None = None,
 ):
-    """One question to the model: `system_prompt` as the system prompt, `input`
-    on stdin, no tools unless `allowed_tools` names some, no session kept.
+    """One question to the model: the body of `.claude/agents/<agent>.md` as the system prompt (`fields`
+    filled in, see `prompt`), `input` on stdin, no session kept. The model and the tools are the file's
+    unless `model` or `allowed_tools` (`()` for none) says otherwise.
 
     With `schema`, the answer is asked for as JSON of that shape and returned
     as a dict; without, the answer text is returned stripped. Either way the
@@ -268,7 +294,9 @@ def ask(
         ClaudeError: as `run()`, or an answer that is not a JSON object when a
             schema was given.
     """
-    args = ["--model", model, "--system-prompt", system_prompt]
+    if allowed_tools is None:
+        allowed_tools = tools_of(agent)
+    args = ["--model", model or model_of(agent), "--system-prompt", prompt(agent, **(fields or {}))]
     if schema is not None:
         args += ["--json-schema", json.dumps(schema)]
     args += STREAM_ARGS
