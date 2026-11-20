@@ -159,6 +159,7 @@ def _scrape_companies(session: PoliteSession, entries: list[str], seen_ids: set[
             report(f"error fetching account {account!r}: {exc}")
             record_entry_error(_SITE, entry, f"error fetching account {account!r}: {exc}")
             continue
+        record_answered(_SITE)
         company = followed_name(config or {}, "workable_companies", entry, (data.get("name") or account).strip())
         account_postings = []
         for job in jobs:
@@ -255,9 +256,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        jobs = data.get("jobs") if isinstance(data, dict) else None
-        if not isinstance(jobs, list):
-            return [], False, "no `jobs` list in the Workable search response"
+        jobs = list_at(data, "jobs", "Workable")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(j, scraped_at) for j in jobs if isinstance(j, dict) and j.get("id")], True, ""
 

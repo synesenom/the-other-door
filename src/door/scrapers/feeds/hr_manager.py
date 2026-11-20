@@ -174,7 +174,9 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             data = _page(session, alias, page * _PAGE_SIZE, _PAGE_SIZE)
             items = list_at(data, "Items", "the HR-Manager feed")
             customer = data.get("CustomerName") or alias
-            found.extend(_to_posting(item, alias, customer, scraped_at) for item in items if isinstance(item, dict) and item.get("Id") is not None)
+            for item in items:
+                if isinstance(item, dict) and item.get("Id") is not None:
+                    found.append(_to_posting(item, alias, customer, scraped_at))
             if len(items) < _PAGE_SIZE:
                 break
         return found

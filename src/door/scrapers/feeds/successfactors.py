@@ -225,6 +225,8 @@ def _fetch_feed(session: PoliteSession, host: str) -> tuple[str, list[dict]]:
     """
     feed_url = f"https://{host}/sitemal.xml"
     resp = session.get(feed_url, headers=_HEADERS)
+    if not _feed_structure_ok(resp.text):
+        raise ValueError("the response is not an RSS feed with a <channel>")
     return _company_name(_channel_title(resp.text), host), _parse_feed(resp.text)
 
 
