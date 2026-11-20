@@ -106,6 +106,18 @@ def test_an_entry_that_is_not_a_portal_is_a_recorded_error():
 
 
 @responses.activate
+def test_an_answer_without_a_posting_list_is_an_error_not_an_empty_portal():
+    responses.add(responses.GET, _CSRF, body=_fx("csrf.json"))
+    responses.add(responses.POST, _SEARCH, json={"error": "nope"})
+    drain_errors()
+    drain_answered("dayforce")
+
+    assert dayforce.scrape(_CONFIG) == []
+    assert drain_errors()["dayforce"]
+    assert drain_answered("dayforce") is False
+
+
+@responses.activate
 def test_an_empty_portal_is_answered():
     responses.add(responses.GET, _CSRF, body=_fx("csrf.json"))
     responses.add(responses.POST, _SEARCH, json={"jobPostings": [], "maxCount": 0})

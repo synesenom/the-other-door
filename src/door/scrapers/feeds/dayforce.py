@@ -32,7 +32,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id,
     parse_iso_date, run_probe, scrape_feeds, strip_html, workers, followed_name,
 )
-from door.scrapers.sdk import keep_local, split_known
+from door.scrapers.sdk import keep_local, list_at, split_known
 from door.scrapers.sdk import Detection, NOT_ACCOUNTS, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -96,8 +96,8 @@ def _to_posting(item: dict, client: str, portal: str, scraped_at: datetime, name
 
 
 def _items(data) -> list[dict]:
-    jobs = data.get("jobPostings") if isinstance(data, dict) else None
-    return [j for j in jobs or [] if isinstance(j, dict) and j.get("jobPostingId") is not None]
+    """The postings of a search answer; raises ``ValueError`` when it holds no list."""
+    return [j for j in list_at(data, "jobPostings", "Dayforce") if isinstance(j, dict) and j.get("jobPostingId") is not None]
 
 
 def _search(session: PoliteSession, client: str, portal: str, start: int) -> dict:
@@ -123,8 +123,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         while start < _MAX_POSTINGS:
             page = _search(session, client, code, start)
             items.extend(_items(page))
-            start += len(page.get("jobPostings") or [])
-            if not page.get("jobPostings") or start >= int(page.get("maxCount") or 0):
+            start += len(page["jobPostings"])
+            if not page["jobPostings"] or start >= int(page.get("maxCount") or 0):
                 break
         name = followed_name(config, "dayforce_companies", entry)
         fresh, known = split_known(items, lambda i: f"{client}-{i['jobPostingId']}", known_ids)
@@ -148,8 +148,6 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        if not isinstance(data, dict) or not isinstance(data.get("jobPostings"), list):
-            return [], False, "no `jobPostings` list in the Dayforce search response"
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(j, client, code, scraped_at) for j in _items(data)], True, ""
 
