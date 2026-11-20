@@ -234,7 +234,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           proposals: ENRICH_PROPOSALS.map((p) => ({ ...p, source: (args['urls'] as string[] | undefined)?.[0] ?? (args['files'] as string[] | undefined)?.[0] ?? fixtures.show_profile.enrich_sources[0] })),
         }
       case 'cv_style_sample':
-        return { png_base64: pngOf(args['cv_accent'] === 'none' && args['cv_fonts'] === 'door' ? sampleDefault : sampleStyled), own_cv: true }
+        return { png_base64: pngOf(args['cv_accent'] === 'blue' && args['cv_fonts'] === 'door' ? sampleDefault : sampleStyled), own_cv: true }
       case 'list_stories':
         return { ...fixtures.list_stories, stories: state === 'empty' ? [] : fixtures.list_stories.stories }
       case 'draft_stories':

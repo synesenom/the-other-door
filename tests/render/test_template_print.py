@@ -140,9 +140,12 @@ def test_an_accent_colours_the_section_headings_and_the_rule_under_the_name(tmp_
     plain, _ = _setup(tmp_path / "plain", monkeypatch, cv=cv, letter=letter)
     teal, results = _setup(tmp_path / "teal", monkeypatch, cv=cv, letter=letter, extra={"cv_accent": "teal"})
     assert results["cv.html"]["readable"] == []
+    ink, _ = _setup(tmp_path / "ink", monkeypatch, cv=cv, letter=letter, extra={"cv_accent": "none"})
     for name in ("cv", "cover_letter"):
         assert _has_colour(teal / f"{name}.pdf", (0x0F, 0x64, 0x66)), name
         assert not _has_colour(plain / f"{name}.pdf", (0x0F, 0x64, 0x66)), name
+        assert _has_colour(plain / f"{name}.pdf", (0x2F, 0x55, 0xC8)), f"{name}: the default is the app's blue"
+        assert not _has_colour(ink / f"{name}.pdf", (0x2F, 0x55, 0xC8)), f"{name}: none is ink"
 
 
 def test_the_example_cv_reads_back_with_every_heading_on_its_own_line_and_in_order(example):

@@ -46,7 +46,7 @@ def test_the_sample_is_a_png_of_the_users_cv_in_the_chosen_style(world):
 
 def test_without_a_cv_the_example_cv_is_printed(world):
     (world.profile / "cv.md").unlink()
-    result = sample_cmd._cv_style_sample_core("none", "door")
+    result = sample_cmd._cv_style_sample_core("blue", "door")
     assert result["own_cv"] is False and "Jane Doe" in world.print.calls[0]["html"]
     assert "<style>:root{" not in world.print.calls[0]["html"]
 
@@ -79,7 +79,7 @@ def test_a_cv_that_cannot_be_read_is_an_error_in_words(world, monkeypatch):
     assert sample_cmd._cv_style_sample_core("teal", "door") == {"error": "Could not read your CV: try again."}
 
 
-@pytest.mark.parametrize("accent,fonts", [("red", "door"), ("none", "Comic")])
+@pytest.mark.parametrize("accent,fonts", [("red", "door"), ("blue", "Comic")])
 def test_a_choice_outside_the_lists_is_refused(world, accent, fonts):
     with pytest.raises(ValueError):
         sample_cmd._cv_style_sample_core(accent, fonts)
@@ -90,9 +90,8 @@ def test_a_failed_print_is_an_error_in_words(world, monkeypatch):
     assert "Chromium crashed" in sample_cmd._cv_style_sample_core("teal", "door")["error"]
 
 
-def test_the_sample_is_a_close_up_of_the_content_at_the_top_of_the_page(world):
-    """#465: the page's margins are cropped away and only its top is kept, so the text is big in the app's small box."""
-    image = _png(sample_cmd._cv_style_sample_core("teal", "door"))
-    page_width = round(595 * 150 / 72)  # an A4 page at the render's 150 dpi
-    assert image.width < page_width * 0.9
-    assert image.height <= image.width * sample_cmd.MAX_ASPECT + 1
+def test_the_sample_is_printed_on_a_narrow_page_so_its_text_is_big_in_the_apps_small_box(world):
+    """#465: the lines re-flow at a page about 10 cm wide, with no margin: the app pads the picture itself."""
+    sample_cmd._cv_style_sample_core("teal", "door")
+    html = world.print.calls[0]["html"]
+    assert "@page{size:10cm 13cm;margin:0}" in html and html.index("--heading:#0f6466") < html.index("@page{size:10cm")

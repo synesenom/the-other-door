@@ -138,7 +138,7 @@
       "type": "object",
       "properties": {
         "cv_accent": {
-          "default": "none",
+          "default": "blue",
           "title": "Cv Accent",
           "type": "string"
         },

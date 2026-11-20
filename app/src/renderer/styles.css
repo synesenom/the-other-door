@@ -695,10 +695,10 @@ details[open] > summary::before { transform: rotate(90deg); }
 .style-name { display: block; margin-top: 6px; font-size: 12px; color: var(--color-ink-muted); text-align: center; white-space: nowrap; margin-inline: -10px; }
 .style-pick input:checked ~ .style-name { color: var(--color-ink); }
 /* the CV's first page, a fixed height that fades at its foot: a sample, not the whole CV */
-.style-sample { position: relative; height: 380px; box-sizing: border-box; max-width: 100%; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-paper); }
-/* a close-up: the picture is the page's content at a fixed width (text about 11.5 px), cropped by the box at its right and foot */
-.style-sample img { display: block; width: 530px; max-width: none; height: auto; }
+.style-sample { position: relative; height: 380px; max-width: 390px; padding: 32px 32px 0; box-sizing: border-box; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-paper); }
+/* a close-up: the top of a narrow page, fitted to the box's inner width with even margins (text about 11.5 px at 390 px), cropped by the box at its foot only */
+.style-sample img { display: block; width: 100%; height: auto; }
 .style-sample:has(img)::after { content: ""; position: absolute; inset: auto 0 0; height: 72px; background: linear-gradient(to bottom, transparent, var(--color-paper)); pointer-events: none; }
 .style-sample[aria-busy="true"] img { opacity: 0.5; }
-.style-sample-wait { height: 100%; display: grid; place-items: center; color: var(--color-ink-muted); background: var(--color-surface); }
+.style-sample-wait { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-ink-muted); background: var(--color-surface); }
 .style-sample .field-error { position: absolute; inset: auto var(--space-3) var(--space-3); z-index: 1; margin: 0; }

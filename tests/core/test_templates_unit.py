@@ -80,8 +80,8 @@ def test_the_shipped_templates_carry_the_two_tokens_and_the_page():
 
 # A pinned hash: a change to a shipped template is deliberate (a user's own copy does not follow it).
 SHIPPED_HASHES = {
-    "cv_template": "8a5f3aa5ac165a82cd2c631cb92aa97dfaa305f2949b4ccf7274aa3a9e81cf11",
-    "cover_letter_template": "bf415a5a0a94aeda22a79574e71a16ccaf99ec63e0603844de0dc73da16b5b6b",
+    "cv_template": "715a89357fd667529c9ed5534e85f287e03b61a12b2eac16049418d9e8716702",
+    "cover_letter_template": "f0d2d81ae14fad68e29f44200e49f7f5b6b7ba598c869b6329fe32382c352891",
 }
 
 
@@ -95,8 +95,18 @@ def test_the_shipped_templates_are_pinned():
 # --- the CV style: an accent colour and a font pair (#465) ---------------------------------------------------------
 
 def test_the_defaults_add_no_style_at_all():
+    """The templates' own CSS is the default look: the app's blue headings and rule, the door fonts."""
     assert templates.style_css({}) == ""
-    assert templates.style_css({"cv_accent": "none", "cv_fonts": "door"}) == ""
+    assert templates.style_css({"cv_accent": "blue", "cv_fonts": "door"}) == ""
+
+
+def test_no_colour_is_ink_headings_and_a_hairline_rule():
+    css = templates.style_css({"cv_accent": "none"})
+    assert "--heading:#1E1A16" in css and "--rule:#D6C7A8" in css
+
+
+def test_blue_is_the_apps_blue():
+    assert templates.ACCENTS["blue"] == "#2f55c8"
 
 
 def test_an_accent_colours_the_headings_and_the_rule():
@@ -110,7 +120,7 @@ def test_a_font_pair_names_its_two_families():
 
 
 def test_an_unknown_value_falls_back_and_is_never_echoed():
-    assert templates.style_css({"cv_accent": "red; } body { display:none", "cv_fonts": "Comic"}) == ""
+    assert templates.style_css({"cv_accent": "red; } body { display:none", "cv_fonts": "Comic"}) == ""  # the defaults
     assert templates.style_css({"cv_accent": 3, "cv_fonts": None}) == ""
 
 

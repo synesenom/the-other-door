@@ -25,7 +25,7 @@ const FIELDS: FieldSpec[] = [
   { key: 'languages', type: 'list', required: false, nullable: false, default: [] },
   { key: 'claude_config_dir', type: 'string', required: false, nullable: true, default: null },
   { key: 'preferences', type: 'string', required: false, nullable: false, default: '' },
-  { key: 'cv_accent', type: 'choice', required: false, nullable: false, default: 'none', choices: ['none', 'navy'] },
+  { key: 'cv_accent', type: 'choice', required: false, nullable: false, default: 'blue', choices: ['none', 'blue', 'navy'] },
   { key: 'cv_fonts', type: 'choice', required: false, nullable: false, default: 'door', choices: ['door', 'plain'] },
 ]
 

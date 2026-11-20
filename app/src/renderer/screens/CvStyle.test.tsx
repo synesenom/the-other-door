@@ -9,7 +9,7 @@ import type { FieldSpec } from './profile-form/form'
 afterEach(cleanup)
 
 const SPECS: FieldSpec[] = [
-  { key: 'cv_accent', type: 'choice', required: false, nullable: false, default: 'none', choices: ['none', 'navy', 'blue', 'teal', 'forest', 'burgundy', 'plum', 'slate', 'rust'] },
+  { key: 'cv_accent', type: 'choice', required: false, nullable: false, default: 'blue', choices: ['none', 'navy', 'blue', 'teal', 'forest', 'burgundy', 'plum', 'slate', 'rust'] },
   { key: 'cv_fonts', type: 'choice', required: false, nullable: false, default: 'door', choices: ['door', 'editorial', 'friendly', 'plain'] },
 ]
 const sample = (n: string) => ({ png_base64: `PNG-${n}`, own_cv: true })
@@ -33,11 +33,11 @@ describe('CvStyle', () => {
     expect(img).toHaveAttribute('src', 'data:image/png;base64,PNG-first')
   })
 
-  it('opens on no colour and the door fonts when nothing is saved, asking for that sample', async () => {
+  it('opens on blue and the door fonts when nothing is saved, asking for that sample', async () => {
     const { call } = show()
-    expect(colours().getByRole('radio', { name: 'No colour' })).toBeChecked()
+    expect(colours().getByRole('radio', { name: 'Blue' })).toBeChecked()
     expect(fonts().getByRole('radio', { name: 'The other door' })).toBeChecked()
-    await waitFor(() => expect(call).toHaveBeenCalledWith('cv_style_sample', { cv_accent: 'none', cv_fonts: 'door' }))
+    await waitFor(() => expect(call).toHaveBeenCalledWith('cv_style_sample', { cv_accent: 'blue', cv_fonts: 'door' }))
   })
 
   it('saves a pick at once with only that key, then asks for the sample again', async () => {
@@ -63,7 +63,7 @@ describe('CvStyle', () => {
   it('ignores a sample that a newer pick replaced', async () => {
     const user = userEvent.setup()
     const waiting: Record<string, (v: unknown) => void> = {}
-    const { call } = show({ cv_style_sample: (a: Record<string, unknown>) => (a['cv_accent'] === 'none' ? sample('none') : new Promise((resolve) => (waiting[String(a['cv_accent'])] = resolve))) })
+    const { call } = show({ cv_style_sample: (a: Record<string, unknown>) => (a['cv_accent'] === 'blue' ? sample('blue') : new Promise((resolve) => (waiting[String(a['cv_accent'])] = resolve))) })
     await screen.findByRole('img')
     await user.click(colours().getByRole('radio', { name: 'Teal' }))
     await waitFor(() => expect(waiting['teal']).toBeDefined())
@@ -81,10 +81,10 @@ describe('CvStyle', () => {
     const user = userEvent.setup()
     const { call } = show()
     await screen.findByRole('img')
-    colours().getByRole('radio', { name: 'No colour' }).focus()
+    colours().getByRole('radio', { name: 'Blue' }).focus()
     await user.keyboard('{ArrowRight}')
-    expect(colours().getByRole('radio', { name: 'Navy' })).toBeChecked()
-    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { other: { cv_accent: 'navy' } }))
+    expect(colours().getByRole('radio', { name: 'Teal' })).toBeChecked()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { other: { cv_accent: 'teal' } }))
   })
 
   it('says a CV that could not be read under the sample', async () => {
@@ -98,7 +98,7 @@ describe('CvStyle', () => {
     await screen.findByRole('img')
     await user.click(colours().getByRole('radio', { name: 'Teal' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('cv_accent')
-    expect(colours().getByRole('radio', { name: 'No colour' })).toBeChecked()
+    expect(colours().getByRole('radio', { name: 'Blue' })).toBeChecked()
   })
 
   it('gives each tile a tooltip', async () => {

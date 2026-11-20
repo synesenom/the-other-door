@@ -30,7 +30,7 @@ export function CvStyle({ specs, config }: Props) {
   const choices = (key: string) => specs.find((s) => s.key === key)?.choices ?? []
   const first = (key: string, fallback: string) => String(specs.find((s) => s.key === key)?.default ?? fallback)
   const [chosen, setChosen] = useState<Record<string, string>>({
-    cv_accent: String(config['cv_accent'] ?? first('cv_accent', 'none')),
+    cv_accent: String(config['cv_accent'] ?? first('cv_accent', 'blue')),
     cv_fonts: String(config['cv_fonts'] ?? first('cv_fonts', 'door')),
   })
   const [png, setPng] = useState<string | null>(null)

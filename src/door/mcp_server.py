@@ -1431,7 +1431,7 @@ async def preview_matches(
 
 @mcp.tool()
 @_tool_errors
-async def cv_style_sample(cv_accent: str = "none", cv_fonts: str = "door") -> dict:
+async def cv_style_sample(cv_accent: str = "blue", cv_fonts: str = "door") -> dict:
     """Page 1 of the CV printed in a chosen accent colour and font pair: what a prepared CV will look like.
 
     The desktop app's Profile -> CV style shows it beside the pickers. Prints the user's own CV (else the example CV)

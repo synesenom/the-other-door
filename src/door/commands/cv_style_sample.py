@@ -3,17 +3,14 @@
 The desktop app's Profile -> CV style shows it beside the pickers. It prints the user's own CV (else the example CV)
 as it is, with no model but the one cached reading of it (`cv_read`), through the same template and style that `compile`
 uses for a prepared CV, so the sample is what the next prepared CV looks like. Cached under `HOME/.style/preview/` by the
-CV, the style, the photo and the template. The picture is a close-up: the page cropped to its content's width and to
-its top, so the text is large where the app shows it small.
+CV, the style, the photo and the template. The picture is a close-up: the top of a narrow page (`SAMPLE_PAGE`), so the text
+is large where the app shows it small.
 """
 
 from __future__ import annotations
 
 import base64
 import hashlib
-import io
-
-from PIL import Image, ImageChops
 
 from door.commands import _common as common
 from door.core import cv_read, templates, utils, workspace
@@ -21,8 +18,9 @@ from door.render import cv_body, html_pdf, pdf_render
 from door.render import page as page_mod
 
 SAMPLE_LANGUAGE = "en"
-PADDING = 24  # px around the content kept in the crop (the page is rendered at 150 dpi)
-MAX_ASPECT = 1.1  # the crop is at most this much taller than wide: the app shows the top of it
+# Printed on a page this size, with no margin (the app pads the picture): the lines re-flow, so the text is large in the
+# app's small box and no line is cut at the edge. Only the top of page 1 is shown; the app fades it out at its foot.
+SAMPLE_PAGE = "@page{size:10cm 13cm;margin:0}"
 
 
 def _check(accent: str, fonts: str) -> None:
@@ -38,21 +36,6 @@ def _cv_text(config: dict) -> tuple[str, bool]:
     if own.is_file():
         return own.read_text(encoding="utf-8"), True
     return (workspace.PROFILE_EXAMPLE_DIR / "cv.md").read_text(encoding="utf-8"), False
-
-
-def _close_up(png: bytes) -> bytes:
-    """`png` (a printed page) cropped to its content's width, with a little padding, and to its top: the page's margins
-    are cut away so the text is big where the app shows it small."""
-    page = Image.open(io.BytesIO(png)).convert("RGB")
-    box = ImageChops.difference(page, Image.new("RGB", page.size, "white")).getbbox()
-    if box is None:
-        return png
-    left, top = max(box[0] - PADDING, 0), max(box[1] - PADDING, 0)
-    right = min(box[2] + PADDING, page.width)
-    bottom = min(box[3] + PADDING, top + round((right - left) * MAX_ASPECT), page.height)
-    out = io.BytesIO()
-    page.crop((left, top, right, bottom)).save(out, format="PNG", optimize=True)
-    return out.getvalue()
 
 
 def _answer(png: bytes, own: bool) -> dict:
@@ -72,7 +55,7 @@ def _cv_style_sample_core(accent: str, fonts: str) -> dict:
     template_path = templates.resolve("cv_template", config)
     template = template_path.read_text(encoding="utf-8")
     photo = page_mod.profile_photo(config, {}) if own else None
-    style = templates.style_css({"cv_accent": accent, "cv_fonts": fonts})
+    style = templates.style_css({"cv_accent": accent, "cv_fonts": fonts}) + SAMPLE_PAGE
     key = hashlib.sha256("\0".join([
         cv_md, style, template, photo.name if photo else "", hashlib.sha256(photo.read_bytes()).hexdigest() if photo else "",
     ]).encode("utf-8")).hexdigest()[:32]
@@ -93,6 +76,6 @@ def _cv_style_sample_core(accent: str, fonts: str) -> dict:
                 photo=photo, style=style)
         except (ValueError, html_pdf.PrintError) as exc:
             return {"error": str(exc)}
-        png = _close_up(pdf_render.render_pdf_pages(pdf, staged)[0].read_bytes())
+        png = pdf_render.render_pdf_pages(pdf, staged)[0].read_bytes()
     utils.write_atomic(cached, png)
     return _answer(png, own)

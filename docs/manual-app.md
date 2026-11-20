@@ -490,7 +490,7 @@ the preview, brought into view, until you next type.
 
 How your prepared CVs and cover letters look: an accent colour and a pair of fonts. Left is a sample of your CV's first
 page (your own CV, or the example one until you have yours) in the choice, fading at its foot; right are the pickers.
-**Colour** is a row of nine tiles: no colour (the default, ink headings) and navy, blue, teal, forest, burgundy, plum, slate and
+**Colour** is a row of nine tiles: blue (the default, the app's own blue), no colour (ink headings and a hairline rule) and navy, teal, forest, burgundy, plum, slate and
 rust, which colour the section headings and the rule under your name; entry titles stay ink. **Fonts** is four blocks
 showing a heading letter and a text letter: The other door (the default), Editorial, Friendly and Plain. The arrow keys
 move within a group. A choice is saved at once (nothing to Save) and the sample is printed again, a second or two; your

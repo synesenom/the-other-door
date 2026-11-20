@@ -836,7 +836,7 @@
      "type": "choice",
      "required": false,
      "nullable": false,
-     "default": "none",
+     "default": "blue",
      "choices": [
       "none",
       "navy",

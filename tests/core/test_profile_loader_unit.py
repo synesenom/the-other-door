@@ -66,7 +66,7 @@ FONTS = ["door", "editorial", "friendly", "plain"]
 
 def test_the_cv_style_defaults_to_todays_look(tmp_path):
     profile = Profile.model_validate(_valid_config(tmp_path / "tpl"))
-    assert (profile.cv_accent, profile.cv_fonts) == ("none", "door")
+    assert (profile.cv_accent, profile.cv_fonts) == ("blue", "door")
 
 
 @pytest.mark.parametrize("name", ACCENTS)
