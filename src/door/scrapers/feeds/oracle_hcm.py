@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
-    Detection, FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local, make_job_id,
+    Detection, FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local, list_at, make_job_id,
     parse_iso_date, parts, record_error, report, run_probe, scrape_feeds, strip_html, tenant_platform_id, unfollowable,
 )
 
@@ -215,8 +215,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        if not isinstance(_first(data).get("requisitionList"), list):
-            return [], False, "no `requisitionList` in the Oracle Cloud HCM job search"
+        list_at(_first(data), "requisitionList", "Oracle Cloud HCM")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(r, host, site, _company_name(host), scraped_at) for r in _requisitions(data)], True, ""
 

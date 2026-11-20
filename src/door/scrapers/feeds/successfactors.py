@@ -33,8 +33,8 @@ from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
     career_site_words, generic_host_labels, word_pattern,
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, host_of, log_keyword_results,
-    make_job_id, tenant_platform_id, map_by_group, record_entry_error, record_error, report, run_probe, strip_html, workers, followed_name,
+    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, host_of,
+    make_job_id, tenant_platform_id, run_probe, scrape_feeds, strip_html, workers, followed_name,
 )
 from door.scrapers.sdk import keep_local
 from door.scrapers.sdk import Detection, parts
@@ -270,44 +270,19 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
     if not hosts:
         return []
 
-    scraped_at = datetime.now(timezone.utc)
-    session = PoliteSession(min_delay=FEED_DELAY[0], max_delay=FEED_DELAY[1], timeout=30, headers=_HEADERS)
-
-    def fetch(host: str):
-        """One host's (employer name, items); ``None`` after a recorded error."""
-        try:
-            return _fetch_feed(session, host)
-        except Exception as exc:
-            report(f"error fetching {host!r}: {exc}")
-            record_entry_error("successfactors", host, f"error fetching {host!r}: {exc}")
-            return None
-
-    # Hosts of different employers are fetched side by side; the rest below is in config order.
-    fetched = map_by_group(hosts, host_of, fetch, workers(config))
-    seen_ids: set[str] = set()
-    postings: list[dict] = []
-
-    for host, feed in zip(hosts, fetched):
-        if feed is None:
-            continue
-        company, items = feed
+    def fetch(session: PoliteSession, host: str, scraped_at: datetime) -> list[dict]:
+        company, items = _fetch_feed(session, host)
         company = followed_name(config, "successfactors_companies", host, company)
-        host_postings: list[dict] = []
-
+        found = []
         for item in items:
-            link = item.get("link") or ""
-            platform_id = _folded_platform_id(link)
-            if not platform_id or platform_id in seen_ids:
-                continue
-            seen_ids.add(platform_id)
+            platform_id = _folded_platform_id(item.get("link"))
+            if platform_id:
+                found.append(_to_posting(item, company, platform_id, scraped_at))
+        return found
 
-            host_postings.append(_to_posting(item, company, platform_id, scraped_at))
-
-        host_postings = keep_local(host_postings, config, "successfactors")
-        log_keyword_results("successfactors", host, host_postings)
-        postings.extend(host_postings)
-
-    return postings
+    # Hosts of different employers are fetched side by side; the output stays in config order.
+    return keep_local(scrape_feeds("successfactors", hosts, fetch, group=host_of,
+                                   max_workers=workers(config), headers=_HEADERS), config, "successfactors")
 
 
 def probe(config: dict) -> ProbeResult | None:
