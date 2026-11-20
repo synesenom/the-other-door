@@ -118,7 +118,10 @@ def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, 
     """The postings of one ``lever_companies`` entry, labelled with the followed *name* when given.
     Raises on HTTP errors."""
     slug, resp = _fetch_postings(session, entry)
-    return [_to_posting(job, slug, scraped_at, name) for job in resp.json() or []]
+    jobs = resp.json()
+    if not isinstance(jobs, list):
+        raise ValueError("no postings list in Lever's answer")
+    return [_to_posting(job, slug, scraped_at, name) for job in jobs]
 
 
 def _to_posting(job: dict, slug: str, scraped_at: datetime, name: str = "") -> dict:

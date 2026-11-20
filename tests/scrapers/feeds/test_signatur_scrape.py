@@ -59,7 +59,8 @@ def test_known_ids_skip_the_detail_request():
 
     postings = signatur.scrape({"signatur_companies": ["2296"]}, known_ids=frozenset({"2296-166057"}))
 
-    assert [p["platform_id"] for p in postings] == ["2296-166122"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["2296-166122"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["2296-166057"]
     assert len(responses.calls) == 2
 
 

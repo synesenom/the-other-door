@@ -247,11 +247,12 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             if not _is_results_page(html):
                 record_error(_SITE, f"search (keyword={keyword!r}, page={page}): no result list in the answer (the site may have changed)")
                 break
+            cards = _parse_cards(html)
+            if cards or _no_hits(html):
+                record_answered(_SITE)  # cards read, all known or off topic, or a no-hits page
             if _no_hits(html):
-                record_answered(_SITE)
                 break
 
-            cards = _parse_cards(html)
             relevant = [c for c in cards if not topic or on_topic(c["title"], topic)]
             for card in relevant:
                 if card["id"] in seen:
@@ -280,7 +281,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             pages = _page_count(html)
             if not cards or (page >= pages if pages is not None else len(cards) < _PAGE_SIZE):
                 break
-        log_keyword_results(_SITE, keyword, [p for p in out[start:] if not p.get("seen_only")])
+        log_keyword_results(_SITE, keyword, out[start:])
     return out
 
 

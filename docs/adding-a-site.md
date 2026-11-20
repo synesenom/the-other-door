@@ -43,7 +43,7 @@ company hosts).
    `tests/scrapers/test_scrapers_probe_contract_unit.py` enforces it).
 
    Read the search terms from `config["search_keywords"]` (falling back to
-   `role_targets`) and `config["location"]`; `kwargs["since"]` is how far back to look: a card older than it is returned as a dated card posting (no ad request), not dropped, an ad dropped for its place goes through `record_non_local`, and a known id is returned as `{"platform_id", "seen_only": True}` or, when the scraper skips it itself, the page read is marked with `record_answered`; otherwise a quiet day is reported `empty`.
+   `role_targets`) and `config["location"]`; `kwargs["since"]` is how far back to look: a card older than it is returned as a dated card posting (no ad request), not dropped, an ad dropped for its place goes through `record_non_local`, and a known id is returned as `{"platform_id", "seen_only": True}` (`sdk.split_known(rows, pid_of, known_ids)` makes them; the `platform_id` is the one the ledger stores, tenant-folded where the feed folds it), so the run counts the ad seen and refreshes its `last_seen`; and the page or list read is marked with `record_answered` whenever it parses, even when every ad on it is known or off topic (`scrape_feeds` does it for each entry it fetched); otherwise a quiet day is reported `empty`.
    Report progress with `report` from the SDK (`report("'accountant': 12 results")`,
    or `report("detail", i, total)` in a loop) and never `print`: on the MCP server stdout is the
    protocol stream, and `find` shows the events live. When a problem needs the user's attention (a

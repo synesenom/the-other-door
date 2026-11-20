@@ -291,3 +291,24 @@ def test_probe_challenge_page_is_a_wall():
     _serve(_search(), "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/h/b'></script></html>")
     result = reed.probe(_CFG)
     assert result["wall"] is True and result["structure_ok"] is False
+
+
+@responses.activate
+def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
+    _serve_search(("p1.html",), keyword="zzzqqq")
+    drain_answered(reed._SITE)
+
+    out = reed.scrape({**_CFG, "search_keywords": ["zzzqqq"], "topic_terms": ["zzzqqq*"], "max_pages_per_keyword": 1})
+
+    assert out == []
+    assert drain_answered(reed._SITE) is True
+
+
+@responses.activate
+def test_a_page_whose_jobs_all_fail_to_read_is_not_answered(monkeypatch):
+    _serve_search(("p1.html",))
+    monkeypatch.setattr(reed, "_card", lambda raw: None)
+    drain_answered(reed._SITE)
+
+    assert reed.scrape({**_CFG, "max_pages_per_keyword": 1}) == []
+    assert drain_answered(reed._SITE) is False

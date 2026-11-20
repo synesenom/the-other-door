@@ -97,7 +97,8 @@ def test_known_ads_cost_no_detail_request_and_are_not_returned():
 
     postings = visma_recruit.scrape({_KEY: [_NASSJO]}, frozenset({"ecb17166-7aaf-4103-acb9-8c6bc6cefc75", "3a0e9253-8700-4c70-83d5-19b609dadcb2"}))
 
-    assert [p["platform_id"] for p in postings] == ["c51c1737-0e85-41e1-b991-7657a50ab8e2"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["c51c1737-0e85-41e1-b991-7657a50ab8e2"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["3a0e9253-8700-4c70-83d5-19b609dadcb2", "ecb17166-7aaf-4103-acb9-8c6bc6cefc75"]
     assert sum("AssignmentView" in c.request.url for c in responses.calls) == 1
 
 

@@ -44,7 +44,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
-    host_of, keep_local, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
+    host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
     run_probe, scrape_feeds, strip_html, tenant_platform_id, workers,
 )
 
@@ -205,7 +205,7 @@ def _site_postings(session: PoliteSession, entry: str, scraped_at: datetime, kno
                    name: str) -> list[dict]:
     """One career site's new postings: the list gives the jobs, each unknown ad's page the text."""
     base = _base(entry)
-    jobs = [j for j in _fetch_jobs(session, base, entry) if tenant_platform_id(base, j["id"]) not in known_ids]
+    jobs, known = split_known(_fetch_jobs(session, base, entry), lambda j: tenant_platform_id(base, j["id"]), known_ids)
     out: list[dict] = []
     for n, job in enumerate(jobs, 1):
         report("detail", n, len(jobs))
@@ -222,7 +222,7 @@ def _site_postings(session: PoliteSession, entry: str, scraped_at: datetime, kno
             record_error(_SITE, f"job {job['id']} of {entry!r} has no ad data")
             continue
         out.append(_to_posting(job, ad, base, name, scraped_at))
-    return out
+    return out + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

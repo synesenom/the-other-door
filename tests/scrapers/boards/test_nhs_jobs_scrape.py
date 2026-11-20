@@ -295,3 +295,14 @@ def test_probe_drift_when_the_results_block_is_removed():
     result = nhs_jobs.probe(_CFG)
     assert result["structure_ok"] is False and result["reason"]
     assert not result.get("wall") and not result.get("unreachable")
+
+
+@responses.activate
+def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
+    _serve_search(("p1.html",))
+    drain_answered(nhs_jobs._SITE)
+
+    out = nhs_jobs.scrape({**_CFG, "topic_terms": ["zzzqqq*"], "max_pages_per_keyword": 1})
+
+    assert out == []
+    assert drain_answered(nhs_jobs._SITE) is True

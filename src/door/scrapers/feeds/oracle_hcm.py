@@ -163,13 +163,16 @@ def _site_postings(session: PoliteSession, config: dict, entry: str, scraped_at:
             break
         items.extend(page)
         offset += len(page)
+    base = f"https://{host}"
     ids = {}   # platform id -> requisition number, for the detail request
-    fresh = []
+    fresh, known = [], []
     for item in items:
-        platform_id = tenant_platform_id(f"https://{host}", str(item["Id"]))
-        if platform_id not in known_ids:
-            ids[platform_id] = str(item["Id"])
-            fresh.append(_to_posting(item, host, site, name, scraped_at))
+        platform_id = tenant_platform_id(base, str(item["Id"]))
+        if platform_id in known_ids:
+            known.append({"platform_id": platform_id, "seen_only": True})
+            continue
+        ids[platform_id] = str(item["Id"])
+        fresh.append(_to_posting(item, host, site, name, scraped_at))
     postings = keep_local(fresh, config, _SITE)  # before the detail requests: the others are never read
     for posting in postings:
         try:
@@ -180,7 +183,7 @@ def _site_postings(session: PoliteSession, config: dict, entry: str, scraped_at:
         text = _description(detail)
         if text:
             posting["description"] = text
-    return postings
+    return postings + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

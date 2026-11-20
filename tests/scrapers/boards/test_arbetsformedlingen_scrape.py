@@ -89,8 +89,9 @@ def test_known_ids_since_and_repeats_are_skipped():
     since = datetime(2026, 10, 22, 16, 0, tzinfo=timezone.utc)
     postings = af.scrape(_CFG, known_ids=frozenset({"31668014"}), since=since)
     # not the known one; the older ones are returned for the engine to count stale
-    ids = [p["platform_id"] for p in postings]
+    ids = [p["platform_id"] for p in postings if not p.get("seen_only")]
     assert "31668014" not in ids and "31666374" in ids and "31632254" in ids
+    assert [p for p in postings if p.get("seen_only")] == [{"platform_id": "31668014", "seen_only": True}]
     assert _queries()[0]["published-after"] == ["2026-10-22T18:00:00"]
 
 
@@ -197,5 +198,6 @@ def test_a_search_of_only_known_ads_is_a_quiet_day():
     _serve_pages()
     known = frozenset(p["platform_id"] for p in af.scrape(_CFG))
     drain_answered("arbetsformedlingen")
-    assert af.scrape(_CFG, known_ids=known) == []
+    out = af.scrape(_CFG, known_ids=known)
+    assert out and all(p.get("seen_only") for p in out) and {p["platform_id"] for p in out} == known
     assert drain_answered("arbetsformedlingen") is True

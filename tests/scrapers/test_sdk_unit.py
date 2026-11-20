@@ -158,3 +158,15 @@ def test_keep_local_filters_and_records(monkeypatch):
     monkeypatch.setattr(locality, "split_postings", lambda postings, config: (postings, 0))
     assert sdk.keep_local([{"a": 1}], {}, "x") == [{"a": 1}]
     assert recorded == []
+
+
+def test_split_known_turns_known_ids_into_seen_only_records_in_row_order():
+    rows = [{"id": "1"}, {"id": "2"}, {"id": "3"}]
+    fresh, seen = sdk.split_known(rows, lambda r: f"t.{r['id']}", frozenset({"t.2"}))
+    assert fresh == [{"id": "1"}, {"id": "3"}]
+    assert seen == [{"platform_id": "t.2", "seen_only": True}]
+
+
+def test_split_known_with_nothing_known_or_no_rows():
+    assert sdk.split_known([{"id": "1"}], lambda r: r["id"], frozenset()) == ([{"id": "1"}], [])
+    assert sdk.split_known([], lambda r: r["id"], frozenset({"1"})) == ([], [])

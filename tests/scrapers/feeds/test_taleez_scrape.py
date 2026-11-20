@@ -69,7 +69,8 @@ def test_known_ids_skip_the_ad_requests_but_not_the_postings_of_the_list():
 
     postings = taleez.scrape({"taleez_companies": ["donecle"]}, known_ids=frozenset({"600922", "600692"}))
 
-    assert [p["platform_id"] for p in postings] == ["598975"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["598975"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["600692", "600922"]
     assert len(responses.calls) == 2
 
 

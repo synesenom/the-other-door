@@ -42,7 +42,7 @@ import requests
 
 from door.scrapers.sdk import (
     Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, host_of,
-    keep_local, make_job_id, on_topic, parse_iso_date, parts, record_error, record_pushback, report, run_probe,
+    keep_local, split_known, make_job_id, on_topic, parse_iso_date, parts, record_error, record_pushback, report, run_probe,
     scrape_feeds, strip_html, tenant_platform_id, topic_terms, workers,
 )
 
@@ -229,7 +229,7 @@ def _site_postings(session: PoliteSession, entry: str, scraped_at: datetime, kno
     ends the site with what was read."""
     ads = _site_ads(session, entry)
     base = _base(entry)
-    fresh = [a for a in _rank(ads, config) if tenant_platform_id(base, a["id"]) not in known_ids]
+    fresh, known = split_known(_rank(ads, config), lambda a: tenant_platform_id(base, a["id"]), known_ids)
     cut = max(len(fresh) - _MAX_PAGES, 0)
     report(f"{_host(entry)}: {len(ads)} ads, {len(fresh)} new, {cut} left for the next run by the {_MAX_PAGES}-page cap")
     fresh = fresh[:_MAX_PAGES]
@@ -258,7 +258,7 @@ def _site_postings(session: PoliteSession, entry: str, scraped_at: datetime, kno
             record_error(_SITE, message)
             continue
         postings.append(_to_posting(item, ad, entry, name, scraped_at))
-    return postings
+    return postings + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

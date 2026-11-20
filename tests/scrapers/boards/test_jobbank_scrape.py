@@ -315,9 +315,20 @@ def test_a_card_older_than_the_cutoff_costs_no_request():
 
 
 @responses.activate
-def test_skipping_cards_does_not_pretend_the_page_said_no_hits():
-    """Only a page that says there are no hits is an answer; skipped cards are the engine's to count."""
+def test_a_page_of_cards_all_skipped_is_still_an_answer():
+    """A page of recognised cards is an answer even when every card is skipped (too old, known, off topic) (#434)."""
     _serve_search(pages=("search_page1.html",))
     drain_answered("jobbank")
     jobbank.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2030, 1, 1, tzinfo=timezone.utc))
-    assert drain_answered("jobbank") is False
+    assert drain_answered("jobbank") is True
+
+
+@responses.activate
+def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
+    _serve_search(pages=("search_page1.html",))
+    drain_answered(jobbank._SITE)
+
+    out = jobbank.scrape({**_CFG, "topic_terms": ["zzzqqq*"], "max_pages_per_keyword": 1})
+
+    assert out == []
+    assert drain_answered(jobbank._SITE) is True

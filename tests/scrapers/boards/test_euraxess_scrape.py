@@ -61,7 +61,8 @@ def test_a_known_offer_costs_no_job_page_request():
 
     postings = euraxess.scrape(_CFG, frozenset({"476999"}))
 
-    assert [p["platform_id"] for p in postings] == ["475660"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["475660"]
+    assert [p for p in postings if p.get("seen_only")] == [{"platform_id": "476999", "seen_only": True}]
 
 
 @responses.activate
@@ -69,7 +70,8 @@ def test_a_listing_of_only_known_offers_is_a_quiet_day():
     _mock_pages()
     drain_answered("euraxess")
 
-    assert euraxess.scrape(_CFG, frozenset({"476999", "475660"})) == []
+    out = euraxess.scrape(_CFG, frozenset({"476999", "475660"}))
+    assert {p["platform_id"] for p in out} == {"476999", "475660"} and all(p.get("seen_only") for p in out)
     assert drain_answered("euraxess") is True
 
 

@@ -92,7 +92,10 @@ def _listed(jobs) -> list[dict]:
 def _board_postings(session: PoliteSession, board: str, scraped_at: datetime, name: str = "") -> list[dict]:
     """Every listed job on Ashby board *board*, labelled with the followed *name* when given.
     Raises on HTTP errors."""
-    jobs = session.get(_BOARD_URL.format(board=board), headers=_HEADERS).json().get("jobs") or []
+    data = session.get(_BOARD_URL.format(board=board), headers=_HEADERS).json()
+    jobs = data.get("jobs") if isinstance(data, dict) else None
+    if not isinstance(jobs, list):
+        raise ValueError("no `jobs` list in Ashby's answer")
     return [_to_posting(job, board, scraped_at, name) for job in _listed(jobs)]
 
 

@@ -80,7 +80,8 @@ def test_known_ids_skip_their_ad_page():
 
     postings = jobylon.scrape({"jobylon_companies": ["2420"]}, known_ids=frozenset({"393911", "391589"}))
 
-    assert [p["platform_id"] for p in postings] == ["393568"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["393568"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["391589", "393911"]
     assert _ad_requests() == [_AD.format("393568", _LYKO["393568"])]
 
 

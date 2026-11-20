@@ -82,7 +82,8 @@ def test_known_ads_cost_no_detail_request():
 
     postings = dr.scrape({"digitalrecruiters_sites": ["recrutement.monoprix.fr"]}, known)
 
-    assert [p["title"] for p in postings] == ["Employé de rayon épicerie - entretien F/H"]
+    assert [p["title"] for p in postings if not p.get("seen_only")] == ["Employé de rayon épicerie - entretien F/H"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == sorted(known)
     assert [u.rsplit("/", 1)[1].split("-")[0] for u in _ad_calls()] == ["4672729", "4672627"]
 
 

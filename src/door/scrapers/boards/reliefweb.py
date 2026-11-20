@@ -158,10 +158,11 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         record_answered("reliefweb")  # a feed read, empty or all known, is a quiet day, not a changed site
         for item in items:
             platform_id = item["platform_id"]
-            if platform_id in seen or platform_id in known_ids:
+            if platform_id in seen:
                 continue
             seen.add(platform_id)
-            postings.append(_to_posting(item, scraped_at))
+            postings.append({"platform_id": platform_id, "seen_only": True} if platform_id in known_ids
+                            else _to_posting(item, scraped_at))
         log_keyword_results("reliefweb", keyword, postings[keyword_start:])
 
     return sdk.keep_local(postings, config, "reliefweb")

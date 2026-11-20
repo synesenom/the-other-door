@@ -188,13 +188,13 @@ def test_scrape_unrecognised_page_is_recorded_as_a_change():
 
 
 @responses.activate
-def test_scrape_a_page_of_cards_does_not_signal_answered():
+def test_scrape_a_page_of_cards_is_answered():
     _search("sygeplejerske", 1, "search_last_page.html")
     _detail("6530742")
     _detail("6529404")
     drain_answered(jobmaskinen._SITE)
     jobmaskinen.scrape({"role_targets": ["sygeplejerske"]})
-    assert drain_answered(jobmaskinen._SITE) is False
+    assert drain_answered(jobmaskinen._SITE) is True
 
 
 @responses.activate

@@ -102,7 +102,8 @@ def test_known_ids_are_left_out_and_their_pages_not_read():
 
     postings = reachmee.scrape({_KEY: ["I003/354/5"]}, known_ids=frozenset({"i003-354-12975"}))
 
-    assert [p["platform_id"] for p in postings] == ["i003-354-12970"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["i003-354-12970"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["i003-354-12975"]
     assert not any("job_id=12975" in c.request.url for c in responses.calls)
 
 

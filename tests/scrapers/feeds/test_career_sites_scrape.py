@@ -12,7 +12,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_entry_errors, drain_errors
+from door.scrapers import drain_answered, drain_entry_errors, drain_errors
 from door.scrapers.feeds import career_sites
 from paths import TESTS_DIR
 
@@ -101,8 +101,31 @@ def test_known_pages_are_not_fetched_again():
 
     postings = career_sites.scrape({"career_sites": [_ACME]}, known_ids=known, since=datetime(2026, 9, 1, tzinfo=timezone.utc))
 
-    assert [p["title"] for p in postings] == ["Data Scientist 2"]
+    assert [p["title"] for p in postings if not p.get("seen_only")] == ["Data Scientist 2"]
+    assert [p["platform_id"] for p in postings if p.get("seen_only")] == sorted(known)
     assert not any(c.request.url.endswith("/jobs/1") for c in responses.calls)
+
+
+@responses.activate
+def test_a_site_whose_pages_are_all_known_is_answered():
+    _acme()
+    drain_answered("career_sites")
+    known = frozenset({career_sites._page_id(f"{_ACME}/jobs/{n}") for n in (1, 2, "old")})
+
+    postings = career_sites.scrape({"career_sites": [_ACME]}, known_ids=known)
+
+    assert postings and all(p.get("seen_only") for p in postings)
+    assert drain_answered("career_sites") is True
+
+
+@responses.activate
+def test_a_site_whose_sitemap_cannot_be_read_is_not_answered():
+    drain_answered("career_sites")
+    responses.add(responses.GET, re.compile(".*"), status=500)
+
+    career_sites.scrape({"career_sites": [_ACME]})
+
+    assert drain_answered("career_sites") is False
 
 
 @responses.activate

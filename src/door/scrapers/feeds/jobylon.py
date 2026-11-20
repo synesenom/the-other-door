@@ -37,7 +37,7 @@ from urllib.parse import urljoin
 import requests
 
 from door.scrapers.sdk import (
-    Detection, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, followed_name, keep_local, make_job_id,
+    Detection, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, followed_name, keep_local, split_known, make_job_id,
     parse_iso_date, parts, record_error, record_pushback, report, run_probe, scrape_feeds, strip_html, unfollowable,
 )
 
@@ -190,7 +190,7 @@ def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, 
     """One employer's new postings: its widget lists them, each unknown ad's page gives the text. An ad page
     that fails is recorded and left out (so the next run reads it again)."""
     items = _fetch_widget(session, entry)
-    fresh = [i for i in items if i["id"] not in known_ids]
+    fresh, known = split_known(items, lambda i: i["id"], known_ids)
     postings = []
     for n, item in enumerate(fresh, 1):
         report("detail", n, len(fresh))
@@ -204,7 +204,7 @@ def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, 
             record_error(_SITE, message)
             continue
         postings.append(_to_posting(item, ad, name, scraped_at))
-    return postings
+    return postings + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

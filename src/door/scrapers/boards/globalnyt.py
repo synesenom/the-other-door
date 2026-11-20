@@ -99,6 +99,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
     postings: list[dict] = []
     for ad in ads:
         if ad["platform_id"] in known_ids:
+            postings.append({"platform_id": ad["platform_id"], "seen_only": True})
             continue
         if since is not None and ad["posted_at"] is not None and ad["posted_at"] < since:
             postings.append(_to_posting(ad, "", "", scraped_at))  # the engine counts it stale; no detail request

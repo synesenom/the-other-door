@@ -32,7 +32,7 @@ from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
     map_by_group, parse_iso_date, record_entry_error, record_error, report, run_probe, strip_html, workers, followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, record_answered, split_known
 from door.scrapers.sdk import Detection, NOT_ACCOUNTS, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -137,9 +137,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             report(f"error fetching postings for {entry!r}: {exc}")
             record_entry_error(_SITE, entry, f"error fetching postings for {entry!r}: {exc}")
             return None
+        record_answered(_SITE)  # the portal's list was read, whatever it held
         name = followed_name(config, "dayforce_companies", entry)
-        return keep_local([_to_posting(i, client, code, scraped_at, name) for i in items
-                           if f"{client}-{i['jobPostingId']}" not in known_ids], config, _SITE)
+        fresh, known = split_known(items, lambda i: f"{client}-{i['jobPostingId']}", known_ids)
+        return keep_local([_to_posting(i, client, code, scraped_at, name) for i in fresh], config, _SITE) + known
 
     fetched = map_by_group(entries, lambda e: _HOST, fetch, workers(config))
     seen: set[str] = set()

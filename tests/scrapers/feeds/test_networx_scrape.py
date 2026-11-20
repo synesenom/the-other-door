@@ -78,7 +78,8 @@ def test_known_ids_skip_the_advert_requests():
 
     postings = networx.scrape(_CFG, known_ids=frozenset(_IDS[:4]))
 
-    assert [p["platform_id"] for p in postings] == ["4359422"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["4359422"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == sorted(_IDS[:4])
     assert len(responses.calls) == 3
 
 

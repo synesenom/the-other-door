@@ -235,7 +235,13 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     seen.add(card["id"])
                     record_non_local(_SITE, 1)
                 continue
-            if card["id"] in seen or card["id"] in known_ids or not _relevant(card, terms):
+            if card["id"] in seen:
+                continue
+            if card["id"] in known_ids:
+                seen.add(card["id"])
+                postings.append({"platform_id": card["id"], "seen_only": True})
+                continue
+            if not _relevant(card, terms):
                 continue
             seen.add(card["id"])
             try:

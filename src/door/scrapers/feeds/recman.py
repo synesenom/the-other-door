@@ -37,7 +37,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
-    host_of, keep_local, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
+    host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
     run_probe, scrape_feeds, strip_html, unfollowable, workers,
 )
 
@@ -170,7 +170,7 @@ def _board_postings(session: PoliteSession, entry: str, scraped_at: datetime, kn
         raise
     if not _is_sitemap(xml):
         raise ValueError(f"{base}/sitemap.xml is not a sitemap (is the career site gone?)")
-    jobs = [j for j in _job_links(xml) if j["id"] not in known_ids]
+    jobs, known = split_known(_job_links(xml), lambda j: j["id"], known_ids)
     out: list[dict] = []
     for n, job in enumerate(jobs, 1):
         report("detail", n, len(jobs))
@@ -187,7 +187,7 @@ def _board_postings(session: PoliteSession, entry: str, scraped_at: datetime, kn
             record_error(_SITE, f"job {job['id']} of {entry!r} has no ad data")
             continue
         out.append(_to_posting(job, ad, name or ad["organization"] or entry, scraped_at))
-    return out
+    return out + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
