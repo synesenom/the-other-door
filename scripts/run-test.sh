@@ -18,8 +18,7 @@
 #   ./scripts/run-test.sh --model    The tests run by the real model on
 #                            the plan your `claude` is signed in to (no API key),
 #                            (the skills /onboard and /expand and a review session
-#                            against the app's test world, the CV style rebuild on
-#                            the style corpus): nothing else leaves the computer. Run before a release (/dev-release does).
+#                            against the app's test world): nothing else leaves the computer. Run before a release (/dev-release does).
 #                            Serial; several minutes and some plan usage each.
 #
 #   ./scripts/run-test.sh --cli-journeys   The real ./door in the app's test world (init,

@@ -19,7 +19,7 @@ _TOOLS = {t["name"]: set(t["inputSchema"].get("properties", {}))
           for t in json.loads((REPO_ROOT / "app" / "src" / "generated" / "tools.json").read_text(encoding="utf-8"))}
 _SRC = "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
 _SKILLS = [p for p in (REPO_ROOT / ".claude" / "skills").glob("*/SKILL.md") if not p.parent.name.startswith("dev-")]
-# An agent the code runs is named in src/door, by its file (`agents/tailor.md`) or its name (`"stylist"`).
+# An agent the code runs is named in src/door, by its file (`agents/tailor.md`) or its name (`"tailor"`).
 _AGENTS = [p for p in (REPO_ROOT / ".claude" / "agents").glob("*.md")
            if re.search(rf'agents/{p.stem}\.md|"{p.stem}(\.md)?"', _SRC)]
 _FILES = sorted([*_SKILLS, *_AGENTS])

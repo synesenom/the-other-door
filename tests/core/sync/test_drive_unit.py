@@ -281,7 +281,7 @@ def test_version_is_the_content_checksum_not_drives_counter(state, tmp_path):
     assert drive.remote_meta()["version"] == pushed == "abc"
 
 
-PROPS = {"door_profile_version": "0.1", "door_jobs_version": "0.0"}
+PROPS = {"door_profile_version": "0.2", "door_jobs_version": "0.0"}
 
 
 @responses.activate

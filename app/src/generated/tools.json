@@ -59,23 +59,6 @@
     }
   },
   {
-    "name": "build_style",
-    "description": "Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.\n    Identical to `./door cv style build`, which waits for it. The call first reads the CV's structure with one short\n    model call (a few seconds, up to a minute when Claude is slow; made once per file), then returns: the build itself\n    takes a few minutes of the model's time, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or\n    ``failed``. A build already going is replaced. The result waits in profile/style.next/ and is written only when it\n    passes; nothing uses it until it is chosen (``use_style``).\n\n    Args:\n        file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).\n\n    Returns:\n        ``{\"started\": True}``, or ``{\"error\": <why nothing started: no Chromium to print with, no style to copy (not a PDF, a scan, a LinkedIn export, a CV of three columns), or the CV's structure could not be read (Claude could not be reached, or its answer did not hold)>}``.\n    ",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "file": {
-          "title": "File",
-          "type": "string"
-        }
-      },
-      "required": [
-        "file"
-      ],
-      "title": "build_styleArguments"
-    }
-  },
-  {
     "name": "cancel_job",
     "description": "Stop the running find_jobs or prepare (it stops at its next step; nothing is lost: the next run picks up).\n\n    Returns:\n        ``{\"cancelling\": tool}``, or ``{\"error\"}`` when nothing runs.\n    ",
     "inputSchema": {
@@ -179,7 +162,7 @@
   },
   {
     "name": "draft_cv",
-    "description": "Draft profile/cv.md from the user's existing CV and public pages.\n\n    `/onboard`'s CV step: give it file paths (their most recent CV as PDF,\n    DOCX or Markdown; a LinkedIn \"Save to PDF\" export) and URLs (a personal\n    site or portfolio). The files are read here, the URLs by one\n    `claude -p` call with WebFetch, which writes the CV in\n    profile.example/cv.md's structure — the newest CV is the backbone, the\n    other sources only add, nothing is invented (missing facts are TODOs).\n    Works before profile/config.json exists. Writes `profile/cv.draft.md`:\n    read it, show it to the user with `provenance` and `todos`, take their\n    edits, and only then put it in place (Write to profile/cv.md), or call\n    again with `write=True` to replace profile/cv.md directly (the previous\n    one is kept as cv.md.bak). The same call as `./door init`'s CV step.\n\n    Args:\n        sources: File paths and URLs. A LinkedIn profile URL is never\n            fetched; ask for its PDF export instead.\n        write: Replace profile/cv.md with the draft instead of writing\n            profile/cv.draft.md.\n        model: Claude model to draft with (default: sonnet).\n\n    Returns:\n        ``{\"draft_path\" | \"cv_path\" + \"backup\", \"written\", \"sources\",\n        \"provenance\": [{\"source\", \"contributed\"}], \"todos\", \"markdown\"}``\n        (``markdown`` is the draft text; each file in ``sources`` has\n        ``style``, whether its look can be copied by ``build_style``).\n    ",
+    "description": "Draft profile/cv.md from the user's existing CV and public pages.\n\n    `/onboard`'s CV step: give it file paths (their most recent CV as PDF,\n    DOCX or Markdown; a LinkedIn \"Save to PDF\" export) and URLs (a personal\n    site or portfolio). The files are read here, the URLs by one\n    `claude -p` call with WebFetch, which writes the CV in\n    profile.example/cv.md's structure — the newest CV is the backbone, the\n    other sources only add, nothing is invented (missing facts are TODOs).\n    Works before profile/config.json exists. Writes `profile/cv.draft.md`:\n    read it, show it to the user with `provenance` and `todos`, take their\n    edits, and only then put it in place (Write to profile/cv.md), or call\n    again with `write=True` to replace profile/cv.md directly (the previous\n    one is kept as cv.md.bak). The same call as `./door init`'s CV step.\n\n    Args:\n        sources: File paths and URLs. A LinkedIn profile URL is never\n            fetched; ask for its PDF export instead.\n        write: Replace profile/cv.md with the draft instead of writing\n            profile/cv.draft.md.\n        model: Claude model to draft with (default: sonnet).\n\n    Returns:\n        ``{\"draft_path\" | \"cv_path\" + \"backup\", \"written\", \"sources\",\n        \"provenance\": [{\"source\", \"contributed\"}], \"todos\", \"markdown\"}``\n        (``markdown`` is the draft text).\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1152,28 +1135,6 @@
     }
   },
   {
-    "name": "preview_styles",
-    "description": "The two looks a first set-up chooses between, before anything is saved: the drafted CV printed in The other\n    door's style, and the uploaded CV PDF as it is (the look a ``build_style`` copies). No model; made again only when\n    the draft or the file changed. The desktop app's onboarding review calls it.\n\n    Args:\n        markdown: The drafted CV (``draft_cv``'s markdown, as edited).\n        file: The uploaded CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\"}, \"original\": {\"cv\": [png paths],\n        \"letter\": [], \"version\"}}}``; a look that could not be made (no browser to print with, a PDF that cannot be\n        read) is left out.\n    ",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "markdown": {
-          "title": "Markdown",
-          "type": "string"
-        },
-        "file": {
-          "title": "File",
-          "type": "string"
-        }
-      },
-      "required": [
-        "markdown",
-        "file"
-      ],
-      "title": "preview_stylesArguments"
-    }
-  },
-  {
     "name": "query_jobs",
     "description": "Count and list postings by filter — for questions no other tool answers (\"how many\n    Teamtailor postings this month?\", \"average score of the Danish ads in September\"). Read only:\n    nothing is written. Identical to `./door jobs query`.\n\n    Args:\n        since: First seen on or after this day (``2026-09-01``).\n        until: First seen on or before this day.\n        site: Only postings from this site (``jobindex``, ``teamtailor``, ...).\n        company: Only companies whose name contains this (any case).\n        status: A ledger status (``applied``, ``rejected``, ...), ``unapplied`` for the untracked,\n            or ``interview`` for any round.\n        min_score: Only postings scoring at least this.\n        max_score: Only postings scoring at most this.\n        language: Only ads in this language (a code: ``en``, ``da``, ``hu``).\n        has_materials: Only postings with (True) or without (False) a prepared CV and letter.\n        limit: How many of the best postings to list (default 10).\n\n    Returns:\n        ``{\"count\", \"average_score\", \"by_site\", \"by_company\", \"by_status\", \"by_month\",\n        \"rows\": [{\"id\", \"title\", \"company\", \"score\", \"status\", \"site\", \"scraped_at\",\n        \"posted_at\"}]}``, the rows best first. Name postings by title and company to the user.\n    ",
     "inputSchema": {
@@ -1671,15 +1632,6 @@
     }
   },
   {
-    "name": "show_style",
-    "description": "Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built\n    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the\n    CV, the photo or a style changed; no model is used.\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\", \"two_column\"}, \"like\": {...}},\n        \"in_use\": \"like\" | \"default\", \"candidate\": whether a style just built waits to be chosen}``:\n        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;\n        ``like`` (the candidate when one waits, else the style kept) only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is\n        left out.\n    ",
-    "inputSchema": {
-      "type": "object",
-      "properties": {},
-      "title": "show_styleArguments"
-    }
-  },
-  {
     "name": "skill_gaps",
     "description": "A skill-gap report with a WebSearch-cited learning plan, written to\n    `upskill/report-<today>.md`.\n\n    \"What should I learn for the Trustpilot job?\": one `claude -p` call (minutes)\n    compares the CV with the targets — a hard-skill diff, then broader gaps\n    (soft skills, domain depth, tooling maturity, credentials, evidence) —\n    searches for real resources and writes the prioritised plan. Read the\n    report back to summarise it. Identical to `./door cv gaps`.\n\n    Args:\n        targets: Role names (\"Senior Accountant\") or skills.\n        jobs: Postings to analyse: each a job id or words from its company\n            and title (\"trustpilot\"). Never ask the user for an id.\n        top: Also analyse the top N matches.\n        model: Claude model to analyse with (default: sonnet).\n\n    Returns:\n        ``{\"report_path\", \"report\" (its Markdown), \"targets\": [{\"kind\", \"label\", \"job_id\"?}], \"plan_items\"}``.\n    ",
     "inputSchema": {
@@ -1745,20 +1697,11 @@
   },
   {
     "name": "status_summary",
-    "description": "Pipeline counts and the applications-ledger breakdown.\n\n    Identical to `./door jobs summary`. A good first\n    call in a review session: it says how many postings are on disk, how\n    many clear min_score, and how many are still unapplied.\n\n    Returns:\n        ``{\"min_score\", \"pipeline\": {\"total\", \"excluded\", \"applicable\",\n        \"above_threshold\", \"unapplied\", \"above_threshold_by_status\":\n        {\"unapplied\", \"prepared\", \"applied\", \"discarded\"}}, \"ledger\": {<each status>: count}, \"interviews\":\n        {<stage>: {\"passed\", \"rejected\", \"ghosted\", \"withdrawn\", \"pending\"}}, \"standing\":\n        {\"offer\", \"interviewing\", \"waiting\", \"rejected\", \"ghosted\", \"withdrawn\"} (where each sent\n        application stands now, each counted once; one with no change for 45 days (tracker.NO_ANSWER_DAYS) counts as ghosted, here\n        and in ``application``), \"no_answer\": {\"count\", \"days\"} (how many applied or interviewing\n        applications ``list_matches(ongoing=True)`` lists have had no change for more than ``days`` days,\n        not the ``ghosted`` standing: when above 0, call ``list_matches(ongoing=True)``, name the rows with\n        ``no_answer`` and offer ``set_status`` ``ghosted``),\n        \"application\": {\"passed\", \"rejected\", \"ghosted\", \"withdrawn\", \"pending\"}, \"pass_rates\":\n        {<stage>: {\"passed\", \"decided\", \"rate\", \"low\", \"high\"}}, \"pass_rates_by_score\": None |\n        {\"split\", \"near_min\", \"top\", \"reading\"} (the application pass rate of the sent applications scored at or\n        above a split near their median score, ``top``, and below it, ``near_min``, each like a ``pass_rates`` entry; None until each\n        has 5 decided; ``reading`` is ``\"near_min_lower\"`` only when the near-minimum range lies wholly below the top's:\n        say that raising ``min_score`` may help), \"since_last_review\":\n        {\"last_reviewed_at\", \"runs\", \"last_run\", \"new_matches\",\n        \"site_failures\"}, \"in_progress\": None | {\"purpose\", \"pid\",\n        \"started_at\", \"message\", \"done\", \"total\", \"site\", \"stage\",\n        \"updated_at\"}}`` — ``since_last_review`` says what the\n        runs did since the last `mark_reviewed`, without re-scraping.\n        ``in_progress`` is set while a `find` run is going (here or in\n        another terminal) and says how far it is — its latest progress event;\n        it is null when nothing is running. ``drive`` is ``{\"connected\",\n        \"account\", \"last_synced\", \"last_error\"}``: whether Google Drive sync\n        is on, and the last time it worked or why it did not (mention a\n        ``last_error`` briefly; do not try to fix it unasked). ``recurring_problem``\n        is true when something keeps going wrong (a site failing run after run,\n        scoring failing, the server crashing, a tool failing again and again) since\n        the last problem report: offer `report_problem` to the user. ``plan`` is null\n        until a call has read the Claude plan, then ``{\"as_of\", \"status\", \"five_hour\":\n        {\"used\", \"resets_at\"}, \"seven_day\": {...}, \"room\": {\"find\", \"prepare\"} | null,\n        \"binding\", \"warning\"?, \"week\": {\"activities\": [{\"label\", \"share\", \"count\", \"of\"}],\n        \"heaviest\"}}``: how full the plan's 5-hour and 7-day windows were after the latest\n        call (``used`` a 0-1 fraction), about how many more finds and prepares fit before\n        the window that binds is full (null until this computer has measured enough), and\n        what used the plan this week. It is an estimate as of ``as_of``: the user's own\n        Claude chats since then are not in it. Mention it when ``warning`` is set or room is\n        short; answer \"can I prepare three more?\" or \"why did I hit my limit?\" from it.\n        ``cost`` is null until a call was weighed, then ``{\"days\", \"usd\", \"activities\":\n        [{\"activity\", \"label\", \"usd\", \"count\", \"of\", \"features\": [{\"feature\", \"label\", \"usd\",\n        \"calls\"}]}], \"per_run\": {\"find\", \"prepare\"}}``: what the last 7 days' calls would cost\n        at Claude's API prices, per activity (largest first) and what it was spent on, and one\n        find and one prepare. An estimate from `claude`'s price table, not a bill (the plan is\n        not charged per call); answer \"what did that cost?\" from it. ``style`` is the state of the CV template\n        built from the user's own CV PDF (``build_style``): ``{\"state\": \"none\" | \"building\" | \"ready\" | \"failed\"}``,\n        with ``problems`` when failed (say them in words, once, when the user asked for the build) and ``fonts`` and\n        ``dropped_icons`` of the last build when ready.\n    ",
+    "description": "Pipeline counts and the applications-ledger breakdown.\n\n    Identical to `./door jobs summary`. A good first\n    call in a review session: it says how many postings are on disk, how\n    many clear min_score, and how many are still unapplied.\n\n    Returns:\n        ``{\"min_score\", \"pipeline\": {\"total\", \"excluded\", \"applicable\",\n        \"above_threshold\", \"unapplied\", \"above_threshold_by_status\":\n        {\"unapplied\", \"prepared\", \"applied\", \"discarded\"}}, \"ledger\": {<each status>: count}, \"interviews\":\n        {<stage>: {\"passed\", \"rejected\", \"ghosted\", \"withdrawn\", \"pending\"}}, \"standing\":\n        {\"offer\", \"interviewing\", \"waiting\", \"rejected\", \"ghosted\", \"withdrawn\"} (where each sent\n        application stands now, each counted once; one with no change for 45 days (tracker.NO_ANSWER_DAYS) counts as ghosted, here\n        and in ``application``), \"no_answer\": {\"count\", \"days\"} (how many applied or interviewing\n        applications ``list_matches(ongoing=True)`` lists have had no change for more than ``days`` days,\n        not the ``ghosted`` standing: when above 0, call ``list_matches(ongoing=True)``, name the rows with\n        ``no_answer`` and offer ``set_status`` ``ghosted``),\n        \"application\": {\"passed\", \"rejected\", \"ghosted\", \"withdrawn\", \"pending\"}, \"pass_rates\":\n        {<stage>: {\"passed\", \"decided\", \"rate\", \"low\", \"high\"}}, \"pass_rates_by_score\": None |\n        {\"split\", \"near_min\", \"top\", \"reading\"} (the application pass rate of the sent applications scored at or\n        above a split near their median score, ``top``, and below it, ``near_min``, each like a ``pass_rates`` entry; None until each\n        has 5 decided; ``reading`` is ``\"near_min_lower\"`` only when the near-minimum range lies wholly below the top's:\n        say that raising ``min_score`` may help), \"since_last_review\":\n        {\"last_reviewed_at\", \"runs\", \"last_run\", \"new_matches\",\n        \"site_failures\"}, \"in_progress\": None | {\"purpose\", \"pid\",\n        \"started_at\", \"message\", \"done\", \"total\", \"site\", \"stage\",\n        \"updated_at\"}}`` — ``since_last_review`` says what the\n        runs did since the last `mark_reviewed`, without re-scraping.\n        ``in_progress`` is set while a `find` run is going (here or in\n        another terminal) and says how far it is — its latest progress event;\n        it is null when nothing is running. ``drive`` is ``{\"connected\",\n        \"account\", \"last_synced\", \"last_error\"}``: whether Google Drive sync\n        is on, and the last time it worked or why it did not (mention a\n        ``last_error`` briefly; do not try to fix it unasked). ``recurring_problem``\n        is true when something keeps going wrong (a site failing run after run,\n        scoring failing, the server crashing, a tool failing again and again) since\n        the last problem report: offer `report_problem` to the user. ``plan`` is null\n        until a call has read the Claude plan, then ``{\"as_of\", \"status\", \"five_hour\":\n        {\"used\", \"resets_at\"}, \"seven_day\": {...}, \"room\": {\"find\", \"prepare\"} | null,\n        \"binding\", \"warning\"?, \"week\": {\"activities\": [{\"label\", \"share\", \"count\", \"of\"}],\n        \"heaviest\"}}``: how full the plan's 5-hour and 7-day windows were after the latest\n        call (``used`` a 0-1 fraction), about how many more finds and prepares fit before\n        the window that binds is full (null until this computer has measured enough), and\n        what used the plan this week. It is an estimate as of ``as_of``: the user's own\n        Claude chats since then are not in it. Mention it when ``warning`` is set or room is\n        short; answer \"can I prepare three more?\" or \"why did I hit my limit?\" from it.\n        ``cost`` is null until a call was weighed, then ``{\"days\", \"usd\", \"activities\":\n        [{\"activity\", \"label\", \"usd\", \"count\", \"of\", \"features\": [{\"feature\", \"label\", \"usd\",\n        \"calls\"}]}], \"per_run\": {\"find\", \"prepare\"}}``: what the last 7 days' calls would cost\n        at Claude's API prices, per activity (largest first) and what it was spent on, and one\n        find and one prepare. An estimate from `claude`'s price table, not a bill (the plan is\n        not charged per call); answer \"what did that cost?\" from it.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {},
       "title": "status_summaryArguments"
-    }
-  },
-  {
-    "name": "stop_style_build",
-    "description": "Stop the CV style build that is running (``build_style``) and wait until its process is gone; it then reads as\n    ``failed`` in `status_summary`'s ``style`` block. The style in use and a style waiting to be chosen are left alone.\n    The desktop app calls it before an update installs.\n\n    Returns:\n        ``{\"stopped\": True}``, or ``{\"stopped\": False}`` when no build was running.\n    ",
-    "inputSchema": {
-      "type": "object",
-      "properties": {},
-      "title": "stop_style_buildArguments"
     }
   },
   {
@@ -1860,28 +1803,6 @@
         "device"
       ],
       "title": "unpair_phoneArguments"
-    }
-  },
-  {
-    "name": "use_style",
-    "description": "Choose the CV style: the one built from the user's own CV (``like``: the candidate a build leaves moves in, and\n    both template keys point at it), The other door's (``default``) or ``current`` (keep what is in use and drop the\n    candidate). Identical to `./door cv style use`. Any pick ends the candidate. Applications already prepared keep their\n    old look unless ``rerender`` is true: those prepared and not sent are printed again in the style in use (no model,\n    no plan usage; sent ones never change).\n\n    Args:\n        style: ``like``, ``default`` or ``current``; required, so a call without it chooses nothing.\n        rerender: Print the prepared applications again in the style in use.\n\n    Returns:\n        ``{\"in_use\": \"like\" | \"default\", \"prepared\": <how many are prepared and not sent>}`` and, with ``rerender``,\n        ``\"rerendered\"`` and ``\"failed\"`` (job ids); or ``{\"error\": ...}`` (``like`` with no style built).\n    ",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "style": {
-          "title": "Style",
-          "type": "string"
-        },
-        "rerender": {
-          "default": false,
-          "title": "Rerender",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "style"
-      ],
-      "title": "use_styleArguments"
     }
   },
   {

@@ -127,7 +127,7 @@ def world(tmp_path, monkeypatch):
 def _seed(world, text="{}"):
     world.profile.mkdir(exist_ok=True)
     (world.profile / "config.json").write_text(text)
-    (world.profile / ".data_version").write_text("0.1")  # the data of this build, as `init` leaves it
+    (world.profile / ".data_version").write_text("0.2")  # the data of this build, as `init` leaves it
     world.jobs.mkdir(exist_ok=True)
     (world.jobs / "history.json").write_text(text)
 
@@ -400,7 +400,7 @@ def _connected_with_local(world):
 def test_a_push_puts_the_local_versions_on_the_file(world):
     _seed(world)
     sync.push()
-    assert world.properties == {"door_profile_version": "0.1", "door_jobs_version": "0.0"}
+    assert world.properties == {"door_profile_version": "0.2", "door_jobs_version": "0.0"}
 
 
 def test_a_pull_of_an_older_archive_is_upgraded(world, tmp_path):
@@ -441,7 +441,7 @@ def test_an_archive_of_an_older_major_is_refused_with_its_own_note(world, tmp_pa
     _connected_with_local(world)
     before = _snapshot(world)
     sync.drain_notes()
-    _blob(world, tmp_path, profile="0.1", jobs="0.0")
+    _blob(world, tmp_path, profile="0.2", jobs="0.0")
     monkeypatch.setattr(version, "VERSION", "1.0.0")
     downloads = world.downloads
 
@@ -481,7 +481,7 @@ def test_while_drive_is_newer_nothing_is_pushed(world, tmp_path, hooks):
 
 def test_a_push_over_an_archive_with_other_properties_of_the_same_versions_works(world):
     _connected_with_local(world)
-    world.properties = {"door_profile_version": "0.1", "door_jobs_version": "0.0", "other": "x"}
+    world.properties = {"door_profile_version": "0.2", "door_jobs_version": "0.0", "other": "x"}
     sync.push()
     assert world.uploads == 2
 
@@ -501,22 +501,22 @@ def test_once_upgraded_a_pull_works_and_a_push_follows(world, tmp_path, monkeypa
     from door.core import migrations
 
     _connected_with_local(world)
-    _blob(world, tmp_path, profile="0.2")
+    _blob(world, tmp_path, profile="0.3")
     sync.on_acquire("run", world.jobs)
     assert drive.read_state()["last_error"] == NEWER_SENTENCE
     sync.drain_notes()
 
-    monkeypatch.setattr(migrations, "PROFILE_STEPS", [migrations.Step("a", lambda f: None), migrations.Step("b", lambda f: None)])
+    monkeypatch.setattr(migrations, "PROFILE_STEPS", [migrations.Step(n, lambda f: None) for n in "abc"])
     sync.on_acquire("run", world.jobs)
 
     state = drive.read_state()
     assert "last_error" not in state
-    assert (world.profile / ".data_version").read_text().strip() == "0.2"
+    assert (world.profile / ".data_version").read_text().strip() == "0.3"
     (world.jobs / "y.json").write_text("new")
     uploads = world.uploads
     sync.on_release("run", world.jobs)
     assert world.uploads == uploads + 1
-    assert world.properties["door_profile_version"] == "0.2"
+    assert world.properties["door_profile_version"] == "0.3"
 
 
 def test_a_pull_whose_upgrade_fails_is_noted_and_pushes_nothing(world, tmp_path, monkeypatch, hooks):

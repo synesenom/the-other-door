@@ -29,17 +29,6 @@ contextBridge.exposeInMainWorld('door', {
   // The CV photo: chosen in a dialog the main process runs, saved by the token it hands back.
   pickPhoto: () => ipcRenderer.invoke('door:pick-photo'),
   savePhoto: (token: string) => ipcRenderer.invoke('door:save-photo', token),
-  buildStyle: (token: string) => ipcRenderer.invoke('door:build-style', token),
-  previewStyles: (token: string, markdown: string) => ipcRenderer.invoke('door:preview-styles', token, markdown),
-  styleFromCvFile: () => ipcRenderer.invoke('door:style-from-cv-file'),
-  // A file was chosen for it: its structure is now being read.
-  onStyleReading: (cb: () => void) => {
-    const listener = () => cb()
-    ipcRenderer.on('door:style-reading', listener)
-    return () => {
-      ipcRenderer.removeListener('door:style-reading', listener)
-    }
-  },
   // Signing in to Claude: the main process runs claude and opens only the page claude printed.
   claudeLogin: {
     start: (email?: string) => ipcRenderer.invoke('door:claude-login-start', email),

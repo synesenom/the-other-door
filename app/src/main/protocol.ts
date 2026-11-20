@@ -1,5 +1,5 @@
 // door-file://output/<jobId>/[sent/]<page>.png: the page images of a prepared job (or of the copy sent), served
-// from HOME/jobs/output, and the previews of a CV style, and nothing else. Pure; index.ts does the serving.
+// from HOME/jobs/output, and nothing else. Pure; index.ts does the serving.
 import { join } from 'node:path'
 import { contained, isJobId, isPngName, materialPath } from './files'
 
@@ -44,20 +44,4 @@ export function resolvePhotoRequest(url: string, home: string): string | null {
   const u = parse(url, 'profile')
   if (!u || u.pathname !== '/photo.jpg') return null
   return contained(join(home, 'profile', 'photo.jpg'), join(home, 'profile'))
-}
-
-/**
- * door-file://style/<default|like>/<cv|letter>_page_<N>.png: the previews of a CV style (`show_style`), served from
- * HOME/.style/preview/<style>/ and nothing else, the page adding `?v=` (the set's version) so a re-made image is
- * fetched again. Links resolved, the file must still lie under that folder.
- */
-export function resolveStylePreviewRequest(url: string, home: string): string | null {
-  const u = parse(url, 'style')
-  if (!u) return null
-  const parts = u.pathname.split('/').filter((_, i) => i > 0)
-  if (parts.length !== 2) return null
-  const [style, file] = parts as [string, string]
-  if (!['default', 'like', 'draft', 'original'].includes(style) || !/^(cv|letter)_page_\d+\.png$/.test(file)) return null
-  const root = join(home, '.style', 'preview')
-  return contained(join(root, style, file), root)
 }

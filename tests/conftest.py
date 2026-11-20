@@ -36,20 +36,6 @@ def _no_wikidata(request, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _no_structure_model(request, tmp_path, monkeypatch):
-    """The model's reading of a CV's structure (#343) is `style_structure`'s one call: in a test a plain rule answers it
-    (`tests/style_structure_utils.fake_ask`) and its cache is a temp folder. The module of its own tests fakes
-    `claude_cli.ask` and the data folder underneath instead, and a model test asks the real one."""
-    from door.style import style_structure
-    from style_structure_utils import fake_ask
-
-    if request.module.__name__.endswith("test_style_structure_unit") or request.node.get_closest_marker("model"):
-        return
-    monkeypatch.setattr(style_structure, "_cache_dir", lambda: tmp_path / "structure-cache")
-    monkeypatch.setattr(style_structure, "_ask", fake_ask)
-
-
-@pytest.fixture(autouse=True)
 def _no_salary_search(request, monkeypatch):
     """`prepare`'s salary estimate (#624) never reaches the `claude` CLI from a test; the salary
     tests fake `claude_cli.ask` underneath and keep it."""

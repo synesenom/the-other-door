@@ -5,9 +5,7 @@ It lays the page's text out on A4 pages with pypdfium2 (wrapped by Helvetica's w
 embedded whole: Helvetica's standard encoding has no ő, ű or ○, which then read back wrong, #135), so a PDF's page
 count follows the length of what the tailor or `revise` wrote, and door renders real page images from it.
 Only the text matters here: `<h1>`..`<h3>` are set larger, `<li>` gets a bullet, the rest is paragraphs. A body
-holding the word `worldfail` fails as a print does (`PrintError`). A CV style build's sample print (`render.pdf` beside
-the build's `original.pdf`) is that original: the stand-in sets text, not a design, so its own print would never look
-like the CV and the build would fail (`style_compare.FLOOR`). Installed by `edges.py` (the server, the CLI)
+holding the word `worldfail` fails as a print does (`PrintError`). Installed by `edges.py` (the server, the CLI)
 and by the stand-in tailor's own `compile` (claude.py) through `install()`.
 """
 
@@ -165,10 +163,6 @@ def print_html(folder, html, out_pdf, *, assets=None, timeout=60.0, launcher=Non
 
     if "worldfail" in html:
         raise html_pdf.PrintError("Chromium could not print the page: worldfail")
-    original = Path(folder) / "original.pdf"
-    if Path(out_pdf).name == "render.pdf" and original.is_file():
-        shutil.copyfile(original, out_pdf)  # a style build's sample print: the world's stylist copies the look exactly
-        return
     render(blocks_of(html), Path(out_pdf))
 
 

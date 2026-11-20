@@ -251,34 +251,7 @@ textarea { resize: none; }
 .matches:not(.pushed) .list-pane { border-right: 0; }
 .matches:not(.pushed) .list-pane > :not(.list-head) { max-width: 620px; }
 
-/* Profile → CV's Style: the sheets side by side, each a button that opens the full pages. The sheet keeps its size
-   while the previews are made, so the row does not move. */
-.dialog-wide { width: min(720px, calc(100vw - var(--space-8))); }
-/* the two styles side by side, each half the width there is, so they can be compared */
-.style-row { display: flex; flex-direction: column; gap: var(--space-3); align-items: stretch; }
-.style-row .spinner-line { margin-left: 0; margin-right: 0; }
-.style-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); align-items: start; }
-.style-card { position: relative; /* holds its visually hidden "in use": the window must not grow with it */ display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-width: 0; }
-.style-thumb { display: block; width: 100%; padding: 0; background: none; border: 1px solid var(--color-border); border-radius: var(--radius-s); overflow: hidden; cursor: pointer; }
-.style-thumb .paper { display: block; width: 100%; border-radius: 0; }
-.style-sheet { display: block; box-sizing: border-box; width: 100%; aspect-ratio: 1 / 1.414; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
-.style-caption { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
-/* the blue dash above the sheet in use; the other card keeps its room, so the sheets line up */
-/* the sheet in use: a 2 px accent border (its 1 px border and a 1 px ring, so nothing moves) */
-.style-pick { cursor: pointer; }
-.style-pick .style-sheet { border: 0; border-radius: 0; }  /* the empty page inside the review's card: the card draws the edge */
-/* the onboarding review's cards are radios: the focus ring is the sheet's */
-.style-pick:has(input:focus-visible) .style-thumb { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.style-current .style-thumb, .style-current .style-thumb:hover { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
-/* the switch held while a build starts or runs */
-.style-switch-busy { opacity: 0.6; }
-.style-below { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
-.style-below:empty { display: none; }
-.style-rerender { display: flex; gap: var(--space-3); align-items: center; }
-@media (hover: hover) { .style-thumb:hover { border-color: var(--color-ink); } }
-
 @media (max-width: 899px) {
-  .style-cards { gap: var(--space-3); }
   .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); }
   .page-aside { display: none; }
   .board-screen { padding: var(--space-6) var(--space-4) var(--space-8); }
@@ -448,8 +421,6 @@ legend.field-label { padding-bottom: var(--space-2); }
 .part > * { margin: 0; }
 .part-head { display: flex; flex-direction: column; gap: var(--space-1); }
 .part-head > * { margin: 0; }
-/* a heading with one control at its right (Profile → CV's Style and its switch) */
-.part-head-row { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 /* A part of a screen (the review, Profile, Settings): a serif title over a thin rule. Its heading stays with
    what it heads; the wider gap is between its fields. */
 .part > :is(.part-head, h2, h3) + * { margin-top: calc(var(--space-4) - 28px); }

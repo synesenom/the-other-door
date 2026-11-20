@@ -13,11 +13,11 @@ import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
 import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
-import { quitStep, restorePhoneAtStart, stopForUpdate, type PhoneUpdateDeps } from './phone-update'
+import { quitStep, restorePhoneAtStart, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
 import { createProblemLog } from './problem-log'
-import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest, resolveStylePreviewRequest } from './protocol'
+import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest } from './protocol'
 import { createPhotoFile } from './photo-file'
-import { createStyleFile } from './style-file'
+import { createCvFile } from './cv-file'
 import { watchRunBoard, type RunBoard } from './run-board'
 import { cspHeader, isAllowedNavigation } from './security'
 import { CHECK_EVERY_MS, checkEvery, createUpdateManager, doorSignedOf, updateMode, updatesAllowed, type UpdaterLike } from './updates'
@@ -38,8 +38,8 @@ const env = serverEnv(start, process.env)
 const home = doorHome(env, packaged ? app.getPath('userData') : repoRoot)
 // What went wrong that the screens do not say (#593): the server's own failures it logs itself; these are the app's.
 const problemLog = createProblemLog(home)
-// The CV file a style is built from (style-file.ts): one per environment, so staging and the sandbox never name your real one.
-const styleSourceFile = join(app.getPath('userData'), environment === 'production' ? 'style-source.txt' : `style-source-${environment}.txt`)
+// The CV file a draft last read (cv-file.ts): one per environment, so staging and the sandbox never name your real one.
+const cvSourceFile = join(app.getPath('userData'), environment === 'production' ? 'cv-source.txt' : `cv-source-${environment}.txt`)
 const server = new DoorServer(
   packaged ? resolvePackagedSpawn({ resourcesPath: process.resourcesPath, home, platform: process.platform, env }) : resolveSpawn(repoRoot, env),
   // A packaged app and the door inside it are one version (#224); from a checkout a test keeps them so.
@@ -55,7 +55,7 @@ try {
   // no package.json to read: not signed
 }
 const mode = updatesAllowed(process.env) ? updateMode({ platform: process.platform, packaged, simulated: environment !== 'production', doorSigned, appImage: Boolean(process.env['APPIMAGE']) }) : 'none'
-// The detached phone server and a CV style build are stopped before an update installs (phone-update.ts, #77, #215).
+// The detached phone server is stopped before an update installs (phone-update.ts, #77).
 let stoppedForUpdate = false
 const phoneDeps = (): PhoneUpdateDeps => ({
   call: (tool, args, timeout) => server.call(tool, args ?? {}, timeout ? { timeout } : {}),
@@ -66,7 +66,7 @@ const phoneDeps = (): PhoneUpdateDeps => ({
 const updates = createUpdateManager({
   beforeInstall: async () => {
     stoppedForUpdate = true
-    await stopForUpdate(phoneDeps())
+    await stopPhoneForUpdate(phoneDeps())
   },
   mode: mode,
   current: app.getVersion(),
@@ -178,7 +178,7 @@ app.whenReady().then(() => {
   })
   session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
   protocol.handle(MATERIAL_SCHEME, async (request) => {
-    const path = resolveMaterialRequest(request.url, home) ?? resolvePhotoRequest(request.url, home) ?? resolveStylePreviewRequest(request.url, home)
+    const path = resolveMaterialRequest(request.url, home) ?? resolvePhotoRequest(request.url, home)
     if (!path) return new Response('not found', { status: 404 })
     const response = await net.fetch(pathToFileURL(path).toString())
     const headers = new Headers(response.headers)
@@ -225,15 +225,13 @@ app.whenReady().then(() => {
       stat,
       realpath,
     }),
-    // The CV a style is built from (Profile → CV): chosen here, the build started here; its dialog opens at the CV
-    // the set-up read (the path kept in a file of the app's own folder, never sent anywhere).
-    styleFile: createStyleFile({
-      stat,
-      realpath,
+    // The CV file a draft last read (Profile → CV's Sources): the path is kept in a file of the app's own folder, never
+    // sent anywhere.
+    cvFile: createCvFile({
       exists: existsSync,
       hintStore: {
-        read: async () => (await readFile(styleSourceFile, 'utf-8')).trim() || null,
-        write: (path) => writeFile(styleSourceFile, path, 'utf-8'),
+        read: async () => (await readFile(cvSourceFile, 'utf-8')).trim() || null,
+        write: (path) => writeFile(cvSourceFile, path, 'utf-8'),
       },
     }),
     // In the sandbox "Find new jobs" is a simulation: nothing reaches the network or claude.
@@ -256,11 +254,11 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', (event) => {
-  // Quitting installs a downloaded update: stop the phone server and a style build first, once, then quit again.
+  // Quitting installs a downloaded update: stop the phone server first, once, then quit again.
   if (quitStep({ installsOnQuit: updates.willInstallOnQuit(), stopped: stoppedForUpdate }) === 'stop-then-quit') {
     event.preventDefault()
     stoppedForUpdate = true
-    void stopForUpdate(phoneDeps()).finally(() => app.quit())
+    void stopPhoneForUpdate(phoneDeps()).finally(() => app.quit())
     return
   }
   board.stop()

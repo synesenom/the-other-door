@@ -29,8 +29,7 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
     pick: vi.fn(async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> => ({ token: 'ph1', name: 'me.jpg' })),
     take: vi.fn((t: string) => (t === 'ph1' ? '/Users/ada/Pictures/me.jpg' : null)),
   }
-  const styleFile = {
-    current: vi.fn(async (): Promise<{ path: string } | { error: string }> => ({ path: '/Users/ada/my cv.pdf' })),
+  const cvFile = {
     remember: vi.fn(async (_path: string) => undefined),
     name: vi.fn(async (): Promise<string | null> => 'my cv.pdf'),
   }
@@ -60,10 +59,10 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
   const notify = vi.fn((_n: Notice) => {
     if (notifyThrows) throw new Error('notify broke')
   })
-  registerIpc(ipcMain, server, { openExternal, home, savePdf: { showSaveDialog, downloads: '/Users/ada/Downloads' }, showItemInFolder, info, currentBoard, demoRun, notify, cvSources, claudeLogin, archiveFiles, photoFile, styleFile, problemLog })
+  registerIpc(ipcMain, server, { openExternal, home, savePdf: { showSaveDialog, downloads: '/Users/ada/Downloads' }, showItemInFolder, info, currentBoard, demoRun, notify, cvSources, claudeLogin, archiveFiles, photoFile, cvFile, problemLog })
   const send = vi.fn()
   const invoke = (channel: string, ...args: unknown[]) => handlers.get(channel)!({ sender: { send } }, ...args)
-  return { server, openExternal, invoke, send, dir, showSaveDialog, saveDir, showItemInFolder, currentBoard, home, notify, cvSources, claudeLogin, archiveFiles, photoFile, styleFile, problemLog }
+  return { server, openExternal, invoke, send, dir, showSaveDialog, saveDir, showItemInFolder, currentBoard, home, notify, cvSources, claudeLogin, archiveFiles, photoFile, cvFile, problemLog }
 }
 
 describe('registerIpc', () => {
@@ -134,8 +133,6 @@ describe('registerIpc', () => {
     ['enrich', 600_000],
     ['market', 60_000],
     ['ask', 180_000],
-    ['show_style', 60_000],
-    ['use_style', 60_000],
   ])('gives %s a call limit over %i ms', async (tool, floor) => {
     const { server, invoke } = setup(undefined, undefined, false, { environment: 'production' })
     await invoke(CHANNELS.call, tool, {})
@@ -689,12 +686,12 @@ describe('the CV draft channels', () => {
   it('tells each file source its token, in order, and leaves the pages without one', async () => {
     const { invoke } = setup(async () => ({
       markdown: '# Ada',
-      sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: true }, { source: 'https://example.com/ada', kind: 'url' }],
+      sources: [{ source: '/Users/ada/cv.pdf', kind: 'file' }, { source: 'https://example.com/ada', kind: 'url' }],
     }))
     const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: ['https://example.com/ada'] })
     expect(r).toEqual({
       ok: true,
-      data: { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: true, token: 'tok1' }, { source: 'https://example.com/ada', kind: 'url' }] },
+      data: { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', token: 'tok1' }, { source: 'https://example.com/ada', kind: 'url' }] },
     })
   })
 
@@ -796,69 +793,15 @@ describe('door:call refuses what names a local file', () => {
   })
 })
 
-describe('the CV style build', () => {
+describe('the CV file', () => {
   const real = { environment: 'production' as const }
 
-  it('a picked CV file goes to build_style by token: the tool gets the real path', async () => {
-    const { invoke, server, cvSources } = setup(async () => ({ started: true }), undefined, false, real)
-    expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: true, data: { started: true } })
-    expect(cvSources.resolve).toHaveBeenCalledWith(['tok1'])
-    expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/cv.pdf' }, { timeout: 120_000 })
-  })
-
-  it('a refusal by the tool reaches the window as the reason', async () => {
-    const { invoke } = setup(async () => {
-      throw new DoorError('this PDF is a scan: there is no style to copy')
-    }, undefined, false, real)
-    expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
-  })
-
-  it('an unknown token, or a path from the window, builds nothing', async () => {
-    const { invoke, server } = setup(undefined, undefined, false, real)
-    for (const t of ['nope', '/Users/ada/cv.pdf', 42]) {
-      expect((await invoke(CHANNELS.buildStyle, t)).ok).toBe(false)
-    }
-    expect(server.call).not.toHaveBeenCalled()
-  })
-
-  it("the review's two looks: the picked CV file by token and the draft go to preview_styles", async () => {
-    const { invoke, server } = setup(async () => ({ styles: {} }), undefined, false, real)
-    expect(await invoke(CHANNELS.previewStyles, 'tok1', '# Ada')).toEqual({ ok: true, data: { styles: {} } })
-    expect(server.call).toHaveBeenCalledWith('preview_styles', { markdown: '# Ada', file: '/Users/ada/cv.pdf' }, { timeout: 120_000 })
-    for (const [t, md] of [['nope', '# Ada'], ['/Users/ada/cv.pdf', '# Ada'], ['tok1', 42]] as const) {
-      expect((await invoke(CHANNELS.previewStyles, t, md)).ok).toBe(false)
-    }
-    expect(server.call).toHaveBeenCalledTimes(1)
-  })
-
-  it('a CV file main can no longer use is logged: the wizard says nothing of it', async () => {
-    const { invoke, problemLog } = setup(undefined, undefined, false, real)
-    await invoke(CHANNELS.buildStyle, 'nope')
-    expect(problemLog.write).toHaveBeenCalledWith('build_style refused', expect.any(String))
-  })
-
-  it('staging and the sandbox build for real', async () => {
-    for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
-      const { invoke, server } = setup(async () => ({ started: true }), undefined, false, info)
-      expect(await invoke(CHANNELS.buildStyle, 'tok1')).toEqual({ ok: true, data: { started: true } })
-      expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/cv.pdf' }, { timeout: 120_000 })
-    }
-  })
-})
-
-describe('a style from the CV file', () => {
-  const real = { environment: 'production' as const }
-
-  it('the CV file is the first file the draft read with a style to copy, else its first file', async () => {
-    const styled = { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', style: false }, { source: '/Users/ada/b.pdf', kind: 'file', style: true }, { source: '/Users/ada/c.pdf', kind: 'file', style: true }] }
-    const one = setup(async () => styled, undefined, false, real)
+  it('the CV file is the first file the draft read', async () => {
+    const read = { markdown: '# Ada', sources: [{ source: 'https://ada.dev', kind: 'url' }, { source: '/Users/ada/cv.docx', kind: 'file' }, { source: '/Users/ada/other.pdf', kind: 'file' }] }
+    const one = setup(async () => read, undefined, false, real)
     await one.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
-    expect(one.styleFile.remember).toHaveBeenCalledTimes(1)
-    expect(one.styleFile.remember).toHaveBeenCalledWith('/Users/ada/b.pdf')
-    const plain = { markdown: '# Ada', sources: [{ source: 'https://ada.dev', kind: 'url' }, { source: '/Users/ada/cv.docx', kind: 'file', style: false }, { source: '/Users/ada/other.pdf', kind: 'file' }] }
-    const two = setup(async () => plain, undefined, false, real)
-    await two.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
-    expect(two.styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.docx')
+    expect(one.cvFile.remember).toHaveBeenCalledTimes(1)
+    expect(one.cvFile.remember).toHaveBeenCalledWith('/Users/ada/cv.docx')
   })
 
   it('a CV file to add from is read by enrich from its path, and is the CV file from then on', async () => {
@@ -866,7 +809,7 @@ describe('a style from the CV file', () => {
     const r = await one.invoke(CHANNELS.enrichFile, 'tok1')
     expect(r).toEqual({ ok: true, data: { outcome: 'proposed', proposals: [] } })
     expect(one.server.call).toHaveBeenCalledWith('enrich', { files: ['/Users/ada/cv.pdf'] }, expect.objectContaining({ timeout: expect.any(Number) }))
-    expect(one.styleFile.remember).toHaveBeenCalledWith('/Users/ada/cv.pdf')
+    expect(one.cvFile.remember).toHaveBeenCalledWith('/Users/ada/cv.pdf')
   })
 
   it('a CV file that cannot be read to add from is not remembered, and an unknown token reads nothing', async () => {
@@ -874,7 +817,7 @@ describe('a style from the CV file', () => {
       throw new DoorError('the file could not be read')
     }, undefined, false, real)
     expect((await failed.invoke(CHANNELS.enrichFile, 'tok1')).ok).toBe(false)
-    expect(failed.styleFile.remember).not.toHaveBeenCalled()
+    expect(failed.cvFile.remember).not.toHaveBeenCalled()
     const guessed = setup(undefined, undefined, false, real)
     expect((await guessed.invoke(CHANNELS.enrichFile, 'guess')).ok).toBe(false)
     expect(guessed.server.call).not.toHaveBeenCalled()
@@ -882,42 +825,5 @@ describe('a style from the CV file', () => {
 
   it('names the CV file to the window by its name only', async () => {
     expect(await setup(undefined, undefined, false, real).invoke(CHANNELS.cvFile)).toBe('my cv.pdf')
-  })
-
-  it('build_style gets the CV file\'s real path from main, never from the window', async () => {
-    const { invoke, server, styleFile } = setup(async () => ({ started: true }), undefined, false, real)
-    expect(await invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: true, data: { started: true } })
-    expect(styleFile.current).toHaveBeenCalled()
-    expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/my cv.pdf' }, { timeout: 120_000 })
-  })
-
-  it('tells the window once the file is taken, before the build', async () => {
-    const { invoke, send, server } = setup(async () => ({ started: true }), undefined, false, real)
-    server.call.mockImplementationOnce(async () => {
-      expect(send).toHaveBeenCalledWith(CHANNELS.styleReading)
-      return { started: true }
-    })
-    await invoke(CHANNELS.styleFromCvFile)
-    expect(send).toHaveBeenCalledWith(CHANNELS.styleReading)
-  })
-
-  it('a CV file refused in main, or by the tool, reaches the window as the reason, and starts nothing', async () => {
-    const one = setup(undefined, undefined, false, real)
-    one.styleFile.current.mockResolvedValueOnce({ error: 'Choose your CV file under Sources first.' })
-    expect(await one.invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: false, error: 'Choose your CV file under Sources first.' })
-    expect(one.server.call).not.toHaveBeenCalled()
-    expect(one.send).not.toHaveBeenCalledWith(CHANNELS.styleReading)
-    const two = setup(async () => {
-      throw new DoorError('this PDF is a scan: there is no style to copy')
-    }, undefined, false, real)
-    expect(await two.invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: false, error: 'this PDF is a scan: there is no style to copy' })
-  })
-
-  it('staging and the sandbox build for real', async () => {
-    for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
-      const { invoke, server } = setup(async () => ({ started: true }), undefined, false, info)
-      expect(await invoke(CHANNELS.styleFromCvFile)).toEqual({ ok: true, data: { started: true } })
-      expect(server.call).toHaveBeenCalledWith('build_style', { file: '/Users/ada/my cv.pdf' }, { timeout: 120_000 })
-    }
   })
 })

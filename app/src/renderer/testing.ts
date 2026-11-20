@@ -60,17 +60,6 @@ export function mockDoor(given: Record<string, Handler>) {
   const cvFile = vi.fn(async (): Promise<string | null> => null)
   // The CV photo: nothing picked; a test answers the dialog with mockResolvedValueOnce.
   const pickPhoto = vi.fn(async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> => ({ canceled: true }))
-  const buildStyle = vi.fn(async (_token: string): Promise<unknown> => ({ ok: true, data: { started: true } }))
-  const previewStyles = vi.fn(async (_token: string, _markdown: string): Promise<unknown> => ({ ok: true, data: { styles: {} } }))
-  const styleReadingListeners = new Set<() => void>()
-  const onStyleReading = vi.fn((cb: () => void) => {
-    styleReadingListeners.add(cb)
-    return () => {
-      styleReadingListeners.delete(cb)
-    }
-  })
-  const pushStyleReading = () => styleReadingListeners.forEach((cb) => cb())
-  const styleFromCvFile = vi.fn(async (): Promise<unknown> => ({ ok: true, data: { started: true } }))
   const savePhoto = vi.fn(async (_token: string): Promise<unknown> => ({ ok: true, data: { photo_path: '/p/photo.jpg' } }))
   // Progress callbacks are kept by call id so a test can fire them (`emitProgress`).
   const progressCallbacks = new Map<string, (p: { progress: number; total?: number; message: string }) => void>()
@@ -145,8 +134,8 @@ export function mockDoor(given: Record<string, Handler>) {
       }
     }),
   }
-  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, buildStyle, previewStyles, styleFromCvFile, onStyleReading, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, importData, reportProblem }
-  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, buildStyle, previewStyles, styleFromCvFile, onStyleReading, pushStyleReading, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, importData, reportProblem }
+  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, importData, reportProblem }
+  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, importData, reportProblem }
 }
 
 export const summary = (over: Record<string, unknown> = {}) => ({

@@ -1,7 +1,7 @@
 """Guard: the lower packages never import the command layer (issue #357).
 
-`door.commands` composes the packages below it; `render/` and `style/` have no business reaching up
-into it, and `render/` is also under `style/`. `pipeline/` is left out: it is the layer that composes
+`door.commands` composes the packages below it; `render/` has no business reaching up
+into it. `pipeline/` is left out: it is the layer that composes
 the commands' cores (`find`'s five steps). There is no exception: `core/sync/sync.py`'s Drive hooks call the
 archive cores in `core/sync/archive.py`. Nor do they import `door.pipeline`.
 """
@@ -10,7 +10,7 @@ import ast
 
 from paths import PACKAGE_DIR
 
-LOWER = ("render", "style", "core", "tailoring", "matching", "i18n", "scrapers")
+LOWER = ("render", "core", "tailoring", "matching", "i18n", "scrapers")
 
 
 def _imports(path):
@@ -40,10 +40,6 @@ def test_the_lower_packages_never_import_the_commands():
 
 def test_the_lower_packages_never_import_the_pipeline():
     assert _offenders(LOWER, "door.pipeline") == set()
-
-
-def test_render_never_imports_style():
-    assert _offenders(("render",), "door.style") == set()
 
 
 def test_employers_sync_and_downloads_never_import_jobs_or_phone():

@@ -29,14 +29,6 @@ declare global {
       /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (save_photo's answer). */
       pickPhoto(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
       savePhoto(token: string): Promise<Envelope>
-      /** Start the CV style build from a CV file the wizard read, by its token. */
-      buildStyle(token: string): Promise<Envelope>
-      /** The onboarding review's two looks (`preview_styles`): the picked CV file by token, beside the draft. */
-      previewStyles(token: string, markdown: string): Promise<Envelope>
-      /** Profile → CV: start building a style from the CV file (Sources); the window names no path. */
-      styleFromCvFile(): Promise<Envelope>
-      /** The CV file was taken by `styleFromCvFile` and is being read; returns the way to stop. */
-      onStyleReading(cb: () => void): () => void
       /** Signing in to Claude: the main process runs `claude auth login` and pushes its state. */
       claudeLogin: {
         start(email?: string): Promise<{ ok: boolean; error?: string }>
@@ -52,7 +44,6 @@ declare global {
       info(): Promise<{ environment: Environment; home?: string; remote?: boolean }>
       /** The phone app's address of a prepared page image (issue 303); the desktop app uses door-file://. */
       pageUrl?(jobId: string, pngPath: string, v: number, sent?: boolean): string
-      /** The preview page's own address for a style preview image (a browser has no door-file scheme). */
       /** Writes an export where the user says in a save dialog (export_data's answer, or canceled). */
       exportData(): Promise<Envelope | { ok: false; canceled: true }>
       /** Picks an archive to import in an open dialog: a token and the file's name. */

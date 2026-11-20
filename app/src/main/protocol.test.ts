@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { resolveMaterialRequest, resolvePhotoRequest, resolveStylePreviewRequest } from './protocol'
+import { resolveMaterialRequest, resolvePhotoRequest } from './protocol'
 
 function home() {
   const h = realpathSync(mkdtempSync(join(tmpdir(), 'proto-')))
@@ -76,54 +76,5 @@ describe('resolvePhotoRequest', () => {
     writeFileSync(join(h, 'secret.jpg'), 's')
     symlinkSync(join(h, 'secret.jpg'), join(h, 'profile', 'photo.jpg'))
     expect(resolvePhotoRequest('door-file://profile/photo.jpg', h)).toBeNull()
-  })
-})
-
-describe('resolveStylePreviewRequest', () => {
-  function previews() {
-    const { h } = home()
-    const dir = join(h, '.style', 'preview', 'like')
-    mkdirSync(dir, { recursive: true })
-    for (const f of ['cv_page_1.png', 'letter_page_1.png', 'cv.pdf', 'meta.json']) writeFileSync(join(dir, f), 'x')
-    return { h, dir }
-  }
-  it('serves a page image of a style, ignoring the cache counter', () => {
-    const { h, dir } = previews()
-    expect(resolveStylePreviewRequest('door-file://style/like/cv_page_1.png?v=abc', h)).toBe(join(dir, 'cv_page_1.png'))
-    expect(resolveStylePreviewRequest('door-file://style/like/letter_page_1.png', h)).toBe(join(dir, 'letter_page_1.png'))
-  })
-  it("serves the onboarding review's two looks: the draft in the default style and the uploaded CV", () => {
-    const { h } = previews()
-    for (const set of ['draft', 'original']) {
-      const dir = join(h, '.style', 'preview', set)
-      mkdirSync(dir, { recursive: true })
-      writeFileSync(join(dir, 'cv_page_1.png'), 'x')
-      expect(resolveStylePreviewRequest(`door-file://style/${set}/cv_page_1.png?v=1`, h)).toBe(join(dir, 'cv_page_1.png'))
-    }
-  })
-  it('refuses another style, another name, another host and a way out', () => {
-    const { h } = previews()
-    for (const bad of [
-      'door-file://style/other/cv_page_1.png',
-      'door-file://style/like/cv.pdf',
-      'door-file://style/like/meta.json',
-      'door-file://style/like/cv_page_x.png',
-      'door-file://style/like/../../cv_page_1.png',
-      'door-file://style/like/%2e%2e/cv_page_1.png',
-      'door-file://style/like%2fcv_page_1.png',
-      'door-file://output/like/cv_page_1.png',
-      'door-file://style/like/cv_page_1.png/extra',
-      'door-file://style/cv_page_1.png',
-      'not a url',
-    ]) {
-      expect(resolveStylePreviewRequest(bad, h), bad).toBeNull()
-    }
-  })
-  it('is null when the file is not there, or a link out of the preview folder', () => {
-    const { h, dir } = previews()
-    expect(resolveStylePreviewRequest('door-file://style/like/cv_page_2.png', h)).toBeNull()
-    writeFileSync(join(h, 'secret.png'), 's')
-    symlinkSync(join(h, 'secret.png'), join(dir, 'cv_page_2.png'))
-    expect(resolveStylePreviewRequest('door-file://style/like/cv_page_2.png', h)).toBeNull()
   })
 })

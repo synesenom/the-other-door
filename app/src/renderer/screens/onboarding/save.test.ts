@@ -87,47 +87,6 @@ describe('saveProfile', () => {
     expect(s.errors.titles).toEqual(['at least one'])
   })
 
-  describe('the CV style build', () => {
-    const styled = (over: Partial<WizardState> = {}) =>
-      filled({
-        cvText: '# Ada\n',
-        files: [{ token: 'f1', name: 'cv.pdf', size: 1 }],
-        cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: true, token: 'f1' }] },
-        ...over,
-      })
-
-    it('a ticked box starts the build from the file, after the CV is saved', async () => {
-      const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
-      h.buildStyle.mockImplementation(async () => {
-        expect(names(h)).toEqual(['init_profile', 'save_cv'])
-        return { ok: true, data: { started: true } }
-      })
-      const result = await saveProfile(styled({ style: true }))
-      expect(h.buildStyle).toHaveBeenCalledWith('f1')
-      expect(result.ok).toBe(true)
-    })
-
-    it('an unticked box starts nothing', async () => {
-      const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
-      await saveProfile(styled())
-      expect(h.buildStyle).not.toHaveBeenCalled()
-    })
-
-    it('a tick with no file that has a style starts nothing', async () => {
-      const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
-      await saveProfile(styled({ style: true, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false, token: 'f1' }] } }))
-      expect(h.buildStyle).not.toHaveBeenCalled()
-    })
-
-    it('a build that is refused or fails does not fail Save', async () => {
-      const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile })
-      h.buildStyle.mockResolvedValueOnce({ ok: false, error: 'no style to copy' })
-      expect((await saveProfile(styled({ style: true }))).ok).toBe(true)
-      h.buildStyle.mockRejectedValueOnce(new Error('boom'))
-      expect((await saveProfile(styled({ style: true }))).ok).toBe(true)
-    })
-  })
-
   describe('the example story', () => {
     const story = { title: 'Halved the close', context: 'c', action: 'a', result: 'r', learning: 'l' }
 

@@ -58,7 +58,6 @@ FEATURES = {
     "import_posting": "other",
     "ask": "other",
     "scraper_fix": "other",
-    "style": "other",
 }
 
 # What each feature is called where a user reads the cost (`cost`); a test checks every feature has one.
@@ -81,7 +80,6 @@ FEATURE_LABELS = {
     "import_posting": "Adding a job",
     "ask": "Questions about your jobs",
     "scraper_fix": "Fixing a scraper",
-    "style": "Building a CV template",
 }
 
 # Before this computer has history, a find is sized as scoring this many postings and a

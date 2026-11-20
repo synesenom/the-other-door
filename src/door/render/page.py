@@ -1,7 +1,6 @@
 """Page assembly for a CV or letter body (#355): the photo placed, the template's two columns, the language's
 typography, the body wrapped in the template and printed with the pinned Chromium (`html_pdf`). `commands/compile`
-(a prepared job), `commands/matches` (the CV as placed) and `style/` (a built style's prints and previews) all place a
-body through this module.
+(a prepared job) and `commands/matches` (the CV as placed) all place a body through this module.
 """
 
 import re

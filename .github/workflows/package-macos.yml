@@ -17,7 +17,6 @@ on:
       - "pyproject.toml"
       - "poetry.lock"
       - "src/door/core/downloads/chromium_pin.json"
-      - "src/door/style/fonts_pin.json"
       - ".github/workflows/package-macos.yml"
   # Everything else is checked once it is on main, not on every pull request (slow, and macOS and Windows minutes cost 10x and 2x).
   push:

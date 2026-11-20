@@ -25,10 +25,6 @@ from release_gate_utils import DEFAULT, releases
 NEW_SINCE_RELEASE: set[str] = {
     # the CV and letter are HTML bodies since #146 (the sample the generator writes has them; the saved 0.2.0 holds .tex)
     "jobs/output/*/cv.html", "jobs/output/*/cover_letter.html", "jobs/output/*/*.html.bak",
-    # a CV template built from an uploaded CV (#149): written only when a user asks for one
-    "profile/style/**",
-    # the candidate a build leaves, waiting to be chosen (#151)
-    "profile/style.next/**",
     # the fact check's round counter: v0.2.0 wrote it, but its saved sample was made without it (#140)
     "jobs/output/*/.facts_rounds",
 }

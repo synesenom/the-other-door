@@ -15,7 +15,7 @@ scripted, multi-step **skills** you invoke with a slash command. Skills live in
 Setup is split in two: `./scripts/setup.sh` (and the `doctor --fix` [command](manual-cli.md) it ends
 with) installs everything and asks nothing about you; `/onboard` reads your sources, asks what
 they did not say, and installs nothing. Its tools are the ones behind `init`'s wizard in a shell (`draft_cv`,
-`infer_basics`, `suggest_titles`, `keywords`, `init_profile`, `save_cv`, `save_photo`, `find_jobs`, and `build_style` when you turn on the style line), so `./door init` does the same onboarding in a
+`infer_basics`, `suggest_titles`, `keywords`, `init_profile`, `save_cv`, `save_photo`, and `find_jobs`), so `./door init` does the same onboarding in a
 terminal — see [*The other door* from the terminal](manual-cli.md#walkthrough). The desktop app's
 first-launch wizard is the third twin of `/onboard` and `init`: the same three parts and the same
 rules, behind the same tools — see [the app](manual-app.md#first-launch).
@@ -54,13 +54,9 @@ The skills are tested end to end, locally and before a release (`./scripts/run-t
 in CI): the real model runs `/onboard`, `/expand` and a review session against a test world,
 a second small model plays the user, and the checks are on behaviour only (which tools, in which order,
 what was written and when), never on wording, except that a thing that must go unsaid is checked unsaid
-(a CV style still building or failed, a recommended style). The same run rebuilds the CV style of every CV in the style
-corpus and its edge cases with the real stylist agent (`tests/model/test_style_rebuild.py`, about 2-4
-minutes a CV): each build ready, close to its original, its fonts found, and the chosen style printing the
-user's CV in the original's columns, read back whole by an ATS; a case a known issue still breaks is an
-`xfail` naming it. They need a signed-in `claude`, `claude-agent-sdk`, `npm ci` in `app/`, the pinned
-Chromium and google/fonts reachable; they use the plan's quota. Run them before a release and when a skill,
-CLAUDE.md's review-session rules, the stylist agent or the style build code changes.
+(a job marked ghosted unasked). They need a signed-in `claude`, `claude-agent-sdk`, `npm ci` in `app/`
+and the pinned Chromium; they use the plan's quota. Run them before a release and when a skill or CLAUDE.md's
+review-session rules change.
 
 ## Agents
 

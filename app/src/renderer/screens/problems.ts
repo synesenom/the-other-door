@@ -12,7 +12,7 @@ export interface Problem {
   key: string
   text: string
   /** Where it is fixed: Settings, or Profile on the CV; `none` has nothing to fix (the plan's window), said, not a button. */
-  target: 'settings' | 'settings-report' | 'profile-cv' | 'profile-style' | 'profile' | 'none'
+  target: 'settings' | 'settings-report' | 'profile-cv' | 'profile' | 'none'
 }
 
 export interface ProblemInput {
@@ -25,8 +25,6 @@ export interface ProblemInput {
   driveConflict?: boolean
   /** status_summary's `plan`; null or missing while unknown. */
   plan?: PlanBlock | null
-  /** status_summary's `style.state`: a CV style build is ready to compare; null or missing while unknown, and on the phone. */
-  style?: 'none' | 'building' | 'ready' | 'failed' | null
   /** The clock, for the reset time; now by default. */
   now?: Date
 }
@@ -84,6 +82,5 @@ export function problems(input: ProblemInput): Problem[] {
   if (input.drive?.connected && input.driveConflict) out.push({ key: 'drive', text: 'Google Drive needs a choice', target: 'settings' })
   else if (input.drive?.connected && input.drive.last_error) out.push({ key: 'drive', text: 'Google Drive sync failed', target: 'settings' })
   if (input.recurring) out.push({ key: 'report', text: 'Something keeps going wrong. Send a report', target: 'settings-report' })
-  if (input.style === 'ready') out.push({ key: 'style', text: 'Your CV style is ready to compare', target: 'profile-style' })
   return out
 }

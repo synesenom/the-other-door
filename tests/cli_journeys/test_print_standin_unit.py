@@ -58,15 +58,6 @@ def test_worldfail_is_a_print_error(standin, tmp_path):
         _print(standin, tmp_path, "<body><p>worldfail</p></body>")
 
 
-def test_a_style_build_s_sample_print_is_the_original_cv_so_the_world_s_rebuild_looks_like_it(standin, tmp_path):
-    original = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
-    (tmp_path / "original.pdf").write_bytes(original.read_bytes())
-    render = _print(standin, tmp_path, "<body><p>the stylist's template</p></body>", "render")
-    assert render.read_bytes() == original.read_bytes()
-    other = _print(standin, tmp_path, "<body><p>a stress render</p></body>", "cv")  # every other print lays the text out
-    assert "a stress render" in pdf_render.page_texts(other)[0]
-
-
 def test_install_replaces_the_print_and_the_chromium_lookup(standin):
     assert html_pdf.print_html is standin.print_html
     assert chromium.find_chromium()  # a path: the wrapper on PATH, else the interpreter

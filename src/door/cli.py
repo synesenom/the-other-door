@@ -26,7 +26,6 @@ from door.commands import report as report_cmd
 from door.commands import serve as serve_cmd
 from door.commands import setup as setup_cmd
 from door.commands import stories as stories_cmd
-from door.commands import style as style_cmd
 from door.commands import titles as titles_cmd
 
 
@@ -141,7 +140,6 @@ cv_cmd.cv_group.add_command(enrich_cmd.enrich, "enrich")
 cv_cmd.cv_group.add_command(gaps_cmd.skill_gaps, "gaps")
 cv_cmd.cv_group.add_command(titles_cmd.titles_command, "titles")
 cv_cmd.cv_group.add_command(stories_cmd.stories_group, "stories")
-cv_cmd.cv_group.add_command(style_cmd.style_group, "style")
 cli.add_command(cv_cmd.cv_group)
 
 companies_cmd.companies_group.add_command(companies_cmd.list_companies, "list")

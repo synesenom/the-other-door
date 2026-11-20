@@ -1,6 +1,6 @@
-"""Processes that outlive the call that started them, and the run.json they leave (the phone server, #444; the CV
-style build, #205; the PDF printer's browser): start one in a session of its own, ask whether it lives, end it with
-everything it started, start `python -m door` for a data folder, and read and write its run state."""
+"""Processes that outlive the call that started them, and the run.json they leave (the phone server, #444; the PDF
+printer's browser): start one in a session of its own, ask whether it lives, end it with everything it started, and
+read and write its run state."""
 
 from __future__ import annotations
 
@@ -28,11 +28,6 @@ def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None, hidde
 def door_env(home: Path) -> dict:
     """The environment of a `python -m door` started for the data folder `home`, on this checkout's source."""
     return {**os.environ, "DOOR_HOME": str(home), "PYTHONPATH": str(workspace.REPO_ROOT / "src")}
-
-
-def spawn_door(home: Path, args: list[str], *, log: Path, hidden_console: bool = False):
-    """Start `python -m door <args>` detached, on the data folder `home`."""
-    return spawn_detached([sys.executable, "-m", "door", *args], log=log, env=door_env(home), hidden_console=hidden_console)
 
 
 def is_alive(pid: int) -> bool:

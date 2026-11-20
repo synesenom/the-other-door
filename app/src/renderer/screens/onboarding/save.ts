@@ -1,7 +1,7 @@
 // The one place the wizard writes: init_profile with every answer, then the CV the user wrote
-// (only if they wrote one), then the photo they chose or removed, then the example story if kept, then the CV style build if ticked, then the profile read back. Called by the review's Save.
+// (only if they wrote one), then the photo they chose or removed, then the example story if kept, then the profile read back. Called by the review's Save.
 import { call, errorText } from '../../api'
-import { styleSource, toInitArgs } from './reducer'
+import { toInitArgs } from './reducer'
 import type { ShowProfile, WizardState } from './reducer'
 
 export type SaveResult =
@@ -47,9 +47,6 @@ export async function saveProfile(state: WizardState): Promise<SaveResult> {
       return { ok: false, kind: 'story', error: errorText(e) }
     }
   }
-  // The CV style build runs on in the background beside the first run; it is optional, so a refusal says nothing.
-  const source = state.style ? styleSource(state) : null
-  if (source) await window.door.buildStyle(source).catch(() => undefined)
   try {
     return { ok: true, profile: await call<ShowProfile>('show_profile') }
   } catch (e) {

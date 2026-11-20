@@ -118,7 +118,7 @@ export interface DoctorReport {
 }
 
 export interface CvDraftInfo {
-  sources: { source: string; kind: 'file' | 'url'; chars?: number; /** A file whose look can be copied (`draft_cv`). */ style?: boolean; /** The token the main process gave the file (`door:draft-cv`). */ token?: string }[]
+  sources: { source: string; kind: 'file' | 'url'; chars?: number; /** The token the main process gave the file (`door:draft-cv`). */ token?: string }[]
 }
 
 /** A title `suggest_titles` proposes, or one the user named. */
@@ -216,8 +216,6 @@ export interface WizardState {
   warnings: Partial<Record<ReadingWarning, string>>
   /** One story drafted from the CV, to show what the story bank is: saved with Save while kept. */
   story: { values: StoryValues; keep: boolean } | null
-  /** The tick "make my tailored CVs look like the CV I uploaded": held until Save, which then starts the build. Off by default. */
-  style: boolean
 }
 
 export function initialState(profile: ShowProfile): WizardState {
@@ -255,7 +253,6 @@ export function initialState(profile: ShowProfile): WizardState {
     errors: {},
     warnings: {},
     story: null,
-    style: false,
   }
 }
 
@@ -348,7 +345,6 @@ export type Action =
   | ({ type: 'draftDone'; markdown: string; urls: string[] } & CvDraftInfo)
   | { type: 'saveFailed'; error: string }
   | { type: 'photo'; choice: PhotoChoice }
-  | { type: 'style'; on: boolean }
   | { type: 'photoFailed'; error: string }
   | { type: 'storyDrafted'; story: StoryValues }
   | { type: 'story'; values: StoryValues }
@@ -465,8 +461,6 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
     }
     case 'saveFailed':
       return { ...state, errors: routeErrors(action.error), step: 'review' }
-    case 'style':
-      return { ...state, style: action.on }
     case 'photo':
       return withoutErrors({ ...state, photo: action.choice }, 'photo')
     case 'photoFailed':
@@ -504,15 +498,6 @@ export function toInitArgs(state: WizardState): Record<string, unknown> {
   if (state.preferences.trim() || state.mode === 'redo') other['preferences'] = state.preferences.trim()
   args['other'] = other
   return args
-}
-
-/** The token of the CV file whose style the build copies: the first picked file `draft_cv` says has one. None on a
- * set-up again or without such a file. */
-export function styleSource(state: WizardState): string | null {
-  if (state.mode !== 'fresh') return null
-  const token = state.cvDraft?.sources.find((s) => s.kind === 'file' && s.style === true)?.token
-  // the draft read those files; one dropped since is no longer there to copy
-  return token !== undefined && state.files.some((f) => f.token === token) ? token : null
 }
 
 /** What the city's country does with a CV photo: `no` for a city the options do not know. */

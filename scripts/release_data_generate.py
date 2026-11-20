@@ -8,7 +8,7 @@ status, a story bank, postings in every state, an application ledger with every 
 prepared job's output, and a run record. Nothing here may name a real person; addresses are `example.com`.
 
 With `DOOR_SAMPLE=default` the profile is the default one instead (#141): the example config's keys only, no template
-in `profile/` and no built style, so `cv_template` and `cover_letter_template` are null and the templates come from
+in `profile/`, so `cv_template` and `cover_letter_template` are null and the templates come from
 the code, as most users have it; `jobs/` is the same.
 
 Written for v0.2.0's API (an older tag cannot run it: it imports `migrations` and sets `preferences`); a later release whose API moved needs this script to follow it, and the next call of
@@ -184,24 +184,6 @@ def make_profile() -> None:
         config = json.loads((PROFILE / "config.json").read_text(encoding="utf-8"))
         assert not {"cv_template", "cover_letter_template"} & set(config), "the default profile sets no template key"
         assert not list(PROFILE.glob("*.template.*")), "the default profile has no template in profile/"
-
-
-def make_style() -> None:
-    """`profile/style/` as a build of a CV writes it (#149): plain files, so any release's sample can hold it."""
-    import shutil
-
-    style = PROFILE / "style"
-    (style / "fonts").mkdir(parents=True)
-    (style / "icons").mkdir()
-    for name in ("cv.template.html", "cover-letter.template.html"):
-        shutil.copyfile(workspace.PROFILE_EXAMPLE_DIR / name, style / name)
-    (style / "template.json").write_text(json.dumps({"version": 1, "fonts": ["YoungSerif-Regular.ttf"],
-                                                     "icons": {"email": "email.svg"}, "max_pages": 1}, indent=1), encoding="utf-8")
-    (style / "style.json").write_text(json.dumps({"verdict": {"copyable": True}, "fonts": [], "icons": []}, indent=1), encoding="utf-8")
-    (style / "icons" / "email.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path fill="#000000" d="M0 0 L10 0 L10 10 Z"/></svg>\n', encoding="utf-8")
-    shutil.copyfile(HERE.parent / "tests" / "style" / "fixtures" / "styles" / "latex-sidebar.pdf", style / "source.pdf")
-    for name in ("YoungSerif-Regular.ttf", "YoungSerif-OFL.txt"):
-        shutil.copyfile(workspace.PROFILE_EXAMPLE_DIR / "fonts" / name, style / "fonts" / name)
 
 
 def make_companies() -> None:
@@ -405,8 +387,6 @@ def make_run_record() -> None:
 
 def main() -> None:
     make_profile()
-    if not DEFAULT:
-        make_style()
     make_companies()
     # A release's own writes go through `ledger_lock`, which stamps a new jobs/ with its data version first; the sample
     # writes the stores directly, so it stamps the folder as the lock would.

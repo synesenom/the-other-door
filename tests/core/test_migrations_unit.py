@@ -106,9 +106,58 @@ def test_the_real_profile_step_on_a_missing_folder(tmp_path):
     assert not (tmp_path / "nothing").exists()
 
 
+def _styled_home(tmp_path):
+    """A home whose profile uses a rebuilt CV style (the feature #464 removed)."""
+    profile = tmp_path / "profile"
+    for folder in ("style", "style.next"):
+        (profile / folder / "fonts").mkdir(parents=True)
+        (profile / folder / "cv.template.html").write_text("<html></html>")
+    (profile / "mine.html").write_text("<html>mine</html>")
+    (profile / "cv.md").write_text("# Ada\n")
+    config = {
+        "name": "Ada",
+        "cv_template": "profile/style/cv.template.html",
+        "cover_letter_template": "profile/style/cover-letter.template.html",
+    }
+    (profile / "config.json").write_text(json.dumps(config))
+    (tmp_path / ".style" / "preview").mkdir(parents=True)
+    (tmp_path / ".style" / "run.json").write_text("{}")
+    return profile
+
+
+def test_the_style_step_clears_the_keys_and_removes_the_style_folders(tmp_path):
+    profile = _styled_home(tmp_path)
+    migrations.PROFILE_STEPS[1].run(profile)
+    assert json.loads((profile / "config.json").read_text()) == {"name": "Ada"}
+    assert not (profile / "style").exists()
+    assert not (profile / "style.next").exists()
+    assert not (tmp_path / ".style").exists()
+    assert (profile / "mine.html").read_text() == "<html>mine</html>"
+    assert (profile / "cv.md").read_text() == "# Ada\n"
+
+
+def test_the_style_step_keeps_a_template_the_user_pointed_elsewhere(tmp_path):
+    profile = _styled_home(tmp_path)
+    config = json.loads((profile / "config.json").read_text())
+    config["cv_template"] = "profile/mine.html"
+    (profile / "config.json").write_text(json.dumps(config))
+    migrations.PROFILE_STEPS[1].run(profile)
+    config = json.loads((profile / "config.json").read_text())
+    assert config == {"name": "Ada", "cv_template": "profile/mine.html"}
+
+
+def test_the_style_step_on_a_profile_without_a_style(tmp_path):
+    profile = tmp_path / "profile"
+    profile.mkdir()
+    (profile / "config.json").write_text(json.dumps({"name": "Ada"}))
+    migrations.PROFILE_STEPS[1].run(profile)
+    assert json.loads((profile / "config.json").read_text()) == {"name": "Ada"}
+    migrations.PROFILE_STEPS[1].run(tmp_path / "nothing")
+
+
 def test_current_version_is_the_app_major_and_the_number_of_steps():
-    assert migrations.current("profile") == migrations.Version(0, 1)
-    assert len(migrations.PROFILE_STEPS) == 1
+    assert migrations.current("profile") == migrations.Version(0, 2)
+    assert len(migrations.PROFILE_STEPS) == 2
     assert migrations.current("jobs") == migrations.Version(0, len(migrations.JOBS_STEPS))
 
 
@@ -116,7 +165,7 @@ def test_the_major_is_read_from_the_app_version_at_call_time(monkeypatch):
     from door import version
 
     monkeypatch.setattr(version, "VERSION", "3.2.1")
-    assert migrations.current("profile") == migrations.Version(3, 1)
+    assert migrations.current("profile") == migrations.Version(3, 2)
 
 
 # ---- the runner ----------------------------------------------------------------------------------------
@@ -372,7 +421,7 @@ def test_two_processes_at_once_the_second_finds_it_done(home, tmp_path):
 def test_ensure_folder_stamps_a_folder_it_creates_or_finds_empty(tmp_path):
     profile = tmp_path / "profile"
     migrations.ensure_folder(profile, "profile")
-    assert (profile / ".data_version").read_text() == "0.1\n"
+    assert (profile / ".data_version").read_text() == "0.2\n"
     empty = tmp_path / "jobs"
     empty.mkdir()
     (empty / ".lock").write_text("")

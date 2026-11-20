@@ -35,8 +35,6 @@ function lastRunText(finishedAt: string | null | undefined): string | null {
   return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-/** How often the sidebar reads the summary again while a CV style is being built. */
-const STYLE_POLL_MS = 30_000
 /** Search and match only on the first run: following and collecting employers wait for the next one. */
 const FIRST_RUN_SKIP = ['discover', 'follow', 'collect']
 
@@ -85,7 +83,6 @@ export function App({ start }: { start?: AppStart } = {}) {
   const [recurring, setRecurring] = useState<boolean | null>(null)
   // The Claude plan's window (status_summary's plan): a sidebar line only when it is nearly full
   const [plan, setPlan] = useState<PlanBlock | null>(null)
-  const [styleState, setStyleState] = useState<'none' | 'building' | 'ready' | 'failed' | null>(null)
   // Bumped when a Prepare ends, to read the summary again (refreshKey would remount Matches)
   const [summaryKey, setSummaryKey] = useState(0)
   // The run: what this window asked for (`run`) and what the main process says is going (`board`),
@@ -254,7 +251,6 @@ export function App({ start }: { start?: AppStart } = {}) {
         setDrive(s.drive && typeof s.drive.connected === 'boolean' ? s.drive : null)
         setRecurring(typeof s.recurring_problem === 'boolean' ? s.recurring_problem : null)
         setPlan(s.plan ?? null)
-        setStyleState(s.style?.state ?? null)
       },
       () => undefined, // the caption is optional; Matches shows the failure
     )
@@ -272,14 +268,6 @@ export function App({ start }: { start?: AppStart } = {}) {
     const timer = setTimeout(() => setSummaryKey((k) => k + 1), Math.min(wait + 1000, 2 ** 31 - 1))
     return () => clearTimeout(timer)
   }, [plan])
-
-  // A CV style build runs in the background for minutes: read the summary now and then while it does, and stop
-  // when it is ready or failed (nothing polls otherwise).
-  useEffect(() => {
-    if (!inShell || styleState !== 'building') return
-    const timer = setInterval(() => setSummaryKey((k) => k + 1), STYLE_POLL_MS)
-    return () => clearInterval(timer)
-  }, [styleState, inShell])
 
   /** A pull or an import replaced profile/ and jobs/: read them again. */
   const dataChanged = () => {
@@ -344,7 +332,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   // What is wrong and needs you (Claude, the Claude plan's window, the CV, Drive, something that keeps going wrong):
   // a short line each at the sidebar's foot (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
   // The other door; a problem report is made there too, so the phone does not say that one.
-  const lines = problems({ doctor, drive, driveConflict, cv: profile?.config ? profile.cv : null, recurring: remote ? null : recurring, plan, style: remote ? null : styleState })
+  const lines = problems({ doctor, drive, driveConflict, cv: profile?.config ? profile.cv : null, recurring: remote ? null : recurring, plan })
   const destinations = remote ? PHONE_DESTINATIONS : DESTINATIONS
   /** Opens Profile at one of its sections (the same way for every link into it). */
   const openProfile = (section: string) => {
@@ -360,8 +348,8 @@ export function App({ start }: { start?: AppStart } = {}) {
   }
   const fix = (p: Problem) => {
     setFinding(false)
-    if (p.target === 'profile-cv' || p.target === 'profile-style') {
-      setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { section: p.target === 'profile-cv' ? 'cv' : 'style' } }))
+    if (p.target === 'profile-cv') {
+      setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { section: 'cv' } }))
       setCurrent('Profile')
     } else if (p.target === 'profile') setCurrent('Profile')
     else {
@@ -465,7 +453,6 @@ export function App({ start }: { start?: AppStart } = {}) {
             key={profileStart?.n ?? 0}
             start={profileStart?.at}
             onDraft={() => void setUpAgain().catch(() => undefined)}
-            style={{ state: styleState, canBuild: !doctor?.checks.some((c) => c.name === 'chromium' && c.status !== 'ok'), onChanged: () => setSummaryKey((k) => k + 1) }}
             onSaved={() => {
               void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
               setRefreshKey((k) => k + 1) // the matches may change with the minimum score or the age limit

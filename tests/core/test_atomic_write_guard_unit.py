@@ -23,8 +23,6 @@ EXEMPT = {
     ("core/sync/drive.py", "download"): _DOWNLOAD,
     ("core/downloads/pinned.py", "http_get"): _DOWNLOAD,
     ("render/html_pdf.py", "_launch"): "the browser's stderr log in its own fresh profile folder",
-    ("style/style_preview.py", "_set"): _STAGED,
-    ("style/style_build.py", None): _STAGED + " (the build's work and staging folders)",
 }
 
 _COPIERS = {"copy", "copy2", "copyfile", "copyfileobj", "copytree"}

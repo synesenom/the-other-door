@@ -1,14 +1,14 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Dispatch, ReactNode } from 'react'
 import { AppName, ErrorBox, ErrorList, named } from '../AppName'
-import { call, errorText, styleUrl } from '../../api'
+import { call, errorText } from '../../api'
 import { DocDialog, LEGAL_DISCLAIMER } from '../Documentation'
 import { Markdown } from '../Markdown'
 import { todoOffsets } from '../todos'
 import { Spinner } from '../Spinner'
 import { ChipInput, CityField, FieldLabel, Frame, TextField } from './parts'
 import { saveProfile } from './save'
-import { discoveryFor, hasOwnCv, ownTitles, photoPolicy, reviewProblem, stillUnfound, styleSource, todoCount } from './reducer'
+import { discoveryFor, hasOwnCv, ownTitles, photoPolicy, reviewProblem, stillUnfound, todoCount } from './reducer'
 import type { Action, Remote, ReviewSection, ShowProfile, WizardState } from './reducer'
 import { Switch } from '../Switch'
 import { PhotoField, photoHelp } from '../PhotoField'
@@ -67,55 +67,6 @@ function Folded({ id, title, summary, open, messages, children }: { id: string; 
       <Errors messages={messages} />
       {children}
     </details>
-  )
-}
-
-type Look = { cv: string[]; version: string }
-
-/** The review's two looks side by side, one chosen: the drafted CV in The other door's style, and the uploaded CV as
- * it is, whose look a build copies after Save. The pictures come once, when the part opens; without them the choice
- * stays, with names only (principle 9: nothing the user can fix). */
-function StyleChoice({ token, cvText, like, onChange }: { token: string; cvText: string; like: boolean; onChange: (like: boolean) => void }) {
-  const [looks, setLooks] = useState<{ draft?: Look; original?: Look } | null>(null)
-  const name = useId()
-  useEffect(() => {
-    let live = true
-    void window.door.previewStyles(token, cvText).then(
-      (r) => {
-        const styles = (r.ok ? (r.data as { styles?: { default?: Look; original?: Look } }).styles : undefined) ?? {}
-        if (live) setLooks({ draft: styles.default, original: styles.original })
-      },
-      () => live && setLooks({}),
-    )
-    return () => {
-      live = false
-    }
-    // once, when the review opens: the draft's look does not change with an edit of its words
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
-  const card = (which: 'draft' | 'original', label: ReactNode, text: string, on: boolean) => {
-    const look = looks?.[which]
-    return (
-      <label className={on ? 'style-card style-current style-pick' : 'style-card style-pick'}>
-        <input type="radio" className="visually-hidden" name={name} checked={on} onChange={() => onChange(which === 'original')} aria-label={text} />
-        <span className="style-thumb">
-          {look?.cv[0] ? <img className="paper" src={styleUrl(which, look.cv[0], look.version)} alt={`${text}, first page`} /> : <span className="style-sheet" />}
-        </span>
-        <span className="small style-caption">{label}</span>
-      </label>
-    )
-  }
-  return (
-    <>
-      <div className="style-cards" role="radiogroup" aria-label="Your CV's style">
-        {card('draft', <AppName />, 'The other door', !like)}
-        {card('original', 'Your CV', 'Your CV', like)}
-      </div>
-      {looks === null && <Spinner message="Preparing the previews…" />}
-      <p className="small muted">
-        {like ? 'Copying your CV’s look takes 2–5 minutes in the background after Save.' : named('Left: your CV in The other door’s style. Right: your CV as you uploaded it.')}
-      </p>
-    </>
   )
 }
 
@@ -183,7 +134,6 @@ export function reviewSections(state: WizardState): { id: string; label: string 
     { id: 'review-preferences', label: 'What matters to you' },
     { id: 'review-search', label: 'Search' },
     { id: 'review-cv', label: 'CV' },
-    ...(styleSource(state) ? [{ id: 'review-style', label: "Your CV's style" }] : []),
     ...(state.story ? [{ id: 'review-story', label: 'Your story bank' }] : []),
     ...(discoveryFor(state).length > 0 ? [{ id: 'review-employers', label: 'Where to find employers' }] : []),
   ]
@@ -362,12 +312,6 @@ export function Review({ state, profile, dispatch, onSaved, onBack }: Props) {
           </ul>
         )}
       </Folded>
-
-      {styleSource(state) && (
-        <Part id="review-style" title="Your CV's style" lead="How your tailored CVs will look. You can change it later in Profile.">
-          <StyleChoice token={styleSource(state)!} cvText={state.cvText ?? ''} like={state.style} onChange={(on) => dispatch({ type: 'style', on })} />
-        </Part>
-      )}
 
       {state.story && (
         <Part

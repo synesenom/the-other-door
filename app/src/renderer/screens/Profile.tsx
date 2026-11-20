@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { ErrorBox, ErrorList, named } from './AppName'
 import { call, errorText } from '../api'
 import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
@@ -50,13 +50,13 @@ function Chips({ label, help, errors, values, onChange }: { label: string; help?
 /**
  * Profile: one page. Every key of profile/config.json in sections (the tuning keys left to config.json), then the CV
  * and the Stories. One Save writes what changed: the details through init_profile (which checks it all; an error is
- * said under its field), then the CV through the editor. The CV's file, style and pages, the photo and the stories are
+ * said under its field), then the CV through the editor. The CV's file and pages, the photo and the stories are
  * each saved the moment they change, by their own controls.
  */
 /** Where Profile opens: a section scrolled into view, `cv` and `stories` among them. */
 export type ProfileStart = { section: string }
 
-export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => void; onDraft: () => void; start?: ProfileStart; style?: ComponentProps<typeof CvEditor>['style'] }) {
+export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDraft: () => void; start?: ProfileStart }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saved, setSaved] = useState<FormValues>({})
@@ -90,7 +90,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
     void load()
   }, [])
   const startSection = start?.section ?? null
-  // the section asked for, brought into view once it is on the page (CV style comes after the CV is read)
+  // the section asked for, brought into view once it is on the page
   useEffect(() => {
     if (!profile || !startSection) return
     const show = () => {
@@ -174,7 +174,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
   const shown = LAYOUT.sections.filter((s) => s.id !== CONFIG_ONLY && s.screen !== 'settings' && fieldsOf(s.id).length > 0)
   const aside = (
     <PageSections
-      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'Master CV' }, ...(style ? [{ id: 'profile-style', label: 'CV style' }] : []), { id: 'profile-stories', label: 'Stories' }]}
+      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'Master CV' }, { id: 'profile-stories', label: 'Stories' }]}
     />
   )
 
@@ -353,8 +353,7 @@ export function Profile({ onSaved, onDraft, start, style }: { onSaved: () => voi
     <Wrap aside={aside}>
       {errors.general.length > 0 && <ErrorList messages={errors.general} />}
       {details}
-      {/* two parts, Master CV and CV style */}
-      <CvEditor onDraft={onDraft} onSaved={onSaved} style={style} />
+      <CvEditor onDraft={onDraft} onSaved={onSaved} />
       <section className="part" aria-labelledby="profile-stories">
         <h2 className="display-s" id="profile-stories">
           Stories

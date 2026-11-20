@@ -367,8 +367,8 @@ phone.remove = _phone_remove
 
 
 # --------------------------------------------------------------------------- detached door processes
-# The CV style build (`python -m door cv style build`, started by the server with a PYTHONPATH of its own) is a process
-# of its own: the world's hook rides along on its PYTHONPATH, so it too reads the world, and its stand-ins, not the outside.
+# A door process the server starts detached (`python -m door ...`, with a PYTHONPATH of its own) is a process of its own:
+# the world's hook rides along on its PYTHONPATH, so it too reads the world, and its stand-ins, not the outside.
 _spawn_detached = process.spawn_detached
 
 

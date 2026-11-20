@@ -8,7 +8,6 @@ import { Profile } from './Profile'
 
 afterEach(cleanup)
 
-const STYLE_SET = { cv: ['/h/cv_page_1.png'], letter: [], version: 'v', two_column: false }
 const CV = '# Ada Lovelace\n\n## Experience\n\n- Analyst at Acme\n'
 
 const profile = (cv: Partial<{ text: string | null; is_example: boolean; exists: boolean }> = {}, sources: string[] = []) => ({
@@ -334,12 +333,11 @@ describe('CvEditor, the profile unreadable', () => {
   })
 })
 
-describe('CvEditor, its two parts', () => {
-  it('are Master CV (the file, the pages, the text), said to be what each application\'s CV is tailored from, and then CV style', async () => {
-    mockDoor({ show_profile: profile(), show_style: { styles: {}, in_use: 'default', candidate: false } })
-    render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
+describe('CvEditor, its part', () => {
+  it('are Master CV (the file, the pages, the text), said to be what each application\'s CV is tailored from', async () => {
+    mockDoor({ show_profile: profile() })
+    render(<CvEditor onDraft={vi.fn()} />)
     await screen.findByRole('switch', { name: 'Preview' })
-    expect(screen.getByRole('region', { name: 'Master CV' }).compareDocumentPosition(screen.getByRole('region', { name: 'CV style' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     const cv = within(screen.getByRole('region', { name: 'Master CV' }))
     expect(cv.getByText(/each application gets a CV of its own, picked from this one and tailored to the ad/)).toBeInTheDocument()
     expect(cv.getByRole('heading', { name: 'Experience' })).toBeInTheDocument()
@@ -405,30 +403,16 @@ describe('CvEditor, the CV file', () => {
     expect(h.enrichFile).not.toHaveBeenCalled()
   })
 
-  it('a new CV file builds the style of your own again from it', async () => {
-    const user = userEvent.setup()
-    const h = mockDoor({ show_profile: profile(), enrich: { outcome: 'nothing_new', proposals: [] }, show_style: { styles: { default: STYLE_SET, like: STYLE_SET }, in_use: 'like', candidate: false } })
-    h.cvFile.mockResolvedValue('old.pdf')
-    h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
-    render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
-    await screen.findByRole('img', { name: /Your CV/ })
-    expect(h.styleFromCvFile).not.toHaveBeenCalled()
-    await user.click(await screen.findByRole('button', { name: 'Replace CV file…' }))
-    expect(await screen.findByText('Nothing in new.pdf is missing from your Master CV.')).toBeInTheDocument()
-    await waitFor(() => expect(h.styleFromCvFile).toHaveBeenCalledTimes(1))
-  })
-
   it('a file that cannot be read is said in the dialog, the CV untouched and the CV file kept', async () => {
     const user = userEvent.setup()
     const h = mockDoor({ show_profile: profile(), enrich: () => { throw { message: 'Claude did not answer. Try again.' } } })
     h.cvFile.mockResolvedValue('old.pdf')
     h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
-    render(<CvEditor onDraft={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
+    render(<CvEditor onDraft={vi.fn()} />)
     await user.click(await screen.findByRole('button', { name: 'Replace CV file…' }))
     const dialog = await screen.findByRole('dialog', { name: 'Add from your CV file' })
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Claude did not answer')
     expect(screen.getByRole('heading', { name: 'Experience' })).toBeInTheDocument()
-    expect(h.styleFromCvFile).not.toHaveBeenCalled()
     expect(h.draftCv).not.toHaveBeenCalled()
   })
 
@@ -440,27 +424,5 @@ describe('CvEditor, the CV file', () => {
     await user.click(await screen.findByRole('button', { name: 'Add a CV file…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('cv.exe: not a CV file')
     expect(h.draftCv).not.toHaveBeenCalled()
-  })
-})
-
-describe('CvEditor, the Style', () => {
-  const styled = { show_style: { styles: { default: { cv: ['/h/cv_page_1.png'], letter: ['/h/letter_page_1.png'], version: 'v1', two_column: false } }, in_use: 'default', candidate: false } }
-
-  it('comes after the CV, and its previews are read again once the editor is left', async () => {
-    const h = mockDoor({ show_profile: profile(), save_cv: { cv_path: '/p/cv.md', backup: null }, ...styled, ...NO_STORIES })
-    render(<Profile onDraft={vi.fn()} onSaved={vi.fn()} style={{ state: 'none', canBuild: true, onChanged: vi.fn() }} />)
-    await screen.findByRole('img', { name: /The other door/ })
-    const row = screen.getByRole('heading', { name: 'CV style' })
-    await userEvent.click(screen.getByRole('switch', { name: 'Preview' }))
-    expect(editor().compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    h.call.mockClear()
-    await userEvent.type(editor(), '- SQL{Enter}')
-    await userEvent.tab()
-    await waitFor(() => expect(h.call).toHaveBeenCalledWith('show_style', {}))
-  })
-
-  it('is not there without the app telling it how the build stands', async () => {
-    await open()
-    expect(screen.queryByRole('heading', { name: 'CV style' })).toBeNull()
   })
 })

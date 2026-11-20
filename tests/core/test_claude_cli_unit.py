@@ -88,6 +88,6 @@ def test_login_check_asks_the_configured_plan(profile):
 
 
 def test_an_agent_definition_is_its_frontmatter_and_its_body_as_the_prompt():
-    entry = claude_cli.agent_definition("stylist")
-    assert entry["model"] == "sonnet" and entry["tools"] == ["Read"]
+    entry = claude_cli.agent_definition("tailor")
+    assert entry["model"] == "sonnet" and "Read" in entry["tools"]
     assert entry["description"] and entry["prompt"].startswith("You")
