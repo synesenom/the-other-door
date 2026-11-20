@@ -85,6 +85,30 @@ def test_the_reviser_rules_are_the_system_prompt_and_the_user_message_has_only_t
     assert "Rules:" in rules and "kind-summary" in rules and "untrusted" in rules
 
 
+# The stylist's round messages (user messages of its calls), as `style_build` sent them before they moved into files (#445).
+MESSAGES = {
+    "stylist-reply-first": ({}, "3bbfcaf76ab1f518085890c610ff9ba0c0d6b61ffea79dc21df222c8191886fe"),
+    "stylist-reply-next": ({}, "70dd0091acd1d7245210bc17b7698ebcf9703630a0253610694463064edf85d3"),
+    "stylist-reply-letter": ({}, "1606b99a094723ac3b8cdcc6486d5555105aacb3d5736a3b7d4bf1bd21b34ec7"),
+    "stylist-letter-request": ({"letter_file": "cover-letter.template.html"},
+                               "7ec06af1b7a153ead8c3c84b02454ec8f7231824576a3478fd7c32307b868528"),
+}
+
+
+@pytest.mark.parametrize("name", MESSAGES)
+def test_a_message_is_the_text_the_code_sent_before(name):
+    fields, digest = MESSAGES[name]
+    assert hashlib.sha256(claude_cli.prompt(name, **fields).encode("utf-8")).hexdigest() == digest
+
+
+@pytest.mark.parametrize("name", [*MESSAGES, "tailor-request", "tailor-retry"])
+def test_a_message_file_is_not_for_direct_use_and_has_no_model_or_tools(name):
+    text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
+    front = text.split("---", 2)[1]
+    assert re.search(r"^description: Not for direct use", front, re.M) and "`door." in front
+    assert not re.search(r"^(model|tools):", front, re.M)
+
+
 def test_the_bundle_copies_the_agent_files_the_code_names_and_no_more():
     src = "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
     named = {p.stem for p in (REPO_ROOT / ".claude" / "agents").glob("*.md")

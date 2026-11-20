@@ -1419,3 +1419,17 @@ def test_a_sparse_last_page_is_reported_and_not_retried(prep, monkeypatch):
     _script_readability(monkeypatch, [_SPARSE])
     result = _go(prep)
     assert len(calls) == 1 and result["readability"] == [_SPARSE]
+
+
+def test_the_tailor_request_is_the_text_the_code_sent_before(cli_env, monkeypatch):
+    """The request's fixed text moved into `.claude/agents/tailor-request.md` and `tailor-retry.md` (#445), byte for byte."""
+    import hashlib
+    from pathlib import Path
+
+    monkeypatch.setattr(workspace, "PROFILE_DIR", Path("/p/profile"))
+    monkeypatch.setattr(workspace, "JOBS_DIR", Path("/p/jobs"))
+    monkeypatch.setattr(prepare_cmd, "_tailor_templates", lambda _d: {"cv_template": Path("/t/cv.html"), "cover_letter_template": Path("/t/cl.html")})
+    monkeypatch.setattr(prepare_cmd, "_cv_conventions_text", lambda _p: "CONVENTIONS {x}.")
+    sha = lambda text: hashlib.sha256(text.encode("utf-8")).hexdigest()
+    assert sha(prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))[0]) == "670bfde478d79ab18caffae7cabf3dad4799d2ddaeaee9cbad110e2173c84421"
+    assert sha(prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"), "cv.pdf: cut {off}")[0]) == "41e41d3f61d8c2949ba136fbc22e98a688e9edda5032ba8d05ece69b870e05a1"
