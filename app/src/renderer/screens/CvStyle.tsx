@@ -3,7 +3,6 @@ import { call, errorText } from '../api'
 import { named } from './AppName'
 import { toInitArgs, type FieldSpec } from './profile-form/form'
 import swatches from './profile-form/cv-style.json'
-import { Spinner } from './Spinner'
 
 /** The accent colours by their config name (`Profile.cv_accent`): the label and the swatch (cv-style.json: the CV's own colours, not the app's; the table is `core/templates.ACCENTS`). */
 const COLOURS = swatches.colours as unknown as Record<string, [string, string]>
@@ -82,8 +81,7 @@ export function CvStyle({ specs, config }: Props) {
       </div>
       <div className="style-part">
         <div className="style-sample" aria-busy={busy}>
-          {png ? <img src={`data:image/png;base64,${png}`} alt="A sample of your CV in this style" /> : busy ? <Spinner message="Printing a sample…" /> : null}
-          {png && busy && <Spinner message="Printing a sample…" />}
+          {png ? <img src={`data:image/png;base64,${png}`} alt="A sample of your CV in this style" /> : <div className="style-sample-wait">{busy && <span className="small">Printing a sample…</span>}</div>}
           {problem && (
             <p role="alert" className="field-error">
               {named(problem)}
