@@ -90,8 +90,8 @@ export const APP_ID = 'dev.door.app'
 
 /**
  * How a packaged app starts the server: the bundled Python (python-build-standalone, its packages
- * installed into it) on the bundled `src/`, from `<resources>/door` (where `.claude/agents` and
- * `profile.example` sit beside `src`, as in a checkout). Nothing is written inside the app: the data
+ * installed into it) on the bundled `src/`, from `<resources>/door` (where `profile.example`
+ * sits beside `src`, as in a checkout). Nothing is written inside the app: the data
  * is `home` (the user's data folder, or DOOR_HOME), Python writes no bytecode and reads no user
  * site-packages. PATH starts with where claude's own installer puts it.
  */

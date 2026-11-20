@@ -141,7 +141,7 @@ _CSS_LENGTH = re.compile(r"(-?)(\d*\.?\d+)([a-z%]*)")
 MIN_LETTER_SPACING_EM, MAX_LETTER_SPACING_EM = -0.02, 0.1
 _CSS_TEXT_JUSTIFY = re.compile(r"(?<![\w-])text-justify\s*:\s*inter-character", re.I)
 # what a `content:` string may print: a list bullet or a separator, never text or a glyph standing for an icon (#248)
-_CONTENT_MARKS = frozenset("•·–—|/.,●○")  # the same marks .claude/agents/stylist.md names
+_CONTENT_MARKS = frozenset("•·–—|/.,●○")  # the same marks src/door/prompts/stylist.md names
 _CSS_ESCAPE = re.compile(r"\\(?:([0-9a-fA-F]{1,6})\s?|\r?\n|(.))", re.S)
 
 

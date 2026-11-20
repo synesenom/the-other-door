@@ -1,7 +1,7 @@
 """`profile/cv.md` as a body in the tailor's vocabulary, with no model (#204, epic #144; #431).
 
 `body(cv_md, reading)` is what the stress renders and the previews of a built CV template print: the same shapes the
-tailor agent writes (`html_guard`'s tags and classes; `.claude/agents/tailor.md`'s building blocks), made from the
+tailor agent writes (`html_guard`'s tags and classes; `src/door/prompts/tailor.md`'s building blocks), made from the
 markdown that `draft_cv` and `init` write. What the CV means comes from `reading`, the one reading of it
 (`core/cv_read.read`, a dict): no word list of any language is here. Nothing is translated, tailored or dropped; text and
 links are escaped and only `https:`, `mailto:` and `#` links are kept.

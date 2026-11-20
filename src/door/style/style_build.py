@@ -1,7 +1,7 @@
 """Build a CV template from an uploaded CV (#149, epic #144): the builder core.
 
 `build(pdf_path, ...)` reads the style of a CV PDF (`style_extract`), fetches the free fonts for it (`fonts`), writes its
-icons as SVG files, and runs the stylist agent (`.claude/agents/stylist.md`) round by round: the agent writes a template
+icons as SVG files, and runs the stylist agent (`src/door/prompts/stylist.md`) round by round: the agent writes a template
 page, the builder checks it (`html_guard.template_problems`), prints a sample body in it with the pinned Chromium, reads
 the print back and compares it with the original (`style_compare`) until the loop's rule says stop. A best round that scored under
 `style_compare.FLOOR` does not look like the CV: the build fails there. Otherwise it is

@@ -1,7 +1,7 @@
 """Unit tests for src/door/matching/scorer.py (issue #128).
 
 Pure/offline: no subprocess, no network. Exercises system-prompt building
-(rubric extraction from .claude/agents/matcher.md + profile), user-message
+(rubric extraction from src/door/prompts/matcher.md + profile), user-message
 building (description_condensed with a 6000-char cap), the `claude -p`
 argv builder, the `--output-format json` envelope parser, and apply_result's
 prefilter/prescreen hard-zero guard.
@@ -15,7 +15,7 @@ from door.matching import scorer
 
 
 # --------------------------------------------------------------------------- #
-# Synthetic rubric markdown mirroring .claude/agents/matcher.md's structure
+# Synthetic rubric markdown mirroring src/door/prompts/matcher.md's structure
 # --------------------------------------------------------------------------- #
 
 _SAMPLE_RUBRIC_MD = """---

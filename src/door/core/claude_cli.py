@@ -191,10 +191,14 @@ def run(
     return envelope if envelope is not None else result.stdout
 
 
+# Every prompt the code sends to `claude -p`, beside the code (a packaged app carries it with `src/`).
+PROMPTS_DIR = Path(__file__).resolve().parents[1] / "prompts"
+
+
 def _agent_file(name: str) -> tuple[dict, str]:
-    """`.claude/agents/<name>.md` as its frontmatter's `description`, `model` and `tools` and its raw body
+    """`src/door/prompts/<name>.md` as its frontmatter's `description`, `model` and `tools` and its raw body
     (everything after the closing `---` line)."""
-    text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
+    text = (PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8")
     _, front, body = text.split("---", 2)
     entry: dict = {}
     key = None
@@ -211,25 +215,25 @@ def _agent_file(name: str) -> tuple[dict, str]:
 
 
 def agent_definition(name: str) -> dict:
-    """`.claude/agents/<name>.md` as an `--agents` entry: its frontmatter's description,
+    """`src/door/prompts/<name>.md` as an `--agents` entry: its frontmatter's description,
     model and tools, and its body as the prompt."""
     entry, body = _agent_file(name)
     return {"prompt": body.strip(), **entry}
 
 
 def prompt(name: str, **fields: str) -> str:
-    """The text in `.claude/agents/<name>.md`: its body (a system prompt, or for a message file the user message), with each `{field}` given replaced by its value
+    """The text in `src/door/prompts/<name>.md`: its body (a system prompt, or for a message file the user message), with each `{field}` given replaced by its value
     in one pass (a value is never read for fields, and a prompt's other braces need no escaping)."""
     return re.sub(r"\{(\w+)\}", lambda m: fields.get(m[1], m[0]), _agent_file(name)[1].strip())
 
 
 def model_of(name: str) -> str:
-    """The model in `.claude/agents/<name>.md`'s frontmatter."""
+    """The model in `src/door/prompts/<name>.md`'s frontmatter."""
     return _agent_file(name)[0]["model"]
 
 
 def tools_of(name: str) -> tuple[str, ...]:
-    """The tools in `.claude/agents/<name>.md`'s frontmatter: what the call allows, none when it has no `tools`."""
+    """The tools in `src/door/prompts/<name>.md`'s frontmatter: what the call allows, none when it has no `tools`."""
     return tuple(_agent_file(name)[0].get("tools", ()))
 
 
@@ -281,7 +285,7 @@ def ask(
     profile_dir: Path | None = None,
     effort: str | None = None,
 ):
-    """One question to the model: the body of `.claude/agents/<agent>.md` as the system prompt (`fields`
+    """One question to the model: the body of `src/door/prompts/<agent>.md` as the system prompt (`fields`
     filled in, see `prompt`), `input` on stdin, no session kept. The model and the tools are the file's
     unless `model` or `allowed_tools` (`()` for none) says otherwise.
 

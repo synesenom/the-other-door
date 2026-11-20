@@ -11,12 +11,12 @@ Public API
 ``build_system_prompt(profile_cfg, cv_md, rubric_md) -> str``
     Deterministic system prompt: the scoring-rubric and language-requirements
     sections extracted from
-    ``.claude/agents/matcher.md``'s raw text (never hardcoded — the skill
+    ``src/door/prompts/matcher.md``'s raw text (never hardcoded — the skill
     and the CLI path read the same source, so they cannot drift) plus the
     phrase lists from ``src/door/i18n/lang/``, the candidate profile and CV.
 
 ``load_rubric_md(path=None) -> str``
-    Read ``.claude/agents/matcher.md``'s raw text (default: the repo copy).
+    Read ``src/door/prompts/matcher.md``'s raw text (default: the repo copy).
 
 ``build_user_message(posting) -> str``
     Title/company/location/posted_at plus ``description_condensed``
@@ -70,13 +70,12 @@ from pathlib import Path
 from typing import Callable
 
 from door import i18n
-from door.core import claude_cli, usage, workspace
+from door.core import claude_cli, usage
 from door.core.downloads import installers
 
-_REPO_ROOT = workspace.REPO_ROOT
-_MATCHER_AGENT_PATH = _REPO_ROOT / ".claude" / "agents" / "matcher.md"
+_MATCHER_AGENT_PATH = claude_cli.PROMPTS_DIR / "matcher.md"
 
-# Headings in .claude/agents/matcher.md pulled into the system prompt.
+# Headings in src/door/prompts/matcher.md pulled into the system prompt.
 # Matched by prefix so "## Scoring rubric (0-1)" etc. all match without
 # hardcoding the exact heading text (which would drift from the skill/agent
 # copy this is sourced from). The "Compensation research" and "Legitimacy"
@@ -114,7 +113,7 @@ class ScoreParseError(ValueError):
 
 
 def load_rubric_md(path: Path | None = None) -> str:
-    """Read `.claude/agents/matcher.md`'s raw text (default: the repo copy)."""
+    """Read `src/door/prompts/matcher.md`'s raw text (default: the repo copy)."""
     if path is None:
         path = _MATCHER_AGENT_PATH
     return Path(path).read_text(encoding="utf-8")
@@ -234,11 +233,11 @@ def build_user_message(posting: dict) -> str:
 # --------------------------------------------------------------------------- #
 
 # What the posting says about a working language other than English; see
-# "Language requirements" in .claude/agents/matcher.md.
+# "Language requirements" in src/door/prompts/matcher.md.
 LANGUAGE_REQUIREMENTS = ["required", "advantage", "none"]
 
 # What the posting says about a visa or work permit; see "Work permit" in
-# .claude/agents/matcher.md.
+# src/door/prompts/matcher.md.
 WORK_PERMIT = ["no_sponsorship", "permit_required", "sponsorship_offered", "not_mentioned"]
 
 SCORE_SCHEMA: dict = {

@@ -19,7 +19,7 @@ interface Props {
   initialDoc?: Document
 }
 
-// The letter's limits the tailor works to (.claude/agents/tailor.md); the CV's page limit comes with the materials.
+// The letter's limits the tailor works to (src/door/prompts/tailor.md); the CV's page limit comes with the materials.
 const LETTER_PAGES = 1
 const WORDS_MIN = 250
 const WORDS_MAX = 350

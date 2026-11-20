@@ -1,4 +1,4 @@
-"""Every model prompt lives in `.claude/agents/<name>.md` and `claude_cli.prompt` returns it byte for byte.
+"""Every model prompt lives in `src/door/prompts/<name>.md` and `claude_cli.prompt` returns it byte for byte.
 
 Recorded answers (cv reading, style structure, facts) are keyed by a hash of prompt plus input, so a prompt
 moved into a file must be exactly the text the code sent before: pinned here by sha256."""
@@ -49,16 +49,16 @@ def test_the_model_is_the_files(name):
 
 
 def test_a_field_is_filled_where_the_file_names_it_and_other_braces_stay():
-    text = (workspace.REPO_ROOT / ".claude" / "agents" / "skill-grouper.md").read_text(encoding="utf-8")
+    text = (claude_cli.PROMPTS_DIR / "skill-grouper.md").read_text(encoding="utf-8")
     assert "{variant, canonical, skill}" in claude_cli.prompt("skill-grouper")
-    assert "{webfetch_rules}" in (workspace.REPO_ROOT / ".claude" / "agents" / "cv-drafter.md").read_text(encoding="utf-8")
+    assert "{webfetch_rules}" in (claude_cli.PROMPTS_DIR / "cv-drafter.md").read_text(encoding="utf-8")
     assert "{webfetch_rules}" not in claude_cli.prompt("cv-drafter", webfetch_rules="X")
     assert text.startswith("---\nname: skill-grouper\n")
 
 
 def test_every_prompt_file_says_it_is_not_for_direct_use_and_names_its_module():
     for name in PROMPTS:
-        text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
+        text = (claude_cli.PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8")
         description = re.search(r"^description: (.*)$", text, re.M).group(1)
         assert description.startswith("Not for direct use"), name
         assert "`door." in description, name
@@ -91,17 +91,30 @@ MESSAGES = ["stylist-reply-first", "stylist-reply-next", "stylist-reply-letter",
 
 @pytest.mark.parametrize("name", MESSAGES)
 def test_a_message_file_is_not_for_direct_use_and_has_no_model_or_tools(name):
-    text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
+    text = (claude_cli.PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8")
     front = text.split("---", 2)[1]
     assert re.search(r"^description: Not for direct use", front, re.M) and "`door." in front
     assert not re.search(r"^(model|tools):", front, re.M)
 
 
-def test_the_bundle_copies_the_agent_files_the_code_names_and_no_more():
+def _names_in_code() -> set[str]:
+    """The prompts the code names: a `claude_cli.prompt|model_of|tools_of|agent_definition|ask` call, an `agent=`,
+    a prompt file read by `PROMPTS_DIR`, or a constant naming an agent (`STYLIST`, `_FIXER`, `_TAILOR_AGENTS`)."""
     src = "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
-    named = {p.stem for p in (REPO_ROOT / ".claude" / "agents").glob("*.md")
-             if re.search(rf'agents/{p.stem}\.md|"{p.stem}(\.md)?"', src)}
-    for script in ("bundle-python.sh", "bundle-python.ps1"):
-        text = (REPO_ROOT / "app" / "scripts" / script).read_text(encoding="utf-8")
-        listed = set(re.search(r"^(?:AGENTS=\(|\$Agents = )(.*?)\)?$", text, re.M).group(1).replace(",", " ").replace("'", "").split())
-        assert listed == named, f"{script}: {sorted(listed ^ named)}"
+    names = set(re.findall(r'(?:prompt|model_of|tools_of|agent_definition|ask)\(\s*"([a-z][a-z-]*)"', src))
+    names |= set(re.findall(r'agent="([a-z][a-z-]*)"', src))
+    names |= set(re.findall(r'\bprompt = "([a-z][a-z-]*)"', src))  # a name chosen, then passed
+    names |= set(re.findall(r'PROMPTS_DIR / "([a-z][a-z-]*)\.md"', src))  # a file read whole (the matcher's rubric)
+    for line in re.findall(r"^_?[A-Z_]*(?:AGENTS?|STYLIST|FIXER)\s*=\s*(.+)$", src, re.M):
+        names |= set(re.findall(r'"([a-z][a-z-]*)"', line))
+    return names
+
+
+def test_every_prompt_the_code_names_is_a_file_in_the_prompts_folder():
+    have = {p.stem for p in claude_cli.PROMPTS_DIR.glob("*.md")}
+    assert _names_in_code() <= have, sorted(_names_in_code() - have)
+
+
+def test_every_file_in_the_prompts_folder_is_used_by_the_code():
+    have = {p.stem for p in claude_cli.PROMPTS_DIR.glob("*.md")}
+    assert have <= _names_in_code(), sorted(have - _names_in_code())

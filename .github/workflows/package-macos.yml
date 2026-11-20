@@ -28,7 +28,6 @@ on:
       - "profile.example/**"
       - "pyproject.toml"
       - "poetry.lock"
-      - ".claude/agents/**"
       - ".github/workflows/package-macos.yml"
   workflow_dispatch:
 

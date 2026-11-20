@@ -954,9 +954,9 @@ def test_new_stories_do_not_back_the_facts_of_the_same_run(cli_env, monkeypatch)
 
 
 def test_the_tailor_agent_has_no_bash():
-    from paths import REPO_ROOT
+    from door.core import claude_cli
 
-    text = (REPO_ROOT / ".claude" / "agents" / "tailor.md").read_text(encoding="utf-8")
+    text = (claude_cli.PROMPTS_DIR / "tailor.md").read_text(encoding="utf-8")
     front = text.split("---")[1]
     assert "- Bash" not in front
     assert "poetry run" not in text and "```python" not in text
