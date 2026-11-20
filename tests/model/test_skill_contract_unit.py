@@ -13,12 +13,13 @@ import re
 
 import pytest
 
+from door.core import claude_cli
 from paths import REPO_ROOT
 
 _TOOLS = {t["name"]: set(t["inputSchema"].get("properties", {}))
           for t in json.loads((REPO_ROOT / "app" / "src" / "generated" / "tools.json").read_text(encoding="utf-8"))}
 _SKILLS = [p for p in (REPO_ROOT / ".claude" / "skills").glob("*/SKILL.md") if not p.parent.name.startswith("dev-")]
-_AGENTS = list((REPO_ROOT / "src" / "door" / "prompts").glob("*.md"))  # every one is run by the code
+_AGENTS = list(claude_cli.PROMPTS_DIR.glob("*.md"))  # every one is run by the code
 _FILES = sorted([*_SKILLS, *_AGENTS])
 _TOOL = re.compile(r"mcp__door__(\w+)")
 # "`mcp__door__keywords` with the recommended titles as `role_targets` and `languages`": the backticked words

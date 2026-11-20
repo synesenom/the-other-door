@@ -16,7 +16,7 @@ def _classes(text: str) -> set[str]:
 
 
 def _tailor_blocks() -> str:
-    text = (REPO_ROOT / "src" / "door" / "prompts" / "tailor.md").read_text(encoding="utf-8")
+    text = (claude_cli.PROMPTS_DIR / "tailor.md").read_text(encoding="utf-8")
     return text.split("## Building blocks", 1)[1].split("\n## ", 1)[0]
 
 
@@ -53,7 +53,7 @@ def test_the_tailor_is_told_the_entry_parts_and_every_level_class():
 
 
 def test_the_tailor_is_told_what_overflow_and_sparse_mean():
-    text = (REPO_ROOT / "src" / "door" / "prompts" / "tailor.md").read_text(encoding="utf-8")
+    text = (claude_cli.PROMPTS_DIR / "tailor.md").read_text(encoding="utf-8")
     assert "`overflow`" in text and "`sparse`" in text and "never invent" in text
 
 
@@ -62,7 +62,7 @@ def _text(*parts: str) -> str:
 
 
 def test_the_tailor_and_the_stylist_are_told_every_section_kind_class():
-    for text in (_tailor_blocks(), _text("src", "door", "prompts", "stylist.md")):
+    for text in (_tailor_blocks(), (claude_cli.PROMPTS_DIR / "stylist.md").read_text(encoding="utf-8")):
         assert html_guard.KIND_CLASSES <= _named_kinds(text)
 
 

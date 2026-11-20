@@ -49,16 +49,16 @@ def test_the_model_is_the_files(name):
 
 
 def test_a_field_is_filled_where_the_file_names_it_and_other_braces_stay():
-    text = (workspace.REPO_ROOT / "src" / "door" / "prompts" / "skill-grouper.md").read_text(encoding="utf-8")
+    text = (claude_cli.PROMPTS_DIR / "skill-grouper.md").read_text(encoding="utf-8")
     assert "{variant, canonical, skill}" in claude_cli.prompt("skill-grouper")
-    assert "{webfetch_rules}" in (workspace.REPO_ROOT / "src" / "door" / "prompts" / "cv-drafter.md").read_text(encoding="utf-8")
+    assert "{webfetch_rules}" in (claude_cli.PROMPTS_DIR / "cv-drafter.md").read_text(encoding="utf-8")
     assert "{webfetch_rules}" not in claude_cli.prompt("cv-drafter", webfetch_rules="X")
     assert text.startswith("---\nname: skill-grouper\n")
 
 
 def test_every_prompt_file_says_it_is_not_for_direct_use_and_names_its_module():
     for name in PROMPTS:
-        text = (workspace.REPO_ROOT / "src" / "door" / "prompts" / f"{name}.md").read_text(encoding="utf-8")
+        text = (claude_cli.PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8")
         description = re.search(r"^description: (.*)$", text, re.M).group(1)
         assert description.startswith("Not for direct use"), name
         assert "`door." in description, name
@@ -91,7 +91,7 @@ MESSAGES = ["stylist-reply-first", "stylist-reply-next", "stylist-reply-letter",
 
 @pytest.mark.parametrize("name", MESSAGES)
 def test_a_message_file_is_not_for_direct_use_and_has_no_model_or_tools(name):
-    text = (workspace.REPO_ROOT / "src" / "door" / "prompts" / f"{name}.md").read_text(encoding="utf-8")
+    text = (claude_cli.PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8")
     front = text.split("---", 2)[1]
     assert re.search(r"^description: Not for direct use", front, re.M) and "`door." in front
     assert not re.search(r"^(model|tools):", front, re.M)

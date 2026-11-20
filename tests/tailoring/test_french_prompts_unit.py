@@ -4,9 +4,9 @@ whole vocabulary."""
 import re
 
 from door.render import html_guard
-from tests.paths import REPO_ROOT
+from door.core import claude_cli
 
-AGENTS = REPO_ROOT / "src" / "door" / "prompts"
+AGENTS = claude_cli.PROMPTS_DIR
 
 
 def _tailor() -> str:
