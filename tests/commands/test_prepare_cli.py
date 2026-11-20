@@ -1419,4 +1419,3 @@ def test_a_sparse_last_page_is_reported_and_not_retried(prep, monkeypatch):
     _script_readability(monkeypatch, [_SPARSE])
     result = _go(prep)
     assert len(calls) == 1 and result["readability"] == [_SPARSE]
-
