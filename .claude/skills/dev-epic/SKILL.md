@@ -77,7 +77,7 @@ If none is left to pick, go to Step 6.
 
 Run `/dev-resolve <sub> epic=<N> base=<epic branch> target=<epic branch>` and follow it to the end: it makes the branch from the epic branch's tip, implements, validates, runs the review (CLAUDE.md "Review") and opens the PR into the epic branch, and returns without watching it; the loop's Step 3 watches it and merges it.
 
-The issues its review filed (its report's Review line) went through `/dev-file-issue` as issues of their own, never into this epic: the epic's scope stays fixed while it is worked, so its queue does not grow. Name them in the final report.
+The issues its review filed (its report's Review line: only bugs a user would hit outside the change, CLAUDE.md "Review") went through `/dev-file-issue` as issues of their own, never into this epic: the epic's scope stays fixed while it is worked, so its queue does not grow. Name them in the final report.
 
 If `/dev-resolve` ends in FAIL, record its diagnosis, comment it on the sub-issue, mark it `failed`, and go on: nothing of it is merged, and the next sub-issue builds on the same tip. Keep each sub-issue's review lines (what the reviewers found and how each ended) and, for a change to the app's screens, what a user sees: Step 8 uses them.
 
