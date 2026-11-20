@@ -12,6 +12,7 @@ import zipfile
 import pytest
 
 from door.commands import cv as cv_cmd
+from door.commands import _common as common
 from door.core import claude_cli, workspace
 from paths import REPO_ROOT
 from pdf_utils import make_pdf
@@ -193,17 +194,17 @@ def test_core_drafts_from_files_and_urls(env, monkeypatch):
 
     call = calls[0]
     args = call["args"]
-    assert args[args.index("--system-prompt") + 1] == cv_cmd._RULES
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
     assert json.loads(args[args.index("--json-schema") + 1]) == cv_cmd._SCHEMA
     assert args[args.index("--allowedTools") + 1] == "WebFetch"
-    assert args[args.index("--model") + 1] == cv_cmd._DEFAULT_MODEL
+    assert args[args.index("--model") + 1] == claude_cli.model_of("cv-drafter")
     for needle in ("Lead Data Scientist at Acme", "Senior Data Scientist at Big Bank", "PhD Copenhagen 2015", "https://github.com/jane"):
         assert needle in call["input"], needle
     assert "## Work Experience" in call["input"]  # the example CV's structure is the template
     assert "Jane Doe" in call["input"] and "Data Scientist" in call["input"]  # the profile's own fields
     assert call["profile_dir"] == env.profile_dir
     for word in ("backbone", "subpages", "api.github.com", "never invent", "TODO"):
-        assert word in cv_cmd._RULES, word
+        assert word in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES), word
 
 
 def test_core_returns_the_draft_text(env, monkeypatch):
@@ -292,7 +293,7 @@ def test_extract_text_reads_a_text_cv_in_the_encodings_windows_saves(tmp_path, d
 def test_the_draft_rules_allow_a_location_as_the_last_part_of_an_entry_heading():
     from door.commands import cv as cv_cmd
 
-    assert "### Role | Company — dates | Location" in cv_cmd._RULES
+    assert "### Role | Company — dates | Location" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
 
 
 def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
@@ -463,8 +464,8 @@ def test_the_structure_call_of_a_draft_is_billed_to_the_draft(env, monkeypatch):
 def test_the_draft_rules_keep_the_cvs_own_section_headings_and_groups():
     from door.commands import cv as cv_cmd
 
-    assert "word for word" in cv_cmd._RULES and "never renamed" in cv_cmd._RULES
-    assert "`### Title` line of its own" in cv_cmd._RULES
+    assert "word for word" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES) and "never renamed" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+    assert "`### Title` line of its own" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
 
 
 @pytest.mark.parametrize("title", ["Technical & Programming Skills", "Kompetencer og værktøjer", "My toolbox"])
@@ -482,8 +483,8 @@ def test_draft_keeps_a_todo_under_a_title_the_model_did_not_name_a_skills_one(en
 
 
 def test_draft_asks_for_its_skills_headings_and_no_kind_markers():
-    assert "skills_headings" in cv_cmd._SCHEMA["required"] and "skills_headings" in cv_cmd._RULES
-    assert "<!-- kind:" not in cv_cmd._RULES
+    assert "skills_headings" in cv_cmd._SCHEMA["required"] and "skills_headings" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+    assert "<!-- kind:" not in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
 
 
 def test_a_todo_goes_with_the_todo_line_it_was_about(env, monkeypatch):

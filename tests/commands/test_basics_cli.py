@@ -9,6 +9,7 @@ import types
 import pytest
 
 from door.commands import cv as cv_cmd
+from door.commands import _common as common
 from door.core import claude_cli, cv_read, workspace
 import cv_read_utils
 from paths import REPO_ROOT
@@ -149,7 +150,7 @@ def test_a_tagline_with_a_bar_and_the_link_parts_do_not_disturb_the_basics(env, 
 
 
 def test_the_draft_rules_say_the_tagline_and_links_are_written_only_when_a_source_gives_them():
-    rules = cv_cmd._RULES
+    rules = claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
     assert "tagline" in rules and "LinkedIn" in rules and "GitHub" in rules
     assert "never a `TODO`" in rules.split("tagline", 1)[1]
 

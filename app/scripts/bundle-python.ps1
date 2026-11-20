@@ -45,7 +45,7 @@ if ($LASTEXITCODE -ne 0) { throw 'pip install failed' }
 
 # 3. door itself, laid out as in a checkout
 robocopy (Join-Path $Repo 'src') (Join-Path $Out 'door\src') /E /XD __pycache__ /NFL /NDL /NJH /NJS | Out-Null
-foreach ($Agent in 'tailor.md', 'reviewer.md', 'matcher.md') { Copy-Item (Join-Path $Repo ".claude\agents\$Agent") (Join-Path $Out 'door\.claude\agents') }
+Copy-Item (Join-Path $Repo '.claude\agents\*.md') (Join-Path $Out 'door\.claude\agents')
 robocopy (Join-Path $Repo 'profile.example') (Join-Path $Out 'door\profile.example') /E /NFL /NDL /NJH /NJS | Out-Null
 
 # 4. the Chromium headless shell, pinned in src\door\core\downloads\chromium_pin.json (the pin `doctor --fix` installs from too)

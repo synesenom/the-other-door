@@ -182,7 +182,7 @@ The layers underneath:
 |-------|-------|------|
 | **Core** | the `_*_core` functions in `src/door/commands/<name>.py`, `src/door/core/`, `src/door/scrapers/`, `src/door/matching/`, `src/door/tailoring/`, `src/door/style/`, `src/door/render/` | All behaviour. Each command is a `_<name>_core` function that performs the side effects and returns a dict; it never prints. It reports progress instead (see [Progress](#progress)). |
 | **Adapters** | CLI: the Click command next to each core in `src/door/commands/`, registered on the group in `src/door/cli.py` (run via `./door`). MCP: the `MCPServer` tools in `src/door/mcp_server.py` | Thin: parse arguments, call the core, render text (CLI) or return the dict as JSON (MCP). Expected failures come back from a tool as `{"error": ...}` with the CLI's wording. Nothing is duplicated between the two. |
-| **Judgment** | `.claude/agents/`, `.claude/skills/` | The small layer both adapters call: the matcher rubric (read by `match` as a `claude -p` system prompt), the tailor + reviewer agents (run by `prepare` via `claude -p`), the stylist agent (run by the CV style builder, `style/style_build.py`, via `claude -p`), and the `/onboard` and `/expand` skills, which orchestrate tools. Skills and agents call MCP tools, never `./door`. |
+| **Judgment** | `.claude/agents/`, `.claude/skills/` | The small layer both adapters call: the matcher rubric (read by `match` as a `claude -p` system prompt), the tailor + reviewer agents (run by `prepare` via `claude -p`), the stylist agent (run by the CV style builder, `style/style_build.py`, via `claude -p`), every other model prompt (one file each, `keywords.md`, `cv-reader.md`, `fact-checker.md`, ...: the file's body is the system prompt, its frontmatter the model and tools, loaded by `claude_cli.prompt`/`model_of`/`tools_of`; code values go in as `{field}` placeholders), and the `/onboard` and `/expand` skills, which orchestrate tools. Skills and agents call MCP tools, never `./door`. |
 
 Every model call goes through the `claude` CLI in print mode, on the user's Pro/Max plan. There is no API key anywhere.
 
@@ -613,7 +613,7 @@ src/door/                           # all pipeline code — run via `./door`
 ├── mcp_server.py                 # the same cores as typed MCP tools
 ├── core/  scrapers/  matching/  tailoring/  style/  render/   # core/workspace.py: PROFILE_DIR, JOBS_DIR
 tests/                            # mirrors the package: scrapers/, commands/, core/, matching/, … (tests/README.md)
-.claude/agents/                   # matcher, tailor, reviewer, stylist, scraper-fixer; issue-* for the dev workflow
+.claude/agents/                   # matcher, tailor, reviewer, stylist, scraper-fixer, one file per model prompt; issue-* for the dev workflow
 .claude/skills/                   # onboard, expand; dev-* for the dev workflow
 scripts/setup.sh, setup.ps1       # Python 3.12 + Poetry + packages, then `door doctor --fix`
 scripts/run-test.sh               # offline suite + coverage badge (docs/badges/coverage.svg)

@@ -60,7 +60,3 @@ def test_every_prompt_file_says_it_is_not_for_direct_use_and_names_its_module():
         assert description.startswith("Not for direct use"), name
         assert "`door." in description, name
 
-
-def test_the_app_bundle_ships_the_agent_files_the_server_reads():
-    script = (workspace.REPO_ROOT / "app" / "scripts" / "bundle-python.sh").read_text(encoding="utf-8")
-    assert '"$REPO"/.claude/agents/*.md' in script

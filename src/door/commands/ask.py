@@ -18,24 +18,12 @@ from door.core.jobs import selection
 
 # The tools the model may call: reading only. Left out: `market` (it saves a report by default), `show`
 # (it can open the PDF viewer and render page images) and `ask` itself (no recursion).
-ASK_TOOLS = ("status_summary", "list_matches", "show_profile", "query_jobs", "list_companies", "why_company")
+ASK_TOOLS = tuple(t.removeprefix("mcp__door__") for t in claude_cli.tools_of("ask"))
 # Refused even if the model asks: the shell and files, and every writing tool by name.
 _REFUSED = ("Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch", "WebSearch", "Agent", "NotebookEdit")
 SCREENS = ("matches", "posting", "applications", "cv")
-_DEFAULT_MODEL = "haiku"
 _TIMEOUT_S = 180
 
-_RULES = """You answer one question about the user's job search in The other door, from The other door's tools only.
-
-- Call the tools to find the answer: status_summary (the dashboard: runs, matches, the ledger, interview
-  rounds), list_matches (the matches, or a status, or ongoing), query_jobs (counts and the best rows by date, site, company, status, score, language), list_companies
-  and why_company (the employers followed), show_profile (the profile and the CV).
-- Answer only from what the tools return. When they cannot answer, say "I don't know" and what is known.
-- One or two short sentences. Name postings by their title and company, never by an id or a path.
-- When a screen shows the answer, set go_to: "matches" (the matches), "applications" (jobs in play),
-  "posting" (one job: its id in job_ids) or "cv" (the CV). Put the
-  ids of the jobs you mean in job_ids, taken from the tools. Leave go_to out otherwise.
-- sources: the tools the answer came from."""
 
 _SCHEMA = {
     "type": "object",
@@ -75,8 +63,8 @@ def _ask_core(question: str, *, model: str | None = None, jobs_dir: Path | None 
     jobs_dir = Path(jobs_dir or workspace.JOBS_DIR)
     mcp_config = workspace.ensure_mcp_config()
     args = [
-        "--model", model or _DEFAULT_MODEL,
-        "--system-prompt", _RULES,
+        "--model", model or claude_cli.model_of("ask"),
+        "--system-prompt", claude_cli.prompt("ask"),
         "--json-schema", json.dumps(_SCHEMA), *claude_cli.STREAM_ARGS,
         "--mcp-config", str(mcp_config),
         "--tools", "",  # no built-in tool (shell, files, web): only the MCP tools allowed below
@@ -103,7 +91,7 @@ def _ask_core(question: str, *, model: str | None = None, jobs_dir: Path | None 
 
 @click.command("ask")
 @click.argument("question", nargs=-1, required=True)
-@click.option("--model", default=None, help=f"Claude model to answer with (default: {_DEFAULT_MODEL}).")
+@click.option("--model", default=None, help=f"Claude model to answer with (default: {claude_cli.model_of('ask')}).")
 def ask(question: tuple[str, ...], model: str | None):
     """Ask a question about your jobs data, in your own words.
 

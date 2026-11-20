@@ -53,15 +53,8 @@ def _fetch_ad(url: str) -> tuple[str, str]:
     return text, response.text
 
 
-_READ_MODEL = "haiku"
 _READ_MAX_CHARS = 30_000
 
-_READ_RULES = (
-    "You read a job ad. The user gives you the readable text of a web page showing one job ad. "
-    "Answer with its job title, the hiring company (the employer, not the job board or recruiter "
-    "platform) and the location as the ad states it. Empty strings for what the page does not "
-    "say. Answer with the JSON only."
-)
 
 _READ_SCHEMA = {
     "type": "object",
@@ -80,7 +73,7 @@ def _read_ad(text: str, url: str) -> dict:
     from door.core import claude_cli
 
     try:
-        answer = claude_cli.ask(_READ_RULES, text[:_READ_MAX_CHARS], model=_READ_MODEL, feature="import_posting",
+        answer = claude_cli.ask(claude_cli.prompt("posting-reader"), text[:_READ_MAX_CHARS], model=claude_cli.model_of("posting-reader"), feature="import_posting",
                                 schema=_READ_SCHEMA, timeout_s=120)
     except claude_cli.ClaudeError as exc:
         raise ValueError(f"could not read the title and company from {url} ({exc}) — pass --title and --company") from None

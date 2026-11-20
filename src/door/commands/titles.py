@@ -14,25 +14,11 @@ from door import i18n
 from door.commands import cv as cv_cmd
 from door.core import claude_cli, profile_loader, workspace
 
-_DEFAULT_MODEL = "haiku"
 _MAX_TITLES = 10
 # Pre-selected when the model marks none, so the review never opens with nothing ticked.
 _FALLBACK_RECOMMENDED = 3
 _OWN_REASON = "You named this title"
 
-_RULES = (
-    "You suggest the job titles a job seeker should search for, from their CV. Read the latest title and the "
-    "progression across roles: Analyst, then Senior Analyst, then Team Lead suggests \"Lead\", \"Head of\" and "
-    "\"Manager\" titles, not only the current one. Add titles next to their own field that fit their skills and "
-    "tools (Python, dbt and Airflow suggest Analytics Engineer). Match the seniority to their years and scope: "
-    "no junior title for a senior person, no jump far above what they have done. Use the titles job boards "
-    "use. The user names the languages of the job ads they read: where a field's ads use another title in one "
-    "of those languages, suggest it in that language too; with English only, English titles only. Keep any "
-    "title the user names, and when they say what they are looking for, include titles for it and mark them "
-    "recommended. Suggest 6-10 titles. Each has `title`, `reason` (a few words the CV backs, like \"your last "
-    "two roles led a team of 5\", never invented) and `recommended` (true for the 2-4 that fit best). Answer "
-    "with the JSON only."
-)
 
 _SCHEMA = {
     "type": "object",
@@ -113,7 +99,7 @@ def _titles_core(
     )
     try:
         answer = claude_cli.ask(
-            _RULES, prompt, model=model or _DEFAULT_MODEL, feature="suggest_titles", schema=_SCHEMA, timeout_s=timeout_s,
+            claude_cli.prompt("titles"), prompt, model=model or claude_cli.model_of("titles"), feature="suggest_titles", schema=_SCHEMA, timeout_s=timeout_s,
             profile_dir=profile_dir,
         )
     except claude_cli.ClaudeError as exc:
@@ -126,7 +112,7 @@ def _titles_core(
 @click.argument("titles", nargs=-1)
 @click.option("--hint", default=None, help='What you are looking for, in your own words ("something with people").')
 @click.option("--languages", default=None, help="The job-ad languages, comma-separated (default: the profile's).")
-@click.option("--model", default=None, help=f"Claude model to ask (default: {_DEFAULT_MODEL}).")
+@click.option("--model", default=None, help=f"Claude model to ask (default: {claude_cli.model_of('titles')}).")
 def titles_command(titles: tuple[str, ...], hint: str | None, languages: str | None, model: str | None):
     """Suggest job titles from your CV and career progression, each with a reason."""
     wanted = [part.strip() for part in languages.split(",") if part.strip()] if languages else None

@@ -12,6 +12,7 @@ from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import enrich as enrich_cmd
+from door.commands import _common as common
 from door.core import claude_cli, workspace
 from cli_utils import result_text
 from profile_utils import write_config
@@ -79,10 +80,10 @@ def test_propose_asks_claude_with_webfetch_the_cv_and_the_urls(env, monkeypatch)
 
     args = calls[0]["args"]
     assert args[args.index("--allowedTools") + 1] == "WebFetch"
-    assert args[args.index("--system-prompt") + 1] == enrich_cmd._RULES
-    assert "never fabricate" in enrich_cmd._RULES.lower() or "never invent" in enrich_cmd._RULES.lower()
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES)
+    assert "never fabricate" in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES).lower() or "never invent" in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES).lower()
     assert json.loads(args[args.index("--json-schema") + 1]) == enrich_cmd._SCHEMA
-    assert args[args.index("--model") + 1] == enrich_cmd._DEFAULT_MODEL
+    assert args[args.index("--model") + 1] == claude_cli.model_of("cv-enricher")
     assert "Built a churn model" in calls[0]["input"]
     assert "Data Scientist" in calls[0]["input"]
     assert "https://github.com/jane\nhttps://down.example" in calls[0]["input"]
@@ -364,7 +365,7 @@ def test_insert_finds_a_section_whose_heading_records_its_kind():
 
 def test_a_new_section_is_written_with_its_title_alone_and_the_rules_ask_for_no_kind_marker():
     assert enrich_cmd._insert("## Profile\n\nHi\n", "Toolbox", "SQL").endswith("\n## Toolbox\n\n- SQL\n")
-    assert "<!-- kind" not in enrich_cmd._RULES
+    assert "<!-- kind" not in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES)
 
 
 def test_clean_keeps_the_title_when_the_model_wrote_a_marker_anyway():

@@ -41,7 +41,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from door.core import cv_read  # noqa: E402
+from door.core import claude_cli, cv_read  # noqa: E402
 from door.render import html_doc  # noqa: E402
 from door.style import cv_body  # noqa: E402
 from door.tailoring import facts  # noqa: E402
@@ -781,8 +781,8 @@ def build_body_corpus() -> dict:
 # history is in the issue.
 
 PROMPTS = {
-    "reader": cv_read.PROMPT,
-    "facts": facts.PROMPT,
+    "reader": claude_cli.prompt("cv-reader"),
+    "facts": claude_cli.prompt("fact-checker"),
 }
 
 SCHEMAS = {
