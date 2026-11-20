@@ -359,7 +359,7 @@ def test_a_block_page_sent_with_a_server_error_is_a_refusal_not_a_failing_server
 def test_hellowork_searches_the_city_of_the_profiles_location_and_none_without_one(src, session):
     if src.name != "hellowork":
         pytest.skip("only HelloWork puts the city in its search")
-    _pages(src, session, src.page(1, 3))
+    session.page.add(re.compile(src.first_page), src.page(1, 3))
     _run(src, {"search_keywords": [src.keyword], "location": "Lyon, France"})
     _run(src, {"search_keywords": [src.keyword]})
     assert session.page.calls == [
