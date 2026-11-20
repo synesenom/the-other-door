@@ -1,4 +1,5 @@
-"""`cv.md` as a body in the tailor's vocabulary, with no model (#431), for `record_cv_reading.py`'s made-up tailored CVs.
+"""`cv.md` as a body in the tailor's vocabulary, with no model (#431): the CV as it is, in the building blocks `compile` prints
+(the CV-style sample of #465 and `scripts/record_cv_reading.py`'s made-up tailored CVs).
 
 `body(cv_md, reading)`: the same shapes the
 tailor agent writes (`html_guard`'s tags and classes; `src/door/prompts/tailor.md`'s building blocks), made from the

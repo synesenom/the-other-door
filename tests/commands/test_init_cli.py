@@ -991,6 +991,9 @@ def test_show_profile_describes_every_config_key(init_env):
     by = {f["key"]: f for f in fields}
     assert by["name"] == {"key": "name", "type": "string", "required": True, "nullable": False}
     assert by["remote"] == {"key": "remote", "type": "choice", "required": True, "nullable": False, "choices": ["yes", "no", "hybrid"]}
+    assert by["cv_accent"]["choices"] == ["none", "navy", "blue", "teal", "forest", "burgundy", "plum", "slate", "rust"]
+    assert by["cv_fonts"]["choices"] == ["door", "editorial", "friendly", "plain"]
+    assert by["cv_accent"]["default"] == "none" and by["cv_fonts"]["default"] == "door"
     assert by["role_targets"]["type"] == "list" and by["role_targets"]["required"] is True
     assert by["cv_template"]["type"] == "path"
     assert by["min_score"] == {"key": "min_score", "type": "number", "required": False, "nullable": False, "default": 0.65}

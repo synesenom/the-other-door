@@ -132,6 +132,26 @@
     }
   },
   {
+    "name": "cv_style_sample",
+    "description": "Page 1 of the CV printed in a chosen accent colour and font pair: what a prepared CV will look like.\n\n    The desktop app's Profile -> CV style shows it beside the pickers. Prints the user's own CV (else the example CV)\n    as it is, with no tailoring; the first one for a CV costs one cached reading of it, a later one about a second.\n    Nothing is saved: a pick is saved with `init_profile` (`cv_accent`, `cv_fonts`) and applies from the next CV\n    that is prepared or revised.\n\n    Args:\n        cv_accent: `none`, `navy`, `blue`, `teal`, `forest`, `burgundy`, `plum`, `slate` or `rust`.\n        cv_fonts: `door`, `editorial`, `friendly` or `plain`.\n\n    Returns:\n        ``{\"png_base64\", \"own_cv\"}`` (the page as a PNG; whether it is the user's own CV, not the example), or\n        ``{\"error\"}`` in words when the CV cannot be read or the print fails.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cv_accent": {
+          "default": "none",
+          "title": "Cv Accent",
+          "type": "string"
+        },
+        "cv_fonts": {
+          "default": "door",
+          "title": "Cv Fonts",
+          "type": "string"
+        }
+      },
+      "title": "cv_style_sampleArguments"
+    }
+  },
+  {
     "name": "disconnect_drive",
     "description": "Forget this computer's Google Drive connection. The archive on Drive stays.\n\n    Identical to `./door data disconnect`.\n\n    Returns:\n        ``{\"disconnected\"}``: False when it was not connected.\n    ",
     "inputSchema": {

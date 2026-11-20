@@ -93,6 +93,16 @@
       "label": "Where you would work"
     },
     {
+      "key": "cv_accent",
+      "section": "config",
+      "label": "CV colour"
+    },
+    {
+      "key": "cv_fonts",
+      "section": "config",
+      "label": "CV fonts"
+    },
+    {
       "key": "linkedin_discovery",
       "section": "risky",
       "label": "LinkedIn"

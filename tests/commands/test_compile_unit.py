@@ -87,7 +87,7 @@ def test_the_chosen_style_is_in_the_cv_and_the_letter(world):
 def test_no_style_keys_add_no_style_block(world):
     world.make(cv="<h2>Experience</h2>")
     _compile(world)
-    assert "--heading" not in world.print.calls[0]["html"]
+    assert "<style>:root{" not in world.print.calls[0]["html"]
 
 
 def test_the_file_on_disk_stays_the_body_and_no_print_page_is_left_in_the_folder(world):
