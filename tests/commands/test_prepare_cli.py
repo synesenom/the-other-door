@@ -390,6 +390,34 @@ def test_prepare_core_other_thread_refuses_up_front_when_run_holds_lock(cli_env,
     assert "a run is in progress" in box["r"]["error"]
 
 
+def test_prepare_core_goes_ahead_when_a_quick_holder_lets_go(cli_env, monkeypatch):
+    import threading
+
+    from door.core import lock as lock_mod
+    from door.core.lock import ledger_lock
+
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 10)
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    called = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", fake_tailor(cli_env.jobs_dir, called))
+    inside, release = threading.Event(), threading.Event()
+
+    def quick():
+        with ledger_lock(cli_env.jobs_dir, "mark_seen"):
+            inside.set()
+            release.wait(10)
+
+    t = threading.Thread(target=quick)
+    t.start()
+    assert inside.wait(10)
+    threading.Timer(0.3, release.set).start()
+    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+    t.join()
+
+    assert called
+    assert result["outcome"] != "failed", result
+
+
 # --------------------------------------------------------------------------- #
 # _run_tailor (issue #72)
 # --------------------------------------------------------------------------- #

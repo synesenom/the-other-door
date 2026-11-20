@@ -24,7 +24,6 @@ _REAL_RUN_AT_START = migrations.run_at_start  # conftest stubs it per test; thes
 @pytest.fixture(autouse=True)
 def _fresh_state(monkeypatch):
     monkeypatch.setattr(migrations, "_state", None)
-    monkeypatch.setattr(migrations, "_LOCK_WAIT_S", 0.0)
 
 
 @pytest.fixture
@@ -346,8 +345,27 @@ def test_a_busy_lock_is_busy_then_retried_lazily(home):
     assert migrations.status() is None
 
 
+def test_a_start_waits_for_a_quick_holder(home, monkeypatch):
+    profile, jobs, backups = home
+    _make(profile, jobs)
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 10)
+    inside, release = threading.Event(), threading.Event()
+
+    def quick():
+        with lock_mod.ledger_lock(jobs, "mark_seen"):
+            inside.set()
+            release.wait(10)
+
+    t = threading.Thread(target=quick)
+    t.start()
+    assert inside.wait(10)
+    threading.Timer(0.3, release.set).start()
+    assert migrations.upgrade_all(profile, jobs, backups, profile_steps=[Step("a", lambda f: None)], jobs_steps=[]) is None
+    t.join()
+
+
 def _upgrade_in_process(profile, jobs, backups, counter):
-    migrations._LOCK_WAIT_S = 10.0  # the second one waits for the first, then finds it done
+    lock_mod.WAIT_SECONDS = 10.0  # the second one waits for the first, then finds it done
     def step(folder):
         with open(counter, "a") as fh:
             fh.write("x")

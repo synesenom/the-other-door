@@ -423,10 +423,11 @@ def _prepare_core(
 
     # Refuse up front rather than spend a tailor run's quota and then fail to
     # record it. A lock this thread already holds is fine.
-    from door.core.lock import _describe, _held_depth, lock_holder
+    # A quick holder (`mark_seen`) is waited for by the status write; only a long one refuses.
+    from door.core.lock import _describe, _held_depth, lock_holder, refuses_at_once
 
     holder = None if _held_depth(jobs_dir) else lock_holder(jobs_dir)
-    if holder is not None:
+    if refuses_at_once(holder):
         return {**result, "error": _describe(holder)}
 
     def _present() -> list[str]:
