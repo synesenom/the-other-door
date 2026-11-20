@@ -1,7 +1,7 @@
 """A cv.md's `## ` sections and their kinds: the one reader of a section heading.
 
-A section's kind is not read from its title or a marker in the file: `core/cv_read` reads it (one model call over the
-CV), so a title written in the user's own words needs no guess here.
+The kind of a section is read by `core/cv_read` (one model call over the CV), not from its title. An older cv.md may
+still carry a `<!-- kind: ... -->` marker on a heading: it is only stripped from the title, nothing reads it as a kind.
 """
 
 import re
@@ -15,8 +15,9 @@ KINDS = cv_read.COLUMN_KINDS
 
 
 def heading(line: str) -> tuple[str, str | None]:
-    """`(title, recorded kind)` of a `## ` heading line: the title without the marker and its `*`, `_` marks and colon,
-    the kind None without a marker or with one that is no section kind."""
+    """`(title, marker kind)` of a `## ` heading line: the title without a `<!-- kind: -->` marker of an older cv.md and
+    without its `*`, `_` marks and colon. The kind is only what that marker names, None without one: no caller uses it,
+    `core/cv_read` gives a section's kind."""
     title, kind = _HEADING.match(line).groups()
     return title.strip(" *_:"), kind if kind in KINDS else None
 
