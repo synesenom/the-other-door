@@ -17,7 +17,7 @@ A PR number and its head SHA; for a spike, a SHA and the issue text as of that h
 
 ## Worktree
 
-`git worktree add <dir> <sha>` at the head; remove it when done. Work only there.
+`git worktree add --detach <dir> <sha>` at the head; remove it when done. Work only there. A new worktree has no Python environment: export `DOOR_PYTHON` as the main checkout's `.venv/bin/python` (the journeys read it) and run Python with it. The worktree is outside the sandbox's writable area and Electron cannot start inside the sandbox, so commands in it run with the sandbox off.
 
 ## Checks first
 
@@ -25,8 +25,8 @@ Write your own checks from the issue's repro and ask before you read the PR's Te
 
 ## How to run
 
-- CLI: `poetry run python scripts/sandbox.py <dir> <cmd>` (a throwaway profile and jobs folder).
-- App: a throwaway `app/journeys/_verify-<pr>.journey.ts` on `fixtures.launch` (the test world and its stand-in claude), run with `cd app && npm ci && npm run test:journeys -- _verify-<pr>`, sandbox off. Delete it afterwards; never commit it.
+- CLI: `$DOOR_PYTHON scripts/sandbox.py <dir> <cmd>` (a throwaway profile and jobs folder), or a core called from `$DOOR_PYTHON` with `src/` on the path when the check needs a state the CLI cannot set up (a held lock).
+- App: a throwaway `app/journeys/_verify-<pr>.journey.ts` on `fixtures.launch` (the test world and its stand-in claude), run with `cd app && npm ci && npm run test:journeys -- _verify-<pr>`. Delete it afterwards; never commit it.
 - `npm run dev:staging` only for what needs the real model or network; say which and why.
 
 ## Evidence
