@@ -13,8 +13,8 @@ limit), and the object it returns is serialised to JSON (``_evaluate_nuxt``).
 For each search keyword it loads ``thehub.io/jobs?search=...&countryCode=...
 &page=<n>`` and reads ``state.jobs.jobs`` (``{total, limit, page, pages,
 docs}``) for the listing page. The listing payload has no description, date or
-external-URL field, so for each new (not yet seen) job it also fetches
-``thehub.io/jobs/<id>`` and reads ``state.jobs.job`` for the full
+external-URL field, so for each new (not in `known_ids`) job it also fetches
+``thehub.io/jobs/<id>`` (a known job is handed back as a ``seen_only`` record instead) and reads ``state.jobs.job`` for the full
 description/date and the company's own job page (``link``, stored as
 ``apply_url``). Requests go through ``PoliteSession`` (``http_client.FEED_DELAY``
 between them), so the scraper runs in ``_scrape_core``'s pool next to the
@@ -38,7 +38,7 @@ from urllib.parse import quote_plus
 from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
-    report, run_probe, strip_html,
+    report, run_probe, split_known, strip_html,
 )
 
 _JOB_BASE_URL = "https://thehub.io/jobs"
@@ -232,11 +232,17 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             if not docs and page_num == 1:
                 record_answered("thehub")
 
+            fresh: list[dict] = []
             for doc in docs:
                 platform_id = str(doc.get("id") or "")
-                if not platform_id or platform_id in seen_ids:
-                    continue
-                seen_ids.add(platform_id)
+                if platform_id and platform_id not in seen_ids:
+                    seen_ids.add(platform_id)
+                    fresh.append(doc)
+            fresh, known = split_known(fresh, lambda d: str(d["id"]), known_ids)
+            postings.extend(known)
+
+            for doc in fresh:
+                platform_id = str(doc["id"])
 
                 detail_url = _job_url(platform_id)
                 try:

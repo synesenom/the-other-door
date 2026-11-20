@@ -185,7 +185,7 @@ company hosts).
    How a site fails (a connection error recorded, not raised; `probe` saying `unreachable` or `wall`) is one shared
    contract, `tests/scrapers/test_scraper_failure_contract.py`, not a per-site test: a feed platform adds its entry to
    that file's `_ENTRY` and its rows to `_CASES` and `_UNREACHABLE` in `tests/scrapers/feeds/test_feed_names_contract.py`;
-   a page-reading discovery source adds its row to `_SOURCES` in `tests/scrapers/discovery/test_page_sources_scrape.py`. A fixture keeps a real response's structure but not its content: trim
+   a page-reading discovery source adds its row to `_SOURCES` in `tests/scrapers/discovery/test_page_sources_scrape.py`. A new board or feed also joins `tests/scrapers/test_known_ids_contract.py` (a board adds a runner to its `_BOARDS`; a feed is covered by its `_CASES` row), which fails for a scraper that drops a known id instead of handing it back as `seen_only`. A fixture keeps a real response's structure but not its content: trim
    it to what the parser reads, rewrite the remaining text (descriptions, blurbs, contact lines) as new text in the
    same language, keep titles, companies, dates, ids, URLs and anything a test asserts on, and make every person up
    (`kontakt@example.com`, `00 00 00 00`); `tests/core/test_fixture_privacy_unit.py` fails on a real address, number
