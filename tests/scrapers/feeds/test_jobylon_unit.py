@@ -146,10 +146,6 @@ def test_detect_html_reads_the_company_of_an_embed_snippet():
     assert jobylon.detect_html("<p>hello</p>", "https://x.example/") is None
 
 
-def test_there_is_no_json_feed_to_confirm_an_entry_with():
-    assert jobylon.name_probes("lyko") == []
-
-
 def test_resolve_takes_the_company_from_the_ad_page():
     class Session:
         def __init__(self):

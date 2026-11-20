@@ -266,11 +266,6 @@ def resolve(session: PoliteSession, det: Detection, url: str) -> Detection:
     return Detection(_SITE, ad["company_id"], f"Jobylon ad {ad_id} belongs to company {ad['company_id']}{who}")
 
 
-def name_probes(slug: str) -> list:
-    """None to try: a Jobylon company is a number, not a name."""
-    return []
-
-
 def detect_html(html: str, url: str) -> Detection | None:
     """A career page that embeds the Jobylon widget (``jbl_company_id = <n>`` with Jobylon's embedder script)."""
     if "jobylon.com" not in html:

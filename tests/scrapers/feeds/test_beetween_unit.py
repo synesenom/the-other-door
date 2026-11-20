@@ -183,7 +183,3 @@ def test_an_own_domain_career_site_is_known_by_its_wordpress_job_links():
 ])
 def test_other_pages_are_not_detected(html):
     assert beetween.detect_html(html, "https://acme.fr/") is None
-
-
-def test_the_feed_has_no_json_check_and_no_name_probe():
-    assert beetween.name_probes("giboire") == []

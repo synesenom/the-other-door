@@ -309,8 +309,3 @@ def detect_html(html: str, url: str) -> Detection | None:
 def alive_url(entry: str) -> str:
     """The first read of a site's feed: the sitemap, which a site that is gone answers with a 4xx."""
     return f"{_base(entry)}/sitemap.xml"
-
-
-def name_probes(slug: str) -> list:
-    """None to try: a tenant is a career-site host, not a company name."""
-    return []

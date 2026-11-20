@@ -248,8 +248,6 @@ def probe(config: dict) -> ProbeResult | None:
 
 # --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
-FEED_KEY = None  # (no feed check by name: no `feed_url`)
-
 
 def _entry_for_host(host: str) -> str | None:
     """The entry a career host is followed under: the slug on ``nous-recrutons.fr``, else the host itself (an
@@ -268,11 +266,6 @@ def detect_url(url: str) -> Detection | None:
         return None
     entry = _entry_for_host(host)
     return Detection(_SITE, entry, f"Beetween career site {host}") if entry else None
-
-
-def name_probes(slug: str) -> list:
-    """None: a company's name does not tell its tenant."""
-    return []
 
 
 def detect_cname(host: str, target: str, where: str) -> Detection | None:

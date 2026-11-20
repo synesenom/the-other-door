@@ -310,8 +310,6 @@ def probe(config: dict) -> ProbeResult | None:
 
 # --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
-FEED_KEY = None  # (no JSON feed to confirm an entry with: no `feed_url`)
-
 
 def _own_path(path: list[str]) -> bool:
     joined = "/".join(path).lower()
@@ -337,11 +335,6 @@ def detect_url(url: str) -> Detection | None:
 def alive_url(entry: str) -> str:
     """The first read of a career site: the list page; an unknown tenant answers a 4xx, which `companies add` reports."""
     return f"{_base(entry)}{_LIST_PATH}"
-
-
-def name_probes(slug: str) -> list:
-    """None to try: a company's name does not tell its tenant."""
-    return []
 
 
 def detect_cname(host: str, target: str, where: str) -> Detection | None:

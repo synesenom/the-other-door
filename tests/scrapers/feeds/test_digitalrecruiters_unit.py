@@ -138,4 +138,3 @@ def test_the_tenant_falls_back_to_the_pages_host_and_other_pages_are_not_detecte
 
 def test_the_feed_is_confirmed_by_the_sitemap_not_a_json_list():
     assert dr.alive_url("recrutement.monoprix.fr") == "https://recrutement.monoprix.fr/sitemap.xml"
-    assert dr.name_probes("monoprix") == []
