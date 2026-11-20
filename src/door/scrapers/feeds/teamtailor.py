@@ -36,7 +36,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, host_of, make_job_id, tenant_platform_id, parse_iso_date, run_probe,
     scrape_feeds, strip_html, workers, followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at
 from door.scrapers.sdk import Detection, NOT_ACCOUNTS, Probe, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -101,9 +101,7 @@ def _fetch_board(session: PoliteSession, base: str) -> dict:
     Raises on HTTP errors or robots.txt disallow (of the first page).
     """
     first = session.get(f"{base}/jobs.json", headers=_HEADERS).json()
-    if not isinstance(first, dict) or not isinstance(first.get("items"), list):
-        raise ValueError("no `items` list in Teamtailor's JSON Feed")
-    items = list(first["items"])
+    items = list(list_at(first, "items", "Teamtailor"))
     seen = {_platform_id(i) for i in items}
     for page in range(2, _MAX_PAGES + 1):
         if not items:
@@ -236,9 +234,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        items = data.get("items") if isinstance(data, dict) else None
-        if not isinstance(items, list):
-            return [], False, "no `items` list in the JSON Feed"
+        items = list_at(data, "items", "Teamtailor")
         company_name = (data.get("title") or slug).strip()
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(i, company_name, scraped_at) for i in items

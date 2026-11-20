@@ -320,3 +320,13 @@ def test_scrape_feeds_a_fetch_that_raises_is_not_answered():
     scrape_feeds("acmeats", ["a"], fetch)
     drain_errors("acmeats")
     assert drain_answered("acmeats") is False
+
+
+def test_list_at_returns_the_list_or_names_the_missing_one():
+    import pytest
+    from door.scrapers import list_at
+
+    assert list_at({"jobs": [1]}, "jobs", "X") == [1]
+    for bad in (None, [], {}, {"jobs": "x"}):
+        with pytest.raises(ValueError, match="no `jobs` list in X's answer"):
+            list_at(bad, "jobs", "X")

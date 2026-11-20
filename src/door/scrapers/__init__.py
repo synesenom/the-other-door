@@ -304,6 +304,15 @@ def scrape_feeds(site: str, entries, fetch, *, key=lambda p: p["platform_id"], l
     return postings
 
 
+def list_at(data, key: str, what: str) -> list:
+    """The list under *key* of a JSON answer; raises ``ValueError`` naming *what* when there is none
+    (the one check a feed's scrape and its probe share)."""
+    found = data.get(key) if isinstance(data, dict) else None
+    if not isinstance(found, list):
+        raise ValueError(f"no `{key}` list in {what}'s answer")
+    return found
+
+
 def probe_failure(exc: Exception, ext: str) -> ProbeResult:
     """A probe result for a failed fetch: robots.txt disallowing it is
     ``robots: "disallowed"``, 401/403/429 a wall, anything else unreachable.

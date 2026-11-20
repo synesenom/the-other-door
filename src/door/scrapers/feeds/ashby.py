@@ -26,7 +26,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id, parse_iso_date, run_probe,
     scrape_feeds, followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at
 from door.scrapers.sdk import Detection, Probe, first, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -93,10 +93,7 @@ def _board_postings(session: PoliteSession, board: str, scraped_at: datetime, na
     """Every listed job on Ashby board *board*, labelled with the followed *name* when given.
     Raises on HTTP errors."""
     data = session.get(_BOARD_URL.format(board=board), headers=_HEADERS).json()
-    jobs = data.get("jobs") if isinstance(data, dict) else None
-    if not isinstance(jobs, list):
-        raise ValueError("no `jobs` list in Ashby's answer")
-    return [_to_posting(job, board, scraped_at, name) for job in _listed(jobs)]
+    return [_to_posting(job, board, scraped_at, name) for job in _listed(list_at(data, "jobs", "Ashby"))]
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
@@ -122,10 +119,7 @@ def probe(config: dict) -> ProbeResult | None:
         return session.get(_BOARD_URL.format(board=board), headers=_HEADERS).text
 
     def parse(text: str):
-        data = json.loads(text)
-        jobs = data.get("jobs") if isinstance(data, dict) else None
-        if not isinstance(jobs, list):
-            return [], False, "no `jobs` list in the Ashby job-board response"
+        jobs = list_at(json.loads(text), "jobs", "Ashby")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(j, board, scraped_at) for j in _listed(jobs)], True, ""
 
