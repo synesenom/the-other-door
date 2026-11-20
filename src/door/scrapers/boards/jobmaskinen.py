@@ -33,7 +33,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
+    FEED_DELAY, JobPosting, probe_session, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
     parse_iso_date, record_answered, record_error, report, run_probe, strip_html,
 )
 
@@ -230,7 +230,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not keywords:
         return None
     url = _search_url(keywords[0], 1)
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def parse(html: str):
         cards, _ = _parse_cards(html)

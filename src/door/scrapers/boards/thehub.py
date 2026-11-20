@@ -36,7 +36,7 @@ from urllib.parse import quote_plus
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
+    FEED_DELAY, JobPosting, PoliteSession, probe_session, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
     report, run_probe, split_known, strip_html,
 )
 
@@ -299,7 +299,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not keywords:
         return None
     url = _listing_url(keywords[0], _country_code(config), 1)
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def parse(html: str):
         jobs_obj = _nuxt_state(html, ("state", "jobs", "jobs"))

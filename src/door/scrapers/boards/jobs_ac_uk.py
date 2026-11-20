@@ -40,7 +40,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
+    FEED_DELAY, JobPosting, probe_session, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
     on_topic, parse_iso_date, record_answered, record_error, report, run_probe,
     topic_terms,
 )
@@ -280,7 +280,7 @@ def probe(config: dict) -> ProbeResult | None:
     keywords = config.get("search_keywords") or config.get("role_targets") or []
     if not keywords:
         return None
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
     url = _search_url(keywords[0], config.get("location", ""), 1)
 
     def fetch() -> str:
