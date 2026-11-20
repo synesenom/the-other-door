@@ -26,7 +26,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id, tenant_platform_id, run_probe, scrape_feeds, strip_html,
     followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at
 from door.scrapers.sdk import Detection, NOT_ACCOUNTS, Probe, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -85,21 +85,13 @@ def _items(data) -> list[dict]:
     return [o for o in data if isinstance(o, dict) and o.get("id")]
 
 
-def _data_list(answer) -> list:
-    """The ``data`` list of a postings feed; raises ``ValueError`` when it holds none."""
-    data = answer.get("data") if isinstance(answer, dict) else None
-    if not isinstance(data, list):
-        raise ValueError("no `data` list in Pinpoint's answer")
-    return data
-
-
 def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, name: str = "") -> list[dict]:
     """The published postings of one ``pinpoint_companies`` entry, labelled with the followed *name*
     when given. Raises on HTTP errors."""
     base = _careers_base(entry)
     company = name or _company_name(entry if "." not in entry else urlparse(base).netloc)
     answer = session.get(f"{base}/postings.json", headers=_HEADERS).json()
-    return [_to_posting(item, company, base, scraped_at) for item in _items(_data_list(answer))]
+    return [_to_posting(item, company, base, scraped_at) for item in _items(list_at(answer, "data", "Pinpoint"))]
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
@@ -125,7 +117,7 @@ def probe(config: dict) -> ProbeResult | None:
         return session.get(f"{base}/postings.json", headers=_HEADERS).text
 
     def parse(text: str):
-        items = _data_list(json.loads(text))
+        items = list_at(json.loads(text), "data", "Pinpoint")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(o, company, base, scraped_at) for o in _items(items)], True, ""
 

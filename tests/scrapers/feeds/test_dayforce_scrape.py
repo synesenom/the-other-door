@@ -6,7 +6,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_answered, drain_errors
+from door.scrapers import drain_answered, drain_entry_errors, drain_errors
 from door.scrapers.feeds import dayforce
 from paths import TESTS_DIR
 
@@ -91,8 +91,12 @@ def test_a_rejected_search_is_a_recorded_error():
     responses.add(responses.POST, _SEARCH, status=403)
 
     drain_errors()
+    drain_entry_errors("dayforce")
+    drain_answered("dayforce")
     assert dayforce.scrape(_CONFIG) == []
     assert drain_errors()["dayforce"]
+    assert "natus/CANDIDATEPORTALSENSORY" in drain_entry_errors("dayforce")
+    assert drain_answered("dayforce") is False
 
 
 def test_an_entry_that_is_not_a_portal_is_a_recorded_error():

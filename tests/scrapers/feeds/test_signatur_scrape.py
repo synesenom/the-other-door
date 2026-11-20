@@ -4,7 +4,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_answered, drain_errors
+from door.scrapers import drain_answered, drain_entry_errors, drain_errors
 from door.scrapers.feeds import signatur
 from paths import TESTS_DIR
 
@@ -83,8 +83,12 @@ def test_a_failed_list_is_a_recorded_error():
     responses.add(responses.GET, _LIST, status=500)
 
     drain_errors()
+    drain_entry_errors("signatur")
+    drain_answered("signatur")
     assert signatur.scrape({"signatur_companies": ["2296"]}) == []
     assert drain_errors()["signatur"]
+    assert "2296" in drain_entry_errors("signatur")
+    assert drain_answered("signatur") is False
 
 
 @responses.activate
