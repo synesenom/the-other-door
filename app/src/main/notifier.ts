@@ -3,9 +3,6 @@
 // imports nothing from it and a test drives it with fakes.
 import type { Notice, NoticeTarget } from './notices'
 
-/** Pushed to the window when a notification is clicked; src/preload/index.ts repeats the literal. */
-export const CHANNEL_OPEN = 'door:open'
-
 const DEDUP_MS = 5_000
 
 interface NotificationLike {
@@ -21,7 +18,7 @@ export function createNotifier(deps: {
   Notification: NotificationClass
   isFocused: () => boolean
   focusWindow: () => void
-  send: (channel: string, target: NoticeTarget) => void
+  send: (target: NoticeTarget) => void
   now?: () => number
 }): (notice: Notice | null) => void {
   const now = deps.now ?? Date.now
@@ -39,7 +36,7 @@ export function createNotifier(deps: {
       const n = new deps.Notification({ title: notice.title, body: notice.body })
       n.on('click', () => {
         deps.focusWindow()
-        deps.send(CHANNEL_OPEN, notice.target)
+        deps.send(notice.target)
       })
       n.show()
     } catch {

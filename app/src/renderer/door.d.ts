@@ -1,65 +1,20 @@
-import type { Envelope } from '../main/ipc'
+import type { ActionArgs, ActionName, ActionResult, Envelope, Events } from '../main/ipc'
 import type { PickResult } from '../main/cv-sources'
-import type { LoginState } from '../main/claude-login'
-import type { NoticeTarget } from '../main/notices'
-import type { UpdateResult } from '../main/updates'
-import type { Environment } from '../main/environments'
-import type { RunBoard } from '../main/run-board'
 
 declare global {
   interface Window {
     door: {
       call(tool: string, args?: Record<string, unknown>, callId?: string, tokens?: string[]): Promise<Envelope>
       onProgress(callId: string, cb: (p: { progress: number; total?: number; message: string }) => void): () => void
-      openExternal(url: string): Promise<{ ok: boolean; error?: string }>
-      /** `sent`: the copy kept when the application was sent. */
-      /** Save CV / Save letter: a save dialog on the desktop (`path` where it went), the browser's download on the phone. */
-      saveMaterial(jobId: string, which: 'cv' | 'cover_letter', sent: boolean, name: string): Promise<{ ok: boolean; path?: string; canceled?: true; error?: string }>
-      /** Opens the file dialog (in the main process); the files come back as tokens, never paths. */
-      pickCvFiles(): Promise<PickResult>
-      dropCvFiles(files: File[]): Promise<PickResult>
-      /** The CV file a draft last read, by its name, or null (Profile → CV's Sources). */
-      cvFile(): Promise<string | null>
-      /** Forgets the picked files (the wizard closed). */
-      clearCvSources(): Promise<void>
-      /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (`call('save_photo', {}, undefined, [token])`). */
-      pickPhoto(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
+      /** Every other capability of the main process: one entry of the action table in src/main/ipc.ts (its handler and its types). A misspelled action fails the typecheck; the drop reaches main only through `dropCvFiles`. */
+      invoke<A extends Exclude<ActionName, 'drop-cv-files'>>(action: A, ...args: ActionArgs<A>): Promise<ActionResult<A>>
+      /** What the main process pushes (run board, update state, sign-in state, a clicked notification); returns the way to stop. */
+      on<E extends keyof Events>(event: E, cb: (payload: Events[E]) => void): () => void
       onBeforeClose(cb: () => Promise<void>): () => void
-      /** Signing in to Claude: the main process runs `claude auth login` and pushes its state. */
-      claudeLogin: {
-        start(email?: string): Promise<{ ok: boolean; error?: string }>
-        /** The code the sign-in page showed, when the browser could not hand it back. */
-        sendCode(code: string): Promise<{ ok: boolean; error?: string }>
-        /** The page claude printed, again. */
-        openPage(): Promise<{ ok: boolean; error?: string }>
-        cancel(): Promise<{ ok: boolean }>
-        state(): Promise<LoginState>
-        onState(cb: (state: LoginState) => void): () => void
-      }
-      /** Where the app runs; `home` is the data folder, shown and never sent back. */
-      info(): Promise<{ environment: Environment; home?: string; remote?: boolean }>
+      /** A drop: only the preload can turn a dropped File into a path; the files come back as tokens. */
+      dropCvFiles(files: File[]): Promise<PickResult>
       /** The phone app's address of a prepared page image (issue 303); the desktop app uses door-file://. */
       pageUrl?(jobId: string, pngPath: string, v: number, sent?: boolean): string
-      /** Writes an export where the user says in a save dialog (export_data's answer, or canceled). */
-      exportData(): Promise<Envelope | { ok: false; canceled: true }>
-      /** Picks an archive to import in an open dialog: a token and the file's name, imported by `call('import_data', {}, undefined, [token])`. */
-      pickArchive(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
-      /** Writes a problem report where the user says in a save dialog (report_problem's answer, or canceled). */
-      reportProblem(): Promise<Envelope | { ok: false; canceled: true }>
-      /** Shows the data folder in the file manager. */
-      showHome(): Promise<{ ok: boolean }>
-      /** Is a newer version out: what the app's own checks found, at start and once a day (updates.ts). */
-      checkUpdate(): Promise<UpdateResult | { enabled: false }>
-      /** Restart now to install a downloaded update; `{ ok: false }` when none is downloaded. */
-      installUpdate(): Promise<{ ok: boolean }>
-      /** The update's state as it changes, e.g. a download finishing; returns the way to stop. */
-      onUpdateState(cb: (state: UpdateResult | { enabled: false }) => void): () => void
-      stopRun(): Promise<{ ok: boolean; error?: string }>
-      showRun(startedAt: string): Promise<{ ok: boolean; error?: string }>
-      runBoard(): Promise<RunBoard>
-      onRunBoard(cb: (board: RunBoard) => void): () => void
-      /** A notification was clicked: where to go. Anything else the page gets is checked by the page. */
-      onOpen(cb: (target: NoticeTarget) => void): () => void
     }
   }
 }

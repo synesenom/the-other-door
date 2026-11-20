@@ -29,7 +29,7 @@ export function DataMoves({ home, onImported }: { home?: string; onImported: () 
   }
   const exportData = async () => {
     start('export')
-    const r = await window.door.exportData()
+    const r = await window.door.invoke('export-data')
     setBusy(null)
     if (r.ok) {
       const d = r.data as { path: string; files: number; bytes: number }
@@ -39,7 +39,7 @@ export function DataMoves({ home, onImported }: { home?: string; onImported: () 
   const pick = async () => {
     setError(null)
     setMessage(null)
-    const r = await window.door.pickArchive()
+    const r = await window.door.invoke('pick-archive')
     if ('token' in r) setPicked(r)
     else if ('error' in r) setError(r.error)
   }
@@ -73,11 +73,11 @@ export function DataMoves({ home, onImported }: { home?: string; onImported: () 
               tabIndex={0}
               className="link-inline"
               title={SHOW_IN_FOLDER}
-              onClick={() => void window.door.showHome()}
+              onClick={() => void window.door.invoke('show-home')}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter' && e.key !== ' ') return
                 e.preventDefault()
-                void window.door.showHome()
+                void window.door.invoke('show-home')
               }}>
               {home}
             </span>

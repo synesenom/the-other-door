@@ -30,7 +30,7 @@ describe('SalaryLine', () => {
     render(<SalaryLine salary={salary} />)
     expect(screen.getByText('55,000–70,000 DKK a month, gross')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Union survey' }))
-    expect(door.openExternal).toHaveBeenCalledWith('https://example.org/survey')
+    expect(door.actions['open-external']).toHaveBeenCalledWith('https://example.org/survey')
   })
 
   it('says it is an estimate, and why, behind the info icon', () => {

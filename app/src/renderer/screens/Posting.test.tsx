@@ -105,14 +105,16 @@ describe('Posting', () => {
   })
 
   it('opens the ad in the system browser through the main process', async () => {
-    const { openExternal } = mockDoor({ show: full })
+    const { actions } = mockDoor({ show: full })
+    const openExternal = actions['open-external']
     render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
     await userEvent.click(await screen.findByRole('button', { name: 'Open in browser' }))
     expect(openExternal).toHaveBeenCalledWith('https://example.com/job/1')
   })
 
   it("opens the employer's application page when the board's ad links to one", async () => {
-    const { openExternal } = mockDoor({ show: { ...full, apply_url: 'https://careers.acme.dk/jobs/42/apply' } })
+    const { actions } = mockDoor({ show: { ...full, apply_url: 'https://careers.acme.dk/jobs/42/apply' } })
+    const openExternal = actions['open-external']
     render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
     await userEvent.click(await screen.findByRole('button', { name: 'Apply on careers.acme.dk' }))
     expect(openExternal).toHaveBeenCalledWith('https://careers.acme.dk/jobs/42/apply')

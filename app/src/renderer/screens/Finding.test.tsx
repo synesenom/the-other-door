@@ -265,7 +265,8 @@ describe('Finding, the summary card', () => {
   })
 
   it('shows how long it took, opens the run record', async () => {
-    const { showRun } = mockDoor({})
+    const { actions } = mockDoor({})
+    const showRun = actions['show-run']
     show({ kind: 'summary', record: record() }, { active: false })
     expect(screen.getByText(/19 min/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Show run record' }))

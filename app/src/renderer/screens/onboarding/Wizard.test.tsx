@@ -18,7 +18,7 @@ const happy = {
 
 function setup(extra: Record<string, unknown> = {}, props: Partial<Parameters<typeof Wizard>[0]> = {}) {
   const h = mockDoor({ ...happy, ...extra })
-  h.pickCvFiles.mockResolvedValue({ files: [{ token: 't', name: 'cv.pdf', size: 1 }], refused: [] })
+  h.actions['pick-cv-files'].mockResolvedValue({ files: [{ token: 't', name: 'cv.pdf', size: 1 }], refused: [] })
   const onFinish = vi.fn()
   const view = render(<Wizard profile={freshProfile} environment="production" onFinish={onFinish} {...props} />)
   return { ...h, onFinish, unmount: view.unmount }
@@ -155,7 +155,8 @@ describe('Wizard', () => {
   })
 
   it('forgets the picked CV files when it closes', async () => {
-    const { clearCvSources, unmount } = setup()
+    const { actions, unmount } = setup()
+    const clearCvSources = actions['cv-sources-clear']
     await screen.findByRole('heading', { name: 'Tell me about yourself' })
     expect(clearCvSources).not.toHaveBeenCalled()
     unmount()

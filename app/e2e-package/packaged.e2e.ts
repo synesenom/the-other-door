@@ -49,7 +49,7 @@ test('the packaged app serves Matches from its bundle and writes nothing inside 
   try {
     const page = await app.firstWindow()
     await expect(page.getByRole('listitem').filter({ hasText: 'Dataanalytiker' })).toBeVisible({ timeout: 120_000 })
-    const info = await page.evaluate(() => window.door.info())
+    const info = await page.evaluate(() => window.door.invoke('info'))
     expect(info.home).toBe(fixture.home)
     const doctor = (await page.evaluate(() => window.door.call('doctor'))) as { ok: boolean; data: { checks: { name: string; status: string; detail: string }[] } }
     const checks = Object.fromEntries(doctor.data.checks.map((c) => [c.name, c]))
@@ -62,7 +62,7 @@ test('the packaged app serves Matches from its bundle and writes nothing inside 
     expect(existsSync(log) ? readFileSync(log, 'utf8') : '').not.toContain('update-check')
     // and mode `none`: the app reports updates disabled (any other mode is enabled from the start), so Settings
     // shows no Version part
-    expect((await page.evaluate(() => window.door.checkUpdate())).enabled).toBe(false)
+    expect((await page.evaluate(() => window.door.invoke('check-update'))).enabled).toBe(false)
   } finally {
     await app.close()
   }

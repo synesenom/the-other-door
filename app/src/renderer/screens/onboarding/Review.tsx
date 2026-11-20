@@ -193,7 +193,7 @@ export function Review({ state, profile, dispatch, onSaved, onBack }: Props) {
   const askPhoto = policy !== 'no' || kept || state.photo.kind === 'new'
   const choosePhoto = async () => {
     setPhotoNote(null)
-    const picked = await window.door.pickPhoto()
+    const picked = await window.door.invoke('pick-photo')
     if ('token' in picked) dispatch({ type: 'photo', choice: { kind: 'new', token: picked.token, name: picked.name } })
     else if ('error' in picked) setPhotoNote(picked.error)
   }

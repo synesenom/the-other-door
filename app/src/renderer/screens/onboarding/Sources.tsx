@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Dispatch, DragEvent } from 'react'
+import type { PickResult } from '../../../main/cv-sources'
 import { ErrorBox } from '../AppName'
 import { Hint } from '../Hint'
 import { FromDrive } from './FromDrive'
@@ -45,7 +46,7 @@ export function Sources({ state, dispatch, onNext, onBack, onPulled }: Props) {
   const typed = urlText.trim() !== '' && urlProblem(urlText.trim()) === null
   const nothingToRead = state.files.length === 0 && state.urls.length === 0 && !typed
 
-  const add = (picked: Awaited<ReturnType<typeof window.door.pickCvFiles>>) => {
+  const add = (picked: PickResult) => {
     setRefused(picked.refused)
     dispatch({ type: 'addFiles', files: picked.files })
   }
@@ -87,7 +88,7 @@ export function Sources({ state, dispatch, onNext, onBack, onPulled }: Props) {
         onDragLeave={() => setOver(false)}
         onDrop={(e) => void drop(e)}
       >
-        <button type="button" className={over ? 'onb-drop onb-drop-over' : 'onb-drop'} onClick={async () => add(await window.door.pickCvFiles())}>
+        <button type="button" className={over ? 'onb-drop onb-drop-over' : 'onb-drop'} onClick={async () => add(await window.door.invoke('pick-cv-files'))}>
           Drop relevant documents here (CV or LinkedIn PDF)
         </button>
         <Hint label="About the documents">PDF, DOCX, Markdown or text, up to 25 MB each. On LinkedIn: More → Save to PDF.</Hint>

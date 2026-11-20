@@ -18,7 +18,8 @@ const file = (name: string) => ({ token: `t-${name}`, name, size: 10 })
 
 describe('Sources', () => {
   it('Continue waits for a source, then goes on', async () => {
-    const { pickCvFiles, onNext } = setup()
+    const { actions, onNext } = setup()
+    const pickCvFiles = actions['pick-cv-files']
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
     pickCvFiles.mockResolvedValue({ files: [file('cv.pdf')], refused: [] })
     await userEvent.click(screen.getByRole('button', { name: 'Drop relevant documents here (CV or LinkedIn PDF)' }))
@@ -28,7 +29,8 @@ describe('Sources', () => {
   })
 
   it('lists files and pages together, and removes either', async () => {
-    const { pickCvFiles } = setup()
+    const { actions } = setup()
+    const pickCvFiles = actions['pick-cv-files']
     pickCvFiles.mockResolvedValue({ files: [file('cv.pdf')], refused: [] })
     await userEvent.click(screen.getByRole('button', { name: 'Drop relevant documents here (CV or LinkedIn PDF)' }))
     await screen.findByText('cv.pdf')
@@ -41,7 +43,8 @@ describe('Sources', () => {
   })
 
   it('takes dropped files through the preload, which alone knows their paths', async () => {
-    const { dropCvFiles } = setup()
+    const { actions } = setup()
+    const dropCvFiles = actions['drop-cv-files']
     dropCvFiles.mockResolvedValue({ files: [file('linkedin.pdf')], refused: [{ name: 'x.png', reason: 'Only PDF' }] })
     const dropped = new File(['x'], 'linkedin.pdf')
     fireEvent.drop(screen.getByRole('button', { name: 'Drop relevant documents here (CV or LinkedIn PDF)' }), { dataTransfer: { files: [dropped] } })
@@ -51,7 +54,8 @@ describe('Sources', () => {
   })
 
   it('removes a file', async () => {
-    const { pickCvFiles } = setup()
+    const { actions } = setup()
+    const pickCvFiles = actions['pick-cv-files']
     pickCvFiles.mockResolvedValue({ files: [file('cv.pdf')], refused: [] })
     await userEvent.click(screen.getByRole('button', { name: 'Drop relevant documents here (CV or LinkedIn PDF)' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Remove cv.pdf' }))
@@ -125,7 +129,8 @@ describe('Sources', () => {
   })
 
   it('a file dropped on the hint icon still counts as dropped', async () => {
-    const { dropCvFiles } = setup()
+    const { actions } = setup()
+    const dropCvFiles = actions['drop-cv-files']
     dropCvFiles.mockResolvedValue({ files: [file('cv.pdf')], refused: [] })
     fireEvent.drop(screen.getByRole('button', { name: 'About the documents' }), { dataTransfer: { files: [new File(['x'], 'cv.pdf')] } })
     expect(await screen.findByText('cv.pdf')).toBeInTheDocument()

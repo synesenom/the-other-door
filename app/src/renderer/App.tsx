@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AppName } from './screens/AppName'
 import { WarningMark } from './screens/CheckMark'
-import { ApiError, call, errorText, findJobs, onOpen, onRunBoard, runBoard, statusSummary, stopRun } from './api'
+import { ApiError, call, errorText, findJobs, statusSummary } from './api'
 import type { Opening, PlanBlock, RunBoard } from './api'
 import { TabIcon } from './TabIcon'
 import { Splash } from './Splash'
@@ -112,11 +112,11 @@ export function App({ start }: { start?: AppStart } = {}) {
   }, [])
   useEffect(() => {
     let live = true
-    runBoard().then(
+    window.door.invoke('current-board').then(
       (b) => live && applyBoard(b),
       () => undefined,
     )
-    const unsubscribe = onRunBoard(applyBoard)
+    const unsubscribe = window.door.on('run-board', applyBoard)
     return () => {
       live = false
       unsubscribe()
@@ -151,7 +151,7 @@ export function App({ start }: { start?: AppStart } = {}) {
     if (outcome.kind === 'busy') {
       // a run started elsewhere a moment before: show that one, read only, as soon as the board says so
       setRun(null)
-      runBoard().then(applyBoard, () => undefined)
+      window.door.invoke('current-board').then(applyBoard, () => undefined)
       return
     }
     setRun(outcome.kind === 'done' ? { kind: 'summary', record: outcome.record, firstRun: skip === FIRST_RUN_SKIP } : outcome.kind === 'error' ? { kind: 'error', message: outcome.message } : outcome)
@@ -166,7 +166,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   }
   useEffect(
     () =>
-      onOpen((target) => {
+      window.door.on('open', (target) => {
         // anything from the main process is checked here: a stale or odd target is ignored
         if (typeof target !== 'object' || target === null) return
         if (target.screen === 'matches') goToMatches(target.newOnly === true)
@@ -194,7 +194,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   useEffect(() => {
     let live = true
     ;(async () => {
-      const info = await window.door.info?.().catch(() => undefined)
+      const info = await window.door.invoke('info').catch(() => undefined)
       if (!live) return
       setEnvironment(info?.environment ?? 'production')
       setHome(info?.home)
@@ -420,7 +420,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             state={findingState}
             board={board}
             onStart={() => void startRun()}
-            onStop={() => void stopRun()}
+            onStop={() => void window.door.invoke('stop-run')}
             onViewMatches={() => goToMatches(true)}
             discoveryUnchosen={sandbox || remote ? [] : (profile?.discovery_unchosen ?? [])}
             discoveryOff={sandbox || remote || !profile ? [] : discoveryOff(profile)}
