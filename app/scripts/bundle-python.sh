@@ -43,7 +43,7 @@ fetch() {
 }
 
 rm -rf "$OUT"
-mkdir -p "$OUT/bin"
+mkdir -p "$OUT/bin" "$OUT/door"
 
 # 1. the Python runtime
 PY_VERSION="$(field python.version)"; PY_TAG="$(field python.tag)"

@@ -28,7 +28,7 @@ function Fetch([string]$Url, [string]$Want) {
 }
 
 if (Test-Path $Out) { Remove-Item -Recurse -Force $Out }
-New-Item -ItemType Directory -Force -Path (Join-Path $Out 'bin') | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $Out 'bin'), (Join-Path $Out 'door') | Out-Null
 
 # 1. the Python runtime
 $Py = $Lock.python
