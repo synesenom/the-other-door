@@ -53,6 +53,17 @@ _held_guard = threading.Lock()
 WAIT_SECONDS = 5.0
 _POLL_SECONDS = 0.05
 
+# Holders that keep the lock for minutes: a writer is refused at once instead of waiting (#447).
+# `upgrade` and `sync` are not here: a start waits for another start, and a Drive sync is short.
+LONG_PURPOSES = frozenset(
+    {"run", "search", "discover", "follow", "collect", "match", "scrape", "market", "salary", "setup", "export", "import"}
+)
+
+
+def refuses_at_once(holder: dict | None) -> bool:
+    """Whether a holder keeps the lock too long to wait for."""
+    return bool(holder) and holder.get("purpose") in LONG_PURPOSES
+
 
 class LockHeldError(RuntimeError):
     """Another process holds the `jobs/` ledger lock."""
@@ -267,7 +278,7 @@ def _acquire(jobs_dir: Path, key: str, purpose: str) -> bool:
 
 @contextmanager
 def ledger_lock(jobs_dir: Path, purpose: str):
-    """Hold the `jobs_dir` ledger lock for the block, or raise `LockHeldError` (at once for a run, after `WAIT_SECONDS` for a quick holder).
+    """Hold the `jobs_dir` ledger lock for the block, or raise `LockHeldError` (at once for a long holder, `LONG_PURPOSES`, after `WAIT_SECONDS` for a quick holder).
 
     Args:
         jobs_dir: The `jobs/` directory (created if missing).
@@ -282,7 +293,7 @@ def ledger_lock(jobs_dir: Path, purpose: str):
             nested = _acquire(jobs_dir, key, purpose)
             break
         except LockHeldError as exc:
-            if exc.purpose == "run" or time.monotonic() >= deadline:
+            if exc.purpose in LONG_PURPOSES or time.monotonic() >= deadline:
                 raise
             time.sleep(_POLL_SECONDS)
 

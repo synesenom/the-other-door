@@ -13,6 +13,14 @@ from door.scrapers import http_client, robots
 
 
 @pytest.fixture(autouse=True)
+def _no_lock_wait(monkeypatch):
+    """A refused ledger lock answers at once in tests; the ones that test the wait turn it on (#447)."""
+    from door.core import lock as lock_mod
+
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 0)
+
+
+@pytest.fixture(autouse=True)
 def _no_follow_ai(request, monkeypatch):
     """`follow`'s Haiku fallback never reaches the `claude` CLI from a test; tests that want an answer patch this."""
     from door.core.employers import careers_ai

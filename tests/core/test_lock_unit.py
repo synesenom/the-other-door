@@ -21,12 +21,6 @@ from door.core.lock import LockHeldError, ledger_lock, lock_holder
 from paths import SRC_DIR
 
 
-@pytest.fixture(autouse=True)
-def _no_wait(monkeypatch):
-    """The refusal tests expect an at-once answer; the waiting ones set their own."""
-    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 0)
-
-
 def _spawn_holder(jobs_dir: Path, purpose: str = "run") -> subprocess.Popen:
     """A second process that takes the lock, says so, and holds it until stdin closes."""
     code = textwrap.dedent(
@@ -364,11 +358,12 @@ def test_a_quick_holder_in_another_thread_is_waited_for(tmp_path, monkeypatch):
     t.join()
 
 
-def test_a_run_is_refused_at_once_even_with_a_wait(tmp_path, monkeypatch):
+@pytest.mark.parametrize("purpose", ["run", "collect"])
+def test_a_long_holder_is_refused_at_once_even_with_a_wait(tmp_path, monkeypatch, purpose):
     monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 60)
-    proc = _spawn_holder(tmp_path, "run")
+    proc = _spawn_holder(tmp_path, purpose)
     try:
-        with pytest.raises(LockHeldError, match="a run is in progress"):
+        with pytest.raises(LockHeldError):
             with ledger_lock(tmp_path, "prepare"):
                 pass
     finally:
