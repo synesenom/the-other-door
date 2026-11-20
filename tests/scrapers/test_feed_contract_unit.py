@@ -3,6 +3,7 @@ feed, and the shared code names no platform outside the dispatcher's precedence 
 
 import importlib
 import re
+import types
 
 import pytest
 
@@ -15,12 +16,19 @@ def _module(name):
     return importlib.import_module(SITES[name].module)
 
 
-@pytest.mark.parametrize("site", sorted(FEED_SITES))
-def test_a_feed_module_detects_urls_and_names_its_feed(site):
-    module = _module(site)
+def _check_detects_urls_and_names_its_feed(module):
     assert callable(module.detect_url) and callable(module.feed_url)
     assert module.detect_url("https://example.invalid/x") is None
     assert module.feed_url("nobody") is None or isinstance(module.feed_url("nobody"), str)
+
+
+@pytest.mark.parametrize("site", sorted(FEED_SITES))
+def test_a_feed_module_detects_urls_and_names_its_feed(site):
+    _check_detects_urls_and_names_its_feed(_module(site))
+
+
+def test_a_feed_module_without_feed_url_meets_the_contract():
+    _check_detects_urls_and_names_its_feed(types.SimpleNamespace(detect_url=lambda url: None))
 
 
 @pytest.mark.parametrize("site", sorted(FEED_SITES))
