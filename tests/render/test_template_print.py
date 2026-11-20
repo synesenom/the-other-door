@@ -19,7 +19,7 @@ from door.commands import compile as compile_cmd
 from door.core import workspace
 from door.core.downloads import chromium
 from door.render import page, pdf_render, readability
-from paths import REPO_ROOT, TESTS_DIR
+from paths import TESTS_DIR
 from pdf_utils import font_names, image_count, page_count
 
 pytestmark = [  # `real_chromium`: the offline suite otherwise hides the developer's Chromium (tests/conftest.py)
@@ -302,48 +302,6 @@ def test_a_photo_header_with_a_tagline_puts_it_under_the_name_beside_the_picture
     assert image_count(out / "cv.pdf") == 1 and page_count(out / "cv.pdf") == 1
 
 
-# --- icons drawn by a template (#189) ---------------------------------------------------------------------------
-
-def _colours(pdf_path):
-    """The (red, green) pixel counts of the first page, drawn by pdfium."""
-    import pypdfium2 as pdfium
-
-    pdf = pdfium.PdfDocument(str(pdf_path))
-    try:
-        image = pdf[0].render(scale=1).to_pil().convert("RGB")
-    finally:
-        pdf.close()
-    pixels = list(image.getdata())
-    return (sum(1 for r, g, b in pixels if r > 200 and g < 60 and b < 60),
-            sum(1 for r, g, b in pixels if g > 200 and r < 60 and b < 60))
-
-
-def test_a_template_with_icons_draws_them_beside_the_details_it_names(tmp_path, monkeypatch):
-    template = TEMPLATES / "icon_template" / "cv.template.html"
-    out, results = _setup(tmp_path, monkeypatch, cv=_KINDS, letter=_LETTER, extra={"cv_template": str(template)})
-    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
-    red, green = _colours(out / "cv.pdf")
-    assert red > 50 and green > 50, (red, green)
-    assert results["cv.html"]["readable"] == []
-
-
-def test_the_same_template_without_its_manifest_draws_no_icon(tmp_path, monkeypatch):
-    import shutil
-
-    copy = tmp_path / "tpl"
-    copy.mkdir()
-    shutil.copy(TEMPLATES / "icon_template" / "cv.template.html", copy)  # no template.json, no icons/
-    out, results = _setup(tmp_path / "job", monkeypatch, cv=_KINDS, letter=_LETTER,
-                          extra={"cv_template": str(copy / "cv.template.html")})
-    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
-    assert _colours(out / "cv.pdf") == (0, 0)
-
-
-def test_the_default_template_draws_no_icon(tmp_path, monkeypatch):
-    out, _ = _setup(tmp_path, monkeypatch, cv=_KINDS, letter=_LETTER)
-    assert _colours(out / "cv.pdf")[0] == 0
-
-
 # --- entries and levels (#147) ----------------------------------------------------------------------------------
 
 _SPAN_ENTRY = ('<h3><span class="role">Financial Controller</span><span class="sep"> | </span><span class="org">Globex Energy</span>'
@@ -375,24 +333,12 @@ def test_a_plain_entry_heading_prints_the_same_text_as_the_span_one(tmp_path, mo
     assert pdf_render.page_texts(spans / "cv.pdf") == pdf_render.page_texts(plain / "cv.pdf")
 
 
-# --- two columns (#147) -----------------------------------------------------------------------------------------
+# --- sections (#147) -----------------------------------------------------------------------------------------
 
 _TWO_COLUMNS = (_HEADER + '<h2 class="kind-experience">Experience</h2><div class="entry"><h3>Controller | Globex Energy - 2021</h3>'
                 '<ul><li>Closed the books in four days.</li></ul></div>'
                 '<h2 class="kind-skills">Skills</h2><p>IFRS, SQL</p><h2 class="kind-education">Education</h2><p>MSc, CBS</p>'
                 '<h2 class="kind-languages">Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>')
-
-
-def test_a_two_column_template_prints_every_heading_on_a_line_and_the_side_after_the_main(tmp_path, monkeypatch):
-    template = TEMPLATES / "columns_template" / "cv.template.html"
-    out, results = _setup(tmp_path, monkeypatch, cv=_TWO_COLUMNS, letter=_LETTER, extra={"cv_template": str(template)})
-    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
-    assert results["cv.html"]["readable"] == []
-    lines = _lines(out / "cv.pdf")
-    for heading in ("Experience", "Skills", "Education", "Languages"):
-        assert heading in lines, lines
-    assert lines.index("Education") < lines.index("Skills") < lines.index("Languages"), lines
-    assert "Danish native" in lines and page_count(out / "cv.pdf") == 1
 
 
 def test_the_default_template_keeps_one_column_in_the_bodys_order(tmp_path, monkeypatch):
@@ -402,16 +348,6 @@ def test_the_default_template_keeps_one_column_in_the_bodys_order(tmp_path, monk
     assert lines.index("Skills") < lines.index("Education") < lines.index("Languages"), lines
 
 
-def test_a_two_column_template_with_a_line_that_cannot_wrap_reports_the_cut_words_as_overflow(tmp_path, monkeypatch):
-    template = TEMPLATES / "overflow_template" / "cv.template.html"  # the side column's lines never wrap
-    cv = _TWO_COLUMNS.replace("<p>IFRS, SQL</p>", "<ul><li>" + "Consolidation and reporting under IFRS, " * 6 + "</li></ul>")
-    out, results = _setup(tmp_path, monkeypatch, cv=cv, letter=_LETTER, extra={"cv_template": str(template)})
-    assert results["cv.html"]["status"] == "compiled", results["cv.html"]
-    found = results["cv.html"]["readable"]
-    assert [p["kind"] for p in found] == ["overflow"], found
-    assert "IFRS" in found[0]["detail"] or "reporting" in found[0]["detail"], found
-
-
 @pytest.mark.parametrize("width", [180, 198, 288])  # widths at which the heading broke before " | " or " - "
 def test_an_entry_heading_never_starts_a_line_with_its_separator(tmp_path, width):
     """#246: a heading too long for its line breaks after the separator, never before it."""
@@ -419,6 +355,6 @@ def test_an_entry_heading_never_starts_a_line_with_its_separator(tmp_path, width
                 "body { font: 12pt sans-serif; } .photo { width: 1pt; }</style></head><body>\n<<body>>\n</body></html>")
     body = ('<div class="entry"><h3><span class="role">Junior Financial Analyst</span><span class="sep"> | </span>'
             '<span class="org">Example Co</span><span class="sep"> - </span><span class="dates">2020 - 2023</span></h3></div>')
-    pdf = page.print_page(body, template, REPO_ROOT / "profile.example" / "cv.template.html", "en", tmp_path, "cv")[0]
+    pdf = page.print_page(body, template, "en", tmp_path, "cv")[0]
     lines = [line.strip() for line in pdf_render.page_texts(pdf)[0].splitlines() if line.strip()]
     assert len(lines) > 1 and not [line for line in lines if line[0] in "|-"], lines

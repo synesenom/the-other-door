@@ -372,66 +372,17 @@ def test_an_errored_entry_has_no_readable(world):
     assert "readable" not in _compile(world)["results"][0]
 
 
-# --- the template manifest (#188) ----------------------------------------------------------------------------------
+# --- a user's own template ----------------------------------------------------------------------------------------
 
-def _manifest(world, data):
-    (world.example / "template.json").write_text(data if isinstance(data, str) else json.dumps(data))
-    (world.example / "fonts" / "A.ttf").write_bytes(b"a")
-    (world.example / "fonts" / "B.ttf").write_bytes(b"b")
-    (world.example / "icons").mkdir(exist_ok=True)
-    (world.example / "icons" / "p.svg").write_text("<svg/>")
-    (world.example / "icons" / "other.svg").write_text("<svg/>")
-
-
-def test_a_manifest_makes_compile_serve_only_the_fonts_and_icons_it_names(world):
-    _manifest(world, {"fonts": ["A.ttf"], "icons": {"phone": "p.svg"}})
-    world.make(cv="<h2>Experience</h2><p>Jane Doe</p>")
-    assert _compile(world)["results"][0]["status"] == "compiled"
-    assert world.print.calls[0]["assets"] == {"fonts": [world.example / "fonts" / "A.ttf"],
-                                              "icons": [world.example / "icons" / "p.svg"]}
-
-
-def test_a_manifest_with_no_icons_serves_no_icons(world):
-    _manifest(world, {"fonts": ["A.ttf"]})
-    world.make(cv="<p>Jane Doe</p>")
-    _compile(world)
-    assert world.print.calls[0]["assets"] == {"fonts": [world.example / "fonts" / "A.ttf"]}
-
-
-def test_a_named_file_that_is_missing_fails_that_pdf_only(world):
-    _manifest(world, {"fonts": ["Gone.ttf"]})
-    world.make(cv="<p>Jane Doe</p>", letter="<p>Hello</p>")
-    cv, letter = _compile(world)["results"]
-    assert cv["status"] == "error" and "Gone.ttf" in cv["stderr"] and not (world.out / "cv.pdf").exists()
-    assert letter["status"] == "error"  # one folder, one manifest: the letter's template is beside it
-
-
-def test_a_broken_manifest_fails_the_pdf_with_its_reason(world):
-    _manifest(world, {"fonts": ["A.otf"]})
-    world.make(cv="<p>Jane Doe</p>")
-    entry = _compile(world)["results"][0]
-    assert entry["status"] == "error" and "template.json" in entry["stderr"]
-    assert world.print.calls == []
-
-
-def test_a_manifest_that_names_no_fonts_keeps_the_usual_fonts(world):
-    _manifest(world, {"max_pages": 1, "icons": {"phone": "p.svg"}})
-    (world.profile / "fonts").mkdir()
-    (world.profile / "fonts" / "Mine.ttf").write_bytes(b"\x00\x01\x00\x00")
-    world.make(cv="<p>Jane Doe</p>")
-    _compile(world)
-    assert world.print.calls[0]["assets"] == {"fonts": [world.profile / "fonts" / "Mine.ttf"],
-                                              "icons": [world.example / "icons" / "p.svg"]}
-
-
-def test_a_users_own_template_reads_its_manifest_and_fonts_beside_it(world):
+def test_a_users_own_template_prints_with_the_profiles_fonts_and_ignores_a_template_json_beside_it(world):
     (world.profile / "cv.template.html").write_text("<html lang=\"<<lang>>\"><body><<body>></body></html>")
     (world.profile / "fonts").mkdir()
     (world.profile / "fonts" / "Own.ttf").write_bytes(b"\x00\x01\x00\x00")
-    (world.profile / "template.json").write_text(json.dumps({"fonts": ["Own.ttf"]}))
-    world.make(cv="<p>Jane Doe</p>")
+    (world.profile / "template.json").write_text(json.dumps({"fonts": ["Other.ttf"], "columns": {"side": ["skills"]}}))
+    world.make(cv="<h2 class=\"kind-skills\">Skills</h2><p>Jane Doe</p>")
     assert _compile(world)["results"][0]["status"] == "compiled"
     assert world.print.calls[0]["assets"] == {"fonts": [world.profile / "fonts" / "Own.ttf"]}
+    assert "side" not in world.print.calls[0]["html"]
 
 
 # --- a tagline and the contact kinds (#189) ------------------------------------------------------------------------

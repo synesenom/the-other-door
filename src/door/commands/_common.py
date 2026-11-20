@@ -53,19 +53,9 @@ def _is_url(value: str) -> bool:
     return re.match(r"https?://", value, re.IGNORECASE) is not None
 
 
-def _cv_manifest(config: dict) -> templates.Manifest | None:
-    """The resolved CV template's manifest; None when it has none or it is broken (prepare refuses a broken one before the tailor runs)."""
-    try:
-        return templates.manifest(templates.resolve("cv_template", config))
-    except ValueError:
-        return None
-
-
 def _cv_max_pages(posting: dict, config: dict) -> int:
-    """The page limit a CV for ``posting`` is made to: the country's `[cv]` max_pages, or the template's own when stricter."""
-    limit = i18n.cv_conventions(posting, config).max_pages
-    manifest = _cv_manifest(config)
-    return min(limit, manifest.max_pages) if manifest and manifest.max_pages else limit
+    """The page limit a CV for ``posting`` is made to: the country's `[cv]` max_pages."""
+    return i18n.cv_conventions(posting, config).max_pages
 
 
 # The sha256 of each earlier profile.example/cv.md that a user may still hold a copy of (#189). Add the hash of the

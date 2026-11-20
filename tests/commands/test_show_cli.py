@@ -597,20 +597,6 @@ def test_show_clean_read_back_says_it_reads_cleanly(cli_env, one_page):
     assert "text reads cleanly" in _rendered(materials)
 
 
-def test_show_reads_a_columns_template_in_its_placed_order(cli_env, one_page):
-    """Side sections interleaved in cv.md come after the main ones on the page: that is no `order` problem."""
-    from door.commands import matches as matches_cmd
-
-    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    (cli_env.profile_dir / "cv.template.html").write_text("<html><body><<body>></body></html>")
-    (cli_env.profile_dir / "template.json").write_text('{"columns": {"side": ["skills", "languages"]}}')
-    _with_cv(cli_env, "<!-- Keywords: Python -->\n<h2 class=\"kind-summary\">Profile</h2><h2 class=\"kind-skills\">Skills</h2>"
-                      "<h2 class=\"kind-experience\">Experience</h2><h2 class=\"kind-languages\">Languages</h2>"
-                      "<h2 class=\"kind-education\">Education</h2>")
-    _real_pdfs(cli_env, "Jane Doe, Python developer\nProfile\nExperience\nEducation\nSkills\nLanguages")
-    assert matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"] == []
-
-
 def test_show_unreadable_pdf_is_not_checked(cli_env, one_page):
     from door.commands import matches as matches_cmd
 
@@ -694,15 +680,12 @@ def test_show_on_a_terminal_says_no_answer_too(cli_env, monkeypatch):
     assert f"No answer in {tracker_mod.NO_ANSWER_DAYS} days" in result_text(result) + "".join(paged)
 
 
-@pytest.mark.parametrize("template_pages, expected", [(1, 1), (None, 2)])
-def test_show_carries_the_page_limit_the_cv_was_made_for(cli_env, one_page, template_pages, expected):
+def test_show_carries_the_page_limit_the_cv_was_made_for(cli_env, one_page):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", location="Aarhus, Denmark")
     _prepared(cli_env)
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
-    assert matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["cv_max_pages"] == expected
+    assert matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["cv_max_pages"] == 2
 
 
 def test_the_card_says_when_the_cv_is_over_its_limit(cli_env):
@@ -740,14 +723,12 @@ def test_show_says_a_cv_over_its_page_limit_in_readability(cli_env):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", location="Aarhus, Denmark")
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text('{"max_pages": 1}')
     _with_cv(cli_env, "<!-- Keywords: Python -->\n<p>Jane Doe, Python developer</p>")
     _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
     out = cli_env.jobs_dir / "output" / "job-abc"
-    make_pdf(out / "cv.pdf", ["Jane Doe, Python developer with plenty of text to be readable"] * 2)
+    make_pdf(out / "cv.pdf", ["Jane Doe, Python developer with plenty of text to be readable"] * 3)
     found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
-    assert found == [{"file": "cv", "kind": "pages", "detail": "2 pages, over the limit of 1 page"}]
+    assert found == [{"file": "cv", "kind": "pages", "detail": "3 pages, over the limit of 2 pages"}]
 
 
 def test_the_card_says_the_page_limit_once_on_the_cv_row_not_under_read_by_an_ats(cli_env):
@@ -761,16 +742,3 @@ def test_the_card_says_the_page_limit_once_on_the_cv_row_not_under_read_by_an_at
     text = _rendered({**base, "readability": [pages, missing]})
     assert "Kubernetes" in text and "over the limit" not in text
 
-
-def test_show_passes_a_two_column_manifest_to_the_cv_check(cli_env, one_page, monkeypatch):
-    from door.commands import matches as matches_cmd
-    from door.render import pdf_render
-
-    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    (cli_env.profile_dir / "cv.template.html").write_text("<html><body><<body>></body></html>")
-    (cli_env.profile_dir / "template.json").write_text('{"columns": {"side": ["skills"]}}')
-    _with_cv(cli_env, "<!-- Keywords: Python -->\n<p>Jane Doe, Python developer</p>")
-    _real_pdfs(cli_env, "Jane Doe, Python developer with plenty of text to be readable")
-    monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])
-    found = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["readability"]
-    assert [(p["file"], p["kind"]) for p in found] == [("cv", "sparse")]

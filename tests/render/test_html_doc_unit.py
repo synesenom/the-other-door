@@ -83,18 +83,6 @@ def test_a_level_item_keeps_its_word_in_the_text():
 
 
 
-def test_columns_reads_a_placed_cv_back_in_its_parts():
-    from door.render import page
-    from door.core import templates
-    body = ('<header class="cv-header"><h1>A</h1></header><h2 class="kind-experience">Experience</h2><p>e</p>'
-            '<h2 class="kind-skills">Skills</h2><p>s</p>')
-    placed = page.place_columns(body, templates.Columns(side=["skills"]))
-    assert html_doc.columns(placed) == ('<header class="cv-header"><h1>A</h1></header>',
-                                        '<h2 class="kind-experience">Experience</h2><p>e</p>',
-                                        '<h2 class="kind-skills">Skills</h2><p>s</p>')
-    assert html_doc.columns(body) is None
-
-
 def test_kinds_reads_the_kind_class_of_each_h2_or_none():
     body = '<h2 class="kind-skills">Skills</h2><p>s</p><h2>Other</h2><h2 class="kind-other x">Hobbys</h2>'
     assert html_doc.kinds(body) == ["skills", None, "other"]

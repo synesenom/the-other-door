@@ -13,7 +13,6 @@ from html.parser import HTMLParser
 from door.render import html_guard
 
 _BLOCKS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "br"})
-MAIN, SIDE = '<div class="main">', '<div class="side">'  # the two columns `page.place_columns` wraps a CV in
 
 
 class _Reader(HTMLParser):
@@ -79,16 +78,6 @@ def headings(body: str) -> list[str]:
 def kinds(body: str) -> list[str | None]:
     """The kind of each `<h2>` of `body`, in order: the `kind-<kind>` class it carries, None for one with none."""
     return _read(body).kinds
-
-
-def columns(body: str) -> tuple[str, str, str] | None:
-    """A CV `body` as `page.place_columns` placed it, in its parts: what comes before the columns (the header), the
-    main column and the side column; None for a body not placed in columns."""
-    before, found, side = body.partition(SIDE)
-    if not found:
-        return None
-    head, _, main = before.partition(MAIN)
-    return head, main.removesuffix("</div>"), side.removesuffix("</div>")
 
 
 def note(body: str, label: str) -> str | None:

@@ -62,7 +62,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
     """Print the HTML bodies of a job application into PDFs; return structured data.
 
     Mirrors the `compile` tool's side effects (starts the pinned Chromium headless shell, sealed: scripts off, only
-    the job folder and the template's fonts and icons served) but never prints to stdout: callers render their own presentation from the
+    the job folder and the fonts served) but never prints to stdout: callers render their own presentation from the
     returned dict.
 
     Args:
@@ -131,10 +131,9 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
         if not common._chromium_available():
             raise common.NoChromium
         try:
-            manifest = (templates.manifest(template_path) or templates.Manifest()) if file == "cv.html" else templates.Manifest()
             photo = page_mod.profile_photo(config, posting)
             pdf, placed, photo_name = page_mod.print_page(
-                body, template, template_path, language, output_dir, Path(file).stem, manifest=manifest, photo=photo,
+                body, template, language, output_dir, Path(file).stem, photo=photo,
                 style=templates.style_css(config))
         except (ValueError, html_pdf.PrintError) as exc:
             entry.update(status="error", stderr=str(exc))

@@ -52,9 +52,9 @@ def test_the_tailor_is_told_the_entry_parts_and_every_level_class():
             "level-5"} <= named
 
 
-def test_the_tailor_is_told_what_overflow_and_sparse_mean():
+def test_the_tailor_is_told_what_overflow_means():
     text = (claude_cli.PROMPTS_DIR / "tailor.md").read_text(encoding="utf-8")
-    assert "`overflow`" in text and "`sparse`" in text and "never invent" in text
+    assert "`overflow`" in text and "never invent" in text
 
 
 def _text(*parts: str) -> str:

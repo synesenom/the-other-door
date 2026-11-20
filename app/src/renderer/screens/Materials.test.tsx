@@ -427,7 +427,7 @@ describe('Materials: text running off the page', () => {
   })
 
   it.each([
-    [[{ file: 'cv', kind: 'sparse', detail: 'x' }, { file: 'cv', kind: 'missing', detail: 'y' }]],
+    [[{ file: 'cv', kind: 'glued', detail: 'x' }, { file: 'cv', kind: 'missing', detail: 'y' }]],
     [[{ ...overflow, file: 'cover_letter' }]],
     [[]],
     [null],
