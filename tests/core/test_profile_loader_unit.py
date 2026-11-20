@@ -60,6 +60,31 @@ def test_valid_profile_and_defaults(tmp_path):
     assert profile.languages == []
 
 
+ACCENTS = ["none", "navy", "blue", "teal", "forest", "burgundy", "plum", "slate", "rust"]
+FONTS = ["door", "editorial", "friendly", "plain"]
+
+
+def test_the_cv_style_defaults_to_todays_look(tmp_path):
+    profile = Profile.model_validate(_valid_config(tmp_path / "tpl"))
+    assert (profile.cv_accent, profile.cv_fonts) == ("none", "door")
+
+
+@pytest.mark.parametrize("name", ACCENTS)
+def test_every_accent_name_is_accepted(tmp_path, name):
+    assert Profile.model_validate(_valid_config(tmp_path / "tpl", cv_accent=name)).cv_accent == name
+
+
+@pytest.mark.parametrize("name", FONTS)
+def test_every_font_pair_name_is_accepted(tmp_path, name):
+    assert Profile.model_validate(_valid_config(tmp_path / "tpl", cv_fonts=name)).cv_fonts == name
+
+
+@pytest.mark.parametrize("key,bad", [("cv_accent", "red"), ("cv_accent", "#fff"), ("cv_fonts", "Comic")])
+def test_a_style_outside_the_lists_is_rejected(tmp_path, key, bad):
+    with pytest.raises(ValidationError):
+        Profile.model_validate(_valid_config(tmp_path / "tpl", **{key: bad}))
+
+
 # --------------------------------------------------------------------------- #
 # Field validation rules
 # --------------------------------------------------------------------------- #

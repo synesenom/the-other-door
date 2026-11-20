@@ -1,6 +1,7 @@
 """The HTML templates come from the code unless the user keeps their own (#56, #146)."""
 
 import hashlib
+import re
 
 import pytest
 
@@ -79,8 +80,8 @@ def test_the_shipped_templates_carry_the_two_tokens_and_the_page():
 
 # A pinned hash: a change to a shipped template is deliberate (a user's own copy does not follow it).
 SHIPPED_HASHES = {
-    "cv_template": "c5c13af913e3502c2e465184644cac15e17782ef1fed5e8024632ef5712fcdf0",
-    "cover_letter_template": "2c917ca8f82bf1dd541c276a86eb4bde3049cd62161a8aa37e5d3871f1e1929f",
+    "cv_template": "8a5f3aa5ac165a82cd2c631cb92aa97dfaa305f2949b4ccf7274aa3a9e81cf11",
+    "cover_letter_template": "bf415a5a0a94aeda22a79574e71a16ccaf99ec63e0603844de0dc73da16b5b6b",
 }
 
 
@@ -89,3 +90,42 @@ def test_the_shipped_templates_are_pinned():
         digest = hashlib.sha256((REPO_ROOT / "profile.example" / name).read_text(encoding="utf-8")
                                 .replace("\r\n", "\n").encode()).hexdigest()
         assert digest == SHIPPED_HASHES[key], f"{name} changed: if that is meant, update its hash (now {digest})"
+
+
+# --- the CV style: an accent colour and a font pair (#465) ---------------------------------------------------------
+
+def test_the_defaults_add_no_style_at_all():
+    assert templates.style_css({}) == ""
+    assert templates.style_css({"cv_accent": "none", "cv_fonts": "door"}) == ""
+
+
+def test_an_accent_colours_the_headings_and_the_rule():
+    css = templates.style_css({"cv_accent": "navy"})
+    assert "--heading:#1f3a5f" in css and "--rule:#1f3a5f" in css and css.startswith(":root{")
+
+
+def test_a_font_pair_names_its_two_families():
+    css = templates.style_css({"cv_fonts": "editorial"})
+    assert "Playfair Display" in css and "Lato" in css
+
+
+def test_an_unknown_value_falls_back_and_is_never_echoed():
+    assert templates.style_css({"cv_accent": "red; } body { display:none", "cv_fonts": "Comic"}) == ""
+    assert templates.style_css({"cv_accent": 3, "cv_fonts": None}) == ""
+
+
+def test_every_font_file_a_pair_names_ships_with_its_licence():
+    shipped = REPO_ROOT / "profile.example" / "fonts"
+    for pair, files in templates.FONT_FILES.items():
+        for name in files:
+            assert (shipped / name).is_file(), f"{pair}: {name}"
+    for name in ("PlayfairDisplay", "Lato", "Montserrat", "Merriweather", "Figtree", "YoungSerif"):
+        assert (shipped / f"{name}-OFL.txt").is_file()
+
+
+def test_every_font_a_template_loads_is_a_shipped_truetype_file():
+    shipped = REPO_ROOT / "profile.example" / "fonts"
+    for template in ("cv.template.html", "cover-letter.template.html"):
+        text = (REPO_ROOT / "profile.example" / template).read_text()
+        for name in re.findall(r"/fonts/([\w.-]+\.ttf)", text):
+            assert (shipped / name).is_file(), f"{template}: {name}"

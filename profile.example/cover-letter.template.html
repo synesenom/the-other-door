@@ -25,19 +25,32 @@
 @font-face { font-family: Figtree; font-weight: 600; font-style: normal; src: url(/fonts/Figtree-SemiBold.ttf) format("truetype"); }
 @font-face { font-family: Figtree; font-weight: 600; font-style: italic; src: url(/fonts/Figtree-SemiBoldItalic.ttf) format("truetype"); }
 @font-face { font-family: "Young Serif"; font-weight: 400; font-style: normal; src: url(/fonts/YoungSerif-Regular.ttf) format("truetype"); }
+/* the fonts of the other pairs (cv_fonts, #465); a face is loaded only when the page uses it */
+@font-face { font-family: "Playfair Display"; font-weight: 700; font-style: normal; src: url(/fonts/PlayfairDisplay-Bold.ttf) format("truetype"); }
+@font-face { font-family: Lato; font-weight: 400; font-style: normal; src: url(/fonts/Lato-Regular.ttf) format("truetype"); }
+@font-face { font-family: Lato; font-weight: 400; font-style: italic; src: url(/fonts/Lato-Italic.ttf) format("truetype"); }
+@font-face { font-family: Lato; font-weight: 700; font-style: normal; src: url(/fonts/Lato-Bold.ttf) format("truetype"); }
+@font-face { font-family: Lato; font-weight: 700; font-style: italic; src: url(/fonts/Lato-BoldItalic.ttf) format("truetype"); }
+@font-face { font-family: Montserrat; font-weight: 700; font-style: normal; src: url(/fonts/Montserrat-Bold.ttf) format("truetype"); }
+@font-face { font-family: Merriweather; font-weight: 400; font-style: normal; src: url(/fonts/Merriweather-Regular.ttf) format("truetype"); }
+@font-face { font-family: Merriweather; font-weight: 400; font-style: italic; src: url(/fonts/Merriweather-Italic.ttf) format("truetype"); }
+@font-face { font-family: Merriweather; font-weight: 700; font-style: normal; src: url(/fonts/Merriweather-Bold.ttf) format("truetype"); }
+@font-face { font-family: Merriweather; font-weight: 700; font-style: italic; src: url(/fonts/Merriweather-BoldItalic.ttf) format("truetype"); }
 
 @page { size: A4; margin: 2.2cm 2.4cm 2cm 2.4cm; }
 
-:root { --ink: #1E1A16; --muted: #6B6157; --hairline: #D6C7A8; --accent: #2F55C8; }
+/* what cv_accent and cv_fonts change (`compile` puts a :root block after this one): the heading colour and font, the text font, the strong weight, the rule under the name */
+:root { --ink: #1E1A16; --muted: #6B6157; --hairline: #D6C7A8; --accent: #2F55C8;
+  --heading: var(--ink); --rule: var(--hairline); --heading-font: "Young Serif", serif; --text-font: Figtree, sans-serif; --heading-weight: 400; --strong: 600; }
 
 html { font-synthesis: none; hyphens: manual; }
-body { margin: 0; font: 10pt/1.4 Figtree, sans-serif; color: var(--ink); orphans: 2; widows: 2; }
+body { margin: 0; font: 10pt/1.4 var(--text-font); color: var(--ink); orphans: 2; widows: 2; }
 p, ul, h1 { margin: 0; }
 a { color: var(--accent); text-decoration: none; }
-strong { font-weight: 600; }
-h1 { font-family: "Young Serif", serif; font-weight: 400; font-size: 28pt; line-height: 32pt; }
+strong { font-weight: var(--strong); }
+h1 { font-family: var(--heading-font); font-weight: var(--heading-weight); font-size: 28pt; line-height: 32pt; }
 
-.letter-header { padding-bottom: 8pt; border-bottom: 0.6pt solid var(--hairline); margin-bottom: 1.2cm; }
+.letter-header { padding-bottom: 8pt; border-bottom: 0.6pt solid var(--rule); margin-bottom: 1.2cm; }
 .contact { margin-top: 8pt; font-size: 9pt; color: var(--muted); }
 .contact span { display: inline-block; white-space: nowrap; margin-right: 0.5em; }
 .contact span:not(:last-child)::after { content: "\00B7"; margin-left: 0.5em; }

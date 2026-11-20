@@ -71,6 +71,10 @@ class Profile(BaseModel):
     # (`matching.scorer`). "" = none.
     preferences: str = ""
     remote: Literal["yes", "no", "hybrid"]
+    # The look of a prepared CV and letter (#465): an accent colour for the section headings and the rule under the name,
+    # and a pair of fonts (`core.templates.ACCENTS`, `FONT_PAIRS`). The defaults are the shipped template's own look.
+    cv_accent: Literal["none", "navy", "blue", "teal", "forest", "burgundy", "plum", "slate", "rust"] = "none"
+    cv_fonts: Literal["door", "editorial", "friendly", "plain"] = "door"
     # `discover` asks LinkedIn which employers hire for the keywords, `follow` then finds
     # their own job feeds (door.pipeline). Off until the user turns it on: its terms forbid
     # automated access, so onboarding asks (`discovery_sources.for_location`).

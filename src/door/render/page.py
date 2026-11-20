@@ -47,7 +47,8 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-def _page(body: str, template: str, folder: Path, *, photo: Path | None, manifest: templates.Manifest, language: str) -> tuple[str, str, str | None]:
+def _page(body: str, template: str, folder: Path, *, photo: Path | None, manifest: templates.Manifest, language: str,
+          style: str = "") -> tuple[str, str, str | None]:
     """The page `print_page` prints for a body: the photo placed (copied into `folder`), the two columns, the language's
     typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
     the body as placed and the photo's file name (None when it was not placed).
@@ -57,7 +58,7 @@ def _page(body: str, template: str, folder: Path, *, photo: Path | None, manifes
     """
     built, name = _with_photo(body, template, folder, photo)
     placed = _placed(built, manifest)
-    return _wrap(template, _glue_separators(typography.apply(placed, language)), language), placed, name
+    return _wrap(template, _glue_separators(typography.apply(placed, language)), language, style), placed, name
 
 
 _SEP_SPACE = re.compile(r'(<span class="sep">) ')
@@ -70,10 +71,11 @@ def _glue_separators(body: str) -> str:
 
 
 def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,
-               manifest: templates.Manifest | None = None, photo: Path | None = None) -> tuple[Path, str, str | None]:
+               manifest: templates.Manifest | None = None, photo: Path | None = None,
+               style: str = "") -> tuple[Path, str, str | None]:
     """`body` placed in `template` (its text) by `_page` and printed to `folder/<name>.pdf` with the pinned Chromium,
     the fonts and icons that the template file `assets_of` names served. Returns the pdf, the body as placed and the
-    photo's file name in `folder` (None when it was not placed).
+    photo's file name in `folder` (None when it was not placed). `style` (`templates.style_css`) goes in the page's head.
 
     Raises:
         html_pdf.PrintError: the print failed.
@@ -82,7 +84,7 @@ def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Pat
     folder.mkdir(parents=True, exist_ok=True)
     assets = templates.assets(assets_of)
     html_text, placed, picture = _page(body, template, folder, photo=photo, language=lang,
-                                        manifest=manifest or templates.Manifest())
+                                        manifest=manifest or templates.Manifest(), style=style)
     pdf = folder / f"{name}.pdf"
     html_pdf.print_html(folder, html_text, pdf, assets=assets)
     return pdf, placed, picture
@@ -133,12 +135,14 @@ def placed_cv(body: str, config: dict) -> str:
     return _placed(body, manifest)
 
 
-def _wrap(template: str, body: str, language: str) -> str:
-    """`template` with its language and `body` in place.
+def _wrap(template: str, body: str, language: str, style: str = "") -> str:
+    """`template` with its language and `body` in place, and the CSS `style` (if any) in a `<style>` before `</head>`.
 
     Raises:
         ValueError: the template has no `<<body>>` to put the body in.
     """
     if "<<body>>" not in template:
         raise ValueError("the template has no <<body>> to put the page in")
+    if style:
+        template = template.replace("</head>", f"<style>{style}</style></head>", 1)
     return template.replace("<<lang>>", language).replace("<<body>>", body)
