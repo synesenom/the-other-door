@@ -10,6 +10,7 @@ import pytest
 
 from conftest import claude_ready
 from door.commands import cv as cv_cmd
+from door.core import workspace
 
 pytestmark = pytest.mark.model
 
@@ -52,7 +53,7 @@ Data analyst with six years of experience in public-sector research.
 
 
 def _headings(markdown: str, level: str) -> list[str]:
-    return [" ".join(m.group(1).split()).casefold() for m in re.finditer(rf"^{level} (.+?)\s*$", markdown, re.M)]
+    return [" ".join(m.group(1).split()) for m in re.finditer(rf"^{level} (.+?)\s*$", markdown, re.M)]
 
 
 @pytest.fixture(scope="module")
@@ -62,14 +63,16 @@ def draft(tmp_path_factory):
     folder = tmp_path_factory.mktemp("draft")
     source = folder / "cv.md"
     source.write_text(CV, encoding="utf-8")
-    return cv_cmd._draft_cv_core([str(source)], profile_dir=folder / "profile")["markdown"]
+    with pytest.MonkeyPatch.context() as mp:  # the usage line of the call goes to a throwaway jobs folder
+        mp.setattr(workspace, "JOBS_DIR", tmp_path_factory.mktemp("jobs"))
+        return cv_cmd._draft_cv_core([str(source)], profile_dir=folder / "profile")["markdown"]
 
 
 def test_the_draft_keeps_a_section_outside_the_template_and_its_sub_groups(draft):
-    assert "research & analyses" in _headings(draft, "##")
-    assert {"survey studies", "policy evaluations"} <= set(_headings(draft, "###"))
+    assert "Research & analyses" in _headings(draft, "##")
+    assert {"Survey studies", "Policy evaluations"} <= set(_headings(draft, "###"))
 
 
 def test_the_draft_keeps_a_section_titled_in_another_language(draft):
-    assert "uddannelse" in _headings(draft, "##")
-    assert "education" not in _headings(draft, "##")
+    assert "Uddannelse" in _headings(draft, "##")
+    assert "Education" not in _headings(draft, "##")
