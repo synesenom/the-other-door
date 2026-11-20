@@ -164,10 +164,6 @@ def parse_list(html: str) -> tuple[str, list[dict]]:
     return name, rows
 
 
-def _schema(html: str) -> dict:
-    return next(iter(sdk.job_postings(html)), {})
-
-
 def _address(value) -> str:
     """A schema.org ``jobLocation.address``: a string, or an ``addressLocality``, tidied (``"Gatan 1 , Ort "``)."""
     if isinstance(value, dict):
@@ -199,7 +195,7 @@ def parse_detail(html: str) -> dict | None:
     The place is the page's ``Kommun`` line, else the schema's ``jobLocation``. Pure."""
     soup = BeautifulSoup(html or "", "html.parser")
     content = soup.find("div", class_="mainContent")
-    schema = _schema(html)
+    schema = next(iter(sdk.job_postings(html)), {})
     if content is None and not schema:
         return None
     location = ""

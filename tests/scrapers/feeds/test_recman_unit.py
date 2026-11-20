@@ -207,3 +207,7 @@ def test_a_tenant_detection_is_left_alone_by_resolve():
     det = recman.detect_url("https://pn.recman.page/jobs")
 
     assert recman.resolve(_session(), det, "https://pn.recman.page/jobs") == det
+
+
+def test_the_first_ad_with_a_title_is_read():
+    assert recman._parse_detail('<script type="application/ld+json">{"@type": "JobPosting", "title": "", "description": "Untitled"}</script><script type="application/ld+json">{"@type": "JobPosting", "title": "Titled", "description": "Body"}</script>')["title"] == "Titled"

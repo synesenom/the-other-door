@@ -87,11 +87,6 @@ def parse_widget(page: str) -> list[dict] | None:
 
 # --- one ad page ---
 
-def _ld_job(page: str) -> dict:
-    """The schema.org JobPosting object of an ad page, ``{}`` when it has none."""
-    return next(iter(sdk.job_postings(page)), {})
-
-
 def _ld_location(job: dict) -> str:
     places = job.get("jobLocation") or []
     names = []
@@ -106,7 +101,7 @@ def _ld_location(job: dict) -> str:
 def parse_ad(page: str) -> dict | None:
     """What an ad page holds: ``company_id``, ``title``, ``company``, ``posted_at`` (ISO text), ``location`` and
     the plain-text ``description``. None for a page with neither the JSON-LD nor the company number. Pure."""
-    job = _ld_job(page)
+    job = next(iter(sdk.job_postings(page)), {})
     company = _AD_COMPANY.search(page)
     if not job and not company:
         return None

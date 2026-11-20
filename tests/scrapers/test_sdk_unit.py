@@ -1,4 +1,3 @@
-from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -8,6 +7,7 @@ from door.core.employers import ats_detect
 from door.matching import locality, title_fit
 from door.scrapers import sdk
 from door import i18n
+from paths import TESTS_DIR
 
 
 def test_every_export_is_documented():
@@ -257,7 +257,7 @@ def test_stop_for_run_reports_records_and_marks_pushback(monkeypatch):
 
 # --- job_postings: the one JSON-LD reader ---
 
-_FEEDS = Path(__file__).parent / "feeds" / "fixtures"
+_FEEDS = TESTS_DIR / "scrapers" / "feeds" / "fixtures"
 
 
 def _ld(*bodies: str) -> str:

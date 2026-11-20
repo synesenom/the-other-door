@@ -115,16 +115,17 @@ def _is_results_page(html: str) -> bool:
 def _parse_detail(html: str) -> dict | None:
     """``{title, company, location, description, posted_at}`` from an ad page's ``JobPosting`` JSON-LD
     (``posted_at`` the ISO string); None when the page has none. Pure."""
-    for data in sdk.job_postings(html):
-        address = (data.get("jobLocation") or {}).get("address") or {}
-        return {
-            "title": (data.get("title") or "").strip(),
-            "company": ((data.get("hiringOrganization") or {}).get("name") or "").strip(),
-            "location": (address.get("addressLocality") or "").strip(),
-            "description": strip_html(data.get("description")),
-            "posted_at": data.get("datePosted") or "",
-        }
-    return None
+    data = next(iter(sdk.job_postings(html)), None)
+    if data is None:
+        return None
+    address = (data.get("jobLocation") or {}).get("address") or {}
+    return {
+        "title": (data.get("title") or "").strip(),
+        "company": ((data.get("hiringOrganization") or {}).get("name") or "").strip(),
+        "location": (address.get("addressLocality") or "").strip(),
+        "description": strip_html(data.get("description")),
+        "posted_at": data.get("datePosted") or "",
+    }
 
 
 def _posting(card: dict, detail: dict | None, scraped_at: datetime) -> dict:

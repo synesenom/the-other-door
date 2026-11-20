@@ -27,7 +27,7 @@ Refusals (a board that reads pages; a 403, a 429 or a challenge page stops the s
 
 JSON-LD
     `job_postings(html)`: every schema.org JobPosting of a page, in document order; each module keeps its own
-    pick rule over it, and none reads `<script type="application/ld+json">` itself.
+    pick rule over it, and no module matches the JSON-LD script by its type itself (taleez, which picks its script by id, is the one exception).
 
 Probing
     `ProbeResult`, `run_probe`, `probe_failure`, `probe_session`.

@@ -56,3 +56,8 @@ def test_description_none_without_a_job_posting():
 
 def test_parse_date_is_naive_even_for_a_z_date():
     assert reed._parse_date("2026-11-20T10:00:00Z").tzinfo is None
+
+
+def test_the_first_ad_with_a_description_is_read_and_none_when_its_text_is_empty():
+    assert reed._parse_description('<script type="application/ld+json">{"@type": "JobPosting", "title": "A", "description": ""}</script><script type="application/ld+json">{"@type": "JobPosting", "title": "B", "description": "<p>Second</p>"}</script>') == "Second"
+    assert reed._parse_description('<script type="application/ld+json">{"@type": "JobPosting", "title": "A", "description": "<p></p>"}</script><script type="application/ld+json">{"@type": "JobPosting", "title": "B", "description": "<p>Second</p>"}</script>') is None

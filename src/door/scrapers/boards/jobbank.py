@@ -133,19 +133,20 @@ def _parse_date(value) -> datetime | None:
 def _parse_detail(html: str) -> dict | None:
     """``title``, ``company``, ``location``, ``description`` (plain text), ``posted_at`` from the ad's
     ``JobPosting`` JSON-LD; None when the page has none. Pure."""
-    for node in sdk.job_postings(html):
-        org = node.get("hiringOrganization")
-        place = node.get("jobLocation")
-        if isinstance(place, list):
-            place = place[0] if place else None
-        return {
-            "title": html_lib.unescape(str(node.get("title") or "")).strip(),
-            "company": html_lib.unescape(str((org or {}).get("name") if isinstance(org, dict) else org or "")).strip(),
-            "location": _location_text((place or {}).get("address") if isinstance(place, dict) else place),
-            "description": strip_html(str(node.get("description") or "")),
-            "posted_at": _parse_date(node.get("datePosted")),
-        }
-    return None
+    node = next(iter(sdk.job_postings(html)), None)
+    if node is None:
+        return None
+    org = node.get("hiringOrganization")
+    place = node.get("jobLocation")
+    if isinstance(place, list):
+        place = place[0] if place else None
+    return {
+        "title": html_lib.unescape(str(node.get("title") or "")).strip(),
+        "company": html_lib.unescape(str((org or {}).get("name") if isinstance(org, dict) else org or "")).strip(),
+        "location": _location_text((place or {}).get("address") if isinstance(place, dict) else place),
+        "description": strip_html(str(node.get("description") or "")),
+        "posted_at": _parse_date(node.get("datePosted")),
+    }
 
 
 def _posting(card: dict, detail: dict, scraped_at: datetime) -> dict:
