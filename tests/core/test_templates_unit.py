@@ -102,7 +102,13 @@ def test_the_defaults_add_no_style_at_all():
 
 def test_no_colour_is_ink_headings_and_a_hairline_rule():
     css = templates.style_css({"cv_accent": "none"})
-    assert "--heading:#1E1A16" in css and "--rule:#D6C7A8" in css
+    assert "--heading:var(--ink)" in css and "--rule:var(--hairline)" in css
+
+
+def test_the_tables_list_every_name_the_profile_accepts_in_order():
+    assert list(templates.ACCENTS) == ["none", "navy", "blue", "teal", "forest", "burgundy", "plum", "slate", "rust"]
+    assert list(templates.FONT_PAIRS) == ["door", "editorial", "friendly", "plain"]
+    assert templates.ACCENTS["none"] == "#1E1A16"  # the template's ink: what the no-colour swatch shows is what prints
 
 
 def test_blue_is_the_apps_blue():
@@ -131,9 +137,3 @@ def test_every_font_a_template_loads_is_a_shipped_truetype_file():
         for name in re.findall(r"/fonts/([\w.-]+\.ttf)", text):
             assert (shipped / name).is_file(), f"{template}: {name}"
             assert (shipped / f"{name.split('-')[0]}-OFL.txt").is_file(), f"{template}: the licence of {name}"
-
-
-def test_the_apps_swatches_are_the_accent_table():
-    import json
-    swatches = json.loads((REPO_ROOT / "app/src/renderer/screens/profile-form/cv-style.json").read_text())["colours"]
-    assert {k: v[1] for k, v in swatches.items() if k != "none"} == templates.ACCENTS

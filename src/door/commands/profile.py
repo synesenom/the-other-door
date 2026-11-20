@@ -981,6 +981,8 @@ def _profile_options(location: str | None = None) -> dict:
         "worldwide_discovery": _discovery_choices(discovery_sources.for_location("")),
         # Each board in words ("The Hub"), the name the posting pane uses ("via The Hub").
         "board_names": {b: sites.source_name(b) or b for b in sorted(offered)},
+        # The CV style's choices with what each looks like (`core.templates`): the app draws its pickers from it.
+        "cv_styles": templates_mod.cv_styles(),
         # Every config key with its type, default and bounds (the Profile screen's form).
         "fields": _profile_field_specs(),
     }

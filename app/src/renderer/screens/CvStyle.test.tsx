@@ -12,11 +12,12 @@ const SPECS: FieldSpec[] = [
   { key: 'cv_accent', type: 'choice', required: false, nullable: false, default: 'blue', choices: ['none', 'navy', 'blue', 'teal', 'forest', 'burgundy', 'plum', 'slate', 'rust'] },
   { key: 'cv_fonts', type: 'choice', required: false, nullable: false, default: 'door', choices: ['door', 'editorial', 'friendly', 'plain'] },
 ]
+const STYLES = {"accents": {"none": "black", "navy": "navy", "blue": "blue", "teal": "teal", "forest": "green", "burgundy": "maroon", "plum": "purple", "slate": "slategray", "rust": "sienna"}, "fonts": {"door": {"heading": "\"Young Serif\", serif", "text": "Figtree, sans-serif", "weight": 400}, "editorial": {"heading": "\"Playfair Display\", serif", "text": "Lato, sans-serif", "weight": 700}, "friendly": {"heading": "Montserrat, sans-serif", "text": "Merriweather, serif", "weight": 700}, "plain": {"heading": "Figtree, sans-serif", "text": "Figtree, sans-serif", "weight": 600}}}
 const sample = (n: string) => ({ png_base64: `PNG-${n}`, own_cv: true })
 
 function show(handlers: Record<string, unknown> = {}, config: Record<string, unknown> = {}) {
   const h = mockDoor({ cv_style_sample: sample('first'), init_profile: {}, ...handlers })
-  render(<CvStyle specs={SPECS} config={config} />)
+  render(<CvStyle specs={SPECS} config={config} styles={STYLES} />)
   return h
 }
 const colours = () => within(screen.getByRole('group', { name: 'Colour' }))
@@ -111,11 +112,11 @@ describe('CvStyle', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
       const h = mockDoor({ cv_style_sample: sample('first'), init_profile: {} })
-      const { rerender } = render(<CvStyle specs={SPECS} config={{}} cvSaves={0} />)
+      const { rerender } = render(<CvStyle specs={SPECS} config={{}} styles={STYLES} cvSaves={0} />)
       await screen.findByRole('img')
       h.call.mockClear()
-      rerender(<CvStyle specs={SPECS} config={{}} cvSaves={1} />)
-      rerender(<CvStyle specs={SPECS} config={{}} cvSaves={2} />)
+      rerender(<CvStyle specs={SPECS} config={{}} styles={STYLES} cvSaves={1} />)
+      rerender(<CvStyle specs={SPECS} config={{}} styles={STYLES} cvSaves={2} />)
       await vi.advanceTimersByTimeAsync(2500)
       expect(h.call.mock.calls.filter((c) => c[0] === 'cv_style_sample')).toHaveLength(1)
     } finally {

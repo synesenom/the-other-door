@@ -117,29 +117,39 @@ def manifest(template_path: Path) -> Manifest | None:
 
 
 # The CV style a profile picks (#465): `cv_accent` colours the section headings and the rule under the name, `cv_fonts`
-# names a pair of fonts. Both are fixed tables: a config value is only ever a key here, never CSS.
-ACCENTS = {"navy": "#1f3a5f", "blue": "#2f55c8", "teal": "#0f6466", "forest": "#2f6b3a", "burgundy": "#8a1c3c",
-           "plum": "#5e2a72", "slate": "#475569", "rust": "#a1401a"}  # `blue` is the app's own, the templates' default
-NO_ACCENT = "--heading:#1E1A16;--rule:#D6C7A8"  # `none`: ink headings and a hairline rule
-# pair: (heading font, text font, heading weight, strong weight); "door" is the template's own look
-FONT_PAIRS = {"editorial": ('"Playfair Display", serif', "Lato, sans-serif", 700, 700),
-              "friendly": ("Montserrat, sans-serif", 'Merriweather, serif', 700, 700),
+# names a pair of fonts. Both are fixed tables, the one source of the `Profile` choices, the CSS and the app's pickers
+# (`show_profile`'s `options.cv_styles`): a config value is only ever a key here, never CSS.
+INK = "#1E1A16"  # the shipped templates' ink
+ACCENTS = {"none": INK, "navy": "#1f3a5f", "blue": "#2f55c8", "teal": "#0f6466", "forest": "#2f6b3a", "burgundy": "#8a1c3c",
+           "plum": "#5e2a72", "slate": "#475569", "rust": "#a1401a"}  # `none`: ink headings and a hairline rule; `blue` is the app's own
+DEFAULT_ACCENT, DEFAULT_FONTS = "blue", "door"  # what the templates' own CSS already says
+NO_ACCENT = "--heading:var(--ink);--rule:var(--hairline)"
+# pair: (heading font, text font, heading weight, strong weight)
+FONT_PAIRS = {"door": ('"Young Serif", serif', "Figtree, sans-serif", 400, 600),
+              "editorial": ('"Playfair Display", serif', "Lato, sans-serif", 700, 700),
+              "friendly": ("Montserrat, sans-serif", "Merriweather, serif", 700, 700),
               "plain": ("Figtree, sans-serif", "Figtree, sans-serif", 600, 600)}
+
+
+def cv_styles() -> dict:
+    """The tables as the app's pickers read them: ``{"accents": {name: hex}, "fonts": {name: {heading, text, weight}}}``."""
+    return {"accents": dict(ACCENTS),
+            "fonts": {name: {"heading": h, "text": t, "weight": w} for name, (h, t, w, _) in FONT_PAIRS.items()}}
+
 
 def style_css(config: dict | None) -> str:
     """The `:root{...}` block that sets the shipped templates' style variables from `cv_accent` and `cv_fonts`; "" for the
-    defaults (blue and the door fonts: the templates' own CSS). A value that is not a name in the tables (the config is read tolerantly) counts as the default."""
+    defaults (blue and the door fonts: the templates' own CSS). A value that is not a name in the tables (the config is read
+    tolerantly) counts as the default."""
     config = config or {}
     accent, fonts = config.get("cv_accent"), config.get("cv_fonts")
     rules = []
-    colour = ACCENTS.get(accent) if isinstance(accent, str) else None
     if accent == "none":
         rules.append(NO_ACCENT)
-    elif colour and accent != "blue":  # blue is what the templates' own CSS already says
-        rules.append(f"--heading:{colour};--rule:{colour}")
-    pair = FONT_PAIRS.get(fonts) if isinstance(fonts, str) else None
-    if pair:
-        heading, text, weight, strong = pair
+    elif isinstance(accent, str) and accent in ACCENTS and accent != DEFAULT_ACCENT:
+        rules.append(f"--heading:{ACCENTS[accent]};--rule:{ACCENTS[accent]}")
+    if isinstance(fonts, str) and fonts in FONT_PAIRS and fonts != DEFAULT_FONTS:
+        heading, text, weight, strong = FONT_PAIRS[fonts]
         rules.append(f"--heading-font:{heading};--text-font:{text};--heading-weight:{weight};--strong:{strong}")
     return ":root{" + ";".join(rules) + "}" if rules else ""
 

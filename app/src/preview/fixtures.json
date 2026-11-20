@@ -756,7 +756,42 @@
     "thehub": "The Hub",
     "workable": "Workable"
    },
-   "fields": [
+   "cv_styles": {
+      "accents": {
+       "none": "#1E1A16",
+       "navy": "#1f3a5f",
+       "blue": "#2f55c8",
+       "teal": "#0f6466",
+       "forest": "#2f6b3a",
+       "burgundy": "#8a1c3c",
+       "plum": "#5e2a72",
+       "slate": "#475569",
+       "rust": "#a1401a"
+      },
+      "fonts": {
+       "door": {
+        "heading": "\"Young Serif\", serif",
+        "text": "Figtree, sans-serif",
+        "weight": 400
+       },
+       "editorial": {
+        "heading": "\"Playfair Display\", serif",
+        "text": "Lato, sans-serif",
+        "weight": 700
+       },
+       "friendly": {
+        "heading": "Montserrat, sans-serif",
+        "text": "Merriweather, serif",
+        "weight": 700
+       },
+       "plain": {
+        "heading": "Figtree, sans-serif",
+        "text": "Figtree, sans-serif",
+        "weight": 600
+       }
+      }
+     },
+    "fields": [
     {
      "key": "name",
      "type": "string",

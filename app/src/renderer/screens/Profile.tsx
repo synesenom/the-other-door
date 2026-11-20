@@ -6,7 +6,7 @@ import { photoPolicy, type ShowProfile } from './onboarding/reducer'
 import layout from './profile-form/fields.json'
 import { changedKeys, fieldErrors, formValues, toInitArgs, type Exclude, type FieldSpec, type FormValues } from './profile-form/form'
 import { CvEditor } from './CvEditor'
-import { CvStyle } from './CvStyle'
+import { CvStyle, type CvStyles } from './CvStyle'
 import { Hint } from './Hint'
 import { PhotoField, photoHelp } from './PhotoField'
 import { Spinner } from './Spinner'
@@ -27,7 +27,7 @@ const REMOTE: Record<string, string> = { hybrid: 'Hybrid', yes: 'Remote only', n
 /** The minimum score as three words; a value set by hand in config.json shows as a fourth choice. */
 const MATCH: [number, string][] = [[0.5, 'Broad'], [0.65, 'Balanced'], [0.75, 'Strong']]
 
-type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: FieldSpec[] }; config: Record<string, unknown> | null }
+type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: FieldSpec[]; cv_styles?: CvStyles }; config: Record<string, unknown> | null }
 
 function Chips({ label, help, errors, values, onChange }: { label: string; help?: string; errors?: string[]; values: string[]; onChange: (v: string[]) => void }) {
   return (
@@ -182,7 +182,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
       sections={[
         ...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []),
         { id: 'profile-cv', label: 'Master CV' },
-        ...(profile?.config ? [{ id: 'profile-cv-style', label: 'CV style' }] : []),
+        ...(profile?.config && profile.options.cv_styles ? [{ id: 'profile-cv-style', label: 'CV style' }] : []),
         { id: 'profile-stories', label: 'Stories' },
       ]}
     />
@@ -364,7 +364,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
       {errors.general.length > 0 && <ErrorList messages={errors.general} />}
       {details}
       <CvEditor onDraft={onDraft} onSaved={onSaved} onCvSaved={() => setCvSaves((n) => n + 1)} />
-      {profile?.config && <CvStyle specs={specs} config={profile.config} cvSaves={cvSaves} />}
+      {profile?.config && profile.options.cv_styles && <CvStyle specs={specs} config={profile.config} styles={profile.options.cv_styles} cvSaves={cvSaves} />}
       <section className="part" aria-labelledby="profile-stories">
         <h2 className="display-s" id="profile-stories">
           Stories

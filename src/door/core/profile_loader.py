@@ -16,7 +16,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, ValidationInfo, field_validator, model_validator
 
 from door import i18n
-from door.core import photo as photo_mod, workspace
+from door.core import photo as photo_mod, templates, workspace
 
 _PROJECT_ROOT = workspace.REPO_ROOT   # where `profile.example/` ships; relative profile paths resolve from `workspace.HOME`
 
@@ -73,8 +73,8 @@ class Profile(BaseModel):
     remote: Literal["yes", "no", "hybrid"]
     # The look of a prepared CV and letter (#465): an accent colour for the section headings and the rule under the name,
     # and a pair of fonts (`core.templates.ACCENTS`, `FONT_PAIRS`). The defaults are the shipped template's own look.
-    cv_accent: Literal["none", "navy", "blue", "teal", "forest", "burgundy", "plum", "slate", "rust"] = "blue"
-    cv_fonts: Literal["door", "editorial", "friendly", "plain"] = "door"
+    cv_accent: Literal[tuple(templates.ACCENTS)] = templates.DEFAULT_ACCENT  # type: ignore[valid-type]
+    cv_fonts: Literal[tuple(templates.FONT_PAIRS)] = templates.DEFAULT_FONTS  # type: ignore[valid-type]
     # `discover` asks LinkedIn which employers hire for the keywords, `follow` then finds
     # their own job feeds (door.pipeline). Off until the user turns it on: its terms forbid
     # automated access, so onboarding asks (`discovery_sources.for_location`).

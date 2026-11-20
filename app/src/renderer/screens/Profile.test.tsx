@@ -34,7 +34,10 @@ const show = (config: Record<string, unknown> = {}) => ({
   config: { name: 'Ada Lovelace', email: 'ada@example.com', location: 'Copenhagen', cv_template: '/home/ada/profile/cv.template.html', role_targets: ['Data Analyst'], remote: 'hybrid', languages: ['English'], ...config },
   errors: [],
   cv: { path: '', exists: true, is_example: false, text: '', headline: null, sections: [] },
-  options: { cities: [{ name: 'Copenhagen', country: 'Denmark', boards: ['jobindex'] }, { name: 'Aarhus', country: 'Denmark', boards: ['jobindex'] }], languages: ['English', 'Danish'], worldwide_boards: [], fields: FIELDS },
+  options: { cities: [{ name: 'Copenhagen', country: 'Denmark', boards: ['jobindex'] }, { name: 'Aarhus', country: 'Denmark', boards: ['jobindex'] }], languages: ['English', 'Danish'], worldwide_boards: [], fields: FIELDS, cv_styles: {
+    accents: { none: 'black', blue: 'navy', navy: 'blue' },
+    fonts: { door: { heading: 'serif', text: 'sans-serif', weight: 400 }, plain: { heading: 'sans-serif', text: 'sans-serif', weight: 600 } },
+  } },
   enrich_sources: [],
 })
 

@@ -2,16 +2,17 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { call, errorText } from '../api'
 import { named } from './AppName'
 import { toInitArgs, type FieldSpec } from './profile-form/form'
-import swatches from './profile-form/cv-style.json'
 
-/** The accent colours by their config name (`Profile.cv_accent`): the label and the swatch (cv-style.json: the CV's own colours, not the app's; the table is `core/templates.ACCENTS`). */
-const COLOURS = swatches.colours as unknown as Record<string, [string, string]>
-/** The font pairs by their config name (`Profile.cv_fonts`): the label, the heading font and weight, the text font. */
-const FONTS: Record<string, [string, string, number, string]> = {
-  door: ['The other door', "'Young Serif', Georgia, serif", 400, "'Figtree', sans-serif"],
-  editorial: ['Editorial', "'Playfair Display', Georgia, serif", 700, "'Lato', sans-serif"],
-  friendly: ['Friendly', "'Montserrat', sans-serif", 700, "'Merriweather', Georgia, serif"],
-  plain: ['Plain', "'Figtree', sans-serif", 600, "'Figtree', sans-serif"],
+/** What each choice is called (the names are the server's, `core/templates`; what each looks like comes from `show_profile`). */
+const LABELS: Record<string, string> = {
+  none: 'No colour', navy: 'Navy', blue: 'Blue', teal: 'Teal', forest: 'Forest', burgundy: 'Burgundy', plum: 'Plum', slate: 'Slate', rust: 'Rust',
+  door: 'The other door', editorial: 'Editorial', friendly: 'Friendly', plain: 'Plain',
+}
+
+/** `show_profile`'s `options.cv_styles`: the swatch of each colour, the fonts and weight of each pair. */
+export interface CvStyles {
+  accents: Record<string, string>
+  fonts: Record<string, { heading: string; text: string; weight: number }>
 }
 
 interface Props {
@@ -19,6 +20,8 @@ interface Props {
   specs: FieldSpec[]
   /** profile/config.json as read (a key it does not set is its default) */
   config: Record<string, unknown>
+  /** What each choice looks like */
+  styles: CvStyles
   /** Counts the saves of the CV text: the sample is printed again from the new text */
   cvSaves?: number
 }
@@ -28,7 +31,7 @@ interface Props {
  * style (`cv_style_sample`), right the two pickers. A pick is saved at once with `init_profile` and applies from the
  * next CV that is prepared; an answer for a pick that a newer one replaced is ignored.
  */
-export function CvStyle({ specs, config, cvSaves = 0 }: Props) {
+export function CvStyle({ specs, config, styles, cvSaves = 0 }: Props) {
   const choices = (key: string) => specs.find((s) => s.key === key)?.choices ?? []
   const first = (key: string, fallback: string) => String(specs.find((s) => s.key === key)?.default ?? fallback)
   const [chosen, setChosen] = useState<Record<string, string>>({
@@ -109,7 +112,8 @@ export function CvStyle({ specs, config, cvSaves = 0 }: Props) {
             <legend className="field-label">Colour</legend>
             <div className="style-grid style-colours">
               {choices('cv_accent').map((c) => {
-                const [label, hex] = COLOURS[c] ?? [c, 'currentColor']
+                const label = LABELS[c] ?? c
+                const hex = styles.accents[c] ?? 'currentColor'
                 return (
                   <label key={c} className="style-pick" title={label}>
                     <input type="radio" name="cv_accent" aria-label={label} checked={chosen['cv_accent'] === c} onChange={() => void pick('cv_accent', c)} />
@@ -124,7 +128,8 @@ export function CvStyle({ specs, config, cvSaves = 0 }: Props) {
             <legend className="field-label">Fonts</legend>
             <div className="style-grid style-fonts">
               {choices('cv_fonts').map((f) => {
-                const [label, heading, weight, text] = FONTS[f] ?? [f, 'serif', 400, 'sans-serif']
+                const label = LABELS[f] ?? f
+                const { heading, weight, text } = styles.fonts[f] ?? { heading: 'serif', weight: 400, text: 'sans-serif' }
                 return (
                   <label key={f} className="style-pick" title={label}>
                     <input type="radio" name="cv_fonts" aria-label={label} checked={chosen['cv_fonts'] === f} onChange={() => void pick('cv_fonts', f)} />
