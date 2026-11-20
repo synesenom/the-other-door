@@ -328,18 +328,25 @@ def test_show_core_names_the_site_in_words(cli_env):
 # --------------------------------------------------------------------------- #
 # the facts check (issue #325)
 # --------------------------------------------------------------------------- #
-def _with_cv(cli_env, cv_html, cv_md="Cut churn by 38%."):
+def _with_cv(cli_env, cv_html, cv_md="Cut churn by 38%.", findings=None, monkeypatch=None, **kw):
+    """Prepared materials; `findings` ((value, context) pairs, with `monkeypatch`) is what the model's fact check listed."""
+    import facts_utils
+
     _prepared(cli_env)
     (cli_env.jobs_dir / "output" / "job-abc" / "cv.html").write_text(cv_html)
     if cv_md is not None:
         (cli_env.profile_dir / "cv.md").write_text(cv_md)
+    if findings is not None:
+        facts_utils.checked(monkeypatch, cli_env.jobs_dir / "output" / "job-abc", cli_env.profile_dir,
+                            [facts_utils.finding(*f) for f in findings], **kw)
 
 
-def test_show_lists_a_figure_not_in_cv_md_with_its_context(cli_env, one_page):
+def test_show_lists_a_figure_not_in_cv_md_with_its_context(cli_env, one_page, monkeypatch):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, "<ul><li>Cut churn by 97% at scale</li></ul>")
+    _with_cv(cli_env, "<ul><li>Cut churn by 97% at scale</li></ul>", findings=[("97%", "Cut churn by 97% at scale")],
+             monkeypatch=monkeypatch)
 
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert [c["value"] for c in materials["unsupported"]] == ["97%"]
@@ -353,13 +360,14 @@ def test_show_lists_a_figure_not_in_cv_md_with_its_context(cli_env, one_page):
     assert "Not in your CV" in text and "97%" in text and "Cut churn by 97% at scale" in text
 
 
-def test_show_lists_an_invented_skill_like_the_other_kinds(cli_env, one_page):
+def test_show_lists_an_invented_skill_like_the_other_kinds(cli_env, one_page, monkeypatch):
     from io import StringIO
     from rich.console import Console
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, "<h2>Skills</h2>\n<p>Python, Terraform</p>\n", cv_md="Cut churn by 38%. Python.")
+    _with_cv(cli_env, "<h2>Skills</h2>\n<p>Python, Terraform</p>\n", cv_md="Cut churn by 38%. Python.",
+             findings=[("Terraform", "Python, Terraform", "skill")], monkeypatch=monkeypatch)
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert [(c["kind"], c["value"]) for c in materials["unsupported"]] == [("skill", "Terraform")]
     buf = StringIO()
@@ -368,18 +376,31 @@ def test_show_lists_an_invented_skill_like_the_other_kinds(cli_env, one_page):
     assert "Not in your CV" in text and "• Terraform" in text and "Python, Terraform" in text and "(cv)" in text
 
 
-def test_show_clean_materials_say_all_found(cli_env, one_page):
+def test_show_clean_materials_say_all_found(cli_env, one_page, monkeypatch):
     from io import StringIO
     from rich.console import Console
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, "<ul><li>Cut churn by 38%</li></ul>")
+    _with_cv(cli_env, "<ul><li>Cut churn by 38%</li></ul>", findings=[], monkeypatch=monkeypatch)
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert materials["unsupported"] == []
     buf = StringIO()
     matches_cmd._render_materials(materials, Console(file=buf, width=100))
     assert "all claims found in cv.md" in buf.getvalue()
+
+
+def test_show_asks_no_model(cli_env, one_page, monkeypatch):
+    from door.commands import matches as matches_cmd
+    from door.tailoring import facts
+
+    def boom(inputs):
+        raise AssertionError("the model was asked")
+
+    monkeypatch.setattr(facts, "_ask", boom)
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
+    _with_cv(cli_env, "<ul><li>Cut churn by 97%</li></ul>")
+    assert matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]["unsupported"] is None
 
 
 def test_show_without_cv_md_is_not_checked_and_does_not_crash(cli_env, one_page):
@@ -611,16 +632,13 @@ def test_materials_without_readability_still_render(cli_env, one_page):
     assert "Materials" in _rendered(materials)
 
 
-def test_show_carries_and_prints_the_reason_of_a_kept_item(cli_env, one_page):
+def test_show_carries_and_prints_the_reason_of_a_kept_item(cli_env, one_page, monkeypatch):
     from io import StringIO
     from rich.console import Console
     from door.commands import matches as matches_cmd
-    from door.tailoring import facts
-
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
-    _with_cv(cli_env, "<ul><li>Cut churn by 97% at scale</li></ul>")
-    out = cli_env.jobs_dir / "output" / "job-abc"
-    facts.check(out, cli_env.profile_dir, keep=[{"kind": "number", "value": "97%", "file": "cv", "reason": "the ad says so"}])
+    _with_cv(cli_env, "<ul><li>Cut churn by 97% at scale</li></ul>", findings=[("97%", "Cut churn by 97% at scale")],
+             monkeypatch=monkeypatch, keep=[{"kind": "number", "value": "97%", "file": "cv", "reason": "the ad says so"}])
     materials = matches_cmd._show_core("job-abc", jobs_dir=cli_env.jobs_dir)["materials"]
     assert materials["unsupported"][0]["reason"] == "the ad says so"
     buf = StringIO()

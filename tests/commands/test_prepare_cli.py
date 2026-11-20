@@ -14,6 +14,7 @@ from click.testing import CliRunner
 from door.cli import cli
 from door.commands import prepare as prepare_cmd
 from door.core import profile_loader, workspace
+import facts_utils
 from cli_utils import FakeCompleted, TAILOR_OUTPUTS, fake_tailor, result_text, write_list_posting, write_tailor_outputs
 
 
@@ -561,6 +562,7 @@ def test_prepare_reports_a_figure_not_in_cv_md_and_still_prepares(cli_env, monke
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
     (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
     monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 97%</li></ul>"))
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", lambda inputs: {"findings": [facts_utils.finding("97%", "Cut churn by 97%")]})
 
     result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
 
@@ -568,6 +570,43 @@ def test_prepare_reports_a_figure_not_in_cv_md_and_still_prepares(cli_env, monke
     assert [c["value"] for c in result["unsupported"]] == ["97%"]
     assert (cli_env.jobs_dir / "output" / "job-abc" / "facts.json").is_file()
     assert json.loads((cli_env.jobs_dir / "applications.json").read_text())["job-abc"]["status"] == "prepared"
+
+
+def test_prepare_whose_check_could_not_run_is_still_prepared_and_not_checked(cli_env, monkeypatch):
+    from door.core import claude_cli
+
+    def down(inputs):
+        raise claude_cli.ClaudeError("limit")
+
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 97%</li></ul>"))
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", down)
+
+    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+
+    assert result["outcome"] == "prepared" and result["unsupported"] is None
+
+
+def test_prepare_asks_the_model_once_when_the_tailors_last_check_still_stands(cli_env, monkeypatch):
+    calls = []
+
+    def ask(inputs):
+        calls.append(1)
+        return {"findings": []}
+
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    inner = _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 38%</li></ul>")
+
+    def run(job_id, posting_path, **kwargs):
+        inner(job_id, posting_path)
+        prepare_cmd.facts_mod.check(cli_env.jobs_dir / "output" / job_id, cli_env.profile_dir)
+        return True
+
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", run)
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", ask)
+    assert prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)["unsupported"] == [] and len(calls) == 1
 
 
 def test_prepare_clean_materials_report_nothing(cli_env, monkeypatch):
@@ -1004,6 +1043,7 @@ def test_prepare_keeps_a_reason_the_tailor_recorded_for_a_still_flagged_item(cli
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
     (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
     inner = _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 97%</li></ul>")
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", lambda inputs: {"findings": [facts_utils.finding("97%", "Cut churn by 97%")]})
 
     def run(job_id, posting_path, **kwargs):
         inner(job_id, posting_path)
