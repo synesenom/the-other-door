@@ -332,3 +332,12 @@ def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
 
     assert out == []
     assert drain_answered(jobbank._SITE) is True
+
+
+@responses.activate
+def test_a_real_page_that_carries_a_challenge_script_is_no_refusal():
+    script = '<script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script>'
+    _serve(jobbank._search_url("reward", 1), script + _html("search_page1.html"))
+    drain_pushback("jobbank")
+    jobbank.scrape({**_CFG, "max_pages_per_keyword": 1}, known_ids=frozenset(_PAGE1))
+    assert drain_pushback("jobbank") is False
