@@ -30,7 +30,7 @@ export function Wizard({ profile: initial, environment, onFinish, onCancel, star
   const quietInstall = useRef(false)
 
   // The CV files picked are forgotten when the wizard closes (finish, cancel, reload).
-  useEffect(() => () => void window.door.clearCvSources(), [])
+  useEffect(() => () => void window.door.invoke('cv-sources-clear'), [])
 
   // The last answer stays while the next is on its way: the sign-in screen stays up during a check.
   const recheck = useCallback(() => {

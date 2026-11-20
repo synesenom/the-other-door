@@ -146,7 +146,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
     setPhotoError(null)
     setPhotoBusy(true)
     try {
-      const picked = await window.door.pickPhoto()
+      const picked = await window.door.invoke('pick-photo')
       if ('error' in picked) setPhotoError(picked.error)
       else if ('token' in picked) {
         try {

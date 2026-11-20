@@ -12,7 +12,7 @@ import { doorHome } from './files'
 import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
 import { beforeQuitStep, closeStep, flushPage } from './close-flush'
-import { CHANNELS, registerIpc, type Progress } from './ipc'
+import { pushEvent, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
 import { quitStep, restorePhoneAtStart, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
 import { createProblemLog } from './problem-log'
@@ -77,7 +77,7 @@ const updates = createUpdateManager({
   log: (message) => problemLog.write('update-check', message),
 })
 updates.subscribe((state) => {
-  for (const win of BrowserWindow.getAllWindows()) win.webContents.send(CHANNELS.updateState, state)
+  for (const win of BrowserWindow.getAllWindows()) pushEvent(win, 'update-state', state)
 })
 const devUrl = process.env['ELECTRON_RENDERER_URL']
 
@@ -112,10 +112,10 @@ const notify = createNotifier({
   Notification,
   isFocused: () => BrowserWindow.getAllWindows().some((w) => w.isFocused()),
   focusWindow: () => void focusWindow(),
-  send: (channel, target) => {
+  send: (target) => {
     const win = BrowserWindow.getAllWindows()[0] ?? focusWindow()
-    if (win.webContents.isLoading()) win.webContents.once('did-finish-load', () => win.webContents.send(channel, target))
-    else win.webContents.send(channel, target)
+    if (win.webContents.isLoading()) win.webContents.once('did-finish-load', () => pushEvent(win, 'open', target))
+    else pushEvent(win, 'open', target)
   },
 })
 // A run somebody else started (a terminal, Claude Code) ends: say so once.
@@ -127,7 +127,7 @@ const board = watchRunBoard(home, (b) => pushBoard(b), { ownPid: () => server.pi
 function pushBoard(b: RunBoard): void {
   lastBoard = b
   void foreignEnd(b)
-  for (const win of BrowserWindow.getAllWindows()) win.webContents.send(CHANNELS.runBoard, b)
+  for (const win of BrowserWindow.getAllWindows()) pushEvent(win, 'run-board', b)
 }
 
 // Signing in to Claude from the app: claude's own login, in the folder doctor says The other door's claude calls use.
@@ -136,7 +136,7 @@ const claudeLogin = createClaudeLogin({
   doctor: () => server.call('doctor', { quick: true }),
   openExternal: (url) => shell.openExternal(url),
   onState: (state) => {
-    for (const win of BrowserWindow.getAllWindows()) win.webContents.send(CHANNELS.claudeLogin, state)
+    for (const win of BrowserWindow.getAllWindows()) pushEvent(win, 'claude-login', state)
   },
 })
 

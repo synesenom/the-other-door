@@ -357,7 +357,7 @@ export function CvEditor({
   }
 
   // the CV file's name (main keeps its path), read again once a new one is read
-  const refreshCvFile = () => void window.door.cvFile().then(setCvFile, () => undefined)
+  const refreshCvFile = () => void window.door.invoke('cv-file').then(setCvFile, () => undefined)
 
   /** A source's button: what was typed written first (each rewrites the CV), then its dialog, or the file picker. */
   const from = (source: { kind: 'page' } | { kind: 'again' } | { kind: 'file' }) =>
@@ -369,7 +369,7 @@ export function CvEditor({
 
   /** A CV file: what it adds proposed, as a page's is; drafted into the editor when there is no Master CV yet. */
   const chooseFile = async () => {
-    const picked = await window.door.pickCvFiles()
+    const picked = await window.door.invoke('pick-cv-files')
     const refused = picked.refused[0]
     if (refused) return setSourceError(`${refused.name}: ${refused.reason}`)
     const file = picked.files[0]

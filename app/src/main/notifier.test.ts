@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CHANNEL_OPEN, createNotifier } from './notifier'
+import { createNotifier } from './notifier'
 import type { Notice } from './notices'
 
 const notice = (over: Partial<Notice> = {}): Notice => ({ title: 'New jobs found', body: '3 new matches', target: { screen: 'matches', newOnly: true }, ...over })
@@ -30,9 +30,6 @@ function setup(over: { focused?: boolean; supported?: boolean; throwOnShow?: boo
 }
 
 describe('createNotifier', () => {
-  it('names the channel', () => {
-    expect(CHANNEL_OPEN).toBe('door:open')
-  })
   it('shows nothing while the window is focused', () => {
     const { notify, shown } = setup({ focused: true })
     notify(notice())
@@ -55,7 +52,7 @@ describe('createNotifier', () => {
     notify(notice())
     shown[0].click!()
     expect(focusWindow).toHaveBeenCalledTimes(1)
-    expect(send).toHaveBeenCalledWith('door:open', { screen: 'matches', newOnly: true })
+    expect(send).toHaveBeenCalledWith({ screen: 'matches', newOnly: true })
   })
   it('drops an identical notice within 5 s, not one after, not a different one', () => {
     const { notify, shown, advance } = setup()

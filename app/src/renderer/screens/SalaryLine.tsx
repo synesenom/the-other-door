@@ -1,4 +1,3 @@
-import { openExternal } from '../api'
 import type { Salary } from '../api'
 import { Hint } from './Hint'
 
@@ -48,7 +47,7 @@ export function SalaryLine({ salary }: { salary: Salary | null | undefined }) {
         {salary.sources.map((s, i) => (
           <span key={s.url}>
             {i > 0 && ', '}
-            <button type="button" className="link-inline" onClick={() => void openExternal(s.url)}>
+            <button type="button" className="link-inline" onClick={() => void window.door.invoke('open-external', s.url)}>
               {s.title}
             </button>
           </span>

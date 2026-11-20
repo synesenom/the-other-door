@@ -17,7 +17,7 @@ Conventions used below:
 ### Start-up gate
 | Condition | What shows |
 |---|---|
-| Waiting for `window.door.info()` and then `show_profile` | **Splash**: `status` named "Starting The other door" (an SVG logo and an animated bar, nothing else) |
+| Waiting for `window.door.invoke('info')` and then `show_profile` | **Splash**: `status` named "Starting The other door" (an SVG logo and an animated bar, nothing else) |
 | `show_profile` → `config === null` and `info.remote` | (phone only) h1 "Set up The other door first" and the body "The other door has no profile yet. Set it up on the computer where it is installed (open the desktop app there, or run its setup), then come back here." |
 | `config === null` and (not demo, or `sandbox === 'onboard'`) | The onboarding Wizard (outside this area) |
 | `config === null` in the demo | The shell (the demo never gets the wizard) |
@@ -220,7 +220,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
       - materials exist → **btn "See the application"**, or **"See what you sent"** when `materials.sent` → view materials. — ✓ a prepared card opens its application and comes back through its posting; ✓ What you sent: the copy kept when it went out, read only, and saved from there
       - else status in [unapplied, prepared] → **btn "Prepare application"** → startPrepare(false). — ✓ Prepare application on a new match tailors, compiles and opens Ready to send
       - else none. — unit: `app/src/renderer/screens/Applications.test.tsx`
-    - **Open**: **btn "Apply on <host>"** when `apply_url` is http(s), differs from `url`, and parses (`www.` is stripped from the host). Otherwise **btn "Open in browser"** when `url` exists. Absent with neither, or with only a non-http apply_url and no url. Disabled while preparing. Click → IPC openExternal(url) in the OS browser; a refused non-http URL is silent. — ✓ a separate application page: "Apply on <host>" opens it in the browser; unit: `app/src/renderer/screens/Posting.test.tsx`; disabled while preparing: Prepare area
+    - **Open**: **btn "Apply on <host>"** when `apply_url` is http(s), differs from `url`, and parses (`www.` is stripped from the host). Otherwise **btn "Open in browser"** when `url` exists. Absent with neither, or with only a non-http apply_url and no url. Disabled while preparing. Click → `open-external` action with the url in the OS browser; a refused non-http URL is silent. — ✓ a separate application page: "Apply on <host>" opens it in the browser; unit: `app/src/renderer/screens/Posting.test.tsx`; disabled while preparing: Prepare area
     - **btn "Status"**: disabled while preparing → StatusDialog (full). — ✓ while Prepare runs: the progress line, the elapsed time, locked actions and no Find new jobs; ✓ opens on the current status, with every status to choose from
     - **btn "Prepare again"** (quiet): materials exist, status in [unapplied, prepared], not running → confirm dialog. — ✓ Prepare again asks first; Cancel and Escape leave the application as it is; ✓ What you sent: … (absent for a sent job)
     - **btn "Not for me"** (quiet): only when there are **no materials**. Disabled while preparing → StatusDialog preset discarded. — ✓ a prepared card opens its application and comes back through its posting (absent with materials); ✓ while Prepare runs: … (disabled); unit: `app/src/renderer/screens/StatusDialog.test.tsx`; unit: `app/src/renderer/screens/Posting.test.tsx`
@@ -524,7 +524,7 @@ Reached through:
 **Run board files** (not a tool): `jobs/.lock.json` `{pid (alive), started_at, purpose}`; `jobs/.progress.json` `{message, steps: [{name, status, detail, started_at?, finished_at?, done?, total?, sites?: {id: n}, hosts?: [], phase?, request?, requests?: [n, m], items?: [{id, name, state}]}]}`.
 
 **IPC (not tools)**:
-- `openExternal(url)` → `{ok, error?}`, ignored.
+- `open-external` action (url) → `{ok, error?}`, ignored.
 - `saveMaterial` → `{ok, path?, canceled?, error?}`.
 - `showRun` → ignored.
 - `stopRun` → ignored.

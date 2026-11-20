@@ -355,7 +355,7 @@ describe('CvEditor, its part', () => {
 describe('CvEditor, the CV file', () => {
   it('is named, by its name', async () => {
     const h = mockDoor({ show_profile: profile() })
-    h.cvFile.mockResolvedValue('my cv.pdf')
+    h.actions['cv-file'].mockResolvedValue('my cv.pdf')
     render(<CvEditor onDraft={vi.fn()} />)
     expect(await within(screen.getByRole('region', { name: 'Master CV' })).findByText('my cv.pdf')).toBeInTheDocument()
   })
@@ -381,11 +381,11 @@ describe('CvEditor, the CV file', () => {
       },
       ...NO_STORIES,
     })
-    h.cvFile.mockResolvedValue('old.pdf')
-    h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
+    h.actions['cv-file'].mockResolvedValue('old.pdf')
+    h.actions['pick-cv-files'].mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
     render(<Profile onDraft={vi.fn()} onSaved={vi.fn()} />)
     const replace = await screen.findByRole('button', { name: 'Replace CV file…' })
-    h.cvFile.mockResolvedValue('new.pdf') // main remembers the file it reads
+    h.actions['cv-file'].mockResolvedValue('new.pdf') // main remembers the file it reads
     await user.click(replace)
     const dialog = await screen.findByRole('dialog', { name: 'Add from your CV file' })
     expect(h.call).toHaveBeenCalledWith('enrich', {}, undefined, ['t1'])
@@ -400,7 +400,7 @@ describe('CvEditor, the CV file', () => {
   it('with no Master CV yet, a CV file is drafted into it whole', async () => {
     const user = userEvent.setup()
     const h = mockDoor({ show_profile: profile({ text: '' }), draft_cv: { markdown: '# Ada\n\n## New\n', sources: [], provenance: [], todos: [] }, save_cv: { cv_path: '/p/cv.md', backup: null }, ...NO_STORIES })
-    h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
+    h.actions['pick-cv-files'].mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
     render(<Profile onDraft={vi.fn()} onSaved={vi.fn()} />)
     await user.click(await screen.findByRole('button', { name: 'Add a CV file…' }))
     expect(await screen.findByRole('heading', { name: 'New' })).toBeInTheDocument()
@@ -412,8 +412,8 @@ describe('CvEditor, the CV file', () => {
   it('a file that cannot be read is said in the dialog, the CV untouched and the CV file kept', async () => {
     const user = userEvent.setup()
     const h = mockDoor({ show_profile: profile(), enrich: () => { throw { message: 'Claude did not answer. Try again.' } } })
-    h.cvFile.mockResolvedValue('old.pdf')
-    h.pickCvFiles.mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
+    h.actions['cv-file'].mockResolvedValue('old.pdf')
+    h.actions['pick-cv-files'].mockResolvedValue({ files: [{ token: 't1', name: 'new.pdf', size: 10 }], refused: [] })
     render(<CvEditor onDraft={vi.fn()} />)
     await user.click(await screen.findByRole('button', { name: 'Replace CV file…' }))
     const dialog = await screen.findByRole('dialog', { name: 'Add from your CV file' })
@@ -425,7 +425,7 @@ describe('CvEditor, the CV file', () => {
   it('a refused file is said by its reason', async () => {
     const user = userEvent.setup()
     const h = mockDoor({ show_profile: profile() })
-    h.pickCvFiles.mockResolvedValue({ files: [], refused: [{ name: 'cv.exe', reason: 'not a CV file' }] })
+    h.actions['pick-cv-files'].mockResolvedValue({ files: [], refused: [{ name: 'cv.exe', reason: 'not a CV file' }] })
     render(<CvEditor onDraft={vi.fn()} />)
     await user.click(await screen.findByRole('button', { name: 'Add a CV file…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('cv.exe: not a CV file')

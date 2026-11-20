@@ -9,7 +9,8 @@ afterEach(cleanup)
 
 describe('MarkdownLink', () => {
   it('opens the cheatsheet in the browser', async () => {
-    const { openExternal } = mockDoor({})
+    const { actions } = mockDoor({})
+    const openExternal = actions['open-external']
     render(<MarkdownLink />)
     await userEvent.click(screen.getByRole('button', { name: 'Markdown' }))
     expect(openExternal).toHaveBeenCalledWith(MARKDOWN_CHEATSHEET)

@@ -7,6 +7,9 @@ import { mockDoor, stubNarrow } from '../testing'
 
 afterEach(cleanup)
 
+/** The save dialog's answer: the file saved in Downloads under the name offered. */
+const saved = { 'save-material': async (_jobId: string, _which: 'cv' | 'cover_letter', _sent: boolean, name: string) => ({ ok: true, path: `/Users/ada/Downloads/${name}` }) }
+
 const dir = '/abs/jobs/output/jobindex.1'
 const materials = (over: Record<string, unknown> = {}) => ({
   output_dir: dir,
@@ -111,7 +114,8 @@ describe('Materials', () => {
   })
 
   it('saves the document shown under its own name, and says where it went', async () => {
-    const { saveMaterial } = mockDoor({ show: posting() })
+    const { actions } = mockDoor({ show: posting() }, { actions: saved })
+    const saveMaterial = actions['save-material']
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     expect(screen.queryAllByRole('note')).toHaveLength(0) // no caption repeating the switch
@@ -135,7 +139,8 @@ describe('Materials', () => {
   })
 
   it('a cancelled save says nothing', async () => {
-    const { saveMaterial } = mockDoor({ show: posting() })
+    const { actions } = mockDoor({ show: posting() }, { actions: saved })
+    const saveMaterial = actions['save-material']
     saveMaterial.mockResolvedValueOnce({ ok: false, canceled: true })
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
     await screen.findByRole('heading', { name: 'Ready to send' })
@@ -197,7 +202,8 @@ describe('Materials', () => {
 
     it('saves the sent copy', async () => {
       stubNarrow(false)
-      const { saveMaterial } = mockDoor({ show: sent() })
+      const { actions } = mockDoor({ show: sent() }, { actions: saved })
+      const saveMaterial = actions['save-material']
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'What you sent' })
       await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter' }))
@@ -206,7 +212,8 @@ describe('Materials', () => {
 
     it('without the sent copy, shows and saves the working files of its own job', async () => {
       stubNarrow(false)
-      const { saveMaterial } = mockDoor({ show: posting({ status: 'applied', materials: materials({ sent: true }) }) })
+      const { actions } = mockDoor({ show: posting({ status: 'applied', materials: materials({ sent: true }) }) }, { actions: saved })
+      const saveMaterial = actions['save-material']
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'What you sent' })
       expect(screen.getAllByRole('img').map((i) => i.getAttribute('src'))).toEqual(['door-file://output/jobindex.1/cover_letter_page_1.png?v=0'])
@@ -233,7 +240,8 @@ describe('Materials', () => {
   })
 
   it('shows an error when a PDF cannot be saved', async () => {
-    const { saveMaterial } = mockDoor({ show: posting() })
+    const { actions } = mockDoor({ show: posting() }, { actions: saved })
+    const saveMaterial = actions['save-material']
     saveMaterial.mockResolvedValueOnce({ ok: false, error: 'Could not save it: disk full' })
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
     await screen.findByRole('heading', { name: 'Ready to send' })
@@ -390,7 +398,8 @@ describe('Materials', () => {
   describe('narrow', () => {
     it('shows one document at a time behind a pill switch and keeps the actions in a bottom bar', async () => {
       stubNarrow(true)
-      const { saveMaterial } = mockDoor({ show: posting() })
+      const { actions } = mockDoor({ show: posting() }, { actions: saved })
+      const saveMaterial = actions['save-material']
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       expect(await screen.findByRole('button', { name: '← Posting' })).toBeInTheDocument()
       const cv = screen.getByRole('button', { name: 'CV · 2 pages' })

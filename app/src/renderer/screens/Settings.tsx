@@ -67,8 +67,8 @@ export function Settings({
   useEffect(() => {
     if (remote) return
     let live = true
-    void window.door.checkUpdate().then((r) => live && setUpdate(r))
-    const stop = window.door.onUpdateState((r) => live && setUpdate(r))
+    void window.door.invoke('check-update').then((r) => live && setUpdate(r))
+    const stop = window.door.on('update-state', (r) => live && setUpdate(r))
     return () => {
       live = false
       stop()
@@ -143,7 +143,7 @@ export function Settings({
           {update.checked && update.available && update.mode === 'link' && (
             <p className="body">
               Version {update.version} is available{' '}
-              <button type="button" className="secondary" onClick={() => void window.door.openExternal(update.url)}>
+              <button type="button" className="secondary" onClick={() => void window.door.invoke('open-external', update.url)}>
                 Download
               </button>
             </p>
@@ -151,7 +151,7 @@ export function Settings({
           {update.checked && update.available && update.mode === 'install' && update.state === 'downloading' && <p className="body">Downloading {update.version}</p>}
           {update.checked && update.available && update.mode === 'install' && update.state === 'downloaded' && (
             <p>
-              <button type="button" className="primary" onClick={() => void window.door.installUpdate()}>
+              <button type="button" className="primary" onClick={() => void window.door.invoke('install-update')}>
                 Restart to update to {update.version}
               </button>
             </p>

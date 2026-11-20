@@ -16,14 +16,16 @@ function show(handlers: Record<string, unknown> = {}) {
 
 describe('Your data', () => {
   it('Export writes where you said and says what went in', async () => {
-    const { exportData } = show()
+    const { actions } = show()
+    const exportData = actions['export-data']
     exportData.mockResolvedValueOnce({ ok: true, data: { path: '/Users/ada/door-export-2026-10-30.tar.gz', files: 120, bytes: 3_500_000 } })
     await userEvent.click(screen.getByRole('button', { name: 'Export…' }))
     expect(await screen.findByText('Exported 120 files (3.5 MB) to door-export-2026-10-30.tar.gz.')).toBeInTheDocument()
   })
 
   it('a cancelled export says nothing; a refused one says why', async () => {
-    const { exportData } = show()
+    const { actions } = show()
+    const exportData = actions['export-data']
     exportData.mockResolvedValueOnce({ ok: false, canceled: true })
     await userEvent.click(screen.getByRole('button', { name: 'Export…' }))
     expect(screen.queryByRole('alert')).toBeNull()
@@ -34,7 +36,8 @@ describe('Your data', () => {
   })
 
   it('Import names the file and what it replaces, and imports only after the yes', async () => {
-    const { pickArchive, call, onImported } = show({ import_data: { files: 120, backup_dir: '/home/backups/2026-10-30T10-00', warnings: ['config cv_template: /Users/old/cv.html is not on this computer'] } })
+    const { actions, call, onImported } = show({ import_data: { files: 120, backup_dir: '/home/backups/2026-10-30T10-00', warnings: ['config cv_template: /Users/old/cv.html is not on this computer'] } })
+    const pickArchive = actions['pick-archive']
     pickArchive.mockResolvedValueOnce({ token: 't1', name: 'door-export.tar.gz' })
     await userEvent.click(screen.getByRole('button', { name: 'Import…' }))
     const dialog = await screen.findByRole('dialog')
@@ -51,7 +54,8 @@ describe('Your data', () => {
   })
 
   it('Cancel in the dialog imports nothing', async () => {
-    const { pickArchive, call } = show()
+    const { actions, call } = show()
+    const pickArchive = actions['pick-archive']
     pickArchive.mockResolvedValueOnce({ token: 't1', name: 'a.tar.gz' })
     await userEvent.click(screen.getByRole('button', { name: 'Import…' }))
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }))
@@ -59,11 +63,12 @@ describe('Your data', () => {
   })
 
   it('a refused archive or a failed import says why', async () => {
-    const { pickArchive } = show({
+    const { actions } = show({
       import_data: () => {
         throw new Error('a run is in progress')
       },
     })
+    const pickArchive = actions['pick-archive']
     pickArchive.mockResolvedValueOnce({ error: 'Choose an export, a .tar.gz file.' })
     await userEvent.click(screen.getByRole('button', { name: 'Import…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Choose an export')

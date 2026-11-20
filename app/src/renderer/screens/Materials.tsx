@@ -1,7 +1,7 @@
 import { ErrorBox, named } from './AppName'
 import { useRemote } from '../remote'
 import { useEffect, useState } from 'react'
-import { call, errorText, materialUrl, saveMaterial, visiblePages } from '../api'
+import { call, errorText, materialUrl, visiblePages } from '../api'
 import type { Document, Materials as MaterialsData, Posting, ReviseResult, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
 import { WarningMark } from './CheckMark'
@@ -138,7 +138,7 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
   const save = async (which: Document) => {
     setFailure(null)
     setNotice(null)
-    const r = await saveMaterial(id, which, inSent, m.file_names[which])
+    const r = await window.door.invoke('save-material', id, which, inSent, m.file_names[which])
     if (r.ok && r.path) setNotice({ text: savedText(r.path) })
     else if (!r.ok && !r.canceled) setFailure(r.error ?? 'Could not save the PDF.')
   }

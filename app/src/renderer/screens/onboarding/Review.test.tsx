@@ -37,7 +37,7 @@ const part = (name: string) => screen.getByRole('region', { name })
 describe('Review, the CV photo', () => {
   it('asks for a photo where the city\'s country has one optional, and holds the pick until Save', async () => {
     const h = setup(answers, { save_photo: { photo_path: '/p/photo.jpg' } })
-    h.pickPhoto.mockResolvedValueOnce({ token: 't1', name: 'portrait.jpg' })
+    h.actions['pick-photo'].mockResolvedValueOnce({ token: 't1', name: 'portrait.jpg' })
     await userEvent.click(within(part('You')).getByRole('button', { name: 'Choose a photo…' }))
     expect(await screen.findByText('portrait.jpg')).toBeInTheDocument()
     expect(seen.photo).toEqual({ kind: 'new', token: 't1', name: 'portrait.jpg' })
