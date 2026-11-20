@@ -199,7 +199,7 @@ def test_scrape_core_liveness_absent_is_none_and_not_called(tmp_path, monkeypatc
     assert result["liveness"] is None
 
 
-def test_scrape_core_surviving_paths_reflect_dedup_output(tmp_path, monkeypatch):
+def test_dedup_reads_what_the_prefilter_kept(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
 
     import door.scrapers.boards.jobindex as ji
@@ -219,7 +219,6 @@ def test_scrape_core_surviving_paths_reflect_dedup_output(tmp_path, monkeypatch)
 
     assert result["prefilter"] == {"survived": 2}
     assert result["dedup"] == {"collapsed": 1, "remaining": 1}
-    assert result["surviving_paths"] == ["a"]
 
 
 def test_scrape_core_dedups_with_the_names_companies_json_holds_for_one_employer(tmp_path, monkeypatch):
@@ -305,7 +304,6 @@ def test_scrape_core_prescreen_honours_config_top_n(tmp_path, monkeypatch):
 
     assert result["prescreen"]["scored"] == 2
     assert result["prescreen"]["kept"] == 1
-    assert len(result["surviving_paths"]) == 1
 
 
 def test_display_path_is_relative_to_the_repo_inside_it_and_whole_outside(tmp_path, monkeypatch):

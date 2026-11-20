@@ -52,7 +52,7 @@ def _merge(into: dict | None, other: dict | None):
         have = out.get(key)
         if isinstance(value, dict) and isinstance(have, dict):
             out[key] = _merge(have, value)
-        elif isinstance(value, bool) or have is None or isinstance(have, bool):
+        elif have is None:
             out[key] = value
         elif isinstance(value, (int, float)) and isinstance(have, (int, float)):
             out[key] = have + value
@@ -77,9 +77,7 @@ def _run_passes(today: Path, jobs_dir: Path, config: dict, profile_dir: Path) ->
         if d != today and match_cmd._find_unscored(d)]
     total: dict = {}
     for day in [*days, today]:
-        result = scrape_cmd._scrape_passes(day, config, profile_dir)
-        result.pop("surviving_paths", None)
-        for key, block in result.items():
+        for key, block in scrape_cmd._scrape_passes(day, config, profile_dir).items():
             total[key] = _merge(total.get(key), block)
     return total
 

@@ -460,8 +460,8 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
     ones liveness found expired) is left alone, so running it again is harmless.
 
     Returns:
-        ``{"prefilter", "dedup", "language", "condense", "prescreen", "surviving_paths"}``: each
-        pass's counts (``None`` when it did not run), the paths that survived all of them.
+        ``{"prefilter", "dedup", "language", "condense", "prescreen"}``: each pass's counts (``None`` when it
+        did not run).
     """
     prefilter_result = None
     dedup_result = None
@@ -509,8 +509,7 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
         prescreen_result = {"scored": before, "kept": len(surviving)}
 
     return {"prefilter": prefilter_result, "dedup": dedup_result, "language": language_result,
-            "condense": condense_result, "prescreen": prescreen_result,
-            "surviving_paths": [str(p) for p in surviving]}
+            "condense": condense_result, "prescreen": prescreen_result}
 
 
 def _held_back(site: str, scrape_state: dict, now: "datetime") -> "dict | None":

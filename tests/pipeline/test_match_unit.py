@@ -33,7 +33,7 @@ def fakes(env, monkeypatch):
     def passes(candidates_dir, config, profile_dir):
         f.order.append(("passes", candidates_dir.name))
         return {"prefilter": {"survived": 2}, "dedup": None, "language": None,
-                "condense": None, "prescreen": {"scored": 2, "kept": 1}, "surviving_paths": ["x"]}
+                "condense": None, "prescreen": {"scored": 2, "kept": 1}}
 
     def match_core(*, jobs_dir, profile_dir):
         f.order.append("match")
@@ -49,7 +49,6 @@ def test_the_block_carries_the_passes_of_today(env, fakes):
     block = run(env)
     assert fakes.order.index(("passes", date.today().isoformat())) < fakes.order.index("match")
     assert block["passes"]["prescreen"] == {"scored": 2, "kept": 1}
-    assert "surviving_paths" not in block["passes"]
 
 
 def test_the_block_carries_the_scoring_result_and_the_selection(env, fakes):
@@ -210,7 +209,7 @@ def test_days_with_nothing_unscored_are_not_passed_again(env, monkeypatch):
     old = (date.today() - timedelta(days=2)).isoformat()
     write_list_posting(env.jobs_dir, old, "jobindex", "done-1", score=0.8)
     seen = []
-    monkeypatch.setattr(scrape_cmd, "_scrape_passes", lambda d, c, p: seen.append(d.name) or {"surviving_paths": []})
+    monkeypatch.setattr(scrape_cmd, "_scrape_passes", lambda d, c, p: seen.append(d.name) or {})
     monkeypatch.setattr(match_cmd, "_match_core", lambda **kw: stub_match_result(env.jobs_dir))
     run(env)
     assert seen == [date.today().isoformat()]
