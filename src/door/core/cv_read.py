@@ -21,7 +21,6 @@ PROMPT_VERSION = 2  # bump with the prompt, the schema or the check: a cached an
 COLUMN_KINDS = ("skills", "education", "certifications", "languages", "interests")  # what a template's column can hold
 KINDS = ("summary", "experience", *COLUMN_KINDS, "other")
 CONTACT_KINDS = ("phone", "email", "web", "linkedin", "github", "location")
-_KEEP_CACHED = 20  # answers kept in the cache folder, the most recently written
 LEVELS = ("native", "fluent", "working", "conversational", "basic")
 _MARKER = re.compile(r"\s*<!--.*?-->\s*$")
 
@@ -225,4 +224,4 @@ def read(cv_md: str) -> dict:
         key=hashlib.sha256(md.encode("utf-8")).hexdigest(), version=PROMPT_VERSION, ask=lambda: _ask(md),
         check=lambda answer: check(answer, md), error=CvReadError,
         unreached=lambda exc: CvReadError(f"Your CV could not be read: {exc}"), label="cv read",
-        store=ask_cached.DirStore(_cache_dir(), _KEEP_CACHED))
+        store=ask_cached.DirStore(_cache_dir()))

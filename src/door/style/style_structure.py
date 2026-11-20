@@ -28,7 +28,6 @@ _SIDE_SHARE = 0.6  # a side column is narrower than this share of the text's wid
 _NEAR = 2.0  # pt of slack where a box is compared with a column
 _CONTINUES = 1.6  # a heading's next line is its second line within this many sizes below
 _FURNITURE_BAND = 0.08  # share of the page height at its top and foot where a footer or header can be
-_KEEP_CACHED = 20  # answers kept in the cache folder, the most recently written
 
 SYSTEM = """You read the structure of a CV from its text lines, as a typesetter would. The input lists each text style (font family, size in pt, weight, italic, colour, characters set in it) and each visual line of text with its page, baseline y, left and right x and style. Most text is body text in the most used style.
 
@@ -329,7 +328,7 @@ def structure_for(pdf_path, feature: str = "style") -> dict | None:
         key=hashlib.sha256(pdf_path.read_bytes()).hexdigest(), version=PROMPT_VERSION,
         tag=hashlib.sha256(text.encode("utf-8")).hexdigest(), ask=lambda: _ask(text, feature),
         check=lambda answer: check(answer, listed, pages), error=StructureError, unreached=StructureError.unreached,
-        label="cv structure", store=ask_cached.DirStore(_cache_dir(), _KEEP_CACHED))
+        label="cv structure", store=ask_cached.DirStore(_cache_dir()))
 
 
 def extract(pdf_path) -> dict:

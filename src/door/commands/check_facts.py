@@ -44,7 +44,7 @@ def _check_facts_core(job_id: str, keep: list[dict] | None = None, jobs_dir: Pat
     if not output_dir.exists():
         raise FileNotFoundError(f"output directory not found: {output_dir}")
     used = _rounds_used(output_dir)
-    asks = not facts_mod.is_cached(output_dir, workspace.PROFILE_DIR)
+    asks = facts_mod.load(output_dir, workspace.PROFILE_DIR) is None
     if asks and used >= MAX_ROUNDS:
         return {"error": f"the fact check ran {MAX_ROUNDS} times already: finish with what is left"}
     found = facts_mod.check(output_dir, workspace.PROFILE_DIR, keep=keep)

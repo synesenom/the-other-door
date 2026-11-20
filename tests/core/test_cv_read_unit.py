@@ -262,11 +262,10 @@ def test_the_kinds_a_column_or_an_icon_names_come_from_the_reading_kinds():
     assert set(templates.ICON_KINDS) >= set(cv_read.CONTACT_KINDS)
 
 
-def test_the_cache_keeps_only_the_most_recent_answers(asked, tmp_path, monkeypatch):
-    monkeypatch.setattr(cv_read, "_KEEP_CACHED", 3)
-    for n in range(6):
+def test_the_cache_keeps_only_the_twenty_most_recent_answers(asked, tmp_path):
+    for n in range(23):
         cv_read.read(MD + f"\nline {n}\n")
-    assert len(list((tmp_path / "cache").glob("*.json"))) == 3
+    assert len(list((tmp_path / "cache").glob("*.json"))) == 20
 
 
 def test_lines_by_kind_gives_each_line_the_kind_of_its_section(asked):

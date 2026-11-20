@@ -177,12 +177,9 @@ class _Store:
         self.output_dir = output_dir
 
     def read(self, key: str):
-        try:
-            data = json.loads((self.output_dir / FACTS_FILE).read_text(encoding="utf-8"))
-            if data["inputs_sha"] == key and data["version"] == VERSION and isinstance(data["unsupported"], list):
-                return {"version": data["version"], "answer": {"unsupported": data["unsupported"]}}
-        except (OSError, ValueError, KeyError, TypeError):
-            pass
+        saved = _saved(self.output_dir)
+        if saved and saved.get("inputs_sha") == key and saved.get("version") == VERSION:
+            return {"version": VERSION, "answer": {"unsupported": saved["unsupported"]}}
         return None
 
     def write(self, key: str, record: dict) -> None:
@@ -223,12 +220,6 @@ def _key(inputs: str) -> str:
     return hashlib.sha256(inputs.encode("utf-8")).hexdigest()
 
 
-def is_cached(output_dir: Path, profile_dir: Path) -> bool:
-    """``facts.json`` already holds the answer for what `check` would show the model now: a `check` asks nothing."""
-    gathered = _gather(output_dir, profile_dir)
-    return gathered is not None and _Store(output_dir).read(_key(gathered[0])) is not None
-
-
 def check(
     output_dir: Path,
     profile_dir: Path,
@@ -251,7 +242,7 @@ def check(
         inputs, bodies = gathered
         key, store = _key(inputs), _Store(output_dir)
         saved = (_saved(output_dir) or {}).get("unsupported")
-        hit = store.read(key) is not None
+        hit = load(output_dir, profile_dir) is not None
         found = ask_cached.cached_answer(
             key=key, version=VERSION, label="facts",
             ask=lambda: _asked(inputs, bodies), check=lambda answer: _held(answer, bodies),
@@ -279,9 +270,9 @@ def _saved(output_dir: Path) -> dict | None:
 
 
 def load(output_dir: Path, profile_dir: Path) -> list[dict] | None:
-    """The unsupported list `check` last wrote for the documents and sources as they are now, or None (not checked)
-    when it is missing or unreadable, has no `inputs_sha`, or was made for other inputs. Reads files only, no model."""
-    saved, gathered = _saved(output_dir), _gather(output_dir, profile_dir)
-    if saved is None or gathered is None or saved.get("inputs_sha") != _key(gathered[0]):
-        return None
-    return saved["unsupported"]
+    """The unsupported list `check` last wrote for the documents and sources as they are now (and this `VERSION`), or
+    None (not checked) when it is missing or unreadable, has no `inputs_sha`, or was made for other inputs. Reads files
+    only, no model: `load(...) is not None` is also "a `check` asks nothing"."""
+    gathered = _gather(output_dir, profile_dir)
+    record = _Store(output_dir).read(_key(gathered[0])) if gathered else None
+    return record["answer"]["unsupported"] if record else None

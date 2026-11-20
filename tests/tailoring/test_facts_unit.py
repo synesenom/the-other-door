@@ -237,13 +237,13 @@ def test_facts_json_is_written_once_with_the_reasons_applied(dirs, model, monkey
     assert len(writes) == 1 and writes[0]["unsupported"][0]["reason"] == "from the ad"
 
 
-def test_is_cached_follows_the_version(dirs, model, monkeypatch):
+def test_load_follows_the_version(dirs, model, monkeypatch):
     out, prof = dirs
-    assert not facts.is_cached(out, prof)
+    assert facts.load(out, prof) is None
     facts.check(out, prof)
-    assert facts.is_cached(out, prof)
+    assert facts.load(out, prof) == []
     monkeypatch.setattr(facts, "VERSION", facts.VERSION + 1)
-    assert not facts.is_cached(out, prof)
+    assert facts.load(out, prof) is None
 
 
 def test_load_is_none_after_a_hand_edit_of_cv_md_and_for_an_old_file_without_the_key(dirs, model):
