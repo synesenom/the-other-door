@@ -251,3 +251,7 @@ def test_the_main_ad_wins_over_an_unrelated_posting_later_in_the_graph():
           '"@graph": [{"@type": "JobPosting", "description": "<p>Other</p>"}]}')
     html = f'<html><script type="application/ld+json">{ld}</script></html>'
     assert jobindex._description_from_html(html) == "Main"
+
+
+def test_the_first_non_empty_description_is_read():
+    assert jobindex._description_from_html('<script type="application/ld+json">{"@type": "JobPosting", "title": "A", "description": "  "}</script><script type="application/ld+json">{"@type": "JobPosting", "title": "B", "description": "<p>Second</p>"}</script>') == "Second"

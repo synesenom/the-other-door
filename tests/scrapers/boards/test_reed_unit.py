@@ -52,3 +52,8 @@ def test_description_none_without_a_job_posting():
     assert reed._parse_description("<html><body>nothing</body></html>") is None
     html = '<script type="application/ld+json">{"@type":"BreadcrumbList"}</script>'
     assert reed._parse_description(html) is None
+
+
+def test_the_first_ad_with_a_description_is_read_and_none_when_its_text_is_empty():
+    assert reed._parse_description('<script type="application/ld+json">{"@type": "JobPosting", "title": "A", "description": ""}</script><script type="application/ld+json">{"@type": "JobPosting", "title": "B", "description": "<p>Second</p>"}</script>') == "Second"
+    assert reed._parse_description('<script type="application/ld+json">{"@type": "JobPosting", "title": "A", "description": "<p></p>"}</script><script type="application/ld+json">{"@type": "JobPosting", "title": "B", "description": "<p>Second</p>"}</script>') is None
