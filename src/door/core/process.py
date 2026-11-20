@@ -14,14 +14,11 @@ from pathlib import Path
 from door.core import utils, workspace
 
 
-def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None, hidden_console: bool = False):
-    """Start `argv` as a process of its own. On Windows a server has no console (DETACHED_PROCESS); with
-    `hidden_console` it has an invisible one instead (CREATE_NO_WINDOW), which the console programs it starts
-    (claude, node) share rather than each opening a window."""
+def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None):
+    """Start `argv` as a process of its own. On Windows a server has no console (DETACHED_PROCESS)."""
     log.parent.mkdir(parents=True, exist_ok=True)
     out = open(log, "ab")  # noqa: SIM115 - handed to the child, which outlives this call
-    no_console = 0x08000000 if hidden_console else 0x00000008  # CREATE_NO_WINDOW, DETACHED_PROCESS
-    extra = {"creationflags": no_console | 0x00000200} if sys.platform == "win32" else {"start_new_session": True}
+    extra = {"creationflags": 0x00000008 | 0x00000200}  # DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else {"start_new_session": True}
     return subprocess.Popen(argv, stdout=out, stderr=out, stdin=subprocess.DEVNULL, env=env, **extra)
 
 

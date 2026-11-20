@@ -9,10 +9,6 @@ interface Deps {
 }
 
 export function createCvFile(deps: Deps) {
-  const kept = async () => {
-    const hint = await deps.hintStore.read().catch(() => null)
-    return hint && deps.exists(hint) ? hint : null
-  }
   return {
     /** Keep the path of the CV file a draft read: Sources names it. */
     async remember(path: string): Promise<void> {
@@ -24,8 +20,8 @@ export function createCvFile(deps: Deps) {
     },
     /** The CV file's name (never its path) while it is still there, else null. */
     async name(): Promise<string | null> {
-      const file = await kept()
-      return file ? basename(file) : null
+      const file = await deps.hintStore.read().catch(() => null)
+      return file && deps.exists(file) ? basename(file) : null
     },
   }
 }

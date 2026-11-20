@@ -47,10 +47,6 @@ def test_on_windows_a_server_is_detached_from_the_console(monkeypatch, tmp_path)
     assert _spawn_flags(monkeypatch, tmp_path, "win32")["creationflags"] == 0x00000008 | 0x00000200
 
 
-def test_on_windows_a_build_gets_a_hidden_console_so_its_children_open_no_windows(monkeypatch, tmp_path):
-    assert _spawn_flags(monkeypatch, tmp_path, "win32", hidden_console=True)["creationflags"] == 0x08000000 | 0x00000200
-
-
 def test_a_signal_can_be_chosen_for_the_group(monkeypatch):
     sent = []
     monkeypatch.setattr(process.os, "killpg", lambda pgid, sig: sent.append((pgid, sig)), raising=False)

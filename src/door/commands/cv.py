@@ -299,8 +299,9 @@ def _draft_cv_core(
     return result
 
 
-def _header_parts(cv_md: str) -> tuple[str | None, list[str]]:
-    """What is above the first `## ` heading: the name (`# `) and the contact lines."""
+def _header(cv_md: str) -> tuple[str | None, dict[str, list[str]], list[str]]:
+    """The CV's header, what is above the first `## ` heading: the name (`# `), its contact values by kind (read in
+    every supported language's labels, `_details`) and the parts with no known label."""
     name = None
     preamble: list[str] = []
     for raw in cv_md.splitlines():
@@ -311,7 +312,7 @@ def _header_parts(cv_md: str) -> tuple[str | None, list[str]]:
             name = stripped[2:].strip()
         elif stripped and not stripped.startswith("#") and not stripped.startswith(">"):
             preamble.append(stripped)
-    return name, preamble
+    return name, *_details(preamble)
 
 
 def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
@@ -331,14 +332,6 @@ def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
             elif part:
                 other.append(part)
     return found, other
-
-
-def _header(cv_md: str) -> dict:
-    """The CV's header as data: ``{"name", "details", "other"}``, `details` the contact values by kind (read in every
-    supported language's labels) and `other` the parts with no known label."""
-    name, preamble = _header_parts(cv_md)
-    details, other = _details(preamble)
-    return {"name": name, "details": details, "other": other}
 
 
 _BASICS_MODEL = "haiku"
@@ -427,11 +420,11 @@ def _infer_basics_core(
 
     # The header (`_header`, its labels in every supported language), then for an email the whole text but
     # the tagline.
-    head = _header(text)
-    name = _usable(head["name"])
+    head_name, details, other = _header(text)
+    name = _usable(head_name)
     untagged = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(">"))
-    email = next((m.group(0) for s in [*head["details"].get("email", []), *head["other"], untagged] if (m := _EMAIL_RE.search(s))), None)
-    place = _usable(next(iter(head["details"].get("location", [])), None))
+    email = next((m.group(0) for s in [*details.get("email", []), *other, untagged] if (m := _EMAIL_RE.search(s))), None)
+    place = _usable(next(iter(details.get("location", [])), None))
     location = i18n.known_city(place) if place else None
     # A place naming a covered country but no known city says too little to search; one naming a place abroad is one
     # The other door does not cover; anything else (a street address) is left to the model.
