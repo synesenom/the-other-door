@@ -616,6 +616,21 @@ def test_scrape_core_reports_site_and_pass_events(cli_env, monkeypatch):
     assert events[3:] == []
 
 
+def test_scrape_passes_report_the_five_pass_events(cli_env, monkeypatch):
+    from cli_utils import CaptureReporter
+    from door.core import progress
+
+    _fake_jobindex(monkeypatch, lambda config, **kwargs: [_posting()])
+    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
+    config = json.loads((cli_env.profile_dir / "config.json").read_text())
+    cap = CaptureReporter()
+    with progress.activate(cap):
+        scrape_cmd._scrape_passes(Path(result["candidates_dir"]), config, cli_env.profile_dir)
+
+    assert [e.message for e in cap.events] == ["pre-filter", "language", "dedup", "condense", "prescreen"]
+    assert [e.stage for e in cap.events] == ["prefilter", "language", "dedup", "condense", "prescreen"]
+
+
 def test_scrape_core_failed_site_event_carries_last_error(cli_env, monkeypatch):
     from cli_utils import CaptureReporter
     from door.scrapers import record_error

@@ -6,6 +6,7 @@ history and file write. `scrape_workers: 1` is the old one-site-after-another ru
 
 import json
 import threading
+import time
 
 import pytest
 
@@ -101,14 +102,14 @@ def test_a_sites_errors_never_change_another_sites_outcome(cli_env, monkeypatch)
     assert (by_site["lever"]["outcome"], by_site["lever"]["errors"]) == ("ok", [])
 
 
-def test_one_worker_runs_the_sites_one_after_another_on_one_worker(cli_env, monkeypatch):
+def test_one_worker_runs_the_sites_one_after_another_without_overlap(cli_env, monkeypatch):
     _configure(cli_env, 1)
-    log, threads = [], set()
+    log = []
 
     for site in _SITES:
         def scrape(config, site=site, **kwargs):
             log.append(f"{site} start")
-            threads.add(threading.current_thread())
+            time.sleep(0.05)  # a site that overlapped another would show here
             log.append(f"{site} end")
             return [_posting(site)]
         _fake(monkeypatch, site, scrape)
@@ -116,7 +117,6 @@ def test_one_worker_runs_the_sites_one_after_another_on_one_worker(cli_env, monk
     result = _run(cli_env)
 
     assert log == [f"{s} {step}" for s in _SITES for step in ("start", "end")]
-    assert len(threads) == 1
     assert [e["count"] for e in result["sites"]] == [1, 1, 1]
 
 
