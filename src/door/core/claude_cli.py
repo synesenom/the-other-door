@@ -190,12 +190,12 @@ def run(
     return envelope if envelope is not None else result.stdout
 
 
-def agent_definition(name: str) -> dict:
-    """`.claude/agents/<name>.md` as an `--agents` entry: its frontmatter's description,
-    model and tools, and its body as the prompt."""
+def _agent_file(name: str) -> tuple[dict, str]:
+    """`.claude/agents/<name>.md` as its frontmatter's `description`, `model` and `tools` and its raw body
+    (everything after the closing `---` line)."""
     text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
     _, front, body = text.split("---", 2)
-    entry: dict = {"prompt": body.strip()}
+    entry: dict = {}
     key = None
     for line in front.splitlines():
         if line.lstrip().startswith("- ") and key == "tools":
@@ -206,7 +206,34 @@ def agent_definition(name: str) -> dict:
                 entry["tools"] = []
             elif key in ("description", "model"):
                 entry[key] = value
-    return entry
+    return entry, body
+
+
+def agent_definition(name: str) -> dict:
+    """`.claude/agents/<name>.md` as an `--agents` entry: its frontmatter's description,
+    model and tools, and its body as the prompt."""
+    entry, body = _agent_file(name)
+    return {"prompt": body.strip(), **entry}
+
+
+def prompt(name: str, **fields: str) -> str:
+    """The system prompt in `.claude/agents/<name>.md`: its body exactly (the blank line after the closing `---`
+    and the file's last line break left off), with each `{field}` given replaced by its value. Only the fields passed
+    are replaced, so a prompt's other braces need no escaping."""
+    text = _agent_file(name)[1].removeprefix("\n\n").removesuffix("\n")
+    for field, value in fields.items():
+        text = text.replace("{" + field + "}", value)
+    return text
+
+
+def model_of(name: str) -> str:
+    """The model in `.claude/agents/<name>.md`'s frontmatter."""
+    return _agent_file(name)[0]["model"]
+
+
+def tools_of(name: str) -> tuple[str, ...]:
+    """The tools in `.claude/agents/<name>.md`'s frontmatter: what the call allows, none when it has no `tools`."""
+    return tuple(_agent_file(name)[0].get("tools", ()))
 
 
 def envelope_result(stdout: str):
