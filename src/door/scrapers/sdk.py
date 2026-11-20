@@ -53,6 +53,10 @@ Discovery sources (`core/employers/discovery_sources.py`, issue #280)
     `CONFIG_KEY`, `run(config, **kwargs) -> DiscoveryResult` and the optional hooks `enabled`,
     `extras(queue)` and `skip_employer(emp, state, now)`. `DiscoveryResult` and `Employer` describe
     what `run` returns; `name_key`, `is_job_board` and `awaiting_job_page` serve the hooks.
+    A source that reads keyword result pages (HelloWork, profession.hu, Jobbsafari) does not write the crawl:
+    its `run` is `paged_discovery(config, name=, search_url=, parse_cards=, is_wall=, full_page=,
+    **kwargs)` (`scrapers/paged_discovery.py`: pacing, budget, pushback, the
+    grouping of on-topic cards by employer), and it keeps its URLs and its page reading.
 
 Context the engine puts in `config` (runtime keys, not declared in `Profile`)
     `_mode`: `"search"` or `"collect"`, which step is calling.
@@ -82,6 +86,7 @@ from door.scrapers import (
     tracked, wall_page,
 )
 from door.scrapers._parallel import host_of, map_by_group, workers
+from door.scrapers.paged_discovery import discover as paged_discovery
 from door.scrapers.http_client import FEED_DELAY, USER_AGENT, PoliteSession, RobotsBlocked
 
 # Documentation for re-exports that carry no docstring of their own.
@@ -106,7 +111,7 @@ __all__ = [
     "career_site_words", "generic_host_labels", "tld_labels", "career_nav_words", "career_apply_words", "career_path_stems", "city_names", "compile_words",
     "seniority_words", "stop_words", "transliteration", "word_pattern", "country_name",
     "ad_links", "country", "look_back_days", "followed_name",
-    "name_key", "is_job_board", "awaiting_job_page", "Employer", "DiscoveryResult",
+    "name_key", "is_job_board", "awaiting_job_page", "Employer", "DiscoveryResult", "paged_discovery",
     "Detection", "Probe", "parts", "first", "NOT_ACCOUNTS", "unfollowable", "follow_link", "career_links", "slug_candidates",
 ]
 

@@ -4,6 +4,7 @@ site's shape, a few made-up cards each (fixtures/hellowork/)."""
 
 from pathlib import Path
 
+from door.scrapers import paged_discovery
 from door.scrapers.discovery import hellowork
 
 _FIX = Path(__file__).parent / "fixtures" / "hellowork"
@@ -18,14 +19,14 @@ def _by_id(cards):
 
 
 def test_the_search_url_quotes_keyword_and_city_and_numbers_the_page_from_the_second():
-    assert hellowork._search_url("chef de projet", "Paris", 1) == \
+    assert hellowork._search_url("chef de projet", 1, {"location": "Paris"}) == \
         "https://www.hellowork.com/fr-fr/emploi/recherche.html?k=chef+de+projet&l=Paris"
-    url = hellowork._search_url("ingénieur données", hellowork._city("Paris, France"), 2)
+    url = hellowork._search_url("ingénieur données", 2, {"location": "Paris, France"})
     assert url == "https://www.hellowork.com/fr-fr/emploi/recherche.html?k=ing%C3%A9nieur+donn%C3%A9es&l=Paris&p=2"
 
 
 def test_without_a_city_the_search_has_no_place():
-    assert hellowork._search_url("data", "", 1).endswith("?k=data")
+    assert hellowork._search_url("data", 1, {}).endswith("?k=data")
 
 
 def test_a_card_gives_id_title_company_location_and_the_ad_link():
@@ -62,28 +63,10 @@ def test_a_card_without_its_hidden_inputs_falls_back_to_the_heading():
     assert hellowork._parse_cards(html)[0]["company"] == "Acme SAS"
 
 
-def _card(i, title, company):
-    return {"platform_id": str(i), "title": title, "company": company, "location": "Paris - 75",
-            "url": f"https://www.hellowork.com/fr-fr/emplois/{i}.html"}
-
-
-def test_only_on_topic_titles_are_kept_and_grouped_by_employer_in_order_of_first_sight():
-    config = {"search_keywords": ["chef de projet"], "location": "Paris"}
-    cards = [_card(1, "Chef de Projet IA H/F", "Acme Groupe"), _card(2, "Boulanger H/F", "Maison Exemple"),
-             _card(3, "Chef de Projet Risque H/F", "ACME GROUPE"), _card(4, "Comptable H/F", "Régie Exemple"),
-             _card(5, "Chef de Projet H/F", "Alfa SAS")]
-    got = hellowork._employers(cards, config)
-    assert [e["company"] for e in got] == ["Acme Groupe", "Alfa SAS"]
-    assert got[0]["titles"] == ["Chef de Projet IA H/F", "Chef de Projet Risque H/F"]
-    assert got[0]["links"] == ["https://www.hellowork.com/fr-fr/emplois/1.html",
-                               "https://www.hellowork.com/fr-fr/emplois/3.html"]
-    assert got[0]["job_ids"] == [] and got[0]["detailed"] is False
-
-
 def test_the_fixture_employers_are_the_on_topic_ones():
     config = {"search_keywords": ["chef de projet"], "location": "Paris"}
     cards = hellowork._parse_cards(_fx("search_chef_de_projet_p1.html")) + hellowork._parse_cards(_fx("search_chef_de_projet_p2.html"))
-    got = {e["company"] for e in hellowork._employers(cards, config)}
+    got = {e["company"] for e in paged_discovery.employers_of(cards, config)}
     assert {"Acme Groupe", "Groupe Imaginé", "Hooli."} <= got
 
 

@@ -345,7 +345,7 @@ on a Mac, a launch agent (`core/phone/launch_agent.py`).
 
 One module per site or source, in the folder of its kind: keyword boards in `src/door/scrapers/boards/` (`jobindex`, `thehub`, `euraxess`, `globalnyt`, `jobbank`, `jobmaskinen`, `reed`, `jobs_ac_uk`, `nhs_jobs`, `arbetsformedlingen`, `francetravail`, `choisirleservicepublic`, `kozigallas`, `reliefweb`),
 the employer discovery sources in `src/door/scrapers/discovery/` (`linkedin`, `profession`, `hellowork`, `jobbsafari`; not sites, registered in
-`core/employers/discovery_sources.SOURCES`), and the employer feed platforms in `src/door/scrapers/feeds/` (Workable,
+`core/employers/discovery_sources.SOURCES`; the last three share one crawl, `scrapers/paged_discovery.py`, handed to them as `sdk.paged_discovery`), and the employer feed platforms in `src/door/scrapers/feeds/` (Workable,
 a board with a feed, too). `Site.module` works the folder out from the entry's flags. The registry in
 `src/door/core/sites.py` has one `Site` entry per scraper — its name, the countries it
 serves (ISO 3166 codes, each with a `src/door/i18n/country/<cc>.toml`; none for global
