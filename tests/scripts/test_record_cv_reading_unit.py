@@ -502,3 +502,26 @@ def test_haiku_is_go_on_the_held_out_corpus_the_prompts_never_saw():
     facts, _ = held_committed("facts")
     assert (reader["verdict"], facts["verdict"]) == ("go", "go")
     assert facts["calls"] == 28 and all(v == 1.0 for v in facts["per_kind"].values()) and facts["false_clean_max"] == 0
+
+
+def test_a_recorded_held_out_answer_flags_the_employer_planted_in_a_translated_body_through_facts_check(tmp_path, monkeypatch):
+    import json
+
+    from door.tailoring import facts
+
+    with rcr.held_out():
+        corpus = rcr.build_body_corpus()
+        recorded = rcr.load_recorded("haiku", "facts", corpus, rcr.RECORDED / "held-out")
+    name = next(n for n, c in corpus.items()
+                if c["lang"] != c["body_lang"] and any(p["kind"] == "employer" and p["file"] == "cv" for p in c["plants"]))
+    case, planted = corpus[name], next(p for p in corpus[name]["plants"] if p["kind"] == "employer")
+    out, prof = tmp_path / "out", tmp_path / "profile"
+    out.mkdir(), prof.mkdir()
+    (prof / "cv.md").write_text(case["md"], encoding="utf-8")
+    (prof / "story_bank.md").write_text(case["story"], encoding="utf-8")
+    (out / "cv.html").write_text(case["body"], encoding="utf-8")
+    (out / "cover_letter.html").write_text(case["letter"], encoding="utf-8")
+    (out / "posting.json").write_text(json.dumps({"title": "Role", "description": case["posting"]}), encoding="utf-8")
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": recorded[name][0]})
+    found = facts.check(out, prof, write=False)
+    assert any(f["kind"] == "employer" and rcr._val(planted["planted_value"]) in rcr._val(f["value"] + f["context"]) for f in found)

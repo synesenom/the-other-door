@@ -279,6 +279,7 @@ def test_prepare_core_reports_tailoring_verifying_recorded(cli_env, monkeypatch)
         ("reading the PDFs back like an ATS", "prepare", None),
         ("verifying outputs for Data Scientist — Acme", "prepare", None),
         ("CV, cover letter and both PDFs on disk", "prepare", "ok"),
+        ("checking the facts", "prepare", None),
         ("status set to prepared", "prepare", "ok"),
     ]
 
@@ -330,6 +331,28 @@ def test_prepare_core_emits_heartbeat_while_tailoring(cli_env, monkeypatch):
     beats = [e.message for e in cap.events if "elapsed" in e.message]
     assert len(beats) >= 2
     assert all(b.startswith("tailoring Data Scientist — Acme · ") for b in beats)
+
+
+def test_prepare_reports_the_fact_check_as_a_step_with_a_heartbeat(cli_env, monkeypatch):
+    import time
+
+    from cli_utils import CaptureReporter
+
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 38%</li></ul>"))
+
+    def slow(inputs):
+        time.sleep(0.15)
+        return {"findings": []}
+
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", slow)
+    monkeypatch.setattr(prepare_cmd, "_HEARTBEAT_INTERVAL_S", 0.01)
+    cap = CaptureReporter()
+    prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir, progress=cap)
+    messages = [e.message for e in cap.events]
+    assert "checking the facts" in messages
+    assert sum(m.startswith("checking the facts · ") for m in messages) >= 2
 
 
 def test_prepare_core_without_job_id_reports_selecting_top_match_first(cli_env, monkeypatch):

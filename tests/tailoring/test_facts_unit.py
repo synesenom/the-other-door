@@ -82,8 +82,14 @@ def test_a_finding_with_no_letter_to_hold_it_is_dropped(dirs, model):
 
 def test_a_malformed_finding_is_dropped(dirs, model):
     out, prof = dirs
-    model["answer"] = {"findings": ["x", {"kind": "number"}, _finding(kind="mood"), _finding(value=""), _finding()]}
+    model["answer"] = {"findings": [{"kind": "number"}, _finding(value=""), _finding()]}
     assert len(facts.check(out, prof)) == 1
+
+
+def test_an_answer_of_another_shape_is_not_checked(dirs, model):
+    out, prof = dirs
+    model["answer"] = {"findings": ["x"]}
+    assert facts.check(out, prof) is None and not (out / "facts.json").exists()
 
 
 def test_a_repeated_finding_is_listed_once(dirs, model):
@@ -207,3 +213,36 @@ def test_write_false_merges_saved_reasons_without_writing(dirs, model):
     before = (out / "facts.json").read_text(encoding="utf-8")
     assert facts.check(out, prof, write=False)[0]["reason"] == "from the ad"
     assert (out / "facts.json").read_text(encoding="utf-8") == before
+
+
+def test_findings_of_the_checked_documents_stay_for_show_when_a_later_check_fails_or_cv_md_is_edited(dirs, model):
+    out, prof = dirs
+    model["answer"] = {"findings": [_finding()]}
+    first = facts.check(out, prof)
+    (out / "cv.html").write_text(BODY + "<p>revised</p>", encoding="utf-8")
+    model["answer"] = claude_cli.ClaudeError("limit")
+    assert facts.check(out, prof) is None  # a revise whose check fails
+    assert facts.load(out) == first
+    (prof / "cv.md").write_text(CV_MD + "- edited by hand\n", encoding="utf-8")
+    assert facts.load(out) == first  # showing asks no model and reads what was found
+
+
+def test_facts_json_is_written_once_with_the_reasons_applied(dirs, model, monkeypatch):
+    from door.core import utils
+
+    out, prof = dirs
+    writes = []
+    real = utils.write_json_atomic
+    monkeypatch.setattr(utils, "write_json_atomic", lambda path, data, **kw: (writes.append(data), real(path, data, **kw)))
+    model["answer"] = {"findings": [_finding()]}
+    facts.check(out, prof, keep=[_keep()])
+    assert len(writes) == 1 and writes[0]["unsupported"][0]["reason"] == "from the ad"
+
+
+def test_is_cached_follows_the_version(dirs, model, monkeypatch):
+    out, prof = dirs
+    assert not facts.is_cached(out, prof)
+    facts.check(out, prof)
+    assert facts.is_cached(out, prof)
+    monkeypatch.setattr(facts, "VERSION", facts.VERSION + 1)
+    assert not facts.is_cached(out, prof)

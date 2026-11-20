@@ -21,4 +21,3 @@ def load(path: Path) -> tuple[dict, str | None]:
     except (OSError, ValueError) as exc:
         return {}, f"{path.name} could not be read ({exc}); skill names are counted as written, nothing grouped or saved"
     return {str(k).strip().lower(): (v.strip() if v else None) for k, v in raw.items()}, None
-

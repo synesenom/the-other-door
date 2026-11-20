@@ -456,3 +456,14 @@ def test_side_kinds_fall_back_to_the_kinds_the_model_read_on_own_titles(monkeypa
     style = _style(_SIDE, [("Logiciels", 395), ("EXPERIENCE", 31)])
     _reads(monkeypatch, **{"Mes outils": "skills", "Parcours": "experience"})
     assert style_build._side_kinds(style, "# A\n\n## Mes outils <!-- kind: skills -->\n\n## Parcours\n") == ["skills"]
+
+
+def test_a_cv_the_model_cannot_read_ends_the_side_kinds_in_the_readers_words(monkeypatch):
+    style = _style(_SIDE, [("Logiciels", 395), ("EXPERIENCE", 31)])
+
+    def broken(md):
+        raise cv_read.CvReadError("Your CV could not be read: limit")
+
+    monkeypatch.setattr(cv_read, "read", broken)
+    with pytest.raises(cv_read.CvReadError, match="could not be read"):
+        style_build._side_kinds(style, "# A\n\n## Parcours\n")

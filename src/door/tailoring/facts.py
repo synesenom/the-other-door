@@ -23,7 +23,7 @@ from door.render import html_doc
 FACTS_FILE = "facts.json"
 VERSION = 1  # bump with the prompt, the schema or the check: a cached answer of another version is asked again
 KINDS = ("number", "year", "employer", "skill", "certification", "degree")
-_CONTEXT_CHARS = 100
+_CONTEXT_CHARS = 200  # the longest context a TODO line is kept at
 _TODO_RE = re.compile(r"\bTODO\b")
 _FILES = {"cv": "cv", "letter": "cover_letter"}  # the schema's name of a document, and the name `facts.json` keeps
 
@@ -101,44 +101,37 @@ def input_text(cv_md: str, story: str, posting: str, cv_html: str, letter_html: 
 
 def _ask(inputs: str) -> dict:
     """The one model call: Haiku at low effort with no MCP servers."""
-    return claude_cli.ask(PROMPT, inputs, model="haiku", feature="facts", schema=SCHEMA, effort="low", timeout_s=240)
-
-
-def _window(line: str, raw: str) -> str:
-    line = _squash(line)
-    idx = line.find(_squash(raw))
-    if len(line) <= 2 * _CONTEXT_CHARS or idx < 0:
-        return line[: 2 * _CONTEXT_CHARS + 1] if len(line) > 2 * _CONTEXT_CHARS + 1 and idx < 0 else line
-    lo = max(0, idx - _CONTEXT_CHARS // 2)
-    hi = min(len(line), idx + len(raw) + _CONTEXT_CHARS // 2)
-    return ("…" if lo else "") + line[lo:hi] + ("…" if hi < len(line) else "")
+    return claude_cli.ask(PROMPT, inputs, model="haiku", feature="facts", schema=SCHEMA, effort="low", timeout_s=120)
 
 
 def _placeholders(body: str, file: str) -> list[dict]:
     """Each `TODO` in the text of `body`, the header included: a gap of cv.md's that must not reach a document."""
-    return [{"kind": "placeholder", "value": "TODO", "context": _window(line, "TODO"), "file": file}
+    return [{"kind": "placeholder", "value": "TODO", "context": line[:_CONTEXT_CHARS], "file": file}
             for line in map(_squash, html_doc.text(body).splitlines()) if _TODO_RE.search(line)]
 
 
 def _findings(answer: dict, bodies: dict[str, str]) -> list[dict]:
-    """The model's findings that hold: a known kind, a value, and a context that is text of the document named,
-    each once, then each `TODO`; `{kind, value, context, file}` with the file as `facts.json` names it."""
+    """The model's findings (`SCHEMA`'s shape) whose `context` is text of the document they name, each kind, value and
+    file once, then each `TODO`; `{kind, value, context, file}` with the file as `facts.json` names it."""
     out, seen = [], set()
-    items = answer.get("findings") if isinstance(answer, dict) else None
-    for item in items if isinstance(items, list) else []:
-        if not isinstance(item, dict) or item.get("kind") not in KINDS or item.get("file") not in _FILES:
-            continue
-        value, context, file = item.get("value"), item.get("context"), _FILES[item["file"]]
-        if not (isinstance(value, str) and value.strip() and isinstance(context, str)):
-            continue
-        key = (item["kind"], value, file)
-        if key in seen or not is_verbatim(context, bodies.get(file, "")):
+    for item in answer.get("findings") or []:
+        file = _FILES.get(item.get("file"))
+        key = (item.get("kind"), item.get("value"), file)
+        if not item.get("value") or key in seen or not is_verbatim(item.get("context"), bodies.get(file, "")):
             continue
         seen.add(key)
-        out.append({"kind": item["kind"], "value": value, "context": context, "file": file})
+        out.append({"kind": item["kind"], "value": item["value"], "context": item["context"], "file": file})
     for file, body in bodies.items():
         out += _placeholders(body, file) if body else []
     return out
+
+
+def _asked(inputs: str, bodies: dict[str, str]) -> dict:
+    """The model's answer as the `unsupported` list it makes; a reply of another shape than `SCHEMA` is a FactsError."""
+    try:
+        return {"unsupported": _findings(_ask(inputs), bodies)}
+    except (AttributeError, KeyError, TypeError) as exc:
+        raise FactsError(f"the answer is not of the schema's shape: {exc}") from None
 
 
 def _read(path: Path) -> str:
@@ -177,30 +170,23 @@ def _with_reasons(found: list[dict], saved: list | None, keep: list[dict] | None
 
 
 class _Store:
-    """`facts.json` as the cache of `ask_cached`: one record, for the one key (the sha256 of the inputs) it was made for.
-    `write=False` keeps it from writing."""
+    """`facts.json` as the cache of `ask_cached`: one record, for the one key (the sha256 of the inputs) and `VERSION`
+    it was made for."""
 
-    def __init__(self, output_dir: Path, write: bool):
-        self.output_dir, self.writing = output_dir, write
+    def __init__(self, output_dir: Path):
+        self.output_dir = output_dir
 
     def read(self, key: str):
         try:
             data = json.loads((self.output_dir / FACTS_FILE).read_text(encoding="utf-8"))
-            if data["inputs_sha"] == key and isinstance(data["unsupported"], list):
+            if data["inputs_sha"] == key and data["version"] == VERSION and isinstance(data["unsupported"], list):
                 return {"version": data["version"], "answer": {"unsupported": data["unsupported"]}}
         except (OSError, ValueError, KeyError, TypeError):
             pass
         return None
 
     def write(self, key: str, record: dict) -> None:
-        if not self.writing:
-            return
-        payload = {"checked_at": datetime.now(timezone.utc).isoformat(), "unsupported": record["answer"]["unsupported"],
-                   "inputs_sha": key, "version": record["version"]}
-        try:
-            utils.write_json_atomic(self.output_dir / FACTS_FILE, payload, default=None)
-        except OSError:
-            pass
+        pass  # `check` writes the file once, with the reasons applied
 
     def drop(self, key: str) -> None:
         pass  # the record is replaced by the next write
@@ -239,11 +225,8 @@ def _key(inputs: str) -> str:
 
 def is_cached(output_dir: Path, profile_dir: Path) -> bool:
     """``facts.json`` already holds the answer for what `check` would show the model now: a `check` asks nothing."""
-    try:
-        gathered = _gather(output_dir, profile_dir)
-        return gathered is not None and _Store(output_dir, False).read(_key(gathered[0])) is not None
-    except Exception:  # noqa: BLE001 - not knowing is "not cached"
-        return False
+    gathered = _gather(output_dir, profile_dir)
+    return gathered is not None and _Store(output_dir).read(_key(gathered[0])) is not None
 
 
 def check(
@@ -266,20 +249,22 @@ def check(
         if gathered is None:
             return None
         inputs, bodies = gathered
-        saved = load(output_dir)
+        key, saved, store = _key(inputs), load(output_dir), _Store(output_dir)
+        hit = store.read(key) is not None
         found = ask_cached.cached_answer(
-            key=_key(inputs), version=VERSION, label="facts",
-            ask=lambda: {"unsupported": _findings(_ask(inputs), bodies)}, check=lambda answer: _held(answer, bodies),
-            error=FactsError, unreached=lambda exc: FactsError(str(exc)), store=_Store(output_dir, write))
-        found = [dict(item) for item in found]
-        _with_reasons(found, saved, keep if isinstance(keep, list) else None)
-    except Exception:  # noqa: BLE001 - a check that cannot run is "not checked", never a failure
+            key=key, version=VERSION, label="facts",
+            ask=lambda: _asked(inputs, bodies), check=lambda answer: _held(answer, bodies),
+            error=FactsError, unreached=lambda exc: FactsError(str(exc)), store=store)
+    except FactsError:  # a check that cannot run is "not checked", never a failure (the problem log has why)
         return None
-    if write and found != saved:
+    found = [dict(item) for item in found]
+    _with_reasons(found, saved, keep if isinstance(keep, list) else None)
+    if write and not (hit and found == saved):
+        payload = {"checked_at": datetime.now(timezone.utc).isoformat(), "unsupported": found,
+                   "inputs_sha": key, "version": VERSION}
         try:
-            current = json.loads((output_dir / FACTS_FILE).read_text(encoding="utf-8"))
-            utils.write_json_atomic(output_dir / FACTS_FILE, {**current, "unsupported": found}, default=None)
-        except (OSError, ValueError):
+            utils.write_json_atomic(output_dir / FACTS_FILE, payload, default=None)
+        except OSError:
             pass
     return found
 

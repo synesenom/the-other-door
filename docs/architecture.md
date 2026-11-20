@@ -130,7 +130,7 @@ The test is deliberately loose. Precision comes later, from the prescreen and th
 
 The passes contain no word lists. Everything that depends on a language or a country lives in `src/door/i18n/`, and each file is validated on load (`extra="forbid"`):
 
-- **`lang/<iso-639-1>.toml`**: section headings, requirement, remote and salary markers, seniority words, false friends, stop words, language-requirement phrases, the `cv_sections` titles of a CV, and the `[careers]` words that find a careers link on a page. **A language with a file is a supported language**: a profile's `languages` may only name these.
+- **`lang/<iso-639-1>.toml`**: section headings, requirement, remote and salary markers, seniority words, false friends, stop words, language-requirement phrases, and the `[careers]` words that find a careers link on a page. **A language with a file is a supported language**: a profile's `languages` may only name these.
 - **`country/<iso-3166>.toml`**: cities and their aliases, currency words, company-form suffixes. A country with a file is one that boards can serve (`Site.countries`) and that the locality filters understand.
 - **`common.toml`**: what applies everywhere, such as international company suffixes, synonyms and foreign place names.
 
@@ -452,7 +452,7 @@ and validated once per process:
 
 | File | Holds | Used by |
 |------|-------|---------|
-| `lang/<code>.toml` (ISO 639-1: `en`, `da`) | section headings, requirement / remote / salary markers, seniority words mapped to canonical levels (`academic` = every academic rank), false friends, stop words, letters to transliterate and to fold in URL slugs, language-requirement phrases, the CV `cv_sections` titles | condense, prescreen, prefilter (keywords), dedup, language, the `match` prompt |
+| `lang/<code>.toml` (ISO 639-1: `en`, `da`) | section headings, requirement / remote / salary markers, seniority words mapped to canonical levels (`academic` = every academic rank), false friends, stop words, letters to transliterate and to fold in URL slugs, language-requirement phrases | condense, prescreen, prefilter (keywords), dedup, language, the `match` prompt |
 | `country/<code>.toml` (ISO 3166: `dk`) | the country's languages, currency words, company-form suffixes, city names and aliases | prefilter (location), condense (salary), dedup |
 | `common.toml` | what applies everywhere (international company-form suffixes) | dedup |
 
