@@ -12,7 +12,6 @@ the spike's (`scripts/record_cv_reading.py`), so its recorded answers stay valid
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from pathlib import Path
 
