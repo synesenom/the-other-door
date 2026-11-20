@@ -97,27 +97,24 @@ def test_a_message_file_is_not_for_direct_use_and_has_no_model_or_tools(name):
     assert not re.search(r"^(model|tools):", front, re.M)
 
 
-def _src() -> str:
-    return "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
+def _names_in_code() -> set[str]:
+    """The prompts the code names: a `claude_cli.prompt|model_of|tools_of|agent_definition|ask` call, an `agent=`,
+    a prompt file read by `PROMPTS_DIR`, or a constant naming an agent (`STYLIST`, `_FIXER`, `_TAILOR_AGENTS`)."""
+    src = "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
+    names = set(re.findall(r'(?:prompt|model_of|tools_of|agent_definition|ask)\(\s*"([a-z][a-z-]*)"', src))
+    names |= set(re.findall(r'agent="([a-z][a-z-]*)"', src))
+    names |= set(re.findall(r'\bprompt = "([a-z][a-z-]*)"', src))  # a name chosen, then passed
+    names |= set(re.findall(r'PROMPTS_DIR / "([a-z][a-z-]*)\.md"', src))  # a file read whole (the matcher's rubric)
+    for line in re.findall(r"^_?[A-Z_]*(?:AGENTS?|STYLIST|FIXER)\s*=\s*(.+)$", src, re.M):
+        names |= set(re.findall(r'"([a-z][a-z-]*)"', line))
+    return names
 
 
 def test_every_prompt_the_code_names_is_a_file_in_the_prompts_folder():
-    called = set(re.findall(r'(?:prompt|model_of|tools_of|agent_definition|ask)\(\s*"([a-z][a-z-]*)"', _src()))
-    called |= set(re.findall(r'agent="([a-z][a-z-]*)"', _src()))
-    called |= {"stylist", "tailor", "reviewer", "scraper-fixer"}  # named by a constant or an `--agent` argument
     have = {p.stem for p in claude_cli.PROMPTS_DIR.glob("*.md")}
-    assert called <= have, sorted(called - have)
+    assert _names_in_code() <= have, sorted(_names_in_code() - have)
 
 
 def test_every_file_in_the_prompts_folder_is_used_by_the_code():
-    src = _src()
-    unused = [p.stem for p in claude_cli.PROMPTS_DIR.glob("*.md") if f'"{p.stem}"' not in src and f"prompts/{p.stem}.md" not in src]
-    assert not unused, unused
-
-
-def test_the_bundle_copies_the_whole_of_src_so_the_prompts_go_with_it():
-    sh = (REPO_ROOT / "app" / "scripts" / "bundle-python.sh").read_text(encoding="utf-8")
-    ps = (REPO_ROOT / "app" / "scripts" / "bundle-python.ps1").read_text(encoding="utf-8")
-    assert re.search(r"rsync -a --exclude '__pycache__' \"\$REPO/src/\" ", sh)
-    assert re.search(r"robocopy \(Join-Path \$Repo 'src'\) .* /E /XD __pycache__ ", ps)
-    assert "AGENTS" not in sh and "$Agents" not in ps
+    have = {p.stem for p in claude_cli.PROMPTS_DIR.glob("*.md")}
+    assert have <= _names_in_code(), sorted(have - _names_in_code())

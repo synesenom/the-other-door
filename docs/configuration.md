@@ -39,7 +39,7 @@ It is an environment variable, not a config key, because it says where `config.j
 or empty, everything stays where it is today. What moves: `profile/`, `jobs/`, `backups/`,
 `upskill/`, and the `.mcp.json` the tailor session uses (generated there for the Python
 running *The other door*, and rewritten when that changes; the checkout's own `.mcp.json` is used when
-`DOOR_HOME` is unset). What does not: `profile.example/`, `.claude/` (the agents) and `src/`,
+`DOOR_HOME` is unset). What does not: `profile.example/`, and `src/`,
 which ship with the code. Relative paths in `config.json` (`cv_content`, `cv_template`,
 `cover_letter_template`, `photo`, e.g. `profile/cv.md`) resolve from `DOOR_HOME`. `./door doctor` prints
 `data folder: <path>`. Register the MCP server for Claude Code with the same variable in its

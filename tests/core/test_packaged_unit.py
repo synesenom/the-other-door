@@ -20,11 +20,12 @@ _SCRIPT = """
 import json
 from door.commands import profile as p, setup as s
 from door.core import workspace
+from door.matching import scorer
 report = s._doctor_core(profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR, probe=False)
 fields = p._profile_fields(name="Ada", email="ada@example.com", location="Aarhus", role_targets=["Data Analyst"], remote="hybrid")
 p._init_core(fields, profile_dir=workspace.PROFILE_DIR, example_dir=workspace.PROFILE_EXAMPLE_DIR)
 mcp = workspace.ensure_mcp_config()
-agent = (workspace.REPO_ROOT / "src" / "door" / "prompts" / "matcher.md").read_text()
+agent = scorer.load_rubric_md()
 print(json.dumps({"checks": [c["name"] for c in report["checks"]], "checkout": workspace.is_checkout(),
                   "mcp": str(mcp), "home": str(workspace.HOME), "agent": len(agent) > 0}))
 """
