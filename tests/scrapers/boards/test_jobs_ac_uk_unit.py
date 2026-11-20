@@ -100,3 +100,7 @@ def test_location_fit_uses_the_city_and_its_commute_area():
     assert sdk.location_fits("", cfg, "x")
     assert not sdk.location_fits("Glasgow", cfg, "x")
     assert sdk.location_fits("Glasgow", {**cfg, "remote": "yes"}, "x")
+
+
+def test_an_ad_with_empty_text_is_read_past():
+    assert jobs_ac_uk._parse_detail('<script type="application/ld+json">{"@type": "JobPosting", "title": "A", "description": "<p></p>"}</script><script type="application/ld+json">{"@type": "JobPosting", "title": "B", "description": "<p>Second</p>"}</script>')["description"] == "Second"

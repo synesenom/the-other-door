@@ -26,7 +26,6 @@ robots.txt (checked 2026-10-31) allows ``/job/`` for every agent and disallows `
 """
 
 import html as html_lib
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
@@ -57,7 +56,6 @@ JOB_BOARD_HOSTS = ("jobbank.",)
 
 _ID_IN_PATH = re.compile(r"^/job/(\d+)/")
 _UPDATED = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})")
-_LD_JSON = re.compile(r"<script[^>]*application/ld\+json[^>]*>(.*?)</script>", re.S | re.I)
 
 
 def _search_url(keyword: str, page: int) -> str:
@@ -139,26 +137,20 @@ def _parse_date(value) -> datetime | None:
 def _parse_detail(html: str) -> dict | None:
     """``title``, ``company``, ``location``, ``description`` (plain text), ``posted_at`` from the ad's
     ``JobPosting`` JSON-LD; None when the page has none. Pure."""
-    for block in _LD_JSON.findall(html or ""):
-        try:
-            data = json.loads(block, strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if not isinstance(node, dict) or node.get("@type") != "JobPosting":
-                continue
-            org = node.get("hiringOrganization")
-            place = node.get("jobLocation")
-            if isinstance(place, list):
-                place = place[0] if place else None
-            return {
-                "title": html_lib.unescape(str(node.get("title") or "")).strip(),
-                "company": html_lib.unescape(str((org or {}).get("name") if isinstance(org, dict) else org or "")).strip(),
-                "location": _location_text((place or {}).get("address") if isinstance(place, dict) else place),
-                "description": strip_html(str(node.get("description") or "")),
-                "posted_at": _parse_date(node.get("datePosted")),
-            }
-    return None
+    node = next(iter(sdk.job_postings(html)), None)
+    if node is None:
+        return None
+    org = node.get("hiringOrganization")
+    place = node.get("jobLocation")
+    if isinstance(place, list):
+        place = place[0] if place else None
+    return {
+        "title": html_lib.unescape(str(node.get("title") or "")).strip(),
+        "company": html_lib.unescape(str((org or {}).get("name") if isinstance(org, dict) else org or "")).strip(),
+        "location": _location_text((place or {}).get("address") if isinstance(place, dict) else place),
+        "description": strip_html(str(node.get("description") or "")),
+        "posted_at": _parse_date(node.get("datePosted")),
+    }
 
 
 def _posting(card: dict, detail: dict, scraped_at: datetime) -> dict:

@@ -123,13 +123,6 @@ def test_a_page_with_neither_text_nor_markup_has_no_ad():
     assert networx.parse_ad("") is None
 
 
-def test_the_unclosed_json_ld_is_read_and_another_broken_one_is_not():
-    assert networx._load_ld('{"datePosted": "2026-10-27", "hiringOrganization": {"name": "A"}') == {
-        "datePosted": "2026-10-27", "hiringOrganization": {"name": "A"}}
-    assert networx._load_ld('{"datePosted": ') is None
-    assert networx._load_ld('{"a": 1}') == {"a": 1}
-
-
 def test_the_posting_is_built_from_a_row_and_its_ad():
     row = networx.parse_search(_fx("search_3509_page1.html"))["rows"][1]
     ad = networx.parse_ad(_fx("ad_4361924.html"))

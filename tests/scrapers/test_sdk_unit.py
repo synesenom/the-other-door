@@ -7,6 +7,7 @@ from door.core.employers import ats_detect
 from door.matching import locality, title_fit
 from door.scrapers import sdk
 from door import i18n
+from paths import TESTS_DIR
 
 
 def test_every_export_is_documented():
@@ -252,3 +253,39 @@ def test_stop_for_run_reports_records_and_marks_pushback(monkeypatch):
     assert reported == ["x: HTTP 429; stopping for this run"]
     assert errors == [("x", "x: HTTP 429; stopped for this run")]
     assert pushed == ["x"]
+
+
+# --- job_postings: the one JSON-LD reader ---
+
+_FEEDS = TESTS_DIR / "scrapers" / "feeds" / "fixtures"
+
+
+def _ld(*bodies: str) -> str:
+    return "".join(f'<script type="application/ld+json">{b}</script>' for b in bodies)
+
+
+def test_job_postings_reads_graph_lists_and_type_lists():
+    html = _ld(
+        '{"@graph": [{"@type": "Organization"}, {"@type": "JobPosting", "title": "A"}]}',
+        '[{"@type": ["JobPosting"], "title": "B"}]',
+        "{not json",
+        '{"@type": "WebSite"}',
+        '{"@type": "JobPosting", "title": "C", "@graph": [{"@type": "JobPosting", "title": "D"}]}',
+    )
+    assert [j["title"] for j in sdk.job_postings(html)] == ["A", "B", "C", "D"]
+    assert sdk.job_postings("") == [] and sdk.job_postings(None) == []
+
+
+def test_job_postings_reads_an_entity_escaped_type():
+    html = (_FEEDS / "jobtrain" / "lat_9610.html").read_text(encoding="utf-8")
+    assert sdk.job_postings(html)
+
+
+def test_job_postings_reads_js_escapes_and_an_unclosed_object():
+    html = (_FEEDS / "career_sites" / "ps_job_copenhagen.html").read_text(encoding="utf-8")
+    [job] = sdk.job_postings(html)
+    assert job["title"] == "Data Science - Manager - Retail"
+    unclosed = (_FEEDS / "networx" / "ad_4361924.html").read_text(encoding="utf-8")
+    assert sdk.job_postings(unclosed)
+    assert sdk.job_postings(_ld('{"datePosted": ')) == []
+    assert sdk.job_postings(_ld('{"@type": "JobPosting", "title": "A"')) == [{"@type": "JobPosting", "title": "A"}]

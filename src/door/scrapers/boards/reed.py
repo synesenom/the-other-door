@@ -57,7 +57,6 @@ _HEADERS = {
 JOB_BOARD_HOSTS = ("reed.co.uk",)
 
 _NEXT_DATA = re.compile(r'<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.S)
-_LD_JSON = re.compile(r"<script[^>]*application/ld\+json[^>]*>(.*?)</script>", re.S | re.I)
 # Locations that name no place Reed could search in: the whole country is searched.
 _NATIONWIDE = {"", "uk", "united kingdom", "great britain", "gb", "england", "britain", "remote", "anywhere"}
 
@@ -125,15 +124,10 @@ def _card(raw: dict) -> dict | None:
 
 def _parse_description(html: str) -> str | None:
     """The plain-text description of the ad's ``JobPosting`` JSON-LD; None when the page has none. Pure."""
-    for block in _LD_JSON.findall(html or ""):
-        try:
-            data = json.loads(block, strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if isinstance(node, dict) and node.get("@type") == "JobPosting" and node.get("description"):
-                text = BeautifulSoup(str(node["description"]), "html.parser").get_text("\n", strip=True)
-                return text or None
+    for node in sdk.job_postings(html):
+        if node.get("description"):
+            text = BeautifulSoup(str(node["description"]), "html.parser").get_text("\n", strip=True)
+            return text or None
     return None
 
 

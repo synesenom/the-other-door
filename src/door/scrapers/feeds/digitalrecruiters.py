@@ -32,7 +32,6 @@ charter) say nothing about reading the ads. Nothing bans scraping, bots or text-
 Monoprix, Franprix and Afflelou: ``User-agent: *``, ``Allow: /``, ``Crawl-delay: 10``. Checked 2026-11-01.
 """
 
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -40,6 +39,7 @@ from xml.etree import ElementTree
 
 import requests
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, host_of,
     keep_local, split_known, make_job_id, on_topic, parse_iso_date, parts, record_error, record_pushback, report, run_probe,
@@ -58,7 +58,6 @@ _HEADERS = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*
 # Hosts of the platform's own that are no employer's career site.
 _NOT_TENANTS = NOT_ACCOUNTS | {"app", "matomo", "status", "help", "docs", "cdn", "mail", "support"}
 _AD_PATH = re.compile(r"/annonce/(\d+)(?:-([^/?#]*))?", re.IGNORECASE)
-_LD_JSON = re.compile(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', re.IGNORECASE | re.DOTALL)
 _NUXT_API = re.compile(r"api\.digitalrecruiters\.com(?:/|\\u002F)careers", re.IGNORECASE)
 _NUXT_DOMAIN = re.compile(r"""domain_name\s*:\s*["']([^"']+)["']""")
 
@@ -128,19 +127,6 @@ def _rank(items: list[dict], config: dict) -> list[dict]:
 
 # --- one ad page ---
 
-def _ld_job(page: str) -> dict:
-    """The schema.org JobPosting object of an ad page, ``{}`` when it has none."""
-    for raw in _LD_JSON.findall(page or ""):
-        try:
-            data = json.loads(raw, strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if isinstance(node, dict) and node.get("@type") == "JobPosting":
-                return node
-    return {}
-
-
 def _ld_location(job: dict) -> str:
     places = job.get("jobLocation") or []
     names = []
@@ -155,7 +141,7 @@ def _ld_location(job: dict) -> str:
 def parse_ad(page: str) -> dict | None:
     """What an ad page holds: ``title``, ``company``, ``posted_at`` (ISO text), ``location`` and the plain-text
     ``description``. None for a page without the JSON-LD JobPosting. Pure."""
-    job = _ld_job(page)
+    job = next(iter(sdk.job_postings(page)), {})
     if not job:
         return None
     hiring = job.get("hiringOrganization")

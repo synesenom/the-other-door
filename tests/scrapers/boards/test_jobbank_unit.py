@@ -107,3 +107,8 @@ def test_detail_without_json_ld_is_none():
 ])
 def test_location_text(address, expected):
     assert jobbank._location_text(address) == expected
+
+
+def test_the_main_ad_wins_over_an_unrelated_posting_later_in_the_graph():
+    ld = ('{"@type": "JobPosting", "title": "Main", "@graph": [{"@type": "JobPosting", "title": "Other"}]}')
+    assert jobbank._parse_detail(f'<script type="application/ld+json">{ld}</script>')["title"] == "Main"

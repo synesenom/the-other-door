@@ -45,6 +45,7 @@ from urllib.parse import parse_qs, quote_plus, urlparse
 
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, RobotsBlocked, city_names,
     compile_words, log_keyword_results, make_job_id, on_topic, record_answered, record_error, report, run_probe,
@@ -492,29 +493,11 @@ def _description_from_html(html: str) -> str:
     )
     if container:
         return container.get_text(separator="\n", strip=True)
-    for script in soup.find_all("script", type="application/ld+json"):
-        description = _json_ld_job_description(script.string or "")
-        if description:
+    for node in sdk.job_postings(html):
+        description = node.get("description")
+        if isinstance(description, str) and description.strip():
             # Some (TeamTailor) entity-escape the markup: unescape before stripping tags.
             return BeautifulSoup(html_lib.unescape(description), "html.parser").get_text(separator="\n", strip=True)
-    return ""
-
-
-def _json_ld_job_description(raw: str) -> str:
-    """The `description` of the first `JobPosting` in a JSON-LD block; "" if none. Pure."""
-    try:
-        data = json.loads(raw)
-    except ValueError:
-        return ""
-    nodes = data if isinstance(data, list) else (data.get("@graph") or [data]) if isinstance(data, dict) else []
-    for node in nodes:
-        if not isinstance(node, dict):
-            continue
-        types = node.get("@type")
-        if "JobPosting" in (types if isinstance(types, list) else [types]):
-            description = node.get("description")
-            if isinstance(description, str) and description.strip():
-                return description
     return ""
 
 

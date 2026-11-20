@@ -32,7 +32,6 @@ bots or text-and-data mining. robots.txt: ``www.jobtrain.co.uk/robots.txt`` and 
 404; the marketing site's ``jobtrain.co.uk/robots.txt`` allows everything. Checked 2026-11-04.
 """
 
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -40,6 +39,7 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
     host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
@@ -136,13 +136,6 @@ def parse_cards(html: str) -> tuple[int, list[dict]]:
     return total, cards
 
 
-def _load(text: str):
-    try:
-        return json.loads(text, strict=False)
-    except ValueError:
-        return None
-
-
 def _place(node: dict) -> str:
     """"Locality, Region, CC" of a JobPosting's ``jobLocation`` (the parts it has)."""
     place = node.get("jobLocation")
@@ -157,21 +150,17 @@ def _place(node: dict) -> str:
 def parse_ad(html: str) -> dict | None:
     """``{description, posted_at, location, organization}`` from an ad page's JobPosting JSON-LD; ``None`` when it
     has none. Pure."""
-    soup = BeautifulSoup(html or "", "html.parser")
-    for tag in soup.find_all("script", type=re.compile(r"ld(\+|&#x2B;|&#43;)json", re.IGNORECASE)):
-        data = _load(tag.string or tag.get_text())
-        for node in data if isinstance(data, list) else [data]:
-            if not isinstance(node, dict) or node.get("@type") != "JobPosting":
-                continue
-            organization = node.get("hiringOrganization")
-            posted = parse_iso_date(node.get("datePosted"))
-            return {
-                "description": strip_html(str(node.get("description") or "")),
-                "posted_at": posted.replace(tzinfo=timezone.utc) if posted is not None and posted.tzinfo is None else posted,
-                "location": _place(node),
-                "organization": strip_html(str(organization.get("name") or "")) if isinstance(organization, dict) else "",
-            }
-    return None
+    node = next(iter(sdk.job_postings(html)), None)
+    if node is None:
+        return None
+    organization = node.get("hiringOrganization")
+    posted = parse_iso_date(node.get("datePosted"))
+    return {
+        "description": strip_html(str(node.get("description") or "")),
+        "posted_at": posted.replace(tzinfo=timezone.utc) if posted is not None and posted.tzinfo is None else posted,
+        "location": _place(node),
+        "organization": strip_html(str(organization.get("name") or "")) if isinstance(organization, dict) else "",
+    }
 
 
 def _to_posting(card: dict, ad: dict | None, base: str, label: str, name: str, scraped_at: datetime) -> dict:

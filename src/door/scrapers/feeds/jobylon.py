@@ -29,13 +29,13 @@ about reading ads. Nothing bans scraping, bots or text-and-data mining. robots.t
 """
 
 import html as _html
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 import requests
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     Detection, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, followed_name, keep_local, split_known, make_job_id,
     parse_iso_date, parts, record_error, record_pushback, report, run_probe, scrape_feeds, strip_html, unfollowable,
@@ -50,7 +50,6 @@ _HEADERS = {"Accept": "text/html"}
 _JOBS_MARKER = "JBL.embed_v2['jobs'] = ["
 _JOB_START = re.compile(r"\{\s*id:\s*'(\d+)'")
 _ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
-_LD_JSON = re.compile(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', re.S)
 _AD_COMPANY = re.compile(r"company_id\s*=\s*(\d+)")
 _AD_PATH = re.compile(r"^(\d+)(?:-|$)")
 
@@ -88,19 +87,6 @@ def parse_widget(page: str) -> list[dict] | None:
 
 # --- one ad page ---
 
-def _ld_job(page: str) -> dict:
-    """The schema.org JobPosting object of an ad page, ``{}`` when it has none."""
-    for raw in _LD_JSON.findall(page):
-        try:
-            data = json.loads(raw, strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if isinstance(node, dict) and node.get("@type") == "JobPosting":
-                return node
-    return {}
-
-
 def _ld_location(job: dict) -> str:
     places = job.get("jobLocation") or []
     names = []
@@ -115,7 +101,7 @@ def _ld_location(job: dict) -> str:
 def parse_ad(page: str) -> dict | None:
     """What an ad page holds: ``company_id``, ``title``, ``company``, ``posted_at`` (ISO text), ``location`` and
     the plain-text ``description``. None for a page with neither the JSON-LD nor the company number. Pure."""
-    job = _ld_job(page)
+    job = next(iter(sdk.job_postings(page)), {})
     company = _AD_COMPANY.search(page)
     if not job and not company:
         return None

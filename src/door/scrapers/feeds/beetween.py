@@ -40,8 +40,8 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import requests
-from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
     host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
@@ -100,19 +100,6 @@ def parse_list(text: str) -> list[dict]:
     return [j for j in jobs if j["id"]]
 
 
-def _ld_job(page: str) -> dict:
-    """The schema.org JobPosting object of an ad page, ``{}`` when it has none."""
-    for tag in BeautifulSoup(page or "", "html.parser").find_all("script", type="application/ld+json"):
-        try:
-            data = json.loads(tag.string or tag.get_text(), strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if isinstance(node, dict) and node.get("@type") == "JobPosting":
-                return node
-    return {}
-
-
 def _location_text(place) -> str:
     """A "; "-joined "City, Region" string from a schema.org ``jobLocation`` (a place or a list of them). Pure."""
     texts: list[str] = []
@@ -135,7 +122,7 @@ def _text(markup) -> str:
 
 def parse_ad(page: str) -> dict | None:
     """``{title, description, location, posted_at, organization}`` from an ad page; ``None`` when it has no ad. Pure."""
-    job = _ld_job(page)
+    job = next(iter(sdk.job_postings(page)), {})
     title = " ".join(_html.unescape(str(job.get("title") or "")).split())
     if not job or not title:
         return None
