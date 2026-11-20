@@ -1,0 +1,17 @@
+{
+ "key": "9001d892a86e",
+ "answer": [
+  {
+   "kind": "employer",
+   "file": "cv",
+   "value": "Zephyr Air",
+   "context": "Senior Operations Analyst | Zephyr Air"
+  },
+  {
+   "kind": "year",
+   "file": "cv",
+   "value": "2011",
+   "context": "4.3.2011 – 11.8.2017"
+  }
+ ]
+}

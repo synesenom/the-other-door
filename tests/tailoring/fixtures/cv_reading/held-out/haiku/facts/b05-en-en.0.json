@@ -1,0 +1,23 @@
+{
+ "key": "45ad59c5dcfa",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Zapier",
+   "context": "Alteryx, Trello, Notion, SAP, Tableau, budgeting, Zapier"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "LLB in Law",
+   "context": "LLB in Law | Sample College"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "Certified Scrum Professional",
+   "context": "Certified Scrum Professional"
+  }
+ ]
+}

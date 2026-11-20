@@ -1,0 +1,23 @@
+{
+ "key": "aa7ebb4f41df",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Airflow",
+   "context": "SQL, Docker, Git, Microsoft Excel, PowerBI, reporting, Airflow"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "Doctorat en économie",
+   "context": "Doctorat en économie | Université d'Exemple"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "CISSP",
+   "context": "CISSP"
+  }
+ ]
+}

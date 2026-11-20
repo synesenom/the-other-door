@@ -1,0 +1,23 @@
+{
+ "key": "d089997ccd82",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Hadoop",
+   "context": "SAP, Tableau, Jira, Visio, SharePoint, budgeting, Hadoop"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "MSc in Data Science",
+   "context": "MSc in Data Science | Sample College"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "CPA",
+   "context": "CPA"
+  }
+ ]
+}

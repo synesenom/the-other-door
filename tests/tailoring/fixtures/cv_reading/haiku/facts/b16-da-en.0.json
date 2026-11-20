@@ -1,0 +1,17 @@
+{
+ "key": "f09699d1b8f8",
+ "answer": [
+  {
+   "kind": "employer",
+   "file": "cv",
+   "value": "Vandelay Industries",
+   "context": "Senior Data Analyst | Vandelay Industries"
+  },
+  {
+   "kind": "year",
+   "file": "cv",
+   "value": "2011",
+   "context": "4.3.2011 – 11.8.2017"
+  }
+ ]
+}

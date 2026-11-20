@@ -433,7 +433,9 @@ def test_haiku_is_go_as_a_reader_and_a_fact_checker_on_the_harder_corpus():
     reader, check = committed("haiku", "reader"), committed("haiku", "facts")  # the reader: one run a case, recorded again with #430's prompt
     assert reader["verdict"] == "go" and reader["calls"] == 15 and reader["stretches"] == 1.0
     assert {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.987}
-    assert check["calls"] == 28 and check["verdict"] == "TODO"
+    # one Haiku run a case (#433): per-kind recall and false flags at #429's thresholds, every finding's context in its document
+    assert check["calls"] == 28 and check["verdict"] == "go" and all(v == 1.0 for v in check["per_kind"].values())
+    assert check["false_clean_max"] == 0 and check["verbatim"] == 1.0
 
 
 def test_no_record_is_an_error():
@@ -499,3 +501,4 @@ def test_haiku_is_go_on_the_held_out_corpus_the_prompts_never_saw():
     reader, _ = held_committed("reader")
     facts, _ = held_committed("facts")
     assert (reader["verdict"], facts["verdict"]) == ("go", "go")
+    assert facts["calls"] == 28 and all(v == 1.0 for v in facts["per_kind"].values()) and facts["false_clean_max"] == 0
