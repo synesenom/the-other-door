@@ -44,7 +44,7 @@ describe('Web', () => {
     expect(await screen.findByRole('heading', { name: 'The desktop screens' })).toBeInTheDocument()
     expect(store.value).toBe('tok')
     expect(fetch).toHaveBeenCalledWith('/session', expect.objectContaining({ method: 'POST', headers: { Authorization: 'Bearer tok' } }))
-    expect(window.door.info).toBeDefined()
+    expect(window.door.invoke).toBeDefined()
   })
 
   it('shows the splash while it reads the pairing', async () => {
@@ -108,7 +108,7 @@ describe('Web', () => {
     expect(await screen.findByRole('heading', { name: 'The desktop screens' })).toBeInTheDocument()
     expect(calls).toContainEqual({ name: 'import_posting', arguments: { url: 'https://jobs.example.com/9' } })
     const seen: unknown[] = []
-    window.door.onOpen((t) => seen.push(t))
+    window.door.on('open', (t) => seen.push(t))
     expect(seen).toEqual([{ screen: 'posting', jobId: 'manual.9', inPlay: false }])
     expect(window.location.pathname).toBe('/')
   })

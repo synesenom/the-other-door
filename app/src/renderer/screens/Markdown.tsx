@@ -49,7 +49,7 @@ function inline(text: string, gaps: Gaps | null): ReactNode[] {
       if (gaps) gaps.next += todoOffsets(token).length // no marker inside a link, but the count stays true to the text
       if (/^https?:\/\//i.test(url!)) {
         out.push(
-          <button key={key} type="button" className="link-inline" onClick={() => void window.door.openExternal(url!)}>
+          <button key={key} type="button" className="link-inline" onClick={() => void window.door.invoke('open-external', url!)}>
             {label}
           </button>,
         )

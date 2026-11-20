@@ -120,8 +120,48 @@ export function mockDoor(given: Record<string, Handler>) {
       }
     }),
   }
-  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, onBeforeClose, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, reportProblem }
-  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, onBeforeClose, pushBeforeClose, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, reportProblem }
+  // What the window reaches: one action map and one event map over the handles above (a test asserts on a handle or on `invoke`).
+  const actions: Record<string, (...args: any[]) => unknown> = {
+    'open-external': openExternal,
+    'save-material': saveMaterial,
+    'pick-cv-files': pickCvFiles,
+    'cv-file': cvFile,
+    'cv-sources-clear': clearCvSources,
+    'pick-photo': pickPhoto,
+    'claude-login-start': claudeLogin.start,
+    'claude-login-code': claudeLogin.sendCode,
+    'claude-login-open': claudeLogin.openPage,
+    'claude-login-cancel': claudeLogin.cancel,
+    'claude-login-state': claudeLogin.state,
+    info,
+    'show-home': showHome,
+    'check-update': checkUpdate,
+    'install-update': installUpdate,
+    'export-data': exportData,
+    'pick-archive': pickArchive,
+    'report-problem': reportProblem,
+    'stop-run': stopRun,
+    'show-run': showRun,
+    'current-board': runBoard,
+  }
+  const subscribers: Record<string, (cb: (p: any) => unknown) => () => void> = {
+    'run-board': onRunBoard,
+    'update-state': onUpdateState,
+    'claude-login': claudeLogin.onState,
+    open: onOpen,
+  }
+  const invoke = vi.fn(async (action: string, ...args: unknown[]) => {
+    const handler = actions[action]
+    if (!handler) throw new Error(`unknown action ${action}`)
+    return handler(...args)
+  })
+  const on = vi.fn((event: string, cb: (payload: any) => unknown) => {
+    const subscribe = subscribers[event]
+    if (!subscribe) throw new Error(`unknown event ${event}`)
+    return subscribe(cb)
+  })
+  ;(window as unknown as { door: unknown }).door = { call, onProgress, invoke, on, onBeforeClose, dropCvFiles }
+  return { invoke, on, call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, onBeforeClose, pushBeforeClose, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, reportProblem }
 }
 
 export const summary = (over: Record<string, unknown> = {}) => ({

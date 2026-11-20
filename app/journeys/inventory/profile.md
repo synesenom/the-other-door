@@ -241,7 +241,7 @@ The CV is one part, `heading "Master CV"` (a muted line under it: everything abo
 - `- * +` give `ul` items; `1.` or `1)` give `ol` items. A list item continues on lines indented by 2 spaces. — unit: `app/src/renderer/screens/Markdown.test.tsx`
 - Inline formatting: `**bold**`, `*italic*`, `` `code` ``, `[label](url)`. Underscore emphasis and tables are not supported; table rows become paragraph text.
 - Links:
-  - `http(s)` → `button "<label>"` (`.link-inline`); click calls `window.door.openExternal(url)`, which opens the system browser. Stub `shell.openExternal` in e2e. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
+  - `http(s)` → `button "<label>"` (`.link-inline`); click calls `window.door.invoke('open-external', url)`, which opens the system browser. Stub `shell.openExternal` in e2e. — unit: `app/src/renderer/screens/CvEditor.test.tsx`
   - Another scheme (`mailto:`) → the raw `[label](mailto:…)` text.
   - A relative or file link → the label text only. — not tested: mailto: and relative links: not pinned
 - The text is never rendered as HTML: `<b>x</b>` shows literally. — unit: `app/src/renderer/screens/CvEditor.test.tsx`

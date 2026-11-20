@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DoorError } from './door-server'
-import { registerIpc, CHANNELS, PATH_ARGS, type Envelope } from './ipc'
+import { pushEvent, registerIpc, PATH_ARGS, type Envelope } from './ipc'
 import { cspHeader, isAllowedNavigation } from './security'
 import tools from '../generated/tools.json'
 import type { Notice } from './notices'
@@ -68,18 +68,18 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
   registerIpc(ipcMain, server, { openExternal, home, savePdf: { showSaveDialog, downloads: '/Users/ada/Downloads' }, showItemInFolder, info, currentBoard, demoRun, notify, cvSources, claudeLogin, archiveFiles: without.archiveFiles === false ? undefined : archiveFiles, photoFile: without.photoFile === false ? undefined : photoFile, cvFile, problemLog })
   const send = vi.fn()
   const invoke = (channel: string, ...args: unknown[]) => handlers.get(channel)!({ sender: { send } }, ...args)
-  return { server, openExternal, invoke, send, dir, showSaveDialog, saveDir, showItemInFolder, currentBoard, home, notify, cvSources, claudeLogin, archiveFiles, photoFile, cvFile, problemLog }
+  return { handlers, server, openExternal, invoke, send, dir, showSaveDialog, saveDir, showItemInFolder, currentBoard, home, notify, cvSources, claudeLogin, archiveFiles, photoFile, cvFile, problemLog }
 }
 
 // door:call with the picked files' tokens (the fourth argument)
-const files = (invoke: (channel: string, ...args: unknown[]) => Promise<any>, tool: unknown, args: unknown, tokens: unknown) => invoke(CHANNELS.call, tool, args, undefined, tokens)
+const files = (invoke: (channel: string, ...args: unknown[]) => Promise<any>, tool: unknown, args: unknown, tokens: unknown) => invoke('door:call', tool, args, undefined, tokens)
 
 describe('registerIpc', () => {
   it('answers the current run board', async () => {
     const { invoke, currentBoard } = setup()
-    expect(await invoke(CHANNELS.currentBoard)).toEqual({ active: false })
+    expect(await invoke('door:current-board')).toEqual({ active: false })
     currentBoard.mockReturnValue({ active: true } as never)
-    expect(await invoke(CHANNELS.currentBoard)).toEqual({ active: true })
+    expect(await invoke('door:current-board')).toEqual({ active: true })
   })
 
   it('tells the window which environment it runs in', async () => {
@@ -89,7 +89,7 @@ describe('registerIpc', () => {
 
   it('forwards a call to the server and wraps the result', async () => {
     const { server, invoke } = setup(async () => ({ matches: [] }))
-    const r: Envelope = await invoke(CHANNELS.call, 'list_matches', { new_only: true })
+    const r: Envelope = await invoke('door:call', 'list_matches', { new_only: true })
     expect(server.call).toHaveBeenCalledWith('list_matches', { new_only: true }, expect.anything())
     expect(r).toEqual({ ok: true, data: { matches: [] } })
   })
@@ -100,7 +100,7 @@ describe('registerIpc', () => {
       e.conflict = true
       throw e
     }, undefined, false, { environment: 'production' })
-    expect(await invoke(CHANNELS.call, 'sync_data', {})).toEqual({ ok: false, error: 'both changed', conflict: true })
+    expect(await invoke('door:call', 'sync_data', {})).toEqual({ ok: false, error: 'both changed', conflict: true })
   })
 
   it('serialises a DoorError with its candidates', async () => {
@@ -108,22 +108,22 @@ describe('registerIpc', () => {
     const { invoke } = setup(async () => {
       throw new DoorError('several jobs match', candidates)
     })
-    expect(await invoke(CHANNELS.call, 'show', { job_id: 'x' })).toEqual({ ok: false, error: 'several jobs match', candidates })
+    expect(await invoke('door:call', 'show', { job_id: 'x' })).toEqual({ ok: false, error: 'several jobs match', candidates })
   })
 
   it('refuses a tool that is not in the generated list, without calling the server', async () => {
     const { server, invoke } = setup()
-    const r = await invoke(CHANNELS.call, 'rm_rf', {})
+    const r = await invoke('door:call', 'rm_rf', {})
     expect(r.ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
-    expect((await invoke(CHANNELS.call, 42, {})).ok).toBe(false)
+    expect((await invoke('door:call', 42, {})).ok).toBe(false)
     expect(tools.map((t) => t.name)).toContain('list_matches')
   })
 
   it('treats missing or odd arguments as an empty object', async () => {
     const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'status_summary')
-    await invoke(CHANNELS.call, 'status_summary', 'nope')
+    await invoke('door:call', 'status_summary')
+    await invoke('door:call', 'status_summary', 'nope')
     expect(server.call).toHaveBeenNthCalledWith(1, 'status_summary', {}, expect.anything())
     expect(server.call).toHaveBeenNthCalledWith(2, 'status_summary', {}, expect.anything())
   })
@@ -144,7 +144,7 @@ describe('registerIpc', () => {
     ['ask', 180_000],
   ])('gives %s a call limit over %i ms', async (tool, floor) => {
     const { server, invoke } = setup(undefined, undefined, false, { environment: 'production' })
-    await invoke(CHANNELS.call, tool, {})
+    await invoke('door:call', tool, {})
     expect(server.call.mock.calls[0][2].timeout).toBeGreaterThan(floor)
   })
 
@@ -152,7 +152,7 @@ describe('registerIpc', () => {
     for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
       const { server, invoke } = setup(undefined, undefined, false, info)
       for (const tool of ['connect_drive', 'sync_data', 'disconnect_drive']) {
-        expect(await invoke(CHANNELS.call, tool, {})).toEqual({ ok: false, error: 'Google Drive is not available in staging or the sandbox.' })
+        expect(await invoke('door:call', tool, {})).toEqual({ ok: false, error: 'Google Drive is not available in staging or the sandbox.' })
       }
       expect(server.call).not.toHaveBeenCalled()
     }
@@ -160,8 +160,8 @@ describe('registerIpc', () => {
 
   it('does not let the renderer choose the timeout', async () => {
     const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'import_posting', { text: 'x', timeout: 1 })
-    await invoke(CHANNELS.call, 'list_matches', { timeout: 999_999 })
+    await invoke('door:call', 'import_posting', { text: 'x', timeout: 1 })
+    await invoke('door:call', 'list_matches', { timeout: 999_999 })
     expect(server.call.mock.calls[0][2].timeout).toBeGreaterThan(60_000)
     expect(server.call.mock.calls[1][2].timeout).toBeUndefined()
   })
@@ -171,7 +171,7 @@ describe('registerIpc', () => {
       opts.onProgress({ progress: 1, total: 4, message: 'reading' })
       return {}
     })
-    await invoke(CHANNELS.call, 'status_summary', {}, 'call-1')
+    await invoke('door:call', 'status_summary', {}, 'call-1')
     expect(send).toHaveBeenCalledWith('door:progress', 'call-1', { progress: 1, total: 4, message: 'reading' })
   })
 
@@ -180,7 +180,7 @@ describe('registerIpc', () => {
       opts?.onProgress?.({ progress: 1, message: 'x' })
       return {}
     })
-    for (const bad of [undefined, 7, '', 'x'.repeat(65), {}]) await invoke(CHANNELS.call, 'status_summary', {}, bad)
+    for (const bad of [undefined, 7, '', 'x'.repeat(65), {}]) await invoke('door:call', 'status_summary', {}, bad)
     expect(send).not.toHaveBeenCalled()
     expect(server.call).toHaveBeenCalledTimes(5)
   })
@@ -190,14 +190,14 @@ describe('registerIpc', () => {
       opts.onProgress({ progress: 1, message: 'y'.repeat(900) })
       return {}
     })
-    await invoke(CHANNELS.call, 'status_summary', {}, 'c')
+    await invoke('door:call', 'status_summary', {}, 'c')
     expect(send.mock.calls[0][2].message).toHaveLength(500)
   })
 
   it('saves a PDF where the user chooses, offered in Downloads under its name, by job id and document', async () => {
     const { invoke, showSaveDialog, saveDir, dir } = setup()
     writeFileSync(join(dir, 'cv.pdf'), 'the cv')
-    const r = await invoke(CHANNELS.saveMaterial, 'jobindex.123', 'cv', false, 'Jane Doe - CV.pdf')
+    const r = await invoke('door:save-material', 'jobindex.123', 'cv', false, 'Jane Doe - CV.pdf')
     expect(showSaveDialog).toHaveBeenCalledWith(expect.objectContaining({ defaultPath: join('/Users/ada/Downloads', 'Jane Doe - CV.pdf') }))
     expect(r).toEqual({ ok: true, path: join(saveDir, 'chosen.pdf') })
     expect(readFileSync(join(saveDir, 'chosen.pdf'), 'utf8')).toBe('the cv')
@@ -207,34 +207,34 @@ describe('registerIpc', () => {
     const { invoke, saveDir, dir } = setup()
     mkdirSync(join(dir, 'sent'))
     writeFileSync(join(dir, 'sent', 'cover_letter.pdf'), 'as sent')
-    await invoke(CHANNELS.saveMaterial, 'jobindex.123', 'cover_letter', true, 'Cover letter.pdf')
+    await invoke('door:save-material', 'jobindex.123', 'cover_letter', true, 'Cover letter.pdf')
     expect(readFileSync(join(saveDir, 'chosen.pdf'), 'utf8')).toBe('as sent')
   })
 
   it('a cancelled dialog saves nothing', async () => {
     const { invoke, showSaveDialog, saveDir } = setup()
     showSaveDialog.mockResolvedValueOnce({ canceled: true })
-    expect(await invoke(CHANNELS.saveMaterial, 'jobindex.123', 'cv', false, 'CV.pdf')).toEqual({ ok: false, canceled: true })
+    expect(await invoke('door:save-material', 'jobindex.123', 'cv', false, 'CV.pdf')).toEqual({ ok: false, canceled: true })
     expect(existsSync(join(saveDir, 'chosen.pdf'))).toBe(false)
   })
 
   it('offers only a plain file name, and refuses a bad id, document or missing file before any dialog', async () => {
     const { invoke, showSaveDialog } = setup()
-    await invoke(CHANNELS.saveMaterial, 'jobindex.123', 'cv', false, '../../etc/x')
+    await invoke('door:save-material', 'jobindex.123', 'cv', false, '../../etc/x')
     expect(showSaveDialog).toHaveBeenLastCalledWith(expect.objectContaining({ defaultPath: join('/Users/ada/Downloads', 'x.pdf') }))
     showSaveDialog.mockClear()
     for (const [id, which, sent] of [['../x', 'cv', false], ['jobindex.123', 'cv.html', false], ['nope.1', 'cv', false], [7, 'cv', false], ['jobindex.123', 'cv', 'yes'], ['jobindex.123', 'cv', true]]) {
-      expect((await invoke(CHANNELS.saveMaterial, id, which, sent, 'CV.pdf')).ok).toBe(false)
+      expect((await invoke('door:save-material', id, which, sent, 'CV.pdf')).ok).toBe(false)
     }
     expect(showSaveDialog).not.toHaveBeenCalled()
   })
 
   it('opens only http(s) links externally', async () => {
     const { openExternal, invoke } = setup()
-    expect(await invoke(CHANNELS.openExternal, 'https://example.com/job')).toEqual({ ok: true })
-    expect(await invoke(CHANNELS.openExternal, 'http://example.com/job')).toEqual({ ok: true })
+    expect(await invoke('door:open-external', 'https://example.com/job')).toEqual({ ok: true })
+    expect(await invoke('door:open-external', 'http://example.com/job')).toEqual({ ok: true })
     for (const bad of ['file:///etc/passwd', 'javascript:alert(1)', 'vscode://x', 'not a url', 7]) {
-      expect((await invoke(CHANNELS.openExternal, bad)).ok).toBe(false)
+      expect((await invoke('door:open-external', bad)).ok).toBe(false)
     }
     expect(openExternal).toHaveBeenCalledTimes(2)
   })
@@ -247,7 +247,7 @@ describe('a run (find_jobs)', () => {
 
   it('has a 15 minute idle limit the renderer cannot override', async () => {
     const { server, invoke } = setup()
-    await invoke(CHANNELS.call, 'find_jobs', { timeout: 1 }, 'c1')
+    await invoke('door:call', 'find_jobs', { timeout: 1 }, 'c1')
     expect(server.call.mock.calls[0][2].timeout).toBe(900_000)
   })
 
@@ -257,7 +257,7 @@ describe('a run (find_jobs)', () => {
       e.timedOut = true
       throw e
     })
-    const r = await invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
+    const r = await invoke('door:call', 'find_jobs', {}, 'c1')
     expect(server.stop).toHaveBeenCalledTimes(1)
     expect(r).toEqual({ ok: false, error: 'The run stopped: The other door heard nothing for 15 minutes.' })
   })
@@ -268,7 +268,7 @@ describe('a run (find_jobs)', () => {
       e.timedOut = true
       throw e
     })
-    const r = await invoke(CHANNELS.call, 'revise', {})
+    const r = await invoke('door:call', 'revise', {})
     expect(server.stop).not.toHaveBeenCalled()
     expect(r.error).toBe('The other door took too long to answer')
   })
@@ -282,7 +282,7 @@ describe('a run (find_jobs)', () => {
       opts.onProgress({ progress: 51, message: 'last' })
       return {}
     })
-    const done = invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
+    const done = invoke('door:call', 'find_jobs', {}, 'c1')
     await vi.advanceTimersByTimeAsync(10)
     expect(send).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(250)
@@ -300,7 +300,7 @@ describe('a run (find_jobs)', () => {
       e.stopped = true
       throw e
     })
-    expect(await invoke(CHANNELS.call, 'find_jobs', {}, 'c1')).toEqual({ ok: false, error: 'stopped', stopped: true })
+    expect(await invoke('door:call', 'find_jobs', {}, 'c1')).toEqual({ ok: false, error: 'stopped', stopped: true })
   })
 
   it('door:stop-run stops the child of a run in progress, and does nothing without one', async () => {
@@ -309,19 +309,19 @@ describe('a run (find_jobs)', () => {
       if (tool === 'find_jobs') await new Promise((_r, rej) => (reject = rej))
       return {}
     })
-    expect(await invoke(CHANNELS.stopRun)).toEqual({ ok: true })
+    expect(await invoke('door:stop-run')).toEqual({ ok: true })
     expect(server.stop).not.toHaveBeenCalled()
-    const run = invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
+    const run = invoke('door:call', 'find_jobs', {}, 'c1')
     await Promise.resolve()
     server.stop.mockImplementation(async () => {
       const e = new DoorError('stopped')
       e.stopped = true
       reject(e)
     })
-    expect(await invoke(CHANNELS.stopRun)).toEqual({ ok: true })
+    expect(await invoke('door:stop-run')).toEqual({ ok: true })
     expect(server.stop).toHaveBeenCalledTimes(1)
     expect(await run).toMatchObject({ ok: false, stopped: true })
-    expect(await invoke(CHANNELS.stopRun)).toEqual({ ok: true })
+    expect(await invoke('door:stop-run')).toEqual({ ok: true })
     expect(server.stop).toHaveBeenCalledTimes(1)
   })
 })
@@ -334,7 +334,7 @@ describe('the sandbox\'s run', () => {
       return { result: Promise.resolve(record), stop: vi.fn() }
     })
     const { server, invoke, send } = setup(async () => ({}), demoRun)
-    const r = await invoke(CHANNELS.call, 'find_jobs', { skip: ['discover'] }, 'c1')
+    const r = await invoke('door:call', 'find_jobs', { skip: ['discover'] }, 'c1')
     expect(r).toEqual({ ok: true, data: record })
     expect(demoRun.mock.calls[0][0]).toEqual({ skip: ['discover'] })
     expect(server.call).not.toHaveBeenCalled()
@@ -343,7 +343,7 @@ describe('the sandbox\'s run', () => {
 
   it('other tools still go to the server', async () => {
     const { server, invoke } = setup(async () => ({ ok: 1 }), vi.fn())
-    await invoke(CHANNELS.call, 'status_summary', {})
+    await invoke('door:call', 'status_summary', {})
     expect(server.call).toHaveBeenCalledTimes(1)
   })
 
@@ -352,9 +352,9 @@ describe('the sandbox\'s run', () => {
     const stop = vi.fn(() => reject(Object.assign(new DoorError('stopped'), { stopped: true })))
     const demoRun = vi.fn(() => ({ result: new Promise((_r, rej) => (reject = rej)), stop }))
     const { server, invoke } = setup(async () => ({}), demoRun)
-    const run = invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
+    const run = invoke('door:call', 'find_jobs', {}, 'c1')
     await Promise.resolve()
-    expect(await invoke(CHANNELS.stopRun)).toEqual({ ok: true })
+    expect(await invoke('door:stop-run')).toEqual({ ok: true })
     expect(stop).toHaveBeenCalledTimes(1)
     expect(server.stop).not.toHaveBeenCalled()
     expect(await run).toEqual({ ok: false, error: 'stopped', stopped: true })
@@ -364,14 +364,14 @@ describe('the sandbox\'s run', () => {
 describe('door:show-run', () => {
   it('reveals the run record named by its started_at, when it exists', async () => {
     const { invoke, showItemInFolder, home } = setup()
-    expect(await invoke(CHANNELS.showRun, '2026-10-29T08:00:00+00:00')).toEqual({ ok: true })
+    expect(await invoke('door:show-run', '2026-10-29T08:00:00+00:00')).toEqual({ ok: true })
     expect(showItemInFolder).toHaveBeenCalledWith(join(home, 'jobs', 'runs', '2026-10-29T08-00-00-00-00.json'))
   })
 
   it('refuses a missing record, a path and anything that is not a string', async () => {
     const { invoke, showItemInFolder } = setup()
     for (const bad of ['2030-01-01T00:00:00+00:00', '../../etc/passwd', '', 7, null, 'x'.repeat(200)]) {
-      expect((await invoke(CHANNELS.showRun, bad)).ok).toBe(false)
+      expect((await invoke('door:show-run', bad)).ok).toBe(false)
     }
     expect(showItemInFolder).not.toHaveBeenCalled()
   })
@@ -428,7 +428,7 @@ describe('notifications', () => {
 
   it('announces a finished search', async () => {
     const { invoke, notify } = setup(impl({ find_jobs: record }))
-    expect(await invoke(CHANNELS.call, 'find_jobs', {}, 'c1')).toEqual({ ok: true, data: record })
+    expect(await invoke('door:call', 'find_jobs', {}, 'c1')).toEqual({ ok: true, data: record })
     expect(notify).toHaveBeenCalledTimes(1)
     expect(notify.mock.calls[0][0]).toMatchObject({ title: 'New jobs found', target: { screen: 'matches', newOnly: true } })
   })
@@ -436,7 +436,7 @@ describe('notifications', () => {
   it('announces the sandbox\'s run through the same path', async () => {
     const demoRun = () => ({ result: Promise.resolve(record), stop: () => undefined })
     const { invoke, notify } = setup(async () => ({}), demoRun)
-    await invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
+    await invoke('door:call', 'find_jobs', {}, 'c1')
     expect(notify).toHaveBeenCalledTimes(1)
     expect(notify.mock.calls[0][0].title).toBe('New jobs found')
   })
@@ -444,7 +444,7 @@ describe('notifications', () => {
   // What each notice says is notices.test.ts; here, that a finished or failed call reaches notify with the job read by show.
   it('announces a prepared application with the job in words', async () => {
     const { server, invoke, notify } = setup(impl({ prepare: { outcome: 'prepared', job_id: 'jobindex.1' } }))
-    await invoke(CHANNELS.call, 'prepare', { job_id: 'jobindex.1' })
+    await invoke('door:call', 'prepare', { job_id: 'jobindex.1' })
     expect(server.call).toHaveBeenCalledWith('show', { job_id: 'jobindex.1' })
     expect(notify).toHaveBeenCalledTimes(1)
     expect(notify.mock.calls[0][0].body).toContain('Data Analyst · Acme')
@@ -452,65 +452,87 @@ describe('notifications', () => {
 
   it('announces a failed call, with the job in words', async () => {
     const { invoke, notify } = setup(impl({ prepare: new DoorError('the print failed') }))
-    expect((await invoke(CHANNELS.call, 'prepare', { job_id: 'jobindex.1' })).ok).toBe(false)
+    expect((await invoke('door:call', 'prepare', { job_id: 'jobindex.1' })).ok).toBe(false)
     expect(notify).toHaveBeenCalledTimes(1)
     expect(notify.mock.calls[0][0].body).toBe('Data Analyst · Acme: the print failed')
   })
 
   it('a failing show still announces, without the job words', async () => {
     const { invoke, notify } = setup(impl({ prepare: { outcome: 'prepared', job_id: 'jobindex.1' } }, new Error('gone')))
-    await invoke(CHANNELS.call, 'prepare', { job_id: 'jobindex.1' })
+    await invoke('door:call', 'prepare', { job_id: 'jobindex.1' })
     expect(notify.mock.calls[0][0].body).toBe('The CV and letter are ready to send.')
   })
 
   it('never announces quick tools, a Stop or a refusal', async () => {
     for (const tool of ['show', 'list_matches', 'set_status', 'mark_reviewed']) {
       const { invoke, notify } = setup(async () => ({ job_id: 'jobindex.1', title: 'T', company: 'C', status: 'applied' }))
-      await invoke(CHANNELS.call, tool, { job_id: 'jobindex.1' })
+      await invoke('door:call', tool, { job_id: 'jobindex.1' })
       expect(notify).not.toHaveBeenCalled()
     }
     const stopped = Object.assign(new DoorError('stopped'), { stopped: true })
     const a = setup(impl({ find_jobs: stopped }))
-    await a.invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
+    await a.invoke('door:call', 'find_jobs', {}, 'c1')
     const b = setup(impl({ find_jobs: new DoorError('A run is in progress (started 09:12)') }))
-    await b.invoke(CHANNELS.call, 'find_jobs', {}, 'c1')
+    await b.invoke('door:call', 'find_jobs', {}, 'c1')
     const c = setup(impl({ prepare: new DoorError('another long-running tool is running') }))
-    await c.invoke(CHANNELS.call, 'prepare', { job_id: 'jobindex.1' })
+    await c.invoke('door:call', 'prepare', { job_id: 'jobindex.1' })
     expect([a.notify, b.notify, c.notify].map((n) => n.mock.calls.length)).toEqual([0, 0, 0])
   })
 
   it('a notify that throws leaves the envelope as it was', async () => {
     const { invoke } = setup(impl({ find_jobs: record }), undefined, true)
-    expect(await invoke(CHANNELS.call, 'find_jobs', {}, 'c1')).toEqual({ ok: true, data: record })
+    expect(await invoke('door:call', 'find_jobs', {}, 'c1')).toEqual({ ok: true, data: record })
   })
 })
 
-describe('the preload and the channels', () => {
-  it('uses every channel name as written in ipc.ts (a sandboxed preload cannot import them)', () => {
-    const preload = readFileSync(join(__dirname, '..', 'preload', 'index.ts'), 'utf8')
-    for (const channel of Object.values(CHANNELS)) expect(preload).toContain(`'${channel}'`)
+describe('the action table', () => {
+  it('an action not in the table is refused, a known one reaches its handler with its arguments', async () => {
+    const { handlers, invoke, openExternal } = setup()
+    expect(handlers.has('door:no-such-action')).toBe(false)
+    expect(handlers.has('door:invoke')).toBe(false)
+    expect(await invoke('door:open-external', 'https://example.com/a')).toEqual({ ok: true })
+    expect(openExternal).toHaveBeenCalledWith('https://example.com/a')
+    expect(await invoke('door:save-material', 'jobindex.123', 'cv', false, 'My CV')).toMatchObject({ ok: true })
+  })
+
+  it('registers door:call and one channel per action, and nothing else', () => {
+    const { handlers } = setup()
+    expect([...handlers.keys()].sort()).toEqual(
+      [
+        'door:call', 'door:open-external', 'door:save-material', 'door:info', 'door:stop-run', 'door:show-run', 'door:current-board',
+        'door:pick-cv-files', 'door:drop-cv-files', 'door:cv-file', 'door:cv-sources-clear', 'door:pick-photo',
+        'door:claude-login-start', 'door:claude-login-code', 'door:claude-login-open', 'door:claude-login-cancel', 'door:claude-login-state',
+        'door:export-data', 'door:pick-archive', 'door:report-problem', 'door:show-home', 'door:check-update', 'door:install-update',
+      ].sort(),
+    )
+  })
+
+  it('pushes an event to the window on door:<event>', () => {
+    const send = vi.fn()
+    pushEvent({ webContents: { send } }, 'run-board', { active: false })
+    expect(send).toHaveBeenCalledWith('door:run-board', { active: false })
   })
 })
 
 describe('moving the data', () => {
   it('exports to where the save dialog said, with time for a big archive', async () => {
     const { invoke, server } = setup(async () => ({ path: '/Users/ada/door-export.tar.gz', files: 12, bytes: 3456 }))
-    expect(await invoke(CHANNELS.exportData, '/etc/evil.tar.gz')).toEqual({ ok: true, data: { path: '/Users/ada/door-export.tar.gz', files: 12, bytes: 3456 } })
+    expect(await invoke('door:export-data', '/etc/evil.tar.gz')).toEqual({ ok: true, data: { path: '/Users/ada/door-export.tar.gz', files: 12, bytes: 3456 } })
     expect(server.call).toHaveBeenCalledWith('export_data', { path: '/Users/ada/door-export.tar.gz' }, { timeout: expect.any(Number) })
   })
 
   it('a cancelled save dialog exports nothing; a refused name says why', async () => {
     const one = setup()
     one.archiveFiles.exportTarget.mockResolvedValueOnce({ canceled: true })
-    expect(await one.invoke(CHANNELS.exportData)).toEqual({ ok: false, canceled: true })
+    expect(await one.invoke('door:export-data')).toEqual({ ok: false, canceled: true })
     one.archiveFiles.exportTarget.mockResolvedValueOnce({ error: 'there already' })
-    expect(await one.invoke(CHANNELS.exportData)).toEqual({ ok: false, error: 'there already' })
+    expect(await one.invoke('door:export-data')).toEqual({ ok: false, error: 'there already' })
     expect(one.server.call).not.toHaveBeenCalled()
   })
 
   it('the archive is picked in main and goes by token', async () => {
     const { invoke, server } = setup(async () => ({ files: 3, backup_dir: '/b', warnings: [] }))
-    expect(await invoke(CHANNELS.pickArchive)).toEqual({ token: 'arch1', name: 'door-export.tar.gz' })
+    expect(await invoke('door:pick-archive')).toEqual({ token: 'arch1', name: 'door-export.tar.gz' })
     expect(await files(invoke, 'import_data', {}, ['arch1'])).toEqual({ ok: true, data: { files: 3, backup_dir: '/b', warnings: [] } })
     expect(server.call).toHaveBeenCalledWith('import_data', { archive: '/Volumes/usb/door-export.tar.gz' }, { timeout: expect.any(Number) })
   })
@@ -528,7 +550,7 @@ describe('moving the data', () => {
 
   it('import_data cannot be called with a path through door:call', async () => {
     const { invoke, server } = setup()
-    expect((await invoke(CHANNELS.call, 'import_data', { archive: '/etc/passwd' })).ok).toBe(false)
+    expect((await invoke('door:call', 'import_data', { archive: '/etc/passwd' })).ok).toBe(false)
     expect((await files(invoke, 'import_data', { archive: '/etc/passwd' }, ['arch1'])).ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
@@ -537,7 +559,7 @@ describe('moving the data', () => {
 describe('the CV photo (#605)', () => {
   it('the picture is picked in main and saved by token: the tool gets the real path', async () => {
     const { invoke, server } = setup(async () => ({ photo_path: '/home/profile/photo.jpg' }))
-    expect(await invoke(CHANNELS.pickPhoto)).toEqual({ token: 'ph1', name: 'me.jpg' })
+    expect(await invoke('door:pick-photo')).toEqual({ token: 'ph1', name: 'me.jpg' })
     expect(await files(invoke, 'save_photo', {}, ['ph1'])).toEqual({ ok: true, data: { photo_path: '/home/profile/photo.jpg' } })
     expect(server.call).toHaveBeenCalledWith('save_photo', { path: '/Users/ada/Pictures/me.jpg' }, expect.anything())
   })
@@ -570,14 +592,14 @@ describe('the CV photo (#605)', () => {
   it('save_photo cannot be called with a path through door:call', async () => {
     const { invoke, server } = setup()
     expect(PATH_ARGS['save_photo']?.[0]?.arg).toBe('path')
-    expect((await invoke(CHANNELS.call, 'save_photo', { path: '/etc/passwd' })).ok).toBe(false)
+    expect((await invoke('door:call', 'save_photo', { path: '/etc/passwd' })).ok).toBe(false)
     expect((await files(invoke, 'save_photo', { path: '/etc/passwd' }, ['ph1'])).ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
   it('removing the photo is an ordinary tool call', async () => {
     const { invoke, server } = setup(async () => ({ removed: true }))
-    expect(await invoke(CHANNELS.call, 'remove_photo', {})).toEqual({ ok: true, data: { removed: true } })
+    expect(await invoke('door:call', 'remove_photo', {})).toEqual({ ok: true, data: { removed: true } })
     expect(server.call).toHaveBeenCalled()
   })
 })
@@ -586,7 +608,7 @@ describe('reporting a problem', () => {
   it('writes the report where the save dialog said', async () => {
     const answer = { path: '/Users/ada/door-report-2026-10-30.zip', files: ['README.txt'], bytes: 900 }
     const { invoke, server } = setup(async () => answer)
-    expect(await invoke(CHANNELS.reportProblem, '/etc/evil.zip')).toEqual({ ok: true, data: answer })
+    expect(await invoke('door:report-problem', '/etc/evil.zip')).toEqual({ ok: true, data: answer })
     expect(server.call).toHaveBeenCalledWith('report_problem', { path: '/Users/ada/door-report-2026-10-30.zip' }, { timeout: expect.any(Number) })
   })
 
@@ -595,25 +617,25 @@ describe('reporting a problem', () => {
       throw new DoorError('disk full')
     })
     one.archiveFiles.reportTarget.mockResolvedValueOnce({ canceled: true })
-    expect(await one.invoke(CHANNELS.reportProblem)).toEqual({ ok: false, canceled: true })
+    expect(await one.invoke('door:report-problem')).toEqual({ ok: false, canceled: true })
     one.archiveFiles.reportTarget.mockResolvedValueOnce({ error: 'there already' })
-    expect(await one.invoke(CHANNELS.reportProblem)).toEqual({ ok: false, error: 'there already' })
+    expect(await one.invoke('door:report-problem')).toEqual({ ok: false, error: 'there already' })
     expect(one.server.call).not.toHaveBeenCalled()
-    expect(await one.invoke(CHANNELS.reportProblem)).toEqual({ ok: false, error: 'disk full' })
+    expect(await one.invoke('door:report-problem')).toEqual({ ok: false, error: 'disk full' })
   })
 
   it('the window may not name the report\'s file through door:call', async () => {
     expect(PATH_ARGS['report_problem']).toEqual([{ arg: 'path' }])
     const { invoke, server } = setup()
-    expect((await invoke(CHANNELS.call, 'report_problem', { path: '/tmp/x.zip' })).ok).toBe(false)
+    expect((await invoke('door:call', 'report_problem', { path: '/tmp/x.zip' })).ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
   it('what the window is refused goes to the problem log, its arguments do not', async () => {
     const { invoke, problemLog } = setup()
-    await invoke(CHANNELS.call, 'rm_rf', { secret: 'Ada Lovelace' })
-    await invoke(CHANNELS.call, 'import_posting', { path: '/Users/ada/ad.txt' })
-    await invoke(CHANNELS.call, 'sync_data', {})
+    await invoke('door:call', 'rm_rf', { secret: 'Ada Lovelace' })
+    await invoke('door:call', 'import_posting', { path: '/Users/ada/ad.txt' })
+    await invoke('door:call', 'sync_data', {})
     expect(problemLog.write.mock.calls).toEqual([
       ['refused rm_rf', 'unknown tool'],
       ['refused import_posting', 'import_posting cannot take a file path from the window; files are chosen with a file dialog.'],
@@ -625,7 +647,7 @@ describe('reporting a problem', () => {
 describe('the data folder', () => {
   it('shows the data folder itself, whatever the window sends', async () => {
     const { invoke, showItemInFolder, home } = setup()
-    expect(await invoke(CHANNELS.showHome, '/etc/passwd')).toEqual({ ok: true })
+    expect(await invoke('door:show-home', '/etc/passwd')).toEqual({ ok: true })
     expect(showItemInFolder).toHaveBeenCalledWith(home)
   })
 })
@@ -636,7 +658,7 @@ describe('the update check channel', () => {
     const updates = { last: vi.fn(() => found), check: vi.fn(async () => found) }
     const handlers = new Map<string, (...a: any[]) => unknown>()
     registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), updates: updates as any })
-    const h = handlers.get(CHANNELS.checkUpdate)!
+    const h = handlers.get('door:check-update')!
     expect(await h({})).toEqual(found)
     expect(await h({}, true)).toEqual(found)
     expect(updates.check).not.toHaveBeenCalled()
@@ -644,11 +666,11 @@ describe('the update check channel', () => {
   it('is disabled without a checker or a cached result', async () => {
     const handlers = new Map<string, (...a: any[]) => unknown>()
     registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn() })
-    expect(await handlers.get(CHANNELS.checkUpdate)!({})).toEqual({ enabled: false })
+    expect(await handlers.get('door:check-update')!({})).toEqual({ enabled: false })
     const updates = { last: vi.fn(() => null), check: vi.fn() }
     handlers.clear()
     registerIpc({ handle: (c, l) => void handlers.set(c, l) }, { call: vi.fn() } as any, { openExternal: vi.fn(), home: '/h', showItemInFolder: vi.fn(), updates: updates as any })
-    expect(await handlers.get(CHANNELS.checkUpdate)!({})).toEqual({ enabled: false })
+    expect(await handlers.get('door:check-update')!({})).toEqual({ enabled: false })
   })
 })
 
@@ -659,11 +681,11 @@ describe('the install update channel', () => {
     return handlers
   }
   it('refuses without an updater', async () => {
-    expect(await reg().get(CHANNELS.installUpdate)!({})).toEqual({ ok: false })
+    expect(await reg().get('door:install-update')!({})).toEqual({ ok: false })
   })
   it('asks the updater to install, whatever the window sends', async () => {
     const updates = { last: vi.fn(), check: vi.fn(), install: vi.fn(async () => ({ ok: true })) }
-    expect(await reg(updates).get(CHANNELS.installUpdate)!({}, 'x')).toEqual({ ok: true })
+    expect(await reg(updates).get('door:install-update')!({}, 'x')).toEqual({ ok: true })
     expect(updates.install).toHaveBeenCalledTimes(1)
   })
 })
@@ -671,37 +693,37 @@ describe('the install update channel', () => {
 describe('the Claude sign-in channels', () => {
   it('starts with the email when it is a string, and nothing else', async () => {
     const { invoke, claudeLogin } = setup()
-    expect(await invoke(CHANNELS.claudeLoginStart, 'jane@example.com')).toEqual({ ok: true })
+    expect(await invoke('door:claude-login-start', 'jane@example.com')).toEqual({ ok: true })
     expect(claudeLogin.start).toHaveBeenLastCalledWith('jane@example.com')
-    await invoke(CHANNELS.claudeLoginStart, { email: 'x' })
+    await invoke('door:claude-login-start', { email: 'x' })
     expect(claudeLogin.start).toHaveBeenLastCalledWith(undefined)
   })
 
   it('passes a code on and answers whether it went', async () => {
     const { invoke, claudeLogin } = setup()
-    expect(await invoke(CHANNELS.claudeLoginCode, 'good#code')).toEqual({ ok: true })
-    expect(await invoke(CHANNELS.claudeLoginCode, 'bad')).toEqual({ ok: false, error: 'That is not a sign-in code.' })
-    expect(await invoke(CHANNELS.claudeLoginCode, 42)).toEqual({ ok: false, error: 'That is not a sign-in code.' })
+    expect(await invoke('door:claude-login-code', 'good#code')).toEqual({ ok: true })
+    expect(await invoke('door:claude-login-code', 'bad')).toEqual({ ok: false, error: 'That is not a sign-in code.' })
+    expect(await invoke('door:claude-login-code', 42)).toEqual({ ok: false, error: 'That is not a sign-in code.' })
     expect(claudeLogin.sendCode).not.toHaveBeenCalledWith(42) // a code that is not text never reaches claude
   })
 
   it('opens the page claude printed, takes no address from the window, cancels, and tells the state', async () => {
     const { invoke, claudeLogin, openExternal } = setup()
-    expect(await invoke(CHANNELS.claudeLoginOpen, 'https://evil.example')).toEqual({ ok: true })
+    expect(await invoke('door:claude-login-open', 'https://evil.example')).toEqual({ ok: true })
     expect(claudeLogin.openPage).toHaveBeenCalledWith()
     expect(openExternal).not.toHaveBeenCalled()
-    expect(await invoke(CHANNELS.claudeLoginCancel)).toEqual({ ok: true })
+    expect(await invoke('door:claude-login-cancel')).toEqual({ ok: true })
     expect(claudeLogin.cancel).toHaveBeenCalled()
-    expect(await invoke(CHANNELS.claudeLoginState)).toEqual({ state: 'idle' })
+    expect(await invoke('door:claude-login-state')).toEqual({ state: 'idle' })
   })
 })
 
 describe('the CV draft channels', () => {
   it('answers the picker result', async () => {
     const { invoke, cvSources } = setup()
-    expect(await invoke(CHANNELS.pickCvFiles)).toEqual({ files: [{ token: 'tok1', name: 'cv.pdf', size: 10 }], refused: [] })
-    expect(await invoke(CHANNELS.dropCvFiles, ['/x/dropped.pdf'])).toEqual({ files: [{ token: 'tok2', name: 'dropped.pdf', size: 10 }], refused: [] })
-    expect(await invoke(CHANNELS.dropCvFiles, 'not a list')).toEqual({ files: [], refused: [] })
+    expect(await invoke('door:pick-cv-files')).toEqual({ files: [{ token: 'tok1', name: 'cv.pdf', size: 10 }], refused: [] })
+    expect(await invoke('door:drop-cv-files', ['/x/dropped.pdf'])).toEqual({ files: [{ token: 'tok2', name: 'dropped.pdf', size: 10 }], refused: [] })
+    expect(await invoke('door:drop-cv-files', 'not a list')).toEqual({ files: [], refused: [] })
     expect(cvSources.pick).toHaveBeenCalled()
   })
 
@@ -764,7 +786,7 @@ describe('the CV draft channels', () => {
 
   it('clears the registry', async () => {
     const { invoke, cvSources } = setup()
-    await invoke(CHANNELS.clearCvSources)
+    await invoke('door:cv-sources-clear')
     expect(cvSources.clear).toHaveBeenCalled()
   })
 })
@@ -784,7 +806,7 @@ describe('door:call refuses what names a local file', () => {
     ['enrich', { files: ['/Users/ada/cv.pdf'] }],
   ])('%s %j', async (tool, args) => {
     const { invoke, server } = setup()
-    const r = await invoke(CHANNELS.call, tool, args)
+    const r = await invoke('door:call', tool, args)
     expect(r.ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
@@ -799,7 +821,7 @@ describe('door:call refuses what names a local file', () => {
     ['enrich', { apply: [1, 2] }],
   ])('lets %s %j through', async (tool, args) => {
     const { invoke, server } = setup()
-    const r = await invoke(CHANNELS.call, tool, args)
+    const r = await invoke('door:call', tool, args)
     expect(r.ok).toBe(true)
     expect(server.call).toHaveBeenCalled()
   })
@@ -888,6 +910,6 @@ describe('the CV file', () => {
   })
 
   it('names the CV file to the window by its name only', async () => {
-    expect(await setup(undefined, undefined, false, real).invoke(CHANNELS.cvFile)).toBe('my cv.pdf')
+    expect(await setup(undefined, undefined, false, real).invoke('door:cv-file')).toBe('my cv.pdf')
   })
 })

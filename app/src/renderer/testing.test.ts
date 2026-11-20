@@ -5,9 +5,9 @@ import { mockDoor } from './testing'
 describe('mockDoor', () => {
   it('stands in for the CV draft surface', async () => {
     const h = mockDoor({})
-    expect(await window.door.pickCvFiles()).toEqual({ files: [], refused: [] })
+    expect(await window.door.invoke('pick-cv-files')).toEqual({ files: [], refused: [] })
     expect(await window.door.call('draft_cv', { sources: [] }, undefined, [])).toMatchObject({ ok: false })
-    await window.door.clearCvSources()
+    await window.door.invoke('cv-sources-clear')
     expect(h.pickCvFiles).toHaveBeenCalledTimes(1)
     expect(h.call).toHaveBeenCalledTimes(1)
     expect(h.clearCvSources).toHaveBeenCalledTimes(1)
@@ -16,5 +16,13 @@ describe('mockDoor', () => {
   it('answers a call with tokens from a draft_cv handler', async () => {
     mockDoor({ draft_cv: (a: Record<string, unknown>) => ({ got: a }) })
     expect(await window.door.call('draft_cv', { sources: ['https://a.com'] }, undefined, ['t'])).toEqual({ ok: true, data: { got: { sources: ['https://a.com'], tokens: ['t'] } } })
+  })
+})
+
+describe('mockDoor actions', () => {
+  it('answers a known action and refuses an unknown one with one stated error', async () => {
+    mockDoor({})
+    expect(await window.door.invoke('pick-cv-files')).toEqual({ files: [], refused: [] })
+    await expect((window.door as unknown as { invoke(a: string): Promise<unknown> }).invoke('no-such-action')).rejects.toThrow('unknown action no-such-action')
   })
 })

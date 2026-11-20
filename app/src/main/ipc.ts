@@ -1,6 +1,8 @@
 // The renderer's only door to the server: `door:call` forwards one named tool
 // (from the generated allow-list) and answers with an envelope, because custom
-// error fields do not survive an IPC rejection.
+// error fields do not survive an IPC rejection. Every other capability is one entry of
+// `buildActions` (its handler and its type): the preload's `invoke(action)` reaches `door:<action>`,
+// and only the channels registered here answer.
 import type { ArchiveFiles } from './archive-files'
 import type { PhotoFile } from './photo-file'
 import type { RememberedCvFile } from './cv-file'
@@ -11,56 +13,34 @@ import { basename, join } from 'node:path'
 import tools from '../generated/tools.json'
 import { DoorError, type Candidate } from './door-server'
 import { isJobId, isMaterialName, materialPath, runRecordPath } from './files'
-import { CHANNEL_OPEN } from './notifier'
-import { inPlayStatus, needsJob, noticeFor, type Notice, type NoticeEvent } from './notices'
+import { inPlayStatus, needsJob, noticeFor, type Notice, type NoticeEvent, type NoticeTarget } from './notices'
 import { type RunBoard } from './run-board'
-import { checkUrls, type CvSources } from './cv-sources'
+import { checkUrls, type CvSources, type PickResult } from './cv-sources'
 import type { UpdateResult } from './updates'
 import type { Environment } from './environments'
 import { isExternalUrl } from './security'
 
-export const CHANNELS = {
-  call: 'door:call',
-  openExternal: 'door:open-external',
-  progress: 'door:progress',
-  saveMaterial: 'door:save-material',
-  info: 'door:info',
-  stopRun: 'door:stop-run',
-  showRun: 'door:show-run',
-  /** Pushed to the window: the run that holds the ledger lock (see run-board.ts). */
-  runBoard: 'door:run-board',
-  currentBoard: 'door:current-board',
-  pickCvFiles: 'door:pick-cv-files',
-  dropCvFiles: 'door:drop-cv-files',
-  /** The CV file's name (Profile → CV's Sources), or null. */
-  cvFile: 'door:cv-file',
-  clearCvSources: 'door:cv-sources-clear',
-  /** The CV photo (photo-file.ts): a picture chosen in main, then saved by its token through `door:call`. */
-  pickPhoto: 'door:pick-photo',
-  /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
-  claudeLoginStart: 'door:claude-login-start',
-  claudeLoginCode: 'door:claude-login-code',
-  claudeLoginOpen: 'door:claude-login-open',
-  claudeLoginCancel: 'door:claude-login-cancel',
-  claudeLoginState: 'door:claude-login-state',
-  /** Moving the data (archive-files.ts): export to a file chosen in a save dialog; an import is picked, then goes by token through `door:call`. */
-  exportData: 'door:export-data',
-  pickArchive: 'door:pick-archive',
-  /** Save logs… (#593): the problem report, written where a save dialog says. */
-  reportProblem: 'door:report-problem',
-  /** Shows the data folder (DOOR_HOME) in the file manager; the window names no path. */
-  showHome: 'door:show-home',
-  /** Is a newer version out (updates.ts): what the app's own checks found; the window never starts one. */
-  checkUpdate: 'door:check-update',
-  /** Restart now to install the downloaded update (updates.ts refuses unless one is downloaded). */
-  installUpdate: 'door:install-update',
-  /** Pushed to the window: the update's state as it changes (index.ts sends it). */
-  updateState: 'door:update-state',
-  /** Pushed to the window: the sign-in's state as it changes. */
-  claudeLogin: 'door:claude-login',
-  /** Pushed to the window when a notification is clicked (notifier.ts sends it). */
-  open: CHANNEL_OPEN,
-} as const
+/** The two channels that are not actions: `door:call` has its own handler (tokens, PATH_ARGS, progress) and `door:progress` is pushed. */
+const CALL_CHANNEL = 'door:call'
+const PROGRESS_CHANNEL = 'door:progress'
+
+/** What main pushes to the window, by event name (the channel is `door:<event>`); the preload lists the same four. */
+export interface Events {
+  /** The run that holds the ledger lock (see run-board.ts). */
+  'run-board': RunBoard
+  /** The update's state as it changes (index.ts sends it). */
+  'update-state': UpdateResult | { enabled: false }
+  /** The sign-in's state as it changes. */
+  'claude-login': LoginState
+  /** A notification was clicked (notifier.ts sends it). */
+  open: NoticeTarget
+}
+export const EVENTS = ['run-board', 'update-state', 'claude-login', 'open'] as const satisfies readonly (keyof Events)[]
+
+/** Pushes one event to a window. */
+export function pushEvent<E extends keyof Events>(win: { webContents: { send(channel: string, ...args: unknown[]): void } }, event: E, payload: Events[E]): void {
+  win.webContents.send(`door:${event}`, payload)
+}
 
 export interface Progress {
   progress: number
@@ -194,38 +174,164 @@ function withTokens(data: unknown, tokens: string[]): unknown {
   return { ...data, sources }
 }
 
+export interface IpcDeps {
+  openExternal: (url: string) => Promise<unknown>
+  home: string
+  /** Save CV / Save letter: a save dialog in front of the window, offered in the Downloads folder. */
+  savePdf?: { showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }>; downloads: string }
+  showItemInFolder: (path: string) => void
+  /** Where the window runs (environments.ts) and where its data is. */
+  info?: { environment: Environment; home?: string }
+  /** The last run board, for a window that opens (or reloads) while a run is going. */
+  currentBoard?: () => RunBoard
+  /** Told when a long tool settles (see notices.ts); never allowed to change the answer. */
+  notify?: (notice: Notice) => void
+  /** The sandbox only: the simulated `find_jobs`, which nothing in the sandbox sends to the server. */
+  /** The CV files the window may draft from (cv-sources.ts). */
+  cvSources?: CvSources
+  /** The files of a data move (archive-files.ts). */
+  archiveFiles?: Pick<ArchiveFiles, 'exportTarget' | 'pick' | 'take' | 'reportTarget'>
+  /** The CV photo's file (photo-file.ts). */
+  photoFile?: Pick<PhotoFile, 'pick' | 'take'>
+  /** The CV file a draft last read (cv-file.ts). */
+  cvFile?: Pick<RememberedCvFile, 'remember' | 'name'>
+  /** The problem log (problem-log.ts): what the window was refused. */
+  problemLog?: ProblemLog
+  /** The update check (updates.ts). */
+  updates?: { last(): UpdateResult | null; check(): Promise<UpdateResult>; install(): Promise<{ ok: boolean }> }
+  /** Signing in to the Claude plan (claude-login.ts). */
+  claudeLogin?: Pick<ClaudeLogin, 'start' | 'sendCode' | 'openPage' | 'cancel' | 'state'>
+  demoRun?: (args: Record<string, unknown>, onProgress: (p: Progress) => void) => { result: Promise<unknown>; stop: () => void }
+}
+
+/** What `window.door.invoke(action, ...args)` reaches, one entry per action: its handler and, by its parameters and answer, its type
+ * (door.d.ts, the phone bridge, the preview and the test stand-in all read it). A new action is one entry here and nothing else.
+ * `door:call` is not here: it keeps its own handler (tokens, PATH_ARGS, progress). */
+function buildActions(deps: IpcDeps, server: ServerLike, state: { runs: () => number; demo: () => { stop: () => void } | null }) {
+  return {
+    // A link opener.
+    'open-external': async (url: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!isExternalUrl(url)) return { ok: false, error: 'only http and https links can be opened' }
+      await deps.openExternal(url)
+      return { ok: true }
+    },
+
+    // A prepared job's files are named by job id and document, never by a path.
+    // `sent`: the copy kept when the application was sent (`jobs/output/<id>/sent/`).
+    // The window names the job, the document and the name to offer (show's file_names); the path is chosen in the dialog.
+    'save-material': async (jobId: string, which: 'cv' | 'cover_letter', sent: boolean, name: string): Promise<{ ok: boolean; path?: string; canceled?: true; error?: string }> => {
+      if (!isJobId(jobId) || !isMaterialName(which) || typeof sent !== 'boolean') return { ok: false, error: 'unknown document' }
+      const source = materialPath(deps.home, jobId, `${which}.pdf`, sent)
+      if (!source) return { ok: false, error: 'that PDF is not on disk' }
+      if (!deps.savePdf) return { ok: false, error: 'saving is not available here' }
+      const r = await deps.savePdf.showSaveDialog({ defaultPath: join(deps.savePdf.downloads, offeredName(name, which)), filters: [{ name: 'PDF', extensions: ['pdf'] }] })
+      if (r.canceled || !r.filePath) return { ok: false, canceled: true }
+      try {
+        await copyFile(source, r.filePath)
+      } catch (e) {
+        return { ok: false, error: `Could not save it: ${(e as Error).message}` }
+      }
+      return { ok: true, path: r.filePath }
+    },
+
+    // Where the app runs (environments.ts) and where its data is.
+    info: async (): Promise<{ environment: Environment; home?: string; remote?: boolean }> => deps.info ?? { environment: 'production' },
+
+    // Stop is for a run this app started: its child is ended (the lock dies with it), never a foreign process.
+    'stop-run': async (): Promise<{ ok: boolean; error?: string }> => {
+      const demo = state.demo()
+      if (demo) demo.stop()
+      else if (state.runs() > 0) await server.stop()
+      return { ok: true }
+    },
+    'show-run': async (startedAt: string): Promise<{ ok: boolean; error?: string }> => {
+      const path = runRecordPath(deps.home, startedAt)
+      if (!path) return { ok: false, error: 'that run record is not on disk' }
+      deps.showItemInFolder(path)
+      return { ok: true }
+    },
+    'current-board': async (): Promise<RunBoard> => deps.currentBoard?.() ?? { active: false },
+
+    // The CV files: picked and dropped here, kept under tokens; the server gets paths only from here.
+    'pick-cv-files': async (): Promise<PickResult> => (deps.cvSources ? deps.cvSources.pick() : { files: [], refused: [] }),
+    'drop-cv-files': async (paths: unknown): Promise<PickResult> => {
+      const strings = Array.isArray(paths) && paths.every((p) => typeof p === 'string')
+      return deps.cvSources && strings ? deps.cvSources.add(paths as string[]) : { files: [], refused: [] }
+    },
+    // The CV file: the first file the draft read. Profile → CV's Sources names it.
+    'cv-file': async (): Promise<string | null> => (deps.cvFile ? deps.cvFile.name() : null),
+    'cv-sources-clear': async (): Promise<void> => {
+      deps.cvSources?.clear()
+    },
+    // The CV photo: picked in a dialog here, saved by token through `door:call`; the tool gets the real path, the window never names one.
+    'pick-photo': async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> =>
+      deps.photoFile ? deps.photoFile.pick() : { error: 'a photo cannot be chosen here' },
+
+    // Signing in to Claude. The window only asks: claude's path, folder and page come from doctor and claude, never from the page.
+    'claude-login-start': async (email?: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!deps.claudeLogin) return { ok: false, error: 'signing in is not available here' }
+      await deps.claudeLogin.start(typeof email === 'string' ? email : undefined)
+      return { ok: true }
+    },
+    'claude-login-code': async (code: string): Promise<{ ok: boolean; error?: string }> =>
+      typeof code === 'string' && deps.claudeLogin?.sendCode(code) ? { ok: true } : { ok: false, error: 'That is not a sign-in code.' },
+    'claude-login-open': async (): Promise<{ ok: boolean; error?: string }> =>
+      (await deps.claudeLogin?.openPage()) ? { ok: true } : { ok: false, error: 'claude has not shown its sign-in page yet' },
+    'claude-login-cancel': async (): Promise<{ ok: boolean }> => {
+      deps.claudeLogin?.cancel()
+      return { ok: true }
+    },
+    'claude-login-state': async (): Promise<LoginState> => deps.claudeLogin?.state() ?? { state: 'idle' },
+
+    // A data move: the file is chosen in main and named by main to the server. The window gets the
+    // export's path to show it, and for an import a token; nothing it sends is used as a path.
+    'export-data': async (): Promise<Envelope | { ok: false; canceled: true }> => {
+      if (!deps.archiveFiles) return { ok: false, error: 'exporting is not available here' }
+      const target = await deps.archiveFiles.exportTarget()
+      if ('canceled' in target) return { ok: false, canceled: true }
+      if ('error' in target) return { ok: false, error: target.error }
+      try {
+        return { ok: true, data: await server.call('export_data', { path: target.path }, { timeout: TOOL_TIMEOUTS['export_data'] }) }
+      } catch (e) {
+        return failureEnvelope(e)
+      }
+    },
+    'pick-archive': async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> =>
+      deps.archiveFiles ? deps.archiveFiles.pick() : { error: 'importing is not available here' },
+    // Save logs…: the archive goes where the save dialog said; the window names no file.
+    'report-problem': async (): Promise<Envelope | { ok: false; canceled: true }> => {
+      if (!deps.archiveFiles) return { ok: false, error: 'reporting is not available here' }
+      const target = await deps.archiveFiles.reportTarget()
+      if ('canceled' in target) return { ok: false, canceled: true }
+      if ('error' in target) return { ok: false, error: target.error }
+      try {
+        return { ok: true, data: await server.call('report_problem', { path: target.path }, { timeout: 120_000 }) }
+      } catch (e) {
+        return failureEnvelope(e)
+      }
+    },
+
+    // Shows the data folder (DOOR_HOME) in the file manager; the window names no path.
+    'show-home': async (): Promise<{ ok: boolean }> => {
+      deps.showItemInFolder(deps.home)
+      return { ok: true }
+    },
+    // Is a newer version out (updates.ts): what the app's own checks found; the window never starts one.
+    'check-update': async (): Promise<UpdateResult | { enabled: false }> => deps.updates?.last() ?? { enabled: false },
+    // Restart now to install the downloaded update (updates.ts refuses unless one is downloaded).
+    'install-update': async (): Promise<{ ok: boolean }> => (await deps.updates?.install()) ?? { ok: false },
+  } satisfies Record<string, (...args: any[]) => unknown>
+}
+
+export type Actions = ReturnType<typeof buildActions>
+export type ActionName = keyof Actions
+export type ActionArgs<A extends ActionName> = Parameters<Actions[A]>
+export type ActionResult<A extends ActionName> = Awaited<ReturnType<Actions[A]>>
+
 export function registerIpc(
   ipcMain: IpcMainLike,
   server: ServerLike,
-  deps: {
-    openExternal: (url: string) => Promise<unknown>
-    home: string
-    /** Save CV / Save letter: a save dialog in front of the window, offered in the Downloads folder. */
-    savePdf?: { showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }>; downloads: string }
-    showItemInFolder: (path: string) => void
-    /** Where the window runs (environments.ts) and where its data is. */
-    info?: { environment: Environment; home?: string }
-    /** The last run board, for a window that opens (or reloads) while a run is going. */
-    currentBoard?: () => RunBoard
-    /** Told when a long tool settles (see notices.ts); never allowed to change the answer. */
-    notify?: (notice: Notice) => void
-    /** The sandbox only: the simulated `find_jobs`, which nothing in the sandbox sends to the server. */
-    /** The CV files the window may draft from (cv-sources.ts). */
-    cvSources?: CvSources
-    /** The files of a data move (archive-files.ts). */
-    archiveFiles?: Pick<ArchiveFiles, 'exportTarget' | 'pick' | 'take' | 'reportTarget'>
-    /** The CV photo's file (photo-file.ts). */
-    photoFile?: Pick<PhotoFile, 'pick' | 'take'>
-    /** The CV file a draft last read (cv-file.ts). */
-    cvFile?: Pick<RememberedCvFile, 'remember' | 'name'>
-    /** The problem log (problem-log.ts): what the window was refused. */
-    problemLog?: ProblemLog
-    /** The update check (updates.ts). */
-    updates?: { last(): UpdateResult | null; check(): Promise<UpdateResult>; install(): Promise<{ ok: boolean }> }
-    /** Signing in to the Claude plan (claude-login.ts). */
-    claudeLogin?: Pick<ClaudeLogin, 'start' | 'sendCode' | 'openPage' | 'cancel' | 'state'>
-    demoRun?: (args: Record<string, unknown>, onProgress: (p: Progress) => void) => { result: Promise<unknown>; stop: () => void }
-  },
+  deps: IpcDeps,
 ): void {
   // A settled call may deserve a notification. The job's words come from one `show` call here, in
   // the main process, so a reloaded window cannot lose them. Nothing in it can fail the call.
@@ -252,12 +358,19 @@ export function registerIpc(
   }
   let runs = 0 // find_jobs calls in flight
   let demo: { stop: () => void } | null = null
+  const actions = buildActions(deps, server, { runs: () => runs, demo: () => demo })
   // A refusal is logged by the tool's name only: what the window sent may be anything.
   const refused = (tool: unknown, error: string): Envelope => {
     deps.problemLog?.write(`refused ${typeof tool === 'string' ? tool.slice(0, 64) : 'a call'}`, error)
     return { ok: false, error }
   }
-  ipcMain.handle(CHANNELS.call, async (event, tool: unknown, args: unknown, callId?: unknown, tokens?: unknown): Promise<Envelope> => {
+  // The CV file: the first file the draft read. Profile → CV's Sources names it.
+  const rememberCvFile = async (data: unknown): Promise<void> => {
+    if (!deps.cvFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
+    const file = data['sources'].find((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && typeof s['source'] === 'string') as { source: string } | undefined
+    if (file) await deps.cvFile.remember(file.source)
+  }
+  ipcMain.handle(CALL_CHANNEL, async (event, tool: unknown, args: unknown, callId?: unknown, tokens?: unknown): Promise<Envelope> => {
     const refuse = (error: string) => refused(tool, error)
     if (typeof tool !== 'string' || !ALLOWED.has(tool)) return refuse('unknown tool')
     const refusal = pathRefusal(tool, isPlainObject(args) ? args : {})
@@ -310,7 +423,7 @@ export function registerIpc(
         const payload = pending
         pending = null
         try {
-          sender.send(CHANNELS.progress, callId, payload)
+          sender.send(PROGRESS_CHANNEL, callId, payload)
         } catch {
           // the window went away; the call carries on
         }
@@ -372,117 +485,6 @@ export function registerIpc(
     }
   })
 
-  // The CV files: picked and dropped here, kept under tokens; the server gets paths only from here.
-  ipcMain.handle(CHANNELS.pickCvFiles, async () => (deps.cvSources ? deps.cvSources.pick() : { files: [], refused: [] }))
-  ipcMain.handle(CHANNELS.dropCvFiles, async (_event, paths: unknown) => {
-    const strings = Array.isArray(paths) && paths.every((p) => typeof p === 'string')
-    return deps.cvSources && strings ? deps.cvSources.add(paths as string[]) : { files: [], refused: [] }
-  })
-  ipcMain.handle(CHANNELS.clearCvSources, async () => {
-    deps.cvSources?.clear()
-  })
-  // The CV photo: picked in a dialog here, saved by token through `door:call`; the tool gets the real path, the window never names one.
-  ipcMain.handle(CHANNELS.pickPhoto, async () => (deps.photoFile ? deps.photoFile.pick() : { error: 'a photo cannot be chosen here' }))
-
-  // The CV file: the first file the draft read. Profile → CV's Sources names it.
-  const rememberCvFile = async (data: unknown): Promise<void> => {
-    if (!deps.cvFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
-    const file = data['sources'].find((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && typeof s['source'] === 'string') as { source: string } | undefined
-    if (file) await deps.cvFile.remember(file.source)
-  }
-  ipcMain.handle(CHANNELS.cvFile, async (): Promise<string | null> => (deps.cvFile ? deps.cvFile.name() : null))
-
-  // Stop is for a run this app started: its child is ended (the lock dies with it), never a foreign process.
-  ipcMain.handle(CHANNELS.stopRun, async (): Promise<{ ok: boolean; error?: string }> => {
-    if (demo) demo.stop()
-    else if (runs > 0) await server.stop()
-    return { ok: true }
-  })
-
-  ipcMain.handle(CHANNELS.showRun, async (_event, startedAt: unknown): Promise<{ ok: boolean; error?: string }> => {
-    const path = runRecordPath(deps.home, startedAt)
-    if (!path) return { ok: false, error: 'that run record is not on disk' }
-    deps.showItemInFolder(path)
-    return { ok: true }
-  })
-
-  // The window only asks: claude's path, folder and page come from doctor and claude, never from the page.
-  ipcMain.handle(CHANNELS.claudeLoginStart, async (_event, email: unknown): Promise<{ ok: boolean; error?: string }> => {
-    if (!deps.claudeLogin) return { ok: false, error: 'signing in is not available here' }
-    await deps.claudeLogin.start(typeof email === 'string' ? email : undefined)
-    return { ok: true }
-  })
-  ipcMain.handle(CHANNELS.claudeLoginCode, async (_event, code: unknown): Promise<{ ok: boolean; error?: string }> =>
-    typeof code === 'string' && deps.claudeLogin?.sendCode(code) ? { ok: true } : { ok: false, error: 'That is not a sign-in code.' },
-  )
-  ipcMain.handle(CHANNELS.claudeLoginOpen, async (): Promise<{ ok: boolean; error?: string }> =>
-    (await deps.claudeLogin?.openPage()) ? { ok: true } : { ok: false, error: 'claude has not shown its sign-in page yet' },
-  )
-  ipcMain.handle(CHANNELS.claudeLoginCancel, async (): Promise<{ ok: boolean }> => {
-    deps.claudeLogin?.cancel()
-    return { ok: true }
-  })
-  ipcMain.handle(CHANNELS.claudeLoginState, async (): Promise<LoginState> => deps.claudeLogin?.state() ?? { state: 'idle' })
-
-  // A data move: the file is chosen in main and named by main to the server. The window gets the
-  // export's path to show it, and for an import a token; nothing it sends is used as a path.
-  ipcMain.handle(CHANNELS.exportData, async (): Promise<Envelope | { ok: false; canceled: true }> => {
-    if (!deps.archiveFiles) return { ok: false, error: 'exporting is not available here' }
-    const target = await deps.archiveFiles.exportTarget()
-    if ('canceled' in target) return { ok: false, canceled: true }
-    if ('error' in target) return { ok: false, error: target.error }
-    try {
-      return { ok: true, data: await server.call('export_data', { path: target.path }, { timeout: TOOL_TIMEOUTS['export_data'] }) }
-    } catch (e) {
-      return failureEnvelope(e)
-    }
-  })
-  // Save logs…: the archive goes where the save dialog said; the window names no file.
-  ipcMain.handle(CHANNELS.reportProblem, async (): Promise<Envelope | { ok: false; canceled: true }> => {
-    if (!deps.archiveFiles) return { ok: false, error: 'reporting is not available here' }
-    const target = await deps.archiveFiles.reportTarget()
-    if ('canceled' in target) return { ok: false, canceled: true }
-    if ('error' in target) return { ok: false, error: target.error }
-    try {
-      return { ok: true, data: await server.call('report_problem', { path: target.path }, { timeout: 120_000 }) }
-    } catch (e) {
-      return failureEnvelope(e)
-    }
-  })
-  ipcMain.handle(CHANNELS.pickArchive, async () => (deps.archiveFiles ? deps.archiveFiles.pick() : { error: 'importing is not available here' }))
-
-  ipcMain.handle(CHANNELS.showHome, async (): Promise<{ ok: boolean }> => {
-    deps.showItemInFolder(deps.home)
-    return { ok: true }
-  })
-
-  ipcMain.handle(CHANNELS.checkUpdate, async (): Promise<UpdateResult | { enabled: false }> => deps.updates?.last() ?? { enabled: false })
-
-  ipcMain.handle(CHANNELS.installUpdate, async (): Promise<{ ok: boolean }> => (await deps.updates?.install()) ?? { ok: false })
-
-  ipcMain.handle(CHANNELS.info, async () => deps.info ?? { environment: 'production' })
-  ipcMain.handle(CHANNELS.currentBoard, async (): Promise<RunBoard> => deps.currentBoard?.() ?? { active: false })
-  ipcMain.handle(CHANNELS.openExternal, async (_event, url: unknown): Promise<{ ok: boolean; error?: string }> => {
-    if (!isExternalUrl(url)) return { ok: false, error: 'only http and https links can be opened' }
-    await deps.openExternal(url)
-    return { ok: true }
-  })
-
-  // A prepared job's files are named by job id and document, never by a path.
-  // `sent`: the copy kept when the application was sent (`jobs/output/<id>/sent/`).
-  // The window names the job, the document and the name to offer (show's file_names); the path is chosen in the dialog.
-  ipcMain.handle(CHANNELS.saveMaterial, async (_event, jobId: unknown, which: unknown, sent: unknown, name: unknown): Promise<{ ok: boolean; path?: string; canceled?: true; error?: string }> => {
-    if (!isJobId(jobId) || !isMaterialName(which) || typeof sent !== 'boolean') return { ok: false, error: 'unknown document' }
-    const source = materialPath(deps.home, jobId, `${which}.pdf`, sent)
-    if (!source) return { ok: false, error: 'that PDF is not on disk' }
-    if (!deps.savePdf) return { ok: false, error: 'saving is not available here' }
-    const r = await deps.savePdf.showSaveDialog({ defaultPath: join(deps.savePdf.downloads, offeredName(name, which)), filters: [{ name: 'PDF', extensions: ['pdf'] }] })
-    if (r.canceled || !r.filePath) return { ok: false, canceled: true }
-    try {
-      await copyFile(source, r.filePath)
-    } catch (e) {
-      return { ok: false, error: `Could not save it: ${(e as Error).message}` }
-    }
-    return { ok: true, path: r.filePath }
-  })
+  // Every other action is one entry of `buildActions`; a name not in it has no handler, so Electron refuses it.
+  for (const [name, handler] of Object.entries(actions) as [string, (...args: any[]) => unknown][]) ipcMain.handle(`door:${name}`, (_event, ...args) => handler(...args))
 }

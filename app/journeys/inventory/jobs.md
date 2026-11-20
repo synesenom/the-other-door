@@ -17,7 +17,7 @@ Conventions used below:
 ### Start-up gate
 | Condition | What shows |
 |---|---|
-| Waiting for `window.door.info()` and then `show_profile` | **Splash**: `status` named "Starting The other door" (an SVG logo and an animated bar, nothing else) |
+| Waiting for `window.door.invoke('info')` and then `show_profile` | **Splash**: `status` named "Starting The other door" (an SVG logo and an animated bar, nothing else) |
 | `show_profile` → `config === null` and `info.remote` | (phone only) h1 "Set up The other door first" and the body "The other door has no profile yet. Set it up on the computer where it is installed (open the desktop app there, or run its setup), then come back here." |
 | `config === null` and (not demo, or `sandbox === 'onboard'`) | The onboarding Wizard (outside this area) |
 | `config === null` in the demo | The shell (the demo never gets the wizard) |

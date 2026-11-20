@@ -204,7 +204,7 @@ Run `gen-tools` and commit the file whenever a tool or a tool parameter in
 ## How it is built
 
 ```
-renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-server.ts --> python -m door.mcp_server
+renderer (React) -- window.door.call / onProgress / invoke / on --> main (ipc.ts) -- door-server.ts --> python -m door.mcp_server
 ```
 
 - `src/main/door-server.ts` is the typed client and the only module that spawns a process.
@@ -261,7 +261,7 @@ renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-serv
   from the run board), deserves in words; `ipc.ts` and `index.ts` feed it, and `notifier.ts`
   shows it as an Electron `Notification` only while no window is focused (identical notices
   within 5 s are dropped). A click focuses the window and pushes the target on `door:open`
-  (the preload's `onOpen`); `App.tsx` routes it. No off switch until Settings (#222).
+  (the preload's `on('open', cb)`); `App.tsx` routes it. No off switch until Settings (#222).
 - Colours, type, spacing and sizes come from the generated theme variables only (a test
   rejects a hex colour in the renderer).
 

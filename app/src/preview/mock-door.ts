@@ -4,7 +4,8 @@
 import { doctorReport } from '../renderer/screens/onboarding/testing'
 import { playRun } from '../main/demo-script'
 import type { RunBoard } from '../main/run-board'
-import type { Envelope } from '../main/ipc'
+import type { ActionArgs, ActionName, ActionResult, Envelope, Events } from '../main/ipc'
+import type { LoginState } from '../main/claude-login'
 import fixtures from './fixtures.json'
 import cvPage1 from '../../test/fixtures/prepared/cv_page_1.png'
 import cvPage2 from '../../test/fixtures/prepared/cv_page_2.png'
@@ -76,7 +77,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   // Claude as a scene starts it: the install and the sign-in below change it, as the real ones would.
   let installed = !scene.claudeNotInstalled
   let signedIn = !scene.claudeSignedOut && !scene.claudeNotInstalled
-  const loginListeners = new Set<(s: { state: 'done' }) => void>()
+  const loginListeners = new Set<(s: LoginState) => void>()
   // Google Drive as the scene starts it: connect_drive, sync_data and disconnect_drive change it.
   const ACCOUNT = 'jane.doe@example.com'
   const start = scene.drive ?? 'off'
@@ -294,6 +295,59 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
 
   const done = async () => ({ ok: true })
   const never = () => () => undefined
+  const actions: { [A in ActionName]?: (...args: ActionArgs<A>) => ActionResult<A> | Promise<ActionResult<A>> } = {
+    'open-external': done,
+    'save-material': async (_j, _w, _s, name) => ({ ok: true, path: `/Users/jane/Downloads/${name}` }),
+    'pick-cv-files': async () => ({ files: [{ token: 'preview-1', name: 'jane-doe-cv.pdf', size: 184_000 }], refused: [] }),
+    'cv-file': async () => 'jane-doe-cv.pdf',
+    'cv-sources-clear': async () => undefined,
+    'pick-photo': async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
+    'claude-login-start': async () => {
+      // A moment for the "Starting the sign-in" line, then signed in, with no browser.
+      setTimeout(() => {
+        signedIn = true
+        loginListeners.forEach((listener) => listener({ state: 'done' }))
+      }, 1500)
+      return { ok: true }
+    },
+    'claude-login-code': done,
+    'claude-login-open': done,
+    'claude-login-cancel': done,
+    'claude-login-state': async () => ({ state: 'idle' }),
+    info: async () => {
+      gateReads = 1
+      return { environment: 'production' as const, home: '/demo' }
+    },
+    'export-data': async () => (scene.fails?.exportData ? { ok: false, error: scene.fails.exportData } : { ok: false, canceled: true }),
+    'pick-archive': async () => ({ canceled: true }),
+    'report-problem': async () => (scene.fails?.reportProblem ? { ok: false, error: scene.fails.reportProblem } : { ok: false, canceled: true }),
+    'show-home': done,
+    'check-update': async () => ({ enabled: false as const }),
+    'install-update': async () => ({ ok: false }),
+    'stop-run': async () => {
+      stopPlay?.()
+      stopPlay = null
+      return { ok: true }
+    },
+    'show-run': done,
+    'current-board': async () => scene.board ?? { active: false },
+  }
+  const subscribers: { [E in keyof Events]: (cb: (payload: Events[E]) => void) => () => void } = {
+    'run-board': (cb) => {
+      boardListeners.add(cb)
+      return () => boardListeners.delete(cb)
+    },
+    'update-state': never,
+    'claude-login': (cb) => {
+      loginListeners.add(cb)
+      return () => loginListeners.delete(cb)
+    },
+    open: (cb) => {
+      // After the app has subscribed, as a click on a notification would be.
+      const timer = scene.open ? setTimeout(() => cb(scene.open!), 0) : undefined
+      return () => clearTimeout(timer)
+    },
+  }
   return {
     call: async (tool, args = {}, _callId, tokens) => {
       if (!tokens) return respond(tool, args)
@@ -305,59 +359,13 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       return { ok: true, data: { markdown: fixtures.show_profile.cv.text, provenance: [], todos: [], sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }] } }
     },
     onProgress: never,
-    openExternal: done,
-    saveMaterial: async (_j: string, _w: string, _s: boolean, name: string) => ({ ok: true, path: `/Users/jane/Downloads/${name}` }),
-    pickCvFiles: async () => ({ files: [{ token: 'preview-1', name: 'jane-doe-cv.pdf', size: 184_000 }], refused: [] }),
+    invoke: ((action: ActionName, ...args: unknown[]) => {
+      const handler = actions[action] as ((...a: unknown[]) => unknown) | undefined
+      return handler ? Promise.resolve(handler(...args)) : Promise.reject(new Error(`the preview has no action ${action}`))
+    }) as Window['door']['invoke'],
+    on: ((event: keyof Events, cb: (payload: never) => void) => (subscribers[event] as (cb: (payload: never) => void) => () => void)(cb)) as Window['door']['on'],
+    onBeforeClose: never,
     dropCvFiles: async (files) => ({ files: files.map((f, i) => ({ token: `preview-drop-${i}`, name: f.name, size: f.size })), refused: [] }),
-    cvFile: async () => 'jane-doe-cv.pdf',
-    clearCvSources: async () => undefined,
-    pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
-    onBeforeClose: () => () => undefined,
-    claudeLogin: {
-      start: async () => {
-        // A moment for the "Starting the sign-in" line, then signed in, with no browser.
-        setTimeout(() => {
-          signedIn = true
-          loginListeners.forEach((listener) => listener({ state: 'done' }))
-        }, 1500)
-        return { ok: true }
-      },
-      sendCode: done,
-      openPage: done,
-      cancel: done,
-      state: async () => ({ state: 'idle' }),
-      onState: (cb: (s: { state: 'done' }) => void) => {
-        loginListeners.add(cb)
-        return () => loginListeners.delete(cb)
-      },
-    },
-    info: async () => {
-      gateReads = 1
-      return { environment: 'production' as const, home: '/demo' }
-    },
     pageUrl,
-    exportData: async () => (scene.fails?.exportData ? { ok: false, error: scene.fails.exportData } : { ok: false, canceled: true }),
-    pickArchive: async () => ({ canceled: true }),
-    reportProblem: async () => (scene.fails?.reportProblem ? { ok: false, error: scene.fails.reportProblem } : { ok: false, canceled: true }),
-    showHome: done,
-    checkUpdate: async () => ({ enabled: false as const }),
-    installUpdate: async () => ({ ok: false }),
-    onUpdateState: () => () => undefined,
-    stopRun: async () => {
-      stopPlay?.()
-      stopPlay = null
-      return { ok: true }
-    },
-    showRun: done,
-    runBoard: async () => scene.board ?? { active: false },
-    onRunBoard: (cb: (b: RunBoard) => void) => {
-      boardListeners.add(cb)
-      return () => boardListeners.delete(cb)
-    },
-    onOpen: (cb) => {
-      // After the app has subscribed, as a click on a notification would be.
-      const timer = scene.open ? setTimeout(() => cb(scene.open!), 0) : undefined
-      return () => clearTimeout(timer)
-    },
   } as Window['door']
 }

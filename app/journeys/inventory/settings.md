@@ -65,7 +65,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 
 ### The data folder (Your data, `DataMoves.tsx`)
 - One muted `.settings-path` paragraph: "Your profile and jobs are stored in <home>. Export saves them in one file, to move to another computer or keep a copy; Import replaces them with the ones in such a file." (the first sentence only when `info.home` is set). — ✓ Your data says where the data folder is; its path shows it
-- `<home>` is a link-styled button (`.link-inline`, its name the path, title "Show in Finder" on macOS, "Show in folder" elsewhere) → `window.door.showHome()` → IPC `door:show-home` → `shell.showItemInFolder(home)`. The OS opens Finder; nothing shows in the window. Stub it. — ✓ Your data says where the data folder is; its path shows it
+- `<home>` is a link-styled button (`.link-inline`, its name the path, title "Show in Finder" on macOS, "Show in folder" elsewhere) → `window.door.invoke('show-home')` → IPC `door:show-home` → `shell.showItemInFolder(home)`. The OS opens Finder; nothing shows in the window. Stub it. — ✓ Your data says where the data folder is; its path shows it
 
 ### Appearance (`theme.ts`)
 - On load, `readTheme()` reads `localStorage['door.theme']`: `light` or `dark`, anything else is `system`. The radio matching it is checked. — unit: `app/src/renderer/theme.test.ts`; ✓ Dark turns the whole app dark and stays dark after a reload; Light turns it light

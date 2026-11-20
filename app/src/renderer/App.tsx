@@ -194,7 +194,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   useEffect(() => {
     let live = true
     ;(async () => {
-      const info = await window.door.info?.().catch(() => undefined)
+      const info = await window.door.invoke('info').catch(() => undefined)
       if (!live) return
       setEnvironment(info?.environment ?? 'production')
       setHome(info?.home)
