@@ -607,10 +607,11 @@ async def cancel_job() -> dict:
 @mcp.tool()
 @_tool_errors
 def check_facts(job_id: str, keep: list[dict] | None = None) -> dict:
-    """Check a prepared CV and cover letter against the candidate's own sources (offline, no model).
+    """Check a prepared CV and cover letter against the candidate's own sources (one Haiku call).
 
     The tailor agent's tool: call it on the finished documents, fix or remove what is truly
     unsupported (then `compile` again), call it once more; two rounds at most per prepare run.
+    A call for documents already checked asks nothing and is no round (that is how to record a `keep`).
     A TODO is a gap in `cv.md` and never takes a reason.
 
     Args:

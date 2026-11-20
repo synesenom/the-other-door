@@ -343,9 +343,11 @@ def make_output() -> None:
         pdf_utils.make_pdf(folder / "cv.pdf", ["Alex Example\nSummary\nExperience\nSkills\nEducation\nclose forecast IFRS"])
         pdf_utils.make_pdf(folder / "cover_letter.pdf", [f"Alex Example\nDear {company},\nI would like to own your close."])
         (folder / "stories.json").write_text(json.dumps([]), encoding="utf-8")
-        flagged = facts_mod.check(folder, PROFILE, write=False) or []
-        keep = [{**item, "reason": "the team size is from the interview notes, not the CV"} for item in flagged]
-        check_facts_cmd._check_facts_core(job_id, keep=keep, jobs_dir=JOBS)  # as the tailor runs it: leaves .facts_rounds
+        # What the tailor's fact check leaves, with no model call: the claim above, with the reason the tailor kept it for.
+        flagged = [] if sent else [{"kind": "number", "value": "25", "context": "Led a team of 25 analysts", "file": "cv",
+                                    "reason": "the team size is from the interview notes, not the CV"}]
+        utils.write_json_atomic(folder / facts_mod.FACTS_FILE, {"checked_at": "2026-01-01T00:00:00+00:00", "unsupported": flagged})
+        (folder / check_facts_cmd.ROUNDS_FILE).write_text("1", encoding="utf-8")
         if sent:
             (folder / "cv.html.bak").write_bytes((folder / "cv.html").read_bytes())  # the version before a revise
             (folder / "photo.jpg").write_bytes((PROFILE / "photo.jpg").read_bytes())
