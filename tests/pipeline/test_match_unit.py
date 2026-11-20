@@ -32,8 +32,8 @@ def fakes(env, monkeypatch):
 
     def passes(candidates_dir, config, profile_dir):
         f.order.append(("passes", candidates_dir.name))
-        return {"prefilter": {"available": True, "survived": 2}, "dedup": None, "language": None,
-                "condense": None, "prescreen": {"available": True, "scored": 2, "kept": 1}, "surviving_paths": ["x"]}
+        return {"prefilter": {"survived": 2}, "dedup": None, "language": None,
+                "condense": None, "prescreen": {"scored": 2, "kept": 1}, "surviving_paths": ["x"]}
 
     def match_core(*, jobs_dir, profile_dir):
         f.order.append("match")
@@ -48,7 +48,7 @@ def fakes(env, monkeypatch):
 def test_the_block_carries_the_passes_of_today(env, fakes):
     block = run(env)
     assert fakes.order.index(("passes", date.today().isoformat())) < fakes.order.index("match")
-    assert block["passes"]["prescreen"] == {"available": True, "scored": 2, "kept": 1}
+    assert block["passes"]["prescreen"] == {"scored": 2, "kept": 1}
     assert "surviving_paths" not in block["passes"]
 
 

@@ -19,6 +19,7 @@ from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import scrape as scrape_cmd
 from door.matching import condense, dedup, prefilter, prescreen
+from cli_utils import scrape_and_pass
 from profile_utils import write_config
 
 
@@ -34,13 +35,6 @@ def _scrape_env(tmp_path, sites=("jobindex",)):
     jobs_dir = tmp_path / "jobs"
     return profile_dir, jobs_dir
 
-
-def _scrape_and_pass(profile_dir, jobs_dir, sites=("jobindex",)):
-    """`_scrape_core`, then the passes the match step runs; both blocks in one dict."""
-    result = scrape_cmd._scrape_core(list(sites), jobs_dir=jobs_dir, profile_dir=profile_dir)
-    config = json.loads((profile_dir / "config.json").read_text())
-    result.update(scrape_cmd._scrape_passes(Path(result["candidates_dir"]), config, profile_dir))
-    return result
 
 
 # --------------------------------------------------------------------------- #
@@ -221,7 +215,7 @@ def test_scrape_core_surviving_paths_reflect_dedup_output(tmp_path, monkeypatch)
     monkeypatch.setattr(condense, "extract_skill_terms", lambda reading, config: set())
     monkeypatch.setattr(prescreen, "prescreen", lambda paths, config, terms: paths)
 
-    result = _scrape_and_pass(profile_dir, jobs_dir)
+    result = scrape_and_pass(profile_dir, jobs_dir, ["jobindex"])
 
     assert result["prefilter"] == {"survived": 2}
     assert result["dedup"] == {"collapsed": 1, "remaining": 1}
@@ -246,7 +240,7 @@ def test_scrape_core_dedups_with_the_names_companies_json_holds_for_one_employer
     seen = {}
     monkeypatch.setattr(dedup, "dedup", lambda paths, config, aliases=None, earlier=None: seen.setdefault("aliases", aliases) and paths)
 
-    _scrape_and_pass(profile_dir, jobs_dir)
+    scrape_and_pass(profile_dir, jobs_dir, ["jobindex"])
 
     assert seen["aliases"] == [["Flugger", "Flügger group A/S"]]
 
@@ -272,7 +266,7 @@ def test_scrape_core_condense_and_prescreen_run_after_dedup(tmp_path, monkeypatc
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    result = _scrape_and_pass(profile_dir, jobs_dir)
+    result = scrape_and_pass(profile_dir, jobs_dir, ["jobindex"])
 
     assert result["condense"]["count"] == 1
     assert result["prescreen"]["scored"] == 1
@@ -307,7 +301,7 @@ def test_scrape_core_prescreen_honours_config_top_n(tmp_path, monkeypatch):
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: postings)
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    result = _scrape_and_pass(profile_dir, jobs_dir)
+    result = scrape_and_pass(profile_dir, jobs_dir, ["jobindex"])
 
     assert result["prescreen"]["scored"] == 2
     assert result["prescreen"]["kept"] == 1

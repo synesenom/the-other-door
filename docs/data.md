@@ -13,7 +13,7 @@ Two things do leave your computer:
 
 | Folder | What's in it |
 |--------|--------------|
-| `profile/` | your config, the employers you follow (`companies.json`; each entry's other names are its `aliases`, formerly `also`, migrated when read), CV and story bank (and the HTML templates, only if you keep your own) |
+| `profile/` | your config, the employers you follow (`companies.json`; each entry's other names are its `aliases`), CV and story bank (and the HTML templates, only if you keep your own) |
 | `jobs/` | scraped and scored postings (`postings/<date>/<site>/`; day folders an older version left directly under `jobs/` are moved there the next time *The other door* reads or writes them), the history and application ledgers, run records (a block per `find` step), the candidates queue (`candidates.json`: employers `follow` has yet to look at), the discovery state, one file per source (`discovery/linkedin.json`, `discovery/profession.json`), the `market` reports (`market/report-<date>.md`) the salary estimates (`salary.json`: `{job_id: {low, high, currency, period, position, sources, as_of}}`, from `jobs salary` or `jobs prepare`; delete an entry to ask again) and its skill-name groups (`skill_aliases.json`: `{"variant": "Canonical"}`, `null` for a name that is not a skill; edit it freely, your edits are kept), and the generated CVs and cover letters (`jobs/output/<job_id>/`); every posting carries an `integrity` verdict (see [how it works](how-it-works.md#the-ad-is-untrusted-input)) |
 
 By default both folders sit in the checkout. Set the environment variable `DOOR_HOME` to a

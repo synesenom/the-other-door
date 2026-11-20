@@ -24,7 +24,7 @@ from door.core import workspace
 from door.matching import dedup as dedup_module
 from door.matching import prefilter as prefilter_mod
 import cv_read_utils
-from cli_utils import result_text, stub_match_result
+from cli_utils import result_text, scrape_and_pass, stub_match_result
 from profile_utils import write_config
 
 
@@ -35,11 +35,7 @@ def stub_match(cli_env, monkeypatch):
 
 
 def _scrape(env, sites, **kwargs):
-    """Scrape, then run the passes the match step runs; both blocks in one dict."""
-    result = scrape_cmd._scrape_core(sites, jobs_dir=env.jobs_dir, profile_dir=env.profile_dir, **kwargs)
-    config = json.loads((env.profile_dir / "config.json").read_text())
-    result.update(scrape_cmd._scrape_passes(Path(result["candidates_dir"]), config, env.profile_dir))
-    return result
+    return scrape_and_pass(env.profile_dir, env.jobs_dir, sites, **kwargs)
 
 
 # --------------------------------------------------------------------------- #

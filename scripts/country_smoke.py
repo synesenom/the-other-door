@@ -290,8 +290,6 @@ _STATE_FILES = ("scrape_state.json", "discovery/linkedin.json")
 def seed_discover_pace(jobs_dir: Path, budget: int) -> None:
     """Set the LinkedIn request budget for the next discover (the floor is 10), keeping the rest state."""
     path = Path(jobs_dir) / "discovery" / "linkedin.json"
-    if not path.exists() and (Path(jobs_dir) / "linkedin_discovery.json").exists():
-        path = Path(jobs_dir) / "linkedin_discovery.json"  # an older sandbox: `load` migrates it
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         state = json.loads(path.read_text(encoding="utf-8"))
