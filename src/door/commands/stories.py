@@ -164,7 +164,7 @@ def _draft_stories_core(text=None, from_cv=False, model=None, *, profile_dir: Pa
     else:
         source = f"The text:\n<<<\n{text}\n>>>\n"
         if cv_path.is_file():
-            source += f"\nThe CV (for facts the text leaves out; where it differs from the text, the text wins):\n<<<\n{cv_path.read_text(encoding='utf-8')}\n>>>\n"
+            source += f"\nThe CV:\n<<<\n{cv_path.read_text(encoding='utf-8')}\n>>>\n"
 
     answer = claude_cli.ask(
         prompt, source, feature="draft_stories", model=model, schema=_SCHEMA, timeout_s=300,

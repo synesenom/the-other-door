@@ -156,24 +156,14 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
     """
     output_dir = workspace.JOBS_DIR / "output" / job_id
     tpl = _tailor_templates(workspace.PROFILE_DIR)
-    prompt = (
-        f"Tailor job_id {job_id!r}: `job` is the posting at {posting_path}, `profile` is "
-        f"{workspace.PROFILE_DIR / 'config.json'} (the profile folder is {workspace.PROFILE_DIR}; "
-        f"the story bank is {workspace.PROFILE_DIR / 'story_bank.md'}). The CV template is {tpl['cv_template']} and "
-        f"the cover letter template is {tpl['cover_letter_template']} (they hold the building blocks; you write only "
-        f"the body, never a whole page). Produce "
-        f"{output_dir}/posting.json, cv.html and "
-        f"cover_letter.html and compile them to PDFs, following your steps in order; "
-        f"new stories go to {output_dir / _STORIES_FILE}. "
-        f"{_cv_conventions_text(posting_path)} "
-        f"Use these absolute paths, not paths relative to the working directory."
-    )
+    fields = {"output_dir": str(output_dir), "stories": str(output_dir / _STORIES_FILE)}
+    prompt = claude_cli.prompt(
+        "tailor-request", **fields, job_id=repr(job_id), posting=str(posting_path),
+        config=str(workspace.PROFILE_DIR / "config.json"), profile_dir=str(workspace.PROFILE_DIR),
+        story_bank=str(workspace.PROFILE_DIR / "story_bank.md"), cv_template=str(tpl["cv_template"]),
+        cover_letter_template=str(tpl["cover_letter_template"]), conventions=_cv_conventions_text(posting_path))
     if feedback:
-        prompt += (
-            f"\n\nThe materials already exist in {output_dir}. Reading the compiled PDFs back the way an ATS "
-            f"does found these problems: keep the existing files, change only what fixes them, recompile with "
-            f"`compile`, and do not start over. New stories still go to {output_dir / _STORIES_FILE}.\n{feedback}"
-        )
+        prompt += "\n\n" + claude_cli.prompt("tailor-retry", **fields, feedback=feedback)
     argv = [
         prompt,
         "--restricted",

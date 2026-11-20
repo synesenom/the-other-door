@@ -115,11 +115,7 @@ def _scraper_path(site: str) -> str:
 
 
 def _fixer_prompt(site: str, raw_path: Path) -> str:
-    return (
-        f"Invoke the scraper-fixer agent for site {site!r}. The saved drift response is {raw_path}. "
-        f"Repair {_scraper_path(site)} test-first per .claude/agents/scraper-fixer.md, "
-        "then finish with a short plain-text summary of what changed and why."
-    )
+    return claude_cli.prompt("scraper-fixer-request", site=repr(site), raw_path=str(raw_path), scraper=_scraper_path(site))
 
 
 _PROBE_SNIPPET = (

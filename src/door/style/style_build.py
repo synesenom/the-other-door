@@ -581,10 +581,6 @@ class _Session:
         return diffs, score, style_compare.worst_offset_pt(diffs), column_problems(self.style, render, placed), spaced
 
 
-_REPLY_FIRST = ("Reply with one line on what you see (layout, colours), then the ```template block and the ```cv block, "
-                "nothing after them.")
-_REPLY_NEXT = "Reply with one line on what you changed and the whole new template in one ```template block, nothing after it."
-_REPLY_LETTER = "Reply with one line and the whole letter template in one ```letter block, nothing after it."
 _LIMIT = 12  # problems one message to the stylist names
 
 
@@ -616,15 +612,9 @@ def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
                                                        f'{b["x0"]:.0f}-{b["x1"]:.0f} pt' for b in s.style["columns"]["bands"])
             + ": place each there with CSS"
         )
-    return (
-        f"Rebuild the look of the CV in this folder as a template. Files here: original_page_1.png to original_page_{pages}.png "
-        f"(the CV; look at them with the Read tool), style.json, text.txt, fonts.css, template.json. "
-        f"Your last template, when there is one, is cv.template.html and the print of the last one that printed is "
-        f"render_page_1.png and on (render_page_N.png for the other pages).\n"
-        f"Fonts (use only these; the @font-face rules are in fonts.css):\n{notes or '- none: use generic families'}\n"
-        f"Icons you may draw, by kind: {icons}.\nSide column: {columns}. Page limit: {s.manifest.max_pages}. "
-        f"Page size: {_page_size(s.style)}, set it with @page size."
-    )
+    return claude_cli.prompt(
+        "stylist-cv-request", pages=str(pages), fonts=notes or "- none: use generic families", icons=icons, columns=columns,
+        max_pages=str(s.manifest.max_pages), page_size=_page_size(s.style))
 
 
 def _list(items: list[str]) -> str:
@@ -651,7 +641,8 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
     for number in range(1, cap + 1):
         progress_mod.report(f"building the template, round {number}", done=number, total=cap, stage="style")
         first = body is None
-        reply = blocks(s.ask(_task(files, feedback, _REPLY_FIRST if first else _REPLY_NEXT)))
+        ask_for = claude_cli.prompt("stylist-reply-first" if first else "stylist-reply-next")
+        reply = blocks(s.ask(_task(files, feedback, ask_for)))
         template = reply.get("template")
         if template is None:
             feedback = "Your reply had no ```template block: the whole page in one fenced block named template."
@@ -742,14 +733,12 @@ def _letter(s: _Session, template: str, cv_md: str, reading: dict) -> tuple[str 
     letter template, its page guarded, printed with a sample letter (readable, one page); one more call when it fails."""
     shutil.copyfile(workspace.PROFILE_EXAMPLE_DIR / _LETTER_FILE, s.work / f"default.{_LETTER_FILE}")
     _write(s.work / _CV_FILE, template)
-    files = (f"Write the cover letter template that matches the CV template. Files here: cv.template.html (the CV template "
-             f"you wrote: its fonts, colours, margins and header), default.{_LETTER_FILE} (the default letter template: its "
-             f"building blocks and structure), template.json, fonts.css. Read the first two with the Read tool.")
+    files = claude_cli.prompt("stylist-letter-request", letter_file=_LETTER_FILE)
     body = style_preview.sample_letter(cv_md, reading)
     feedback, problems = None, []
     for _ in range(2):
         progress_mod.report("building the letter template", stage="style")
-        candidate = blocks(s.ask(_task(files, feedback, _REPLY_LETTER), count=False)).get("letter")
+        candidate = blocks(s.ask(_task(files, feedback, claude_cli.prompt("stylist-reply-letter")), count=False)).get("letter")
         if candidate is None:
             problems = ["no ```letter block: the whole page in one fenced block named letter"]
         elif not (problems := html_guard.template_problems(candidate, s.manifest, "letter")):
@@ -867,7 +856,7 @@ def _rounds(s: _Session, plan: list[dict], icon_files: dict[str, str], pdf: Path
     if failures := _stress(s, template, cv_md, reading):
         progress_mod.report("one more round for the stress renders", stage="style")
         _write(s.work / _CV_FILE, template)
-        reply = blocks(s.ask(_task(files, "Printed with other texts, your template fails:\n" + _list(failures), _REPLY_NEXT)))
+        reply = blocks(s.ask(_task(files, "Printed with other texts, your template fails:\n" + _list(failures), claude_cli.prompt("stylist-reply-next"))))
         template = reply.get("template") or ""
         if problems := (html_guard.template_problems(template, s.manifest) if template else ["no ```template block in the reply"]):
             raise _Stop("the stress renders failed and the extra round's template was refused: " + "; ".join(problems[:3]))
