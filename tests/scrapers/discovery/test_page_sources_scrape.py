@@ -1,7 +1,7 @@
 """Fixture tests for the result-page discovery sources (`hellowork.run`, `jobbsafari.run`,
 `profession.run`): the whole crawl in a fake HTTP session that serves result pages (synthetic
 ones in each site's shape, fixtures/<source>/, and pages built from a card template). No network,
-no waiting (each module's `_sleep` is faked). The crawl rules are the same for the three; what each
+no waiting (the shared `_sleep` is faked). The crawl rules are the same for the three; what each
 site's pages look like is its adapter here and its unit tests."""
 
 import json
@@ -15,11 +15,11 @@ import pytest
 import responses
 
 from door.scrapers import drain_errors, drain_pushback
-from door.scrapers import sdk
+from door.scrapers import paged_discovery, sdk
 from door.scrapers.discovery import hellowork, jobbsafari, profession
 
 _FIX = Path(__file__).parent / "fixtures"
-_REAL_SLEEP = {m.NAME: m._sleep for m in (hellowork, jobbsafari, profession)}   # before any test fakes it
+_REAL_SLEEP = paged_discovery._sleep   # before any test fakes it
 _PAUSE = (3.0, 6.0)
 _KEYS = {"employers", "details", "pages", "requests", "stopped", "pushback", "outcome", "mode", "mode_switched",
          "searched", "search_complete", "first_429", "budget", "pause", "seconds"}
@@ -179,7 +179,7 @@ def src(request):
 @pytest.fixture
 def session(src, monkeypatch):
     s = _Session()
-    monkeypatch.setattr(src.module, "_open_session", lambda: s)
+    monkeypatch.setattr(paged_discovery, "_open_session", lambda: s)
     drain_errors()
     drain_pushback(src.name)
     return s
@@ -193,7 +193,7 @@ def sleeps(src, monkeypatch):
         out.append(seconds)
         return stop.is_set() if stop is not None else False
 
-    monkeypatch.setattr(src.module, "_sleep", fake_sleep)
+    monkeypatch.setattr(paged_discovery, "_sleep", fake_sleep)
     return out
 
 
@@ -369,7 +369,7 @@ def test_hellowork_searches_the_city_of_the_profiles_location_and_none_without_o
 
 
 def test_the_real_sleep_waits_the_seconds_or_ends_early_on_a_stop_signal(src, monkeypatch):
-    real = _REAL_SLEEP[src.name]
+    real = _REAL_SLEEP
     waited = []
     monkeypatch.setattr("time.sleep", waited.append)
     assert real(2, None) is False and waited == [2]

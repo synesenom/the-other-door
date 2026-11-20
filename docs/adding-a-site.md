@@ -97,6 +97,10 @@ company hosts).
    discovery source under the constraints above, and `follow` goes straight to each employer's own
    feed (its ATS platform) or career site. Only a site with nothing readable logged out (a login,
    CAPTCHA or bot wall on every page, or listings that exist only in a real browser) is skipped.
+   A source that reads keyword result pages writes no crawl: its `run` is one `sdk.paged_discovery(...)` call
+   (`scrapers/paged_discovery.py`: pacing, budget, pushback, the grouping of on-topic cards by employer), and
+   the module keeps its constants (`NAME`, `COUNTRIES`, `CONFIG_KEY`, page cap, full-page size, budget, pause),
+   `_search_url(keyword, page, config)`, `_parse_cards` and `_is_wall` (`hellowork.py`, `profession.py`).
 
    Requests go through
    `PoliteSession`, which reads robots.txt for sitemaps and `Crawl-delay` (always honoured)

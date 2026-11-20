@@ -36,18 +36,10 @@ Parsing is pure and separate from the network, so fixtures test it offline.
 """
 
 import json
-import random
 import re
-import threading
-import time
-from datetime import datetime, timezone
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
-import requests
-
 from door.scrapers import sdk
-
-_SITE = "jobbsafari"
 
 # The discovery-source contract (`door.core.employers.discovery_sources`).
 NAME = "jobbsafari"
@@ -64,25 +56,8 @@ _PAGE_CAP = 3  # pages read for one keyword
 _FULL_PAGE = 30  # ads a full result page lists; a page with fewer is the last one
 _MAX_BUDGET = 30  # requests a run, whatever the engine allows
 _MIN_PAUSE = (3.0, 6.0)  # seconds between two requests, at least
-_TIMEOUT_S = 30
 _LISTING_PATH = re.compile(r"^/lediga-jobb(/|$)")  # where a search lives; anything else is a wall
 JOB_BOARD_HOSTS = ("jobbsafari.",)
-
-
-class _Stop(Exception):
-    """Jobbsafari pushed back, or the run was cancelled: stop for this run.
-
-    ``pushback`` marks a refusal (a block, a rate limit, a redirect to a login page) as opposed to a
-    server that kept failing; only a refusal rests the source (`record_pushback`).
-    """
-
-    def __init__(self, reason: str, *, pushback: bool = False):
-        super().__init__(reason)
-        self.pushback = pushback
-
-
-class _Spent(Exception):
-    """The request budget is used up."""
 
 
 # --------------------------------------------------------------------------- #
@@ -93,7 +68,7 @@ def _collapse(text: str | None) -> str:
     return re.sub(r"\s+", " ", text or "").strip()
 
 
-def _search_url(keyword: str, page: int) -> str:
+def _search_url(keyword: str, page: int, config: dict) -> str:
     url = f"{_BASE}/lediga-jobb?sok={quote(keyword.strip(), safe='')}"
     return url if page <= 1 else f"{url}&page={page}"
 
@@ -152,220 +127,10 @@ def _parse_cards(html: str) -> list[dict]:
     return cards
 
 
-def _employers(cards: list[dict], config: dict) -> list[dict]:
-    """The cards whose title is on topic for *config* grouped by employer (two spellings of a name are
-    one), in order of first sight. ``job_ids`` stays empty: the ad is never read. Pure."""
-    grouped: dict[str, dict] = {}
-    terms = sdk.topic_terms(config)
-    for card in cards:
-        if not sdk.on_topic(card["title"], terms):
-            continue
-        employer = grouped.setdefault(sdk.name_key(card["company"]) or card["company"].lower(), {
-            "company": card["company"], "titles": [], "links": [], "job_ids": [], "detailed": False,
-        })
-        if card["title"] not in employer["titles"]:
-            employer["titles"].append(card["title"])
-        if card["url"] and card["url"] not in employer["links"]:
-            employer["links"].append(card["url"])
-    return list(grouped.values())
-
-
-# --------------------------------------------------------------------------- #
-# Network
-# --------------------------------------------------------------------------- #
-
-class _Response:
-    def __init__(self, resp: requests.Response):
-        self.status = resp.status_code
-        self.url = resp.url
-        self._text = resp.text
-
-    def text(self) -> str:
-        return self._text
-
-
-class _HttpSession:
-    """A fresh logged-out HTTP session: no saved cookies, `http_client.USER_AGENT`. `page` is itself
-    (``goto``, ``url``)."""
-
-    def __init__(self):
-        self._http = requests.Session()
-        self._http.headers["User-Agent"] = sdk.USER_AGENT
-        self.page = self
-        self.url = ""
-
-    def goto(self, url: str, **_kwargs) -> _Response:
-        resp = self._http.get(url, timeout=_TIMEOUT_S)
-        self.url = resp.url
-        return _Response(resp)
-
-    def close(self) -> None:
-        self._http.close()
-
-
-def _open_session() -> _HttpSession:
-    return _HttpSession()
-
-
-def _now() -> float:
-    return time.monotonic()
-
-
-def _sleep(seconds: float, stop: threading.Event | None) -> bool:
-    """Wait *seconds*; True when *stop* was set meanwhile (the wait ends early)."""
-    if stop is None:
-        time.sleep(seconds)
-        return False
-    return stop.wait(seconds)
-
-
-class _Crawler:
-    """The requests of one run: counts them against the budget, pauses between them, and notes when
-    Jobbsafari first refused. Not thread-safe; one run uses it from one thread."""
-
-    def __init__(self, page, *, budget: int, pause: tuple[float, float], stop: threading.Event | None):
-        self.page, self.budget, self.pause, self.stop = page, budget, pause, stop
-        self.requests = 0
-        self.started = _now()
-        self.first_429: dict | None = None
-
-    def seconds(self) -> int:
-        return int(round(_now() - self.started))
-
-    def _wait(self) -> None:
-        if self.requests == 0:
-            return
-        seconds = int(round(random.uniform(*self.pause)))
-        sdk.report(f"waiting {seconds} s", seconds, site=_SITE, stage="li_wait")
-        if _sleep(seconds, self.stop):
-            raise _Stop("cancelled")
-
-    def get(self, url: str) -> str:
-        """Load *url* and return the body. Raises `_Spent` when the budget is used up, `_Stop` on a
-        stop signal or pushback. A pause comes before every load but the run's first. 429 and 403 stop
-        at once; any other error status or a failed load gets one more try (also counted), then stops;
-        a redirect to a login page or off the listing stops too."""
-        transient = 0
-        while True:
-            if self.stop is not None and self.stop.is_set():
-                raise _Stop("cancelled")
-            if self.requests >= self.budget:
-                raise _Spent()
-            self._wait()
-            self.requests += 1
-            sdk.report(f"page {self.requests}/{self.budget}", self.requests, self.budget, site=_SITE, stage="li_request")
-            try:
-                resp = self.page.goto(url)
-            except Exception as exc:  # noqa: BLE001 - network errors and timeouts
-                transient += 1
-                if transient > 1:
-                    raise _Stop(f"{type(exc).__name__}: {exc}")
-                continue
-            if _is_wall(self.page.url):
-                raise _Stop(f"redirected away from the listing ({self.page.url})", pushback=True)
-            if resp.status in (429, 403):
-                if resp.status == 429:
-                    self.first_429 = {"after_requests": self.requests - 1, "after_s": self.seconds()}
-                raise _Stop(f"HTTP {resp.status}", pushback=True)
-            if resp.status >= 400 and (wall := sdk.wall_page(resp.text())):
-                raise _Stop(f"HTTP {resp.status}: {wall} instead of the results", pushback=True)
-            if resp.status >= 400:
-                transient += 1
-                if transient > 1:
-                    raise _Stop(f"HTTP {resp.status}")
-                continue
-            return resp.text()
-
-
-def _stop(stop: _Stop) -> None:
-    message = f"stopped for this run: {stop}"
-    sdk.report(message, site=_SITE)
-    sdk.record_error(_SITE, message)
-    if stop.pushback:
-        sdk.record_pushback(_SITE)
-
-
-def _page_through(crawler: _Crawler, keyword: str, cards: list[dict], seen: set[str]) -> bool:
-    """Read the result pages of one *keyword* into *cards* (ads not in *seen* yet) until a short page,
-    `_PAGE_CAP` pages, or the budget. True when it ended by itself (not by the budget)."""
-    for number in range(1, _PAGE_CAP + 1):
-        try:
-            html = crawler.get(_search_url(keyword, number))
-        except _Spent:
-            return False
-        page = _parse_cards(html)
-        if not page and (wall := sdk.wall_page(html)):
-            raise _Stop(f"{wall} instead of the results", pushback=True)
-        new = [c for c in page if c["platform_id"] not in seen]
-        seen.update(c["platform_id"] for c in new)
-        cards.extend(new)
-        if len(page) < _FULL_PAGE:
-            return True
-    return True
-
-
-def discover_run(
-    config: dict, *, budget: int = _MAX_BUDGET, pause: tuple[float, float] = _MIN_PAUSE, rotation=(),
-    stop: threading.Event | None = None, **_ignored,
-) -> dict:
-    """One discovery run's requests, and how they went. Side-effect free apart from
-    `record_error`/`record_pushback` and progress events, so it can run in a worker thread.
-
-    The *rotation* keywords are searched one at a time; the ones the budget did not reach are in no
-    ``searched`` and wait for the next run. *budget* and *pause* are the engine's, held to
-    `_MAX_BUDGET` and `_MIN_PAUSE` (the engine's defaults are made for LinkedIn). The rest of what the
-    engine passes (``since``, ``known_companies``, ``mode``, ...) is not used: the search has no date
-    filter, and an employer already known is dropped when queued.
-
-    Returns the `sdk.DiscoveryResult` fields; ``mode`` is always ``rotate``.
-    """
-    budget = max(1, min(budget, _MAX_BUDGET))
-    pause = (max(pause[0], _MIN_PAUSE[0]), max(pause[1], _MIN_PAUSE[1]))
-    result: dict = {"employers": [], "details": 0, "pages": 0, "requests": 0, "stopped": None, "pushback": False,
-                    "outcome": "ok", "mode": "rotate", "mode_switched": False, "searched": [], "search_complete": False,
-                    "first_429": None, "budget": budget, "pause": [pause[0], pause[1]], "seconds": 0}
-    if not sdk.keywords(config):
-        return result
-    now = datetime.now(timezone.utc).isoformat()
-    try:
-        session = _open_session()
-    except Exception as exc:  # noqa: BLE001
-        stopped = _Stop(f"the HTTP session did not start: {exc}")
-        _stop(stopped)
-        result.update(stopped=str(stopped), outcome="error")
-        return result
-    crawler = _Crawler(session.page, budget=budget, pause=pause, stop=stop)
-    cards: list[dict] = []
-    complete = True
-    try:
-        try:
-            seen: set[str] = set()
-            for keyword in rotation:
-                if not _page_through(crawler, keyword, cards, seen):
-                    complete = False
-                    break
-                result["searched"].append(keyword)
-        except _Stop as stopped:
-            complete = False
-            _stop(stopped)
-            result.update(stopped=str(stopped), pushback=stopped.pushback)
-        finally:  # the cards read so far count, stopped or not
-            result["employers"] = [{**e, "first_seen": now} for e in _employers(cards, config)]
-    finally:
-        session.close()
-    result.update(requests=crawler.requests, pages=crawler.requests, first_429=crawler.first_429,
-                  seconds=crawler.seconds(), search_complete=complete)
-    if result["stopped"] == "cancelled":
-        result["outcome"] = "cancelled"
-    elif result["stopped"]:
-        result["outcome"] = "refused" if result["pushback"] else "error"
-    elif not complete:
-        result["outcome"] = "budget"
-    return result
-
-
 # --- the discovery-source contract ----------------------------------------------------------
 
 def run(config: dict, **kwargs) -> "sdk.DiscoveryResult":
-    """`discover_run`, looked up at call time (a test replaces it)."""
-    return discover_run(config, **kwargs)
+    """The shared paged crawl (`sdk.paged_discovery`) over this source's URLs and cards."""
+    return sdk.paged_discovery(
+        config, name=NAME, search_url=_search_url, parse_cards=_parse_cards, is_wall=_is_wall,
+        page_cap=_PAGE_CAP, full_page=_FULL_PAGE, max_budget=_MAX_BUDGET, min_pause=_MIN_PAUSE, **kwargs)

@@ -4,6 +4,7 @@ in the site's shape (``__NEXT_DATA__``), a few made-up results each (fixtures/jo
 
 from pathlib import Path
 
+from door.scrapers import paged_discovery
 from door.scrapers.discovery import jobbsafari
 
 _FIX = Path(__file__).parent / "fixtures" / "jobbsafari"
@@ -18,9 +19,9 @@ def _by_id(cards):
 
 
 def test_the_search_url_quotes_the_keyword_and_pages_from_the_second_page():
-    assert jobbsafari._search_url("project manager", 1) == "https://jobbsafari.se/lediga-jobb?sok=project%20manager"
-    assert jobbsafari._search_url("project manager", 2) == "https://jobbsafari.se/lediga-jobb?sok=project%20manager&page=2"
-    assert "sok=systemutvecklare%20%C3%A5" in jobbsafari._search_url("systemutvecklare å", 1)
+    assert jobbsafari._search_url("project manager", 1, {}) == "https://jobbsafari.se/lediga-jobb?sok=project%20manager"
+    assert jobbsafari._search_url("project manager", 2, {}) == "https://jobbsafari.se/lediga-jobb?sok=project%20manager&page=2"
+    assert "sok=systemutvecklare%20%C3%A5" in jobbsafari._search_url("systemutvecklare å", 1, {})
 
 
 def test_a_result_gives_id_title_company_place_and_the_employers_apply_link_without_tracking():
@@ -75,7 +76,7 @@ def test_only_on_topic_titles_are_kept_and_grouped_by_employer_in_order_of_first
     config = {"search_keywords": ["project manager"], "location": "Stockholm"}
     cards = [_card(1, "Senior Project Manager", "Hooli AB"), _card(2, "Lagerarbetare", "Lager Exempel AB"),
              _card(3, "Project Manager", "HOOLI AB"), _card(4, "Kock", "Krog Exempel AB"), _card(5, "Project Manager", "Alfa AB", "")]
-    got = jobbsafari._employers(cards, config)
+    got = paged_discovery.employers_of(cards, config)
     assert [e["company"] for e in got] == ["Hooli AB", "Alfa AB"]
     assert got[0]["titles"] == ["Senior Project Manager", "Project Manager"]
     assert got[0]["links"] == ["https://careers.example.com/job/1", "https://careers.example.com/job/3"]
@@ -86,7 +87,7 @@ def test_only_on_topic_titles_are_kept_and_grouped_by_employer_in_order_of_first
 def test_swedish_keywords_keep_swedish_titles_and_drop_the_rest():
     config = {"search_keywords": ["projektledare"], "location": "Stockholm"}
     cards = jobbsafari._parse_cards(_fx("search_project_manager_p1.html"))
-    got = {e["company"] for e in jobbsafari._employers(cards, config)}
+    got = {e["company"] for e in paged_discovery.employers_of(cards, config)}
     assert {"Exempelby Kommun", "Globex Energi", "Initrode Kraft"} <= got
 
 
