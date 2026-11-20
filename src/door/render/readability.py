@@ -19,16 +19,12 @@ def normalise(text: str) -> str:
     return " ".join(text.split())
 
 
-def problems(text: str, *, name: str | None, headings: list[str], keywords: list[str], pages: int = 1,
-             side: list[str] | tuple[str, ...] = ()) -> list[dict]:
+def problems(text: str, *, name: str | None, headings: list[str], keywords: list[str], pages: int = 1) -> list[dict]:
     """What would not survive an ATS reading `text` (a PDF's extracted text), as ``[{kind, detail}]``.
 
     Kinds: ``empty`` (under `MIN_CHARS_PER_PAGE` characters a page), ``garbled`` (replacement or private-use
     glyphs), ``missing`` (the name, a heading or a keyword absent), ``glued`` (a heading present but not on its
     own line), ``order`` (headings out of the order the source has them). No ``headings``: no heading checks.
-    `side` are the headings of a side column: a reader may take that column before or after the main one and
-    set its headings on a line of the main text, so they are checked for ``missing`` and for their order among
-    themselves, never for ``glued`` or against the main headings.
     """
     found: list[dict] = []
     if len("".join(text.split())) < MIN_CHARS_PER_PAGE * max(pages, 1):
@@ -39,22 +35,21 @@ def problems(text: str, *, name: str | None, headings: list[str], keywords: list
     if name and normalise(name) not in flat:
         found.append({"kind": "missing", "detail": f"your name ({name}) is not in the text"})
     lines = [normalise(line) for line in text.splitlines()]
-    for column, glue in ((headings, True), (side, False)):
-        positions: list[tuple[str, int]] = []
-        for heading in column:
-            wanted = normalise(heading)
-            if not wanted:
-                continue
-            if wanted in lines:
-                positions.append((heading, lines.index(wanted)))
-            elif wanted not in flat:
-                found.append({"kind": "missing", "detail": f"heading \"{heading}\" is not in the text"})
-            elif glue:
-                found.append({"kind": "glued", "detail": f"heading \"{heading}\" is not on a line of its own"})
-        for (_, before), (later, after) in zip(positions, positions[1:]):
-            if after < before:
-                found.append({"kind": "order", "detail": f"heading \"{later}\" reads before an earlier section"})
-                break
+    positions: list[tuple[str, int]] = []
+    for heading in headings:
+        wanted = normalise(heading)
+        if not wanted:
+            continue
+        if wanted in lines:
+            positions.append((heading, lines.index(wanted)))
+        elif wanted not in flat:
+            found.append({"kind": "missing", "detail": f"heading \"{heading}\" is not in the text"})
+        else:
+            found.append({"kind": "glued", "detail": f"heading \"{heading}\" is not on a line of its own"})
+    for (_, before), (later, after) in zip(positions, positions[1:]):
+        if after < before:
+            found.append({"kind": "order", "detail": f"heading \"{later}\" reads before an earlier section"})
+            break
     for keyword in keywords:
         if normalise(keyword) and normalise(keyword) not in flat:
             found.append({"kind": "missing", "detail": f"keyword \"{keyword}\" is not in the text"})
@@ -83,8 +78,6 @@ def extract(pdf: Path) -> tuple[str, int]:
     return "\n".join(texts), len(texts)
 
 
-Box = tuple[float, float, float, float]
-SPARSE_SHARE = 0.2  # a last page with less ink than this share of the page height is sparse
 MISSING_NAMED = 5  # how many absent words an `overflow` detail names
 
 
@@ -140,20 +133,8 @@ def spaced_problems(pdf_text: str, body: str) -> list[dict]:
     return [{"kind": "spaced", "detail": f"letters printed apart: {', '.join(named)}"}]
 
 
-def layout_problems(pages: list[tuple[float, float, list[Box]]], *, two_column: bool) -> list[dict]:
-    """``sparse``: the last of several pages of a `two_column` CV holds no ink or under a fifth of the page height
-    (reported only). `pages` is ``[(width, height, [char box (l, b, r, t)])]``, `pdf_render.page_boxes`."""
-    if not two_column or len(pages) < 2:
-        return []
-    _, height, boxes = pages[-1]
-    if not boxes or max(t for *_, t in boxes) - min(b for _, b, _, _ in boxes) < SPARSE_SHARE * height:
-        return [{"kind": "sparse", "detail": f"the last page ({len(pages)}) is almost empty"}]
-    return []
-
-
 def page_problems(pages: int, max_pages: int | None) -> list[dict]:
-    """``pages``: a CV of more pages than `max_pages` (`common._cv_max_pages`, the stricter of the country's and the
-    template's), the limit named so the tailor's retry knows what to cut to (#194). No limit: nothing."""
+    """``pages``: a CV of more pages than `max_pages` (the country's `[cv] max_pages`), the limit named so the tailor's retry knows what to cut to (#194). No limit: nothing."""
     if max_pages is None or pages <= max_pages:
         return []
     return [{"kind": "pages", "detail": f"{pages} pages, over the limit of {max_pages} page{'s' if max_pages > 1 else ''}"}]
@@ -164,24 +145,15 @@ def check_pdf(pdf: Path, body: str, name: object, *, cv: bool = False, max_pages
     the raw config's value, used when it is a string), and for words read as letters apart (`spaced_problems`); a
     heading read apart is `spaced` only, not also `missing` or `glued`, which a tailor's retry could not cure. A `cv`
     is also checked for words lost off the page
-    (`overflow_problems`, unless no text could be read), for more pages than `max_pages` (`page_problems`) and,
-    when `body` is placed in columns (the `side` div `page.place_columns` adds only for a template with a side
-    column), for a sparse last page (`layout_problems`); a letter gets none of these."""
-    from door.render import pdf_render
-
+    (`overflow_problems`, unless no text could be read), for more pages than `max_pages` (`page_problems`); a letter gets neither."""
     text, pages = extract(pdf)
-    cols = html_doc.columns(body)
-    main, side = (body, "") if cols is None else (cols[0] + cols[1], cols[2])
     apart = [squash(r) for r in spaced_runs(text, body)]
 
-    def read(part: str) -> list[str]:
-        return [h for h in html_doc.headings(part) if not any(r in squash(h) for r in apart)]
-
-    found = problems(text, name=name if isinstance(name, str) else None, headings=read(main), side=read(side),
+    headings = [h for h in html_doc.headings(body) if not any(r in squash(h) for r in apart)]
+    found = problems(text, name=name if isinstance(name, str) else None, headings=headings,
                      keywords=html_doc.keywords(body), pages=pages) + spaced_problems(text, body)
     if cv:
         if not {"empty", "garbled"} & {p["kind"] for p in found}:
             found += overflow_problems(text, body)
         found += page_problems(pages, max_pages)
-        found += layout_problems(pdf_render.page_boxes(pdf), two_column=cols is not None)
     return found

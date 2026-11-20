@@ -23,12 +23,12 @@ from door.core import sites
 # the caller; story_bank.md holds made-up stories the tailor would read as the
 # candidate's own (it starts absent, and the tailor fills it from real CVs);
 # cv.md is the example person's CV, never the candidate's (none is "no CV yet").
-# The HTML templates, their manifest, fonts and icons come from the code (`door.core.templates`), never copied (#56, #188).
+# The HTML templates and fonts come from the code (`door.core.templates`), never copied (#56, #188).
 _NOT_COPIED = {
     Path("config.json"), Path("story_bank.md"), Path("companies.json"), Path("cv.md"),
-    Path("cv.template.html"), Path("cover-letter.template.html"), Path("template.json"),
+    Path("cv.template.html"), Path("cover-letter.template.html"),
 }
-_NOT_COPIED_DIRS = {Path("fonts"), Path("icons")}
+_NOT_COPIED_DIRS = {Path("fonts")}
 
 
 def _copy_missing_example_files(example_dir: Path, profile_dir: Path) -> list[str]:

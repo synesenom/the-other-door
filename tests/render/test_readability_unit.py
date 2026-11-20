@@ -155,35 +155,7 @@ def test_a_body_with_no_words_has_no_overflow():
     assert readability.overflow_problems(PDF_TEXT, "<!-- Keywords: a -->") == []
 
 
-def test_sparse_last_page_of_a_two_column_template():
-    full = page((60, 60, 70, 780))
-    last = page((60, 700, 70, 760))  # 60pt of ink on an 842pt page
-    assert kinds(readability.layout_problems([full, last], two_column=True)) == ["sparse"]
-    assert readability.layout_problems([full, last], two_column=False) == []
-
-
-def test_a_blank_last_page_of_a_two_column_cv_is_sparse():
-    assert kinds(readability.layout_problems([page((60, 60, 70, 780)), page()], two_column=True)) == ["sparse"]
-
-
-def test_check_pdf_reads_two_column_from_the_placed_body(tmp_path, monkeypatch):
-    from door.render import pdf_render
-
-    pdf = make_pdf(tmp_path / "a.pdf", [GOOD, "x"])
-    monkeypatch.setattr(pdf_render, "page_boxes", lambda p: [(595.0, 842.0, [(60, 60, 70, 780)]), (595.0, 842.0, [(60, 700, 70, 710)])])
-    placed = '<div class="main"><p>Jane Doe</p></div><div class="side"><p>Python</p></div>'
-    assert "sparse" in kinds(readability.check_pdf(pdf, placed, NAME, cv=True))
-    assert "sparse" not in kinds(readability.check_pdf(pdf, "<p>Jane Doe Python</p>", NAME, cv=True))
-    assert "sparse" not in kinds(readability.check_pdf(pdf, placed, NAME))
-
-
-def test_sparse_needs_more_than_one_page_and_a_nearly_empty_last():
-    assert readability.layout_problems([page((60, 700, 70, 760))], two_column=True) == []
-    full = page((60, 60, 70, 780))
-    assert readability.layout_problems([full, page((60, 100, 70, 700))], two_column=True) == []
-
-
-def test_check_pdf_of_a_letter_does_no_layout_or_overflow_check(tmp_path):
+def test_check_pdf_of_a_letter_does_no_overflow_check(tmp_path):
     pdf = make_pdf(tmp_path / "a.pdf", [GOOD])
     assert "overflow" not in kinds(readability.check_pdf(pdf, "<p>zzzunseenword</p>", NAME))
 
@@ -201,70 +173,10 @@ def test_no_overflow_is_said_for_a_pdf_with_no_readable_text(tmp_path):
     assert "empty" in kinds(found) and "overflow" not in kinds(found)
 
 
-def test_side_headings_read_in_the_wrong_order_are_reported():
+def test_headings_read_in_the_wrong_order_are_reported():
     text = "Experience\nx\nSkills\ny\nProfile\n"
     found = readability.problems(text, name=None, headings=["Profile", "Experience", "Skills"], keywords=[])
     assert "order" in kinds(found)
-
-
-def page(*boxes, size=(595.0, 842.0)):
-    return (size[0], size[1], list(boxes))
-
-
-SIDE_FIRST = (
-    "Skills & Tools\nPython, SQL, Airflow, dbt\n"
-    "Jane Doe\nSenior data engineer with many years of building pipelines.\n"
-    "Profile\nI build data platforms in Python and SQL.\n"
-    "Experience\nAcme: led a team that shipped Airflow jobs.\n"
-)
-
-
-def test_side_heading_reading_first_is_fine():
-    found = readability.problems(SIDE_FIRST, name=NAME, headings=["Profile", "Experience"], side=["Skills & Tools"],
-                                 keywords=[])
-    assert found == []
-
-
-def test_main_out_of_order_still_flagged_with_a_side_column():
-    text = "Skills & Tools\nPython\nJane Doe\nExperience\nAcme\nProfile\nabout me\n"
-    found = readability.problems(text, name=NAME, headings=["Profile", "Experience"], side=["Skills & Tools"],
-                                 keywords=[])
-    assert "order" in kinds(found)
-
-
-def test_side_out_of_order_among_themselves_flagged():
-    text = "Languages\nEnglish\nSkills\nPython\n" + GOOD
-    found = readability.problems(text, name=NAME, headings=["Profile", "Experience"], side=["Skills", "Languages"],
-                                 keywords=[])
-    assert "order" in kinds(found)
-
-
-def test_side_heading_sharing_a_line_is_not_glued():
-    text = GOOD.replace("Experience\n", "Skills & Tools Experience\n").replace("Skills & Tools\n", "")
-    found = readability.problems(text, name=NAME, headings=["Profile"], side=["Skills & Tools"], keywords=[])
-    assert found == []
-
-
-def test_missing_side_heading_still_missing():
-    found = readability.problems(GOOD.replace("Skills & Tools\n", ""), name=NAME, headings=["Profile"],
-                                 side=["Skills & Tools"], keywords=[])
-    assert kinds(found) == ["missing"]
-
-
-def test_page_split_main_column_passes():
-    # page 1 reads main, then the side column; the rest of main follows on page 2
-    text = "Jane Doe\nProfile\nabout me\nExperience\nAcme\nSkills & Tools\nPython\nEducation\nUniversity\n"
-    found = readability.problems(text, name=NAME, headings=["Profile", "Experience", "Education"],
-                                 side=["Skills & Tools"], keywords=[])
-    assert found == []
-
-
-def test_check_pdf_splits_main_and_side(tmp_path):
-    pdf = tmp_path / "cv.pdf"
-    make_pdf(pdf, [SIDE_FIRST])
-    body = ('<h1>Jane Doe</h1><div class="main"><h2>Profile</h2><p>x</p><h2>Experience</h2><p>y</p></div>'
-            '<div class="side"><h2>Skills &amp; Tools</h2><p>z</p></div>')
-    assert readability.check_pdf(pdf, body, NAME) == []
 
 
 def test_a_cv_over_its_page_limit_is_a_fixable_problem_that_names_the_limit(tmp_path):

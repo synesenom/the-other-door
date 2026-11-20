@@ -132,15 +132,12 @@ def _cv_conventions_text(posting_path: Path) -> str:
     cv = country.cv if country else i18n.CvConventions()
     photo = config.get("photo")
     has_photo = bool(photo) and photo_mod.problem(Path(photo) if Path(photo).is_absolute() else workspace.HOME / photo) is None
-    manifest = common._cv_manifest(config)
-    max_pages = common._cv_max_pages(posting, config)
-    side = f" The template puts the sections {', '.join(manifest.columns.side)} in a narrow side column: keep each short." \
-        if manifest and manifest.columns and manifest.columns.side else ""
+    max_pages = i18n.cv_conventions(posting, config).max_pages
     return (
         f"CV conventions for this job's country ({country.code if country else 'no country file'}): "
         f"photo: {cv.photo}; the profile has a photo: {'yes' if has_photo else 'no'}; "
         f"{'a date of birth is usual there' if cv.date_of_birth else 'no date of birth is expected there'}, but never add a date of birth: keep one only if cv.md already has it; "
-        f"at most {max_pages} pages; a full date is written {cv.date_format}.{side}"
+        f"at most {max_pages} pages; a full date is written {cv.date_format}."
     )
 
 
@@ -274,10 +271,10 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None,
 
 
 def _read_back(output_dir: Path, posting: dict, config: dict) -> list[dict] | None:
-    """The ATS read-back of the two PDFs (`matches._readability`), the CV held to `common._cv_max_pages` for
+    """The ATS read-back of the two PDFs (`matches._readability`), the CV held to the country's `[cv] max_pages` for
     `posting`, or None when it could not be made."""
     try:
-        return matches_cmd._readability(output_dir, max_pages=common._cv_max_pages(posting, config))
+        return matches_cmd._readability(output_dir, max_pages=i18n.cv_conventions(posting, config).max_pages)
     except Exception:  # noqa: BLE001 - the check never fails a prepare
         return None
 
@@ -372,11 +369,6 @@ def _prepare_core(
     config = profile_loader.load_config_or_defaults(home)
     if common._cv_is_example(config, home):
         return {"job_id": job_id, "outcome": "failed", "error": common.EXAMPLE_CV_MESSAGE}
-    try:  # a broken template.json, or a file it names missing, would only fail compile after the tailor ran (#188)
-        for template_path in _tailor_templates(home).values():
-            templates.assets(template_path)
-    except ValueError as exc:
-        return {"job_id": job_id, "outcome": "failed", "error": str(exc)}
     if job_id is None:
         if not common._claude_available():
             return {"job_id": None, "outcome": "failed", "error": claude_cli.NO_CLAUDE}

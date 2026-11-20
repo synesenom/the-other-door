@@ -23,7 +23,7 @@ PROMPTS = {
     "skill-gaps": ("sonnet", "1f46f1a229ba3db39ca73c2b2cdc990945ff177d7b5dcc65b56a5b45ab470036"),
     "keywords": ("haiku", "6b9c81f3e5d8791f6750aca0c4207840daba6280df0b3d0d1a0519e2395f3513"),
     "skill-grouper": ("haiku", "f3492df541d158d0b13e3071464e7879bcdbabb30aca2a536bd304daa63d5e96"),
-    "reviser": ("sonnet", "62b1db5e4bb3ea4481c4f957f7c7caf947d3ca36cfcfedf28a87a3d51c200564"),
+    "reviser": ("sonnet", "5d9a5cb38d4b2cc68801817fe8a3e79e561d02d21e318178c41044f037ecaded"),
     "salary": ("haiku", "bcc343a5e311c3daa8dfefafc790c59764b51305d0670fd0fadaf40f15b6988e"),
     "story-from-text": ("sonnet", "95b7e7c71a4f29b5544f29c91c83f676ea7c06bfb97a16d1fe0fa456d64f1a54"),
     "story-from-cv": ("sonnet", "e3d7398892b12f04dd7d8cad7d4a380342c0591139fd480462022e7b8ca49e9b"),

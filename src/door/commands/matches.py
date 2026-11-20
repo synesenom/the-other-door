@@ -18,7 +18,6 @@ from door.commands import status as status_cmd
 from door.core import profile_loader, sites, workspace
 from door.tailoring import facts as facts_mod
 from door.render import html_doc, readability
-from door.render import page as page_mod
 
 
 def _list_core(
@@ -367,7 +366,7 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
     the ``Keywords`` and ``Tailoring`` comments the tailor writes into
     ``cv.html`` (what it emphasised; what it cut, kept or condensed; empty for a job prepared before the HTML bodies), page
     counts and the cover letter's word count.
-    ``cv_max_pages`` is the CV's page limit as the profile and template stand now (`common._cv_max_pages` for ``posting``).
+    ``cv_max_pages`` is the CV's page limit as the profile stands now (the country's `[cv] max_pages` for ``posting``).
 
     Returns:
         ``{"output_dir", "pdfs": {"cv", "cover_letter"}, "pngs": {"cv":
@@ -407,7 +406,7 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
     unsupported = facts_mod.load(output_dir, workspace.PROFILE_DIR)  # what the last check found: showing a job asks no model
 
     config = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR)
-    cv_max_pages = common._cv_max_pages(posting, config)
+    cv_max_pages = i18n.cv_conventions(posting, config).max_pages
     return {
         "output_dir": str(output_dir),
         "readability": _readability(output_dir, max_pages=cv_max_pages),
@@ -435,8 +434,6 @@ def _readability(output_dir: Path, max_pages: int) -> list[dict] | None:
         for material in _MATERIALS:
             body_path = output_dir / f"{material}.html"
             body = body_path.read_text(encoding="utf-8") if body_path.is_file() else ""
-            if material == "cv":
-                body = page_mod.placed_cv(body, config)
             checks = readability.check_pdf(output_dir / f"{material}.pdf", body, name, cv=material == "cv",
                                            max_pages=max_pages)
             found += [{"file": material, **p} for p in checks]

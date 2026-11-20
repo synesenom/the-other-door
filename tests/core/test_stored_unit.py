@@ -8,7 +8,7 @@ from door.core import stored
 
 
 @pytest.mark.parametrize("path", [
-    "profile/config.json", "profile/fonts/Figtree-Regular.ttf", "profile/cv.template.html", "profile/template.json", "profile/icons/phone.svg",
+    "profile/config.json", "profile/fonts/Figtree-Regular.ttf", "profile/cv.template.html",
     "profile/cover-letter.template.html", "profile/cv.template.tex", "profile/cover-letter.template.tex", "profile/cv.md.bak", "profile/.data_version",
     "jobs/history.json", "jobs/discovery/linkedin.json", "jobs/runs/2026-01-01T10-00-00.json", "jobs/runs/latest.log",
     "jobs/postings/2026-01-01/jobindex/jobindex.123.json", "jobs/output/jobindex.123/cv.html",

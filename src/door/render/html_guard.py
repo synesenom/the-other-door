@@ -21,13 +21,13 @@ from door.core import cv_read
 
 TAGS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "span", "strong", "em", "a", "br"})
 VOID = frozenset({"br"})
-# What the template's CSS styles; `photo`, `main` and `side` are written by `compile` after the guard, never by the model.
+# What the template's CSS styles; `photo` is written by `compile` after the guard, never by the model.
 CLASSES = frozenset({
     "cv-header", "contact", "entry", "letter-header", "recipient", "date", "closing", "signoff",
     "tagline", "phone", "email", "web", "location", "linkedin", "github",
     "role", "org", "dates", "place", "sep", "level", "level-1", "level-2", "level-3", "level-4", "level-5",
 })
-# the kind of a CV section, on its `<h2>` only: the tailor writes it by what the section holds, `place_columns` reads it
+# the kind of a CV section, on its `<h2>` only: the tailor writes it by what the section holds
 KIND_PREFIX = "kind-"
 KIND_CLASSES = frozenset(f"{KIND_PREFIX}{k}" for k in cv_read.KINDS)
 NOTES = ("Keywords", "Tailoring")

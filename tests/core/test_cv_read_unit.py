@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from door.core import claude_cli, cv_read, templates
+from door.core import claude_cli, cv_read
 
 MD = """# Mette Berg
 
@@ -255,11 +255,6 @@ def _recorded_cvs():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return [c["md"] for c in module.build_reader_corpus().values()]
-
-
-def test_the_kinds_a_column_or_an_icon_names_come_from_the_reading_kinds():
-    assert set(templates.SECTION_KINDS) <= set(cv_read.KINDS)
-    assert set(templates.ICON_KINDS) >= set(cv_read.CONTACT_KINDS)
 
 
 def test_the_cache_keeps_only_the_twenty_most_recent_answers(asked, tmp_path):

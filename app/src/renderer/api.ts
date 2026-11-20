@@ -239,7 +239,7 @@ export interface Materials {
   keywords: string[]
   tailoring: string[]
   page_counts: { cv: number; cover_letter: number }
-  /** The CV's page limit as the profile and template stand now: the stricter of the job country's convention and the template's. */
+  /** The CV's page limit as the profile stands now: the job country's convention. */
   cv_max_pages: number
   cover_letter_words: number | null
   rendered: boolean

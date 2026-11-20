@@ -1012,9 +1012,8 @@ def test_a_job_in_no_known_country_gets_the_profiles_and_else_the_neutral_conven
     assert "(no country file)" in neutral and "photo: no" in neutral and "at most 2 pages" in neutral
 
 
-def test_cv_max_pages_follows_the_postings_country_not_the_profiles(cli_env, monkeypatch):
+def test_the_page_limit_follows_the_postings_country_not_the_profiles(cli_env, tmp_path, monkeypatch):
     from door import i18n
-    from door.commands import _common as common
 
     dk = i18n.country_for_location("Aarhus, Denmark")
     strict = dk.model_copy(update={"cv": dk.cv.model_copy(update={"max_pages": 1})})
@@ -1022,53 +1021,9 @@ def test_cv_max_pages_follows_the_postings_country_not_the_profiles(cli_env, mon
     monkeypatch.setattr(i18n, "country_for_location", lambda loc: strict if "Aarhus" in (loc or "") else real(loc))
     config = profile_loader.load_config_or_defaults(cli_env.profile_dir)
     config["location"] = "London, United Kingdom"
-    assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == 1
-    assert common._cv_max_pages({"location": "London, United Kingdom"}, config) == 2
-
-
-@pytest.mark.parametrize("template_pages, expected", [(1, 1), (3, 2), (None, 2)])
-def test_the_page_limit_is_the_stricter_of_the_templates_and_the_countrys(cli_env, tmp_path, template_pages, expected):
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
-    prompt = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
-    assert f"at most {expected} pages" in prompt
-
-
-def test_the_prompt_names_the_sections_a_template_puts_in_a_narrow_side_column(cli_env, tmp_path):
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text(json.dumps({"columns": {"side": ["skills", "languages"]}}))
-    prompt = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
-    assert "narrow side column" in prompt and "skills, languages" in prompt
-
-
-def test_the_prompt_says_nothing_of_columns_for_a_one_column_template(cli_env, tmp_path):
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": 1}))
-    plain = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
-    assert "side column" not in plain
-
-
-def test_a_broken_template_manifest_leaves_the_countrys_page_limit(cli_env, tmp_path):
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text("{broken")
-    prompt = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
-    assert "at most 2 pages" in prompt
-
-
-def test_prepare_refuses_a_broken_template_manifest_before_the_tailor_runs(cli_env, monkeypatch):
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text('{"fonts": ["A.otf"]}')
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("the tailor ran"))
-    result = prepare_cmd._prepare_core("job-1")
-    assert result["outcome"] == "failed" and "template.json" in result["error"]
-
-
-def test_prepare_refuses_a_manifest_naming_a_missing_font_before_the_tailor_runs(cli_env, monkeypatch):
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text('{"fonts": ["Gone.ttf"]}')
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", lambda *a, **k: pytest.fail("the tailor ran"))
-    result = prepare_cmd._prepare_core("job-1")
-    assert result["outcome"] == "failed" and "Gone.ttf" in result["error"]
+    (cli_env.profile_dir / "config.json").write_text(json.dumps(config))
+    assert "at most 1 pages" in prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path / "a", "Aarhus, Denmark"))[0]
+    assert "at most 2 pages" in prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path / "b", "London, United Kingdom"))[0]
 
 
 def test_run_tailor_clears_the_fact_check_rounds_and_stale_facts_before_it_starts(cli_env, monkeypatch):
@@ -1328,32 +1283,7 @@ def test_prepare_tags_the_language_of_an_ad_stored_without_one(cli_env, monkeypa
     assert seen == ["da"]
 
 
-def test_cv_max_pages_follows_the_postings_country_not_the_profiles(cli_env, monkeypatch):
-    from door import i18n
-    from door.commands import _common as common
-
-    dk = i18n.country_for_location("Aarhus, Denmark")
-    strict = dk.model_copy(update={"cv": dk.cv.model_copy(update={"max_pages": 1})})
-    real = i18n.country_for_location
-    monkeypatch.setattr(i18n, "country_for_location", lambda loc: strict if "Aarhus" in (loc or "") else real(loc))
-    config = profile_loader.load_config_or_defaults(cli_env.profile_dir)
-    config["location"] = "London, United Kingdom"
-    assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == 1
-    assert common._cv_max_pages({"location": "London, United Kingdom"}, config) == 2
-
-
-@pytest.mark.parametrize("template_pages, expected", [(1, 1), (3, 2), (None, 2)])
-def test_cv_max_pages_is_the_stricter_of_the_templates_and_the_countrys(cli_env, template_pages, expected):
-    from door.commands import _common as common
-
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
-    config = profile_loader.load_config_or_defaults(cli_env.profile_dir)
-    assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == expected
-
-
 _OVERFLOW = {"file": "cv", "kind": "overflow", "detail": "text cut off: Kubernetes, Airflow"}
-_SPARSE = {"file": "cv", "kind": "sparse", "detail": "the last page (2) is almost empty"}
 
 
 def test_an_overflow_gets_one_retry_with_its_detail_and_the_instruction_in_the_prompt(prep, monkeypatch):
@@ -1399,23 +1329,14 @@ def test_a_cv_still_over_its_limit_after_the_retry_is_in_readability_and_not_ret
     assert len(calls) == 2 and result["readability"] == [_PAGES] and result["warning"]
 
 
-@pytest.mark.parametrize("template_pages, expected", [(1, 1), (None, 2)])
-def test_the_read_back_checks_the_cv_against_the_stricter_page_limit(prep, monkeypatch, template_pages, expected):
+def test_the_read_back_checks_the_cv_against_the_countrys_page_limit(prep, monkeypatch):
     from door.commands import matches as matches_cmd
 
     write_list_posting(prep.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9, location="Aarhus, Denmark")
-    (prep.profile_dir / "cv.template.html").write_text("<<body>>")
-    (prep.profile_dir / "template.json").write_text(json.dumps({"max_pages": template_pages} if template_pages else {}))
     limits = []
     monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, []))
     monkeypatch.setattr(matches_cmd, "_readability", lambda output_dir, max_pages=None: limits.append(max_pages) or [])
     _go(prep)
-    assert limits == [expected]
+    assert limits == [2]
 
 
-def test_a_sparse_last_page_is_reported_and_not_retried(prep, monkeypatch):
-    calls = []
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls))
-    _script_readability(monkeypatch, [_SPARSE])
-    result = _go(prep)
-    assert len(calls) == 1 and result["readability"] == [_SPARSE]

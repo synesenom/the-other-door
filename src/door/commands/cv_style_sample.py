@@ -63,9 +63,8 @@ def _cv_style_sample_core(accent: str, fonts: str) -> dict:
         return {"error": "cv_unreadable"}
     with utils.staging(folder, "print-") as staged:
         try:
-            pdf, _, _ = page_mod.print_page(
-                body, template, template_path, "en", staged, "cv", manifest=templates.manifest(template_path),
-                photo=photo, style=style)
+            pdf, _ = page_mod.print_page(
+                body, template, "en", staged, "cv", photo=photo, style=style)
         except (ValueError, html_pdf.PrintError):
             return {"error": "print_failed"}
         png = pdf_render.render_pdf_pages(pdf, staged)[0].read_bytes()

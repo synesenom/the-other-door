@@ -18,8 +18,7 @@ from pathlib import Path
 from door.core import ask_cached, claude_cli, workspace
 
 PROMPT_VERSION = 2  # bump with the prompt, the schema or the check: a cached answer of another version is asked again
-COLUMN_KINDS = ("skills", "education", "certifications", "languages", "interests")  # what a template's column can hold
-KINDS = ("summary", "experience", *COLUMN_KINDS, "other")
+KINDS = ("summary", "experience", "skills", "education", "certifications", "languages", "interests", "other")
 CONTACT_KINDS = ("phone", "email", "web", "linkedin", "github", "location")
 LEVELS = ("native", "fluent", "working", "conversational", "basic")
 _MARKER = re.compile(r"\s*<!--.*?-->\s*$")

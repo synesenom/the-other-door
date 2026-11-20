@@ -1,6 +1,6 @@
-"""Page assembly for a CV or letter body (#355): the photo placed, the template's two columns, the language's
-typography, the body wrapped in the template and printed with the pinned Chromium (`html_pdf`). `commands/compile`
-(a prepared job) and `commands/matches` (the CV as placed) all place a body through this module.
+"""Page assembly for a CV or letter body (#355): the photo placed, the language's
+typography, the body wrapped in the template and printed with the pinned Chromium (`html_pdf`). `commands/compile` (a prepared job) and
+`commands/cv_style_sample` (the style previews) place a body through this module.
 """
 
 import re
@@ -9,7 +9,7 @@ from pathlib import Path
 from door import i18n
 from door.core import photo as photo_mod
 from door.core import templates, utils, workspace
-from door.render import html_doc, html_pdf, typography
+from door.render import html_pdf, typography
 
 # The CV photo (#605): the tailor writes `<<photo>>` where it wants one. After the guard has read the body, `compile`
 # swaps it for this one trusted image of the copy of the profile's photo it puts beside the page (the template must
@@ -47,18 +47,16 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-def _page(body: str, template: str, folder: Path, *, photo: Path | None, manifest: templates.Manifest, language: str,
-          style: str = "") -> tuple[str, str, str | None]:
-    """The page `print_page` prints for a body: the photo placed (copied into `folder`), the two columns, the language's
-    typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
-    the body as placed and the photo's file name (None when it was not placed).
+def _page(body: str, template: str, folder: Path, *, photo: Path | None, language: str, style: str = "") -> tuple[str, str | None]:
+    """The page `print_page` prints for a body: the photo placed (copied into `folder`), the language's
+    typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page and the
+    photo's file name (None when it was not placed).
 
     Raises:
         ValueError: the template cannot hold the body.
     """
-    built, name = _with_photo(body, template, folder, photo)
-    placed = _placed(built, manifest)
-    return _wrap(template, _glue_separators(typography.apply(placed, language)), language, style), placed, name
+    placed, name = _with_photo(body, template, folder, photo)
+    return _wrap(template, _glue_separators(typography.apply(placed, language)), language, style), name
 
 
 _SEP_SPACE = re.compile(r'(<span class="sep">) ')
@@ -70,69 +68,21 @@ def _glue_separators(body: str) -> str:
     return _SEP_SPACE.sub("\\1&#160;", body)
 
 
-def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Path, name: str, *,
-               manifest: templates.Manifest | None = None, photo: Path | None = None,
-               style: str = "") -> tuple[Path, str, str | None]:
+def print_page(body: str, template: str, lang: str, folder: Path, name: str, *, photo: Path | None = None,
+               style: str = "") -> tuple[Path, str | None]:
     """`body` placed in `template` (its text) by `_page` and printed to `folder/<name>.pdf` with the pinned Chromium,
-    the fonts and icons that the template file `assets_of` names served. Returns the pdf, the body as placed and the
+    the fonts (`templates.fonts`) served. Returns the pdf and the
     photo's file name in `folder` (None when it was not placed). `style` (`templates.style_css`) goes in the page's head.
 
     Raises:
         html_pdf.PrintError: the print failed.
-        ValueError: the template or its manifest cannot be used.
+        ValueError: the template cannot be used.
     """
     folder.mkdir(parents=True, exist_ok=True)
-    assets = templates.assets(assets_of)
-    html_text, placed, picture = _page(body, template, folder, photo=photo, language=lang,
-                                        manifest=manifest or templates.Manifest(), style=style)
+    html_text, picture = _page(body, template, folder, photo=photo, language=lang, style=style)
     pdf = folder / f"{name}.pdf"
-    html_pdf.print_html(folder, html_text, pdf, assets=assets)
-    return pdf, placed, picture
-
-
-NO_KINDS_HINT = "prepare it again or revise it"
-_H2 = re.compile(r"(?=<h2[\s>])")
-
-
-def place_columns(body: str, columns: templates.Columns | None) -> str:
-    """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` after
-    the header (the notes, the photo, the whole header: an `<h2>` inside it is the header's, #242) as it is, then
-    `<div class="main">` and `<div class="side">` (`html_doc.columns` reads them back), each section in the order the
-    body has it. A section goes to the side when the kind class of its `<h2>` (`kind-skills`, written by the tailor
-    by what the section holds, #431) is one of the template's ``columns.side`` kinds; any other goes to the main
-    column. `body` itself when the template has no side column.
-
-    Raises:
-        ValueError: the template has side kinds and a section has no kind class (a CV prepared before sections had one).
-    """
-    if columns is None or not columns.side:
-        return body
-    cut = body.find("</header>") + len("</header>") if "</header>" in body else 0
-    first, *sections = _H2.split(body[cut:])
-    first = body[:cut] + first
-    main, side = [], []
-    for section in sections:
-        heading = (html_doc.headings(section) or [""])[0]
-        kind = (html_doc.kinds(section) or [None])[0]
-        if kind is None:
-            raise ValueError(f"this CV's section {heading!r} has no kind, so the template's columns cannot place it: "
-                             + NO_KINDS_HINT)
-        (side if kind in columns.side else main).append(section)
-    return f'{first}{html_doc.MAIN}{"".join(main)}</div>{html_doc.SIDE}{"".join(side)}</div>'
-
-
-def _placed(body: str, manifest: templates.Manifest) -> str:
-    """`body` with its sections in the manifest's columns."""
-    return place_columns(body, manifest.columns)
-
-
-def placed_cv(body: str, config: dict) -> str:
-    """The CV `body` as its printed page reads it (`place_columns` by the resolved CV template's manifest); `body` itself when the template has no side column or cannot be read."""
-    try:
-        manifest = templates.manifest(templates.resolve("cv_template", config)) or templates.Manifest()
-    except (OSError, ValueError):
-        manifest = templates.Manifest()
-    return _placed(body, manifest)
+    html_pdf.print_html(folder, html_text, pdf, fonts=templates.fonts())
+    return pdf, picture
 
 
 def _wrap(template: str, body: str, language: str, style: str = "") -> str:
