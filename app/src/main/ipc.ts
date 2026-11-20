@@ -3,7 +3,7 @@
 // error fields do not survive an IPC rejection.
 import type { ArchiveFiles } from './archive-files'
 import type { PhotoFile } from './photo-file'
-import type { CvFile } from './cv-file'
+import type { RememberedCvFile } from './cv-file'
 import type { ProblemLog } from './problem-log'
 import type { ClaudeLogin, LoginState } from './claude-login'
 import { copyFile } from 'node:fs/promises'
@@ -217,7 +217,7 @@ export function registerIpc(
     /** The CV photo's file (photo-file.ts). */
     photoFile?: Pick<PhotoFile, 'pick' | 'take'>
     /** The CV file a draft last read (cv-file.ts). */
-    cvFile?: Pick<CvFile, 'remember' | 'name'>
+    cvFile?: Pick<RememberedCvFile, 'remember' | 'name'>
     /** The problem log (problem-log.ts): what the window was refused. */
     problemLog?: ProblemLog
     /** The update check (updates.ts). */

@@ -89,3 +89,8 @@ def test_a_group_nobody_may_signal_is_left_alone(monkeypatch):
     monkeypatch.setattr(process.os, "killpg", refuse, raising=False)
     monkeypatch.setattr(process.sys, "platform", "darwin")
     process.kill_tree(4242, group=True)
+
+
+def test_elsewhere_a_server_starts_a_session_of_its_own_with_no_windows_flags(monkeypatch, tmp_path):
+    seen = _spawn_flags(monkeypatch, tmp_path, "darwin")
+    assert seen.get("start_new_session") is True and "creationflags" not in seen

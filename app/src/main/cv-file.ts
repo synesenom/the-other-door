@@ -26,4 +26,4 @@ export function createCvFile(deps: Deps) {
   }
 }
 
-export type CvFile = ReturnType<typeof createCvFile>
+export type RememberedCvFile = ReturnType<typeof createCvFile>

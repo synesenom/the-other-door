@@ -18,7 +18,8 @@ def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None):
     """Start `argv` as a process of its own. On Windows a server has no console (DETACHED_PROCESS)."""
     log.parent.mkdir(parents=True, exist_ok=True)
     out = open(log, "ab")  # noqa: SIM115 - handed to the child, which outlives this call
-    extra = {"creationflags": 0x00000008 | 0x00000200}  # DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else {"start_new_session": True}
+    # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+    extra = {"creationflags": 0x00000008 | 0x00000200} if sys.platform == "win32" else {"start_new_session": True}
     return subprocess.Popen(argv, stdout=out, stderr=out, stdin=subprocess.DEVNULL, env=env, **extra)
 
 
