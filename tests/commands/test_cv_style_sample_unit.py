@@ -88,3 +88,11 @@ def test_a_choice_outside_the_lists_is_refused(world, accent, fonts):
 def test_a_failed_print_is_an_error_in_words(world, monkeypatch):
     install(monkeypatch, fail="Chromium crashed")
     assert "Chromium crashed" in sample_cmd._cv_style_sample_core("teal", "door")["error"]
+
+
+def test_the_sample_is_a_close_up_of_the_content_at_the_top_of_the_page(world):
+    """#465: the page's margins are cropped away and only its top is kept, so the text is big in the app's small box."""
+    image = _png(sample_cmd._cv_style_sample_core("teal", "door"))
+    page_width = round(595 * 150 / 72)  # an A4 page at the render's 150 dpi
+    assert image.width < page_width * 0.9
+    assert image.height <= image.width * sample_cmd.MAX_ASPECT + 1
