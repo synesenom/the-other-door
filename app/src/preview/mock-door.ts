@@ -12,6 +12,9 @@ import letterPage1 from '../../test/fixtures/prepared/cover_letter_page_1.png'
 import { SAMPLE_RUN, type DataState, type Scene } from './scenes'
 import pairQr from './pair-qr.svg?raw'
 
+/** A made-up first page for `cv_style_sample`: a name, a rule and lines of text on white. */
+const CV_SAMPLE_PNG = 'iVBORw0KGgoAAAANSUhEUgAAASwAAAGQCAIAAACbF8osAAAFEUlEQVR4nO3csW3lQBQEQYX883dODm3iAGLU0rIqAhrTAJ+zX/+A1Ff9AfB2IoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCE2jPADZxmVIkL4X6NS/I5CTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMY//cpTdnndEyFF2e94RIUfZ7XnHTQgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECLFhhB/4U3Yt3BMhXHYt3BMhXHYt3HMTQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHEvDHDUXZ73hEhR9nteUeEHGW35x03IcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCzBszvMhu7U+IkBfZrf0JEfIiu7U/4SaEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoTYMMIP/LjdnndEyFF2e94RIUfZ7XnHTQgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEPPGDC+yW/sTIuRFdmt/QoS8yG7tT7gJISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBi3piBy66FeyKEy66FeyKEy66Fe25CiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIDSP8wC+zW/sTIuRFdmt/QoS8yG7tT7gJISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBi3piBy66FeyKEy66FeyKEy66Fe25CiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYN2Y4ym7POyLkKLs974iQo+z2vOMmhJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKE2DDCD/wpuxbuiRAuuxbuiRAuuxbuuQkhJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGLemOEouz3viJCj7Pa8I0KOstvzjpsQYt9nUEL7yGGUQAAAAABJRU5ErkJggg=='
+
 type Answer = { data: unknown } | { error: string }
 
 /** The sidebar's own reads: they answer in every state, so a state shows on the screen under test. */
@@ -228,6 +231,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           unreachable: [],
           proposals: ENRICH_PROPOSALS.map((p) => ({ ...p, source: (args['urls'] as string[] | undefined)?.[0] ?? (args['files'] as string[] | undefined)?.[0] ?? fixtures.show_profile.enrich_sources[0] })),
         }
+      case 'cv_style_sample':
+        return { png_base64: CV_SAMPLE_PNG, own_cv: true }
       case 'list_stories':
         return { ...fixtures.list_stories, stories: state === 'empty' ? [] : fixtures.list_stories.stories }
       case 'draft_stories':

@@ -150,6 +150,24 @@ describe('scenes', () => {
     expect(screen.getByRole('button', { name: 'Mark ghosted' })).toBeInTheDocument()
   })
 
+  it('profile-cv-style shows the pickers and a sample of the CV', async () => {
+    mount('profile-cv-style')
+    expect(await screen.findByRole('img', { name: /sample of your CV/ })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Teal' })).toBeInTheDocument()
+  })
+
+  it('profile-cv-style-chosen has the pressed colour and fonts checked', async () => {
+    mount('profile-cv-style-chosen')
+    await pressInOrder(sceneById('profile-cv-style-chosen')!.press!)
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Teal' })).toBeChecked())
+    expect(screen.getByRole('radio', { name: 'Editorial' })).toBeChecked()
+  })
+
+  it('profile-cv-style-failed says a CV that could not be read under the sample', async () => {
+    mount('profile-cv-style-failed')
+    expect(await screen.findByText('Your CV could not be read. Try again.')).toBeInTheDocument()
+  })
+
   it('profile-stories lists the stories', async () => {
     mount('profile-stories')
     expect(await screen.findByRole('listitem', { name: 'Rebuilt the cash forecast at Acme Foods' })).toBeInTheDocument()

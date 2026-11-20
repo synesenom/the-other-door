@@ -664,3 +664,38 @@ details[open] > summary::before { transform: rotate(90deg); }
   .primary, .secondary, .quiet, .pill, .nav-item, .switch-track, .switch-thumb { transition: none; }
 }
 
+
+/* Profile -> CV style: the sample on the left, the pickers on the right; stacked, pickers first, when narrow */
+.style-part { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.style-pickers { display: grid; gap: var(--space-4); align-content: start; }
+/* stacked, pickers first, when the part is narrow (a container query: the one width media query is the phone's) */
+.style-container { container-type: inline-size; }
+@container (max-width: 700px) { .style-part { grid-template-columns: minmax(0, 1fr); } .style-pickers { order: -1; } }
+.style-group { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-2); min-width: 0; }
+.style-group legend { padding: 0; margin-bottom: var(--space-2); }
+/* both rows the same width: nine colours in one row, four fonts in another */
+.style-grid { display: grid; gap: 10px; width: 300px; max-width: 100%; }
+.style-colours { grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; }
+.style-fonts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.style-pick { position: relative; }
+.style-pick input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.style-pick input:focus-visible + .style-tile, .style-pick input:focus-visible + .style-font { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.style-tile { display: block; width: 100%; aspect-ratio: 1; border-radius: var(--radius-s); background: var(--c); box-shadow: inset 0 0 0 1px var(--color-border); }
+.style-tile.none { background: var(--color-paper); box-shadow: inset 0 0 0 1px var(--color-border); position: relative; overflow: hidden; }
+.style-tile.none::after { content: ""; position: absolute; left: -4px; right: -4px; top: 50%; height: 1.5px; background: var(--color-paper-muted); transform: rotate(-45deg); }
+.style-pick input:checked + .style-tile { box-shadow: 0 0 0 2px var(--color-ground), 0 0 0 4px var(--color-accent); }
+/* a font block: paper, the heading font's letter large, the text font's small */
+.style-font { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: var(--radius-s); background: var(--color-paper); color: var(--color-paper-ink); box-shadow: inset 0 0 0 1px var(--color-border); }
+.style-font span { display: flex; align-items: baseline; gap: 3px; line-height: 1; }
+.style-font .h { font-family: var(--h); font-weight: var(--hw); font-size: 30px; }
+.style-font .t { font-family: var(--t); font-size: 17px; }
+.style-pick input:checked + .style-font { box-shadow: inset 0 0 0 2px var(--color-accent); }
+.style-pick:has(.style-font) { display: grid; justify-items: center; }
+.style-name { display: block; margin-top: 6px; font-size: 12px; color: var(--color-ink-muted); text-align: center; white-space: nowrap; margin-inline: -10px; }
+.style-pick input:checked ~ .style-name { color: var(--color-ink); }
+/* the CV's first page, a fixed height that fades at its foot: a sample, not the whole CV */
+.style-sample { position: relative; height: 380px; max-width: 100%; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-paper); }
+.style-sample img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.style-sample:has(img)::after { content: ""; position: absolute; inset: auto 0 0; height: 72px; background: linear-gradient(to bottom, transparent, var(--color-paper)); pointer-events: none; }
+.style-sample[aria-busy="true"] img { opacity: 0.5; }
+.style-sample .field-error { position: absolute; inset: auto var(--space-3) var(--space-3); z-index: 1; margin: 0; }

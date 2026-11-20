@@ -1,0 +1,108 @@
+// @vitest-environment jsdom
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it } from 'vitest'
+import { mockDoor } from '../testing'
+import { CvStyle } from './CvStyle'
+import type { FieldSpec } from './profile-form/form'
+
+afterEach(cleanup)
+
+const SPECS: FieldSpec[] = [
+  { key: 'cv_accent', type: 'choice', required: false, nullable: false, default: 'none', choices: ['none', 'navy', 'blue', 'teal', 'forest', 'burgundy', 'plum', 'slate', 'rust'] },
+  { key: 'cv_fonts', type: 'choice', required: false, nullable: false, default: 'door', choices: ['door', 'editorial', 'friendly', 'plain'] },
+]
+const sample = (n: string) => ({ png_base64: `PNG-${n}`, own_cv: true })
+
+function show(handlers: Record<string, unknown> = {}, config: Record<string, unknown> = {}) {
+  const h = mockDoor({ cv_style_sample: sample('first'), init_profile: {}, ...handlers })
+  render(<CvStyle specs={SPECS} config={config} />)
+  return h
+}
+const colours = () => within(screen.getByRole('group', { name: 'Colour' }))
+const fonts = () => within(screen.getByRole('group', { name: 'Fonts' }))
+
+describe('CvStyle', () => {
+  it('shows nine colours and four font pairs, the saved ones checked, and a sample of the CV', async () => {
+    show({}, { cv_accent: 'navy', cv_fonts: 'plain' })
+    expect(colours().getAllByRole('radio')).toHaveLength(9)
+    expect(fonts().getAllByRole('radio')).toHaveLength(4)
+    expect(colours().getByRole('radio', { name: 'Navy' })).toBeChecked()
+    expect(fonts().getByRole('radio', { name: 'Plain' })).toBeChecked()
+    const img = await screen.findByRole('img', { name: /sample of your CV/ })
+    expect(img).toHaveAttribute('src', 'data:image/png;base64,PNG-first')
+  })
+
+  it('opens on no colour and the door fonts when nothing is saved, asking for that sample', async () => {
+    const { call } = show()
+    expect(colours().getByRole('radio', { name: 'No colour' })).toBeChecked()
+    expect(fonts().getByRole('radio', { name: 'The other door' })).toBeChecked()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('cv_style_sample', { cv_accent: 'none', cv_fonts: 'door' }))
+  })
+
+  it('saves a pick at once with only that key, then asks for the sample again', async () => {
+    const user = userEvent.setup()
+    const { call } = show({ cv_style_sample: (a: Record<string, unknown>) => sample(String(a['cv_accent'])) })
+    await screen.findByRole('img')
+    call.mockClear()
+    await user.click(colours().getByRole('radio', { name: 'Teal' }))
+    await waitFor(() => expect(screen.getByRole('img')).toHaveAttribute('src', 'data:image/png;base64,PNG-teal'))
+    expect(call.mock.calls.map((c) => c[0])).toEqual(['init_profile', 'cv_style_sample'])
+    expect(call).toHaveBeenCalledWith('init_profile', { other: { cv_accent: 'teal' } })
+    expect(call).toHaveBeenCalledWith('cv_style_sample', { cv_accent: 'teal', cv_fonts: 'door' })
+  })
+
+  it('a font pick is saved as cv_fonts alone', async () => {
+    const user = userEvent.setup()
+    const { call } = show()
+    await screen.findByRole('img')
+    await user.click(fonts().getByRole('radio', { name: 'Editorial' }))
+    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { other: { cv_fonts: 'editorial' } }))
+  })
+
+  it('ignores a sample that a newer pick replaced', async () => {
+    const user = userEvent.setup()
+    const waiting: Record<string, (v: unknown) => void> = {}
+    const { call } = show({ cv_style_sample: (a: Record<string, unknown>) => (a['cv_accent'] === 'none' ? sample('none') : new Promise((resolve) => (waiting[String(a['cv_accent'])] = resolve))) })
+    await screen.findByRole('img')
+    await user.click(colours().getByRole('radio', { name: 'Teal' }))
+    await waitFor(() => expect(waiting['teal']).toBeDefined())
+    await user.click(colours().getByRole('radio', { name: 'Rust' }))
+    await waitFor(() => expect(waiting['rust']).toBeDefined())
+    waiting['rust']!(sample('rust'))
+    await waitFor(() => expect(screen.getByRole('img')).toHaveAttribute('src', 'data:image/png;base64,PNG-rust'))
+    waiting['teal']!(sample('teal'))
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.getByRole('img')).toHaveAttribute('src', 'data:image/png;base64,PNG-rust')
+    expect(call).toHaveBeenCalledWith('cv_style_sample', { cv_accent: 'teal', cv_fonts: 'door' })
+  })
+
+  it('moves within a group with the arrow keys, which picks', async () => {
+    const user = userEvent.setup()
+    const { call } = show()
+    await screen.findByRole('img')
+    colours().getByRole('radio', { name: 'No colour' }).focus()
+    await user.keyboard('{ArrowRight}')
+    expect(colours().getByRole('radio', { name: 'Navy' })).toBeChecked()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { other: { cv_accent: 'navy' } }))
+  })
+
+  it('says a CV that could not be read under the sample', async () => {
+    show({ cv_style_sample: () => { throw { message: 'Your CV could not be read. Try again.' } } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your CV could not be read. Try again.')
+  })
+
+  it('puts a pick back and says why when it could not be saved', async () => {
+    const user = userEvent.setup()
+    show({ init_profile: () => { throw { message: 'profile/config.json: cv_accent — bad' } } })
+    await screen.findByRole('img')
+    await user.click(colours().getByRole('radio', { name: 'Teal' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('cv_accent')
+    expect(colours().getByRole('radio', { name: 'No colour' })).toBeChecked()
+  })
+
+  it('gives each tile a tooltip', async () => {
+    show()
+    expect(colours().getByRole('radio', { name: 'Burgundy' }).closest('label')).toHaveAttribute('title', 'Burgundy')
+  })
+})

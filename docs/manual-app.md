@@ -34,6 +34,7 @@ the same, Prepare and Revise say "The browser that prints your CVs is not instal
 - [Notifications](#notifications)
 - [Profile](#profile)
   - [Master CV](#master-cv)
+  - [CV style](#cv-style)
   - [Your stories](#your-stories)
 - [Settings](#settings)
 - [Analytics](#analytics)
@@ -421,7 +422,7 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 ## Profile
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
-then your [Master CV](#master-cv) and your [Stories](#your-stories). The list on the right names its sections, the one you
+then your [Master CV](#master-cv), the [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
 are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar at the
 page's foot saves the settings; your CV saves itself as you type.
 
@@ -484,6 +485,17 @@ kept as `cv.md.bak`.
 
 What you typed is saved before either reads, since they rewrite the CV. What was added is tinted in the editor and
 the preview, brought into view, until you next type.
+
+### CV style
+
+How your prepared CVs and cover letters look: an accent colour and a pair of fonts. Left is a sample of your CV's first
+page (your own CV, or the example one until you have yours) in the choice, fading at its foot; right are the pickers.
+**Colour** is a row of nine tiles: no colour (the default, ink headings) and navy, blue, teal, forest, burgundy, plum, slate and
+rust, which colour the section headings and the rule under your name; entry titles stay ink. **Fonts** is four blocks
+showing a heading letter and a text letter: The other door (the default), Editorial, Friendly and Plain. The arrow keys
+move within a group. A choice is saved at once (nothing to Save) and the sample is printed again, a second or two; your
+CVs and letters are printed with it from the next one you prepare or revise. The choice is `cv_accent` and `cv_fonts` in
+`profile/config.json` ([Configuration](configuration.md)). CV style is not on the phone and not part of set-up.
 
 ### Your stories
 

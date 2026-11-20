@@ -129,3 +129,9 @@ def test_every_font_a_template_loads_is_a_shipped_truetype_file():
         text = (REPO_ROOT / "profile.example" / template).read_text()
         for name in re.findall(r"/fonts/([\w.-]+\.ttf)", text):
             assert (shipped / name).is_file(), f"{template}: {name}"
+
+
+def test_the_apps_swatches_are_the_accent_table():
+    import json
+    swatches = json.loads((REPO_ROOT / "app/src/renderer/screens/profile-form/cv-style.json").read_text())["colours"]
+    assert {k: v[1] for k, v in swatches.items() if k != "none"} == templates.ACCENTS

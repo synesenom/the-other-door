@@ -172,7 +172,7 @@ session, where `./scripts/setup.sh` is the install.
 | `data report [PATH]` | `report_problem` | the report's path, the names in it and its size ("something is broken, make a report") |
 
 The tools marked — have no command: `revise` and `mark_reviewed` are things you say to
-Claude, `mark_seen` is the desktop app opening a posting, `preview_matches` is what a wizard shows while you check your answers, `compile` and `check_facts` are the tailor agent's (`revise` recompiles on its own, so a `.html`
+Claude, `mark_seen` is the desktop app opening a posting, `preview_matches` is what a wizard shows while you check your answers, `cv_style_sample` is the desktop app's sample of your CV in a chosen colour and fonts (a conversation changes them with `init_profile`: `cv_accent`, `cv_fonts`), `compile` and `check_facts` are the tailor agent's (`revise` recompiles on its own, so a `.html`
 never changes without its PDF).
 
 Every tool that takes a `job_id` also accepts words from the job's company and title

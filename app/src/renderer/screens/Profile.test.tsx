@@ -25,6 +25,8 @@ const FIELDS: FieldSpec[] = [
   { key: 'languages', type: 'list', required: false, nullable: false, default: [] },
   { key: 'claude_config_dir', type: 'string', required: false, nullable: true, default: null },
   { key: 'preferences', type: 'string', required: false, nullable: false, default: '' },
+  { key: 'cv_accent', type: 'choice', required: false, nullable: false, default: 'none', choices: ['none', 'navy'] },
+  { key: 'cv_fonts', type: 'choice', required: false, nullable: false, default: 'door', choices: ['door', 'plain'] },
 ]
 
 const show = (config: Record<string, unknown> = {}) => ({
@@ -36,7 +38,7 @@ const show = (config: Record<string, unknown> = {}) => ({
   enrich_sources: [],
 })
 
-const NO_STORIES = { list_stories: { exists: false, stories: [] } }
+const NO_STORIES = { list_stories: { exists: false, stories: [] }, cv_style_sample: { png_base64: 'PNG', own_cv: true } }
 
 async function open(handlers: Record<string, unknown> = {}, config: Record<string, unknown> = {}) {
   const h = mockDoor({ show_profile: show(config), ...NO_STORIES, ...handlers })
@@ -259,10 +261,17 @@ describe('Profile', () => {
     await open()
     await screen.findByRole('group', { name: 'Sources' })
     const names = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
-    expect(names.slice(-2)).toEqual(['Master CV', 'Stories'])
+    expect(names.slice(-3)).toEqual(['Master CV', 'CV style', 'Stories'])
     expect(names[0]).toBe('About you')
-    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-2).map((l) => l.textContent)).toEqual(['Master CV', 'Stories'])
+    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-3).map((l) => l.textContent)).toEqual(['Master CV', 'CV style', 'Stories'])
     expect(screen.getAllByRole('button', { name: 'Save' })).toHaveLength(1)
+  })
+
+  it('the CV style is a section of the page, and its two keys are not in the form above it', async () => {
+    await open()
+    expect(await screen.findByRole('region', { name: 'CV style' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'CV colour' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'CV fonts' })).toBeNull()
   })
 
   it('a config that does not load says why, with the lines', async () => {

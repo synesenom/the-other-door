@@ -832,6 +832,37 @@
      ]
     },
     {
+     "key": "cv_accent",
+     "type": "choice",
+     "required": false,
+     "nullable": false,
+     "default": "none",
+     "choices": [
+      "none",
+      "navy",
+      "blue",
+      "teal",
+      "forest",
+      "burgundy",
+      "plum",
+      "slate",
+      "rust"
+     ]
+    },
+    {
+     "key": "cv_fonts",
+     "type": "choice",
+     "required": false,
+     "nullable": false,
+     "default": "door",
+     "choices": [
+      "door",
+      "editorial",
+      "friendly",
+      "plain"
+     ]
+    },
+    {
      "key": "linkedin_discovery",
      "type": "boolean",
      "required": false,

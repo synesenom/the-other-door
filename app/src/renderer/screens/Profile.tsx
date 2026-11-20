@@ -6,6 +6,7 @@ import { photoPolicy, type ShowProfile } from './onboarding/reducer'
 import layout from './profile-form/fields.json'
 import { changedKeys, fieldErrors, formValues, toInitArgs, type Exclude, type FieldSpec, type FormValues } from './profile-form/form'
 import { CvEditor } from './CvEditor'
+import { CvStyle } from './CvStyle'
 import { Hint } from './Hint'
 import { PhotoField, photoHelp } from './PhotoField'
 import { Spinner } from './Spinner'
@@ -176,7 +177,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
   const shown = LAYOUT.sections.filter((s) => s.id !== CONFIG_ONLY && s.screen !== 'settings' && fieldsOf(s.id).length > 0)
   const aside = (
     <PageSections
-      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'Master CV' }, { id: 'profile-stories', label: 'Stories' }]}
+      sections={[...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []), { id: 'profile-cv', label: 'Master CV' }, { id: 'profile-cv-style', label: 'CV style' }, { id: 'profile-stories', label: 'Stories' }]}
     />
   )
 
@@ -356,6 +357,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
       {errors.general.length > 0 && <ErrorList messages={errors.general} />}
       {details}
       <CvEditor onDraft={onDraft} onSaved={onSaved} />
+      {profile?.config && <CvStyle specs={specs} config={profile.config} />}
       <section className="part" aria-labelledby="profile-stories">
         <h2 className="display-s" id="profile-stories">
           Stories
