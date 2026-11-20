@@ -4,11 +4,10 @@ Each site is served from its saved fixture, scraped once for its ids, then again
 `known_ids`. The second run must account for every id of the first, by the same ledger id
 (`make_job_id(site, platform_id)`): as a full posting (a scraper may ignore `known_ids`) or as
 `{"platform_id", "seen_only": True}`; one that filters and returns nothing leaves the engine unable to
-count the ad or refresh its `last_seen`. A `seen_only` id must cost no request the first run made for
-that id's own page.
+count the ad or refresh its `last_seen`. A known id, full or `seen_only`, must cost no request naming it.
 
-Covered: every single-employer feed served by `feeds/test_feed_names_contract.py`'s cases. Not covered
-here (own multi-entry or listing fixtures, no one-entry serve helper): hr_manager, career_sites, oracle_hcm.
+Covered: every single-employer feed served by `feeds/test_feed_names_contract.py`'s cases, plus hr_manager and
+oracle_hcm with their own serve helpers. Not covered: career_sites (its entries are whole sites and listings).
 Boards: each with its own serve helpers (`_BOARDS`; Workable, also a board, is a feed above). A scraper that serves its whole answer
 from one listing and ignores `known_ids` (no detail request to save) passes by returning full postings."""
 
@@ -63,11 +62,10 @@ def _check(site, run):
     seen = {models.make_job_id(site, r["platform_id"]) for r in second if r.get("seen_only")}
     full = {r["id"] for r in second if not r.get("seen_only")}
     assert seen | full == set(ledger), f"{site}: known ids dropped: {sorted(set(ledger) - seen - full)}"
-    seen = {ledger[i] for i in seen}
     assert all(set(r) == {"platform_id", "seen_only"} and r["seen_only"] is True for r in second if r.get("seen_only"))
-    for pid in seen:
-        assert not [u for u in urls_second if pid in u], f"{site}: a request for the known id {pid}"
-    return seen
+    for pid in by_pid:
+        key = pid.rsplit("-", 1)[-1]   # a tenant-folded id ("kkdk-216470") sits in a URL as its last part
+        assert not [u for u in urls_second if key in u], f"{site}: a request for the known id {pid}"
 
 
 def _feed_run(site):
@@ -77,6 +75,35 @@ def _feed_run(site):
         config = {SITES[site].config_key: [entry]}
         return importlib.import_module(SITES[site].module).scrape(config, known_ids=known_ids)
     return run
+
+
+def _hr_manager():
+    m = _load(_HERE / "feeds" / "test_hr_manager_scrape.py", "_known_ids_hr_manager")
+    return lambda k: (m._pages(), _feed_scrape("hr_manager", {"hr_manager_aliases": ["kkdk"]}, k))[1]
+
+
+def _oracle_hcm():
+    m = _load(_HERE / "feeds" / "test_oracle_hcm_scrape.py", "_known_ids_oracle_hcm")
+    return lambda k: (m._serve(), _feed_scrape("oracle_hcm", {"oracle_hcm_companies": [m._ENTRY]}, k))[1]
+
+
+def _feed_scrape(site, config, known_ids):
+    return importlib.import_module(SITES[site].module).scrape(config, known_ids=known_ids)
+
+
+_OWN = {"hr_manager": _hr_manager, "oracle_hcm": _oracle_hcm}
+
+
+def test_every_feed_platform_is_checked():
+    assert _NAMES._OWN_TESTS - set(_OWN) == {"career_sites"}
+
+
+@pytest.mark.parametrize("site", sorted(_OWN))
+@responses.activate
+def test_a_multi_employer_feed_hands_known_ids_back_as_seen_only(site, monkeypatch):
+    module = importlib.import_module(SITES[site].module)
+    monkeypatch.setattr(module, "_PAGE_SIZE" if site == "hr_manager" else "_PAGE", 2)
+    _check(site, _OWN[site]())
 
 
 @pytest.mark.parametrize("site", sorted(_NAMES._CASES))
