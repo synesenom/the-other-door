@@ -10,12 +10,12 @@ people, so every expected value is a literal of the text, and nothing of it is s
 The facts corpus is meant to be hard: a body in another language than its source (headings, degrees, months and level
 words translated, names, employers and figures kept), a tailor's rewording (new summary, merged and dropped bullets and
 entries, reordered sections, a skill named by a synonym the CV backs), numeric and day-month dates, claims backed only
-by a story bank, a letter echoing the posting, and fabrications in a letter. The rules of today (`facts.extract_claims`
-and `unsupported`) are scored on the same cases as the baseline (the reader's word rules were deleted with #430: no baseline). A miss becomes a made-up
-example in the prompt, never a rule in Python.
+by a story bank, a letter echoing the posting, and fabrications in a letter. The facts prompt, schema and the check that a
+finding's context is text of its document are `door.tailoring.facts`'s (#433): what is recorded here is what the app asks.
+A miss becomes a made-up example in the prompt, never a rule in Python.
 
     poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet [--runs 3] [--held-out]
-    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet|baseline --report  (baseline: facts only)
+    poetry run python scripts/record_cv_reading.py --task reader|facts --model haiku|sonnet --report
 
 `--held-out` builds a second corpus from other pools (names, employers, schools, places, degrees, skills, certifications, figures, story
 bank and posting) that the prompts were never tuned on; its records are under `held-out/`.
@@ -24,7 +24,7 @@ A record is `tests/tailoring/fixtures/cv_reading/<model>/<task>/<case>.<run>.jso
 prompt and input it answered (a record of other text is not read, and a test fails for one). A failed call is recorded
 as an error and counts as a miss; run again and only the errors are asked again (a plan's limit is waited out that way).
 Calls go through `claude_cli.ask` on the local claude's plan (never an API key); the usage feature keys are
-`cv_read` (the reader) and `revise` (the fact check, the nearest existing one).
+`cv_read` (the reader) and `facts` (the fact check).
 """
 
 from __future__ import annotations
@@ -125,7 +125,7 @@ def stretches(md: str, answer) -> tuple[int, int]:
 
 # --- scoring the facts check ------------------------------------------------------------------------------------
 
-KINDS = ("number", "year", "employer", "skill", "certification", "degree")
+KINDS = facts.KINDS
 
 
 def _val(value) -> str:
@@ -133,10 +133,7 @@ def _val(value) -> str:
     return re.sub(r"\s+", "", _n(value)).replace(",", ".")
 
 
-def is_verbatim(quote: str, *bodies: str) -> bool:
-    """The quote is a stretch of the text of one of the bodies (spacing squashed, as `facts` squashes it)."""
-    quote = facts._squash(quote or "")
-    return bool(quote) and any(quote in facts._squash(html_doc.text(b)) for b in bodies if b)
+is_verbatim = facts.is_verbatim
 
 
 def _findings(answer) -> list[dict]:
@@ -641,32 +638,14 @@ def render_cv_md(person: dict, lang: str | None = None, *, tailor: bool = False)
     return "\n".join(out), expected
 
 
-_LEVEL_WORDS = frozenset("native c2 fluent professional c1 working b2 conversational b1 basic a1 a2".split())
-
-
 def render_body(person: dict, lang: str, *, reformat: bool = False) -> str:
     """The tailored CV in `lang` as a body in the tailor's vocabulary (`cv_body.body` on the reading `render_cv_md` expects: no model). `reformat` tells two
     figures of the first job another way (the same value: `40 000` as `40k`), which the CV backs."""
     md, expected = render_cv_md(person, lang, tailor=True)
-    # The recorded answers of the facts reader are keyed by this body's bytes and were measured on the body as it was
-    # before `cv_body` read a reading (#431); no answer is recorded again, so the reading handed over is what the old
-    # word lists found: no `h2` kind class (removed below), a detail with a label its kind (one with none a plain span, written here), an entry
-    # heading with a ` | ` its parts, a level word of the tailor's English and CEFR table its level. Drop this when
-    # the facts corpus is recorded again.
-    contacts = [c for c in expected["contacts"] if c["label"]]
-    unlabelled = "".join(
-        f'<span class="email"><a href="mailto:{c["value"]}">{c["value"]}</a></span>' if c["kind"] == "email"
-        else f"<span>{html.escape(c['value'], quote=False)}</span>" for c in expected["contacts"] if not c["label"])
-    levels = []
-    for item, level in expected["levels"].items():
-        found = re.search(rf"^- (?:\*\*)?{re.escape(item)}(?:\*\*)?\s*(?:[—–:]|\()\s*([^()]+?)\)?\s*$", md, re.M)
-        if found and found.group(1).strip().casefold() in _LEVEL_WORDS:
-            levels.append({"item": item, "level": level})
     reading = {**cv_read._empty(), "sections": [{"heading": h, "kind": k} for h, k in expected["sections"].items()],
-               "contacts": contacts, "entries": [e for e in expected["entries"] if " | " in e["heading"]], "levels": levels}
-    body = re.sub(r' class="kind-\w+"', "", cv_body.body(md, reading))
-    if unlabelled:  # the old body wrote a detail with no label as a plain span, an address as a mail link
-        body = body.replace("</header>", f'\n<p class="contact">{unlabelled}</p></header>', 1)
+               "contacts": expected["contacts"], "entries": expected["entries"],
+               "levels": [{"item": item, "level": level} for item, level in expected["levels"].items()]}
+    body = cv_body.body(md, reading)
     if reformat:
         for ix in person["jobs"][0]["bullets"][:2]:
             _, anchor, same, _ = _BULLETS[lang][ix]
@@ -694,7 +673,7 @@ def _esc(text: str) -> str:
 
 def _insert_in_section(body: str, heading: str, snippet_ul: str, snippet_p: str) -> str:
     """Add to the end of the list or paragraph that follows `heading` (its `<h2>`)."""
-    start = re.search(rf'<h2(?: class="kind-\w+")?>{re.escape(_esc(heading))}</h2>', body)
+    start = re.search(rf'<h2 class="kind-\w+">{re.escape(_esc(heading))}</h2>', body)
     start = start.start() if start else -1
     if start < 0:
         raise ValueError(f"no section {heading!r} to plant in")
@@ -796,76 +775,19 @@ def build_body_corpus() -> dict:
     return corpus
 
 
-# --- today's fact-check rules, as the baseline ------------------------------------------------------------------------------
-
-def baseline_facts(case: dict) -> list[dict]:
-    """What `facts.extract_claims` and `unsupported` flag in the case's documents, today, as findings: the story bank is
-    a source of the CV (as `check` reads it), the posting only of the letter."""
-    claims = facts.extract_claims(case["body"], "cv") + (facts.extract_claims(case["letter"], "cover_letter") if case["letter"] else [])
-    sources = [case["md"], case["story"]]
-    found = facts.unsupported(claims, sources, sources + [case["posting"]], current_year=2026)
-    return [{**f, "file": "letter" if f["file"] == "cover_letter" else "cv"} for f in found]
-
-
 # --- the prompts ------------------------------------------------------------------------------------------------
-# The reader's prompt and schema are `core/cv_read.py`'s (#430): what is recorded here is what the app asks. The facts
-# prompt is spike-local until a model is chosen for the check. The examples in them are made up (never a person or a text of the corpus) and each answers a miss of an earlier measurement; the
+# The reader's prompt and schema are `core/cv_read.py`'s (#430) and the facts check's `tailoring/facts.py`'s (#433): what is
+# recorded here is what the app asks. The examples in them are made up (never a person or a text of the corpus) and each answers a miss of an earlier measurement; the
 # history is in the issue.
 
 PROMPTS = {
     "reader": cv_read.PROMPT,
-    "facts": (
-        "You check a tailored CV and cover letter against the candidate's own sources. You get the SOURCE CV (markdown), "
-        "the STORY BANK (stories of the candidate, or none), the POSTING (the job ad, or none), the TAILORED CV (HTML) and "
-        "the COVER LETTER (HTML, or none). The tailored documents may drop, reorder, merge, shorten and reword, and may be "
-        "written in another language than the source (headings, degrees, months and level words translated; names, employers "
-        "and figures are not); they must not add a fact the sources do not back. A fact the story bank backs is supported; "
-        "the cover letter may also echo the posting's words, figures and skills. List every claim the sources do not "
-        "support:\n"
-        "- `number`: a figure, amount, percentage or count whose VALUE differs from the sources'; a figure told another way "
-        "with the same value (`1 200 000 EUR` and `1,2 M EUR`, `40 000` and `40k`, `9 %` and `9 percent`, a number written "
-        "in words) is supported. The day and month of a date are not figures.\n"
-        "- `year`: a year, or a year of a date range, that differs from the source's; a date written another way "
-        "(`03/2019`, `1.3.2019`, `2019-03`, `1st March 2019`) is the same date.\n"
-        "- `employer`: an employer the sources do not name. `skill`: a tool, technology or method they do not name; a name of "
-        "one the source backs written another way (`PowerBI` for `Power BI`) is supported. `certification`, `degree`: one "
-        "they do not name, in whatever language it is written.\n"
-        "Ignore the header, the contact details, the recipient, the date, the greeting and the closing. `file`: `cv` or "
-        "`letter`. `value`: the claimed value. `context`: a stretch of that document's text, copied exactly as it reads (at "
-        "most 15 words) that holds it. List nothing the sources support: an empty list is a clean document.\n"
-        "Examples (made up):\n"
-        "- `context` is plain text with no HTML tag in it: for `<li><strong>Rust</strong></li>` it is `Rust`, for a heading "
-        "`<span class=\"role\">Analyst</span> | <span class=\"org\">Zenith Corp</span>` it is `Analyst | Zenith Corp`.\n"
-        "- `value` is the claimed item alone, as the document writes it: a figure with its unit (`3 k`, `7 percent`), the name "
-        "of an employer, skill, certification or degree. For a changed date range `2004 - 2008` the kind is `year` and the "
-        "value the one year that differs (`2004`), not the range.\n"
-        "- Never copy markup into `context`: `<strong>Rust</strong>` is wrong and `Rust` is right; "
-        "`<span class=\"dates\">2004 - 2008</span>` is wrong and `Zenith Corp - 2004 - 2008` is right. Copy only words and "
-        "figures, as the text of the page reads them.\n"
-        "- A degree translated is the same degree, and so is its local title: `BSc in Physics`, `Licence de physique` and "
-        "`Bachelor i fysik` are one degree, and `MSc in Chemistry`, `Master en chimie` and `Cand.scient. i kemi` are one. "
-        "Compare the level and the field, not the words.\n"
-        "- `value` of a count or an amount is the figure with its unit sign or currency and nothing after it: `7 k`, `12 %`, "
-        "`3 M EUR`; for `a team of 7 people` it is `7`.\n"
-        "- A tool, skill or figure that only the story bank names is supported: a story that says `I used Rust` backs `Rust` in the "
-        "tailored CV.\n"
-        "- For a bold list item `<li><strong>Rust</strong> \u2014 2020</li>` the `context` is `Rust \u2014 2020`: the words of the item, "
-        "no tag.\n"
-        "- A year or date the source gives for a job is supported wherever the tailored text puts it: `(2005)` after a bullet of "
-        "a job the source says began in 2005 is no new year; a year in brackets at the end of a bullet is that date, not a claim.\n"
-        "Answer with the JSON only."
-    ),
+    "facts": facts.PROMPT,
 }
 
 SCHEMAS = {
     "reader": cv_read.SCHEMA,
-    "facts": {
-        "type": "object",
-        "properties": {"findings": {"type": "array", "items": {"type": "object", "properties": {
-            "kind": {"type": "string", "enum": list(KINDS)}, "file": {"type": "string", "enum": ["cv", "letter"]},
-            "value": {"type": "string"}, "context": {"type": "string"}}, "required": ["kind", "file", "value", "context"]}}},
-        "required": ["findings"],
-    },
+    "facts": facts.SCHEMA,
 }
 
 MODELS = ("haiku", "sonnet")
@@ -875,8 +797,7 @@ def case_input(task: str, case: dict) -> str:
     """What the model is shown for `case`."""
     if task == "reader":
         return f"CV:\n<<<\n{case['md']}\n>>>\n"
-    return (f"SOURCE CV:\n<<<\n{case['md']}\n>>>\n\nSTORY BANK:\n<<<\n{case['story'] or 'none'}\n>>>\n\nPOSTING:\n<<<\n{case['posting'] or 'none'}\n>>>\n\n"
-            f"TAILORED CV:\n<<<\n{case['body']}\n>>>\n\nCOVER LETTER:\n<<<\n{case['letter'] or 'none'}\n>>>\n")
+    return facts.input_text(case["md"], case["story"], case["posting"], case["body"], case["letter"])
 
 
 def _key(task: str, case: dict) -> str:
@@ -889,7 +810,7 @@ def ask_case(task: str, model: str, case: dict):
     Plan quota through `claude_cli.ask`; the feature keys are the nearest existing ones (see the module's docstring)."""
     from door.core import claude_cli
 
-    answer = claude_cli.ask(PROMPTS[task], case_input(task, case), model=model, feature="cv_read" if task == "reader" else "revise",
+    answer = claude_cli.ask(PROMPTS[task], case_input(task, case), model=model, feature="cv_read" if task == "reader" else "facts",
                             schema=SCHEMAS[task], effort="low", timeout_s=240)
     return answer if task == "reader" else [f for f in answer.get("findings") or [] if isinstance(f, dict)]
 
@@ -1005,9 +926,9 @@ def main(argv: list[str] | None = None) -> None:
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--task", choices=("reader", "facts"), required=True)
-    ap.add_argument("--model", choices=(*MODELS, "baseline"), default="haiku")
+    ap.add_argument("--model", choices=MODELS, default="haiku")
     ap.add_argument("--runs", type=int, default=3)
-    ap.add_argument("--report", action="store_true", help="print the numbers of the recorded answers (or of today's rules)")
+    ap.add_argument("--report", action="store_true", help="print the numbers of the recorded answers ")
     ap.add_argument("--held-out", action="store_true", help="the held-out corpus, recorded under its own folder (the prompts were not tuned on it)")
     args = ap.parse_args(argv)
     if args.held_out:
@@ -1020,11 +941,6 @@ def _main(args, root: Path) -> None:
     corpus = build_reader_corpus() if args.task == "reader" else build_body_corpus()
     if not args.report:
         run(args.task, args.model, corpus, runs=args.runs, root=root)
-    elif args.model == "baseline":
-        if args.task == "reader":
-            raise SystemExit("the word rules the reader's baseline measured were deleted (#430)")
-        answers = {n: [baseline_facts(c)] for n, c in corpus.items()}
-        print(to_markdown(args.task, summarize(args.task, answers, corpus)))
     else:
         print(to_markdown(args.task, summarize(args.task, load_recorded(args.model, args.task, corpus, root), corpus)))
 
