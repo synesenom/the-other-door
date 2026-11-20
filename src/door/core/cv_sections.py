@@ -1,9 +1,7 @@
 """A cv.md's `## ` sections and their kinds: the one reader of a section heading.
 
-The model that drafts a CV records each section's kind on its heading line, `## Technical Skills <!-- kind: skills -->`
-(one of the kinds a template's column can hold, whatever the title), so a reader needs no guess at a title written in
-the user's own words; a heading with no marker has no kind here (`cv_read` reads it). The marker is a comment: no
-renderer shows it.
+A section's kind is not read from its title or a marker in the file: `core/cv_read` reads it (one model call over the
+CV), so a title written in the user's own words needs no guess here.
 """
 
 import re
