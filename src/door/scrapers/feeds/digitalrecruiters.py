@@ -127,11 +127,6 @@ def _rank(items: list[dict], config: dict) -> list[dict]:
 
 # --- one ad page ---
 
-def _ld_job(page: str) -> dict:
-    """The schema.org JobPosting object of an ad page, ``{}`` when it has none."""
-    return next(iter(sdk.job_postings(page)), {})
-
-
 def _ld_location(job: dict) -> str:
     places = job.get("jobLocation") or []
     names = []
@@ -146,7 +141,7 @@ def _ld_location(job: dict) -> str:
 def parse_ad(page: str) -> dict | None:
     """What an ad page holds: ``title``, ``company``, ``posted_at`` (ISO text), ``location`` and the plain-text
     ``description``. None for a page without the JSON-LD JobPosting. Pure."""
-    job = _ld_job(page)
+    job = next(iter(sdk.job_postings(page)), {})
     if not job:
         return None
     hiring = job.get("hiringOrganization")
