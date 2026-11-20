@@ -39,7 +39,7 @@ Before summarising a change you implemented (a PR, or a branch about to become o
 
 Then, once their findings are dealt with, spawn `integration-reviewer` (`.claude/agents/integration-reviewer.md`) last, on the final diff: it maps the change's blast radius and asks whether the whole solution would be smaller had the feature been in the codebase's founding principles, so the code does not grow by accretion.
 
-Each reports its findings with a `Command:` and its `Output:` (None is valid; design: a screenshot). Before acting on a finding, rerun its command: a finding with no run, or whose rerun does not show it, is dropped and never filed. An issue filed from a finding carries its command and output. Every finding, and every one you found yourself, ends in one of three ways before you summarise:
+Each reports its findings with a `Command:` and its `Output:` (design: a screenshot), written to rerun as is from the checkout (naming the head it read, e.g. `git grep <pattern> <sha> --`); a report with no findings is valid. Before acting on a finding, rerun its command: a finding with no run, or whose rerun does not show it, is dropped and never filed. An issue filed from a finding carries its command and output. Every finding, and every one you found yourself, ends in one of three ways before you summarise:
 
 - **fixed in the change**: it is about the change's own lines or its goal (test-first like any change);
 - **filed** through `/dev-file-issue`, whose number you give: only a bug a user would hit (a wrong result, a failure, lost data, a site silently broken) that lies outside the change;

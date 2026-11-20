@@ -47,9 +47,9 @@ Proof: a finding is reported only with a screenshot path and the rule it breaks 
 Base: <base_branch>  Goal: <issue or words>
 Screens looked at: <scene, state, theme, width — or "code only: <why>">
 Findings:
-1. <one sentence: what breaks the rule> — <rule: README section and point> — <evidence: file:line or screenshot path> — <fix here (about this change) | issue (a bug a user would hit, outside the change) | out of scope (named, not filed)>
-   Command: <the screenshot script or `git grep`, or None>
-   Output: <the screenshot path or what it printed, or None>
+1. <one sentence: what breaks the rule> — <rule: README section and point> — <evidence: file:line> — <fix here (about this change) | issue (a bug a user would hit, outside the change) | out of scope (named, not filed)>
+   Command: <the screenshot script or `git grep`>
+   Output: <the screenshot path or what it printed>
 2. ...
 Checked and fine: <a short list of the rules checked and met>
 ```
