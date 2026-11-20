@@ -27,14 +27,13 @@ career site disallows only ``/profile/``, ``/employee/``, ``/sys/`` and ``/drive
 Checked 2026-10-31.
 """
 
-import json
 import re
 from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
-from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
     host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
@@ -92,36 +91,11 @@ def _location_text(place) -> str:
     return "; ".join(texts)
 
 
-def _json_ld(html: str) -> list:
-    """The JSON-LD objects of a page (``@graph`` and lists flattened); unreadable blocks are skipped."""
-    found: list = []
-
-    def add(node) -> None:
-        if isinstance(node, list):
-            for item in node:
-                add(item)
-        elif isinstance(node, dict):
-            found.append(node)
-            add(node.get("@graph"))
-
-    for tag in BeautifulSoup(html or "", "html.parser").find_all("script", type="application/ld+json"):
-        try:
-            add(json.loads(tag.string or tag.get_text(), strict=False))
-        except ValueError:
-            continue
-    return found
-
-
-def _is_job_posting(node: dict) -> bool:
-    kind = node.get("@type")
-    return kind == "JobPosting" or (isinstance(kind, list) and "JobPosting" in kind)
-
-
 def _parse_detail(html: str) -> dict | None:
     """``{title, description, location, posted_at, organization}`` from a job page; ``None`` when it has no ad. Pure."""
-    for node in _json_ld(html):
+    for node in sdk.job_postings(html):
         title = re.sub(r"\s+", " ", str(node.get("title") or "").replace("\xa0", " ")).strip()
-        if _is_job_posting(node) and title:
+        if title:
             org = node.get("hiringOrganization")
             return {
                 "title": title,

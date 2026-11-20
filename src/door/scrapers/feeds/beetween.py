@@ -40,8 +40,8 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import requests
-from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
     host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
@@ -102,15 +102,7 @@ def parse_list(text: str) -> list[dict]:
 
 def _ld_job(page: str) -> dict:
     """The schema.org JobPosting object of an ad page, ``{}`` when it has none."""
-    for tag in BeautifulSoup(page or "", "html.parser").find_all("script", type="application/ld+json"):
-        try:
-            data = json.loads(tag.string or tag.get_text(), strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if isinstance(node, dict) and node.get("@type") == "JobPosting":
-                return node
-    return {}
+    return next(iter(sdk.job_postings(page)), {})
 
 
 def _location_text(place) -> str:

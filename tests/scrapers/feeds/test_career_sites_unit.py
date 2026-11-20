@@ -51,23 +51,6 @@ def test_looks_like_a_job_page(url, job):
     assert career_sites._looks_like_job(url) is job
 
 
-def test_job_postings_from_html_reads_js_escaped_markup_like_publicis_sapients():
-    html = (_FIX / "ps_job_copenhagen.html").read_text(encoding="utf-8")
-    [job] = career_sites._job_postings_from_html(html)
-    assert job["title"] == "Data Science - Manager - Retail"
-    assert job["datePosted"] == "2026-04-08T08:20:00Z"
-
-
-def test_job_postings_from_html_finds_graphs_and_lists_and_skips_invalid_json():
-    html = """
-    <script type="application/ld+json">{"@graph": [{"@type": "Organization"}, {"@type": "JobPosting", "title": "A"}]}</script>
-    <script type="application/ld+json">[{"@type": ["JobPosting"], "title": "B"}]</script>
-    <script type="application/ld+json">{not json</script>
-    <script type="application/ld+json">{"@type": "WebSite"}</script>
-    """
-    assert [j["title"] for j in career_sites._job_postings_from_html(html)] == ["A", "B"]
-
-
 @pytest.mark.parametrize("location, text", [
     ({"@type": "Place", "address": {"addressLocality": "København", "addressRegion": "Hovedstaden", "addressCountry": "DK"}},
      "København, Hovedstaden, DK"),

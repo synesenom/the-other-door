@@ -25,7 +25,6 @@ Terms: none found on the site (no terms page, no clause on automated access); ch
 robots.txt: ``User-agent: *`` with an empty ``Disallow``, everything allowed.
 """
 
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urlencode
@@ -116,13 +115,7 @@ def _is_results_page(html: str) -> bool:
 def _parse_detail(html: str) -> dict | None:
     """``{title, company, location, description, posted_at}`` from an ad page's ``JobPosting`` JSON-LD
     (``posted_at`` the ISO string); None when the page has none. Pure."""
-    for block in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL):
-        try:
-            data = json.loads(block)
-        except ValueError:
-            continue
-        if not isinstance(data, dict) or data.get("@type") != "JobPosting":
-            continue
+    for data in sdk.job_postings(html):
         address = (data.get("jobLocation") or {}).get("address") or {}
         return {
             "title": (data.get("title") or "").strip(),

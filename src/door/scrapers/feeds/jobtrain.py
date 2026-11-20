@@ -40,6 +40,7 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
     host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
@@ -157,20 +158,15 @@ def _place(node: dict) -> str:
 def parse_ad(html: str) -> dict | None:
     """``{description, posted_at, location, organization}`` from an ad page's JobPosting JSON-LD; ``None`` when it
     has none. Pure."""
-    soup = BeautifulSoup(html or "", "html.parser")
-    for tag in soup.find_all("script", type=re.compile(r"ld(\+|&#x2B;|&#43;)json", re.IGNORECASE)):
-        data = _load(tag.string or tag.get_text())
-        for node in data if isinstance(data, list) else [data]:
-            if not isinstance(node, dict) or node.get("@type") != "JobPosting":
-                continue
-            organization = node.get("hiringOrganization")
-            posted = parse_iso_date(node.get("datePosted"))
-            return {
-                "description": strip_html(str(node.get("description") or "")),
-                "posted_at": posted.replace(tzinfo=timezone.utc) if posted is not None and posted.tzinfo is None else posted,
-                "location": _place(node),
-                "organization": strip_html(str(organization.get("name") or "")) if isinstance(organization, dict) else "",
-            }
+    for node in sdk.job_postings(html):
+        organization = node.get("hiringOrganization")
+        posted = parse_iso_date(node.get("datePosted"))
+        return {
+            "description": strip_html(str(node.get("description") or "")),
+            "posted_at": posted.replace(tzinfo=timezone.utc) if posted is not None and posted.tzinfo is None else posted,
+            "location": _place(node),
+            "organization": strip_html(str(organization.get("name") or "")) if isinstance(organization, dict) else "",
+        }
     return None
 
 

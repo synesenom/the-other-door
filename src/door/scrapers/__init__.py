@@ -1,6 +1,7 @@
 """Shared helpers for all scrapers."""
 
 import html as _html
+import json
 import re
 import threading
 from datetime import datetime, timezone
@@ -265,6 +266,48 @@ _BLOCK_BREAK = re.compile(r"(?i)<br\s*/?>|<li[^>]*>|</(p|li|h\d|div|ul|ol|tr)>")
 _TAG = re.compile(r"<[^>]+>")
 _INVISIBLE = re.compile("[​-‏⁠﻿]")
 _SPACES = re.compile(r"[ \t\r\f\v]+")
+
+
+_LD_JSON = re.compile(r"<script[^>]*application/ld(?:\+|&#x2B;|&#43;)json[^>]*>(.*?)</script>", re.I | re.S)
+
+
+def _load_json(raw: str):
+    """JSON-LD as sites write it: JavaScript ``\\xHH`` escapes and one unclosed object are tolerated."""
+    raw = raw.strip()
+    try:
+        return json.loads(raw, strict=False)
+    except ValueError:
+        pass
+    try:
+        return json.loads(re.sub(r"\\x([0-9a-fA-F]{2})", r"\\u00\1", raw), strict=False)
+    except ValueError:
+        return json.loads(raw + "}" * max(raw.count("{") - raw.count("}"), 0), strict=False)
+
+
+def _is_job_posting(node) -> bool:
+    kind = node.get("@type") if isinstance(node, dict) else None
+    return "JobPosting" in (kind if isinstance(kind, list) else [kind])
+
+
+def job_postings(html: str | None) -> list[dict]:
+    """Every schema.org ``JobPosting`` object in a page's JSON-LD, in document order (per script: the node, then
+    its ``@graph`` members; top-level lists, ``@type`` lists, an entity-escaped ``ld&#x2B;json`` type and
+    unreadable blocks all handled). The caller keeps its own pick rule. Pure."""
+    found = []
+    for match in _LD_JSON.finditer(html or ""):
+        try:
+            data = _load_json(match.group(1))
+        except ValueError:
+            continue
+        for node in data if isinstance(data, list) else [data]:
+            if not isinstance(node, dict):
+                continue
+            if _is_job_posting(node):
+                found.append(node)
+            graph = node.get("@graph")
+            if isinstance(graph, list):
+                found.extend(n for n in graph if _is_job_posting(n))
+    return found
 
 
 def strip_html(raw: str | None, *, encoded: bool = False) -> str:

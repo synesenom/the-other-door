@@ -31,7 +31,6 @@ scraping, automated access or text-and-data mining (checked 2026-11-03). Operato
 Services Limited. robots.txt (checked 2026-11-03) disallows only ``/job/feedback/`` and ``/enhanced/fp/``.
 """
 
-import json
 import re
 import unicodedata
 from urllib.parse import quote_plus
@@ -160,17 +159,11 @@ def _html_text(html: str) -> str:
 def _parse_detail(html: str) -> dict | None:
     """``{"description", "posted"}`` of the ad's ``JobPosting`` JSON-LD (plain-text description, exact date or
     None); None when the page has none. Pure."""
-    for block in re.findall(r"<script[^>]*application/ld\+json[^>]*>(.*?)</script>", html or "", re.S | re.I):
-        try:
-            data = json.loads(block, strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if isinstance(node, dict) and node.get("@type") == "JobPosting" and node.get("description"):
-                text = _html_text(str(node["description"]))
-                if text:
-                    posted = parse_iso_date(node.get("datePosted"))
-                    return {"description": text, "posted": posted.replace(tzinfo=None) if posted else None}
+    for node in sdk.job_postings(html):
+        text = _html_text(str(node.get("description") or ""))
+        if text:
+            posted = parse_iso_date(node.get("datePosted"))
+            return {"description": text, "posted": posted.replace(tzinfo=None) if posted else None}
     return None
 
 

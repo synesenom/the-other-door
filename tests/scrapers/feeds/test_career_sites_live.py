@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from door.scrapers import sdk
 from door.scrapers.feeds import career_sites
 from door.scrapers.http_client import PoliteSession
 from live_utils import assert_contract, assert_detects, assert_listing, fail, probe_sized
@@ -37,7 +38,7 @@ def test_career_sites_details_live():
         postings = []
         for url in urls:
             resp = career_sites._get(session, url)
-            jobs = career_sites._job_postings_from_html(resp.text)
+            jobs = sdk.job_postings(resp.text)
             assert jobs, fail("career_sites", "details", f"no JobPosting markup at {url}")
             postings.append(career_sites._to_posting(jobs[0], resp.url or url, host, now))
     assert_contract("career_sites", postings, "details", config=CONFIG)

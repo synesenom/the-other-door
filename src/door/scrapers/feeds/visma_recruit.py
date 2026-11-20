@@ -63,6 +63,7 @@ from urllib.parse import parse_qs, urljoin, urlsplit, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, career_links, followed_name,
     host_of, is_job_board, keep_local, split_known, make_job_id, name_key, parts, record_entry_error, record_error, record_pushback,
@@ -163,15 +164,8 @@ def parse_list(html: str) -> tuple[str, list[dict]]:
     return name, rows
 
 
-def _schema(soup: BeautifulSoup) -> dict:
-    for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
-        try:
-            data = json.loads(script.string or "")
-        except ValueError:
-            continue
-        if isinstance(data, dict) and data.get("@type") == "JobPosting":
-            return data
-    return {}
+def _schema(html: str) -> dict:
+    return next(iter(sdk.job_postings(html)), {})
 
 
 def _address(value) -> str:
@@ -205,7 +199,7 @@ def parse_detail(html: str) -> dict | None:
     The place is the page's ``Kommun`` line, else the schema's ``jobLocation``. Pure."""
     soup = BeautifulSoup(html or "", "html.parser")
     content = soup.find("div", class_="mainContent")
-    schema = _schema(soup)
+    schema = _schema(html)
     if content is None and not schema:
         return None
     location = ""

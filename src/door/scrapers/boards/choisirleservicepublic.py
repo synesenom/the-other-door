@@ -33,7 +33,6 @@ robots.txt (checked 2026-10-31) disallows ``/wp-admin/`` and ``/wp-content/uploa
 """
 
 import html as html_lib
-import json
 import re
 import unicodedata
 from datetime import datetime, timezone
@@ -180,22 +179,11 @@ def _is_results_page(html: str) -> bool:
     return "js-results" in h or "fr-card--offer" in h
 
 
-def _json_ld(soup) -> dict:
-    for script in soup.find_all("script", type="application/ld+json"):
-        try:
-            data = json.loads(script.string or "")
-        except ValueError:
-            continue
-        if isinstance(data, dict) and data.get("@type") == "JobPosting":
-            return data
-    return {}
-
-
 def _parse_detail(page: str) -> dict | None:
     """``description`` (plain text: missions, profile, skills), ``company`` and ``location`` from an ad page;
     None when it has no ad text. Pure."""
     soup = BeautifulSoup(page or "", "html.parser")
-    ld = _json_ld(soup)
+    ld = next(iter(sdk.job_postings(page)), {})
     body = soup.select_one("div.col-left.rte")
     text = ""
     if body is not None:
