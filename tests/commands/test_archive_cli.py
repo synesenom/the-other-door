@@ -327,7 +327,7 @@ def test_a_conflict_refuses_a_locked_core(env, connected, enable_sync_hooks):
 # --------------------------------------------------------------------------- #
 # data versions (#56)
 # --------------------------------------------------------------------------- #
-def _versioned(env, profile="0.2", jobs="0.0"):
+def _versioned(env, profile="0.1", jobs="0.0"):
     (env.profile_dir / ".data_version").write_text(profile)
     (env.jobs_dir / ".data_version").write_text(jobs)
 

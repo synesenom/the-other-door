@@ -118,8 +118,7 @@ class RefusedData(ValueError):
 
 @dataclass(frozen=True)
 class Step:
-    """One move of a folder from version N to N+1; *run* takes the folder and changes nothing outside it (but for
-    derived scratch beside it that a step names, as `_drop_cv_style` does for `.style/`).
+    """One move of a folder from version N to N+1; *run* takes the folder and changes nothing outside it.
 
     *changes* are the paths into a release's saved `expected.json` (`tests/data_versions/<X.Y.Z>/`, #57) that the step
     changes on purpose, as globs over the dotted path (``show_profile.config.cv_template``; ``*`` is any text, a list
@@ -197,34 +196,6 @@ def _templates_from_code(profile_dir: Path) -> None:
         utils.write_json_atomic(config_path, config)
 
 
-def _drop_cv_style(profile_dir: Path) -> None:
-    """1 -> 2: the CV style rebuilt from an uploaded CV is gone (#464).
-
-    Clears the template keys that named a template in `profile/style/`, removes `profile/style/`, `profile/style.next/`
-    and the build's scratch folder `.style/` beside `profile/` (the data folder's); a template of the user's own,
-    anywhere else, stays.
-    """
-    profile_dir = Path(profile_dir)
-    if not profile_dir.is_dir():
-        return
-    config_path = profile_dir / "config.json"
-    try:
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        config = None
-    if isinstance(config, dict):
-        dropped = [
-            key for key in ("cv_template", "cover_letter_template")
-            if isinstance(config.get(key), str) and config[key].replace("\\", "/").startswith("profile/style/")
-        ]
-        for key in dropped:
-            del config[key]
-        if dropped:
-            utils.write_json_atomic(config_path, config)
-    for folder in (profile_dir / "style", profile_dir / "style.next", profile_dir.parent / ".style"):
-        shutil.rmtree(folder, ignore_errors=True)
-
-
 PROFILE_STEPS: list[Step] = [
     Step(
         "templates come from the code", _templates_from_code,
@@ -232,10 +203,6 @@ PROFILE_STEPS: list[Step] = [
             "show_profile.config.cv_template", "show_profile.config.cover_letter_template",  # the keys named the copies
             "show_profile.templates.*.path",  # the template read is the code's, not a copy in profile/
         ),
-    ),
-    Step(
-        "the CV style rebuilt from a CV is dropped", _drop_cv_style,
-        changes=("show_profile.config.cv_template", "show_profile.config.cover_letter_template", "show_profile.templates.*.path"),
     ),
 ]
 JOBS_STEPS: list[Step] = []

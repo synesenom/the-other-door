@@ -1,5 +1,5 @@
 """The one pinned-download step (#202): fetch into a `.part` staging folder, check the sha256, leave the move to
-the caller; Chromium, cloudflared and the fonts all go through it."""
+the caller; Chromium and cloudflared both go through it."""
 
 from __future__ import annotations
 

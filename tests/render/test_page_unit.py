@@ -4,7 +4,7 @@ from door.render import page
 
 
 def test_a_heading_inside_the_header_stays_in_the_header_and_the_columns_start_after_it():
-    """#242: a header with its own <h2> (a built style's sample body put CONTACT there) is not split: splitting at it
+    """#242: a header with its own <h2> (a template's sample body may put CONTACT there) is not split: splitting at it
     left the columns inside the header, which the template places in its own grid area."""
     from door.core import templates
     body = ('<header class="cv-header"><h1>A B</h1><h2>Contact</h2><p class="contact">x</p></header>'

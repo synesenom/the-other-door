@@ -550,7 +550,7 @@ def test_init_partial_profile_dir_copies_missing_files_only(init_env, prompts):
 
     for name in ("cv.template.html", "cover-letter.template.html", "fonts"):
         assert not (init_env.profile_dir / name).exists()  # the templates and fonts come from the code (#56)
-    assert (init_env.profile_dir / ".data_version").read_text() == "0.2\n"  # made by this build: nothing to upgrade
+    assert (init_env.profile_dir / ".data_version").read_text() == "0.1\n"  # made by this build: nothing to upgrade
     assert not (init_env.profile_dir / "cv.md").exists()  # no CV yet, not the example's
     assert (state_dir / "mine.json").read_text() == '{"notes": []}'
 
