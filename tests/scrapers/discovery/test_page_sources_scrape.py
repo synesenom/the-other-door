@@ -1,7 +1,7 @@
 """Fixture tests for the result-page discovery sources (`hellowork.run`, `jobbsafari.run`,
 `profession.run`): the whole crawl in a fake HTTP session that serves result pages (synthetic
 ones in each site's shape, fixtures/<source>/, and pages built from a card template). No network,
-no waiting (each module's `_sleep` is faked). The crawl rules are the same for the three; what each
+no waiting (the shared `_sleep` is faked). The crawl rules are the same for the three; what each
 site's pages look like is its adapter here and its unit tests."""
 
 import json
@@ -15,10 +15,11 @@ import pytest
 import responses
 
 from door.scrapers import drain_errors, drain_pushback
-from door.scrapers import sdk
+from door.scrapers import paged_discovery, sdk
 from door.scrapers.discovery import hellowork, jobbsafari, profession
 
 _FIX = Path(__file__).parent / "fixtures"
+_REAL_SLEEP = paged_discovery._sleep   # before any test fakes it
 _PAUSE = (3.0, 6.0)
 _KEYS = {"employers", "details", "pages", "requests", "stopped", "pushback", "outcome", "mode", "mode_switched",
          "searched", "search_complete", "first_429", "budget", "pause", "seconds"}
@@ -121,18 +122,15 @@ _SOURCES = {
 
 
 class _Response:
-    def __init__(self, status, body):
-        self.status, self._body = status, body
-
-    def text(self):
-        return self._body
+    def __init__(self, status, body, url):
+        self.status_code, self.text, self.url = status, body, url
 
 
 class _Page:
     """Answers per URL in order, repeating the last; an answer is (status, body, final_url) or an exception."""
 
     def __init__(self):
-        self.routes, self.calls, self.url = [], [], ""
+        self.routes, self.calls = [], []
 
     def add(self, pattern, body="", status=200, final_url=None, raises=None):
         answer = raises or (status, body, final_url)
@@ -142,7 +140,7 @@ class _Page:
                 return
         self.routes.append((pattern, [answer]))
 
-    def goto(self, url, **kwargs):
+    def get(self, url, **kwargs):
         self.calls.append(url)
         for pat, answers in self.routes:
             if pat.match(url):
@@ -150,14 +148,16 @@ class _Page:
                 if isinstance(answer, BaseException):
                     raise answer
                 status, body, final_url = answer
-                self.url = final_url or url
-                return _Response(status, body)
+                return _Response(status, body, final_url or url)
         raise AssertionError(f"unexpected goto {url}")
 
 
 class _Session:
     def __init__(self):
-        self.page, self.closed = _Page(), False
+        self.page, self.closed, self.headers = _Page(), False, {}
+
+    def get(self, url, **kwargs):
+        return self.page.get(url, **kwargs)
 
     def close(self):
         self.closed = True
@@ -178,7 +178,7 @@ def src(request):
 @pytest.fixture
 def session(src, monkeypatch):
     s = _Session()
-    monkeypatch.setattr(src.module, "_open_session", lambda: s)
+    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: s)
     drain_errors()
     drain_pushback(src.name)
     return s
@@ -192,7 +192,7 @@ def sleeps(src, monkeypatch):
         out.append(seconds)
         return stop.is_set() if stop is not None else False
 
-    monkeypatch.setattr(src.module, "_sleep", fake_sleep)
+    monkeypatch.setattr(paged_discovery, "_sleep", fake_sleep)
     return out
 
 
@@ -235,7 +235,7 @@ def test_a_full_page_then_a_short_one_end_the_keyword_and_queue_the_on_topic_emp
 def test_a_keyword_stops_at_the_page_cap(src, session):
     _pages(src, session, *(_full(src, k) for k in range(4)))
     result = _run(src)
-    assert len(session.page.calls) == src.module._PAGE_CAP == 3
+    assert len(session.page.calls) == 3
     assert result["search_complete"] and result["outcome"] == "ok"
 
 
@@ -254,7 +254,7 @@ def test_a_small_budget_ends_the_run_and_the_unreached_keywords_wait(src, sessio
 def test_the_budget_and_pause_of_the_engine_are_clamped_to_this_sources_own_limits(src, session):
     _pages(src, session, src.fx(src.page2_fixture))
     result = _run(src, budget=150, pause=(2.0, 4.0))
-    assert result["budget"] == src.module._MAX_BUDGET == 30 and result["pause"] == [3.0, 6.0]
+    assert result["budget"] == 30 and result["pause"] == [3.0, 6.0]
     assert _run(src, budget=150, pause=(8.0, 16.0))["pause"] == [8.0, 16.0]
 
 
@@ -300,14 +300,14 @@ def test_a_redirect_off_the_listing_stops_as_a_refusal(src, session, which):
 def test_a_stop_signal_ends_the_run_before_the_next_request(src, session):
     stop = threading.Event()
     _pages(src, session, _full(src, 0))
-    goto = session.page.goto
+    get = session.page.get
 
     def goto_then_stop(url, **kwargs):
-        response = goto(url, **kwargs)
+        response = get(url, **kwargs)
         stop.set()
         return response
 
-    session.page.goto = goto_then_stop
+    session.page.get = goto_then_stop
     result = _run(src, stop=stop)
     assert len(session.page.calls) == 1 and result["outcome"] == "cancelled" and not result["pushback"]
     assert len(result["employers"]) == src.size
@@ -353,3 +353,26 @@ def test_a_block_page_sent_with_a_server_error_is_a_refusal_not_a_failing_server
     result = _run(src)
     assert result["outcome"] == "refused" and result["pushback"] and len(session.page.calls) == 1
     assert drain_pushback(src.name) is True
+
+
+def test_hellowork_searches_the_city_of_the_profiles_location_and_none_without_one(src, session):
+    if src.name != "hellowork":
+        pytest.skip("only HelloWork puts the city in its search")
+    session.page.add(re.compile(src.first_page), src.page(1, 3))
+    _run(src, {"search_keywords": [src.keyword], "location": "Lyon, France"})
+    _run(src, {"search_keywords": [src.keyword]})
+    assert session.page.calls == [
+        "https://www.hellowork.com/fr-fr/emploi/recherche.html?k=chef+de+projet&l=Lyon",
+        "https://www.hellowork.com/fr-fr/emploi/recherche.html?k=chef+de+projet",
+    ]
+
+
+def test_the_real_sleep_waits_the_seconds_or_ends_early_on_a_stop_signal(src, monkeypatch):
+    real = _REAL_SLEEP
+    waited = []
+    monkeypatch.setattr("time.sleep", waited.append)
+    assert real(2, None) is False and waited == [2]
+    stop = threading.Event()
+    assert real(0.01, stop) is False
+    stop.set()
+    assert real(30, stop) is True
