@@ -36,7 +36,9 @@ Render what changed. From `app/`, start the preview's server alone, in the backg
 
 If it cannot run (no `app/node_modules`: `npm ci` is not yours to run; no Chromium; the server will not start), say which, and review from the code alone.
 
-Check every finding against the rule's text and the screenshot or the line; a matter of taste the rules do not settle is not a finding.
+Guide: a control, class, colour or size the change uses that `?scene=guide` (`app/src/preview/Guide.tsx`) does not show is a finding, proven by a `git grep` in `Guide.tsx` that finds nothing.
+
+Proof: a finding is reported only with a screenshot path and the rule it breaks (or the empty `git grep` above). A matter of taste the rules do not settle is not a finding.
 
 ## Output
 
@@ -46,6 +48,8 @@ Base: <base_branch>  Goal: <issue or words>
 Screens looked at: <scene, state, theme, width — or "code only: <why>">
 Findings:
 1. <one sentence: what breaks the rule> — <rule: README section and point> — <evidence: file:line or screenshot path> — <fix here (about this change) | issue (a bug a user would hit, outside the change) | out of scope (named, not filed)>
+   Command: <the screenshot script or `git grep`, or None>
+   Output: <the screenshot path or what it printed, or None>
 2. ...
 Checked and fine: <a short list of the rules checked and met>
 ```

@@ -28,7 +28,7 @@ Read `CLAUDE.md`, then `git diff <base_branch>...HEAD` and the files it touches,
 5. **Docs that are now false**, or a user-visible change with no doc (CLAUDE.md "Docs maintenance"): `grep` the docs for the names and behaviours the change touched.
 6. **A follow-up the change makes necessary**: a later issue that now has a new requirement, a TODO left in the diff, a temporary list or exemption that someone must empty later.
 
-Check every claim against the code before you report it: read the line, run the test or the grep. A guess is not a gap.
+Proof: a gap is reported only with a failing command or test that shows it. Write the repro in the scratchpad, never the repo, and quote its path. A gap you could only read, not run, is not reported.
 
 ## Output
 
@@ -37,6 +37,8 @@ Check every claim against the code before you report it: read the line, run the 
 Base: <base_branch>  Goal: <issue or words>
 Gaps:
 1. <one sentence: what is missing> — <evidence: file:line, test, or command output> — <fix here (about this change) | issue (a bug a user would hit, outside the change) | out of scope (anything else outside the change: named, not filed)>
+   Command: <the failing command or test, with the repro's scratchpad path, or None>
+   Output: <what it printed, or None>
 2. ...
 Checked and fine: <a short list of what you looked at and found complete>
 ```

@@ -26,7 +26,9 @@ Read `CLAUDE.md` (its Conventions and Code layout rules), then `git diff <base_b
 4. **A diff larger than its goal.** Unrelated refactors, reformatting, renames riding along; tests that pin decisions instead of behaviour (CLAUDE.md "Testing").
 5. **Simpler shapes.** The same lines written twice within the diff, a loop that is a comprehension, a state machine that is a lookup table, three flags that are one enum, a function twice as long as it needs to be. Report only where the simpler version is clearly simpler to read, not a matter of taste.
 
-Check every finding against the code: read the line, `grep` the callers, run the test. A suggestion that would break a test or a guard (`tests/core/test_*_guard_unit.py`, the MCP parity test) is not simpler.
+6. **A special case.** A branch, constant, word list or rule that matches only the observed input: a font name, one site's string, one CV's phrasing. Proof: a `git grep` or a test showing it fires on that one input and nothing else. The fix is a second, different case plus a legitimate case where it must not fire, or a plain fix with no rule. Reading the meaning of free-form input stays a model call ("structure by model").
+
+Proof: a finding is reported only with a run that shows the claim: a `git grep` with no second caller, line counts, or the smaller version's tests passing in a scratch worktree. A suggestion that would break a test or a guard (`tests/core/test_*_guard_unit.py`, the MCP parity test) is not simpler.
 
 ## Output
 
@@ -35,6 +37,8 @@ Check every finding against the code: read the line, `grep` the callers, run the
 Base: <base_branch>  Goal: <issue or words>
 Findings:
 1. <one sentence: what is more complex than needed> — <evidence: file:line, the callers> — <the simpler version, in one line> — <fix here (about this change) | out of scope (code the change does not touch: named, not filed)>
+   Command: <the run that shows it, or None>
+   Output: <what it printed, or None>
 2. ...
 Checked and fine: <a short list of what you looked at and found as simple as it can be>
 ```

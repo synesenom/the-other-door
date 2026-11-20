@@ -34,6 +34,8 @@ Ask what the codebase would look like if this feature had been one of its foundi
 
 For each candidate, sketch the founding version concretely: which existing code changes, what merges, what is deleted, where the new behaviour lives, and the estimated net lines against the current branch (count the lines it would remove; do not guess). Check it is real: read the code it would change, `grep` every caller it would touch, and name the guards and tests (`tests/core/test_*_guard_unit.py`, the MCP parity test, the scraper contracts) it must keep passing. A refactor that is larger than the code it saves, or that fights a stated principle in CLAUDE.md, is not one.
 
+Proof: a refactor is reported only with a run that shows the claim: a `git grep` of the callers or of the duplicate, line counts, or the smaller version's tests passing in a scratch worktree.
+
 ## Output
 
 ```
@@ -44,6 +46,8 @@ Blast radius: <callers, surfaces, stored files, tests, docs touched>
 Verdict: integrated | refactor here
 Refactors:
 1. <one sentence: the founding version> — <what changes, merges, is deleted; where it lives> — <net lines vs the branch, from counted lines> — <evidence: file:line, callers> — <here (about this change) | out of scope (named, not filed)>
+   Command: <the run that shows it, or None>
+   Output: <what it printed, or None>
 2. ...
 Checked and fine: <where the change already fits the codebase's shape>
 ```
