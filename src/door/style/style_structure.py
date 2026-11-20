@@ -39,7 +39,7 @@ Answer with:
 - name: the id of the line with the candidate's name.
 - headings: every section heading line, by id, with its `kind`.
 - entry_titles: the ids of the entry title lines (a job title, employer, degree or school heading one entry).
-- contacts: every line that holds one contact detail or a date, by id, with its `kind` (phone, email, web, linkedin, github, location, or date for the dates of an entry or a period) and its `label`: the words the line itself puts before the value ("Tel:", "Puhelin", "E-mail"), exactly as written, in any language, or "" when it has none. A line is a contact detail by what it holds (a number, an address, a link, a place), not by its position; a section heading or a line of running text is none. List each line once.
+- contacts: every line that holds one contact detail or a date, by id, with its `kind` (phone, email, web, linkedin, github, location, or date for the dates of an entry or a period). A line is a contact detail by what it holds (a number, an address, a link, a place), not by its position; a section heading or a line of running text is none. List each line once.
 - footers: the ids of the lines that are page furniture and no content: a page number, a "Page N of M" line, a running footer or header repeated on the pages.
 
 A section heading names a section of the CV (in any language, also unknown words): it starts a section and the CV has a handful of them, set in one consistent style that stands out from the body. Entry titles repeat within a section, usually carry a date on their line or next to them, and are often in a style close to the headings: tell them apart by position (a heading comes first and groups several entries), by count and by wording, not by style alone. A heading may contain a year ("Projekte 2020"). Text in another column on the same baseline belongs to that column, not to the heading."""
@@ -58,9 +58,8 @@ SCHEMA = {
             "properties": {"id": {"type": "integer"}, "kind": {"enum": KINDS}}}},
         "entry_titles": {"type": "array", "items": {"type": "integer"}},
         "contacts": {"type": "array", "items": {
-            "type": "object", "additionalProperties": False, "required": ["id", "kind", "label"],
-            "properties": {"id": {"type": "integer"}, "kind": {"enum": list(templates.ICON_KINDS)},
-                           "label": {"type": "string"}}}},
+            "type": "object", "additionalProperties": False, "required": ["id", "kind"],
+            "properties": {"id": {"type": "integer"}, "kind": {"enum": list(templates.ICON_KINDS)}}}},
         "footers": {"type": "array", "items": {"type": "integer"}},
     },
 }
@@ -147,7 +146,7 @@ def _ids(values, rows_by_id: dict, what: str) -> list[int]:
 
 
 def _contacts(given, rows_by_id: dict) -> list[dict]:
-    """The model's contact lines as ``[{row, kind, label}]``: each a line that exists, once, of a kind an icon has."""
+    """The model's contact lines as ``[{row, kind}]``: each a line that exists, once, of a kind an icon has."""
     if not isinstance(given, list) or not all(isinstance(c, dict) for c in given):
         raise _fail("the contacts are not a list")
     ids = _ids([c.get("id") for c in given], rows_by_id, "the contacts")
@@ -155,9 +154,7 @@ def _contacts(given, rows_by_id: dict) -> list[dict]:
     for c, i in zip(given, ids):
         if c.get("kind") not in templates.ICON_KINDS:
             raise _fail(f"contact line {i} has no kind of contact detail")
-        if not isinstance(c.get("label"), str):
-            raise _fail(f"contact line {i} has no label")
-        out.append({"row": rows_by_id[i], "kind": c["kind"], "label": c["label"].strip()})
+        out.append({"row": rows_by_id[i], "kind": c["kind"]})
     return out
 
 
@@ -231,7 +228,7 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
     """The model's `answer` held to the code's checks, as the structure `style_extract.extract` reads.
 
     ``{linkedin, columns: "one" | "two" | "three", side_range: (x0, x1) | None, name, headings: [{kind, column,
-    row, text, bbox}], entry_titles: [id], contacts: [{row, kind, label}], footers: [row]}``, `name`, each heading's,
+    row, text, bbox}], entry_titles: [id], contacts: [{row, kind}], footers: [row]}``, `name`, each heading's,
     contact's and footer's `row` the rows of `rows_list` (a footer outside the top and bottom 8% of its page is dropped). A heading's column is worked out from its x and the side range
     (the model's is not used), its `kind` is the model's, and a heading that wraps takes its second line in. LinkedIn
     is believed only with a footer line the model named on every page.

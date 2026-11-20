@@ -2,7 +2,7 @@
 `door.style.style_structure.rows` writes them, and the answer is a plain rule's, as in `tests/style_structure_utils`:
 the name is the largest text of the first page, the headings are the lines of at most six words set unlike the body
 text that a section kind names, one column, not LinkedIn; the contact lines are those that look like an email, a link,
-a phone number or a period of years (no label), the footers the lines that are a page number or `Page N of M`. Run as `python structure.py` with the input on stdin; needs
+a phone number or a period of years the footers the lines that are a page number or `Page N of M`. Run as `python structure.py` with the input on stdin; needs
 `door` importable."""
 
 import json
@@ -18,7 +18,7 @@ _PERIOD = re.compile(r"(19|20)\d\d\s*[-\u2013]\s*((19|20)\d\d|\w+)")
 
 
 def contact_kind(text: str) -> str | None:
-    """The kind of contact detail a line looks like, for a test's stand-in only: no label, no language."""
+    """The kind of contact detail a line looks like, for a test's stand-in only: no language."""
     text = text.strip()
     low = text.lower()
     if "@" in text:
@@ -60,7 +60,7 @@ def answer(text: str) -> dict:
         "linkedin_export": False, "layout": {"columns": "one"}, "name": name["id"],
         "headings": [{"id": r["id"], "kind": i18n.cv_section_kind(r["text"], KINDS) or "other"} for r in heads],
         "entry_titles": [],
-        "contacts": [{"id": r["id"], "kind": kind, "label": ""} for r in lines if (kind := contact_kind(r["text"]))],
+        "contacts": [{"id": r["id"], "kind": kind} for r in lines if (kind := contact_kind(r["text"]))],
         "footers": [r["id"] for r in lines if _FOOTER.fullmatch(r["text"].strip())]}
 
 

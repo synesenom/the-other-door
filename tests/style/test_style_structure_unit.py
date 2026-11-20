@@ -206,18 +206,17 @@ def test_the_models_kind_for_a_heading_is_kept_whatever_the_words(cv):
 def test_the_contact_lines_and_footers_are_carried_in_the_structure(tmp_path):
     pages, rows, _ = read(pdf_of(tmp_path, one_column() + put("F1", 8, 270, 30, "Page 1 of 1")))
     ids = ids_by_text(rows)
-    a = answer(rows, contacts=[{"id": ids["max@example.com +49 30 1234567"], "kind": "email", "label": " E-mail: "}],
+    a = answer(rows, contacts=[{"id": ids["max@example.com +49 30 1234567"], "kind": "email", "label": "E-mail:"}],
                footers=[ids["Page 1 of 1"]])
     s = style_structure.check(a, rows, pages)
-    assert [(c["row"]["id"], c["kind"], c["label"]) for c in s["contacts"]] == [(ids["max@example.com +49 30 1234567"], "email", "E-mail:")]
+    assert [(c["row"]["id"], c["kind"]) for c in s["contacts"]] == [(ids["max@example.com +49 30 1234567"], "email")]
     assert [r["id"] for r in s["footers"]] == [ids["Page 1 of 1"]]
 
 
 @pytest.mark.parametrize("break_it", [
-    lambda a, ids: a["contacts"].append({"id": 999, "kind": "phone", "label": ""}),
-    lambda a, ids: a["contacts"].append({"id": ids["Experience"], "kind": "fax", "label": ""}),
-    lambda a, ids: a["contacts"].append({"id": ids["Experience"], "kind": "phone"}),
-    lambda a, ids: a.update(contacts=[{"id": ids["Experience"], "kind": "phone", "label": ""}] * 2),
+    lambda a, ids: a["contacts"].append({"id": 999, "kind": "phone"}),
+    lambda a, ids: a["contacts"].append({"id": ids["Experience"], "kind": "fax"}),
+    lambda a, ids: a.update(contacts=[{"id": ids["Experience"], "kind": "phone"}] * 2),
     lambda a, ids: a.update(contacts="x"),
     lambda a, ids: a.update(footers=[999]),
     lambda a, ids: a.pop("footers"),
@@ -553,8 +552,8 @@ def test_an_icon_gets_its_kind_from_the_model_s_contact_line_in_a_language_no_ta
     pages, rows, _ = read(path)
     ids = ids_by_text(rows)
     contacts = [{"id": ids["Puhelin 040 1234567"], "kind": "phone", "label": "Puhelin"},
-                {"id": ids["Helsinki"], "kind": "location", "label": ""},
-                {"id": ids["1999 - 2003"], "kind": "date", "label": ""}]
+                {"id": ids["Helsinki"], "kind": "location"},
+                {"id": ids["1999 - 2003"], "kind": "date"}]
     style = style_extract.extract(path, structure=style_structure.check(answer(rows, contacts=contacts), rows, pages))
     assert [(i["near"]["text"], i["kind"]) for i in style["icons"]] == [
         ("Puhelin 040 1234567", "phone"), ("Helsinki", "location"), ("1999 - 2003", "date"), ("Reading", None)]
