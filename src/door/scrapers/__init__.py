@@ -126,9 +126,10 @@ _answered: set[str] = set()
 
 
 def record_answered(source: str) -> None:
-    """Mark that *source* read a recognised results page with no hits this run.
+    """Mark that *source* read a results page or list it recognises this run: no hits, or only ads it skips
+    itself (off topic) or returns as ``seen_only`` records (known ads).
 
-    A scraper that can tell "the search found nothing" from "the page is not what I know" calls it
+    A scraper that can tell "the search found nothing new" from "the page is not what I know" calls it
     for the first. `_scrape_core` drains it when the site finishes: no postings, no errors and this
     signal is a quiet day (`ok`), not an `empty` site that may have changed. Safe to call from any thread.
     """
@@ -137,7 +138,7 @@ def record_answered(source: str) -> None:
 
 
 def drain_answered(source: str) -> bool:
-    """Whether *source* answered with a recognised zero-hit page since the last drain; clears it."""
+    """Whether *source* read a recognised results page since the last drain; clears it."""
     with _errors_lock:
         if source in _answered:
             _answered.discard(source)
@@ -232,13 +233,14 @@ def strip_html(raw: str | None, *, encoded: bool = False) -> str:
 
 
 def log_keyword_results(source: str, keyword: str, postings: list) -> None:
-    """Report the number of results found for *keyword*.
+    """Report the number of results found for *keyword*: the postings, not the known ads (`seen_only`).
 
     Always reports so the user can see per-keyword counts and distinguish
     genuine zero results from scraper errors (which are reported separately
     when the HTTP request or parse step raises).
     """
-    report(f"'{keyword}': {len(postings)} results", site=source, stage="keyword")
+    count = sum(1 for p in postings if not p.get("seen_only"))
+    report(f"'{keyword}': {count} results", site=source, stage="keyword")
 
 
 def tracked(entries, label=str):
@@ -267,7 +269,8 @@ def scrape_feeds(site: str, entries, fetch, *, key=lambda p: p["platform_id"], l
     With *group* (an entry's host) and *max_workers* above 1, entries on different hosts are
     fetched side by side (`_parallel.map_by_group`); the output never depends on timing.
     An entry that raises is reported and recorded as an error of *site*, and the rest go on;
-    each entry's count is reported like a keyword's.
+    each entry's count is reported like a keyword's (``seen_only`` records not counted). An entry whose
+    fetch returned, even with no ads or only known ones, marks *site* answered (`record_answered`).
     """
     from door.scrapers._parallel import map_by_group
     from door.scrapers.http_client import FEED_DELAY, PoliteSession
@@ -290,6 +293,7 @@ def scrape_feeds(site: str, entries, fetch, *, key=lambda p: p["platform_id"], l
     for entry, found in zip(entries, fetched):
         if found is None:
             continue
+        record_answered(site)  # the entry's list was read, whatever it held: all known is a quiet day
         fresh = []
         for posting in found:
             if key(posting) and key(posting) not in seen:
@@ -298,6 +302,15 @@ def scrape_feeds(site: str, entries, fetch, *, key=lambda p: p["platform_id"], l
         log_keyword_results(site, label(entry), fresh)
         postings.extend(fresh)
     return postings
+
+
+def list_at(data, key: str, what: str) -> list:
+    """The list under *key* of a JSON answer; raises ``ValueError`` naming *what* when there is none
+    (the one check a feed's scrape and its probe share)."""
+    found = data.get(key) if isinstance(data, dict) else None
+    if not isinstance(found, list):
+        raise ValueError(f"no `{key}` list in {what}'s answer")
+    return found
 
 
 def probe_failure(exc: Exception, ext: str) -> ProbeResult:

@@ -282,8 +282,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 break
 
             cards = _parse_cards(html)
-            if not cards:
-                record_answered(_SITE)
+            record_answered(_SITE)  # a results page read, whatever its cards are (all known, off topic, none)
             relevant = [c for c in cards if not topic or on_topic(c["title"], topic)]
             for card in relevant:
                 if card["id"] in seen:
@@ -312,7 +311,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             # The ranking puts the on-topic ads first: a page without one ends the keyword.
             if not relevant or not _has_next(html):
                 break
-        log_keyword_results(_SITE, keyword, [p for p in out[start:] if not p.get("seen_only")])
+        log_keyword_results(_SITE, keyword, out[start:])
     return out
 
 

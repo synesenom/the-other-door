@@ -1300,3 +1300,7 @@ def test_a_templates_manifest_and_icons_are_never_copied_into_the_profile(tmp_pa
     profile.mkdir()
     profile_cmd._copy_missing_example_files(example, profile)
     assert sorted(p.name for p in profile.iterdir()) == ["notes.md"]  # the manifest and icons belong to the code's template (#188)
+
+
+def test_parse_cv_titles_carry_no_recorded_kind():
+    assert profile_cmd._parse_cv("# A\n\n## Toolbox <!-- kind: skills -->\n\n- x\n")["sections"][0]["title"] == "Toolbox"

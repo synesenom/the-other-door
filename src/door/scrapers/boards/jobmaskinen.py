@@ -204,10 +204,11 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 except Exception as exc:
                     _fail(f"search error (keyword={keyword!r}, page={page}): {exc}")
                     break
+                results_page = bool(cards) or _is_results_page(html)
+                if results_page:
+                    record_answered(_SITE)  # a results page read, whatever its ads are
                 if not cards:
-                    if _is_results_page(html):
-                        record_answered(_SITE)
-                    else:
+                    if not results_page:
                         _fail(f"search (keyword={keyword!r}, page={page}): no result cards or no-results marker "
                               "on the page (the site may have changed)")
                     break
@@ -220,6 +221,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                         postings.append({"platform_id": platform_id, "seen_only": True})
                         continue
                     if since and card["posted_at"] and card["posted_at"] < since:
+                        postings.append(_posting(card, None, scraped_at))  # the engine counts it stale; no ad request
                         continue
                     detail = None
                     try:

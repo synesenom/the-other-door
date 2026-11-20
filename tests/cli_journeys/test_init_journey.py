@@ -78,7 +78,7 @@ def _init_find_show_prepare(world: World, persona: str, cv_name: str | None = No
 
     cv = (world.home / "profile" / "cv.md").read_text(encoding="utf-8")
     assert cv == world.persona["cv"]
-    for call in ("basics", "titles"):   # the other reading steps read the draft whole
+    for call in ("cv_read", "titles"):   # the other reading steps read the draft whole
         assert cv.strip() in world.claude_inputs(call)[0], call
     config = world.read("profile/config.json")
     assert config["name"] == world.persona["name"] and config["location"] == world.persona["city"]
@@ -123,7 +123,7 @@ def test_init_then_the_first_find(world):
     assert world.persona["cv"] != (REPO_ROOT / "profile.example" / "cv.md").read_text(encoding="utf-8")
 
     kinds = world.claude_kinds()
-    positions = [kinds.index(k) for k in ("draft", "basics", "titles", "keywords")]
+    positions = [kinds.index(k) for k in ("draft", "cv_read", "titles", "keywords")]
     assert positions == sorted(positions), kinds
     prompts = [c["name"] for c in world.calls() if c["kind"] == "prompt"]
     assert prompts.index("review") > prompts.index("titles_pick")

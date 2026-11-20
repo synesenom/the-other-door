@@ -11,6 +11,7 @@ import { startDemoRun } from './demo-run'
 import { doorHome } from './files'
 import { watchForeignEnd } from './foreign-run'
 import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-server'
+import { beforeQuitStep, closeStep, flushPage } from './close-flush'
 import { CHANNELS, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
 import { quitStep, restorePhoneAtStart, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
@@ -139,6 +140,8 @@ const claudeLogin = createClaudeLogin({
   },
 })
 
+let pagesFlushed = false
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1200,
@@ -163,6 +166,14 @@ function createWindow(): void {
   })
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   win.once('ready-to-show', () => win.show())
+  // The page writes what it holds unsaved (the Master CV's last seconds of typing) before the window goes.
+  let closing = false
+  win.on('close', (event) => {
+    if (closeStep({ closing, pagesFlushed }) === 'let-close') return // a quit has flushed every page already (before-quit)
+    event.preventDefault()
+    closing = true
+    void flushPage(win.webContents, ipcMain).finally(() => win.destroy())
+  })
   if (devUrl) void win.loadURL(devUrl)
   else void win.loadFile(join(__dirname, '../renderer/index.html'))
 }
@@ -254,6 +265,15 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', (event) => {
+  // The pages write what they hold unsaved first, while the server still answers; then the quit goes on.
+  if (beforeQuitStep({ pagesFlushed }) === 'flush-then-quit') {
+    event.preventDefault()
+    void Promise.all(BrowserWindow.getAllWindows().map((w) => flushPage(w.webContents, ipcMain))).finally(() => {
+      pagesFlushed = true
+      app.quit()
+    })
+    return
+  }
   // Quitting installs a downloaded update: stop the phone server first, once, then quit again.
   if (quitStep({ installsOnQuit: updates.willInstallOnQuit(), stopped: stoppedForUpdate }) === 'stop-then-quit') {
     event.preventDefault()
@@ -263,7 +283,7 @@ app.on('before-quit', (event) => {
   }
   board.stop()
   claudeLogin.cancel()
-  void server.close()
+  void server.close(5000) // a save in flight gets a moment to finish
 })
 
 /** Where a saved PDF is offered first: Downloads, or home when Windows cannot say where Downloads is (a redirected

@@ -6,7 +6,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
+from door.scrapers import drain_answered, drain_entry_errors, drain_errors
 from door.scrapers.feeds import dayforce
 from paths import TESTS_DIR
 
@@ -70,7 +70,19 @@ def test_known_ids_are_left_out():
 
     postings = dayforce.scrape(_CONFIG, known_ids=frozenset({"natus-3518", "natus-3555"}))
 
-    assert [p["platform_id"] for p in postings] == ["natus-3288"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["natus-3288"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["natus-3518", "natus-3555"]
+
+
+@responses.activate
+def test_a_portal_whose_ads_are_all_known_is_answered():
+    _mock()
+    drain_answered("dayforce")
+
+    postings = dayforce.scrape(_CONFIG, known_ids=frozenset(('natus-3518', 'natus-3555', 'natus-3288')))
+
+    assert all(p.get("seen_only") for p in postings) and len(postings) == 3
+    assert drain_answered("dayforce") is True
 
 
 @responses.activate
@@ -79,8 +91,40 @@ def test_a_rejected_search_is_a_recorded_error():
     responses.add(responses.POST, _SEARCH, status=403)
 
     drain_errors()
+    drain_entry_errors("dayforce")
+    drain_answered("dayforce")
     assert dayforce.scrape(_CONFIG) == []
     assert drain_errors()["dayforce"]
+    assert "natus/CANDIDATEPORTALSENSORY" in drain_entry_errors("dayforce")
+    assert drain_answered("dayforce") is False
+
+
+def test_an_entry_that_is_not_a_portal_is_a_recorded_error():
+    drain_errors()
+    assert dayforce.scrape({"dayforce_companies": ["nonsense"]}) == []
+    assert "not a Dayforce portal" in " ".join(drain_errors()["dayforce"])
+
+
+@responses.activate
+def test_an_answer_without_a_posting_list_is_an_error_not_an_empty_portal():
+    responses.add(responses.GET, _CSRF, body=_fx("csrf.json"))
+    responses.add(responses.POST, _SEARCH, json={"error": "nope"})
+    drain_errors()
+    drain_answered("dayforce")
+
+    assert dayforce.scrape(_CONFIG) == []
+    assert drain_errors()["dayforce"]
+    assert drain_answered("dayforce") is False
+
+
+@responses.activate
+def test_an_empty_portal_is_answered():
+    responses.add(responses.GET, _CSRF, body=_fx("csrf.json"))
+    responses.add(responses.POST, _SEARCH, json={"jobPostings": [], "maxCount": 0})
+    drain_answered("dayforce")
+
+    assert dayforce.scrape(_CONFIG) == []
+    assert drain_answered("dayforce") is True
 
 
 def test_scrape_without_portals_is_empty():

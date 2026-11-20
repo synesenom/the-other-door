@@ -14,6 +14,7 @@ from click.testing import CliRunner
 from door.cli import cli
 from door.commands import prepare as prepare_cmd
 from door.core import profile_loader, workspace
+import facts_utils
 from cli_utils import FakeCompleted, TAILOR_OUTPUTS, fake_tailor, result_text, write_list_posting, write_tailor_outputs
 
 
@@ -278,6 +279,7 @@ def test_prepare_core_reports_tailoring_verifying_recorded(cli_env, monkeypatch)
         ("reading the PDFs back like an ATS", "prepare", None),
         ("verifying outputs for Data Scientist — Acme", "prepare", None),
         ("CV, cover letter and both PDFs on disk", "prepare", "ok"),
+        ("checking the facts", "prepare", None),
         ("status set to prepared", "prepare", "ok"),
     ]
 
@@ -331,6 +333,28 @@ def test_prepare_core_emits_heartbeat_while_tailoring(cli_env, monkeypatch):
     assert all(b.startswith("tailoring Data Scientist — Acme · ") for b in beats)
 
 
+def test_prepare_reports_the_fact_check_as_a_step_with_a_heartbeat(cli_env, monkeypatch):
+    import time
+
+    from cli_utils import CaptureReporter
+
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 38%</li></ul>"))
+
+    def slow(inputs):
+        time.sleep(0.15)
+        return {"findings": []}
+
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", slow)
+    monkeypatch.setattr(prepare_cmd, "_HEARTBEAT_INTERVAL_S", 0.01)
+    cap = CaptureReporter()
+    prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir, progress=cap)
+    messages = [e.message for e in cap.events]
+    assert "checking the facts" in messages
+    assert sum(m.startswith("checking the facts · ") for m in messages) >= 2
+
+
 def test_prepare_core_without_job_id_reports_selecting_top_match_first(cli_env, monkeypatch):
     from cli_utils import CaptureReporter
 
@@ -364,6 +388,34 @@ def test_prepare_core_other_thread_refuses_up_front_when_run_holds_lock(cli_env,
     assert called == []
     assert box["r"]["outcome"] == "failed"
     assert "a run is in progress" in box["r"]["error"]
+
+
+def test_prepare_core_goes_ahead_when_a_quick_holder_lets_go(cli_env, monkeypatch):
+    import threading
+
+    from door.core import lock as lock_mod
+    from door.core.lock import ledger_lock
+
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 10)
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    called = []
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", fake_tailor(cli_env.jobs_dir, called))
+    inside, release = threading.Event(), threading.Event()
+
+    def quick():
+        with ledger_lock(cli_env.jobs_dir, "mark_seen"):
+            inside.set()
+            release.wait(10)
+
+    t = threading.Thread(target=quick)
+    t.start()
+    assert inside.wait(10)
+    threading.Timer(0.3, release.set).start()
+    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+    t.join()
+
+    assert called
+    assert result["outcome"] != "failed", result
 
 
 # --------------------------------------------------------------------------- #
@@ -561,6 +613,7 @@ def test_prepare_reports_a_figure_not_in_cv_md_and_still_prepares(cli_env, monke
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
     (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
     monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 97%</li></ul>"))
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", lambda inputs: {"findings": [facts_utils.finding("97%", "Cut churn by 97%")]})
 
     result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
 
@@ -568,6 +621,43 @@ def test_prepare_reports_a_figure_not_in_cv_md_and_still_prepares(cli_env, monke
     assert [c["value"] for c in result["unsupported"]] == ["97%"]
     assert (cli_env.jobs_dir / "output" / "job-abc" / "facts.json").is_file()
     assert json.loads((cli_env.jobs_dir / "applications.json").read_text())["job-abc"]["status"] == "prepared"
+
+
+def test_prepare_whose_check_could_not_run_is_still_prepared_and_not_checked(cli_env, monkeypatch):
+    from door.core import claude_cli
+
+    def down(inputs):
+        raise claude_cli.ClaudeError("limit")
+
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 97%</li></ul>"))
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", down)
+
+    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+
+    assert result["outcome"] == "prepared" and result["unsupported"] is None
+
+
+def test_prepare_asks_the_model_once_when_the_tailors_last_check_still_stands(cli_env, monkeypatch):
+    calls = []
+
+    def ask(inputs):
+        calls.append(1)
+        return {"findings": []}
+
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    inner = _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 38%</li></ul>")
+
+    def run(job_id, posting_path, **kwargs):
+        inner(job_id, posting_path)
+        prepare_cmd.facts_mod.check(cli_env.jobs_dir / "output" / job_id, cli_env.profile_dir)
+        return True
+
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", run)
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", ask)
+    assert prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)["unsupported"] == [] and len(calls) == 1
 
 
 def test_prepare_clean_materials_report_nothing(cli_env, monkeypatch):
@@ -864,9 +954,9 @@ def test_new_stories_do_not_back_the_facts_of_the_same_run(cli_env, monkeypatch)
 
 
 def test_the_tailor_agent_has_no_bash():
-    from paths import REPO_ROOT
+    from door.core import claude_cli
 
-    text = (REPO_ROOT / ".claude" / "agents" / "tailor.md").read_text(encoding="utf-8")
+    text = (claude_cli.PROMPTS_DIR / "tailor.md").read_text(encoding="utf-8")
     front = text.split("---")[1]
     assert "- Bash" not in front
     assert "poetry run" not in text and "```python" not in text
@@ -1004,6 +1094,7 @@ def test_prepare_keeps_a_reason_the_tailor_recorded_for_a_still_flagged_item(cli
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
     (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
     inner = _tailor_writing_cv(cli_env.jobs_dir, "<ul><li>Cut churn by 97%</li></ul>")
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", lambda inputs: {"findings": [facts_utils.finding("97%", "Cut churn by 97%")]})
 
     def run(job_id, posting_path, **kwargs):
         inner(job_id, posting_path)

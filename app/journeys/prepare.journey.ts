@@ -220,7 +220,12 @@ test('Revise changes the letter, shows the new pages, and Undo puts it back', as
 })
 
 test('Ready to send names the claims the CV does not back', async ({ page, world }) => {
-  world.faults({ claude: { tailor: { cv: cvHtml(world.persona) + '\n<p>Cut forecast error by 87% across 140 wind parks.</p>\n' } } })
+  const claim = 'Cut forecast error by 87% across 140 wind parks.'
+  world.faults({ claude: {
+    tailor: { cv: cvHtml(world.persona) + `\n<p>${claim}</p>\n` },
+    // the fact check is a model call: the world's stand-in names the planted figure, as Haiku would
+    facts: { answer: { findings: [{ kind: 'number', value: '87%', context: claim, file: 'cv' }] } },
+  } })
   await prepareVestvind(page)
   const facts = world.readJson<{ value: string }[] | { unsupported: { value: string }[] }>(`jobs/output/${world.jobId(VESTVIND_KEY)}/facts.json`)
   expect(JSON.stringify(facts)).toContain('87')

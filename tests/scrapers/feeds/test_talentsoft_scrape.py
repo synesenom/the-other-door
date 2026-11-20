@@ -74,8 +74,10 @@ def test_known_ids_skip_the_ad_page_and_the_ad():
 
     postings = talentsoft.scrape(_CFG, known)
 
-    assert {p["title"] for p in postings}.isdisjoint({"ASSISTANT BUSINESS ANALYST - Stage H/F", "ANALYSTE DATA H/F"})
-    assert len(postings) == 3 and _AD_2269 not in _urls()
+    ads = [p for p in postings if not p.get("seen_only")]
+    assert {p["title"] for p in ads}.isdisjoint({"ASSISTANT BUSINESS ANALYST - Stage H/F", "ANALYSTE DATA H/F"})
+    assert len(ads) == 3 and _AD_2269 not in _urls()
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == sorted(known)
 
 
 @responses.activate

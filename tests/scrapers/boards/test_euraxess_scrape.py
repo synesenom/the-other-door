@@ -9,7 +9,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_pushback
 from door.scrapers.boards import euraxess
 
 _FIX = Path(__file__).parent / "fixtures" / "euraxess"
@@ -61,7 +61,18 @@ def test_a_known_offer_costs_no_job_page_request():
 
     postings = euraxess.scrape(_CFG, frozenset({"476999"}))
 
-    assert [p["platform_id"] for p in postings] == ["475660"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["475660"]
+    assert [p for p in postings if p.get("seen_only")] == [{"platform_id": "476999", "seen_only": True}]
+
+
+@responses.activate
+def test_a_listing_of_only_known_offers_is_a_quiet_day():
+    _mock_pages()
+    drain_answered("euraxess")
+
+    out = euraxess.scrape(_CFG, frozenset({"476999", "475660"}))
+    assert {p["platform_id"] for p in out} == {"476999", "475660"} and all(p.get("seen_only") for p in out)
+    assert drain_answered("euraxess") is True
 
 
 @responses.activate
@@ -71,7 +82,9 @@ def test_the_cutoff_stops_the_paging_and_drops_older_offers():
 
     postings = euraxess.scrape({"location": "Copenhagen, Denmark"}, since=since)
 
-    assert {p["platform_id"] for p in postings} == {"476999", "476522", "476205"}
+    # the older cards come back dated, from the listing alone, for the engine to count stale
+    assert {p["platform_id"] for p in postings if p["posted_at"] >= "2026-10-28"} == {"476999", "476522", "476205"}
+    assert any(p["posted_at"] < "2026-10-28" for p in postings)
     assert not any("page=1" in c.request.url for c in responses.calls)
 
 
@@ -206,5 +219,16 @@ def test_an_older_foreign_card_still_stops_the_paging():
 
     postings = euraxess.scrape({"location": "Stockholm, Sweden"}, since=datetime(2026, 10, 31, tzinfo=timezone.utc))
 
-    assert postings == []
+    # the older card comes back dated, for the engine to count stale; no detail request
+    assert postings and all(p["posted_at"] < "2026-10-31" for p in postings)
     assert not any("page=1" in c.request.url for c in responses.calls)
+    assert not any(re.search(r"/jobs/\d+", c.request.url) for c in responses.calls)
+
+
+@responses.activate
+def test_a_listing_of_only_off_topic_offers_is_a_quiet_day():
+    _mock_pages()
+    drain_answered("euraxess")
+
+    assert euraxess.scrape({**_CFG, "topic_terms": ["glaciology"], "search_keywords": ["glaciology"]}) == []
+    assert drain_answered("euraxess") is True

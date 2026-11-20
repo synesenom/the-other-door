@@ -42,7 +42,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
-    host_of, keep_local, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
+    host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
     run_probe, scrape_feeds, strip_html, workers,
 )
 
@@ -232,7 +232,7 @@ def _tenant_postings(session: PoliteSession, entry: str, scraped_at: datetime, k
     if target is None:
         raise ValueError("not a Jobtrain tenant")
     base, label = target
-    cards = [c for c in _cards_of(session, base) if f"{label}-{c['id']}" not in known_ids]
+    cards, known = split_known(_cards_of(session, base), lambda c: f"{label}-{c['id']}", known_ids)
     out: list[dict] = []
     for n, card in enumerate(cards, 1):
         report("detail", n, len(cards))
@@ -249,7 +249,7 @@ def _tenant_postings(session: PoliteSession, entry: str, scraped_at: datetime, k
             record_error(_SITE, f"job {card['id']} of {entry!r} has no ad data")
             continue
         out.append(_to_posting(card, ad, base, label, name, scraped_at))
-    return out
+    return out + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

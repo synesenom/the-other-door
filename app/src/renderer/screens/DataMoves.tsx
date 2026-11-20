@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { call, errorText } from '../api'
 import { ErrorBox } from './AppName'
 import { Dialog } from './Dialog'
 import { Spinner } from './Spinner'
@@ -46,13 +47,15 @@ export function DataMoves({ home, onImported }: { home?: string; onImported: () 
     const token = picked!.token
     setPicked(null)
     start('import')
-    const r = await window.door.importData(token)
-    setBusy(null)
-    if (!r.ok) {
-      setError(r.error)
+    let d: { files: number; backup_dir?: string | null; warnings?: string[] }
+    try {
+      d = await call('import_data', {}, { tokens: [token] })
+    } catch (e) {
+      setBusy(null)
+      setError(errorText(e))
       return
     }
-    const d = r.data as { files: number; backup_dir?: string | null; warnings?: string[] }
+    setBusy(null)
     setMessage(`Imported ${d.files} files.${d.backup_dir ? ` What was here is kept in ${d.backup_dir}.` : ''}`)
     setWarnings(d.warnings ?? [])
     onImported()

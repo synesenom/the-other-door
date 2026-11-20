@@ -45,7 +45,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, followed_name, make_job_id, record_error,
     record_pushback, run_probe, scrape_feeds, strip_html, workers,
 )
-from door.scrapers.sdk import Detection, keep_local, parts, unfollowable
+from door.scrapers.sdk import Detection, keep_local, parts, split_known, unfollowable
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
 PLATFORM_DOMAINS = ("reachmee.com",)
@@ -226,11 +226,10 @@ def _entry_postings(session: PoliteSession, entry: str, known_ids: frozenset[str
             record_pushback(_SITE)
         raise
     name = followed_name(config, _KEY, entry, employer or entry)
+    rows, known = split_known(rows, lambda row: _platform_id(p, row["job_id"]), known_ids)
     postings = []
     refused = False
     for row in rows:
-        if _platform_id(p, row["job_id"]) in known_ids:
-            continue
         job: dict = {}
         if not refused:
             try:
@@ -241,7 +240,7 @@ def _entry_postings(session: PoliteSession, entry: str, known_ids: frozenset[str
                     record_pushback(_SITE)
                     refused = True
         postings.append(_to_posting(row, job, name, p, scraped_at))
-    return postings
+    return postings + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

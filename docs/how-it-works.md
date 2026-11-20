@@ -23,6 +23,20 @@
 Actually submitting the application is left to you: the pipeline prepares the materials and
 tracks status, but does not fill or submit live application forms. See [Status](#status) for why.
 
+<!-- toc -->
+**Contents**
+
+- [The pipeline step by step](#the-pipeline-step-by-step)
+  - [The five steps](#the-five-steps)
+- [Your CV's style](#your-cvs-style)
+- [The ad is untrusted input](#the-ad-is-untrusted-input)
+- [Plan usage](#plan-usage)
+  - [How much of the plan is left](#how-much-of-the-plan-is-left)
+  - [What Claude's work costs](#what-claudes-work-costs)
+- [Getting only what's new](#getting-only-whats-new)
+- [Status](#status)
+<!-- /toc -->
+
 ## The pipeline step by step
 
 ### The five steps
@@ -44,7 +58,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    (`jobbsafari_discovery`), HelloWork in France (`hellowork_discovery`), and LinkedIn
    anywhere. LinkedIn's logged-out search cards (`linkedin_discovery`): one quoted search per keyword, newest first, the last 7 days, each paged
    to its end (150 requests a run at most, 2 to 4 s apart; the budget and pause adapt to
-   what LinkedIn tolerated; a keyword the budget did not reach comes first next run). Each employer is queued with its LinkedIn link and no job page is
+   what LinkedIn tolerated; a keyword the budget did not reach comes first next run; a keyword whose first page comes back empty, which LinkedIn also answers a guest it holds back, keeps its cutoff and is searched again from it). Each employer is queued with its LinkedIn link and no job page is
    fetched for it: `follow` tries it by name first (the feeds' public endpoints, then its own website as Wikidata names it), and only the employers it could not resolve
    have their job page read here on a later run, for the offsite apply link (Easy Apply employers
    are remembered 90 days and not queued). Only cards whose title is on topic count. Skipped while
@@ -89,7 +103,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    (feed found) -> *dormant* (nothing relevant for `retire_after_days`) -> *followed* again (seen
    with an on-topic ad by `search` or `discover`, or `companies add NAME`). `companies` lists dormant
    employers with `·` and the reason, and `companies why NAME` explains.
-5. **`match`** — the passes over today's postings, then scoring:
+5. **`match`** — first Claude reads your CV (one small call, once per change of the CV, cached in `.cv_read/`: its skills, sections and years, in any language; if it cannot, the step is skipped, the run says so and the new jobs stay unscored for the next run), then the passes over today's postings, then scoring:
    drop the ones that can't fit (excluded companies
    or keywords, incompatible locations, duplicates), then rank the rest offline so only the
    plausible ones are scored. Each ad's language is detected from its description (`py3langid`), and ads not
@@ -98,7 +112,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    language requirements) come per language and country from `src/door/i18n/`, and a
    Danish title gets an English translation (`title_en`, one Haiku call per 50 titles)
    so it ranks fairly against English `role_targets`. Then each unscored posting in every `jobs/postings/<date>/` of the last
-   `max_age_days` is scored against a fixed rubric (`.claude/agents/matcher.md`, read at runtime as
+   `max_age_days` is scored against a fixed rubric (`src/door/prompts/matcher.md`, read at runtime as
    the system prompt) via parallel Haiku `claude -p` calls. Postings that already have a
    `score` are skipped, so a re-run or an interrupted run never pays twice, and whatever an
    interrupted run left unscored is picked up by the next `find`.
@@ -109,19 +123,13 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
 6. `jobs` — the unapplied matches, best first.
 7. `jobs prepare <job_id>` (or `jobs prepare` alone, for the top match) — run the tailor agent headlessly for one posting.
    `find` does not prepare anything. When the tailor is done, `prepare` (and later `revise`) checks the CV and
-   letter against `profile/cv.md` and the story bank (which you can see, edit, add to and draft from your CV in the app's Profile, `cv stories` or a conversation) in code: every number, year, employer, skill or tool,
-   certification and degree must appear there (the letter may also echo the ad's figures and skills). Skills,
-   certifications and degrees are read from the CV's Skills, Certifications and Education sections (their
-   titles in each language's `[cv_sections]`, `src/door/i18n/lang/*.toml`) and, elsewhere, from technical-looking
-   words only (`C++`, `Node.js`, `CI/CD`, `SQL`); generic words (communication, months, ...) are the language
-   files' `skill_stop_words`. Case, plurals and the aliases of `jobs/skill_aliases.json` (read, never written)
-   are folded, so `k8s` is backed by `Kubernetes`, and a name the alias file maps to `null` is never claimed. What does not is written to `facts.json` in the job's output
-   folder and shown by `show` as "Not in your CV"; a sent status warns about it. No model call, never a block;
-   figures are read the French way too (`45 000`, with a space, non-breaking or narrow, `\,` or `~`, is `45000`; `2,5` is `2.5`; `45 k€` is `45000`), and the day and month of a written date ("29 octobre", `10/2026`) are not figures; amounts with a suffix count (`40k` is `40,000`, `2.5M` is `2,500,000`, `3x` stays `3x`); single digits and
-   the current year are skipped, derived figures may be flagged; plain lowercase words in a bullet are not checked
-   (precision over recall), but every item of the Skills section is. A `TODO` left in a document is always flagged:
-   it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing. Company forms (`ApS`, `GmbH`, `Ltd`, `S.A.S.`) are never read as skills.
-   The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json`, which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
+   letter against `profile/cv.md` and the story bank (which you can see, edit, add to and draft from your CV in the app's Profile, `cv stories` or a conversation) with one Haiku call: every number, year, employer, skill or tool,
+   certification and degree must be backed there, in whatever language the CV and the documents are written (the letter may also echo the ad's figures and skills; a figure told another way, `40 000` and `40k`, is the same figure). The model lists what is not, each with the words
+   of the document it stands in; a finding whose words are not in that document is dropped (a quote the model made up). What is left is written to `facts.json` in the job's output
+   folder with the sha256 of everything the model was shown, so the same inputs are never asked twice, and `show` reads that file ("Not in your CV"; it asks no model), as a sent status's warning does. Never a block, and a check that cannot run (Claude not reachable, no `cv.md`) is "not checked", never a guess by rules.
+   A `TODO` left in a document is always flagged, by code, not the model:
+   it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing.
+   The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json` (recording one for documents already checked asks nothing and is no round), which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
    `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `<h2>` heading
    on a line of its own and in order (a two-column CV's main and side columns each in their own order, a side heading
    allowed to share a line with main text), the `Keywords` note, no garbled or empty text and no word read as letters apart (`spaced`: "P r o f i l e", what a template's letter-spacing too wide for its text gives; such a heading is not also `missing`, so no retry is spent on a template's fault). A CV is also checked for text lost off the page: Chromium

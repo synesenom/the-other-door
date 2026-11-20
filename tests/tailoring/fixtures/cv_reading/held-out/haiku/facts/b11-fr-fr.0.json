@@ -1,0 +1,23 @@
+{
+ "key": "5673c0f3e095",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Zapier",
+   "context": "Visio, SharePoint, Alteryx, Trello, Notion, budget, Zapier"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "Licence de droit",
+   "context": "Licence de droit | École d'Essai"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "CFA Level 1",
+   "context": "CFA Level 1"
+  }
+ ]
+}

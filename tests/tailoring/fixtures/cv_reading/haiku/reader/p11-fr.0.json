@@ -1,0 +1,147 @@
+{
+ "key": "9013de445d6e",
+ "answer": {
+  "name": "Chloé Girard",
+  "email": "chloe.girard@example.com",
+  "city": "Nantes",
+  "country": "fr",
+  "languages": [
+   {
+    "language": "Français",
+    "code": "fr",
+    "level": "native"
+   },
+   {
+    "language": "Anglais",
+    "code": "en",
+    "level": "fluent"
+   },
+   {
+    "language": "Allemand",
+    "code": "de",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Parcours",
+    "kind": "experience"
+   },
+   {
+    "heading": "Formation",
+    "kind": "education"
+   },
+   {
+    "heading": "Savoir-faire",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Langues",
+    "kind": "languages"
+   },
+   {
+    "heading": "Centres d'intérêt",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tél",
+    "value": "+33 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Courriel",
+    "value": "chloe.girard@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Site",
+    "value": "example.com/chloe.girard"
+   },
+   {
+    "kind": "location",
+    "label": "Lieu",
+    "value": "Nantes"
+   }
+  ],
+  "skills": [
+   "Git",
+   "Excel",
+   "Power BI",
+   "Figma",
+   "TypeScript",
+   "reporting"
+  ],
+  "levels": [
+   {
+    "item": "Français",
+    "level": 5
+   },
+   {
+    "item": "Anglais",
+    "level": 4
+   },
+   {
+    "item": "Allemand",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Bluebird Systems, Nantes – Responsable analytique (décembre 2020 – présent)",
+    "role": "Responsable analytique",
+    "org": "Bluebird Systems",
+    "dates": "décembre 2020 – présent",
+    "place": "Nantes",
+    "start_year": 2020,
+    "end_year": null
+   },
+   {
+    "heading": "Linden Works, Lyon – Analyste senior (octobre 2016 – mars 2020)",
+    "role": "Analyste senior",
+    "org": "Linden Works",
+    "dates": "octobre 2016 – mars 2020",
+    "place": "Lyon",
+    "start_year": 2016,
+    "end_year": 2020
+   },
+   {
+    "heading": "Maple Robotics, Lille – Analyste de données (août 2013 – janvier 2016)",
+    "role": "Analyste de données",
+    "org": "Maple Robotics",
+    "dates": "août 2013 – janvier 2016",
+    "place": "Lille",
+    "start_year": 2013,
+    "end_year": 2016
+   },
+   {
+    "heading": "Université d'Exemple, Nantes – Licence de mathématiques (décembre 2008 – mai 2011)",
+    "role": "Licence de mathématiques",
+    "org": "Université d'Exemple",
+    "dates": "décembre 2008 – mai 2011",
+    "place": "Nantes",
+    "start_year": 2008,
+    "end_year": 2011
+   },
+   {
+    "heading": "Université d'Exemple, Nantes – Master en informatique (octobre 2011 – mars 2013)",
+    "role": "Master en informatique",
+    "org": "Université d'Exemple",
+    "dates": "octobre 2011 – mars 2013",
+    "place": "Nantes",
+    "start_year": 2011,
+    "end_year": 2013
+   }
+  ]
+ }
+}

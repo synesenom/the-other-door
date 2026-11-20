@@ -354,7 +354,7 @@ def test_only_unknown_names_sent_with_existing_canonicals_as_context(tree, monke
     c = calls[0]
     assert _names_in(c) == ["dbt"]
     assert json.loads(c["input"])["known_canonical"] == ["Kubernetes", "Python"]
-    assert c["model"] == "haiku" and c["timeout_s"] == 120 and c["profile_dir"] == tree[0]
+    assert c["system"] == "skill-grouper" and c["timeout_s"] == 120 and c["profile_dir"] == tree[0]
     props = c["schema"]["properties"]["groups"]["items"]["properties"]
     assert set(props) == {"variant", "canonical", "skill"}
 

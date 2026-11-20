@@ -49,12 +49,35 @@ def test_a_local_profile_gets_local_unspecified_and_home_based_jobs_only():
 
 
 @responses.activate
+def test_a_list_of_only_older_jobs_comes_back_dated():
+    _serve()
+    postings = reliefweb.scrape(_ANY, since=datetime(2027, 1, 1, tzinfo=timezone.utc))
+    assert postings and all(p["posted_at"] < "2027-01-01" for p in postings)
+
+
+@responses.activate
 def test_known_ids_and_old_jobs_are_skipped():
     _serve()
     since = datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc)
     postings = reliefweb.scrape(_ANY, known_ids=frozenset({"4236426"}), since=since)
-    # not the known Nepal one; not the ones posted before 28 Oct 12:00 (Kenya 26th, Guatemala 27th, one-health is 30th)
-    assert {p["platform_id"] for p in postings} == {"4235500", "4235700"}
+    # not the known Nepal one; the ones posted before 28 Oct 12:00 (Kenya 26th, Guatemala 27th) come back dated, for
+    # the engine to count stale
+    assert [p for p in postings if p.get("seen_only")] == [{"platform_id": "4236426", "seen_only": True}]
+    postings = [p for p in postings if not p.get("seen_only")]
+    old = {p["platform_id"] for p in postings if p["posted_at"] < "2026-10-28T12:00"}
+    assert {p["platform_id"] for p in postings} - old == {"4235500", "4235700"}
+    assert old and "4236426" not in old
+
+
+@responses.activate
+def test_a_feed_of_only_known_jobs_is_a_quiet_day():
+    _serve()
+    ids = frozenset(p["platform_id"] for p in reliefweb.scrape(_ANY))
+    drain_answered("reliefweb")
+    _serve()
+    out = reliefweb.scrape(_ANY, known_ids=ids)
+    assert {p["platform_id"] for p in out} == ids and all(p.get("seen_only") for p in out)
+    assert drain_answered("reliefweb") is True
 
 
 @responses.activate

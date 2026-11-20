@@ -9,6 +9,21 @@ jobs": the five steps live, Stop, a summary card) takes the place of the page du
 prepared job opens "Ready to send" (the pages, Revise and Undo). What each does is in
 [`../docs/manual-app.md`](../docs/manual-app.md). Below 900 px the sidebar becomes a tab bar, which steps aside while a posting is open. The visual design is in [`../docs/design/`](../docs/design/).
 
+<!-- toc -->
+**Contents**
+
+- [Run it](#run-it)
+- [Environments](#environments)
+- [Work on one screen (`npm run dev:preview`)](#work-on-one-screen-npm-run-devpreview)
+- [The bundle a packaged app carries (#223)](#the-bundle-a-packaged-app-carries-223)
+- [Packaging (#223)](#packaging-223)
+- [The install test (#639)](#the-install-test-639)
+- [Releasing (#224)](#releasing-224)
+- [Commands](#commands)
+- [How it is built](#how-it-is-built)
+- [Known gaps](#known-gaps)
+<!-- /toc -->
+
 ## Run it
 
 Needs Node 22 (`.nvmrc`) and the Python environment of the repo (`poetry install`, so
@@ -82,7 +97,7 @@ scripts/check-bundle.sh    # imports, the MCP handshake, doctor (with its Chromi
 - `python/` is [python-build-standalone](https://github.com/astral-sh/python-build-standalone) 3.12 with *The other door*'s
   `poetry.lock` main group installed into it, every package by hash and from a wheel only
   (`scripts/lock_requirements.py` writes the requirements; a package with no wheel for the system fails the build).
-- `door/` is `src/`, `.claude/agents/{tailor,matcher}.md` and `profile.example/`, laid out as in a checkout.
+- `door/` is `src/`, the prompts in `src/door/prompts/` (they go with `src/`) and `profile.example/`, laid out as in a checkout.
 - `bin/` is `chromium/`, the Chrome for Testing headless shell that
   prints CVs (#165), pinned in `src/door/core/downloads/chromium_pin.json` (the one pin, also what `doctor --fix` installs;
   not in `bundle.lock.json`): an estimated 105-128 MB more per installer zipped and about 200 MB unpacked. On Windows on ARM the
@@ -225,7 +240,7 @@ renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-serv
   and nothing else (names checked, symlinks resolved, `Cache-Control: no-store`; the page adds `?v=`
   after a revision). `HOME` follows `workspace.py` (`src/main/files.ts`; an integration test
   compares it with the server's `output_dir`). **Save CV** / **Save letter** is the IPC
-  channel `door:save-material` (job id, `cv` or `cover_letter`, sent or not, the name `show`'s
+  `door:before-close` (main to the page when a window closes or the app quits: the page writes what it holds unsaved, the Master CV's last typing, and answers `door:before-close-done`; main waits 3 s at most, `src/main/close-flush.ts`, the preload's one listener `before-close.ts` answering at once when nothing is registered, and `DoorServer.close(5000)` lets a save in flight finish); channel `door:save-material` (job id, `cv` or `cover_letter`, sent or not, the name `show`'s
   `file_names` offers): the main process runs the save dialog in Downloads and copies the PDF
   where the user chose; the renderer never names a path (on the phone, the browser downloads
   the same file from `/files`). `prepare` waits up to 180 s between progress
@@ -234,12 +249,12 @@ renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-serv
   passes a path. `door:pick-cv-files` runs the open dialog in the main process
   (`src/main/cv-sources.ts`: pdf, docx, md, markdown, txt, up to 25 MB, checked again when used)
   and answers `{files: [{token, name, size}], refused}`; the paths stay in a registry in main
-  under random tokens, with no way to read it. `door:draft-cv` takes `{files: tokens, urls}`,
-  resolves the tokens, refuses a non-http address and a linkedin.com one, and calls `draft_cv`
+  under random tokens, with no way to read it. `door:call` takes `tokens` as its fourth argument for the tools whose `PATH_ARGS` rule is `picked`
+  (`draft_cv`, `enrich`, and by one-shot token from `photo-file.ts` and `archive-files.ts` `save_photo` and `import_data`, a token good once, their own "Choose the picture again." / "Choose the archive again."): it resolves them into the paths of that argument, and for
+  `draft_cv` (`sources` are its pages) refuses a non-http address and a linkedin.com one and calls it
   (960 s). `door:drop-cv-files` does the same for a drop: the preload turns each dropped `File` into its path with `webUtils.getPathForFile`, out of the page's reach, and the same checks and tokens apply. `door:cv-sources-clear` empties the registry when the wizard closes. `door:call`
   refuses every argument that names a local file (`PATH_ARGS` in `ipc.ts`: `draft_cv` `sources`
-  other than http(s) addresses, `import_posting` `path`, `export_data` `path`, `import_data`
-  `archive`); a test fails when a tool gains a parameter that could name a file and is in neither
+  other than http(s) addresses, `import_posting` `path`, `export_data` `path`, and the rest of `PATH_ARGS`); a test fails when a tool gains a parameter that could name a file and is in neither
   that table nor its short allow-list.
 - Notifications (#350): `src/main/notices.ts` (pure) says what a settled `find_jobs`, `prepare`,
   `revise` or `import_posting` call, or the end of a run started elsewhere (`foreign-run.ts`,

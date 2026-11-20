@@ -17,6 +17,8 @@ from __future__ import annotations
 import re
 from html.parser import HTMLParser
 
+from door.core import cv_read
+
 TAGS = frozenset({"header", "h1", "h2", "h3", "p", "ul", "ol", "li", "div", "span", "strong", "em", "a", "br"})
 VOID = frozenset({"br"})
 # What the template's CSS styles; `photo`, `main` and `side` are written by `compile` after the guard, never by the model.
@@ -25,6 +27,9 @@ CLASSES = frozenset({
     "tagline", "phone", "email", "web", "location", "linkedin", "github",
     "role", "org", "dates", "place", "sep", "level", "level-1", "level-2", "level-3", "level-4", "level-5",
 })
+# the kind of a CV section, on its `<h2>` only: the tailor writes it by what the section holds, `place_columns` reads it
+KIND_PREFIX = "kind-"
+KIND_CLASSES = frozenset(f"{KIND_PREFIX}{k}" for k in cv_read.KINDS)
 NOTES = ("Keywords", "Tailoring")
 TOKENS = re.compile(r"<<(?:photo|date|company|title)>>")
 _OPENER = re.compile(r"<[A-Za-z/!?]")
@@ -67,7 +72,8 @@ class _Collector(_Reader):
             value = value or ""
             if "<" in value or ">" in value:
                 self._flag(f"{name}= with a < or >")
-            elif name == "class" and all(c in CLASSES for c in value.split()) and value.strip():
+            elif name == "class" and value.strip() and all(
+                    c in CLASSES or (tag == "h2" and c in KIND_CLASSES) for c in value.split()):
                 continue
             elif name == "href" and tag == "a" and _LINK.match(re.sub(r"[\x00-\x20]", "", value)):
                 continue

@@ -29,10 +29,10 @@ import re
 from datetime import datetime, timezone
 
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
-    map_by_group, parse_iso_date, record_entry_error, record_error, report, run_probe, strip_html, workers, followed_name,
+    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id,
+    parse_iso_date, run_probe, scrape_feeds, strip_html, workers, followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at, split_known
 from door.scrapers.sdk import Detection, NOT_ACCOUNTS, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -96,8 +96,8 @@ def _to_posting(item: dict, client: str, portal: str, scraped_at: datetime, name
 
 
 def _items(data) -> list[dict]:
-    jobs = data.get("jobPostings") if isinstance(data, dict) else None
-    return [j for j in jobs or [] if isinstance(j, dict) and j.get("jobPostingId") is not None]
+    """The postings of a search answer; raises ``ValueError`` when it holds no list."""
+    return [j for j in list_at(data, "jobPostings", "Dayforce") if isinstance(j, dict) and j.get("jobPostingId") is not None]
 
 
 def _search(session: PoliteSession, client: str, portal: str, start: int) -> dict:
@@ -111,47 +111,27 @@ def _search(session: PoliteSession, client: str, portal: str, start: int) -> dic
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
     """Every open posting of each configured Dayforce candidate portal."""
-    entries = [e for e in config.get("dayforce_companies") or [] if e.strip()]
-    if not entries:
-        return []
-    scraped_at = datetime.now(timezone.utc)
-    session = PoliteSession(min_delay=FEED_DELAY[0], max_delay=FEED_DELAY[1], timeout=30, headers=_HEADERS)
+    entries = [e.strip() for e in config.get("dayforce_companies") or [] if e.strip()]
 
-    def fetch(entry: str) -> list[dict] | None:
-        """One portal's postings; ``None`` after a recorded error."""
+    def fetch(session, entry, scraped_at):
         portal = _portal(entry)
         if portal is None:
-            record_error(_SITE, f"not a Dayforce portal (expected <client>/<portal>): {entry!r}")
-            return None
+            raise ValueError(f"not a Dayforce portal (expected <client>/<portal>): {entry!r}")
         client, code = portal
         items: list[dict] = []
         start = 0
-        try:
-            while start < _MAX_POSTINGS:
-                page = _search(session, client, code, start)
-                items.extend(_items(page))
-                start += len(page.get("jobPostings") or [])
-                if not page.get("jobPostings") or start >= int(page.get("maxCount") or 0):
-                    break
-        except Exception as exc:
-            report(f"error fetching postings for {entry!r}: {exc}")
-            record_entry_error(_SITE, entry, f"error fetching postings for {entry!r}: {exc}")
-            return None
+        while start < _MAX_POSTINGS:
+            page = _search(session, client, code, start)
+            items.extend(_items(page))
+            start += len(page["jobPostings"])
+            if not page["jobPostings"] or start >= int(page.get("maxCount") or 0):
+                break
         name = followed_name(config, "dayforce_companies", entry)
-        return keep_local([_to_posting(i, client, code, scraped_at, name) for i in items
-                           if f"{client}-{i['jobPostingId']}" not in known_ids], config, _SITE)
+        fresh, known = split_known(items, lambda i: f"{client}-{i['jobPostingId']}", known_ids)
+        return [_to_posting(i, client, code, scraped_at, name) for i in fresh] + known
 
-    fetched = map_by_group(entries, lambda e: _HOST, fetch, workers(config))
-    seen: set[str] = set()
-    postings: list[dict] = []
-    for entry, company_postings in zip(entries, fetched):
-        if company_postings is None:
-            continue
-        fresh = [p for p in company_postings if p["platform_id"] not in seen]
-        seen.update(p["platform_id"] for p in fresh)
-        log_keyword_results(_SITE, entry.strip(), fresh)
-        postings.extend(fresh)
-    return postings
+    return keep_local(scrape_feeds(_SITE, entries, fetch, group=lambda e: _HOST,
+                                   max_workers=workers(config), headers=_HEADERS), config, _SITE)
 
 
 def probe(config: dict) -> ProbeResult | None:
@@ -168,8 +148,6 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        if not isinstance(data, dict) or not isinstance(data.get("jobPostings"), list):
-            return [], False, "no `jobPostings` list in the Dayforce search response"
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(j, client, code, scraped_at) for j in _items(data)], True, ""
 

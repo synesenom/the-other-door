@@ -20,6 +20,11 @@ describe('Markdown', () => {
     expect(container.querySelector('code')!.textContent).toBe('code')
   })
 
+  it('hides the kind a draft recorded on a section heading', () => {
+    render(<Markdown text={'## Technical Skills <!-- kind: skills -->\n\n- Python\n'} />)
+    expect(screen.getByRole('heading', { name: 'Technical Skills', level: 3 })).toBeInTheDocument()
+  })
+
   it('shows a > line (the CV tagline) as a muted paragraph without its marker', () => {
     const { container } = render(<Markdown text={'# Ada\n\n> Analyst | Engines\n\nPlain text\n'} />)
     const ps = container.querySelectorAll('p')

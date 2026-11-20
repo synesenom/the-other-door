@@ -133,21 +133,6 @@ class Careers(_Strict):
         return _check_words(v)
 
 
-class CvSections(_Strict):
-    """Titles of the CV sections the facts check reads (matched as a whole heading)."""
-
-    skills: list[str] = []
-    education: list[str] = []
-    certifications: list[str] = []
-    languages: list[str] = []
-    interests: list[str] = []
-
-    @field_validator("*")
-    @classmethod
-    def _words(cls, v: list[str]) -> list[str]:
-        return _check_words(v)
-
-
 class Typography(_Strict):
     """How the language sets punctuation (French: a narrow no-break space before : ; ! ? and inside guillemets)."""
 
@@ -171,7 +156,6 @@ class DateFormat(_Strict):
     pattern: str = "{month} {day}, {year}"
     first: str | None = None
     months: list[str] = []
-    day_suffixes: list[str] = []  # what a day may carry in this language ("1st", "1er", "15-én"), for reading a date written out
 
     @field_validator("months")
     @classmethod
@@ -195,23 +179,6 @@ class DateFormat(_Strict):
         return v
 
 
-class ContactLabels(_Strict):
-    """What a CV's contact line calls each kind of detail (`**Telefon:** ...`), matched as a whole label. The fields
-    are the kinds, in the order the tailor writes them."""
-
-    phone: list[str] = []
-    email: list[str] = []
-    web: list[str] = []
-    linkedin: list[str] = []
-    github: list[str] = []
-    location: list[str] = []
-
-    @field_validator("*")
-    @classmethod
-    def _words(cls, v: list[str]) -> list[str]:
-        return _check_words(v)
-
-
 class LanguagePack(_Strict):
     code: str
     name: str
@@ -221,9 +188,6 @@ class LanguagePack(_Strict):
     transliterate: dict[str, str] = {}
     slug_fold: dict[str, str] = {}
     stop_words: list[str] = []
-    skill_stop_words: list[str] = []
-    cv_sections: CvSections = CvSections()
-    contact_labels: ContactLabels = ContactLabels()
     headings: Headings = Headings()
     markers: Markers = Markers()
     seniority: dict[str, list[str]] = {}
@@ -234,12 +198,11 @@ class LanguagePack(_Strict):
     compounds: StrictBool = False         # the language writes compounds as one word (Danish "intensivsygeplejerske")
     plural_suffixes: list[str] = []       # endings a plural or inflected form adds to a word ("er", "e", "r")
     role_nouns: list[str] = []            # generic words of a job title that name no field ("consultant", "partner")
-    months: dict[str, int] = {}           # extra month forms (abbreviations, unaccented spellings; lower case) -> 1..12; the full names are date.months
     title_tags: list[str] = []            # gender tags a job title carries ("H/F", "m/k"), dropped from stored titles
     typography: Typography = Typography()  # punctuation spacing the printed CV and letter get
     date: DateFormat = DateFormat()        # the letter's date written out, in this language
 
-    @field_validator("names", "false_friends", "stop_words", "skill_stop_words", "career_site_words", "role_nouns")
+    @field_validator("names", "false_friends", "stop_words", "career_site_words", "role_nouns")
     @classmethod
     def _words(cls, v: list[str]) -> list[str]:
         return _check_words(v)
@@ -259,23 +222,6 @@ class LanguagePack(_Strict):
             if not suffix.strip() or "*" in suffix:
                 raise ValueError(f"{suffix!r}: a plural suffix is plain letters")
         return [s.lower() for s in v]
-
-    @field_validator("months")
-    @classmethod
-    def _months(cls, v: dict[str, int]) -> dict[str, int]:
-        for name, number in v.items():
-            if not name.strip() or "*" in name:
-                raise ValueError(f"{name!r}: a month name is plain text")
-            if not 1 <= number <= 12:
-                raise ValueError(f"{name!r}: month {number} is not 1..12")
-        return {name.lower(): number for name, number in v.items()}
-
-    @model_validator(mode="after")
-    def _all_twelve_months(self) -> "LanguagePack":
-        merged = {n: i for i, n in enumerate(self.date.months, 1)} | self.months
-        if merged and set(merged.values()) != set(range(1, 13)):
-            raise ValueError("date.months and months together must name each of the twelve months")
-        return self
 
     @field_validator("seniority")
     @classmethod
@@ -689,59 +635,6 @@ def format_date(day, code: str | None = None) -> str:
     fmt = pack.date if pack and pack.date.months else languages()["en"].date
     pattern = fmt.first if day.day == 1 and fmt.first else fmt.pattern
     return pattern.format(day=day.day, month=fmt.months[day.month - 1], year=day.year)
-
-
-def month_numbers(codes: tuple[str, ...] | None = None) -> dict[str, int]:
-    """``{month name or abbreviation (lower case): 1..12}`` over the languages ``codes`` (``None``: every
-    language), for reading a date written out ("25 octobre 2026")."""
-    mapping: dict[str, int] = {}
-    for pack in _packs(codes):
-        for number, name in enumerate(pack.date.months, 1):
-            mapping.setdefault(name.lower(), number)
-        for name, number in pack.months.items():
-            mapping.setdefault(name, number)
-    return mapping
-
-
-def day_suffixes(codes: tuple[str, ...] | None = None) -> list[str]:
-    """What a day number may carry in a written date ("1st", "1er", "15-én"), over the languages ``codes``."""
-    return _union(p.date.day_suffixes for p in _packs(codes))
-
-
-def numeric_date_formats() -> tuple[str, ...]:
-    """Every all-numeric full date format (``DD``, ``MM``, ``YYYY`` and separators): each country's
-    ``[cv].date_format`` and the US order."""
-    return tuple(sorted({c.cv.date_format for c in countries().values()} | {"MM/DD/YYYY"}))
-
-
-def skill_stop_words(codes: tuple[str, ...] | None = None) -> list[str]:
-    """Generic words (soft skills, months, weekdays) the facts check never claims as a
-    skill or tool, over the languages ``codes`` (``None``: every language)."""
-    return _union(p.skill_stop_words for p in _packs(codes))
-
-
-def cv_section(kind: str, codes: tuple[str, ...] | None = None) -> list[str]:
-    """Titles of the CV section ``kind`` (skills / education / certifications / languages / interests)."""
-    if kind not in CvSections.model_fields:
-        raise ValueError(f"unknown CV section {kind!r}; use one of {tuple(CvSections.model_fields)}")
-    return _union(getattr(p.cv_sections, kind) for p in _packs(codes))
-
-
-CONTACT_KINDS = tuple(ContactLabels.model_fields)
-
-
-def contact_kind(label: str) -> str | None:
-    """The kind of contact detail (one of `CONTACT_KINDS`) that `label` names in any supported language (spaces
-    squashed, without case or a trailing colon), or None."""
-    key = " ".join(label.split()).casefold().strip(" :")
-    return next((k for k in CONTACT_KINDS if any(key == w.casefold() for p in _packs(None) for w in getattr(p.contact_labels, k))), None)
-
-
-def cv_section_kind(title: str, kinds, codes: tuple[str, ...] | None = None) -> str | None:
-    """The one of `kinds` whose titles hold `title` as a whole heading (spaces squashed, without case or a trailing
-    colon), or None: how the facts check and the column placement read a CV heading."""
-    key = " ".join(title.split()).casefold().strip(" :")
-    return next((kind for kind in kinds if key in {t.casefold() for t in cv_section(kind, codes)}), None)
 
 
 def _ascii_only(text: str) -> str:

@@ -18,30 +18,12 @@ import click
 
 from door import i18n
 from door.commands import _common as common
-from door.core import claude_cli, migrations, profile_loader, utils, workspace
+from door.core import claude_cli, cv_read, cv_sections, migrations, profile_loader, utils, workspace
 from door.render import pdf_draft
 
-_DEFAULT_MODEL = "sonnet"
 _DRAFT_NAME = "cv.draft.md"
 _TEXT_SUFFIXES = {".md", ".markdown", ".txt"}
 
-_RULES = (
-    "You draft a job seeker's CV as Markdown from the sources you are given: the text of "
-    "their files (their most recent CV, a LinkedIn PDF export, notes) and public URLs. "
-    + common._WEBFETCH_RULES + "\n\n"
-    "Write one CV in the structure of the template you are given (its sections, "
-    "`### Role | Company — dates` headings, bullets; add ` | Location` as a last part, `### Role | Company — dates | Location`, "
-    "only when a source gives the place of that role). The most recent CV is the backbone; "
-    "the other sources only add to it — month-level dates, roles it leaves out, years and "
-    "venues of publications, named projects, a portfolio link. Use only what the sources say; "
-    "never invent content — write `TODO` for anything missing (phone, education dates) "
-    "and list those under `todos`. The header holds a tagline as `> ...` under the name and `**LinkedIn:**` and "
-    "`**GitHub:**` parts on the contact line: write each only when a source gives it (the source's own headline, "
-    "its profile links), never invent one, and never a `TODO` for them: leave them out. Fill the template's Skills section with the skills the sources "
-    "show, also those that appear only in job descriptions; if they show none, leave the section "
-    "out: never a `TODO` for skills. Under `provenance`, say what each source besides the "
-    "backbone contributed. Answer with the JSON only."
-)
 
 _SCHEMA = {
     "type": "object",
@@ -56,8 +38,9 @@ _SCHEMA = {
             },
         },
         "todos": {"type": "array", "items": {"type": "string"}},
+        "skills_headings": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["cv_markdown", "provenance", "todos"],
+    "required": ["cv_markdown", "provenance", "todos", "skills_headings"],
 }
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -156,31 +139,37 @@ def _onboarding_cv_text(profile_dir: Path, config: dict) -> str | None:
     return text.strip()
 
 
-def _without_skills_todos(markdown: str, todos: list[str]) -> tuple[str, list[str]]:
-    """A CV need not list its skills, so nothing asks for them: `TODO`s go from its skills sections
-    with what the model listed about them, and a section with nothing else left goes too."""
-    titles = i18n.cv_section("skills")
-    sections: list[list[str]] = [[]]
-    for line in markdown.splitlines():
-        if line.startswith("## "):
-            sections.append([])
-        sections[-1].append(line)
+def _words(text: str) -> str:
+    """`text` as lower-case words alone, for comparing a todo with a line or a title."""
+    return " ".join(re.sub(r"[^\w\s]", " ", text).split()).casefold()
 
+
+def _without_skills_todos(markdown: str, todos: list[str], headings: list[str]) -> tuple[str, list[str]]:
+    """A CV need not list its skills, so nothing asks for them: `TODO`s go from the skills sections the model named
+    (`headings`, the `## ` texts it wrote), a section with nothing else left goes too, and so do the model's todos about
+    them: one that says what a removed `TODO` line said, or (for a bare `TODO`) names the section."""
+    named = {" ".join(h.split()).casefold() for h in headings if h.strip()}
     found = False
     kept: list[str] = []
-    for section in sections:
-        heading = section[0][3:].strip(" *:_").casefold() if section and section[0].startswith("## ") else None
-        if heading not in titles or not any("TODO" in line for line in section):
+    gone: set[str] = set()  # what each removed TODO line said, and the section's title for a bare one
+    for section in cv_sections.split(markdown):
+        title = " ".join(cv_sections.heading(section[0]).split()).casefold() if section and section[0].startswith("## ") else None
+        if title not in named or not any("TODO" in line for line in section):
             kept.extend(section)
             continue
         found = True
+        gone.add(_words(title))
+        for line in section[1:]:
+            if "TODO" in line and _skills_line_without_todo(line) is None:
+                if said := _words(line.replace("TODO", " ")):
+                    gone.add(said)
         body = [left for left in map(_skills_line_without_todo, section[1:]) if left is not None]
         if any(line.strip() for line in body):
             kept.extend([section[0], *body])
     if not found:
         return markdown, todos
     text = re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip() + "\n"
-    return text, [t for t in todos if not any(title in t.casefold() for title in titles)]
+    return text, [t for t in todos if not any(g in _words(t) for g in gone)]
 
 
 def _skills_line_without_todo(line: str) -> str | None:
@@ -245,7 +234,7 @@ def _draft_cv_core(
         + ("\n\nPages to read:\n" + "\n".join(urls) + "\n" if urls else "\n")
     )
     answer = claude_cli.ask(
-        _RULES, prompt, model=model or _DEFAULT_MODEL, feature="draft_cv", schema=_SCHEMA, allowed_tools=("WebFetch",),
+        "cv-drafter", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="draft_cv", schema=_SCHEMA,
         timeout_s=timeout_s, profile_dir=profile_dir,
     )
     markdown = answer.get("cv_markdown")
@@ -254,7 +243,7 @@ def _draft_cv_core(
     markdown = markdown.strip() + "\n"
     provenance = [p for p in answer.get("provenance") or [] if isinstance(p, dict)]
     todos = [str(t) for t in answer.get("todos") or []]
-    markdown, todos = _without_skills_todos(markdown, todos)
+    markdown, todos = _without_skills_todos(markdown, todos, [str(h) for h in answer.get("skills_headings") or []])
 
     migrations.ensure_folder(profile_dir, "profile")
     draft_path = profile_dir / _DRAFT_NAME
@@ -271,73 +260,7 @@ def _draft_cv_core(
     return result
 
 
-def _header(cv_md: str) -> tuple[str | None, dict[str, list[str]], list[str]]:
-    """The CV's header, what is above the first `## ` heading: the name (`# `), its contact values by kind (read in
-    every supported language's labels, `_details`) and the parts with no known label."""
-    name = None
-    preamble: list[str] = []
-    for raw in cv_md.splitlines():
-        stripped = raw.strip()
-        if stripped.startswith("## "):
-            break
-        if stripped.startswith("# ") and name is None:
-            name = stripped[2:].strip()
-        elif stripped and not stripped.startswith("#") and not stripped.startswith(">"):
-            preamble.append(stripped)
-    return name, *_details(preamble)
-
-
-def _details(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
-    """The contact parts of `lines` (split on `|`): the values of the labelled ones by kind, and the parts with no
-    known label whole. A label is one `i18n.contact_kind` knows, followed by a colon or a spaced dash, bold or not, after
-    any leading symbols: `**Location:** X`, `Location: X`, `**Location: X**`, `Location - X`. An empty value is dropped."""
-    found: dict[str, list[str]] = {}
-    other: list[str] = []
-    for line in lines:
-        for part in line.split("|"):
-            part = part.strip()
-            label = re.match(r"^(.+?)\s*(?::|\s[-\u2013\u2014]\s)\s*(.*)$", re.sub(r"^\W+", "", part.replace("**", "")))
-            kind = i18n.contact_kind(label.group(1)) if label else None
-            if kind:
-                if value := label.group(2).strip(" :"):
-                    found.setdefault(kind, []).append(value)
-            elif part:
-                other.append(part)
-    return found, other
-
-
-_BASICS_MODEL = "haiku"
 _DEFAULT_REMOTE = "hybrid"
-_EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-# A level at which someone works in a language; a language at any other level stays out of `languages`.
-_WORKING_LEVELS = {"native", "fluent", "working"}
-
-_BASICS_RULES = (
-    "You read a job seeker's CV and fill in what it says about them. `name`: their full name. `email`: their "
-    "email address. `city`: the city they live in, from the contact details, else the city of their current "
-    "job; null when the CV does not say. Never guess any of these: null when it is not there. `languages`: "
-    "every spoken language the CV names, each with its `level`: `native`, `fluent` (or professional or "
-    "business), `working`, `conversational` or `basic`. Answer with the JSON only."
-)
-
-_BASICS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "name": {"type": ["string", "null"]},
-        "email": {"type": ["string", "null"]},
-        "city": {"type": ["string", "null"]},
-        "languages": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {"language": {"type": "string"}, "level": {"type": "string"}},
-                "required": ["language", "level"],
-            },
-        },
-    },
-    "required": ["name", "email", "city", "languages"],
-}
-
 
 def _usable(value) -> str | None:
     """`value` as text, or `None` when it is empty or still a `TODO` of the draft."""
@@ -345,40 +268,29 @@ def _usable(value) -> str | None:
     return text if text and "TODO" not in text else None
 
 
-def _needs_the_model(text: str, name, email, location) -> bool:
-    """Parsing leaves something to read: a basic it did not find, or a language besides English to judge."""
-    if not (name and email and location):
-        return True
-    others = [word for code, pack in i18n.languages().items() if code != "en" for word in pack.names]
-    return bool(i18n.compile_words(others).search(text))
-
-
-def _working_languages(answered) -> list[str]:
-    """English, plus each supported language the model reads at a working level, by its file's name."""
+def _working_languages(read) -> list[str]:
+    """English, plus each supported language the reading puts at a working level (by its ISO code), by its file's name."""
     packs = i18n.languages()
     codes = ["en"]
-    for item in answered if isinstance(answered, list) else []:
-        code = i18n.language_code(str(item.get("language") or "")) if isinstance(item, dict) else None
-        if code and code not in codes and str(item.get("level") or "").lower() in _WORKING_LEVELS:
-            codes.append(code)
+    for item in read:
+        if item.get("code") in packs and item["code"] not in codes and item.get("level") in cv_read.LEVELS[:3]:  # native, fluent, working
+            codes.append(item["code"])
     return [packs[c].name for c in codes]
 
 
 def _infer_basics_core(
     markdown: str | None = None,
     *,
-    model: str | None = None,
     profile_dir: Path | None = None,
-    timeout_s: float = 120,
 ) -> dict:
-    """Read the profile basics from the CV: `markdown`, else the draft or the CV on disk. The header is parsed; one
-    `claude -p` call reads only what parsing leaves (a missing basic, a language besides English). Works before the
-    profile exists, and a failed call never stops a flow: what it would have read is `missing`.
+    """Read the profile basics from the CV: `markdown`, else the draft or the CV on disk, through `cv_read.read` (one
+    cached model call per CV text). Works before the profile exists, and a CV that could not be read never stops a
+    flow: what it would have said is `missing`.
 
     Returns:
         ``{"name", "email", "location", "languages", "remote", "missing"}`` (`None` for what was not found;
         `missing` lists the keys to ask about, and is the only reason to ask), plus ``"unsupported_location"`` (a
-        place outside the covered countries: ask) and ``"warning"`` (the model call failed).
+        place in a country The other door does not cover: ask) and ``"warning"`` (the CV could not be read).
 
     Raises:
         ConfigError: an invalid profile/config.json.
@@ -389,40 +301,19 @@ def _infer_basics_core(
     result = {"name": None, "email": None, "location": None, "languages": ["English"], "remote": _DEFAULT_REMOTE, "missing": []}
     if not text:
         return {**result, "missing": ["name", "email", "location"]}
+    try:
+        read = cv_read.read(text)
+    except cv_read.CvReadError as exc:
+        return {**result, "missing": ["name", "email", "location"], "warning": str(exc)}
 
-    # The header (`_header`, its labels in every supported language), then for an email the whole text but
-    # the tagline.
-    head_name, details, other = _header(text)
-    name = _usable(head_name)
-    untagged = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(">"))
-    email = next((m.group(0) for s in [*details.get("email", []), *other, untagged] if (m := _EMAIL_RE.search(s))), None)
-    place = _usable(next(iter(details.get("location", [])), None))
-    location = i18n.known_city(place) if place else None
-    # A place naming a covered country but no known city says too little to search; one naming a place abroad is one
-    # The other door does not cover; anything else (a street address) is left to the model.
-    abroad = place and not location and not i18n.country_for_location(place) and i18n.compile_words(i18n.foreign_places()).search(place)
-    unsupported = place if abroad else None
-
-    if _needs_the_model(text, name, email, location or unsupported):
-        try:
-            answer = claude_cli.ask(
-                _BASICS_RULES, f"CV:\n<<<\n{text}\n>>>\n", model=model or _BASICS_MODEL, feature="infer_basics", schema=_BASICS_SCHEMA,
-                timeout_s=timeout_s, profile_dir=profile_dir,
-            )
-        except claude_cli.ClaudeError as exc:
-            result["warning"] = str(exc)
-        else:
-            # What the model names must be in the CV: a name or an address is never made up.
-            read_name, read_email = _usable(answer.get("name")), _usable(answer.get("email"))
-            name = name or (read_name if read_name and read_name.lower() in text.lower() else None)
-            email = email or (read_email if read_email and read_email in text and _EMAIL_RE.fullmatch(read_email) else None)
-            city = _usable(answer.get("city"))
-            if city and not (location or unsupported):
-                location = i18n.known_city(city)
-                unsupported = city if not location and not i18n.country_for_location(city) else None
-            result["languages"] = _working_languages(answer.get("languages"))
-
-    result.update(name=name, email=email, location=location)
+    city = _usable(read.get("city"))
+    location = i18n.known_city(city) if city else None
+    country = str(read.get("country") or "").lower()
+    # A city in a country The other door does not cover is one to say so about; a country alone, or a city of a
+    # covered country that is not listed, says too little to search and is only asked about.
+    unsupported = city if city and not location and country and country not in i18n.countries() else None
+    result.update(name=_usable(read.get("name")), email=_usable(read.get("email")), location=location,
+                  languages=_working_languages(read.get("languages") or []))
     if unsupported:
         result["unsupported_location"] = unsupported
     result["missing"] = [key for key in ("name", "email", "location") if not result[key]]

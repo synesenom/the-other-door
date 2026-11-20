@@ -1,0 +1,23 @@
+{
+ "key": "aa54219169e9",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Airflow",
+   "context": "Git, Microsoft Excel, PowerBI, Figma, TypeScript, reporting, Airflow"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "Doctorat en économie",
+   "context": "Doctorat en économie"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "AWS Certified Solutions Architect",
+   "context": "AWS Certified Solutions Architect"
+  }
+ ]
+}

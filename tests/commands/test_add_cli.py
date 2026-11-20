@@ -406,7 +406,7 @@ from door.core import claude_cli
 def _haiku_reads(answer, asked=None):
     def fake_ask(system_prompt, input, **kwargs):
         if asked is not None:
-            asked.update(input=input, model=kwargs["model"])
+            asked.update(input=input, model=claude_cli.model_of(system_prompt))
         return answer
     return fake_ask
 

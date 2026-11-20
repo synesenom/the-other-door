@@ -320,7 +320,7 @@ Outcome by what claude does:
   - "This replaces your profile and jobs on this computer with the ones in <name>. What is here now is kept as a backup first, so nothing is lost." — ✓ Import… asks first; Cancel imports nothing
   - Muted: "If Google Drive is connected, the next sync sends the imported data to Drive, replacing the copy there; if Drive changed meanwhile, it asks which to keep first." — ✓ Import… asks first; Cancel imports nothing
   - Buttons **"Cancel"** (drops the token; nothing imported) and **"Import"** (primary). Escape also cancels. — ✓ Import… asks first; Cancel imports nothing
-- **Import** → `door:import-data(token)`. Main runs `take(token)`; an unknown or used token gives **"Choose the archive again."** (renderer-unreachable normally). Then `import_data {archive: realpath}` (180 s). — ✓ Import replaces the data and keeps what was here in backups/; "Choose the archive again.": not tested (unreachable from the window)
+- **Import** → `door:call` `import_data` with the token (`PATH_ARGS`' `picked` rule, store `archiveFiles`). Main runs `take(token)`; an unknown or used token gives **"Choose the archive again."** (renderer-unreachable normally). Then `import_data {archive: realpath}` (180 s). — ✓ Import replaces the data and keeps what was here in backups/; "Choose the archive again.": not tested (unreachable from the window)
 - Success: — ✓ Import replaces the data and keeps what was here in backups/
   - **`Imported <files> files.`**, plus ` What was here is kept in <backup_dir>.` when `backup_dir` is set (an absolute path: `<home>/backups/<YYYYMMDD-HHMMSS>[-n]`). — ✓ Import replaces the data and keeps what was here in backups/
   - `warnings` → `list "Worth checking"`, one item per string, e.g. `cv_template points to /x/y, which doesn't exist on this computer; update profile/config.json`, or `<home>/profile/config.json is not valid JSON; run \`doctor\``. — not tested: the world's own export has no foreign paths to warn about
@@ -466,7 +466,7 @@ Not used anywhere in Settings. It is used by the CV editor. It renders `role="sw
 | `show_profile` (App) | `{}` | `config.email` (for SignIn), `config` null or not, `cv.exists` (sidebar CV line) |
 | IPC `door:export-data` | none | `{ok:true, data:{path, files, bytes}}` / `{ok:false, canceled:true}` / `{ok:false, error}` |
 | IPC `door:pick-archive` | none | `{token, name}` / `{canceled:true}` / `{error}` |
-| IPC `door:import-data` | token | `{ok:true, data:{files, backup_dir, warnings[]}}` / `{ok:false, error}` |
+| `door:call` `import_data` | token (fourth argument) | `{ok:true, data:{files, backup_dir, warnings[]}}` / `{ok:false, error}` |
 | IPC `door:claude-login-state` and the pushed `door:claude-login` | none | `LoginState`: `{state:'idle'\|'starting'\|'done'\|'timeout'\|'cancelled'}`, `{state:'waiting', canOpen}`, `{state:'failed', message}` |
 | IPC `door:claude-login-code` | code | `{ok, error?}` |
 | IPC `door:info` (App) | none | `demo`, `sandbox` ('onboard'), `home`, `version`, `remote` |

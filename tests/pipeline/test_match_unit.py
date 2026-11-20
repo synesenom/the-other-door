@@ -9,6 +9,7 @@ from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
 from door.pipeline import match as match_step
 from cli_utils import stub_match_result, write_list_posting
+import cv_read_utils
 from pipeline_utils import posting
 
 
@@ -213,3 +214,40 @@ def test_days_with_nothing_unscored_are_not_passed_again(env, monkeypatch):
     monkeypatch.setattr(match_cmd, "_match_core", lambda **kw: stub_match_result(env.jobs_dir))
     run(env)
     assert seen == [date.today().isoformat()]
+
+
+# --- a CV that cannot be read stops this step only (#430) --------------------------------------------------------
+
+def _unreadable(monkeypatch):
+    from door.core import claude_cli, cv_read
+
+    def boom(md):
+        raise claude_cli.ClaudeError("not logged in")
+    monkeypatch.setattr(cv_read, "_ask", boom)
+
+
+def test_a_cv_that_cannot_be_read_leaves_the_postings_unscored_and_says_why_in_plain_words(env, fakes, monkeypatch):
+    from door.pipeline import display  # noqa: F401  (the board reads the same event)
+
+    write_list_posting(env.jobs_dir, date.today().isoformat(), "jobindex", "job-1")
+    (env.profile_dir / "_templates" / "cv.md").write_text("# Ada\n\n## Skills\n\nPython\n")
+    _unreadable(monkeypatch)
+    block = run(env)
+    assert block["skipped"] == "Claude could not read your CV, so the new jobs were not scored; they will be on the next run."
+    assert block["summary"] == block["skipped"] and "#" not in block["skipped"]
+    assert block["scored"] == 0 and block["new_above_threshold"] == [] and block["top"] == [] and block["failed"] == []
+    assert fakes.order == []  # no pass, no scoring: the posting stays as it is for the next run
+
+
+def test_the_cv_is_read_once_at_the_start_of_the_step_for_every_day_folder(env, fakes, monkeypatch):
+    from datetime import timedelta
+
+    from door.core import cv_read
+
+    (env.profile_dir / "_templates" / "cv.md").write_text("# Ada\n\n## Skills\n\nPython\n")
+    for days in (1, 0):
+        write_list_posting(env.jobs_dir, (date.today() - timedelta(days=days)).isoformat(), "jobindex", f"job-{days}")
+    asked = []
+    monkeypatch.setattr(cv_read, "_ask", lambda md: asked.append(md) or cv_read_utils.plain(md))
+    run(env)
+    assert len(asked) == 1

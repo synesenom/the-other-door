@@ -12,7 +12,7 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.core import profile_loader, progress, templates, utils, workspace
+from door.core import cv_read, profile_loader, progress, templates, utils, workspace
 from door.core.employers import companies
 from door.core.downloads import chromium
 from door.core.downloads import installers
@@ -102,6 +102,17 @@ def _require_own_cv(config: dict, profile_dir: Path) -> None:
     """
     if _cv_is_example(config, profile_dir):
         raise ConfigError([EXAMPLE_CV_MESSAGE])
+
+
+def _cv_reading(config: dict, profile_dir: Path) -> dict:
+    """The reading (`core.cv_read`) of the profile's CV: cached, so the first caller of a run pays and the rest do not.
+    A missing or empty CV is read without a call.
+
+    Raises:
+        cv_read.CvReadError: the CV could not be read; there is no fallback.
+    """
+    path = workspace.cv_path(config, profile_dir)
+    return cv_read.read(path.read_text(encoding="utf-8") if path.exists() else "")
 
 
 def _write_with_backup(path: Path, text: str) -> Path | None:

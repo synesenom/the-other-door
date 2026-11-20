@@ -12,7 +12,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_answered, drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_non_local, drain_pushback
 from door.scrapers.boards import jobs_ac_uk
 
 _FIX = Path(__file__).parent / "fixtures" / "jobs_ac_uk"
@@ -130,9 +130,11 @@ def test_cards_in_another_place_cost_no_ad_request():
     assert "Glasgow" in body
     _serve(_search(), body)
     _serve_details(["1093143", "1093009"])
+    drain_non_local("jobs_ac_uk")
     out = jobs_ac_uk.scrape({**_CFG, "max_pages_per_keyword": 1})
     assert [p["platform_id"] for p in out] == ["1093143", "1093009"]
     assert not any("DTN132" in u for u in _requested())
+    assert drain_non_local("jobs_ac_uk") == 1  # said, so a page of only other places is not `empty`
 
 
 @responses.activate
@@ -149,8 +151,40 @@ def test_since_ends_the_keyword_at_the_first_older_ad():
     _serve_search()
     _serve_details(["1093148", "1093143"])
     out = jobs_ac_uk.scrape(_CFG, since=datetime(2026, 11, 3))
-    assert [p["platform_id"] for p in out] == ["1093148", "1093143"]  # 1093009 was placed on 2 Nov
+    # 1093009 was placed on 2 Nov: it comes back as a dated card for the engine to count stale, with no ad request
+    assert [p["platform_id"] for p in out] == ["1093148", "1093143", "1093009"]
+    assert out[-1]["posted_at"] < "2026-11-03"
+    assert not any("1093009" in u for u in _requested())
     assert _searches() == [_search(page=1)]  # newest first: nothing on page 2 can be newer
+
+
+@responses.activate
+def test_a_first_page_of_only_older_ads_costs_no_ad_request():
+    _serve_search(("p1.html",))
+    out = jobs_ac_uk.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2026, 11, 10))
+    assert out and all(p["posted_at"] < "2026-11-10" for p in out)
+    assert len(_requested()) == 1
+
+
+@responses.activate
+def test_an_older_ad_comes_back_once_for_two_keywords():
+    _serve(_search("research associate"), _html("p1.html"))
+    _serve(_search("postdoc"), _html("p1.html"))
+    _serve_details(["1093148", "1093143"])
+    out = jobs_ac_uk.scrape({**_CFG, "search_keywords": ["research associate", "postdoc"], "max_pages_per_keyword": 1},
+                            since=datetime(2026, 11, 3))
+    assert [p["platform_id"] for p in out] == ["1093148", "1093143", "1093009"]
+
+
+@responses.activate
+def test_a_card_in_another_place_is_counted_once_for_two_keywords():
+    body = _html("p1.html").replace("Location:\n            London", "Location:\n            Glasgow", 1)
+    _serve(_search("research associate"), body)
+    _serve(_search("postdoc"), body)
+    _serve_details(["1093143", "1093009"])
+    drain_non_local("jobs_ac_uk")
+    jobs_ac_uk.scrape({**_CFG, "search_keywords": ["research associate", "postdoc"], "max_pages_per_keyword": 1})
+    assert drain_non_local("jobs_ac_uk") == 1
 
 
 @responses.activate
@@ -294,3 +328,14 @@ def test_probe_challenge_page_is_a_wall():
     _serve(_search(), "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/h/b'></script></html>")
     result = jobs_ac_uk.probe(_CFG)
     assert result["wall"] is True and result["structure_ok"] is False
+
+
+@responses.activate
+def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
+    _serve_search(("p1.html",), keyword="zzzqqq")
+    drain_answered(jobs_ac_uk._SITE)
+
+    out = jobs_ac_uk.scrape({**_CFG, "search_keywords": ["zzzqqq"], "topic_terms": ["zzzqqq*"], "max_pages_per_keyword": 1})
+
+    assert out == []
+    assert drain_answered(jobs_ac_uk._SITE) is True

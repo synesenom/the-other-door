@@ -12,6 +12,34 @@ signs you in when it is missing. From a checkout, `./door doctor` checks them al
 the same, Prepare and Revise say "The browser that prints your CVs is not installed yet." and change nothing;
 `./door doctor --fix` installs it. Should Claude be missing, Prepare and Revise say "Claude is not installed yet." and change nothing; from a shell, `jobs prepare` adds the `./door doctor --fix` line.
 
+<!-- toc -->
+**Contents**
+
+- [Installing the app](#installing-the-app)
+  - [Opening it on macOS the first time](#opening-it-on-macos-the-first-time)
+- [First launch](#first-launch)
+- [Finding new jobs](#finding-new-jobs)
+  - [Stop](#stop)
+  - [A run started somewhere else](#a-run-started-somewhere-else)
+  - [When the run is done](#when-the-run-is-done)
+  - [In the sandbox](#in-the-sandbox)
+- [Matches](#matches)
+- [A posting](#a-posting)
+- [Prepare](#prepare)
+- [Ready to send](#ready-to-send)
+- [Revise and Undo](#revise-and-undo)
+- [Status](#status)
+- [Add a job](#add-a-job)
+- [Applications](#applications)
+- [Notifications](#notifications)
+- [Profile](#profile)
+  - [Master CV](#master-cv)
+  - [Your stories](#your-stories)
+- [Settings](#settings)
+- [Analytics](#analytics)
+- [On your phone](#on-your-phone)
+<!-- /toc -->
+
 ## Installing the app
 
 The installer carries everything *The other door* needs except Claude: its own Python with the pipeline's packages,
@@ -438,8 +466,8 @@ drafted into it whole. A new CV file is your CV file from then on.
 
 Under them `profile/cv.md` as it reads, the **Preview** switch on its right on, with each gap (`TODO`) a blue "to fill
 in" pill: a click on one shows the text in an editor ("Written in Markdown" beside it), with that gap selected, as Preview off does;
-an empty CV opens in the editor. There is no Save: what you type is saved a second after you stop, and when you leave
-the editor ("Saving…", then "Saved", beside Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak` (adding from a source keeps the
+an empty CV opens in the editor. There is no Save: what you type is saved a second after you stop, when you leave
+the editor and when you close the app ("Saving…", then "Saved", beside Preview). The first save after you open Profile keeps the CV as it was as `cv.md.bak` (adding from a source keeps the
 CV as it was just before the addition instead), so that is one step back; ⌘Z (Ctrl+Z) undoes typing. An empty CV is never saved. With no CV yet, a line above says so
 and offers "Draft it from your CV file or pages", the wizard's screens. A `cv.md` that cannot be read as text
 (another encoding, a Word file renamed) is said above an empty editor; what you write there replaces it, the file

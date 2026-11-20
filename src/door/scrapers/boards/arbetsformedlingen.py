@@ -179,7 +179,7 @@ def _parse_response(text: str) -> tuple[list[dict], int]:
         raise ValueError(f"not JSON: {exc}") from exc
     hits = data.get("hits") if isinstance(data, dict) else None
     if not isinstance(hits, list):
-        raise ValueError("no  list in the JobSearch answer")
+        raise ValueError("no `hits` list in the JobSearch answer")
     total = (data.get("total") or {}).get("value")
     return [h for h in hits if isinstance(h, dict)], total if isinstance(total, int) else len(hits)
 
@@ -267,20 +267,16 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 report(f"search error (keyword={keyword!r}, offset={offset}): {exc}")
                 record_error(_SITE, f"search error (keyword={keyword!r}, offset={offset}): {exc}")
                 break
-            if not hits and offset == 0:
-                record_answered(_SITE)
+            record_answered(_SITE)  # an answer read, empty or all known, is a quiet day, not a changed site
             for hit in hits:
                 posting = _to_posting(hit, scraped_at) if _is_live(hit) else None
                 if posting is None:
                     continue
                 platform_id = posting["platform_id"]
-                if platform_id in seen or platform_id in known_ids:
+                if platform_id in seen:
                     continue
                 seen.add(platform_id)
-                posted = _parse_date(hit.get("publication_date"))
-                if since is not None and posted is not None and posted < (since if since.tzinfo else since.replace(tzinfo=timezone.utc)):
-                    continue
-                postings.append(posting)
+                postings.append({"platform_id": platform_id, "seen_only": True} if platform_id in known_ids else posting)
             if len(hits) < _PAGE_SIZE or offset + len(hits) >= total:
                 break
         log_keyword_results(_SITE, keyword, postings[start:])

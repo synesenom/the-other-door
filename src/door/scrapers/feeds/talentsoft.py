@@ -42,7 +42,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
-    host_of, keep_local, make_job_id, parts, record_entry_error, record_error, record_pushback, report, run_probe,
+    host_of, keep_local, split_known, make_job_id, parts, record_entry_error, record_error, record_pushback, report, run_probe,
     scrape_feeds, strip_html, tenant_platform_id, workers,
 )
 
@@ -242,7 +242,7 @@ def _site_postings(session: PoliteSession, entry: str, scraped_at: datetime, kno
             record_pushback(_SITE)
         raise
     company = name or employer or entry
-    cards = [c for c in cards if tenant_platform_id(base, c["id"]) not in known_ids]
+    cards, known = split_known(cards, lambda c: tenant_platform_id(base, c["id"]), known_ids)
     feed: dict[str, dict] = {}
     if cards:
         try:
@@ -272,7 +272,7 @@ def _site_postings(session: PoliteSession, entry: str, scraped_at: datetime, kno
             text = page["description"]
             ad = {**(ad or {}), "location": (ad or {}).get("location") or page["location"]}
         out.append(_to_posting(card, base, company, text, scraped_at, ad))
-    return out
+    return out + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

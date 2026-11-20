@@ -13,6 +13,14 @@ from door.scrapers import http_client, robots
 
 
 @pytest.fixture(autouse=True)
+def _no_lock_wait(monkeypatch):
+    """A refused ledger lock answers at once in tests; the ones that test the wait turn it on (#447)."""
+    from door.core import lock as lock_mod
+
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 0)
+
+
+@pytest.fixture(autouse=True)
 def _no_follow_ai(request, monkeypatch):
     """`follow`'s Haiku fallback never reaches the `claude` CLI from a test; tests that want an answer patch this."""
     from door.core.employers import careers_ai
@@ -33,6 +41,32 @@ def _no_wikidata(request, monkeypatch):
     if request.module.__name__.endswith(_WIKIDATA_TESTS) or request.node.get_closest_marker("live"):
         return
     monkeypatch.setattr(wikidata.Lookup, "employer", lambda self, session, name: (None, None))
+
+
+@pytest.fixture(autouse=True)
+def _no_cv_model(request, tmp_path, monkeypatch):
+    """The model's reading of cv.md (#430) is `core/cv_read`'s one call: in a test a plain stand-in answers it
+    (`tests/cv_read_utils.fake_ask`) and its cache is a temp folder. A test that wants other answers replaces
+    `cv_read._ask` itself, a model test asks the real one."""
+    from cv_read_utils import fake_ask
+
+    from door.core import cv_read
+
+    if request.node.get_closest_marker("model"):
+        return
+    monkeypatch.setattr(cv_read, "_cache_dir", lambda: tmp_path / "cv-read-cache")
+    monkeypatch.setattr(cv_read, "_ask", fake_ask)
+
+
+@pytest.fixture(autouse=True)
+def _no_facts_model(request, monkeypatch):
+    """The fact check (#433) is `tailoring/facts`'s one call: in a test it finds nothing unless the test replaces
+    `facts._ask` with the answer it wants (`{"findings": [...]}`); a model test asks the real one."""
+    from door.tailoring import facts
+
+    if request.node.get_closest_marker("model"):
+        return
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": []})
 
 
 @pytest.fixture(autouse=True)

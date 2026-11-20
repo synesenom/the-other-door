@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
-    Detection, FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local, make_job_id,
+    Detection, FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local, list_at, make_job_id,
     parse_iso_date, parts, record_error, report, run_probe, scrape_feeds, strip_html, tenant_platform_id, unfollowable,
 )
 
@@ -163,13 +163,16 @@ def _site_postings(session: PoliteSession, config: dict, entry: str, scraped_at:
             break
         items.extend(page)
         offset += len(page)
+    base = f"https://{host}"
     ids = {}   # platform id -> requisition number, for the detail request
-    fresh = []
+    fresh, known = [], []
     for item in items:
-        platform_id = tenant_platform_id(f"https://{host}", str(item["Id"]))
-        if platform_id not in known_ids:
-            ids[platform_id] = str(item["Id"])
-            fresh.append(_to_posting(item, host, site, name, scraped_at))
+        platform_id = tenant_platform_id(base, str(item["Id"]))
+        if platform_id in known_ids:
+            known.append({"platform_id": platform_id, "seen_only": True})
+            continue
+        ids[platform_id] = str(item["Id"])
+        fresh.append(_to_posting(item, host, site, name, scraped_at))
     postings = keep_local(fresh, config, _SITE)  # before the detail requests: the others are never read
     for posting in postings:
         try:
@@ -180,7 +183,7 @@ def _site_postings(session: PoliteSession, config: dict, entry: str, scraped_at:
         text = _description(detail)
         if text:
             posting["description"] = text
-    return postings
+    return postings + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
@@ -212,8 +215,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        if not isinstance(_first(data).get("requisitionList"), list):
-            return [], False, "no `requisitionList` in the Oracle Cloud HCM job search"
+        list_at(_first(data), "requisitionList", "Oracle Cloud HCM")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(r, host, site, _company_name(host), scraped_at) for r in _requisitions(data)], True, ""
 

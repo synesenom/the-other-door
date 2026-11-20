@@ -82,7 +82,7 @@ function blocks(text: string): Block[] {
     if (!line) flush()
     else if (heading) {
       flush()
-      out.push({ kind: 'h', level: heading[1]!.length, text: heading[2]! })
+      out.push({ kind: 'h', level: heading[1]!.length, text: heading[2]!.replace(/\s*<!--.*?-->/g, '') }) // a section's recorded kind is a comment
     } else if (quote) {
       flush()
       out.push({ kind: 'p', text: quote[1]!, quote: true })

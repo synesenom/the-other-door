@@ -43,7 +43,7 @@ company hosts).
    `tests/scrapers/test_scrapers_probe_contract_unit.py` enforces it).
 
    Read the search terms from `config["search_keywords"]` (falling back to
-   `role_targets`) and `config["location"]`; `kwargs["since"]` is how far back to look.
+   `role_targets`) and `config["location"]`; `kwargs["since"]` is how far back to look: a card older than it is returned as a dated card posting (no ad request), not dropped, an ad dropped for its place goes through `record_non_local`, and a known id is returned as `{"platform_id", "seen_only": True}` (`sdk.split_known(rows, pid_of, known_ids)` makes them; the `platform_id` is the one the ledger stores, tenant-folded where the feed folds it), so the run counts the ad seen and refreshes its `last_seen`; and the page or list read is marked with `record_answered` whenever it parses, even when every ad on it is known or off topic (`scrape_feeds` does it for each entry it fetched); otherwise a quiet day is reported `empty`.
    Report progress with `report` from the SDK (`report("'accountant': 12 results")`,
    or `report("detail", i, total)` in a loop) and never `print`: on the MCP server stdout is the
    protocol stream, and `find` shows the events live. When a problem needs the user's attention (a
@@ -155,8 +155,8 @@ company hosts).
      supported language needs: section
      `headings`, requirement / remote / salary `markers`, `seniority` words mapped to
      the canonical levels (`junior`, `senior`, `lead`, `principal`, `head`, `manager`, and `academic` for postdoc, assistant or associate professor and professor, one level so any rank matches any other), `false_friends` (English words that mean something else in
-     it), `stop_words` (connecting words like "of" that a search phrase drops), letters to `transliterate`, `title_tags` (the gender tags its job titles carry, `"H/F"`, `"m/k"`: letters split by `/` or `.`; every board and feed posting's stored title drops them, bare or in parentheses, in any case), `date.months` (the twelve month names; a date written out is read with them), `date.day_suffixes` (what a day number may carry, `"er"`, `"-én"`, `"st"`) and `months` (extra forms only: abbreviations and unaccented spellings with their numbers, `"janv." = 1`), and the `language_requirement` and `work_permit` (no sponsorship, permit required, sponsorship offered) phrases the matcher
-     looks for ("Deutsch ist ein Muss"), and the `cv_sections` (the titles of a CV's skills, education, certifications, languages and interests sections) and `contact_labels` (the words that label a phone, email, web, location, LinkedIn or GitHub line of a CV), and the `[careers] link` words (and phrases) that make a link a careers page ("Karriere", "Stellenangebote"; `companies add` follows them).
+     it), `stop_words` (connecting words like "of" that a search phrase drops), letters to `transliterate`, `title_tags` (the gender tags its job titles carry, `"H/F"`, `"m/k"`: letters split by `/` or `.`; every board and feed posting's stored title drops them, bare or in parentheses, in any case), `date` (the letter's date written out: the twelve month names and a pattern), and the `language_requirement` and `work_permit` (no sponsorship, permit required, sponsorship offered) phrases the matcher
+     looks for ("Deutsch ist ein Muss"), and the `[careers] link` words (and phrases) that make a link a careers page ("Karriere", "Stellenangebote"; `companies add` follows them).
 
    Word lists match whole words in any case; end one with `*` to match the start of
    longer words (compounds). A language's headings, markers and seniority words apply only
@@ -185,7 +185,7 @@ company hosts).
    How a site fails (a connection error recorded, not raised; `probe` saying `unreachable` or `wall`) is one shared
    contract, `tests/scrapers/test_scraper_failure_contract.py`, not a per-site test: a feed platform adds its entry to
    that file's `_ENTRY` and its rows to `_CASES` and `_UNREACHABLE` in `tests/scrapers/feeds/test_feed_names_contract.py`;
-   a page-reading discovery source adds its row to `_SOURCES` in `tests/scrapers/discovery/test_page_sources_scrape.py`. A fixture keeps a real response's structure but not its content: trim
+   a page-reading discovery source adds its row to `_SOURCES` in `tests/scrapers/discovery/test_page_sources_scrape.py`. A new board or feed also joins `tests/scrapers/test_known_ids_contract.py` (a board adds a runner to its `_BOARDS`; a feed is covered by its `_CASES` row), which fails for a scraper that drops a known id instead of handing it back as `seen_only`. A fixture keeps a real response's structure but not its content: trim
    it to what the parser reads, rewrite the remaining text (descriptions, blurbs, contact lines) as new text in the
    same language, keep titles, companies, dates, ids, URLs and anything a test asserts on, and make every person up
    (`kontakt@example.com`, `00 00 00 00`); `tests/core/test_fixture_privacy_unit.py` fails on a real address, number

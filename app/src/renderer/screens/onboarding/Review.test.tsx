@@ -36,14 +36,14 @@ const part = (name: string) => screen.getByRole('region', { name })
 
 describe('Review, the CV photo', () => {
   it('asks for a photo where the city\'s country has one optional, and holds the pick until Save', async () => {
-    const h = setup()
+    const h = setup(answers, { save_photo: { photo_path: '/p/photo.jpg' } })
     h.pickPhoto.mockResolvedValueOnce({ token: 't1', name: 'portrait.jpg' })
     await userEvent.click(within(part('You')).getByRole('button', { name: 'Choose a photo…' }))
     expect(await screen.findByText('portrait.jpg')).toBeInTheDocument()
     expect(seen.photo).toEqual({ kind: 'new', token: 't1', name: 'portrait.jpg' })
-    expect(h.savePhoto).not.toHaveBeenCalled()
+    expect(h.call).not.toHaveBeenCalledWith('save_photo', expect.anything(), undefined, expect.anything())
     await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
-    await waitFor(() => expect(h.savePhoto).toHaveBeenCalledWith('t1'))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_photo', {}, undefined, ['t1']))
   })
 
   it('says nothing about a photo for a city whose country wants none, or an unknown city', () => {
@@ -53,8 +53,11 @@ describe('Review, the CV photo', () => {
   })
 
   it('a refused picture is said under the photo and the wizard stays', async () => {
-    const h = setup({ ...answers, photo: { kind: 'new', token: 't1', name: 'tiny.png' } })
-    h.savePhoto.mockResolvedValueOnce({ ok: false, error: 'the picture is too small (50 x 50 px)' })
+    const h = setup({ ...answers, photo: { kind: 'new', token: 't1', name: 'tiny.png' } }, {
+      save_photo: () => {
+      throw new Error('the picture is too small (50 x 50 px)')
+    },
+    })
     await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
     expect(await within(part('You')).findByText(/too small/)).toBeInTheDocument()
     expect(h.onSaved).not.toHaveBeenCalled()

@@ -12,7 +12,7 @@ Conventions used below:
      - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 660 s, market 180 s.
      - `The other door's server stopped; try again`: the child process died.
      - `<tool> returned something that is not JSON`.
-     - Main-process refusals: `unknown tool`, `enrich takes web addresses only; files are chosen with the file picker.` (its `urls`), and `enrich cannot take a file path from the window; files are chosen with a file dialog.` (its `files`: a CV file goes by token, `door:enrich-file`)
+     - Main-process refusals: `unknown tool`, `enrich takes web addresses only; files are chosen with the file picker.` (its `urls`), and `enrich cannot take a file path from the window; files are chosen with a file dialog.` (its `files`: a CV file goes by token, the `tokens` of `door:call`)
 - Playwright name matching is a case-insensitive **substring** match by default. Many names here collide, so use `exact: true` where noted (e.g. `CV` with `Draft … CV …`, `Name` with the hint button `About Name`, `Add` with `Add these titles…`).
 
 ---
@@ -27,6 +27,7 @@ Conventions used below:
 | `onDraft` (the CV section's buttons) | see §4 | `setUpAgain()`: calls `show_profile`, then the onboarding wizard opens prefilled with Cancel available (config exists). If `show_profile` fails, **nothing happens** (silent). | — unit: `app/src/renderer/screens/CvEditor.test.tsx`; the silent show_profile failure is not tested (nothing on screen to assert)
 | `onSaved` (after a details Save, the first CV written, or the editor left after a write) | — | App re-reads `show_profile` (sidebar lines, `discovery_unchosen`) and bumps `refreshKey`, which remounts Matches. | — ✓ the first CV saves itself, with no backup, and the sidebar line goes
 | Leave Profile (any nav button, Find new jobs) | — | Profile unmounts. **Unsaved details are dropped silently**; CV text typed since the last pause is written as the editor goes. | — not tested: nothing on screen to assert
+| Close the window or quit the app | — | The window waits (at most 3 s, `main/close-flush.ts`) while the editor writes the text typed since the last pause, then closes. | — ✓ text typed just before the window is closed is written first |
 | Remote (phone) | — | Profile is never rendered (`current === 'Profile' && !remote`). Not reachable in Electron. | — not tested: unreachable in Electron (the phone never renders Profile)
 
 There is no gate into the wizard for an invalid config while the app runs. At launch, `config === null` opens the wizard (or remote-setup), so Profile's "could not be read" view is only reachable if config.json breaks **after** launch, or in the demo, where the wizard is not allowed.
@@ -204,7 +205,7 @@ Other data-driven variants:
 The CV is one part, `heading "Master CV"` (a muted line under it: everything about the user's work, never sent as it is, each application's CV picked from it and tailored; then the field Sources, then the CV). Each field is a form field: its name with an info bubble (`button "About <name>"`), 4 px above its control, what belongs to it under it, an error under it as `field-error`. Replace…, Add a page and Check again first write what was typed.
 
 - **`group "Sources"`**: `button "Replace CV file…"` (`"Add a CV file…"` with no CV file known), `button "Add a page"` (opens `dialog "Add a page"`, §4.4) and, with remembered pages, `button "Check again"` (opens `dialog "Check your pages again"`), then under them `list "What your Master CV is read from"`: the CV file a draft or a read last took (`door:cv-file`, from the path the main process keeps; no ×), then one chip per page, shown without `https://` (the full address on hover), each with `button "Forget <page>"`, which removes it at once (`init_profile`); a page that could not be forgotten is said under the field and its chip stays. — ✓ reads the page asked for, remembers it, and proposes what the CV lacks, all ticked; ✓ Check again reads them all and names the page of each proposal; ✓ a page is forgotten by its ×; unit: `app/src/renderer/screens/CvEditor.test.tsx`
-- A CV file chosen (`pickCvFiles`): with a Master CV, `dialog "Add from your CV file"` reads it (`door:enrich-file` by its token, `enrich {files}` in main, the spinner "Reading <name> (a minute or two)…"), proposes what it adds as a page's read does (or "Nothing in <name> is missing from your Master CV."), and adds the ticked ones, tinted; the file is the CV file from then on; a failed read is said in the dialog, the CV and the CV file as they were. With no Master CV, `draftCv({files:[token], urls:[]})` (spinner "Reading your CV file (a minute or two)…") drafts it whole, saved; a refused file is said under the field. — ✓ a new CV file proposes what it adds, and adding keeps everything the Master CV had; unit: `CvEditor.test.tsx`
+- A CV file chosen (`pickCvFiles`): with a Master CV, `dialog "Add from your CV file"` reads it (`door:call` `enrich` with its token, `enrich {files}` in main, the spinner "Reading <name> (a minute or two)…"), proposes what it adds as a page's read does (or "Nothing in <name> is missing from your Master CV."), and adds the ticked ones, tinted; the file is the CV file from then on; a failed read is said in the dialog, the CV and the CV file as they were. With no Master CV, `draft_cv` through `door:call` with the token (spinner "Reading your CV file (a minute or two)…") drafts it whole, saved; a refused file is said under the field. — ✓ a new CV file proposes what it adds, and adding keeps everything the Master CV had; unit: `CvEditor.test.tsx`
 
 ### 4.4 The page dialogs: Add a page, Check your pages again
 
@@ -306,7 +307,7 @@ Variants to drive:
 `save_cv({markdown, backup})` (`backup` false after a visit's first save): `{ cv_path, backup }` or `{error}`. Only success or throw is read.
 
 ### enrich
-- Propose (`urls`, or `files` by `door:enrich-file`): `{ outcome: "proposed"|"nothing_new", urls, files, proposals: [{n, section, text, source}], unreachable: [str], proposals_path? }`. The window reads `proposals` and `unreachable` (each `?? []`).
+- Propose (`urls`, or `files` by the `tokens` of `door:call`): `{ outcome: "proposed"|"nothing_new", urls, files, proposals: [{n, section, text, source}], unreachable: [str], proposals_path? }`. The window reads `proposals` and `unreachable` (each `?? []`).
 - Apply: `{ outcome: "applied", added: [{n,section,text,source}] /* LIST, window expects number */, cv_path, backup }`.
 
 ### market (save:false)

@@ -20,48 +20,6 @@ from door.core import claude_cli, utils, workspace
 from door.core import progress as progress_mod
 from door.matching import integrity
 
-_DEFAULT_MODEL = "sonnet"
-
-_RULES = """You write a skill-gap analysis and learning plan for a job seeker. You get their CV and one or more targets (a role name, or job postings). Work in this order and write the report in Markdown, nothing else.
-
-Pass 1 — Hard-skill gaps: the explicit and implicit requirements of the targets (tools and software, methods, domain knowledge, licences and named certifications, languages) that the CV does not show, each with the target that requires it.
-
-Pass 2 — Synthesised gaps: what a keyword diff misses — soft skills, domain depth (knowing a method vs. having led it: bookkeeping vs. running a year-end close), tooling maturity (using a system vs. running it: entering orders in an ERP vs. configuring it), credentials that would strengthen the application, and experience the CV mentions but does not evidence with outcomes — each with why it matters for the targets.
-
-Resources: for each gap, use WebSearch to find real, credible learning resources (a course, a study guide, a book, documentation). Never invent URLs, course titles, platforms or resource names: cite only what WebSearch returned. A gap with no credible result goes under "Skipped gaps" as "No vetted resource found — manual research recommended."
-
-Plan: order the gaps by impact — hard skills explicitly required first, then domain and tooling maturity, then certifications, then soft skills and portfolio evidence.
-
-Report structure (use the date you are given):
-
-# Upskill Plan — YYYY-MM-DD
-
-## Target role(s)
-<the roles or postings analysed>
-
-## Pass 1 — Hard-skill gaps
-
-| Gap | Source | Priority |
-|-----|--------|----------|
-
-## Pass 2 — Synthesised gaps
-
-| Gap | Why it matters | Priority |
-|-----|---------------|----------|
-
-## Prioritized learning plan
-
-### 1. <Gap name> (Priority: High)
-**Why**: <one sentence on impact>
-**Resources**:
-- [<Resource name>](<URL from WebSearch>) — <why it helps>
-
-### 2. ...
-
-## Skipped gaps
-<gaps with no vetted resource, or "none">
-"""
-
 _PLAN_ITEM_RE = re.compile(r"^### \d+\.", re.MULTILINE)
 
 
@@ -157,11 +115,11 @@ def _skill_gaps_core(
         f"CV (profile/cv.md):\n<<<\n{cv_path.read_text(encoding='utf-8')}\n>>>\n\n"
         "Targets:\n\n" + "\n\n".join(_target_text(t) for t in resolved) + "\n"
     )
-    model = model or _DEFAULT_MODEL
+    model = model or claude_cli.model_of("skill-gaps")
     progress_mod.report(f"analysing {len(resolved)} target(s) with {model} and WebSearch (minutes)", stage="gaps")
     try:
         report = claude_cli.ask(
-            _RULES, prompt, model=model, feature="skill_gaps", allowed_tools=("WebSearch",),
+            "skill-gaps", prompt, model=model, feature="skill_gaps",
             timeout_s=timeout_s, profile_dir=profile_dir,
         )
         if not report:
@@ -187,7 +145,7 @@ def _skill_gaps_core(
 @click.argument("targets", nargs=-1)
 @click.option("--job", "jobs", multiple=True, help="A job to analyse: words from its company and title (`--job trustpilot`); repeatable.")
 @click.option("--top", type=click.IntRange(min=1), default=None, help="Also analyse the top N matches from `jobs`.")
-@click.option("--model", default=None, help=f"Claude model to analyse with (default: {_DEFAULT_MODEL}).")
+@click.option("--model", default=None, help=f"Claude model to analyse with (default: {claude_cli.model_of('skill-gaps')}).")
 def skill_gaps(targets: tuple[str, ...], jobs: tuple[str, ...], top: int | None, model: str | None):
     """Skill-gap report for TARGETS (role names), the --job postings and/or
     the --top N matches: a prioritised, WebSearch-cited learning plan written to

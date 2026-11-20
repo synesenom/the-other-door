@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # commits docs/badges/live-smoke.md and the live-*.svg badges
+  contents: write  # commits live-smoke.md and the live-*.svg badges to the live-smoke-status branch
   issues: write
 
 jobs:
@@ -16,6 +16,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+
+      # The status page and badges live on their own branch: main takes changes only through a pull request.
+      - name: Check out the status branch
+        uses: actions/checkout@v7
+        with:
+          ref: live-smoke-status
+          path: status
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v7
@@ -42,29 +49,30 @@ jobs:
           --ignore=tests/scrapers/discovery
           --junitxml=smoke-junit.xml
 
-      # The README shows the committed badge SVGs, one per list (GitHub's workflow badge
+      # The README shows the badge SVGs of the status branch, one per list (GitHub's workflow badge
       # can only say whether the whole run passed), each linked to its list on the page.
       # CI has no Claude plan, so the matcher's golden set is skipped here and its list
       # keeps the last local result.
       - name: Write the status page and badges
         if: always()
         run: >-
-          poetry run python scripts/smoke_report.py smoke-junit.xml docs/badges/live-smoke.md
-          --badges docs/badges
+          poetry run python scripts/smoke_report.py smoke-junit.xml status/live-smoke.md
+          --badges status
           --unreached smoke-unreached.md
           --changed smoke-changed.md
           --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Commit the status page and badges
         if: always()
+        working-directory: status
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/badges/live-smoke.md docs/badges/live-*.svg
+          git add live-smoke.md live-*.svg
           git diff --cached --quiet && exit 0
-          git commit -m "Update live smoke status [skip ci]"
-          git pull --rebase origin "${{ github.ref_name }}"
-          git push origin "HEAD:${{ github.ref_name }}"
+          git commit -m "Update live smoke status"
+          git pull --rebase origin live-smoke-status
+          git push origin HEAD:live-smoke-status
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7

@@ -1,5 +1,19 @@
 # Job sites
 
+<!-- toc -->
+**Contents**
+
+- [Supported countries](#supported-countries)
+- [All sites](#all-sites)
+- [How The other door fetches](#how-the-other-door-fetches)
+- [Universities](#universities)
+- [Per-company feeds](#per-company-feeds)
+- [Career sites](#career-sites)
+- [Following an employer (`follow`)](#following-an-employer-follow)
+- [When a site changes](#when-a-site-changes)
+- [Discovery sources](#discovery-sources)
+<!-- /toc -->
+
 ## Supported countries
 
 | Where | Sites |
@@ -127,6 +141,9 @@ Every request *The other door* makes, by any scraper, follows the same rules:
   `*.teamtailor.com`, `*.myworkdayjobs.com`, `*.recruitee.com`) are fetched at most four at
   a time.
 - **Plain HTTP, logged out:** no browser, no CAPTCHA solving, no proxies, no logins.
+- **A common browser's User-Agent, Firefox's** (`http_client.USER_AGENT`), naming no project. Not
+  Chrome's: a real Chrome also sends client hints and its own TLS handshake, so a plain request naming
+  Chrome reads as a faked browser, which some firewalls block (profession.hu's search listing did).
 - **Terms first, one verdict per source.** Every source (a board, an employer-feed platform or a
   discovery source) has a terms verdict, recorded when it is added: `verdict` and `terms_summary` on its
   `Site` (`src/door/core/sites.py`), `VERDICT`, `TERMS_URL` and `TERMS_SUMMARY` in a discovery source's
@@ -451,7 +468,8 @@ run by the `discover` step (`door.core.employers.discovery_sources`), each with 
   link to the employer's own site or job system. So *The other door* reads the **search cards over plain
   HTTP** (no browser, no login): one quoted search per keyword (`"financial controller"`, then
   `"registered nurse"`, …), newest first, the last 7 days at most (since the last discovery when that is
-  more recent), each paged (ten cards a page) to its last page, a card older than the cutoff, or
+  more recent; a keyword whose first page comes back empty, which LinkedIn also answers a guest it
+  holds back, keeps its cutoff), each paged (ten cards a page) to its last page, a card older than the cutoff, or
   the request budget (150 a run, 2 to 4 s apart; a keyword the budget did not reach comes first
   next run). One boolean `OR` query is not used: it returns fewer cards than its first keyword
   alone. A first 429 is waited out (90 s) and retried; a second one stops the run and rests

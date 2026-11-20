@@ -62,7 +62,7 @@ class _SiteRun:
         """Count one record; write it unless it is a known id or too old. Sets `capped`
         (and `cancelled`) once `max_postings_per_site` postings are written."""
         self.seen += 1
-        if self._streams and record.get("seen_only"):
+        if record.get("seen_only"):
             pid = record.get("platform_id")
             if pid:
                 self.store.touch(models.make_job_id(self.site, pid))
@@ -296,11 +296,11 @@ def _scrape_core(
         # site may have changed under the scraper. Only known/old records
         # -> genuinely nothing new ("ok"). A site with count > 0 is never
         # downgraded, even if some requests also failed (partial success). A site
-        # that read a recognised results page with no hits (`record_answered`) is a
-        # quiet day ("ok") too.
+        # that read a recognised results page with no hits (`record_answered`) or
+        # that dropped postings as not local (`non_local`) answered: a quiet day ("ok") too.
         if run.count == 0 and site_errors:
             outcome = "failed"
-        elif run.seen == 0 and not answered:
+        elif run.seen == 0 and not answered and not non_local:
             outcome = "empty"
         else:
             outcome = "ok"
@@ -561,12 +561,7 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
 
             progress_mod.report("condense", stage="condense")
 
-            cv_path = workspace.cv_path(config, profile_dir)
-            if not cv_path.exists():
-                cv_path = profile_dir / "cv.md"
-            cv_md = cv_path.read_text(encoding="utf-8") if cv_path.exists() else ""
-
-            profile_terms = extract_skill_terms(cv_md, config)
+            profile_terms = extract_skill_terms(common._cv_reading(config, profile_dir), config)
             stats = condense_postings(surviving, profile_terms, config)
             ratio_pct = (
                 round(stats["avg_ratio"] * 100) if stats.get("avg_ratio") is not None else None

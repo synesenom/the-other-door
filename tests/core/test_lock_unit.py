@@ -10,6 +10,7 @@ import json
 import subprocess
 import sys
 import textwrap
+import threading
 from pathlib import Path
 
 import pytest
@@ -328,3 +329,62 @@ def test_locked_activates_progress_and_attaches_progress_file(tmp_path):
     assert [e.message for e in cap.events] == ["working"]
     assert seen["file"]["message"] == "working"
     assert not (tmp_path / ".progress.json").exists()
+
+
+def test_a_quick_holder_in_another_process_is_waited_for(tmp_path, monkeypatch):
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 10)
+    proc = _spawn_holder(tmp_path, "mark_seen")
+    threading.Timer(0.3, _release, args=(proc,)).start()
+    with ledger_lock(tmp_path, "prepare"):
+        assert lock_mod._held_depth(tmp_path) == 1
+
+
+def test_a_quick_holder_in_another_thread_is_waited_for(tmp_path, monkeypatch):
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 10)
+    inside = threading.Event()
+    release = threading.Event()
+
+    def quick():
+        with ledger_lock(tmp_path, "mark_seen"):
+            inside.set()
+            release.wait(10)
+
+    t = threading.Thread(target=quick)
+    t.start()
+    assert inside.wait(10)
+    threading.Timer(0.3, release.set).start()
+    with ledger_lock(tmp_path, "prepare"):
+        pass
+    t.join()
+
+
+@pytest.mark.parametrize("purpose", ["run", "collect"])
+def test_a_long_holder_is_refused_at_once_even_with_a_wait(tmp_path, monkeypatch, purpose):
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 60)
+    proc = _spawn_holder(tmp_path, purpose)
+    try:
+        with pytest.raises(LockHeldError):
+            with ledger_lock(tmp_path, "prepare"):
+                pass
+    finally:
+        _release(proc)
+
+
+def test_a_holder_that_outlasts_the_wait_refuses(tmp_path, monkeypatch):
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 0.2)
+    proc = _spawn_holder(tmp_path, "mark_seen")
+    try:
+        with pytest.raises(LockHeldError, match="mark_seen"):
+            with ledger_lock(tmp_path, "prepare"):
+                pass
+    finally:
+        _release(proc)
+
+
+def test_waiting_runs_the_sync_hooks_once(tmp_path, monkeypatch, hooks):
+    monkeypatch.setattr(lock_mod, "WAIT_SECONDS", 10)
+    proc = _spawn_holder(tmp_path, "mark_seen")
+    threading.Timer(0.3, _release, args=(proc,)).start()
+    with ledger_lock(tmp_path, "prepare"):
+        pass
+    assert len(hooks) == 2

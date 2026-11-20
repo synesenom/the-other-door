@@ -73,7 +73,8 @@ def test_known_ids_skip_the_ad_requests():
     postings = jobtrain.scrape({"jobtrain_companies": ["leighacademiestrust"]},
                                known_ids=frozenset({"leighacademiestrust-9610", "leighacademiestrust-9609", "leighacademiestrust-9600"}))
 
-    assert [p["platform_id"] for p in postings] == ["leighacademiestrust-9592"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["leighacademiestrust-9592"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["leighacademiestrust-9600", "leighacademiestrust-9609", "leighacademiestrust-9610"]
     assert len(responses.calls) == 3
 
 

@@ -5,13 +5,14 @@ HTTP is mocked with `responses` from pages saved from the live site (search page
 of 20 cards, a short last page, an empty page. No network.
 """
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_answered, drain_errors, drain_pushback
+from door.scrapers import drain_answered, drain_errors, drain_non_local, drain_pushback
 from door.scrapers.boards import jobbank
 
 _FIX = Path(__file__).parent / "fixtures" / "jobbank"
@@ -21,7 +22,9 @@ _CFG = {
     "location": "Copenhagen",
 }
 # The on-topic ads of the saved pages, by page.
-_PAGE1 = ["3133352", "3133445", "3133449", "3125524", "3119510", "3104812", "3147764"]
+_PAGE1 = ["3133352", "3133445", "3133449", "3125524", "3119510", "3104812"]
+# On topic but abroad ("Udlandet (Sverige)"): dropped before its ad is read.
+_ABROAD = "3147764"
 _PAGE2 = ["3095045", "3123940"]
 _PAGE3 = ["3146289", "3137378"]  # 3095045 is on it again: a duplicate
 
@@ -94,13 +97,10 @@ def test_an_english_and_a_danish_ad_both_come_through():
     assert "søger en kollega" in forsvaret["description"]
 
 
-@responses.activate
 def test_an_ad_without_an_address_keeps_the_region_of_its_card():
-    _serve_search()
-    _serve_details(_PAGE1 + _PAGE2 + _PAGE3)
-    voi = {p["platform_id"]: p for p in jobbank.scrape(_CFG)}["3147764"]
-    assert voi["location"] == "Udlandet (Sverige)"
-    assert voi["company"] == "VOI Denmark ApS"
+    card = jobbank._parse_cards(_html("search_page1.html"))[0]
+    detail = {"title": "", "company": "", "location": "", "description": "", "posted_at": None}
+    assert jobbank._posting(card, detail, datetime.now(timezone.utc))["location"] == card["region"]
 
 
 @responses.activate
@@ -282,3 +282,53 @@ def test_probe_challenge_page_is_a_wall():
     _serve(_probe_url(), "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/h/b'></script></html>")
     result = jobbank.probe(_CFG)
     assert result["wall"] is True and result["structure_ok"] is False
+
+
+@responses.activate
+def test_an_ad_abroad_costs_no_request_and_is_counted_as_not_local():
+    """A card for a job abroad ("Udlandet (...)", whose ad names no place) is dropped before the ad is read."""
+    _serve_search()
+    _serve_details(_PAGE1 + _PAGE2 + _PAGE3)
+
+    drain_non_local("jobbank")
+    postings = jobbank.scrape(_CFG)
+
+    assert _ABROAD not in [p["platform_id"] for p in postings]
+    assert jobbank._detail_url(_ABROAD) not in _requested()
+    assert drain_non_local("jobbank") == 1
+
+
+@responses.activate
+def test_a_card_older_than_the_cutoff_costs_no_request():
+    """The search ranks by relevance and lists ads years old; the card's date is checked against ``since`` first."""
+    _serve_search(pages=("search_page1.html",))
+    _serve_details(_PAGE1)
+
+    since = datetime(2026, 9, 20, tzinfo=timezone.utc)
+    out = jobbank.scrape({**_CFG, "max_pages_per_keyword": 1}, since=since)
+
+    old = ["3119510", "3104812"]
+    assert [p["platform_id"] for p in out if p["description"]] == [i for i in _PAGE1 if i not in old]
+    # An old card comes back as a card posting (no description), for the engine to count as stale.
+    assert [p["platform_id"] for p in out if not p["description"]] == old
+    assert not any(jobbank._detail_url(i) in _requested() for i in old)
+
+
+@responses.activate
+def test_a_page_of_cards_all_skipped_is_still_an_answer():
+    """A page of recognised cards is an answer even when every card is skipped (too old, known, off topic) (#434)."""
+    _serve_search(pages=("search_page1.html",))
+    drain_answered("jobbank")
+    jobbank.scrape({**_CFG, "max_pages_per_keyword": 1}, since=datetime(2030, 1, 1, tzinfo=timezone.utc))
+    assert drain_answered("jobbank") is True
+
+
+@responses.activate
+def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
+    _serve_search(pages=("search_page1.html",))
+    drain_answered(jobbank._SITE)
+
+    out = jobbank.scrape({**_CFG, "topic_terms": ["zzzqqq*"], "max_pages_per_keyword": 1})
+
+    assert out == []
+    assert drain_answered(jobbank._SITE) is True

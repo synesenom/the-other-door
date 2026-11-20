@@ -97,6 +97,8 @@ Note the results in the release's pull request or issue, one line per system:
 vX.Y.Z  macOS 15 arm64: 1–7 ok · Windows 11 x64: 1–6 ok, 7 n/a · Ubuntu 24.04: 1–7 ok (AppImage and .deb)
 ```
 
+- On each system: type in Profile → Master CV, then at once "Restart to update" (a build with an update waiting) or ⌘Q / close the window; after the restart the text is in the CV (mac and Windows).
+
 ## 3. Release notes
 
 Written for users, not developers: a changelog of what was **Added**, **Changed**, **Fixed** and **Removed**

@@ -11,7 +11,13 @@ import type { Environment } from './environments'
 
 type Handler = (event: unknown, ...args: any[]) => Promise<any>
 
-function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<unknown> = async () => ({ ok: 1 }), demoRun?: (args: any, onProgress: any) => any, notifyThrows = false, info: { environment: Environment; home?: string } = { environment: 'sandbox' }) {
+// A token store that gives its path once, as photo-file.ts and archive-files.ts do.
+const oneShot = (token: string, path: string) => {
+  let left = true
+  return (t: string) => (left && t === token ? ((left = false), path) : null)
+}
+
+function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<unknown> = async () => ({ ok: 1 }), demoRun?: (args: any, onProgress: any) => any, notifyThrows = false, info: { environment: Environment; home?: string } = { environment: 'sandbox' }, without: { photoFile?: false; archiveFiles?: false } = {}) {
   const cvSources = {
     pick: vi.fn(async () => ({ files: [{ token: 'tok1', name: 'cv.pdf', size: 10 }], refused: [] })),
     add: vi.fn(async (_paths: string[]) => ({ files: [{ token: 'tok2', name: 'dropped.pdf', size: 10 }], refused: [] })),
@@ -22,12 +28,12 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
   const archiveFiles = {
     exportTarget: vi.fn(async (): Promise<{ path: string } | { canceled: true } | { error: string }> => ({ path: '/Users/ada/door-export.tar.gz' })),
     pick: vi.fn(async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> => ({ token: 'arch1', name: 'door-export.tar.gz' })),
-    take: vi.fn((t: string) => (t === 'arch1' ? '/Volumes/usb/door-export.tar.gz' : null)),
+    take: vi.fn(oneShot('arch1', '/Volumes/usb/door-export.tar.gz')),
     reportTarget: vi.fn(async (): Promise<{ path: string } | { canceled: true } | { error: string }> => ({ path: '/Users/ada/door-report-2026-10-30.zip' })),
   }
   const photoFile = {
     pick: vi.fn(async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> => ({ token: 'ph1', name: 'me.jpg' })),
-    take: vi.fn((t: string) => (t === 'ph1' ? '/Users/ada/Pictures/me.jpg' : null)),
+    take: vi.fn(oneShot('ph1', '/Users/ada/Pictures/me.jpg')),
   }
   const cvFile = {
     remember: vi.fn(async (_path: string) => undefined),
@@ -59,11 +65,14 @@ function setup(callImpl: (tool: string, args: unknown, opts?: any) => Promise<un
   const notify = vi.fn((_n: Notice) => {
     if (notifyThrows) throw new Error('notify broke')
   })
-  registerIpc(ipcMain, server, { openExternal, home, savePdf: { showSaveDialog, downloads: '/Users/ada/Downloads' }, showItemInFolder, info, currentBoard, demoRun, notify, cvSources, claudeLogin, archiveFiles, photoFile, cvFile, problemLog })
+  registerIpc(ipcMain, server, { openExternal, home, savePdf: { showSaveDialog, downloads: '/Users/ada/Downloads' }, showItemInFolder, info, currentBoard, demoRun, notify, cvSources, claudeLogin, archiveFiles: without.archiveFiles === false ? undefined : archiveFiles, photoFile: without.photoFile === false ? undefined : photoFile, cvFile, problemLog })
   const send = vi.fn()
   const invoke = (channel: string, ...args: unknown[]) => handlers.get(channel)!({ sender: { send } }, ...args)
   return { server, openExternal, invoke, send, dir, showSaveDialog, saveDir, showItemInFolder, currentBoard, home, notify, cvSources, claudeLogin, archiveFiles, photoFile, cvFile, problemLog }
 }
+
+// door:call with the picked files' tokens (the fourth argument)
+const files = (invoke: (channel: string, ...args: unknown[]) => Promise<any>, tool: unknown, args: unknown, tokens: unknown) => invoke(CHANNELS.call, tool, args, undefined, tokens)
 
 describe('registerIpc', () => {
   it('answers the current run board', async () => {
@@ -502,15 +511,25 @@ describe('moving the data', () => {
   it('the archive is picked in main and goes by token', async () => {
     const { invoke, server } = setup(async () => ({ files: 3, backup_dir: '/b', warnings: [] }))
     expect(await invoke(CHANNELS.pickArchive)).toEqual({ token: 'arch1', name: 'door-export.tar.gz' })
-    expect(await invoke(CHANNELS.importData, 'arch1')).toEqual({ ok: true, data: { files: 3, backup_dir: '/b', warnings: [] } })
+    expect(await files(invoke, 'import_data', {}, ['arch1'])).toEqual({ ok: true, data: { files: 3, backup_dir: '/b', warnings: [] } })
     expect(server.call).toHaveBeenCalledWith('import_data', { archive: '/Volumes/usb/door-export.tar.gz' }, { timeout: expect.any(Number) })
   })
 
-  it('an unknown token, or a path from the window, imports nothing', async () => {
+  it('an unknown or used token, or a path from the window, imports nothing', async () => {
     const { invoke, server } = setup()
-    for (const t of ['nope', '/Users/ada/x.tar.gz', 42]) {
-      expect(await invoke(CHANNELS.importData, t)).toEqual({ ok: false, error: 'Choose the archive again.' })
+    for (const t of [['nope'], ['/Users/ada/x.tar.gz'], 42, [], ['arch1', 'arch1']]) {
+      expect(await files(invoke, 'import_data', {}, t)).toEqual({ ok: false, error: 'Choose the archive again.' })
     }
+    expect(server.call).not.toHaveBeenCalled()
+    expect((await files(invoke, 'import_data', {}, ['arch1'])).ok).toBe(true)
+    expect(await files(invoke, 'import_data', {}, ['arch1'])).toEqual({ ok: false, error: 'Choose the archive again.' })
+    expect(server.call).toHaveBeenCalledTimes(1)
+  })
+
+  it('import_data cannot be called with a path through door:call', async () => {
+    const { invoke, server } = setup()
+    expect((await invoke(CHANNELS.call, 'import_data', { archive: '/etc/passwd' })).ok).toBe(false)
+    expect((await files(invoke, 'import_data', { archive: '/etc/passwd' }, ['arch1'])).ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 })
@@ -519,30 +538,40 @@ describe('the CV photo (#605)', () => {
   it('the picture is picked in main and saved by token: the tool gets the real path', async () => {
     const { invoke, server } = setup(async () => ({ photo_path: '/home/profile/photo.jpg' }))
     expect(await invoke(CHANNELS.pickPhoto)).toEqual({ token: 'ph1', name: 'me.jpg' })
-    expect(await invoke(CHANNELS.savePhoto, 'ph1')).toEqual({ ok: true, data: { photo_path: '/home/profile/photo.jpg' } })
-    expect(server.call).toHaveBeenCalledWith('save_photo', { path: '/Users/ada/Pictures/me.jpg' })
+    expect(await files(invoke, 'save_photo', {}, ['ph1'])).toEqual({ ok: true, data: { photo_path: '/home/profile/photo.jpg' } })
+    expect(server.call).toHaveBeenCalledWith('save_photo', { path: '/Users/ada/Pictures/me.jpg' }, expect.anything())
   })
 
   it('a refusal by the tool reaches the window as the reason', async () => {
     const { invoke } = setup(async () => {
       throw new DoorError('the picture is too small (50 x 50 px)')
     })
-    expect(await invoke(CHANNELS.savePhoto, 'ph1')).toEqual({ ok: false, error: 'the picture is too small (50 x 50 px)' })
+    expect(await files(invoke, 'save_photo', {}, ['ph1'])).toEqual({ ok: false, error: 'the picture is too small (50 x 50 px)' })
   })
 
-  it('an unknown token, or a path from the window, saves nothing', async () => {
+  it('an unknown or used token, or a path from the window, saves nothing', async () => {
     const { invoke, server } = setup()
-    for (const t of ['nope', '/Users/ada/me.jpg', 42]) {
-      expect(await invoke(CHANNELS.savePhoto, t)).toEqual({ ok: false, error: 'Choose the picture again.' })
+    for (const t of [['nope'], ['/Users/ada/me.jpg'], 42, [], ['ph1', 'ph1']]) {
+      expect(await files(invoke, 'save_photo', {}, t)).toEqual({ ok: false, error: 'Choose the picture again.' })
     }
     expect(server.call).not.toHaveBeenCalled()
+    expect((await files(invoke, 'save_photo', {}, ['ph1'])).ok).toBe(true)
+    expect(await files(invoke, 'save_photo', {}, ['ph1'])).toEqual({ ok: false, error: 'Choose the picture again.' })
+    expect(server.call).toHaveBeenCalledTimes(1)
+  })
+
+  it('a token store that is not there answers the rule\'s words and calls nothing', async () => {
+    const one = setup(undefined, undefined, false, undefined, { photoFile: false, archiveFiles: false })
+    expect(await files(one.invoke, 'save_photo', {}, ['ph1'])).toEqual({ ok: false, error: 'Choose the picture again.' })
+    expect(await files(one.invoke, 'import_data', {}, ['arch1'])).toEqual({ ok: false, error: 'Choose the archive again.' })
+    expect(one.server.call).not.toHaveBeenCalled()
   })
 
   it('save_photo cannot be called with a path through door:call', async () => {
     const { invoke, server } = setup()
-    expect(PATH_ARGS['save_photo']).toEqual([{ arg: 'path' }])
-    const r = await invoke(CHANNELS.call, 'save_photo', { path: '/etc/passwd' })
-    expect(r.ok).toBe(false)
+    expect(PATH_ARGS['save_photo']?.[0]?.arg).toBe('path')
+    expect((await invoke(CHANNELS.call, 'save_photo', { path: '/etc/passwd' })).ok).toBe(false)
+    expect((await files(invoke, 'save_photo', { path: '/etc/passwd' }, ['ph1'])).ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
@@ -678,7 +707,7 @@ describe('the CV draft channels', () => {
 
   it('drafts from the resolved paths and the urls, with the long limit', async () => {
     const { invoke, server } = setup(async () => ({ markdown: '# Ada' }))
-    const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: ['https://example.com/ada'] })
+    const r = await files(invoke, 'draft_cv', { sources: ['https://example.com/ada'] }, ['tok1'])
     expect(r).toEqual({ ok: true, data: { markdown: '# Ada' } })
     expect(server.call).toHaveBeenCalledWith('draft_cv', { sources: ['/Users/ada/cv.pdf', 'https://example.com/ada'] }, expect.objectContaining({ timeout: expect.any(Number) }))
   })
@@ -688,7 +717,7 @@ describe('the CV draft channels', () => {
       markdown: '# Ada',
       sources: [{ source: '/Users/ada/cv.pdf', kind: 'file' }, { source: 'https://example.com/ada', kind: 'url' }],
     }))
-    const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: ['https://example.com/ada'] })
+    const r = await files(invoke, 'draft_cv', { sources: ['https://example.com/ada'] }, ['tok1'])
     expect(r).toEqual({
       ok: true,
       data: { markdown: '# Ada', sources: [{ source: '/Users/ada/cv.pdf', kind: 'file', token: 'tok1' }, { source: 'https://example.com/ada', kind: 'url' }] },
@@ -697,31 +726,31 @@ describe('the CV draft channels', () => {
 
   it('refuses an unknown token without calling the server', async () => {
     const { invoke, server } = setup()
-    const r = await invoke(CHANNELS.draftCv, { files: ['guess'], urls: [] })
+    const r = await files(invoke, 'draft_cv', { sources: [] }, ['guess'])
     expect(r.ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
   it('refuses a LinkedIn page with the hint, and a non-http address', async () => {
     const { invoke, server } = setup()
-    const li = await invoke(CHANNELS.draftCv, { files: [], urls: ['https://www.linkedin.com/in/ada'] })
+    const li = await files(invoke, 'draft_cv', { sources: ['https://www.linkedin.com/in/ada'] }, [])
     expect(li).toMatchObject({ ok: false, error: expect.stringContaining('Save to PDF') })
-    const bad = await invoke(CHANNELS.draftCv, { files: [], urls: ['file:///etc/passwd'] })
+    const bad = await files(invoke, 'draft_cv', { sources: ['file:///etc/passwd'] }, [])
     expect(bad.ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
   it.each([
-    [{ files: 'tok1', urls: [] }],
-    [{ files: [], urls: 'https://a.com' }],
-    [{ files: [1], urls: [] }],
-    [{ files: [], urls: [2] }],
-    ['text'],
-    [null],
-    [{ files: [], urls: [] }],
-  ])('refuses the payload %j', async (payload) => {
+    [{ sources: [] }, 'tok1'],
+    [{ sources: [] }, [1]],
+    [{ sources: 'https://a.com' }, []],
+    [{ sources: [2] }, []],
+    ['text', []],
+    [null, []],
+    [{ sources: [] }, []],
+  ])('refuses the call %j with tokens %j', async (args, tokens) => {
     const { invoke, server } = setup()
-    expect((await invoke(CHANNELS.draftCv, payload)).ok).toBe(false)
+    expect((await files(invoke, 'draft_cv', args, tokens)).ok).toBe(false)
     expect(server.call).not.toHaveBeenCalled()
   })
 
@@ -729,7 +758,7 @@ describe('the CV draft channels', () => {
     const { invoke } = setup(async () => {
       throw Object.assign(new DoorError('draft_cv took too long'), { timedOut: true as const })
     })
-    const r = await invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
+    const r = await files(invoke, 'draft_cv', { sources: [] }, ['tok1'])
     expect(r).toEqual({ ok: false, error: expect.stringContaining('too long') })
   })
 
@@ -793,20 +822,55 @@ describe('door:call refuses what names a local file', () => {
   })
 })
 
+describe('the picked-file channel', () => {
+  it('refuses a tool that takes no picked file, and a path the window names', async () => {
+    const { invoke, server, cvSources } = setup()
+    for (const tool of ['status_summary', 'import_posting', 'export_data', 'nope', 7]) {
+      expect((await files(invoke, tool, {}, ['tok1'])).ok).toBe(false)
+    }
+    expect((await files(invoke, 'enrich', { files: ['/etc/passwd'] }, ['tok1'])).ok).toBe(false)
+    expect(cvSources.resolve).not.toHaveBeenCalled()
+    expect(server.call).not.toHaveBeenCalled()
+  })
+
+  it('a new CV file to enrich from needs its token: none calls nothing and remembers nothing', async () => {
+    const { invoke, server, cvFile } = setup()
+    expect(await files(invoke, 'enrich', {}, [])).toEqual({ ok: false, error: 'Choose the file again.' })
+    expect(server.call).not.toHaveBeenCalled()
+    expect(cvFile.remember).not.toHaveBeenCalled()
+  })
+
+  it('a refusal is logged by the tool name only, as door:call logs it', async () => {
+    const { invoke, problemLog } = setup()
+    await files(invoke, 'enrich', { files: ['/etc/passwd'] }, ['tok1'])
+    await files(invoke, 'status_summary', {}, [])
+    expect(problemLog.write.mock.calls.map((c) => c[0])).toEqual(['refused enrich', 'refused status_summary'])
+    expect(JSON.stringify(problemLog.write.mock.calls)).not.toContain('/etc/passwd')
+  })
+
+  it('refuses a token that was never handed out', async () => {
+    const { invoke, server } = setup()
+    for (const tool of ['draft_cv', 'enrich']) {
+      expect((await files(invoke, tool, {}, ['guess'])).ok).toBe(false)
+    }
+    expect(server.call).not.toHaveBeenCalled()
+  })
+})
+
 describe('the CV file', () => {
   const real = { environment: 'production' as const }
 
   it('the CV file is the first file the draft read', async () => {
     const read = { markdown: '# Ada', sources: [{ source: 'https://ada.dev', kind: 'url' }, { source: '/Users/ada/cv.docx', kind: 'file' }, { source: '/Users/ada/other.pdf', kind: 'file' }] }
     const one = setup(async () => read, undefined, false, real)
-    await one.invoke(CHANNELS.draftCv, { files: ['tok1'], urls: [] })
+    await files(one.invoke, 'draft_cv', { sources: [] }, ['tok1'])
     expect(one.cvFile.remember).toHaveBeenCalledTimes(1)
     expect(one.cvFile.remember).toHaveBeenCalledWith('/Users/ada/cv.docx')
   })
 
   it('a CV file to add from is read by enrich from its path, and is the CV file from then on', async () => {
     const one = setup(async () => ({ outcome: 'proposed', proposals: [] }), undefined, false, real)
-    const r = await one.invoke(CHANNELS.enrichFile, 'tok1')
+    const r = await files(one.invoke, 'enrich', {}, ['tok1'])
     expect(r).toEqual({ ok: true, data: { outcome: 'proposed', proposals: [] } })
     expect(one.server.call).toHaveBeenCalledWith('enrich', { files: ['/Users/ada/cv.pdf'] }, expect.objectContaining({ timeout: expect.any(Number) }))
     expect(one.cvFile.remember).toHaveBeenCalledWith('/Users/ada/cv.pdf')
@@ -816,10 +880,10 @@ describe('the CV file', () => {
     const failed = setup(async () => {
       throw new DoorError('the file could not be read')
     }, undefined, false, real)
-    expect((await failed.invoke(CHANNELS.enrichFile, 'tok1')).ok).toBe(false)
+    expect((await files(failed.invoke, 'enrich', {}, ['tok1'])).ok).toBe(false)
     expect(failed.cvFile.remember).not.toHaveBeenCalled()
     const guessed = setup(undefined, undefined, false, real)
-    expect((await guessed.invoke(CHANNELS.enrichFile, 'guess')).ok).toBe(false)
+    expect((await files(guessed.invoke, 'enrich', {}, ['guess'])).ok).toBe(false)
     expect(guessed.server.call).not.toHaveBeenCalled()
   })
 

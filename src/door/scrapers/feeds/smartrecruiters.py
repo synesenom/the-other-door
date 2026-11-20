@@ -31,7 +31,7 @@ from door.scrapers.sdk import (
     record_non_local, report, run_probe, scrape_feeds, strip_html,
     followed_name,
 )
-from door.scrapers.sdk import Detection, Probe, first, parts
+from door.scrapers.sdk import Detection, Probe, first, list_at, parts, split_known
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
 PLATFORM_DOMAINS = ("smartrecruiters.com", "smrtr.io")
@@ -123,7 +123,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             offset += len(raw)
             if not raw or offset >= int(page.get("totalFound") or 0):
                 break
-        fresh = [i for i in items if str(i["id"]) not in known_ids]
+        fresh, known = split_known(items, lambda i: str(i["id"]), known_ids)
         local = [i for i in fresh if not _non_local(i, config)]  # no detail request for a job in another country
         if len(local) < len(fresh):
             record_non_local(_SITE, len(fresh) - len(local))
@@ -137,7 +137,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 record_error(_SITE, f"error fetching posting {item['id']} of {entry!r}: {exc}")
                 detail = None
             out.append(_to_posting(item, detail, company_id, scraped_at, followed_name(config, "smartrecruiters_companies", entry)))
-        return out
+        return out + known
 
     # One host serves every company, so they are read one after the other.
     return scrape_feeds(_SITE, entries, fetch, headers=_HEADERS)
@@ -156,9 +156,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        content = data.get("content") if isinstance(data, dict) else None
-        if not isinstance(content, list):
-            return [], False, "no `content` list in the SmartRecruiters postings response"
+        content = list_at(data, "content", "SmartRecruiters")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(o, None, company_id, scraped_at) for o in _items(content)], True, ""
 

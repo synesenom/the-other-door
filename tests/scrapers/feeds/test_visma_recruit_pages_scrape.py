@@ -86,7 +86,8 @@ def test_known_ads_cost_no_request_and_are_not_returned():
 
     postings = v.scrape({_KEY: [_VB]}, frozenset(_VB_IDS[:2]))
 
-    assert [p["platform_id"] for p in postings] == [_VB_IDS[2]]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == [_VB_IDS[2]]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == sorted(_VB_IDS[:2])
     assert len(responses.calls) == 2
 
 

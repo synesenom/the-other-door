@@ -50,11 +50,22 @@ def test_every_ad_is_returned_with_its_employer_from_the_detail_page():
 
 
 @responses.activate
+def test_a_list_of_only_older_ads_costs_no_detail_request():
+    _serve()
+    postings = globalnyt.scrape(_CFG, since=datetime(2027, 1, 1, tzinfo=timezone.utc))
+    assert len(postings) == 4 and all(p["posted_at"] < "2027-01-01" for p in postings)
+    assert len(responses.calls) == 1
+
+
+@responses.activate
 def test_a_known_ad_costs_no_detail_request_and_an_old_one_is_skipped():
     _serve()
     since = datetime(2026, 10, 1, tzinfo=timezone.utc)
     postings = globalnyt.scrape(_CFG, known_ids=frozenset({"510393"}), since=since)
-    assert {p["platform_id"] for p in postings} == {"510291", "508636"}
+    # the old ad comes back dated for the engine to count stale, from the list alone
+    assert {p["platform_id"] for p in postings if not p.get("seen_only")} == {"510291", "508636", "456923"}
+    assert [p for p in postings if p.get("seen_only")] == [{"platform_id": "510393", "seen_only": True}]
+    assert next(p for p in postings if p["platform_id"] == "456923")["posted_at"] < "2026-10-01"
     assert not any("mhpss-advisor" in c.request.url for c in responses.calls)
     assert not any("universitetspraktikant" in c.request.url for c in responses.calls)
 
@@ -83,6 +94,15 @@ def test_a_failing_list_is_an_error():
     assert globalnyt.scrape(_CFG) == []
     assert drain_errors("globalnyt").get("globalnyt")
     assert drain_answered("globalnyt") is False
+
+
+@responses.activate
+def test_a_list_of_only_known_ads_is_a_quiet_day():
+    _serve(details=False)
+    known = frozenset({"510393", "510291", "508636", "456923"})
+    out = globalnyt.scrape(_CFG, known_ids=known)
+    assert {p["platform_id"] for p in out} == known and all(p.get("seen_only") for p in out)
+    assert drain_answered("globalnyt") is True
 
 
 @responses.activate

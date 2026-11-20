@@ -221,32 +221,17 @@ def test_condense_keeps_danish_language_clause_from_real_fixture():
 # extract_skill_terms
 # ---------------------------------------------------------------------------
 
-_CV_MD = """# Jane Doe
-
-## Profile
-
-Experienced data scientist.
-
-## Skills
-
-Python (scikit-learn, pytorch, pandas), SQL, AWS, Spark, data visualization (d3, matplotlib), Docker, Git.
-
-## Languages
-
-- English — fluent
-"""
+_READING = {"skills": ["Python", "SQL", "AWS", "Spark", "data visualization", "d3", "Docker", "Git", "Python"]}
 
 
-def test_extract_skill_terms_includes_cv_skills():
-    terms = extract_skill_terms(_CV_MD, {})
-    assert "python" in terms
-    assert "sql" in terms
-    assert "docker" in terms
+def test_extract_skill_terms_includes_the_readings_skills_lowercased_and_deduplicated():
+    terms = extract_skill_terms(_READING, {})
+    assert {"python", "sql", "docker", "data visualization"} <= terms
+    assert sum(1 for t in terms if t == "python") == 1
 
 
 def test_extract_skill_terms_excludes_short_tokens():
-    terms = extract_skill_terms(_CV_MD, {})
-    assert "d3" not in terms  # < 3 chars
+    assert "d3" not in extract_skill_terms(_READING, {})  # < 3 chars
 
 
 def test_extract_skill_terms_includes_role_targets_and_search_keywords():
@@ -254,19 +239,14 @@ def test_extract_skill_terms_includes_role_targets_and_search_keywords():
         "role_targets": ["Lead Data Scientist"],
         "search_keywords": ["machine learning manager"],
     }
-    terms = extract_skill_terms(_CV_MD, config)
+    terms = extract_skill_terms(_READING, config)
     assert "lead data scientist" in terms
     assert "machine learning manager" in terms
-
-
-def test_extract_skill_terms_is_lowercase_and_deduplicated():
-    config = {"role_targets": ["Python Developer", "python developer"]}
-    terms = extract_skill_terms(_CV_MD, config)
-    assert sum(1 for t in terms if t == "python developer") == 1
+    assert "scientist" in terms  # and each word of them
 
 
 def test_extract_skill_terms_without_a_cv_still_has_the_role_targets():
-    terms = extract_skill_terms("", {"role_targets": ["Data Engineer"]})
+    terms = extract_skill_terms({"skills": []}, {"role_targets": ["Data Engineer"]})
     assert "data engineer" in terms
 
 
@@ -537,19 +517,13 @@ def test_swedish_work_permit_sentence_survives_condensing(sentence, language):
     assert sentence in out
 
 
-@pytest.mark.parametrize("heading", ["## Skills", "## Technical Skills", "## Kompetencer", "## Compétences", "## **Skills:**"])
-def test_extract_skill_terms_reads_a_skills_section_under_any_of_its_names(heading):
-    assert "pandas" in extract_skill_terms(f"# Jane\n\n{heading}\n\npandas, Spark\n\n## Profile\n\nNotpandas person\n", {})
 
 
-def test_extract_skill_terms_reads_every_skills_section_and_nothing_else():
-    terms = extract_skill_terms("## Skills\n\npandas\n\n## Profile\n\nleadership\n\n## Tools\n\nSpark\n", {})
-    assert {"pandas", "spark"} <= terms
-    assert "leadership" not in terms
 
 
-def test_extract_skill_terms_without_a_skills_section_has_only_the_profile_terms():
-    assert extract_skill_terms("## Profile\n\npandas\n", {"role_targets": ["Analyst"]}) == {"analyst"}
+
+
+
 
 
 @pytest.mark.parametrize("sentence", [
@@ -569,3 +543,15 @@ def test_british_work_permit_sentence_survives_condensing(sentence, language):
 def test_condense_keeps_a_british_salary_line():
     ad = "Intro one.\nIntro two.\n\nDetails\nSalary: GBP 45,000 per annum, pro rata.\nWe like tea."
     assert "per annum" in condense_description(ad, language="en")
+
+
+
+
+
+
+
+
+
+
+def test_extract_skill_terms_without_skills_has_only_the_profile_terms():
+    assert extract_skill_terms({"skills": []}, {"role_targets": ["Analyst"]}) == {"analyst"}

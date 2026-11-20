@@ -9,9 +9,10 @@ shared `cli_env` fixture is in tests/commands/conftest.py, helpers in tests/cli_
 import json
 import sys
 import types
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
+import responses
 from click.testing import CliRunner
 
 from door.cli import cli
@@ -19,6 +20,7 @@ from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
 from door.core import workspace
+import cv_read_utils
 from cli_utils import result_text, stub_match_result
 from profile_utils import write_config
 
@@ -502,6 +504,24 @@ def test_scrape_core_answered_with_no_hits_is_ok_and_moves_the_watermark(cli_env
     assert "jobindex" in freshness.load_scrape_state(cli_env.jobs_dir)
 
 
+def test_scrape_core_a_site_that_dropped_postings_as_not_local_is_ok_not_empty(cli_env, monkeypatch):
+    """A first page all abroad is an answer: the site worked, there was nothing local."""
+    import door.scrapers.boards.jobindex as ji
+    from door.scrapers import record_non_local
+
+    def abroad(config, **kwargs):
+        record_non_local("jobindex", 3)
+        return []
+
+    monkeypatch.setattr(ji, "scrape", abroad)
+    monkeypatch.delattr(ji, "iter_scrape", raising=False)
+
+    entry = scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert entry["outcome"] == "ok"
+    assert entry["non_local"] == 3
+    assert "warning" not in entry
+
+
 def test_scrape_core_answered_with_an_error_is_still_failed(cli_env, monkeypatch):
     import door.scrapers.boards.jobindex as ji
     from door.scrapers import record_answered, record_error
@@ -667,6 +687,19 @@ def test_scrape_core_stale_count_in_done_message(cli_env, monkeypatch):
     done = next(e for e in cap.events if e.outcome)
     assert done.message.startswith("jobindex: 1 posting(s), 1 older than ")
     assert done.message.endswith(" skipped")
+
+
+def test_scrape_core_a_board_that_returned_only_older_cards_is_ok_not_empty(cli_env, monkeypatch):
+    """A day of only ads older than the cutoff is a quiet day: counted stale, nothing written, not `empty`."""
+    _fake_jobindex(monkeypatch, lambda config, **kw: [
+        _posting(1, posted_at="2001-01-01T00:00:00Z"), _posting(2, posted_at="2001-01-02T00:00:00Z")])
+
+    entry = scrape_cmd._scrape_core(
+        ["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert entry["outcome"] == "ok"
+    assert entry["count"] == 0
+    assert entry["stale"] == 2
+    assert "warning" not in entry
 
 
 def test_scrape_core_skipped_sites_emit_no_events(cli_env):
@@ -980,3 +1013,129 @@ def test_a_french_boards_gender_tag_is_stripped_from_the_stored_title(cli_env, m
 
     stored = sorted(json.loads(open(p).read())["title"] for p in result["written"])
     assert stored == ["Chef de service comptable - Paris Centre", "Comptable"]
+
+
+def _day_with_a_posting(cli_env, cv: str | None = "# Ada\n\n## Skills\n\nPython, SQL\n"):
+    from datetime import date
+
+    cv_file = cli_env.profile_dir / "_templates" / "cv.md"  # `cv_content` of the test config
+    if cv is not None:
+        cv_file.write_text(cv)
+    else:
+        cv_file.unlink()
+    folder = cli_env.jobs_dir / "postings" / date.today().isoformat() / "jobindex"
+    folder.mkdir(parents=True)
+    (folder / "jobindex.1.json").write_text(json.dumps({
+        "id": "jobindex.1", "title": "Data Scientist", "company": "WPP", "location": "Copenhagen",
+        "url": "https://example.com/1", "description": "We need a data scientist with Python.", "source": "jobindex",
+        "scraped_at": "2026-10-13T00:00:00Z"}))
+    return folder.parent
+
+
+def test_the_passes_take_the_condense_terms_from_the_cvs_reading_and_read_it_once(cli_env, monkeypatch):
+    from door.commands import scrape as scrape_cmd
+    from door.core import cv_read
+    from door.matching import condense
+
+    asked, terms = [], []
+    monkeypatch.setattr(cv_read, "_ask", lambda md: asked.append(md) or {**cv_read_utils.plain(md), "skills": ["Python"]})
+    real = condense.condense_postings
+    monkeypatch.setattr(condense, "condense_postings", lambda paths, profile_terms, config: terms.append(profile_terms) or real(paths, profile_terms, config))
+    day = _day_with_a_posting(cli_env)
+    config = json.loads((cli_env.profile_dir / "config.json").read_text())
+    scrape_cmd._scrape_passes(day, config, cli_env.profile_dir)
+    scrape_cmd._scrape_passes(day, config, cli_env.profile_dir)  # another day's folder of the same run: the cache
+    assert len(asked) == 1 and "python" in terms[0]
+
+
+def test_a_cv_that_cannot_be_read_fails_the_passes_in_words(cli_env, monkeypatch):
+    from door.commands import scrape as scrape_cmd
+    from door.core import claude_cli, cv_read
+
+    def boom(md):
+        raise claude_cli.ClaudeError("not logged in")
+    monkeypatch.setattr(cv_read, "_ask", boom)
+    day = _day_with_a_posting(cli_env)
+    with pytest.raises(cv_read.CvReadError, match="not logged in"):
+        scrape_cmd._scrape_passes(day, json.loads((cli_env.profile_dir / "config.json").read_text()), cli_env.profile_dir)
+
+
+def test_no_cv_means_no_reading_and_only_the_role_terms(cli_env, monkeypatch):
+    from door.commands import scrape as scrape_cmd
+    from door.core import cv_read
+
+    monkeypatch.setattr(cv_read, "_ask", lambda md: pytest.fail("there is no CV to read"))
+    day = _day_with_a_posting(cli_env, cv=None)
+    scrape_cmd._scrape_passes(day, json.loads((cli_env.profile_dir / "config.json").read_text()), cli_env.profile_dir)
+
+
+def _serve_board(name: str) -> None:
+    """Serve one board's saved first answer, whatever the query."""
+    import re
+    from pathlib import Path
+
+    fix = Path(__file__).parents[1] / "scrapers" / "boards" / "fixtures" / name
+    files = {"globalnyt": "stilling_list.json", "euraxess": "search_dk_page1.html", "reliefweb": "mel_page.xml"}
+    responses.add(responses.GET, re.compile(".*"), body=(fix / files[name]).read_text(encoding="utf-8"))
+
+
+_ALL_KNOWN = {  # (config, every id of the served answer)
+    "globalnyt": ({"search_keywords": ["programme advisor"], "location": "Copenhagen"},
+                  {"510393", "510291", "508636", "456923"}),
+    "euraxess": ({"search_keywords": ["postdoc physics"], "topic_terms": ["physics", "postdoc", "professor"],
+                  "location": "Copenhagen, Denmark"}, {"476999", "475660"}),
+    "reliefweb": ({"search_keywords": ["monitoring evaluation"], "location": ""},
+                  {"4235001", "4235500", "4235600", "4235700", "4235800", "4236426"}),
+}
+
+
+@pytest.mark.parametrize("name", sorted(_ALL_KNOWN))
+@responses.activate
+def test_scrape_core_a_board_whose_every_ad_is_known_is_ok_not_empty(cli_env, monkeypatch, name):
+    """#418: these boards skip known ids themselves; an answer of only known ads is a quiet day."""
+    import importlib
+
+    module = importlib.import_module(f"door.scrapers.boards.{name}")
+    config, known = _ALL_KNOWN[name]
+    real = module.scrape
+    monkeypatch.setattr(module, "scrape", lambda _config, **kwargs: real(config, **{**kwargs, "known_ids": frozenset(known),
+                                                                                    "since": None}))
+    monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
+    _serve_board(name)
+
+    entry = scrape_cmd._scrape_core([name], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert (entry["outcome"], entry["count"], "warning" in entry) == ("ok", 0, False)
+
+
+def test_scrape_core_a_known_id_from_a_plain_scrape_is_counted_seen(cli_env, monkeypatch):
+    """reed and the other non-streaming boards return `seen_only` records for known ids: counted, not written."""
+    import door.scrapers.boards.jobindex as ji
+
+    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [{"platform_id": "1", "seen_only": True}])
+    monkeypatch.delattr(ji, "iter_scrape", raising=False)
+
+    entry = scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["sites"][0]
+    assert entry["outcome"] == "ok"
+    assert entry["count"] == 0
+
+
+def test_collect_a_feed_whose_every_ad_is_known_is_ok_and_refreshes_last_seen(cli_env, monkeypatch):
+    """#434: a feed returns `seen_only` records for the ads it already has: `ok`, no warning, `last_seen` touched."""
+    import door.scrapers.feeds.lever as lever
+    from door.core.jobs import history
+
+    write_config(cli_env.profile_dir, {})
+    _follow(cli_env.profile_dir, "lever", "acme")
+    store = history.HistoryStore(cli_env.jobs_dir / "history.json")
+    for pid in ("a1", "a2"):
+        store.record(f"lever.{pid}", pid, f"https://x/{pid}", "lever", now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+    store.save()
+    monkeypatch.setattr(lever, "scrape", lambda config, **kw: [{"platform_id": p, "seen_only": True} for p in ("a1", "a2")])
+    monkeypatch.delattr(lever, "iter_scrape", raising=False)
+
+    entry = scrape_cmd._scrape_core(["lever"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir,
+                                    mode="collect")["sites"][0]
+
+    assert (entry["outcome"], entry["count"], "warning" in entry) == ("ok", 0, False)
+    data = json.loads((cli_env.jobs_dir / "history.json").read_text())
+    assert all(not data[j]["last_seen"].startswith("2026-01-01") for j in ("lever.a1", "lever.a2"))

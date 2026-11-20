@@ -10,6 +10,22 @@ change a colour or a size there, not in a component.
 
 ![Style tile: logo, colours, type and controls](screens/style-tile.png)
 
+<!-- toc -->
+**Contents**
+
+- [Principles](#principles)
+- [Colour](#colour)
+- [Type](#type)
+- [Space and shape](#space-and-shape)
+- [The blue dash](#the-blue-dash)
+- [Components](#components)
+- [Layouts](#layouts)
+  - [Phone and narrow windows](#phone-and-narrow-windows)
+- [Dark mode](#dark-mode)
+- [Logo](#logo)
+- [Mockups](#mockups)
+<!-- /toc -->
+
 ## Principles
 
 1. **Paper and ink.** A warm parchment ground, near-black ink text. No gradients, no
@@ -159,7 +175,7 @@ What needs you (Claude not signed in, the Claude plan's window nearly full, no C
 wrong) is a short underlined line each at the foot of the sidebar, under the last run, opening
 where it is fixed; nothing when all is well. The plan's line has nothing to fix, it is waited out: it opens nothing and goes when the window resets. The app opens on Matches.
 
-**Profile is one page**: About you, What to look for, What to skip, Master CV and Stories, each a part with its `display-s` heading and its entry in the list beside the page. Master CV has one muted line under its heading (everything about the user's work, never sent as it is: each application's CV is picked from it and tailored), then one field like any form's, Sources (Replace CV file…, Add a page and Check again, the CV file and the pages as chips under them, its info bubble, its error under it), then the CV with no name of its own: as it reads, the Preview switch at its top right on, off for the editor with "Written in Markdown" at its top left; both in the same 480 px box that scrolls inside itself, so the parts under it are near and the switch never changes the page's length. A source only adds: a new CV file proposes what it adds, as a page does. The save bar at the page's foot is the details' only: the CV's text saves itself (a second after typing stops, and when the editor is left; "Saving…" then "Saved" in `small` `ink-muted` beside Preview, the first save of a visit keeping the CV as it was as `cv.md.bak`), and the photo, the CV file, its pages and the stories are saved by their own controls.
+**Profile is one page**: About you, What to look for, What to skip, Master CV and Stories, each a part with its `display-s` heading and its entry in the list beside the page. Master CV has one muted line under its heading (everything about the user's work, never sent as it is: each application's CV is picked from it and tailored), then one field like any form's, Sources (Replace CV file…, Add a page and Check again, the CV file and the pages as chips under them, its info bubble, its error under it), then the CV with no name of its own: as it reads, the Preview switch at its top right on, off for the editor with "Written in Markdown" at its top left; both in the same 480 px box that scrolls inside itself, so the parts under it are near and the switch never changes the page's length. A source only adds: a new CV file proposes what it adds, as a page does. The save bar at the page's foot is the details' only: the CV's text saves itself (a second after typing stops, when the editor is left, and when the window closes or the app quits; "Saving…" then "Saved" in `small` `ink-muted` beside Preview, the first save of a visit keeping the CV as it was as `cv.md.bak`), and the photo, the CV file, its pages and the stories are saved by their own controls.
 
 **Matches** (the home of a review session): the list, and a row opens its posting on the
 whole page, as a card does in Applications. The list stops at 620 px, the column of Settings and Finding jobs, so a row reads as one

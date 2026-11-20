@@ -19,21 +19,9 @@ from door.core.jobs import selection
 from door.core.utils import write_json_atomic
 
 CACHE = "salary.json"
-_DEFAULT_MODEL = "haiku"
 _NO_SOURCE = "No salary source found for this job, so there is no number to give."
 STALE_AFTER_DAYS = 90  # `prepare` asks again for an estimate older than this
 
-_SYSTEM_PROMPT = """You estimate the salary a job seeker can expect for one job. The input is the job (title, company, place, the ad's own salary lines, what it asks for) and the candidate's experience.
-
-Use WebSearch for a few quick searches: salary surveys, job boards, union or government statistics for this title, seniority and city. Never invent a figure or a URL: use only what the pages you read say.
-
-Answer in JSON:
-- found: true only when at least one page you read supports the range; otherwise false and nothing else.
-- low, high: the range you expect for this candidate (numbers, gross unless the pages say otherwise), in the local currency.
-- currency: its three-letter code (DKK, EUR, GBP, SEK, HUF...). period: "month" or "year", as the sources give it.
-- position: where the candidate sits in the market range for this job given their years of experience against what the ad asks for: "below", "within" or "above". basis: one line on why.
-- sources: the pages the range was read from, each {title, url}. At least one.
-- ad_salary: the ad's own salary figure as written, or null. When the ad states one, it beats the estimate: make low and high that figure."""
 
 _SCHEMA = {
     "type": "object",
@@ -99,7 +87,7 @@ def _salary_core(job_id: str, refresh: bool = False, *, max_age_days: int | None
     older (`prepare` passes `STALE_AFTER_DAYS`; a user's own ask shows an old one as it is).
 
     Raises:
-        ValueError / LookupError: no such job, or several (``candidates``).
+        ValueError / LookupError: no such job, or several (``candidates``); the CV could not be read (`cv_read.CvReadError`).
         claude_cli.ClaudeError: the call failed; nothing is cached.
     """
     jobs_dir = Path(jobs_dir if jobs_dir is not None else workspace.JOBS_DIR)
@@ -119,9 +107,9 @@ def _salary_core(job_id: str, refresh: bool = False, *, max_age_days: int | None
         cv_text = workspace.cv_path(config, profile_dir).read_text(encoding="utf-8")
     except OSError:
         cv_text = ""
-    text = salary.build_input(posting, cv_text, config)
-    answer = claude_cli.ask(_SYSTEM_PROMPT, text, model=model or _DEFAULT_MODEL, feature="salary",
-                            schema=_SCHEMA, allowed_tools=("WebSearch",), timeout_s=180, profile_dir=profile_dir)
+    text = salary.build_input(posting, cv_text, config, common._cv_reading(config, profile_dir))  # a CV that cannot be read is never sent as it is
+    answer = claude_cli.ask("salary", text, model=model, feature="salary",
+                            schema=_SCHEMA, timeout_s=180, profile_dir=profile_dir)
     parsed = salary.parse(answer)
     if parsed is None:
         return {**head, "found": False, "message": _NO_SOURCE}
@@ -161,7 +149,7 @@ def render(result: dict) -> str:
 @click.command("salary")
 @click.argument("job_id", metavar="JOB", required=False)
 @click.option("--refresh", is_flag=True, help="Ask again even if an estimate is saved.")
-@click.option("--model", default=None, help=f"Claude model to ask (default: {_DEFAULT_MODEL}).")
+@click.option("--model", default=None, help=f"Claude model to ask (default: {claude_cli.model_of('salary')}).")
 def salary_cmd(job_id: str | None, refresh: bool, model: str | None):
     """The salary range to expect for JOB, with sources.
 

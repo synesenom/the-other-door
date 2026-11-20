@@ -19,11 +19,12 @@ const SAVED_PROFILE = {
 
 export function mockDoor(given: Record<string, Handler>) {
   const handlers: Record<string, Handler> = { show_profile: SAVED_PROFILE, ...given }
-  const call = vi.fn(async (tool: string, args: Record<string, unknown> = {}, _callId?: string) => {
+  // `tokens`: the picked files of draft_cv, enrich, save_photo, import_data (their handler gets them as `tokens`)
+  const call = vi.fn(async (tool: string, args: Record<string, unknown> = {}, _callId?: string, tokens?: string[]) => {
     if (!(tool in handlers)) return { ok: false, error: `unexpected tool ${tool}` }
     const h = handlers[tool]
     try {
-      const data = typeof h === 'function' ? await (h as (a: Record<string, unknown>) => unknown)(args) : h
+      const data = typeof h === 'function' ? await (h as (a: Record<string, unknown>) => unknown)(tokens ? { ...args, tokens } : args) : h
       return { ok: true, data }
     } catch (e) {
       const err = e as { message: string; candidates?: unknown; conflict?: boolean }
@@ -34,33 +35,19 @@ export function mockDoor(given: Record<string, Handler>) {
   // The CV draft surface: no files picked, and a draft answered from a `draft_cv` handler (given `{files, urls}`).
   const pickCvFiles = vi.fn(async (): Promise<{ files: { token: string; name: string; size: number }[]; refused: { name: string; reason: string }[] }> => ({ files: [], refused: [] }))
   const dropCvFiles = vi.fn(async (_files: File[]): Promise<{ files: { token: string; name: string; size: number }[]; refused: { name: string; reason: string }[] }> => ({ files: [], refused: [] }))
-  const draftCv = vi.fn(async (payload: { files: string[]; urls: string[] }) => {
-    if (!('draft_cv' in handlers)) return { ok: false, error: 'unexpected draft_cv' }
-    const h = handlers['draft_cv']
-    try {
-      const data = typeof h === 'function' ? await (h as (a: Record<string, unknown>) => unknown)(payload) : h
-      return { ok: true, data }
-    } catch (e) {
-      return { ok: false, error: (e as { message: string }).message }
-    }
-  })
-  // enrich from a CV file: the `enrich` handler, given the token as `files`
-  const enrichFile = vi.fn(async (token: string) => {
-    if (!('enrich' in handlers)) return { ok: false, error: 'unexpected enrich' }
-    const h = handlers['enrich']
-    try {
-      const data = typeof h === 'function' ? await (h as (a: Record<string, unknown>) => unknown)({ files: [token] }) : h
-      return { ok: true, data }
-    } catch (e) {
-      return { ok: false, error: (e as { message: string }).message }
-    }
-  })
   const clearCvSources = vi.fn(async () => undefined)
   // the CV file a draft read: none known unless a test says one
   const cvFile = vi.fn(async (): Promise<string | null> => null)
   // The CV photo: nothing picked; a test answers the dialog with mockResolvedValueOnce.
   const pickPhoto = vi.fn(async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> => ({ canceled: true }))
-  const savePhoto = vi.fn(async (_token: string): Promise<unknown> => ({ ok: true, data: { photo_path: '/p/photo.jpg' } }))
+  const beforeCloseListeners = new Set<() => Promise<void>>()
+  const onBeforeClose = vi.fn((cb: () => Promise<void>) => {
+    beforeCloseListeners.add(cb)
+    return () => {
+      beforeCloseListeners.delete(cb)
+    }
+  })
+  const pushBeforeClose = () => Promise.all([...beforeCloseListeners].map((cb) => cb()))
   // Progress callbacks are kept by call id so a test can fire them (`emitProgress`).
   const progressCallbacks = new Map<string, (p: { progress: number; total?: number; message: string }) => void>()
   const onProgress = vi.fn((id: string, cb: (p: { progress: number; total?: number; message: string }) => void) => {
@@ -112,7 +99,6 @@ export function mockDoor(given: Record<string, Handler>) {
   // A data move: a test answers the dialogs with mockResolvedValueOnce.
   const exportData = vi.fn(async (): Promise<unknown> => ({ ok: false, canceled: true }))
   const pickArchive = vi.fn(async (): Promise<unknown> => ({ canceled: true }))
-  const importData = vi.fn(async (_token: string): Promise<unknown> => ({ ok: false, error: 'Choose the archive again.' }))
   const reportProblem = vi.fn(async (): Promise<unknown> => ({ ok: false, canceled: true }))
   // Signing in to Claude: a test pushes the main process's states with `pushLogin`.
   let loginState: unknown = { state: 'idle' }
@@ -134,8 +120,8 @@ export function mockDoor(given: Record<string, Handler>) {
       }
     }),
   }
-  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, importData, reportProblem }
-  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, importData, reportProblem }
+  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, onBeforeClose, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, reportProblem }
+  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, onBeforeClose, pushBeforeClose, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, reportProblem }
 }
 
 export const summary = (over: Record<string, unknown> = {}) => ({

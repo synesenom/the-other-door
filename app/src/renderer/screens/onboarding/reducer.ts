@@ -118,7 +118,7 @@ export interface DoctorReport {
 }
 
 export interface CvDraftInfo {
-  sources: { source: string; kind: 'file' | 'url'; chars?: number; /** The token the main process gave the file (`door:draft-cv`). */ token?: string }[]
+  sources: { source: string; kind: 'file' | 'url'; chars?: number; /** The token the main process gave the file (`door:call`). */ token?: string }[]
 }
 
 /** A title `suggest_titles` proposes, or one the user named. */

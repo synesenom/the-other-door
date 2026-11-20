@@ -1,4 +1,4 @@
-"""A packaged app runs door from a read-only bundle (#223): `src/`, `.claude/agents/` and `profile.example/`
+"""A packaged app runs door from a read-only bundle (#223): `src/` (the prompts in it) and `profile.example/`
 copied into the app, the data in the user's folder. Nothing may be written inside the bundle."""
 
 import json
@@ -20,11 +20,12 @@ _SCRIPT = """
 import json
 from door.commands import profile as p, setup as s
 from door.core import workspace
+from door.matching import scorer
 report = s._doctor_core(profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR, probe=False)
 fields = p._profile_fields(name="Ada", email="ada@example.com", location="Aarhus", role_targets=["Data Analyst"], remote="hybrid")
 p._init_core(fields, profile_dir=workspace.PROFILE_DIR, example_dir=workspace.PROFILE_EXAMPLE_DIR)
 mcp = workspace.ensure_mcp_config()
-agent = (workspace.REPO_ROOT / ".claude" / "agents" / "matcher.md").read_text()
+agent = scorer.load_rubric_md()
 print(json.dumps({"checks": [c["name"] for c in report["checks"]], "checkout": workspace.is_checkout(),
                   "mcp": str(mcp), "home": str(workspace.HOME), "agent": len(agent) > 0}))
 """
@@ -37,9 +38,6 @@ def _snapshot(root):
 def test_door_runs_from_a_read_only_bundle_and_writes_only_to_its_home(tmp_path):
     bundle = tmp_path / "Resources" / "door"
     shutil.copytree(REPO_ROOT / "src", bundle / "src", ignore=shutil.ignore_patterns("__pycache__"))
-    (bundle / ".claude" / "agents").mkdir(parents=True)
-    for agent in ("tailor.md", "matcher.md"):
-        shutil.copy(REPO_ROOT / ".claude" / "agents" / agent, bundle / ".claude" / "agents" / agent)
     shutil.copytree(REPO_ROOT / "profile.example", bundle / "profile.example")
     for path in [bundle, *bundle.rglob("*")]:
         path.chmod(0o555 if path.is_dir() else 0o444)

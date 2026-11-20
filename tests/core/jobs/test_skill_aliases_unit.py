@@ -31,8 +31,3 @@ def test_non_dict_and_non_text_values_are_refused(tmp_path):
         aliases, warning = skill_aliases.load(path)
         assert aliases == {} and warning
         assert path.read_text() == body
-
-
-def test_load_for_reads_the_jobs_dir(tmp_path):
-    (tmp_path / skill_aliases.FILE).write_text('{"k8s": "Kubernetes"}')
-    assert skill_aliases.load_for(tmp_path)[0] == {"k8s": "Kubernetes"}

@@ -1,385 +1,96 @@
-"""Offline check of a tailored CV and cover letter against the candidate's own sources.
+"""The fact check of a tailored CV and cover letter against the candidate's own sources (#433).
 
-Every number, year, employer, skill or tool, certification and degree in ``cv.html`` /
-``cover_letter.html`` should appear in ``profile/cv.md`` or the story bank (the letter may
-also echo the ad's figures and skills). What does not is *reported*, never blocked: the tailor is told not to invent, this checks it
-did not. Pure and deterministic: no model call, no network, never raises out of `check`.
+Every number, year, employer, skill or tool, certification and degree in ``cv.html`` / ``cover_letter.html`` should
+be backed by ``profile/cv.md`` or the story bank (the letter may also echo the ad). One Haiku call reads the sources and
+both documents and lists what is not (`fact-checker.md`, `SCHEMA`: the spike's, recorded in `scripts/record_cv_reading.py`);
+code keeps a finding only when its `context` is a stretch of the text of the document it names (`is_verbatim`), and adds
+each `TODO` (the app's own marker of a gap of cv.md's). What is found is *reported*, never blocked. The answer is cached
+in ``facts.json`` under the sha256 of everything the model was shown (`core/ask_cached`), so the same inputs are never
+asked twice. A check that cannot run (no CV, a failed call) is None: there is no fallback to rules.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
-from datetime import date, datetime, timezone
-from decimal import Decimal
-from functools import lru_cache
+from datetime import datetime, timezone
 from pathlib import Path
 
-from door import i18n
-from door.core import utils, workspace
-from door.core.jobs import skill_aliases
-from door.matching import integrity
+from door.core import ask_cached, claude_cli, utils
 from door.render import html_doc
 
 FACTS_FILE = "facts.json"
-
-# A figure: digits with ``.`` / ``,`` groups, or French groups of three after a (narrow, non-breaking) space
-# ("45 000"); a ``%`` (a space before it allowed) or a ``k`` / ``m`` / ``b`` / ``x`` suffix, a ``k`` also after a
-# space when a currency sign follows ("45 k€").
-_GROUP = "[ \u00a0\u202f]"
-_NUM_RE = re.compile(
-    rf"(?<![\w.,])(?:\d{{1,3}}(?:{_GROUP}\d{{3}}(?!\d))+|\d+)(?:[.,]\d+)*"
-    rf"(?:\s?%|[kKmMbBx](?![a-zA-Z])|{_GROUP}?[kK](?=\s?€))?(?![\w])"
-)
-_SCALE = {"k": 3, "m": 6, "b": 9}
-_THOUSANDS_RE = re.compile(r"\d{1,3}([.,]\d{3})+")
-_DASHES_RE = re.compile(r"---|--|–|—")
-_CONTEXT_CHARS = 100
+VERSION = 1  # bump with the prompt, the schema or the check: a cached answer of another version is asked again
+KINDS = ("number", "year", "employer", "skill", "certification", "degree")
+_CONTEXT_CHARS = 200  # the longest context a TODO line is kept at
 _TODO_RE = re.compile(r"\bTODO\b")
+_FILES = {"cv": "cv", "letter": "cover_letter"}  # the schema's name of a document, and the name `facts.json` keeps
 
 
-@lru_cache(maxsize=1)
-def _date_res() -> tuple[re.Pattern, re.Pattern, re.Pattern]:
-    """The parts of a date that are not figures to check (its year still is): the day before a
-    month name ("29 octobre", "1er oct."), the day after one ("2020. március 15.", "March 15, 2020"),
-    and the day and month of an all-numeric date in any country's format ("15.03.2020", "2020-03-15")."""
-    never = re.compile(r"(?!)")
-    names = sorted((re.escape(n) for n in i18n.month_numbers()), key=len, reverse=True)
-    suffixes = "|".join(sorted((re.escape(x) for x in i18n.day_suffixes()), key=len, reverse=True))
-    sfx = rf"(?:{suffixes})" if suffixes else r"(?!)"
-    gap = r"[ \u00a0\u202f]*"
-    year = r"(?:19|20)\d\d"
-    month = re.compile(rf"(?<![\w.,])\d{{1,2}}(?:{sfx})?\.?{gap}(?=(?:{'|'.join(names)})(?!\w))", re.I) if names else never
-    # after the month name: a closing period ("2020. március 15."), a suffix ("15-én"), or a comma before the year ("March 15, 2020")
-    after = re.compile(rf"(?<![\w])({'|'.join(names)}){gap}\d{{1,2}}(?:{sfx}(?!\w)|\.(?!\d)|(?:{sfx})?,(?={gap}{year}))", re.I) if names else never
-    parts = {"DD": r"(?:0?[1-9]|[12]\d|3[01])", "MM": r"(?:0?[1-9]|1[0-2])"}
-    alts = []
-    for n, fmt in enumerate(["MM/YYYY", *sorted(i18n.numeric_date_formats(), key=len, reverse=True)]):
-        body = re.escape(fmt.rstrip("."))
-        for token, rx in parts.items():
-            body = body.replace(token, rx)
-        alts.append(body.replace("YYYY", f"(?P<y{n}>{year})") + (r"\.?" if fmt.endswith(".") else ""))
-    numeric = re.compile(r"(?<![\w.,/])(?:" + "|".join(alts) + r")(?!\d)")
-    return month, after, numeric
+SCHEMA = {
+    "type": "object",
+    "properties": {"findings": {"type": "array", "items": {"type": "object", "properties": {
+        "kind": {"type": "string", "enum": list(KINDS)}, "file": {"type": "string", "enum": list(_FILES)},
+        "value": {"type": "string"}, "context": {"type": "string"}}, "required": ["kind", "file", "value", "context"]}}},
+    "required": ["findings"],
+}
 
 
-def _strip_dates(line: str) -> str:
-    month, after, numeric = _date_res()
-    return numeric.sub(lambda m: next(v for v in m.groupdict().values() if v), after.sub(r"\1 ", month.sub("", line)))
-
-
-def _dashes(text: str) -> str:
-    return _DASHES_RE.sub(" - ", text)
-
-
-def _canon(token: str) -> str:
-    """One spelling per figure: ``1,200`` = ``1.200`` = ``1200``, ``3,5`` = ``3.5``,
-    ``40k`` = ``40,000``, ``2.5M`` = ``2,500,000``; ``%`` and a multiplier ``x`` stay."""
-    pct = token.endswith("%")
-    token = re.sub(r"\s", "", token.rstrip("%"))
-    suffix = token[-1].lower() if token[-1].isalpha() else ""
-    token = token.rstrip("kKmMbBx")
-    if _THOUSANDS_RE.fullmatch(token):
-        token = re.sub(r"[.,]", "", token)
-    else:
-        token = token.replace(",", ".")
-    if suffix in _SCALE:
-        token, suffix = format(Decimal(token).scaleb(_SCALE[suffix]).normalize(), "f"), ""
-    if "." in token:
-        token = token.rstrip("0").rstrip(".")
-    return token + ("%" if pct else suffix)
+class FactsError(ValueError):
+    """The check could not be made: the call failed or its answer does not hold."""
 
 
 def _squash(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _window(line: str, raw: str) -> str:
-    line = _squash(line)
-    idx = line.find(_squash(raw))
-    if len(line) <= 2 * _CONTEXT_CHARS or idx < 0:
-        return line[: 2 * _CONTEXT_CHARS + 1] if len(line) > 2 * _CONTEXT_CHARS + 1 and idx < 0 else line
-    lo = max(0, idx - _CONTEXT_CHARS // 2)
-    hi = min(len(line), idx + len(raw) + _CONTEXT_CHARS // 2)
-    return ("…" if lo else "") + line[lo:hi] + ("…" if hi < len(line) else "")
+def is_verbatim(quote: str, *bodies: str) -> bool:
+    """The quote is a stretch of the text of one of the bodies (spacing squashed: a no-break space, a line break)."""
+    quote = _squash(quote or "")
+    return bool(quote) and any(quote in _squash(html_doc.text(b)) for b in bodies if b)
 
 
-def extract_claims(body: str, file: str) -> list[dict]:
-    """The checkable claims of one document (a CV or letter body): numbers, years, (CV only) employers, skills,
-    certifications and degrees, and each `TODO`, a gap of cv.md's that must not reach a document."""
-    claims: list[dict] = [
-        # Read off the whole text, header included: a TODO in the contact details is still a gap.
-        {"kind": "placeholder", "value": "TODO", "context": _window(line, "TODO"), "file": file}
-        for line in map(_squash, html_doc.text(body).splitlines()) if _TODO_RE.search(line)
-    ]
-    if file == "cv":
-        for head in html_doc.h3s(body):
-            head = _squash(_dashes(head))
-            if " | " not in head:
-                continue
-            company = head.split(" | ", 1)[1].split(" | ", 1)[0]  # the place after the company is not part of it
-            company = re.split(r"\s[-–—]{1,3}\s", company, maxsplit=1)[0].strip()
-            if company:
-                claims.append({"kind": "employer", "value": company, "context": head, "file": file})
-    text = _dashes(html_doc.claim_text(body))
-    for line in text.splitlines():
-        if line.startswith(html_doc.SECTION):
-            continue
-        shown = line
-        line = _strip_dates(line)
-        for match in _NUM_RE.finditer(line):
-            raw = match.group(0)
-            value = _canon(raw)
-            if re.fullmatch(r"\d", value):
-                continue
-            kind = "year" if re.fullmatch(r"(19|20)\d\d", value) else "number"
-            claims.append({"kind": kind, "value": value, "context": _window(shown, raw), "file": file})
-    return claims + extract_term_claims(text, file)
+def input_text(cv_md: str, story: str, posting: str, cv_html: str, letter_html: str) -> str:
+    """What the model is shown: the sources, the posting and the two documents."""
+    return (f"SOURCE CV:\n<<<\n{cv_md}\n>>>\n\nSTORY BANK:\n<<<\n{story or 'none'}\n>>>\n\n"
+            f"POSTING:\n<<<\n{posting or 'none'}\n>>>\n\nTAILORED CV:\n<<<\n{cv_html}\n>>>\n\n"
+            f"COVER LETTER:\n<<<\n{letter_html or 'none'}\n>>>\n")
 
 
-# --- skills, tools, certifications and degrees --------------------------------
-
-_PAREN_RE = re.compile(r"\([^)]*\)")
-_SPLIT_RE = re.compile(r"[,;•|]")
-_SKILL_MAX_WORDS = 4
-_TEXT_MAX_WORDS = 10
-_TERM_SPLIT_RE = re.compile(r"[\s,;:()\[\]{}\"“”‘’*|•<>=!?]+")
-_ABBREV_RE = re.compile(r"(?:[A-Za-z]\.){1,}[A-Za-z]?")
+def _ask(inputs: str) -> dict:
+    """The one model call: Haiku at low effort with no MCP servers."""
+    return claude_cli.ask("fact-checker", inputs, feature="facts", schema=SCHEMA, effort="low", timeout_s=120)
 
 
-def _singular(word: str) -> str:
-    if len(word) > 4 and word.endswith("ies"):
-        return word[:-3] + "y"
-    return word[:-1] if len(word) > 3 and word.endswith("s") and not word.endswith("ss") else word
+def _placeholders(body: str, file: str) -> list[dict]:
+    """Each `TODO` in the text of `body`, the header included: a gap of cv.md's that must not reach a document."""
+    return [{"kind": "placeholder", "value": "TODO", "context": line[:_CONTEXT_CHARS], "file": file}
+            for line in map(_squash, html_doc.text(body).splitlines()) if _TODO_RE.search(line)]
 
 
-def _term_tokens(text: str) -> list[str]:
-    """Normalised tokens of a term or a source text: casefolded, hyphens as spaces, edge
-    punctuation and simple plurals removed; ``+ # . /`` inside a token stay (``c++``,
-    ``.net``, ``s/4hana``)."""
-    out = []
-    for raw in _TERM_SPLIT_RE.split(text.replace("\u2019s", "").casefold()):
-        for tok in re.split(r"[-_–—]+", raw):
-            tok = tok.rstrip(".'/")
-            if not tok.startswith(".") or not re.match(r"\.[a-z]", tok):  # keep ".net"
-                tok = tok.lstrip(".'/&")
-            if re.search(r"\w", tok):
-                out.append(_singular(tok))
-    return out
-
-
-def _term_key(term: str) -> str:
-    return " ".join(_term_tokens(term))
-
-
-def _stop_keys() -> set[str]:
-    return {_term_key(w) for w in i18n.skill_stop_words()}
-
-
-def _bare(key: str) -> str:
-    return re.sub(r"[./]", "", key)
-
-
-def _legal_keys() -> set[str]:
-    """The company forms of every country ("ApS", "GmbH", "S.A.S."), dots and slashes dropped: a form is no skill."""
-    return {_bare(_term_key(s)) for s in i18n.legal_suffixes()} - {""}
-
-
-def _filler() -> set[str]:
-    return {_singular(w) for w in i18n.stop_words()}
-
-
-def _section_kind(title: str) -> str:
-    return i18n.cv_section_kind(title, ("skills", "education", "certifications")) or "other"
-
-
-def _is_technical(tok: str) -> bool:
-    """A word that looks like a tool, language or standard: ``C++``, ``Node.js``, ``CI/CD``,
-    ``S/4HANA``, ``PostgreSQL``, ``SQL``. Plain and capitalised words are not."""
-    if not re.search(r"[A-Za-z]", tok) or "@" in tok or tok.lower().startswith(("http", "www")):
-        return False
-    if sum(c.isdigit() for c in tok) > 2 or _ABBREV_RE.fullmatch(tok):
-        return False
-    if re.search(r"[A-Za-z0-9][+#]", tok):
-        return True
-    if re.fullmatch(r"[A-Z0-9]+", tok):
-        return sum(c.isalpha() for c in tok) >= 2
-    if re.search(r"[a-z][A-Z]", tok):
-        return True
-    if any(c.isupper() for c in tok) and ("." in tok or "/" in tok):
-        parts = [p for p in re.split(r"[./]", tok) if p]
-        need = 3 if "." in tok else 2
-        return any(sum(c.isalpha() for c in p) >= need for p in parts)
-    return False
-
-
-def _technical_tokens(line: str) -> list[str]:
-    out = []
-    for raw in re.split(r"[\s,;:()\[\]{}\"“”*|•<>=!?]+", line):
-        for tok in re.split(r"[-–—]+", raw):
-            tok = tok.strip("'’_/&").rstrip(".") if not tok.startswith(".") else tok.rstrip(".")
-            if tok and _is_technical(tok):
-                out.append(tok)
-    return out
-
-
-def _list_items(line: str) -> list[str]:
-    items = []
-    for part in _SPLIT_RE.split(line):
-        part = _squash(_PAREN_RE.sub(" ", part))
-        head, colon, rest = part.partition(":")
-        if colon and len(head.split()) <= 3:
-            part = rest
-        part = part.strip(" .:*-")
-        if part:
-            items.append(part)
-    return items
-
-
-def _entries(line: str, kind: str) -> list[str]:
-    """The claim texts of one line of a certifications / education section."""
-    if kind == "education":
-        head = re.split(r"\s[|-]\s|,", line)[0]
-        parts = [head]
-    else:
-        parts = [re.split(r"\s[|-]\s|,\s*(?:19|20)\d\d", seg)[0] for seg in re.split(r"[;,](?![^()]*\))", line)]
-    out = []
-    for part in parts:
-        part = _squash(part).strip(" .:*-")
-        if re.search(r"[^\W\d_]", part) and len(part.split()) <= _TEXT_MAX_WORDS:
-            out.append(part)
-    return out
-
-
-def extract_term_claims(text: str, file: str) -> list[dict]:
-    """Skills, certifications and degrees of one document (``text`` is `html_doc.claim_text`: a line per block, each
-    `<h2>` a section marker). Section-aware: every item of a Skills, Certifications or Education section is a
-    claim; elsewhere (bullets, profile, letter) only technical-looking words are."""
-    stop = _stop_keys()
-    legal = _legal_keys()
-    claims: list[dict] = []
-    section = "other"
-    for line in text.splitlines():
-        if line.startswith(html_doc.SECTION):
-            section = _section_kind(line[len(html_doc.SECTION):])
-            continue
-        if not line.strip():
-            continue
-        if section == "skills":
-            found = [("skill", v) for v in _list_items(line) if len(v.split()) <= _SKILL_MAX_WORDS]
-        elif section == "certifications":
-            found = [("certification", v) for v in _entries(line, section)]
-        elif section == "education":
-            found = [("degree", v) for v in _entries(line, section)]
-        else:
-            found = [("skill", v) for v in _technical_tokens(line)]
-        for kind, value in found:
-            if _term_key(value) in stop or not _term_key(value) or _TODO_RE.search(value):
-                continue
-            if kind == "skill" and _bare(_term_key(value)) in legal:
-                continue
-            claims.append({"kind": kind, "value": value, "context": _window(line, value), "file": file})
-    return claims
-
-
-def source_tokens(*texts: str) -> set[str]:
-    """Every canonical number token of the given source texts."""
-    tokens: set[str] = set()
-    for text in texts:
-        for match in _NUM_RE.finditer(_strip_dates(text)):
-            tokens.add(_canon(match.group(0)))
-    return tokens
-
-
-def _norm_name(text: str) -> str:
-    return _squash(text).casefold()
-
-
-_TERM_KINDS = ("skill", "certification", "degree")
-
-
-class _TermSources:
-    """The terms of the source texts, for the skill / certification / degree claims."""
-
-    def __init__(self, texts: list[str], aliases: dict):
-        self.filler = _filler()
-        tokens = _term_tokens("\n".join(texts))
-        self.tokens = {t for t in tokens if t not in self.filler}
-        self.phrase = " " + " ".join(t for t in tokens if t not in self.filler) + " "
-        self.canon: dict[str, list[str]] = {}
-        self.dropped: set[str] = set()
-        for variant, canonical in aliases.items():
-            vkey = _term_key(variant)
-            if not vkey:
-                continue
-            if canonical is None:
-                self.dropped.add(vkey)
-                continue
-            ckey = _term_key(canonical)
-            self.canon.setdefault(vkey, []).append(ckey)
-            self.canon.setdefault(ckey, []).append(vkey)
-
-    def _words(self, value: str) -> list[str]:
-        return [t for t in _term_tokens(value) if t not in self.filler and not t.isdigit()]
-
-    def _has(self, kind: str, words: list[str]) -> bool:
-        if kind == "certification":
-            return " " + " ".join(words) + " " in self.phrase
-        return set(words) <= self.tokens
-
-    def supports(self, kind: str, value: str) -> bool:
-        key = _term_key(value)
-        if key in self.dropped:
-            return True
-        variants = [self._words(value)]
-        if kind == "certification":
-            variants.append(self._words(_PAREN_RE.sub(" ", value)))
-            variants += [self._words(m) for m in re.findall(r"\(([^)]*)\)", value)]
-        variants += [self._words(alt) for alt in self.canon.get(key, [])]
-        return any(not words or self._has(kind, words) for words in variants)
-
-
-def unsupported(
-    claims: list[dict],
-    cv_sources: list[str],
-    letter_sources: list[str] | None = None,
-    *,
-    current_year: int | None = None,
-    aliases: dict | None = None,
-) -> list[dict]:
-    """The claims no source supports, deduplicated, in document order.
-
-    ``aliases`` is ``jobs/skill_aliases.json`` (``{variant: canonical | None}``): a skill and its
-    alias count as one, and a ``None`` one is not a skill."""
-    year = str(current_year or date.today().year)
-    cv_tokens = source_tokens(*cv_sources)
-    letter_tokens = source_tokens(*(cv_sources if letter_sources is None else letter_sources))
-    haystack = _norm_name("\n".join(cv_sources))
-    cv_terms = _TermSources(cv_sources, aliases or {})
-    letter_terms = _TermSources(cv_sources if letter_sources is None else letter_sources, aliases or {})
+def _findings(answer: dict, bodies: dict[str, str]) -> list[dict]:
+    """The model's findings (`SCHEMA`'s shape) whose `context` is text of the document they name, each kind, value and
+    file once, then each `TODO`; `{kind, value, context, file}` with the file as `facts.json` names it."""
     out, seen = [], set()
-    for claim in claims:
-        value = claim["value"]
-        if claim["kind"] == "placeholder":
-            pass  # cv.md says TODO too, and that backs nothing
-        elif claim["kind"] in _TERM_KINDS:
-            terms = letter_terms if claim["file"] == "cover_letter" else cv_terms
-            if terms.supports(claim["kind"], value):
-                continue
-        elif claim["kind"] == "employer":
-            if claim["file"] != "cv" or _norm_name(value) in haystack:
-                continue
-        else:
-            if claim["kind"] == "year" and value == year:
-                continue
-            tokens = letter_tokens if claim["file"] == "cover_letter" else cv_tokens
-            if value in tokens or (value.endswith("%") and value[:-1] in tokens):
-                continue
-        key = (claim["kind"], value, claim["file"], claim["context"])
-        if key not in seen:
-            seen.add(key)
-            out.append(claim)
+    for item in answer.get("findings") or []:
+        file = _FILES.get(item.get("file"))
+        key = (item.get("kind"), item.get("value"), file)
+        if not item.get("value") or key in seen or not is_verbatim(item.get("context"), bodies.get(file, "")):
+            continue
+        seen.add(key)
+        out.append({"kind": item["kind"], "value": item["value"], "context": item["context"], "file": file})
+    for file, body in bodies.items():
+        out += _placeholders(body, file) if body else []
     return out
+
+
+def _asked(inputs: str, bodies: dict[str, str]) -> dict:
+    """The model's answer as the `unsupported` list it makes; a reply of another shape than `SCHEMA` is a FactsError."""
+    try:
+        return {"unsupported": _findings(_ask(inputs), bodies)}
+    except (AttributeError, KeyError, TypeError) as exc:
+        raise FactsError(f"the answer is not of the schema's shape: {exc}") from None
 
 
 def _read(path: Path) -> str:
@@ -416,60 +127,111 @@ def _with_reasons(found: list[dict], saved: list | None, keep: list[dict] | None
             item["reason"] = reason
 
 
+
+class _Store:
+    """`facts.json` as the cache of `ask_cached`: one record, for the one key (the sha256 of the inputs) and `VERSION`
+    it was made for."""
+
+    def __init__(self, output_dir: Path):
+        self.output_dir = output_dir
+
+    def read(self, key: str):
+        saved = _saved(self.output_dir)
+        if saved and saved.get("inputs_sha") == key and saved.get("version") == VERSION:
+            return {"version": VERSION, "answer": {"unsupported": saved["unsupported"]}}
+        return None
+
+    def write(self, key: str, record: dict) -> None:
+        pass  # `check` writes the file once, with the reasons applied
+
+    def drop(self, key: str) -> None:
+        pass  # the record is replaced by the next write
+
+
+def _held(answer: dict, bodies: dict[str, str]) -> list[dict]:
+    """The cached `unsupported` list when every finding in it still holds to the text, else FactsError."""
+    items = answer.get("unsupported")
+    if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
+        raise FactsError("the cached findings are not a list")
+    for item in items:
+        if item.get("kind") != "placeholder" and not is_verbatim(item.get("context"), bodies.get(item.get("file"), "")):
+            raise FactsError(f"{item.get('value')!r} is not in the text any more")
+    return items
+
+
+def _gather(output_dir: Path, profile_dir: Path) -> tuple[str, dict[str, str]] | None:
+    """What the model is shown for this job, and the text of each document, or None with no ``cv.md`` or ``cv.html``."""
+    cv_md, cv_html = _read(profile_dir / "cv.md"), _read(output_dir / "cv.html")
+    if not cv_md or not cv_html:
+        return None
+    letter = _read(output_dir / "cover_letter.html")
+    try:
+        posting = json.loads(_read(output_dir / "posting.json") or "{}")
+    except ValueError:
+        posting = {}
+    posting = posting if isinstance(posting, dict) else {}
+    ad = "\n".join(str(posting.get(k) or "") for k in ("title", "description")).strip()
+    return (input_text(cv_md, _read(profile_dir / "story_bank.md"), ad, cv_html, letter),
+            {"cv": cv_html, "cover_letter": letter})
+
+
+def _key(inputs: str) -> str:
+    return hashlib.sha256(inputs.encode("utf-8")).hexdigest()
+
+
 def check(
     output_dir: Path,
     profile_dir: Path,
     *,
     write: bool = True,
-    current_year: int | None = None,
     keep: list[dict] | None = None,
 ) -> list[dict] | None:
     """Check ``output_dir``'s CV and letter against the profile; None when it cannot be known.
 
-    ``[]`` is clean. Writes ``facts.json`` (best effort) unless ``write`` is False. Never raises.
+    ``[]`` is clean. Asks the model once for these inputs (the answer is cached in ``facts.json``, which is written
+    unless ``write`` is False, and the same inputs ask nothing); None, with nothing written, when there is no
+    ``cv.md`` or ``cv.html`` or the call failed (the problem log has it). Never raises.
     An item still flagged keeps the ``reason`` recorded for it (by kind, value and file); ``keep``
     (``[{kind, value, file, reason}]``) records new ones. A TODO never takes one.
     """
     try:
-        cv_md = profile_dir / "cv.md"
-        cv_html = output_dir / "cv.html"
-        if not cv_md.is_file() or not cv_html.is_file():
+        gathered = _gather(output_dir, profile_dir)
+        if gathered is None:
             return None
-        cv_sources = [cv_md.read_text(encoding="utf-8"), _read(profile_dir / "story_bank.md")]
-        try:
-            posting = json.loads(_read(output_dir / "posting.json") or "{}")
-        except ValueError:
-            posting = {}
-        if not isinstance(posting, dict):
-            posting = {}
-        integrity.ensure(posting)
-        try:
-            aliases, _ = skill_aliases.load_for(workspace.JOBS_DIR)
-        except Exception:  # noqa: BLE001 - the alias file only widens what counts as supported
-            aliases = {}
-        ad = f"{posting.get('title') or ''}\n{posting.get('description') or ''}"
-        claims = extract_claims(cv_html.read_text(encoding="utf-8"), "cv")
-        letter = output_dir / "cover_letter.html"
-        if letter.is_file():
-            claims += extract_claims(letter.read_text(encoding="utf-8"), "cover_letter")
-        found = unsupported(claims, cv_sources, cv_sources + [ad], current_year=current_year, aliases=aliases)
-        _with_reasons(found, load(output_dir), keep if isinstance(keep, list) else None)
-    except Exception:  # noqa: BLE001 - a check that cannot run is "not checked", never a failure
+        inputs, bodies = gathered
+        key, store = _key(inputs), _Store(output_dir)
+        saved = (_saved(output_dir) or {}).get("unsupported")
+        hit = load(output_dir, profile_dir) is not None
+        found = ask_cached.cached_answer(
+            key=key, version=VERSION, label="facts",
+            ask=lambda: _asked(inputs, bodies), check=lambda answer: _held(answer, bodies),
+            error=FactsError, unreached=lambda exc: FactsError(str(exc)), store=store)
+    except FactsError:  # a check that cannot run is "not checked", never a failure (the problem log has why)
         return None
-    if write:
+    found = [dict(item) for item in found]
+    _with_reasons(found, saved, keep if isinstance(keep, list) else None)
+    if write and not (hit and found == saved):
+        payload = {"checked_at": datetime.now(timezone.utc).isoformat(), "unsupported": found,
+                   "inputs_sha": key, "version": VERSION}
         try:
-            payload = {"checked_at": datetime.now(timezone.utc).isoformat(), "unsupported": found}
             utils.write_json_atomic(output_dir / FACTS_FILE, payload, default=None)
         except OSError:
             pass
     return found
 
 
-def load(output_dir: Path) -> list[dict] | None:
-    """The unsupported list `check` last wrote, or None when missing or unreadable."""
+def _saved(output_dir: Path) -> dict | None:
     try:
         data = json.loads((output_dir / FACTS_FILE).read_text(encoding="utf-8"))
-        items = data["unsupported"]
-        return items if isinstance(items, list) else None
-    except (OSError, ValueError, KeyError, TypeError):
+        return data if isinstance(data, dict) and isinstance(data.get("unsupported"), list) else None
+    except (OSError, ValueError):
         return None
+
+
+def load(output_dir: Path, profile_dir: Path) -> list[dict] | None:
+    """The unsupported list `check` last wrote for the documents and sources as they are now (and this `VERSION`), or
+    None (not checked) when it is missing or unreadable, has no `inputs_sha`, or was made for other inputs. Reads files
+    only, no model: `load(...) is not None` is also "a `check` asks nothing"."""
+    gathered = _gather(output_dir, profile_dir)
+    record = _Store(output_dir).read(_key(gathered[0])) if gathered else None
+    return record["answer"]["unsupported"] if record else None

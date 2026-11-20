@@ -4,6 +4,7 @@ and a real browser prints it. The guard is an allow-list; compile refuses to bui
 
 import pytest
 
+from door.core import cv_read
 from door.render import html_guard
 
 CV = """<!-- Keywords: IFRS, budgeting -->
@@ -34,6 +35,19 @@ def test_a_header_with_a_tagline_and_a_kind_on_each_contact_span_passes():
 
 def test_an_unknown_kind_class_is_refused():
     assert html_guard.unsafe('<p class="contact"><span class="fax">x</span></p>') != []
+
+
+@pytest.mark.parametrize("kind", cv_read.KINDS)
+def test_each_section_kind_is_a_class_of_an_h2(kind):
+    assert html_guard.unsafe(f'<h2 class="kind-{kind}">Anything</h2>') == []
+
+
+@pytest.mark.parametrize("snippet", [
+    '<div class="kind-skills">x</div>', '<span class="kind-skills">x</span>', '<p class="kind-skills">x</p>',
+    '<h3 class="kind-skills">x</h3>', '<h2 class="kind-bogus">x</h2>', '<h2 class="kind-skills main">x</h2>',
+])
+def test_a_kind_class_is_only_for_an_h2_and_only_a_known_kind(snippet):
+    assert html_guard.unsafe(snippet) != []
 
 
 def test_an_ordinary_cv_and_letter_pass():

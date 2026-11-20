@@ -43,7 +43,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name, host_of,
-    keep_local, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report, run_probe,
+    keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report, run_probe,
     scrape_feeds, strip_html, workers,
 )
 
@@ -274,7 +274,7 @@ def _employer_postings(session: PoliteSession, entry: str, scraped_at: datetime,
     cid = _cid(entry)
     if cid is None:
         raise ValueError("not a Networx client")
-    rows = [r for r in _rows_of(session, entry, cid) if r["id"] not in known_ids]
+    rows, known = split_known(_rows_of(session, entry, cid), lambda r: r["id"], known_ids)
     out: list[dict] = []
     for n, row in enumerate(rows, 1):
         report("detail", n, len(rows))
@@ -291,7 +291,7 @@ def _employer_postings(session: PoliteSession, entry: str, scraped_at: datetime,
             record_error(_SITE, f"advert {row['id']} of {entry!r} has no ad data")
             continue
         out.append(_to_posting(row, ad, name, scraped_at))
-    return out
+    return out + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

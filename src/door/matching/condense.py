@@ -21,8 +21,8 @@ Public API
     the first two sentences (role summary) and truncates to ``max_chars``,
     preferring requirement content over responsibilities when cutting.
 
-``extract_skill_terms(cv_md, config)``
-    Tokens from the CV's Skills section plus ``role_targets``/
+``extract_skill_terms(reading, config)``
+    The skills of the CV's reading (``core.cv_read``) plus ``role_targets``/
     ``search_keywords``, lower-cased, deduplicated, >= 3 chars.
 
 ``condense_postings(paths, profile_terms, config)``
@@ -266,36 +266,18 @@ def condense_description(
     return result[: max_chars - len(_TRUNCATION_MARKER)].rstrip() + _TRUNCATION_MARKER
 
 
-def _extract_skills_section(cv_md: str) -> str:
-    """Return the raw text of the CV's skills sections, under any name in any language (empty if none)."""
-    if not cv_md:
-        return ""
-    titles = i18n.cv_section("skills")
-    capturing = False
-    collected: list[str] = []
-    for line in cv_md.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("## "):
-            capturing = stripped[3:].strip(" *:_").casefold() in titles
-            continue
-        if capturing:
-            collected.append(line)
-    return "\n".join(collected)
-
-
-def extract_skill_terms(cv_md: str, config: dict) -> set[str]:
+def extract_skill_terms(reading: dict, config: dict) -> set[str]:
     """Return a lower-cased, deduplicated set of skill/role tokens (>= 3 chars).
 
-    Pulled from the CV's skills sections (``i18n.cv_section``) plus ``role_targets`` and
+    The CV's skills as `core.cv_read` read them (``reading["skills"]``), plus ``role_targets`` and
     ``search_keywords`` (whole phrases and individual words).
     """
     terms: set[str] = set()
 
-    skills_text = _extract_skills_section(cv_md)
-    for token in re.split(r"[,\n;/()]+", skills_text):
-        token = token.strip().lower()
-        if len(token) >= 3:
-            terms.add(token)
+    for skill in reading.get("skills") or []:
+        skill = skill.strip().lower()
+        if len(skill) >= 3:
+            terms.add(skill)
 
     for key in ("role_targets", "search_keywords"):
         for phrase in config.get(key) or []:

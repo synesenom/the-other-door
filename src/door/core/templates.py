@@ -17,8 +17,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from door import i18n
-from door.core import workspace
+from door.core import cv_read, workspace
 
 # The config key of each template and the file it defaults to.
 FILES = {"cv_template": "cv.template.html", "cover_letter_template": "cover-letter.template.html"}
@@ -45,9 +44,8 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
 
 MANIFEST_FILE = "template.json"
 MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
-ICON_KINDS = (*i18n.CONTACT_KINDS, "date")
-# The section kinds a column can hold: the CV sections `i18n` names.
-SECTION_KINDS = tuple(i18n.CvSections.model_fields)
+ICON_KINDS = (*cv_read.CONTACT_KINDS, "date")
+SECTION_KINDS = cv_read.COLUMN_KINDS  # the section kinds a column can hold
 
 
 def _bare_name(name: str, suffix: str) -> str:
@@ -74,7 +72,7 @@ class Columns(BaseModel):
 
 class Manifest(BaseModel):
     """`template.json`: ``fonts`` (TrueType files in `fonts/` beside it), ``icons`` (kind to an SVG in `icons/`),
-    ``max_pages`` (the template's own limit, 1 to 3) and ``columns`` (absent: one column)."""
+    ``max_pages`` (the template's own limit, 1 to 3), and ``columns`` (absent: one column)."""
 
     model_config = ConfigDict(extra="forbid")
     version: Literal[1] = 1
@@ -82,7 +80,6 @@ class Manifest(BaseModel):
     icons: dict[str, str] = {}
     max_pages: int | None = Field(default=None, ge=1, le=MAX_PAGES)
     columns: Columns | None = None
-
     @field_validator("fonts")
     @classmethod
     def _fonts(cls, v: list[str]) -> list[str]:

@@ -2,7 +2,7 @@
 (boards, employer feeds, employer discovery, the matcher).
 
 The weekly live-smoke workflow writes pytest's JUnit XML, then this script turns
-it into docs/badges/live-smoke.md, the page the README's live-smoke badge links.
+it into live-smoke.md on the `live-smoke-status` branch, the page the README's live-smoke badge links.
 """
 
 import importlib.util
@@ -156,8 +156,10 @@ def test_the_live_smoke_workflow_runs_the_report_inside_poetry():
     assert "poetry run python scripts/smoke_report.py" in workflow
 
 
-# The README's badges are committed SVGs, not GitHub's workflow badge URL: the repo is
-# private, and the GitHub mobile app fetches that URL without a session (a 404).
+# The README's badges are SVGs committed to the `live-smoke-status` branch, not GitHub's workflow badge URL,
+# which can only say whether the whole run passed.
+_STATUS_RAW = "https://raw.githubusercontent.com/synesenom/the-other-door/live-smoke-status"
+_STATUS_PAGE = "https://github.com/synesenom/the-other-door/blob/live-smoke-status/live-smoke.md"
 
 
 def test_there_is_no_run_wide_badge_any_more():
@@ -165,9 +167,8 @@ def test_there_is_no_run_wide_badge_any_more():
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     workflow = (REPO_ROOT / ".github" / "workflows" / "live-smoke.yml").read_text(encoding="utf-8")
     assert "actions/workflows/live-smoke.yml/badge.svg" not in readme
-    assert "docs/badges/live-smoke.svg" not in readme
+    assert "live-smoke.svg" not in readme
     assert "--badge " not in workflow
-    assert not (REPO_ROOT / "docs" / "badges" / "live-smoke.svg").exists()
 
 
 # --- the matcher's golden set ------------------------------------------------------------------------------
@@ -366,12 +367,14 @@ def test_the_readme_shows_the_dimension_badges_linked_to_their_lists():
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     for svg, anchor in (("live-boards", "boards"), ("live-feeds", "employer-feeds"),
                         ("live-discovery", "employer-discovery"), ("live-matcher", "matcher")):
-        assert f"(docs/badges/{svg}.svg)](docs/badges/live-smoke.md#{anchor})" in readme
+        assert f"({_STATUS_RAW}/{svg}.svg)]({_STATUS_PAGE}#{anchor})" in readme
 
 
-def test_the_live_smoke_workflow_writes_and_commits_the_dimension_badges():
+def test_the_live_smoke_workflow_publishes_to_the_status_branch_not_main():
+    """main takes changes only through a pull request: the weekly status goes to its own branch."""
     workflow = (REPO_ROOT / ".github" / "workflows" / "live-smoke.yml").read_text(encoding="utf-8")
-    assert "--badges docs/badges" in workflow and "docs/badges/live-*.svg" in workflow
+    assert "ref: live-smoke-status" in workflow
+    assert "scripts/smoke_report.py smoke-junit.xml status/live-smoke.md" in workflow and "--badges status" in workflow
 
 
 def test_a_local_run_keeps_the_link_to_the_last_workflow_run(tmp_path):

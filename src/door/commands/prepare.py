@@ -33,7 +33,7 @@ _HEARTBEAT_INTERVAL_S = 30.0
 
 
 def _tailor_outputs_missing(output_dir: Path) -> list[str]:
-    """The tailor agent's output files (see `.claude/agents/tailor.md` → Output)
+    """The tailor agent's output files (see `src/door/prompts/tailor.md` → Output)
     that are absent or empty in `output_dir`, in contract order.
 
     An empty list means the materials are complete. A 0-byte file counts as
@@ -118,7 +118,7 @@ def _tailor_folders(posting_path: Path) -> list[Path]:
 
 
 def _cv_conventions_text(posting_path: Path) -> str:
-    """The country's CV conventions as the tailor reads them (`.claude/agents/tailor.md` → CV conventions): the
+    """The country's CV conventions as the tailor reads them (`src/door/prompts/tailor.md` → CV conventions): the
     posting's country, else the profile's (`i18n.cv_country`), else the neutral default."""
     try:
         posting = json.loads(Path(posting_path).read_text(encoding="utf-8"))
@@ -150,30 +150,20 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
     The session runs in the job's output folder (`_run_tailor`), not the checkout, in
     `--restricted` mode: no tool that runs commands, file tools confined to the working
     directories (that folder and `_tailor_folders`), no project or user settings. The
-    tailor and reviewer agents come from `--agents` (the `.claude/agents/` files), the
+    tailor and reviewer agents come from `--agents` (the `src/door/prompts/` files), the
     door server from `--mcp-config` alone. `feedback` (the retry after the ATS read-back) adds the
     problems the PDFs read back with: the files exist, keep them and fix only these.
     """
     output_dir = workspace.JOBS_DIR / "output" / job_id
     tpl = _tailor_templates(workspace.PROFILE_DIR)
-    prompt = (
-        f"Tailor job_id {job_id!r}: `job` is the posting at {posting_path}, `profile` is "
-        f"{workspace.PROFILE_DIR / 'config.json'} (the profile folder is {workspace.PROFILE_DIR}; "
-        f"the story bank is {workspace.PROFILE_DIR / 'story_bank.md'}). The CV template is {tpl['cv_template']} and "
-        f"the cover letter template is {tpl['cover_letter_template']} (they hold the building blocks; you write only "
-        f"the body, never a whole page). Produce "
-        f"{output_dir}/posting.json, cv.html and "
-        f"cover_letter.html and compile them to PDFs, following your steps in order; "
-        f"new stories go to {output_dir / _STORIES_FILE}. "
-        f"{_cv_conventions_text(posting_path)} "
-        f"Use these absolute paths, not paths relative to the working directory."
-    )
+    fields = {"output_dir": str(output_dir), "stories": str(output_dir / _STORIES_FILE)}
+    prompt = claude_cli.prompt(
+        "tailor-request", **fields, job_id=repr(job_id), posting=str(posting_path),
+        config=str(workspace.PROFILE_DIR / "config.json"), profile_dir=str(workspace.PROFILE_DIR),
+        story_bank=str(workspace.PROFILE_DIR / "story_bank.md"), cv_template=str(tpl["cv_template"]),
+        cover_letter_template=str(tpl["cover_letter_template"]), conventions=_cv_conventions_text(posting_path))
     if feedback:
-        prompt += (
-            f"\n\nThe materials already exist in {output_dir}. Reading the compiled PDFs back the way an ATS "
-            f"does found these problems: keep the existing files, change only what fixes them, recompile with "
-            f"`compile`, and do not start over. New stories still go to {output_dir / _STORIES_FILE}.\n{feedback}"
-        )
+        prompt += "\n\n" + claude_cli.prompt("tailor-retry", **fields, feedback=feedback)
     argv = [
         prompt,
         "--restricted",
@@ -423,10 +413,11 @@ def _prepare_core(
 
     # Refuse up front rather than spend a tailor run's quota and then fail to
     # record it. A lock this thread already holds is fine.
-    from door.core.lock import _describe, _held_depth, lock_holder
+    # A quick holder (`mark_seen`) is waited for by the status write; only a long one refuses.
+    from door.core.lock import _describe, _held_depth, lock_holder, refuses_at_once
 
     holder = None if _held_depth(jobs_dir) else lock_holder(jobs_dir)
-    if holder is not None:
+    if refuses_at_once(holder):
         return {**result, "error": _describe(holder)}
 
     def _present() -> list[str]:
@@ -496,7 +487,9 @@ def _prepare_core(
 
     _step("CV, cover letter and both PDFs on disk", "ok")
     # Reported, never a block: figures, employers, skills, certifications and degrees cv.md and the story bank do not back (#325, #369).
-    unsupported = facts_mod.check(output_dir, profile_dir or workspace.PROFILE_DIR)
+    _step("checking the facts")
+    with progress_mod.heartbeat("checking the facts", stage="prepare", interval_s=_HEARTBEAT_INTERVAL_S):
+        unsupported = facts_mod.check(output_dir, profile_dir or workspace.PROFILE_DIR)
     # After the check: stories written this run must not back the run's own figures.
     stories = _add_stories(output_dir, profile_dir or workspace.PROFILE_DIR)
     try:

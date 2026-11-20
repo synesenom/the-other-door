@@ -222,15 +222,16 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 break
             count, jobs = parsed
             cards = [c for c in (_card(j) for j in jobs) if c]
-            if not jobs:
-                record_answered(_SITE)
+            if cards or not jobs:
+                record_answered(_SITE)  # cards read, all known or off topic, or a page with no jobs
 
             for card in cards:
                 if card["id"] in seen or (topic and not on_topic(card["title"], topic)):
                     continue
-                if since is not None and card["created"] is not None and card["created"] < since:
-                    continue
                 seen.add(card["id"])
+                if since is not None and card["created"] is not None and card["created"] < since:
+                    out.append(_posting(card, card["snippet"], scraped_at))  # the engine counts it stale; no ad request
+                    continue
                 if card["id"] in known_ids:
                     out.append({"platform_id": card["id"], "seen_only": True})
                     continue
@@ -250,7 +251,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
 
             if not jobs or page * _PAGE_SIZE >= count:
                 break
-        log_keyword_results(_SITE, keyword, [p for p in out[start:] if not p.get("seen_only")])
+        log_keyword_results(_SITE, keyword, out[start:])
     return out
 
 

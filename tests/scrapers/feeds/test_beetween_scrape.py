@@ -99,7 +99,8 @@ def test_known_ids_skip_the_ad_requests():
 
     postings = beetween.scrape({"beetween_companies": ["giboire"]}, known_ids=frozenset(_PIDS[:2]))
 
-    assert [p["platform_id"] for p in postings] == _PIDS[2:]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == _PIDS[2:]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == sorted(_PIDS[:2])
     assert len(responses.calls) == 4
 
 

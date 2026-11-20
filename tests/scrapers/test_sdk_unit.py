@@ -138,6 +138,16 @@ def test_followed_name_ignores_a_blank_name():
     assert sdk.followed_name({"_names": {"k": {"a": "  "}}}, "k", "a", "feed") == "feed"
 
 
+def test_location_fits_records_a_non_local_drop():
+    from door.scrapers import drain_non_local
+    drain_non_local("x")
+    cfg = {"location": "London", "remote": "no"}
+    assert sdk.location_fits("London", cfg, "x")
+    assert drain_non_local("x") == 0
+    assert not sdk.location_fits("Glasgow", cfg, "x")
+    assert drain_non_local("x") == 1
+
+
 def test_keep_local_filters_and_records(monkeypatch):
     recorded = []
     monkeypatch.setattr(sdk, "record_non_local", lambda site, n: recorded.append((site, n)))
@@ -148,3 +158,15 @@ def test_keep_local_filters_and_records(monkeypatch):
     monkeypatch.setattr(locality, "split_postings", lambda postings, config: (postings, 0))
     assert sdk.keep_local([{"a": 1}], {}, "x") == [{"a": 1}]
     assert recorded == []
+
+
+def test_split_known_turns_known_ids_into_seen_only_records_in_row_order():
+    rows = [{"id": "1"}, {"id": "2"}, {"id": "3"}]
+    fresh, seen = sdk.split_known(rows, lambda r: f"t.{r['id']}", frozenset({"t.2"}))
+    assert fresh == [{"id": "1"}, {"id": "3"}]
+    assert seen == [{"platform_id": "t.2", "seen_only": True}]
+
+
+def test_split_known_with_nothing_known_or_no_rows():
+    assert sdk.split_known([{"id": "1"}], lambda r: r["id"], frozenset()) == ([{"id": "1"}], [])
+    assert sdk.split_known([], lambda r: r["id"], frozenset({"1"})) == ([], [])

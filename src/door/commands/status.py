@@ -130,7 +130,7 @@ def _ad_text(jobs_dir: Path, job_id: str) -> str:
 
 def _unsupported_warning(out_dir: Path, job_id: str) -> str | None:
     """Figures, employers, skills, certifications or degrees of the materials being sent that cv.md and the story bank do not back (#325)."""
-    found = facts_mod.check(out_dir, workspace.PROFILE_DIR, write=False)
+    found = facts_mod.load(out_dir, workspace.PROFILE_DIR)  # what the last check found: setting a status asks no model
     if not found:
         return None
     values = ", ".join(dict.fromkeys(

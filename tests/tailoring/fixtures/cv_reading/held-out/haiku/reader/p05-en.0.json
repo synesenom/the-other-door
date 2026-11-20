@@ -1,0 +1,147 @@
+{
+ "key": "793260eb9cd3",
+ "answer": {
+  "name": "Nathan Lindgren",
+  "email": "nathan.lindgren@example.com",
+  "city": "Exeter",
+  "country": "gb",
+  "languages": [
+   {
+    "language": "English",
+    "code": "en",
+    "level": "native"
+   },
+   {
+    "language": "French",
+    "code": "fr",
+    "level": "fluent"
+   },
+   {
+    "language": "German",
+    "code": "de",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profile",
+    "kind": "summary"
+   },
+   {
+    "heading": "Work Experience",
+    "kind": "experience"
+   },
+   {
+    "heading": "Education",
+    "kind": "education"
+   },
+   {
+    "heading": "Skills",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Languages",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interests",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Phone",
+    "value": "+44 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Email",
+    "value": "nathan.lindgren@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Web",
+    "value": "example.com/nathan.lindgren"
+   },
+   {
+    "kind": "location",
+    "label": "Location",
+    "value": "Exeter"
+   }
+  ],
+  "skills": [
+   "Alteryx",
+   "Trello",
+   "Notion",
+   "SAP",
+   "Tableau",
+   "budgeting"
+  ],
+  "levels": [
+   {
+    "item": "English",
+    "level": 5
+   },
+   {
+    "item": "French",
+    "level": 4
+   },
+   {
+    "item": "German",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Copper Mills, Exeter – Head of Operations (2018 - present)",
+    "role": "Head of Operations",
+    "org": "Copper Mills",
+    "dates": "2018 - present",
+    "place": "Exeter",
+    "start_year": 2018,
+    "end_year": null
+   },
+   {
+    "heading": "Summit Tools, Norwich – Senior Operations Analyst (2014 - 2018)",
+    "role": "Senior Operations Analyst",
+    "org": "Summit Tools",
+    "dates": "2014 - 2018",
+    "place": "Norwich",
+    "start_year": 2014,
+    "end_year": 2018
+   },
+   {
+    "heading": "Alpine Textiles, Leicester – Operations Analyst (2011 - 2014)",
+    "role": "Operations Analyst",
+    "org": "Alpine Textiles",
+    "dates": "2011 - 2014",
+    "place": "Leicester",
+    "start_year": 2011,
+    "end_year": 2014
+   },
+   {
+    "heading": "Sample College, Exeter – BA in Economics (2006 - 2009)",
+    "role": "BA in Economics",
+    "org": "Sample College",
+    "dates": "2006 - 2009",
+    "place": "Exeter",
+    "start_year": 2006,
+    "end_year": 2009
+   },
+   {
+    "heading": "Sample College, Exeter – MA in Business Administration (2009 - 2011)",
+    "role": "MA in Business Administration",
+    "org": "Sample College",
+    "dates": "2009 - 2011",
+    "place": "Exeter",
+    "start_year": 2009,
+    "end_year": 2011
+   }
+  ]
+ }
+}

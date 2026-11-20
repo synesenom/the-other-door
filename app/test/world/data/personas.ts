@@ -9,6 +9,8 @@ export interface Persona {
   city: string
   country: 'dk' | 'fr' | 'hu' | 'se'
   languages: string[]
+  /** The languages the CV names, as it writes them and at which level: what the stand-in reader (`cv_read.py`) reports. */
+  cvLanguages: { language: string; code: string; level: string }[]
   roleTargets: string[]
   searchKeywords: string[]
   topicTerms: string[]
@@ -581,6 +583,7 @@ export const PERSONAS: Record<string, Persona> = {
     city: 'Copenhagen',
     country: 'dk',
     languages: ['English', 'Danish'],
+    cvLanguages: [{ language: 'Danish', code: 'da', level: 'native' }, { language: 'English', code: 'en', level: 'fluent' }],
     roleTargets: ['Senior Data Scientist', 'Lead Data Scientist', 'Machine Learning Engineer', 'Forecasting Specialist'],
     searchKeywords: [
       'data scientist',
@@ -606,6 +609,7 @@ export const PERSONAS: Record<string, Persona> = {
     city: 'Lyon',
     country: 'fr',
     languages: ['French', 'English'],
+    cvLanguages: [{ language: 'Français', code: 'fr', level: 'native' }, { language: 'Anglais', code: 'en', level: 'fluent' }],
     roleTargets: ['Contrôleuse de gestion', 'Contrôleur de gestion industriel', 'Business Controller'],
     searchKeywords: [
       'contrôleur de gestion',
@@ -629,6 +633,7 @@ export const PERSONAS: Record<string, Persona> = {
     city: 'Budapest',
     country: 'hu',
     languages: ['English', 'Hungarian'],
+    cvLanguages: [{ language: 'Hungarian', code: 'hu', level: 'native' }, { language: 'English', code: 'en', level: 'fluent' }],
     roleTargets: ['Backend Engineer', 'Senior Backend Engineer', 'Go Developer'],
     searchKeywords: [
       'backend engineer',
@@ -652,6 +657,7 @@ export const PERSONAS: Record<string, Persona> = {
     city: 'Aarhus',
     country: 'dk',
     languages: ['English', 'Danish'],
+    cvLanguages: [{ language: 'Danish', code: 'da', level: 'native' }, { language: 'English', code: 'en', level: 'fluent' }],
     roleTargets: ['Environmental Engineer', 'Graduate Engineer', 'Water Engineer'],
     searchKeywords: [
       'environmental engineer',
@@ -674,6 +680,7 @@ export const PERSONAS: Record<string, Persona> = {
     city: 'Göteborg',
     country: 'se',
     languages: ['English', 'Swedish'],
+    cvLanguages: [{ language: 'Svenska', code: 'sv', level: 'native' }, { language: 'Engelska', code: 'en', level: 'fluent' }],
     roleTargets: ['Hållbarhetsanalytiker', 'Miljöstrateg', 'Sustainability Analyst'],
     searchKeywords: ['hållbarhetsanalytiker', 'miljöstrateg', 'hållbarhetsspecialist', 'miljöanalytiker', 'sustainability analyst'],
     topicTerms: ['hållbarhet*', 'miljö*', 'klimat*', 'sustainability'],

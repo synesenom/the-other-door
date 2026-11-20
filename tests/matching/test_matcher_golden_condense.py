@@ -23,6 +23,7 @@ import json
 
 import pytest
 
+import cv_read_utils
 from door.matching.condense import condense_description, extract_skill_terms
 
 from golden_utils import (
@@ -73,7 +74,7 @@ def _realistic_keep_terms() -> set:
     """The keep_terms a real `match` run would use (the golden profile's CV + config)."""
     config = json.loads((GOLDEN_PROFILE_DIR / "config.json").read_text())
     cv_md = (GOLDEN_PROFILE_DIR / "cv.md").read_text()
-    return extract_skill_terms(cv_md, config)
+    return extract_skill_terms(cv_read_utils.reading(cv_md), config)
 
 
 @pytest.mark.parametrize(

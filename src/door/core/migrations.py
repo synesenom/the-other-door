@@ -32,7 +32,6 @@ import json
 import os
 import re
 import shutil
-import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -47,7 +46,6 @@ from door.core.downloads import pinned
 VERSION_FILE = ".data_version"
 BACKUP_PREFIX = "upgrade-"
 KEEP_BACKUPS = 2
-_LOCK_WAIT_S = 3.0  # how long a start waits for a run (or another start) holding the lock
 MARKER = ".upgrading"  # in a folder while its steps run: holds the backup's path, so an interrupted upgrade is undone
 # Files at the top of a folder that are not the user's data: they neither stamp nor un-stamp it, a backup leaves them
 # out and a restore leaves them be (the lock files of this very process, this computer's usage log, the marker).
@@ -484,16 +482,11 @@ def upgrade_all(
     if not _behind(folders, steps_of):
         return _set(None)
 
-    deadline = time.monotonic() + _LOCK_WAIT_S
-    while True:
-        try:
-            with lock_mod.ledger_lock(jobs_dir, "upgrade"):
-                return _set(_upgrade_locked(folders, steps_of, backups_dir))
-        except lock_mod.LockHeldError as exc:
-            if time.monotonic() >= deadline:
-                busy = {"state": "busy", "message": str(exc)}
-                return _set(busy)
-            time.sleep(0.2)
+    try:  # the lock itself waits for another start or a quick holder
+        with lock_mod.ledger_lock(jobs_dir, "upgrade"):
+            return _set(_upgrade_locked(folders, steps_of, backups_dir))
+    except lock_mod.LockHeldError as exc:
+        return _set({"state": "busy", "message": str(exc)})
 
 
 def _upgrade_locked(folders, steps_of, backups_dir: Path) -> dict | None:

@@ -263,20 +263,26 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 report(f"no search results block on page (keyword={keyword!r}, page={page})")
                 record_error(_SITE, f"no search results block on page (keyword={keyword!r}, page={page})")
                 break
-            if not cards:
-                record_answered(_SITE)
+            record_answered(_SITE)  # a results page read, whatever its cards are (all known, off topic, none)
 
             for card in cards:
                 placed = card["posted"]
-                if since_day is not None and placed is not None and placed.date() < since_day:
-                    done = True  # newest first: every later card is older too
-                    break
-                if card["id"] in seen or (topic and not on_topic(card["title"], topic)):
-                    continue
-                if not sdk.location_fits(card["location"], config) or not sdk.keep_local(
-                        [{"location": card["location"]}], config, _SITE):
+                old = since_day is not None and placed is not None and placed.date() < since_day
+                if card["id"] in seen:  # read for an earlier keyword: nothing more to do with it
+                    if old:
+                        done = True  # newest first: every later card is older too
+                        break
                     continue
                 seen.add(card["id"])
+                if old:
+                    done = True
+                    out.append(_posting(card, _card_text(card), placed, scraped_at))  # the engine counts it stale
+                    break
+                if topic and not on_topic(card["title"], topic):
+                    continue
+                if (not sdk.location_fits(card["location"], config, _SITE)
+                        or not sdk.keep_local([{"location": card["location"]}], config, _SITE)):
+                    continue
                 if card["id"] in known_ids:
                     out.append({"platform_id": card["id"], "seen_only": True})
                     continue
@@ -298,13 +304,14 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 own = (detail or {}).get("location") or ""
                 if own:
                     card = {**card, "location": own}
-                    if not sdk.location_fits(own, config) or not sdk.keep_local([{"location": own}], config, _SITE):
+                    if (not sdk.location_fits(own, config, _SITE)
+                            or not sdk.keep_local([{"location": own}], config, _SITE)):
                         continue
                 out.append(_posting(card, description, posted, scraped_at))
 
             if done or not cards or not _has_next(html):
                 break
-        log_keyword_results(_SITE, keyword, [p for p in out[start:] if not p.get("seen_only")])
+        log_keyword_results(_SITE, keyword, out[start:])
     return out
 
 

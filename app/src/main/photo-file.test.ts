@@ -34,19 +34,9 @@ describe('createPhotoFile', () => {
     expect(await setup('/a/me.png', MAX_PHOTO_BYTES + 1).photo.pick()).toEqual({ error: 'That picture is over 10 MB.' })
   })
 
-  it('hands the real path over once, for the token it gave out', async () => {
+  it('hands the real path over by the token it gave out', async () => {
     const { photo } = setup('/a/me.png')
     const r = (await photo.pick()) as { token: string }
-    expect(photo.take('nope')).toBeNull()
     expect(photo.take(r.token)).toBe('/a/me.png')
-    expect(photo.take(r.token)).toBeNull()
-  })
-
-  it('a new pick replaces the last', async () => {
-    const { photo } = setup('/a/me.png')
-    const one = (await photo.pick()) as { token: string }
-    const two = (await photo.pick()) as { token: string }
-    expect(photo.take(one.token)).toBeNull()
-    expect(photo.take(two.token)).toBe('/a/me.png')
   })
 })

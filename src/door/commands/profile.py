@@ -10,7 +10,7 @@ import click
 
 from door import i18n
 from door.commands import _prompts
-from door.core import utils, workspace
+from door.core import cv_sections, utils, workspace
 from door.core.employers import companies as companies_mod
 from door.core.employers import discovery_sources
 from door.core import migrations, profile_loader
@@ -903,7 +903,7 @@ def _parse_cv(text: str) -> dict:
         if re.match(r"#\s+", line):
             headline = headline or line.lstrip("#").strip()
         elif re.match(r"##\s+", line):
-            sections.append({"title": line.lstrip("#").strip(), "roles": [], "bullets": 0})
+            sections.append({"title": cv_sections.heading(line), "roles": [], "bullets": 0})
         elif re.match(r"###\s+", line):
             if sections:
                 sections[-1]["roles"].append(line.lstrip("#").strip())

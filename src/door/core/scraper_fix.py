@@ -52,6 +52,9 @@ _GATE_PROBE_TIMEOUT_S = 120
 _FIXABLE_STATUSES = ("drift", "warn")
 
 
+_FIXER = "scraper-fixer"
+
+
 class ScraperFixerError(RuntimeError):
     """The `claude -p` scraper-fixer run failed (non-zero exit, timeout, or no `claude`)."""
 
@@ -68,7 +71,7 @@ def _run_scraper_fixer(site: str, raw_path: Path, timeout_s: float | None = _DEF
     """Drive the scraper-fixer agent for *site* via the `claude` CLI; returns its summary.
 
     Shells out to ``claude -p "<prompt>" --allowedTools ...`` from the repo root
-    so ``.claude/agents/scraper-fixer.md`` is found. This is the seam tests
+    with the agent (``src/door/prompts/scraper-fixer.md``) handed in by ``--agents``. This is the seam tests
     replace. Only the plan's `claude -p` is used; there is no API key anywhere.
 
     Raises:
@@ -78,6 +81,7 @@ def _run_scraper_fixer(site: str, raw_path: Path, timeout_s: float | None = _DEF
     try:
         result = subprocess.run(
             [installers.find_claude() or "claude", "-p", prompt, "--allowedTools", ",".join(_fixer_tools(repo_root, raw_path)),
+             "--agents", json.dumps({_FIXER: claude_cli.agent_definition(_FIXER)}),
              "--settings", json.dumps(_FIXER_SETTINGS), claude_cli.STRICT_MCP, *claude_cli.STREAM_ARGS],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=repo_root, timeout=timeout_s, env=claude_cli.env(), stdin=subprocess.DEVNULL,
         )
@@ -115,11 +119,7 @@ def _scraper_path(site: str) -> str:
 
 
 def _fixer_prompt(site: str, raw_path: Path) -> str:
-    return (
-        f"Invoke the scraper-fixer agent for site {site!r}. The saved drift response is {raw_path}. "
-        f"Repair {_scraper_path(site)} test-first per .claude/agents/scraper-fixer.md, "
-        "then finish with a short plain-text summary of what changed and why."
-    )
+    return claude_cli.prompt("scraper-fixer-request", site=repr(site), raw_path=str(raw_path), scraper=_scraper_path(site))
 
 
 _PROBE_SNIPPET = (

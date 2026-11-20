@@ -629,11 +629,12 @@ def test_merge_companies_proposes_merges_and_reports_errors(tmp_path, monkeypatc
     (lambda: server.skill_gaps(), "error"),
 ])
 def test_the_profile_tools_answer_with_their_cores_result_or_an_error(tmp_path, monkeypatch, call, key):
-    from door.core import claude_cli
+    from door.core import claude_cli, cv_read
 
     monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
     monkeypatch.setattr(workspace, "JOBS_DIR", tmp_path / "jobs")
     monkeypatch.setattr(claude_cli, "run", lambda *a, **k: (_ for _ in ()).throw(claude_cli.ClaudeError("no claude")))
+    monkeypatch.setattr(cv_read, "_ask", lambda md: (_ for _ in ()).throw(claude_cli.ClaudeError("no claude")))
     assert key in call()
 
 

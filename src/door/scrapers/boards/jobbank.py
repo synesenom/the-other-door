@@ -10,10 +10,11 @@ Endpoints:
   description (HTML), ``datePosted``, ``validThrough``, ``hiringOrganization`` and ``jobLocation``.
 
 The search is full text and ranked by relevance, so it is noisy: a card whose title is not on
-topic for the profile's keywords (``on_topic``) costs no ad request and is dropped. An ad whose id
+topic for the profile's keywords (``on_topic``), or whose region is abroad ("Udlandet (øvrige)": the ad
+itself names no place; ``keep_local``, counted as not local), costs no ad request and is dropped. An ad whose id
 is in ``known_ids`` costs none either (a ``seen_only`` record, as Jobindex's). A keyword reads
 pages until a short or empty page, at most ``max_pages_per_keyword`` (default 3). The site has no
-age filter; the freshness cutoff is left to ``find``.
+age filter and lists ads years old among the new: a card dated before ``since`` costs no ad request either.
 
 Cloudflare sits in front of the site. A 403 or 429 (after the session's backoff) or a challenge
 page is pushback: it is recorded with ``record_pushback`` (the site rests for
@@ -34,8 +35,8 @@ import requests
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    on_topic, record_answered, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
+    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, keep_local, log_keyword_results,
+    make_job_id, on_topic, record_answered, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
 )
 
 _SITE = "jobbank"
@@ -203,7 +204,7 @@ def _posting(card: dict, detail: dict, scraped_at: datetime) -> dict:
 
 
 def _card_posting(card: dict, scraped_at: datetime) -> dict:
-    """A posting from a search card alone (the probe's; no description)."""
+    """A posting from a search card alone, no description (the probe's, and a card older than the cutoff)."""
     return _posting(card, {"title": "", "company": "", "location": "", "description": "", "posted_at": None}, scraped_at)
 
 
@@ -218,6 +219,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
     keywords: list[str] = config.get("search_keywords") or config.get("role_targets") or []
     max_pages = int(config.get("max_pages_per_keyword", _MAX_PAGES))
     topic = topic_terms(config)
+    since: datetime | None = kwargs.get("since")
+    since = since.astimezone(timezone.utc).replace(tzinfo=None) if since else None
     scraped_at = datetime.now(timezone.utc)
     session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=20, headers=_HEADERS)
     seen: set[str] = set()
@@ -238,14 +241,19 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
                 break
 
-            if not cards and _says_no_hits(html):
-                record_answered(_SITE)
+            if cards or _says_no_hits(html):
+                record_answered(_SITE)  # a page of cards, all known or off topic, or a no-hits page
             for card in cards:
                 if card["id"] in seen or (topic and not on_topic(card["title"], topic)):
                     continue
                 seen.add(card["id"])
                 if card["id"] in known_ids:
                     out.append({"platform_id": card["id"], "seen_only": True})
+                    continue
+                if not keep_local([{"location": card["region"]}], config, _SITE):
+                    continue
+                if since and card["updated"] and card["updated"] < since:
+                    out.append(_card_posting(card, scraped_at))  # the engine counts it stale; no ad request
                     continue
                 report(f"'{keyword}' details", len(out) - start + 1, len(cards))
                 try:
@@ -265,7 +273,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
 
             if len(cards) < _PAGE_SIZE:
                 break
-        log_keyword_results(_SITE, keyword, [p for p in out[start:] if not p.get("seen_only")])
+        log_keyword_results(_SITE, keyword, out[start:])
     return out
 
 

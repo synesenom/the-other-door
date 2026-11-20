@@ -9,7 +9,7 @@ import type { RunBoard } from '../main/run-board'
 declare global {
   interface Window {
     door: {
-      call(tool: string, args?: Record<string, unknown>, callId?: string): Promise<Envelope>
+      call(tool: string, args?: Record<string, unknown>, callId?: string, tokens?: string[]): Promise<Envelope>
       onProgress(callId: string, cb: (p: { progress: number; total?: number; message: string }) => void): () => void
       openExternal(url: string): Promise<{ ok: boolean; error?: string }>
       /** `sent`: the copy kept when the application was sent. */
@@ -18,17 +18,13 @@ declare global {
       /** Opens the file dialog (in the main process); the files come back as tokens, never paths. */
       pickCvFiles(): Promise<PickResult>
       dropCvFiles(files: File[]): Promise<PickResult>
-      /** Drafts a CV from picked files (by token) and web pages. */
-      draftCv(payload: { files: string[]; urls: string[] }): Promise<Envelope>
-      /** A CV file chosen in the picker (its token), read by enrich for what it adds to the Master CV. */
-      enrichFile(token: string): Promise<Envelope>
       /** The CV file a draft last read, by its name, or null (Profile → CV's Sources). */
       cvFile(): Promise<string | null>
       /** Forgets the picked files (the wizard closed). */
       clearCvSources(): Promise<void>
-      /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (save_photo's answer). */
+      /** The CV photo: a picture chosen in an open dialog (a token and its name, or why not), then saved by its token (`call('save_photo', {}, undefined, [token])`). */
       pickPhoto(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
-      savePhoto(token: string): Promise<Envelope>
+      onBeforeClose(cb: () => Promise<void>): () => void
       /** Signing in to Claude: the main process runs `claude auth login` and pushes its state. */
       claudeLogin: {
         start(email?: string): Promise<{ ok: boolean; error?: string }>
@@ -46,10 +42,8 @@ declare global {
       pageUrl?(jobId: string, pngPath: string, v: number, sent?: boolean): string
       /** Writes an export where the user says in a save dialog (export_data's answer, or canceled). */
       exportData(): Promise<Envelope | { ok: false; canceled: true }>
-      /** Picks an archive to import in an open dialog: a token and the file's name. */
+      /** Picks an archive to import in an open dialog: a token and the file's name, imported by `call('import_data', {}, undefined, [token])`. */
       pickArchive(): Promise<{ token: string; name: string } | { canceled: true } | { error: string }>
-      /** Imports the picked archive (import_data's answer). */
-      importData(token: string): Promise<Envelope>
       /** Writes a problem report where the user says in a save dialog (report_problem's answer, or canceled). */
       reportProblem(): Promise<Envelope | { ok: false; canceled: true }>
       /** Shows the data folder in the file manager. */

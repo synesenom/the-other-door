@@ -73,13 +73,15 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
   const [error, setError] = useState<string | null>(null)
   const nothing: Step = { kind: 'read', result: { outcome: 'nothing_new', proposals: [], unreachable: [] }, dropped: new Set() }
   const readFile = async (token: string) => {
-    const r = (await window.door.enrichFile(token)) as { ok: true; data: Enriched } | { ok: false; error: string }
-    if (!r.ok) {
-      setError(r.error)
+    let data: Enriched
+    try {
+      data = await call<Enriched>('enrich', {}, { tokens: [token] })
+    } catch (e) {
+      setError(errorText(e))
       return setStep(nothing)
     }
     onFile()
-    setStep({ kind: 'read', result: { ...r.data, proposals: r.data.proposals ?? [], unreachable: [] }, dropped: new Set() })
+    setStep({ kind: 'read', result: { ...data, proposals: data.proposals ?? [], unreachable: [] }, dropped: new Set() })
   }
   const read = async (urls: string[]) => {
     setStep({ kind: 'reading' })
@@ -330,8 +332,16 @@ export function CvEditor({
     const t = setTimeout(() => void flush(), SAVE_AFTER_MS)
     return () => clearTimeout(t)
   }, [text, saved, profile])
-  // leaving Profile with a pause not yet reached still writes it
-  useEffect(() => () => void flush(), [])
+  // a pause not yet reached is still written when Profile is left, or when the window closes (the app waits for it)
+  const flushRef = useRef(flush)
+  flushRef.current = flush
+  useEffect(() => {
+    const unregister = window.door.onBeforeClose(() => flushRef.current())
+    return () => {
+      unregister()
+      void flushRef.current()
+    }
+  }, [])
   /** The editor left: written now, and the app reads it again. */
   const leave = async () => {
     const before = savedRef.current

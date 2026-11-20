@@ -288,22 +288,24 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   const done = async () => ({ ok: true })
   const never = () => () => undefined
   return {
-    call: (tool, args = {}) => respond(tool, args),
+    call: async (tool, args = {}, _callId, tokens) => {
+      if (!tokens) return respond(tool, args)
+      if (tool === 'save_photo') return { ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }
+      if (tool === 'import_data') return { ok: false, error: 'Nothing is imported in the preview.' }
+      if (tool === 'enrich') return respond('enrich', { files: ['jane-doe-cv.pdf'] })
+      const r = await respond('draft_cv', {})
+      if (!r.ok) return r
+      return { ok: true, data: { markdown: fixtures.show_profile.cv.text, provenance: [], todos: [], sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }] } }
+    },
     onProgress: never,
     openExternal: done,
     saveMaterial: async (_j: string, _w: string, _s: boolean, name: string) => ({ ok: true, path: `/Users/jane/Downloads/${name}` }),
     pickCvFiles: async () => ({ files: [{ token: 'preview-1', name: 'jane-doe-cv.pdf', size: 184_000 }], refused: [] }),
     dropCvFiles: async (files) => ({ files: files.map((f, i) => ({ token: `preview-drop-${i}`, name: f.name, size: f.size })), refused: [] }),
     cvFile: async () => 'jane-doe-cv.pdf',
-    draftCv: async () => {
-      const r = await respond('draft_cv', {})
-      if (!r.ok) return r
-      return { ok: true, data: { markdown: fixtures.show_profile.cv.text, provenance: [], todos: [], sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }] } }
-    },
-    enrichFile: async () => respond('enrich', { files: ['jane-doe-cv.pdf'] }),
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
-    savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
+    onBeforeClose: () => () => undefined,
     claudeLogin: {
       start: async () => {
         // A moment for the "Starting the sign-in" line, then signed in, with no browser.
@@ -329,7 +331,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     pageUrl,
     exportData: async () => (scene.fails?.exportData ? { ok: false, error: scene.fails.exportData } : { ok: false, canceled: true }),
     pickArchive: async () => ({ canceled: true }),
-    importData: async () => ({ ok: false, error: 'Nothing is imported in the preview.' }),
     reportProblem: async () => (scene.fails?.reportProblem ? { ok: false, error: scene.fails.reportProblem } : { ok: false, canceled: true }),
     showHome: done,
     checkUpdate: async () => ({ enabled: false as const }),

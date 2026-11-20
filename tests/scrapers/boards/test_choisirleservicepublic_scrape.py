@@ -312,3 +312,14 @@ def test_probe_drift_when_the_cards_lose_their_links():
     _serve(_probe_url(), _html("search_page1.html").replace("-reference-", "-ref-"))
     result = csp.probe(_CFG)
     assert result["structure_ok"] is False and result["reason"]
+
+
+@responses.activate
+def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
+    _serve_search(pages=("search_page1.html",))
+    drain_answered(csp._SITE)
+
+    out = csp.scrape({**_CFG, "topic_terms": ["zzzqqq*"], "max_pages_per_keyword": 1})
+
+    assert out == []
+    assert drain_answered(csp._SITE) is True

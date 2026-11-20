@@ -26,7 +26,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id, tenant_platform_id, run_probe, scrape_feeds, strip_html,
     followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at
 from door.scrapers.sdk import Detection, NOT_ACCOUNTS, Probe, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -90,8 +90,8 @@ def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, 
     when given. Raises on HTTP errors."""
     base = _careers_base(entry)
     company = name or _company_name(entry if "." not in entry else urlparse(base).netloc)
-    data = session.get(f"{base}/postings.json", headers=_HEADERS).json().get("data") or []
-    return [_to_posting(item, company, base, scraped_at) for item in _items(data)]
+    answer = session.get(f"{base}/postings.json", headers=_HEADERS).json()
+    return [_to_posting(item, company, base, scraped_at) for item in _items(list_at(answer, "data", "Pinpoint"))]
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
@@ -117,10 +117,7 @@ def probe(config: dict) -> ProbeResult | None:
         return session.get(f"{base}/postings.json", headers=_HEADERS).text
 
     def parse(text: str):
-        data = json.loads(text)
-        items = data.get("data") if isinstance(data, dict) else None
-        if not isinstance(items, list):
-            return [], False, "no `data` list in the Pinpoint postings feed"
+        items = list_at(json.loads(text), "data", "Pinpoint")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(o, company, base, scraped_at) for o in _items(items)], True, ""
 

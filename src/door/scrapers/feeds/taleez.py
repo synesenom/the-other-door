@@ -36,7 +36,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
     Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, Probe, ProbeResult, RobotsBlocked,
-    followed_name, host_of, keep_local, make_job_id, parts, record_entry_error, record_error, record_pushback, report,
+    followed_name, host_of, keep_local, list_at, split_known, make_job_id, parts, record_entry_error, record_error, record_pushback, report,
     run_probe, scrape_feeds, strip_html, workers,
 )
 
@@ -96,10 +96,8 @@ def parse_list(text: str) -> tuple[str, list[dict]]:
         data = json.loads(text or "")
     except ValueError as exc:
         raise ValueError(f"not a Taleez job list: {exc}") from exc
-    if not isinstance(data, dict) or not isinstance(data.get(FEED_KEY), list):
-        raise ValueError("no jobs list in Taleez's answer")
     jobs = []
-    for raw in data[FEED_KEY]:
+    for raw in list_at(data, FEED_KEY, "Taleez"):
         if not isinstance(raw, dict):
             continue
         job_id, slug, title = str(raw.get("id") or "").strip(), str(raw.get("slug") or "").strip(), str(raw.get("label") or "").strip()
@@ -166,7 +164,7 @@ def _tenant_postings(session: PoliteSession, entry: str, scraped_at: datetime, k
         if _status(exc) in _PUSHBACK:
             record_pushback(_SITE)
         raise
-    jobs = [j for j in jobs if j["id"] not in known_ids]
+    jobs, known = split_known(jobs, lambda j: j["id"], known_ids)
     out: list[dict] = []
     for n, job in enumerate(jobs, 1):
         report("detail", n, len(jobs))
@@ -183,7 +181,7 @@ def _tenant_postings(session: PoliteSession, entry: str, scraped_at: datetime, k
             record_error(_SITE, f"job {job['id']} of {entry!r} has no ad data")
             continue
         out.append(_to_posting(job, ad["description"], name or channel or ad["organization"] or _slug(entry), scraped_at))
-    return out
+    return out + known
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:

@@ -31,10 +31,10 @@ from urllib.parse import parse_qs, unquote_plus, urlparse
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
-    map_by_group, record_entry_error, record_error, report, run_probe, strip_html, workers, followed_name,
+    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id,
+    record_error, report, run_probe, scrape_feeds, strip_html, workers, followed_name,
 )
-from door.scrapers.sdk import Detection, parts
+from door.scrapers.sdk import Detection, parts, split_known
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
 PLATFORM_DOMAINS = ("signatur.dk",)
@@ -123,23 +123,13 @@ def _to_posting(job: dict, detail: dict | None, client: str, company: str, scrap
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
     """Every open job of each configured Signatur customer."""
-    entries = [e for e in config.get("signatur_companies") or [] if e.strip()]
-    if not entries:
-        return []
-    scraped_at = datetime.now(timezone.utc)
-    session = PoliteSession(min_delay=FEED_DELAY[0], max_delay=FEED_DELAY[1], timeout=30)
+    entries = [e.strip() for e in config.get("signatur_companies") or [] if e.strip()]
 
-    def fetch(entry: str) -> list[dict] | None:
-        """One customer's jobs; ``None`` after a recorded error."""
+    def fetch(session, entry, scraped_at):
         client = _client_id(entry)
-        try:
-            company, jobs = _parse_list(session.get(f"{_BASE}/JobList.aspx", params={"ClientId": client}).text)
-        except Exception as exc:
-            report(f"error fetching jobs for {entry!r}: {exc}")
-            record_entry_error(_SITE, entry, f"error fetching jobs for {entry!r}: {exc}")
-            return None
+        company, jobs = _parse_list(session.get(f"{_BASE}/JobList.aspx", params={"ClientId": client}).text)
         company = followed_name(config, "signatur_companies", entry, company or f"Signatur {client}")
-        fresh = [j for j in jobs if f"{client}-{j['id']}" not in known_ids]
+        fresh, known = split_known(jobs, lambda j: f"{client}-{j['id']}", known_ids)
         out: list[dict] = []
         for n, job in enumerate(fresh, 1):
             report("detail", n, len(fresh))
@@ -149,19 +139,9 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 record_error(_SITE, f"error fetching job {job['id']} of {entry!r}: {exc}")
                 detail = None
             out.append(_to_posting(job, detail, client, company, scraped_at))
-        return out
+        return out + known
 
-    fetched = map_by_group(entries, lambda e: _HOST, fetch, workers(config))
-    seen: set[str] = set()
-    postings: list[dict] = []
-    for entry, company_postings in zip(entries, fetched):
-        if company_postings is None:
-            continue
-        fresh = [p for p in company_postings if p["platform_id"] not in seen]
-        seen.update(p["platform_id"] for p in fresh)
-        log_keyword_results(_SITE, entry.strip(), fresh)
-        postings.extend(fresh)
-    return postings
+    return scrape_feeds(_SITE, entries, fetch, group=lambda e: _HOST, max_workers=workers(config))
 
 
 def probe(config: dict) -> ProbeResult | None:

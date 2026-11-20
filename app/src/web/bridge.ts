@@ -187,8 +187,6 @@ export function createWebDoor(deps: WebDeps) {
     async dropCvFiles(): Promise<PickResult> {
       return { files: [], refused: [] }
     },
-    draftCv: machineOnly,
-    enrichFile: machineOnly,
     async cvFile() {
       return null
     },
@@ -196,7 +194,7 @@ export function createWebDoor(deps: WebDeps) {
     async pickPhoto() {
       return { error: ON_THE_MACHINE }
     },
-    savePhoto: machineOnly,
+    onBeforeClose: () => () => undefined,
     claudeLogin: {
       start: machineOnly,
       sendCode: machineOnly,
@@ -216,7 +214,6 @@ export function createWebDoor(deps: WebDeps) {
     async pickArchive() {
       return { error: ON_THE_MACHINE }
     },
-    importData: machineOnly,
     reportProblem: machineOnly,
     async showHome() {
       return { ok: false }

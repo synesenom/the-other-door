@@ -4,7 +4,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
+from door.scrapers import drain_answered, drain_entry_errors, drain_errors
 from door.scrapers.feeds import signatur
 from paths import TESTS_DIR
 
@@ -59,7 +59,8 @@ def test_known_ids_skip_the_detail_request():
 
     postings = signatur.scrape({"signatur_companies": ["2296"]}, known_ids=frozenset({"2296-166057"}))
 
-    assert [p["platform_id"] for p in postings] == ["2296-166122"]
+    assert [p["platform_id"] for p in postings if not p.get("seen_only")] == ["2296-166122"]
+    assert sorted(p["platform_id"] for p in postings if p.get("seen_only")) == ["2296-166057"]
     assert len(responses.calls) == 2
 
 
@@ -75,6 +76,28 @@ def test_a_failing_detail_keeps_the_job_from_the_list():
     assert len(postings) == 2
     assert postings[0]["description"] == "" and postings[0]["title"]
     assert drain_errors()["signatur"]
+
+
+@responses.activate
+def test_a_failed_list_is_a_recorded_error():
+    responses.add(responses.GET, _LIST, status=500)
+
+    drain_errors()
+    drain_entry_errors("signatur")
+    drain_answered("signatur")
+    assert signatur.scrape({"signatur_companies": ["2296"]}) == []
+    assert drain_errors()["signatur"]
+    assert "2296" in drain_entry_errors("signatur")
+    assert drain_answered("signatur") is False
+
+
+@responses.activate
+def test_an_empty_list_is_answered():
+    responses.add(responses.GET, _LIST, body="<html><title>Kommune - Ledige stillinger</title></html>")
+    drain_answered("signatur")
+
+    assert signatur.scrape({"signatur_companies": ["2296"]}) == []
+    assert drain_answered("signatur") is True
 
 
 def test_scrape_without_clients_is_empty():

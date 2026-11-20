@@ -72,7 +72,7 @@ The step-by-step guide, including adding a new country, is
 [docs/adding-a-site.md](docs/adding-a-site.md); `/dev-add-scraper <site> [country]`
 scaffolds it. A scraper is a
 stateless `scrape(config, known_ids=..., since=...)` returning serialised `JobPosting` dicts; `since` is the freshness cutoff (a `datetime` or
-`None`) it may use to filter at the source. Parsing helpers stay pure so they can be tested
+`None`) it may use to filter at the source (a card older than it is returned as a dated card posting with no ad request, not dropped; an ad dropped for its place goes through `record_non_local`, or a quiet day is reported `empty`). Parsing helpers stay pure so they can be tested
 from saved payloads without the network.
 
 A site module imports `door` code only from `door.scrapers.sdk` (guard: `tests/scrapers/test_scraper_imports_unit.py`; see [adding a site](docs/adding-a-site.md)).
@@ -89,4 +89,4 @@ a warning rather than drift. `tests/scrapers/test_scrapers_probe_contract_unit.p
 scraper without `probe()`, and each scraper's fixture test needs an ok and a drift case.
 `run_probe` and `probe_failure` in `src/door/scrapers/__init__.py` do the fetch/parse
 bookkeeping. On drift, `doctor` saves the raw response to `jobs/drift/<site>/`, and `setup`
-can hand it to the scraper-fixer agent (`.claude/agents/scraper-fixer.md`).
+can hand it to the scraper-fixer agent (`src/door/prompts/scraper-fixer.md`).

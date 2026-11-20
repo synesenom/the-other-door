@@ -142,7 +142,6 @@ def _to_posting(item: dict, scraped_at: datetime) -> dict:
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
     """Return JobPosting dicts from ReliefWeb: one feed per search keyword, newest first."""
     keywords = config.get("search_keywords") or config.get("role_targets") or []
-    since: datetime | None = kwargs.get("since")
     scraped_at = datetime.now(timezone.utc)
     session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY)
     seen: set[str] = set()
@@ -156,16 +155,14 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             report(f"feed error (keyword={keyword!r}): {exc}")
             record_error("reliefweb", f"feed error (keyword={keyword!r}): {exc}")
             continue
-        if not items:
-            record_answered("reliefweb")
+        record_answered("reliefweb")  # a feed read, empty or all known, is a quiet day, not a changed site
         for item in items:
             platform_id = item["platform_id"]
-            if platform_id in seen or platform_id in known_ids:
+            if platform_id in seen:
                 continue
             seen.add(platform_id)
-            if since is not None and item["posted_at"] is not None and item["posted_at"] < since:
-                continue
-            postings.append(_to_posting(item, scraped_at))
+            postings.append({"platform_id": platform_id, "seen_only": True} if platform_id in known_ids
+                            else _to_posting(item, scraped_at))
         log_keyword_results("reliefweb", keyword, postings[keyword_start:])
 
     return sdk.keep_local(postings, config, "reliefweb")

@@ -77,7 +77,7 @@ from door.core.employers.ats_detect import Detection
 from door.core.models import JobPosting, make_job_id, normalize_platform_id, tenant_platform_id
 from door.matching import locality, prefilter, title_fit
 from door.scrapers import (
-    PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, parse_iso_date, probe_failure, record_entry_error,
+    PROBE_TIMEOUT_S, ProbeResult, list_at, log_keyword_results, parse_iso_date, probe_failure, record_entry_error,
     record_answered, record_error, record_non_local, record_pushback, report, run_probe, scrape_feeds, strip_html,
     tracked, wall_page,
 )
@@ -99,10 +99,10 @@ __all__ = [
     "JobPosting", "make_job_id", "normalize_platform_id", "tenant_platform_id", "PoliteSession", "USER_AGENT", "RobotsBlocked", "FEED_DELAY", "PROBE_TIMEOUT_S",
     "report", "record_error", "record_entry_error", "record_pushback", "record_answered", "record_non_local", "tracked", "log_keyword_results",
     "wall_page",
-    "ProbeResult", "run_probe", "probe_failure", "scrape_feeds", "strip_html", "parse_iso_date",
+    "ProbeResult", "run_probe", "probe_failure", "scrape_feeds", "list_at", "strip_html", "parse_iso_date",
     "host_of", "map_by_group", "workers",
     "on_topic", "topic_terms", "topic_words", "keywords", "squash", "name_pattern",
-    "location_filter", "split_urls", "keep_local", "is_remote", "local_names", "country_is_non_local",
+    "location_filter", "split_urls", "keep_local", "split_known", "is_remote", "local_names", "country_is_non_local",
     "career_site_words", "generic_host_labels", "tld_labels", "career_nav_words", "career_apply_words", "career_path_stems", "city_names", "compile_words",
     "seniority_words", "stop_words", "transliteration", "word_pattern", "country_name",
     "ad_links", "from_url", "country", "look_back_days", "followed_name",
@@ -162,6 +162,22 @@ def keep_local(postings: list[dict], config: dict, site: str) -> list[dict]:
     return kept
 
 
+def split_known(rows: list, pid_of, known_ids) -> tuple[list, list[dict]]:
+    """`rows` split into those whose id `pid_of(row)` is not in `known_ids`, and a ``seen_only`` record
+    (`{"platform_id", "seen_only": True}`) for each that is, so the engine counts the ad as seen and
+    refreshes its `last_seen` without a detail request. `pid_of` must give the id the ledger stores
+    (tenant-folded where the feed folds it)."""
+    fresh: list = []
+    seen_only: list[dict] = []
+    for row in rows:
+        pid = pid_of(row)
+        if pid in known_ids:
+            seen_only.append({"platform_id": pid, "seen_only": True})
+        else:
+            fresh.append(row)
+    return fresh, seen_only
+
+
 def is_remote(text: str) -> bool:
     """Whether `text` holds a remote, hybrid or home-based word (any supported language)."""
     return locality.is_remote(text)
@@ -214,11 +230,15 @@ def known_city(location: str) -> str | None:
     return i18n.known_city(location)
 
 
-def location_fits(posting_location: str, config: dict) -> bool:
+def location_fits(posting_location: str, config: dict, site: str) -> bool:
     """Whether a posting's free-text location suits the profile: it names the profile's city or a town
     of its commute area, is empty, remote or names no known place; or the profile accepts remote work
-    or abroad. The match step's location pre-filter, for a board that cannot filter by place."""
-    return prefilter._is_location_compatible(posting_location, config)
+    or abroad. The match step's location pre-filter, for a board that cannot filter by place; a drop is
+    counted with `record_non_local(site, 1)`."""
+    fits = prefilter._is_location_compatible(posting_location, config)
+    if not fits:
+        record_non_local(site, 1)
+    return fits
 
 
 def city_names(location: str) -> list[str]:
@@ -312,7 +332,8 @@ class DiscoveryResult(TypedDict, total=False):
     """What a source's ``run`` returns: ``employers``, ``requests``, ``pages``, ``details``,
     ``stopped`` (reason | None), ``pushback`` (a refusal: the source rests a day), ``outcome``
     (``ok``, ``budget``, ``refused``, ``error``, ``cancelled``), ``mode``, ``mode_switched``,
-    ``searched``, ``search_complete``, ``first_429``, ``budget``, ``pause``, ``seconds``."""
+    ``searched`` (the keywords to stamp searched), ``empty`` (keywords completed with an empty first
+    page: passed in the rotation, their cutoff kept), ``search_complete``, ``first_429``, ``budget``, ``pause``, ``seconds``."""
 
     employers: list[Employer]
     requests: int
@@ -324,6 +345,7 @@ class DiscoveryResult(TypedDict, total=False):
     mode: str
     mode_switched: bool
     searched: list[str]
+    empty: list[str]
     search_complete: bool
     first_429: dict | None
     budget: int

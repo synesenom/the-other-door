@@ -41,11 +41,11 @@ def test_core_asks_claude_with_the_rules_and_the_role_targets(env, monkeypatch):
                       "topic_terms": ["data"], "saved": False}
     call = calls[0]
     args = call["args"]
-    assert args[args.index("--system-prompt") + 1] == keywords_cmd._RULES
-    assert "8" in keywords_cmd._RULES and "15" in keywords_cmd._RULES and "noun form" in keywords_cmd._RULES
-    assert "institute" in keywords_cmd._RULES and "department" in keywords_cmd._RULES
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("keywords")
+    assert "8" in claude_cli.prompt("keywords") and "15" in claude_cli.prompt("keywords") and "noun form" in claude_cli.prompt("keywords")
+    assert "institute" in claude_cli.prompt("keywords") and "department" in claude_cli.prompt("keywords")
     assert json.loads(args[args.index("--json-schema") + 1]) == keywords_cmd._SCHEMA
-    assert args[args.index("--model") + 1] == keywords_cmd._DEFAULT_MODEL
+    assert args[args.index("--model") + 1] == claude_cli.model_of("keywords")
     assert "--tools" in args and args[args.index("--tools") + 1] == ""
     assert "Data Scientist" in call["input"] and "ML Engineer" in call["input"]
     assert call["profile_dir"] == env.profile_dir
@@ -63,7 +63,7 @@ def test_keywords_come_in_every_ad_language_of_the_profile(env, monkeypatch):
     write_config(env.profile_dir, {"role_targets": ["Data Scientist"], "languages": ["English", "da"]})
     keywords_cmd._keywords_core(profile_dir=env.profile_dir)
     assert "Ad languages: English, Danish" in calls[-1]["input"]
-    assert "each ad language" in keywords_cmd._RULES
+    assert "each ad language" in claude_cli.prompt("keywords")
 
     server.keywords(["Data Scientist"], languages=["English"])   # onboarding: before the profile has them
     assert "Ad languages: English" in calls[-1]["input"] and "Danish" not in calls[-1]["input"]
@@ -100,7 +100,7 @@ def test_topic_terms_come_with_the_keywords_in_every_ad_language(env, monkeypatc
     _answer(monkeypatch, ["data scientist"], topic=[" data ", "BI", "bi", "adat*", ""])
     assert keywords_cmd._keywords_core(profile_dir=env.profile_dir)["topic_terms"] == ["data", "BI", "adat*"]
     assert "topic_terms" in keywords_cmd._SCHEMA["required"]
-    rules = keywords_cmd._RULES
+    rules = claude_cli.prompt("keywords")
     assert "topic_terms" in rules and "role noun" in rules and "*" in rules
 
 
@@ -108,7 +108,7 @@ def test_the_rules_leave_compounds_and_plurals_to_the_matcher(env):
     """#428: the matcher finds a field word inside a Danish compound and in a plural, so the prompt asks
     for plain field words; `*x`, `x*` stay allowed, and an abbreviation that is also a word is kept in
     capitals or paired with its field word."""
-    rules = keywords_cmd._RULES
+    rules = claude_cli.prompt("keywords")
     assert "matcher" in rules and "compound" in rules and "plural" in rules
     assert "*" in rules and "trailing *" not in rules
     assert "all-caps" in rules and "MEAL" in rules

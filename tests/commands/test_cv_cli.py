@@ -12,6 +12,7 @@ import zipfile
 import pytest
 
 from door.commands import cv as cv_cmd
+from door.commands import _common as common
 from door.core import claude_cli, workspace
 from paths import REPO_ROOT
 from pdf_utils import make_pdf
@@ -187,17 +188,17 @@ def test_core_drafts_from_files_and_urls(env, monkeypatch):
 
     call = calls[0]
     args = call["args"]
-    assert args[args.index("--system-prompt") + 1] == cv_cmd._RULES
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
     assert json.loads(args[args.index("--json-schema") + 1]) == cv_cmd._SCHEMA
     assert args[args.index("--allowedTools") + 1] == "WebFetch"
-    assert args[args.index("--model") + 1] == cv_cmd._DEFAULT_MODEL
+    assert args[args.index("--model") + 1] == claude_cli.model_of("cv-drafter")
     for needle in ("Lead Data Scientist at Acme", "Senior Data Scientist at Big Bank", "PhD Copenhagen 2015", "https://github.com/jane"):
         assert needle in call["input"], needle
     assert "## Work Experience" in call["input"]  # the example CV's structure is the template
     assert "Jane Doe" in call["input"] and "Data Scientist" in call["input"]  # the profile's own fields
     assert call["profile_dir"] == env.profile_dir
     for word in ("backbone", "subpages", "api.github.com", "never invent", "TODO"):
-        assert word in cv_cmd._RULES, word
+        assert word in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES), word
 
 
 def test_core_returns_the_draft_text(env, monkeypatch):
@@ -240,8 +241,8 @@ def test_core_errors(env, monkeypatch):
     assert not env.draft_path.exists()
 
 
-def _draft_answering(env, monkeypatch, markdown, todos=()):
-    answer = {"cv_markdown": markdown, "todos": list(todos)}
+def _draft_answering(env, monkeypatch, markdown, todos=(), skills_headings=()):
+    answer = {"cv_markdown": markdown, "todos": list(todos), "skills_headings": list(skills_headings)}
     monkeypatch.setattr(claude_cli, "run", lambda *a, **k: json.dumps({"result": json.dumps(answer)}))
     return cv_cmd._draft_cv_core([str(env.tmp / "notes.md")], profile_dir=env.profile_dir)
 
@@ -250,7 +251,7 @@ def _draft_answering(env, monkeypatch, markdown, todos=()):
 def test_draft_never_asks_for_a_skills_section_the_sources_did_not_show(env, monkeypatch, line):
     result = _draft_answering(
         env, monkeypatch, f"# Ada\n\n## Skills\n\n{line}\n\n## Languages\n\n- English\n",
-        ["Add your skills", "Add the year of your MSc"],
+        ["Add your skills", "Add the year of your MSc"], ["Skills"],
     )
     assert result["markdown"] == "# Ada\n\n## Languages\n\n- English\n"
     assert result["todos"] == ["Add the year of your MSc"]
@@ -258,12 +259,12 @@ def test_draft_never_asks_for_a_skills_section_the_sources_did_not_show(env, mon
 
 
 def test_draft_keeps_the_skills_it_found_beside_a_todo(env, monkeypatch):
-    result = _draft_answering(env, monkeypatch, "## Kompetencer\n\nPython, SQL, TODO\n- TODO\n- Excel\n")
+    result = _draft_answering(env, monkeypatch, "## Kompetencer\n\nPython, SQL, TODO\n- TODO\n- Excel\n", skills_headings=["Kompetencer"])
     assert result["markdown"] == "## Kompetencer\n\nPython, SQL\n- Excel\n"
 
 
 def test_draft_keeps_a_todo_in_any_other_section(env, monkeypatch):
-    result = _draft_answering(env, monkeypatch, "## Skills\n\nPython\n\n## Education\n\nMSc, TODO year\n", ["Add your skills list", "x"])
+    result = _draft_answering(env, monkeypatch, "## Skills\n\nPython\n\n## Education\n\nMSc, TODO year\n", ["Add your skills list", "x"], ["Skills"])
     assert "MSc, TODO year" in result["markdown"]
     assert result["todos"] == ["Add your skills list", "x"]  # nothing was taken out of Skills
 
@@ -286,7 +287,7 @@ def test_extract_text_reads_a_text_cv_in_the_encodings_windows_saves(tmp_path, d
 def test_the_draft_rules_allow_a_location_as_the_last_part_of_an_entry_heading():
     from door.commands import cv as cv_cmd
 
-    assert "### Role | Company — dates | Location" in cv_cmd._RULES
+    assert "### Role | Company — dates | Location" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
 
 
 FIXTURES = REPO_ROOT / "tests" / "commands" / "fixtures"
@@ -330,3 +331,55 @@ def test_extract_text_of_a_pdf_says_a_level_shown_by_the_colour_of_its_dots():
 
 def test_extract_text_of_a_pdf_with_no_icons_is_pdfiums_text(env):
     assert cv_cmd._extract_text(env.tmp / "old-cv.pdf") == _pdfium_text(env.tmp / "old-cv.pdf")
+
+
+def test_extract_text_of_a_pdf_keeps_dots_and_bullets_in_a_font_of_their_own_and_drops_its_glyphs(tmp_path):
+    from pdf_utils import raw_pdf
+
+    # ZapfDingbats: ( is a plane, l a black circle, 4 a check mark
+    content = """BT /F1 11 Tf 50 760 Td (Jane Doe) Tj ET
+BT /F6 9 Tf 50 740 Td (\\() Tj ET BT /F1 11 Tf 64 740 Td (+45 1234 5678) Tj ET
+BT /F6 9 Tf 50 720 Td (l) Tj ET BT /F1 11 Tf 64 720 Td (Led the team) Tj ET
+BT /F1 11 Tf 50 700 Td (Python) Tj ET BT /F6 9 Tf 120 700 Td (l l l) Tj ET
+BT /F6 9 Tf 50 680 Td (4) Tj ET BT /F1 11 Tf 64 680 Td (Certified) Tj ET
+BT /F1 11 Tf 50 660 Td (Data engineer building pipelines in Copenhagen since 2019.) Tj ET"""
+    pdf = tmp_path / "cv.pdf"
+    pdf.write_bytes(raw_pdf(content, fonts={"F6": "ZapfDingbats"}))
+    lines = [" ".join(line.split()) for line in cv_cmd._extract_text(pdf).splitlines()]
+    assert lines == ["Jane Doe", "+45 1234 5678", "● Led the team", "Python ● ● ●", "Certified",
+                     "Data engineer building pipelines in Copenhagen since 2019."]
+
+
+def test_the_draft_rules_keep_the_cvs_own_section_headings_and_groups():
+    from door.commands import cv as cv_cmd
+
+    assert "word for word" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES) and "never renamed" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+    assert "`### Title` line of its own" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+
+
+@pytest.mark.parametrize("title", ["Technical & Programming Skills", "Kompetencer og værktøjer", "My toolbox"])
+def test_draft_drops_a_skills_todo_under_the_title_the_model_named(env, monkeypatch, title):
+    result = _draft_answering(
+        env, monkeypatch, f"# Ada\n\n## {title}\n\nTODO\n\n## Languages\n\n- English\n", [f"Add {title}"], [title],
+    )
+    assert result["markdown"] == "# Ada\n\n## Languages\n\n- English\n"
+    assert result["todos"] == []
+
+
+def test_draft_keeps_a_todo_under_a_title_the_model_did_not_name_a_skills_one(env, monkeypatch):
+    result = _draft_answering(env, monkeypatch, "## My toolbox\n\nTODO\n")
+    assert "TODO" in result["markdown"]
+
+
+def test_draft_asks_for_its_skills_headings_and_no_kind_markers():
+    assert "skills_headings" in cv_cmd._SCHEMA["required"] and "skills_headings" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+    assert "<!-- kind:" not in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+
+
+def test_a_todo_goes_with_the_todo_line_it_was_about(env, monkeypatch):
+    result = _draft_answering(
+        env, monkeypatch, "# Ada\n\n## Technical Skills\n\nTODO: list your tools\n\n## Languages\n\n- English\n",
+        ["List your tools and frameworks", "Add the year of your MSc"], ["Technical Skills"],
+    )
+    assert result["markdown"] == "# Ada\n\n## Languages\n\n- English\n"
+    assert result["todos"] == ["Add the year of your MSc"]

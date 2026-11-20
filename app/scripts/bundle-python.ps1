@@ -1,6 +1,6 @@
 # Windows twin of bundle-python.sh (#355, #223): builds app\resources\ for x64 Windows.
 #   python\   python-build-standalone 3.12 (python.exe at its root) with door's locked packages, by hash, wheels only
-#   door\   src\, .claude\agents\{tailor,reviewer,matcher}.md and profile.example\, as in a checkout
+#   door\   src\ (the prompts in src\door\prompts\ with it) and profile.example\, as in a checkout
 #   bin\      chromium\ (the Chromium headless shell that prints CVs, #165; win64 also runs on Windows on ARM)
 # Pinned in scripts\bundle.lock.json; downloads cached in app\.bundle-cache\ (DOOR_BUNDLE_CACHE).
 $ErrorActionPreference = 'Stop'
@@ -28,7 +28,7 @@ function Fetch([string]$Url, [string]$Want) {
 }
 
 if (Test-Path $Out) { Remove-Item -Recurse -Force $Out }
-New-Item -ItemType Directory -Force -Path (Join-Path $Out 'bin'), (Join-Path $Out 'door\.claude\agents') | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $Out 'bin'), (Join-Path $Out 'door') | Out-Null
 
 # 1. the Python runtime
 $Py = $Lock.python
@@ -45,7 +45,6 @@ if ($LASTEXITCODE -ne 0) { throw 'pip install failed' }
 
 # 3. door itself, laid out as in a checkout
 robocopy (Join-Path $Repo 'src') (Join-Path $Out 'door\src') /E /XD __pycache__ /NFL /NDL /NJH /NJS | Out-Null
-foreach ($Agent in 'tailor.md', 'reviewer.md', 'matcher.md') { Copy-Item (Join-Path $Repo ".claude\agents\$Agent") (Join-Path $Out 'door\.claude\agents') }
 robocopy (Join-Path $Repo 'profile.example') (Join-Path $Out 'door\profile.example') /E /NFL /NDL /NJH /NJS | Out-Null
 
 # 4. the Chromium headless shell, pinned in src\door\core\downloads\chromium_pin.json (the pin `doctor --fix` installs from too)

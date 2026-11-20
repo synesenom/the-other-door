@@ -19,11 +19,6 @@ updates:
       python-security:
         applies-to: security-updates
         patterns: ["*"]
-    ignore:
-      # cryptography 49 and later ship no Intel macOS wheel, and the app is still built for Intel Macs
-      # (pyproject.toml keeps it below 49).
-      - dependency-name: cryptography
-        versions: [">=49"]
 
   - package-ecosystem: npm          # the desktop app
     directory: /app
@@ -55,7 +50,6 @@ updates:
       day: monday
     cooldown:
       default-days: 7
-      semver-major-days: 14
     groups:
       actions:
         applies-to: version-updates

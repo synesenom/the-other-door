@@ -12,7 +12,7 @@ Pure and offline — no network.
 import pytest
 
 from door.core.progress import Progress
-from door.scrapers import drain_errors, log_keyword_results, record_error, report, scrape_feeds, strip_html, tracked
+from door.scrapers import drain_answered, drain_errors, log_keyword_results, record_error, report, scrape_feeds, strip_html, tracked
 
 
 @pytest.fixture(autouse=True)
@@ -33,6 +33,11 @@ def test_log_keyword_results_reports_count_and_prints_nothing(progress_events, c
 def test_log_keyword_results_zero_results_reports_0_results(progress_events):
     log_keyword_results("lever", "analyst", [])
     assert [e.message for e in progress_events] == ["'analyst': 0 results"]
+
+
+def test_log_keyword_results_does_not_count_known_ads(progress_events):
+    log_keyword_results("reed", "analyst", [{"id": "1"}, {"platform_id": "2", "seen_only": True}])
+    assert [e.message for e in progress_events] == ["'analyst': 1 results"]
 
 
 def test_report_forwards_to_core_channel_with_site_and_detail(progress_events):
@@ -286,3 +291,42 @@ def test_scrape_feeds_records_a_failed_entry_when_run_side_by_side():
     postings = scrape_feeds("acmeats", ["bad.example", "ok.example"], fetch, group=lambda e: e, max_workers=2)
     assert [p["platform_id"] for p in postings] == ["ok.example"]
     assert drain_errors("acmeats") == {"acmeats": ["error fetching 'bad.example': boom"]}
+
+
+def test_scrape_feeds_a_fetch_that_returns_normally_answered_even_with_no_ads():
+    drain_answered("acmeats")
+    assert scrape_feeds("acmeats", ["a"], lambda session, entry, at: []) == []
+    assert drain_answered("acmeats") is True
+
+
+def test_scrape_feeds_seen_only_records_answer_and_are_not_counted_as_results(progress_events):
+    drain_answered("acmeats")
+
+    def fetch(session, entry, scraped_at):
+        return [{"platform_id": "k1", "seen_only": True}, _posting("n1")]
+
+    postings = scrape_feeds("acmeats", ["a"], fetch)
+    assert [p["platform_id"] for p in postings] == ["k1", "n1"]
+    assert drain_answered("acmeats") is True
+    assert ("'a': 1 results", "keyword") in [(e.message, e.stage) for e in progress_events]
+
+
+def test_scrape_feeds_a_fetch_that_raises_is_not_answered():
+    drain_answered("acmeats")
+
+    def fetch(session, entry, scraped_at):
+        raise ValueError("boom")
+
+    scrape_feeds("acmeats", ["a"], fetch)
+    drain_errors("acmeats")
+    assert drain_answered("acmeats") is False
+
+
+def test_list_at_returns_the_list_or_names_the_missing_one():
+    import pytest
+    from door.scrapers import list_at
+
+    assert list_at({"jobs": [1]}, "jobs", "X") == [1]
+    for bad in (None, [], {}, {"jobs": "x"}):
+        with pytest.raises(ValueError, match="no `jobs` list in X's answer"):
+            list_at(bad, "jobs", "X")
