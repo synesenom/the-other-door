@@ -35,7 +35,7 @@ from xml.etree import ElementTree
 import requests
 
 from door.scrapers.sdk import (
-    Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, host_of,
+    Detection, JobPosting, NOT_ACCOUNTS, probe_session, PoliteSession, ProbeResult, followed_name, host_of,
     keep_local, make_job_id, parse_iso_date, parts, record_pushback, run_probe, scrape_feeds, strip_html, workers,
 )
 
@@ -155,7 +155,7 @@ def probe(config: dict) -> ProbeResult | None:
     entries = [e for e in config.get("personio_companies") or [] if e.strip()]
     if not entries:
         return None
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(xml_url(entries[0]), headers=_HEADERS).text
@@ -186,12 +186,6 @@ def detect_url(url: str) -> Detection | None:
     host, _path, _query = parts(url.strip())
     entry = _entry(host)
     return Detection(_SITE, entry, f"Personio career page {host}") if entry else None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the feed is XML, not the JSON list the confirmation reads; the link's shape vouches for it and
-    `alive_url` drops an account that does not exist."""
-    return None
 
 
 def alive_url(entry: str) -> str:

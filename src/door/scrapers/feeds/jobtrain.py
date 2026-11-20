@@ -42,7 +42,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
+    NOT_ACCOUNTS, Detection, JobPosting, probe_session, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
     host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
     run_probe, scrape_feeds, strip_html, workers,
 )
@@ -96,11 +96,6 @@ def alive_url(entry: str) -> str | None:
     """The first page of *entry*'s job list: it answers 4xx for a tenant that does not exist."""
     target = _target(entry)
     return _list_url(target[0], 0) if target else None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the list is HTML, not a JSON answer to confirm by; a link that names a tenant is proof enough."""
-    return None
 
 
 def _text(node) -> str:
@@ -267,7 +262,7 @@ def probe(config: dict) -> ProbeResult | None:
     if target is None:
         return None
     base, label = target
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(_list_url(base, 0)).text

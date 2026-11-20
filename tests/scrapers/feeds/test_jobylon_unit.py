@@ -147,7 +147,6 @@ def test_detect_html_reads_the_company_of_an_embed_snippet():
 
 
 def test_there_is_no_json_feed_to_confirm_an_entry_with():
-    assert jobylon.feed_url("2420") is None
     assert jobylon.name_probes("lyko") == []
 
 

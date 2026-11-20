@@ -35,7 +35,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, Probe, ProbeResult, RobotsBlocked,
+    Detection, JobPosting, NOT_ACCOUNTS, probe_session, PoliteSession, Probe, ProbeResult, RobotsBlocked,
     followed_name, host_of, keep_local, list_at, split_known, make_job_id, parts, record_entry_error, record_error, record_pushback, report,
     run_probe, scrape_feeds, strip_html, workers,
 )
@@ -202,7 +202,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     entry = entries[0]
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(feed_url(entry)).text

@@ -34,7 +34,7 @@ from datetime import date, datetime, timezone
 from urllib.parse import urljoin
 
 from door.scrapers.sdk import (
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, host_of, make_job_id, parse_iso_date, run_probe,
+    JobPosting, PoliteSession, probe_session, ProbeResult, host_of, make_job_id, parse_iso_date, run_probe,
     report, scrape_feeds, strip_html, tenant_platform_id, workers, followed_name,
 )
 from door.scrapers.sdk import keep_local, list_at
@@ -273,7 +273,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     tenant = _tenant(entries[0])
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         resp = session.post(f"{_base(tenant)}/api/integration/vacancy/get-page", headers=_HEADERS,
@@ -309,6 +309,3 @@ def detect_html(html: str, url: str) -> Detection | None:
     return None
 
 
-def feed_url(entry: str) -> str | None:
-    """None: the vacancy list is a POST, which the link's shape (a tenant host) vouches for."""
-    return None

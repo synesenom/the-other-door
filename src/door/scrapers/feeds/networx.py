@@ -43,7 +43,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name, host_of,
+    Detection, JobPosting, probe_session, PoliteSession, ProbeResult, RobotsBlocked, followed_name, host_of,
     keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report, run_probe,
     scrape_feeds, strip_html, workers,
 )
@@ -84,11 +84,6 @@ def _cid(entry: str) -> str | None:
 def search_url(cid: str) -> str:
     """The board's search narrowed to the client with id *cid*."""
     return f"{_HOST}/Website/Search?SelectedEmployers={cid}"
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the list is HTML, not a JSON answer to confirm by; a link that carries a client id is proof enough."""
-    return None
 
 
 def _text(node) -> str:
@@ -297,7 +292,7 @@ def probe(config: dict) -> ProbeResult | None:
     cid = _cid(entries[0]) if entries else None
     if cid is None:
         return None
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(search_url(cid)).text

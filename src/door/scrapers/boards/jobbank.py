@@ -126,12 +126,8 @@ def _location_text(address) -> str:
 
 
 def _parse_date(value) -> datetime | None:
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
-    except ValueError:
-        return None
+    parsed = sdk.parse_iso_date(value)
+    return parsed.replace(tzinfo=None) if parsed else None
 
 
 def _parse_detail(html: str) -> dict | None:

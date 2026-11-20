@@ -51,7 +51,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, RobotsBlocked, ad_links,
+    FEED_DELAY, JobPosting, PoliteSession, probe_session, ProbeResult, RobotsBlocked, ad_links,
     career_apply_words, career_nav_words, career_path_stems, career_site_words, followed_name, generic_host_labels, tld_labels, host_of, keep_local, local_names, location_filter,
     log_keyword_results, make_job_id, map_by_group, name_pattern, parse_iso_date, probe_failure, record_entry_error,
     record_answered, record_non_local, report, split_known, split_urls, squash, topic_words, workers,
@@ -683,7 +683,7 @@ def probe(config: dict) -> ProbeResult | None:
         return None
     base = _base(entries[0])
     host = urlparse(base).netloc
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
     try:
         if _platform_reservation(host):
             raise RobotsBlocked(base)
@@ -796,11 +796,6 @@ def tenant_probe(session: PoliteSession, slug: str) -> Detection | None:
                 return Detection("career_sites", f"{base}/{site}",
                                  f"Workday site {host}/{site}, named like the employer, lists {count} "
                                  f"{'job' if count == 1 else 'jobs'} publicly")
-    return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: a link to the site names the account, no feed check is needed."""
     return None
 
 

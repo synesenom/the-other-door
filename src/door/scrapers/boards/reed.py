@@ -95,12 +95,8 @@ def _parse_results(html: str) -> tuple[int, list[dict]] | None:
 
 def _parse_date(value) -> datetime | None:
     """A Reed timestamp (naive local time, optionally with a ``Z``) as a naive datetime. Pure."""
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
-    except ValueError:
-        return None
+    parsed = sdk.parse_iso_date(value)
+    return parsed.replace(tzinfo=None) if parsed else None
 
 
 def _card(raw: dict) -> dict | None:

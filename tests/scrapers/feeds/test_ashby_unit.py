@@ -37,4 +37,3 @@ def test_detect_url():
 def test_an_ashby_name_probe_is_the_job_board_api():
     (probe,) = ashby.name_probes("acme")
     assert (probe.url, probe.key) == ("https://api.ashbyhq.com/posting-api/job-board/acme", "jobs")
-    assert ashby.feed_url("acme") is None

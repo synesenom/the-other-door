@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id, tenant_platform_id, run_probe, scrape_feeds, strip_html,
+    JobPosting, PoliteSession, probe_session, ProbeResult, make_job_id, tenant_platform_id, run_probe, scrape_feeds, strip_html,
     followed_name,
 )
 from door.scrapers.sdk import keep_local, list_at
@@ -111,7 +111,7 @@ def probe(config: dict) -> ProbeResult | None:
         return None
     base = _careers_base(entries[0])
     company = _company_name(entries[0].strip() if "." not in entries[0] else urlparse(base).netloc)
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(f"{base}/postings.json", headers=_HEADERS).text

@@ -181,10 +181,6 @@ def test_a_page_without_reachmee_is_not_detected():
     assert reachmee.detect_html("<html>careers</html>", "https://acme.example/") is None
 
 
-def test_the_link_shape_is_proof_enough():
-    assert reachmee.feed_url("I003/354/5") is None
-
-
 def test_two_customers_with_the_same_ad_number_get_different_ids():
     row = {"job_id": "77", "title": "Chef", "url": "https://web103.reachmee.com/ext/I003/1/job?site=1&job_id=77"}
 

@@ -41,7 +41,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
+    Detection, JobPosting, NOT_ACCOUNTS, probe_session, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
     host_of, keep_local, split_known, make_job_id, parts, record_entry_error, record_error, record_pushback, report, run_probe,
     scrape_feeds, strip_html, tenant_platform_id, workers,
 )
@@ -293,7 +293,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     base = _base(entries[0])
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def fetch() -> str:
         return session.get(f"{base}{_LIST_PATH}").text
@@ -310,7 +310,7 @@ def probe(config: dict) -> ProbeResult | None:
 
 # --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
 
-FEED_KEY = None  # (no JSON feed to confirm an entry with: `feed_url` is None)
+FEED_KEY = None  # (no JSON feed to confirm an entry with: no `feed_url`)
 
 
 def _own_path(path: list[str]) -> bool:
@@ -331,12 +331,6 @@ def detect_url(url: str) -> Detection | None:
         return None
     if _own_path(path):
         return Detection(_SITE, host, f"{url} has Talentsoft's paths: a Talentsoft career site on {host}")
-    return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the RSS feed is XML and capped at twenty ads, not the JSON list the confirmation reads; a link's
-    shape vouches for the site, and `alive_url` drops a career site that does not exist."""
     return None
 
 

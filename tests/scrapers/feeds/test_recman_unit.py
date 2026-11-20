@@ -140,7 +140,6 @@ def test_the_shared_apply_host_alone_is_not_a_detection():
 
 
 def test_the_feed_needs_no_confirmation():
-    assert recman.feed_url("pn") is None
     assert recman.name_probes("pn") == []
 
 

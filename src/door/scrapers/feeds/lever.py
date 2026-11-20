@@ -27,7 +27,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id, run_probe, scrape_feeds, followed_name,
+    JobPosting, PoliteSession, probe_session, ProbeResult, make_job_id, run_probe, scrape_feeds, followed_name,
 )
 from door.scrapers.sdk import keep_local
 from door.scrapers.sdk import Detection, Probe, first, parts
@@ -164,7 +164,7 @@ def probe(config: dict) -> ProbeResult | None:
         return None
     entry = companies[0]
     slug = _company(entry)[0]
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return _fetch_postings(session, entry)[1].text
@@ -186,11 +186,6 @@ def detect_url(url: str) -> Detection | None:
         return None
     slug = first(path)
     return Detection("lever", slug, f"Lever board link {url}") if slug else None
-
-def feed_url(entry: str) -> str | None:
-    """None: a link to the board names the account, no feed check is needed."""
-    return None
-
 
 def name_probes(slug: str) -> list[Probe]:
     """The public postings API to try for a company name's *slug*: the US host, then the EU one."""

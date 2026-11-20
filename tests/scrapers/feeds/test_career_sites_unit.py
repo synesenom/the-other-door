@@ -256,7 +256,6 @@ def test_detect_url_reads_a_workday_tenant():
         "career_sites", "https://velux.wd3.myworkdayjobs.com")
     assert career_sites.detect_url("https://wd3.myworkdaysite.com/other/velux/x") is None
     assert career_sites.detect_url("https://acme.dk/careers") is None
-    assert career_sites.feed_url("https://acme.dk") is None
 
 
 @pytest.mark.parametrize("target, expected", [

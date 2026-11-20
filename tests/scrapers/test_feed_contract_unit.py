@@ -17,9 +17,10 @@ def _module(name):
 
 
 def _check_detects_urls_and_names_its_feed(module):
-    assert callable(module.detect_url) and callable(module.feed_url)
+    assert callable(module.detect_url)
     assert module.detect_url("https://example.invalid/x") is None
-    assert module.feed_url("nobody") is None or isinstance(module.feed_url("nobody"), str)
+    if hasattr(module, "feed_url"):   # optional: only a platform whose feed can be confirmed names one
+        assert isinstance(module.feed_url("nobody"), str)
 
 
 @pytest.mark.parametrize("site", sorted(FEED_SITES))

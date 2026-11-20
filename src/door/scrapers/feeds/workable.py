@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
+    FEED_DELAY, JobPosting, PoliteSession, probe_session, ProbeResult, log_keyword_results, make_job_id,
     parse_iso_date, record_answered, record_entry_error, record_error, report, run_probe, strip_html, tracked, followed_name,
 )
 from door.scrapers.sdk import keep_local, list_at
@@ -233,7 +233,7 @@ def probe(config: dict) -> ProbeResult | None:
     companies = config.get("workable_companies") or []
     if not keywords and companies:
         account = _account(companies[0])
-        session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+        session = probe_session(_HEADERS)
 
         def fetch_account() -> str:
             return session.get(_WIDGET_URL.format(account=account), headers=_HEADERS, params={"details": "true"}).text
@@ -249,7 +249,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not keywords:
         return None
     location = (config.get("location") or "").strip()
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(_SEARCH_URL, headers=_HEADERS, params=_search_params(keywords[0], location, None)).text
@@ -276,11 +276,6 @@ def detect_url(url: str) -> Detection | None:
         return None
     account = first(path)
     return Detection("workable", account, f"Workable careers link {url}") if account else None
-
-def feed_url(entry: str) -> str | None:
-    """None: a link to the board names the account, no feed check is needed."""
-    return None
-
 
 def name_probes(slug: str) -> list[Probe]:
     """The public widget API to try for a company name's *slug*."""

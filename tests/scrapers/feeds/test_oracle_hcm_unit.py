@@ -144,6 +144,5 @@ def test_a_site_list_that_cannot_be_read_leaves_the_detection_alone(session):
 
 
 def test_the_feed_check_is_the_one_job_search():
-    assert oracle_hcm.feed_url("h.oraclecloud.com/CX_1") is None
     assert "limit=1" in oracle_hcm.alive_url("h.oraclecloud.com/CX_1")
     assert oracle_hcm.alive_url("nonsense") is None

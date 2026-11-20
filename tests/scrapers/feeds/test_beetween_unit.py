@@ -186,5 +186,4 @@ def test_other_pages_are_not_detected(html):
 
 
 def test_the_feed_has_no_json_check_and_no_name_probe():
-    assert beetween.feed_url("giboire") is None
     assert beetween.name_probes("giboire") == []

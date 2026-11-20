@@ -93,7 +93,6 @@ def test_detect_url(url, expected):
         assert det.evidence
     assert hr_manager.detect_url("https://candidate.hr-manager.net/Vacancies/List.aspx") is None
     assert hr_manager.detect_url("https://example.com/") is None
-    assert hr_manager.feed_url("kkdk") is None
 
 
 _HR_FIXTURES = TESTS_DIR / "scrapers" / "feeds" / "fixtures" / "hr_manager"

@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
-    country_is_non_local, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id, parse_iso_date, record_error,
+    country_is_non_local, JobPosting, PoliteSession, probe_session, ProbeResult, make_job_id, parse_iso_date, record_error,
     record_non_local, report, run_probe, scrape_feeds, strip_html,
     followed_name,
 )
@@ -149,7 +149,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     company_id = _company_id(entries[0])
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(f"{_API}/{company_id}/postings", params={"limit": 20}, headers=_HEADERS).text
@@ -189,11 +189,6 @@ def detect_url(url: str) -> Detection | None:
     if host.endswith("smrtr.io"):
         return Detection("smartrecruiters", None, f"SmartRecruiters short link {url}: it names no company")
     return None
-
-def feed_url(entry: str) -> str | None:
-    """None: a link to the board names the account, no feed check is needed."""
-    return None
-
 
 def name_probes(slug: str) -> list[Probe]:
     """The public postings API to try for a company name's *slug*."""

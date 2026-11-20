@@ -115,7 +115,7 @@ def _resolves(host: str) -> bool:
 
 
 def _feed_module(platform: str):
-    """The platform's module under `door.scrapers.feeds`, for its `feed_url` (None for a platform it has none)."""
+    """The platform's module under `door.scrapers.feeds`, for its `feed_url` (a platform whose link is proof enough has none)."""
     return importlib.import_module(f"door.scrapers.feeds.{platform}")
 
 

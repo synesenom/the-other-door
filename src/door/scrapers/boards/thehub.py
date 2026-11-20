@@ -21,8 +21,7 @@ between them), so the scraper runs in ``_scrape_core``'s pool next to the
 other boards.
 
 Parsing (``_parse_listing_payload``, ``_parse_detail_payload``, ``_job_url``,
-``_location_text``, ``_parse_date``) is kept pure and
-separate from the network so it can be unit/fixture tested offline.
+``_location_text``) is kept pure and separate from the network so it can be unit/fixture tested offline.
 
 The Hub is a Nordic startup job board; only its Danish listings are searched.
 
@@ -63,15 +62,6 @@ def _country_code(config: dict) -> str:
     `src/door/i18n/country/`) when the site is registered for it, else the
     first country it is registered for."""
     return sdk.country(config, _SERVED)
-
-
-def _parse_date(raw: Any) -> datetime | None:
-    if not isinstance(raw, str) or not raw:
-        return None
-    try:
-        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
-    except ValueError:
-        return None
 
 
 def _location_text(node: dict) -> str:
@@ -135,7 +125,7 @@ def _parse_detail_payload(job_obj: dict | None) -> dict | None:
         "company": company,
         "location": _location_text(job_obj),
         "description": description,
-        "posted_at": _parse_date(job_obj.get("publishedAt")),
+        "posted_at": sdk.parse_iso_date(job_obj.get("publishedAt")),
         # The company's own job page; empty for ads applied to by email.
         "apply_url": (job_obj.get("link") or "").strip() or None,
     }

@@ -29,7 +29,7 @@ import re
 from datetime import datetime, timezone
 
 from door.scrapers.sdk import (
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id,
+    JobPosting, PoliteSession, probe_session, ProbeResult, make_job_id,
     parse_iso_date, run_probe, scrape_feeds, strip_html, workers, followed_name,
 )
 from door.scrapers.sdk import keep_local, list_at, split_known
@@ -141,7 +141,7 @@ def probe(config: dict) -> ProbeResult | None:
     if portal is None:
         return None
     client, code = portal
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return json.dumps(_search(session, client, code, 0))
@@ -175,6 +175,3 @@ def detect_url(url: str) -> Detection | None:
     entry = _dayforce_entry(path)
     return Detection("dayforce", entry, f"Dayforce candidate portal link {url}") if entry else None
 
-def feed_url(entry: str) -> str | None:
-    """None: a link to the board names the account, no feed check is needed."""
-    return None

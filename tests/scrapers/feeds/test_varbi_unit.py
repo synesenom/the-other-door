@@ -42,10 +42,6 @@ def test_detect_url_ignores_what_is_no_tenant(url):
     assert varbi.detect_url(url) is None
 
 
-def test_the_feed_is_confirmed_by_the_host_not_by_a_json_list():
-    assert varbi.feed_url("ki") is None
-
-
 def test_alive_url_is_the_rss_feed():
     assert varbi.alive_url("ki") == "https://ki.varbi.com/what:rssfeed/"
     assert varbi.alive_url("https://KI.varbi.com/se/") == "https://ki.varbi.com/what:rssfeed/"

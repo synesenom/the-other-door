@@ -65,7 +65,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, career_links, followed_name,
+    Detection, JobPosting, probe_session, PoliteSession, ProbeResult, RobotsBlocked, career_links, followed_name,
     host_of, is_job_board, keep_local, split_known, make_job_id, name_key, parts, record_entry_error, record_error, record_pushback,
     report, run_probe, scrape_feeds, unfollowable, workers,
 )
@@ -509,7 +509,7 @@ def probe(config: dict) -> ProbeResult | None:
     key = next((k for k in (list_guid(e) or page_entry(e) for e in config.get(_KEY) or []) if k), None)
     if key is None:
         return None
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
     own = not _GUID.match(key)
 
     def fetch() -> str:
@@ -556,12 +556,6 @@ def detect_html(html: str, url: str) -> Detection | None:
         return Detection(_SITE, guid, f"{url} links Visma Recruit's job list {guid}")
     if _LINK.search(html or ""):
         return unfollowable(_SITE, f"{url} links to Visma Recruit", _REASON, "cant_yet")
-    return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the list is HTML, not the JSON list the confirmation reads; the link's guid vouches for it, and
-    `alive_url` drops a customer that does not exist."""
     return None
 
 
