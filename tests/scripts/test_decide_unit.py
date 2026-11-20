@@ -79,8 +79,10 @@ def _run(checks, body="- [x] done", files=FILES):
     def run(args):
         calls.append(args)
         if args[:2] == ["pr", "view"]:
-            return {"headRefOid": "H", "body": body, "files": [{"path": f} for f in files]}
+            return {"headRefOid": "H", "body": body}
         assert "--slurp" in args  # --paginate alone concatenates the pages' objects
+        if "/files" in args[-1]:
+            return [[{"filename": f} for f in files[:100]], [{"filename": f} for f in files[100:]]]
         return [{"check_runs": checks[:1]}, {"check_runs": checks[1:]}]
 
     return run, calls
@@ -106,3 +108,32 @@ def test_main_reads_every_page_of_check_runs(capsys):
     run, _ = _run([_check("tests"), _check("app", conclusion="failure")])
     assert decide.main(["7"], run) == 1
     assert "check app failed" in json.loads(capsys.readouterr().out)["reasons"]
+
+
+@pytest.mark.parametrize("line", ["+ [ ] x", "1. [ ] x", "  * [ ] x"])
+def test_every_task_list_marker_counts_as_a_box(line):
+    assert "unticked box" in _decide(body=line)[1]
+
+
+def test_a_tilde_fence_hides_its_boxes():
+    assert _decide(body="~~~\n- [ ] x\n~~~") == (True, [])
+
+
+@pytest.mark.parametrize("line", ["- Needs the maintainer: try it", "**Needs the maintainer:** try it"])
+def test_a_needs_the_maintainer_line_in_a_list_or_in_bold_is_seen(line):
+    assert _decide(body=line) == (False, ["Needs the maintainer: try it"])
+
+
+def test_main_reads_every_changed_file_past_the_first_hundred(capsys):
+    run, _ = _run([_check("tests")], files=[f"src/door/f{i}.py" for i in range(150)] + ["app/src/web/x.ts"])
+    assert decide.main(["7"], run) == 1
+    assert json.loads(capsys.readouterr().out)["reasons"] == ["Needs the maintainer: look at it"]
+
+
+def test_main_says_when_gh_fails(capsys):
+    def run(args):
+        raise decide.subprocess.CalledProcessError(1, ["gh"], stderr="HTTP 404")
+
+    assert decide.main(["7"], run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is False and "gh failed" in out["reasons"][0]
