@@ -27,7 +27,7 @@ def _session() -> PoliteSession:
 
 def _get(session: PoliteSession, url: str) -> str:
     try:
-        return nhs_jobs._get(session, url)
+        return sdk.get_page(session, url)
     except sdk.Refused as exc:
         not_reached("nhs_jobs", str(exc))
 

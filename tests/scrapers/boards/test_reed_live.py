@@ -26,7 +26,7 @@ def _session() -> PoliteSession:
 
 def _get(session: PoliteSession, url: str) -> str:
     try:
-        return reed._get(session, url)
+        return sdk.get_page(session, url, content="__next_data__")
     except sdk.Refused as exc:
         not_reached("reed", str(exc))
 

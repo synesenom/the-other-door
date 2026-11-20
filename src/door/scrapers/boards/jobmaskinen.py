@@ -164,8 +164,9 @@ def _get(session: PoliteSession, url: str) -> str:
     try:
         return session.get(url).text
     except requests.HTTPError as exc:
-        if getattr(exc.response, "status_code", None) in (403, 429):
-            raise sdk.Refused(f"HTTP {exc.response.status_code} on {url}") from exc
+        refused = sdk.refusal(exc)
+        if refused:
+            raise sdk.Refused(f"{refused} on {url}") from exc
         raise
 
 

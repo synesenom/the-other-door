@@ -197,14 +197,20 @@ def is_challenge(body: str, status: int, *, content: str | None = None) -> bool:
     return any(marker in head for marker in _CHALLENGE_MARKERS) and not (content and content in head)
 
 
+def refusal(exc: requests.HTTPError) -> Refused | None:
+    """`Refused("HTTP <status>")` when *exc* is a 403 or 429 answer, None for any other error. Pure."""
+    status = getattr(exc.response, "status_code", 0)
+    return Refused(f"HTTP {status}") if status in (403, 429) else None
+
+
 def get_page(session, url: str, *, content: str | None = None) -> str:
     """The page at *url*. Raises `Refused` on a 403/429 or a challenge page, the request's own error otherwise."""
     try:
         resp = session.get(url)
     except requests.HTTPError as exc:
-        status = getattr(exc.response, "status_code", 0)
-        if is_challenge("", status):
-            raise Refused(f"HTTP {status}") from exc
+        refused = refusal(exc)
+        if refused:
+            raise refused from exc
         raise
     if is_challenge(resp.text, resp.status_code, content=content):
         raise Refused("challenge page")

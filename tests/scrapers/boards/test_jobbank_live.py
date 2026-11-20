@@ -27,7 +27,7 @@ def _session() -> PoliteSession:
 
 def _get(session: PoliteSession, url: str) -> str:
     try:
-        return jobbank._get(session, url)
+        return sdk.get_page(session, url, content="job-item")
     except sdk.Refused as exc:
         not_reached("jobbank", str(exc))
 

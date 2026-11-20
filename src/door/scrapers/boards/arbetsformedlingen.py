@@ -39,7 +39,7 @@ import requests
 from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
-    record_pushback, report, run_probe,
+    report, run_probe,
 )
 
 _SITE = "arbetsformedlingen"
@@ -232,9 +232,9 @@ def _get(session: PoliteSession, url: str) -> str:
     try:
         return _fetch(session, url)
     except requests.HTTPError as exc:
-        status = getattr(exc.response, "status_code", 0)
-        if status in (403, 429):
-            raise sdk.Refused(f"HTTP {status}") from exc
+        refused = sdk.refusal(exc)
+        if refused:
+            raise refused from exc
         raise
 
 
@@ -255,9 +255,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             try:
                 hits, total = _parse_response(_get(session, _url(_params(keyword, municipalities, offset, since))))
             except sdk.Refused as exc:
-                report(f"{_SITE}: {exc}; stopping for this run")
-                record_error(_SITE, f"{_SITE}: {exc} (keyword={keyword!r}); stopped for this run")
-                record_pushback(_SITE)
+                sdk.stop_for_run(_SITE, f"{exc} (keyword={keyword!r})")
                 return postings
             except Exception as exc:  # noqa: BLE001 - a bad keyword never stops the others
                 report(f"search error (keyword={keyword!r}, offset={offset}): {exc}")

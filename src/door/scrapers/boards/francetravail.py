@@ -42,9 +42,10 @@ from urllib.parse import quote_plus
 import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, city_names, log_keyword_results,
-    make_job_id, on_topic, record_answered, record_error, report, run_probe, stop_for_run, topic_terms,
+    make_job_id, on_topic, record_answered, record_error, report, run_probe, topic_terms,
 )
 
 _SITE = "francetravail"
@@ -245,10 +246,6 @@ def _card_posting(card: dict, today: datetime, scraped_at: datetime) -> dict:
     return _posting(card, {"description": card["teaser"], "company": "", "location": ""}, today, scraped_at)
 
 
-def _refused(exc: requests.HTTPError) -> bool:
-    return getattr(exc.response, "status_code", 0) in (403, 429)
-
-
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
     """JobPosting dicts for the on-topic ads of every search keyword (``seen_only`` records for known ids)."""
     keywords: list[str] = config.get("search_keywords") or config.get("role_targets") or []
@@ -266,14 +263,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         start = len(out)
         for page in range(1, max_pages + 1):
             try:
-                html = session.get(_search_url(keyword, insee, emission, page)).text
-            except requests.HTTPError as exc:
-                if _refused(exc):
-                    stop_for_run(_SITE, f"HTTP {exc.response.status_code}")
-                    return out
-                report(f"search error (keyword={keyword!r}, page={page}): {exc}")
-                record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
-                break
+                html = sdk.get_page(session, _search_url(keyword, insee, emission, page))
+            except sdk.Refused as exc:
+                sdk.stop_for_run(_SITE, str(exc))
+                return out
             except Exception as exc:  # noqa: BLE001 - one bad page never stops the run
                 report(f"search error (keyword={keyword!r}, page={page}): {exc}")
                 record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
@@ -296,8 +289,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     body = session.get(_detail_url(card["id"]), headers=_JSON_HEADERS).text
                     detail = _parse_detail(body)
                 except requests.HTTPError as exc:
-                    if _refused(exc):
-                        stop_for_run(_SITE, f"HTTP {exc.response.status_code}")
+                    if refused := sdk.refusal(exc):
+                        sdk.stop_for_run(_SITE, str(refused))
                         return out
                     record_error(_SITE, f"detail error ({card['id']}): {exc}")
                     continue

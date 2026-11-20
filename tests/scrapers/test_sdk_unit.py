@@ -202,13 +202,17 @@ def _session(*, text="", status=200, error=None):
 
 
 @pytest.mark.parametrize("status", [403, 429])
-def test_get_page_refuses_403_and_429(status):
+def test_get_page_refuses_403_429_and_challenge_pages(status):
     import requests
 
     response = requests.Response()
     response.status_code = status
     with pytest.raises(sdk.Refused, match=f"HTTP {status}"):
         sdk.get_page(_session(error=requests.HTTPError(response=response)), "u")
+    with pytest.raises(sdk.Refused, match="challenge page"):
+        sdk.get_page(_session(text="<title>Just a moment...</title>"), "u")
+    late = "x" * 7000 + "cf-chl"  # a marker past the first 6000 characters is no challenge
+    assert sdk.get_page(_session(text=late), "u") == late
 
 
 def test_get_page_lets_other_errors_through():
@@ -220,11 +224,15 @@ def test_get_page_lets_other_errors_through():
         sdk.get_page(_session(error=requests.HTTPError(response=response)), "u")
 
 
-def test_get_page_refuses_a_challenge_page_only_in_its_head():
-    with pytest.raises(sdk.Refused, match="challenge page"):
-        sdk.get_page(_session(text="<title>Just a moment...</title>"), "u")
-    late = "x" * 7000 + "cf-chl"
-    assert sdk.get_page(_session(text=late), "u") == late
+def test_refusal_is_the_403_429_rule():
+    import requests
+
+    for status, expected in ((403, "HTTP 403"), (429, "HTTP 429"), (500, None)):
+        response = requests.Response()
+        response.status_code = status
+        refused = sdk.refusal(requests.HTTPError(response=response))
+        assert (str(refused) if refused else None) == expected
+    assert sdk.refusal(requests.HTTPError()) is None
 
 
 def test_get_page_returns_a_real_page_and_honours_content():
