@@ -1,8 +1,8 @@
 """The scraping engine behind `search` and `collect`: drive a list of sites (the boards, or
 the platforms of the followed employers), write their new postings, keep the per-site outcomes,
-watermarks, resting and history, and run the passes (liveness, prefilter, dedup, language,
-condense, prescreen) over what was written. `door.pipeline.search` and `.collect` call
-`_scrape_core` with their own site lists; the match step runs the passes (`_scrape_passes`)."""
+watermarks, resting and history, and run the liveness check. `door.pipeline.search` and
+`.collect` call `_scrape_core` with their own site lists; the match step runs the passes
+(`_scrape_passes`: prefilter, language, dedup, condense, prescreen) over what was written."""
 
 import queue
 import re
@@ -17,7 +17,7 @@ from door.core import models, sites, workspace
 from door.core.jobs import freshness
 from door.core.employers import companies as companies_store
 from door.core.sites import FEED_SITES, SITES
-from door.matching import integrity, title_fit
+from door.matching import condense, dedup, integrity, language, prefilter, prescreen, title_fit
 from door.scrapers import _parallel
 from door.scrapers import drain_entry_errors as _drain_scraper_entry_errors
 from door.scrapers import drain_errors as _drain_scraper_errors
@@ -114,7 +114,6 @@ def _scrape_core(
     *,
     mode: str = "search",
     companies: list[str] | None = None,
-    passes: bool = True,
     progress=None,
 ) -> dict:
     """Scrape a list of sites, write their new postings, run the passes; return structured data.
@@ -124,9 +123,7 @@ def _scrape_core(
     `profile/companies.json`). Loads `profile/config.json`,
     imports each site's module (`door.core.sites.SITES`), writes new postings to
     `jobs_dir/<run_date>/<site>/`, updates the cross-run `HistoryStore`, then
-    runs the optional liveness check and, with ``passes``, `matching.prefilter`, `matching.dedup`,
-    `matching.language`, `matching.condense` and `matching.prescreen`
-    but never prints —
+    runs the optional liveness check, but never prints —
     callers (CLI, MCP) render their own presentation from the returned dict.
 
     Freshness differs by mode. A board posting is new when it was published since the site's
@@ -138,8 +135,6 @@ def _scrape_core(
             the profile's country (search), or the platforms with a followed employer (collect).
         mode: ``"search"`` or ``"collect"``.
         companies: Collect only: scrape just these followed employers (names on the list).
-        passes: Run the passes over `jobs_dir/<run_date>/` afterwards (the pipeline runs them
-            once, in the match step, and passes False here).
         jobs_dir: Root directory for scraped postings (defaults to the
             module-level `JOBS_DIR`).
         profile_dir: Directory containing `config.json` (defaults to the
@@ -154,23 +149,14 @@ def _scrape_core(
             `Progress` events while the call runs: "scraping (site i/N)" when
             a site starts (i is its place in the list; with `scrape_workers` above 1
             several run at once) and one closing event per site, counting the
-            sites finished so far, whatever the scrapers report, then one
-            event per pass. The core still never prints.
+            sites finished so far, whatever the scrapers report. The core still never prints.
 
     Returns:
         ``{"run_date", "mode", "employers", "written", "sites": [{"site", "outcome": "ok"|
-        "not_implemented"|"not_configured"|"reserved"|"resting"|"error"|"failed"|"empty",
+        "not_configured"|"reserved"|"resting"|"error"|"failed"|"empty",
         "count"?, "stale"?, "non_local"?, "since"?, "dir"?, "config_key"?, "terms_url"?, "until"?, "error"?, "errors"?,
         "warning"?}, ...], "liveness": None |
-        {"before", "after"}, "prefilter": None | {"available": False} |
-        {"available": True, "survived"}, "dedup": None |
-        {"available": False} | {"available": True, "collapsed",
-        "remaining"}, "condense": None | {"available": False} |
-        {"available": True, "count", "ratio_pct"}, "language": None |
-        {"languages": {code|"unknown": n}, "dropped", "translated", "failed_batches"},
-        "prescreen": None |
-        {"available": False} | {"available": True, "scored", "kept"},
-        "candidates_dir", "surviving_paths"}``.
+        {"before", "after"}, "candidates_dir"}``.
 
     Raises:
         FileNotFoundError: `profile_dir/config.json` is missing.
@@ -263,8 +249,6 @@ def _scrape_core(
                 config.get("max_postings_per_site"), recheck_after_days, candidates_paths, freshness,
                 topic=topic,
             )
-        except ImportError:
-            _finish_site(index, {"site": site, "outcome": "not_implemented"})
         except Exception as exc:
             _finish_site(index, {"site": site, "outcome": "error", "error": str(exc)})
         return None
@@ -283,9 +267,6 @@ def _scrape_core(
         answered = _drain_scraper_answered(run.site)
         if _drain_scraper_pushback(run.site):
             freshness.record_pushback(jobs_dir, run.site, datetime.now(timezone.utc))
-        if isinstance(failure, ImportError):
-            _finish_site(run.index, {"site": run.site, "outcome": "not_implemented"})
-            return
         if failure is not None:
             _finish_site(run.index, {"site": run.site, "outcome": "error", "error": str(failure)})
             return
@@ -327,83 +308,61 @@ def _scrape_core(
     def _announce(run: "_SiteRun") -> None:
         progress_mod.report(f"scraping (site {run.index + 1}/{n_sites})", site=run.site, stage="scrape")
 
-    def _run_inline(run: "_SiteRun") -> None:
-        """Scrape, write and finish one site on this thread."""
-        _announce(run)
-        failure: BaseException | None = None
-        with progress_mod.scope(site=run.site, stage="scrape"):
+    runs = [run for index, site in enumerate(resolved_sites) if (run := _start_site(index, site))]
+    inbox: queue.Queue = queue.Queue(maxsize=16)  # a streaming site cannot run far ahead of its writes
+    tasks: queue.Queue = queue.Queue()
+    for r in runs:
+        tasks.put(r)
+
+    def _work() -> None:
+        """A pool thread: scrape sites off `tasks`, hand every record to `inbox`."""
+        while True:
             try:
-                for record in run.records(config):
-                    run.accept(record)
-                    if run.capped:
-                        break
-            except Exception as exc:
+                run = tasks.get_nowait()
+            except queue.Empty:
+                return
+            failure: BaseException | None = None
+            records = None
+            try:
+                with progress_mod.scope(site=run.site, stage="scrape"):
+                    _announce(run)
+                    records = run.records(config)
+                    for record in records:
+                        if run.cancelled.is_set():
+                            break
+                        inbox.put((run, "record", record))
+            except BaseException as exc:  # noqa: BLE001 - handed to the consuming thread
                 failure = exc
-        _finish_run(run, failure)
+            finally:
+                if records is not None:
+                    records.close()
+                inbox.put((run, "done", failure))
 
-    if pool_size <= 1:
-        # One site after another on this thread, exactly as before concurrency.
-        for index, site in enumerate(resolved_sites):
-            run = _start_site(index, site)
-            if run is not None:
-                _run_inline(run)
-    else:
-        runs = [run for index, site in enumerate(resolved_sites) if (run := _start_site(index, site))]
-        pooled = runs
-        inbox: queue.Queue = queue.Queue(maxsize=16)  # a streaming site cannot run far ahead of its writes
-        tasks: queue.Queue = queue.Queue()
-        for r in pooled:
-            tasks.put(r)
-
-        def _work() -> None:
-            """A pool thread: scrape sites off `tasks`, hand every record to `inbox`."""
-            while True:
+    threads = [threading.Thread(target=_work, name=f"scrape-{i}", daemon=True)
+               for i in range(min(pool_size, len(runs)))]
+    try:
+        for thread in threads:
+            thread.start()
+        # Only this thread writes: records and finished sites arrive through `inbox`.
+        remaining = len(runs)
+        while remaining:
+            run, kind, payload = inbox.get()
+            if kind == "record":
+                if run.cancelled.is_set():
+                    continue
                 try:
-                    run = tasks.get_nowait()
-                except queue.Empty:
-                    return
-                failure: BaseException | None = None
-                records = None
-                try:
-                    with progress_mod.scope(site=run.site, stage="scrape"):
-                        _announce(run)
-                        records = run.records(config)
-                        for record in records:
-                            if run.cancelled.is_set():
-                                break
-                            inbox.put((run, "record", record))
-                except BaseException as exc:  # noqa: BLE001 - handed to the consuming thread
-                    failure = exc
-                finally:
-                    if records is not None:
-                        records.close()
-                    inbox.put((run, "done", failure))
-
-        threads = [threading.Thread(target=_work, name=f"scrape-{i}", daemon=True)
-                   for i in range(min(pool_size, len(pooled)))]
-        try:
-            for thread in threads:
-                thread.start()
-            # Only this thread writes: records and finished sites arrive through `inbox`.
-            remaining = len(pooled)
-            while remaining:
-                run, kind, payload = inbox.get()
-                if kind == "record":
-                    if run.cancelled.is_set():
-                        continue
-                    try:
-                        run.accept(payload)
-                    except Exception as exc:
-                        run.failure = exc
-                        run.cancelled.set()
-                else:
-                    remaining -= 1
-                    _finish_run(run, payload)
-        finally:
-            # An interrupt (or any error) stops the producers and keeps what was written.
-            for run in pooled:
-                run.cancelled.set()
-            store.save()
+                    run.accept(payload)
+                except Exception as exc:
+                    run.failure = exc
+                    run.cancelled.set()
+            else:
+                remaining -= 1
+                _finish_run(run, payload)
+    finally:
+        # An interrupt (or any error) stops the producers and keeps what was written.
+        for run in runs:
+            run.cancelled.set()
+        store.save()
 
     site_results: list = [results[i] for i in range(n_sites)]
     written = [str(p) for p in candidates_paths]
@@ -418,7 +377,6 @@ def _scrape_core(
         liveness_result = {"before": before, "after": len(candidates_paths)}
 
     candidates_dir = workspace.day_dir(jobs_dir, run_date)
-    passed = _scrape_passes(candidates_dir, config, profile_dir) if passes else {}
     employers = (sum(len(config.get(SITES[x].config_key) or []) for x in resolved_sites if SITES[x].config_key)
                  if collecting else None)
 
@@ -429,13 +387,7 @@ def _scrape_core(
         "written": written,
         "sites": site_results,
         "liveness": liveness_result,
-        "prefilter": passed.get("prefilter"),
-        "dedup": passed.get("dedup"),
-        "condense": passed.get("condense"),
-        "language": passed.get("language"),
-        "prescreen": passed.get("prescreen"),
         "candidates_dir": str(candidates_dir),
-        "surviving_paths": passed.get("surviving_paths", []),
     }
 
 
@@ -508,8 +460,8 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
     ones liveness found expired) is left alone, so running it again is harmless.
 
     Returns:
-        ``{"prefilter", "dedup", "language", "condense", "prescreen", "surviving_paths"}`` as in
-        `_scrape_core`'s result.
+        ``{"prefilter", "dedup", "language", "condense", "prescreen"}``: each pass's counts (``None`` when it
+        did not run).
     """
     prefilter_result = None
     dedup_result = None
@@ -517,36 +469,25 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
     surviving: list = []
 
     if candidates_dir.exists():
-        try:
-            from door.matching.prefilter import prefilter
-            progress_mod.report("pre-filter", stage="prefilter")
-            surviving = prefilter(candidates_dir, config)
-            prefilter_result = {"available": True, "survived": len(surviving)}
-        except ImportError:
-            prefilter_result = {"available": False}
+        progress_mod.report("pre-filter", stage="prefilter")
+        surviving = prefilter.prefilter(candidates_dir, config)
+        prefilter_result = {"survived": len(surviving)}
 
         if surviving:
             # Tag each posting's language, drop the ones outside the profile's
             # `languages`, and translate the kept non-English titles so prescreen can
             # compare them with role_targets. One batched `claude -p` call per 50
             # titles; a failure only leaves `title_en` unset.
-            from door.matching import language
-
             progress_mod.report("language", stage="language")
             surviving, language_result = language.filter_languages(surviving, config)
 
         # Cross-site dedup over what the language pass kept
-        try:
-            from door.matching.dedup import dedup as _dedup
-            progress_mod.report("dedup", stage="dedup")
-            aliases = [[c.name, *c.aliases] for c in companies_store.load(profile_dir) if c.aliases]
-            earlier = _earlier_postings(candidates_dir, config.get("max_age_days") or common._DEFAULT_MAX_AGE_DAYS)
-            dedup_surviving = _dedup(surviving, config, aliases=aliases, earlier=earlier)
-            collapsed = len(surviving) - len(dedup_surviving)
-            dedup_result = {"available": True, "collapsed": collapsed, "remaining": len(dedup_surviving)}
-            surviving = dedup_surviving
-        except ImportError:
-            dedup_result = {"available": False}
+        progress_mod.report("dedup", stage="dedup")
+        aliases = [[c.name, *c.aliases] for c in companies_store.load(profile_dir) if c.aliases]
+        earlier = _earlier_postings(candidates_dir, config.get("max_age_days") or common._DEFAULT_MAX_AGE_DAYS)
+        dedup_surviving = dedup.dedup(surviving, config, aliases=aliases, earlier=earlier)
+        dedup_result = {"collapsed": len(surviving) - len(dedup_surviving), "remaining": len(dedup_surviving)}
+        surviving = dedup_surviving
 
     # Pre-match passes (issue #143): condense each posting's description to the
     # parts that matter for scoring and rank the survivors offline so only the
@@ -556,42 +497,19 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
     profile_terms: set = set()
 
     if surviving:
-        try:
-            from door.matching.condense import condense_postings, extract_skill_terms
+        progress_mod.report("condense", stage="condense")
+        profile_terms = condense.extract_skill_terms(common._cv_reading(config, profile_dir), config)
+        stats = condense.condense_postings(surviving, profile_terms, config)
+        ratio_pct = round(stats["avg_ratio"] * 100) if stats.get("avg_ratio") is not None else None
+        condense_result = {"count": stats["count"], "ratio_pct": ratio_pct}
 
-            progress_mod.report("condense", stage="condense")
-
-            profile_terms = extract_skill_terms(common._cv_reading(config, profile_dir), config)
-            stats = condense_postings(surviving, profile_terms, config)
-            ratio_pct = (
-                round(stats["avg_ratio"] * 100) if stats.get("avg_ratio") is not None else None
-            )
-            condense_result = {
-                "available": True,
-                "count": stats["count"],
-                "ratio_pct": ratio_pct,
-            }
-        except ImportError:
-            condense_result = {"available": False}
-
-        try:
-            from door.matching.prescreen import prescreen as _prescreen
-
-            progress_mod.report("prescreen", stage="prescreen")
-
-            before = len(surviving)
-            surviving = _prescreen(surviving, config, profile_terms)
-            prescreen_result = {
-                "available": True,
-                "scored": before,
-                "kept": len(surviving),
-            }
-        except ImportError:
-            prescreen_result = {"available": False}
+        progress_mod.report("prescreen", stage="prescreen")
+        before = len(surviving)
+        surviving = prescreen.prescreen(surviving, config, profile_terms)
+        prescreen_result = {"scored": before, "kept": len(surviving)}
 
     return {"prefilter": prefilter_result, "dedup": dedup_result, "language": language_result,
-            "condense": condense_result, "prescreen": prescreen_result,
-            "surviving_paths": [str(p) for p in surviving]}
+            "condense": condense_result, "prescreen": prescreen_result}
 
 
 def _held_back(site: str, scrape_state: dict, now: "datetime") -> "dict | None":
@@ -621,8 +539,6 @@ def _site_done_message(entry: dict) -> str:
         return f"{message} — {errors[-1]}" if errors else message
     if outcome == "empty":
         return f"{site}: {entry['warning']}"
-    if outcome == "not_implemented":
-        return f"{site}: scraper not yet implemented, skipping."
     return f"{site}: error — {entry.get('error', '')}"
 
 
@@ -648,131 +564,3 @@ def _empty_site_warning(site, config: dict) -> str:
         "returned no results at all — the site may have changed. "
         "`doctor --probe` checks the site and `setup` can fix its scraper."
     )
-
-
-def _scrape_result_lines(result: dict, *, shown=(), tally: bool = True) -> list[tuple[str, str]]:
-    """`_echo_scrape_result`'s lines as ``[(mark, text), ...]`` (mark: ok/warn/fail/info).
-
-    ``shown`` names the sites a live progress line already reported; they get no line.
-    ``tally``: also a ``Sites: n ok, n failed: …, n empty: …`` line when any site
-    failed or came back empty (`find` leaves it out: its Summary grid lists failures).
-    """
-    lines: list[tuple[str, str]] = []
-    for entry in result["sites"]:
-        site = entry["site"]
-        if site in shown:
-            continue
-        outcome = entry["outcome"]
-        if outcome == "ok":
-            lines.append(("ok", f"{site}: {entry['count']} posting(s) written to {common._display_path(entry['dir'])}"))
-            if entry.get("stale"):
-                lines.append((
-                    "info",
-                    f"{site}: {entry['stale']} older than {common._local_time(entry['since'])} skipped",
-                ))
-        elif outcome == "not_implemented":
-            lines.append(("info", f"{site}: scraper not yet implemented, skipping."))
-        elif outcome == "reserved":
-            lines.append(("info", f"{site}: skipped — its terms reserve it against scraping ({entry['terms_url']})."))
-        elif outcome == "resting":
-            lines.append((
-                "info",
-                f"{site}: skipped — resting after it pushed back; next try after {common._local_time(entry['until'])}.",
-            ))
-        elif outcome == "not_configured":
-            lines.append((
-                "info",
-                f"{site}: skipped — no employers followed on it (`./door companies add <name or link>`).",
-            ))
-        elif outcome == "failed":
-            errors = entry.get("errors", [])
-            last = errors[-1] if errors else "no error message was recorded"
-            lines.append(("fail", f"{site}: 0 posting(s), {_format_site_failure_detail(errors)} — {last}"))
-        elif outcome == "empty":
-            lines.append(("warn", f"{site}: {entry['warning']}"))
-        else:
-            lines.append(("fail", f"{site}: error — {entry['error']}"))
-
-    failed_sites = [e for e in result["sites"] if e["outcome"] == "failed"]
-    empty_sites = [e["site"] for e in result["sites"] if e["outcome"] == "empty"]
-    if tally and (failed_sites or empty_sites):
-        n_ok = sum(1 for e in result["sites"] if e["outcome"] == "ok")
-        parts = [f"{n_ok} ok"]
-        if failed_sites:
-            detail = ", ".join(
-                f"{e['site']} ({_format_site_failure_detail(e.get('errors', []))})" for e in failed_sites
-            )
-            parts.append(f"{len(failed_sites)} failed: {detail}")
-        if empty_sites:
-            parts.append(f"{len(empty_sites)} empty: {', '.join(empty_sites)}")
-        lines.append(("fail" if failed_sites else "warn", "Sites: " + ", ".join(parts)))
-
-    if result["liveness"] is not None:
-        lines.append((
-            "ok",
-            f"Liveness check complete: {result['liveness']['after']} posting(s) verified live/indeterminate "
-            f"(of {result['liveness']['before']}).",
-        ))
-
-    if result["prefilter"] is not None:
-        if result["prefilter"]["available"]:
-            lines.append(("ok", f"Pre-filter complete: {result['prefilter']['survived']} candidate(s) passed."))
-        else:
-            lines.append(("info", "Pre-filter not yet implemented, skipping."))
-        if result["dedup"] is not None and result["dedup"]["available"]:
-            lines.append((
-                "ok",
-                f"Dedup complete: {result['dedup']['collapsed']} duplicate(s) collapsed, "
-                f"{result['dedup']['remaining']} candidate(s) remaining.",
-            ))
-
-    if result["condense"] is not None:
-        if result["condense"]["available"]:
-            ratio_pct = result["condense"]["ratio_pct"]
-            reduced_text = f", size reduced {100 - ratio_pct}%" if ratio_pct is not None else ""
-            lines.append(("ok", f"Condense complete: {result['condense']['count']} description(s) condensed{reduced_text}."))
-        else:
-            lines.append(("info", "Condense not yet implemented, skipping."))
-
-    if result.get("language") is not None:
-        lang = result["language"]
-        counts = ", ".join(f"{code} {n}" for code, n in sorted(lang["languages"].items()))
-        line = f"Languages: {counts}"
-        if lang["dropped"]:
-            line += f"; {lang['dropped']} dropped (no description, or not in languages)"
-        if lang["translated"]:
-            line += f"; {lang['translated']} title(s) translated"
-        if lang["failed_batches"]:
-            line += (
-                f"; title translation failed for {lang['failed_batches']} batch(es) "
-                "— prescreen used the original titles"
-            )
-        lines.append(("warn" if lang["failed_batches"] else "ok", line + "."))
-
-    if result["prescreen"] is not None:
-        if result["prescreen"]["available"]:
-            lines.append((
-                "ok",
-                f"Prescreen complete: {result['prescreen']['kept']} of "
-                f"{result['prescreen']['scored']} candidate(s) sent forward for scoring.",
-            ))
-        else:
-            lines.append(("info", "Prescreen not yet implemented, skipping."))
-    return lines
-
-
-def _echo_scrape_result(result: dict, *, shown=(), tally: bool = True, console=None) -> None:
-    """Render a `_scrape_core` result dict: `find`'s scrape-stage detail, one
-    ``✓``/``⚠``/``✗``/``·`` line each (`_common._mark_line`).
-
-    ``shown`` names the sites a live progress line already reported (see
-    `_progress.LiveLine.finished_sites`); they get no line here. Sites skipped
-    without scraping (not configured, reserved), failures, empty sites and
-    every pass result (liveness, pre-filter, dedup, condense, languages,
-    prescreen) are always printed. Messages are plain text, never rich markup.
-    """
-    from rich.text import Text
-
-    console = console or common._console()
-    for kind, text in _scrape_result_lines(result, shown=shown, tally=tally):
-        common._mark_line(console, kind, Text(text, style="dim" if kind == "info" else ""))

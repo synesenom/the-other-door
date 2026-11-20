@@ -591,15 +591,29 @@ def test_a_request_past_the_threads_budget_is_not_made(no_sleep, monkeypatch):
     assert session.get(_JOB_URL).text == "OK"
 
 
-def test_budget_is_per_thread():
+@responses.activate
+def test_budget_is_per_thread(no_sleep, monkeypatch):
+    """A budget bounds only the thread that opened it: another thread's request is not refused."""
     import threading
 
+    clock = [1000.0]
+    monkeypatch.setattr("door.scrapers.http_client.time.monotonic", lambda: clock[0])
+    responses.add(responses.GET, _ROBOTS_URL, body="User-agent: *\nCrawl-delay: 20\n")
+    responses.add(responses.GET, _JOB_URL, body="OK")
+    session = PoliteSession(min_delay=0.1, max_delay=0.2, obey_robots=False)
     seen = []
-    with http_client.budget(5):
-        t = threading.Thread(target=lambda: seen.append(http_client.current_deadline()))
+
+    def other_thread():
+        try:
+            seen.append(session.get(_JOB_URL).text)
+        except http_client.BudgetExceeded:
+            seen.append("refused")
+
+    with http_client.budget(5):  # a 20 s pause would not fit in this thread
+        t = threading.Thread(target=other_thread)
         t.start()
         t.join()
-    assert seen == [None]
+    assert seen == ["OK"]
 
 
 # ---------------------------------------------------------------------------

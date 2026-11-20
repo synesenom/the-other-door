@@ -110,7 +110,7 @@ def _search_core(
         pipeline.items("search", [(b, sites.SITES[b].label) for b in chosen
                                   if scrape_cmd._held_back(b, state, now) is None])
         result = scrape_cmd._scrape_core(chosen, jobs_dir=jobs_dir, profile_dir=profile_dir,
-                                         mode="search", passes=False)
+                                         mode="search")
         stamp_employers(result["written"], profile_dir)
         queued = queue_postings(result["written"], jobs_dir, profile_dir, datetime.now(timezone.utc))
         outcomes = result["sites"]

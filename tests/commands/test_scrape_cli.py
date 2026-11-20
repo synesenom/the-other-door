@@ -1,8 +1,8 @@
 """`find`'s scrape stage: sites, history, incremental writes and the per-site cap, liveness,
 failure accounting, and how `find` renders it.
 
-Most tests call `_scrape_core` (plus `_echo_scrape_result`, the stage detail `find`
-prints); exit codes and the live line go through `find` with matching stubbed. The
+Most tests call `_scrape_core` (and `_scrape_passes`, the passes the
+match step runs); exit codes and the live line go through `find` with matching stubbed. The
 shared `cli_env` fixture is in tests/commands/conftest.py, helpers in tests/cli_utils.py.
 """
 
@@ -10,6 +10,7 @@ import json
 import sys
 import types
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 import pytest
 import responses
@@ -20,8 +21,10 @@ from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
 from door.core import workspace
+from door.matching import dedup as dedup_module
+from door.matching import prefilter as prefilter_mod
 import cv_read_utils
-from cli_utils import result_text, stub_match_result
+from cli_utils import result_text, scrape_and_pass, stub_match_result
 from profile_utils import write_config
 
 
@@ -31,13 +34,8 @@ def stub_match(cli_env, monkeypatch):
     monkeypatch.setattr(match_cmd, "_match_core", lambda **kw: stub_match_result(cli_env.jobs_dir))
 
 
-def _scrape_text(env, capsys, sites, **kwargs):
-    """Run the scrape stage and return what `find` prints for it (stdout + stderr)."""
-    capsys.readouterr()
-    result = scrape_cmd._scrape_core(sites, jobs_dir=env.jobs_dir, profile_dir=env.profile_dir, **kwargs)
-    scrape_cmd._echo_scrape_result(result)
-    out = capsys.readouterr()
-    return out.out + out.err
+def _scrape(env, sites, **kwargs):
+    return scrape_and_pass(env.profile_dir, env.jobs_dir, sites, **kwargs)
 
 
 # --------------------------------------------------------------------------- #
@@ -74,24 +72,15 @@ def test_scrape_happy_path_writes_postings(cli_env, monkeypatch, capsys):
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
+    result = _scrape(cli_env, ["jobindex"])
 
     out_file = cli_env.jobs_dir / "postings" / date.today().isoformat() / "jobindex" / "jobindex-acme-data-scientist.json"
     assert out_file.exists()
     assert json.loads(out_file.read_text())["company"] == "Acme"
-    assert "1 posting(s)" in text
-    # matching/prefilter is now implemented — pre-filter runs and reports count.
-    assert "Pre-filter complete:" in text
-    # matching/condense and matching/prescreen (issue #143) run after dedup.
-    assert "Dedup complete:" in text
-    assert "Condense complete:" in text
-    assert "Prescreen complete:" in text
-    # Each pass is a ✓ line; the "Running ..." chatter and the funnel line are gone
-    # (the funnel is `find`'s Summary grid now).
-    assert "✓ Pre-filter complete:" in text
-    assert "Running pre-filter" not in text
-    assert "Scraping jobindex" not in text
-    assert "✓ jobindex: 1 posting(s) written to" in text
+    assert result["sites"][0]["count"] == 1
+    assert result["prefilter"]["survived"] == 1
+    # dedup, condense and prescreen (issue #143) run after the language pass.
+    assert result["dedup"] is not None and result["condense"] is not None and result["prescreen"] is not None
 
     data = json.loads(out_file.read_text())
     assert "description_condensed" in data
@@ -121,7 +110,7 @@ def test_scrape_tags_languages_and_translates_danish_titles(cli_env, monkeypatch
 
     monkeypatch.setattr(language, "_run_claude", fake_claude)
 
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
+    result = _scrape(cli_env, ["jobindex"])
 
     out_file = cli_env.jobs_dir / "postings" / date.today().isoformat() / "jobindex" / "jobindex-acme-dataforsker.json"
     data = json.loads(out_file.read_text())
@@ -129,7 +118,7 @@ def test_scrape_tags_languages_and_translates_danish_titles(cli_env, monkeypatch
     assert data["title_en"] == "Data Scientist"
     assert data["title"] == "Dataforsker"
     assert len(sent) == 1
-    assert "Languages: da 1; 1 title(s) translated." in text
+    assert result["language"]["languages"] == {"da": 1} and result["language"]["translated"] == 1
 
 
 def test_scrape_drops_ads_in_a_language_outside_the_profile(cli_env, monkeypatch, capsys):
@@ -145,14 +134,14 @@ def test_scrape_drops_ads_in_a_language_outside_the_profile(cli_env, monkeypatch
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
+    result = _scrape(cli_env, ["jobindex"])
 
     out_file = cli_env.jobs_dir / "postings" / date.today().isoformat() / "jobindex" / "jobindex-acme-dataforsker.json"
     data = json.loads(out_file.read_text())
     assert data["score"] == 0.0
     assert data["score_reason"] == "language: Danish (da) not in languages"
     assert "description_condensed" not in data
-    assert "Languages: da 1; 1 dropped (no description, or not in languages)." in text
+    assert result["language"]["languages"] == {"da": 1} and result["language"]["dropped"] == 1
 
 
 def test_scrape_reports_a_failed_title_translation_without_failing(cli_env, monkeypatch, capsys):
@@ -169,16 +158,16 @@ def test_scrape_reports_a_failed_title_translation_without_failing(cli_env, monk
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    text = _scrape_text(cli_env, capsys, ["jobindex"])  # conftest: no claude
-    assert "title translation failed" in text
+    result = _scrape(cli_env, ["jobindex"])  # conftest: no claude
+    assert result["language"]["failed_batches"] == 1
 
 
 def test_scrape_uses_config_sites_when_no_flag(cli_env, monkeypatch, capsys):
     import door.scrapers.boards.jobindex as ji
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
-    text = _scrape_text(cli_env, capsys, None)  # no --sites -> config["sites"]
-    assert "⚠ jobindex: returned no results at all" in text
+    result = _scrape(cli_env, None)  # no --sites -> config["sites"]
+    assert result["sites"][0]["outcome"] == "empty" and "returned no results at all" in result["sites"][0]["warning"]
 
 
 def test_scrape_dedup_log_shows_collapsed_count(cli_env, monkeypatch, capsys):
@@ -192,20 +181,17 @@ def test_scrape_dedup_log_shows_collapsed_count(cli_env, monkeypatch, capsys):
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
     # Inject fake prefilter returning 2 paths
-    matching_pkg = types.ModuleType("matching")
     pf_mod = types.ModuleType("door.matching.prefilter")
     pf_mod.prefilter = lambda candidates_dir, config: ["a", "b"]
-    matching_pkg.prefilter = pf_mod
-    monkeypatch.setitem(sys.modules, "matching", matching_pkg)
-    monkeypatch.setitem(sys.modules, "door.matching.prefilter", pf_mod)
+    monkeypatch.setattr(prefilter_mod, "prefilter", pf_mod.prefilter)
 
     # Inject fake dedup that removes one path (simulating 1 duplicate collapsed)
     dedup_mod = types.ModuleType("door.matching.dedup")
     dedup_mod.dedup = lambda paths, config, **kw: paths[:1]  # drop one
-    monkeypatch.setitem(sys.modules, "door.matching.dedup", dedup_mod)
+    monkeypatch.setattr(dedup_module, "dedup", dedup_mod.dedup)
 
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
-    assert "1 duplicate(s) collapsed" in text
+    result = _scrape(cli_env, ["jobindex"])
+    assert result["dedup"]["collapsed"] == 1
 
 
 def test_scrape_scraper_exception_is_reported(cli_env, monkeypatch, capsys):
@@ -216,28 +202,8 @@ def test_scrape_scraper_exception_is_reported(cli_env, monkeypatch, capsys):
 
     monkeypatch.setattr(ji, "scrape", boom)
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
-    assert "kaboom" in text
-
-
-def test_scrape_unimplemented_scraper_skips(cli_env, monkeypatch, capsys):
-    # lever is a known site but this test simulates its module raising
-    # ImportError by removing it from sys.modules and patching the import.
-    import sys
-    write_config(cli_env.profile_dir, {})
-    monkeypatch.delitem(sys.modules, "door.scrapers.feeds.lever", raising=False)
-    # Patch the import so it raises ImportError
-    import builtins
-    real_import = builtins.__import__
-
-    def fake_import(name, *args, **kwargs):
-        if name == "door.scrapers.feeds.lever":
-            raise ImportError("simulated missing scraper")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-    text = _scrape_text(cli_env, capsys, ["lever"])
-    assert "not yet implemented" in text
+    result = _scrape(cli_env, ["jobindex"])
+    assert result["sites"][0]["error"] == "kaboom"
 
 
 # --------------------------------------------------------------------------- #
@@ -285,7 +251,7 @@ def test_scrape_skips_already_seen_posting(cli_env, monkeypatch, capsys):
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
     before = _seed_history(cli_env.jobs_dir, "jobindex-acme-data-scientist", "pid-already-seen", days_ago=3)
 
-    _scrape_text(cli_env, capsys, ["jobindex"])
+    _scrape(cli_env, ["jobindex"])
 
     assert not _today_file(cli_env).exists(), "already-seen posting should be skipped"
     assert _history(cli_env.jobs_dir)["jobindex-acme-data-scientist"]["last_seen"] > before
@@ -297,7 +263,7 @@ def test_scrape_new_posting_is_written_and_recorded_in_history(cli_env, monkeypa
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [_make_posting(platform_id)])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    _scrape_text(cli_env, capsys, ["jobindex"])
+    _scrape(cli_env, ["jobindex"])
 
     assert _today_file(cli_env).exists(), "new posting should be written to disk"
     if platform_id:
@@ -316,7 +282,7 @@ def test_scrape_recheck_after_days_from_config(cli_env, monkeypatch, capsys):
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
     _seed_history(cli_env.jobs_dir, "jobindex-acme-data-scientist", "pid-r", days_ago=10)
 
-    _scrape_text(cli_env, capsys, ["jobindex"])
+    _scrape(cli_env, ["jobindex"])
 
     assert _today_file(cli_env).exists()
 
@@ -434,9 +400,9 @@ def test_scrape_liveness_called_when_flag_set(cli_env, monkeypatch, capsys):
 
     monkeypatch.setattr(liveness_mod, "verify_liveness", _fake_verify_liveness)
 
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
+    result = _scrape(cli_env, ["jobindex"])
     assert len(calls["paths"]) == 1
-    assert "liveness" in text.lower()
+    assert result["liveness"] == {"before": 1, "after": 1}
 
 # --------------------------------------------------------------------------- #
 # scrape — failure accounting (issue #132)
@@ -479,9 +445,8 @@ def test_scrape_prints_a_flag_for_an_empty_site(cli_env, monkeypatch, capsys):
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
-    assert "⚠ jobindex: returned no results at all" in text
-    assert "1 empty" in text
+    result = _scrape(cli_env, ["jobindex"])
+    assert result["sites"][0]["outcome"] == "empty" and "returned no results at all" in result["sites"][0]["warning"]
 
 
 def test_scrape_core_answered_with_no_hits_is_ok_and_moves_the_watermark(cli_env, monkeypatch):
@@ -587,19 +552,9 @@ def test_scrape_prints_failure_summary(cli_env, monkeypatch, capsys):
     monkeypatch.setattr(ji, "scrape", _make_failing_scraper(["404 Not Found"] * 8))
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    text = _scrape_text(cli_env, capsys, ["jobindex"])
-    assert "✗ jobindex: 0 posting(s), 404 x8 — 404 Not Found" in text
-    assert "Sites: 0 ok, 1 failed: jobindex (404 x8)" in text
-
-
-def test_scrape_failure_detail_is_printed_verbatim_not_as_markup(capsys):
-    """An error message with square brackets is text, never rich markup."""
-    result = {
-        "sites": [{"site": "jobindex", "outcome": "error", "error": "[Errno 61] Connection refused [bold]"}],
-        "liveness": None, "prefilter": None, "dedup": None, "condense": None, "prescreen": None,
-    }
-    scrape_cmd._echo_scrape_result(result)
-    assert "✗ jobindex: error — [Errno 61] Connection refused [bold]" in capsys.readouterr().out
+    entry = _scrape(cli_env, ["jobindex"])["sites"][0]
+    assert entry["outcome"] == "failed" and entry["errors"] == ["404 Not Found"] * 8
+    assert scrape_cmd._format_site_failure_detail(entry["errors"]) == "404 x8"
 
 
 def test_scrape_core_feed_site_without_companies_is_not_configured(cli_env, monkeypatch):
@@ -654,8 +609,22 @@ def test_scrape_core_reports_site_and_pass_events(cli_env, monkeypatch):
     done = events[2]
     assert done.message == "jobindex: 1 posting(s)"
     assert (done.outcome, done.done, done.total, done.site, done.stage) == ("ok", 1, 1, "jobindex", "scrape")
-    assert [e.message for e in events[3:]] == ["pre-filter", "language", "dedup", "condense", "prescreen"]
-    assert [e.stage for e in events[3:]] == ["prefilter", "language", "dedup", "condense", "prescreen"]
+    assert events[3:] == []
+
+
+def test_scrape_passes_report_the_five_pass_events(cli_env, monkeypatch):
+    from cli_utils import CaptureReporter
+    from door.core import progress
+
+    _fake_jobindex(monkeypatch, lambda config, **kwargs: [_posting()])
+    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
+    config = json.loads((cli_env.profile_dir / "config.json").read_text())
+    cap = CaptureReporter()
+    with progress.activate(cap):
+        scrape_cmd._scrape_passes(Path(result["candidates_dir"]), config, cli_env.profile_dir)
+
+    assert [e.message for e in cap.events] == ["pre-filter", "language", "dedup", "condense", "prescreen"]
+    assert [e.stage for e in cap.events] == ["prefilter", "language", "dedup", "condense", "prescreen"]
 
 
 def test_scrape_core_failed_site_event_carries_last_error(cli_env, monkeypatch):
@@ -787,9 +756,7 @@ def test_scrape_failed_line_shows_last_error_not_see_errors_above(cli_env, monke
         return []
 
     _fake_jobindex(monkeypatch, failing)
-    text = _scrape_text(cli_env, capsys, ["jobindex"])  # the engine's detail
-    assert "search error: HTTP 503 upstream" in text, text
-    assert "see errors above" not in text
+    assert _scrape(cli_env, ["jobindex"])["sites"][0]["errors"] == ["search error: HTTP 503 upstream"]
 
     _tty(monkeypatch)  # the live display
     result = CliRunner().invoke(cli, ["find", "search"])
@@ -810,8 +777,6 @@ def test_a_reserved_verdict_is_never_fetched(cli_env, monkeypatch, capsys):
     result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
 
     assert result["sites"] == [{"site": "jobindex", "outcome": "reserved", "terms_url": sites.SITES["jobindex"].terms_url}]
-    scrape_cmd._echo_scrape_result(result)
-    assert "terms reserve it against scraping" in capsys.readouterr().out
 
 
 # --------------------------------------------------------------------------- #
@@ -888,18 +853,13 @@ def test_search_mode_carries_no_followed_names(cli_env, monkeypatch):
     assert "_names" not in seen
 
 
-def test_a_feed_site_with_no_followed_employer_is_not_configured(cli_env, capsys):
+def test_a_feed_site_with_no_followed_employer_is_not_configured(cli_env):
     write_config(cli_env.profile_dir, {})
     _follow(cli_env.profile_dir, "greenhouse", "initech", name="Initech")
 
     result = scrape_cmd._scrape_core(["lever"], jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir, mode="collect")
-    scrape_cmd._echo_scrape_result(result)
 
     assert result["sites"][0]["outcome"] == "not_configured"
-    out = capsys.readouterr()
-    assert "no employers followed" in out.out and "companies add" in out.out
-    assert "⚠" not in out.out
-    assert "profile/config.json" not in out.out
 
 
 def test_a_posting_already_seen_on_an_earlier_day_is_a_duplicate_of_it(cli_env):
@@ -969,7 +929,7 @@ def test_scrape_gates_every_stored_posting(cli_env, monkeypatch, capsys):
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [clean, dirty])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    _scrape_text(cli_env, capsys, ["jobindex"])
+    _scrape(cli_env, ["jobindex"])
 
     out = cli_env.jobs_dir / "postings" / date.today().isoformat() / "jobindex"
     ok = json.loads((out / "jobindex.1.json").read_text())
@@ -991,7 +951,7 @@ def test_scrape_stores_the_posting_when_the_gate_fails(cli_env, monkeypatch, cap
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
     monkeypatch.setattr(integrity, "check", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
 
-    _scrape_text(cli_env, capsys, ["jobindex"])
+    _scrape(cli_env, ["jobindex"])
 
     out = cli_env.jobs_dir / "postings" / date.today().isoformat() / "jobindex" / "jobindex.3.json"
     assert out.exists() and "integrity" not in json.loads(out.read_text())

@@ -192,7 +192,7 @@ def test_load_missing_file_starts_empty(tmp_path):
 def test_known_ids_includes_entry_within_recheck_window(tmp_path):
     entries = {
         "jobindex.pid-fresh": {
-            "job_id": "j1", "url": "u", "source": "jobindex",
+            "job_id": "j1", "platform_id": "pid-fresh", "url": "u", "source": "jobindex",
             "first_seen": _RECENT.isoformat(), "last_seen": _RECENT.isoformat(),
             "status": "seen",
         }
@@ -217,12 +217,12 @@ def test_known_ids_excludes_entry_past_recheck_window(tmp_path):
 def test_known_ids_excludes_entries_from_a_different_source(tmp_path):
     entries = {
         "jobindex.pid-jobindex": {
-            "job_id": "j1", "url": "u", "source": "jobindex",
+            "job_id": "j1", "platform_id": "pid-jobindex", "url": "u", "source": "jobindex",
             "first_seen": _RECENT.isoformat(), "last_seen": _RECENT.isoformat(),
             "status": "seen",
         },
         "thehub.pid-thehub": {
-            "job_id": "j2", "url": "u", "source": "thehub",
+            "job_id": "j2", "platform_id": "pid-thehub", "url": "u", "source": "thehub",
             "first_seen": _RECENT.isoformat(), "last_seen": _RECENT.isoformat(),
             "status": "seen",
         },
@@ -258,10 +258,3 @@ def test_known_ids_returns_platform_ids_of_that_source_only(tmp_path):
     store.record("greenhouse.g2", "g2", "u", "greenhouse", now=_NOW)
     assert store.known_ids("jobindex", None, now=_NOW) == {"h1"}
     assert store.known_ids("greenhouse", None, now=_NOW) == {"h1", "g2"}
-
-
-def test_known_ids_strips_the_source_prefix_for_a_legacy_entry(tmp_path):
-    entries = {"jobindex.h9": {"job_id": "jobindex.h9", "url": "u", "source": "jobindex",
-                               "first_seen": _RECENT.isoformat(), "last_seen": _RECENT.isoformat(), "status": "seen"}}
-    store = _store(tmp_path, entries=entries)
-    assert store.known_ids("jobindex", None, now=_NOW) == {"h9"}

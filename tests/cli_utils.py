@@ -66,22 +66,14 @@ def fake_tailor(jobs_dir, called=None, *, writes=TAILOR_OUTPUTS, ok=True):
     return _run
 
 
-def stub_scrape_result(jobs_dir: Path, *, sites=None) -> dict:
-    return {
-        "run_date": "2026-07-01",
-        "days": None,
-        "mode": "search",
-        "employers": None,
-        "written": [],
-        "sites": sites if sites is not None else [{"site": "jobindex", "outcome": "ok", "count": 1, "dir": "x"}],
-        "liveness": None,
-        "prefilter": None,
-        "dedup": None,
-        "condense": None,
-        "prescreen": None,
-        "candidates_dir": str(jobs_dir / "postings" / "2026-07-01"),
-        "surviving_paths": [],
-    }
+def scrape_and_pass(profile_dir: Path, jobs_dir: Path, sites, **kwargs) -> dict:
+    """`_scrape_core`, then the passes the match step runs on what it wrote; both blocks in one dict."""
+    from door.commands import scrape as scrape_cmd
+
+    result = scrape_cmd._scrape_core(sites, jobs_dir=jobs_dir, profile_dir=profile_dir, **kwargs)
+    config = json.loads((profile_dir / "config.json").read_text())
+    result.update(scrape_cmd._scrape_passes(Path(result["candidates_dir"]), config, profile_dir))
+    return result
 
 
 def stub_match_result(jobs_dir: Path, *, scored=1, failed=None, above_threshold=0) -> dict:

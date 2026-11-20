@@ -110,7 +110,7 @@ __all__ = [
     "location_filter", "split_urls", "keep_local", "split_known", "is_remote", "local_names", "country_is_non_local",
     "career_site_words", "generic_host_labels", "tld_labels", "career_nav_words", "career_apply_words", "career_path_stems", "city_names", "compile_words",
     "seniority_words", "stop_words", "transliteration", "word_pattern", "country_name",
-    "ad_links", "from_url", "country", "look_back_days", "followed_name",
+    "ad_links", "country", "look_back_days", "followed_name",
     "name_key", "is_job_board", "awaiting_job_page", "Employer", "DiscoveryResult", "paged_discovery",
     "Detection", "Probe", "parts", "first", "NOT_ACCOUNTS", "unfollowable", "follow_link", "career_links", "slug_candidates",
 ]
@@ -287,11 +287,6 @@ def country_name(code: str) -> str:
 def ad_links(html: str, page_url: str, limit: int = 300) -> list[str]:
     """The job-ad links on a listing page."""
     return ats_detect.ad_links(html, page_url, limit)
-
-
-def from_url(url: str):
-    """The ATS (platform and id) a URL belongs to, or `None`."""
-    return ats_detect.from_url(url)
 
 
 def country(config: dict, served: tuple[str, ...]) -> str:

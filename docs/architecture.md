@@ -589,7 +589,7 @@ jobs/                             # gitignored — created on first scrape
 ├── applications.json             # application status ledger
 ├── scrape_state.json             # per-board last successful search (freshness), and pushback_at
 ├── candidates.json               # the employers `follow` has yet to look at (core/jobs/candidates.py)
-├── discovery/<source>.json       # one per discovery source (linkedin.json, profession.json, hellowork.json): last_run, pushback_at, Easy Apply employers seen, pace (budget/factor), history of runs, mode/rotation; an older linkedin_discovery.json is copied here on first read and left in place
+├── discovery/<source>.json       # one per discovery source (linkedin.json, profession.json, hellowork.json): last_run, pushback_at, Easy Apply employers seen, pace (budget/factor), history of runs, mode/rotation
 ├── skill_aliases.json            # market: {variant: canonical | null}, hand-editable, hand edits win
 ├── last_review.json              # review watermark
 ├── usage.jsonl                   # one line per Claude call: when, what for, postings scored, its weight, how full the plan's windows were; this computer's only (not exported or synced)

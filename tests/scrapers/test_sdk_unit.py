@@ -30,12 +30,10 @@ def test_wrappers_follow_a_patch_of_the_defining_module(monkeypatch):
     monkeypatch.setattr(title_fit, "on_topic", lambda title, terms: ("t", title, terms))
     monkeypatch.setattr(locality, "country_is_non_local", lambda c, config, remote=False: ("l", c, remote))
     monkeypatch.setattr(i18n, "career_site_words", lambda: ["patched"])
-    monkeypatch.setattr(ats_detect, "from_url", lambda url: ("a", url))
     monkeypatch.setattr(freshness, "days_back", lambda since, now: "patched")
     assert sdk.on_topic("x", ["y"]) == ("t", "x", ["y"])
     assert sdk.country_is_non_local("SE", {}, remote=True) == ("l", "SE", True)
     assert sdk.career_site_words() == ["patched"]
-    assert sdk.from_url("u") == ("a", "u")
     assert sdk.look_back_days(datetime.now(timezone.utc), datetime.now(timezone.utc)) == "patched"
 
 

@@ -99,8 +99,6 @@ def test_a_site_that_pushed_back_rests_for_its_cooldown_without_a_request(env, f
     entry = second["sites"][0]
     assert entry["site"] == "jobindex" and entry["outcome"] == "resting" and entry["until"]
     assert fake_jobindex["calls"] == 1  # no request while it rests
-    scrape_cmd._echo_scrape_result(second)
-    assert "resting after it pushed back" in capsys.readouterr().out
 
 
 def test_after_the_cooldown_the_site_is_scraped_again(env, fake_jobindex):

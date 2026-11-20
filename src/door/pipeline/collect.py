@@ -163,7 +163,7 @@ def _collect_core(
     started = time.monotonic()
     with pipeline.running("collect", total=employers or None, late=late) as step:
         result = scrape_cmd._scrape_core(None, jobs_dir=jobs_dir, profile_dir=profile_dir,
-                                         mode="collect", companies=companies, passes=False)
+                                         mode="collect", companies=companies)
         _stamp_relevant(result["written"], profile_dir, config)
         _stamp_problems(result["sites"], feeds, profile_dir)
         sites = result["sites"]

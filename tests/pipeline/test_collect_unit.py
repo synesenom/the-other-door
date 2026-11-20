@@ -281,7 +281,7 @@ def test_search_keeps_off_topic_titles_the_board_returned(env, monkeypatch):
     from door.commands import scrape as scrape_cmd
 
     fake_scraper(monkeypatch, "jobindex", lambda config, **kw: [posting(1, title="Pedagog", platform_id="p1")])
-    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=env.jobs_dir, profile_dir=env.profile_dir, passes=False)
+    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
     assert result["sites"][0]["count"] == 1 and "off_topic" not in result["sites"][0]
 
 
