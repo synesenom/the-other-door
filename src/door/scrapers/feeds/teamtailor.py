@@ -94,6 +94,14 @@ def _feed_base(entry: str) -> str:
     return f"https://{parsed.netloc.lower()}"
 
 
+def _item_list(data) -> list:
+    """The ``items`` list of a JSON Feed page; raises ``ValueError`` when it holds none."""
+    items = data.get("items") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        raise ValueError("no `items` list in Teamtailor's JSON Feed")
+    return items
+
+
 def _fetch_board(session: PoliteSession, base: str) -> dict:
     """The JSON Feed for the board at *base*, every page of it.
 
@@ -101,9 +109,7 @@ def _fetch_board(session: PoliteSession, base: str) -> dict:
     Raises on HTTP errors or robots.txt disallow (of the first page).
     """
     first = session.get(f"{base}/jobs.json", headers=_HEADERS).json()
-    if not isinstance(first, dict) or not isinstance(first.get("items"), list):
-        raise ValueError("no `items` list in Teamtailor's JSON Feed")
-    items = list(first["items"])
+    items = list(_item_list(first))
     seen = {_platform_id(i) for i in items}
     for page in range(2, _MAX_PAGES + 1):
         if not items:
@@ -236,9 +242,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        items = data.get("items") if isinstance(data, dict) else None
-        if not isinstance(items, list):
-            return [], False, "no `items` list in the JSON Feed"
+        items = _item_list(data)
         company_name = (data.get("title") or slug).strip()
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(i, company_name, scraped_at) for i in items

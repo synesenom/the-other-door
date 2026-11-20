@@ -114,14 +114,18 @@ def _fetch_postings(session: PoliteSession, entry: str):
     raise RuntimeError("unreachable")  # pragma: no cover - the loop returns or raises
 
 
+def _job_list(data) -> list:
+    """A postings answer's job list; raises ``ValueError`` when it is not one."""
+    if not isinstance(data, list):
+        raise ValueError("no postings list in Lever's answer")
+    return data
+
+
 def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, name: str = "") -> list[dict]:
     """The postings of one ``lever_companies`` entry, labelled with the followed *name* when given.
     Raises on HTTP errors."""
     slug, resp = _fetch_postings(session, entry)
-    jobs = resp.json()
-    if not isinstance(jobs, list):
-        raise ValueError("no postings list in Lever's answer")
-    return [_to_posting(job, slug, scraped_at, name) for job in jobs]
+    return [_to_posting(job, slug, scraped_at, name) for job in _job_list(resp.json())]
 
 
 def _to_posting(job: dict, slug: str, scraped_at: datetime, name: str = "") -> dict:
@@ -166,9 +170,7 @@ def probe(config: dict) -> ProbeResult | None:
         return _fetch_postings(session, entry)[1].text
 
     def parse(text: str):
-        jobs = json.loads(text)
-        if not isinstance(jobs, list):
-            return [], False, "the postings API did not return a JSON array"
+        jobs = _job_list(json.loads(text))
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(j, slug, scraped_at) for j in jobs if isinstance(j, dict) and j.get("id")], True, ""
 

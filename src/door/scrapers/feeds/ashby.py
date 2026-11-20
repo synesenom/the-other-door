@@ -89,14 +89,19 @@ def _listed(jobs) -> list[dict]:
     return [j for j in jobs if isinstance(j, dict) and j.get("id") and j.get("isListed", True) is not False]
 
 
+def _job_list(data) -> list:
+    """The ``jobs`` list of a job-board answer; raises ``ValueError`` when it holds none."""
+    jobs = data.get("jobs") if isinstance(data, dict) else None
+    if not isinstance(jobs, list):
+        raise ValueError("no `jobs` list in Ashby's answer")
+    return jobs
+
+
 def _board_postings(session: PoliteSession, board: str, scraped_at: datetime, name: str = "") -> list[dict]:
     """Every listed job on Ashby board *board*, labelled with the followed *name* when given.
     Raises on HTTP errors."""
     data = session.get(_BOARD_URL.format(board=board), headers=_HEADERS).json()
-    jobs = data.get("jobs") if isinstance(data, dict) else None
-    if not isinstance(jobs, list):
-        raise ValueError("no `jobs` list in Ashby's answer")
-    return [_to_posting(job, board, scraped_at, name) for job in _listed(jobs)]
+    return [_to_posting(job, board, scraped_at, name) for job in _listed(_job_list(data))]
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
@@ -122,10 +127,7 @@ def probe(config: dict) -> ProbeResult | None:
         return session.get(_BOARD_URL.format(board=board), headers=_HEADERS).text
 
     def parse(text: str):
-        data = json.loads(text)
-        jobs = data.get("jobs") if isinstance(data, dict) else None
-        if not isinstance(jobs, list):
-            return [], False, "no `jobs` list in the Ashby job-board response"
+        jobs = _job_list(json.loads(text))
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(j, board, scraped_at) for j in _listed(jobs)], True, ""
 

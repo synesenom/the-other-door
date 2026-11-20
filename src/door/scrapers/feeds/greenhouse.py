@@ -58,15 +58,19 @@ def _board_token(entry: str) -> str:
     return parts[0].lower() if parts else ""
 
 
+def _job_list(data) -> list:
+    """The ``jobs`` list of a boards API answer; raises ``ValueError`` when it holds none."""
+    jobs = data.get("jobs") if isinstance(data, dict) else None
+    if not isinstance(jobs, list):
+        raise ValueError("no `jobs` list in Greenhouse's answer")
+    return jobs
+
+
 def _fetch_board(session: PoliteSession, token: str, scraped_at: datetime, name: str = "") -> list[dict]:
     """The postings of board *token* (each job carries its ``company_name``; the followed *name*
     wins over it). Raises on HTTP errors."""
     resp = session.get(f"{_API_BASE}/{token}/jobs", headers=_HEADERS, params={"content": "true"})
-    data = resp.json()
-    jobs = data.get("jobs") if isinstance(data, dict) else None
-    if not isinstance(jobs, list):
-        raise ValueError("no `jobs` list in Greenhouse's answer")
-    return [_to_posting(job, token, scraped_at, name) for job in jobs if job.get("id")]
+    return [_to_posting(job, token, scraped_at, name) for job in _job_list(resp.json()) if job.get("id")]
 
 
 def _to_posting(job: dict, token: str, scraped_at: datetime, name: str = "") -> dict:
@@ -114,10 +118,7 @@ def probe(config: dict) -> ProbeResult | None:
                            params={"content": "true"}).text
 
     def parse(text: str):
-        data = json.loads(text)
-        jobs = data.get("jobs") if isinstance(data, dict) else None
-        if not isinstance(jobs, list):
-            return [], False, "no `jobs` list in the boards API response"
+        jobs = _job_list(json.loads(text))
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(j, token, scraped_at) for j in jobs if isinstance(j, dict) and j.get("id")], True, ""
 

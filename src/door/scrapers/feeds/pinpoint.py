@@ -85,16 +85,21 @@ def _items(data) -> list[dict]:
     return [o for o in data if isinstance(o, dict) and o.get("id")]
 
 
+def _data_list(answer) -> list:
+    """The ``data`` list of a postings feed; raises ``ValueError`` when it holds none."""
+    data = answer.get("data") if isinstance(answer, dict) else None
+    if not isinstance(data, list):
+        raise ValueError("no `data` list in Pinpoint's answer")
+    return data
+
+
 def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, name: str = "") -> list[dict]:
     """The published postings of one ``pinpoint_companies`` entry, labelled with the followed *name*
     when given. Raises on HTTP errors."""
     base = _careers_base(entry)
     company = name or _company_name(entry if "." not in entry else urlparse(base).netloc)
     answer = session.get(f"{base}/postings.json", headers=_HEADERS).json()
-    data = answer.get("data") if isinstance(answer, dict) else None
-    if not isinstance(data, list):
-        raise ValueError("no `data` list in Pinpoint's answer")
-    return [_to_posting(item, company, base, scraped_at) for item in _items(data)]
+    return [_to_posting(item, company, base, scraped_at) for item in _items(_data_list(answer))]
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
@@ -120,10 +125,7 @@ def probe(config: dict) -> ProbeResult | None:
         return session.get(f"{base}/postings.json", headers=_HEADERS).text
 
     def parse(text: str):
-        data = json.loads(text)
-        items = data.get("data") if isinstance(data, dict) else None
-        if not isinstance(items, list):
-            return [], False, "no `data` list in the Pinpoint postings feed"
+        items = _data_list(json.loads(text))
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(o, company, base, scraped_at) for o in _items(items)], True, ""
 
