@@ -5,6 +5,7 @@ site's shape, a few made-up cards each (fixtures/profession/)."""
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from door.scrapers import paged_discovery
 from door.scrapers.discovery import profession
 
 _FIX = Path(__file__).parent / "fixtures" / "profession"
@@ -19,8 +20,8 @@ def _by_id(cards):
 
 
 def test_the_search_url_quotes_the_keyword_and_numbers_the_page():
-    assert profession._search_url("data scientist", 1) == "https://www.profession.hu/allasok/1,0,0,data%20scientist"
-    url = profession._search_url("adatelemző", 2)
+    assert profession._search_url("data scientist", 1, {}) == "https://www.profession.hu/allasok/1,0,0,data%20scientist"
+    url = profession._search_url("adatelemző", 2, {})
     assert url.startswith("https://www.profession.hu/allasok/2,0,0,") and "%C5%91" in url
     assert unquote(urlparse(url).path).endswith(",adatelemző")
 
@@ -73,22 +74,10 @@ def _card(i, title, company):
             "url": f"https://www.profession.hu/allas/x-{i}"}
 
 
-def test_only_on_topic_titles_are_kept_and_grouped_by_employer_in_order_of_first_sight():
-    config = {"search_keywords": ["data scientist"], "location": "Budapest"}
-    cards = [_card(1, "Senior Data Scientist", "Globex Zrt."), _card(2, "Demand planner", "Vortex Kft."),
-             _card(3, "Data Scientist (Medior)", "GLOBEX ZRT."), _card(4, "Quality manager", "Soylent Kft."),
-             _card(5, "Data Scientist", "Alfa Kft.")]
-    got = profession._employers(cards, config)
-    assert [e["company"] for e in got] == ["Globex Zrt.", "Alfa Kft."]
-    assert got[0]["titles"] == ["Senior Data Scientist", "Data Scientist (Medior)"]
-    assert got[0]["links"] == ["https://www.profession.hu/allas/x-1", "https://www.profession.hu/allas/x-3"]
-    assert got[0]["job_ids"] == [] and got[0]["detailed"] is False
-
-
 def test_hungarian_keywords_keep_hungarian_titles_and_drop_the_rest():
     config = {"search_keywords": ["adatelemző"], "location": "Budapest"}
     cards = profession._parse_cards(_fx("search_adatelemzo_hu.html"))
-    got = {e["company"] for e in profession._employers(cards, config)}
+    got = {e["company"] for e in paged_discovery.employers_of(cards, config)}
     assert {"Példavárosi Tudományegyetem", "Kék Duna Nonprofit Zrt."} <= got
     assert "Vortex Ingredients Kft." not in got and "Soylent Magyarország Kft." not in got
 
@@ -96,7 +85,7 @@ def test_hungarian_keywords_keep_hungarian_titles_and_drop_the_rest():
 def test_two_forms_of_one_employers_name_are_one_employer():
     config = {"search_keywords": ["data scientist"], "location": "Budapest"}
     cards = [_card(1, "Data Scientist", "Globex Online Zrt."), _card(2, "Data Scientist", "GLOBEX ONLINE")]
-    assert len(profession._employers(cards, config)) == 1
+    assert len(paged_discovery.employers_of(cards, config)) == 1
 
 
 def test_a_profession_ad_link_is_a_job_board_link_not_an_employer_site():
