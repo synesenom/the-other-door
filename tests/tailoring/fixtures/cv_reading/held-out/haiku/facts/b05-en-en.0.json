@@ -1,5 +1,5 @@
 {
- "key": "4025f632c779",
+ "key": "45ad59c5dcfa",
  "answer": [
   {
    "kind": "skill",
@@ -11,7 +11,7 @@
    "kind": "degree",
    "file": "cv",
    "value": "LLB in Law",
-   "context": "Sample College, Exeter – LLB in Law (2009 - 2011)"
+   "context": "LLB in Law | Sample College"
   },
   {
    "kind": "certification",

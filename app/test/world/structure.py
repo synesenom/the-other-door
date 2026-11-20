@@ -9,12 +9,22 @@ import json
 import re
 import sys
 
-from door import i18n
-
-KINDS = tuple(i18n.CvSections.model_fields)
+# The stand-in's own few titles of the sections a column can hold (a test world's, not a language table).
+TITLES = {
+    "skills": ("skills", "kompetencer", "compétences"),
+    "education": ("education", "uddannelse", "formation"),
+    "certifications": ("certifications", "certificeringer"),
+    "languages": ("languages", "sprog", "langues"),
+    "interests": ("interests", "interesser", "loisirs", "centres d'intérêt", "érdeklődési kör", "intressen"),
+}
 _FOOTER = re.compile(r"\d+|page \d+ of \d+", re.I)
 _PHONE = re.compile(r"[\d\s()+.\-]{7,}")
 _PERIOD = re.compile(r"(19|20)\d\d\s*[-\u2013]\s*((19|20)\d\d|\w+)")
+
+
+def section_kind(title: str) -> str | None:
+    key = " ".join(title.split()).casefold().strip(" :")
+    return next((kind for kind, titles in TITLES.items() if key in titles), None)
 
 
 def contact_kind(text: str) -> str | None:
@@ -55,10 +65,10 @@ def answer(text: str) -> dict:
     first = [r for r in lines if r["page"] == 1] or lines
     name = max(first, key=lambda r: (styles[r["style"]]["size"], -r["id"]))
     short = [r for r in lines if r is not name and len(r["text"].split()) <= 6 and r["style"] != body]
-    heads = [r for r in short if i18n.cv_section_kind(r["text"], KINDS)] or short[:3]
+    heads = [r for r in short if section_kind(r["text"])] or short[:3]
     return {
         "linkedin_export": False, "layout": {"columns": "one"}, "name": name["id"],
-        "headings": [{"id": r["id"], "kind": i18n.cv_section_kind(r["text"], KINDS) or "other"} for r in heads],
+        "headings": [{"id": r["id"], "kind": section_kind(r["text"]) or "other"} for r in heads],
         "entry_titles": [],
         "contacts": [{"id": r["id"], "kind": kind} for r in lines if (kind := contact_kind(r["text"]))],
         "footers": [r["id"] for r in lines if _FOOTER.fullmatch(r["text"].strip())]}

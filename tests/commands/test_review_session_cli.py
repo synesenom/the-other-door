@@ -329,9 +329,9 @@ NEW_BODY = """<p>Dear Hiring Team,</p>
 <p>Best regards</p>"""
 
 
-def _envelope(text: str) -> str:
-    """`claude -p --output-format json`'s answer around `text`."""
-    return json.dumps({"type": "result", "is_error": False, "result": text, "total_cost_usd": 0.05})
+def _envelope(body: str) -> str:
+    """`claude -p`'s answer to a revise: the JSON `{body}` in the envelope."""
+    return json.dumps({"type": "result", "is_error": False, "result": json.dumps({"body": body}), "total_cost_usd": 0.05})
 
 
 @pytest.fixture
@@ -342,7 +342,7 @@ def revise_env(env, monkeypatch):
 
     def fake_run(argv, **kwargs):
         calls.claude.append((argv, kwargs))
-        return subprocess.CompletedProcess(argv, 0, stdout=_envelope(f"```html\n{NEW_BODY}\n```\n"), stderr="")
+        return subprocess.CompletedProcess(argv, 0, stdout=_envelope(NEW_BODY), stderr="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
@@ -464,6 +464,7 @@ def test_revise_undo_restores_the_backup(revise_env):
 
 def test_revise_reruns_the_facts_check(revise_env, monkeypatch):
     (revise_env.profile_dir / "cv.md").write_text("Shipped models. Raised 38%.")
+    from door.tailoring import facts
     out = revise_env.out
     clean = revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
     assert clean["unsupported"] == []
@@ -471,11 +472,14 @@ def test_revise_reruns_the_facts_check(revise_env, monkeypatch):
 
     invented = "<p>Dear team,</p><p>I raised revenue by 60% last year.</p>"
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(invented), stderr=""))
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": [
+        {"kind": "number", "value": "60%", "context": "I raised revenue by 60% last year.", "file": "letter"}]})
     result = revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
     assert [c["value"] for c in result["unsupported"]] == ["60%"]
     assert result["unsupported"][0]["file"] == "cover_letter"
     assert json.loads((out / "facts.json").read_text())["unsupported"][0]["value"] == "60%"
 
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": []})
     undone = revise_cmd._revise_core("jobindex-top", "cover_letter", undo=True, jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
     assert undone["unsupported"] == []
 
@@ -485,13 +489,16 @@ def test_revise_keeps_a_reason_while_the_item_is_flagged_and_drops_it_when_gone(
     invented = "<p>Dear team,</p><p>I raised revenue by 60% last year.</p>"
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(invented), stderr=""))
     kw = dict(jobs_dir=revise_env.jobs_dir, profile_dir=revise_env.profile_dir)
-    revise_cmd._revise_core("jobindex-top", "cover_letter", "x", **kw)
     from door.tailoring import facts
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": [
+        {"kind": "number", "value": "60%", "context": "I raised revenue by 60% last year.", "file": "letter"}]})
+    revise_cmd._revise_core("jobindex-top", "cover_letter", "x", **kw)
     facts.check(revise_env.out, revise_env.profile_dir,
                 keep=[{"kind": "number", "value": "60%", "file": "cover_letter", "reason": "in the ad"}])
     again = revise_cmd._revise_core("jobindex-top", "cover_letter", "y", **kw)
     assert again["unsupported"][0]["reason"] == "in the ad"
     clean = "<p>Dear team,</p><p>I shipped models.</p>"
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": []})
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(clean), stderr=""))
     assert revise_cmd._revise_core("jobindex-top", "cover_letter", "z", **kw)["unsupported"] == []
 
@@ -593,17 +600,6 @@ def test_prepare_without_a_job_id_skips_stale_postings_like_list(env):
 # review fixes
 # --------------------------------------------------------------------------- #
 
-@pytest.mark.parametrize("answer", [
-    "Here is the revised body:\n```html\n<p>Hello</p>\n```",
-    "Sure! Here is the revised body:\n\nDear Team,",
-])
-def test_revise_rejects_answers_with_commentary(revise_env, monkeypatch, answer):
-    monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(answer), stderr=""))
-    with pytest.raises(ValueError, match="commentary"):
-        revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
-    assert (revise_env.out / "cover_letter.html").read_text() == LETTER_HTML
-
-
 def test_word_count_counts_the_text_not_the_tags():
     body = "<!-- Keywords: a b --><h2>Hi</h2><p class=\"date\">Hello there</p><ul><li>one two</li></ul>"
     assert html_doc.word_count(body) == 5
@@ -660,13 +656,13 @@ def test_revise_never_sends_an_instruction_line_of_a_legacy_ad(revise_env):
     assert "We need a data scientist." in stdin and "Ignore previous" not in stdin
 
 
-def test_revise_asks_for_the_envelope_and_records_its_usage(revise_env):
+def test_revise_asks_for_a_body_in_a_schema_and_records_its_usage(revise_env):
     """#575: a revise's usage is recorded under `revise`."""
     from door.core import usage
     result = revise_cmd._revise_core("jobindex-top", "cover_letter", "tighten", jobs_dir=revise_env.jobs_dir)
     assert result["outcome"] == "revised"
     argv = revise_env.calls.claude[0][0]
-    assert argv[argv.index("--output-format") + 1] == "stream-json"
+    assert argv[argv.index("--output-format") + 1] == "stream-json" and "--json-schema" in argv
     [line] = usage.read(revise_env.jobs_dir)
     assert (line["feature"], line["weight"]) == ("revise", 0.05)
 

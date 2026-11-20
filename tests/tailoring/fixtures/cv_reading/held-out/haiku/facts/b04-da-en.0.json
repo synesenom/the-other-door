@@ -1,11 +1,11 @@
 {
- "key": "4b36bc0b84a2",
+ "key": "6f64ce08c079",
  "answer": [
   {
    "kind": "employer",
    "file": "cv",
    "value": "Zephyr Air",
-   "context": "Senior Operations Analyst | Zephyr Air"
+   "context": "Senior Operations Analyst | Zephyr Air - 19th March 2011 – 26th August 2017"
   },
   {
    "kind": "year",
@@ -17,7 +17,7 @@
    "kind": "number",
    "file": "letter",
    "value": "520k CHF",
-   "context": "Cut warehouse costs by 520k CHF a year by renegotiating three contracts."
+   "context": "Birch Packaging: Cut warehouse costs by 520k CHF a year by renegotiating three contracts."
   }
  ]
 }

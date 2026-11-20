@@ -616,53 +616,73 @@ def test_status_summary_reads_the_postings_once(cli_env, monkeypatch):
 # --------------------------------------------------------------------------- #
 # the facts check on a sent status (issue #325)
 # --------------------------------------------------------------------------- #
-def _invented(cli_env, cv="<ul><li>Cut churn by 97%</li></ul>"):
-    from door.commands import status as status_cmd  # noqa: F401
+def _invented(cli_env, monkeypatch, cv="<ul><li>Cut churn by 97%</li></ul>", findings=(("97%", "Cut churn by 97%"),),
+              **kw):
+    """Materials the fact check (a model's answer: `findings`) has listed claims of, as the tailor's check leaves them."""
+    import facts_utils
 
-    _write_materials(cli_env.jobs_dir, "job-1", cv=cv)
+    out = _write_materials(cli_env.jobs_dir, "job-1", cv=cv)
     (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    facts_utils.checked(monkeypatch, out, cli_env.profile_dir, [facts_utils.finding(*f) for f in findings], **kw)
 
 
 @pytest.mark.parametrize("status", ["applied", "interview:screening"])
-def test_sending_with_a_figure_not_in_cv_md_warns(cli_env, status):
+def test_sending_with_a_figure_not_in_cv_md_warns(cli_env, status, monkeypatch):
     from door.commands import status as status_cmd
 
-    _invented(cli_env)
+    _invented(cli_env, monkeypatch)
     result = status_cmd._set_status_core("job-1", status, jobs_dir=cli_env.jobs_dir)
 
     assert "97%" in result["warning"] and "cv.md" in result["warning"]
     assert _ledger(cli_env.jobs_dir)["job-1"]["status"] == status
 
 
-def test_the_warning_counts_claims_and_names_skills(cli_env):
+def test_the_warning_counts_claims_and_names_skills(cli_env, monkeypatch):
     from door.commands import status as status_cmd
 
-    _invented(cli_env, cv="<h2>Skills</h2>\n<p>Terraform</p>\n")
+    _invented(cli_env, monkeypatch, cv="<h2>Skills</h2>\n<p>Terraform</p>\n", findings=[("Terraform", "Terraform", "skill")])
     warning = status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)["warning"]
     assert warning.startswith("1 claim(s) in the sent materials are not in your cv.md: Terraform")
 
 
-def test_the_figure_warning_joins_the_short_ad_warning(cli_env):
+def test_the_figure_warning_joins_the_short_ad_warning(cli_env, monkeypatch):
     from door.commands import status as status_cmd
 
-    _invented(cli_env)
-    (cli_env.jobs_dir / "output" / "job-1" / "posting.json").write_text(json.dumps({"description": "short"}))
+    import facts_utils
+
+    _invented(cli_env, monkeypatch)
+    out = cli_env.jobs_dir / "output" / "job-1"
+    (out / "posting.json").write_text(json.dumps({"description": "short"}))
+    facts_utils.checked(monkeypatch, out, cli_env.profile_dir, [facts_utils.finding("97%", "Cut churn by 97%")])
     warning = status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)["warning"]
     assert "characters" in warning and "97%" in warning and "; " in warning
 
 
-def test_clean_materials_add_no_figure_warning(cli_env):
+def test_clean_materials_add_no_figure_warning(cli_env, monkeypatch):
     from door.commands import status as status_cmd
 
-    _invented(cli_env, cv="<ul><li>Cut churn by 38%</li></ul>")
+    _invented(cli_env, monkeypatch, cv="<ul><li>Cut churn by 38%</li></ul>", findings=[])
     assert "warning" not in status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)
 
 
-def test_no_figure_warning_before_sending(cli_env):
+def test_no_figure_warning_before_sending(cli_env, monkeypatch):
     from door.commands import status as status_cmd
 
-    _invented(cli_env)
+    _invented(cli_env, monkeypatch)
     assert "warning" not in status_cmd._set_status_core("job-1", "prepared", jobs_dir=cli_env.jobs_dir)
+
+
+def test_a_job_never_checked_gives_no_warning_and_no_model_call(cli_env, monkeypatch):
+    from door.commands import status as status_cmd
+    from door.tailoring import facts
+
+    def boom(inputs):
+        raise AssertionError("the model was asked")
+
+    monkeypatch.setattr(facts, "_ask", boom)
+    _write_materials(cli_env.jobs_dir, "job-1", cv="<ul><li>Cut churn by 97%</li></ul>")
+    (cli_env.profile_dir / "cv.md").write_text("Cut churn by 38%.")
+    assert "warning" not in status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)
 
 
 def test_no_cv_md_means_no_figure_warning(cli_env):
@@ -700,13 +720,10 @@ def test_in_progress_steps_is_none_for_a_snapshot_without_them(cli_env):
     assert live["message"] == "old" and live["steps"] is None
 
 
-def test_the_warning_carries_the_reason_the_tailor_kept_an_item_for(cli_env):
+def test_the_warning_carries_the_reason_the_tailor_kept_an_item_for(cli_env, monkeypatch):
     from door.commands import status as status_cmd
-    from door.tailoring import facts
 
-    _invented(cli_env)
-    out = cli_env.jobs_dir / "output" / "job-1"
-    facts.check(out, cli_env.profile_dir, keep=[{"kind": "number", "value": "97%", "file": "cv", "reason": "from the ad"}])
+    _invented(cli_env, monkeypatch, keep=[{"kind": "number", "value": "97%", "file": "cv", "reason": "from the ad"}])
     warning = status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)["warning"]
     assert "97%" in warning and "from the ad" in warning
 

@@ -338,7 +338,7 @@ def test_nothing_in_the_corpus_is_a_real_address_or_number():
             assert not re.search(r"\+\d\d \d\d [1-9]", text)
 
 
-# --- recorded answers, the report and the baseline ---------------------------------------------------------------
+# --- recorded answers and the report ---------------------------------------------------------------
 
 def record(folder, case, run, corpus, task="facts", answer=None, error=None):
     folder.mkdir(parents=True, exist_ok=True)
@@ -377,14 +377,6 @@ def test_the_reader_report_pools_the_fields_over_cases_and_runs_and_counts_stret
     name = next(iter(corpus))
     report = rcr.summarize("reader", {name: [{"error": "x"}]}, corpus)
     assert report["fields"]["name"] == 0.0 and report["verdict"] == "no-go" and report["calls"] == 1
-
-
-def test_the_baseline_fact_check_flags_what_the_rules_see_and_reads_the_story_bank_and_the_posting():
-    corpus = rcr.build_body_corpus()
-    name = next(n for n, c in corpus.items() if any(p["kind"] == "employer" for p in c["plants"]))
-    assert any(f["kind"] == "employer" for f in rcr.baseline_facts(corpus[name]))
-    clean = next(c for c in corpus.values() if c["letter"] and c["story"] and not c["plants"])
-    assert not [f for f in rcr.baseline_facts(clean) if f["value"] in ("4 000", "dbt", "Looker", "120")]
 
 
 # --- the prompts and the runner ----------------------------------------------------------------------------------
@@ -441,20 +433,9 @@ def test_haiku_is_go_as_a_reader_and_a_fact_checker_on_the_harder_corpus():
     reader, check = committed("haiku", "reader"), committed("haiku", "facts")  # the reader: one run a case, recorded again with #430's prompt
     assert reader["verdict"] == "go" and reader["calls"] == 15 and reader["stretches"] == 1.0
     assert {f: round(v, 3) for f, v in reader["fields"].items() if v < 1} == {"levels": 0.987}
-    assert check["verdict"] == "go" and check["calls"] == 84 and all(v == 1.0 for v in check["per_kind"].values())
-    assert check["false_clean_max"] == 0 and round(check["verbatim"], 3) == 0.984 and check["stable"] == 1.0
-
-
-def test_sonnet_is_close_on_the_facts_for_a_less_stable_check():
-    check = committed("sonnet", "facts")  # its reader records went stale with #430's prompt and were not recorded again
-    assert check["verdict"] == "close" and round(check["stable"], 3) == 0.857 and round(check["verbatim"], 3) == 0.993
-    assert all(v == 1.0 for v in check["per_kind"].values()) and check["false_clean_max"] == 0
-
-
-def test_the_fact_rules_of_today_are_no_go_on_the_same_cases():
-    corpus = rcr.build_body_corpus()
-    answers = {n: [rcr.baseline_facts(c)] for n, c in corpus.items()}
-    assert rcr.summarize("facts", answers, corpus)["verdict"] == "no-go"
+    # one Haiku run a case (#433): per-kind recall and false flags at #429's thresholds, every finding's context in its document
+    assert check["calls"] == 28 and check["verdict"] == "go" and all(v == 1.0 for v in check["per_kind"].values())
+    assert check["false_clean_max"] == 0 and check["verbatim"] == 1.0
 
 
 def test_no_record_is_an_error():
@@ -520,3 +501,27 @@ def test_haiku_is_go_on_the_held_out_corpus_the_prompts_never_saw():
     reader, _ = held_committed("reader")
     facts, _ = held_committed("facts")
     assert (reader["verdict"], facts["verdict"]) == ("go", "go")
+    assert facts["calls"] == 28 and all(v == 1.0 for v in facts["per_kind"].values()) and facts["false_clean_max"] == 0
+
+
+def test_a_recorded_held_out_answer_flags_the_employer_planted_in_a_translated_body_through_facts_check(tmp_path, monkeypatch):
+    import json
+
+    from door.tailoring import facts
+
+    with rcr.held_out():
+        corpus = rcr.build_body_corpus()
+        recorded = rcr.load_recorded("haiku", "facts", corpus, rcr.RECORDED / "held-out")
+    name = next(n for n, c in corpus.items()
+                if c["lang"] != c["body_lang"] and any(p["kind"] == "employer" and p["file"] == "cv" for p in c["plants"]))
+    case, planted = corpus[name], next(p for p in corpus[name]["plants"] if p["kind"] == "employer")
+    out, prof = tmp_path / "out", tmp_path / "profile"
+    out.mkdir(), prof.mkdir()
+    (prof / "cv.md").write_text(case["md"], encoding="utf-8")
+    (prof / "story_bank.md").write_text(case["story"], encoding="utf-8")
+    (out / "cv.html").write_text(case["body"], encoding="utf-8")
+    (out / "cover_letter.html").write_text(case["letter"], encoding="utf-8")
+    (out / "posting.json").write_text(json.dumps({"title": "Role", "description": case["posting"]}), encoding="utf-8")
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": recorded[name][0]})
+    found = facts.check(out, prof, write=False)
+    assert any(f["kind"] == "employer" and rcr._val(planted["planted_value"]) in rcr._val(f["value"] + f["context"]) for f in found)

@@ -102,7 +102,7 @@ interface ServerLike {
 const TOOL_TIMEOUTS: Record<string, number> = {
   import_posting: 180_000,
   prepare: 180_000,
-  revise: 420_000,
+  revise: 480_000,
   find_jobs: 900_000,
   draft_cv: 960_000,
   // a data move: one archive packed or unpacked.

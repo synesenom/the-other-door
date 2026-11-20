@@ -123,19 +123,13 @@ per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/ru
 6. `jobs` — the unapplied matches, best first.
 7. `jobs prepare <job_id>` (or `jobs prepare` alone, for the top match) — run the tailor agent headlessly for one posting.
    `find` does not prepare anything. When the tailor is done, `prepare` (and later `revise`) checks the CV and
-   letter against `profile/cv.md` and the story bank (which you can see, edit, add to and draft from your CV in the app's Profile, `cv stories` or a conversation) in code: every number, year, employer, skill or tool,
-   certification and degree must appear there (the letter may also echo the ad's figures and skills). Skills,
-   certifications and degrees are read from the CV's Skills, Certifications and Education sections (their
-   titles in each language's `[cv_sections]`, `src/door/i18n/lang/*.toml`) and, elsewhere, from technical-looking
-   words only (`C++`, `Node.js`, `CI/CD`, `SQL`); generic words (communication, months, ...) are the language
-   files' `skill_stop_words`. Case, plurals and the aliases of `jobs/skill_aliases.json` (read, never written)
-   are folded, so `k8s` is backed by `Kubernetes`, and a name the alias file maps to `null` is never claimed. What does not is written to `facts.json` in the job's output
-   folder and shown by `show` as "Not in your CV"; a sent status warns about it. No model call, never a block;
-   figures are read the French way too (`45 000`, with a space, non-breaking or narrow, `\,` or `~`, is `45000`; `2,5` is `2.5`; `45 k€` is `45000`), and the day and month of a written date ("29 octobre", `10/2026`) are not figures; amounts with a suffix count (`40k` is `40,000`, `2.5M` is `2,500,000`, `3x` stays `3x`); single digits and
-   the current year are skipped, derived figures may be flagged; plain lowercase words in a bullet are not checked
-   (precision over recall), but every item of the Skills section is. A `TODO` left in a document is always flagged:
-   it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing. Company forms (`ApS`, `GmbH`, `Ltd`, `S.A.S.`) are never read as skills.
-   The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json`, which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
+   letter against `profile/cv.md` and the story bank (which you can see, edit, add to and draft from your CV in the app's Profile, `cv stories` or a conversation) with one Haiku call: every number, year, employer, skill or tool,
+   certification and degree must be backed there, in whatever language the CV and the documents are written (the letter may also echo the ad's figures and skills; a figure told another way, `40 000` and `40k`, is the same figure). The model lists what is not, each with the words
+   of the document it stands in; a finding whose words are not in that document is dropped (a quote the model made up). What is left is written to `facts.json` in the job's output
+   folder with the sha256 of everything the model was shown, so the same inputs are never asked twice, and `show` reads that file ("Not in your CV"; it asks no model), as a sent status's warning does. Never a block, and a check that cannot run (Claude not reachable, no `cv.md`) is "not checked", never a guess by rules.
+   A `TODO` left in a document is always flagged, by code, not the model:
+   it marks something `cv.md` has not filled in, so `cv.md` having it too backs nothing.
+   The tailor runs this check itself before it finishes (the `check_facts` tool, two rounds at most): it fixes or removes what is unsupported and, for an item that is true, records a short reason in `facts.json` (recording one for documents already checked asks nothing and is no round), which `show`, the sent warning and the app print beside the item. A reason lasts while the item is still flagged; a `TODO` never takes one.
    `compile` also reads each PDF back as an ATS would (pypdfium2 text, no model call): your name, each `<h2>` heading
    on a line of its own and in order (a two-column CV's main and side columns each in their own order, a side heading
    allowed to share a line with main text), the `Keywords` note, no garbled or empty text and no word read as letters apart (`spaced`: "P r o f i l e", what a template's letter-spacing too wide for its text gives; such a heading is not also `missing`, so no retry is spent on a template's fault). A CV is also checked for text lost off the page: Chromium

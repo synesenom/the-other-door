@@ -12,17 +12,15 @@ the spike's (`scripts/record_cv_reading.py`), so its recorded answers stay valid
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from pathlib import Path
 
-from door.core import claude_cli, problem_log, utils, workspace
+from door.core import ask_cached, claude_cli, workspace
 
 PROMPT_VERSION = 2  # bump with the prompt, the schema or the check: a cached answer of another version is asked again
 COLUMN_KINDS = ("skills", "education", "certifications", "languages", "interests")  # what a template's column can hold
 KINDS = ("summary", "experience", *COLUMN_KINDS, "other")
 CONTACT_KINDS = ("phone", "email", "web", "linkedin", "github", "location")
-_KEEP_CACHED = 20  # answers kept in the cache folder, the most recently written
 LEVELS = ("native", "fluent", "working", "conversational", "basic")
 _MARKER = re.compile(r"\s*<!--.*?-->\s*$")
 
@@ -205,20 +203,6 @@ def _cache_dir() -> Path:
     return workspace.HOME / ".cv_read"
 
 
-def _cache_file(md: str) -> Path:
-    return _cache_dir() / f"{hashlib.sha256(md.encode('utf-8')).hexdigest()}.json"
-
-
-def _read_cache(file: Path) -> dict | None:
-    try:
-        data = json.loads(file.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if isinstance(data, dict) and data.get("version") == PROMPT_VERSION and isinstance(data.get("answer"), dict):
-        return data["answer"]
-    return None
-
-
 def _ask(md: str) -> dict:
     """The one model call: Haiku at low effort with no MCP servers."""
     return claude_cli.ask(PROMPT, f"CV:\n<<<\n{md}\n>>>\n", model="haiku", feature="cv_read", schema=SCHEMA,
@@ -227,8 +211,8 @@ def _ask(md: str) -> dict:
 
 def read(cv_md: str) -> dict:
     """The checked reading of `cv_md`: the cached one for its normalised text and this `PROMPT_VERSION` when it still holds,
-    else one Haiku call (`_ask`) whose answer is checked and then cached; an answer that does not hold is asked once more
-    (the model's answers vary). A CV with nothing in it is read without a call.
+    else one Haiku call (`_ask`) whose answer is checked and then cached (`ask_cached`); an answer that does not hold is
+    asked once more (the model's answers vary). A CV with nothing in it is read without a call.
 
     Raises:
         CvReadError: the call failed or its answer did not hold; nothing is cached then. There is no fallback.
@@ -236,34 +220,8 @@ def read(cv_md: str) -> dict:
     md = _normalise(cv_md)
     if not md:
         return _empty()
-    file = _cache_file(md)
-    if (cached := _read_cache(file)) is not None:
-        try:
-            return check(cached, md)
-        except CvReadError:
-            file.unlink(missing_ok=True)
-    try:
-        answer = _asked(md)
-    except CvReadError as exc:
-        problem_log.failure("cv read", str(exc))
-        raise
-    utils.write_json_atomic(file, {"version": PROMPT_VERSION, "answer": answer}, indent=None)
-    try:
-        stale = sorted(file.parent.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True)[_KEEP_CACHED:]
-        for old in stale:
-            old.unlink(missing_ok=True)
-    except OSError:
-        pass  # the cache is a convenience: a file that will not go is left
-    return answer
-
-
-def _asked(md: str) -> dict:
-    """One call whose answer holds, the model's answers varying: an answer that does not hold is asked once more."""
-    for attempt in (1, 2):
-        try:
-            return check(_ask(md), md)
-        except claude_cli.ClaudeError as exc:
-            raise CvReadError(f"Your CV could not be read: {exc}") from None
-        except CvReadError:
-            if attempt == 2:
-                raise
+    return ask_cached.cached_answer(
+        key=hashlib.sha256(md.encode("utf-8")).hexdigest(), version=PROMPT_VERSION, ask=lambda: _ask(md),
+        check=lambda answer: check(answer, md), error=CvReadError,
+        unreached=lambda exc: CvReadError(f"Your CV could not be read: {exc}"), label="cv read",
+        store=ask_cached.DirStore(_cache_dir()))

@@ -1,5 +1,5 @@
 {
- "key": "b0b652e310fc",
+ "key": "8d4102b0474d",
  "answer": [
   {
    "kind": "skill",
@@ -11,13 +11,13 @@
    "kind": "degree",
    "file": "cv",
    "value": "Közgazdaságtan PhD",
-   "context": "Példa Egyetem, Pécs – Közgazdaságtan PhD (2009 - 2011)"
+   "context": "Közgazdaságtan PhD | Példa Egyetem"
   },
   {
    "kind": "certification",
    "file": "cv",
    "value": "CISSP",
-   "context": "<li><strong>CISSP</strong></li>"
+   "context": "CISSP"
   }
  ]
 }

@@ -65,6 +65,17 @@ def _no_cv_model(request, tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_facts_model(request, monkeypatch):
+    """The fact check (#433) is `tailoring/facts`'s one call: in a test it finds nothing unless the test replaces
+    `facts._ask` with the answer it wants (`{"findings": [...]}`); a model test asks the real one."""
+    from door.tailoring import facts
+
+    if request.node.get_closest_marker("model"):
+        return
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": []})
+
+
+@pytest.fixture(autouse=True)
 def _no_salary_search(request, monkeypatch):
     """`prepare`'s salary estimate (#624) never reaches the `claude` CLI from a test; the salary
     tests fake `claude_cli.ask` underneath and keep it."""

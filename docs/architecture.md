@@ -130,7 +130,7 @@ The test is deliberately loose. Precision comes later, from the prescreen and th
 
 The passes contain no word lists. Everything that depends on a language or a country lives in `src/door/i18n/`, and each file is validated on load (`extra="forbid"`):
 
-- **`lang/<iso-639-1>.toml`**: section headings, requirement, remote and salary markers, seniority words, false friends, stop words, language-requirement phrases, the `cv_sections` titles of a CV, and the `[careers]` words that find a careers link on a page. **A language with a file is a supported language**: a profile's `languages` may only name these.
+- **`lang/<iso-639-1>.toml`**: section headings, requirement, remote and salary markers, seniority words, false friends, stop words, language-requirement phrases, and the `[careers]` words that find a careers link on a page. **A language with a file is a supported language**: a profile's `languages` may only name these.
 - **`country/<iso-3166>.toml`**: cities and their aliases, currency words, company-form suffixes. A country with a file is one that boards can serve (`Site.countries`) and that the locality filters understand.
 - **`common.toml`**: what applies everywhere, such as international company suffixes, synonyms and foreign place names.
 
@@ -198,7 +198,7 @@ Every model call goes through the `claude` CLI in print mode, on the user's Pro/
 | `jobs add <file, - or URL> [--title] [--company] [--url] [--location] [--force]` | `import_posting` | Store an ad found elsewhere (text, Markdown, JSON, pasted text via the tool, or a URL fetched through the scrapers' polite client, its title, company and location read off the page by one Haiku `claude -p` call unless given) as an ordinary posting under `jobs/postings/<today>/manual/` (`source="manual"`; `scrape`'s filters never touch it; its language is detected and a non-English title translated by one Haiku call, an ad outside `languages` kept), scored at once by `_match_core(paths=[…])` |
 | `jobs prepare [job]` | `prepare` | Tailor materials for a job (or, with none, the top match) and advance it to `prepared` once they are on disk |
 | — (conversation only) | `revise` | One `claude -p` edit of a document's body, recompiled (the body is wrapped in today's template whenever it is printed); `.bak` for undo |
-| — (the tailor agent's) | `check_facts` | `tailoring/facts.check` on the finished `.html` bodies, offline: what `cv.md` and the story bank do not back; `keep` records a reason per kept item in `facts.json`; two calls a prepare run (`.facts_rounds`, cleared by `prepare`) |
+| — (the tailor agent's) | `check_facts` | `tailoring/facts.check` on the finished `.html` bodies: one Haiku call (usage feature `facts`) for what `cv.md` and the story bank do not back, each finding's words verified against the document, cached in `facts.json` by the sha256 of its inputs (`core/ask_cached`, which `cv_read` and `style_structure` share); a changed input is a round, the same inputs are not; `keep` records a reason per kept item in `facts.json`; two calls a prepare run (`.facts_rounds`, cleared by `prepare`) |
 | — (the tailor agent's) | `compile` | the tailored `.html` bodies, guarded, filled, given their photo and typography, wrapped in the template and printed by the pinned Chromium (`render/html_pdf`) → PDFs; `--render` also renders each compiled PDF's pages to PNGs, with its page count |
 | — (conversation only) | `mark_reviewed` | Stamp `jobs/last_review.json` — the end of a review session |
 | — (the desktop app's) | `mark_seen` | Add one job to `jobs/last_review.json`'s `seen`: opened, no longer new |
@@ -452,7 +452,7 @@ and validated once per process:
 
 | File | Holds | Used by |
 |------|-------|---------|
-| `lang/<code>.toml` (ISO 639-1: `en`, `da`) | section headings, requirement / remote / salary markers, seniority words mapped to canonical levels (`academic` = every academic rank), false friends, stop words, letters to transliterate and to fold in URL slugs, language-requirement phrases, the CV `cv_sections` titles | condense, prescreen, prefilter (keywords), dedup, language, the `match` prompt |
+| `lang/<code>.toml` (ISO 639-1: `en`, `da`) | section headings, requirement / remote / salary markers, seniority words mapped to canonical levels (`academic` = every academic rank), false friends, stop words, letters to transliterate and to fold in URL slugs, language-requirement phrases | condense, prescreen, prefilter (keywords), dedup, language, the `match` prompt |
 | `country/<code>.toml` (ISO 3166: `dk`) | the country's languages, currency words, company-form suffixes, city names and aliases | prefilter (location), condense (salary), dedup |
 | `common.toml` | what applies everywhere (international company-form suffixes) | dedup |
 

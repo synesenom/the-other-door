@@ -1,11 +1,17 @@
 {
- "key": "912df3bb90aa",
+ "key": "65f808284229",
  "answer": [
   {
    "kind": "number",
    "file": "cv",
    "value": "520k CHF",
    "context": "sparede 520k CHF om året på lageret ved at genforhandle tre kontrakter"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "Cand.merc. i erhvervsøkonomi",
+   "context": "Cand.merc. i erhvervsøkonomi | École d'Essai"
   }
  ]
 }

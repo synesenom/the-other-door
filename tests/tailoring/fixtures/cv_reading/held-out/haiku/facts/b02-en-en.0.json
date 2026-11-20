@@ -1,5 +1,5 @@
 {
- "key": "2c6e43f7892f",
+ "key": "6419a0d199e2",
  "answer": [
   {
    "kind": "skill",
@@ -11,7 +11,7 @@
    "kind": "degree",
    "file": "cv",
    "value": "MSc in Data Science",
-   "context": "Sample College, Exeter – MSc in Data Science (January 2010 – June 2012)"
+   "context": "MSc in Data Science | Sample College"
   },
   {
    "kind": "certification",

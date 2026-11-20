@@ -34,6 +34,7 @@ _PRICED = {
     "read_ad": ("You read a job ad.", "Analyst at Acme", 0.01),
     "market": ("You group skill names.", json.dumps({"names": ["Python"]}), 0.01),
     "revise": ("", "You are revising the body of an HTML letter.\nCurrent body:\nOne.\n\nTwo.\n\nThree.", 0.05),
+    "facts": ("You check a tailored CV and cover letter against the candidate's own sources.", "SOURCE CV:\n<<<\nx\n>>>\n", 0.01),
     "gaps": (gaps._RULES, "the CV and the targets", 0.03),
     "cv_read": (cv_read.PROMPT, "CV:\n<<<\n# A\n\n## Skills\n\nPython\n>>>\n", 0.01),
 }
@@ -50,6 +51,19 @@ def test_every_answer_carries_its_price_the_usage_log_weighs(tmp_path, kind):
     assert out.returncode == 0, out.stderr
     envelope, _ = claude_cli.read_stream(out.stdout)
     assert usage.weight(envelope) == price
+
+
+def test_revise_and_facts_answer_in_their_schemas(tmp_path):
+    (tmp_path / "world.json").write_text(json.dumps({}))
+    for system, stdin, want in (
+        ("", "You are revising the body of an HTML letter.\nCurrent body:\nOne.\n\nTwo.\n\nThree.", {"body": "One.\n\nTwo."}),
+        ("You check a tailored CV and cover letter against the candidate's own sources.", "SOURCE CV:\n", {"findings": []}),
+    ):
+        argv = [sys.executable, str(CLAUDE), str(tmp_path), "-p", "--model", "haiku", "--system-prompt", system,
+                *claude_cli.STREAM_ARGS, "--tools", "", "--no-session-persistence"]
+        out = subprocess.run(argv, input=stdin, capture_output=True, text=True)
+        assert out.returncode == 0, out.stderr
+        assert claude_cli.json_result(out.stdout) == want
 
 
 def test_the_tailor_answers_with_a_priced_envelope(tmp_path):

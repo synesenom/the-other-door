@@ -1,5 +1,5 @@
 {
- "key": "af1dca9f54bd",
+ "key": "aa7ebb4f41df",
  "answer": [
   {
    "kind": "skill",
@@ -11,7 +11,7 @@
    "kind": "degree",
    "file": "cv",
    "value": "Doctorat en économie",
-   "context": "Université d'Exemple, Nantes – Doctorat en économie (2009-04 – 2011-09)"
+   "context": "Doctorat en économie | Université d'Exemple"
   },
   {
    "kind": "certification",

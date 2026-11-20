@@ -1,5 +1,5 @@
 {
- "key": "71c6b79bd87d",
+ "key": "c59dfe2cd28a",
  "answer": [
   {
    "kind": "skill",
@@ -11,7 +11,7 @@
    "kind": "degree",
    "file": "cv",
    "value": "MBA en management stratégique",
-   "context": "Université d'Exemple, Nantes – MBA en management stratégique (2010 - 2012)"
+   "context": "MBA en management stratégique"
   },
   {
    "kind": "certification",

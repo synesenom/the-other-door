@@ -1,17 +1,17 @@
 {
- "key": "56e61b1031ec",
+ "key": "4f5c859c9793",
  "answer": [
   {
    "kind": "employer",
    "file": "cv",
    "value": "Redwood Capital",
-   "context": "Senior Operations Analyst | Redwood Capital - 12/2012 – 05/2018"
+   "context": "Senior Operations Analyst | Redwood Capital"
   },
   {
    "kind": "year",
    "file": "cv",
    "value": "2012",
-   "context": "Senior Operations Analyst | Redwood Capital - 12/2012 – 05/2018"
+   "context": "12/2012 – 05/2018"
   }
  ]
 }
