@@ -31,7 +31,7 @@ from door.scrapers.sdk import (
     record_non_local, report, run_probe, scrape_feeds, strip_html,
     followed_name,
 )
-from door.scrapers.sdk import Detection, Probe, first, parts, split_known
+from door.scrapers.sdk import Detection, Probe, first, list_at, parts, split_known
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
 PLATFORM_DOMAINS = ("smartrecruiters.com", "smrtr.io")
@@ -156,9 +156,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        content = data.get("content") if isinstance(data, dict) else None
-        if not isinstance(content, list):
-            return [], False, "no `content` list in the SmartRecruiters postings response"
+        content = list_at(data, "content", "SmartRecruiters")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(o, None, company_id, scraped_at) for o in _items(content)], True, ""
 

@@ -37,7 +37,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, host_of, make_job_id, parse_iso_date, run_probe,
     report, scrape_feeds, strip_html, tenant_platform_id, workers, followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at
 from door.scrapers.sdk import Detection, NOT_ACCOUNTS, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -122,8 +122,7 @@ def _page(session: PoliteSession, tenant: str, offset: int) -> dict:
     if resp.is_redirect:
         raise ValueError(f"no Emply career site {tenant}{_SUFFIX} (redirected to {resp.headers.get('Location')})")
     data = resp.json()
-    if not isinstance(data, dict) or not isinstance(data.get("vacancies"), list):
-        raise ValueError("no `vacancies` list in Emply's answer")
+    list_at(data, "vacancies", "Emply")
     return data
 
 
@@ -285,9 +284,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        items = data.get("vacancies") if isinstance(data, dict) else None
-        if not isinstance(items, list):
-            return [], False, "no `vacancies` list in the Emply API response"
+        items = list_at(data, "vacancies", "Emply")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(v, tenant, scraped_at) for v in _vacancies(items)], True, ""
 

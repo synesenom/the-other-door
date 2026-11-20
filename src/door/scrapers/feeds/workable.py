@@ -35,7 +35,7 @@ from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
     parse_iso_date, record_answered, record_entry_error, record_error, report, run_probe, strip_html, tracked, followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at
 from door.scrapers.sdk import Detection, Probe, first, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -154,13 +154,15 @@ def _scrape_companies(session: PoliteSession, entries: list[str], seen_ids: set[
         account = _account(entry)
         try:
             data = session.get(_WIDGET_URL.format(account=account), headers=_HEADERS, params={"details": "true"}).json()
+            jobs = list_at(data, "jobs", "Workable")
         except Exception as exc:
             report(f"error fetching account {account!r}: {exc}")
             record_entry_error(_SITE, entry, f"error fetching account {account!r}: {exc}")
             continue
+        record_answered(_SITE)
         company = followed_name(config or {}, "workable_companies", entry, (data.get("name") or account).strip())
         account_postings = []
-        for job in data.get("jobs") or []:
+        for job in jobs:
             platform_id = str(job.get("shortcode") or "")
             if not platform_id or platform_id in seen_ids:
                 continue
@@ -238,9 +240,7 @@ def probe(config: dict) -> ProbeResult | None:
 
         def parse_account(text: str):
             data = json.loads(text)
-            jobs = data.get("jobs") if isinstance(data, dict) else None
-            if not isinstance(jobs, list):
-                return [], False, "no `jobs` list in the Workable widget response"
+            jobs = list_at(data, "jobs", "Workable")
             company = (data.get("name") or account).strip()
             scraped_at = datetime.now(timezone.utc)
             return [_widget_posting(j, company, scraped_at) for j in jobs if isinstance(j, dict) and j.get("shortcode")], True, ""
@@ -256,9 +256,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        jobs = data.get("jobs") if isinstance(data, dict) else None
-        if not isinstance(jobs, list):
-            return [], False, "no `jobs` list in the Workable search response"
+        jobs = list_at(data, "jobs", "Workable")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(j, scraped_at) for j in jobs if isinstance(j, dict) and j.get("id")], True, ""
 

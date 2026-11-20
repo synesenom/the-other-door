@@ -11,7 +11,7 @@ import pytest
 import responses
 
 from door.core.models import JobPosting
-from door.scrapers import drain_errors
+from door.scrapers import drain_answered, drain_entry_errors, drain_errors
 from door.scrapers.feeds import hr_manager
 from paths import TESTS_DIR
 
@@ -79,6 +79,18 @@ def test_a_failed_transaction_status_is_an_error():
     drain_errors()
     assert hr_manager.scrape({"hr_manager_aliases": ["kkdk"]}) == []
     assert "broken" in drain_errors()["hr_manager"][0]
+
+
+@responses.activate
+def test_an_answer_without_an_items_list_is_an_entry_error():
+    responses.add(responses.GET, _KKDK, body=json.dumps({"TransactionStatus": {"StatusCode": 0}}))
+    drain_answered("hr_manager")
+    drain_entry_errors("hr_manager")
+
+    assert hr_manager.scrape({"hr_manager_aliases": ["kkdk"]}) == []
+
+    assert "kkdk" in drain_entry_errors("hr_manager")
+    assert drain_answered("hr_manager") is False
 
 
 @responses.activate

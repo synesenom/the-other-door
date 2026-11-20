@@ -179,7 +179,7 @@ def _parse_response(text: str) -> tuple[list[dict], int]:
         raise ValueError(f"not JSON: {exc}") from exc
     hits = data.get("hits") if isinstance(data, dict) else None
     if not isinstance(hits, list):
-        raise ValueError("no  list in the JobSearch answer")
+        raise ValueError("no `hits` list in the JobSearch answer")
     total = (data.get("total") or {}).get("value")
     return [h for h in hits if isinstance(h, dict)], total if isinstance(total, int) else len(hits)
 

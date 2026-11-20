@@ -30,10 +30,10 @@ from urllib.parse import urlparse
 import requests
 
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
-    record_entry_error, record_error, report, run_probe, strip_html, tracked,
+    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id,
+    run_probe, scrape_feeds, strip_html,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at
 from door.scrapers.sdk import Detection, RobotsBlocked, career_links, parts, slug_candidates
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -167,32 +167,21 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
     aliases: list[str] = [a.strip().lower() for a in config.get("hr_manager_aliases") or [] if a.strip()]
     if not aliases:
         return []
-    scraped_at = datetime.now(timezone.utc)
-    session = PoliteSession(min_delay=FEED_DELAY[0], max_delay=FEED_DELAY[1], timeout=30, headers=_HEADERS)
-    seen: set[str] = set()
-    postings: list[dict] = []
-    for alias in tracked(aliases):
-        alias_postings: list[dict] = []
-        try:
-            for page in range(_MAX_PAGES):
-                data = _page(session, alias, page * _PAGE_SIZE, _PAGE_SIZE)
-                items = data.get("Items") or []
-                customer = data.get("CustomerName") or alias
-                for item in items:
-                    platform_id = f"{alias}-{item.get('Id')}"
-                    if item.get("Id") is None or platform_id in seen:
-                        continue
-                    seen.add(platform_id)
-                    alias_postings.append(_to_posting(item, alias, customer, scraped_at))
-                if len(items) < _PAGE_SIZE:
-                    break
-        except Exception as exc:
-            report(f"error fetching {alias!r}: {exc}")
-            record_entry_error(_SITE, alias, f"error fetching {alias!r}: {exc}")
-        alias_postings = keep_local(alias_postings, config, _SITE)
-        log_keyword_results(_SITE, alias, alias_postings)
-        postings.extend(alias_postings)
-    return postings
+
+    def fetch(session: PoliteSession, alias: str, scraped_at: datetime) -> list[dict]:
+        found: list[dict] = []
+        for page in range(_MAX_PAGES):
+            data = _page(session, alias, page * _PAGE_SIZE, _PAGE_SIZE)
+            items = list_at(data, "Items", "the HR-Manager feed")
+            customer = data.get("CustomerName") or alias
+            for item in items:
+                if isinstance(item, dict) and item.get("Id") is not None:
+                    found.append(_to_posting(item, alias, customer, scraped_at))
+            if len(items) < _PAGE_SIZE:
+                break
+        return found
+
+    return keep_local(scrape_feeds(_SITE, aliases, fetch, headers=_HEADERS), config, _SITE)
 
 
 def probe(config: dict) -> ProbeResult | None:
@@ -209,9 +198,7 @@ def probe(config: dict) -> ProbeResult | None:
 
     def parse(text: str):
         data = json.loads(text)
-        items = data.get("Items") if isinstance(data, dict) else None
-        if not isinstance(items, list):
-            return [], False, "no `Items` list in the HR-Manager feed"
+        items = list_at(data, "Items", "the HR-Manager feed")
         scraped_at = datetime.now(timezone.utc)
         customer = data.get("CustomerName") or alias
         return [_to_posting(i, alias, customer, scraped_at) for i in items if isinstance(i, dict) and i.get("Id")], True, ""

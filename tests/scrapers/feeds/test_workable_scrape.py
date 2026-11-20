@@ -12,7 +12,7 @@ import pytest
 import responses as responses_lib
 
 from door.core.models import JobPosting
-from door.scrapers import drain_answered, drain_errors
+from door.scrapers import drain_answered, drain_entry_errors, drain_errors
 from door.scrapers.feeds import workable
 
 _FIX = Path(__file__).parent / "fixtures" / "workable"
@@ -246,6 +246,17 @@ def test_a_company_that_fails_is_recorded_and_the_rest_continue(_robots_allows_a
 
     assert len(postings) == 2
     assert "gone" in drain_errors()["workable"][0]
+
+
+def test_a_followed_account_answering_without_a_job_list_is_an_entry_error(_robots_allows_api):
+    _robots_allows_api.add(responses_lib.GET, _WIDGET, body=json.dumps({"name": "Dreamdata"}))
+    drain_answered("workable")
+    drain_entry_errors("workable")
+
+    assert workable.scrape({"workable_companies": ["dreamdata"], "_mode": "collect"}) == []
+
+    assert "dreamdata" in drain_entry_errors("workable")
+    assert drain_answered("workable") is False
 
 
 def test_probe_reads_the_first_account_when_there_are_no_keywords(_robots_allows_api):
