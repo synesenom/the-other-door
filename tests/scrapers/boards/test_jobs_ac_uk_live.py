@@ -1,13 +1,14 @@
 """Live smoke tests for jobs.ac.uk (academic jobs), one per mode (#19): "research associate" in London, newest first.
 
 Opt-in (marked `live`): fetches the real search pages and ads over plain HTTP. Run with `./scripts/run-test.sh --live`.
-A refusal or challenge page (`jobs_ac_uk._Pushback`) is not reached.
+A refusal or challenge page (`sdk.Refused`) is not reached.
 """
 
 from datetime import datetime, timezone
 
 import pytest
 
+from door.scrapers import sdk
 from door.scrapers.boards import jobs_ac_uk
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
@@ -26,7 +27,7 @@ def _session() -> PoliteSession:
 def _get(session: PoliteSession, url: str) -> str:
     try:
         return jobs_ac_uk._get(session, url)
-    except jobs_ac_uk._Pushback as exc:
+    except sdk.Refused as exc:
         not_reached("jobs_ac_uk", str(exc))
 
 

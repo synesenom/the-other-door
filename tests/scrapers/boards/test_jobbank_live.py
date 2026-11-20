@@ -1,7 +1,7 @@
 """Live smoke tests for Akademikernes Jobbank (jobbank.dk), one per mode (#19): the search for "analyst".
 
 Opt-in (marked `live`): fetches the real search pages and ads over plain HTTP. Run with `./scripts/run-test.sh --live`.
-A Cloudflare refusal or challenge (`jobbank._Pushback`) is not reached.
+A Cloudflare refusal or challenge (`sdk.Refused`) is not reached.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from door.matching import locality
+from door.scrapers import sdk
 from door.scrapers.boards import jobbank
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
@@ -27,7 +28,7 @@ def _session() -> PoliteSession:
 def _get(session: PoliteSession, url: str) -> str:
     try:
         return jobbank._get(session, url)
-    except jobbank._Pushback as exc:
+    except sdk.Refused as exc:
         not_reached("jobbank", str(exc))
 
 

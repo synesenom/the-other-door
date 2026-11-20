@@ -306,3 +306,12 @@ def test_a_page_of_only_off_topic_ads_is_answered_not_empty():
 
     assert out == []
     assert drain_answered(nhs_jobs._SITE) is True
+
+
+@responses.activate
+def test_a_challenge_page_with_status_200_is_pushback_too():
+    _serve(_search(), "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/h/b'></script></html>")
+    drain_errors()
+    drain_pushback("nhs_jobs")
+    assert nhs_jobs.scrape(_CFG) == []
+    assert drain_pushback("nhs_jobs") is True

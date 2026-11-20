@@ -119,10 +119,6 @@ _MUNICIPALITIES = {
 }
 
 
-class _Pushback(Exception):
-    """The API refused the request (403 or 429)."""
-
-
 def _plain(text: str) -> str:
     """*text* lowercased without accents or a trailing *, for the municipality table."""
     return unicodedata.normalize("NFKD", text.rstrip("*").lower()).encode("ascii", "ignore").decode()
@@ -232,13 +228,13 @@ def _fetch(session: PoliteSession, url: str) -> str:
 
 
 def _get(session: PoliteSession, url: str) -> str:
-    """`_fetch`, with a refusal (403, 429) raised as `_Pushback`."""
+    """`_fetch`, with a refusal (403, 429) raised as `sdk.Refused`."""
     try:
         return _fetch(session, url)
     except requests.HTTPError as exc:
         status = getattr(exc.response, "status_code", 0)
         if status in (403, 429):
-            raise _Pushback(f"HTTP {status}") from exc
+            raise sdk.Refused(f"HTTP {status}") from exc
         raise
 
 
@@ -258,7 +254,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             offset = page * _PAGE_SIZE
             try:
                 hits, total = _parse_response(_get(session, _url(_params(keyword, municipalities, offset, since))))
-            except _Pushback as exc:
+            except sdk.Refused as exc:
                 report(f"{_SITE}: {exc}; stopping for this run")
                 record_error(_SITE, f"{_SITE}: {exc} (keyword={keyword!r}); stopped for this run")
                 record_pushback(_SITE)

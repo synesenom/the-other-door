@@ -2,13 +2,14 @@
 
 Opt-in (marked `live`): fetches the real search pages and ads over plain HTTP. Run with `./scripts/run-test.sh --live`.
 NHS search is loose (a "project manager" page can be all nurses and doctors), so the search is for what NHS Jobs always
-lists in London. A refusal or challenge page (`nhs_jobs._Pushback`) is not reached.
+lists in London. A refusal or challenge page (`sdk.Refused`) is not reached.
 """
 
 from datetime import datetime, timezone
 
 import pytest
 
+from door.scrapers import sdk
 from door.scrapers.boards import nhs_jobs
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
@@ -27,7 +28,7 @@ def _session() -> PoliteSession:
 def _get(session: PoliteSession, url: str) -> str:
     try:
         return nhs_jobs._get(session, url)
-    except nhs_jobs._Pushback as exc:
+    except sdk.Refused as exc:
         not_reached("nhs_jobs", str(exc))
 
 

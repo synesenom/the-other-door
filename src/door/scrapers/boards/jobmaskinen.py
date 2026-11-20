@@ -33,6 +33,7 @@ from urllib.parse import urlencode
 import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
     parse_iso_date, record_answered, record_error, record_pushback, report, run_probe, strip_html,
@@ -48,10 +49,6 @@ _MIN_DELAY, _MAX_DELAY = FEED_DELAY
 JOB_BOARD_HOSTS = ("jobmaskinen.",)
 
 _JOBNET_ID = re.compile(r"[?&]jobnet=(\d+)")
-
-
-class _Pushback(Exception):
-    """The site refused (403 or 429): stop for this run."""
 
 
 def _search_url(keyword: str, page: int) -> str:
@@ -163,12 +160,12 @@ def _keywords(config: dict) -> list[str]:
 
 
 def _get(session: PoliteSession, url: str) -> str:
-    """The page's text; a 403 or 429 raises `_Pushback`, any other failure its own exception."""
+    """The page's text; a 403 or 429 raises `sdk.Refused`, any other failure its own exception."""
     try:
         return session.get(url).text
     except requests.HTTPError as exc:
         if getattr(exc.response, "status_code", None) in (403, 429):
-            raise _Pushback(f"HTTP {exc.response.status_code} on {url}") from exc
+            raise sdk.Refused(f"HTTP {exc.response.status_code} on {url}") from exc
         raise
 
 
@@ -199,7 +196,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 try:
                     html = _get(session, url)
                     cards, has_next = _parse_cards(html)
-                except _Pushback:
+                except sdk.Refused:
                     raise
                 except Exception as exc:
                     _fail(f"search error (keyword={keyword!r}, page={page}): {exc}")
@@ -228,7 +225,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                         detail = _parse_detail(_get(session, _job_url(platform_id)))
                         if detail is None:
                             _fail(f"detail error ({_job_url(platform_id)}): no JobPosting data")
-                    except _Pushback:
+                    except sdk.Refused:
                         raise
                     except Exception as exc:
                         _fail(f"detail error ({_job_url(platform_id)}): {exc}")
@@ -236,7 +233,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if not has_next:
                     break
             log_keyword_results(_SITE, keyword, postings[start:])
-    except _Pushback as exc:
+    except sdk.Refused as exc:
         _fail(f"stopped for this run: {exc}")
         record_pushback(_SITE)
     return postings

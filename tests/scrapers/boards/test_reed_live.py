@@ -1,13 +1,14 @@
 """Live smoke tests for Reed (reed.co.uk), one per mode (#19): the search for "project manager" in London.
 
 Opt-in (marked `live`): fetches the real search pages and ads over plain HTTP. Run with `./scripts/run-test.sh --live`.
-A refusal or challenge page (`reed._Pushback`) is not reached.
+A refusal or challenge page (`sdk.Refused`) is not reached.
 """
 
 from datetime import datetime, timezone
 
 import pytest
 
+from door.scrapers import sdk
 from door.scrapers.boards import reed
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
@@ -26,7 +27,7 @@ def _session() -> PoliteSession:
 def _get(session: PoliteSession, url: str) -> str:
     try:
         return reed._get(session, url)
-    except reed._Pushback as exc:
+    except sdk.Refused as exc:
         not_reached("reed", str(exc))
 
 

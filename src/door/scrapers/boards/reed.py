@@ -32,12 +32,12 @@ import re
 import unicodedata
 from datetime import datetime, timezone
 
-import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    on_topic, record_answered, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
+    on_topic, record_answered, record_error, report, run_probe, strip_html, topic_terms,
 )
 
 _SITE = "reed"
@@ -56,15 +56,10 @@ _HEADERS = {
 # Hosts of this board: a link here is an ad on the board, never an employer's own site (`ats_detect.is_job_board`).
 JOB_BOARD_HOSTS = ("reed.co.uk",)
 
-_CHALLENGE_MARKERS = ("just a moment", "cdn-cgi/challenge-platform", "attention required", "cf-chl", "cf-browser-verification")
 _NEXT_DATA = re.compile(r'<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.S)
 _LD_JSON = re.compile(r"<script[^>]*application/ld\+json[^>]*>(.*?)</script>", re.S | re.I)
 # Locations that name no place Reed could search in: the whole country is searched.
 _NATIONWIDE = {"", "uk", "united kingdom", "great britain", "gb", "england", "britain", "remote", "anywhere"}
-
-
-class _Pushback(Exception):
-    """The site refused the request (a 403/429 or a challenge page); the run stops."""
 
 
 def _slug(text: str) -> str:
@@ -142,28 +137,6 @@ def _parse_description(html: str) -> str | None:
     return None
 
 
-def _is_challenge(body: str, status: int) -> bool:
-    """Whether an answer is a refusal or a challenge page, not the site. Pure."""
-    if status in (403, 429):
-        return True
-    head = (body or "")[:6000].lower()
-    return any(marker in head for marker in _CHALLENGE_MARKERS) and "__next_data__" not in head
-
-
-def _get(session: PoliteSession, url: str) -> str:
-    """The page at *url*. Raises `_Pushback` on a refusal or a challenge, the request's own error otherwise."""
-    try:
-        resp = session.get(url)
-    except requests.HTTPError as exc:
-        status = getattr(exc.response, "status_code", 0)
-        if _is_challenge("", status):
-            raise _Pushback(f"HTTP {status}") from exc
-        raise
-    if _is_challenge(resp.text, resp.status_code):
-        raise _Pushback("challenge page")
-    return resp.text
-
-
 def _posting(card: dict, description: str, scraped_at: datetime) -> dict:
     external = card["external_url"]
     return JobPosting(
@@ -180,12 +153,6 @@ def _posting(card: dict, description: str, scraped_at: datetime) -> dict:
         apply_type="external" if external else None,
         apply_url=external or None,
     ).model_dump(mode="json")
-
-
-def _pushback(message: str) -> None:
-    report(f"{_SITE}: {message}; stopping for this run")
-    record_error(_SITE, f"{_SITE}: {message}; stopped for this run")
-    record_pushback(_SITE)
 
 
 def _naive(moment: datetime | None) -> datetime | None:
@@ -208,9 +175,9 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         start = len(out)
         for page in range(1, max_pages + 1):
             try:
-                parsed = _parse_results(_get(session, _search_url(keyword, location, page)))
-            except _Pushback as exc:
-                _pushback(str(exc))
+                parsed = _parse_results(sdk.get_page(session, _search_url(keyword, location, page), content="__next_data__"))
+            except sdk.Refused as exc:
+                sdk.stop_for_run(_SITE, str(exc))
                 return out
             except Exception as exc:  # noqa: BLE001 - one bad page never stops the run
                 report(f"search error (keyword={keyword!r}, page={page}): {exc}")
@@ -232,17 +199,18 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if since is not None and card["created"] is not None and card["created"] < since:
                     out.append(_posting(card, card["snippet"], scraped_at))  # the engine counts it stale; no ad request
                     continue
-                if card["id"] in known_ids:
-                    out.append({"platform_id": card["id"], "seen_only": True})
+                _, known = sdk.split_known([card], lambda c: c["id"], known_ids)
+                if known:
+                    out.extend(known)
                     continue
                 report(f"'{keyword}' details", len(out) - start + 1, len(cards))
                 description = None
                 try:
-                    description = _parse_description(_get(session, card["url"]))
+                    description = _parse_description(sdk.get_page(session, card["url"], content="__next_data__"))
                     if description is None:
                         raise ValueError("no JobPosting data on the page")
-                except _Pushback as exc:
-                    _pushback(str(exc))
+                except sdk.Refused as exc:
+                    sdk.stop_for_run(_SITE, str(exc))
                     return out
                 except Exception as exc:  # noqa: BLE001 - the snippet is the fallback
                     report(f"detail error ({card['url']}): {exc}")
@@ -270,7 +238,7 @@ def probe(config: dict) -> ProbeResult | None:
         return session.get(url).text
 
     def parse(html: str):
-        if _is_challenge(html, 200):
+        if sdk.is_challenge(html, 200, content="__next_data__"):
             return [], False, "bot-wall: a challenge page"
         parsed = _parse_results(html)
         if parsed is None:
