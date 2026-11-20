@@ -9,12 +9,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from door.matching import locality
-from door.scrapers import sdk
 from door.scrapers.boards import jobbank
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
     NONSENSE_KEYWORD as KW, assert_contract, assert_listing, assert_page2, assert_zero_hits, drain_zero_hit_state,
-    fail, not_reached, probe_sized,
+    fail, page_or_not_reached, probe_sized,
 )
 
 CONFIG = {"search_keywords": ["analyst"], "location": "Copenhagen"}
@@ -25,15 +24,8 @@ def _session() -> PoliteSession:
     return PoliteSession(min_delay=0.5, max_delay=1.0, timeout=30, max_retries=0, headers=jobbank._HEADERS)
 
 
-def _get(session: PoliteSession, url: str) -> str:
-    try:
-        return sdk.get_page(session, url, content="job-item")
-    except sdk.Refused as exc:
-        not_reached("jobbank", str(exc))
-
-
 def _cards(session: PoliteSession, page: int) -> list[dict]:
-    return jobbank._parse_cards(_get(session, jobbank._search_url(_KEYWORD, page)))
+    return jobbank._parse_cards(page_or_not_reached("jobbank", session, jobbank._search_url(_KEYWORD, page), content="job-item"))
 
 
 def _postings(cards: list[dict]) -> list[dict]:
@@ -69,7 +61,7 @@ def test_jobbank_details_live():
         now = datetime.now(timezone.utc)
         postings = []
         for card in cards[:2]:
-            detail = jobbank._parse_detail(_get(session, card["url"]))
+            detail = jobbank._parse_detail(page_or_not_reached("jobbank", session, card["url"], content="job-item"))
             assert detail is not None, fail("jobbank", "details", f"no JobPosting JSON-LD on {card['url']}")
             postings.append(jobbank._posting(card, detail, now))
     assert_contract("jobbank", postings, "details", config=CONFIG)

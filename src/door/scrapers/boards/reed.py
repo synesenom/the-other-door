@@ -199,9 +199,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if since is not None and card["created"] is not None and card["created"] < since:
                     out.append(_posting(card, card["snippet"], scraped_at))  # the engine counts it stale; no ad request
                     continue
-                _, known = sdk.split_known([card], lambda c: c["id"], known_ids)
-                if known:
-                    out.extend(known)
+                if card["id"] in known_ids:
+                    out.append({"platform_id": card["id"], "seen_only": True})
                     continue
                 report(f"'{keyword}' details", len(out) - start + 1, len(cards))
                 description = None

@@ -9,12 +9,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from door.scrapers import sdk
 from door.scrapers.boards import nhs_jobs
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
     NONSENSE_KEYWORD as KW, assert_contract, assert_listing, assert_page2, assert_zero_hits, drain_zero_hit_state,
-    fail, not_reached, probe_sized,
+    fail, page_or_not_reached, probe_sized,
 )
 
 CONFIG = {"search_keywords": ["nurse"], "topic_terms": ["nurse*"], "location": "London"}
@@ -25,15 +24,8 @@ def _session() -> PoliteSession:
     return PoliteSession(min_delay=0.5, max_delay=1.0, timeout=30, max_retries=0, headers=nhs_jobs._HEADERS)
 
 
-def _get(session: PoliteSession, url: str) -> str:
-    try:
-        return sdk.get_page(session, url)
-    except sdk.Refused as exc:
-        not_reached("nhs_jobs", str(exc))
-
-
 def _cards(session: PoliteSession, page: int) -> list[dict]:
-    cards = nhs_jobs._parse_cards(_get(session, nhs_jobs._search_url(_KEYWORD, CONFIG["location"], page)))
+    cards = nhs_jobs._parse_cards(page_or_not_reached("nhs_jobs", session, nhs_jobs._search_url(_KEYWORD, CONFIG["location"], page)))
     assert cards is not None, fail("nhs_jobs", "page2" if page > 1 else "details", "no search results block")
     return cards
 
@@ -66,7 +58,7 @@ def test_nhs_jobs_details_live():
         now = datetime.now(timezone.utc)
         postings = []
         for card in cards[:2]:
-            detail = nhs_jobs._parse_detail(_get(session, card["url"]))
+            detail = nhs_jobs._parse_detail(page_or_not_reached("nhs_jobs", session, card["url"]))
             assert detail is not None, fail("nhs_jobs", "details", f"no job description on {card['url']}")
             if detail["location"]:
                 card = {**card, "location": detail["location"]}
