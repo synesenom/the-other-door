@@ -95,6 +95,22 @@ def test_a_rejected_search_is_a_recorded_error():
     assert drain_errors()["dayforce"]
 
 
+def test_an_entry_that_is_not_a_portal_is_a_recorded_error():
+    drain_errors()
+    assert dayforce.scrape({"dayforce_companies": ["nonsense"]}) == []
+    assert "not a Dayforce portal" in " ".join(drain_errors()["dayforce"])
+
+
+@responses.activate
+def test_an_empty_portal_is_answered():
+    responses.add(responses.GET, _CSRF, body=_fx("csrf.json"))
+    responses.add(responses.POST, _SEARCH, json={"jobPostings": [], "maxCount": 0})
+    drain_answered("dayforce")
+
+    assert dayforce.scrape(_CONFIG) == []
+    assert drain_answered("dayforce") is True
+
+
 def test_scrape_without_portals_is_empty():
     assert dayforce.scrape({}) == []
     assert dayforce.probe({}) is None
