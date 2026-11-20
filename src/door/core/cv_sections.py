@@ -1,26 +1,18 @@
-"""A cv.md's `## ` sections and their kinds: the one reader of a section heading.
+"""A cv.md's `## ` sections: the one reader of a section heading.
 
-The model that drafts a CV records each section's kind on its heading line, `## Technical Skills <!-- kind: skills -->`
-(one of the kinds a template's column can hold, whatever the title), so a reader needs no guess at a title written in
-the user's own words; a heading with no marker has no kind here (`cv_read` reads it). The marker is a comment: no
-renderer shows it.
+The kind of a section is read by `core/cv_read` (one model call over the CV), not from its title. An older cv.md may
+still carry a `<!-- kind: ... -->` marker on a heading: it is only stripped from the title, nothing reads it as a kind.
 """
 
 import re
 
-from door.core import cv_read
-
-_HEADING = re.compile(r"^##\s+(.*?)\s*(?:<!--\s*kind:\s*([a-z]+)\s*-->)?\s*$")
+_HEADING = re.compile(r"^##\s+(.*?)\s*(?:<!--\s*kind:\s*[a-z]+\s*-->)?\s*$")
 
 
-KINDS = cv_read.COLUMN_KINDS
-
-
-def heading(line: str) -> tuple[str, str | None]:
-    """`(title, recorded kind)` of a `## ` heading line: the title without the marker and its `*`, `_` marks and colon,
-    the kind None without a marker or with one that is no section kind."""
-    title, kind = _HEADING.match(line).groups()
-    return title.strip(" *_:"), kind if kind in KINDS else None
+def heading(line: str) -> str:
+    """The title of a `## ` heading line: without a `<!-- kind: -->` marker of an older cv.md and without its `*`, `_`
+    marks and colon."""
+    return _HEADING.match(line).group(1).strip(" *_:")
 
 
 def split(cv_md: str) -> list[list[str]]:

@@ -73,7 +73,7 @@ def _clean_proposals(raw, cv_text: str) -> list[dict]:
     for item in raw:
         if not isinstance(item, dict):
             continue
-        section = cv_sections.heading("## " + " ".join(str(item.get("section") or "").lstrip("#").split()))[0]
+        section = cv_sections.heading("## " + " ".join(str(item.get("section") or "").lstrip("#").split()))
         text = _BULLET_RE.sub("", " ".join(str(item.get("text") or "").split()))
         if not section or not text:
             continue
@@ -89,7 +89,7 @@ def _insert(cv_text: str, section: str, text: str) -> str:
     """`cv_text` with `- text` added under `## section` (its title): after the section's last
     bullet, after its prose when it has none, or in a new section at the end."""
     lines = cv_text.split("\n")
-    start = next((i for i, line in enumerate(lines) if line.startswith("## ") and cv_sections.heading(line)[0].lower() == section.lower()), None)
+    start = next((i for i, line in enumerate(lines) if line.startswith("## ") and cv_sections.heading(line).lower() == section.lower()), None)
     bullet = f"- {text}"
     if start is None:
         body = cv_text.rstrip("\n")
