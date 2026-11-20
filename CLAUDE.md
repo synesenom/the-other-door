@@ -10,7 +10,7 @@ When summarising what you just did, use at most 10 short bullet points: what hap
 
 A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implemented (`/dev-epic`: every sub-issue implemented, every box checked). The only reason to stop and wait for the user is a decision the `decider` returned CANNOT DECIDE on. Finishing a step, an agent returning, an issue filed, a merge or a permission to wait for are not reasons to stop: go straight on to the next step. Anything else only the user can give (a permission the harness asks for, a merge into `main`, a FAIL after two attempts) blocks that one item, never the run: ask for it in one line and go on with every other item. After the user merges or grants something, re-read what it unblocked and start it in the same turn.
 
-Waiting is not idle time. While a PR's checks run, or a PR waits for the user's merge, find the next issue to resolve and start it without being asked. First the PRs the session-start list names ("Open PRs that need you": a conflict, a failed or missing check, a failed verify, a `Needs the maintainer:` line, verified but not merged), then pick in this order:
+Waiting is not idle time. While a PR's checks run, or a PR waits for the user's merge, find the next issue to resolve and start it without being asked. First the PRs the session-start list names ("Open PRs that need you"): fix a conflict, a failed or missing check or a failed `verify`, verify or merge one that waits on Claude, and ask for a `Needs the maintainer:` one in one line. Then pick in this order:
 
 1. The next open sub-issue of the epic being worked.
 2. Else an open sub-issue of an epic the session's work belongs to.
