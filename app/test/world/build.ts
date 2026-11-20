@@ -330,9 +330,20 @@ function worldJson(persona: Persona, ads: Ad[], options: WorldOptions) {
     titles_en: titlesEn,
     tailor: { cv: cvHtml(persona), cover_letter: coverLetterHtml(persona) },
     answers: answersFor(persona),
+    reading: { languages: persona.cvLanguages, kinds: SECTION_KINDS },
     drive: { configured: options.drive?.configured ?? true, account: persona.email },
     printer: options.chromium ?? true, // the stand-in Chromium print (print_standin.py); false: the app's own prints
   }
+}
+
+/** The kind of each section heading the personas' CVs have, for the stand-in that reads a CV (`cv_read.py`, #430). */
+const SECTION_KINDS: Record<string, string> = {
+  Profile: 'summary', Profil: 'summary',
+  'Work Experience': 'experience', 'Expérience professionnelle': 'experience', Erfarenhet: 'experience',
+  Education: 'education', Formation: 'education', Utbildning: 'education',
+  Skills: 'skills', 'Compétences': 'skills', Kompetenser: 'skills',
+  Certifications: 'certifications',
+  Languages: 'languages', Langues: 'languages', 'Språk': 'languages',
 }
 
 /** What the stand-in claude says to the onboarding and CV calls, from the persona. */
@@ -342,12 +353,6 @@ export function answersFor(persona: Persona) {
       cv_markdown: persona.cv,
       provenance: [{ source: 'the CV you added', contributed: 'work history, education and skills' }],
       todos: [...persona.cv.matchAll(/TODO[^\n]*/g)].map((m) => m[0]),
-    },
-    basics: {
-      name: persona.name,
-      email: persona.email,
-      city: /\*\*Location:\*\*/.test(persona.cv) ? persona.city : null,
-      languages: persona.languages.map((language, i) => ({ language, level: i === 0 ? 'native' : 'fluent' })),
     },
     titles: {
       titles: [

@@ -39,19 +39,21 @@ test('Claude usage: nothing before the first search, then what the search cost',
   await nav.getByRole('button', { name: 'Matches', exact: true }).click()
   await nav.getByRole('button', { name: 'Analytics', exact: true }).click()
 
-  // the find: one scoring chunk and one title translation; everything else: Market's grouping after the run
+  // the find: one scoring chunk and one title translation; everything else: the one reading of the CV before scoring ($0.01, cached
+  // after it) and Market's grouping after the run
   expect(world.claudeCalls('score')).toHaveLength(1)
   expect(world.claudeCalls('translate')).toHaveLength(1)
+  expect(world.claudeCalls('cv_read')).toHaveLength(1)
   expect(world.claudeCalls('market')).toHaveLength(2) // the failed one, then the one that answered
-  await expect(usage.getByText(/^≈ \$/)).toHaveText('≈ $0.04')
+  await expect(usage.getByText(/^≈ \$/)).toHaveText('≈ $0.05')
   await expect(usage).toContainText("You don't pay this. Your Claude plan covers it. The last 7 days, estimated at API prices.")
   await expect(usage.getByText(/^About /)).toHaveText('About $0.03 a search, $1.00 an application') // no prepare yet: an application is sized from scoring one posting
-  await expect(usage.getByRole('img')).toHaveAttribute('aria-label', 'Finding jobs 75%, Everything else 25%')
+  await expect(usage.getByRole('img')).toHaveAttribute('aria-label', 'Finding jobs 60%, Everything else 40%')
   const finding = usage.locator('.usage-activity').filter({ hasText: 'Finding jobs' })
   await expect(finding.locator('h3')).toHaveText('Finding jobs · 3 postings scored')
   await expect(finding.locator('.usage-row').first()).toContainText('$0.03')
   await expect(finding.getByRole('listitem')).toHaveText(['Scoring postings$0.02', 'Translating job titles$0.01'])
-  await expect(usage.locator('.usage-activity').filter({ hasText: 'Everything else' }).locator('h3')).toHaveText('Everything else · 1 other request')
+  await expect(usage.locator('.usage-activity').filter({ hasText: 'Everything else' }).locator('h3')).toHaveText('Everything else · 2 other requests')
 })
 
 const openAnalytics = async (page: Parameters<typeof ready>[0]) => {

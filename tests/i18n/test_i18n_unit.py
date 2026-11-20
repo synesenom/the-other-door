@@ -529,43 +529,6 @@ def test_a_language_file_without_injection_loads(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# CV section titles and skill stop words (facts check, issue #369)
-# ---------------------------------------------------------------------------
-
-
-def test_cv_section_titles_cover_english_and_danish():
-    assert {"skills", "kompetencer"} <= set(i18n.cv_section("skills"))
-    assert {"education", "uddannelse"} <= set(i18n.cv_section("education"))
-    assert {"certifications", "certificeringer"} <= set(i18n.cv_section("certifications"))
-
-
-@pytest.mark.parametrize("code", ["en", "da", "fr", "hu", "sv"])
-@pytest.mark.parametrize("kind", ["skills", "education", "certifications", "languages", "interests"])
-def test_every_supported_language_names_every_cv_section(code, kind):
-    assert i18n.cv_section(kind, (code,)) != []
-
-
-def test_the_languages_and_interests_titles_are_the_ones_a_cv_uses():
-    assert {"languages", "sprog", "langues", "nyelvek", "språk"} <= set(i18n.cv_section("languages"))
-    assert {"interests", "interesser", "centres d'intérêt", "érdeklődési kör", "intressen"} <= set(i18n.cv_section("interests"))
-
-
-def test_the_skills_titles_do_not_include_the_new_kinds():
-    assert not {"languages", "sprog", "interests"} & set(i18n.cv_section("skills"))
-
-
-def test_cv_section_of_an_unknown_kind_is_refused():
-    with pytest.raises(ValueError):
-        i18n.cv_section("hobbies")
-
-
-def test_skill_stop_words_are_generic_words_of_every_language():
-    words = set(i18n.skill_stop_words())
-    assert {"communication", "kommunikation", "january", "monday"} <= words
-    assert "terraform" not in words
-
-
-# ---------------------------------------------------------------------------
 # Compounds, plurals and role nouns (#428)
 # ---------------------------------------------------------------------------
 
@@ -708,24 +671,6 @@ def test_french_letters_fold_to_ascii_and_agree_with_the_other_languages():
 def test_french_stop_words_are_listed_with_and_without_the_accent_and_elision_letters():
     stops = i18n.stop_words(("fr",))
     assert {"de", "du", "des", "la", "le", "les", "pour", "et", "à", "d", "l"} <= set(stops)
-
-
-def test_french_months_are_numbered_and_validated(tmp_path):
-    months = i18n.month_numbers(("fr",))
-    assert months["janvier"] == 1 and months["août"] == 8 and months["aout"] == 8
-    assert months["décembre"] == 12 and months["févr."] == 2 and months["sept."] == 9
-    assert set(months.values()) == set(range(1, 13))
-    assert i18n.month_numbers(("da",))["okt."] == 10 and set(i18n.month_numbers(("da",)).values()) == set(range(1, 13))
-    for body in ('months = {janvier = 13}', 'months = {janvier = 1}'):
-        bad = tmp_path / "xx.toml"
-        bad.write_text(f'code = "xx"\nname = "X"\n{body}\n')
-        with pytest.raises(ValidationError):
-            i18n.load_language_file(bad)   # a month out of 1..12, or a table that leaves months out
-
-
-def test_french_month_names_and_weekdays_are_not_skills():
-    stops = set(i18n.skill_stop_words(("fr",)))
-    assert {"janvier", "octobre", "lundi", "dimanche", "rigueur", "autonomie"} <= stops
 
 
 def test_a_french_synonym_is_on_topic_through_common_toml():
@@ -885,32 +830,11 @@ def test_preload_keeps_a_blas_thread_count_the_user_set(monkeypatch):
     assert os.environ["OPENBLAS_NUM_THREADS"] == "4"
 
 
-def test_a_heading_is_the_section_kind_whose_title_it_is_whole_without_case_or_a_colon():
-    assert i18n.cv_section_kind(" Technical  SKILLS: ", ("skills", "education")) == "skills"
-    assert i18n.cv_section_kind("Sprog", ("languages",), ("da", "en")) == "languages"
-    assert i18n.cv_section_kind("Skills and hobbies", ("skills", "interests")) is None
-    assert i18n.cv_section_kind("Education", ("skills",)) is None  # only the kinds asked for
+@pytest.mark.parametrize("code, written", [
+    ("en", "March 1, 2026"), ("da", "1. marts 2026"), ("fr", "1er mars 2026"), ("hu", "2026. március 1."),
+    ("sv", "1 mars 2026"),
+])
+def test_the_letters_date_is_written_out_in_each_language(code, written):
+    from datetime import date
 
-
-@pytest.mark.parametrize("code", ["en", "da", "fr", "hu", "sv"])
-@pytest.mark.parametrize("kind", ["phone", "email", "web", "location"])
-def test_every_supported_language_labels_the_everyday_contact_details(code, kind):
-    assert getattr(i18n._packs((code,))[0].contact_labels, kind)
-
-
-def test_each_languages_written_months_are_read_as_dates():
-    for code, name, number in (("da", "marts", 3), ("hu", "március", 3), ("sv", "mars", 3), ("en", "March", 3), ("fr", "août", 8)):
-        assert i18n.month_numbers((code,))[name.lower()] == number
-
-
-def test_a_month_extra_beside_the_date_names_completes_them(tmp_path):
-    good = tmp_path / "xx.toml"
-    good.write_text('code = "xx"\nname = "X"\nmonths = {"jan." = 1}\n[date]\npattern = "{day} {month} {year}"\n'
-                    'months = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]\n')
-    pack = i18n.load_language_file(good)
-    assert pack.months == {"jan.": 1}
-
-
-def test_numeric_date_formats_and_day_suffixes_come_from_the_data():
-    assert {"DD.MM.YYYY", "YYYY.MM.DD.", "YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY"} <= set(i18n.numeric_date_formats())
-    assert {"er", "st", "th", "-én"} <= set(i18n.day_suffixes())
+    assert i18n.format_date(date(2026, 3, 1), code) == written

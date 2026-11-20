@@ -561,12 +561,7 @@ def _scrape_passes(candidates_dir: Path, config: dict, profile_dir: Path) -> dic
 
             progress_mod.report("condense", stage="condense")
 
-            cv_path = workspace.cv_path(config, profile_dir)
-            if not cv_path.exists():
-                cv_path = profile_dir / "cv.md"
-            cv_md = cv_path.read_text(encoding="utf-8") if cv_path.exists() else ""
-
-            profile_terms = extract_skill_terms(cv_md, config)
+            profile_terms = extract_skill_terms(common._cv_reading(config, profile_dir), config)
             stats = condense_postings(surviving, profile_terms, config)
             ratio_pct = (
                 round(stats["avg_ratio"] * 100) if stats.get("avg_ratio") is not None else None

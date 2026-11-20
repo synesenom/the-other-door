@@ -21,14 +21,17 @@ class ReviseError(claude_cli.ClaudeError):
 
 _DEFAULT_REVISE_MODEL = "sonnet"
 _DEFAULT_REVISE_TIMEOUT_S = 300
+_REVISE_SYSTEM = "You revise the body of an HTML CV or cover letter as the user message says, and answer with JSON."
+_REVISE_SCHEMA = {"type": "object", "properties": {"body": {"type": "string"}}, "required": ["body"]}
 _REVISE_PROMPT = """You are revising the body of an HTML {what} for a job application.
 
 Apply this instruction from the candidate, and change nothing else:
 {instruction}
 
 Rules:
-- Return ONLY the revised body: the fragment of tags that goes inside the page. No <html>, <head>, <body> or <style>, no markdown fences, no commentary.
-- Write only these tags: header, h1, h2, h3, p, ul, ol, li, div, span, strong, em, a, br. The only attributes are class (only the classes the body already uses) and href on a (https:, mailto: or #).
+- Answer with the revised body in the `body` field: the fragment of tags that goes inside the page. No <html>, <head>, <body> or <style>.
+- Write only these tags: header, h1, h2, h3, p, ul, ol, li, div, span, strong, em, a, br. The only attributes are class (only the classes the body already uses, and for a CV the kind classes of an h2) and href on a (https:, mailto: or #).
+- In a CV every h2 carries one kind class by what the section holds: kind-summary, kind-experience, kind-skills, kind-education, kind-certifications, kind-languages, kind-interests, kind-other. Give an h2 that has none its class; never write the classes main or side.
 - Keep the <!-- Keywords: ... --> and <!-- Tailoring: ... --> comments, and the <<photo>>, <<company>>, <<title>> and <<date>> tokens, as they are. Write & as &amp; and < as &lt; in text.
 - Never invent experience, employers, dates, numbers or skills that are not already in the body.
 
@@ -45,16 +48,8 @@ _PAGE_RE = re.compile(r"<!doctype|<html[\s>]|<head[\s>]|<body[\s>]", re.IGNORECA
 
 
 def _clean_revised_body(text: str) -> str:
-    """The model's answer as a bare body: fences stripped, whole documents rejected."""
+    """The model's `body` as a bare body: an empty one and a whole document are refused."""
     body = text.strip()
-    fence = re.search(r"```[A-Za-z]*\n(.*?)\n?```", body, re.DOTALL)
-    if fence:
-        outside = (body[: fence.start()] + body[fence.end():]).strip()
-        if outside:
-            raise ValueError(f"the revision came with commentary ({outside[:60]!r}); file left unchanged")
-        body = fence.group(1).strip()
-    elif re.match(r"^(sure|here|certainly|of course|okay|ok)\b[^\n]*:\s*(\n|$)", body, re.IGNORECASE):
-        raise ValueError("the revision came with commentary before the body; file left unchanged")
     if not body:
         raise ValueError("the revision came back empty; file left unchanged")
     if _PAGE_RE.search(body):
@@ -146,16 +141,14 @@ def _revise_core(
             body=original.strip(),
         )
         try:
-            stdout = claude_cli.run(
-                ["--model", model, "--tools", "", "--no-session-persistence", *claude_cli.STREAM_ARGS],
-                feature="revise", input=prompt, timeout_s=timeout_s, profile_dir=profile_dir,
-            )
-            answer = claude_cli.envelope_result(stdout)
-            if not isinstance(answer, str):
-                raise claude_cli.ClaudeError("claude's answer is not text")
+            answer = claude_cli.ask(_REVISE_SYSTEM, prompt, model=model, feature="revise", schema=_REVISE_SCHEMA,
+                                    timeout_s=timeout_s, profile_dir=profile_dir)
         except claude_cli.ClaudeError as exc:
             raise ReviseError(f"{str(exc).rstrip('.')}; file left unchanged") from None
-        new_body = _carry_notes(original, _clean_revised_body(answer))
+        body = answer.get("body")
+        if not isinstance(body, str):
+            raise ReviseError("claude's answer has no body; file left unchanged")
+        new_body = _carry_notes(original, _clean_revised_body(body))
         refused = html_guard.unsafe(new_body)
         if refused:
             raise ValueError(f"the revision uses {', '.join(refused)}, outside the tags and links a {file} is written in; file left unchanged")

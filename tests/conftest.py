@@ -50,6 +50,32 @@ def _no_structure_model(request, tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_cv_model(request, tmp_path, monkeypatch):
+    """The model's reading of cv.md (#430) is `core/cv_read`'s one call: in a test a plain stand-in answers it
+    (`tests/cv_read_utils.fake_ask`) and its cache is a temp folder. A test that wants other answers replaces
+    `cv_read._ask` itself, a model test asks the real one."""
+    from cv_read_utils import fake_ask
+
+    from door.core import cv_read
+
+    if request.node.get_closest_marker("model"):
+        return
+    monkeypatch.setattr(cv_read, "_cache_dir", lambda: tmp_path / "cv-read-cache")
+    monkeypatch.setattr(cv_read, "_ask", fake_ask)
+
+
+@pytest.fixture(autouse=True)
+def _no_facts_model(request, monkeypatch):
+    """The fact check (#433) is `tailoring/facts`'s one call: in a test it finds nothing unless the test replaces
+    `facts._ask` with the answer it wants (`{"findings": [...]}`); a model test asks the real one."""
+    from door.tailoring import facts
+
+    if request.node.get_closest_marker("model"):
+        return
+    monkeypatch.setattr(facts, "_ask", lambda inputs: {"findings": []})
+
+
+@pytest.fixture(autouse=True)
 def _no_salary_search(request, monkeypatch):
     """`prepare`'s salary estimate (#624) never reaches the `claude` CLI from a test; the salary
     tests fake `claude_cli.ask` underneath and keep it."""

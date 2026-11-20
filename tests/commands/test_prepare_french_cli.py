@@ -62,8 +62,10 @@ def test_an_invented_french_figure_is_reported_once(cli_env, monkeypatch):
         return True
 
     monkeypatch.setattr(prepare_cmd, "_run_tailor", invented)
+    monkeypatch.setattr(prepare_cmd.facts_mod, "_ask", lambda inputs: {"findings": [
+        {"kind": "number", "value": "40 000", "context": "40 000 personnes", "file": "cv"}] * 2})
     result = prepare_cmd._prepare_core(JOB, jobs_dir=cli_env.jobs_dir)
-    assert [(c["kind"], c["value"]) for c in result["unsupported"]] == [("number", "40000")]
+    assert [(c["kind"], c["value"]) for c in result["unsupported"]] == [("number", "40 000")]
 
 
 def test_prepare_gives_a_printed_one_page_french_cv_and_letter(cli_env, monkeypatch):

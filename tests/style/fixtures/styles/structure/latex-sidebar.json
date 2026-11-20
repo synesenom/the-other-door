@@ -3,7 +3,7 @@
  "layout": {
   "columns": "two",
   "side_x0": 7,
-  "side_x1": 129
+  "side_x1": 131
  },
  "name": 2,
  "headings": [
@@ -38,5 +38,53 @@
   32,
   44,
   45
- ]
+ ],
+ "contacts": [
+  {
+   "id": 9,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 10,
+   "kind": "phone",
+   "label": ""
+  },
+  {
+   "id": 12,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 14,
+   "kind": "web",
+   "label": ""
+  },
+  {
+   "id": 16,
+   "kind": "location",
+   "label": ""
+  },
+  {
+   "id": 20,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 33,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 44,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 45,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

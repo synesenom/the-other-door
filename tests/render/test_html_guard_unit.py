@@ -4,6 +4,7 @@ and a real browser prints it. The guard is an allow-list; compile refuses to bui
 
 import pytest
 
+from door.core import cv_read
 from door.render import html_guard
 
 CV = """<!-- Keywords: IFRS, budgeting -->
@@ -34,6 +35,19 @@ def test_a_header_with_a_tagline_and_a_kind_on_each_contact_span_passes():
 
 def test_an_unknown_kind_class_is_refused():
     assert html_guard.unsafe('<p class="contact"><span class="fax">x</span></p>') != []
+
+
+@pytest.mark.parametrize("kind", cv_read.KINDS)
+def test_each_section_kind_is_a_class_of_an_h2(kind):
+    assert html_guard.unsafe(f'<h2 class="kind-{kind}">Anything</h2>') == []
+
+
+@pytest.mark.parametrize("snippet", [
+    '<div class="kind-skills">x</div>', '<span class="kind-skills">x</span>', '<p class="kind-skills">x</p>',
+    '<h3 class="kind-skills">x</h3>', '<h2 class="kind-bogus">x</h2>', '<h2 class="kind-skills main">x</h2>',
+])
+def test_a_kind_class_is_only_for_an_h2_and_only_a_known_kind(snippet):
+    assert html_guard.unsafe(snippet) != []
 
 
 def test_an_ordinary_cv_and_letter_pass():
@@ -105,7 +119,7 @@ from door.core import templates  # noqa: E402
 from paths import REPO_ROOT  # noqa: E402
 
 _CV_COMMENT = ("cv-header contact tagline phone email web location linkedin github entry role org dates place sep level "
-               "level-1 level-5")
+               "level-1 level-5 " + " ".join(f"kind-{k}" for k in cv_read.KINDS))
 _LETTER_COMMENT = "letter-header contact phone email web location linkedin github recipient date closing signoff"
 _MANIFEST = templates.Manifest(fonts=["Lato-Regular.ttf", "Lato-Bold.ttf"], icons={"phone": "phone.svg", "email": "mail.svg"})
 
@@ -210,6 +224,12 @@ def test_the_header_comment_must_list_the_vocabulary_classes():
     assert found and "tagline" in found[0] and "sep" in found[0]
     assert any("comment" in p for p in problems(page(comment=_LETTER_COMMENT), kind="cv"))
     assert any("comment" in p for p in problems("<!doctype html><html lang=\"<<lang>>\"><body><<body>></body></html>"))
+
+
+def test_a_cv_template_header_comment_must_list_the_kind_classes_a_letter_one_need_not():
+    found = [p for p in problems(page(comment=_CV_COMMENT.replace("kind-skills", ""))) if "comment" in p]
+    assert found and "kind-skills" in found[0]
+    assert problems(page(comment=_LETTER_COMMENT), kind="letter") == []
 
 
 def test_a_word_of_a_class_is_not_the_class():

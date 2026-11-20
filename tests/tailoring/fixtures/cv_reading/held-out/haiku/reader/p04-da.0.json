@@ -1,0 +1,180 @@
+{
+ "key": "cfe48c84ce69",
+ "answer": {
+  "name": "Astrid Nygaard",
+  "email": "astrid.nygaard@example.com",
+  "city": "Roskilde",
+  "country": "dk",
+  "languages": [
+   {
+    "language": "Dansk",
+    "code": "da",
+    "level": "native"
+   },
+   {
+    "language": "Engelsk",
+    "code": "en",
+    "level": "working"
+   },
+   {
+    "language": "Tysk",
+    "code": "de",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Erhvervserfaring",
+    "kind": "experience"
+   },
+   {
+    "heading": "Uddannelse",
+    "kind": "education"
+   },
+   {
+    "heading": "Kompetencer",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certificeringer",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Sprog",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interesser",
+    "kind": "interests"
+   },
+   {
+    "heading": "Frivilligt arbejde",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tlf",
+    "value": "+45 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "E-mail",
+    "value": "astrid.nygaard@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Hjemmeside",
+    "value": "example.com/astrid.nygaard"
+   },
+   {
+    "kind": "linkedin",
+    "label": "LinkedIn",
+    "value": "https://www.linkedin.com/in/astrid.nygaard"
+   },
+   {
+    "kind": "location",
+    "label": "By",
+    "value": "Roskilde"
+   }
+  ],
+  "skills": [
+   "SharePoint",
+   "Alteryx",
+   "Trello",
+   "Notion",
+   "SAP",
+   "coaching"
+  ],
+  "levels": [
+   {
+    "item": "SharePoint",
+    "level": null
+   },
+   {
+    "item": "Alteryx",
+    "level": null
+   },
+   {
+    "item": "Trello",
+    "level": null
+   },
+   {
+    "item": "Notion",
+    "level": null
+   },
+   {
+    "item": "SAP",
+    "level": null
+   },
+   {
+    "item": "coaching",
+    "level": null
+   },
+   {
+    "item": "Dansk",
+    "level": 5
+   },
+   {
+    "item": "Engelsk",
+    "level": 3
+   },
+   {
+    "item": "Tysk",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Driftschef | Birch Packaging — 5. maj 2017 – nu | Roskilde",
+    "role": "Driftschef",
+    "org": "Birch Packaging",
+    "dates": "5. maj 2017 – nu",
+    "place": "Roskilde",
+    "start_year": 2017,
+    "end_year": null
+   },
+   {
+    "heading": "Seniordriftsanalytiker | Anchor Marine — 19. marts 2013 – 26. august 2017 | Kolding",
+    "role": "Seniordriftsanalytiker",
+    "org": "Anchor Marine",
+    "dates": "19. marts 2013 – 26. august 2017",
+    "place": "Kolding",
+    "start_year": 2013,
+    "end_year": 2017
+   },
+   {
+    "heading": "Driftsanalytiker | Cedar Freight — 6. januar 2010 – 13. juni 2013 | Esbjerg",
+    "role": "Driftsanalytiker",
+    "org": "Cedar Freight",
+    "dates": "6. januar 2010 – 13. juni 2013",
+    "place": "Esbjerg",
+    "start_year": 2010,
+    "end_year": 2013
+   },
+   {
+    "heading": "Bachelor i økonomi | Prøve Højskole — 20. maj 2005 – 27. oktober 2008 | Roskilde",
+    "role": "Bachelor i økonomi",
+    "org": "Prøve Højskole",
+    "dates": "20. maj 2005 – 27. oktober 2008",
+    "place": "Roskilde",
+    "start_year": 2005,
+    "end_year": 2008
+   },
+   {
+    "heading": "Cand.merc. i erhvervsøkonomi | Prøve Højskole — 7. marts 2008 – 14. august 2010 | Roskilde",
+    "role": "Cand.merc. i erhvervsøkonomi",
+    "org": "Prøve Højskole",
+    "dates": "7. marts 2008 – 14. august 2010",
+    "place": "Roskilde",
+    "start_year": 2008,
+    "end_year": 2010
+   }
+  ]
+ }
+}

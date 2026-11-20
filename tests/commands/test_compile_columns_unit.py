@@ -3,6 +3,7 @@ that go in a narrow column; the CV body is wrapped as the header, then `div.main
 `cv.md` gives; the file on disk and the letter are never split."""
 
 import json
+import re
 
 import pytest
 
@@ -49,11 +50,11 @@ def _compile(world):
 
 CV = """<!-- Keywords: IFRS -->
 <header class="cv-header"><h1>Jane Doe</h1><p class="contact"><span>x</span></p></header>
-<h2>Profile</h2><p>A controller.</p>
-<h2>Experience</h2><div class="entry"><h3>Controller | Acme - 2021</h3><ul><li>Closed books.</li></ul></div>
-<h2>Skills</h2><p>IFRS, SQL</p>
-<h2>Education</h2><div class="entry"><h3>MSc | CBS - 2015</h3></div>
-<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>
+<h2 class="kind-summary">Profile</h2><p>A controller.</p>
+<h2 class="kind-experience">Experience</h2><div class="entry"><h3>Controller | Acme - 2021</h3><ul><li>Closed books.</li></ul></div>
+<h2 class="kind-skills">Skills</h2><p>IFRS, SQL</p>
+<h2 class="kind-education">Education</h2><div class="entry"><h3>MSc | CBS - 2015</h3></div>
+<h2 class="kind-languages">Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>
 """
 
 
@@ -76,18 +77,18 @@ def test_the_side_sections_go_in_a_side_div_after_the_main_one_in_cv_order(world
     html = _html(world)
     assert html.index("</header>") < html.index('<div class="main">') < html.index('<div class="side">')
     main, side = html.split('<div class="side">')
-    assert all(f"<h2>{h}</h2>" in main for h in ("Profile", "Experience", "Education"))
-    assert all(f"<h2>{h}</h2>" in side for h in ("Skills", "Languages"))
-    assert side.index("<h2>Skills</h2>") < side.index("<h2>Languages</h2>")
-    assert main.index("<h2>Experience</h2>") < main.index("<h2>Education</h2>")
+    assert all(f">{h}</h2>" in main for h in ("Profile", "Experience", "Education"))
+    assert all(f">{h}</h2>" in side for h in ("Skills", "Languages"))
+    assert side.index(">Skills</h2>") < side.index(">Languages</h2>")
+    assert main.index(">Experience</h2>") < main.index(">Education</h2>")
 
 
 def test_a_heading_the_manifest_names_goes_to_the_side_in_a_prepare_compile(world):
     (world.example / "template.json").write_text(json.dumps({"columns": {"side": [], "headings": ["Logiciels"]}}))
-    world.make(cv=CV + "<h2>Logiciels</h2><p>Excel</p>")
+    world.make(cv=CV + '<h2 class="kind-other">Logiciels</h2><p>Excel</p>')
     _compile(world)
     main, side = _html(world).split('<div class="side">')
-    assert "<h2>Logiciels</h2>" in side and "<h2>Logiciels</h2>" not in main
+    assert ">Logiciels</h2>" in side and ">Logiciels</h2>" not in main
 
 
 def test_the_file_on_disk_is_left_as_written(world):
@@ -99,35 +100,48 @@ def test_the_file_on_disk_is_left_as_written(world):
 
 def test_an_unknown_heading_stays_in_the_main_column(world):
     _columns(world)
-    world.make(cv=CV + "<h2>Publications</h2><p>One.</p>")
+    world.make(cv=CV + '<h2 class="kind-other">Publications</h2><p>One.</p>')
     _compile(world)
     main = _html(world).split('<div class="side">')[0]
-    assert "<h2>Publications</h2>" in main
+    assert ">Publications</h2>" in main
 
 
-def test_a_danish_ad_finds_its_side_sections_by_their_danish_titles(world):
+def test_sections_are_placed_by_their_kind_whatever_their_titles_say(world):
     _columns(world)
-    cv = CV.replace("<h2>Skills</h2>", "<h2>Kompetencer</h2>").replace("<h2>Languages</h2>", "<h2>Sprog</h2>")
+    cv = CV.replace(">Skills</h2>", ">Kompetencer</h2>").replace(">Languages</h2>", ">Sprog</h2>")
     world.make(cv=cv, posting={**POSTING, "language": "da"})
     _compile(world)
     side = _html(world).split('<div class="side">')[1]
-    assert "<h2>Kompetencer</h2>" in side and "<h2>Sprog</h2>" in side
+    assert ">Kompetencer</h2>" in side and ">Sprog</h2>" in side
 
 
-def test_the_heading_is_matched_whole_and_without_case(world):
+def test_the_kind_decides_not_the_title(world):
     _columns(world, side=("skills",))
-    cv = CV.replace("<h2>Skills</h2>", "<h2>KEY SKILLS</h2>").replace("<h2>Education</h2>", "<h2>Skills I want to learn</h2>")
+    cv = CV.replace('<h2 class="kind-education">Education', '<h2 class="kind-experience">Skills I want to learn')
     world.make(cv=cv)
     _compile(world)
     main, side = _html(world).split('<div class="side">')
-    assert "<h2>KEY SKILLS</h2>" in side and "<h2>Skills I want to learn</h2>" in main
+    assert ">Skills</h2>" in side and ">Skills I want to learn</h2>" in main
+
+
+def test_an_old_cv_html_with_no_kind_classes_is_refused_by_a_side_column_template_in_words(world):
+    _columns(world)
+    world.make(cv=re.sub(r' class="kind-\w+"', "", CV))
+    entry = _compile(world)["results"][0]
+    assert entry["status"] == "error" and "prepare it again or revise it" in entry["stderr"]
+    assert not (world.out / "cv.pdf").exists()
+
+
+def test_an_old_cv_html_with_no_kind_classes_still_compiles_in_a_one_column_template(world):
+    world.make(cv=re.sub(r' class="kind-\w+"', "", CV))
+    assert _compile(world)["results"][0]["status"] == "compiled"
 
 
 def test_a_template_without_columns_gets_the_body_as_it_was(world):
     world.make(cv=CV)
     _compile(world)
     html = _html(world)
-    assert 'class="main"' not in html and 'class="side"' not in html and "<h2>Skills</h2>" in html
+    assert 'class="main"' not in html and 'class="side"' not in html and ">Skills</h2>" in html
 
 
 def test_a_manifest_with_no_columns_key_is_not_split_either(world):
@@ -147,7 +161,7 @@ def test_the_letter_is_never_split(world):
 @pytest.mark.parametrize("cls", ["main", "side"])
 def test_a_column_class_written_by_the_model_is_refused(world, cls):
     _columns(world)
-    world.make(cv=f'<h2>Skills</h2><div class="{cls}"><p>x</p></div>')
+    world.make(cv=f'<h2 class="kind-skills">Skills</h2><div class="{cls}"><p>x</p></div>')
     entry = _compile(world)["results"][0]
     assert entry["status"] == "error" and "class" in entry["stderr"] and world.print.calls == []
 
@@ -204,7 +218,7 @@ def test_a_side_of_interests_alone_with_no_interests_section_leaves_main_whole_a
     world.make(cv=CV)
     result = _compile(world)["results"][0]
     main, side = _html(world).split('<div class="side">')
-    assert all(f"<h2>{h}</h2>" in main for h in ("Profile", "Experience", "Skills", "Education", "Languages"))
+    assert all(f">{h}</h2>" in main for h in ("Profile", "Experience", "Skills", "Education", "Languages"))
     assert side.split("</div>")[0].strip() == ""
     assert seen["headings"] == ["Profile", "Experience", "Skills", "Education", "Languages"]
     assert result["status"] == "compiled" and not result.get("readable")

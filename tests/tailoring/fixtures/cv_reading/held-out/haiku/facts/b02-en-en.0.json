@@ -1,0 +1,23 @@
+{
+ "key": "6419a0d199e2",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Hadoop",
+   "context": "Jira, Visio, SharePoint, Alteryx, Trello, budgeting, Hadoop"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "MSc in Data Science",
+   "context": "MSc in Data Science | Sample College"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "Azure Fundamentals",
+   "context": "Azure Fundamentals"
+  }
+ ]
+}

@@ -20,6 +20,7 @@ from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
 from door.core import workspace
+import cv_read_utils
 from cli_utils import result_text, stub_match_result
 from profile_utils import write_config
 
@@ -1012,6 +1013,60 @@ def test_a_french_boards_gender_tag_is_stripped_from_the_stored_title(cli_env, m
 
     stored = sorted(json.loads(open(p).read())["title"] for p in result["written"])
     assert stored == ["Chef de service comptable - Paris Centre", "Comptable"]
+
+
+def _day_with_a_posting(cli_env, cv: str | None = "# Ada\n\n## Skills\n\nPython, SQL\n"):
+    from datetime import date
+
+    cv_file = cli_env.profile_dir / "_templates" / "cv.md"  # `cv_content` of the test config
+    if cv is not None:
+        cv_file.write_text(cv)
+    else:
+        cv_file.unlink()
+    folder = cli_env.jobs_dir / "postings" / date.today().isoformat() / "jobindex"
+    folder.mkdir(parents=True)
+    (folder / "jobindex.1.json").write_text(json.dumps({
+        "id": "jobindex.1", "title": "Data Scientist", "company": "WPP", "location": "Copenhagen",
+        "url": "https://example.com/1", "description": "We need a data scientist with Python.", "source": "jobindex",
+        "scraped_at": "2026-10-13T00:00:00Z"}))
+    return folder.parent
+
+
+def test_the_passes_take_the_condense_terms_from_the_cvs_reading_and_read_it_once(cli_env, monkeypatch):
+    from door.commands import scrape as scrape_cmd
+    from door.core import cv_read
+    from door.matching import condense
+
+    asked, terms = [], []
+    monkeypatch.setattr(cv_read, "_ask", lambda md: asked.append(md) or {**cv_read_utils.plain(md), "skills": ["Python"]})
+    real = condense.condense_postings
+    monkeypatch.setattr(condense, "condense_postings", lambda paths, profile_terms, config: terms.append(profile_terms) or real(paths, profile_terms, config))
+    day = _day_with_a_posting(cli_env)
+    config = json.loads((cli_env.profile_dir / "config.json").read_text())
+    scrape_cmd._scrape_passes(day, config, cli_env.profile_dir)
+    scrape_cmd._scrape_passes(day, config, cli_env.profile_dir)  # another day's folder of the same run: the cache
+    assert len(asked) == 1 and "python" in terms[0]
+
+
+def test_a_cv_that_cannot_be_read_fails_the_passes_in_words(cli_env, monkeypatch):
+    from door.commands import scrape as scrape_cmd
+    from door.core import claude_cli, cv_read
+
+    def boom(md):
+        raise claude_cli.ClaudeError("not logged in")
+    monkeypatch.setattr(cv_read, "_ask", boom)
+    day = _day_with_a_posting(cli_env)
+    with pytest.raises(cv_read.CvReadError, match="not logged in"):
+        scrape_cmd._scrape_passes(day, json.loads((cli_env.profile_dir / "config.json").read_text()), cli_env.profile_dir)
+
+
+def test_no_cv_means_no_reading_and_only_the_role_terms(cli_env, monkeypatch):
+    from door.commands import scrape as scrape_cmd
+    from door.core import cv_read
+
+    monkeypatch.setattr(cv_read, "_ask", lambda md: pytest.fail("there is no CV to read"))
+    day = _day_with_a_posting(cli_env, cv=None)
+    scrape_cmd._scrape_passes(day, json.loads((cli_env.profile_dir / "config.json").read_text()), cli_env.profile_dir)
 
 
 def _serve_board(name: str) -> None:

@@ -28,5 +28,38 @@
   19,
   26,
   27
- ]
+ ],
+ "contacts": [
+  {
+   "id": 3,
+   "kind": "phone",
+   "label": ""
+  },
+  {
+   "id": 8,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 14,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 20,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 26,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 27,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

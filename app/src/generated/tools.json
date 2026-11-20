@@ -86,7 +86,7 @@
   },
   {
     "name": "check_facts",
-    "description": "Check a prepared CV and cover letter against the candidate's own sources (offline, no model).\n\n    The tailor agent's tool: call it on the finished documents, fix or remove what is truly\n    unsupported (then `compile` again), call it once more; two rounds at most per prepare run.\n    A TODO is a gap in `cv.md` and never takes a reason.\n\n    Args:\n        job_id: The job: its id, or words from its company and title.\n        keep: For an item that stays because it is true, ``[{\"kind\", \"value\", \"file\", \"reason\"}]``\n            copied from the list, ``reason`` one plain sentence (200 characters at most); it is\n            written into `facts.json` and shown next to the item.\n\n    Returns:\n        ``{\"job_id\", \"round\", \"rounds_left\", \"unsupported\"}``: each item ``{kind, value, context,\n        file, reason?}`` (``[]`` clean, None when the check cannot run), or ``{\"error\"}`` after the\n        second round.\n    ",
+    "description": "Check a prepared CV and cover letter against the candidate's own sources (one Haiku call).\n\n    The tailor agent's tool: call it on the finished documents, fix or remove what is truly\n    unsupported (then `compile` again), call it once more; two rounds at most per prepare run.\n    A call for documents already checked asks nothing and is no round (that is how to record a `keep`).\n    A TODO is a gap in `cv.md` and never takes a reason.\n\n    Args:\n        job_id: The job: its id, or words from its company and title.\n        keep: For an item that stays because it is true, ``[{\"kind\", \"value\", \"file\", \"reason\"}]``\n            copied from the list, ``reason`` one plain sentence (200 characters at most); it is\n            written into `facts.json` and shown next to the item.\n\n    Returns:\n        ``{\"job_id\", \"round\", \"rounds_left\", \"unsupported\"}``: each item ``{kind, value, context,\n        file, reason?}`` (``[]`` clean, None when the check cannot run), or ``{\"error\"}`` after the\n        second round.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -525,7 +525,7 @@
   },
   {
     "name": "infer_basics",
-    "description": "Read the profile basics from the CV: name, email, city, job-ad languages and a `remote` default.\n\n    Onboarding's reading step, right after `draft_cv`. The header is parsed; one `claude -p` call (Haiku by\n    default) reads only what parsing leaves. Works before profile/config.json exists. Ask the user only about\n    the keys in `missing`, one question each; show the rest in the review. Writes nothing.\n\n    Args:\n        markdown: The CV text. Omit for `profile/cv.draft.md`, or `profile/cv.md` when there is no draft.\n        model: Claude model to ask (default: haiku).\n\n    Returns:\n        ``{\"name\", \"email\", \"location\", \"languages\", \"remote\", \"missing\"}`` (`None` for what was not found),\n        plus ``\"unsupported_location\"`` (a place outside the covered countries, to ask about) and ``\"warning\"``\n        (the model call failed, so what it would have read is in `missing`).\n    ",
+    "description": "Read the profile basics from the CV: name, email, city, job-ad languages and a `remote` default.\n\n    Onboarding's reading step, right after `draft_cv`. The CV is read by one cached `claude -p` call (Haiku;\n    the same reading `find` and the salary estimate use). Works before profile/config.json exists. Ask the user\n    only about the keys in `missing`, one question each; show the rest in the review. Writes nothing.\n\n    Args:\n        markdown: The CV text. Omit for `profile/cv.draft.md`, or `profile/cv.md` when there is no draft.\n\n    Returns:\n        ``{\"name\", \"email\", \"location\", \"languages\", \"remote\", \"missing\"}`` (`None` for what was not found),\n        plus ``\"unsupported_location\"`` (a place in a country not covered, to ask about) and ``\"warning\"``\n        (the CV could not be read, so what it would have said is in `missing`).\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -540,18 +540,6 @@
           ],
           "default": null,
           "title": "Markdown"
-        },
-        "model": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Model"
         }
       },
       "title": "infer_basicsArguments"
@@ -1650,7 +1638,7 @@
   },
   {
     "name": "show_style",
-    "description": "Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built\n    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the\n    CV, the photo or a style changed; no model is used.\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\", \"two_column\"}, \"like\": {...}},\n        \"in_use\": \"like\" | \"default\", \"candidate\": whether a style just built waits to be chosen}``:\n        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;\n        ``like`` (the candidate when one waits, else the style kept) only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is\n        left out.\n    ",
+    "description": "Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built\n    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the\n    CV, the photo or a style changed; the CV is read by the model once (remembered).\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\", \"two_column\"}, \"like\": {...}},\n        \"in_use\": \"like\" | \"default\", \"candidate\": whether a style just built waits to be chosen}``:\n        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;\n        ``like`` (the candidate when one waits, else the style kept) only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is\n        left out; a CV the model cannot read leaves ``styles`` empty with a ``warning`` in words.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {},

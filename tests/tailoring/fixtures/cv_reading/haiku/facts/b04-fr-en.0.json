@@ -1,0 +1,23 @@
+{
+ "key": "97312daf9e5c",
+ "answer": [
+  {
+   "kind": "year",
+   "file": "cv",
+   "value": "2011",
+   "context": "19th March 2011 – 26th August 2017"
+  },
+  {
+   "kind": "employer",
+   "file": "cv",
+   "value": "Vandelay Industries",
+   "context": "Senior Data Analyst | Vandelay Industries"
+  },
+  {
+   "kind": "number",
+   "file": "letter",
+   "value": "30",
+   "context": "Linden Works: Led a team of 30 people through a migration with no downtime."
+  }
+ ]
+}

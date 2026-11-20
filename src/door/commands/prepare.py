@@ -496,7 +496,9 @@ def _prepare_core(
 
     _step("CV, cover letter and both PDFs on disk", "ok")
     # Reported, never a block: figures, employers, skills, certifications and degrees cv.md and the story bank do not back (#325, #369).
-    unsupported = facts_mod.check(output_dir, profile_dir or workspace.PROFILE_DIR)
+    _step("checking the facts")
+    with progress_mod.heartbeat("checking the facts", stage="prepare", interval_s=_HEARTBEAT_INTERVAL_S):
+        unsupported = facts_mod.check(output_dir, profile_dir or workspace.PROFILE_DIR)
     # After the check: stories written this run must not back the run's own figures.
     stories = _add_stories(output_dir, profile_dir or workspace.PROFILE_DIR)
     try:

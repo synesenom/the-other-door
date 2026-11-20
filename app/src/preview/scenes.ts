@@ -44,7 +44,7 @@ export interface Scene {
   styleReady?: boolean
   /** Profile → CV's Style: which style is in use, whether one built from a CV is kept (`like`), whether it waits to
    * be chosen (`candidate`), a build running, how many prepared CVs a switch could print again, how many of them fail the first time they are printed again. Default: The other door's, no build. */
-  style?: { in_use?: 'default' | 'like'; like?: boolean; candidate?: boolean; two_column?: boolean; building?: boolean; prepared?: number; failing?: number }
+  style?: { in_use?: 'default' | 'like'; like?: boolean; candidate?: boolean; two_column?: boolean; building?: boolean; prepared?: number; failing?: number; again?: boolean; warning?: boolean }
   /** Tools (or `window.door` calls: `exportData`, `reportProblem`) that fail here, each with the words it fails with: an error the user sees. */
   fails?: Record<string, string>
   /** Buttons the preview presses, in order, once the screen has loaded (`pressInOrder`): a state only an action reaches. */
@@ -183,6 +183,8 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-cv-style-unread', group: 'Profile', title: 'CV, the look could not be read (the error box)', start: { destination: 'Profile', cv: true }, fails: { styleFromCvFile: 'Claude could not be reached, or Claude\'s usage limit is reached. Try again later.' }, press: ['Use my own style'] },
   { id: 'profile-cv-style-candidate', group: 'Profile', title: 'CV, a built style to compare (the switch on, then Print again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 2 } },
   { id: 'profile-cv-style-printed', group: 'Profile', title: 'CV, the prepared CVs printed again, one failed (Try again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 3, failing: 1 }, press: ['Use my own style', 'Print 3 prepared CVs again'] },
+  { id: 'profile-cv-style-again', group: 'Profile', title: 'CV, prepared before sections had a kind: prepare again or revise (no Try again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 3, failing: 2, again: true }, press: ['Use my own style', 'Print 3 prepared CVs again'] },
+  { id: 'profile-cv-style-unreadable', group: 'Profile', title: 'CV, the CV could not be read for the previews (no sets, no build hint, the switch still chooses)', start: { destination: 'Profile', cv: true }, style: { warning: true } },
   { id: 'profile-cv-style-refused', group: 'Profile', title: 'CV, choosing a style failed (the error box)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true }, fails: { use_style: 'Your choice could not be saved. Try again.' }, press: ['Use my own style'] },
   { id: 'profile-cv-forget-failed', group: 'Profile', title: 'CV, a page that could not be forgotten (under Sources)', start: { destination: 'Profile', cv: true }, fails: { init_profile: 'Your pages could not be saved. Try again.' }, press: ['Forget https://janedoe.example/portfolio'] },
   { id: 'profile-cv-gaps', group: 'Profile', title: 'CV with gaps: "to fill in" pills in the preview', start: { destination: 'Profile', cv: true }, cvGaps: true },

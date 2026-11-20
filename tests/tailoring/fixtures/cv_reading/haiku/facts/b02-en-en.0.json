@@ -1,0 +1,23 @@
+{
+ "key": "126a5396c7a3",
+ "answer": [
+  {
+   "kind": "skill",
+   "file": "cv",
+   "value": "Apache Spark",
+   "context": "Docker, Git, Microsoft Excel, PowerBI, Figma, reporting, Apache Spark"
+  },
+  {
+   "kind": "degree",
+   "file": "cv",
+   "value": "MBA in Strategic Management",
+   "context": "MBA in Strategic Management | Example University"
+  },
+  {
+   "kind": "certification",
+   "file": "cv",
+   "value": "Certified Kubernetes Administrator",
+   "context": "Certified Kubernetes Administrator"
+  }
+ ]
+}

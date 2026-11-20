@@ -607,10 +607,11 @@ async def cancel_job() -> dict:
 @mcp.tool()
 @_tool_errors
 def check_facts(job_id: str, keep: list[dict] | None = None) -> dict:
-    """Check a prepared CV and cover letter against the candidate's own sources (offline, no model).
+    """Check a prepared CV and cover letter against the candidate's own sources (one Haiku call).
 
     The tailor agent's tool: call it on the finished documents, fix or remove what is truly
     unsupported (then `compile` again), call it once more; two rounds at most per prepare run.
+    A call for documents already checked asks nothing and is no round (that is how to record a `keep`).
     A TODO is a gap in `cv.md` and never takes a reason.
 
     Args:
@@ -1381,23 +1382,22 @@ def draft_cv(sources: list[str], write: bool = False, model: str | None = None) 
 
 @mcp.tool()
 @_tool_errors
-def infer_basics(markdown: str | None = None, model: str | None = None) -> dict:
+def infer_basics(markdown: str | None = None) -> dict:
     """Read the profile basics from the CV: name, email, city, job-ad languages and a `remote` default.
 
-    Onboarding's reading step, right after `draft_cv`. The header is parsed; one `claude -p` call (Haiku by
-    default) reads only what parsing leaves. Works before profile/config.json exists. Ask the user only about
-    the keys in `missing`, one question each; show the rest in the review. Writes nothing.
+    Onboarding's reading step, right after `draft_cv`. The CV is read by one cached `claude -p` call (Haiku;
+    the same reading `find` and the salary estimate use). Works before profile/config.json exists. Ask the user
+    only about the keys in `missing`, one question each; show the rest in the review. Writes nothing.
 
     Args:
         markdown: The CV text. Omit for `profile/cv.draft.md`, or `profile/cv.md` when there is no draft.
-        model: Claude model to ask (default: haiku).
 
     Returns:
         ``{"name", "email", "location", "languages", "remote", "missing"}`` (`None` for what was not found),
-        plus ``"unsupported_location"`` (a place outside the covered countries, to ask about) and ``"warning"``
-        (the model call failed, so what it would have read is in `missing`).
+        plus ``"unsupported_location"`` (a place in a country not covered, to ask about) and ``"warning"``
+        (the CV could not be read, so what it would have said is in `missing`).
     """
-    return cv_cmd._infer_basics_core(markdown, model=model, profile_dir=workspace.PROFILE_DIR)
+    return cv_cmd._infer_basics_core(markdown, profile_dir=workspace.PROFILE_DIR)
 
 
 @mcp.tool()
@@ -1516,14 +1516,14 @@ async def stop_style_build() -> dict:
 async def show_style() -> dict:
     """Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built
     from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the
-    CV, the photo or a style changed; no model is used.
+    CV, the photo or a style changed; the CV is read by the model once (remembered).
 
     Returns:
         ``{"styles": {"default": {"cv": [png paths], "letter": [png paths], "version", "two_column"}, "like": {...}},
         "in_use": "like" | "default", "candidate": whether a style just built waits to be chosen}``:
         ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;
         ``like`` (the candidate when one waits, else the style kept) only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is
-        left out.
+        left out; a CV the model cannot read leaves ``styles`` empty with a ``warning`` in words.
     """
     # On a thread: a cold set prints four pages with Chromium, and the other calls must not wait for it.
     return await asyncio.to_thread(style_cmd._show_core)

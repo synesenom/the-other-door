@@ -25,20 +25,6 @@ stop_words = ["és", "vagy", "a", "az", "egy", "valamint"]
 # Generic words around an employer's name in a careers site's title.
 career_site_words = ["karrier", "állások", "állás", "állásajánlatok", "nyitott pozíciók", "munkalehetőségek"]
 
-# The titles of a CV's sections: the facts check reads them, and a template can place them in a column.
-[cv_sections]
-skills = ["készségek", "kompetenciák", "szakmai készségek", "ismeretek"]
-education = ["tanulmányok", "végzettség", "oktatás", "képzettség"]
-certifications = ["tanúsítványok", "képesítések", "bizonyítványok", "tanfolyamok"]
-languages = ["nyelvek", "nyelvismeret", "nyelvtudás"]
-interests = ["érdeklődési kör", "érdeklődési körök", "hobbi", "hobbik", "érdeklődés"]
-
-[contact_labels]
-phone = ["telefon", "mobil"]
-email = ["e-mail"]
-web = ["weboldal", "honlap"]
-location = ["helyszín", "város", "cím"]
-
 [headings]
 requirement = ["elvárások", "követelmények", "amit várunk", "mit várunk", "milyen vagy", "kit keresünk", "ideális jelölt", "a te profilod"]
 responsibility = ["a pozícióról", "a munkakörről", "feladatok", "amit csinálsz", "mi lesz a feladatod"]
@@ -67,7 +53,6 @@ advantage = [
     "magyar nyelvtudás előny", "magyar nyelv ismerete előny",
     "Hungarian is a plus", "Hungarian is an advantage",
 ]
-
 
 [work_permit]
 no_sponsorship = [
@@ -101,19 +86,3 @@ nav = [
 [date]
 pattern = "{year}. {month} {day}."
 months = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"]
-day_suffixes = ["-én", "-án"]
-
-# The extra month forms (abbreviations; the full names are [date].months), for reading a date written out.
-[months]
-"jan." = 1
-"febr." = 2
-"márc." = 3
-"ápr." = 4
-"máj." = 5
-"jún." = 6
-"júl." = 7
-"aug." = 8
-"szept." = 9
-"okt." = 10
-"nov." = 11
-"dec." = 12

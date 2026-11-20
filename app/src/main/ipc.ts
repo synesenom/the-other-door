@@ -102,7 +102,7 @@ interface ServerLike {
 const TOOL_TIMEOUTS: Record<string, number> = {
   import_posting: 180_000,
   prepare: 180_000,
-  revise: 420_000,
+  revise: 480_000,
   find_jobs: 900_000,
   draft_cv: 960_000,
   // a data move: one archive packed or unpacked.
@@ -110,7 +110,7 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   import_data: 180_000,
   keywords: 150_000,
   suggest_titles: 150_000,
-  infer_basics: 150_000,
+  infer_basics: 300_000, // one read of the CV, asked again once when its answer does not hold (2 x 120 s)
   // setup installs Chromium or claude, or (a developer action) runs the scraper fixer, tests and a probe.
   setup: 1_800_000,
   // connect_drive waits up to five minutes for the browser; sync_data moves one archive.
@@ -126,8 +126,10 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   ask: 240_000,
   // draft_stories: one sonnet call (300 s on the server), no progress.
   draft_stories: 360_000,
-  // show_style prints up to four pages cold; use_style with rerender prints each prepared application again.
-  show_style: 180_000,
+  // show_style reads the CV (one Haiku call of up to 120 s, asked once more when its answer does not hold: 240 s) and
+  // then prints up to four pages cold.
+  show_style: 360_000,
+  // use_style with rerender prints each prepared application again.
   use_style: 600_000,
   // build_style reads the CV's structure with one Haiku call (60 s on the server) before it starts the build.
   build_style: 120_000,

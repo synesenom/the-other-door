@@ -246,8 +246,8 @@ def test_core_errors(env, monkeypatch):
     assert not env.draft_path.exists()
 
 
-def _draft_answering(env, monkeypatch, markdown, todos=()):
-    answer = {"cv_markdown": markdown, "todos": list(todos)}
+def _draft_answering(env, monkeypatch, markdown, todos=(), skills_headings=()):
+    answer = {"cv_markdown": markdown, "todos": list(todos), "skills_headings": list(skills_headings)}
     monkeypatch.setattr(claude_cli, "run", lambda *a, **k: json.dumps({"result": json.dumps(answer)}))
     return cv_cmd._draft_cv_core([str(env.tmp / "notes.md")], profile_dir=env.profile_dir)
 
@@ -256,7 +256,7 @@ def _draft_answering(env, monkeypatch, markdown, todos=()):
 def test_draft_never_asks_for_a_skills_section_the_sources_did_not_show(env, monkeypatch, line):
     result = _draft_answering(
         env, monkeypatch, f"# Ada\n\n## Skills\n\n{line}\n\n## Languages\n\n- English\n",
-        ["Add your skills", "Add the year of your MSc"],
+        ["Add your skills", "Add the year of your MSc"], ["Skills"],
     )
     assert result["markdown"] == "# Ada\n\n## Languages\n\n- English\n"
     assert result["todos"] == ["Add the year of your MSc"]
@@ -264,12 +264,12 @@ def test_draft_never_asks_for_a_skills_section_the_sources_did_not_show(env, mon
 
 
 def test_draft_keeps_the_skills_it_found_beside_a_todo(env, monkeypatch):
-    result = _draft_answering(env, monkeypatch, "## Kompetencer\n\nPython, SQL, TODO\n- TODO\n- Excel\n")
+    result = _draft_answering(env, monkeypatch, "## Kompetencer\n\nPython, SQL, TODO\n- TODO\n- Excel\n", skills_headings=["Kompetencer"])
     assert result["markdown"] == "## Kompetencer\n\nPython, SQL\n- Excel\n"
 
 
 def test_draft_keeps_a_todo_in_any_other_section(env, monkeypatch):
-    result = _draft_answering(env, monkeypatch, "## Skills\n\nPython\n\n## Education\n\nMSc, TODO year\n", ["Add your skills list", "x"])
+    result = _draft_answering(env, monkeypatch, "## Skills\n\nPython\n\n## Education\n\nMSc, TODO year\n", ["Add your skills list", "x"], ["Skills"])
     assert "MSc, TODO year" in result["markdown"]
     assert result["todos"] == ["Add your skills list", "x"]  # nothing was taken out of Skills
 
@@ -467,19 +467,29 @@ def test_the_draft_rules_keep_the_cvs_own_section_headings_and_groups():
     assert "`### Title` line of its own" in cv_cmd._RULES
 
 
-@pytest.mark.parametrize("title", ["Technical & Programming Skills", "Kompetencer og værktøjer"])
-def test_draft_drops_a_skills_todo_under_a_marked_own_title(env, monkeypatch, title):
+@pytest.mark.parametrize("title", ["Technical & Programming Skills", "Kompetencer og værktøjer", "My toolbox"])
+def test_draft_drops_a_skills_todo_under_the_title_the_model_named(env, monkeypatch, title):
     result = _draft_answering(
-        env, monkeypatch, f"# Ada\n\n## {title} <!-- kind: skills -->\n\nTODO\n\n## Languages\n\n- English\n", ["Add your skills"],
+        env, monkeypatch, f"# Ada\n\n## {title}\n\nTODO\n\n## Languages\n\n- English\n", [f"Add {title}"], [title],
     )
     assert result["markdown"] == "# Ada\n\n## Languages\n\n- English\n"
     assert result["todos"] == []
 
 
-def test_draft_keeps_a_todo_under_an_unmarked_own_title(env, monkeypatch):
+def test_draft_keeps_a_todo_under_a_title_the_model_did_not_name_a_skills_one(env, monkeypatch):
     result = _draft_answering(env, monkeypatch, "## My toolbox\n\nTODO\n")
     assert "TODO" in result["markdown"]
 
 
-def test_draft_asks_the_model_to_mark_each_section_kind():
-    assert "<!-- kind:" in cv_cmd._RULES
+def test_draft_asks_for_its_skills_headings_and_no_kind_markers():
+    assert "skills_headings" in cv_cmd._SCHEMA["required"] and "skills_headings" in cv_cmd._RULES
+    assert "<!-- kind:" not in cv_cmd._RULES
+
+
+def test_a_todo_goes_with_the_todo_line_it_was_about(env, monkeypatch):
+    result = _draft_answering(
+        env, monkeypatch, "# Ada\n\n## Technical Skills\n\nTODO: list your tools\n\n## Languages\n\n- English\n",
+        ["List your tools and frameworks", "Add the year of your MSc"], ["Technical Skills"],
+    )
+    assert result["markdown"] == "# Ada\n\n## Languages\n\n- English\n"
+    assert result["todos"] == ["Add the year of your MSc"]

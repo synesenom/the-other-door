@@ -1,0 +1,151 @@
+{
+ "key": "3123590354e1",
+ "answer": {
+  "name": "Hannah Clarke",
+  "email": "hannah.clarke@example.com",
+  "city": "Leeds",
+  "country": "gb",
+  "languages": [
+   {
+    "language": "English",
+    "code": "en",
+    "level": "native"
+   },
+   {
+    "language": "French",
+    "code": "fr",
+    "level": "working"
+   },
+   {
+    "language": "German",
+    "code": "de",
+    "level": "basic"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profile",
+    "kind": "summary"
+   },
+   {
+    "heading": "Career History",
+    "kind": "experience"
+   },
+   {
+    "heading": "Education",
+    "kind": "education"
+   },
+   {
+    "heading": "Key Skills",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Languages",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interests",
+    "kind": "interests"
+   },
+   {
+    "heading": "Volunteering",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Phone",
+    "value": "+44 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Email",
+    "value": "hannah.clarke@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Web",
+    "value": "example.com/hannah.clarke"
+   },
+   {
+    "kind": "location",
+    "label": "Location",
+    "value": "Leeds"
+   }
+  ],
+  "skills": [
+   "Docker",
+   "Git",
+   "Excel",
+   "Power BI",
+   "Figma",
+   "reporting"
+  ],
+  "levels": [
+   {
+    "item": "English",
+    "level": 5
+   },
+   {
+    "item": "French",
+    "level": 3
+   },
+   {
+    "item": "German",
+    "level": 1
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Kestrel Analytics, Leeds – Analytics Lead (March 2019 – present)",
+    "role": "Analytics Lead",
+    "org": "Kestrel Analytics",
+    "dates": "March 2019 – present",
+    "place": "Leeds",
+    "start_year": 2019,
+    "end_year": null
+   },
+   {
+    "heading": "Harbor Digital, Manchester – Senior Data Analyst (January 2015 – June 2019)",
+    "role": "Senior Data Analyst",
+    "org": "Harbor Digital",
+    "dates": "January 2015 – June 2019",
+    "place": "Manchester",
+    "start_year": 2015,
+    "end_year": 2019
+   },
+   {
+    "heading": "Tidewater Data, Bristol – Data Analyst (November 2012 – April 2015)",
+    "role": "Data Analyst",
+    "org": "Tidewater Data",
+    "dates": "November 2012 – April 2015",
+    "place": "Bristol",
+    "start_year": 2012,
+    "end_year": 2015
+   },
+   {
+    "heading": "Example University, Leeds – BSc in Mathematics (March 2007 – August 2010)",
+    "role": "BSc in Mathematics",
+    "org": "Example University",
+    "dates": "March 2007 – August 2010",
+    "place": "Leeds",
+    "start_year": 2007,
+    "end_year": 2010
+   },
+   {
+    "heading": "Example University, Leeds – MSc in Computer Science (January 2010 – June 2012)",
+    "role": "MSc in Computer Science",
+    "org": "Example University",
+    "dates": "January 2010 – June 2012",
+    "place": "Leeds",
+    "start_year": 2010,
+    "end_year": 2012
+   }
+  ]
+ }
+}

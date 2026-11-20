@@ -55,7 +55,7 @@ test('a failed draft says the sources could not be read, with Try again and Go o
   await expect(alert.getByRole('button', { name: 'Go on without a draft', exact: true })).toBeVisible()
   await expect(readingStep(page, 'Drafting your CV')).toHaveAttribute('aria-current', 'step')
   await expect(readingStep(page, 'Drafting your CV')).not.toContainText(/\d+ s/) // the clock stops
-  expect(world.claudeCalls('basics')).toEqual([]) // nothing else is asked
+  expect(world.claudeCalls('cv_read')).toEqual([]) // nothing else is asked
   expect(world.exists('profile/cv.draft.md')).toBe(false)
 })
 

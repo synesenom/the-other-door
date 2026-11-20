@@ -1,0 +1,147 @@
+{
+ "key": "304946bc561a",
+ "answer": {
+  "name": "Inès Perrin",
+  "email": "ines.perrin@example.com",
+  "city": "Rennes",
+  "country": "fr",
+  "languages": [
+   {
+    "language": "Français",
+    "code": "fr",
+    "level": "native"
+   },
+   {
+    "language": "Anglais",
+    "code": "en",
+    "level": "fluent"
+   },
+   {
+    "language": "Allemand",
+    "code": "de",
+    "level": "conversational"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Expérience professionnelle",
+    "kind": "experience"
+   },
+   {
+    "heading": "Formation",
+    "kind": "education"
+   },
+   {
+    "heading": "Compétences",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Langues",
+    "kind": "languages"
+   },
+   {
+    "heading": "Centres d'intérêt",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tél",
+    "value": "+33 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Courriel",
+    "value": "ines.perrin@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Site",
+    "value": "example.com/ines.perrin"
+   },
+   {
+    "kind": "location",
+    "label": "Lieu",
+    "value": "Rennes"
+   }
+  ],
+  "skills": [
+   "Tableau",
+   "Jira",
+   "Visio",
+   "SharePoint",
+   "Alteryx",
+   "négociation"
+  ],
+  "levels": [
+   {
+    "item": "Français",
+    "level": 5
+   },
+   {
+    "item": "Anglais",
+    "level": 4
+   },
+   {
+    "item": "Allemand",
+    "level": 2
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Directeur des opérations, Heron Supply (2018 - présent)",
+    "role": "Directeur des opérations",
+    "org": "Heron Supply",
+    "dates": "2018 - présent",
+    "place": null,
+    "start_year": 2018,
+    "end_year": null
+   },
+   {
+    "heading": "Analyste senior des opérations, Granite Logistics (2014 - 2018)",
+    "role": "Analyste senior des opérations",
+    "org": "Granite Logistics",
+    "dates": "2014 - 2018",
+    "place": null,
+    "start_year": 2014,
+    "end_year": 2018
+   },
+   {
+    "heading": "Analyste des opérations, Copper Mills (2011 - 2014)",
+    "role": "Analyste des opérations",
+    "org": "Copper Mills",
+    "dates": "2011 - 2014",
+    "place": null,
+    "start_year": 2011,
+    "end_year": 2014
+   },
+   {
+    "heading": "Licence en économie, École d'Essai (2006 - 2009)",
+    "role": "Licence en économie",
+    "org": "École d'Essai",
+    "dates": "2006 - 2009",
+    "place": null,
+    "start_year": 2006,
+    "end_year": 2009
+   },
+   {
+    "heading": "Master en gestion, École d'Essai (2009 - 2011)",
+    "role": "Master en gestion",
+    "org": "École d'Essai",
+    "dates": "2009 - 2011",
+    "place": null,
+    "start_year": 2009,
+    "end_year": 2011
+   }
+  ]
+ }
+}

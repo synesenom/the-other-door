@@ -27,5 +27,33 @@
   7,
   10,
   11
- ]
+ ],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 4,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 7,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 10,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 11,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

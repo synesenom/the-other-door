@@ -4,8 +4,7 @@ import json
 
 import pytest
 
-from door import i18n
-from door.core import templates
+from door.core import cv_read, templates
 
 
 def _write(tmp_path, data):
@@ -32,10 +31,9 @@ def test_a_full_manifest_is_read(tmp_path):
     assert m.columns.side == ["skills"]
 
 
-def test_the_section_kinds_are_the_cv_sections():
-    assert templates.SECTION_KINDS == tuple(i18n.CvSections.model_fields)
+def test_the_section_kinds_are_what_a_column_can_hold():
     assert {"skills", "education", "certifications", "languages", "interests"} == set(templates.SECTION_KINDS)
-    assert templates.ICON_KINDS == (*i18n.CONTACT_KINDS, "date")
+    assert templates.ICON_KINDS == (*cv_read.CONTACT_KINDS, "date")
 
 
 @pytest.mark.parametrize("data", [

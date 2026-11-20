@@ -24,23 +24,12 @@ role_nouns = [
 
 # Connecting words that carry no meaning in a job title ("Chef for data").
 
-
 # English words that mean something unrelated in Danish: an exclude keyword
 # equal to one of these is not applied to a Danish ad.
 false_friends = ["intern", "chef"]  # intern = internal, chef = boss
 
 # Filler words with no topic, left out of the search keywords' content words.
 stop_words = ["og", "i", "til", "for", "af", "med", "på", "en", "et", "den", "det", "som", "at"]
-
-# Generic words that are not a skill, tool or certification by themselves: soft skills,
-# months, weekdays. The facts check never claims them.
-skill_stop_words = [
-    "kommunikation", "ledelse", "samarbejde", "kreativitet", "fleksibilitet", "ansvar",
-    "initiativ", "motivation", "analytisk", "problemløsning", "tidsstyring",
-    "januar", "februar", "marts", "maj", "juni", "juli", "oktober", "december",
-    "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag",
-    "nu", "nuværende", "flydende", "modersmål", "grundlæggende",
-]
 
 # Generic words around an employer's name in a careers site's title.
 career_site_words = ["karriere", "job", "jobs", "ledige stillinger", "stillinger", "karrieremuligheder"]
@@ -58,20 +47,6 @@ career_site_words = ["karriere", "job", "jobs", "ledige stillinger", "stillinger
 "æ" = "ae"
 "ø" = "o"
 "å" = "aa"
-
-# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
-[cv_sections]
-skills = ["kompetencer", "færdigheder", "it-kompetencer", "nøglekompetencer", "værktøjer"]
-education = ["uddannelse", "uddannelser", "uddannelse og kurser"]
-certifications = ["certificeringer", "certifikater", "kurser", "certificeringer og kurser"]
-languages = ["sprog", "sprogkundskaber"]
-interests = ["interesser", "fritidsinteresser", "hobbyer"]
-
-[contact_labels]
-phone = ["telefon", "tlf", "mobil"]
-email = ["e-mail", "mail"]
-web = ["hjemmeside", "websted", "portfolio"]
-location = ["sted", "by", "adresse"]
 
 [headings]
 requirement = ["vi forventer", "kvalifikationer", "krav", "hvem er du", "din profil"]
@@ -102,7 +77,6 @@ advantage = [
     "dansk er en fordel", "gerne dansk",
     "Danish is a plus", "Danish is an advantage",
 ]
-
 
 [work_permit]
 no_sponsorship = [
@@ -154,18 +128,3 @@ nav = [
 [date]
 pattern = "{day}. {month} {year}"
 months = ["januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"]
-
-# The extra month forms (abbreviations; the full names are [date].months), for reading a date written out.
-[months]
-"jan." = 1
-"feb." = 2
-"mar." = 3
-"apr." = 4
-"jun." = 6
-"jul." = 7
-"aug." = 8
-"sep." = 9
-"sept." = 9
-"okt." = 10
-"nov." = 11
-"dec." = 12

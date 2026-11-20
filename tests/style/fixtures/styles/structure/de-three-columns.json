@@ -39,5 +39,83 @@
   23,
   25,
   26
- ]
+ ],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 6,
+   "kind": "location",
+   "label": ""
+  },
+  {
+   "id": 7,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 8,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 9,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 10,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 11,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 12,
+   "kind": "phone",
+   "label": ""
+  },
+  {
+   "id": 22,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 23,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 24,
+   "kind": "location",
+   "label": ""
+  },
+  {
+   "id": 25,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 26,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 27,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 30,
+   "kind": "phone",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

@@ -26,16 +26,6 @@ false_friends = ["intern", "chef", "fast"]  # intern = internal, chef = boss, fa
 # Filler words with no topic, left out of the search keywords' content words.
 stop_words = ["och", "i", "på", "för", "av", "med", "till", "en", "ett", "den", "det", "som", "att", "inom", "hos"]
 
-# Generic words that are not a skill, tool or certification by themselves: soft skills,
-# months, weekdays. The facts check never claims them.
-skill_stop_words = [
-    "kommunikation", "ledarskap", "samarbete", "kreativitet", "flexibilitet", "ansvar",
-    "initiativ", "motivation", "analytisk", "problemlösning", "tidshantering",
-    "januari", "februari", "mars", "maj", "juni", "juli", "augusti", "oktober",
-    "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag",
-    "nuvarande", "flytande", "modersmål", "grundläggande",
-]
-
 # Generic words around an employer's name in a careers site's title (the one-word ones are also tried as a
 # career host, "karriar.acme.se").
 career_site_words = ["karriär", "karriar", "jobb", "lediga jobb", "lediga tjänster", "lediga befattningar", "lediga anställningar", "karriärmöjligheter"]
@@ -44,20 +34,6 @@ career_site_words = ["karriär", "karriar", "jobb", "lediga jobb", "lediga tjän
 # as Danish for "å", which both files must spell alike.
 [transliterate]
 "å" = "aa"
-
-# Titles of the CV sections the facts check reads (the whole heading, case-insensitive).
-[cv_sections]
-skills = ["kompetenser", "färdigheter", "it-kompetens", "teknisk kompetens", "nyckelkompetenser", "verktyg"]
-education = ["utbildning", "utbildningar", "utbildning och kurser"]
-certifications = ["certifieringar", "certifikat", "kurser", "certifieringar och kurser"]
-languages = ["språk", "språkkunskaper"]
-interests = ["intressen", "fritidsintressen"]
-
-[contact_labels]
-phone = ["telefon", "mobil"]
-email = ["e-post", "epost"]
-web = ["webbplats", "hemsida"]
-location = ["ort", "stad", "adress"]
 
 [headings]
 requirement = [
@@ -96,7 +72,6 @@ advantage = [
     "kunskaper i svenska är en fördel", "meriterande med svenska",
     "Swedish is a plus", "Swedish is an advantage", "Swedish is preferred",
 ]
-
 
 [work_permit]
 no_sponsorship = [
@@ -144,17 +119,3 @@ nav = [
 [date]
 pattern = "{day} {month} {year}"
 months = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"]
-
-# The extra month forms (abbreviations; the full names are [date].months), for reading a date written out.
-[months]
-"jan." = 1
-"feb." = 2
-"apr." = 4
-"jun." = 6
-"jul." = 7
-"aug." = 8
-"sep." = 9
-"sept." = 9
-"okt." = 10
-"nov." = 11
-"dec." = 12

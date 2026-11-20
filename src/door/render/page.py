@@ -10,7 +10,7 @@ from pathlib import Path
 
 from door import i18n
 from door.core import photo as photo_mod
-from door.core import templates, utils, workspace
+from door.core import cv_read, templates, utils, workspace
 from door.render import html_doc, html_pdf, typography
 
 # The CV photo (#605): the tailor writes `<<photo>>` where it wants one. After the guard has read the body, `compile`
@@ -49,7 +49,7 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-_CONTACT = re.compile(r'<span class="(%s)">' % "|".join(i18n.CONTACT_KINDS))
+_CONTACT = re.compile(r'<span class="(%s)">' % "|".join(cv_read.CONTACT_KINDS))
 
 
 def _with_labels(body: str, labels: dict[str, str]) -> str:
@@ -102,6 +102,7 @@ def print_page(body: str, template: str, assets_of: Path, lang: str, folder: Pat
     return pdf, placed, picture
 
 
+NO_KINDS_HINT = "prepare it again or revise it"
 _H2 = re.compile(r"(?=<h2[\s>])")
 
 
@@ -109,20 +110,29 @@ def place_columns(body: str, columns: templates.Columns | None) -> str:
     """The CV `body` with its sections in the template's two columns (#147): what comes before the first `<h2>` after
     the header (the notes, the photo, the whole header: an `<h2>` inside it is the header's, #242) as it is, then
     `<div class="main">` and `<div class="side">` (`html_doc.columns` reads them back), each section in the order the
-    body has it. A section goes to the side when its heading is, whole and without case, a title of one of
-    the template's ``columns.side`` kinds in any supported language (a CV's headings are in its own language, whatever
-    the ad's, #227), or is, whole and without case, one of its ``columns.headings``; any other goes to the main column.
-    `body` itself when the template has no side column."""
+    body has it. A section goes to the side when the kind class of its `<h2>` (`kind-skills`, written by the tailor
+    by what the section holds, #431) is one of the template's ``columns.side`` kinds, or its heading is, whole and
+    without case, one of its ``columns.headings``; any other goes to the main column. `body` itself when the template
+    has no side column.
+
+    Raises:
+        ValueError: the template has side kinds and a section has no kind class (a CV prepared before sections had one).
+    """
     if columns is None or not (columns.side or columns.headings):
         return body
     cut = body.find("</header>") + len("</header>") if "</header>" in body else 0
     first, *sections = _H2.split(body[cut:])
     first = body[:cut] + first
+    named_headings = {h.casefold() for h in columns.headings}
     main, side = [], []
     for section in sections:
         heading = (html_doc.headings(section) or [""])[0]
-        named = heading.casefold() in {h.casefold() for h in columns.headings}
-        (side if named or i18n.cv_section_kind(heading, columns.side) else main).append(section)
+        kind = (html_doc.kinds(section) or [None])[0]
+        if kind is None and columns.side and heading.casefold() not in named_headings:
+            raise ValueError(f"this CV's section {heading!r} has no kind, so the style's columns cannot place it: "
+                             + NO_KINDS_HINT)
+        named = heading.casefold() in named_headings
+        (side if named or kind in columns.side else main).append(section)
     return f'{first}{html_doc.MAIN}{"".join(main)}</div>{html_doc.SIDE}{"".join(side)}</div>'
 
 

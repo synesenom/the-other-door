@@ -33,9 +33,7 @@ _RULES = (
     "Propose additions that are directly evidenced in the fetched or given text (quote or paraphrase "
     "accurately; never invent, never embellish), that are not already in the CV, and that "
     "are relevant to the role targets. Each proposal has `section` (the `##` section of the "
-    "CV it belongs in, its title as written there: an existing one when it fits, otherwise a new short heading; a new "
-    "heading of one of the kinds " + cv_sections.KINDS_TEXT + " ends with its kind as a comment, "
-    "`Technical Skills <!-- kind: skills -->`; an existing one too when it is of such a kind), `text` "
+    "CV it belongs in, its title as written there: an existing one when it fits, otherwise a new short heading), `text` "
     "(one bullet ready to paste, without the leading dash) and `source` (the URL it came "
     "from, or the CV file's file name). List every URL you could not fetch under `unreachable`. Answer with the JSON only."
 )
@@ -87,7 +85,7 @@ def _clean_proposals(raw, cv_text: str) -> list[dict]:
     for item in raw:
         if not isinstance(item, dict):
             continue
-        section, kind = cv_sections.heading("## " + " ".join(str(item.get("section") or "").lstrip("#").split()))
+        section = cv_sections.heading("## " + " ".join(str(item.get("section") or "").lstrip("#").split()))[0]
         text = _BULLET_RE.sub("", " ".join(str(item.get("text") or "").split()))
         if not section or not text:
             continue
@@ -95,21 +93,19 @@ def _clean_proposals(raw, cv_text: str) -> list[dict]:
         if key in seen or _in_cv(text, cv_words, cv_lines):
             continue
         seen.add(key)
-        cleaned.append({"n": len(cleaned) + 1, "section": section, "text": text, "source": str(item.get("source") or ""), **({"kind": kind} if kind else {})})
+        cleaned.append({"n": len(cleaned) + 1, "section": section, "text": text, "source": str(item.get("source") or "")})
     return cleaned
 
 
-def _insert(cv_text: str, section: str, text: str, kind: str | None = None) -> str:
-    """`cv_text` with `- text` added under `## section` (its title, whatever kind it records): after the section's last
-    bullet, after its prose when it has none, or in a new section at the end; a heading with no recorded kind gets `kind`."""
+def _insert(cv_text: str, section: str, text: str) -> str:
+    """`cv_text` with `- text` added under `## section` (its title): after the section's last
+    bullet, after its prose when it has none, or in a new section at the end."""
     lines = cv_text.split("\n")
     start = next((i for i, line in enumerate(lines) if line.startswith("## ") and cv_sections.heading(line)[0].lower() == section.lower()), None)
     bullet = f"- {text}"
     if start is None:
         body = cv_text.rstrip("\n")
-        return (f"{body}\n\n" if body else "") + f"## {section}{cv_sections.mark(kind)}\n\n{bullet}\n"
-    if kind and cv_sections.heading(lines[start])[1] is None:
-        lines[start] = lines[start].rstrip() + cv_sections.mark(kind)  # the kind an older CV's heading never recorded
+        return (f"{body}\n\n" if body else "") + f"## {section}\n\n{bullet}\n"
     end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
     last_bullet = next((i for i in range(end - 1, start, -1) if _BULLET_RE.match(lines[i])), None)
     if last_bullet is not None:
@@ -187,7 +183,7 @@ def _apply(apply, all_, *, profile_dir) -> dict:
 
     new_text = cv_text
     for proposal in chosen:
-        new_text = _insert(new_text, proposal["section"], proposal["text"], proposal.get("kind"))
+        new_text = _insert(new_text, proposal["section"], proposal["text"])
     backup = common._write_with_backup(cv_path, new_text)
     proposals_path.unlink()
     return {"outcome": "applied", "added": chosen, "cv_path": str(cv_path), "backup": str(backup) if backup else None}

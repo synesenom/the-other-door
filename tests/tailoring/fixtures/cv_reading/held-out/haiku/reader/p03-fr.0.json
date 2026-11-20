@@ -1,0 +1,147 @@
+{
+ "key": "ca87417d685b",
+ "answer": {
+  "name": "Théo Lacroix",
+  "email": "theo.lacroix@example.com",
+  "city": "Rennes",
+  "country": "fr",
+  "languages": [
+   {
+    "language": "Français",
+    "code": "fr",
+    "level": "native"
+   },
+   {
+    "language": "Anglais",
+    "code": "en",
+    "level": "fluent"
+   },
+   {
+    "language": "Allemand",
+    "code": "de",
+    "level": "conversational"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profil",
+    "kind": "summary"
+   },
+   {
+    "heading": "Emplois",
+    "kind": "experience"
+   },
+   {
+    "heading": "Formation",
+    "kind": "education"
+   },
+   {
+    "heading": "Aptitudes",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Langues",
+    "kind": "languages"
+   },
+   {
+    "heading": "Centres d'intérêt",
+    "kind": "interests"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Tél",
+    "value": "+33 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Courriel",
+    "value": "theo.lacroix@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Site",
+    "value": "example.com/theo.lacroix"
+   },
+   {
+    "kind": "location",
+    "label": "Lieu",
+    "value": "Rennes"
+   }
+  ],
+  "skills": [
+   "Visio",
+   "SharePoint",
+   "Alteryx",
+   "Trello",
+   "Notion",
+   "négociation"
+  ],
+  "levels": [
+   {
+    "item": "Français",
+    "level": 5
+   },
+   {
+    "item": "Anglais",
+    "level": 4
+   },
+   {
+    "item": "Allemand",
+    "level": 2
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Directeur des opérations, Saffron Foods (2020-04 – présent)",
+    "role": "Directeur des opérations",
+    "org": "Saffron Foods",
+    "dates": "2020-04 – présent",
+    "place": null,
+    "start_year": 2020,
+    "end_year": null
+   },
+   {
+    "heading": "Analyste senior des opérations, Willow Print (2016-02 – 2020-07)",
+    "role": "Analyste senior des opérations",
+    "org": "Willow Print",
+    "dates": "2016-02 – 2020-07",
+    "place": null,
+    "start_year": 2016,
+    "end_year": 2020
+   },
+   {
+    "heading": "Analyste des opérations, Heron Supply (2013-12 – 2016-05)",
+    "role": "Analyste des opérations",
+    "org": "Heron Supply",
+    "dates": "2013-12 – 2016-05",
+    "place": null,
+    "start_year": 2013,
+    "end_year": 2016
+   },
+   {
+    "heading": "Licence en économie, École d'Essai (2008-04 – 2011-09)",
+    "role": "Licence en économie",
+    "org": "École d'Essai",
+    "dates": "2008-04 – 2011-09",
+    "place": null,
+    "start_year": 2008,
+    "end_year": 2011
+   },
+   {
+    "heading": "Master en gestion, École d'Essai (2011-02 – 2013-07)",
+    "role": "Master en gestion",
+    "org": "École d'Essai",
+    "dates": "2011-02 – 2013-07",
+    "place": null,
+    "start_year": 2011,
+    "end_year": 2013
+   }
+  ]
+ }
+}

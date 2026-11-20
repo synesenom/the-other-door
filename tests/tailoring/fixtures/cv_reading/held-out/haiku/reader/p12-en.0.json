@@ -1,0 +1,156 @@
+{
+ "key": "cf80f929ab95",
+ "answer": {
+  "name": "Nathan Lindgren",
+  "email": "nathan.lindgren@example.com",
+  "city": "Norwich",
+  "country": "gb",
+  "languages": [
+   {
+    "language": "English",
+    "code": "en",
+    "level": "native"
+   },
+   {
+    "language": "French",
+    "code": "fr",
+    "level": "working"
+   },
+   {
+    "language": "German",
+    "code": "de",
+    "level": "conversational"
+   }
+  ],
+  "sections": [
+   {
+    "heading": "Profile",
+    "kind": "summary"
+   },
+   {
+    "heading": "Work Experience",
+    "kind": "experience"
+   },
+   {
+    "heading": "Education",
+    "kind": "education"
+   },
+   {
+    "heading": "Skills",
+    "kind": "skills"
+   },
+   {
+    "heading": "Certifications",
+    "kind": "certifications"
+   },
+   {
+    "heading": "Languages",
+    "kind": "languages"
+   },
+   {
+    "heading": "Interests",
+    "kind": "interests"
+   },
+   {
+    "heading": "Volunteering",
+    "kind": "other"
+   }
+  ],
+  "contacts": [
+   {
+    "kind": "phone",
+    "label": "Phone",
+    "value": "+44 00 00 00 00"
+   },
+   {
+    "kind": "email",
+    "label": "Email",
+    "value": "nathan.lindgren@example.com"
+   },
+   {
+    "kind": "web",
+    "label": "Web",
+    "value": "example.com/nathan.lindgren"
+   },
+   {
+    "kind": "linkedin",
+    "label": "LinkedIn",
+    "value": "https://www.linkedin.com/in/nathan.lindgren"
+   },
+   {
+    "kind": "location",
+    "label": "Location",
+    "value": "Norwich"
+   }
+  ],
+  "skills": [
+   "SharePoint",
+   "Alteryx",
+   "Trello",
+   "Notion",
+   "SAP",
+   "negotiation"
+  ],
+  "levels": [
+   {
+    "item": "English",
+    "level": 5
+   },
+   {
+    "item": "French",
+    "level": 3
+   },
+   {
+    "item": "German",
+    "level": 2
+   }
+  ],
+  "entries": [
+   {
+    "heading": "Head of Operations, Granite Logistics (2017-01 – present)",
+    "role": "Head of Operations",
+    "org": "Granite Logistics",
+    "dates": "2017-01 – present",
+    "place": null,
+    "start_year": 2017,
+    "end_year": null
+   },
+   {
+    "heading": "Senior Operations Analyst, Copper Mills (2013-11 – 2017-04)",
+    "role": "Senior Operations Analyst",
+    "org": "Copper Mills",
+    "dates": "2013-11 – 2017-04",
+    "place": null,
+    "start_year": 2013,
+    "end_year": 2017
+   },
+   {
+    "heading": "Operations Analyst, Summit Tools (2010-09 – 2013-02)",
+    "role": "Operations Analyst",
+    "org": "Summit Tools",
+    "dates": "2010-09 – 2013-02",
+    "place": null,
+    "start_year": 2010,
+    "end_year": 2013
+   },
+   {
+    "heading": "BA in Economics, Sample College (2005-01 – 2008-06)",
+    "role": "BA in Economics",
+    "org": "Sample College",
+    "dates": "2005-01 – 2008-06",
+    "place": null,
+    "start_year": 2005,
+    "end_year": 2008
+   },
+   {
+    "heading": "MA in Business Administration, Sample College (2008-11 – 2010-04)",
+    "role": "MA in Business Administration",
+    "org": "Sample College",
+    "dates": "2008-11 – 2010-04",
+    "place": null,
+    "start_year": 2008,
+    "end_year": 2010
+   }
+  ]
+ }
+}
