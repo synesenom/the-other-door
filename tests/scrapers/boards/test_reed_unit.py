@@ -52,3 +52,7 @@ def test_description_none_without_a_job_posting():
     assert reed._parse_description("<html><body>nothing</body></html>") is None
     html = '<script type="application/ld+json">{"@type":"BreadcrumbList"}</script>'
     assert reed._parse_description(html) is None
+
+
+def test_parse_date_is_naive_even_for_a_z_date():
+    assert reed._parse_date("2026-11-20T10:00:00Z").tzinfo is None
