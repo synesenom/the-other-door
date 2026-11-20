@@ -200,6 +200,15 @@ def test_a_cached_answer_that_no_longer_holds_is_asked_again(asked, tmp_path):
     assert len(asked["calls"]) == 2
 
 
+def test_a_file_written_before_the_shared_helper_is_a_hit(asked, tmp_path):
+    import hashlib
+    key = hashlib.sha256(cv_read._normalise(MD).encode("utf-8")).hexdigest()
+    (tmp_path / "cache").mkdir()
+    (tmp_path / "cache" / f"{key}.json").write_text(
+        json.dumps({"version": cv_read.PROMPT_VERSION, "answer": READING}), encoding="utf-8")
+    assert cv_read.read(MD)["email"] == "mette.berg@example.com" and asked["calls"] == []
+
+
 def test_an_empty_cv_is_read_without_a_call(asked):
     reading = cv_read.read("  \n")
     assert reading["sections"] == [] and reading["skills"] == [] and asked["calls"] == []

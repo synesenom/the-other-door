@@ -16,7 +16,7 @@ import json
 import re
 from pathlib import Path
 
-from door.core import claude_cli, problem_log, templates, utils, workspace
+from door.core import ask_cached, claude_cli, templates, workspace
 from door.style import style_extract
 
 PROMPT_VERSION = 3  # bump with the prompt, the schema or `rows`: a cached answer of another version is asked again
@@ -304,32 +304,6 @@ def _cache_dir() -> Path:
     return workspace.HOME / ".style" / "structure"
 
 
-def _cache_file(pdf_path: Path) -> Path:
-    return _cache_dir() / f"{hashlib.sha256(Path(pdf_path).read_bytes()).hexdigest()}.json"
-
-
-def _read_cache(file: Path, digest: str) -> dict | None:
-    """The cached answer of this `PROMPT_VERSION` that was made for rows of this `digest`, else None."""
-    try:
-        data = json.loads(file.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if (isinstance(data, dict) and data.get("version") == PROMPT_VERSION and data.get("rows") == digest
-            and isinstance(data.get("answer"), dict)):
-        return data["answer"]
-    return None
-
-
-def _write_cache(file: Path, digest: str, answer: dict) -> None:
-    utils.write_json_atomic(file, {"version": PROMPT_VERSION, "rows": digest, "answer": answer}, indent=None)
-    try:
-        stale = sorted(file.parent.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True)[_KEEP_CACHED:]
-        for old in stale:
-            old.unlink(missing_ok=True)
-    except OSError:
-        pass  # the cache is a convenience: a file that will not go is left
-
-
 def _ask(text: str, feature: str = "style") -> dict:
     """The one model call: Haiku at low effort with no MCP servers (their tool lists would be thousands of tokens)."""
     return claude_cli.ask(SYSTEM, text, model="haiku", feature=feature, schema=SCHEMA, effort="low",
@@ -352,30 +326,11 @@ def structure_for(pdf_path, feature: str = "style") -> dict | None:
     if not style_extract.scan_verdict(pages)["copyable"]:
         return None
     text, listed = rows(pages)
-    file = _cache_file(pdf_path)
-    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    if (cached := _read_cache(file, digest)) is not None:
-        try:
-            return check(cached, listed, pages)
-        except StructureError:
-            file.unlink(missing_ok=True)
-    try:
-        for attempt in (1, 2):  # the model's answers vary: one that does not hold is asked once more
-            try:
-                answer = _ask(text, feature)
-            except claude_cli.ClaudeError as exc:
-                raise StructureError.unreached(exc) from None
-            try:
-                structure = check(answer, listed, pages)
-                break
-            except StructureError:
-                if attempt == 2:
-                    raise
-    except StructureError as exc:
-        problem_log.failure("cv structure", exc.detail)
-        raise
-    _write_cache(file, digest, answer)
-    return structure
+    return ask_cached.cached_answer(
+        key=hashlib.sha256(pdf_path.read_bytes()).hexdigest(), version=PROMPT_VERSION,
+        tag=hashlib.sha256(text.encode("utf-8")).hexdigest(), ask=lambda: _ask(text, feature),
+        check=lambda answer: check(answer, listed, pages), error=StructureError, unreached=StructureError.unreached,
+        label="cv structure", store=ask_cached.DirStore(_cache_dir(), _KEEP_CACHED))
 
 
 def extract(pdf_path) -> dict:
