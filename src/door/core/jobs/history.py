@@ -128,15 +128,11 @@ class HistoryStore:
         recorded under a different ``source`` are never included.
         """
         result: set[str] = set()
-        prefix = f"{source}."
         for job_id, entry in self._data.items():
             if entry.get("source") != source:
                 continue
             if not self.is_new(job_id, source, recheck_after_days, now=now):
-                platform_id = entry.get("platform_id")
-                if platform_id is None:  # a legacy entry: the key is ``<source>.<platform_id>``
-                    platform_id = job_id[len(prefix):] if job_id.startswith(prefix) else job_id
-                result.add(platform_id)
+                result.add(entry["platform_id"])
         return result
 
     def record(

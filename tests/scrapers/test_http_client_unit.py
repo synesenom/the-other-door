@@ -596,7 +596,7 @@ def test_budget_is_per_thread():
 
     seen = []
     with http_client.budget(5):
-        t = threading.Thread(target=lambda: seen.append(http_client.current_deadline()))
+        t = threading.Thread(target=lambda: seen.append(getattr(http_client._local, "budget", None)))
         t.start()
         t.join()
     assert seen == [None]

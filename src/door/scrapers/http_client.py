@@ -88,12 +88,6 @@ def budget(seconds: float):
         _local.budget = previous
 
 
-def current_deadline() -> float | None:
-    """The deadline of this thread's `budget()`, or None."""
-    current = getattr(_local, "budget", None)
-    return current.deadline if current is not None else None
-
-
 def _wait(seconds: float) -> None:
     """Sleep *seconds* (at most `MAX_PAUSE_S`), or raise `BudgetExceeded` when this thread's budget has less left."""
     seconds = min(seconds, MAX_PAUSE_S)

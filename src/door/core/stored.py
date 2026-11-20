@@ -59,7 +59,6 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("jobs/scrape_state.json", LEDGER, "door.core.jobs.freshness: {site: {last_success, pushback_at?}}"),
     Stored("jobs/candidates.json", LEDGER, "door.core.jobs.candidates: {company_key: {name, links, titles, sources, first_seen, last_seen}}"),
     Stored("jobs/discovery/*.json", LEDGER, "door.core.jobs.discovery_state: one file per discovery source"),
-    Stored("jobs/linkedin_discovery.json", LEDGER, "the LinkedIn discovery state an older version kept (copied to jobs/discovery/ on load)"),
     Stored("jobs/skill_aliases.json", LEDGER, "door.core.jobs.skill_aliases: {variant: canonical | null}"),
     Stored("jobs/salary.json", LEDGER, "door.core.salary"),
     Stored("jobs/.tailor/**", TRANSIENT, "door.commands.prepare: the posting copy the tailor reads (posting.json) and the agent definitions handed to claude -p (agents.json), one folder per job", "removed when the tailor ends"),

@@ -9,7 +9,7 @@ Shape (``version`` 1)::
        "reason": null,                                          # why it is not followed
        "found_via": "manual",                                   # | a board, a discovery source, "ai" (found_via_values())
        "evidence": "HR-Manager feed bec lists open jobs",
-       "aliases": [],                                           # other names of the employer (formerly "also")
+       "aliases": [],                                           # other names of the employer
        "first_seen": "2026-01-02T03:04:05+00:00", "last_checked": "2026-01-02T03:04:05+00:00",
        "last_relevant": null}                                   # set by collect and match; see `retire_idle`
     ]}
@@ -138,17 +138,6 @@ class Company(BaseModel):
             det = ats_detect.from_url(feed["id"] if "://" in feed["id"] else f"https://{feed['id']}")
             if det is not None and det.platform in _UPGRADED_PLATFORMS and det.entry:
                 data = {**data, "feed": {"platform": det.platform, "id": det.entry}}
-        return data
-
-    @model_validator(mode="before")
-    @classmethod
-    def _migrate_also(cls, data):
-        """Entries written before #314 call the aliases ``also``; fold them into ``aliases``."""
-        if isinstance(data, dict) and "also" in data:
-            data = dict(data)
-            old = data.pop("also")
-            if isinstance(old, list) and isinstance(data.get("aliases", []), list):
-                data["aliases"] = _dedupe([*data.get("aliases", []), *old])
         return data
 
     @field_validator("name")

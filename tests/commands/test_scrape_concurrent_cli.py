@@ -101,7 +101,7 @@ def test_a_sites_errors_never_change_another_sites_outcome(cli_env, monkeypatch)
     assert (by_site["lever"]["outcome"], by_site["lever"]["errors"]) == ("ok", [])
 
 
-def test_one_worker_runs_the_sites_one_after_another_on_the_calling_thread(cli_env, monkeypatch):
+def test_one_worker_runs_the_sites_one_after_another_on_one_worker(cli_env, monkeypatch):
     _configure(cli_env, 1)
     log, threads = [], set()
 
@@ -116,7 +116,7 @@ def test_one_worker_runs_the_sites_one_after_another_on_the_calling_thread(cli_e
     result = _run(cli_env)
 
     assert log == [f"{s} {step}" for s in _SITES for step in ("start", "end")]
-    assert threads == {threading.current_thread()}
+    assert len(threads) == 1
     assert [e["count"] for e in result["sites"]] == [1, 1, 1]
 
 

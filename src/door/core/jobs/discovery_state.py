@@ -1,7 +1,6 @@
 """State of employer discovery, one file per source: ``jobs/discovery/<source>.json``.
 
-(LinkedIn's was ``jobs/linkedin_discovery.json``; `load` copies it to the new place the first time, and
-leaves the old file alone. The helpers below are generic; the wording speaks of LinkedIn, the first source.)
+(The helpers below are generic; the wording speaks of LinkedIn, the first source.)
 
 
 ``{"last_run": iso, "pushback_at": iso?, "seen": {company_lower: {"outcome": "easy_apply", "at": iso}},
@@ -35,7 +34,6 @@ from door.core import utils
 from door.core.jobs import freshness
 
 DIR = "discovery"
-LEGACY = {"linkedin": "linkedin_discovery.json"}  # a source's file before the per-source layout
 REST_HOURS = 24
 RETRY_DAYS = 90
 _OVERLAP = timedelta(days=1)
@@ -64,14 +62,9 @@ def _read(file: Path) -> dict | None:
 
 
 def load(jobs_dir: Path, source: str) -> dict:
-    """The *source*'s state, or an empty one when the file is missing or unreadable. A source with a
-    legacy file and no new one is migrated by copy (the old file stays)."""
+    """The *source*'s state, or an empty one when the file is missing or unreadable."""
     new = path(jobs_dir, source)
     data = _read(new) if new.exists() else None
-    if data is None and not new.exists() and source in LEGACY:
-        data = _read(Path(jobs_dir) / LEGACY[source])
-        if data is not None:
-            utils.write_json_atomic(new, data)
     state = data if data is not None else {}
     if not isinstance(state.get("seen"), dict):
         state["seen"] = {}

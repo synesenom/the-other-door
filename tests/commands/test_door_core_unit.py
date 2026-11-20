@@ -7,17 +7,18 @@ return structured data and raise ordinary exceptions instead of calling
 never corrupts an MCP stdio JSON-RPC stream.
 """
 
-import builtins
 import json
 import sys
 import types
 from datetime import date
+from pathlib import Path
 
 import pytest
 
 from door.commands import _common as common
 from door.commands import compile as compile_cmd
 from door.commands import scrape as scrape_cmd
+from door.matching import condense, dedup, prefilter, prescreen
 from profile_utils import write_config
 
 
@@ -32,6 +33,14 @@ def _scrape_env(tmp_path, sites=("jobindex",)):
     write_config(profile_dir, profile_dir_config)
     jobs_dir = tmp_path / "jobs"
     return profile_dir, jobs_dir
+
+
+def _scrape_and_pass(profile_dir, jobs_dir, sites=("jobindex",)):
+    """`_scrape_core`, then the passes the match step runs; both blocks in one dict."""
+    result = scrape_cmd._scrape_core(list(sites), jobs_dir=jobs_dir, profile_dir=profile_dir)
+    config = json.loads((profile_dir / "config.json").read_text())
+    result.update(scrape_cmd._scrape_passes(Path(result["candidates_dir"]), config, profile_dir))
+    return result
 
 
 # --------------------------------------------------------------------------- #
@@ -140,8 +149,6 @@ def test_scrape_core_happy_path_writes_postings_and_returns_counts(tmp_path, mon
     assert result["sites"][0].pop("since")  # first scrape: the max_age_days cutoff
     assert result["sites"] == [{"site": "jobindex", "outcome": "ok", "count": 1, "stale": 0, "dir": str(out_dir), "errors": []}]
     assert result["candidates_dir"] == str(jobs_dir / "postings" / run_date)
-    # matching/prefilter and matching/dedup are implemented for real here.
-    assert result["prefilter"]["available"] is True
 
 
 def test_scrape_core_per_site_outcomes_preserved_in_order(tmp_path, monkeypatch):
@@ -163,15 +170,6 @@ def test_scrape_core_per_site_outcomes_preserved_in_order(tmp_path, monkeypatch)
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    real_import = builtins.__import__
-
-    def fake_import(name, *args, **kwargs):
-        if name == "door.scrapers.feeds.lever":
-            raise ImportError("simulated missing scraper")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-
     import door.scrapers.boards.thehub as th
 
     def boom(config, **kwargs):
@@ -180,12 +178,12 @@ def test_scrape_core_per_site_outcomes_preserved_in_order(tmp_path, monkeypatch)
     monkeypatch.setattr(th, "scrape", boom)
 
     result = scrape_cmd._scrape_core(
-        ["jobindex", "lever", "thehub"], jobs_dir=jobs_dir, profile_dir=profile_dir,
+        ["jobindex", "thehub"], jobs_dir=jobs_dir, profile_dir=profile_dir,
     )
 
     outcomes = [(entry["site"], entry["outcome"]) for entry in result["sites"]]
-    assert outcomes == [("jobindex", "ok"), ("lever", "not_implemented"), ("thehub", "error")]
-    assert result["sites"][2]["error"] == "kaboom"
+    assert outcomes == [("jobindex", "ok"), ("thehub", "error")]
+    assert result["sites"][1]["error"] == "kaboom"
 
 
 def test_scrape_core_liveness_absent_is_none_and_not_called(tmp_path, monkeypatch):
@@ -207,58 +205,6 @@ def test_scrape_core_liveness_absent_is_none_and_not_called(tmp_path, monkeypatc
     assert result["liveness"] is None
 
 
-def test_scrape_core_prefilter_unavailable_reports_false(tmp_path, monkeypatch):
-    profile_dir, jobs_dir = _scrape_env(tmp_path)
-
-    import door.scrapers.boards.jobindex as ji
-    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
-    monkeypatch.delattr(ji, "iter_scrape", raising=False)
-
-    real_import = builtins.__import__
-
-    def fake_import(name, *args, **kwargs):
-        if name == "door.matching.prefilter":
-            raise ImportError("simulated missing module")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-
-    dedup_mod = types.ModuleType("door.matching.dedup")
-    dedup_mod.dedup = lambda paths, config, aliases=None, earlier=None: paths
-    monkeypatch.setitem(sys.modules, "door.matching.dedup", dedup_mod)
-
-    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=jobs_dir, profile_dir=profile_dir)
-
-    assert result["prefilter"] == {"available": False}
-    assert result["surviving_paths"] == []
-
-
-def test_scrape_core_dedup_unavailable_reports_false(tmp_path, monkeypatch):
-    profile_dir, jobs_dir = _scrape_env(tmp_path)
-
-    import door.scrapers.boards.jobindex as ji
-    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
-    monkeypatch.delattr(ji, "iter_scrape", raising=False)
-
-    pf_mod = types.ModuleType("door.matching.prefilter")
-    pf_mod.prefilter = lambda candidates_dir, config: ["a", "b"]
-    monkeypatch.setitem(sys.modules, "door.matching.prefilter", pf_mod)
-
-    real_import = builtins.__import__
-
-    def fake_import(name, *args, **kwargs):
-        if name == "door.matching.dedup":
-            raise ImportError("simulated missing module")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-
-    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=jobs_dir, profile_dir=profile_dir)
-
-    assert result["prefilter"] == {"available": True, "survived": 2}
-    assert result["dedup"] == {"available": False}
-
-
 def test_scrape_core_surviving_paths_reflect_dedup_output(tmp_path, monkeypatch):
     profile_dir, jobs_dir = _scrape_env(tmp_path)
 
@@ -266,30 +212,19 @@ def test_scrape_core_surviving_paths_reflect_dedup_output(tmp_path, monkeypatch)
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    pf_mod = types.ModuleType("door.matching.prefilter")
-    pf_mod.prefilter = lambda candidates_dir, config: ["a", "b"]
-    monkeypatch.setitem(sys.modules, "door.matching.prefilter", pf_mod)
-
-    dedup_mod = types.ModuleType("door.matching.dedup")
-    dedup_mod.dedup = lambda paths, config, aliases=None, earlier=None: paths[:1]
-    monkeypatch.setitem(sys.modules, "door.matching.dedup", dedup_mod)
-
+    monkeypatch.setattr(prefilter, "prefilter", lambda candidates_dir, config: ["a", "b"])
+    monkeypatch.setattr(dedup, "dedup", lambda paths, config, aliases=None, earlier=None: paths[:1])
     # "a"/"b" are fake stand-in paths (no real files), so condense/prescreen
     # (which read the surviving JSON files from disk) are stubbed as no-ops
     # here — this test is only about the prefilter -> dedup wiring.
-    condense_mod = types.ModuleType("door.matching.condense")
-    condense_mod.condense_postings = lambda paths, terms, config: {"count": len(paths), "avg_ratio": None}
-    condense_mod.extract_skill_terms = lambda reading, config: set()
-    monkeypatch.setitem(sys.modules, "door.matching.condense", condense_mod)
+    monkeypatch.setattr(condense, "condense_postings", lambda paths, terms, config: {"count": len(paths), "avg_ratio": None})
+    monkeypatch.setattr(condense, "extract_skill_terms", lambda reading, config: set())
+    monkeypatch.setattr(prescreen, "prescreen", lambda paths, config, terms: paths)
 
-    prescreen_mod = types.ModuleType("door.matching.prescreen")
-    prescreen_mod.prescreen = lambda paths, config, terms: paths
-    monkeypatch.setitem(sys.modules, "door.matching.prescreen", prescreen_mod)
+    result = _scrape_and_pass(profile_dir, jobs_dir)
 
-    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=jobs_dir, profile_dir=profile_dir)
-
-    assert result["prefilter"] == {"available": True, "survived": 2}
-    assert result["dedup"] == {"available": True, "collapsed": 1, "remaining": 1}
+    assert result["prefilter"] == {"survived": 2}
+    assert result["dedup"] == {"collapsed": 1, "remaining": 1}
     assert result["surviving_paths"] == ["a"]
 
 
@@ -307,15 +242,11 @@ def test_scrape_core_dedups_with_the_names_companies_json_holds_for_one_employer
     import door.scrapers.boards.jobindex as ji
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
-    pf_mod = types.ModuleType("door.matching.prefilter")
-    pf_mod.prefilter = lambda candidates_dir, config: []
-    monkeypatch.setitem(sys.modules, "door.matching.prefilter", pf_mod)
+    monkeypatch.setattr(prefilter, "prefilter", lambda candidates_dir, config: [])
     seen = {}
-    dedup_mod = types.ModuleType("door.matching.dedup")
-    dedup_mod.dedup = lambda paths, config, aliases=None, earlier=None: seen.setdefault("aliases", aliases) and paths
-    monkeypatch.setitem(sys.modules, "door.matching.dedup", dedup_mod)
+    monkeypatch.setattr(dedup, "dedup", lambda paths, config, aliases=None, earlier=None: seen.setdefault("aliases", aliases) and paths)
 
-    scrape_cmd._scrape_core(["jobindex"], jobs_dir=jobs_dir, profile_dir=profile_dir)
+    _scrape_and_pass(profile_dir, jobs_dir)
 
     assert seen["aliases"] == [["Flugger", "Flügger group A/S"]]
 
@@ -341,11 +272,9 @@ def test_scrape_core_condense_and_prescreen_run_after_dedup(tmp_path, monkeypatc
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=jobs_dir, profile_dir=profile_dir)
+    result = _scrape_and_pass(profile_dir, jobs_dir)
 
-    assert result["condense"]["available"] is True
     assert result["condense"]["count"] == 1
-    assert result["prescreen"]["available"] is True
     assert result["prescreen"]["scored"] == 1
 
     run_date = date.today().isoformat()
@@ -354,62 +283,6 @@ def test_scrape_core_condense_and_prescreen_run_after_dedup(tmp_path, monkeypatc
     assert data["description_condensed"]
     assert "free lunch" not in data["description_condensed"].lower()
     assert "prescreen_score" in data
-
-
-def test_scrape_core_condense_unavailable_reports_false(tmp_path, monkeypatch):
-    profile_dir, jobs_dir = _scrape_env(tmp_path)
-
-    import door.scrapers.boards.jobindex as ji
-    posting = {
-        "id": "jobindex-acme-x", "title": "X", "company": "Acme", "location": "Copenhagen",
-        "url": "u", "description": "We are looking for a data scientist who will join our team and work with Python.", "source": "jobindex", "scraped_at": "2026-06-13T00:00:00Z",
-    }
-    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
-    monkeypatch.delattr(ji, "iter_scrape", raising=False)
-
-    real_import = builtins.__import__
-
-    def fake_import(name, *args, **kwargs):
-        if name == "door.matching.condense":
-            raise ImportError("simulated missing module")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-
-    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=jobs_dir, profile_dir=profile_dir)
-
-    assert result["condense"] == {"available": False}
-    # prescreen is an independent optional pass — it still runs even when
-    # condense is unavailable (it just sees no description_condensed field).
-    assert result["prescreen"]["available"] is True
-
-
-def test_scrape_core_prescreen_unavailable_reports_false(tmp_path, monkeypatch):
-    profile_dir, jobs_dir = _scrape_env(tmp_path)
-
-    import door.scrapers.boards.jobindex as ji
-    posting = {
-        "id": "jobindex-acme-x", "title": "X", "company": "Acme", "location": "Copenhagen",
-        "url": "u", "description": "We are looking for a data scientist who will join our team and work with Python.", "source": "jobindex", "scraped_at": "2026-06-13T00:00:00Z",
-    }
-    monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: [posting])
-    monkeypatch.delattr(ji, "iter_scrape", raising=False)
-
-    real_import = builtins.__import__
-
-    def fake_import(name, *args, **kwargs):
-        if name == "door.matching.prescreen":
-            raise ImportError("simulated missing module")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-
-    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=jobs_dir, profile_dir=profile_dir)
-
-    assert result["condense"]["available"] is True
-    assert result["prescreen"] == {"available": False}
-    # surviving_paths still reflects condense's (pass-through) output.
-    assert len(result["surviving_paths"]) == 1
 
 
 def test_scrape_core_prescreen_honours_config_top_n(tmp_path, monkeypatch):
@@ -434,7 +307,7 @@ def test_scrape_core_prescreen_honours_config_top_n(tmp_path, monkeypatch):
     monkeypatch.setattr(ji, "scrape", lambda config, **kwargs: postings)
     monkeypatch.delattr(ji, "iter_scrape", raising=False)
 
-    result = scrape_cmd._scrape_core(["jobindex"], jobs_dir=jobs_dir, profile_dir=profile_dir)
+    result = _scrape_and_pass(profile_dir, jobs_dir)
 
     assert result["prescreen"]["scored"] == 2
     assert result["prescreen"]["kept"] == 1
