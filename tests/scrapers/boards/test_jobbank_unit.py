@@ -112,3 +112,10 @@ def test_location_text(address, expected):
 def test_the_main_ad_wins_over_an_unrelated_posting_later_in_the_graph():
     ld = ('{"@type": "JobPosting", "title": "Main", "@graph": [{"@type": "JobPosting", "title": "Other"}]}')
     assert jobbank._parse_detail(f'<script type="application/ld+json">{ld}</script>')["title"] == "Main"
+
+
+def test_parse_date_is_naive_so_it_compares_with_a_naive_since():
+    parsed = jobbank._parse_date("2026-11-20T10:00:00Z")
+    assert parsed == datetime(2026, 11, 20, 10, 0) and parsed.tzinfo is None
+    assert jobbank._parse_date("2026-11-20T10:00:00+02:00").tzinfo is None
+    assert jobbank._parse_date("") is None and jobbank._parse_date("later") is None

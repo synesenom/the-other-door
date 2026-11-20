@@ -402,6 +402,13 @@ def list_at(data, key: str, what: str) -> list:
     return found
 
 
+def probe_session(headers: dict[str, str] | None = None):
+    """The session of a probe: quick, one try, `PROBE_TIMEOUT_S` a request."""
+    from door.scrapers.http_client import PoliteSession
+
+    return PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=headers)
+
+
 def probe_failure(exc: Exception, ext: str) -> ProbeResult:
     """A probe result for a failed fetch: robots.txt disallowing it is
     ``robots: "disallowed"``, 401/403/429 a wall, anything else unreachable.

@@ -36,7 +36,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
+    FEED_DELAY, JobPosting, probe_session, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
     on_topic, record_answered, record_error, report, run_probe, strip_html, topic_terms,
 )
 
@@ -95,12 +95,8 @@ def _parse_results(html: str) -> tuple[int, list[dict]] | None:
 
 def _parse_date(value) -> datetime | None:
     """A Reed timestamp (naive local time, optionally with a ``Z``) as a naive datetime. Pure."""
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
-    except ValueError:
-        return None
+    parsed = sdk.parse_iso_date(value)
+    return parsed.replace(tzinfo=None) if parsed else None
 
 
 def _card(raw: dict) -> dict | None:
@@ -224,7 +220,7 @@ def probe(config: dict) -> ProbeResult | None:
     keywords = config.get("search_keywords") or config.get("role_targets") or []
     if not keywords:
         return None
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
     url = _search_url(keywords[0], config.get("location", ""), 1)
 
     def fetch() -> str:

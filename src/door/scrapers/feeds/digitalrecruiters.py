@@ -23,7 +23,7 @@ rest wait for the next run (an ad read once is in ``known_ids``).
 Finding a tenant: ``detect_html`` recognises the platform on the page itself (the Nuxt payload names
 ``api.digitalrecruiters.com/careers`` and the tenant's ``domain_name``), so ``follow`` finds it on an employer's
 career page, whatever domain it is on. ``detect_url`` takes only a ``<x>.digitalrecruiters.com`` link. There is
-no JSON endpoint to confirm an entry with, so ``feed_url`` is None and ``alive_url`` is the sitemap.
+no JSON endpoint to confirm an entry with, so it has no ``feed_url`` and ``alive_url`` is the sitemap.
 
 Terms: Digitalrecruiters publishes no terms for a tenant's visitors. Cegid's legal notice
 (https://www.cegid.com/fr/mentions-legales/) covers cegid.com and its brands, and its CGU/CGV are contracts with
@@ -41,7 +41,7 @@ import requests
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, host_of,
+    Detection, JobPosting, NOT_ACCOUNTS, probe_session, PoliteSession, ProbeResult, followed_name, host_of,
     keep_local, split_known, make_job_id, on_topic, parse_iso_date, parts, record_error, record_pushback, report, run_probe,
     scrape_feeds, strip_html, tenant_platform_id, topic_terms, workers,
 )
@@ -269,7 +269,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     entry = entries[0]
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(f"{_base(entry)}/sitemap.xml", headers=_HEADERS).text
@@ -306,16 +306,6 @@ def detect_html(html: str, url: str) -> Detection | None:
     return Detection(_SITE, host, f"{url} is a Digitalrecruiters career site ({host})") if host else None
 
 
-def feed_url(entry: str) -> str | None:
-    """None: the sitemap is XML, not the JSON list the confirmation reads; `alive_url` drops a site that is gone."""
-    return None
-
-
 def alive_url(entry: str) -> str:
     """The first read of a site's feed: the sitemap, which a site that is gone answers with a 4xx."""
     return f"{_base(entry)}/sitemap.xml"
-
-
-def name_probes(slug: str) -> list:
-    """None to try: a tenant is a career-site host, not a company name."""
-    return []

@@ -144,7 +144,7 @@ Each platform's scraper module knows how to recognise its own feed. Its hooks:
 - `detect_url`: a job link or careers URL
 - `detect_cname`: a careers host's DNS alias
 - `detect_html`: a careers page's markup
-- `feed_url`: an account id → its public feed URL
+- `feed_url` (optional): an account id → its public feed URL, only where a JSON endpoint can confirm it
 - `name_probes`: an employer name → URLs to try
 - `tenant_probe(session, slug)` (optional): the tenant named like an employer whose own website was found (`career_sites`: a Workday tenant's robots.txt lists its career sites)
 

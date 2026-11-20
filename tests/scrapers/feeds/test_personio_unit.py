@@ -50,7 +50,6 @@ def test_detect_url_ignores_what_is_no_account(url):
 
 
 def test_the_feed_is_xml_so_it_is_confirmed_by_the_host():
-    assert personio.feed_url("acme") is None
     assert personio.alive_url("acme") == "https://acme.jobs.personio.com/xml"
 
 

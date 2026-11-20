@@ -42,7 +42,7 @@ from urllib.parse import parse_qs, urljoin, urlparse
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, followed_name, make_job_id, record_error,
+    JobPosting, PoliteSession, probe_session, ProbeResult, followed_name, make_job_id, record_error,
     record_pushback, run_probe, scrape_feeds, strip_html, workers,
 )
 from door.scrapers.sdk import Detection, keep_local, parts, split_known, unfollowable
@@ -265,7 +265,7 @@ def probe(config: dict) -> ProbeResult | None:
     p = _entry_parts(entries[0]) if entries else None
     if p is None:
         return None
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def parse(text: str):
         if not _has_list(text):
@@ -327,11 +327,6 @@ def name_page(entry: str, link: str) -> str:
     if p is None or not validator:
         return link
     return _list_url(p, validator[0], "SE")
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the list is HTML behind a validator, so a link's shape is proof enough (``resolve`` reads the script)."""
-    return None
 
 
 def resolve(session: PoliteSession, det: Detection, url: str) -> Detection:

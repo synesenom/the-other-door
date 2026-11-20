@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
+    FEED_DELAY, JobPosting, PoliteSession, probe_session, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
     report, run_probe, strip_html,
 )
 
@@ -120,7 +120,7 @@ def probe(config: dict) -> ProbeResult | None:
     """Side-effect-free health check: the list only, no detail pages. ``None`` for a profile with no keywords."""
     if not (config.get("search_keywords") or config.get("role_targets")):
         return None
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def parse(text: str):
         import json

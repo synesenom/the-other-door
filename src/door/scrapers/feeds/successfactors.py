@@ -33,7 +33,7 @@ from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
     career_site_words, generic_host_labels, word_pattern,
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, host_of,
+    JobPosting, PoliteSession, probe_session, ProbeResult, host_of,
     make_job_id, tenant_platform_id, run_probe, scrape_feeds, strip_html, workers, followed_name,
 )
 from door.scrapers.sdk import keep_local
@@ -293,7 +293,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not hosts:
         return None
     host = hosts[0]
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(f"https://{host}/sitemal.xml", headers=_HEADERS).text
@@ -327,11 +327,6 @@ def detect_url(url: str) -> Detection | None:
     if host.endswith(".jobs2web.com"):
         return Detection("successfactors", host, f"SAP SuccessFactors career site {host}")
     return None
-
-def feed_url(entry: str) -> str | None:
-    """None: a link to the site names the account, no feed check is needed."""
-    return None
-
 
 def detect_cname(host: str, target: str, where: str) -> Detection | None:
     """A career host that is a CNAME for a ``jobs2web.com`` host."""

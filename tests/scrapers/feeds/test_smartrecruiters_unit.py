@@ -73,4 +73,3 @@ def test_a_name_probe_is_the_postings_api():
     (probe,) = smartrecruiters.name_probes("acme")
     assert probe.url == "https://api.smartrecruiters.com/v1/companies/acme/postings"
     assert probe.key == "content" and probe.params == {"limit": 100}
-    assert smartrecruiters.feed_url("acme") is None

@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 import requests
 
 from door.scrapers.sdk import (
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id,
+    JobPosting, PoliteSession, probe_session, ProbeResult, make_job_id,
     run_probe, scrape_feeds, strip_html,
 )
 from door.scrapers.sdk import keep_local, list_at
@@ -190,7 +190,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not aliases:
         return None
     alias = aliases[0]
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(_FEED_URL.format(alias=alias), headers=_HEADERS,
@@ -220,11 +220,6 @@ def detect_url(url: str) -> Detection | None:
         if query.get("cid"):
             return Detection("hr_manager", None, f"HR-Manager customer {query['cid']} ({url}): the link names no alias; "
                                                  "find `customer=` in the employer's job-agent link")
-    return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: an alias in a link is taken as it is (the name and ad-page lookups below confirm theirs)."""
     return None
 
 

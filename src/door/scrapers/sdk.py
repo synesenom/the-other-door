@@ -30,21 +30,22 @@ JSON-LD
     pick rule over it, and no module matches the JSON-LD script by its type itself (taleez, which picks its script by id, is the one exception).
 
 Probing
-    `ProbeResult`, `run_probe`, `probe_failure`.
+    `ProbeResult`, `run_probe`, `probe_failure`, `probe_session`.
 
-Feed helpers
-    `scrape_feeds`, `strip_html`, `parse_iso_date`.
+Feed and parsing helpers
+    `scrape_feeds` (one feed-paced session over a feed's entries), `list_at` (the list under a JSON key of a feed's
+    answer), `strip_html`, `parse_iso_date`.
 
 Feed platforms (the detection half of a per-company feed site, issue #282)
     A feed site's module also says how its feed is found, in plain functions that
     `core/employers/ats_detect.py` (a dispatcher over `ats_detect.PRECEDENCE`) and `commands/companies.py`
-    call; none is required except the first two:
+    call; only `detect_url` is required:
     `detect_url(url) -> Detection | None` (a careers or job link on the platform, with the entry
     it names, or `entry=None` when the link names no account),
-    `feed_url(entry) -> str | None` (the endpoint that confirms a detected entry by listing jobs;
-    `None` when the link's shape is proof enough) with `FEED_KEY` (the JSON key the list is under),
+    `feed_url(entry) -> str | None` (only where a JSON endpoint confirms a detected entry by listing jobs, None
+    for an entry with no such endpoint, as flatchr's custom host; a platform whose link's shape is proof enough defines none) with `FEED_KEY` (the JSON key the list is under),
     `detect_cname(host, target, where) -> Detection | None` (a CNAME target, `where` the evidence text), `detect_html(html, url) -> Detection | None`
-    (page signatures), `name_probes(slug) -> list[Probe]` (the public endpoints to try for a
+    (page signatures), `name_probes(slug) -> list[Probe]` (optional: the public endpoints to try for a
     company name), and `resolve(...)` for a platform that needs more than a link.
     `resolve(session, det, url) -> Detection` reads further after a detection (a link into an inactive site, a
     front end whose pages name the system behind it); a platform that cannot be followed but whose link names the employer
@@ -92,7 +93,7 @@ from door.core.employers.ats_detect import Detection
 from door.core.models import JobPosting, make_job_id, normalize_platform_id, tenant_platform_id
 from door.matching import locality, prefilter, title_fit
 from door.scrapers import (
-    PROBE_TIMEOUT_S, ProbeResult, job_postings, list_at, log_keyword_results, parse_iso_date, probe_failure, record_entry_error,
+    PROBE_TIMEOUT_S, ProbeResult, job_postings, list_at, log_keyword_results, parse_iso_date, probe_failure, probe_session, record_entry_error,
     Refused, get_page, is_challenge, refusal, stop_for_run, record_answered, record_error, record_non_local, record_pushback, report, run_probe, scrape_feeds, strip_html,
     tracked, wall_page,
 )
@@ -115,7 +116,7 @@ __all__ = [
     "JobPosting", "make_job_id", "normalize_platform_id", "tenant_platform_id", "PoliteSession", "USER_AGENT", "RobotsBlocked", "FEED_DELAY", "PROBE_TIMEOUT_S",
     "report", "record_error", "record_entry_error", "record_pushback", "record_answered", "record_non_local", "tracked", "log_keyword_results",
     "wall_page", "Refused", "is_challenge", "get_page", "refusal", "stop_for_run",
-    "ProbeResult", "run_probe", "probe_failure", "scrape_feeds", "list_at", "strip_html", "parse_iso_date", "job_postings",
+    "ProbeResult", "run_probe", "probe_failure", "probe_session", "scrape_feeds", "list_at", "strip_html", "parse_iso_date", "job_postings",
     "host_of", "map_by_group", "workers",
     "on_topic", "topic_terms", "topic_words", "keywords", "squash", "name_pattern",
     "location_filter", "split_urls", "keep_local", "split_known", "is_remote", "local_names", "country_is_non_local",

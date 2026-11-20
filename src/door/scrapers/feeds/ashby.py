@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id, parse_iso_date, run_probe,
+    JobPosting, PoliteSession, probe_session, ProbeResult, make_job_id, parse_iso_date, run_probe,
     scrape_feeds, followed_name,
 )
 from door.scrapers.sdk import keep_local, list_at
@@ -113,7 +113,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not boards:
         return None
     board = boards[0]
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(_BOARD_URL.format(board=board), headers=_HEADERS).text
@@ -135,11 +135,6 @@ def detect_url(url: str) -> Detection | None:
         return None
     board = first(path)
     return Detection("ashby", board, f"Ashby board link {url}") if board else None
-
-def feed_url(entry: str) -> str | None:
-    """None: a link to the board names the account, no feed check is needed."""
-    return None
-
 
 def name_probes(slug: str) -> list[Probe]:
     """The public job-board API to try for a company name's *slug*."""

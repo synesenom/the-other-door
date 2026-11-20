@@ -27,7 +27,6 @@ def test_the_feed_is_the_platforms_own_data_feed():
     assert eploy.datafeed_url("https://Portal.careers.turing.ac.uk/vacancies/") == \
         "https://portal.careers.turing.ac.uk/feeds/datafeed.ashx"
     assert eploy.alive_url("vitalityweb.eploy.net") == eploy.datafeed_url("vitalityweb.eploy.net")
-    assert eploy.feed_url("vitalityweb.eploy.net") is None   # RSS, not the JSON list `companies add` confirms by
 
 
 @pytest.mark.parametrize("url, host", [

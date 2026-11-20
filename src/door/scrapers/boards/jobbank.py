@@ -34,7 +34,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, keep_local, log_keyword_results,
+    FEED_DELAY, JobPosting, probe_session, PoliteSession, ProbeResult, keep_local, log_keyword_results,
     make_job_id, on_topic, record_answered, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
 )
 
@@ -126,12 +126,8 @@ def _location_text(address) -> str:
 
 
 def _parse_date(value) -> datetime | None:
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
-    except ValueError:
-        return None
+    parsed = sdk.parse_iso_date(value)
+    return parsed.replace(tzinfo=None) if parsed else None
 
 
 def _parse_detail(html: str) -> dict | None:
@@ -250,7 +246,7 @@ def probe(config: dict) -> ProbeResult | None:
     keywords = config.get("search_keywords") or config.get("role_targets") or []
     if not keywords:
         return None
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
     url = _search_url(keywords[0], 1)
 
     def fetch() -> str:

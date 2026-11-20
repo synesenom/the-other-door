@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 import requests
 
 from door.scrapers.sdk import (
-    NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, Probe, ProbeResult, RobotsBlocked,
+    NOT_ACCOUNTS, Detection, JobPosting, probe_session, PoliteSession, Probe, ProbeResult, RobotsBlocked,
     followed_name, keep_local, make_job_id, parse_iso_date, parts, record_pushback, run_probe, scrape_feeds,
     strip_html,
 )
@@ -154,7 +154,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     slug = _slug(entries[0])
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(feed_url(slug or entries[0]), headers=_HEADERS).text

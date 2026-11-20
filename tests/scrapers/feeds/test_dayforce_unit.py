@@ -50,4 +50,3 @@ def test_a_link_without_a_portal_is_not_a_feed():
     assert dayforce.detect_url("https://jobs.dayforcehcm.com/en-US") is None
     assert dayforce.detect_url("https://jobs.dayforcehcm.com/") is None
     assert dayforce.detect_url("https://example.com/en-US/natus/PORTAL") is None
-    assert dayforce.feed_url("natus/PORTAL") is None

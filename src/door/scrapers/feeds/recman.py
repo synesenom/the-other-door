@@ -35,7 +35,7 @@ import requests
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    NOT_ACCOUNTS, Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
+    NOT_ACCOUNTS, Detection, JobPosting, probe_session, PoliteSession, ProbeResult, RobotsBlocked, followed_name,
     host_of, keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report,
     run_probe, scrape_feeds, strip_html, unfollowable, workers,
 )
@@ -182,7 +182,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     entry = entries[0]
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(f"{_base(entry)}/sitemap.xml").text
@@ -198,8 +198,6 @@ def probe(config: dict) -> ProbeResult | None:
 
 
 # --- feed detection (issue #282): what `core/employers/ats_detect.py` and `commands/companies.py` ask ---
-
-FEED_KEY = None  # (no JSON feed to confirm an entry with: `feed_url` is None)
 
 
 def _entry_for_host(host: str) -> str | None:
@@ -230,16 +228,6 @@ def detect_url(url: str) -> Detection | None:
         entry = _entry_for_host(host)
         return Detection(_SITE, entry, f"Recman career site {host}") if entry else None
     return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: a link to the career site names the tenant, no feed check is needed."""
-    return None
-
-
-def name_probes(slug: str) -> list:
-    """None: a company's name does not tell its tenant."""
-    return []
 
 
 def detect_cname(host: str, target: str, where: str) -> Detection | None:

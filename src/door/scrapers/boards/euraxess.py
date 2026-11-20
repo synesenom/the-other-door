@@ -39,7 +39,7 @@ from bs4 import BeautifulSoup
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id,
+    FEED_DELAY, JobPosting, PoliteSession, probe_session, ProbeResult, log_keyword_results, make_job_id,
     record_error, record_non_local, record_pushback, report, run_probe,
 )
 
@@ -263,7 +263,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
 def probe(config: dict) -> ProbeResult | None:
     """Side-effect-free health check: listing page 1 of the profile's country, no job pages."""
     country = sdk.country(config, _SERVED).lower()
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def parse(html: str):
         cards, _ = parse_listing(html)

@@ -236,7 +236,6 @@ def test_detect_url_and_cname():
     assert _d(successfactors.detect_cname("careers.veo.co", "novonordisk.jobs2web.com", "w")) == (
         "successfactors", "careers.veo.co")
     assert successfactors.detect_cname("careers.veo.co", "acme.github.io", "w") is None
-    assert successfactors.feed_url("x.jobs2web.com") is None
 
 
 def test_detect_html_recognises_an_rmk_career_site():

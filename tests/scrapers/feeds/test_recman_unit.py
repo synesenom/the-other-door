@@ -139,11 +139,6 @@ def test_the_shared_apply_host_alone_is_not_a_detection():
     assert recman.detect_url("https://apply.recman.page/unknown") is None
 
 
-def test_the_feed_needs_no_confirmation():
-    assert recman.feed_url("pn") is None
-    assert recman.name_probes("pn") == []
-
-
 def test_a_cname_for_a_tenant_names_it():
     det = recman.detect_cname("stillinger.signo.no", "signo.recman.page", "where")
 

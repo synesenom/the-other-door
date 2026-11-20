@@ -43,7 +43,6 @@ def test_an_entry_without_a_client_id_names_no_employer(entry):
 
 def test_the_search_that_lists_one_clients_adverts():
     assert networx.search_url("3509") == "https://www.networxrecruitment.com/Website/Search?SelectedEmployers=3509"
-    assert networx.feed_url("3509") is None
 
 
 # --- the search page ---

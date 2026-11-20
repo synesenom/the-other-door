@@ -70,10 +70,10 @@ The module is `src/door/scrapers/<pkg><site>.py`; its tests are `tests/scrapers/
    - An ad page's schema.org `JobPosting` JSON-LD is read with `sdk.job_postings(html)` (all JobPosting nodes, in document order); the module's own pick rule goes over its result, and it matches no `<script>` tag or `"@type"` itself.
    - Progress with `report()` (`report("'kw': 12 results")`, `report("detail", i, total)`), failures with `record_error()`, never `print()` and no `__main__` block.
    - Parsing in small pure functions, separate from the network code. `make_job_id(site, company, title, platform_id)` for the id.
-   - `probe` fetches page 1 of the first keyword only, maps it with the same helper `scrape` uses, uses `run_probe`/`probe_failure`, and never records errors, writes files or takes a lock.
+   - `probe` fetches page 1 of the first keyword only, maps it with the same helper `scrape` uses, uses `run_probe`/`probe_failure`, builds its session with `sdk.probe_session(headers=...)`, and never records errors, writes files or takes a lock.
    - The module docstring states the kind of site, the endpoint, the config key (if any), the terms URL you read and the clause that matters, and what robots.txt says — copy `discovery/profession.py`'s docstring layout.
 
-5. **Register it.** One entry in `SITES` (`src/door/core/sites.py`), next to the country's other sites: `Site("<site>", label="<Name as written>", countries=("<cc>",), board=True, terms_url="...")` for a board searched by keyword (its module also names its hosts, `JOB_BOARD_HOSTS = ("<host marker>.",)`, so `follow` never takes an ad link on it for an employer's site), or with `config_key=` for a per-company feed (and, in its module, `detect_url` and `feed_url` plus the optional `detect_cname`, `detect_html`, `name_probes` of the feed contract in `door.scrapers.sdk`, and its name in `ats_detect.PRECEDENCE`). `tests/core/test_sites_unit.py` fails until the module and the registry agree, and `tests/scrapers/test_scrapers_probe_contract_unit.py` until `probe` exists.
+5. **Register it.** One entry in `SITES` (`src/door/core/sites.py`), next to the country's other sites: `Site("<site>", label="<Name as written>", countries=("<cc>",), board=True, terms_url="...")` for a board searched by keyword (its module also names its hosts, `JOB_BOARD_HOSTS = ("<host marker>.",)`, so `follow` never takes an ad link on it for an employer's site), or with `config_key=` for a per-company feed (and, in its module, `detect_url` plus the optional `feed_url` (only where a JSON endpoint confirms an entry), `detect_cname`, `detect_html`, `name_probes` of the feed contract in `door.scrapers.sdk`, and its name in `ats_detect.PRECEDENCE`). `tests/core/test_sites_unit.py` fails until the module and the registry agree, and `tests/scrapers/test_scrapers_probe_contract_unit.py` until `probe` exists.
 
 6. **Per-site docs.** A row in the sites table of `docs/job-sites.md` (site link, country name, today's date as Checked) and in the Scrapers table of `docs/architecture.md` (module, `<cc>`, site name, auth `None`, employers key or `—`, transport). The country-level rows (Supported countries, README) are not yours; the skill writes them.
 
@@ -94,54 +94,6 @@ A source whose terms ban scraping (the research's verdict `discovery`), or one o
 3. **Red:**
    - **Unit** (`test_<source>_unit.py`): parsing a card into employer, title, place and link (the link without its tracking query), the on-topic filtering in the source's language, and its wall markup (`_is_wall`).
    - **Fixture**: a `_SOURCES` row in `tests/scrapers/discovery/test_page_sources_scrape.py` runs the whole crawl through the source with HTTP faked. The engine's behaviour (budget, short page, 429/403, redirect, retry, stop) is tested once in `tests/scrapers/test_paged_discovery_unit.py`, never per source.
-   - **Live smoke** (`tests/scrapers/<pkg>test_<site>_live.py`): one probe-sized test per mode, each `@pytest.mark.live` and named `test_<site>_<mode>_live`, with `keyword` (else a broad one: `"software"` or the local word for it) and the capital as `location`, built on `tests/live_utils.py`. Copy `tests/scrapers/boards/test_jobindex_live.py` (a board) or `tests/scrapers/feeds/test_greenhouse_live.py` (a feed whose one answer lists every job):
-     - `listing`: page 1 through `probe`, `assert_listing` (the field contract on its postings);
-     - `page2`: one more listing page through the module's own helpers inside `probe_sized(site, "page2")`, then `assert_page2`; or `NO_PAGE2 = "<why>"` when one answer lists every job;
-     - `details`: the listing and at most two detail pages inside `probe_sized(site, "details")`, then `assert_contract(site, postings, "details", config=...)`; or `NO_DETAILS = "<why>"` when the listing carries the whole ad;
-     - `zero_hits` (a board): `NONSENSE_KEYWORD` answered with a recognised zero-hit page (`assert_zero_hits`), and a saved real zero-hit page in `tests/live_matrix.ZERO_HIT_FIXTURES`;
-     - `detection` (a feed platform): `assert_detects("<site>")`, with a real, stable employer's careers page in `tests/live_employers.DETECTION`.
-     No other test goes in the file, and none reads the site's whole list. `tests/scrapers/test_live_modes_unit.py` fails until each mode that applies has its test; `scripts/smoke_report.py` reads the site from the file name, so the name must be exactly `test_<site>_live.py`.
-
-4. **Green.** Write `src/door/scrapers/<pkg><site>.py`, importing only from `door.scrapers.sdk` (`tests/scrapers/test_scraper_imports_unit.py` fails on any other `door` import; add a wrapper to the SDK if you need a helper it lacks):
-   ```python
-   def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]: ...
-   def probe(config: dict) -> ProbeResult | None: ...
-   ```
-   - Read `search_keywords` (falling back to `role_targets`) and `location` from `config`; never positional `query`/`location` arguments. `kwargs["since"]` is the freshness cutoff (`datetime` or `None`): filter at the source when the site can, otherwise ignore it.
-   - **No language at the source.** The country a site serves says nothing about the languages a user wants: someone in Denmark may want only English ads, someone in Hungary English and Hungarian. The profile's `languages` and `scrape`'s language pass (each ad's detected language) decide, after scraping. So never set a language facet or filter from the country, never pick an endpoint, locale or subdomain that hides English ads, never drop or tag an ad by language, and send the profile's keywords as they are (no translating them).
-   - Every request through `PoliteSession` (its `USER_AGENT`, per-host pacing, backoff on 429/5xx); catch `RobotsBlocked` and record it.
-   - Progress with `report()` (`report("'kw': 12 results")`, `report("detail", i, total)`), failures with `record_error()`, never `print()` and no `__main__` block.
-   - Parsing in small pure functions, separate from the network code. `make_job_id(site, company, title, platform_id)` for the id.
-   - `probe` fetches page 1 of the first keyword only, maps it with the same helper `scrape` uses, uses `run_probe`/`probe_failure`, and never records errors, writes files or takes a lock.
-   - The module docstring states the kind of site, the endpoint, the config key (if any), the terms URL you read and the clause that matters, and what robots.txt says — copy `discovery/profession.py`'s docstring layout.
-
-5. **Register it.** One entry in `SITES` (`src/door/core/sites.py`), next to the country's other sites: `Site("<site>", label="<Name as written>", countries=("<cc>",), board=True, terms_url="...")` for a board searched by keyword (its module also names its hosts, `JOB_BOARD_HOSTS = ("<host marker>.",)`, so `follow` never takes an ad link on it for an employer's site), or with `config_key=` for a per-company feed (and, in its module, `detect_url` and `feed_url` plus the optional `detect_cname`, `detect_html`, `name_probes` of the feed contract in `door.scrapers.sdk`, and its name in `ats_detect.PRECEDENCE`). `tests/core/test_sites_unit.py` fails until the module and the registry agree, and `tests/scrapers/test_scrapers_probe_contract_unit.py` until `probe` exists.
-
-6. **Per-site docs.** A row in the sites table of `docs/job-sites.md` (site link, country name, today's date as Checked) and in the Scrapers table of `docs/architecture.md` (module, `<cc>`, site name, auth `None`, employers key or `—`, transport). The country-level rows (Supported countries, README) are not yours; the skill writes them.
-
-7. **Refactor**, then run `./scripts/run-test.sh` (the whole offline suite must be green) and the live test once: `./scripts/run-test.sh --live tests/scrapers/<pkg>test_<site>_live.py`. A live failure you can't fix (the site walls the request) goes in your report, not in a weakened test.
-
-8. **Commit**: `git add` exactly the files you created or changed, then `git commit -m "Add the <site> scraper (<cc>)"`, ending with the attribution line the session gives you.
-
-## Steps — `kind: discovery`
-
-A source whose terms ban scraping (the research's verdict `discovery`), or one only worth reading for its employers. LinkedIn (`discovery/linkedin.py`) and profession.hu (`discovery/profession.py`) are the models; `profession.py` is the smallest model of a page-search source (the shared crawl is `sdk.paged_discovery`). The rules are in `docs/adding-a-site.md` and `CLAUDE.md`'s Conventions on discovery sources:
-- logged out (no login, cookies or session);
-- paced and capped (a request budget per run);
-- stops for the run on pushback and rests 24 h after a refusal;
-- keeps only employer names, titles and ad links, never an ad's text.
-
-1. **Confirm the route and the terms**, as in `mode: new` step 1. The verdict may be `discovery`; anything walled stops the build.
-2. **Save real payloads**, as in `mode: new` step 2: one or two search pages, no detail pages (a discovery source never opens an ad).
-3. **Red:**
-   - **Unit** (`test_<source>_unit.py`): parsing a card into employer, title, place and link (the link without its tracking query), and the on-topic filter.
-   - **Fixture** (`test_<source>_scrape.py`, HTTP mocked): `run(config, budget=, pause=, rotation=, stop=)` returns a `sdk.DiscoveryResult`. Cover:
-     - only employers with an on-topic title are kept;
-     - the budget caps the requests;
-     - a short page ends a keyword;
-     - a 429/403 or a redirect to a login page stops the run and reports pushback;
-     - a failed load is retried once;
-     - nothing but employer, title and link comes back.
    - **Live smoke** (`test_<source>_live.py`, copy `test_profession_live.py`): `test_<source>_employers_live`, one request with `keyword`, checked by `live_utils.assert_discovery` (employers with a name, a title and a link where it gives one; a refusal, including a captcha or consent page where the results should be, is not reached). The source stops on a wall page (`sdk.wall_page`) as on a 403.
 4. **Green:** `src/door/scrapers/discovery/<source>.py`, a module with its constants (`_FULL_PAGE`; the page cap, budget and pause are the engine's), `_search_url`, `_parse_cards`, `_is_wall` and a `run` calling `sdk.paged_discovery`, with `NAME`, `COUNTRIES` (lower-case ISO codes, `()` for anywhere), `CONFIG_KEY = "<source>_discovery"`, `run(config, **kwargs)` and only the optional hooks it needs (`enabled`, `extras`, `skip_employer`). It imports only from `door.scrapers.sdk`. Its docstring follows `profession.py`'s: what it is and why it is not a job source, the request limits, the terms clause, the markup, the date it was checked.
 5. **Register it:**

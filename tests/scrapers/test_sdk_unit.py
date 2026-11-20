@@ -289,3 +289,13 @@ def test_job_postings_reads_js_escapes_and_an_unclosed_object():
     assert sdk.job_postings(unclosed)
     assert sdk.job_postings(_ld('{"datePosted": ')) == []
     assert sdk.job_postings(_ld('{"@type": "JobPosting", "title": "A"')) == [{"@type": "JobPosting", "title": "A"}]
+
+
+def test_probe_session_has_the_probe_pacing():
+    session = sdk.probe_session()
+    assert (session.min_delay, session.max_delay) == (0.2, 0.5)
+    assert session.timeout == sdk.PROBE_TIMEOUT_S and session.max_retries == 0
+
+
+def test_probe_session_passes_its_headers_through():
+    assert sdk.probe_session({"Accept": "application/json"})._session.headers["Accept"] == "application/json"

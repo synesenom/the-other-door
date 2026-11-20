@@ -40,7 +40,7 @@ Against `git diff <base_branch>...HEAD` and the files, for each new source. `<pk
 - **board / feed:**
   - its `Site` in `sites.py` with `terms_url`, and the right `countries` (empty for a worldwide one);
   - a `probe` with its probe test;
-  - a feed also has `detect_url` and `feed_url` and its place in `ats_detect.PRECEDENCE`.
+  - a feed also has `detect_url` (and `feed_url`, optional: only when the platform has one feed URL) and its place in `ats_detect.PRECEDENCE`.
 - **discovery:**
   - its line in `core/employers/discovery_sources.SOURCES`;
   - `NAME`, `COUNTRIES`, `CONFIG_KEY`, `run`;
