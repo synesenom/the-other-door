@@ -36,6 +36,7 @@ READ_CHANGES: dict[str, tuple[tuple[str, str], ...]] = {
             for job in ("1002", "1004") for field in ("cover_letter_words", "keywords", "tailoring")
         ),
         ("show.jobindex.1004.materials.unsupported", "#146: the CV and letter are HTML bodies; the LaTeX ones are kept, never read"),
+        ("show.jobindex.1002.materials.unsupported", "#484 (#444): a finding is read only for the HTML documents it was checked against; a LaTeX job's are kept, never read"),
         ("show_profile.templates.cover_letter.is_example", "#146: a LaTeX template is not read; the shipped HTML one is used"),
         ("show_profile.templates.cover_letter.path", "#146: a LaTeX template is not read; the shipped HTML one is used"),
         ("show_profile.templates.cv.is_example", "#146: a LaTeX template is not read; the shipped HTML one is used"),
