@@ -7,9 +7,11 @@ atomic tmp+rename writes prevent a corrupt file but not a lost update, so
 every core that writes a ledger does it under `ledger_lock`, and `find` holds
 it for the whole run.
 
-The lock never blocks: a second writer gets `LockHeldError` at once, whose
-message says who holds it ("a run is in progress (started 06:30, pid 4242)"),
-so a conversation gets a clear answer instead of a hung tool call.
+The lock never blocks for long: a second writer gets `LockHeldError` at once
+when a run holds it, and after `WAIT_SECONDS` when a quick holder (`mark_seen`,
+`set_status`, ...) does (#447). The message says who holds it ("a run is in
+progress (started 06:30, pid 4242)"), so a conversation gets a clear answer
+instead of a hung tool call.
 
 Mechanics: an OS advisory lock on `jobs/.lock` (`fcntl.flock` on POSIX,
 `msvcrt.locking` on Windows), which the OS drops when the holder dies — so a
@@ -47,9 +49,17 @@ _INFO_NAME = ".lock.json"
 _held: dict[str, list] = {}
 _held_guard = threading.Lock()
 
+# How long a writer waits for a holder that is not a run before it is refused (#447).
+WAIT_SECONDS = 5.0
+_POLL_SECONDS = 0.05
+
 
 class LockHeldError(RuntimeError):
     """Another process holds the `jobs/` ledger lock."""
+
+    def __init__(self, message: str, purpose: str | None = None):
+        super().__init__(message)
+        self.purpose = purpose
 
 
 class SyncConflict(RuntimeError):
@@ -220,23 +230,13 @@ def hold(path: Path, wait: float):
         fh.close()
 
 
-@contextmanager
-def ledger_lock(jobs_dir: Path, purpose: str):
-    """Hold the `jobs_dir` ledger lock for the block, or raise `LockHeldError` at once.
-
-    Args:
-        jobs_dir: The `jobs/` directory (created if missing).
-        purpose: What the holder is doing ("run", "set_status", "discard", ...),
-            shown to anyone refused while it is held.
-    """
-    jobs_dir = Path(jobs_dir)
-    key = _key(jobs_dir)
-
+def _acquire(jobs_dir: Path, key: str, purpose: str) -> bool:
+    """Take or re-enter the lock; True when re-entered. `LockHeldError` if another holder has it."""
     with _held_guard:
         entry = _held.get(key)
         if entry is not None:
             if entry[3] != threading.get_ident():
-                raise LockHeldError(_describe(entry[2]))
+                raise LockHeldError(_describe(entry[2]), entry[2].get("purpose"))
             entry[1] += 1
             nested = True
         else:
@@ -245,7 +245,8 @@ def ledger_lock(jobs_dir: Path, purpose: str):
             fh = open(jobs_dir / _LOCK_NAME, "a+", encoding="utf-8")
             if not _try_os_lock(fh):
                 fh.close()
-                raise LockHeldError(_describe(_read_info(jobs_dir)))
+                info = _read_info(jobs_dir)
+                raise LockHeldError(_describe(info), info.get("purpose"))
             info = {
                 "pid": os.getpid(),
                 "purpose": purpose,
@@ -261,6 +262,29 @@ def ledger_lock(jobs_dir: Path, purpose: str):
             sink = progress.ProgressFile(jobs_dir / progress.PROGRESS_NAME)
             progress.register(sink)
             _held[key] = [fh, 1, info, threading.get_ident(), sink]
+    return nested
+
+
+@contextmanager
+def ledger_lock(jobs_dir: Path, purpose: str):
+    """Hold the `jobs_dir` ledger lock for the block, or raise `LockHeldError` (at once for a run, after `WAIT_SECONDS` for a quick holder).
+
+    Args:
+        jobs_dir: The `jobs/` directory (created if missing).
+        purpose: What the holder is doing ("run", "set_status", "discard", ...),
+            shown to anyone refused while it is held.
+    """
+    jobs_dir = Path(jobs_dir)
+    key = _key(jobs_dir)
+    deadline = time.monotonic() + WAIT_SECONDS
+    while True:
+        try:
+            nested = _acquire(jobs_dir, key, purpose)
+            break
+        except LockHeldError as exc:
+            if exc.purpose == "run" or time.monotonic() >= deadline:
+                raise
+            time.sleep(_POLL_SECONDS)
 
     sync_here = not nested and purpose not in _NO_SYNC_PURPOSES
     pulled = False
