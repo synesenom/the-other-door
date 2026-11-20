@@ -137,3 +137,54 @@ def test_main_says_when_gh_fails(capsys):
     assert decide.main(["7"], run) == 1
     out = json.loads(capsys.readouterr().out)
     assert out["ok"] is False and "gh failed" in out["reasons"][0]
+
+
+# --open: the session-start list of the user's open PRs that need something
+_OK = [{"name": "tests", "status": "COMPLETED", "conclusion": "SUCCESS"}]
+
+
+def _pr(n=1, base="main", mergeable="MERGEABLE", rollup=_OK, body=""):
+    return {"number": n, "baseRefName": base, "mergeable": mergeable, "statusCheckRollup": rollup, "body": body}
+
+
+def _verify(state, description=""):
+    return {"context": "verify", "state": state, "description": description}
+
+
+@pytest.mark.parametrize(
+    "pr, lines",
+    [
+        (_pr(), []),
+        (_pr(base="epic/478-x", mergeable="CONFLICTING"), ["#1 conflicts with epic/478-x"]),
+        (_pr(rollup=[{"name": "tests", "status": "COMPLETED", "conclusion": "FAILURE"}]), ["#1: tests failed"]),
+        (_pr(rollup=[{"name": "app", "status": "IN_PROGRESS", "conclusion": None}]), []),
+        (_pr(rollup=[]), ["#1: no checks ran"]),
+        (_pr(rollup=_OK + [_verify("FAILURE", "FAIL: x")]), ["#1: verify failed: FAIL: x"]),
+        (_pr(rollup=_OK + [_verify("PENDING", "Needs the maintainer: look at it")]), ["#1: verify pending: Needs the maintainer: look at it"]),
+        (_pr(rollup=_OK + [_verify("SUCCESS", "PASS")]), ["#1: verified, not merged"]),
+        (_pr(body="- Needs the maintainer: try it\r\n"), ["#1: needs the maintainer: try it"]),
+        (_pr(body="~~~\n```\nNeeds the maintainer: quoted\n~~~\n"), []),
+    ],
+)
+def test_attention_names_what_an_open_pr_needs(pr, lines):
+    assert decide.attention(pr) == lines
+
+
+def test_attention_reads_the_body_only_while_verify_has_not_spoken():
+    pr = _pr(rollup=_OK + [_verify("PENDING", "check app is pending")], body="Needs the maintainer: try it")
+    assert decide.attention(pr) == ["#1: verify pending: check app is pending"]
+
+
+def test_open_prints_a_heading_and_the_lines(capsys):
+    prs = [_pr(1), _pr(2, rollup=[])]
+    assert decide.main(["--open"], lambda args: prs) == 0
+    assert capsys.readouterr().out == "Open PRs that need you:\n#2: no checks ran\n"
+
+
+def test_open_is_silent_when_gh_fails_or_nothing_needs_you(capsys):
+    def fail(args):
+        raise decide.subprocess.TimeoutExpired(["gh"], 5)
+
+    assert decide.main(["--open"], fail) == 0
+    assert decide.main(["--open"], lambda args: [_pr()]) == 0
+    assert capsys.readouterr().out == ""
