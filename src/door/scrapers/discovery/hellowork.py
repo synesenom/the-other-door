@@ -5,23 +5,11 @@ HelloWork is not a job source for door and not a `Site`: its terms (CGU art. 8.2
 ban "l'utilisation de systemes automatises ou de logiciels pour extraire des donnees du Site ... a quelques
 fins que ce soit, commerciales ou non" (art. 9.3 adds an extraction ban on the database), so no posting is
 stored, scored or tailored from it. What it is good for is telling WHICH employers hire for the user's
-keywords. `discover` reads a few search pages, keeps the employers whose ad title is on topic, and queues
-them with the ad link; `follow` then looks for each employer's own feed by name (an ad link on a job board
-is never an employer's careers page, `ats_detect.is_job_board`). That is the same use LinkedIn gets
-(`door.scrapers.discovery.linkedin`) and profession.hu (`door.scrapers.discovery.profession`) and it stays
-small and slow:
+keywords: the employers whose ad title is on topic are queued with the ad link, for `follow` to look for
+their own feed by name. The crawl (pacing, budget, pushback, wall pages) is `sdk.paged_discovery`'s.
 
-- plain HTTP, logged out: no login, no cookies kept (a fresh session per run), no account, no
-  headless browser, `sdk.USER_AGENT` like every other request;
-- one search per keyword of the rotation, ``/fr-fr/emploi/recherche.html?k=<keyword>&l=<city>[&p=<n>]``,
-  at most `_PAGE_CAP` pages of `_FULL_PAGE` ads, a short page being the last; at most `_MAX_BUDGET`
-  requests a run with at least `_MIN_PAUSE` seconds between two, whatever the engine hands over;
-- the first 429 or 403, a redirect to a login page or off the listing, or a wall page (a captcha, a
-  consent page, `sdk.wall_page`) where the results should be, stops the run and rests the
-  source for a day (`record_pushback`); a 5xx or a failed load is tried once more, then stops;
-- no ad text is read or kept, no job page is opened: a card gives the id, title, employer, place and
-  link, and only the employer, the title and the link are handed on. The employer's own apply link sits
-  behind the ad page and is not needed.
+URL: one search per keyword, ``/fr-fr/emploi/recherche.html?k=<keyword>&l=<city>[&p=<n>]``; `_PAGE_CAP` pages
+of `_FULL_PAGE` ads at most, `_MAX_BUDGET` requests a run, `_MIN_PAUSE` between two.
 
 Terms (https://www.hellowork-group.com/fr/legal/cgu-hellowork/, read 2026-10-31): art. 8.2 and 9.3 as quoted above; a verdict of `unsure`.
 robots.txt (checked 2026-10-31) disallows any URL with a query and ``/fr-fr/emploi/recherche.html``

@@ -61,39 +61,6 @@ def employers_of(cards: list[dict], config: dict) -> list[dict]:
     return list(grouped.values())
 
 
-class _Response:
-    def __init__(self, resp: requests.Response):
-        self.status = resp.status_code
-        self.url = resp.url
-        self._text = resp.text
-
-    def text(self) -> str:
-        return self._text
-
-
-class _HttpSession:
-    """A fresh logged-out HTTP session: no saved cookies, `http_client.USER_AGENT`. `page` is itself
-    (``goto``, ``url``)."""
-
-    def __init__(self):
-        self._http = requests.Session()
-        self._http.headers["User-Agent"] = USER_AGENT
-        self.page = self
-        self.url = ""
-
-    def goto(self, url: str, **_kwargs) -> _Response:
-        resp = self._http.get(url, timeout=_TIMEOUT_S)
-        self.url = resp.url
-        return _Response(resp)
-
-    def close(self) -> None:
-        self._http.close()
-
-
-def _open_session() -> _HttpSession:
-    return _HttpSession()
-
-
 def _now() -> float:
     return time.monotonic()
 
@@ -110,9 +77,9 @@ class _Crawler:
     """The requests of one run: counts them against the budget, pauses between them, and notes when
     the source first refused. Not thread-safe; one run uses it from one thread."""
 
-    def __init__(self, page, *, name: str, is_wall: Callable[[str], bool], budget: int, pause: tuple[float, float],
+    def __init__(self, session, *, name: str, is_wall: Callable[[str], bool], budget: int, pause: tuple[float, float],
                  stop: threading.Event | None):
-        self.page, self.name, self.is_wall, self.budget, self.pause, self.stop = page, name, is_wall, budget, pause, stop
+        self.session, self.name, self.is_wall, self.budget, self.pause, self.stop = session, name, is_wall, budget, pause, stop
         self.requests = 0
         self.started = _now()
         self.first_429: dict | None = None
@@ -143,26 +110,26 @@ class _Crawler:
             self.requests += 1
             report(f"page {self.requests}/{self.budget}", self.requests, self.budget, site=self.name, stage="li_request")
             try:
-                resp = self.page.goto(url)
+                resp = self.session.get(url, timeout=_TIMEOUT_S)
             except Exception as exc:  # noqa: BLE001 - network errors and timeouts
                 transient += 1
                 if transient > 1:
                     raise _Stop(f"{type(exc).__name__}: {exc}")
                 continue
-            if self.is_wall(self.page.url):
-                raise _Stop(f"redirected away from the listing ({self.page.url})", pushback=True)
-            if resp.status in (429, 403):
-                if resp.status == 429:
+            if self.is_wall(resp.url):
+                raise _Stop(f"redirected away from the listing ({resp.url})", pushback=True)
+            if resp.status_code in (429, 403):
+                if resp.status_code == 429:
                     self.first_429 = {"after_requests": self.requests - 1, "after_s": self.seconds()}
-                raise _Stop(f"HTTP {resp.status}", pushback=True)
-            if resp.status >= 400 and (wall := wall_page(resp.text())):
-                raise _Stop(f"HTTP {resp.status}: {wall} instead of the results", pushback=True)
-            if resp.status >= 400:
+                raise _Stop(f"HTTP {resp.status_code}", pushback=True)
+            if resp.status_code >= 400 and (wall := wall_page(resp.text)):
+                raise _Stop(f"HTTP {resp.status_code}: {wall} instead of the results", pushback=True)
+            if resp.status_code >= 400:
                 transient += 1
                 if transient > 1:
-                    raise _Stop(f"HTTP {resp.status}")
+                    raise _Stop(f"HTTP {resp.status_code}")
                 continue
-            return resp.text()
+            return resp.text
 
 
 def _stop(name: str, stop: _Stop) -> None:
@@ -176,7 +143,6 @@ def _stop(name: str, stop: _Stop) -> None:
 def discover(
     config: dict, *, name: str, search_url: Callable[[str, int, dict], str], parse_cards: Callable[[str], list[dict]],
     is_wall: Callable[[str], bool], page_cap: int, full_page: int, max_budget: int, min_pause: tuple[float, float],
-    employers: Callable[[list[dict], dict], list[dict]] = employers_of,
     budget: int | None = None, pause: tuple[float, float] | None = None, rotation=(),
     stop: threading.Event | None = None, **_ignored,
 ) -> dict:
@@ -185,7 +151,7 @@ def discover(
 
     The source gives *search_url* (keyword, page number from 1 and config to a URL), *parse_cards* (a
     result page to ``{platform_id, title, company, location, url}`` cards), *is_wall* (a final URL that is
-    not the listing), *employers* (cards to the employers queued, default `employers_of`) and its limits
+    not the listing) and its limits
     (*page_cap*, *full_page*, *max_budget*, *min_pause*). The *rotation* keywords are searched one at a
     time; the ones the budget did not reach are in no ``searched`` and wait for the next run. *budget* and
     *pause* are the engine's, held to the source's limits (the engine's defaults are made for LinkedIn). The
@@ -202,14 +168,9 @@ def discover(
     if not title_fit.keywords(config):
         return result
     now = datetime.now(timezone.utc).isoformat()
-    try:
-        session = _open_session()
-    except Exception as exc:  # noqa: BLE001
-        stopped = _Stop(f"the HTTP session did not start: {exc}")
-        _stop(name, stopped)
-        result.update(stopped=str(stopped), outcome="error")
-        return result
-    crawler = _Crawler(session.page, name=name, is_wall=is_wall, budget=budget, pause=pause, stop=stop)
+    session = requests.Session()
+    session.headers["User-Agent"] = USER_AGENT
+    crawler = _Crawler(session, name=name, is_wall=is_wall, budget=budget, pause=pause, stop=stop)
     cards: list[dict] = []
     complete = True
     try:
@@ -225,7 +186,7 @@ def discover(
             _stop(name, stopped)
             result.update(stopped=str(stopped), pushback=stopped.pushback)
         finally:  # the cards read so far count, stopped or not
-            result["employers"] = [{**e, "first_seen": now} for e in employers(cards, config)]
+            result["employers"] = [{**e, "first_seen": now} for e in employers_of(cards, config)]
     finally:
         session.close()
     result.update(requests=crawler.requests, pages=crawler.requests, first_429=crawler.first_429,

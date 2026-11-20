@@ -6,21 +6,12 @@ Terms (https://www.profession.hu/, the terms are linked from its footer): clause
 
 profession.hu is not a job source for door and not a `Site`: its terms (VI.1) ban scraping, so no
 posting is stored, scored or tailored from it. What it is good for is telling WHICH employers hire for
-the user's keywords. `discover` reads a few search pages, keeps the employers whose ad title is on
-topic, and queues them with the ad link; `follow` then looks for each employer's own feed (an ad link
-on a job board is never an employer's careers page, `ats_detect.is_job_board`). That is the same use
-LinkedIn gets (`door.scrapers.discovery.linkedin`) and it stays small and slow:
+the user's keywords: the employers whose ad title is on topic are queued with the ad link (without its
+tracking query), for `follow` to look for their own feed. The crawl (pacing, budget, pushback, wall
+pages) is `sdk.paged_discovery`'s.
 
-- plain HTTP, logged out: no login, no cookies kept (a fresh session per run), no account, no
-  headless browser, `sdk.USER_AGENT` like every other request;
-- one search per keyword of the rotation, ``/allasok/<page>,0,0,<keyword>``, at most `_PAGE_CAP` pages
-  of `_FULL_PAGE` ads, a short page being the last; at most `_MAX_BUDGET` requests a run with at least
-  `_MIN_PAUSE` seconds between two, whatever the engine hands over;
-- the first 429 or 403, a redirect to a login page or off the listing, or a wall page (a captcha, a
-  consent page, `sdk.wall_page`) where the results should be, stops the run and rests the
-  source for a day (`record_pushback`); a 5xx or a failed load is tried once more, then stops;
-- no ad text is read or kept, no job page is opened: a card gives the id, title, employer, place and
-  link, and only the employer, the title and the link (without its tracking query) are handed on.
+URL: one search per keyword, ``/allasok/<page>,0,0,<keyword>``; `_PAGE_CAP` pages of `_FULL_PAGE` ads at
+most, `_MAX_BUDGET` requests a run, `_MIN_PAUSE` between two.
 
 Markup (checked 2026-10-28): each ad is an ``li.advertisement-result-list-item`` carrying
 ``data-item-id``, ``data-item-name`` (the title), ``data-item-brand`` (the employer) and

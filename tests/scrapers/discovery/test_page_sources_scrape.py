@@ -122,18 +122,15 @@ _SOURCES = {
 
 
 class _Response:
-    def __init__(self, status, body):
-        self.status, self._body = status, body
-
-    def text(self):
-        return self._body
+    def __init__(self, status, body, url):
+        self.status_code, self.text, self.url = status, body, url
 
 
 class _Page:
     """Answers per URL in order, repeating the last; an answer is (status, body, final_url) or an exception."""
 
     def __init__(self):
-        self.routes, self.calls, self.url = [], [], ""
+        self.routes, self.calls = [], []
 
     def add(self, pattern, body="", status=200, final_url=None, raises=None):
         answer = raises or (status, body, final_url)
@@ -143,7 +140,7 @@ class _Page:
                 return
         self.routes.append((pattern, [answer]))
 
-    def goto(self, url, **kwargs):
+    def get(self, url, **kwargs):
         self.calls.append(url)
         for pat, answers in self.routes:
             if pat.match(url):
@@ -151,14 +148,16 @@ class _Page:
                 if isinstance(answer, BaseException):
                     raise answer
                 status, body, final_url = answer
-                self.url = final_url or url
-                return _Response(status, body)
+                return _Response(status, body, final_url or url)
         raise AssertionError(f"unexpected goto {url}")
 
 
 class _Session:
     def __init__(self):
-        self.page, self.closed = _Page(), False
+        self.page, self.closed, self.headers = _Page(), False, {}
+
+    def get(self, url, **kwargs):
+        return self.page.get(url, **kwargs)
 
     def close(self):
         self.closed = True
@@ -179,7 +178,7 @@ def src(request):
 @pytest.fixture
 def session(src, monkeypatch):
     s = _Session()
-    monkeypatch.setattr(paged_discovery, "_open_session", lambda: s)
+    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: s)
     drain_errors()
     drain_pushback(src.name)
     return s
@@ -301,14 +300,14 @@ def test_a_redirect_off_the_listing_stops_as_a_refusal(src, session, which):
 def test_a_stop_signal_ends_the_run_before_the_next_request(src, session):
     stop = threading.Event()
     _pages(src, session, _full(src, 0))
-    goto = session.page.goto
+    get = session.page.get
 
     def goto_then_stop(url, **kwargs):
-        response = goto(url, **kwargs)
+        response = get(url, **kwargs)
         stop.set()
         return response
 
-    session.page.goto = goto_then_stop
+    session.page.get = goto_then_stop
     result = _run(src, stop=stop)
     assert len(session.page.calls) == 1 and result["outcome"] == "cancelled" and not result["pushback"]
     assert len(result["employers"]) == src.size

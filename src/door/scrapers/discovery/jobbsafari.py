@@ -4,21 +4,12 @@
 Jobbsafari (jobbsafari.se, run by Duunitori) is not a job source for The other door and not a `Site`: its
 terms ban scraping, so no posting is stored, scored or tailored from it. What it is good for is telling
 WHICH employers hire for the user's keywords, and it gives the link to the employer's own application
-page, which `follow` can resolve to the employer's feed. `discover` reads a few search pages, keeps the
-employers whose ad title is on topic, and queues them with that apply link. Like LinkedIn
-(`door.scrapers.discovery.linkedin`), profession.hu and HelloWork it stays small and slow:
+page, which `follow` can resolve to the employer's feed. The employers whose ad title is on topic are
+queued with that apply link (ads applied for by email have none; the tracking query is dropped). The crawl
+(pacing, budget, pushback, wall pages) is `sdk.paged_discovery`'s.
 
-- plain HTTP, logged out: no login, no cookies kept (a fresh session per run), no account, no
-  headless browser, `sdk.USER_AGENT` like every other request;
-- one search per keyword of the rotation, ``/lediga-jobb?sok=<keyword>[&page=N]``, at most `_PAGE_CAP`
-  pages of `_FULL_PAGE` ads, a short page being the last; at most `_MAX_BUDGET` requests a run with at
-  least `_MIN_PAUSE` seconds between two, whatever the engine hands over;
-- the first 429 or 403, a redirect to a login page or off the listing, or a wall page (a captcha, a
-  consent page, `sdk.wall_page`) where the results should be, stops the run and rests the
-  source for a day (`record_pushback`); a 5xx or a failed load is tried once more, then stops;
-- no ad text is read or kept, no `/jobb/<slug>` page is opened: a result gives the id, title, employer,
-  place and apply link, and only the employer, the title and the link (without its tracking query) are
-  handed on. Ads applied for by email have no link.
+URL: one search per keyword, ``/lediga-jobb?sok=<keyword>[&page=N]``; `_PAGE_CAP` pages of `_FULL_PAGE` ads
+at most, `_MAX_BUDGET` requests a run, `_MIN_PAUSE` between two. No `/jobb/<slug>` page is opened.
 
 Terms (https://jobbsafari.se/compliance/allmanna-villkor, read 2026-10-31): "Användaren får inte lagra,
 arkivera, skrapa eller på annat sätt systematiskt kopiera innehållet i Tjänsten" and may not use the

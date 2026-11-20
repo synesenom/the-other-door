@@ -67,23 +67,6 @@ def test_a_duplicate_id_counts_once_and_a_result_missing_its_id_title_or_company
     assert [c["platform_id"] for c in jobbsafari._parse_cards(html)] == ["1"]
 
 
-def _card(i, title, company, url=None):
-    return {"platform_id": str(i), "title": title, "company": company, "location": "Stockholm",
-            "url": f"https://careers.example.com/job/{i}" if url is None else url}
-
-
-def test_only_on_topic_titles_are_kept_and_grouped_by_employer_in_order_of_first_sight():
-    config = {"search_keywords": ["project manager"], "location": "Stockholm"}
-    cards = [_card(1, "Senior Project Manager", "Hooli AB"), _card(2, "Lagerarbetare", "Lager Exempel AB"),
-             _card(3, "Project Manager", "HOOLI AB"), _card(4, "Kock", "Krog Exempel AB"), _card(5, "Project Manager", "Alfa AB", "")]
-    got = paged_discovery.employers_of(cards, config)
-    assert [e["company"] for e in got] == ["Hooli AB", "Alfa AB"]
-    assert got[0]["titles"] == ["Senior Project Manager", "Project Manager"]
-    assert got[0]["links"] == ["https://careers.example.com/job/1", "https://careers.example.com/job/3"]
-    assert got[0]["job_ids"] == [] and got[0]["detailed"] is False
-    assert got[1]["links"] == []
-
-
 def test_swedish_keywords_keep_swedish_titles_and_drop_the_rest():
     config = {"search_keywords": ["projektledare"], "location": "Stockholm"}
     cards = jobbsafari._parse_cards(_fx("search_project_manager_p1.html"))

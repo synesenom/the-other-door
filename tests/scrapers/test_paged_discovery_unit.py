@@ -10,22 +10,18 @@ from door.scrapers import paged_discovery
 
 
 class _Resp:
-    def __init__(self, status, body):
-        self.status, self._body = status, body
-
-    def text(self):
-        return self._body
+    def __init__(self, status, body, url):
+        self.status_code, self.text, self.url = status, body, url
 
 
 class _Session:
     def __init__(self, answers):
-        self.answers, self.calls, self.url, self.page = list(answers), [], "", self
+        self.answers, self.calls, self.headers = list(answers), [], {}
 
-    def goto(self, url, **_kwargs):
+    def get(self, url, **_kwargs):
         self.calls.append(url)
         status, body, final = self.answers.pop(0) if len(self.answers) > 1 else self.answers[0]
-        self.url = final or url
-        return _Resp(status, body)
+        return _Resp(status, body, final or url)
 
     def close(self):
         pass
@@ -38,7 +34,7 @@ def _cards(html):
 
 def _discover(monkeypatch, answers, *, rotation=("a",), sleeps=None, **kwargs):
     session = _Session(answers)
-    monkeypatch.setattr(paged_discovery, "_open_session", lambda: session)
+    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: session)
 
     def sleep(seconds, stop):
         (sleeps if sleeps is not None else []).append(seconds)
@@ -89,20 +85,19 @@ def test_stops_at_budget_wall_and_refusal(monkeypatch):
     assert drain_pushback("fake") is False
 
 
-def test_a_stop_during_the_sleep_ends_the_run(monkeypatch):
+def test_a_stop_set_before_the_first_request_reads_nothing(monkeypatch):
     stop = threading.Event()
     stop.set()
     sleeps = []
     session, result = _discover(monkeypatch, [(200, "full", None)], stop=stop, sleeps=sleeps)
     assert result["outcome"] == "cancelled" and not result["pushback"]
-    # the stop is seen before the first request: nothing was read
     assert session.calls == [] and result["employers"] == []
 
 
 def test_a_stop_set_while_waiting_between_two_requests_ends_the_run(monkeypatch):
     stop = threading.Event()
     session = _Session([(200, "full", None)])
-    monkeypatch.setattr(paged_discovery, "_open_session", lambda: session)
+    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: session)
     monkeypatch.setattr(paged_discovery, "_sleep", lambda seconds, s: (s.set(), True)[1])
     result = sdk.paged_discovery(
         {"search_keywords": ["data"]}, name="fake", search_url=lambda kw, page, config: f"https://fake.example/{page}",
@@ -111,15 +106,25 @@ def test_a_stop_set_while_waiting_between_two_requests_ends_the_run(monkeypatch)
     assert len(session.calls) == 1 and result["outcome"] == "cancelled" and len(result["employers"]) == 2
 
 
-def test_without_keywords_or_with_a_session_that_will_not_start_nothing_is_read(monkeypatch):
-    def boom():
-        raise OSError("no sockets")
+def test_without_keywords_nothing_is_read(monkeypatch):
+    session = _Session([(200, "full", None)])
+    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: session)
+    result = sdk.paged_discovery({}, name="fake", search_url=lambda *a: "", parse_cards=_cards, is_wall=lambda url: False,
+                                 page_cap=1, full_page=1, max_budget=1, min_pause=(1.0, 1.0), rotation=["a"])
+    assert result["outcome"] == "ok" and session.calls == []
 
-    monkeypatch.setattr(paged_discovery, "_open_session", boom)
-    options = dict(name="fake", search_url=lambda *a: "", parse_cards=_cards, is_wall=lambda url: False,
-                   page_cap=1, full_page=1, max_budget=1, min_pause=(1.0, 1.0), rotation=["a"])
-    assert sdk.paged_discovery({}, **options)["outcome"] == "ok"
-    drain_errors()
-    result = sdk.paged_discovery({"search_keywords": ["data"]}, **options)
-    assert result["outcome"] == "error" and "did not start" in result["stopped"]
-    drain_errors()
+
+def _card(i, title, company, url=""):
+    return {"platform_id": str(i), "title": title, "company": company, "location": "", "url": url}
+
+
+def test_only_on_topic_titles_are_kept_and_grouped_by_employer_in_order_of_first_sight():
+    config = {"search_keywords": ["project manager"]}
+    cards = [_card(1, "Senior Project Manager", "Hooli AB", "https://x.example/1"), _card(2, "Cook", "Krog AB"),
+             _card(3, "Project Manager", "HOOLI AB", "https://x.example/3"), _card(4, "Baker", "Lager AB"),
+             _card(5, "Project Manager", "Alfa AB")]
+    got = paged_discovery.employers_of(cards, config)
+    assert [e["company"] for e in got] == ["Hooli AB", "Alfa AB"]
+    assert got[0]["titles"] == ["Senior Project Manager", "Project Manager"]
+    assert got[0]["links"] == ["https://x.example/1", "https://x.example/3"] and got[1]["links"] == []
+    assert got[0]["job_ids"] == [] and got[0]["detailed"] is False

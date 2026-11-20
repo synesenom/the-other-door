@@ -63,24 +63,6 @@ def test_a_card_without_its_hidden_inputs_falls_back_to_the_heading():
     assert hellowork._parse_cards(html)[0]["company"] == "Acme SAS"
 
 
-def _card(i, title, company):
-    return {"platform_id": str(i), "title": title, "company": company, "location": "Paris - 75",
-            "url": f"https://www.hellowork.com/fr-fr/emplois/{i}.html"}
-
-
-def test_only_on_topic_titles_are_kept_and_grouped_by_employer_in_order_of_first_sight():
-    config = {"search_keywords": ["chef de projet"], "location": "Paris"}
-    cards = [_card(1, "Chef de Projet IA H/F", "Acme Groupe"), _card(2, "Boulanger H/F", "Maison Exemple"),
-             _card(3, "Chef de Projet Risque H/F", "ACME GROUPE"), _card(4, "Comptable H/F", "Régie Exemple"),
-             _card(5, "Chef de Projet H/F", "Alfa SAS")]
-    got = paged_discovery.employers_of(cards, config)
-    assert [e["company"] for e in got] == ["Acme Groupe", "Alfa SAS"]
-    assert got[0]["titles"] == ["Chef de Projet IA H/F", "Chef de Projet Risque H/F"]
-    assert got[0]["links"] == ["https://www.hellowork.com/fr-fr/emplois/1.html",
-                               "https://www.hellowork.com/fr-fr/emplois/3.html"]
-    assert got[0]["job_ids"] == [] and got[0]["detailed"] is False
-
-
 def test_the_fixture_employers_are_the_on_topic_ones():
     config = {"search_keywords": ["chef de projet"], "location": "Paris"}
     cards = hellowork._parse_cards(_fx("search_chef_de_projet_p1.html")) + hellowork._parse_cards(_fx("search_chef_de_projet_p2.html"))

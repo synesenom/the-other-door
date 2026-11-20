@@ -74,18 +74,6 @@ def _card(i, title, company):
             "url": f"https://www.profession.hu/allas/x-{i}"}
 
 
-def test_only_on_topic_titles_are_kept_and_grouped_by_employer_in_order_of_first_sight():
-    config = {"search_keywords": ["data scientist"], "location": "Budapest"}
-    cards = [_card(1, "Senior Data Scientist", "Globex Zrt."), _card(2, "Demand planner", "Vortex Kft."),
-             _card(3, "Data Scientist (Medior)", "GLOBEX ZRT."), _card(4, "Quality manager", "Soylent Kft."),
-             _card(5, "Data Scientist", "Alfa Kft.")]
-    got = paged_discovery.employers_of(cards, config)
-    assert [e["company"] for e in got] == ["Globex Zrt.", "Alfa Kft."]
-    assert got[0]["titles"] == ["Senior Data Scientist", "Data Scientist (Medior)"]
-    assert got[0]["links"] == ["https://www.profession.hu/allas/x-1", "https://www.profession.hu/allas/x-3"]
-    assert got[0]["job_ids"] == [] and got[0]["detailed"] is False
-
-
 def test_hungarian_keywords_keep_hungarian_titles_and_drop_the_rest():
     config = {"search_keywords": ["adatelemző"], "location": "Budapest"}
     cards = profession._parse_cards(_fx("search_adatelemzo_hu.html"))
