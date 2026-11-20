@@ -62,7 +62,7 @@ class _SiteRun:
         """Count one record; write it unless it is a known id or too old. Sets `capped`
         (and `cancelled`) once `max_postings_per_site` postings are written."""
         self.seen += 1
-        if self._streams and record.get("seen_only"):
+        if record.get("seen_only"):
             pid = record.get("platform_id")
             if pid:
                 self.store.touch(models.make_job_id(self.site, pid))

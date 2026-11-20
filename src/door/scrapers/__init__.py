@@ -126,9 +126,10 @@ _answered: set[str] = set()
 
 
 def record_answered(source: str) -> None:
-    """Mark that *source* read a recognised results page with no hits this run.
+    """Mark that *source* read a results page it recognises this run: no hits, or only ads it skips itself
+    (known ids, off topic).
 
-    A scraper that can tell "the search found nothing" from "the page is not what I know" calls it
+    A scraper that can tell "the search found nothing new" from "the page is not what I know" calls it
     for the first. `_scrape_core` drains it when the site finishes: no postings, no errors and this
     signal is a quiet day (`ok`), not an `empty` site that may have changed. Safe to call from any thread.
     """
@@ -137,7 +138,7 @@ def record_answered(source: str) -> None:
 
 
 def drain_answered(source: str) -> bool:
-    """Whether *source* answered with a recognised zero-hit page since the last drain; clears it."""
+    """Whether *source* read a recognised results page since the last drain; clears it."""
     with _errors_lock:
         if source in _answered:
             _answered.discard(source)

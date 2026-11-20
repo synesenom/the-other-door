@@ -68,6 +68,16 @@ def test_known_ids_and_old_jobs_are_skipped():
 
 
 @responses.activate
+def test_a_feed_of_only_known_jobs_is_a_quiet_day():
+    _serve()
+    ids = frozenset(p["platform_id"] for p in reliefweb.scrape(_ANY))
+    drain_answered("reliefweb")
+    _serve()
+    assert reliefweb.scrape(_ANY, known_ids=ids) == []
+    assert drain_answered("reliefweb") is True
+
+
+@responses.activate
 def test_each_keyword_is_one_feed_and_a_job_in_two_feeds_counts_once():
     _serve("monitoring evaluation")
     _serve("mel officer")

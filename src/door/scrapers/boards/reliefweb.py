@@ -155,8 +155,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             report(f"feed error (keyword={keyword!r}): {exc}")
             record_error("reliefweb", f"feed error (keyword={keyword!r}): {exc}")
             continue
-        if not items:
-            record_answered("reliefweb")
+        record_answered("reliefweb")  # a feed read, empty or all known, is a quiet day, not a changed site
         for item in items:
             platform_id = item["platform_id"]
             if platform_id in seen or platform_id in known_ids:

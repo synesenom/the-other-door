@@ -94,8 +94,7 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         report(f"list error: {exc}")
         record_error("globalnyt", f"list error: {exc}")
         return []
-    if not ads:
-        record_answered("globalnyt")
+    record_answered("globalnyt")  # a list read, empty or all known, is a quiet day, not a changed site
 
     postings: list[dict] = []
     for ad in ads:

@@ -121,7 +121,7 @@ def test_a_failed_request_is_recorded_and_the_next_keyword_still_runs():
     assert len(postings) == 3
     [error] = drain_errors()["arbetsformedlingen"]
     assert "first" in error
-    assert drain_answered("arbetsformedlingen") is False
+    assert drain_answered("arbetsformedlingen") is True   # the second keyword was read
     assert drain_pushback("arbetsformedlingen") is False
 
 
@@ -190,3 +190,12 @@ def test_probe_certificate_failure_is_unreachable_with_a_clear_reason():
     result = af.probe(_CFG)
     assert result["unreachable"] is True and "Telia" in result["reason"]
     assert drain_errors() == {}
+
+
+@responses.activate
+def test_a_search_of_only_known_ads_is_a_quiet_day():
+    _serve_pages()
+    known = frozenset(p["platform_id"] for p in af.scrape(_CFG))
+    drain_answered("arbetsformedlingen")
+    assert af.scrape(_CFG, known_ids=known) == []
+    assert drain_answered("arbetsformedlingen") is True
