@@ -4,7 +4,8 @@ name: Dependabot merge
 # version: those wait for a person. The workflows here run only for the paths a change touches, so no
 # check can be required by the main ruleset; this job waits for whichever ones did start instead.
 # A merge made with the workflow's token starts no push workflows on main: the pull request's own runs
-# are what checked it.
+# are what checked it. The main ruleset requires the `verify` status, which the verifier agent posts on
+# Claude's pull requests; this job posts it for Dependabot's once the checks are green.
 on:
   pull_request:
 
@@ -17,6 +18,7 @@ permissions:
   contents: write
   pull-requests: write
   checks: read
+  statuses: write
 
 jobs:
   merge:
@@ -46,4 +48,5 @@ jobs:
             echo "$runs" | grep -vq '^completed ' || break
             sleep 60
           done
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" -f state=success -f context=verify -f description="PASS: Dependabot, checks green"
           gh pr merge "$PR" --squash

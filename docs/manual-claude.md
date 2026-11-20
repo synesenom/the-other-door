@@ -119,8 +119,10 @@ interpreter is `.venv/Scripts/python.exe`, so `doctor --fix` registers a local-s
 starts it without asking. `doctor --fix` ends by starting the server once and checking it answers.
 In a Claude Code **cloud session** (claude.ai/code), which starts from a fresh clone with no
 `.venv/`, the `SessionStart` hook in the same file (`.claude/hooks/session-start.sh`) runs
-`poetry install` first, so the server connects there too; it does nothing in a local
-session, where `./scripts/setup.sh` is the install.
+`poetry install` first, so the server connects there too; a local session skips the install,
+`./scripts/setup.sh` being the install there. In every session the hook also lists your open
+pull requests that need something (a conflict, a failed or missing check, the `verify` status,
+a `Needs the maintainer:` line), so the conversation starts on them.
 
 ### Tools
 
