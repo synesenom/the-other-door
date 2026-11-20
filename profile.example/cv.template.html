@@ -77,7 +77,6 @@ p + p { margin-top: 3pt; }
 .contact span { display: inline-block; white-space: nowrap; margin-right: 0.5em; } /* a line breaks between details, never inside one */
 .contact span:not(:last-child)::after { content: "\00B7"; margin-left: 0.5em; } /* the dot ends a line, never starts one */
 .cv-header .tagline { margin-top: 2pt; font-size: 11pt; color: var(--muted); }
-/* To draw an icon by kind on a contact span: see docs/configuration.md. (This template draws none.) */
 
 /* with a photo: the details one per line beside it, so the name and the details are about as tall as the photo */
 .cv-header:has(.photo) { display: grid; grid-template-columns: 1fr 2.2cm; column-gap: 0.6cm; align-items: start; }

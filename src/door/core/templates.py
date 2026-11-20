@@ -73,15 +73,8 @@ def style_css(config: dict | None) -> str:
     return ":root{" + ";".join(rules) + "}" if rules else ""
 
 
-def _fonts_dir() -> Path:
-    """The folder the templates' `/fonts/...` is served from: the profile's own when it holds TrueType files, else the
-    code's. (Chromium writes a CFF `.otf` font into a PDF as nameless text.)"""
-    own = workspace.PROFILE_DIR / "fonts"
-    if own.is_dir() and any(own.glob("*.ttf")):
-        return own
-    return workspace.PROFILE_EXAMPLE_DIR / "fonts"
-
-
 def fonts() -> list[Path]:
-    """The fonts the print serves beside the page: the TrueType files `_fonts_dir` finds."""
-    return sorted(_fonts_dir().glob("*.ttf"))
+    """The fonts the print serves as `/fonts/...`: the TrueType files of the profile's `fonts/` when it holds any, else
+    the code's. (Chromium writes a CFF `.otf` font into a PDF as nameless text.)"""
+    own = sorted((workspace.PROFILE_DIR / "fonts").glob("*.ttf"))
+    return own or sorted((workspace.PROFILE_EXAMPLE_DIR / "fonts").glob("*.ttf"))

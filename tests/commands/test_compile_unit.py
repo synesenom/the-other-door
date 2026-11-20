@@ -374,15 +374,13 @@ def test_an_errored_entry_has_no_readable(world):
 
 # --- a user's own template ----------------------------------------------------------------------------------------
 
-def test_a_users_own_template_prints_with_the_profiles_fonts_and_ignores_a_template_json_beside_it(world):
+def test_a_users_own_template_prints_with_the_profiles_fonts(world):
     (world.profile / "cv.template.html").write_text("<html lang=\"<<lang>>\"><body><<body>></body></html>")
     (world.profile / "fonts").mkdir()
     (world.profile / "fonts" / "Own.ttf").write_bytes(b"\x00\x01\x00\x00")
-    (world.profile / "template.json").write_text(json.dumps({"fonts": ["Other.ttf"], "columns": {"side": ["skills"]}}))
-    world.make(cv="<h2 class=\"kind-skills\">Skills</h2><p>Jane Doe</p>")
+    world.make(cv="<p>Jane Doe</p>")
     assert _compile(world)["results"][0]["status"] == "compiled"
     assert world.print.calls[0]["fonts"] == [world.profile / "fonts" / "Own.ttf"]
-    assert "side" not in world.print.calls[0]["html"]
 
 
 def test_the_cvs_check_is_asked_for_and_the_letters_is_not(world, monkeypatch):

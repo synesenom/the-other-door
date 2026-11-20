@@ -49,8 +49,8 @@ def _fill_placeholders(body: str, posting: dict, output_dir: Path) -> str:
 
 
 def _read_back(entry: dict, pdf: Path, body: str, config: dict, cv: bool = False) -> None:
-    """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from (a CV's sections as
-    placed); `cv` adds the CV's overflow and layout checks; a failing check is a ``warning``, never a failed compile."""
+    """Set ``entry["readable"]`` from the compiled PDF, read against the `body` it was printed from; `cv` adds the
+    CV's overflow and page checks; a failing check is a ``warning``, never a failed compile."""
     try:
         entry["readable"] = readability.check_pdf(pdf, body, config.get("name"), cv=cv)
     except Exception as exc:  # the check must never fail a compile
@@ -132,7 +132,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             raise common.NoChromium
         try:
             photo = page_mod.profile_photo(config, posting)
-            pdf, placed, photo_name = page_mod.print_page(
+            pdf, photo_name = page_mod.print_page(
                 body, template, language, output_dir, Path(file).stem, photo=photo,
                 style=templates.style_css(config))
         except (ValueError, html_pdf.PrintError) as exc:
@@ -143,7 +143,7 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             entry["photo"] = photo_name
             photos.append(photo_name)
         entry.update(status="compiled", pdf=str(pdf))
-        _read_back(entry, pdf, placed, config, cv=file == "cv.html")
+        _read_back(entry, pdf, body, config, cv=file == "cv.html")
         results.append(entry)
 
     for name in page_mod.PHOTO_FILES.values():  # a photo from an earlier compile that this one does not use

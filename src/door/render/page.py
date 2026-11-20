@@ -1,6 +1,6 @@
 """Page assembly for a CV or letter body (#355): the photo placed, the language's
-typography, the body wrapped in the template and printed with the pinned Chromium (`html_pdf`). `commands/compile`
-(a prepared job) and `commands/matches` (the CV as placed) all place a body through this module.
+typography, the body wrapped in the template and printed with the pinned Chromium (`html_pdf`). `commands/compile` (a prepared job) and
+`commands/cv_style_sample` (the style previews) place a body through this module.
 """
 
 import re
@@ -47,16 +47,16 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-def _page(body: str, template: str, folder: Path, *, photo: Path | None, language: str, style: str = "") -> tuple[str, str, str | None]:
+def _page(body: str, template: str, folder: Path, *, photo: Path | None, language: str, style: str = "") -> tuple[str, str | None]:
     """The page `print_page` prints for a body: the photo placed (copied into `folder`), the language's
-    typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
-    the body as placed and the photo's file name (None when it was not placed).
+    typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page and the
+    photo's file name (None when it was not placed).
 
     Raises:
         ValueError: the template cannot hold the body.
     """
     placed, name = _with_photo(body, template, folder, photo)
-    return _wrap(template, _glue_separators(typography.apply(placed, language)), language, style), placed, name
+    return _wrap(template, _glue_separators(typography.apply(placed, language)), language, style), name
 
 
 _SEP_SPACE = re.compile(r'(<span class="sep">) ')
@@ -69,9 +69,9 @@ def _glue_separators(body: str) -> str:
 
 
 def print_page(body: str, template: str, lang: str, folder: Path, name: str, *, photo: Path | None = None,
-               style: str = "") -> tuple[Path, str, str | None]:
+               style: str = "") -> tuple[Path, str | None]:
     """`body` placed in `template` (its text) by `_page` and printed to `folder/<name>.pdf` with the pinned Chromium,
-    the fonts (`templates.fonts`) served. Returns the pdf, the body as placed and the
+    the fonts (`templates.fonts`) served. Returns the pdf and the
     photo's file name in `folder` (None when it was not placed). `style` (`templates.style_css`) goes in the page's head.
 
     Raises:
@@ -79,10 +79,10 @@ def print_page(body: str, template: str, lang: str, folder: Path, name: str, *, 
         ValueError: the template cannot be used.
     """
     folder.mkdir(parents=True, exist_ok=True)
-    html_text, placed, picture = _page(body, template, folder, photo=photo, language=lang, style=style)
+    html_text, picture = _page(body, template, folder, photo=photo, language=lang, style=style)
     pdf = folder / f"{name}.pdf"
     html_pdf.print_html(folder, html_text, pdf, fonts=templates.fonts())
-    return pdf, placed, picture
+    return pdf, picture
 
 
 def _wrap(template: str, body: str, language: str, style: str = "") -> str:

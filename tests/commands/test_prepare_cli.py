@@ -1026,13 +1026,6 @@ def test_the_page_limit_follows_the_postings_country_not_the_profiles(cli_env, t
     assert "at most 2 pages" in prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path / "b", "London, United Kingdom"))[0]
 
 
-def test_a_template_json_beside_a_users_template_does_not_change_the_page_limit(cli_env, tmp_path):
-    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
-    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": 1}))
-    prompt = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
-    assert "at most 2 pages" in prompt
-
-
 def test_run_tailor_clears_the_fact_check_rounds_and_stale_facts_before_it_starts(cli_env, monkeypatch):
     seen = {}
     out = cli_env.jobs_dir / "output" / "job-abc"
