@@ -49,7 +49,7 @@ def arg(name: str) -> str | None:
 
 # What each kind of answer costs at API prices (`total_cost_usd`, #67): fixed, round figures, so
 # `status_summary`'s `cost` and Analytics' Claude usage read the same in every run.
-COST_USD = {"cv_read": 0.01, "structure": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "stylist": 0.30}
+COST_USD = {"cv_read": 0.01, "structure": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "facts": 0.01, "stylist": 0.30}
 OTHER_COST_USD = 0.03
 
 
@@ -111,6 +111,7 @@ KINDS = [
     ("titles", "You suggest the job titles"),
     ("gaps", "You write a skill-gap analysis"),
     ("revise", "You are revising the body of an HTML"),
+    ("facts", "You check a tailored CV and cover letter"),
     ("market", "You group skill names"),
     ("ask", "You answer one question about the user's job search"),
     ("careers", "You find the official careers page"),
@@ -176,7 +177,9 @@ elif kind == "revise":
     paragraphs = [p for p in body.split("\n\n") if p.strip()]
     if len(paragraphs) > 2:
         paragraphs = paragraphs[:-1]  # every instruction here makes it shorter: the last paragraph goes
-    envelope("\n\n".join(paragraphs))  # revise reads the envelope of a stream-json run
+    envelope({"body": "\n\n".join(paragraphs)})
+elif kind == "facts":
+    envelope(said.get("answer") or {"findings": W.get("facts", [])})  # the world's claims the sources do not back: none
 elif kind == "tailor":
     import subprocess
 
