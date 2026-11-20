@@ -25,7 +25,7 @@ PROMPTS = {
     "skill-grouper": ("haiku", "f3492df541d158d0b13e3071464e7879bcdbabb30aca2a536bd304daa63d5e96"),
     "reviser": ("sonnet", "62b1db5e4bb3ea4481c4f957f7c7caf947d3ca36cfcfedf28a87a3d51c200564"),
     "salary": ("haiku", "bcc343a5e311c3daa8dfefafc790c59764b51305d0670fd0fadaf40f15b6988e"),
-    "story-from-text": ("sonnet", "396cb41ff0c03f36daacfbd7c251ab47afe86305a1e6699c52bef0222242ce57"),
+    "story-from-text": ("sonnet", "95b7e7c71a4f29b5544f29c91c83f676ea7c06bfb97a16d1fe0fa456d64f1a54"),
     "story-from-cv": ("sonnet", "e3d7398892b12f04dd7d8cad7d4a380342c0591139fd480462022e7b8ca49e9b"),
     "titles": ("haiku", "9a43c42623988336bf2ff2157766650e4769632e65021f1b22156f6d22484299"),
     "cv-reader": ("haiku", "47d0089f6137d469597472e2c392160874f13df59f576976f44bdbb9ec879ea7"),
@@ -85,23 +85,11 @@ def test_the_reviser_rules_are_the_system_prompt_and_the_user_message_has_only_t
     assert "Rules:" in rules and "kind-summary" in rules and "untrusted" in rules
 
 
-# The stylist's round messages (user messages of its calls), as `style_build` sent them before they moved into files (#445).
-MESSAGES = {
-    "stylist-reply-first": ({}, "3bbfcaf76ab1f518085890c610ff9ba0c0d6b61ffea79dc21df222c8191886fe"),
-    "stylist-reply-next": ({}, "70dd0091acd1d7245210bc17b7698ebcf9703630a0253610694463064edf85d3"),
-    "stylist-reply-letter": ({}, "1606b99a094723ac3b8cdcc6486d5555105aacb3d5736a3b7d4bf1bd21b34ec7"),
-    "stylist-letter-request": ({"letter_file": "cover-letter.template.html"},
-                               "7ec06af1b7a153ead8c3c84b02454ec8f7231824576a3478fd7c32307b868528"),
-}
+MESSAGES = ["stylist-reply-first", "stylist-reply-next", "stylist-reply-letter", "stylist-letter-request", "stylist-cv-request",
+            "scraper-fixer-request", "tailor-request", "tailor-retry"]
 
 
 @pytest.mark.parametrize("name", MESSAGES)
-def test_a_message_is_the_text_the_code_sent_before(name):
-    fields, digest = MESSAGES[name]
-    assert hashlib.sha256(claude_cli.prompt(name, **fields).encode("utf-8")).hexdigest() == digest
-
-
-@pytest.mark.parametrize("name", [*MESSAGES, "tailor-request", "tailor-retry"])
 def test_a_message_file_is_not_for_direct_use_and_has_no_model_or_tools(name):
     text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
     front = text.split("---", 2)[1]

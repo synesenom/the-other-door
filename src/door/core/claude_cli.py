@@ -218,7 +218,7 @@ def agent_definition(name: str) -> dict:
 
 
 def prompt(name: str, **fields: str) -> str:
-    """The system prompt in `.claude/agents/<name>.md`: its body, with each `{field}` given replaced by its value
+    """The text in `.claude/agents/<name>.md`: its body (a system prompt, or for a message file the user message), with each `{field}` given replaced by its value
     in one pass (a value is never read for fields, and a prompt's other braces need no escaping)."""
     return re.sub(r"\{(\w+)\}", lambda m: fields.get(m[1], m[0]), _agent_file(name)[1].strip())
 

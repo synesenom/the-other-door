@@ -46,7 +46,7 @@ if ($LASTEXITCODE -ne 0) { throw 'pip install failed' }
 # 3. door itself, laid out as in a checkout
 robocopy (Join-Path $Repo 'src') (Join-Path $Out 'door\src') /E /XD __pycache__ /NFL /NDL /NJH /NJS | Out-Null
 # the agent files src/door names (tests/core/test_prompts_unit.py checks)
-$Agents = 'ask', 'careers-finder', 'cv-drafter', 'cv-enricher', 'cv-reader', 'cv-structure', 'fact-checker', 'keywords', 'matcher', 'posting-reader', 'reviewer', 'reviser', 'salary', 'scorer', 'scraper-fixer', 'skill-gaps', 'skill-grouper', 'story-from-cv', 'story-from-text', 'stylist', 'stylist-letter-request', 'stylist-reply-first', 'stylist-reply-letter', 'stylist-reply-next', 'tailor', 'tailor-request', 'tailor-retry', 'title-translator', 'titles'
+$Agents = 'ask', 'careers-finder', 'cv-drafter', 'cv-enricher', 'cv-reader', 'cv-structure', 'fact-checker', 'keywords', 'matcher', 'posting-reader', 'reviewer', 'reviser', 'salary', 'scorer', 'scraper-fixer', 'scraper-fixer-request', 'skill-gaps', 'skill-grouper', 'story-from-cv', 'story-from-text', 'stylist', 'stylist-cv-request', 'stylist-letter-request', 'stylist-reply-first', 'stylist-reply-letter', 'stylist-reply-next', 'tailor', 'tailor-request', 'tailor-retry', 'title-translator', 'titles'
 foreach ($Agent in $Agents) { Copy-Item (Join-Path $Repo ".claude\agents\$Agent.md") (Join-Path $Out 'door\.claude\agents') }
 robocopy (Join-Path $Repo 'profile.example') (Join-Path $Out 'door\profile.example') /E /NFL /NDL /NJH /NJS | Out-Null
 

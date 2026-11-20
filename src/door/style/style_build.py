@@ -612,15 +612,9 @@ def _files_text(s: _Session, notes: str, icon_files: dict[str, str]) -> str:
                                                        f'{b["x0"]:.0f}-{b["x1"]:.0f} pt' for b in s.style["columns"]["bands"])
             + ": place each there with CSS"
         )
-    return (
-        f"Rebuild the look of the CV in this folder as a template. Files here: original_page_1.png to original_page_{pages}.png "
-        f"(the CV; look at them with the Read tool), style.json, text.txt, fonts.css, template.json. "
-        f"Your last template, when there is one, is cv.template.html and the print of the last one that printed is "
-        f"render_page_1.png and on (render_page_N.png for the other pages).\n"
-        f"Fonts (use only these; the @font-face rules are in fonts.css):\n{notes or '- none: use generic families'}\n"
-        f"Icons you may draw, by kind: {icons}.\nSide column: {columns}. Page limit: {s.manifest.max_pages}. "
-        f"Page size: {_page_size(s.style)}, set it with @page size."
-    )
+    return claude_cli.prompt(
+        "stylist-cv-request", pages=str(pages), fonts=notes or "- none: use generic families", icons=icons, columns=columns,
+        max_pages=str(s.manifest.max_pages), page_size=_page_size(s.style))
 
 
 def _list(items: list[str]) -> str:
@@ -647,7 +641,8 @@ def _draft(s: _Session, files: str, cap: int) -> tuple[str | None, str | None, l
     for number in range(1, cap + 1):
         progress_mod.report(f"building the template, round {number}", done=number, total=cap, stage="style")
         first = body is None
-        reply = blocks(s.ask(_task(files, feedback, claude_cli.prompt("stylist-reply-first" if first else "stylist-reply-next"))))
+        ask_for = claude_cli.prompt("stylist-reply-first" if first else "stylist-reply-next")
+        reply = blocks(s.ask(_task(files, feedback, ask_for)))
         template = reply.get("template")
         if template is None:
             feedback = "Your reply had no ```template block: the whole page in one fenced block named template."

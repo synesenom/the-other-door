@@ -61,7 +61,7 @@ PIP_CACHE_DIR="$CACHE/pip" "$PY" -s -m pip install --quiet --disable-pip-version
 # 3. The other door itself, laid out as in a checkout (REPO_ROOT = door/)
 rsync -a --exclude '__pycache__' "$REPO/src/" "$OUT/door/src/"
 # the agent files src/door names (tests/core/test_prompts_unit.py checks)
-AGENTS=(ask careers-finder cv-drafter cv-enricher cv-reader cv-structure fact-checker keywords matcher posting-reader reviewer reviser salary scorer scraper-fixer skill-gaps skill-grouper story-from-cv story-from-text stylist stylist-letter-request stylist-reply-first stylist-reply-letter stylist-reply-next tailor tailor-request tailor-retry title-translator titles)
+AGENTS=(ask careers-finder cv-drafter cv-enricher cv-reader cv-structure fact-checker keywords matcher posting-reader reviewer reviser salary scorer scraper-fixer scraper-fixer-request skill-gaps skill-grouper story-from-cv story-from-text stylist stylist-cv-request stylist-letter-request stylist-reply-first stylist-reply-letter stylist-reply-next tailor tailor-request tailor-retry title-translator titles)
 for a in "${AGENTS[@]}"; do cp "$REPO/.claude/agents/$a.md" "$OUT/door/.claude/agents/"; done
 rsync -a "$REPO/profile.example/" "$OUT/door/profile.example/"
 
