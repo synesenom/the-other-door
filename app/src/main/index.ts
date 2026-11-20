@@ -112,10 +112,10 @@ const notify = createNotifier({
   Notification,
   isFocused: () => BrowserWindow.getAllWindows().some((w) => w.isFocused()),
   focusWindow: () => void focusWindow(),
-  send: (channel, target) => {
+  send: (target) => {
     const win = BrowserWindow.getAllWindows()[0] ?? focusWindow()
-    if (win.webContents.isLoading()) win.webContents.once('did-finish-load', () => win.webContents.send(channel, target))
-    else win.webContents.send(channel, target)
+    if (win.webContents.isLoading()) win.webContents.once('did-finish-load', () => pushEvent(win, 'open', target))
+    else pushEvent(win, 'open', target)
   },
 })
 // A run somebody else started (a terminal, Claude Code) ends: say so once.

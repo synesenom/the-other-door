@@ -10,6 +10,7 @@ import fixtures from './fixtures.json'
 import cvPage1 from '../../test/fixtures/prepared/cv_page_1.png'
 import cvPage2 from '../../test/fixtures/prepared/cv_page_2.png'
 import letterPage1 from '../../test/fixtures/prepared/cover_letter_page_1.png'
+import { unknownAction } from '../renderer/unknown-action'
 import { SAMPLE_RUN, type DataState, type Scene } from './scenes'
 import pairQr from './pair-qr.svg?raw'
 
@@ -318,9 +319,9 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       gateReads = 1
       return { environment: 'production' as const, home: '/demo' }
     },
-    'export-data': async () => (scene.fails?.exportData ? { ok: false, error: scene.fails.exportData } : { ok: false, canceled: true }),
+    'export-data': async () => (scene.fails?.['export-data'] ? { ok: false, error: scene.fails['export-data'] } : { ok: false, canceled: true }),
     'pick-archive': async () => ({ canceled: true }),
-    'report-problem': async () => (scene.fails?.reportProblem ? { ok: false, error: scene.fails.reportProblem } : { ok: false, canceled: true }),
+    'report-problem': async () => (scene.fails?.['report-problem'] ? { ok: false, error: scene.fails['report-problem'] } : { ok: false, canceled: true }),
     'show-home': done,
     'check-update': async () => ({ enabled: false as const }),
     'install-update': async () => ({ ok: false }),
@@ -361,9 +362,9 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     onProgress: never,
     invoke: ((action: ActionName, ...args: unknown[]) => {
       const handler = actions[action] as ((...a: unknown[]) => unknown) | undefined
-      return handler ? Promise.resolve(handler(...args)) : Promise.reject(new Error(`the preview has no action ${action}`))
+      return handler ? Promise.resolve(handler(...args)) : Promise.reject(new Error(unknownAction(action)))
     }) as Window['door']['invoke'],
-    on: ((event: keyof Events, cb: (payload: never) => void) => (subscribers[event] as (cb: (payload: never) => void) => () => void)(cb)) as Window['door']['on'],
+    on: ((event: keyof Events, cb: (payload: never) => void) => ((subscribers[event] as ((cb: (payload: never) => void) => () => void) | undefined) ?? never)(cb)) as Window['door']['on'],
     onBeforeClose: never,
     dropCvFiles: async (files) => ({ files: files.map((f, i) => ({ token: `preview-drop-${i}`, name: f.name, size: f.size })), refused: [] }),
     pageUrl,

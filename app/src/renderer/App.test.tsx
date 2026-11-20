@@ -178,7 +178,8 @@ describe('App', () => {
   })
 
   it('says so in a banner and the window title when it runs in the sandbox', async () => {
-    const { info } = setup()
+    const { actions } = setup()
+    const info = actions['info']
     info.mockResolvedValue({ environment: 'sandbox' })
     render(<App />)
     const tag = await screen.findByRole('note', { name: 'Sandbox' })
@@ -342,7 +343,7 @@ describe('App, Find new jobs', () => {
 
   it('a run already going when the window opens is shown', async () => {
     const h = runSetup()
-    await h.runBoard.mockResolvedValue({ active: true, own: false, started_at: RECORD.started_at, purpose: 'run', message: 'm', steps: [] } as never)
+    await h.actions['current-board'].mockResolvedValue({ active: true, own: false, started_at: RECORD.started_at, purpose: 'run', message: 'm', steps: [] } as never)
     render(<App />)
     expect(await screen.findByText(/A run started elsewhere is in progress/)).toBeInTheDocument()
   })
@@ -364,7 +365,7 @@ describe('App, Find new jobs', () => {
     })
     render(<App />)
     await screen.findByRole('heading', { name: 'Matches' })
-    h.runBoard.mockResolvedValue({ active: true, own: false, started_at: RECORD.started_at, purpose: 'run', message: 'm', steps: [] } as never)
+    h.actions['current-board'].mockResolvedValue({ active: true, own: false, started_at: RECORD.started_at, purpose: 'run', message: 'm', steps: [] } as never)
     await userEvent.click(sidebarButton())
     expect(await screen.findByText(/A run started elsewhere is in progress/)).toBeInTheDocument()
     expect(screen.queryByRole('alert')).toBeNull()
@@ -431,15 +432,15 @@ describe('App, Find new jobs', () => {
     })
 
     it('ignores a target it does not know, and unsubscribes on unmount', async () => {
-      const { pushOpen, openListeners } = open()
+      const { pushOpen, listeners } = open()
       const { unmount } = render(<App />)
       await screen.findByRole('heading', { name: 'Matches' })
-      act(() => pushOpen({ screen: 'nowhere' }))
-      act(() => pushOpen(null))
+      act(() => pushOpen({ screen: 'nowhere' } as never))
+      act(() => pushOpen(null as never))
       expect(screen.getByRole('heading', { name: 'Matches' })).toBeInTheDocument()
-      expect(openListeners.size).toBe(1) // subscribed
+      expect(listeners.open.size).toBe(1) // subscribed
       unmount()
-      expect(openListeners.size).toBe(0) // the unsubscribe from onOpen ran
+      expect(listeners.open.size).toBe(0) // the unsubscribe from the open event ran
     })
   })
 })
@@ -459,13 +460,14 @@ describe('App, the first-launch gate', () => {
   })
 
   it('Save on a first launch goes straight to Finding jobs with a first run', async () => {
-    const { call, pickCvFiles } = gated(freshProfile, {
+    const { call, actions } = gated(freshProfile, {
       draft_cv: { markdown: '# Ada\n', provenance: [], todos: [], sources: [] },
       infer_basics: { name: 'Ada', email: 'ada@x.dk', location: 'Aarhus', languages: ['English'], remote: 'hybrid', missing: [] },
       suggest_titles: { titles: [{ title: 'Lead', reason: 'you led', recommended: true }] },
       keywords: { keywords: ['lead'], topic_terms: [] },
       init_profile: {}, save_cv: {}, find_jobs: () => new Promise(() => {}),
     })
+    const pickCvFiles = actions['pick-cv-files']
     pickCvFiles.mockResolvedValue({ files: [{ token: 't', name: 'cv.pdf', size: 1 }], refused: [] })
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: 'Drop relevant documents here (CV or LinkedIn PDF)' }))
@@ -481,13 +483,14 @@ describe('App, the first-launch gate', () => {
   it('a first run with few matches reminds about the discovery sources left off; a later one does not', async () => {
     const saved = { ...existingProfile, config: { ...existingProfile.config!, linkedin_discovery: false, hellowork_discovery: false } }
     let reads = 0
-    const { pickCvFiles } = gated(() => (reads++ === 0 ? freshProfile : saved), {
+    const { actions } = gated(() => (reads++ === 0 ? freshProfile : saved), {
       draft_cv: { markdown: '# Ada\n', provenance: [], todos: [], sources: [] },
       infer_basics: { name: 'Ada', email: 'ada@x.dk', location: 'Aarhus', languages: ['English'], remote: 'hybrid', missing: [] },
       suggest_titles: { titles: [{ title: 'Lead', reason: 'you led', recommended: true }] },
       keywords: { keywords: ['lead'], topic_terms: [] },
       init_profile: {}, save_cv: {}, find_jobs: { ...RECORD, new_above_threshold: [], top: [] },
     })
+    const pickCvFiles = actions['pick-cv-files']
     pickCvFiles.mockResolvedValue({ files: [{ token: 't', name: 'cv.pdf', size: 1 }], refused: [] })
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: 'Drop relevant documents here (CV or LinkedIn PDF)' }))
@@ -522,7 +525,8 @@ describe('App, the first-launch gate', () => {
   })
 
   it('on the phone: Matches, Applications and Settings; the profile is changed on the computer', async () => {
-    const { info } = gated(profile())
+    const { actions } = gated(profile())
+    const info = actions['info']
     info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
     const nav = await screen.findByRole('navigation')
@@ -530,7 +534,8 @@ describe('App, the first-launch gate', () => {
   })
 
   it('on the phone, doctor is never asked and what needs you is said, not a button to a screen it lacks', async () => {
-    const { info, call } = gated(profile({ cv: cvState(), discovery_unchosen: [{ key: 'linkedin_discovery', label: 'LinkedIn' }] }))
+    const { actions, call } = gated(profile({ cv: cvState(), discovery_unchosen: [{ key: 'linkedin_discovery', label: 'LinkedIn' }] }))
+    const info = actions['info']
     info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
     const foot = await screen.findByRole('group', { name: 'Needs you' })
@@ -543,7 +548,8 @@ describe('App, the first-launch gate', () => {
   })
 
   it('on the phone, a home with no profile says to set The other door up on the computer running The other door', async () => {
-    const { info } = gated(freshProfile)
+    const { actions } = gated(freshProfile)
+    const info = actions['info']
     info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
     expect(await screen.findByRole('heading', { name: 'Set up The other door first' })).toBeInTheDocument()
@@ -553,7 +559,8 @@ describe('App, the first-launch gate', () => {
 
   it('shows it in staging and an empty sandbox, with no way to Google Drive', async () => {
     for (const environment of ['staging', 'sandbox'] as const) {
-      const { info } = gated(freshProfile)
+      const { actions } = gated(freshProfile)
+      const info = actions['info']
       info.mockResolvedValue({ environment })
       render(<App />)
       expect(await screen.findByRole('heading', { name: 'Tell me about yourself' })).toBeInTheDocument()
@@ -571,7 +578,8 @@ describe('App, the first-launch gate', () => {
   })
 
   it('says in the sidebar and the title that it is staging', async () => {
-    const { info } = gated(profile())
+    const { actions } = gated(profile())
+    const info = actions['info']
     info.mockResolvedValue({ environment: 'staging' })
     render(<App />)
     expect(await screen.findByRole('note', { name: 'Staging' })).toHaveTextContent('Staging')
@@ -636,7 +644,7 @@ describe('App, the first-launch gate', () => {
       cleanup()
       const drive = { connected: true, account: 'a@b.c', last_synced: null, last_error: null, configured: true }
       const phone = gated(profile(), { status_summary: summary({ drive }) })
-      phone.info.mockResolvedValue({ environment: 'production', remote: true })
+      phone.actions['info'].mockResolvedValue({ environment: 'production', remote: true })
       render(<App />)
       await screen.findByRole('heading', { name: 'Matches' })
       await waitFor(() => expect(phone.call.mock.calls.map((c) => c[0])).toContain('status_summary'))
@@ -692,7 +700,7 @@ describe('App, the first-launch gate', () => {
       const report = await screen.findByRole('region', { name: 'Report a problem' })
       expect(within(report).getByRole('button', { name: 'Save logs…' })).toBeVisible()
       expect(screen.getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-current', 'page')
-      expect(h.reportProblem).not.toHaveBeenCalled()
+      expect(h.actions['report-problem']).not.toHaveBeenCalled()
     })
 
     it('data that could not be upgraded is said at the sidebar even though every other tool refuses', async () => {
@@ -714,14 +722,15 @@ describe('App, the first-launch gate', () => {
       await userEvent.click(await (await sidebar()).findByRole('button', { name: 'Something keeps going wrong. Send a report' }))
       const report = await screen.findByRole('region', { name: 'Report a problem' })
       recurring = false
-      h.reportProblem.mockResolvedValueOnce({ ok: true, data: { path: '/Users/ada/Desktop/door-report-2026-10-26.zip', files: [], bytes: 1 } })
+      h.actions['report-problem'].mockResolvedValueOnce({ ok: true, data: { path: '/Users/ada/Desktop/door-report-2026-10-26.zip', files: [], bytes: 1 } })
       await userEvent.click(within(report).getByRole('button', { name: 'Save logs…' }))
       await waitFor(() => expect(lines().queryByRole('button', { name: 'Something keeps going wrong. Send a report' })).toBeNull())
       expect(within(screen.getByRole('region', { name: 'Report a problem' })).getByText(/^Saved as door-report-2026-10-26\.zip\./)).toBeInTheDocument()
     })
 
     it('on the phone, something that keeps going wrong is not said: the report is made on the computer', async () => {
-      const { info, call } = gated(profile(), { status_summary: summary({ recurring_problem: true }) })
+      const { actions, call } = gated(profile(), { status_summary: summary({ recurring_problem: true }) })
+      const info = actions['info']
       info.mockResolvedValue({ environment: 'production', remote: true })
       render(<App />)
       await screen.findByRole('heading', { name: 'Matches' })
@@ -732,7 +741,8 @@ describe('App, the first-launch gate', () => {
 
     it('on the phone, the plan line is said, as plain text', async () => {
       const low = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.9 }, room: { find: 1, prepare: 2 }, binding: 'five_hour' }
-      const { info } = gated(profile(), { status_summary: summary({ plan: low }) })
+      const { actions } = gated(profile(), { status_summary: summary({ plan: low }) })
+      const info = actions['info']
       info.mockResolvedValue({ environment: 'production', remote: true })
       render(<App />)
       const line = await screen.findByText('Claude can prepare 2 more')

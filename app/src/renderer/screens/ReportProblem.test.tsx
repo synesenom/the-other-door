@@ -15,13 +15,15 @@ function show() {
 
 describe('Report a problem', () => {
   it('says what it saves and what it never holds, before anything is saved', () => {
-    const { reportProblem } = show()
+    const { actions } = show()
+    const reportProblem = actions['report-problem']
     expect(screen.getByText(/^Saves one file to send when something does not work/)).toHaveTextContent('No CV, profile, job ads or applications; emails and folder names are hidden.')
     expect(reportProblem).not.toHaveBeenCalled()
   })
 
   it('saves where the dialog said and says whom to send it to', async () => {
-    const { reportProblem, call } = show()
+    const { actions, call } = show()
+    const reportProblem = actions['report-problem']
     reportProblem.mockResolvedValueOnce({ ok: true, data: { path: '/Users/ada/Desktop/door-report-2026-10-26.zip', files: ['README.txt'], bytes: 4000 } })
     await userEvent.click(screen.getByRole('button', { name: 'Save logs…' }))
     expect(await screen.findByText('Saved as door-report-2026-10-26.zip. Send it to enys.mones@gmail.com.')).toBeInTheDocument()
@@ -29,7 +31,8 @@ describe('Report a problem', () => {
   })
 
   it('a cancelled dialog says nothing; a refused save says why', async () => {
-    const { reportProblem } = show()
+    const { actions } = show()
+    const reportProblem = actions['report-problem']
     await userEvent.click(screen.getByRole('button', { name: 'Save logs…' }))
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.queryByText(/^Saved as/)).toBeNull()

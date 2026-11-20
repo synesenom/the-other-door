@@ -226,6 +226,24 @@ renderer (React) -- window.door.call / onProgress / invoke / on --> main (ipc.ts
   (`DoorServer.stop()`), the call rejects as stopped and the next call starts a new child; a
   run started elsewhere cannot be stopped from here. "Show run record" is `door:show-run` (the
   run's `started_at`, mapped to `jobs/runs/<name>.json` like `find.py` does).
+- A main-process action (anything the window asks of main that is not a tool: open a link, save a
+  PDF, pick a file, the sign-in, the update) is **one entry of `buildActions` in `src/main/ipc.ts`**:
+  its handler, and by its parameters and answer its type. `window.door.invoke(action, ...args)`
+  reaches it as `door:<action>`; `door.d.ts`, the preload, the phone bridge, the preview and the
+  test stand-in all read the table's types, so a misspelled action fails the typecheck. Nothing else
+  is added for it:
+  - the **phone** (`src/web/bridge.ts`) answers only the actions on its own list and refuses every
+    other one ("is not available on the phone"), on purpose;
+  - the **preview** (`src/preview/mock-door.ts`) answers only the actions its scenes use; any other
+    is refused with `unknown action <name>` (`src/renderer/unknown-action.ts`, the same words as the
+    test stand-in);
+  - a **screen test** (`src/renderer/testing.ts`) gives the action its answer itself:
+    `mockDoor(handlers, { actions: { 'save-material': fn } })` or
+    `m.actions['save-material'].mockResolvedValueOnce(...)`, and asserts on
+    `expect(m.invoke).toHaveBeenCalledWith('save-material', ...)` or on that action's mock.
+  What main pushes is the same: one entry of `Events`/`EVENTS` in `ipc.ts`, sent with `pushEvent`
+  (a notification's click too), read with `window.door.on(event, cb)`; an unknown event gets a no-op
+  unsubscribe everywhere.
 - Fonts: Young Serif and Figtree, and Playfair Display, Lato, Montserrat and Merriweather (the CV style's font blocks), come from `@fontsource` packages (pinned,
   bundled by Vite, no request at run time); a build copies their SIL OFL licences to
   `out/renderer/licenses/`.

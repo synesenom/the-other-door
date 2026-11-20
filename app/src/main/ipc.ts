@@ -205,9 +205,9 @@ export interface IpcDeps {
 }
 
 /** What `window.door.invoke(action, ...args)` reaches, one entry per action: its handler and, by its parameters and answer, its type
- * (door.d.ts, the phone bridge, the preview and the test stand-in all read it). A new action is one entry here and nothing else.
+ * (door.d.ts, the phone bridge, the preview and the test stand-in all read its types). A new action is one entry here and nothing else: the phone refuses what is not on its list, the preview answers only what its scenes use, and a screen test gives the action its answer (app/README.md).
  * `door:call` is not here: it keeps its own handler (tokens, PATH_ARGS, progress). */
-function buildActions(deps: IpcDeps, server: ServerLike, state: { runs: () => number; demo: () => { stop: () => void } | null }) {
+export function buildActions(deps: IpcDeps, server: ServerLike, state: { runs: () => number; demo: () => { stop: () => void } | null }) {
   return {
     // A link opener.
     'open-external': async (url: string): Promise<{ ok: boolean; error?: string }> => {

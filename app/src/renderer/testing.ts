@@ -1,9 +1,13 @@
-// Test helper: a stand-in for the preload's window.door. A handler is a value
+// Test helper: a stand-in for the preload's window.door. A tool handler is a value
 // (the tool's result) or a function of the arguments; throwing { message,
-// candidates? } answers the way a failed tool does.
-import { vi } from 'vitest'
-import type { UpdateResult } from '../main/updates'
-import type { Environment } from '../main/environments'
+// candidates? } answers the way a failed tool does. Every other capability is an action
+// (src/main/ipc.ts's `buildActions`): `m.actions[name]` is its `vi.fn`, answering a default until a
+// test gives it another answer (`mockDoor(handlers, { actions: { 'save-material': fn } })` or
+// `m.actions['save-material'].mockResolvedValueOnce(...)`). A new action needs no entry here:
+// a test that reaches it gives it its answer; an action with no answer is refused.
+import { vi, type Mock } from 'vitest'
+import { EVENTS, type ActionArgs, type ActionName, type ActionResult, type Events } from '../main/ipc'
+import { unknownAction } from './unknown-action'
 
 type Handler = unknown | ((args: Record<string, unknown>) => unknown)
 
@@ -17,7 +21,12 @@ const SAVED_PROFILE = {
   enrich_sources: [],
 }
 
-export function mockDoor(given: Record<string, Handler>) {
+type Answers = { [A in ActionName]: (...args: ActionArgs<A>) => ActionResult<A> | Promise<ActionResult<A>> }
+type ActionMocks = { [A in ActionName]: Mock<(...args: ActionArgs<A>) => Promise<ActionResult<A>>> }
+type Progress = { progress: number; total?: number; message: string }
+type Listeners = { [E in keyof Events]: Set<(payload: Events[E]) => void> }
+
+export function mockDoor(given: Record<string, Handler>, options: { actions?: Partial<Answers> } = {}) {
   const handlers: Record<string, Handler> = { show_profile: SAVED_PROFILE, ...given }
   // `tokens`: the picked files of draft_cv, enrich, save_photo, import_data (their handler gets them as `tokens`)
   const call = vi.fn(async (tool: string, args: Record<string, unknown> = {}, _callId?: string, tokens?: string[]) => {
@@ -31,15 +40,66 @@ export function mockDoor(given: Record<string, Handler>) {
       return { ok: false, error: err.message, ...(err.candidates ? { candidates: err.candidates } : {}), ...(err.conflict ? { conflict: true } : {}) }
     }
   })
-  const openExternal = vi.fn(async () => ({ ok: true }))
-  // The CV draft surface: no files picked, and a draft answered from a `draft_cv` handler (given `{files, urls}`).
-  const pickCvFiles = vi.fn(async (): Promise<{ files: { token: string; name: string; size: number }[]; refused: { name: string; reason: string }[] }> => ({ files: [], refused: [] }))
-  const dropCvFiles = vi.fn(async (_files: File[]): Promise<{ files: { token: string; name: string; size: number }[]; refused: { name: string; reason: string }[] }> => ({ files: [], refused: [] }))
-  const clearCvSources = vi.fn(async () => undefined)
-  // the CV file a draft read: none known unless a test says one
-  const cvFile = vi.fn(async (): Promise<string | null> => null)
-  // The CV photo: nothing picked; a test answers the dialog with mockResolvedValueOnce.
-  const pickPhoto = vi.fn(async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> => ({ canceled: true }))
+
+  // The state main holds and pushes: a test pushes a new one with `pushBoard`, `pushLogin`.
+  let board: Events['run-board'] = { active: false }
+  let loginState: Events['claude-login'] = { state: 'idle' }
+  const noFiles = { files: [], refused: [] }
+  // What each action answers until a test says otherwise: nothing picked, nothing known, every request fine.
+  const defaults: Answers = {
+    'open-external': async () => ({ ok: true }),
+    'save-material': async (_jobId, _which, _sent, name) => ({ ok: true, path: `/Users/ada/Downloads/${name}` }),
+    info: async () => ({ environment: 'production' }),
+    'stop-run': async () => ({ ok: true }),
+    'show-run': async () => ({ ok: true }),
+    'current-board': async () => board,
+    'pick-cv-files': async () => noFiles,
+    'drop-cv-files': async () => noFiles,
+    'cv-file': async () => null,
+    'cv-sources-clear': async () => undefined,
+    'pick-photo': async () => ({ canceled: true }),
+    'claude-login-start': async () => ({ ok: true }),
+    'claude-login-code': async () => ({ ok: true }),
+    'claude-login-open': async () => ({ ok: true }),
+    'claude-login-cancel': async () => ({ ok: true }),
+    'claude-login-state': async () => loginState,
+    'export-data': async () => ({ ok: false, canceled: true }),
+    'pick-archive': async () => ({ canceled: true }),
+    'report-problem': async () => ({ ok: false, canceled: true }),
+    'show-home': async () => ({ ok: true }),
+    'check-update': async () => ({ enabled: false }),
+    'install-update': async () => ({ ok: true }),
+  }
+  const answers = { ...defaults, ...options.actions }
+  const actions = Object.fromEntries((Object.keys(answers) as ActionName[]).map((name) => [name, vi.fn(answers[name] as (...a: never[]) => unknown)])) as unknown as ActionMocks
+  const invoke = vi.fn(async (action: string, ...args: unknown[]) => {
+    const mock = (actions as Record<string, ((...a: unknown[]) => unknown) | undefined>)[action]
+    if (!mock) throw new Error(unknownAction(action))
+    return mock(...args)
+  })
+
+  // One listener set per event main pushes; a test pushes with `pushBoard`, `pushOpen`, `pushLogin`, `pushUpdate`.
+  const listeners = Object.fromEntries(EVENTS.map((e) => [e, new Set()])) as unknown as Listeners
+  const emit = <E extends keyof Events>(event: E, payload: Events[E]) => listeners[event].forEach((cb) => cb(payload))
+  const on = vi.fn((event: string, cb: (payload: never) => void) => {
+    const set = (listeners as Record<string, Set<(p: never) => void> | undefined>)[event]
+    if (!set) return () => undefined
+    set.add(cb)
+    return () => {
+      set.delete(cb)
+    }
+  })
+  const pushBoard = (b: Events['run-board']) => {
+    board = b
+    emit('run-board', b)
+  }
+  const pushOpen = (t: Events['open']) => emit('open', t)
+  const pushLogin = (s: Events['claude-login']) => {
+    loginState = s
+    emit('claude-login', s)
+  }
+  const pushUpdate = (u: Events['update-state']) => emit('update-state', u)
+
   const beforeCloseListeners = new Set<() => Promise<void>>()
   const onBeforeClose = vi.fn((cb: () => Promise<void>) => {
     beforeCloseListeners.add(cb)
@@ -49,119 +109,18 @@ export function mockDoor(given: Record<string, Handler>) {
   })
   const pushBeforeClose = () => Promise.all([...beforeCloseListeners].map((cb) => cb()))
   // Progress callbacks are kept by call id so a test can fire them (`emitProgress`).
-  const progressCallbacks = new Map<string, (p: { progress: number; total?: number; message: string }) => void>()
-  const onProgress = vi.fn((id: string, cb: (p: { progress: number; total?: number; message: string }) => void) => {
+  const progressCallbacks = new Map<string, (p: Progress) => void>()
+  const onProgress = vi.fn((id: string, cb: (p: Progress) => void) => {
     progressCallbacks.set(id, cb)
     return () => {
       progressCallbacks.delete(id)
     }
   })
-  const emitProgress = (p: { progress: number; total?: number; message: string }) => progressCallbacks.forEach((cb) => cb(p))
-  // The run board the main process pushes: a test pushes one with `pushBoard`.
-  let board: unknown = { active: false }
-  const boardListeners = new Set<(b: unknown) => void>()
-  const onRunBoard = vi.fn((cb: (b: unknown) => void) => {
-    boardListeners.add(cb)
-    return () => {
-      boardListeners.delete(cb)
-    }
-  })
-  const pushBoard = (b: unknown) => {
-    board = b
-    boardListeners.forEach((cb) => cb(b))
-  }
-  // The target of a clicked notification: a test pushes one with `pushOpen`.
-  const openListeners = new Set<(t: unknown) => void>()
-  const onOpen = vi.fn((cb: (t: unknown) => void) => {
-    openListeners.add(cb)
-    return () => {
-      openListeners.delete(cb)
-    }
-  })
-  const pushOpen = (t: unknown) => openListeners.forEach((cb) => cb(t))
-  const runBoard = vi.fn(async () => board)
-  const stopRun = vi.fn(async () => ({ ok: true }))
-  const showRun = vi.fn(async (_startedAt: string) => ({ ok: true }))
-  const saveMaterial = vi.fn(async (_jobId: string, _which: string, _sent: boolean, name: string): Promise<{ ok: boolean; path?: string; canceled?: true; error?: string }> => ({ ok: true, path: `/Users/ada/Downloads/${name}` }))
-  const info = vi.fn(async (): Promise<{ environment: Environment; home?: string; remote?: boolean }> => ({ environment: 'production' }))
-  const showHome = vi.fn(async () => ({ ok: true }))
-  const checkUpdate = vi.fn(async (): Promise<UpdateResult | { enabled: false }> => ({ enabled: false }))
-  const installUpdate = vi.fn(async (): Promise<{ ok: boolean }> => ({ ok: true }))
-  const updateListeners: Array<(state: UpdateResult | { enabled: false }) => void> = []
-  const onUpdateState = vi.fn((cb: (state: UpdateResult | { enabled: false }) => void) => {
-    updateListeners.push(cb)
-    return () => {
-      const i = updateListeners.indexOf(cb)
-      if (i >= 0) updateListeners.splice(i, 1)
-    }
-  })
-  const pushUpdate = (state: UpdateResult | { enabled: false }) => updateListeners.forEach((cb) => cb(state))
-  // A data move: a test answers the dialogs with mockResolvedValueOnce.
-  const exportData = vi.fn(async (): Promise<unknown> => ({ ok: false, canceled: true }))
-  const pickArchive = vi.fn(async (): Promise<unknown> => ({ canceled: true }))
-  const reportProblem = vi.fn(async (): Promise<unknown> => ({ ok: false, canceled: true }))
-  // Signing in to Claude: a test pushes the main process's states with `pushLogin`.
-  let loginState: unknown = { state: 'idle' }
-  const loginListeners = new Set<(s: unknown) => void>()
-  const pushLogin = (s: unknown) => {
-    loginState = s
-    loginListeners.forEach((cb) => cb(s))
-  }
-  const claudeLogin = {
-    start: vi.fn(async (_email?: string) => ({ ok: true })),
-    sendCode: vi.fn(async (_code: string) => ({ ok: true })),
-    openPage: vi.fn(async () => ({ ok: true })),
-    cancel: vi.fn(async () => ({ ok: true })),
-    state: vi.fn(async () => loginState),
-    onState: vi.fn((cb: (s: unknown) => void) => {
-      loginListeners.add(cb)
-      return () => {
-        loginListeners.delete(cb)
-      }
-    }),
-  }
-  // What the window reaches: one action map and one event map over the handles above (a test asserts on a handle or on `invoke`).
-  const actions: Record<string, (...args: any[]) => unknown> = {
-    'open-external': openExternal,
-    'save-material': saveMaterial,
-    'pick-cv-files': pickCvFiles,
-    'cv-file': cvFile,
-    'cv-sources-clear': clearCvSources,
-    'pick-photo': pickPhoto,
-    'claude-login-start': claudeLogin.start,
-    'claude-login-code': claudeLogin.sendCode,
-    'claude-login-open': claudeLogin.openPage,
-    'claude-login-cancel': claudeLogin.cancel,
-    'claude-login-state': claudeLogin.state,
-    info,
-    'show-home': showHome,
-    'check-update': checkUpdate,
-    'install-update': installUpdate,
-    'export-data': exportData,
-    'pick-archive': pickArchive,
-    'report-problem': reportProblem,
-    'stop-run': stopRun,
-    'show-run': showRun,
-    'current-board': runBoard,
-  }
-  const subscribers: Record<string, (cb: (p: any) => unknown) => () => void> = {
-    'run-board': onRunBoard,
-    'update-state': onUpdateState,
-    'claude-login': claudeLogin.onState,
-    open: onOpen,
-  }
-  const invoke = vi.fn(async (action: string, ...args: unknown[]) => {
-    const handler = actions[action]
-    if (!handler) throw new Error(`unknown action ${action}`)
-    return handler(...args)
-  })
-  const on = vi.fn((event: string, cb: (payload: any) => unknown) => {
-    const subscribe = subscribers[event]
-    if (!subscribe) throw new Error(`unknown event ${event}`)
-    return subscribe(cb)
-  })
+  const emitProgress = (p: Progress) => progressCallbacks.forEach((cb) => cb(p))
+  // A drop reaches main as paths; the stand-in hands the files themselves to the action.
+  const dropCvFiles = (files: File[]) => actions['drop-cv-files'](files as never)
   ;(window as unknown as { door: unknown }).door = { call, onProgress, invoke, on, onBeforeClose, dropCvFiles }
-  return { invoke, on, call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, onBeforeClose, pushBeforeClose, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, reportProblem }
+  return { call, onProgress, emitProgress, invoke, on, actions, listeners, pushBoard, pushOpen, pushLogin, pushUpdate, onBeforeClose, pushBeforeClose }
 }
 
 export const summary = (over: Record<string, unknown> = {}) => ({

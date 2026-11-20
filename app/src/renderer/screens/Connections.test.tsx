@@ -108,9 +108,9 @@ describe('Connections: Claude', () => {
 
 describe('Connections: Google Drive', () => {
   it('nothing runs when the list opens', () => {
-    const { call, claudeLogin } = show({ drive: on })
+    const { call, actions } = show({ drive: on })
     expect(call.mock.calls.map((c) => c[0])).toEqual([])
-    expect(claudeLogin.start).not.toHaveBeenCalled()
+    expect(actions['claude-login-start']).not.toHaveBeenCalled()
   })
 
   it('off: Connect connects, then syncs at once and says what it did', async () => {

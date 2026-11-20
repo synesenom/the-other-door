@@ -6,8 +6,8 @@ declare global {
     door: {
       call(tool: string, args?: Record<string, unknown>, callId?: string, tokens?: string[]): Promise<Envelope>
       onProgress(callId: string, cb: (p: { progress: number; total?: number; message: string }) => void): () => void
-      /** Every other capability of the main process: one entry of the action table in src/main/ipc.ts (its handler and its types). A misspelled action fails the typecheck. */
-      invoke<A extends ActionName>(action: A, ...args: ActionArgs<A>): Promise<ActionResult<A>>
+      /** Every other capability of the main process: one entry of the action table in src/main/ipc.ts (its handler and its types). A misspelled action fails the typecheck; the drop reaches main only through `dropCvFiles`. */
+      invoke<A extends Exclude<ActionName, 'drop-cv-files'>>(action: A, ...args: ActionArgs<A>): Promise<ActionResult<A>>
       /** What the main process pushes (run board, update state, sign-in state, a clicked notification); returns the way to stop. */
       on<E extends keyof Events>(event: E, cb: (payload: Events[E]) => void): () => void
       onBeforeClose(cb: () => Promise<void>): () => void

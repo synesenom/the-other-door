@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DoorError } from './door-server'
-import { pushEvent, registerIpc, PATH_ARGS, type Envelope } from './ipc'
+import { buildActions, pushEvent, registerIpc, PATH_ARGS, type Envelope } from './ipc'
 import { cspHeader, isAllowedNavigation } from './security'
 import tools from '../generated/tools.json'
 import type { Notice } from './notices'
@@ -497,14 +497,8 @@ describe('the action table', () => {
 
   it('registers door:call and one channel per action, and nothing else', () => {
     const { handlers } = setup()
-    expect([...handlers.keys()].sort()).toEqual(
-      [
-        'door:call', 'door:open-external', 'door:save-material', 'door:info', 'door:stop-run', 'door:show-run', 'door:current-board',
-        'door:pick-cv-files', 'door:drop-cv-files', 'door:cv-file', 'door:cv-sources-clear', 'door:pick-photo',
-        'door:claude-login-start', 'door:claude-login-code', 'door:claude-login-open', 'door:claude-login-cancel', 'door:claude-login-state',
-        'door:export-data', 'door:pick-archive', 'door:report-problem', 'door:show-home', 'door:check-update', 'door:install-update',
-      ].sort(),
-    )
+    const actions = Object.keys(buildActions({} as never, {} as never, { runs: () => 0, demo: () => null }))
+    expect([...handlers.keys()].sort()).toEqual(['door:call', ...actions.map((a) => `door:${a}`)].sort())
   })
 
   it('pushes an event to the window on door:<event>', () => {

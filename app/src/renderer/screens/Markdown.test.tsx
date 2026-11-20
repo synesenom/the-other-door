@@ -74,7 +74,8 @@ describe('Markdown', () => {
   })
 
   it('a web link opens in the browser through the main process; anything else is plain text', async () => {
-    const { openExternal } = mockDoor({})
+    const { actions } = mockDoor({})
+    const openExternal = actions['open-external']
     render(<Markdown text={'See [the course](https://example.com/sql) and [this](javascript:alert(1)) and [file](file:///etc/passwd).'} />)
     await userEvent.click(screen.getByRole('button', { name: 'the course' }))
     expect(openExternal).toHaveBeenCalledWith('https://example.com/sql')
