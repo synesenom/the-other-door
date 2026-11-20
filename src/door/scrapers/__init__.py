@@ -6,6 +6,8 @@ import threading
 from datetime import datetime, timezone
 from typing import Any, NotRequired, TypedDict
 
+import requests
+
 from door.core import progress as _progress
 
 PROBE_TIMEOUT_S = 10  # per-request timeout for every scraper probe
@@ -176,6 +178,50 @@ def wall_page(html: str) -> str | None:
             if pattern.search(html):
                 return what
     return None
+
+
+_CHALLENGE_MARKERS = ("just a moment", "cdn-cgi/challenge-platform", "attention required", "cf-chl", "cf-browser-verification")
+
+
+class Refused(Exception):
+    """The site refused the request (a 403/429 or a challenge page); the run stops."""
+
+
+def is_challenge(body: str, status: int, *, content: str | None = None) -> bool:
+    """Whether an answer is a refusal or a challenge page, not the site. A page whose first 6000
+    characters hold *content* (a marker of the real page, lowercase) is the site's whatever else it
+    carries. Pure."""
+    if status in (403, 429):
+        return True
+    head = (body or "")[:6000].lower()
+    return any(marker in head for marker in _CHALLENGE_MARKERS) and not (content and content in head)
+
+
+def refusal(exc: requests.HTTPError) -> Refused | None:
+    """`Refused("HTTP <status>")` when *exc* is a 403 or 429 answer, None for any other error. Pure."""
+    status = getattr(exc.response, "status_code", 0)
+    return Refused(f"HTTP {status}") if status in (403, 429) else None
+
+
+def get_page(session, url: str, *, content: str | None = None) -> str:
+    """The page at *url*. Raises `Refused` on a 403/429 or a challenge page, the request's own error otherwise."""
+    try:
+        resp = session.get(url)
+    except requests.HTTPError as exc:
+        refused = refusal(exc)
+        if refused:
+            raise refused from exc
+        raise
+    if is_challenge(resp.text, resp.status_code, content=content):
+        raise Refused("challenge page")
+    return resp.text
+
+
+def stop_for_run(site: str, message: str) -> None:
+    """Say *message* as the reason *site* stops for this run: reported, recorded as an error and as pushback."""
+    report(f"{site}: {message}; stopping for this run")
+    record_error(site, f"{site}: {message}; stopped for this run")
+    record_pushback(site)
 
 
 _non_local: dict[str, int] = {}

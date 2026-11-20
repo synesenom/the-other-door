@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from door.scrapers import sdk
 from door.scrapers.boards import jobmaskinen
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
@@ -24,7 +25,7 @@ def _session() -> PoliteSession:
 
 
 def _cards(session, page: int) -> list[dict]:
-    cards, _ = jobmaskinen._parse_cards(jobmaskinen._get(session, jobmaskinen._search_url(KEYWORD, page)))
+    cards, _ = jobmaskinen._parse_cards(sdk.get_page(session, jobmaskinen._search_url(KEYWORD, page)))
     return cards
 
 
@@ -57,7 +58,7 @@ def test_jobmaskinen_details_live():
         postings = []
         for card in cards[:2]:
             url = jobmaskinen._job_url(card["platform_id"])
-            detail = jobmaskinen._parse_detail(jobmaskinen._get(session, url))
+            detail = jobmaskinen._parse_detail(sdk.get_page(session, url))
             assert detail is not None, f"jobmaskinen [details]: no JobPosting data on {url}"
             postings.append(jobmaskinen._posting(card, detail, now))
     assert_contract("jobmaskinen", postings, "details", config=CONFIG)

@@ -168,3 +168,87 @@ def test_split_known_turns_known_ids_into_seen_only_records_in_row_order():
 def test_split_known_with_nothing_known_or_no_rows():
     assert sdk.split_known([{"id": "1"}], lambda r: r["id"], frozenset()) == ([{"id": "1"}], [])
     assert sdk.split_known([], lambda r: r["id"], frozenset({"1"})) == ([], [])
+
+
+@pytest.mark.parametrize("body, status, content, expected", [
+    ("<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/x'></script></html>", 200, None, True),
+    ("<html>Attention Required! | Cloudflare</html>", 200, None, True),
+    ("anything", 403, None, True),
+    ("anything", 429, None, True),
+    ("anything", 403, "job-item", True),
+    ("<html><body>ok</body></html>", 200, None, False),
+    ("<html>cf-chl <div class='job-item'></div></html>", 200, "job-item", False),
+    ("<html>cf-chl <div class='job-item'></div></html>", 200, None, True),
+    ("<html>cf-chl</html>", 200, "job-item", True),
+])
+def test_is_challenge(body, status, content, expected):
+    assert sdk.is_challenge(body, status, content=content) is expected
+
+
+def _session(*, text="", status=200, error=None):
+    class _Resp:
+        pass
+
+    resp = _Resp()
+    resp.text, resp.status_code = text, status
+
+    class _Session:
+        def get(self, url):
+            if error is not None:
+                raise error
+            return resp
+
+    return _Session()
+
+
+@pytest.mark.parametrize("status", [403, 429])
+def test_get_page_refuses_403_429_and_challenge_pages(status):
+    import requests
+
+    response = requests.Response()
+    response.status_code = status
+    with pytest.raises(sdk.Refused, match=f"HTTP {status}"):
+        sdk.get_page(_session(error=requests.HTTPError(response=response)), "u")
+    with pytest.raises(sdk.Refused, match="challenge page"):
+        sdk.get_page(_session(text="<title>Just a moment...</title>"), "u")
+    late = "x" * 7000 + "cf-chl"  # a marker past the first 6000 characters is no challenge
+    assert sdk.get_page(_session(text=late), "u") == late
+
+
+def test_get_page_lets_other_errors_through():
+    import requests
+
+    response = requests.Response()
+    response.status_code = 500
+    with pytest.raises(requests.HTTPError):
+        sdk.get_page(_session(error=requests.HTTPError(response=response)), "u")
+
+
+def test_refusal_is_the_403_429_rule():
+    import requests
+
+    for status, expected in ((403, "HTTP 403"), (429, "HTTP 429"), (500, None)):
+        response = requests.Response()
+        response.status_code = status
+        refused = sdk.refusal(requests.HTTPError(response=response))
+        assert (str(refused) if refused else None) == expected
+    assert sdk.refusal(requests.HTTPError()) is None
+
+
+def test_get_page_returns_a_real_page_and_honours_content():
+    assert sdk.get_page(_session(text="<html>ok</html>"), "u") == "<html>ok</html>"
+    page = "<script src='/cdn-cgi/challenge-platform/x'></script><div class='job-item'>"
+    assert sdk.get_page(_session(text=page), "u", content="job-item") == page
+
+
+def test_stop_for_run_reports_records_and_marks_pushback(monkeypatch):
+    from door import scrapers
+
+    reported, errors, pushed = [], [], []
+    monkeypatch.setattr(scrapers, "report", lambda m, *a, **k: reported.append(m))
+    monkeypatch.setattr(scrapers, "record_error", lambda site, m: errors.append((site, m)))
+    monkeypatch.setattr(scrapers, "record_pushback", lambda site: pushed.append(site))
+    sdk.stop_for_run("x", "HTTP 429")
+    assert reported == ["x: HTTP 429; stopping for this run"]
+    assert errors == [("x", "x: HTTP 429; stopped for this run")]
+    assert pushed == ["x"]

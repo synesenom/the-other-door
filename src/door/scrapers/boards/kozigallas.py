@@ -42,9 +42,10 @@ from bs4 import BeautifulSoup
 
 import json
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
     FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    on_topic, record_answered, record_error, record_pushback, report, run_probe, topic_terms,
+    on_topic, record_answered, record_error, report, run_probe, topic_terms,
 )
 
 _SITE = "kozigallas"
@@ -204,16 +205,6 @@ def _card_posting(card: dict, scraped_at: datetime | None = None) -> dict:
     return _posting(card, detail, scraped_at or datetime.now(timezone.utc))
 
 
-def _pushback(message: str) -> None:
-    report(f"{_SITE}: {message}; stopping for this run")
-    record_error(_SITE, f"{_SITE}: {message}; stopped for this run")
-    record_pushback(_SITE)
-
-
-def _refused(exc: requests.HTTPError) -> bool:
-    return getattr(exc.response, "status_code", 0) in (403, 429)
-
-
 def _session(timeout: float, max_retries: int = 3) -> PoliteSession:
     # system_trust: the host's root certificate (Microsec e-Szigno 2025) is not in certifi's bundle yet.
     return PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=timeout, max_retries=max_retries,
@@ -236,8 +227,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             try:
                 html = session.post(_LIST_URL, data=_search_body(keyword, page).encode("utf-8"), headers=_JSON).text
             except requests.HTTPError as exc:
-                if _refused(exc):
-                    _pushback(f"HTTP {exc.response.status_code}")
+                if refused := sdk.refusal(exc):
+                    sdk.stop_for_run(_SITE, str(refused))
                     return out
                 record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
                 break
@@ -263,13 +254,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     continue
                 report(f"'{keyword}' details", len(out) - start + 1, len(relevant))
                 try:
-                    detail = _parse_detail(session.get(card["url"]).text)
-                except requests.HTTPError as exc:
-                    if _refused(exc):
-                        _pushback(f"HTTP {exc.response.status_code}")
-                        return out
-                    record_error(_SITE, f"detail error ({card['id']}): {exc}")
-                    continue
+                    detail = _parse_detail(sdk.get_page(session, card["url"]))
+                except sdk.Refused as exc:
+                    sdk.stop_for_run(_SITE, str(exc))
+                    return out
                 except Exception as exc:  # noqa: BLE001
                     record_error(_SITE, f"detail error ({card['id']}): {exc}")
                     continue

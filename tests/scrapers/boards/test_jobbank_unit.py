@@ -107,18 +107,3 @@ def test_detail_without_json_ld_is_none():
 ])
 def test_location_text(address, expected):
     assert jobbank._location_text(address) == expected
-
-
-@pytest.mark.parametrize("body, status, expected", [
-    ("<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/x'></script></html>", 200, True),
-    ("<html>Attention Required! | Cloudflare</html>", 200, True),
-    ("anything", 403, True),
-    ("anything", 429, True),
-    ("<html><body>ok</body></html>", 200, False),
-])
-def test_challenge_detection(body, status, expected):
-    assert jobbank._is_challenge(body, status) is expected
-
-
-def test_a_real_search_page_is_no_challenge():
-    assert jobbank._is_challenge(_html("search_page1.html"), 200) is False
