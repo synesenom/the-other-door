@@ -82,7 +82,7 @@ from door.core.models import JobPosting, make_job_id, normalize_platform_id, ten
 from door.matching import locality, prefilter, title_fit
 from door.scrapers import (
     PROBE_TIMEOUT_S, ProbeResult, list_at, log_keyword_results, parse_iso_date, probe_failure, record_entry_error,
-    record_answered, record_error, record_non_local, record_pushback, report, run_probe, scrape_feeds, strip_html,
+    Refused, get_page, is_challenge, stop_for_run, record_answered, record_error, record_non_local, record_pushback, report, run_probe, scrape_feeds, strip_html,
     tracked, wall_page,
 )
 from door.scrapers._parallel import host_of, map_by_group, workers
@@ -103,7 +103,7 @@ _DOCS: dict[str, str] = {
 __all__ = [
     "JobPosting", "make_job_id", "normalize_platform_id", "tenant_platform_id", "PoliteSession", "USER_AGENT", "RobotsBlocked", "FEED_DELAY", "PROBE_TIMEOUT_S",
     "report", "record_error", "record_entry_error", "record_pushback", "record_answered", "record_non_local", "tracked", "log_keyword_results",
-    "wall_page",
+    "wall_page", "Refused", "is_challenge", "get_page", "stop_for_run",
     "ProbeResult", "run_probe", "probe_failure", "scrape_feeds", "list_at", "strip_html", "parse_iso_date",
     "host_of", "map_by_group", "workers",
     "on_topic", "topic_terms", "topic_words", "keywords", "squash", "name_pattern",
