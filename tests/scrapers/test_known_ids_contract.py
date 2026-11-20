@@ -9,7 +9,7 @@ that id's own page.
 
 Covered: every single-employer feed served by `feeds/test_feed_names_contract.py`'s cases. Not covered
 here (own multi-entry or listing fixtures, no one-entry serve helper): hr_manager, career_sites, oracle_hcm.
-Boards: all fourteen, each with its own serve helpers (`_BOARDS`; Workable, also a board, is a feed above). A scraper that serves its whole answer
+Boards: each with its own serve helpers (`_BOARDS`; Workable, also a board, is a feed above). A scraper that serves its whole answer
 from one listing and ignores `known_ids` (no detail request to save) passes by returning full postings."""
 
 import importlib
@@ -101,7 +101,7 @@ def _arbetsformedlingen(monkeypatch):
     return lambda k: (m._serve_pages(), _scrape_board("arbetsformedlingen", m._CFG, k))[1]
 
 
-def _choisirleservicepublic(monkeypatch):
+def _choisirleservicepublic():
     m = _board("choisirleservicepublic")
     return lambda k: (m._serve_search(), m._serve_details(m._ALL), _scrape_board("choisirleservicepublic", m._CFG, k))[2]
 
@@ -112,23 +112,23 @@ def _euraxess(monkeypatch):
     return lambda k: (m._mock_pages(), _scrape_board("euraxess", m._CFG, k))[1]
 
 
-def _francetravail(monkeypatch):
+def _francetravail():
     m = _board("francetravail")
     return lambda k: (m._serve_search(), m._serve_details(m._ALL), _scrape_board("francetravail", m._CFG, k))[2]
 
 
-def _globalnyt(monkeypatch):
+def _globalnyt():
     m = _board("globalnyt")
     return lambda k: (m._serve(), _scrape_board("globalnyt", m._CFG, k))[1]
 
 
-def _jobbank(monkeypatch):
+def _jobbank():
     m = _board("jobbank")
     return lambda k: (m._serve_search(), m._serve_details(m._PAGE1 + m._PAGE2 + m._PAGE3),
                       _scrape_board("jobbank", m._CFG, k))[2]
 
 
-def _jobindex(monkeypatch):
+def _jobindex():
     m = _board("jobindex")
     config = {"role_targets": ["data scientist", "domain architect"], "location": "Copenhagen"}
     html = "text/html; charset=utf-8"
@@ -143,7 +143,7 @@ def _jobindex(monkeypatch):
     return run
 
 
-def _jobmaskinen(monkeypatch):
+def _jobmaskinen():
     m = _board("jobmaskinen")
 
     def run(k):
@@ -169,23 +169,23 @@ def _kozigallas(monkeypatch):
     return lambda k: (m._serve_list(), m._serve_details(m._ALL), _scrape_board("kozigallas", m._CFG, k))[2]
 
 
-def _nhs_jobs(monkeypatch):
+def _nhs_jobs():
     m = _board("nhs_jobs")
     return lambda k: (m._serve_search(), m._serve_details(m._PAGE1 + m._PAGE2),
                       _scrape_board("nhs_jobs", {**m._CFG, "max_pages_per_keyword": 2}, k))[2]
 
 
-def _reed(monkeypatch):
+def _reed():
     m = _board("reed")
     return lambda k: (m._serve_search(), m._serve_details(m._PAGE1 + m._PAGE2), _scrape_board("reed", m._CFG, k))[2]
 
 
-def _reliefweb(monkeypatch):
+def _reliefweb():
     m = _board("reliefweb")
     return lambda k: (m._serve(), _scrape_board("reliefweb", m._ANY, k))[1]
 
 
-def _thehub(monkeypatch):
+def _thehub():
     m = _board("thehub")
 
     def run(k):
@@ -207,17 +207,23 @@ def test_every_board_is_checked():
     assert set(_BOARDS) == {name for name, site in SITES.items() if site.board and not site.config_key}
 
 
+def _board_run(site, monkeypatch):
+    make = _BOARDS[site]
+    return make(monkeypatch) if make.__code__.co_argcount else make()
+
+
 @pytest.mark.parametrize("site", sorted(_BOARDS))
 @responses.activate
 def test_a_board_hands_known_ids_back_as_seen_only(site, monkeypatch):
-    _check(site, _BOARDS[site](monkeypatch))
+    _check(site, _board_run(site, monkeypatch))
 
 
-@pytest.mark.parametrize("site", ["beetween", "dayforce", "jobtrain"])
+@pytest.mark.parametrize("site, make_run", [("dayforce", lambda s, mp: _feed_run(s)),
+                                            ("jobbank", _board_run)])
 @responses.activate
-def test_a_feed_that_drops_known_ids_fails_the_contract(site, monkeypatch):
+def test_a_scraper_that_drops_known_ids_fails_the_contract(site, make_run, monkeypatch):
     """The test of the test: a scraper whose known ids are filtered out with no record returned is caught."""
-    run = _feed_run(site)
+    run = make_run(site, monkeypatch)
     module = importlib.import_module(SITES[site].module)
     real = module.scrape
     monkeypatch.setattr(module, "scrape", lambda config, known_ids=frozenset(), **kw: [
@@ -225,15 +231,3 @@ def test_a_feed_that_drops_known_ids_fails_the_contract(site, monkeypatch):
 
     with pytest.raises(AssertionError, match="known ids dropped"):
         _check(site, run)
-
-
-@responses.activate
-def test_a_board_that_drops_known_ids_fails_the_contract(monkeypatch):
-    run = _BOARDS["jobbank"](monkeypatch)
-    module = importlib.import_module(SITES["jobbank"].module)
-    real = module.scrape
-    monkeypatch.setattr(module, "scrape", lambda config, known_ids=frozenset(), **kw: [
-        p for p in real(config, known_ids=known_ids, **kw) if not p.get("seen_only")])
-
-    with pytest.raises(AssertionError, match="known ids dropped"):
-        _check("jobbank", run)
