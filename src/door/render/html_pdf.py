@@ -42,14 +42,14 @@ class PrintError(Exception):
 class _Handler(http.server.BaseHTTPRequestHandler):
     root: Path
     page: bytes = b""
-    assets: dict[str, dict[str, Path]] = {}
+    fonts: dict[str, Path] = {}
 
     def _target(self, path: str) -> tuple[Path, Path] | None:
-        """``(file, folder it must stay inside)`` for a path: under an asset name, the one of its files of that exact
-        name; else in the page's folder. None where no file can be meant."""
+        """``(file, folder it must stay inside)`` for a path: under `/fonts/`, the one font of that exact name; else
+        in the page's folder. None where no file can be meant."""
         first, _, rest = path.lstrip("/").partition("/")
-        if first in self.assets:
-            file = self.assets[first].get(rest)
+        if first == "fonts":
+            file = self.fonts.get(rest)
             return (file, file.parent) if file else None
         return self.root / path.lstrip("/"), self.root
 
@@ -83,9 +83,9 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def _serve(folder: Path, page: bytes, assets: dict[str, Sequence[Path]] | None = None) -> http.server.ThreadingHTTPServer:
-    resolved = {name: {Path(f).name: Path(f).parent.resolve() / Path(f).name for f in files} for name, files in (assets or {}).items()}
-    handler = type("Handler", (_Handler,), {"root": Path(folder).resolve(), "page": page, "assets": resolved})
+def _serve(folder: Path, page: bytes, fonts: Sequence[Path] = ()) -> http.server.ThreadingHTTPServer:
+    resolved = {Path(f).name: Path(f).parent.resolve() / Path(f).name for f in fonts}
+    handler = type("Handler", (_Handler,), {"root": Path(folder).resolve(), "page": page, "fonts": resolved})
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -154,11 +154,11 @@ def _refused_sandbox(profile: Path) -> bool:
 
 
 def print_html(folder: Path, html: str, out_pdf: Path, *,
-               assets: dict[str, Sequence[Path]] | None = None, timeout: float = 60.0, launcher=_launch) -> None:
+               fonts: Sequence[Path] = (), timeout: float = 60.0, launcher=_launch) -> None:
     """Print `html` (served from memory as `/index.html`, with the folder's files beside it) to `out_pdf`.
 
-    `assets` maps one URL segment to files outside the page's folder (``{"fonts": [Path(".../x.ttf")]}`` serves
-    ``/fonts/x.ttf``): shared files such as the fonts are served by their names, not copied into the job's folder.
+    `fonts` are files outside the page's folder (``[Path(".../x.ttf")]`` serves ``/fonts/x.ttf``): the shared fonts are
+    served by their names, not copied into the job's folder.
     """
     exe = chromium.find_chromium()
     if exe is None:
@@ -170,7 +170,7 @@ def print_html(folder: Path, html: str, out_pdf: Path, *,
         return max(deadline - time.monotonic(), 0.1)
 
     profile = Path(tempfile.mkdtemp(prefix="door-chromium-"))
-    server = _serve(folder, html.encode("utf-8"), assets)
+    server = _serve(folder, html.encode("utf-8"), fonts)
     origin = f"http://127.0.0.1:{server.server_address[1]}"
     proc = None
     conn = None

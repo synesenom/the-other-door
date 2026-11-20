@@ -157,7 +157,7 @@ def render(blocks: list[tuple[str, str]], out_pdf: Path) -> None:
     pdf.save(str(out_pdf))
 
 
-def print_html(folder, html, out_pdf, *, assets=None, timeout=60.0, launcher=None) -> None:
+def print_html(folder, html, out_pdf, *, fonts=(), timeout=60.0, launcher=None) -> None:
     """`html_pdf.print_html`, in the world: the page's text laid out in a PDF, or a failure for `worldfail`."""
     from door.render import html_pdf
 

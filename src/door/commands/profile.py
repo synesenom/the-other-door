@@ -23,7 +23,7 @@ from door.core import sites
 # the caller; story_bank.md holds made-up stories the tailor would read as the
 # candidate's own (it starts absent, and the tailor fills it from real CVs);
 # cv.md is the example person's CV, never the candidate's (none is "no CV yet").
-# The HTML templates, fonts come from the code (`door.core.templates`), never copied (#56, #188).
+# The HTML templates and fonts come from the code (`door.core.templates`), never copied (#56, #188).
 _NOT_COPIED = {
     Path("config.json"), Path("story_bank.md"), Path("companies.json"), Path("cv.md"),
     Path("cv.template.html"), Path("cover-letter.template.html"),

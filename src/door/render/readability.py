@@ -134,7 +134,7 @@ def spaced_problems(pdf_text: str, body: str) -> list[dict]:
 
 
 def page_problems(pages: int, max_pages: int | None) -> list[dict]:
-    """``pages``: a CV of more pages than `max_pages` (`common._cv_max_pages`, the country's), the limit named so the tailor's retry knows what to cut to (#194). No limit: nothing."""
+    """``pages``: a CV of more pages than `max_pages` (the country's `[cv] max_pages`), the limit named so the tailor's retry knows what to cut to (#194). No limit: nothing."""
     if max_pages is None or pages <= max_pages:
         return []
     return [{"kind": "pages", "detail": f"{pages} pages, over the limit of {max_pages} page{'s' if max_pages > 1 else ''}"}]

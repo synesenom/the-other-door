@@ -21,7 +21,6 @@ class _Reader(HTMLParser):
         self.out: list[str] = []
         self.headings: list[str] = []
         self.h3s: list[str] = []
-        self.kinds: list[str | None] = []
         self.comments: list[str] = []
         self._cur: dict[str, list[str]] = {}
 
@@ -35,8 +34,6 @@ class _Reader(HTMLParser):
             self._emit(" ")
         if tag in ("h2", "h3"):
             self._cur[tag] = []
-        if tag == "h2":
-            self.kinds.append(next((c[len(html_guard.KIND_PREFIX):] for c in dict(attrs).get("class", "").split() if c.startswith(html_guard.KIND_PREFIX)), None))
 
     def handle_startendtag(self, tag, attrs):
         if tag in _BLOCKS:
@@ -73,11 +70,6 @@ def _read(body: str) -> _Reader:
 def headings(body: str) -> list[str]:
     """The `<h2>` texts of `body`, in order (entities decoded, inner tags dropped, whitespace collapsed)."""
     return _read(body).headings
-
-
-def kinds(body: str) -> list[str | None]:
-    """The kind of each `<h2>` of `body`, in order: the `kind-<kind>` class it carries, None for one with none."""
-    return _read(body).kinds
 
 
 def note(body: str, label: str) -> str | None:

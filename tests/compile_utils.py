@@ -11,15 +11,15 @@ from pdf_utils import make_pdf
 
 
 class FakePrint:
-    """`calls`: one dict per print (``html``, ``assets``, ``folder``, ``files`` seen in the folder)."""
+    """`calls`: one dict per print (``html``, ``fonts``, ``folder``, ``files`` seen in the folder)."""
 
     def __init__(self, fail: str | None = None):
         self.calls: list[dict] = []
         self.fail = fail
 
-    def __call__(self, folder, html, out_pdf, *, assets=None, timeout=60.0, launcher=None):
+    def __call__(self, folder, html, out_pdf, *, fonts=(), timeout=60.0, launcher=None):
         folder = Path(folder)
-        self.calls.append({"html": html, "assets": assets, "folder": folder,
+        self.calls.append({"html": html, "fonts": fonts, "folder": folder,
                            "files": sorted(p.name for p in folder.iterdir())})
         if self.fail:
             raise html_pdf.PrintError(self.fail)

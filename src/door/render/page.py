@@ -9,7 +9,7 @@ from pathlib import Path
 from door import i18n
 from door.core import photo as photo_mod
 from door.core import templates, utils, workspace
-from door.render import html_doc, html_pdf, typography
+from door.render import html_pdf, typography
 
 # The CV photo (#605): the tailor writes `<<photo>>` where it wants one. After the guard has read the body, `compile`
 # swaps it for this one trusted image of the copy of the profile's photo it puts beside the page (the template must
@@ -71,7 +71,7 @@ def _glue_separators(body: str) -> str:
 def print_page(body: str, template: str, lang: str, folder: Path, name: str, *, photo: Path | None = None,
                style: str = "") -> tuple[Path, str, str | None]:
     """`body` placed in `template` (its text) by `_page` and printed to `folder/<name>.pdf` with the pinned Chromium,
-    the fonts (`templates.assets`) served. Returns the pdf, the body as placed and the
+    the fonts (`templates.fonts`) served. Returns the pdf, the body as placed and the
     photo's file name in `folder` (None when it was not placed). `style` (`templates.style_css`) goes in the page's head.
 
     Raises:
@@ -79,10 +79,9 @@ def print_page(body: str, template: str, lang: str, folder: Path, name: str, *, 
         ValueError: the template cannot be used.
     """
     folder.mkdir(parents=True, exist_ok=True)
-    assets = templates.assets()
     html_text, placed, picture = _page(body, template, folder, photo=photo, language=lang, style=style)
     pdf = folder / f"{name}.pdf"
-    html_pdf.print_html(folder, html_text, pdf, assets=assets)
+    html_pdf.print_html(folder, html_text, pdf, fonts=templates.fonts())
     return pdf, placed, picture
 
 

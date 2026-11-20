@@ -831,7 +831,7 @@ def show(job_id: str, open: bool = False) -> dict:
         prepared, else ``{"output_dir", "pdfs", "pngs", "keywords",
         "tailoring", "page_counts", "cv_max_pages", "cover_letter_words", "rendered", "file_names", "sent"}``
         (``file_names``: what to save each PDF as, the candidate's name first);
-        ``cv_max_pages`` is the CV's page limit as the profile and template stand now: the stricter of the job country's convention and the template's;
+        ``cv_max_pages`` is the CV's page limit as the profile stands now: the job country's convention;
         ``sent`` true once the application went out, and then the files are the
         copy taken when it was sent (what the employer has), not ones a later
         ``revise`` changed. ``salary`` is the saved estimate (`salary_estimate`'s

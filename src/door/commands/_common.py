@@ -12,7 +12,7 @@ from pathlib import Path
 import click
 
 from door import i18n
-from door.core import cv_read, profile_loader, progress, templates, utils, workspace
+from door.core import cv_read, profile_loader, progress, utils, workspace
 from door.core.employers import companies
 from door.core.downloads import chromium
 from door.core.downloads import installers
@@ -51,11 +51,6 @@ def _company_items(profile_dir: Path) -> list:
 
 def _is_url(value: str) -> bool:
     return re.match(r"https?://", value, re.IGNORECASE) is not None
-
-
-def _cv_max_pages(posting: dict, config: dict) -> int:
-    """The page limit a CV for ``posting`` is made to: the country's `[cv]` max_pages."""
-    return i18n.cv_conventions(posting, config).max_pages
 
 
 # The sha256 of each earlier profile.example/cv.md that a user may still hold a copy of (#189). Add the hash of the

@@ -132,7 +132,7 @@ def _cv_conventions_text(posting_path: Path) -> str:
     cv = country.cv if country else i18n.CvConventions()
     photo = config.get("photo")
     has_photo = bool(photo) and photo_mod.problem(Path(photo) if Path(photo).is_absolute() else workspace.HOME / photo) is None
-    max_pages = common._cv_max_pages(posting, config)
+    max_pages = i18n.cv_conventions(posting, config).max_pages
     return (
         f"CV conventions for this job's country ({country.code if country else 'no country file'}): "
         f"photo: {cv.photo}; the profile has a photo: {'yes' if has_photo else 'no'}; "
@@ -271,10 +271,10 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None,
 
 
 def _read_back(output_dir: Path, posting: dict, config: dict) -> list[dict] | None:
-    """The ATS read-back of the two PDFs (`matches._readability`), the CV held to `common._cv_max_pages` for
+    """The ATS read-back of the two PDFs (`matches._readability`), the CV held to the country's `[cv] max_pages` for
     `posting`, or None when it could not be made."""
     try:
-        return matches_cmd._readability(output_dir, max_pages=common._cv_max_pages(posting, config))
+        return matches_cmd._readability(output_dir, max_pages=i18n.cv_conventions(posting, config).max_pages)
     except Exception:  # noqa: BLE001 - the check never fails a prepare
         return None
 

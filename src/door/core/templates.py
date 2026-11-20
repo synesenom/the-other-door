@@ -82,6 +82,6 @@ def _fonts_dir() -> Path:
     return workspace.PROFILE_EXAMPLE_DIR / "fonts"
 
 
-def assets() -> dict[str, list[Path]]:
-    """What the print serves beside the page: the TrueType files `_fonts_dir` finds."""
-    return {"fonts": sorted(_fonts_dir().glob("*.ttf"))}
+def fonts() -> list[Path]:
+    """The fonts the print serves beside the page: the TrueType files `_fonts_dir` finds."""
+    return sorted(_fonts_dir().glob("*.ttf"))

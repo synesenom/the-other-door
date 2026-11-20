@@ -318,7 +318,7 @@ column comes under the pages.
   shorter version." when words of the CV never reached its PDF (Chromium cuts what runs past the
   page); on materials that cannot be revised it says "Prepare it again to fix it." Prepare already
   asked the tailor once to trim the CV before it shows this.
-- A CV is meant to be within its page limit, as your profile and template stand now (the stricter of the job country's convention, usually 2, and your template's own), a letter 1 page and 250 to 350 words. When one is over,
+- A CV is meant to be within its page limit, as your profile stands now (the job country's convention, usually 2), a letter 1 page and 250 to 350 words. When one is over,
   a note under the page says so in words ("(limit is 2)", "(aim for 250–350)").
 - **Save CV** or **Save letter** under the page saves the document shown, named for you
   ("Jane Doe - CV.pdf", "Jane Doe - Cover letter.pdf": what an employer sees when you upload

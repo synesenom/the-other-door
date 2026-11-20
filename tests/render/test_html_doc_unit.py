@@ -80,9 +80,3 @@ def test_a_span_structured_entry_heading_reads_as_the_plain_one():
 def test_a_level_item_keeps_its_word_in_the_text():
     body = '<h2>Languages</h2><ul><li><strong>Danish</strong> <span class="level level-5">native</span></li></ul>'
     assert "Danish native" in html_doc.text(body)
-
-
-
-def test_kinds_reads_the_kind_class_of_each_h2_or_none():
-    body = '<h2 class="kind-skills">Skills</h2><p>s</p><h2>Other</h2><h2 class="kind-other x">Hobbys</h2>'
-    assert html_doc.kinds(body) == ["skills", None, "other"]

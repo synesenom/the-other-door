@@ -100,7 +100,7 @@ def test_the_file_on_disk_stays_the_body_and_no_print_page_is_left_in_the_folder
 def test_fonts_are_served_from_the_examples_when_the_profile_has_none(world):
     world.make(cv="<p>Jane Doe</p>")
     _compile(world)
-    assert world.print.calls[0]["assets"] == {"fonts": sorted((world.example / "fonts").glob("*.ttf"))}
+    assert world.print.calls[0]["fonts"] == sorted((world.example / "fonts").glob("*.ttf"))
     assert not any("font" in name for name in world.print.calls[0]["files"])
 
 
@@ -109,7 +109,7 @@ def test_the_profiles_own_truetype_fonts_win(world):
     (world.profile / "fonts" / "Mine.ttf").write_bytes(b"\x00\x01\x00\x00")
     world.make(cv="<p>Jane Doe</p>")
     _compile(world)
-    assert world.print.calls[0]["assets"] == {"fonts": [world.profile / "fonts" / "Mine.ttf"]}
+    assert world.print.calls[0]["fonts"] == [world.profile / "fonts" / "Mine.ttf"]
 
 
 def test_a_profile_fonts_folder_without_truetype_is_not_used(world):
@@ -117,7 +117,7 @@ def test_a_profile_fonts_folder_without_truetype_is_not_used(world):
     (world.profile / "fonts" / "Old.otf").write_bytes(b"OTTO")
     world.make(cv="<p>Jane Doe</p>")
     _compile(world)
-    assert world.print.calls[0]["assets"] == {"fonts": sorted((world.example / "fonts").glob("*.ttf"))}
+    assert world.print.calls[0]["fonts"] == sorted((world.example / "fonts").glob("*.ttf"))
 
 
 def test_a_user_template_that_is_html_is_the_one_printed(world):
@@ -381,7 +381,7 @@ def test_a_users_own_template_prints_with_the_profiles_fonts_and_ignores_a_templ
     (world.profile / "template.json").write_text(json.dumps({"fonts": ["Other.ttf"], "columns": {"side": ["skills"]}}))
     world.make(cv="<h2 class=\"kind-skills\">Skills</h2><p>Jane Doe</p>")
     assert _compile(world)["results"][0]["status"] == "compiled"
-    assert world.print.calls[0]["assets"] == {"fonts": [world.profile / "fonts" / "Own.ttf"]}
+    assert world.print.calls[0]["fonts"] == [world.profile / "fonts" / "Own.ttf"]
     assert "side" not in world.print.calls[0]["html"]
 
 

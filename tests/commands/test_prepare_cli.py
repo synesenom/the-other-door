@@ -1012,9 +1012,8 @@ def test_a_job_in_no_known_country_gets_the_profiles_and_else_the_neutral_conven
     assert "(no country file)" in neutral and "photo: no" in neutral and "at most 2 pages" in neutral
 
 
-def test_cv_max_pages_follows_the_postings_country_not_the_profiles(cli_env, monkeypatch):
+def test_the_page_limit_follows_the_postings_country_not_the_profiles(cli_env, tmp_path, monkeypatch):
     from door import i18n
-    from door.commands import _common as common
 
     dk = i18n.country_for_location("Aarhus, Denmark")
     strict = dk.model_copy(update={"cv": dk.cv.model_copy(update={"max_pages": 1})})
@@ -1022,8 +1021,16 @@ def test_cv_max_pages_follows_the_postings_country_not_the_profiles(cli_env, mon
     monkeypatch.setattr(i18n, "country_for_location", lambda loc: strict if "Aarhus" in (loc or "") else real(loc))
     config = profile_loader.load_config_or_defaults(cli_env.profile_dir)
     config["location"] = "London, United Kingdom"
-    assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == 1
-    assert common._cv_max_pages({"location": "London, United Kingdom"}, config) == 2
+    (cli_env.profile_dir / "config.json").write_text(json.dumps(config))
+    assert "at most 1 pages" in prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path / "a", "Aarhus, Denmark"))[0]
+    assert "at most 2 pages" in prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path / "b", "London, United Kingdom"))[0]
+
+
+def test_a_template_json_beside_a_users_template_does_not_change_the_page_limit(cli_env, tmp_path):
+    (cli_env.profile_dir / "cv.template.html").write_text("<<body>>")
+    (cli_env.profile_dir / "template.json").write_text(json.dumps({"max_pages": 1}))
+    prompt = prepare_cmd._tailor_args("job-1", _posting_copy(tmp_path, "Aarhus, Denmark"))[0]
+    assert "at most 2 pages" in prompt
 
 
 def test_run_tailor_clears_the_fact_check_rounds_and_stale_facts_before_it_starts(cli_env, monkeypatch):
@@ -1281,20 +1288,6 @@ def test_prepare_tags_the_language_of_an_ad_stored_without_one(cli_env, monkeypa
     monkeypatch.setattr(prepare_cmd, "_run_tailor", tailor)
     CliRunner().invoke(cli, ["jobs", "prepare", "manual.abc"])
     assert seen == ["da"]
-
-
-def test_cv_max_pages_follows_the_postings_country_not_the_profiles(cli_env, monkeypatch):
-    from door import i18n
-    from door.commands import _common as common
-
-    dk = i18n.country_for_location("Aarhus, Denmark")
-    strict = dk.model_copy(update={"cv": dk.cv.model_copy(update={"max_pages": 1})})
-    real = i18n.country_for_location
-    monkeypatch.setattr(i18n, "country_for_location", lambda loc: strict if "Aarhus" in (loc or "") else real(loc))
-    config = profile_loader.load_config_or_defaults(cli_env.profile_dir)
-    config["location"] = "London, United Kingdom"
-    assert common._cv_max_pages({"location": "Aarhus, Denmark"}, config) == 1
-    assert common._cv_max_pages({"location": "London, United Kingdom"}, config) == 2
 
 
 _OVERFLOW = {"file": "cv", "kind": "overflow", "detail": "text cut off: Kubernetes, Airflow"}
