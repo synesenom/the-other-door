@@ -131,7 +131,7 @@ Then validate once more and write the new report to `thoughts/validate/<issue_nu
 
 ## Step 4: Review
 
-On **PASS** only (on FAIL go to Step 6). Run the reviewers CLAUDE.md "Review" names, in its order, with `base_branch: <base branch>` and the issue as the goal. Fix each finding on the branch (test-first, then run the tests it touches) or file it with `/dev-file-issue` (naming this issue). Keep the list of findings and how each ended (fixed, filed `#N`, not real) for the PR body and Step 6.
+On **PASS** only (on FAIL go to Step 6). Run the reviewers CLAUDE.md "Review" names, in its order, with `base_branch: <base branch>` and the issue as the goal. Each finding ends as CLAUDE.md "Review" says: fixed on the branch when it is about the change (test-first, then run the tests it touches); filed with `/dev-file-issue` (naming this issue) only when it is a bug a user would hit outside the change; otherwise dropped, named in one line in the PR body. Keep the list of findings and how each ended (fixed, filed `#N`, dropped, not real) for the PR body and Step 6.
 
 ---
 
@@ -153,7 +153,7 @@ Path:        Simple | Complex
 Attempts:    1 | 2
 Commit:      <short hash>
 Validation:  PASS | FAIL
-Review:      <n> fixed, <n> filed (#.., #..), <n> not real
+Review:      <n> fixed, <n> filed (#.., #..), <n> dropped, <n> not real
 PR:          #<number> <url> | not opened (FAIL)
 ```
 

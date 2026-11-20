@@ -25,7 +25,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, host_of, make_job_id, parse_iso_date, run_probe,
     scrape_feeds, strip_html, workers, followed_name,
 )
-from door.scrapers.sdk import keep_local
+from door.scrapers.sdk import keep_local, list_at
 from door.scrapers.sdk import Detection, NOT_ACCOUNTS, Probe, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -95,10 +95,7 @@ def _company_postings(session: PoliteSession, entry: str, scraped_at: datetime, 
     """The published offers of one ``recruitee_companies`` entry, labelled with the followed *name*
     when given. Raises on HTTP errors."""
     answer = session.get(f"{_careers_base(entry)}/api/offers/", headers=_HEADERS).json()
-    offers = answer.get("offers") if isinstance(answer, dict) else None
-    if not isinstance(offers, list):
-        raise ValueError("no `offers` list in Recruitee's answer")
-    return [_to_posting(offer, entry, scraped_at, name) for offer in _published(offers)]
+    return [_to_posting(offer, entry, scraped_at, name) for offer in _published(list_at(answer, "offers", "Recruitee"))]
 
 
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
@@ -124,10 +121,7 @@ def probe(config: dict) -> ProbeResult | None:
         return session.get(f"{base}/api/offers/", headers=_HEADERS).text
 
     def parse(text: str):
-        data = json.loads(text)
-        offers = data.get("offers") if isinstance(data, dict) else None
-        if not isinstance(offers, list):
-            return [], False, "no `offers` list in the Recruitee careers API response"
+        offers = list_at(json.loads(text), "offers", "Recruitee")
         scraped_at = datetime.now(timezone.utc)
         return [_to_posting(o, entries[0].strip(), scraped_at) for o in _published(offers)], True, ""
 

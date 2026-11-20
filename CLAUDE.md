@@ -39,7 +39,13 @@ Before summarising a change you implemented (a PR, or a branch about to become o
 
 Then, once their findings are dealt with, spawn `integration-reviewer` (`.claude/agents/integration-reviewer.md`) last, on the final diff: it maps the change's blast radius and asks whether the whole solution would be smaller had the feature been in the codebase's founding principles, so the code does not grow by accretion.
 
-Each reports its findings with evidence. Every finding, and every one you found yourself, ends in one of two ways before you summarise: fixed in the change (small and in scope, test-first like any change), or filed as a GitHub issue (larger, or out of scope) through `/dev-file-issue`, whose number you give. The summary names each finding and which way it went; none is only mentioned. A finding you judge not real: say why in one line.
+Each reports its findings with evidence. Every finding, and every one you found yourself, ends in one of three ways before you summarise:
+
+- **fixed in the change**: it is about the change's own lines or its goal (test-first like any change);
+- **filed** through `/dev-file-issue`, whose number you give: only a bug a user would hit (a wrong result, a failure, lost data, a site silently broken) that lies outside the change;
+- **dropped**: anything else outside the change's scope (duplication, consistency, naming, a refactor or a missing test in code the change does not touch) is named in one line in the PR body's review section and not filed, and the change does not grow to absorb it.
+
+The summary names each finding and which way it went. A finding you judge not real: say why in one line.
 
 ## Pull requests
 
