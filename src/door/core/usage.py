@@ -46,6 +46,7 @@ FEATURES = {
     "tailoring": "prepare",
     "tailoring_retry": "prepare",  # the one extra tailor run after the ATS read-back; not another application prepared
     "revise": "prepare",
+    "facts": "prepare",
     "draft_cv": "other",
     "draft_stories": "other",
     "cv_read": "other",
@@ -69,6 +70,7 @@ FEATURE_LABELS = {
     "tailoring": "Tailoring the CV and letter",
     "tailoring_retry": "Tailoring again after the ATS check",
     "revise": "Revising materials",
+    "facts": "Checking facts",
     "draft_cv": "Drafting the CV",
     "draft_stories": "Drafting stories",
     "cv_read": "Reading your CV",

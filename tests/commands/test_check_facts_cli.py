@@ -22,11 +22,25 @@ def world(tmp_path, monkeypatch):
     return profile, jobs, out
 
 
+@pytest.fixture
+def model(monkeypatch):
+    state = {"calls": 0, "answer": {"findings": [{"kind": "number", "value": "40%", "context": "Cut churn by 40%", "file": "cv"}]}}
+
+    def ask(inputs):
+        state["calls"] += 1
+        if isinstance(state["answer"], Exception):
+            raise state["answer"]
+        return state["answer"]
+
+    monkeypatch.setattr(facts, "_ask", ask)
+    return state
+
+
 def _core(job="job-abc", **kw):
     return check_facts_cmd._check_facts_core(job, jobs_dir=workspace.JOBS_DIR, **kw)
 
 
-def test_reports_unsupported_and_rounds(world):
+def test_reports_unsupported_and_rounds(world, model):
     _, _, out = world
     first = _core()
     assert first["job_id"] == "job-abc" and first["round"] == 1 and first["rounds_left"] == 1
@@ -34,22 +48,41 @@ def test_reports_unsupported_and_rounds(world):
     assert first["unsupported"] == facts.load(out)
 
 
-def test_keep_persists_reason(world):
+def test_keep_persists_reason_with_no_second_call_and_no_round(world, model):
     _, _, out = world
+    _core()
     result = _core(keep=[{"value": "40%", "kind": "number", "file": "cv", "reason": "from the ad"}])
     assert result["unsupported"][0]["reason"] == "from the ad"
     assert facts.load(out)[0]["reason"] == "from the ad"
+    assert model["calls"] == 1 and result["round"] == 1 and result["rounds_left"] == 1
 
 
-def test_third_call_is_refused_and_writes_nothing(world):
+def test_a_changed_document_uses_the_second_round_and_the_third_is_refused(world, model):
     _, _, out = world
     _core()
-    _core()
+    (out / "cv.html").write_text("<ul><li>Cut churn by 40% in a year</li></ul>\n", encoding="utf-8")
+    assert _core()["round"] == 2
+    (out / "cv.html").write_text("<ul><li>Cut churn by 40% in a month</li></ul>\n", encoding="utf-8")
     before = (out / "facts.json").read_text(encoding="utf-8")
-    (out / "facts.json").write_text(before + " ", encoding="utf-8")
     result = _core()
-    assert "error" in result
-    assert (out / "facts.json").read_text(encoding="utf-8") == before + " "
+    assert "error" in result and model["calls"] == 2
+    assert (out / "facts.json").read_text(encoding="utf-8") == before
+
+
+def test_the_same_inputs_are_free_after_the_rounds_are_spent(world, model):
+    _, _, out = world
+    _core()
+    (out / "cv.html").write_text("<ul><li>Cut churn by 40% in a year</li></ul>\n", encoding="utf-8")
+    _core()
+    assert _core()["round"] == 2 and model["calls"] == 2
+
+
+def test_a_failed_call_is_not_checked_and_uses_no_round(world, model):
+    from door.core import claude_cli
+
+    model["answer"] = claude_cli.ClaudeError("limit")
+    result = _core()
+    assert result["unsupported"] is None and result["round"] == 0 and result["rounds_left"] == 2
 
 
 def test_bad_job_ids(world):
@@ -57,11 +90,3 @@ def test_bad_job_ids(world):
         _core("../evil")
     with pytest.raises(FileNotFoundError):
         check_facts_cmd._check_facts_core("job-zzz", jobs_dir=workspace.JOBS_DIR)
-
-
-def test_check_that_cannot_run_consumes_no_round(world):
-    profile, _, out = world
-    (profile / "cv.md").unlink()
-    for _ in range(3):
-        assert _core() == {"job_id": "job-abc", "round": 0, "rounds_left": 2, "unsupported": None}
-    assert not (out / ".facts_rounds").exists()
