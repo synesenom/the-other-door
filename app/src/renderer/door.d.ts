@@ -31,6 +31,8 @@ declare global {
       savePhoto(token: string): Promise<Envelope>
       /** Start the CV style build from a CV file the wizard read, by its token. */
       buildStyle(token: string): Promise<Envelope>
+      /** The onboarding review's two looks (`preview_styles`): the picked CV file by token, beside the draft. */
+      previewStyles(token: string, markdown: string): Promise<Envelope>
       /** Profile → CV: start building a style from the CV file (Sources); the window names no path. */
       styleFromCvFile(): Promise<Envelope>
       /** The CV file was taken by `styleFromCvFile` and is being read; returns the way to stop. */

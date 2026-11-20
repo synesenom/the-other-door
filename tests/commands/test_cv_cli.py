@@ -368,6 +368,17 @@ def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch
     assert result["sources"][0]["style"] is True
 
 
+def test_a_pdf_set_in_a_font_with_no_free_look_alike_offers_no_style(env, monkeypatch):
+    (env.profile_dir / "config.json").unlink()  # a first set-up
+    from door.style import fonts
+
+    _answer(monkeypatch)
+    monkeypatch.setattr(fonts, "unlike", lambda plan, used: ["Zorblax"])
+    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
+    result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
+    assert result["sources"][0]["style"] is False and result["sources"][0]["chars"] > 0
+
+
 STYLES = REPO_ROOT / "tests" / "style" / "fixtures" / "styles"
 ICONS = ["scrubbed-pages-header-en", "scrubbed-altacv-icons-fr"]
 

@@ -34,7 +34,7 @@ def test_a_short_style_suffix_is_read_too():
 
 
 def test_every_alias_the_script_writes_is_in_normal_form_and_a_listed_family():
-    listed = {name for name, _, _ in pin_fonts.FAMILIES}
+    listed = {name for name, _, _ in pin_fonts.FAMILIES} | set(pin_fonts.EXTERNAL)
     for table in (pin_fonts.ALIASES, pin_fonts.LOOKALIKES):
         for target, names in table.items():
             assert target in listed
@@ -72,7 +72,7 @@ def _written(pin, path):
 
 
 def test_every_pinned_family_is_in_families():
-    assert set(fonts.pin()["families"]) <= {name for name, _, _ in pin_fonts.FAMILIES}
+    assert set(fonts.pin()["families"]) <= {name for name, _, _ in pin_fonts.FAMILIES} | set(pin_fonts.EXTERNAL)
 
 
 def test_only_re_pins_the_named_family_and_leaves_every_other_one_byte_for_byte(tmp_path, monkeypatch):
@@ -138,3 +138,28 @@ def test_tables_only_rewrites_just_the_tables(tmp_path, monkeypatch):
     now = json.loads(out.read_text())
     assert now["families"] == stale["families"]
     assert now["aliases"] == fonts.pin()["aliases"] and now["lookalikes"] == fonts.pin()["lookalikes"]
+
+
+def test_a_family_from_its_own_repo_is_pinned_at_its_newest_commit_each_file_hashed_as_published(tmp_path, monkeypatch):
+    ttf = (workspace.PROFILE_EXAMPLE_DIR / "fonts" / "Figtree-Regular.ttf").read_bytes()
+    urls = []
+    monkeypatch.setattr(pin_fonts, "gh", lambda path: {"sha": "c" * 40} if path == "repos/someone/face/commits/HEAD" else None)
+    monkeypatch.setattr(pin_fonts, "download", lambda url, cache: urls.append(url) or (b"licence" if url.endswith(".txt") else ttf))
+    spec = {"class": "sans", "repo": "someone/face", "url": "https://raw.githubusercontent.com/someone/face/{commit}/ttf/{name}",
+            "files": ["Face-Regular.ttf", "Face-BoldItalic.ttf"],
+            "licence": ("OFL.txt", "https://raw.githubusercontent.com/someone/face/{commit}/OFL.txt")}
+    got, why = pin_fonts.pin_external("Face", spec, tmp_path)
+    assert why is None and got["url"] == "https://raw.githubusercontent.com/someone/face/" + "c" * 40 + "/ttf/{name}"
+    assert [(f["name"], f["weight"], f["italic"], "from" in f) for f in got["files"]] == [
+        ("Face-Regular.ttf", 400, False, False), ("Face-BoldItalic.ttf", 700, True, False)]
+    assert got["licence"]["url"].endswith("c" * 40 + "/OFL.txt") and 0.45 < got["metrics"]["x_height"] < 0.55
+    assert not list(tmp_path.glob("*.ttf"))   # the measured copy is not left behind
+
+
+def test_an_opentype_family_keeps_its_published_name_to_fetch_and_a_truetype_name_to_serve(tmp_path, monkeypatch):
+    ttf = (workspace.PROFILE_EXAMPLE_DIR / "fonts" / "Figtree-Regular.ttf").read_bytes()
+    monkeypatch.setattr(pin_fonts, "download", lambda url, cache: b"licence" if url.endswith(".TXT") else ttf)
+    spec = {"class": "serif", "convert": True, "url": "https://mirrors.ctan.org/x/{name}", "files": ["face10-regular.otf"],
+            "licence": ("LICENSE.TXT", "https://mirrors.ctan.org/doc/LICENSE.TXT")}
+    got, _ = pin_fonts.pin_external("Face", spec, tmp_path)
+    assert got["files"][0]["name"] == "face10-regular.ttf" and got["files"][0]["from"] == "face10-regular.otf"

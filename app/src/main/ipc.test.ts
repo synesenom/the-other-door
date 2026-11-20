@@ -821,6 +821,22 @@ describe('the CV style build', () => {
     expect(server.call).not.toHaveBeenCalled()
   })
 
+  it("the review's two looks: the picked CV file by token and the draft go to preview_styles", async () => {
+    const { invoke, server } = setup(async () => ({ styles: {} }), undefined, false, real)
+    expect(await invoke(CHANNELS.previewStyles, 'tok1', '# Ada')).toEqual({ ok: true, data: { styles: {} } })
+    expect(server.call).toHaveBeenCalledWith('preview_styles', { markdown: '# Ada', file: '/Users/ada/cv.pdf' }, { timeout: 120_000 })
+    for (const [t, md] of [['nope', '# Ada'], ['/Users/ada/cv.pdf', '# Ada'], ['tok1', 42]] as const) {
+      expect((await invoke(CHANNELS.previewStyles, t, md)).ok).toBe(false)
+    }
+    expect(server.call).toHaveBeenCalledTimes(1)
+  })
+
+  it('a CV file main can no longer use is logged: the wizard says nothing of it', async () => {
+    const { invoke, problemLog } = setup(undefined, undefined, false, real)
+    await invoke(CHANNELS.buildStyle, 'nope')
+    expect(problemLog.write).toHaveBeenCalledWith('build_style refused', expect.any(String))
+  })
+
   it('staging and the sandbox build for real', async () => {
     for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
       const { invoke, server } = setup(async () => ({ started: true }), undefined, false, info)

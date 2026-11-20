@@ -280,3 +280,34 @@ def test_moving_the_candidate_in_prints_nothing_again(world):
     (profile / "style.next").rename(profile / "style")
     _show(home, profile)
     assert len(printer.calls) == printed
+
+
+# ---------- the onboarding review's choice: the drafted CV in the default style beside the uploaded CV itself ----------
+
+def test_the_review_shows_the_draft_in_the_default_style_and_the_uploaded_cv_as_it_is(world):
+    home, profile, printer = world
+    shown = style_preview.review(home, profile, CV, PDF)
+    assert set(shown) == {"default", "original"}
+    assert shown["default"]["cv"] and all(p.startswith(str(home / ".style" / "preview" / "draft")) for p in shown["default"]["cv"])
+    assert "Ada Lovelace" in printer.calls[0]["html"]  # the draft, not the profile's cv.md or the example
+    original = shown["original"]["cv"]
+    assert original and all(p.startswith(str(home / ".style" / "preview" / "original" / "cv_page_")) for p in original)
+    assert len(printer.calls) == 2  # the CV and the sample letter; the uploaded CV is rendered, never printed
+    assert shown["default"]["version"] and shown["original"]["version"]
+
+
+def test_the_review_makes_nothing_again_while_the_draft_and_the_file_are_the_same(world):
+    home, profile, printer = world
+    first = style_preview.review(home, profile, CV, PDF)
+    again = style_preview.review(home, profile, CV, PDF)
+    assert again == first and len(printer.calls) == 2
+    style_preview.review(home, profile, CV + "\n- One more thing.\n", PDF)
+    assert len(printer.calls) == 4
+
+
+def test_the_review_leaves_out_what_cannot_be_shown(world, monkeypatch, tmp_path):
+    home, profile, _ = world
+    monkeypatch.setattr(html_pdf, "print_html", Printer(fail=True))
+    broken = tmp_path / "broken.pdf"
+    broken.write_bytes(b"not a pdf")
+    assert style_preview.review(home, profile, CV, broken) == {}

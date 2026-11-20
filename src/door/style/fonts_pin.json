@@ -1172,6 +1172,120 @@
     "advance": [399, 515, 407, 506, 390, 318, 435, 515, 245, 226, 469, 240, 778, 528, 495, 519, 522, 334, 323, 314, 527, 438, 685, 430, 438, 377, 692, 587, 710, 754, 564, 512, 729, 810, 340, 340, 681, 584, 901, 792, 763, 552, 763, 713, 465, 670, 738, 672, 916, 707, 578, 603, 480, 480, 480, 480, 480, 480, 480, 480, 480, 480, 200]
    }
   },
+  "Figtree": {
+   "url": "https://raw.githubusercontent.com/erikdkennedy/figtree/032dfa7fe219ef3a02890d6d3add84eacc9aebfe/fonts/ttf/{name}",
+   "class": "sans",
+   "licence": {
+    "name": "OFL.txt",
+    "sha256": "140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268",
+    "url": "https://raw.githubusercontent.com/erikdkennedy/figtree/032dfa7fe219ef3a02890d6d3add84eacc9aebfe/OFL.txt"
+   },
+   "files": [
+    {
+     "name": "Figtree-Light.ttf",
+     "weight": 300,
+     "italic": false,
+     "size": 54292,
+     "sha256": "d45f2ae5a0f2d58b00d3d46056fdb9288201b9f2928a1bf960342ba347c8c660"
+    },
+    {
+     "name": "Figtree-LightItalic.ttf",
+     "weight": 300,
+     "italic": true,
+     "size": 54208,
+     "sha256": "2b2213c0d7672e97fb21f8a5c22b99d61e1ca2827ccc8ad7d66832c90d4a82d4"
+    },
+    {
+     "name": "Figtree-Regular.ttf",
+     "weight": 400,
+     "italic": false,
+     "size": 57504,
+     "sha256": "448d74e778cc9774db27bd86cf451bba982b2e4dc348f610390eb6e3439cf6ca"
+    },
+    {
+     "name": "Figtree-Italic.ttf",
+     "weight": 400,
+     "italic": true,
+     "size": 56856,
+     "sha256": "462e367f49de2d2b09b712be18a4026c66f196455388d904f1038e8d1c859e11"
+    },
+    {
+     "name": "Figtree-Medium.ttf",
+     "weight": 500,
+     "italic": false,
+     "size": 57316,
+     "sha256": "358a4de79ae6c3fd7c6a54fcd778c1101ba376af75b8463e715df6988387bc19"
+    },
+    {
+     "name": "Figtree-MediumItalic.ttf",
+     "weight": 500,
+     "italic": true,
+     "size": 56868,
+     "sha256": "5cabcef8a72e2cd34a3ea244b1ab99ccad5cc5fb5488e5df163b21eb8656b9bc"
+    },
+    {
+     "name": "Figtree-SemiBold.ttf",
+     "weight": 600,
+     "italic": false,
+     "size": 57584,
+     "sha256": "35fc4508d627f8402a7d5ae91d842d1adb36846eea902c0a849642afecd0ac74"
+    },
+    {
+     "name": "Figtree-SemiBoldItalic.ttf",
+     "weight": 600,
+     "italic": true,
+     "size": 57168,
+     "sha256": "0302171fbef7747ff915b55495a2fdb3123fa50f52ad6c1907d480cb9091eec9"
+    },
+    {
+     "name": "Figtree-Bold.ttf",
+     "weight": 700,
+     "italic": false,
+     "size": 57672,
+     "sha256": "71a35e2bd92a05427e2dc9897bab41f8a865800e148238007735b5934508198a"
+    },
+    {
+     "name": "Figtree-BoldItalic.ttf",
+     "weight": 700,
+     "italic": true,
+     "size": 57612,
+     "sha256": "a79c6930ff01245bc1c809acfe80e8defe55cbd21086f12b148e382548f220e2"
+    },
+    {
+     "name": "Figtree-ExtraBold.ttf",
+     "weight": 800,
+     "italic": false,
+     "size": 57928,
+     "sha256": "c86cc3d813f6af7723474ff78ba1d1351254d1f4d4bfeedf58d9e8ed389b1dc4"
+    },
+    {
+     "name": "Figtree-ExtraBoldItalic.ttf",
+     "weight": 800,
+     "italic": true,
+     "size": 57460,
+     "sha256": "bdfa49eb6e23a899c48f2218e21e0029e2683617b47c0d8676075055175e9c50"
+    },
+    {
+     "name": "Figtree-Black.ttf",
+     "weight": 900,
+     "italic": false,
+     "size": 57568,
+     "sha256": "d32cf04815985f3cb0fa811236a1e130db44885ea981927a3237427320e851ef"
+    },
+    {
+     "name": "Figtree-BlackItalic.ttf",
+     "weight": 900,
+     "italic": true,
+     "size": 56956,
+     "sha256": "817222506620fd2ac8b850a3e5a3eee7f2a2946e18bbe51aa0acf887b050fabd"
+    }
+   ],
+   "metrics": {
+    "x_height": 0.5,
+    "stem": 0.08,
+    "advance": [510, 586, 541, 586, 546, 369, 587, 558, 232, 269, 485, 220, 851, 558, 580, 591, 578, 338, 466, 378, 558, 520, 784, 475, 526, 492, 677, 611, 721, 688, 592, 543, 760, 751, 271, 515, 610, 520, 846, 774, 776, 579, 780, 626, 614, 552, 708, 693, 960, 614, 604, 641, 641, 413, 559, 544, 621, 575, 566, 537, 614, 566, 247]
+   }
+  },
   "Fira Mono": {
    "commit": "d74f7e8db499e84477ad0af4140ad25cf573091c",
    "dir": "ofl/firamono",
@@ -1922,6 +2036,54 @@
     "x_height": 0.478,
     "stem": 0.079,
     "advance": [560, 584, 515, 594, 515, 343, 565, 604, 299, 314, 564, 280, 935, 603, 546, 594, 585, 381, 526, 376, 606, 503, 725, 512, 484, 475, 575, 622, 613, 661, 562, 524, 645, 669, 280, 404, 609, 468, 848, 685, 646, 554, 652, 613, 605, 501, 654, 563, 895, 642, 549, 592, 594, 331, 580, 591, 559, 565, 573, 470, 615, 581, 238]
+   }
+  },
+  "Latin Modern Roman": {
+   "url": "https://mirrors.ctan.org/fonts/lm/fonts/opentype/public/lm/{name}",
+   "class": "serif",
+   "licence": {
+    "name": "GUST-FONT-LICENSE.TXT",
+    "sha256": "49ea6cb9257bbee0a3979c48a774cd221550ac1c20c95549efe45fc99cc18050",
+    "url": "https://mirrors.ctan.org/fonts/lm/doc/fonts/lm/GUST-FONT-LICENSE.TXT"
+   },
+   "files": [
+    {
+     "name": "lmroman10-regular.ttf",
+     "weight": 400,
+     "italic": false,
+     "size": 111536,
+     "sha256": "1aa18cfefa58132c52ce5de70db1fd1154201c19cd2b2cdaffba4906a33e6852",
+     "from": "lmroman10-regular.otf"
+    },
+    {
+     "name": "lmroman10-italic.ttf",
+     "weight": 400,
+     "italic": true,
+     "size": 118828,
+     "sha256": "c1fce25075567bb8dbf2151658c3b442690041db17a2d49fc9e55905ea5b7169",
+     "from": "lmroman10-italic.otf"
+    },
+    {
+     "name": "lmroman10-bold.ttf",
+     "weight": 700,
+     "italic": false,
+     "size": 111240,
+     "sha256": "102fe06c430a8b681b2bf6876b7cd967ae4d47b4b6b41d915eb7913b726d9fb1",
+     "from": "lmroman10-bold.otf"
+    },
+    {
+     "name": "lmroman10-bolditalic.ttf",
+     "weight": 700,
+     "italic": true,
+     "size": 118204,
+     "sha256": "c37a28eed7a6e03f792b98b5e5f637b2fcda378bb4855f99284f1a88fe35f124",
+     "from": "lmroman10-bolditalic.otf"
+    }
+   ],
+   "metrics": {
+    "x_height": 0.429,
+    "stem": 0.222,
+    "advance": [500, 556, 444, 556, 444, 306, 500, 556, 278, 306, 528, 278, 833, 556, 500, 556, 528, 392, 394, 389, 556, 528, 722, 528, 528, 444, 750, 708, 722, 764, 681, 653, 785, 750, 361, 514, 778, 625, 917, 750, 778, 681, 778, 736, 556, 722, 750, 750, 1028, 750, 750, 611, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 333]
    }
   },
   "Lato": {
@@ -4412,6 +4574,9 @@
   "arialmt": "Arimo",
   "calibri": "Carlito",
   "cambria": "Caladea",
+  "cmr10": "Latin Modern Roman",
+  "cmuserif": "Latin Modern Roman",
+  "computermodern": "Latin Modern Roman",
   "courier": "Cousine",
   "couriernew": "Cousine",
   "couriernewps": "Cousine",
@@ -4419,9 +4584,11 @@
   "freeserif": "Tinos",
   "georgia": "Gelasio",
   "helvetica": "Arimo",
+  "latinmodernroman": "Latin Modern Roman",
   "liberationmono": "Cousine",
   "liberationsans": "Arimo",
   "liberationserif": "Tinos",
+  "lmroman10": "Latin Modern Roman",
   "mulish": "Muli",
   "nimbusmono": "Cousine",
   "nimbusmonol": "Cousine",
@@ -4447,13 +4614,30 @@
   "baskerville": "Libre Baskerville",
   "bookantiqua": "Spectral",
   "centurygothic": "Questrial",
+  "cmr12": "Latin Modern Roman",
+  "cmr17": "Latin Modern Roman",
+  "cmr5": "Latin Modern Roman",
+  "cmr6": "Latin Modern Roman",
+  "cmr7": "Latin Modern Roman",
+  "cmr8": "Latin Modern Roman",
+  "cmr9": "Latin Modern Roman",
   "franklingothic": "Libre Franklin",
   "garamond": "EB Garamond",
   "helveticaneue": "Arimo",
+  "lmroman12": "Latin Modern Roman",
+  "lmroman17": "Latin Modern Roman",
+  "lmroman5": "Latin Modern Roman",
+  "lmroman6": "Latin Modern Roman",
+  "lmroman7": "Latin Modern Roman",
+  "lmroman8": "Latin Modern Roman",
+  "lmroman9": "Latin Modern Roman",
   "optima": "Asap",
   "palatino": "Spectral",
   "palatinolinotype": "Spectral",
+  "palladio": "Spectral",
   "segoeui": "Open Sans",
+  "tahoma": "Fira Sans",
+  "urwpalladiol": "Spectral",
   "verdana": "Work Sans"
  }
 }

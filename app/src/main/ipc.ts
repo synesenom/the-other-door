@@ -43,6 +43,7 @@ export const CHANNELS = {
   savePhoto: 'door:save-photo',
   /** The CV style build: a CV file the wizard read, by its token. */
   buildStyle: 'door:build-style',
+  previewStyles: 'door:preview-styles',
   /** A CV chosen from Profile → CV to build a style from: the dialog and the build both run in main (style-file.ts). */
   styleFromCvFile: 'door:style-from-cv-file',
   /** Sent to the window once a file is chosen for it, before its structure is read. */
@@ -135,6 +136,8 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   use_style: 600_000,
   // build_style reads the CV's structure with one Haiku call (60 s on the server) before it starts the build.
   build_style: 120_000,
+  // the onboarding review prints the draft once (Chromium, no model)
+  preview_styles: 120_000,
 }
 
 // Staging and the sandbox run on throwaway data: none of it may reach the user's Drive.
@@ -155,6 +158,8 @@ export const PATH_ARGS: Record<string, { arg: string; urlsOnly?: true }[]> = {
   save_photo: [{ arg: 'path' }],
   // a CV PDF whose look is copied
   build_style: [{ arg: 'file' }],
+  // the uploaded CV beside the draft in the onboarding review (door:preview-styles)
+  preview_styles: [{ arg: 'file' }],
   // enrich reads web pages, and a CV file chosen in a dialog and sent by token (door:enrich-file)
   enrich: [{ arg: 'urls', urlsOnly: true }, { arg: 'files' }],
 }
@@ -429,11 +434,28 @@ export function registerIpc(
     }
   })
 
-  // The CV style build: the CV file the wizard read, by its token (the window never names a path).
-  ipcMain.handle(CHANNELS.buildStyle, async (_event, token: unknown): Promise<Envelope> => {
-    if (typeof token !== 'string' || !deps.cvSources) return { ok: false, error: 'Choose the file again.' }
+  // The onboarding review's two looks: the CV file the wizard read, by its token, beside the draft in the default style.
+  ipcMain.handle(CHANNELS.previewStyles, async (_event, token: unknown, markdown: unknown): Promise<Envelope> => {
+    if (typeof token !== 'string' || typeof markdown !== 'string' || !deps.cvSources) return { ok: false, error: 'Choose the file again.' }
     const resolved = await deps.cvSources.resolve([token])
     if (!resolved.ok) return resolved
+    try {
+      return { ok: true, data: await server.call('preview_styles', { markdown, file: resolved.paths[0] }, { timeout: TOOL_TIMEOUTS['preview_styles'] }) }
+    } catch (e) {
+      return failureEnvelope(e)
+    }
+  })
+
+  // The CV style build: the CV file the wizard read, by its token (the window never names a path).
+  ipcMain.handle(CHANNELS.buildStyle, async (_event, token: unknown): Promise<Envelope> => {
+    // the wizard says nothing of a refusal (the build is optional), so main's own is logged; the server logs its own
+    const refused = (error: string): Envelope => {
+      deps.problemLog?.write('build_style refused', error)
+      return { ok: false, error }
+    }
+    if (typeof token !== 'string' || !deps.cvSources) return refused('Choose the file again.')
+    const resolved = await deps.cvSources.resolve([token])
+    if (!resolved.ok) return refused(resolved.error)
     try {
       return { ok: true, data: await server.call('build_style', { file: resolved.paths[0] }, { timeout: TOOL_TIMEOUTS['build_style'] }) }
     } catch (e) {

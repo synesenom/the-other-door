@@ -149,6 +149,21 @@ def test_a_scan_and_a_linkedin_export_are_named_in_whole_sentences(home, world):
     assert world.spawned == []
 
 
+def test_a_cv_whose_main_font_has_no_free_look_alike_is_refused_in_words_and_nothing_starts(home, world, monkeypatch):
+    # a stand-in chosen only for its width would not look like the CV: its look is not offered at all
+    from door.style import fonts
+
+    seen = []
+    monkeypatch.setattr(fonts, "unlike", lambda plan, used: seen.append([e["family"] for e in plan]) or ["Figtree"])
+    assert asyncio.run(mcp_server.build_style(str(STYLES / "html-word-two-column.pdf"))) == {
+        "error": "html-word-two-column.pdf is set in Figtree, which has no free font that looks like it, so its style cannot be copied."}
+    assert world.spawned == [] and seen and "Figtree" in seen[0]
+
+
+def test_a_cv_whose_fonts_have_look_alikes_passes_the_intake(home, world):
+    assert asyncio.run(mcp_server.build_style(str(STYLES / "latex-classic.pdf"))) == {"started": True}
+
+
 def test_a_cv_whose_structure_could_not_be_read_is_refused_in_words_and_nothing_starts(home, world, monkeypatch):
     from door.style import style_structure
 
@@ -609,3 +624,16 @@ def test_the_show_tool_is_a_writing_tool_the_phone_does_not_get(home, cli_env, s
     from door import serve_policy
     assert "show_style" in mcp_server.WRITING_TOOLS and "show_style" not in serve_policy.PHONE_TOOLS
     assert asyncio.run(mcp_server.show_style())["styles"]["default"]["letter"] == ["/x/letter_page_1.png"]
+
+
+# ----------------------------------------------------------------------------- the onboarding review's previews
+def test_the_preview_core_shows_the_draft_and_the_uploaded_file_in_the_home(home, cli_env, cv_pdf, monkeypatch):
+    calls = []
+    monkeypatch.setattr(style_preview, "review", lambda h, p, md, pdf: calls.append((h, p, md, pdf)) or {"original": {"cv": ["/x.png"]}})
+    assert style_cmd._preview_core("# Ada\n", str(cv_pdf)) == {"styles": {"original": {"cv": ["/x.png"]}}}
+    assert calls == [(home, cli_env.profile_dir, "# Ada\n", cv_pdf)]
+
+
+def test_the_preview_core_names_a_file_that_is_gone(home, cli_env, tmp_path):
+    with pytest.raises(ValueError, match="could not be found"):
+        style_cmd._preview_core("# Ada\n", str(tmp_path / "gone.pdf"))

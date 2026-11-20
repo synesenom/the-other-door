@@ -61,6 +61,7 @@ export function mockDoor(given: Record<string, Handler>) {
   // The CV photo: nothing picked; a test answers the dialog with mockResolvedValueOnce.
   const pickPhoto = vi.fn(async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> => ({ canceled: true }))
   const buildStyle = vi.fn(async (_token: string): Promise<unknown> => ({ ok: true, data: { started: true } }))
+  const previewStyles = vi.fn(async (_token: string, _markdown: string): Promise<unknown> => ({ ok: true, data: { styles: {} } }))
   const styleReadingListeners = new Set<() => void>()
   const onStyleReading = vi.fn((cb: () => void) => {
     styleReadingListeners.add(cb)
@@ -144,8 +145,8 @@ export function mockDoor(given: Record<string, Handler>) {
       }
     }),
   }
-  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, buildStyle, styleFromCvFile, onStyleReading, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, importData, reportProblem }
-  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, buildStyle, styleFromCvFile, onStyleReading, pushStyleReading, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, importData, reportProblem }
+  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, buildStyle, previewStyles, styleFromCvFile, onStyleReading, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, importData, reportProblem }
+  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, draftCv, enrichFile, cvFile, clearCvSources, pickPhoto, savePhoto, buildStyle, previewStyles, styleFromCvFile, onStyleReading, pushStyleReading, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, importData, reportProblem }
 }
 
 export const summary = (over: Record<string, unknown> = {}) => ({

@@ -38,7 +38,7 @@ from door.commands import _common as common
 from door.commands import _progress
 from door.core import lock, process, profile_loader, templates, utils, workspace
 from door.core.jobs import tracker
-from door.style import style_build, style_extract, style_preview, style_structure
+from door.style import font_measure, fonts, style_build, style_extract, style_preview, style_structure
 
 LOCK_WAIT = 20.0  # seconds a build waits for the one it replaced to let go
 PENDING_SECONDS = 30  # a started build that has not yet taken its lock still reads as building this long
@@ -73,6 +73,12 @@ def _look(path: Path, feature: str = "style") -> None:
     if refused := style_extract.not_pdf(path):
         raise ValueError(f"{path.name} {refused['detail']}")
     try:
+        # a stand-in chosen only for its width does not look like the CV: no look is offered without a look-alike,
+        # found offline before the model is asked
+        used = style_extract.fonts_used(style_extract.read_pages(path))
+        if unlike := fonts.unlike(fonts.plan(used, font_measure.measure(path, used)), used):
+            which = "has no free font that looks like it" if len(unlike) == 1 else "have no free fonts that look like them"
+            raise ValueError(f"{path.name} is set in {' and '.join(unlike)}, which {which}, so its style cannot be copied.")
         structure = style_structure.structure_for(path, feature)
         verdict = style_extract.scan_verdict([]) if structure is None else style_extract.structure_verdict(structure)
     except (PdfiumError, OSError) as exc:
@@ -325,6 +331,16 @@ def _show_core(*, home: Path | None = None, profile_dir: Path | None = None) -> 
     shown = style_preview.show(Path(home or workspace.HOME), profile_dir, config)
     shown.update(in_use=templates.in_use(profile_dir, config), candidate=templates.liked(profile_dir).name == templates.CANDIDATE)
     return shown
+
+
+def _preview_core(markdown: str, file: str, *, home: Path | None = None, profile_dir: Path | None = None) -> dict:
+    """The onboarding review's choice of look, before anything is saved (`style_preview.review`): the drafted CV
+    `markdown` in the default style and the uploaded CV PDF at `file` as it is: ``{"styles": {"default" | "original":
+    {"cv": [png], "letter": [png], "version"}}}``, no model. Raises ValueError, in words, when the file is gone."""
+    pdf = Path(file).expanduser()
+    if not pdf.is_file():
+        raise ValueError(f"{pdf.name} could not be found.")
+    return {"styles": style_preview.review(Path(home or workspace.HOME), Path(profile_dir or workspace.PROFILE_DIR), markdown, pdf)}
 
 
 @click.group("style")

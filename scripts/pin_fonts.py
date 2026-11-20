@@ -43,7 +43,7 @@ LICENCES = ("OFL.txt", "LICENSE.txt")
 _SANS = [
     "Carlito", "Lato", "Open Sans", "Roboto", "Montserrat", "Source Sans Pro", "Raleway", "Poppins", "Nunito",
     "Nunito Sans", "PT Sans", "Work Sans", "DM Sans", "Fira Sans", "Karla", "Rubik", "Jost", "Mulish", "Muli",
-    "Quicksand", "IBM Plex Sans", "Libre Franklin", "Questrial", "Cabin", "Inter", "Figtree", "Barlow", "Hind",
+    "Quicksand", "IBM Plex Sans", "Libre Franklin", "Questrial", "Cabin", "Inter", "Barlow", "Hind",
     "Titillium Web", "Josefin Sans", "Archivo", "Oxygen", "Asap", "Catamaran",
 ]
 _SERIF = [
@@ -69,6 +69,25 @@ FAMILIES: list[tuple[str, str, tuple[str, ...]]] = (
     + [(n, c, (f"apache/{_slug(n)}",)) for n, c in _APACHE_ONLY]
 )
 
+# Families google/fonts has no static copy of, pinned from their own source: `url` (with {commit} for a GitHub repo
+# pinned at its newest commit, and {name}), the files, the licence and its url. `convert`: the files are OpenType with
+# CFF outlines, which Chromium prints as nameless text, so `fonts.fetch` writes them as TrueType (named `.ttf`).
+# CTAN serves only the current release, through whichever mirror answers: a new Latin Modern release fails the
+# sha256, which the live print test (tests/style/test_fonts_live.py) reports, and is pinned again with --only.
+_CTAN_LM = "https://mirrors.ctan.org/fonts/lm"
+EXTERNAL = {
+    "Figtree": {"class": "sans", "repo": "erikdkennedy/figtree",
+                "url": "https://raw.githubusercontent.com/erikdkennedy/figtree/{commit}/fonts/ttf/{name}",
+                "files": [f"Figtree-{s}.ttf" for s in ("Light", "LightItalic", "Regular", "Italic", "Medium", "MediumItalic",
+                                                       "SemiBold", "SemiBoldItalic", "Bold", "BoldItalic", "ExtraBold",
+                                                       "ExtraBoldItalic", "Black", "BlackItalic")],
+                "licence": ("OFL.txt", "https://raw.githubusercontent.com/erikdkennedy/figtree/{commit}/OFL.txt")},
+    "Latin Modern Roman": {"class": "serif", "convert": True,
+                           "url": _CTAN_LM + "/fonts/opentype/public/lm/{name}",
+                           "files": [f"lmroman10-{s}.otf" for s in ("regular", "italic", "bold", "bolditalic")],
+                           "licence": ("GUST-FONT-LICENSE.TXT", _CTAN_LM + "/doc/fonts/lm/GUST-FONT-LICENSE.TXT")},
+}
+
 # Each name a CV may give a font that a pinned family replaces at the same widths: a metric-compatible clone (Carlito,
 # Arimo, ...) or the same family under a newer name.
 ALIASES = {
@@ -82,19 +101,24 @@ ALIASES = {
     "Source Sans Pro": ["sourcesans3", "sourcesans"],
     "Source Serif Pro": ["sourceserif4"],
     "Muli": ["mulish"],
+    # Latin Modern is Computer Modern redrawn at its metrics: LaTeX's default font, as either name
+    "Latin Modern Roman": ["lmroman10", "latinmodernroman", "cmr10", "cmuserif", "computermodern"],
 }
 # A free family that only looks like the font: its line widths may differ.
 LOOKALIKES = {
     "Arimo": ["helveticaneue", "aptos"],
     "Asap": ["optima"],
     "EB Garamond": ["garamond"],
+    "Fira Sans": ["tahoma"],
     "Lato": ["avenir", "avenirnext"],
     "Libre Baskerville": ["baskerville"],
     "Libre Franklin": ["franklingothic"],
     "Open Sans": ["segoeui"],
     "Questrial": ["centurygothic"],
-    "Spectral": ["palatino", "palatinolinotype", "bookantiqua"],
+    "Spectral": ["palatino", "palatinolinotype", "bookantiqua", "palladio", "urwpalladiol"],  # Palladio: URW's Palatino
     "Work Sans": ["verdana"],
+    # LaTeX's other optical sizes: the same design, drawn a little wider or narrower than the 10 pt one pinned
+    "Latin Modern Roman": [f"{f}{n}" for f in ("lmroman", "cmr") for n in (5, 6, 7, 8, 9, 12, 17)],
 }
 
 
@@ -207,6 +231,43 @@ def pin_family(name: str, klass: str, folders: tuple[str, ...], cache: Path):
             "files": entries, "metrics": metrics}, None
 
 
+def pin_external(name: str, spec: dict, cache: Path):
+    """A family of `EXTERNAL`: each file downloaded and hashed as published, measured as it will be printed."""
+    commit = ""
+    if "repo" in spec:
+        head = gh(f"repos/{spec['repo']}/commits/HEAD")
+        if not head:
+            return None, f"cannot read {spec['repo']}"
+        commit = head["sha"]
+    url = spec["url"].replace("{commit}", commit)
+    entries, regular = [], None
+    for source in spec["files"]:
+        data = download(url.format(name=source), cache)
+        stem = source.rsplit(".", 1)[0]
+        weight, italic = weight_italic(stem + ".ttf")
+        entry = {"name": stem + ".ttf", "weight": weight, "italic": italic, "size": len(data),
+                 "sha256": hashlib.sha256(data).hexdigest()}
+        if spec.get("convert"):
+            entry["from"] = source
+        entries.append(entry)
+        if (weight, italic) == (400, False):
+            regular = cache / entry["name"]
+            regular.write_bytes(data)
+    if regular is None:
+        return None, "no regular file"
+    lic_name, lic_url = spec["licence"]
+    lic = download(lic_url.replace("{commit}", commit), cache)
+    try:
+        if spec.get("convert"):
+            fonts._to_truetype(regular)
+        metrics = measure_font(regular)
+    finally:
+        regular.unlink()
+    return {"url": url, "class": spec["class"],
+            "licence": {"name": lic_name, "sha256": hashlib.sha256(lic).hexdigest(), "url": lic_url.replace("{commit}", commit)},
+            "files": entries, "metrics": metrics}, None
+
+
 def write(pin: dict, out: Path) -> None:
     text = json.dumps(pin, indent=1, ensure_ascii=False)
     text = re.sub(r"\[\s+([\d,\s.\-]+?)\s+\]", lambda m: "[" + re.sub(r"\s+", " ", m.group(1)) + "]", text)
@@ -223,7 +284,7 @@ def main(argv=None) -> int:
                       help="pin nothing; rewrite `aliases` and `lookalikes` from the families already pinned")
     ap.add_argument("--out", type=Path, default=OUT)
     args = ap.parse_args(argv)
-    known = {name for name, _, _ in FAMILIES}
+    known = {name for name, _, _ in FAMILIES} | set(EXTERNAL)
     unknown = [n for n in args.only or [] if n not in known]
     if unknown:
         ap.error(f"not in FAMILIES: {', '.join(unknown)}")
@@ -231,6 +292,16 @@ def main(argv=None) -> int:
     families = dict(json.loads(args.out.read_text(encoding="utf-8"))["families"]) if partial else {}
     to_pin = [] if args.tables_only else [f for f in FAMILIES if args.only is None or f[0] in args.only]
     skipped = {}
+    for name, spec in EXTERNAL.items():
+        if args.tables_only or (args.only is not None and name not in args.only):
+            continue
+        got, why = pin_external(name, spec, args.cache)
+        if got:
+            families[name] = got
+            print(f"pinned  {name}: {got['url']} {len(got['files'])} files")
+        else:
+            skipped[name] = why
+            print(f"skipped {name}: {why}")
     for name, klass, folders in to_pin:
         pinned, why = pin_family(name, klass, folders, args.cache)
         if pinned:

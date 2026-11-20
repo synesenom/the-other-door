@@ -17,6 +17,10 @@ import re
 import statistics
 from pathlib import Path
 
+from fontTools.pens.cu2quPen import Cu2QuPen
+from fontTools.pens.ttGlyphPen import TTGlyphPen
+from fontTools.ttLib import TTFont, TTLibError, newTable
+
 from door.core import utils
 from door.core.downloads import pinned
 
@@ -38,7 +42,11 @@ def key(name: str) -> str:
 
 
 def file_url(family: str, name: str, data: dict) -> str:
+    """Where a pinned file is fetched: the family's own source (`url`, for a family google/fonts has no static copy
+    of), else its google/fonts commit."""
     fam = data["families"][family]
+    if "url" in fam:
+        return fam["url"].format(name=name)
     return data["url"].format(commit=fam["commit"], dir=fam["dir"], name=name)
 
 
@@ -120,14 +128,14 @@ def _files(family: str, uses: list[tuple[int, bool]], data: dict) -> list[dict]:
     chosen: dict[str, dict] = {}
     for weight, italic in uses:
         file = _pick(data["families"][family]["files"], weight, italic)
-        entry = chosen.setdefault(file["name"], {**file, "url": file_url(family, file["name"], data), "for": []})
+        entry = chosen.setdefault(file["name"], {**file, "url": file_url(family, file.get("from", file["name"]), data), "for": []})
         entry["for"].append([weight, italic])
     return list(chosen.values())
 
 
 def _licence(family: str, data: dict) -> dict:
     lic = data["families"][family]["licence"]
-    return {"name": f"{family.replace(' ', '')}-{lic['name']}", "url": file_url(family, lic["name"], data),
+    return {"name": f"{family.replace(' ', '')}-{lic['name']}", "url": lic.get("url") or file_url(family, lic["name"], data),
             "sha256": lic["sha256"]}
 
 
@@ -205,6 +213,12 @@ def _resolve(family: str, group: list[dict], measured: dict | None, data: dict) 
         return _entry(family, "none", default,
                       f"{family}: no free copy, and no measurement of it to compare; {default or 'nothing'} stands in", uses, data)
     ranked = _rank(klass, own, uses, data)
+    # width cannot tell shapes apart: the curated look-alike wins when it is near enough in width and fakes no more
+    # of the CV's faces than the nearest would
+    near_like = next((r for r in ranked if r["family"] == like), None) if like else None
+    if near_like and near_like["error"] <= MAX_WIDTH_ERROR and near_like["faked"] <= ranked[0]["faked"]:
+        return _entry(family, "lookalike", like,
+                      f"{family}: {like} looks alike and is free (width within {near_like['error']:.1%})", uses, data)
     if ranked and ranked[0]["error"] <= MAX_WIDTH_ERROR:
         best = ranked[0]
         return _entry(family, "nearest", best["family"],
@@ -231,7 +245,54 @@ def plan(fonts: list[dict], measured: dict | None = None, *, data: dict | None =
     return [_resolve(family, group, measured, data) for family, group in groups.items()]
 
 
+LOOKS_ALIKE = ("name", "standin", "lookalike")
+MAIN_SHARE = 0.1   # a font carrying at least this share of a CV's text is one of its main fonts
+
+
+def unlike(plan_: list[dict], fonts: list[dict]) -> list[str]:
+    """The main fonts of a CV (`fonts`, as `style_extract` reads them: a family carrying at least `MAIN_SHARE` of the
+    text, icon fonts not counted) that `plan_` gives no font that looks alike: only a width match or the class
+    default. A CV with one has no look that can be copied."""
+    text = [f for f in fonts if not f.get("icon") and f.get("family")]
+    total = sum(f["chars"] for f in text) or 1
+    share: dict[str, int] = {}
+    for f in text:
+        share[f["family"]] = share.get(f["family"], 0) + f["chars"]
+    return [e["family"] for e in plan_ if share.get(e["family"], 0) / total >= MAIN_SHARE and e["source"] not in LOOKS_ALIKE]
+
+
 # ---------- fetch ----------
+
+def _to_truetype(path: Path) -> None:
+    """Rewrite the OpenType font at `path` with CFF outlines as TrueType outlines in place: Chromium prints a CFF
+    font into a PDF as nameless text. The curves become quadratic within a hundredth of an em unit's tolerance."""
+    font = TTFont(path)
+    if "CFF " not in font:
+        return
+    glyph_set = font.getGlyphSet()
+    glyphs = {}
+    for name in font.getGlyphOrder():
+        pen = TTGlyphPen(glyph_set)
+        glyph_set[name].draw(Cu2QuPen(pen, max_err=1.0, reverse_direction=True))
+        glyphs[name] = pen.glyph()
+    del font["CFF "]
+    if "VORG" in font:
+        del font["VORG"]
+    font["glyf"] = newTable("glyf")
+    font["glyf"].glyphOrder = font.getGlyphOrder()
+    font["glyf"].glyphs = glyphs
+    font["loca"] = newTable("loca")
+    font["maxp"] = newTable("maxp")
+    font["maxp"].tableVersion = 0x00010000
+    font["maxp"].maxZones = 1
+    for attr in ("maxTwilightPoints", "maxStorage", "maxFunctionDefs", "maxInstructionDefs",
+                 "maxStackElements", "maxSizeOfInstructions", "maxComponentElements"):
+        setattr(font["maxp"], attr, 0)
+    font["head"].glyphDataFormat = 0
+    font["post"].formatType = 2.0
+    font["post"].extraNames, font["post"].mapping = [], {}
+    font.sfntVersion = "\x00\x01\x00\x00"
+    font.save(path)
 
 def fetch(plan: list[dict], dest: Path) -> list[Path]:
     """Download what `plan` names into `dest` (the font files and each family's licence beside them) and return the
@@ -242,18 +303,23 @@ def fetch(plan: list[dict], dest: Path) -> list[Path]:
         FontsError: a download failed or does not match the pinned sha256.
     """
     wanted: list[tuple[str, str, str]] = []   # (url, file name in dest, sha256)
+    converted: set[str] = set()   # pinned as OpenType CFF (`from`), written as TrueType: its hash is the source's
     for entry in plan:
         wanted += [(f["url"], f["name"], f["sha256"]) for f in entry["files"]]
+        converted |= {f["name"] for f in entry["files"] if "from" in f}
         if entry["licence"]:
             wanted.append((entry["licence"]["url"], entry["licence"]["name"], entry["licence"]["sha256"]))
     dest = Path(dest)
-    missing = [w for w in wanted if not (dest / w[1]).is_file() or pinned.sha256(dest / w[1]) != w[2]]
+    missing = [w for w in wanted if not (dest / w[1]).is_file()
+               or (w[1] not in converted and pinned.sha256(dest / w[1]) != w[2])]
     if missing:
         try:
             with utils.staging(dest, ".fonts.") as staging:
                 pinned.download(missing, staging)
                 for _, name, _ in missing:
+                    if name in converted:
+                        _to_truetype(staging / name)
                     (staging / name).replace(dest / name)
-        except (OSError, pinned.ChecksumError) as exc:
+        except (OSError, pinned.ChecksumError, TTLibError) as exc:
             raise FontsError(str(exc)) from exc
     return [dest / f["name"] for entry in plan for f in entry["files"]]

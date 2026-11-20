@@ -22,6 +22,8 @@ _STAND_INS = {
     "Arimo": ["Arimo-Regular", "Arimo-Bold"], "Tinos": ["Tinos-Regular", "Tinos-Bold"],
     "Cousine": ["Cousine-Regular", "Cousine-Bold"], "Lato": ["Lato-Regular", "Lato-Bold"],
     "Young Serif": ["YoungSerif-Regular"],
+    # pinned from their own source: Figtree's repo, and Latin Modern from CTAN written as TrueType
+    "Figtree": ["Figtree-Regular", "Figtree-Bold"], "Latin Modern Roman": ["LMRoman10-Regular", "LMRoman10-Bold"],
 }
 
 
@@ -49,7 +51,7 @@ def test_each_stand_in_prints_under_its_own_name(tmp_path):
     try:
         files = fonts.fetch(plan, tmp_path / "fonts")
     except fonts.FontsError as exc:
-        not_reached("raw.githubusercontent.com", str(exc))
+        not_reached("raw.githubusercontent.com or mirrors.ctan.org", str(exc))
     faces = "".join(
         f"@font-face {{ font-family: '{e['family']}'; src: url('/fonts/{f['name']}'); "
         f"font-weight: {f['weight']}; font-style: {'italic' if f['italic'] else 'normal'} }}\n"

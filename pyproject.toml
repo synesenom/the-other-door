@@ -36,6 +36,7 @@ segno = "^1.6"
 pillow = ">=13.0.0,<14"
 truststore = "^0.10.5"
 tzdata = "^2026.6"
+fonttools = "^4.68.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

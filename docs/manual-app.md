@@ -97,7 +97,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    The running step shows its time so far. It asks nothing: what it could not find
    (your name, email, city or titles) is left for the review. A failed draft offers "Try again" or going on
    without one. The draft is a scratch file, `profile/cv.draft.md`.
-3. **Check your answers.** Everything on one page, editable in place. A note at the top names what
+3. **Check your answers.** Everything on one page, editable in place, with the list of its parts on the right to jump to one. A note at the top names what
    could not be found in your sources, and Save waits until it is filled in; a city in a country not
    covered yet is named, and you choose a city or keep yours under Other, where only the worldwide
    boards are searched:
@@ -111,7 +111,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    what you did; a story tells what was behind it, and the tailor draws on your stories for every application.
    Fill in what the CV could not say, usually what you learned, or untick "Keep this story"; Save waits for one or the other.
    More stories go in Profile → [Stories](#your-stories));
-   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 2-5 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV style. Nothing is said if it does not work out);
+   **Your CV's style** (only when a PDF you gave has a look to copy: two first pages side by side, your CV in The other door's style and your CV as you uploaded it, The other door's chosen; pick one by clicking it. With "Your CV" picked, Save starts building a template from your CV's look in the background, 2-5 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV style. Nothing is said if it does not work out);
    **Where to find employers** (LinkedIn, and profession.hu, HelloWork or Jobbsafari where they serve your city:
    each stays off unless you tick it, because their terms forbid automated access; see the
    [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Risky sources changes it later).
@@ -466,8 +466,9 @@ CV and a sample letter) in a dialog. The switch **Use my own style**, at the sec
 style is used, built first from your CV file (under Master CV) when there is none yet (a PDF; after a short wait,
 "Reading your CV's look…", then 2-5 minutes on your Claude plan, which "Building your style…" says, and it is put in
 use once ready); off, The other door's style is used again, your style kept. A CV file that cannot be used (none
-yet, not a PDF, no look to copy, or a look that could not be read because Claude was unreachable or its usage limit
-reached) is said at once; a build that does not work out later is not. A new CV file builds your style again from
+yet, not a PDF, no look to copy, set in a font with no free look-alike, or a look that could not be read because Claude was unreachable or its usage limit
+reached) is said at once; a build that does not work out later turns the switch back off and says "Your CV's style
+could not be copied, so your CVs keep The other door's style." (turning the switch on again tries once more). A new CV file builds your style again from
 it. Prepared applications keep their look; after a switch "Print N prepared CVs again" does it (no Claude call; sent
 ones never change; "Try again" appears if some could not be printed). A two-column style may be read less well by
 application systems, and the section says so.

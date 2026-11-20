@@ -394,6 +394,16 @@ def _long_title(lines: list[str]) -> list[str]:
     return [*lines, "", "## Experience", "", f"### {_LONG_ROLE} | Example Company — 2020 - 2023", "", "- A bullet.", ""]
 
 
+_EXTRA_HEADINGS = ("Publications", "Talks", "Awards", "Volunteering", "Further reading")
+
+
+def _extra_heading(lines: list[str]) -> str:
+    """The heading of the ``extra_section`` variant: one the CV does not have, as a second one of the same name would
+    read back as a section out of order."""
+    have = {line[3:].strip().casefold() for line in lines if line.startswith("## ")}
+    return next((h for h in _EXTRA_HEADINGS if h.casefold() not in have), "Selected further work")
+
+
 def _stress_variants(cv_md: str) -> dict[str, dict]:
     """The CV in `cv_md` made into the texts a template must hold (no model): ``photo`` (the same, printed with a
     photo), ``fewer`` (one entry a section), ``long_title`` (a very long job title), ``extra_section`` (one more
@@ -402,7 +412,7 @@ def _stress_variants(cv_md: str) -> dict[str, dict]:
     at = _section_at(lines)
     variants = {
         "photo": lines, "fewer": _fewer(lines), "long_title": _long_title(lines),
-        "extra_section": [*lines, "", "## Publications", "", "- A study of nightly pipelines (2021)", "- Notes on small steady steps (2019)"],
+        "extra_section": [*lines, "", f"## {_extra_heading(lines)}", "", "- A study of nightly pipelines (2021)", "- Notes on small steady steps (2019)"],
         "french": [*lines[:at], "## Profil", "", _FRENCH, "", *lines[at:]],
     }
     return {name: {"md": cv_md if name == "photo" else "\n".join(v) + "\n", "lang": "fr" if name == "french" else "en",

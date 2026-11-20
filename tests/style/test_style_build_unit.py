@@ -392,3 +392,10 @@ def test_a_line_the_pdf_prints_with_a_ligature_is_found_in_the_body_spelt_out():
             "<h2>Skills</h2><p>Python</p>")
     problems = style_build.body_column_problems(style, body, templates.Columns(side=["skills"]))
     assert len(problems) == 1 and "side column of the original" in problems[0]
+
+
+def test_the_extra_section_is_one_the_cv_does_not_have():
+    # a CV that has a Publications section already: a second one would read as out of order (a false failure)
+    cv = "# Jane Doe\n\n## Profile\n\nA text.\n\n## Publications\n\n- A paper (2020)\n\n## Projects\n\n- A project\n"
+    headings = re.findall(r"^## (.+)$", style_build._stress_variants(cv)["extra_section"]["md"], re.M)
+    assert len(headings) == 4 and len(set(h.casefold() for h in headings)) == 4

@@ -1152,6 +1152,28 @@
     }
   },
   {
+    "name": "preview_styles",
+    "description": "The two looks a first set-up chooses between, before anything is saved: the drafted CV printed in The other\n    door's style, and the uploaded CV PDF as it is (the look a ``build_style`` copies). No model; made again only when\n    the draft or the file changed. The desktop app's onboarding review calls it.\n\n    Args:\n        markdown: The drafted CV (``draft_cv``'s markdown, as edited).\n        file: The uploaded CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).\n\n    Returns:\n        ``{\"styles\": {\"default\": {\"cv\": [png paths], \"letter\": [png paths], \"version\"}, \"original\": {\"cv\": [png paths],\n        \"letter\": [], \"version\"}}}``; a look that could not be made (no browser to print with, a PDF that cannot be\n        read) is left out.\n    ",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "markdown": {
+          "title": "Markdown",
+          "type": "string"
+        },
+        "file": {
+          "title": "File",
+          "type": "string"
+        }
+      },
+      "required": [
+        "markdown",
+        "file"
+      ],
+      "title": "preview_stylesArguments"
+    }
+  },
+  {
     "name": "query_jobs",
     "description": "Count and list postings by filter — for questions no other tool answers (\"how many\n    Teamtailor postings this month?\", \"average score of the Danish ads in September\"). Read only:\n    nothing is written. Identical to `./door jobs query`.\n\n    Args:\n        since: First seen on or after this day (``2026-09-01``).\n        until: First seen on or before this day.\n        site: Only postings from this site (``jobindex``, ``teamtailor``, ...).\n        company: Only companies whose name contains this (any case).\n        status: A ledger status (``applied``, ``rejected``, ...), ``unapplied`` for the untracked,\n            or ``interview`` for any round.\n        min_score: Only postings scoring at least this.\n        max_score: Only postings scoring at most this.\n        language: Only ads in this language (a code: ``en``, ``da``, ``hu``).\n        has_materials: Only postings with (True) or without (False) a prepared CV and letter.\n        limit: How many of the best postings to list (default 10).\n\n    Returns:\n        ``{\"count\", \"average_score\", \"by_site\", \"by_company\", \"by_status\", \"by_month\",\n        \"rows\": [{\"id\", \"title\", \"company\", \"score\", \"status\", \"site\", \"scraped_at\",\n        \"posted_at\"}]}``, the rows best first. Name postings by title and company to the user.\n    ",
     "inputSchema": {

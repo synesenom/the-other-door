@@ -144,6 +144,8 @@ export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: {
   // own style is wanted or in use is put in use (it was built from their CV file for that)
   useEffect(() => {
     const finished = was.current === 'building' && state === 'ready'
+    // a build that failed uses nothing: the switch goes back off
+    if (state === 'failed') setWanted(false)
     was.current = state
     void read().then((answer) => {
       if (finished && answer.candidate && (wanted || answer.in_use === 'like')) {
@@ -237,7 +239,13 @@ export function StyleRow({ state, canBuild, onChanged, reload, replaced = 0 }: {
               </div>
             )}
             <div className="style-below">
-              {!hasLike && !building && !reading && canBuild && <p className="small muted">Your tailored CVs printed in the style of your CV file. Building it takes 2–5 minutes in the background.</p>}
+              {!hasLike && !held && canBuild && (
+                <p className="small muted">
+                  {state === 'failed'
+                    ? named("Your CV's style could not be copied, so your CVs keep The other door's style.")
+                    : 'Your tailored CVs printed in the style of your CV file. Building it takes 2–5 minutes in the background.'}
+                </p>
+              )}
               {twoColumn && <p className="small muted">Some application systems read two-column CVs less well.</p>}
               {(building || reading) && <Spinner message={building ? 'Building your style…' : "Reading your CV's look…"} />}
             </div>

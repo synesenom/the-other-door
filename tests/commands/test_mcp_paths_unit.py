@@ -52,3 +52,20 @@ def test_the_desktop_app_names_any_path(scoped, monkeypatch):
     _, calls = scoped
     monkeypatch.setenv(path_scope.ENV, "1")
     assert server.import_data("/tmp/elsewhere/door.tar.gz") == {"ok": True}
+
+
+@pytest.mark.parametrize("call", [
+    lambda: server.build_style("/root/cv.pdf"),
+    lambda: server.preview_styles("# Ada\n", "/root/cv.pdf"),
+])
+def test_the_style_tools_refuse_a_file_outside_before_the_core_runs(scoped, monkeypatch, call):
+    import asyncio
+
+    from door.commands import style as style_cmd
+
+    calls = []
+    for name in ("_start_core", "_preview_core"):
+        monkeypatch.setattr(style_cmd, name, lambda *a, _n=name, **kw: calls.append(_n) or {"ok": True})
+    result = asyncio.run(call())
+    assert "outside the data folder" in result["error"]
+    assert calls == []

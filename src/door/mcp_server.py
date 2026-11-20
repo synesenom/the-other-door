@@ -259,6 +259,7 @@ CONVERSATION_ONLY_TOOLS = (
     # the phone server, for the desktop app's "Set up your phone" and Claude Code (#444, #424)
     "phone_status", "phone_start", "phone_stop", "pair_phone", "unpair_phone",
     "stop_style_build",  # the desktop app before an update installs (#215); `cv style build` runs in the foreground
+    "preview_styles",  # the onboarding review's two looks, before anything is saved
 )
 
 # Commands with no tool: `serve` runs this server over HTTP and manages who may call it (#302); a tool
@@ -275,7 +276,7 @@ READ_ONLY_TOOLS = frozenset({
 WRITING_TOOLS = frozenset({
     "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
     "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
-    "remove_company", "merge_companies", "build_style", "show_style", "use_style", "stop_style_build", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
+    "remove_company", "merge_companies", "build_style", "show_style", "preview_styles", "use_style", "stop_style_build", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
 })
 
@@ -1527,6 +1528,26 @@ async def show_style() -> dict:
     """
     # On a thread: a cold set prints four pages with Chromium, and the other calls must not wait for it.
     return await asyncio.to_thread(style_cmd._show_core)
+
+
+@mcp.tool()
+@_tool_errors
+async def preview_styles(markdown: str, file: str) -> dict:
+    """The two looks a first set-up chooses between, before anything is saved: the drafted CV printed in The other
+    door's style, and the uploaded CV PDF as it is (the look a ``build_style`` copies). No model; made again only when
+    the draft or the file changed. The desktop app's onboarding review calls it.
+
+    Args:
+        markdown: The drafted CV (``draft_cv``'s markdown, as edited).
+        file: The uploaded CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).
+
+    Returns:
+        ``{"styles": {"default": {"cv": [png paths], "letter": [png paths], "version"}, "original": {"cv": [png paths],
+        "letter": [], "version"}}}``; a look that could not be made (no browser to print with, a PDF that cannot be
+        read) is left out.
+    """
+    # On a thread: a cold set prints two pages with Chromium, and the other calls must not wait for it.
+    return await asyncio.to_thread(style_cmd._preview_core, markdown, str(path_scope.check(file)))
 
 
 @mcp.tool()

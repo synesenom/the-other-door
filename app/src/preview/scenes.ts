@@ -44,7 +44,7 @@ export interface Scene {
   styleReady?: boolean
   /** Profile → CV's Style: which style is in use, whether one built from a CV is kept (`like`), whether it waits to
    * be chosen (`candidate`), a build running, how many prepared CVs a switch could print again, how many of them fail the first time they are printed again. Default: The other door's, no build. */
-  style?: { in_use?: 'default' | 'like'; like?: boolean; candidate?: boolean; two_column?: boolean; building?: boolean; prepared?: number; failing?: number }
+  style?: { in_use?: 'default' | 'like'; like?: boolean; candidate?: boolean; two_column?: boolean; building?: boolean; failed?: boolean; prepared?: number; failing?: number }
   /** Tools (or `window.door` calls: `exportData`, `reportProblem`) that fail here, each with the words it fails with: an error the user sees. */
   fails?: Record<string, string>
   /** Buttons the preview presses, in order, once the screen has loaded (`pressInOrder`): a state only an action reaches. */
@@ -181,6 +181,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-cv-style-building', group: 'Profile', title: 'CV, a style being built', start: { destination: 'Profile', cv: true }, style: { building: true } },
   { id: 'profile-cv-style-reading', group: 'Profile', title: 'CV, the switch on with no style yet: the CV file\'s look being read (the spinner)', start: { destination: 'Profile', cv: true }, hold: 'styleFromCvFile', press: ['Use my own style'] },
   { id: 'profile-cv-style-unread', group: 'Profile', title: 'CV, the look could not be read (the error box)', start: { destination: 'Profile', cv: true }, fails: { styleFromCvFile: 'Claude could not be reached, or Claude\'s usage limit is reached. Try again later.' }, press: ['Use my own style'] },
+  { id: 'profile-cv-style-failed', group: 'Profile', title: 'CV, a build that failed (the switch off, one muted line)', start: { destination: 'Profile', cv: true }, style: { failed: true } },
   { id: 'profile-cv-style-candidate', group: 'Profile', title: 'CV, a built style to compare (the switch on, then Print again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 2 } },
   { id: 'profile-cv-style-printed', group: 'Profile', title: 'CV, the prepared CVs printed again, one failed (Try again)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true, prepared: 3, failing: 1 }, press: ['Use my own style', 'Print 3 prepared CVs again'] },
   { id: 'profile-cv-style-refused', group: 'Profile', title: 'CV, choosing a style failed (the error box)', start: { destination: 'Profile', cv: true }, style: { like: true, candidate: true }, fails: { use_style: 'Your choice could not be saved. Try again.' }, press: ['Use my own style'] },
@@ -220,7 +221,9 @@ export const SCENES: readonly Scene[] = [
   { id: 'onboarding-reading', group: 'Onboarding', title: '2. Reading, slowed down (reload to watch again)', fresh: true, start: { wizard: { step: 'reading', files: [FILE] } }, slow: { draft_cv: 8_000, infer_basics: 2_000, suggest_titles: 3_000, keywords: 3_000 } },
   { id: 'onboarding-reading-last', group: 'Onboarding', title: '2. Reading, stays on the last step', fresh: true, start: { wizard: { step: 'reading', files: [FILE] } }, hold: 'keywords' },
   { id: 'onboarding-review', group: 'Onboarding', title: '3. Review', fresh: true, start: { wizard: { ...ANSWERED, step: 'review' } } },
-  { id: 'onboarding-review-style', group: 'Onboarding', title: '3. Review, the CV style offered (off)', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', files: [FILE], cvDraft: STYLED_DRAFT } } },
+  { id: 'onboarding-review-style', group: 'Onboarding', title: "3. Review, the CV style: your CV in The other door's style beside it as uploaded", fresh: true, start: { wizard: { ...ANSWERED, step: 'review', files: [FILE], cvDraft: STYLED_DRAFT } } },
+  { id: 'onboarding-review-style-loading', group: 'Onboarding', title: '3. Review, the CV style previews being printed', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', files: [FILE], cvDraft: STYLED_DRAFT } }, hold: 'previewStyles' },
+  { id: 'onboarding-review-style-unprinted', group: 'Onboarding', title: '3. Review, the CV style previews could not be printed (names only)', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', files: [FILE], cvDraft: STYLED_DRAFT } }, fails: { previewStyles: 'no Chromium' } },
   { id: 'onboarding-review-unfound', group: 'Onboarding', title: '3. Review, details not found', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', name: '', email: '', location: '', titles: [], roleTargets: [], keywords: [], topicTerms: [], keywordsState: 'none', missing: ['name', 'email', 'location', 'titles'] } } },
   { id: 'onboarding-review-gaps', group: 'Onboarding', title: '3. Review, the CV has gaps', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', cvText: CV.replace('+45 00 00 00 00', 'TODO').replace(/(BSc in Business Administration.*— ).*/, '$1TODO') } } },
   { id: 'onboarding-review-no-cv', group: 'Onboarding', title: '3. Review, the draft failed', fresh: true, start: { wizard: { ...ANSWERED, cvText: null, cvDraft: null, step: 'review' } } },

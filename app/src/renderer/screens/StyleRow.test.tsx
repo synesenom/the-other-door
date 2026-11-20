@@ -102,11 +102,34 @@ describe('StyleRow, no style of your own yet', () => {
     expect(screen.queryByRole('switch')).toBeNull()
   })
 
-  it('goes back to this, saying nothing, when the build failed', async () => {
+  const FAILED = "Your CV's style could not be copied, so your CVs keep The other door's style."
+
+  it('says in one quiet line that the style could not be copied when the build failed, the switch off', async () => {
     await open({}, { state: 'failed' })
     await ready()
     expect(screen.getByRole('switch', { name: 'Use my own style' }).getAttribute('aria-checked')).toBe('false')
+    expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === FAILED)).toBeTruthy()
+    expect(screen.queryByText(/Building it takes 2–5 minutes/)).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('a build turned on that fails turns the switch back off and says so', async () => {
+    const h = await open({})
+    await ready()
+    await userEvent.click(screen.getByRole('switch', { name: 'Use my own style' }))
+    await waitFor(() => expect(h.onChanged).toHaveBeenCalled())
+    h.view.rerender(<StyleRow state="building" canBuild onChanged={h.onChanged} reload={0} />)
+    expect(await screen.findByText('Building your style…')).toBeTruthy()
+    expect(screen.queryByText(/could not be copied/)).toBeNull()
+    h.view.rerender(<StyleRow state="failed" canBuild onChanged={h.onChanged} reload={0} />)
+    expect(await screen.findByText((_, el) => el?.tagName === 'P' && el.textContent === FAILED)).toBeTruthy()
+    expect(screen.getByRole('switch', { name: 'Use my own style' }).getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('says nothing of a failed build while a style of your own is there to use', async () => {
+    await open({ show_style: both() }, { state: 'failed' })
+    await ready()
+    expect(screen.queryByText(/could not be copied/)).toBeNull()
   })
 })
 

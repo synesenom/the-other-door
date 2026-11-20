@@ -115,13 +115,13 @@ def _make(stage: Path, cv_md: str, lang: str, photo: Path | None, cv_template: P
     return images
 
 
-def _set(root: Path, folder: Path, key: str, cv_md: str, lang: str, photo: Path | None, cv_template: Path,
-         letter_template: Path) -> list[str] | None:
-    """Make the set in a staging folder of this call and move it in as `folder`; its image names, None when it could
-    not be printed. A call that meets another's set already moved in (the same key, the same files) uses that."""
+def _set(root: Path, folder: Path, key: str, make) -> list[str] | None:
+    """Make the set with `make(stage)` (its image names) in a staging folder of this call and move it in as `folder`;
+    its image names, None when it could not be made. A call that meets another's set already moved in (the same key,
+    the same files) uses that."""
     try:
         with utils.staging(root, f".{folder.name}.") as stage:
-            images = _make(stage, cv_md, lang, photo, cv_template, letter_template)
+            images = make(stage)
             (stage / "meta.json").write_text(json.dumps({"key": key, "images": images}), encoding="utf-8")
             shutil.rmtree(folder, ignore_errors=True)
             try:
@@ -154,8 +154,47 @@ def show(home: Path, profile_dir: Path, config: dict) -> dict:
             two_column = bool((templates.manifest(cv_template) or templates.Manifest()).columns)
         except (ValueError, OSError):
             continue
-        images = _fresh(folder, key) or _set(root, folder, key, cv_md, lang, photo, cv_template, letter_template)
+        images = _fresh(folder, key) or _set(
+            root, folder, key, lambda stage, t=cv_template, lt=letter_template: _make(stage, cv_md, lang, photo, t, lt))
         if images:
-            out[style] = {kind: [str(folder / n) for n in images if n.startswith(f"{kind}_page_")] for kind in ("cv", "letter")}
-            out[style].update(version=key, two_column=two_column)
+            out[style] = {**_by_kind(folder, images), "version": key, "two_column": two_column}
     return {"styles": out}
+
+
+def _by_kind(folder: Path, images: list[str]) -> dict[str, list[str]]:
+    return {kind: [str(folder / n) for n in images if n.startswith(f"{kind}_page_")] for kind in ("cv", "letter")}
+
+
+def _pages(pdf: Path):
+    """The set of an uploaded CV as it is: its pages as images, nothing printed."""
+    def make(stage: Path) -> list[str]:
+        utils.write_atomic(stage / "cv.pdf", pdf.read_bytes())
+        return [p.name for p in pdf_render.render_pdf_pages(stage / "cv.pdf", stage)]
+    return make
+
+
+def review(home: Path, profile_dir: Path, cv_md: str, original: Path) -> dict:
+    """The onboarding review's two looks to choose between, before anything is saved: ``default``, the drafted CV
+    `cv_md` (and the sample letter) printed in the default template, in `HOME/.style/preview/draft/`, and ``original``,
+    the uploaded CV PDF `original` as it is, its pages in `HOME/.style/preview/original/` (``{"cv": [png], "letter":
+    [png], "version": key}`` each). Each is made again only when what it is made from changed; one that cannot be made
+    is left out, nothing is raised."""
+    root = Path(home) / ".style" / "preview"
+    lang = _language(cv_md)
+    cv_template, letter_template = _paths("default", Path(profile_dir))
+    out: dict[str, dict] = {}
+    try:
+        draft_key = _key(cv_md, lang, None, cv_template, letter_template)
+    except (ValueError, OSError):
+        draft_key = None
+    original_key = _sha(version.VERSION.encode(), _bytes(original))
+    sets = [("default", "draft", draft_key, lambda stage: _make(stage, cv_md, lang, None, cv_template, letter_template)),
+            ("original", "original", original_key, _pages(Path(original)))]
+    for name, folder_name, key, make in sets:
+        if key is None:
+            continue
+        folder = root / folder_name
+        images = _fresh(folder, key) or _set(root, folder, key, make)
+        if images:
+            out[name] = {**_by_kind(folder, images), "version": key}
+    return out

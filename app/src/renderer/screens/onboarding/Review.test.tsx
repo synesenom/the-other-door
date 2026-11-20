@@ -18,8 +18,9 @@ const answers: Partial<WizardState> = {
   keywords: ['lead'], topicTerms: ['data'], keywordsState: 'proposed', cvText: '# Ada\n',
 }
 let seen: WizardState
-function setup(start: Partial<WizardState> = answers, handlers: Record<string, unknown> = {}, profile: ShowProfile = freshProfile) {
+function setup(start: Partial<WizardState> = answers, handlers: Record<string, unknown> = {}, profile: ShowProfile = freshProfile, before?: (h: ReturnType<typeof mockDoor>) => void) {
   const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile, keywords: { keywords: ['new'], topic_terms: ['t'] }, ...handlers })
+  before?.(h)
   const onSaved = vi.fn()
   render(
     <Host profile={profile} start={start}>
@@ -397,36 +398,64 @@ describe('Review, the example story', () => {
   })
 })
 
-describe('Review, the CV style tick', () => {
+describe("Review, the CV style choice", () => {
   const styled: Partial<WizardState> = {
     ...answers,
+    cvText: '# Ada\n',
     files: [{ token: 'f1', name: 'cv.pdf', size: 1 }],
     cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: true, token: 'f1' }] },
   }
-  const box = () => screen.queryByRole('checkbox', { name: /Make my tailored CVs look like the CV I uploaded/ })
+  const looks = {
+    styles: {
+      default: { cv: ['/h/.style/preview/draft/cv_page_1.png'], letter: [], version: 'd1' },
+      original: { cv: ['/h/.style/preview/original/cv_page_1.png'], letter: [], version: 'o1' },
+    },
+  }
+  const ours = () => screen.queryByRole('radio', { name: /The other door/ })
+  const theirs = () => screen.queryByRole('radio', { name: 'Your CV' })
+  const withLooks = (answer: unknown) => (h: ReturnType<typeof mockDoor>) => h.previewStyles.mockResolvedValue(answer)
 
-  it('offers it, off, with the time it takes, when an uploaded CV has a style to copy', () => {
-    setup(styled)
-    expect(box()).not.toBeNull()
-    expect(box()).not.toBeChecked()
-    expect(screen.getByText('Takes 2–5 minutes in the background.')).toBeInTheDocument()
+  it("offers your CV in The other door's style beside your CV as uploaded, The other door's chosen", async () => {
+    const h = setup(styled, {}, freshProfile, withLooks({ ok: true, data: looks }))
+    expect(screen.getByRole('radiogroup', { name: "Your CV's style" })).toBeInTheDocument()
+    expect(ours()).toBeChecked()
+    expect(theirs()).not.toBeChecked()
+    await waitFor(() => expect(h.previewStyles).toHaveBeenCalledWith('f1', '# Ada\n'))
   })
 
-  it('holds the tick until Save, which starts the build from the file', async () => {
+  it('shows each look as its first page once the previews are made', async () => {
+    setup(styled, {}, freshProfile, withLooks({ ok: true, data: looks }))
+    expect((await screen.findByRole('img', { name: 'Your CV, first page' })).getAttribute('src')).toBe('door-file://style/original/cv_page_1.png?v=o1')
+    expect(screen.getByRole('img', { name: 'The other door, first page' }).getAttribute('src')).toBe('door-file://style/draft/cv_page_1.png?v=d1')
+  })
+
+  it('holds the choice until Save, which starts the build from the file', async () => {
     const h = setup(styled)
-    await userEvent.click(box()!)
+    await userEvent.click(theirs()!)
     expect(seen.style).toBe(true)
+    expect(theirs()).toBeChecked()
     expect(h.buildStyle).not.toHaveBeenCalled()
+    expect(screen.getByText(/2–5 minutes in the background/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
     await waitFor(() => expect(h.buildStyle).toHaveBeenCalledWith('f1'))
     expect(h.onSaved).toHaveBeenCalled()
   })
 
+  it('keeps the choice, with names only, when the previews could not be made', async () => {
+    const h = setup(styled, {}, freshProfile, withLooks({ ok: false, error: 'no Chromium' }))
+    await waitFor(() => expect(h.previewStyles).toHaveBeenCalled())
+    await waitFor(() => expect(screen.queryByText('Preparing the previews…')).toBeNull())
+    expect(ours()).toBeInTheDocument()
+    expect(theirs()).toBeInTheDocument()
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it('is not there without a style to copy, or on a set-up again', () => {
     setup({ ...answers, files: styled.files, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false, token: 'f1' }] } })
-    expect(box()).toBeNull()
+    expect(theirs()).toBeNull()
     cleanup()
     setup({ ...styled, mode: 'redo' })
-    expect(box()).toBeNull()
+    expect(theirs()).toBeNull()
   })
 })

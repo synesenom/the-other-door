@@ -1,5 +1,6 @@
 """The pinned free fonts (#199): `style/fonts_pin.json`, written by scripts/pin_fonts.py. Each family is pinned at the last
-google/fonts commit where it was still static, with the sha256 of every file and of its licence."""
+google/fonts commit where it was still static, or at its own source when google/fonts has no static copy (a GitHub
+repo at a commit, or CTAN), with the sha256 of every file and of its licence."""
 
 from __future__ import annotations
 
@@ -8,6 +9,8 @@ import re
 from door.style import fonts
 
 _URL = re.compile(r"^https://raw\.githubusercontent\.com/google/fonts/[0-9a-f]{40}/(ofl|apache)/[a-z0-9]+/[A-Za-z0-9_.-]+$")
+# its own source: a GitHub repo at a commit, or a CTAN path (any mirror: the sha256 holds it)
+_OWN = re.compile(r"^https://(raw\.githubusercontent\.com/[\w.-]+/[\w.-]+/[0-9a-f]{40}|mirrors\.ctan\.org)/[\w./-]+$")
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -18,6 +21,11 @@ def test_the_pin_has_families_in_three_classes():
 def test_every_file_and_licence_url_is_a_raw_google_fonts_commit_path():
     data = fonts.pin()
     for name, fam in data["families"].items():
+        if "url" in fam:
+            for file in fam["files"]:
+                assert _OWN.match(fonts.file_url(name, file.get("from", file["name"]), data)), (name, file["name"])
+            assert _OWN.match(fam["licence"]["url"]), name
+            continue
         for file in fam["files"]:
             assert _URL.match(fonts.file_url(name, file["name"], data)), (name, file["name"])
         assert _URL.match(data["url"].format(commit=fam["commit"], dir=fam["dir"], name=fam["licence"]["name"])), name
@@ -28,9 +36,10 @@ def test_each_family_has_a_regular_static_file_and_a_licence():
         assert any(f["weight"] == 400 and not f["italic"] for f in fam["files"]), name
         assert not any("[" in f["name"] or "]" in f["name"] for f in fam["files"]), name   # static only
         assert all(f["name"].endswith(".ttf") for f in fam["files"]), name
-        assert _SHA.match(fam["licence"]["sha256"]) and fam["licence"]["name"] in ("OFL.txt", "LICENSE.txt"), name
+        assert _SHA.match(fam["licence"]["sha256"]) and fam["licence"]["name"] in ("OFL.txt", "LICENSE.txt", "GUST-FONT-LICENSE.TXT"), name
         assert all(_SHA.match(f["sha256"]) for f in fam["files"]), name
-        assert re.fullmatch(r"[0-9a-f]{40}", fam["commit"]), name
+        assert "url" in fam or re.fullmatch(r"[0-9a-f]{40}", fam["commit"]), name
+        assert all(f.get("from", ".otf").endswith(".otf") for f in fam["files"]), name   # only OpenType is converted
 
 
 def test_no_family_has_two_files_of_the_same_weight_and_style():

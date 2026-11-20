@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../../testing'
@@ -58,6 +58,16 @@ describe('Wizard', () => {
     expect(screen.getByRole('heading', { name: 'Tell me about yourself' })).toBeInTheDocument()
     await toReview()
     expect(screen.getByLabelText('Name')).toHaveValue('Ada')
+  })
+
+  it('the review lists its parts beside it, each a jump to its heading; the screens before it have no list', async () => {
+    setup()
+    await screen.findByRole('heading', { name: 'Tell me about yourself' })
+    expect(screen.queryByRole('navigation', { name: 'Sections' })).toBeNull()
+    await toReview()
+    const links = within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link')
+    expect(links.map((l) => l.textContent)).toEqual(['You', 'Titles', 'What matters to you', 'Search', 'CV', 'Where to find employers'])
+    for (const l of links) expect(document.getElementById(l.getAttribute('href')!.slice(1))).not.toBeNull()
   })
 
   it('Save goes straight into the first run', async () => {

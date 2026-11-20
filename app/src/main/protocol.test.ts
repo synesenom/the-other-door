@@ -92,6 +92,15 @@ describe('resolveStylePreviewRequest', () => {
     expect(resolveStylePreviewRequest('door-file://style/like/cv_page_1.png?v=abc', h)).toBe(join(dir, 'cv_page_1.png'))
     expect(resolveStylePreviewRequest('door-file://style/like/letter_page_1.png', h)).toBe(join(dir, 'letter_page_1.png'))
   })
+  it("serves the onboarding review's two looks: the draft in the default style and the uploaded CV", () => {
+    const { h } = previews()
+    for (const set of ['draft', 'original']) {
+      const dir = join(h, '.style', 'preview', set)
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(join(dir, 'cv_page_1.png'), 'x')
+      expect(resolveStylePreviewRequest(`door-file://style/${set}/cv_page_1.png?v=1`, h)).toBe(join(dir, 'cv_page_1.png'))
+    }
+  })
   it('refuses another style, another name, another host and a way out', () => {
     const { h } = previews()
     for (const bad of [

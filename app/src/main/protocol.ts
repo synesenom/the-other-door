@@ -57,7 +57,7 @@ export function resolveStylePreviewRequest(url: string, home: string): string | 
   const parts = u.pathname.split('/').filter((_, i) => i > 0)
   if (parts.length !== 2) return null
   const [style, file] = parts as [string, string]
-  if (!['default', 'like'].includes(style) || !/^(cv|letter)_page_\d+\.png$/.test(file)) return null
+  if (!['default', 'like', 'draft', 'original'].includes(style) || !/^(cv|letter)_page_\d+\.png$/.test(file)) return null
   const root = join(home, '.style', 'preview')
   return contained(join(root, style, file), root)
 }

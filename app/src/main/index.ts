@@ -38,6 +38,8 @@ const env = serverEnv(start, process.env)
 const home = doorHome(env, packaged ? app.getPath('userData') : repoRoot)
 // What went wrong that the screens do not say (#593): the server's own failures it logs itself; these are the app's.
 const problemLog = createProblemLog(home)
+// The CV file a style is built from (style-file.ts): one per environment, so staging and the sandbox never name your real one.
+const styleSourceFile = join(app.getPath('userData'), environment === 'production' ? 'style-source.txt' : `style-source-${environment}.txt`)
 const server = new DoorServer(
   packaged ? resolvePackagedSpawn({ resourcesPath: process.resourcesPath, home, platform: process.platform, env }) : resolveSpawn(repoRoot, env),
   // A packaged app and the door inside it are one version (#224); from a checkout a test keeps them so.
@@ -230,8 +232,8 @@ app.whenReady().then(() => {
       realpath,
       exists: existsSync,
       hintStore: {
-        read: async () => (await readFile(join(app.getPath('userData'), 'style-source.txt'), 'utf-8')).trim() || null,
-        write: (path) => writeFile(join(app.getPath('userData'), 'style-source.txt'), path, 'utf-8'),
+        read: async () => (await readFile(styleSourceFile, 'utf-8')).trim() || null,
+        write: (path) => writeFile(styleSourceFile, path, 'utf-8'),
       },
     }),
     // In the sandbox "Find new jobs" is a simulation: nothing reaches the network or claude.

@@ -155,9 +155,11 @@ describe('scenes', () => {
     expect(await screen.findByRole('listitem', { name: 'Rebuilt the cash forecast at Acme Foods' })).toBeInTheDocument()
   })
 
-  it('onboarding-review-style offers the CV style, off', async () => {
+  it("onboarding-review-style shows the two looks side by side, The other door's chosen", async () => {
     mount('onboarding-review-style')
-    expect(await screen.findByRole('checkbox', { name: 'Make my tailored CVs look like the CV I uploaded' })).not.toBeChecked()
+    expect(await screen.findByRole('radio', { name: 'Your CV' })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: 'The other door' })).toBeChecked()
+    expect(await screen.findByRole('img', { name: 'Your CV, first page' })).toBeInTheDocument()
   })
 
   it('matches-style-ready says at the sidebar\'s foot that the style is ready', async () => {

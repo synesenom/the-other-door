@@ -561,6 +561,11 @@ def _fonts_used(runs: list[dict]) -> list[dict]:
     return sorted(fonts, key=lambda f: -f["chars"])
 
 
+def fonts_used(pages: list[dict]) -> list[dict]:
+    """Each font of the pages' text (`read_pages`) with its use, most characters first, as `extract` gives them."""
+    return _fonts_used([r for p in pages for r in p["runs"]])
+
+
 def _read_pages(doc) -> list[dict]:
     """Per page: size, merged text runs, the drawn shapes (the page background taken out) and the drawings left for
     the icon pass, the images, the photo and the box of its picture."""

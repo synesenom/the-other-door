@@ -81,12 +81,51 @@ def test_a_look_alike_is_taken_but_not_said_to_have_the_same_widths(data):
     assert "same widths" not in p["reason"] and "looks alike" in p["reason"] and "may differ" in p["reason"]
 
 
-def test_a_look_alike_comes_after_the_measured_nearest(data):
+def test_a_look_alike_within_the_width_tolerance_comes_before_a_nearer_width(data):
+    # width cannot tell shapes apart: a curated look-alike near enough in width wins over a family nearer still
+    data["lookalikes"]["centurygothic"] = "Carlito"
     f = font("CenturyGothic", "Century Gothic")
-    [p] = one([f], data, _measure("CenturyGothic", per_char=0.49))       # Arimo and Carlito are within 6%
+    [p] = one([f], data, _measure("CenturyGothic", per_char=0.505))      # Arimo is nearer, Carlito within 6%
+    assert (p["source"], p["resolved"]) == ("lookalike", "Carlito")
+    assert "looks alike" in p["reason"] and "width within" in p["reason"]
+
+
+def test_a_look_alike_too_far_in_width_comes_after_the_measured_nearest(data):
+    f = font("CenturyGothic", "Century Gothic")
+    [p] = one([f], data, _measure("CenturyGothic", per_char=0.49))       # Narrow is 18% off; Arimo and Carlito are within 6%
     assert p["source"] == "nearest" and p["resolved"] != "Narrow"
     [p] = one([f], data, _measure("CenturyGothic", per_char=0.8))         # nothing is: the look-alike, not the default
     assert (p["source"], p["resolved"]) == ("lookalike", "Narrow")
+
+
+def test_a_look_alike_that_would_fake_more_of_the_cvs_faces_gives_way_to_the_nearest(data):
+    # Narrow has no italic: a CV in italic keeps the family that has it
+    data["lookalikes"]["centurygothic"] = "Carlito"
+    f = font("CenturyGothic-Italic", "Century Gothic", italic=True)
+    [p] = one([f], data, _measure("CenturyGothic-Italic", per_char=0.505))
+    assert (p["source"], p["resolved"]) == ("nearest", "Arimo")
+
+
+# ---------- whether a CV's look can be copied at all: its main fonts need one that looks alike ----------
+
+def test_a_main_font_with_only_a_width_match_has_none_that_looks_alike(data):
+    f = font("Palladio-Roma", "Palladio", serif=True, chars=900)
+    plan = one([f], data, _measure("Palladio-Roma", per_char=0.43))
+    assert fonts.unlike(plan, [f]) == ["Palladio"]
+
+
+def test_fonts_by_name_stand_in_or_look_alike_look_alike_and_a_minor_font_does_not_count(data):
+    main = [font("Lato-Regular", "Lato", chars=700), font("Calibri", "Calibri", chars=200), font("CenturyGothic", "Century Gothic", chars=200)]
+    minor = font("Palladio-Italic", "Palladio", serif=True, italic=True, chars=30)  # under a tenth of the text
+    plan = one([*main, minor], data, _measure("Palladio-Italic", per_char=0.43))
+    assert fonts.unlike(plan, [*main, minor]) == []
+
+
+def test_icon_fonts_are_not_counted_in_the_share(data):
+    text = font("Palladio-Roma", "Palladio", serif=True, chars=100)
+    icons = font("FontAwesome", "FontAwesome", icon=True, chars=5000)
+    plan = one([text, icons], data, _measure("Palladio-Roma", per_char=0.43))
+    assert fonts.unlike(plan, [text, icons]) == ["Palladio"]
 
 
 def test_an_icon_font_is_not_fetched_and_a_font_with_no_family_is_left_out(data):
@@ -295,12 +334,14 @@ def test_the_real_pin_gives_each_unmeasured_commercial_font_a_look_alike(name, f
     assert "same widths" not in p["reason"] and "may differ" in p["reason"]
 
 
-def test_on_the_real_pin_a_measured_font_near_a_pinned_family_is_nearest_not_the_look_alike():
-    pin = fonts.pin()
-    adv = pin["families"]["Lato"]["metrics"]["advance"]
-    per = sum(adv) / len(adv) / 1000
-    [p] = fonts.plan([font("Verdana-Regular", "Verdana")], _measure("Verdana-Regular", per_char=per + fonts.BEARING / 6))
-    assert p["source"] == "nearest"
+def test_on_the_real_pin_tahoma_looks_like_fira_sans_when_near_in_width():
+    # runs as wide as Fira Sans would set them: several families are as near, the look-alike is taken
+    table = dict(zip(fonts.ADVANCE_CHARS, fonts.pin()["families"]["Fira Sans"]["metrics"]["advance"]))
+    text = "abcdefghijklmnop"
+    width = (sum(table[c] for c in text) / 1000 - fonts.BEARING) * 10
+    measured = {"Tahoma": {"x_height": 0.545, "stem": 0.09, "runs": [(text, width, 10)] * 6}}
+    [p] = fonts.plan([font("Tahoma", "Tahoma")], measured)
+    assert (p["source"], p["resolved"]) == ("lookalike", "Fira Sans")
 
 
 def test_on_the_real_pin_a_measured_font_far_from_every_family_gets_the_look_alike_not_the_default():
@@ -321,3 +362,74 @@ def test_a_pin_with_only_some_families_never_names_one_it_lacks():
 def test_a_name_that_only_starts_with_a_lowercase_a_is_not_read_as_adobes_prefix(name):
     [p] = fonts.plan([font(name + "-Regular", name)])
     assert p["source"] == "none"
+
+
+# ---------- a family pinned from its own source, and one converted to TrueType ----------
+
+def _cff_font() -> bytes:
+    """A one-glyph OpenType font with CFF outlines, the kind Chromium prints as nameless text."""
+    import io
+
+    from fontTools.fontBuilder import FontBuilder
+    from fontTools.pens.t2CharStringPen import T2CharStringPen
+
+    fb = FontBuilder(1000, isTTF=False)
+    fb.setupGlyphOrder([".notdef", "l"])
+    fb.setupCharacterMap({ord("l"): "l"})
+    pen = T2CharStringPen(500, None)
+    pen.moveTo((100, 0)), pen.lineTo((100, 700)), pen.curveTo((150, 750), (200, 750), (250, 700)), pen.lineTo((250, 0))
+    pen.closePath()
+    fb.setupCFF("Test-Regular", {"FullName": "Test Regular"}, {".notdef": T2CharStringPen(500, None).getCharString(),
+                                                                "l": pen.getCharString()}, {})
+    fb.setupHorizontalMetrics({".notdef": (500, 0), "l": (350, 100)})
+    fb.setupHorizontalHeader(ascent=800, descent=-200)
+    fb.setupNameTable({"familyName": "Test", "styleName": "Regular"})
+    fb.setupOS2(), fb.setupPost()
+    out = io.BytesIO()
+    fb.save(out)
+    return out.getvalue()
+
+
+def _own_source(data, convert=False):
+    body = _cff_font() if convert else b"plain ttf"
+    source = "Own-Regular.otf" if convert else "Own-Regular.ttf"
+    FILES[source] = body
+    FILES["Own/LICENCE.TXT"] = b"own licence"
+    data["families"]["Own"] = {
+        "url": "https://example.org/fonts/{name}", "class": "serif",
+        "licence": {"name": "LICENCE.TXT", "sha256": _sha(b"own licence"), "url": "https://example.org/doc/LICENCE.TXT"},
+        "files": [{"name": "Own-Regular.ttf", "weight": 400, "italic": False, "sha256": _sha(body),
+                   **({"from": source} if convert else {})}],
+        "metrics": data["families"]["Tinos"]["metrics"]}
+    data["aliases"]["ownface"] = "Own"
+
+
+def _own_fetch(calls):
+    def fetch(url, to):
+        calls.append(url)
+        to.write_bytes(FILES["Own/LICENCE.TXT"] if url.endswith("LICENCE.TXT") else FILES[url.rsplit("/", 1)[1]])
+    return fetch
+
+
+def test_a_family_pinned_from_its_own_source_is_fetched_from_there_with_its_licence(data, tmp_path):
+    _own_source(data)
+    [p] = one([font("OwnFace-Regular", "OwnFace", serif=True)], data)
+    calls = []
+    _fetch([p], tmp_path, _own_fetch(calls))
+    assert sorted(calls) == ["https://example.org/doc/LICENCE.TXT", "https://example.org/fonts/Own-Regular.ttf"]
+    assert (tmp_path / "Own-Regular.ttf").read_bytes() == b"plain ttf" and (tmp_path / "Own-LICENCE.TXT").is_file()
+
+
+def test_an_opentype_cff_font_is_checked_as_pinned_then_written_as_truetype(data, tmp_path):
+    from fontTools.ttLib import TTFont
+
+    _own_source(data, convert=True)
+    [p] = one([font("OwnFace-Regular", "OwnFace", serif=True)], data)
+    calls = []
+    [path] = _fetch([p], tmp_path, _own_fetch(calls))
+    assert path.name == "Own-Regular.ttf" and "https://example.org/fonts/Own-Regular.otf" in calls
+    converted = TTFont(path)
+    assert "glyf" in converted and "CFF " not in converted and converted["hmtx"]["l"][0] == 350
+    calls.clear()
+    _fetch([p], tmp_path, _own_fetch(calls))
+    assert calls == []   # already there: not fetched or converted again

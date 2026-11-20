@@ -46,7 +46,8 @@ function listFor(args: Record<string, unknown>): List {
 const PAGES: Record<string, string> = { cv_page_1: cvPage1, cv_page_2: cvPage2, cover_letter_page_1: letterPage1 }
 const pageUrl = (jobId: string, pngPath: string): string => {
   const name = pngPath.split('/').pop()!.replace(/\.png$/, '')
-  if (jobId === 'like' && name.startsWith('cv')) return likeCvPage1 // styleUrl passes the style where a job id goes
+  // styleUrl passes the style where a job id goes; the uploaded CV of the review stands in as the style built from it
+  if ((jobId === 'like' || jobId === 'original') && name.startsWith('cv')) return likeCvPage1
   return PAGES[name] ?? (name.startsWith('letter') ? letterPage1 : cvPage1) // a style preview's letter is `letter_page_N`
 }
 
@@ -78,7 +79,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   // Google Drive as the scene starts it: connect_drive, sync_data and disconnect_drive change it.
   // Profile → CV's Style, as the server would keep it: `use_style` and a build change it.
   const styled = scene.style ?? {}
-  const style = { in_use: styled.in_use ?? 'default', like: Boolean(styled.like), candidate: Boolean(styled.candidate), building: Boolean(styled.building), two_column: Boolean(styled.two_column), failing: styled.failing ?? 0 }
+  const style = { in_use: styled.in_use ?? 'default', like: Boolean(styled.like), candidate: Boolean(styled.candidate), building: Boolean(styled.building), failed: Boolean(styled.failed), two_column: Boolean(styled.two_column), failing: styled.failing ?? 0 }
   const styleSet = (version: string, two_column = false, cv = ['cv_page_1.png', 'cv_page_2.png']) => ({ cv, letter: ['letter_page_1.png'], version, two_column })
   const ACCOUNT = 'jane.doe@example.com'
   const start = scene.drive ?? 'off'
@@ -167,7 +168,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         return {
           ...fixtures.status_summary,
           drive,
-          style: { state: style.building ? 'building' : style.candidate || scene.styleReady ? 'ready' : 'none' },
+          style: { state: style.building ? 'building' : style.candidate || scene.styleReady ? 'ready' : style.failed ? 'failed' : 'none' },
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
           ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {}, pass_rates_by_score: null } : {}),
           // the plan's window nearly full: the sidebar's foot says so
@@ -327,6 +328,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     savePhoto: async () => ({ ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }),
     buildStyle: async () => ({ ok: true, data: { started: true } }),
+    previewStyles: async () => scene.hold === 'previewStyles' ? new Promise(() => undefined) : scene.fails?.previewStyles ? { ok: false, error: scene.fails.previewStyles } : ({ ok: true, data: { styles: { default: styleSet('d', false, ['cv_page_1.png']), original: styleSet('o', false, ['cv_page_1.png']) } } }),
     onStyleReading: (cb: () => void) => {
       styleReadingListeners.add(cb)
       return () => styleReadingListeners.delete(cb)
