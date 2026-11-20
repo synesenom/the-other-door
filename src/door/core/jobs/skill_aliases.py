@@ -1,6 +1,6 @@
 """`jobs/skill_aliases.json`: ``{variant: canonical | null}``, hand-editable (``null`` = not a skill).
 
-Read by `market` (which also writes it) and by the facts check (which only reads).
+Read and written by `market`.
 """
 
 import json
@@ -22,6 +22,3 @@ def load(path: Path) -> tuple[dict, str | None]:
         return {}, f"{path.name} could not be read ({exc}); skill names are counted as written, nothing grouped or saved"
     return {str(k).strip().lower(): (v.strip() if v else None) for k, v in raw.items()}, None
 
-
-def load_for(jobs_dir: Path) -> tuple[dict, str | None]:
-    return load(Path(jobs_dir) / FILE)
