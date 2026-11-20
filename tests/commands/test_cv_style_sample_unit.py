@@ -74,6 +74,7 @@ def test_a_changed_font_prints_again(world):
     font.write_bytes(b"another cut")
     sample_cmd._cv_style_sample_core("teal", "door")
     assert len(world.print.calls) == 2
+    assert len(list((world.home / ".style" / "preview").glob("*.png"))) == 1
 
 
 def test_a_changed_cv_drops_the_old_samples_and_a_new_style_keeps_the_cvs_others(world):

@@ -48,10 +48,10 @@ def _cv_style_sample_core(accent: str, fonts: str) -> dict:
     template = template_path.read_text(encoding="utf-8")
     photo = page_mod.profile_photo(config, {}) if own else None
     style = templates.style_css({"cv_accent": accent, "cv_fonts": fonts}) + SAMPLE_PAGE
-    # `<the CV's hash>-<the rest's>.png`: a new CV drops the files of the old one, so the folder never grows
-    cv_key = hashlib.sha256(cv_md.encode("utf-8")).hexdigest()[:16]
-    rest = "\0".join([style, template, photo.name if photo else "", hashlib.sha256(photo.read_bytes()).hexdigest() if photo else "",
-                      *(hashlib.sha256(font.read_bytes()).hexdigest() for font in templates.fonts())])
+    # `<the CV's and the fonts' hash>-<the rest's>.png`: a new CV or font drops the files of the old one, so the folder never grows
+    fonts_hash = "".join(hashlib.sha256(font.read_bytes()).hexdigest() for font in templates.fonts())
+    cv_key = hashlib.sha256((cv_md + fonts_hash).encode("utf-8")).hexdigest()[:16]
+    rest = "\0".join([style, template, photo.name if photo else "", hashlib.sha256(photo.read_bytes()).hexdigest() if photo else ""])
     folder = workspace.HOME / ".style" / "preview"
     cached = folder / f"{cv_key}-{hashlib.sha256(rest.encode('utf-8')).hexdigest()[:16]}.png"
     if cached.is_file():
