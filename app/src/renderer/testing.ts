@@ -44,39 +44,29 @@ export function mockDoor(given: Record<string, Handler>, options: { actions?: Pa
   // The state main holds and pushes: a test pushes a new one with `pushBoard`, `pushLogin`.
   let board: Events['run-board'] = { active: false }
   let loginState: Events['claude-login'] = { state: 'idle' }
-  const noFiles = { files: [], refused: [] }
-  // What each action answers until a test says otherwise: nothing picked, nothing known, every request fine.
-  const defaults: Answers = {
-    'open-external': async () => ({ ok: true }),
-    'save-material': async (_jobId, _which, _sent, name) => ({ ok: true, path: `/Users/ada/Downloads/${name}` }),
+  // What the shell reads on its own when a screen mounts. Any other action answers only what a test gives it
+  // (`options.actions`, or `m.actions[name].mockResolvedValue...`); with no answer it is refused, so a new action needs no entry here.
+  const defaults: Partial<Answers> = {
     info: async () => ({ environment: 'production' }),
-    'stop-run': async () => ({ ok: true }),
-    'show-run': async () => ({ ok: true }),
     'current-board': async () => board,
-    'pick-cv-files': async () => noFiles,
-    'drop-cv-files': async () => noFiles,
-    'cv-file': async () => null,
-    'cv-sources-clear': async () => undefined,
-    'pick-photo': async () => ({ canceled: true }),
-    'claude-login-start': async () => ({ ok: true }),
-    'claude-login-code': async () => ({ ok: true }),
-    'claude-login-open': async () => ({ ok: true }),
-    'claude-login-cancel': async () => ({ ok: true }),
-    'claude-login-state': async () => loginState,
-    'export-data': async () => ({ ok: false, canceled: true }),
-    'pick-archive': async () => ({ canceled: true }),
-    'report-problem': async () => ({ ok: false, canceled: true }),
-    'show-home': async () => ({ ok: true }),
     'check-update': async () => ({ enabled: false }),
-    'install-update': async () => ({ ok: true }),
+    'claude-login-state': async () => loginState,
   }
-  const answers = { ...defaults, ...options.actions }
-  const actions = Object.fromEntries((Object.keys(answers) as ActionName[]).map((name) => [name, vi.fn(answers[name] as (...a: never[]) => unknown)])) as unknown as ActionMocks
-  const invoke = vi.fn(async (action: string, ...args: unknown[]) => {
-    const mock = (actions as Record<string, ((...a: unknown[]) => unknown) | undefined>)[action]
-    if (!mock) throw new Error(unknownAction(action))
-    return mock(...args)
+  const answers: Partial<Answers> = { ...defaults, ...options.actions }
+  // One `vi.fn` per action, made on first use.
+  const made = new Map<string, Mock<(...args: never[]) => unknown>>()
+  const actions = new Proxy({} as ActionMocks, {
+    get(_target, name) {
+      if (typeof name !== 'string') return undefined
+      let mock = made.get(name)
+      if (!mock) {
+        mock = vi.fn((answers as Record<string, ((...a: never[]) => unknown) | undefined>)[name] ?? (async () => { throw new Error(unknownAction(name)) }))
+        made.set(name, mock)
+      }
+      return mock
+    },
   })
+  const invoke = vi.fn(async (action: string, ...args: unknown[]) => (actions as unknown as Record<string, (...a: unknown[]) => unknown>)[action]!(...args))
 
   // One listener set per event main pushes; a test pushes with `pushBoard`, `pushOpen`, `pushLogin`, `pushUpdate`.
   const listeners = Object.fromEntries(EVENTS.map((e) => [e, new Set()])) as unknown as Listeners

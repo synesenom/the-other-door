@@ -8,7 +8,7 @@ import { SignIn } from './SignIn'
 afterEach(cleanup)
 
 async function show(email?: string) {
-  const h = mockDoor({})
+  const h = mockDoor({}, { actions: { 'claude-login-code': async () => ({ ok: true }) } })
   const onDone = vi.fn()
   render(<SignIn email={email} onDone={onDone} />)
   await act(async () => {})

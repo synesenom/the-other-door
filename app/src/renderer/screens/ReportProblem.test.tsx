@@ -8,7 +8,7 @@ import { ReportProblem } from './ReportProblem'
 afterEach(cleanup)
 
 function show() {
-  const h = mockDoor({})
+  const h = mockDoor({}, { actions: { 'report-problem': async () => ({ ok: false, canceled: true }) } })
   render(<ReportProblem />)
   return h
 }

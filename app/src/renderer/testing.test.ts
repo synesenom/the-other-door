@@ -4,7 +4,7 @@ import { mockDoor } from './testing'
 
 describe('mockDoor', () => {
   it('stands in for the CV draft surface', async () => {
-    const h = mockDoor({})
+    const h = mockDoor({}, { actions: { 'pick-cv-files': async () => ({ files: [], refused: [] }), 'cv-sources-clear': async () => undefined } })
     expect(await window.door.invoke('pick-cv-files')).toEqual({ files: [], refused: [] })
     expect(await window.door.call('draft_cv', { sources: [] }, undefined, [])).toMatchObject({ ok: false })
     await window.door.invoke('cv-sources-clear')
@@ -21,8 +21,9 @@ describe('mockDoor', () => {
 
 describe('mockDoor actions', () => {
   it('answers a known action and refuses an unknown one with one stated error', async () => {
-    mockDoor({})
+    mockDoor({}, { actions: { 'pick-cv-files': async () => ({ files: [], refused: [] }) } })
     expect(await window.door.invoke('pick-cv-files')).toEqual({ files: [], refused: [] })
+    await expect(window.door.invoke('show-home')).rejects.toThrow('unknown action show-home') // no answer given: refused
     await expect((window.door as unknown as { invoke(a: string): Promise<unknown> }).invoke('no-such-action')).rejects.toThrow('unknown action no-such-action')
   })
 
