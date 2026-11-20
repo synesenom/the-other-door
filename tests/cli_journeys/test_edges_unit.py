@@ -60,7 +60,7 @@ def test_a_continuous_clock_goes_on_across_processes(tmp_path):
 
 
 def test_a_door_process_the_server_starts_detached_gets_the_hook(tmp_path):
-    """The CV style build is `python -m door ...` started detached by the server with its own PYTHONPATH: the world's hook rides along (#150)."""
+    """A `python -m door ...` the server starts detached has its own PYTHONPATH: the world's hook rides along (#150)."""
     (tmp_path / "world.json").write_text(json.dumps({"now": "2026-03-02T09:00:00+00:00", "boards": {}, "feeds": {}}))
     code = """
 import json, subprocess, sys
@@ -70,7 +70,7 @@ from pathlib import Path
 from door.core import process
 seen = []
 subprocess.Popen = lambda argv, **kw: seen.append([argv, kw["env"]])
-process.spawn_detached([sys.executable, "-m", "door", "cv", "style", "build", "x.pdf"], log=Path(%r), env={"PYTHONPATH": "/the/src", "DOOR_WORLD": %r})
+process.spawn_detached([sys.executable, "-m", "door", "serve", "start"], log=Path(%r), env={"PYTHONPATH": "/the/src", "DOOR_WORLD": %r})
 process.spawn_detached([sys.executable, "-c", "pass"], log=Path(%r), env={"PYTHONPATH": "/the/src"})
 print(json.dumps([e["PYTHONPATH"] for _, e in seen]))
 """ % (str(WORLD_DIR), str(tmp_path / "a.log"), str(tmp_path), str(tmp_path / "b.log"))

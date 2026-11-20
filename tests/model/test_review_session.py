@@ -4,23 +4,15 @@ Not a skill: the user just says "let's go through my jobs" in a repo whose CLAUD
 Marker `skills`, never CI. Checks are on behaviour: it starts from the status, lists the matches before
 showing any, ends with `mark_reviewed` once the user says they are done, and does nothing unasked; an
 application with no answer for weeks is listed but not marked ghosted unasked. A second run acts on what
-the user says (#103): "not this one", "prepare it" and "I applied". The CV style pick (#223): a style built from
-the user's CV waiting (`status_summary.style` ready) is shown before it is chosen, both styles are offered with
-neither recommended, the prepared CVs are printed again only on a yes and never after "keep my current style", and
-a build still running or failed is not mentioned.
+the user says (#103): "not this one", "prepare it" and "I applied".
 """
 
 import json
-import re
-import shutil
-from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from door.core import lock, templates
 from door.core.jobs import tracker
-from paths import REPO_ROOT
 
 from conftest import home, run_skill
 
@@ -144,150 +136,3 @@ def test_acting_on_jobs_runs_no_search_and_no_shell_and_ends_the_review(actions)
     assert result["tools"][-1] == "mark_reviewed", result["tools"]
     assert "find_jobs" not in result["tools"], result["tools"]
     assert not [u for u in result["used"] if u["tool"] in ("Bash", "Write", "Edit")], result["used"]
-
-
-# ----------------------------------------------------------------------------- the CV style pick (#223)
-IN_USE = "\n<!-- the style in use -->\n"
-
-
-def _style_folder(world, folder: str) -> None:
-    """A built style in `profile/<folder>/`: the default's own two templates stand in for one (the world's print lays
-    out text only, so the look is never seen)."""
-    target = home(world) / "profile" / folder
-    target.mkdir(parents=True, exist_ok=True)
-    for name in templates.FILES.values():
-        shutil.copyfile(REPO_ROOT / "profile.example" / name, target / name)
-
-
-def _run_record(world, state: str, **fields) -> None:
-    path = home(world) / ".style" / "run.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"state": state, "started_at": NOW.isoformat(timespec="seconds"), **fields}),
-                    encoding="utf-8")
-
-
-def _ready(world) -> None:
-    """A style built from the user's CV waits to be compared; nothing in use changed."""
-    _style_folder(world, "style.next")
-    _run_record(world, "ready", pid=1, result={"state": "ready", "fonts": [], "dropped_icons": []})
-
-
-def _ready_with_one_in_use(world) -> None:
-    """An earlier style built from the user's CV is in use, and a newer one waits."""
-    _style_folder(world, "style")
-    with (home(world) / "profile" / "style" / templates.FILES["cv_template"]).open("a", encoding="utf-8") as f:
-        f.write(IN_USE)   # tells the style in use from the waiting one
-    config_path = home(world) / "profile" / "config.json"
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-    config.update(cv_template="profile/style/cv.template.html",
-                  cover_letter_template="profile/style/cover-letter.template.html")
-    config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
-    _ready(world)
-
-
-STYLE_NOTE = "When the assistant has shown you the jobs, say you are done; ask for nothing to be run or prepared. "
-
-
-def _review(tmp_path_factory, name: str, seed, wish: str = ""):
-    """A review session in a world `seed` changed, the user wishing `STYLE_NOTE` and `wish`."""
-    return run_skill(tmp_path_factory, name, "Let's go through my jobs.", max_turns=8, seed=seed,
-                     stop_after_tool="mark_reviewed", persona_kind="onboarded", facts_note=STYLE_NOTE + wish)
-
-
-@pytest.fixture(scope="module")
-def style_like(tmp_path_factory):
-    return _review(tmp_path_factory, "review-style-like", _ready,
-                   "If the assistant asks which CV style to use, you want the style of your own CV: pick \"Use the "
-                   "style of my CV\" (or the option that says the same), never The other door's. If it offers to print "
-                   "your prepared applications again, say no, not now.")
-
-
-@pytest.fixture(scope="module")
-def style_current(tmp_path_factory):
-    # the user would say yes to printing again: an offer after "keep my current style" shows up as a `rerender` call
-    return _review(tmp_path_factory, "review-style-current", _ready_with_one_in_use,
-                   "If the assistant asks which CV style to use, you want to keep the style you use now, unchanged: "
-                   "pick \"Keep my current style\" (or the option that says the same), never The other door's and "
-                   "never the new one. If it offers to print your prepared applications again, say yes.")
-
-
-@pytest.fixture(scope="module", params=["building", "failed"])
-def style_quiet(request, tmp_path_factory):
-    """A build still running (its lock held by this test for the run) or one that failed."""
-    with ExitStack() as stack:
-        def seed(world):
-            if request.param == "building":
-                _run_record(world, "building", pid=1)
-                stack.enter_context(lock.hold(home(world) / ".style" / "build.lock", 5))
-            else:
-                _run_record(world, "failed", result={"problems": ["the rebuilt CV never came close to the original"]})
-
-        yield request.param, _review(tmp_path_factory, f"review-style-{request.param}", seed)
-
-
-def _style_question(result) -> dict:
-    """The one question that offered the styles: the first asked whose options name a CV style."""
-    for ask in result["asked"]:
-        for q in ask["questions"]:
-            if any("door" in o.get("label", "").lower() for o in q.get("options", [])):
-                return q
-    raise AssertionError(f"no question offered the two styles: {result['asked']}")
-
-
-def _offers_both_styles_and_recommends_neither(result) -> None:
-    question = _style_question(result)
-    labels = [o.get("label", "").lower() for o in question["options"]]
-    assert any("door" in l for l in labels) and any("my cv" in l for l in labels), labels
-    text = json.dumps(question).lower()
-    assert "recommend" not in text, question
-    said = [t for t in result["said"] if "recommend" in t.lower()]
-    assert not said, said
-
-
-def _shown_then_chosen(result) -> list[dict]:
-    tools = result["tools"]
-    assert "show_style" in tools and "use_style" in tools, tools
-    assert tools.index("show_style") < tools.index("use_style"), tools
-    read = [u["input"].get("file_path", "") for u in result["used"] if u["tool"] == "Read"]
-    for style in ("default", "like"):
-        assert any(f"/preview/{style}/cv_page_1.png" in path for path in read), read
-    return _calls(result, "use_style")
-
-
-def test_a_waiting_style_is_shown_before_it_is_chosen_with_neither_recommended(style_like):
-    world, result = style_like
-    uses = _shown_then_chosen(result)
-    _offers_both_styles_and_recommends_neither(result)
-    assert [c["args"].get("style") for c in uses] == ["like"], uses
-    config = json.loads((home(world) / "profile" / "config.json").read_text(encoding="utf-8"))
-    assert config.get("cv_template") == "profile/style/cv.template.html", config
-    assert not (home(world) / "profile" / "style.next").exists()
-
-
-def test_prepared_cvs_are_not_printed_again_without_a_yes(style_like):
-    _, result = style_like
-    assert not [c for c in _calls(result, "use_style") if c["args"].get("rerender")], result["calls"]
-    assert not [t for t in result["tools"] if t in UNASKED], result["tools"]
-
-
-def test_keeping_the_current_style_changes_nothing_and_prints_nothing_again(style_current):
-    world, result = style_current
-    uses = _shown_then_chosen(result)
-    _offers_both_styles_and_recommends_neither(result)
-    assert [c["args"].get("style") for c in uses] == ["current"], uses
-    assert not [c for c in uses if c["args"].get("rerender")], uses
-    config = json.loads((home(world) / "profile" / "config.json").read_text(encoding="utf-8"))
-    assert config.get("cv_template") == "profile/style/cv.template.html", config
-    assert not (home(world) / "profile" / "style.next").exists()
-    kept = home(world) / "profile" / "style"
-    assert sorted(p.name for p in kept.iterdir()) == sorted(templates.FILES.values())
-    assert (kept / templates.FILES["cv_template"]).read_text(encoding="utf-8").endswith(IN_USE)
-
-
-def test_a_build_running_or_failed_is_not_mentioned(style_quiet):
-    state, (world, result) = style_quiet
-    assert json.loads((home(world) / ".style" / "run.json").read_text(encoding="utf-8"))["state"] == state
-    assert not {"show_style", "use_style", "build_style"} & set(result["tools"]), result["tools"]
-    said = [s for s in result["said"] if re.search(r"\bstyles?\b", s, re.IGNORECASE)]
-    assert not said, said
-    assert result["tools"][-1] == "mark_reviewed", result["tools"]

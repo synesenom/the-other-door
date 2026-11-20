@@ -86,7 +86,6 @@ from door.commands import find as find_cmd
 from door.commands import setup as setup_cmd
 from door.commands import status as status_cmd
 from door.commands import stories as stories_cmd
-from door.commands import style as style_cmd
 from door.core.sync import archive as archive_core
 from door.core import claude_cli, migrations, problem_log, workspace
 from door.core.sync import drive
@@ -228,9 +227,6 @@ CLI_COMMAND_TOOLS = {
     "cv stories add": ("save_story",),
     "cv stories remove": ("remove_story",),
     "cv stories draft": ("draft_stories",),
-    "cv style build": ("build_style",),
-    "cv style show": ("show_style",),
-    "cv style use": ("use_style",),
     "market": ("market",),
     "ask": ("ask",),
     "doctor": ("doctor", "setup"),  # `doctor --fix` is `setup`
@@ -258,7 +254,6 @@ CONVERSATION_ONLY_TOOLS = (
     "preview_matches",  # onboarding's first look; `init` calls the core itself
     # the phone server, for the desktop app's "Set up your phone" and Claude Code (#444, #424)
     "phone_status", "phone_start", "phone_stop", "pair_phone", "unpair_phone",
-    "stop_style_build",  # the desktop app before an update installs (#215); `cv style build` runs in the foreground
 )
 
 # Commands with no tool: `serve` runs this server over HTTP and manages who may call it (#302); a tool
@@ -275,7 +270,7 @@ READ_ONLY_TOOLS = frozenset({
 WRITING_TOOLS = frozenset({
     "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
     "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
-    "remove_company", "merge_companies", "build_style", "show_style", "use_style", "stop_style_build", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
+    "remove_company", "merge_companies", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
 })
 
@@ -898,10 +893,7 @@ def status_summary() -> dict:
         "calls"}]}], "per_run": {"find", "prepare"}}``: what the last 7 days' calls would cost
         at Claude's API prices, per activity (largest first) and what it was spent on, and one
         find and one prepare. An estimate from `claude`'s price table, not a bill (the plan is
-        not charged per call); answer "what did that cost?" from it. ``style`` is the state of the CV template
-        built from the user's own CV PDF (``build_style``): ``{"state": "none" | "building" | "ready" | "failed"}``,
-        with ``problems`` when failed (say them in words, once, when the user asked for the build) and ``fonts`` and
-        ``dropped_icons`` of the last build when ready.
+        not charged per call); answer "what did that cost?" from it.
     """
     return status_cmd._status_summary_core(jobs_dir=workspace.JOBS_DIR, profile_dir=workspace.PROFILE_DIR)
 
@@ -1371,8 +1363,7 @@ def draft_cv(sources: list[str], write: bool = False, model: str | None = None) 
     Returns:
         ``{"draft_path" | "cv_path" + "backup", "written", "sources",
         "provenance": [{"source", "contributed"}], "todos", "markdown"}``
-        (``markdown`` is the draft text; each file in ``sources`` has
-        ``style``, whether its look can be copied by ``build_style``).
+        (``markdown`` is the draft text).
     """
     for source in sources:
         if not common._is_url(source):
@@ -1475,79 +1466,6 @@ def save_photo(path: str) -> dict:
 
     path_scope.check(path)
     return profile_cmd._save_photo_core(path)
-
-
-@mcp.tool()
-@_tool_errors
-async def build_style(file: str) -> dict:
-    """Start building a CV template from the look of a CV PDF the user has (fonts, colours, layout), in the background.
-    Identical to `./door cv style build`, which waits for it. The call first reads the CV's structure with one short
-    model call (a few seconds, up to a minute when Claude is slow; made once per file), then returns: the build itself
-    takes a few minutes of the model's time, and `status_summary`'s ``style`` block says ``building``, then ``ready`` or
-    ``failed``. A build already going is replaced. The result waits in profile/style.next/ and is written only when it
-    passes; nothing uses it until it is chosen (``use_style``).
-
-    Args:
-        file: The CV as a PDF; a path inside the data folder (the desktop app passes the one its file dialog chose).
-
-    Returns:
-        ``{"started": True}``, or ``{"error": <why nothing started: no Chromium to print with, no style to copy (not a PDF, a scan, a LinkedIn export, a CV of three columns), or the CV's structure could not be read (Claude could not be reached, or its answer did not hold)>}``.
-    """
-    # On a thread: the intake's one model call can take a minute, and the other calls must not wait for it.
-    return await asyncio.to_thread(style_cmd._start_core, str(path_scope.check(file)))
-
-
-@mcp.tool()
-@_tool_errors
-async def stop_style_build() -> dict:
-    """Stop the CV style build that is running (``build_style``) and wait until its process is gone; it then reads as
-    ``failed`` in `status_summary`'s ``style`` block. The style in use and a style waiting to be chosen are left alone.
-    The desktop app calls it before an update installs.
-
-    Returns:
-        ``{"stopped": True}``, or ``{"stopped": False}`` when no build was running.
-    """
-    # On a thread: it waits for the build to let go of its lock, and the other calls must not wait for it.
-    return await asyncio.to_thread(style_cmd._stop_core)
-
-
-@mcp.tool()
-@_tool_errors
-async def show_style() -> dict:
-    """Print the user's CV (`cv.md`) and a sample letter in the default style and, once one is built, in the style built
-    from their own CV (``build_style``), as page images. Identical to `./door cv style show`. Made again only when the
-    CV, the photo or a style changed; the CV is read by the model once (remembered).
-
-    Returns:
-        ``{"styles": {"default": {"cv": [png paths], "letter": [png paths], "version", "two_column"}, "like": {...}},
-        "in_use": "like" | "default", "candidate": whether a style just built waits to be chosen}``:
-        ``version`` changes with the images (a cache buster), ``two_column`` is whether the style has a side column;
-        ``like`` (the candidate when one waits, else the style kept) only once a style is built; a style that could not be printed (no browser: ``doctor`` fixes it) is
-        left out; a CV the model cannot read leaves ``styles`` empty with a ``warning`` in words.
-    """
-    # On a thread: a cold set prints four pages with Chromium, and the other calls must not wait for it.
-    return await asyncio.to_thread(style_cmd._show_core)
-
-
-@mcp.tool()
-@_tool_errors
-async def use_style(style: str, rerender: bool = False) -> dict:
-    """Choose the CV style: the one built from the user's own CV (``like``: the candidate a build leaves moves in, and
-    both template keys point at it), The other door's (``default``) or ``current`` (keep what is in use and drop the
-    candidate). Identical to `./door cv style use`. Any pick ends the candidate. Applications already prepared keep their
-    old look unless ``rerender`` is true: those prepared and not sent are printed again in the style in use (no model,
-    no plan usage; sent ones never change).
-
-    Args:
-        style: ``like``, ``default`` or ``current``; required, so a call without it chooses nothing.
-        rerender: Print the prepared applications again in the style in use.
-
-    Returns:
-        ``{"in_use": "like" | "default", "prepared": <how many are prepared and not sent>}`` and, with ``rerender``,
-        ``"rerendered"`` and ``"failed"`` (job ids); or ``{"error": ...}`` (``like`` with no style built).
-    """
-    # On a thread: printing the prepared applications again takes Chromium a few seconds each.
-    return await asyncio.to_thread(style_cmd._use_core, style, rerender)
 
 
 @mcp.tool()

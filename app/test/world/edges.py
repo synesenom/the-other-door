@@ -367,15 +367,15 @@ phone.remove = _phone_remove
 
 
 # --------------------------------------------------------------------------- detached door processes
-# The CV style build (`python -m door cv style build`, started by the server with a PYTHONPATH of its own) is a process
-# of its own: the world's hook rides along on its PYTHONPATH, so it too reads the world, and its stand-ins, not the outside.
+# A door process the server starts detached (`python -m door ...`, with a PYTHONPATH of its own) is a process of its own:
+# the world's hook rides along on its PYTHONPATH, so it too reads the world, and its stand-ins, not the outside.
 _spawn_detached = process.spawn_detached
 
 
-def _spawn_detached_in_world(argv, *, log, env=None, hidden_console=False):
+def _spawn_detached_in_world(argv, *, log, env=None):
     if env is not None and list(argv[1:3]) == ["-m", "door"]:
         env = {**env, "PYTHONPATH": os.pathsep.join(p for p in (env.get("PYTHONPATH"), str(Path(__file__).resolve().parent / "hook")) if p)}
-    return _spawn_detached(argv, log=log, env=env, hidden_console=hidden_console)
+    return _spawn_detached(argv, log=log, env=env)
 
 
 process.spawn_detached = _spawn_detached_in_world

@@ -9,8 +9,6 @@ import fixtures from './fixtures.json'
 import cvPage1 from '../../test/fixtures/prepared/cv_page_1.png'
 import cvPage2 from '../../test/fixtures/prepared/cv_page_2.png'
 import letterPage1 from '../../test/fixtures/prepared/cover_letter_page_1.png'
-// "Your CV" style: a sample CV of the style corpus (tests/style/fixtures/styles/html-header-photo-round.pdf), page 1
-import likeCvPage1 from '../../test/fixtures/style/like_cv_page_1.png'
 import { SAMPLE_RUN, type DataState, type Scene } from './scenes'
 import pairQr from './pair-qr.svg?raw'
 
@@ -44,10 +42,9 @@ function listFor(args: Record<string, unknown>): List {
 /** The page images: the demo's (`test/fixtures/prepared/`, the example CV laid out as the templates do, rendered
  * at prepare's 150 DPI), picked by the file name the fixture asks for. */
 const PAGES: Record<string, string> = { cv_page_1: cvPage1, cv_page_2: cvPage2, cover_letter_page_1: letterPage1 }
-const pageUrl = (jobId: string, pngPath: string): string => {
+const pageUrl = (_jobId: string, pngPath: string): string => {
   const name = pngPath.split('/').pop()!.replace(/\.png$/, '')
-  if (jobId === 'like' && name.startsWith('cv')) return likeCvPage1 // styleUrl passes the style where a job id goes
-  return PAGES[name] ?? (name.startsWith('letter') ? letterPage1 : cvPage1) // a style preview's letter is `letter_page_N`
+  return PAGES[name] ?? (name.startsWith('letter') ? letterPage1 : cvPage1)
 }
 
 
@@ -76,10 +73,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   let signedIn = !scene.claudeSignedOut && !scene.claudeNotInstalled
   const loginListeners = new Set<(s: { state: 'done' }) => void>()
   // Google Drive as the scene starts it: connect_drive, sync_data and disconnect_drive change it.
-  // Profile → CV's Style, as the server would keep it: `use_style` and a build change it.
-  const styled = scene.style ?? {}
-  const style = { in_use: styled.in_use ?? 'default', like: Boolean(styled.like), candidate: Boolean(styled.candidate), building: Boolean(styled.building), two_column: Boolean(styled.two_column), failing: styled.failing ?? 0, again: Boolean(styled.again), warning: Boolean(styled.warning) }
-  const styleSet = (version: string, two_column = false, cv = ['cv_page_1.png', 'cv_page_2.png']) => ({ cv, letter: ['letter_page_1.png'], version, two_column })
   const ACCOUNT = 'jane.doe@example.com'
   const start = scene.drive ?? 'off'
   let drive = {
@@ -167,28 +160,11 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         return {
           ...fixtures.status_summary,
           drive,
-          style: style.building
-            ? { state: 'building', step: { message: 'building the template, round 2', done: 2, total: 4 } }
-            : { state: style.candidate || scene.styleReady ? 'ready' : 'none' },
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
           ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {}, pass_rates_by_score: null } : {}),
           // the plan's window nearly full: the sidebar's foot says so
           ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, five_hour: { used: 0.9, resets_at: new Date(Date.now() + 90 * 60_000).toISOString() }, room: { find: 1, prepare: 2 } } } : {}),
         }
-      case 'show_style':
-        if (style.warning) return { styles: {}, in_use: style.in_use, candidate: style.candidate, warning: 'Claude could not read your CV. Try again later.' }
-        return { styles: { default: styleSet('d'), ...(style.like ? { like: styleSet('l', style.two_column, ['cv_page_1.png']) } : {}) }, in_use: style.in_use, candidate: style.candidate }
-      case 'use_style': {
-        const pick = String(args['style'] ?? 'like')
-        if (pick === 'like') style.in_use = 'like'
-        else if (pick === 'default') style.in_use = 'default'
-        style.candidate = false
-        const prepared = styled.prepared ?? 0
-        const jobs = Array.from({ length: prepared }, (_, i) => `job.${i}`)
-        const failed = args['rerender'] ? jobs.slice(0, style.failing).map((job, i) => ({ job, title: ['Data Analyst', 'Finance Controller'][i % 2], company: ['Acme', 'Globex'][i % 2], reason: style.again ? 'this CV has no section kinds: prepare it again or revise it' : 'it could not be printed', prepare_again: style.again })) : []
-        if (args['rerender']) style.failing = 0 // the next print works
-        return { in_use: style.in_use, prepared, ...(args['rerender'] ? { rerendered: jobs.filter((j) => !failed.some((f) => f.job === j)), failed } : {}) }
-      }
       case 'doctor':
         if (!installed) return { ok: false, checks: [{ name: 'claude CLI', status: 'missing', required: true, detail: 'no claude found' }] }
         return doctorReport(signedIn ? 'ok' : 'out')
@@ -292,7 +268,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         resolve({ ok: true, data: { ...SAMPLE_RUN, started_at: startedAt } })
       })
     })
-  const styleReadingListeners = new Set<() => void>()
   const respond = async (tool: string, args: Record<string, unknown>): Promise<Envelope> => {
     if (tool === 'find_jobs' && scene.play) return playFind(args)
     const free = SHELL_TOOLS.has(tool) || (tool === 'show_profile' && gateReads > 0)
@@ -315,7 +290,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   return {
     call: async (tool, args = {}, _callId, tokens) => {
       if (!tokens) return respond(tool, args)
-      if (tool === 'build_style') return { ok: true, data: { started: true } }
       if (tool === 'save_photo') return { ok: true, data: { photo_path: '/demo/profile/photo.jpg' } }
       if (tool === 'import_data') return { ok: false, error: 'Nothing is imported in the preview.' }
       if (tool === 'enrich') return respond('enrich', { files: ['jane-doe-cv.pdf'] })
@@ -332,24 +306,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     clearCvSources: async () => undefined,
     pickPhoto: async () => ({ token: 'preview-photo', name: 'portrait.jpg' }),
     onBeforeClose: () => () => undefined,
-    onStyleReading: (cb: () => void) => {
-      styleReadingListeners.add(cb)
-      return () => styleReadingListeners.delete(cb)
-    },
-    styleFromCvFile: async () => {
-      // the dialog closes with a file: the window is told, then the structure is read
-      styleReadingListeners.forEach((cb) => cb())
-      if (scene.hold === 'styleFromCvFile') return new Promise(() => undefined)
-      if (scene.fails?.styleFromCvFile) return { ok: false, error: scene.fails.styleFromCvFile }
-      // a build that ends, a little later, with a style to compare
-      style.building = true
-      setTimeout(() => {
-        style.building = false
-        style.like = true
-        style.candidate = true
-      }, 6_000)
-      return { ok: true, data: { started: true } }
-    },
     claudeLogin: {
       start: async () => {
         // A moment for the "Starting the sign-in" line, then signed in, with no browser.

@@ -15,7 +15,7 @@ on:
       - "tests/cli_world.py"
       - "tests/paths.py"
       - "tests/pdf_utils.py"
-      - "tests/style/fixtures/styles/scrubbed-altacv-icons-fr.pdf"
+      - "tests/commands/fixtures/scrubbed-altacv-icons-fr.pdf"
       - "profile.example/**"
       - "app/package.json"
       - "app/package-lock.json"

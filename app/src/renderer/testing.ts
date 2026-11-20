@@ -19,9 +19,8 @@ const SAVED_PROFILE = {
 
 export function mockDoor(given: Record<string, Handler>) {
   const handlers: Record<string, Handler> = { show_profile: SAVED_PROFILE, ...given }
-  // `tokens`: the picked files of draft_cv, enrich, build_style, save_photo, import_data (their handler gets them as `tokens`; build_style answers started)
+  // `tokens`: the picked files of draft_cv, enrich, save_photo, import_data (their handler gets them as `tokens`)
   const call = vi.fn(async (tool: string, args: Record<string, unknown> = {}, _callId?: string, tokens?: string[]) => {
-    if (tool === 'build_style' && tokens && !(tool in handlers)) return { ok: true, data: { started: true } }
     if (!(tool in handlers)) return { ok: false, error: `unexpected tool ${tool}` }
     const h = handlers[tool]
     try {
@@ -41,13 +40,6 @@ export function mockDoor(given: Record<string, Handler>) {
   const cvFile = vi.fn(async (): Promise<string | null> => null)
   // The CV photo: nothing picked; a test answers the dialog with mockResolvedValueOnce.
   const pickPhoto = vi.fn(async (): Promise<{ token: string; name: string } | { canceled: true } | { error: string }> => ({ canceled: true }))
-  const styleReadingListeners = new Set<() => void>()
-  const onStyleReading = vi.fn((cb: () => void) => {
-    styleReadingListeners.add(cb)
-    return () => {
-      styleReadingListeners.delete(cb)
-    }
-  })
   const beforeCloseListeners = new Set<() => Promise<void>>()
   const onBeforeClose = vi.fn((cb: () => Promise<void>) => {
     beforeCloseListeners.add(cb)
@@ -56,8 +48,6 @@ export function mockDoor(given: Record<string, Handler>) {
     }
   })
   const pushBeforeClose = () => Promise.all([...beforeCloseListeners].map((cb) => cb()))
-  const pushStyleReading = () => styleReadingListeners.forEach((cb) => cb())
-  const styleFromCvFile = vi.fn(async (): Promise<unknown> => ({ ok: true, data: { started: true } }))
   // Progress callbacks are kept by call id so a test can fire them (`emitProgress`).
   const progressCallbacks = new Map<string, (p: { progress: number; total?: number; message: string }) => void>()
   const onProgress = vi.fn((id: string, cb: (p: { progress: number; total?: number; message: string }) => void) => {
@@ -130,8 +120,8 @@ export function mockDoor(given: Record<string, Handler>) {
       }
     }),
   }
-  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, styleFromCvFile, onStyleReading, onBeforeClose, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, reportProblem }
-  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, styleFromCvFile, onStyleReading, pushStyleReading, pushBeforeClose, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, reportProblem }
+  ;(window as unknown as { door: unknown }).door = { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, onBeforeClose, saveMaterial, info, onRunBoard, runBoard, stopRun, showRun, onOpen, claudeLogin, showHome, checkUpdate, installUpdate, onUpdateState, exportData, pickArchive, reportProblem }
+  return { call, onProgress, openExternal, pickCvFiles, dropCvFiles, cvFile, clearCvSources, pickPhoto, onBeforeClose, pushBeforeClose, saveMaterial, info, emitProgress, onRunBoard, pushBoard, runBoard, stopRun, showRun, onOpen, pushOpen, openListeners, claudeLogin, pushLogin, showHome, checkUpdate, installUpdate, onUpdateState, pushUpdate, exportData, pickArchive, reportProblem }
 }
 
 export const summary = (over: Record<string, unknown> = {}) => ({

@@ -5,7 +5,7 @@ so a release that changes the building blocks never breaks a profile that holds 
 styling keeps a file of that name in `profile/` (or names one in `config.json`); it wins. A file that is not `.html`
 (an old LaTeX template) is never read: a browser cannot print it.
 
-A template's folder may hold `template.json` (#188, `manifest`): what the style lends the page beyond the HTML (the fonts
+A template's folder may hold `template.json` (#188, `manifest`): what the template lends the page beyond the HTML (the fonts
 and icons it serves, its own page limit, a side column). Without one the template prints as it always did.
 """
 
@@ -42,30 +42,6 @@ def resolve(key: str, config: dict | None = None, profile_dir: Path | None = Non
     return Path(example_dir if example_dir is not None else workspace.PROFILE_EXAMPLE_DIR) / name
 
 
-STYLE = "style"  # the style in use (`use_style` moves a candidate in); a built style waits in CANDIDATE until it is chosen
-CANDIDATE = "style.next"
-
-
-def liked(profile_dir: Path) -> Path:
-    """The folder of the style built from the user's CV ("like"): the candidate when one waits, else the style kept."""
-    candidate = Path(profile_dir) / CANDIDATE
-    return candidate if (candidate / FILES["cv_template"]).is_file() else Path(profile_dir) / STYLE
-
-
-def points_into(value: str, folder: Path) -> bool:
-    """Whether the config value `value` (relative paths from the data folder) is a file directly in `folder`."""
-    path = Path(value)
-    path = path if path.is_absolute() else workspace.HOME / path
-    return path.resolve().parent == Path(folder).resolve()
-
-
-def in_use(profile_dir: Path, config: dict) -> str:
-    """``"like"`` when the CV template in use is the one in `profile/style/`, else ``"default"`` (the code's, or a file
-    of the user's own)."""
-    resolved = resolve("cv_template", config, profile_dir)
-    return "like" if resolved.resolve().parent == (Path(profile_dir) / STYLE).resolve() else "default"
-
-
 MANIFEST_FILE = "template.json"
 MAX_PAGES = 3  # the most pages a template may name (`Manifest.max_pages`)
 ICON_KINDS = (*cv_read.CONTACT_KINDS, "date")
@@ -80,12 +56,10 @@ def _bare_name(name: str, suffix: str) -> str:
 
 
 class Columns(BaseModel):
-    """The sections placed in the narrow side column; the rest stay in the main one: those of the `side` kinds and those
-    whose heading is, whole and without case, one of `headings` (a built style names its original's side headings)."""
+    """The sections placed in the narrow side column, those of the `side` kinds; the rest stay in the main one."""
 
     model_config = ConfigDict(extra="forbid")
     side: list[str] = []
-    headings: list[str] = []
 
     @field_validator("side")
     @classmethod
@@ -98,9 +72,7 @@ class Columns(BaseModel):
 
 class Manifest(BaseModel):
     """`template.json`: ``fonts`` (TrueType files in `fonts/` beside it), ``icons`` (kind to an SVG in `icons/`),
-    ``max_pages`` (the template's own limit, 1 to 3), ``columns`` (absent: one column) and ``contact_labels`` (contact
-    kind to the label the style's CV prints before it, `Tel:`; `render/page.py` writes each as `<label class="label">` in
-    the contact span, the body having none)."""
+    ``max_pages`` (the template's own limit, 1 to 3), and ``columns`` (absent: one column)."""
 
     model_config = ConfigDict(extra="forbid")
     version: Literal[1] = 1
@@ -108,18 +80,6 @@ class Manifest(BaseModel):
     icons: dict[str, str] = {}
     max_pages: int | None = Field(default=None, ge=1, le=MAX_PAGES)
     columns: Columns | None = None
-    contact_labels: dict[str, str] = {}
-
-    @field_validator("contact_labels")
-    @classmethod
-    def _labels(cls, v: dict[str, str]) -> dict[str, str]:
-        for kind, label in v.items():
-            if kind not in cv_read.CONTACT_KINDS:
-                raise ValueError(f"{kind!r} is not a contact kind ({', '.join(cv_read.CONTACT_KINDS)})")
-            if not label.strip():
-                raise ValueError(f"the label of {kind!r} is empty")
-        return v
-
     @field_validator("fonts")
     @classmethod
     def _fonts(cls, v: list[str]) -> list[str]:

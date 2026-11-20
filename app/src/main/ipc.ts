@@ -3,7 +3,7 @@
 // error fields do not survive an IPC rejection.
 import type { ArchiveFiles } from './archive-files'
 import type { PhotoFile } from './photo-file'
-import type { StyleFile } from './style-file'
+import type { RememberedCvFile } from './cv-file'
 import type { ProblemLog } from './problem-log'
 import type { ClaudeLogin, LoginState } from './claude-login'
 import { copyFile } from 'node:fs/promises'
@@ -37,10 +37,6 @@ export const CHANNELS = {
   clearCvSources: 'door:cv-sources-clear',
   /** The CV photo (photo-file.ts): a picture chosen in main, then saved by its token through `door:call`. */
   pickPhoto: 'door:pick-photo',
-  /** A CV chosen from Profile → CV to build a style from: the dialog and the build both run in main (style-file.ts). */
-  styleFromCvFile: 'door:style-from-cv-file',
-  /** Sent to the window once a file is chosen for it, before its structure is read. */
-  styleReading: 'door:style-reading',
   /** Signing in to Claude (claude-login.ts): start, a pasted code, the page again, cancel, the state now. */
   claudeLoginStart: 'door:claude-login-start',
   claudeLoginCode: 'door:claude-login-code',
@@ -126,13 +122,6 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   ask: 240_000,
   // draft_stories: one sonnet call (300 s on the server), no progress.
   draft_stories: 360_000,
-  // show_style reads the CV (one Haiku call of up to 120 s, asked once more when its answer does not hold: 240 s) and
-  // then prints up to four pages cold.
-  show_style: 360_000,
-  // use_style with rerender prints each prepared application again.
-  use_style: 600_000,
-  // build_style reads the CV's structure with one Haiku call (60 s on the server) before it starts the build.
-  build_style: 120_000,
 }
 
 // Staging and the sandbox run on throwaway data: none of it may reach the user's Drive.
@@ -153,8 +142,6 @@ export const PATH_ARGS: Record<string, { arg: string; urlsOnly?: true; picked?: 
   report_problem: [{ arg: 'path' }],
   // the CV photo is chosen in a dialog and saved by token
   save_photo: [{ arg: 'path', picked: 'one', store: 'photoFile', again: 'Choose the picture again.' }],
-  // a CV PDF whose look is copied
-  build_style: [{ arg: 'file', picked: 'one' }],
   // enrich reads web pages, and a CV file chosen in a dialog and sent by token
   enrich: [{ arg: 'urls', urlsOnly: true }, { arg: 'files', picked: 'list' }],
 }
@@ -229,8 +216,8 @@ export function registerIpc(
     archiveFiles?: Pick<ArchiveFiles, 'exportTarget' | 'pick' | 'take' | 'reportTarget'>
     /** The CV photo's file (photo-file.ts). */
     photoFile?: Pick<PhotoFile, 'pick' | 'take'>
-    /** The CV a style is built from (style-file.ts). */
-    styleFile?: Pick<StyleFile, 'current' | 'remember' | 'name'>
+    /** The CV file a draft last read (cv-file.ts). */
+    cvFile?: Pick<RememberedCvFile, 'remember' | 'name'>
     /** The problem log (problem-log.ts): what the window was refused. */
     problemLog?: ProblemLog
     /** The update check (updates.ts). */
@@ -276,7 +263,7 @@ export function registerIpc(
     const refusal = pathRefusal(tool, isPlainObject(args) ? args : {})
     if (refusal) return refuse(refusal)
     if (deps.info && deps.info.environment !== 'production' && DRIVE_TOOLS.has(tool)) return refuse('Google Drive is not available in staging or the sandbox.')
-    // Picked files come as tokens (draft_cv, enrich, build_style: reusable CV-file tokens; save_photo, import_data: one-shot
+    // Picked files come as tokens (draft_cv, enrich: reusable CV-file tokens; save_photo, import_data: one-shot
     // tokens of their own store; their `picked` PATH_ARGS rule): the paths go into that rule's argument, the window never names one.
     let toolArgs = isPlainObject(args) ? args : {}
     let paths: string[] = []
@@ -289,8 +276,8 @@ export function registerIpc(
         if (!path) return { ok: false, error: rule.again! }
         toolArgs = { ...toolArgs, [rule.arg]: path }
       } else {
-        // only a draft may go without a file (it reads pages); a style builds from exactly one
-        if (!Array.isArray(tokens) || !tokens.every((t) => typeof t === 'string') || (tokens.length === 0 && tool !== 'draft_cv') || (rule.picked === 'one' && tokens.length > 1)) return { ok: false, error: 'Choose the file again.' }
+        // only a draft may go without a file (it reads pages)
+        if (!Array.isArray(tokens) || !tokens.every((t) => typeof t === 'string') || (tokens.length === 0 && tool !== 'draft_cv')) return { ok: false, error: 'Choose the file again.' }
         if (tool === 'draft_cv') {
           const urls = toolArgs['sources'] ?? []
           if (!Array.isArray(urls)) return { ok: false, error: 'nothing to draft from' }
@@ -305,7 +292,7 @@ export function registerIpc(
           paths = resolved.paths
         }
         const own = toolArgs[rule.arg]
-        toolArgs = { ...toolArgs, [rule.arg]: rule.picked === 'one' ? paths[0] : [...paths, ...(Array.isArray(own) ? own : [])] }
+        toolArgs = { ...toolArgs, [rule.arg]: [...paths, ...(Array.isArray(own) ? own : [])] }
       }
     }
     const sender = (event as { sender?: { send(channel: string, ...a: unknown[]): void } } | undefined)?.sender
@@ -352,7 +339,7 @@ export function registerIpc(
         if (tool === 'draft_cv') {
           await rememberCvFile(result)
           result = withTokens(result, tokens as string[])
-        } else if (tool === 'enrich') await deps.styleFile?.remember(paths[0]!) // a newer CV file is the CV file from then on
+        } else if (tool === 'enrich') await deps.cvFile?.remember(paths[0]!) // a newer CV file is the CV file from then on
       }
       await announce({ kind: 'call', tool, args: toolArgs, result })
       return { ok: true, data: result }
@@ -397,28 +384,13 @@ export function registerIpc(
   // The CV photo: picked in a dialog here, saved by token through `door:call`; the tool gets the real path, the window never names one.
   ipcMain.handle(CHANNELS.pickPhoto, async () => (deps.photoFile ? deps.photoFile.pick() : { error: 'a photo cannot be chosen here' }))
 
-  // The CV file: the first file the draft read that has a style to copy, else the first file it read. Profile → CV's
-  // Sources names it, and a style is built from it.
+  // The CV file: the first file the draft read. Profile → CV's Sources names it.
   const rememberCvFile = async (data: unknown): Promise<void> => {
-    if (!deps.styleFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
-    const files = data['sources'].filter((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && typeof s['source'] === 'string') as { source: string; style?: boolean }[]
-    const file = files.find((s) => s.style === true) ?? files[0]
-    if (file) await deps.styleFile.remember(file.source)
+    if (!deps.cvFile || !isPlainObject(data) || !Array.isArray(data['sources'])) return
+    const file = data['sources'].find((s: unknown) => isPlainObject(s) && s['kind'] === 'file' && typeof s['source'] === 'string') as { source: string } | undefined
+    if (file) await deps.cvFile.remember(file.source)
   }
-  ipcMain.handle(CHANNELS.cvFile, async (): Promise<string | null> => (deps.styleFile ? deps.styleFile.name() : null))
-
-  // A style built from the CV file (Profile → CV): the file and the build both here; the window names no path.
-  ipcMain.handle(CHANNELS.styleFromCvFile, async (event): Promise<Envelope> => {
-    if (!deps.styleFile) return { ok: false, error: 'A style cannot be built here.' }
-    const chosen = await deps.styleFile.current()
-    if ('error' in chosen) return { ok: false, error: chosen.error }
-    ;(event as { sender?: { send(channel: string): void } } | undefined)?.sender?.send(CHANNELS.styleReading)
-    try {
-      return { ok: true, data: await server.call('build_style', { file: chosen.path }, { timeout: TOOL_TIMEOUTS['build_style'] }) }
-    } catch (e) {
-      return failureEnvelope(e)
-    }
-  })
+  ipcMain.handle(CHANNELS.cvFile, async (): Promise<string | null> => (deps.cvFile ? deps.cvFile.name() : null))
 
   // Stop is for a run this app started: its child is ended (the lock dies with it), never a foreign process.
   ipcMain.handle(CHANNELS.stopRun, async (): Promise<{ ok: boolean; error?: string }> => {

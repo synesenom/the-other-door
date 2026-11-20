@@ -1,7 +1,7 @@
 ---
 name: onboard
 description: Conversational onboarding for The other door, after ./scripts/setup.sh has installed everything — takes your sources (CV, LinkedIn PDF, public pages), infers your details, job titles and search terms, shows it all in one review, writes only after you confirm, then starts the first search. Invoked with /onboard.
-tools: [Read, Edit, AskUserQuestion, mcp__door__doctor, mcp__door__show_profile, mcp__door__draft_cv, mcp__door__infer_basics, mcp__door__suggest_titles, mcp__door__keywords, mcp__door__preview_matches, mcp__door__init_profile, mcp__door__save_cv, mcp__door__save_photo, mcp__door__build_style, mcp__door__find_jobs, mcp__door__connect_drive, mcp__door__sync_data]
+tools: [Read, Edit, AskUserQuestion, mcp__door__doctor, mcp__door__show_profile, mcp__door__draft_cv, mcp__door__infer_basics, mcp__door__suggest_titles, mcp__door__keywords, mcp__door__preview_matches, mcp__door__init_profile, mcp__door__save_cv, mcp__door__save_photo, mcp__door__find_jobs, mcp__door__connect_drive, mcp__door__sync_data]
 ---
 
 You are onboarding a new The other door user in a conversation. Everything is installed already
@@ -153,12 +153,6 @@ One review, everything in one place, before anything is written:
    plainly hits something they ruled out much lower, that a doubt never costs a posting its place, and that it
    applies from the next run.
 
-8. **CV style** (a first set-up only, never after a pull from Drive, and only when a file in `draft_cv`'s `sources`
-   has `style` true; use the first such file): one line of the review,
-   not a question of its own, off by default: "CV style: The other door's. Make my tailored CVs look like the CV I
-   uploaded? (takes 2–5 minutes in the background)". The user changes it like any other line; keep that file
-   for step 4.
-
 Items 5 and 6 read `mcp__door__show_profile` with the location as `location`: its `options.cities` then holds
 that city alone (the full list is too long to read in one answer), and `worldwide_discovery` serves a city
 it does not know.
@@ -168,7 +162,7 @@ one line), about companies to follow ("follow <company>" works once onboarding i
 or words to exclude and `min_score` (they stay at their defaults; "exclude …" later, or the profile).
 
 Ask with `AskUserQuestion`: "Does this look right?" — "Yes, save and start searching" / "Change something".
-The box hides the text above it, so the whole review (items 1–4, and the answers to 5, 6, 7 and 8) goes in the
+The box hides the text above it, so the whole review (items 1–4, and the answers to 5, 6 and 7) goes in the
 first option's `preview`, not only a summary line in the question. On a change, take what to change in plain text, apply it and show the review again;
 continue only on an explicit yes. Never overwrite profile/cv.md without this yes.
 
@@ -186,16 +180,11 @@ with the contents of `profile/cv.draft.md` as confirmed (it keeps the old one as
 If the user gave a photo, then call `mcp__door__save_photo` with its path (it checks a JPEG or PNG, drops the camera and
 location data, scales it and names it in the profile); if it returns an `error`, show the reason in one line and say the
 photo can be added later in the app's Profile screen or by saying /onboard again; it never stops onboarding.
-If the user turned the CV style on, then call `mcp__door__build_style` with the file as `file` (after `save_cv` and
-`save_photo`: it reads the saved CV and photo; it returns at once and builds in the background); if it returns an
-`error`, show it in one line and go on.
 
 Start the first run right away, without asking: `mcp__door__find_jobs` with `skip` =
 `["discover", "follow", "collect"]` (search the boards, then score; a few minutes). If profile/cv.md
 is still the example, say so instead and ask for a CV. Report how many postings it wrote and the top matches,
 or its error.
-If a style build was started, say in one line that it is building in the background and will be offered at the start
-of a later conversation if it comes out like your CV. Never wait for it, check on it or call `show_style`/`use_style` here.
 
 Then tell the user how to use The other door from now on: say "get me today's jobs" in a conversation (the
 `find_jobs` tool — it only fetches postings published since the last scrape), then "what's new?".

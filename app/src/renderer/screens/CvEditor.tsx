@@ -1,7 +1,6 @@
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { ErrorBox } from './AppName'
 import { call, draftCv, errorText } from '../api'
-import type { StyleStep } from '../api'
 import { Dialog } from './Dialog'
 import { Hint } from './Hint'
 import { Markdown } from './Markdown'
@@ -9,7 +8,6 @@ import { MarkdownLink } from './MarkdownHelp'
 import type { ShowProfile } from './onboarding/reducer'
 import { Spinner } from './Spinner'
 import { Switch } from './Switch'
-import { StyleRow } from './StyleRow'
 import { todoOffsets } from './todos'
 
 type Profile = ShowProfile & { config: (ShowProfile['config'] & { role_targets?: string[] }) | null }
@@ -205,7 +203,7 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
 const SAVE_AFTER_MS = 1000
 
 /**
- * Profile's "Master CV" and "CV style". Master CV: its Sources (the CV file and the pages it is read from, each only
+ * Profile's "Master CV": its Sources (the CV file and the pages it is read from, each only
  * adding: "Add a page" is /expand as a button, a new CV file is read the same way), then profile/cv.md as it reads or
  * as Markdown. The text saves itself a second after typing stops, and when the editor is left: no Save. The first save
  * of a visit keeps the CV as it was as cv.md.bak; the later ones leave that backup alone (save_cv's `backup`).
@@ -213,15 +211,11 @@ const SAVE_AFTER_MS = 1000
 export function CvEditor({
   onDraft,
   onSaved,
-  style,
 }: {
   onDraft: () => void
   /** cv.md was written and the editor left (or the first CV written): what reads the profile (the sidebar's "no CV
    * yet") reads it again. */
   onSaved?: () => void
-  /** The CV style: how its build stands (the sidebar's summary), whether one can be built here (not on made-up data),
-   * and what to tell the app when a build starts or a style is chosen. */
-  style?: { state: 'none' | 'building' | 'ready' | 'failed' | null; step?: StyleStep; canBuild: boolean; onChanged: () => void }
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -234,15 +228,13 @@ export function CvEditor({
   const [pages, setPages] = useState<string[] | null>(null)
   // What the last "Add … to my Master CV" put in: tinted in the preview until the next edit or save.
   const [added, setAdded] = useState<string[] | null>(null)
-  // counts the saves: the style previews are made from the CV
+  // counts the saves
   const [saves, setSaves] = useState(0)
   // the CV file a draft read, by its name (the main process keeps its path); being drafted from; its error
   const [cvFile, setCvFile] = useState<string | null>(null)
   const [drafting, setDrafting] = useState(false)
   // why a source could not be read, chosen or forgotten: said under Sources
   const [sourceError, setSourceError] = useState<string | null>(null)
-  // counts the CV files drafted from here: the style of the user's own is built again from a new one
-  const [replaced, setReplaced] = useState(0)
   // the live save: writing, or why the last write failed (tried again at the next pause)
   const [writing, setWriting] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -350,7 +342,7 @@ export function CvEditor({
       void flushRef.current()
     }
   }, [])
-  /** The editor left: written now, and the style previews (made from the CV) and the app read it again. */
+  /** The editor left: written now, and the app reads it again. */
   const leave = async () => {
     const before = savedRef.current
     await flush()
@@ -386,7 +378,6 @@ export function CvEditor({
       setAdded(null)
       setText(r.markdown)
       setView('read')
-      setReplaced((n) => n + 1)
       refreshCvFile()
     } catch (e) {
       setSourceError(errorText(e))
@@ -400,7 +391,7 @@ export function CvEditor({
   const editing = view === 'edit'
   const written = writing ? 'Saving…' : saveError ? null : dirty ? null : saves > 0 || backedUp.current ? 'Saved' : null
 
-  // Profile's part "Master CV": the file and the pages it is read from, then the text; the style is a part of its own after it
+  // Profile's part "Master CV": the file and the pages it is read from, then the text
   const part = (body: ReactNode) => (
     <section className="part cv-editor" aria-labelledby="profile-cv">
       <h2 className="display-s" id="profile-cv">
@@ -495,8 +486,7 @@ export function CvEditor({
             blocked={dirty}
             onRead={(url) => !remembered.includes(url) && void keepPages([...remembered, url])}
             onFile={() => {
-              // the new file is the CV file now: named under Sources, and the style of your own built again from it
-              setReplaced((n) => n + 1)
+              // the new file is the CV file now: named under Sources
               refreshCvFile()
             }}
             onClose={() => setPanel(null)}
@@ -550,7 +540,6 @@ export function CvEditor({
         {saveError && <p className="field-error" role="alert">{saveError}</p>}
         </div>
       </>)}
-      {style && <StyleRow state={style.state} step={style.step} canBuild={style.canBuild} onChanged={style.onChanged} reload={saves} replaced={replaced} />}
     </>
   )
 }

@@ -11,7 +11,6 @@ import click
 from door.core.jobs import tracker as _tracker_mod
 from door.commands import _common as common
 from door.commands import _progress, _prompts
-from door.commands import style as style_cmd
 from door.core import lock, profile_loader, progress, recurring, usage, utils, workspace
 from door.core.jobs import runs
 from door.core.employers import companies
@@ -269,7 +268,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "rate", "low", "high"}}, "pass_rates_by_score": {"split", "near_min", "top", "reading"} | None, "standing": {"offer", "interviewing", "waiting", "rejected", "ghosted",
         "withdrawn"}, "no_answer": {"count", "days"}, "in_progress": {...} | None, "employers": {"followed", "unfollowable",
         "unresolved"}, "drive": {"connected", "account", "last_synced",
-        "last_error", "configured"}, "recurring_problem": bool, "plan": {...} | None, "cost": {...} | None, "style": {"state": "none" | "building" | "ready" | "failed", ...}}`` — every ledger status is present,
+        "last_error", "configured"}, "recurring_problem": bool, "plan": {...} | None, "cost": {...} | None}`` — every ledger status is present,
         0 when unused; ``interviews`` is `tracker.interview_outcomes` (only the
         stages that occur); ``application`` is `tracker.application_outcomes`
         (did each sent application lead to an interview); ``pass_rates`` is
@@ -339,7 +338,6 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "recurring_problem": recurring.check(jobs_dir.parent, records),
         "plan": _plan_block(jobs_dir, records),
         "cost": usage.cost(jobs_dir, records=records),
-        "style": style_cmd.status(jobs_dir.parent, profile_dir),
     }
 
 
@@ -571,11 +569,6 @@ def _print_pipeline_status() -> None:
     if any(employers.values()):
         common._section(console, "Employers")
         console.print(Padding(Text(", ".join(f"{n} {label}" for label, n in employers.items()), style=""), (0, 2)))
-
-    if result["style"]["state"] == "ready":
-        common._section(console, "CV style")
-        console.print(Padding(Text(
-            "A style built from your CV is ready: `./door cv style show` to compare, `./door cv style use like` to choose it."), (0, 2)))
 
     if result["drive"]["connected"]:
         common._section(console, "Google Drive")

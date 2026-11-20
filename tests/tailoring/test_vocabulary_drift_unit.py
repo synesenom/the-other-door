@@ -61,9 +61,8 @@ def _text(*parts: str) -> str:
     return (REPO_ROOT.joinpath(*parts)).read_text(encoding="utf-8")
 
 
-def test_the_tailor_and_the_stylist_are_told_every_section_kind_class():
-    for text in (_tailor_blocks(), (claude_cli.PROMPTS_DIR / "stylist.md").read_text(encoding="utf-8")):
-        assert html_guard.KIND_CLASSES <= _named_kinds(text)
+def test_the_tailor_is_told_every_section_kind_class():
+    assert html_guard.KIND_CLASSES <= _named_kinds(_tailor_blocks())
 
 
 def _named_kinds(text: str) -> set[str]:

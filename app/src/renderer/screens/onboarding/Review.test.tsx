@@ -18,8 +18,9 @@ const answers: Partial<WizardState> = {
   keywords: ['lead'], topicTerms: ['data'], keywordsState: 'proposed', cvText: '# Ada\n',
 }
 let seen: WizardState
-function setup(start: Partial<WizardState> = answers, handlers: Record<string, unknown> = {}, profile: ShowProfile = freshProfile) {
+function setup(start: Partial<WizardState> = answers, handlers: Record<string, unknown> = {}, profile: ShowProfile = freshProfile, before?: (h: ReturnType<typeof mockDoor>) => void) {
   const h = mockDoor({ init_profile: {}, save_cv: {}, show_profile: existingProfile, keywords: { keywords: ['new'], topic_terms: ['t'] }, ...handlers })
+  before?.(h)
   const onSaved = vi.fn()
   render(
     <Host profile={profile} start={start}>
@@ -397,39 +398,5 @@ describe('Review, the example story', () => {
   it('without one, no story bank part', () => {
     setup()
     expect(screen.queryByRole('region', { name: 'Your story bank' })).toBeNull()
-  })
-})
-
-describe('Review, the CV style tick', () => {
-  const styled: Partial<WizardState> = {
-    ...answers,
-    files: [{ token: 'f1', name: 'cv.pdf', size: 1 }],
-    cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: true, token: 'f1' }] },
-  }
-  const box = () => screen.queryByRole('checkbox', { name: /Make my tailored CVs look like the CV I uploaded/ })
-
-  it('offers it, off, with the time it takes, when an uploaded CV has a style to copy', () => {
-    setup(styled)
-    expect(box()).not.toBeNull()
-    expect(box()).not.toBeChecked()
-    expect(screen.getByText('Takes 2–5 minutes in the background.')).toBeInTheDocument()
-  })
-
-  it('holds the tick until Save, which starts the build from the file', async () => {
-    const h = setup(styled)
-    await userEvent.click(box()!)
-    expect(seen.style).toBe(true)
-    expect(h.call.mock.calls.some((c) => c[0] === 'build_style')).toBe(false)
-    await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
-    await waitFor(() => expect(h.call).toHaveBeenCalledWith('build_style', {}, undefined, ['f1']))
-    expect(h.onSaved).toHaveBeenCalled()
-  })
-
-  it('is not there without a style to copy, or on a set-up again', () => {
-    setup({ ...answers, files: styled.files, cvDraft: { sources: [{ source: '/cv.pdf', kind: 'file', style: false, token: 'f1' }] } })
-    expect(box()).toBeNull()
-    cleanup()
-    setup({ ...styled, mode: 'redo' })
-    expect(box()).toBeNull()
   })
 })

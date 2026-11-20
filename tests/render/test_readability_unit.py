@@ -3,7 +3,6 @@
 import pytest
 
 from door.render import readability
-from paths import TESTS_DIR
 from pdf_utils import make_pdf
 
 NAME = "Jane Doe"
@@ -329,12 +328,6 @@ def test_check_pdf_reports_spaced_letters_for_a_cv_and_a_letter(tmp_path):
 
 def test_spaced_letters_are_reported_not_retried():
     assert "spaced" not in readability.FIXABLE
-
-
-@pytest.mark.parametrize("pdf", sorted((TESTS_DIR / "style" / "fixtures" / "styles").glob("*.pdf")), ids=lambda p: p.stem)
-def test_no_cv_of_the_style_corpus_reads_as_spaced_letters(pdf):
-    # two-column side bands, initials, French text, LaTeX and Word letter-spacing: none is a word printed apart
-    assert readability.spaced_problems(readability.extract(pdf)[0], "") == []
 
 
 @pytest.mark.parametrize("printed,heading", [("B i o", "Bio"), ("C V", "CV"), ("B I O", "Bio")])

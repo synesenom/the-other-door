@@ -6,7 +6,8 @@ import { Reading } from './Reading'
 import { canRunFirst, claudeReady, initialState, STEPS, wizardReducer } from './reducer'
 import type { DoctorReport, ShowProfile, WizardState } from './reducer'
 import type { Environment } from '../connection-rows'
-import { Review } from './Review'
+import { Review, reviewSections } from './Review'
+import { PageSections } from '../PageSections'
 import { Sources } from './Sources'
 
 interface Props {
@@ -81,7 +82,7 @@ export function Wizard({ profile: initial, environment, onFinish, onCancel, star
       )
   }
 
-  return (
+  const page = (
     <div className="onb">
       <ol className="segments" aria-label="Progress">
         {steps.map((s, i) => (
@@ -89,6 +90,14 @@ export function Wizard({ profile: initial, environment, onFinish, onCancel, star
         ))}
       </ol>
       {connecting ? <Connect doctor={doctor} onRecheck={recheck} onBack={onCancel} /> : body}
+    </div>
+  )
+  // the review is long: its parts are listed beside it, as Profile's and Settings' are
+  if (connecting || state.step !== 'review') return page
+  return (
+    <div className="page-with-aside">
+      {page}
+      <PageSections sections={reviewSections(state)} />
     </div>
   )
 }

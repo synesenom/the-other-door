@@ -129,7 +129,7 @@ def test_ask_passes_effort_when_asked_and_always_no_user_mcp_servers(monkeypatch
     calls = []
     stdout = _stream(_result(result="{}", structured_output={}))
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, stdout))
-    claude_cli.ask("cv-structure", "q", feature="style", schema={"type": "object"}, effort="low")
+    claude_cli.ask("cv-reader", "q", feature="cv_read", schema={"type": "object"}, effort="low")
     argv = calls[0]
     assert argv[argv.index("--effort") + 1] == "low" and argv.count("--strict-mcp-config") == 1
 

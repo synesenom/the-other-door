@@ -18,9 +18,8 @@ import click
 
 from door import i18n
 from door.commands import _common as common
-from door.commands import style as style_cmd
 from door.core import claude_cli, cv_read, cv_sections, migrations, profile_loader, utils, workspace
-from door.style import style_icons
+from door.render import pdf_draft
 
 _DRAFT_NAME = "cv.draft.md"
 _TEXT_SUFFIXES = {".md", ".markdown", ".txt"}
@@ -48,9 +47,7 @@ _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
 def _extract_text(path: Path) -> str:
-    """The text of a PDF (pypdfium2; its icon-font glyphs left out, #266, but not its level dots and bullets, #313,
-    by its `style_extract.extract`, with no structure), a DOCX (its paragraphs, symbol-font runs left
-    out, #297) or a Markdown/text file.
+    """The text of a PDF (`pdf_draft`: icon glyphs left out, level dots said, #266, #313), a DOCX (its paragraphs, symbol-font runs left out, #297) or a Markdown/text file.
 
     Raises:
         FileNotFoundError: no such file.
@@ -62,12 +59,7 @@ def _extract_text(path: Path) -> str:
     if not path.is_file():
         raise FileNotFoundError(f"{path}: no such file")
     if suffix == ".pdf":
-        from door.render import pdf_render
-        from door.style import style_extract
-
-        style = style_extract.extract(path)
-        runs = style.get("runs", [])  # none for a scan; without a structure a LinkedIn export keeps its runs
-        return "\n".join(pdf_render.page_texts(path, rewrite=style_icons.draft_edits(runs, style))).strip()
+        return pdf_draft.draft_text(path)
     if suffix == ".docx":
         return _docx_text(path)
     return _decode_text_file(path.read_bytes()).strip()
@@ -75,7 +67,7 @@ def _extract_text(path: Path) -> str:
 
 def _docx_text(path: Path) -> str:
     """A DOCX's paragraphs, leaving out its icons, which read back as a stray "(" or "*" (#297): a run of only
-    private-use, control or pictographic characters, or one set in an icon or symbol font (`style_icons.icon_font`, as a PDF's) (its own
+    private-use, control or pictographic characters, or one set in an icon or symbol font (`pdf_draft.icon_font`, as a PDF's) (its own
     font, else its character style's, else its paragraph style's or the default one's, each style through the
     ones it is based on)."""
     with zipfile.ZipFile(path) as zf:
@@ -101,7 +93,7 @@ def _docx_text(path: Path) -> str:
             text = "".join(t.text or "" for t in run.findall(f"{_W}t"))
             font = (_font(run) or styled(_val(run, f"{_W}rPr/{_W}rStyle"))
                     or styled(_val(p, f"{_W}pPr/{_W}pStyle") or default))
-            if not (text and style_icons.glyph_only(text)) and not (font and style_icons.icon_font(font)):
+            if not (text and pdf_draft.glyph_only(text)) and not (font and pdf_draft.icon_font(font)):
                 texts.append(text)
         paragraphs.append("".join(texts))
     return "\n".join(p for p in paragraphs if p.strip()).strip()
@@ -188,16 +180,6 @@ def _skills_line_without_todo(line: str) -> str | None:
     return left if re.sub(r"^[\s*_-]*", "", left) and not left.rstrip("*_ ").endswith(":") else None
 
 
-def _has_style(path: Path) -> bool:
-    """Whether the file at `path` has a CV style to copy (`style._look` passes, which reads the CV's structure with
-    the one model call the build then reuses); false on any failure, a failed call too (#150)."""
-    try:
-        style_cmd._look(path, "draft_cv")
-    except ValueError:  # an unreadable file, or a structure that could not be read, simply offers no style
-        return False
-    return True
-
-
 def _draft_cv_core(
     sources: list[str],
     *,
@@ -214,7 +196,7 @@ def _draft_cv_core(
 
     Returns:
         ``{"draft_path" | "cv_path" + "backup", "written", "sources":
-        [{"source", "kind", "chars"?, "style"?}] (`style` only on a first set-up, no profile/config.json yet: else false, with no model call), "provenance", "todos"}``.
+        [{"source", "kind", "chars"?}], "provenance", "todos"}``.
 
     Raises:
         ValueError: no sources, or a file of another type.
@@ -229,7 +211,6 @@ def _draft_cv_core(
     if not sources:
         raise ValueError("no source to draft from: give a CV file (PDF, DOCX, Markdown) or a URL")
     config = profile_loader.load_config_or_defaults(profile_dir)
-    first_setup = not (profile_dir / "config.json").is_file()  # only a first set-up offers the CV's style (no call else)
 
     described = []
     parts = []
@@ -241,7 +222,7 @@ def _draft_cv_core(
         else:
             path = Path(source)
             text = _extract_text(path)
-            described.append({"source": source, "kind": "file", "chars": len(text), "style": first_setup and _has_style(path)})
+            described.append({"source": source, "kind": "file", "chars": len(text)})
             parts.append(f"Source file {source}:\n<<<\n{text}\n>>>")
 
     template = workspace.PROFILE_EXAMPLE_DIR / "cv.md"
@@ -341,4 +322,4 @@ def _infer_basics_core(
 
 @click.group("cv")
 def cv_group():
-    """Your CV over time: `cv enrich` adds what your public pages show, `cv gaps` plans what to learn, `cv titles` suggests titles to look for, `cv stories` keeps the story bank the tailor draws on, `cv style` builds a template from the look of a CV PDF of yours."""
+    """Your CV over time: `cv enrich` adds what your public pages show, `cv gaps` plans what to learn, `cv titles` suggests titles to look for, `cv stories` keeps the story bank the tailor draws on."""

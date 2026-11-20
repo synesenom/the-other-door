@@ -1,6 +1,6 @@
-"""`profile/cv.md` as a body in the tailor's vocabulary, with no model (#204, epic #144; #431).
+"""`cv.md` as a body in the tailor's vocabulary, with no model (#431), for `record_cv_reading.py`'s made-up tailored CVs.
 
-`body(cv_md, reading)` is what the stress renders and the previews of a built CV template print: the same shapes the
+`body(cv_md, reading)`: the same shapes the
 tailor agent writes (`html_guard`'s tags and classes; `src/door/prompts/tailor.md`'s building blocks), made from the
 markdown that `draft_cv` and `init` write. What the CV means comes from `reading`, the one reading of it
 (`core/cv_read.read`, a dict): no word list of any language is here. Nothing is translated, tailored or dropped; text and
@@ -69,16 +69,6 @@ def _detail(kind: str, value: str) -> str:
             text = re.sub(r"^https://(?:www\.)?|/$", "", href) if kind == "web" else re.sub(r"^https://", "", href).rstrip("/")
             return f'<span{cls}><a href="{html.escape(href)}">{html.escape(text, quote=False)}</a></span>'
     return f"<span{cls}>{_inline(value)}</span>"
-
-
-def contact_labels(reading: dict) -> dict[str, str]:
-    """The labels the CV's contact details are written with, by kind, with a colon (`Tel:`): the first of each kind
-    that has one. The body drops them; a built style keeps them in its manifest and the page writes them again."""
-    labels: dict[str, str] = {}
-    for contact in reading["contacts"]:
-        if contact["label"]:
-            labels.setdefault(contact["kind"], contact["label"].rstrip(": ") + ":")
-    return labels
 
 
 def _contact(reading: dict) -> str:
@@ -209,12 +199,3 @@ def body(cv_md: str, reading: dict) -> str:
         header.append(contact)
     head = f'<header class="cv-header"><<photo>>{chr(10).join(header)}</header>' if header else ""
     return "\n".join(x for x in [head, *blocks.out] if x)
-
-
-def letter_header(cv_md: str, reading: dict) -> tuple[str, str]:
-    """The letter's header from the CV: ``(html, name)``, the CV's name and contact details in the `letter-header`
-    shape (what the tailor writes at the top of a letter); ``("", "")`` for a CV with no name. The tagline is left out."""
-    name, _ = _header_parts(cv_md)
-    if not name:
-        return "", ""
-    return f'<header class="letter-header"><h1>{_inline(name)}</h1>{_contact(reading)}</header>', name

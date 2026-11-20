@@ -130,14 +130,6 @@ describe('Profile, opened at a section', () => {
     await waitFor(() => expect(scrolled).toEqual(['profile-skip']))
   })
 
-  it('the CV style is listed beside the page only where it can be shown', async () => {
-    mockDoor({ show_profile: show(), ...NO_STORIES, show_style: { styles: {}, in_use: 'default', candidate: false } })
-    render(<Profile onSaved={() => {}} onDraft={() => {}} style={{ state: 'none', canBuild: true, onChanged: () => {} }} />)
-    await screen.findByRole('group', { name: 'Sources' })
-    const links = within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link')
-    expect(links.slice(-3).map((l) => l.textContent)).toEqual(['Master CV', 'CV style', 'Stories'])
-  })
-
   it('the CV and the Stories are sections of the same page, scrolled to like the rest', async () => {
     const scrolled: string[] = []
     Element.prototype.scrollIntoView = vi.fn(function (this: Element) {

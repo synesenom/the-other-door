@@ -1,4 +1,4 @@
-/** The pages of one document, one under the other, as the prepared materials and the style previews show them. */
+/** The pages of one document, one under the other, as the prepared materials show them. */
 export function PageStack({ urls, label }: { urls: string[]; label: string }) {
   return (
     <div className="pages-stack">

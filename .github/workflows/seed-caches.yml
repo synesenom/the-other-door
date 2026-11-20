@@ -108,7 +108,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.poetry-cache.outputs.cache-hit != 'true'
-        run: poetry install --with corpus
+        run: poetry install
 
       # The pinned Chromium shell that tests.yml's real-print tests use
       - name: Cache Chromium

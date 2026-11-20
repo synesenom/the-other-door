@@ -6,7 +6,7 @@
 //   Drive refused, so the throwaway data never reaches your archive.
 // - sandbox (`npm run dev:sandbox`, `:fresh` builds it again, `:empty` starts with nothing): app/.sandbox/, the
 //   made-up data of sandbox.ts or nothing; "Find new jobs" is simulated (demo-run.ts) and Drive refused, the
-//   rest is real (claude on your plan, the style build, Prepare).
+//   rest is real (claude on your plan, Prepare).
 import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { refuseRealData, seedSandbox } from './sandbox'

@@ -1,16 +1,14 @@
 """Page assembly for a CV or letter body (#355): the photo placed, the template's two columns, the language's
 typography, the body wrapped in the template and printed with the pinned Chromium (`html_pdf`). `commands/compile`
-(a prepared job), `commands/matches` (the CV as placed) and `style/` (a built style's prints and previews) all place a
-body through this module.
+(a prepared job) and `commands/matches` (the CV as placed) all place a body through this module.
 """
 
-import html
 import re
 from pathlib import Path
 
 from door import i18n
 from door.core import photo as photo_mod
-from door.core import cv_read, templates, utils, workspace
+from door.core import templates, utils, workspace
 from door.render import html_doc, html_pdf, typography
 
 # The CV photo (#605): the tailor writes `<<photo>>` where it wants one. After the guard has read the body, `compile`
@@ -49,21 +47,9 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-_CONTACT = re.compile(r'<span class="(%s)">' % "|".join(cv_read.CONTACT_KINDS))
-
-
-def _with_labels(body: str, labels: dict[str, str]) -> str:
-    """`body` with each contact span of a kind in `labels` opened by `<label class="label">` (not a `span`: a template spaces the contact items with `.contact span`, and the label is no item) (the style's label for it,
-    escaped). The body is written with none (the guard knows no `label` class); the page adds them, so a built style
-    whose CV prints `Tel:` before the number prints it on every CV."""
-    return _CONTACT.sub(
-        lambda m: m.group(0) + f'<label class="label">{html.escape(labels[m.group(1)], quote=False)}</label> '
-        if m.group(1) in labels else m.group(0), body)
-
-
 def _page(body: str, template: str, folder: Path, *, photo: Path | None, manifest: templates.Manifest, language: str) -> tuple[str, str, str | None]:
     """The page `print_page` prints for a body: the photo placed (copied into `folder`), the two columns, the language's
-    typography, the contact labels, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
+    typography, each entry heading's separator kept to the text before it, wrapped in `template`. Returns the page,
     the body as placed and the photo's file name (None when it was not placed).
 
     Raises:
@@ -111,34 +97,31 @@ def place_columns(body: str, columns: templates.Columns | None) -> str:
     the header (the notes, the photo, the whole header: an `<h2>` inside it is the header's, #242) as it is, then
     `<div class="main">` and `<div class="side">` (`html_doc.columns` reads them back), each section in the order the
     body has it. A section goes to the side when the kind class of its `<h2>` (`kind-skills`, written by the tailor
-    by what the section holds, #431) is one of the template's ``columns.side`` kinds, or its heading is, whole and
-    without case, one of its ``columns.headings``; any other goes to the main column. `body` itself when the template
-    has no side column.
+    by what the section holds, #431) is one of the template's ``columns.side`` kinds; any other goes to the main
+    column. `body` itself when the template has no side column.
 
     Raises:
         ValueError: the template has side kinds and a section has no kind class (a CV prepared before sections had one).
     """
-    if columns is None or not (columns.side or columns.headings):
+    if columns is None or not columns.side:
         return body
     cut = body.find("</header>") + len("</header>") if "</header>" in body else 0
     first, *sections = _H2.split(body[cut:])
     first = body[:cut] + first
-    named_headings = {h.casefold() for h in columns.headings}
     main, side = [], []
     for section in sections:
         heading = (html_doc.headings(section) or [""])[0]
         kind = (html_doc.kinds(section) or [None])[0]
-        if kind is None and columns.side and heading.casefold() not in named_headings:
-            raise ValueError(f"this CV's section {heading!r} has no kind, so the style's columns cannot place it: "
+        if kind is None:
+            raise ValueError(f"this CV's section {heading!r} has no kind, so the template's columns cannot place it: "
                              + NO_KINDS_HINT)
-        named = heading.casefold() in named_headings
-        (side if named or kind in columns.side else main).append(section)
+        (side if kind in columns.side else main).append(section)
     return f'{first}{html_doc.MAIN}{"".join(main)}</div>{html_doc.SIDE}{"".join(side)}</div>'
 
 
 def _placed(body: str, manifest: templates.Manifest) -> str:
-    """`body` with the style's contact labels written and its sections in the manifest's columns."""
-    return place_columns(_with_labels(body, manifest.contact_labels), manifest.columns)
+    """`body` with its sections in the manifest's columns."""
+    return place_columns(body, manifest.columns)
 
 
 def placed_cv(body: str, config: dict) -> str:

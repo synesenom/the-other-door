@@ -4,7 +4,7 @@ from door.render import page
 
 
 def test_a_heading_inside_the_header_stays_in_the_header_and_the_columns_start_after_it():
-    """#242: a header with its own <h2> (a built style's sample body put CONTACT there) is not split: splitting at it
+    """#242: a header with its own <h2> (a template's sample body may put CONTACT there) is not split: splitting at it
     left the columns inside the header, which the template places in its own grid area."""
     from door.core import templates
     body = ('<header class="cv-header"><h1>A B</h1><h2>Contact</h2><p class="contact">x</p></header>'
@@ -26,15 +26,6 @@ def test_a_section_goes_to_the_side_by_its_kind_class_whatever_it_says():
     assert placed == ('<div class="main"><h2 class="kind-summary">Profil</h2><p>p</p>'
                       '<h2 class="kind-experience">Erfahrung</h2><p>e</p><h2 class="kind-other">Hobbys</h2><p>o</p></div>'
                       '<div class="side"><h2 class="kind-languages">Sprachen</h2><p>l</p></div>')
-
-
-def test_a_heading_named_by_the_template_goes_to_the_side_with_or_without_a_kind():
-    from door.core import templates
-    columns = templates.Columns(side=["skills"], headings=["hobbys"])
-    placed = page.place_columns(_SECTIONS, columns)
-    assert placed.endswith('<div class="side"><h2 class="kind-other">Hobbys</h2><p>o</p></div>')
-    bare = '<h2 class="kind-experience">E</h2><p>e</p><h2>Hobbys</h2><p>o</p>'
-    assert page.place_columns(bare, columns).endswith('<div class="side"><h2>Hobbys</h2><p>o</p></div>')
 
 
 def test_a_section_with_no_kind_class_in_a_side_column_template_is_refused_in_words():
@@ -92,12 +83,3 @@ def test_placed_cv_is_the_body_itself_when_the_manifest_cannot_be_read(monkeypat
     body = "<h2>Experience</h2><p>e</p><h2>Skills</h2><p>s</p>"
     assert page.placed_cv(body, {}) == body
 
-
-def test_the_style_s_contact_labels_are_written_in_the_contact_spans_of_their_kinds_only():
-    body = ('<header class="cv-header"><h1>A</h1><p class="contact"><span class="phone">12</span>'
-            '<span class="email"><a href="mailto:a@b.c">a@b.c</a></span><span class="location">X</span></p></header>')
-    out = page._with_labels(body, {"phone": "Tel:", "email": "<b>"})
-    assert '<span class="phone"><label class="label">Tel:</label> 12</span>' in out
-    assert '<span class="email"><label class="label">&lt;b&gt;</label> <a ' in out
-    assert '<span class="location">X</span>' in out
-    assert page._with_labels(body, {}) == body

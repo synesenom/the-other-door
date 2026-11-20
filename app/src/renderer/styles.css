@@ -59,7 +59,7 @@ button:disabled { cursor: default; }
 .list-pane { flex: 1 1 340px; min-width: 340px; overflow-y: auto; padding: 0 0 var(--space-6); border-right: 1px solid var(--color-border); }
 .list-head { padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); }
 .subtitle { margin: var(--size-gap-s) 0 0; font-size: var(--text-body-size); line-height: var(--text-body-line); color: var(--color-ink-muted); }
-.list-pane > .notice, .list-pane > .error, .list-pane > .body, .list-pane > .spinner-line { margin-left: var(--size-screen-gutter); margin-right: var(--size-screen-gutter); }
+.list-pane > .notice, .list-pane > .error, .list-pane > .body, .list-pane > .empty, .list-pane > .spinner-line { margin-left: var(--size-screen-gutter); margin-right: var(--size-screen-gutter); }
 .reading-pane { flex: 999 1 480px; min-width: 0; overflow-y: auto; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-8); }
 /* The posting fills its pane (the ad reads as wide as the window); the reason keeps its 60ch. */
 .posting { display: flex; flex-direction: column; gap: var(--space-6); }
@@ -251,32 +251,7 @@ textarea { resize: none; }
 .matches:not(.pushed) .list-pane { border-right: 0; }
 .matches:not(.pushed) .list-pane > :not(.list-head) { max-width: 620px; }
 
-/* Profile → CV's Style: the sheets side by side, each a button that opens the full pages. The sheet keeps its size
-   while the previews are made, so the row does not move. */
-.dialog-wide { width: min(720px, calc(100vw - var(--space-8))); }
-/* the two styles side by side, each half the width there is, so they can be compared */
-.style-row { display: flex; flex-direction: column; gap: var(--space-3); align-items: stretch; }
-.style-row .spinner-line { margin-left: 0; margin-right: 0; align-items: flex-start; }
-/* a stage that wraps keeps the spinner beside its first line */
-.style-row .spinner-line .spinner { flex-shrink: 0; margin-top: calc((1lh - 12px) / 2); }
-.style-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); align-items: start; }
-.style-card { position: relative; /* holds its visually hidden "in use": the window must not grow with it */ display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-width: 0; }
-.style-thumb { display: block; width: 100%; padding: 0; background: none; border: 1px solid var(--color-border); border-radius: var(--radius-s); overflow: hidden; cursor: pointer; }
-.style-thumb .paper { display: block; width: 100%; border-radius: 0; }
-.style-sheet { box-sizing: border-box; width: 100%; aspect-ratio: 1 / 1.414; border: 1px solid var(--color-border); border-radius: var(--radius-s); background: var(--color-surface); }
-.style-caption { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
-/* the blue dash above the sheet in use; the other card keeps its room, so the sheets line up */
-/* the sheet in use: a 2 px accent border (its 1 px border and a 1 px ring, so nothing moves) */
-.style-current .style-thumb, .style-current .style-thumb:hover { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
-/* the switch held while a build starts or runs */
-.style-switch-busy { opacity: 0.6; }
-.style-below { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
-.style-below:empty { display: none; }
-.style-rerender { display: flex; gap: var(--space-3); align-items: center; }
-@media (hover: hover) { .style-thumb:hover { border-color: var(--color-ink); } }
-
 @media (max-width: 899px) {
-  .style-cards { gap: var(--space-3); }
   .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); }
   .page-aside { display: none; }
   .board-screen { padding: var(--space-6) var(--space-4) var(--space-8); }
@@ -300,7 +275,7 @@ textarea { resize: none; }
   .tab-dash { display: block; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: var(--phone-tab-bar-dash-width); height: var(--phone-tab-bar-dash-height); border-radius: var(--radius-pill); background: var(--color-accent); }
   .list-pane { min-width: 0; border-right: 0; }
   .list-head { padding: var(--space-6) var(--phone-gutter) var(--space-4); }
-  .list-pane > .notice, .list-pane > .error, .list-pane > .body, .list-pane > .spinner-line { margin-left: var(--phone-gutter); margin-right: var(--phone-gutter); }
+  .list-pane > .notice, .list-pane > .error, .list-pane > .body, .list-pane > .empty, .list-pane > .spinner-line { margin-left: var(--phone-gutter); margin-right: var(--phone-gutter); }
   .rows { padding: 0 var(--phone-gutter); gap: 0; }
   .row { min-height: var(--phone-row-min-height); border-radius: 0; padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }
   .reading-pane { padding: var(--space-6) var(--phone-gutter); }
@@ -446,8 +421,6 @@ legend.field-label { padding-bottom: var(--space-2); }
 .part > * { margin: 0; }
 .part-head { display: flex; flex-direction: column; gap: var(--space-1); }
 .part-head > * { margin: 0; }
-/* a heading with one control at its right (Profile → CV's Style and its switch) */
-.part-head-row { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 /* A part of a screen (the review, Profile, Settings): a serif title over a thin rule. Its heading stays with
    what it heads; the wider gap is between its fields. */
 .part > :is(.part-head, h2, h3) + * { margin-top: calc(var(--space-4) - 28px); }
@@ -494,6 +467,8 @@ details.part > summary + * { margin-top: var(--space-4); }
 .page-with-aside > .settings { flex: 1; min-width: 0; max-width: none; }
 /* its rows keep a reading width, as Matches' list does, the list of sections staying at the window's edge */
 .page-with-aside > .settings > * { max-width: 620px; }
+/* the wizard's review: its column stays centred in the room the list leaves */
+.page-with-aside > .onb { flex: 1; min-width: 0; }
 .page-aside { position: sticky; top: 0; flex: 0 0 calc(140px + var(--size-screen-gutter)); padding: calc(var(--size-screen-top) + 8px) var(--size-screen-gutter) 0 0; /* level with the title */ }
 .page-aside ul { list-style: none; margin: 0; padding: 0 0 0 var(--space-4); border-left: 1px solid var(--color-border); display: flex; flex-direction: column; gap: var(--space-1); }
 .page-aside a { display: block; position: relative; padding: var(--space-1) 0; font-size: var(--text-small-size); color: var(--color-ink-muted); text-decoration: none; }
@@ -546,6 +521,8 @@ details.part > summary + * { margin-top: var(--space-4); }
 .cv-editor .cv-text { min-height: 480px; font-size: var(--text-small-size); line-height: 1.55; }
 .cv-example { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-m); }
 .cv-preview { padding: var(--space-6); background: var(--color-page); border: 1px solid var(--color-border); border-radius: var(--radius-l); }
+/* Master CV's preview scrolls in the editor's box, so the parts under it are a short scroll away and Preview keeps the height */
+.cv-editor .cv-preview { box-sizing: border-box; max-height: 480px; overflow-y: auto; scrollbar-gutter: stable; }
 .cv-panel { display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-4); }
 .cv-panel > * { margin: 0; }
 .cv-proposal > span { display: flex; flex-direction: column; }

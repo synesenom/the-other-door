@@ -44,14 +44,6 @@ genbadge = { extras = ["coverage"], version = "*" }
 pytest-xdist = "*"
 claude-agent-sdk = "0.2.181"
 
-# The style corpus scrubber (scripts/style_corpus/scrub_pdf.py) and its tests; not in a plain `poetry install`
-# (setup.sh): pikepdf has no wheels for Intel or older macOS. `poetry install --with corpus`
-[tool.poetry.group.corpus]
-optional = true
-
-[tool.poetry.group.corpus.dependencies]
-pikepdf = "*"
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # tests/ mirrors the package layout in subfolders, so test modules are imported by
@@ -65,7 +57,7 @@ addopts = "-m 'not live and not model and not release and not cli_journeys' --im
 markers = [
     "live: hits a real external site over the network (opt-in, network-dependent)",
     "acceptance: a long live run (a full search per profile); left out of the weekly CI smoke run",
-    "model: run by the real model on the local claude's plan: the Claude Code skills and a review session against the test world, the CV style rebuild on the style corpus (./scripts/run-test.sh --model; before a release, never in CI)",
+    "model: run by the real model on the local claude's plan: the Claude Code skills and a review session against the test world (./scripts/run-test.sh --model; before a release, never in CI)",
     "cli_journeys: the real ./door (door.cmd on Windows) in the test world, after setup on a fresh checkout (CI: cli-journeys.yml, Linux, Windows and macOS; ./scripts/run-test.sh --cli-journeys)",
     "release: the release gate (#57): every earlier release's saved data (tests/data_versions/) opens in this build and reads back as it did (./scripts/run-test.sh --release; before a release, never in the offline suite or CI)",
     "real_chromium: prints with the real pinned Chromium shell instead of hiding it (tests/conftest.py); skipped where none is installed, but not in CI, which installs it",

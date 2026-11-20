@@ -40,10 +40,11 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO / "scripts"))
 
+import cv_body  # noqa: E402
 from door.core import claude_cli, cv_read  # noqa: E402
 from door.render import html_doc  # noqa: E402
-from door.style import cv_body  # noqa: E402
 from door.tailoring import facts  # noqa: E402
 
 

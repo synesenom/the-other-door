@@ -27,7 +27,7 @@ Everything is door's own code except the edges that would leave the computer. Th
 | Job boards (`search`) | `edges.py`: one module per board, returning the world's `fresh` ads | `boards.<site>.fail` in world.json (the board records an error) |
 | Employer feeds (`follow`, `collect`) | `edges.py`: `feeds` (company → platform, entry, postings) | — |
 | `claude` | `claude.py`, first on PATH: sign-in, then every `-p` call by its system prompt (scores, titles, CV draft, keywords, enrich, gaps, revise, the tailor…), each answer priced at a fixed `total_cost_usd` per kind (`COST_USD`) so Analytics' Claude usage has a log to read | `world.faults({ claude: { tailor: { fail: '…' } } })`, `delay_s`, `answer` |
-| Chromium print | `print_standin.py`: `html_pdf.print_html` replaced; real PDFs (pypdfium2), page count follows the text; a CV style build's sample print is the original PDF itself (a rebuild that looks like it) | a body containing `worldfail` |
+| Chromium print | `print_standin.py`: `html_pdf.print_html` replaced; real PDFs (pypdfium2), page count follows the text | a body containing `worldfail` |
 | Google Drive | `edges.py`: a folder in the world plays the account; door's real sync logic runs over it | `world.faults({ drive: { upload: 'quota exceeded' } })` |
 | Phone tunnel | `edges.py`: a pretend tunnel | `world.faults({ phone: { start: { error: '…' } } })` |
 | Any tool | `boot.py` wraps every MCP tool | `world.faults({ tools: { show: { error: '…', once: true } } })`, `delay_s`, `crash` (the server dies) |

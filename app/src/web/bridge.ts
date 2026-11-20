@@ -194,8 +194,6 @@ export function createWebDoor(deps: WebDeps) {
     async pickPhoto() {
       return { error: ON_THE_MACHINE }
     },
-    styleFromCvFile: machineOnly,
-    onStyleReading: () => () => undefined,
     onBeforeClose: () => () => undefined,
     claudeLogin: {
       start: machineOnly,

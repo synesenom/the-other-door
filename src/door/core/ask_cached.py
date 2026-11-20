@@ -1,4 +1,4 @@
-"""One cached, checked model answer (#433): what `cv_read`, `style_structure` and `tailoring.facts` share.
+"""One cached, checked model answer (#433): what `cv_read` and `tailoring.facts` share.
 
 `cached_answer` returns the checked result for a key: the cached answer of this version when it is there and still
 holds, else the model's (`ask`), held to `check` and asked once more when it does not hold (the model's answers vary),

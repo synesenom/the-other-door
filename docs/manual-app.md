@@ -5,7 +5,7 @@ installer (below) or runs from a checkout ([`app/README.md`](../app/README.md)).
 each screen does. The look is in [`design/`](design/README.md).
 
 The first time you open it on a computer with no profile, a short wizard sets *The other door* up
-([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, your CV style being ready, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
+([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
 Preparing an application needs the `claude` command line and a Chromium headless shell, which prints the PDFs. The installed app
 brings Chromium (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all. Should Chromium be missing all
@@ -34,7 +34,6 @@ the same, Prepare and Revise say "The browser that prints your CVs is not instal
 - [Notifications](#notifications)
 - [Profile](#profile)
   - [Master CV](#master-cv)
-  - [CV style](#cv-style)
   - [Your stories](#your-stories)
 - [Settings](#settings)
 - [Analytics](#analytics)
@@ -62,7 +61,7 @@ and signs you in to your Claude plan.
 it is open; there is nothing to press. Settings → Version shows the version you have. The Windows installer, the AppImage and a signed macOS build download it in the
 background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
 that installs it at once. When the app installs an update itself, a running phone server is stopped first; one on Tailscale starts
-again with the new version, a quick tunnel needs setting up again with a new code. A CV style being built from your CV is ended too: start it again after the update. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
+again with the new version, a quick tunnel needs setting up again with a new code. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
 replace themselves (a phone server the older version left is stopped at the next start, a Tailscale one starts again, a quick tunnel needs a new code): Settings says "Version X is available" with a Download button that opens the release page, and
 you install the download over this one. The check sends no information about you; offline, or when the release
 cannot be reached, it shows nothing and writes one line to the problem log. The unsigned Windows installer may
@@ -126,7 +125,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    The running step shows its time so far. It asks nothing: what it could not find
    (your name, email, city or titles) is left for the review. A failed draft offers "Try again" or going on
    without one. The draft is a scratch file, `profile/cv.draft.md`.
-3. **Check your answers.** Everything on one page, editable in place. A note at the top names what
+3. **Check your answers.** Everything on one page, editable in place, with the list of its parts on the right to jump to one. A note at the top names what
    could not be found in your sources, and Save waits until it is filled in; a city in a country not
    covered yet is named, and you choose a city or keep yours under Other, where only the worldwide
    boards are searched:
@@ -140,7 +139,6 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    what you did; a story tells what was behind it, and the tailor draws on your stories for every application.
    Fill in what the CV could not say, usually what you learned, or untick "Keep this story"; Save waits for one or the other.
    More stories go in Profile → [Stories](#your-stories));
-   **Your CV's style** (only when a PDF you gave has a look to copy: one tick box, off, "Make my tailored CVs look like the CV I uploaded". Ticked, Save starts building a template from your CV's look in the background, 2-5 minutes on your Claude plan, beside the first search; when it is ready a line at the foot of the sidebar says "Your CV style is ready to compare" and opens Profile → CV style. Nothing is said if it does not work out);
    **Where to find employers** (LinkedIn, and profession.hu, HelloWork or Jobbsafari where they serve your city:
    each stays off unless you tick it, because their terms forbid automated access; see the
    [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Risky sources changes it later).
@@ -423,7 +421,7 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 ## Profile
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
-then your [Master CV](#master-cv), its [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
+then your [Master CV](#master-cv) and your [Stories](#your-stories). The list on the right names its sections, the one you
 are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar at the
 page's foot saves the settings; your CV saves itself as you type.
 
@@ -464,7 +462,7 @@ page** and **Check again**, and under them your CV file and each page as a chip 
 ever adds: a new CV file, like a page, is read in one Claude call on your plan (a minute or two), and what it has that
 your Master CV does not is proposed, all ticked; what you keep is added, tinted blue, and nothing is taken out or
 rewritten (what changed, such as an end date, you change yourself in the text). With no Master CV yet, a CV file is
-drafted into it whole. A new CV file is your CV file from then on, and your own CV style is built again from it.
+drafted into it whole. A new CV file is your CV file from then on.
 
 Under them `profile/cv.md` as it reads, the **Preview** switch on its right on, with each gap (`TODO`) a blue "to fill
 in" pill: a click on one shows the text in an editor ("Written in Markdown" beside it), with that gap selected, as Preview off does;
@@ -486,21 +484,6 @@ kept as `cv.md.bak`.
 
 What you typed is saved before either reads, since they rewrite the CV. What was added is tinted in the editor and
 the preview, brought into view, until you next type.
-
-### CV style
-
-How your tailored CVs are printed. "The other door" and, once one is built, "Your CV" side by side, each first page
-at half the width so the two can be compared; the one in use has a blue border, and each opens its full pages (your
-CV and a sample letter) in a dialog. The switch **Use my own style**, at the section's top right, chooses: on, your
-style is used, built first from your CV file (under Master CV) when there is none yet (a PDF; after a short wait,
-"Reading your CV's look…", then 2-5 minutes on your Claude plan, which "Building your style…" says with the step it is
-at, such as "drawing it, try 2 of 4", and it is put in
-use once ready); off, The other door's style is used again, your style kept. A CV file that cannot be used (none
-yet, not a PDF, no look to copy, or a look that could not be read because Claude was unreachable or its usage limit
-reached) is said at once; a build that does not work out later is not. A new CV file builds your style again from
-it. Prepared applications keep their look; after a switch "Print N prepared CVs again" does it (no Claude call; sent
-ones never change; "Try again" appears if some could not be printed; for one prepared before sections had a kind, which a two-column style cannot place, the line says to prepare it again or revise it instead). A two-column style may be read less well by
-application systems, and the section says so.
 
 ### Your stories
 

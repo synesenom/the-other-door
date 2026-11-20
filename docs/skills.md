@@ -15,7 +15,7 @@ scripted, multi-step **skills** you invoke with a slash command. Skills live in
 Setup is split in two: `./scripts/setup.sh` (and the `doctor --fix` [command](manual-cli.md) it ends
 with) installs everything and asks nothing about you; `/onboard` reads your sources, asks what
 they did not say, and installs nothing. Its tools are the ones behind `init`'s wizard in a shell (`draft_cv`,
-`infer_basics`, `suggest_titles`, `keywords`, `init_profile`, `save_cv`, `save_photo`, `find_jobs`, and `build_style` when you turn on the style line), so `./door init` does the same onboarding in a
+`infer_basics`, `suggest_titles`, `keywords`, `init_profile`, `save_cv`, `save_photo`, and `find_jobs`), so `./door init` does the same onboarding in a
 terminal — see [*The other door* from the terminal](manual-cli.md#walkthrough). The desktop app's
 first-launch wizard is the third twin of `/onboard` and `init`: the same three parts and the same
 rules, behind the same tools — see [the app](manual-app.md#first-launch).
@@ -54,13 +54,9 @@ The skills are tested end to end, locally and before a release (`./scripts/run-t
 in CI): the real model runs `/onboard`, `/expand` and a review session against a test world,
 a second small model plays the user, and the checks are on behaviour only (which tools, in which order,
 what was written and when), never on wording, except that a thing that must go unsaid is checked unsaid
-(a CV style still building or failed, a recommended style). The same run rebuilds the CV style of every CV in the style
-corpus and its edge cases with the real stylist agent (`tests/model/test_style_rebuild.py`, about 2-4
-minutes a CV): each build ready, close to its original, its fonts found, and the chosen style printing the
-user's CV in the original's columns, read back whole by an ATS; a case a known issue still breaks is an
-`xfail` naming it. They need a signed-in `claude`, `claude-agent-sdk`, `npm ci` in `app/`, the pinned
-Chromium and google/fonts reachable; they use the plan's quota. Run them before a release and when a skill,
-CLAUDE.md's review-session rules, the stylist agent or the style build code changes.
+(a job marked ghosted unasked). They need a signed-in `claude`, `claude-agent-sdk`, `npm ci` in `app/`
+and the pinned Chromium; they use the plan's quota. Run them before a release and when a skill or CLAUDE.md's
+review-session rules change.
 
 ## Agents
 
@@ -70,10 +66,8 @@ Agents are not invoked directly; tools and skills run them.
 |-------|--------|------|
 | `matcher` | `match` | The scoring rubric, used as the system prompt of one `claude -p` call per posting. |
 | `scorer` | `door.matching.scorer` | The scoring prompt's wrapper: it fills in the matcher's rubric, the language and work-permit phrases, the profile and the CV. |
-| `stylist` | the CV style build (`door.style.style_build`) | Rebuilds the look of an uploaded CV as a CV template and a letter template, round by round. |
 | `ask`, `cv-drafter`, `cv-enricher`, `skill-gaps`, `keywords`, `skill-grouper`, `reviser`, `salary`, `story-from-text`, `story-from-cv`, `titles`, `posting-reader` | `door.commands.ask`, `cv`, `enrich`, `gaps`, `keywords`, `market`, `revise`, `salary`, `stories`, `titles`, `add` | One model prompt each: the file's body is the system prompt of one `claude -p` call, its frontmatter the model and tools (`claude_cli.prompt`). |
-| `cv-reader`, `fact-checker`, `cv-structure`, `careers-finder`, `title-translator` | `door.core.cv_read`, `door.tailoring.facts`, `door.style.style_structure`, `door.core.employers.careers_ai`, `door.matching.language` | The same, for the code below the commands. |
-| `stylist-cv-request`, `stylist-reply-first`, `stylist-reply-next`, `stylist-reply-letter`, `stylist-letter-request` | `door.style.style_build` | Message files, not agents: the user message of each round of the stylist's calls, with no model or tools. |
+| `cv-reader`, `fact-checker`, `careers-finder`, `title-translator` | `door.core.cv_read`, `door.tailoring.facts`, `door.core.employers.careers_ai`, `door.matching.language` | The same, for the code below the commands. |
 | `tailor-request`, `tailor-retry`, `scraper-fixer-request` | `door.commands.prepare`, `door.core.scraper_fix` | Message files: the `-p` request that runs the tailor (and its retry) or the scraper-fixer, with the job or site filled in. |
 | `tailor` | `prepare` | Writes the tailored CV and cover letter, compiles and checks page limits. |
 | `reviewer` | the tailor agent | Critiques the draft for relevance, evidence, fabrication and tone. |

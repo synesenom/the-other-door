@@ -1,6 +1,6 @@
 """Every model prompt lives in `src/door/prompts/<name>.md` and `claude_cli.prompt` returns it byte for byte.
 
-Recorded answers (cv reading, style structure, facts) are keyed by a hash of prompt plus input, so a prompt
+Recorded answers (cv reading, facts) are keyed by a hash of prompt plus input, so a prompt
 moved into a file must be exactly the text the code sent before: pinned here by sha256."""
 
 import hashlib
@@ -31,7 +31,6 @@ PROMPTS = {
     "cv-reader": ("haiku", "47d0089f6137d469597472e2c392160874f13df59f576976f44bdbb9ec879ea7"),
     "careers-finder": ("haiku", "db7ae8bb770a26bd7b7e7e0721f7d5e8bae23dac0a8a44cb44a2b7b64539da80"),
     "title-translator": ("haiku", "7366039f9e7e68574fc0b240b86d9c456983ac93d83c46e729c571e286a79d61"),
-    "cv-structure": ("haiku", "365f6265bb3c328ffd0e53ae992d21e3ec7b12f850da029f185022e4cb64ad13"),
     "fact-checker": ("haiku", "b59c8019c78432960dc58b23ebf15a133cd9db6c301c2d7b6c861697ba570f76"),
 }
 _FIELDS = {"cv-drafter": {"webfetch_rules": common._WEBFETCH_RULES}, "cv-enricher": {"webfetch_rules": common._WEBFETCH_RULES}}
@@ -85,8 +84,7 @@ def test_the_reviser_rules_are_the_system_prompt_and_the_user_message_has_only_t
     assert "Rules:" in rules and "kind-summary" in rules and "untrusted" in rules
 
 
-MESSAGES = ["stylist-reply-first", "stylist-reply-next", "stylist-reply-letter", "stylist-letter-request", "stylist-cv-request",
-            "scraper-fixer-request", "tailor-request", "tailor-retry"]
+MESSAGES = ["scraper-fixer-request", "tailor-request", "tailor-retry"]
 
 
 @pytest.mark.parametrize("name", MESSAGES)
@@ -99,13 +97,13 @@ def test_a_message_file_is_not_for_direct_use_and_has_no_model_or_tools(name):
 
 def _names_in_code() -> set[str]:
     """The prompts the code names: a `claude_cli.prompt|model_of|tools_of|agent_definition|ask` call, an `agent=`,
-    a prompt file read by `PROMPTS_DIR`, or a constant naming an agent (`STYLIST`, `_FIXER`, `_TAILOR_AGENTS`)."""
+    a prompt file read by `PROMPTS_DIR`, or a constant naming an agent (`_FIXER`, `_TAILOR_AGENTS`)."""
     src = "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
     names = set(re.findall(r'(?:prompt|model_of|tools_of|agent_definition|ask)\(\s*"([a-z][a-z-]*)"', src))
     names |= set(re.findall(r'agent="([a-z][a-z-]*)"', src))
     names |= set(re.findall(r'\bprompt = "([a-z][a-z-]*)"', src))  # a name chosen, then passed
     names |= set(re.findall(r'PROMPTS_DIR / "([a-z][a-z-]*)\.md"', src))  # a file read whole (the matcher's rubric)
-    for line in re.findall(r"^_?[A-Z_]*(?:AGENTS?|STYLIST|FIXER)\s*=\s*(.+)$", src, re.M):
+    for line in re.findall(r"^_?[A-Z_]*(?:AGENTS?|FIXER)\s*=\s*(.+)$", src, re.M):
         names |= set(re.findall(r'"([a-z][a-z-]*)"', line))
     return names
 

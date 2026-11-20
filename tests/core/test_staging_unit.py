@@ -1,4 +1,4 @@
-"""One staging folder for every staged write (#270): the pinned downloads, the style build and preview, the data import."""
+"""One staging folder for every staged write (#270): the pinned downloads and the data import."""
 
 from __future__ import annotations
 

@@ -10,7 +10,7 @@ only after a person has installed it on a clean machine of each system and gone 
 
 - `./scripts/run-test.sh --release` passes: the offline suite, the release gate, the app's tests with every journey,
   the CLI journeys (the real `./door` in the test world) and the real-model tests, which only run locally (the real model on your Claude plan runs `/onboard`, `/expand` and a review session against the app's
-  test world, and rebuilds the CV style of every style corpus CV).
+  test world).
 - The release gate (#57, `tests/release/`, marker `release`) is part of it: every earlier release's saved data,
   `tests/data_versions/<X.Y.Z>/`, and its `default/` variant (the default profile: no template in `profile/`, both
   template keys null, the templates the code's own, as most users have it; #141), is copied to a temporary home, upgraded by the build's own steps and read back with
@@ -86,9 +86,7 @@ On each, download the installer from the draft release and check, in order:
    this version is out. With the draft published, a Windows or AppImage install (and a signed mac one) of the old
    version downloads it by itself and offers "Restart to update to X"; an unsigned mac one shows the Download link.
    With the phone server running on the old version, "Restart to update" stops it first (a Tailscale one
-   answers the phone again from the new version, a quick tunnel is off until set up again). With a CV style build
-   running (Profile → CV style → "Use my own style"), "Restart to update" ends it and the update installs; the
-   style in use is unchanged.
+   answers the phone again from the new version, a quick tunnel is off until set up again).
 
 Anything that fails is fixed on `main` and released as a new version (the next patch number); a draft is
 never rebuilt under the same tag. Delete the failed draft and its tag.

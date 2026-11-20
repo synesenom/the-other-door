@@ -10,7 +10,7 @@ const writers = new Set<() => Promise<void>>()
 ipcRenderer.on('door:before-close', beforeCloseHandler(writers, () => ipcRenderer.send('door:before-close-done')))
 
 contextBridge.exposeInMainWorld('door', {
-  // `tokens`: the files the user picked (CV files for draft_cv, enrich, build_style; the photo for save_photo, an archive for import_data, one-shot); main puts their paths into the tool's argument.
+  // `tokens`: the files the user picked (CV files for draft_cv, enrich; the photo for save_photo, an archive for import_data, one-shot); main puts their paths into the tool's argument.
   call: (tool: string, args?: Record<string, unknown>, callId?: string, tokens?: string[]) =>
     ipcRenderer.invoke('door:call', tool, args ?? {}, callId, tokens),
   onProgress: (callId: string, cb: (p: { progress: number; total?: number; message: string }) => void) => {
@@ -32,15 +32,6 @@ contextBridge.exposeInMainWorld('door', {
   clearCvSources: () => ipcRenderer.invoke('door:cv-sources-clear'),
   // The CV photo: chosen in a dialog the main process runs, saved by the token it hands back (`call`'s tokens).
   pickPhoto: () => ipcRenderer.invoke('door:pick-photo'),
-  styleFromCvFile: () => ipcRenderer.invoke('door:style-from-cv-file'),
-  // A file was chosen for it: its structure is now being read.
-  onStyleReading: (cb: () => void) => {
-    const listener = () => cb()
-    ipcRenderer.on('door:style-reading', listener)
-    return () => {
-      ipcRenderer.removeListener('door:style-reading', listener)
-    }
-  },
   // Signing in to Claude: the main process runs claude and opens only the page claude printed.
   claudeLogin: {
     start: (email?: string) => ipcRenderer.invoke('door:claude-login-start', email),

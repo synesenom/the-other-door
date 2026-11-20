@@ -1,7 +1,7 @@
 // What a run or a Prepare is doing, in words for the user. The progress messages are written for logs
 // and the terminal (`'data' details`, `verifying outputs for …`), so a screen never shows them as they are:
 // it says the step from the folded `steps`, and a Prepare's stage from the start of its message.
-import type { InProgress, StepActivity, StepRow, StyleStep } from '../api'
+import type { InProgress, StepActivity, StepRow } from '../api'
 
 const STEP_WORDS: Record<string, string> = {
   search: 'searching the job boards',
@@ -46,19 +46,4 @@ const PREPARE_WORDS: [RegExp, string][] = [
 /** A Prepare's progress message as the step it is on. */
 export function prepareText(message: string): string {
   return PREPARE_WORDS.find(([re]) => re.test(message))?.[1] ?? 'Preparing…'
-}
-
-const STYLE_WORDS: [RegExp, (s: StyleStep) => string][] = [
-  [/^reading the CV's style/, () => "reading your CV's look"],
-  [/^fetching the fonts/, () => 'getting the fonts'],
-  [/^building the template, round/, (s) => (s.done && s.total ? `drawing it, try ${s.done} of ${s.total}` : 'drawing it')],
-  [/^stress render/, () => 'trying it with longer and shorter versions of your CV'],
-  [/^one more round/, () => 'fixing what those tries showed'],
-  [/^building the letter template/, () => 'making the cover letter'],
-]
-
-/** The stage a CV style build is at, e.g. "Building your style: drawing it, try 2 of 4…". */
-export function styleText(step?: StyleStep): string {
-  const found = step && STYLE_WORDS.find(([re]) => re.test(step.message))
-  return found ? `Building your style: ${found[1](step)}…` : 'Building your style…'
 }

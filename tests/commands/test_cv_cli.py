@@ -124,13 +124,7 @@ ICON_FONTS = ["FontAwesome", "Font Awesome 6 Free Solid", "Symbol", "Wingdings 2
 
 
 @pytest.mark.parametrize("font", ICON_FONTS)
-def test_the_pdf_and_docx_readers_leave_out_the_same_icon_fonts(tmp_path, font):
-    # one rule (`style_icons.icon_font`) for both: a PDF's run in the font is an icon, a DOCX's run is left out
-    from door.style import style_icons
-
-    runs = [{"font": font, "text": "Abc"}, {"font": "Calibri", "text": "Abc"}]
-    style_icons.mark_icon_runs(runs)
-    assert [r["icon"] for r in runs] == [True, False]
+def test_the_docx_reader_leaves_out_the_icon_fonts(tmp_path, font):
     path = tmp_path / "cv.docx"
     _styled_docx(path, [(None, [_run("Abc", font=font), _run("+45 1234 5678", font="Calibri")])], [])
     assert cv_cmd._extract_text(path) == "+45 1234 5678"
@@ -296,81 +290,8 @@ def test_the_draft_rules_allow_a_location_as_the_last_part_of_an_entry_heading()
     assert "### Role | Company — dates | Location" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
 
 
-def test_core_says_per_file_whether_its_style_can_be_copied(env, monkeypatch):
-    (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
-    """The wizard offers the style build only for a file that has a style to copy (#150)."""
-    _answer(monkeypatch)
-    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
-    three = styled.with_name("html-three-columns.pdf")
-    sources = [str(styled), str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane", str(three)]
-    result = cv_cmd._draft_cv_core(sources, profile_dir=env.profile_dir)
-    assert [s.get("style") for s in result["sources"]] == [True, False, False, None, False]
-
-
-def test_a_draft_with_a_profile_offers_no_style_and_makes_no_structure_call(env, monkeypatch):
-    from door.style import style_structure
-
-    def never(text, feature="style"):
-        raise AssertionError("the structure call is for a first set-up only")
-
-    _answer(monkeypatch)
-    monkeypatch.setattr(style_structure, "_ask", never)
-    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
-    result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
-    assert [s["style"] for s in result["sources"]] == [False]
-
-
-def test_a_linkedin_export_has_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
-    (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
-    _answer(monkeypatch)
-    linkedin = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "linkedin-like.pdf"
-    result = cv_cmd._draft_cv_core([str(linkedin)], profile_dir=env.profile_dir)
-    assert [s["style"] for s in result["sources"]] == [False] and result["sources"][0]["chars"] > 0
-
-
-def test_a_failed_structure_call_means_no_style_to_copy_and_the_draft_still_succeeds(env, monkeypatch):
-    (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
-    from door.style import style_structure
-
-    def broken(text, feature="style"):
-        raise claude_cli.ClaudeError("claude -p timed out after 60s")
-
-    _answer(monkeypatch)
-    monkeypatch.setattr(style_structure, "_ask", broken)
-    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
-    result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
-    assert [s["style"] for s in result["sources"]] == [False] and result["sources"][0]["chars"] > 0
-
-
-def test_a_draft_extracts_each_pdf_once(env, monkeypatch):
-    (env.profile_dir / "config.json").unlink()  # a first set-up: the only one that offers the style
-    """Its text (the icon boxes) is one extract (#298: a style extract is the slow part); its style verdict is the
-    structure's (`style_structure`), which makes no second extract."""
-    from door.style import style_extract
-
-    _answer(monkeypatch)
-    read, extract = [], style_extract.extract
-    monkeypatch.setattr(style_extract, "extract", lambda path, structure=None: read.append(path) or extract(path, structure))
-    pdfs = [STYLES / "latex-classic.pdf", STYLES / "scrubbed-altacv-icons-fr.pdf", env.tmp / "old-cv.pdf"]
-    result = cv_cmd._draft_cv_core([*map(str, pdfs), str(env.tmp / "old-cv.docx")], profile_dir=env.profile_dir)
-    assert sorted(map(str, read)) == sorted(map(str, pdfs))
-    assert [s["style"] for s in result["sources"]] == [True, True, False, False]
-
-
-def test_a_missing_chromium_does_not_make_a_file_look_styleless(env, monkeypatch):
-    (env.profile_dir / "config.json").unlink()  # a first set-up
-    """`style` says the file has a look to copy; whether this machine can print is another question."""
-    from door.commands import _common as common
-
-    _answer(monkeypatch)
-    monkeypatch.setattr(common, "_chromium_available", lambda: False)
-    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
-    result = cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
-    assert result["sources"][0]["style"] is True
-
-
-STYLES = REPO_ROOT / "tests" / "style" / "fixtures" / "styles"
-ICONS = ["scrubbed-pages-header-en", "scrubbed-altacv-icons-fr"]
+FIXTURES = REPO_ROOT / "tests" / "commands" / "fixtures"
+ICONS_FR = FIXTURES / "scrubbed-altacv-icons-fr.pdf"
 
 
 def _pdfium_text(pdf):
@@ -379,35 +300,37 @@ def _pdfium_text(pdf):
     return "\n".join(pdf_render.page_texts(pdf)).strip()
 
 
-# an icon-font glyph reads back as a stray character ("!", "Ó", "½"): the model would copy it into cv.md, and
-# infer_basics read a location as "½ Ours, Tortue" (#266)
+# an icon-font glyph reads back as a stray character ("!", "Ó", "½"): the model would copy it into cv.md (#266)
 def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs():
-    text = cv_cmd._extract_text(STYLES / "scrubbed-pages-header-en.pdf")
+    text = cv_cmd._extract_text(FIXTURES / "scrubbed-pages-header-en.pdf")
     assert "!" not in text
     assert "Merle abeille parapluie lampe les chemise promenade printemps promenade." in text
     assert "petit." in [line.strip() for line in text.splitlines()]
 
 
 def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs_in_the_contact_line():
-    text = cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf")
+    text = cv_cmd._extract_text(ICONS_FR)
     assert not set("[Ó½¯\x11") & set(text)
     assert "(+89) 079788144 Ours, Tortue (paysage a couteau) bougie-nuageux" in " ".join(text.split())
 
 
-# a level written as dots is information (3 of 5) and a bullet is list structure: neither is an icon, even drawn
-# with the icon font (#313: the French CV's level dots are FontAwesome's)
+# a level written as dots is information and a bullet is list structure: neither is an icon, even drawn with the
+# icon font (#313)
 def test_extract_text_of_a_pdf_keeps_level_dots_and_bullets_drawn_with_the_icon_font():
-    text = cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf")
-    assert "Matinée ●●●●●" in text
-    assert text.count("○") + text.count("●") == _pdfium_text(STYLES / "scrubbed-altacv-icons-fr.pdf").count("○")
+    text = cv_cmd._extract_text(ICONS_FR)
+    assert text.count("○") + text.count("●") == _pdfium_text(ICONS_FR).count("○")
     assert "•" in text
 
 
-# a level in the dots' colour, not their shape (#314): the same glyph in the CV's dark colour is filled, in a pale one
-# empty, so the draft says `●●●●○`; a row of the filled colour is all filled, with a two-colour row in the CV
+# a level in the dots' colour, not their shape: the same glyph in a dark colour is filled, in a pale one empty
 def test_extract_text_of_a_pdf_says_a_level_shown_by_the_colour_of_its_dots():
-    text = " ".join(cv_cmd._extract_text(STYLES / "scrubbed-altacv-icons-fr.pdf").split())
+    text = " ".join(cv_cmd._extract_text(ICONS_FR).split())
+    assert "Matinée ●●●●●" in text
     assert "Crayon (IL6) ●●●●○" in text
+
+
+def test_extract_text_of_a_pdf_with_no_icons_is_pdfiums_text(env):
+    assert cv_cmd._extract_text(env.tmp / "old-cv.pdf") == _pdfium_text(env.tmp / "old-cv.pdf")
 
 
 def test_extract_text_of_a_pdf_keeps_dots_and_bullets_in_a_font_of_their_own_and_drops_its_glyphs(tmp_path):
@@ -425,40 +348,6 @@ BT /F1 11 Tf 50 660 Td (Data engineer building pipelines in Copenhagen since 201
     lines = [" ".join(line.split()) for line in cv_cmd._extract_text(pdf).splitlines()]
     assert lines == ["Jane Doe", "+45 1234 5678", "● Led the team", "Python ● ● ●", "Certified",
                      "Data engineer building pipelines in Copenhagen since 2019."]
-
-
-@pytest.mark.parametrize("name", ICONS)
-def test_extract_text_of_a_pdf_with_icons_keeps_its_lines(name):
-    assert len(cv_cmd._extract_text(STYLES / f"{name}.pdf").splitlines()) == len(_pdfium_text(STYLES / f"{name}.pdf").splitlines())
-
-
-@pytest.mark.parametrize("pdf", [p for p in sorted(STYLES.glob("*.pdf")) if p.stem not in ICONS], ids=lambda p: p.stem)
-def test_extract_text_of_a_pdf_with_no_icon_glyphs_is_pdfiums_text(pdf):
-    # a scan, a LinkedIn export and a CV with no icon font: the text as pdfium gives it, in its order
-    assert cv_cmd._extract_text(pdf) == _pdfium_text(pdf)
-
-
-def test_the_draft_text_of_a_refused_three_column_cv_still_drops_its_icons(monkeypatch):
-    """`style_extract` keeps the runs of a layout refusal, so `draft_edits` is given them (#318)."""
-    from door.style import style_icons
-
-    given = []
-    monkeypatch.setattr(style_icons, "draft_edits", lambda runs, style: given.append(runs) or {})
-    text = cv_cmd._extract_text(REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "html-three-columns.pdf")
-    assert len(given[0]) > 20 and "Experience" in text
-
-
-def test_the_structure_call_of_a_draft_is_billed_to_the_draft(env, monkeypatch):
-    (env.profile_dir / "config.json").unlink()  # a first set-up
-    from door.style import style_structure
-    from style_structure_utils import fake_ask
-
-    _answer(monkeypatch)
-    features = []
-    monkeypatch.setattr(style_structure, "_ask", lambda text, feature="style": features.append(feature) or fake_ask(text))
-    styled = REPO_ROOT / "tests" / "style" / "fixtures" / "styles" / "latex-classic.pdf"
-    cv_cmd._draft_cv_core([str(styled)], profile_dir=env.profile_dir)
-    assert features == ["draft_cv"]
 
 
 def test_the_draft_rules_keep_the_cvs_own_section_headings_and_groups():

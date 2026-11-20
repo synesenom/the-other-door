@@ -2,9 +2,8 @@
 and the run.json a long-lived process leaves. Nothing real is started or killed."""
 
 import signal
-import sys
 
-from door.core import process, workspace
+from door.core import process
 
 
 def test_stopping_ends_each_process_group_not_just_its_first_process(monkeypatch):
@@ -48,10 +47,6 @@ def test_on_windows_a_server_is_detached_from_the_console(monkeypatch, tmp_path)
     assert _spawn_flags(monkeypatch, tmp_path, "win32")["creationflags"] == 0x00000008 | 0x00000200
 
 
-def test_on_windows_a_build_gets_a_hidden_console_so_its_children_open_no_windows(monkeypatch, tmp_path):
-    assert _spawn_flags(monkeypatch, tmp_path, "win32", hidden_console=True)["creationflags"] == 0x08000000 | 0x00000200
-
-
 def test_a_signal_can_be_chosen_for_the_group(monkeypatch):
     sent = []
     monkeypatch.setattr(process.os, "killpg", lambda pgid, sig: sent.append((pgid, sig)), raising=False)
@@ -59,16 +54,6 @@ def test_a_signal_can_be_chosen_for_the_group(monkeypatch):
     monkeypatch.setattr(process.sys, "platform", "darwin")
     process.kill_tree(4242, signal.SIGKILL)
     assert sent == [(4242, signal.SIGKILL)]
-
-
-def test_spawn_door_runs_the_cli_with_the_data_folder_and_the_source_on_the_path(monkeypatch, tmp_path):
-    seen = {}
-    monkeypatch.setattr(process, "spawn_detached", lambda argv, **kw: seen.update(argv=argv, **kw) or "proc")
-    assert process.spawn_door(tmp_path, ["cv", "style", "build", "x.pdf"], log=tmp_path / "b.log", hidden_console=True) == "proc"
-    assert seen["argv"] == [sys.executable, "-m", "door", "cv", "style", "build", "x.pdf"]
-    assert seen["env"]["DOOR_HOME"] == str(tmp_path)
-    assert seen["env"]["PYTHONPATH"] == str(workspace.REPO_ROOT / "src")
-    assert seen["log"] == tmp_path / "b.log" and seen["hidden_console"] is True
 
 
 def test_a_run_file_is_read_back_as_written_and_a_missing_or_broken_one_is_none(tmp_path):
@@ -104,3 +89,8 @@ def test_a_group_nobody_may_signal_is_left_alone(monkeypatch):
     monkeypatch.setattr(process.os, "killpg", refuse, raising=False)
     monkeypatch.setattr(process.sys, "platform", "darwin")
     process.kill_tree(4242, group=True)
+
+
+def test_elsewhere_a_server_starts_a_session_of_its_own_with_no_windows_flags(monkeypatch, tmp_path):
+    seen = _spawn_flags(monkeypatch, tmp_path, "darwin")
+    assert seen.get("start_new_session") is True and "creationflags" not in seen

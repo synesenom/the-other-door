@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { InProgress } from '../api'
-import { activityText, prepareText, runText, styleText } from './run-text'
+import { activityText, prepareText, runText } from './run-text'
 
 const run = (steps: unknown[], over: Partial<InProgress> = {}): InProgress => ({ purpose: 'run', message: "'data' details", stage: 'scrape', site: 'jobindex', steps, ...over })
 
@@ -55,21 +55,5 @@ describe("prepareText: a Prepare's step in words", () => {
     ['something new', 'Preparing…'],
   ])('%s', (message, text) => {
     expect(prepareText(message)).toBe(text)
-  })
-})
-
-describe("styleText: the stage a CV style build is at, in words", () => {
-  const step = (message: string, done: number | null = null, total: number | null = null) => ({ message, done, total })
-  it.each([
-    [step("reading the CV's style"), "Building your style: reading your CV's look…"],
-    [step('fetching the fonts'), 'Building your style: getting the fonts…'],
-    [step('building the template, round 2', 2, 4), 'Building your style: drawing it, try 2 of 4…'],
-    [step('stress render: long'), 'Building your style: trying it with longer and shorter versions of your CV…'],
-    [step('one more round for the stress renders'), 'Building your style: fixing what those tries showed…'],
-    [step('building the letter template'), 'Building your style: making the cover letter…'],
-    [step('something new'), 'Building your style…'],
-    [undefined, 'Building your style…'],
-  ])('%j', (s, text) => {
-    expect(styleText(s)).toBe(text)
   })
 })
