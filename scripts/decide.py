@@ -47,8 +47,8 @@ def main(argv=None, run=_gh):
     pr = (sys.argv[1:] if argv is None else argv)[0]
     view = run(["pr", "view", pr, "--json", "headRefOid,body,files"])
     sha = view["headRefOid"]
-    runs = run(["api", "--paginate", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100"])
-    checks = [c for c in runs["check_runs"] if c["name"] != "verify"]
+    pages = run(["api", "--paginate", "--slurp", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100"])
+    checks = [c for page in pages for c in page["check_runs"] if c["name"] != "verify"]
     ok, reasons = decide(checks, view["body"], [f["path"] for f in view["files"]], sha)
     print(json.dumps({"ok": ok, "reasons": reasons, "sha": sha}))
     return 0 if ok else 1

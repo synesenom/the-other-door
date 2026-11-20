@@ -80,7 +80,8 @@ def _run(checks, body="- [x] done", files=FILES):
         calls.append(args)
         if args[:2] == ["pr", "view"]:
             return {"headRefOid": "H", "body": body, "files": [{"path": f} for f in files]}
-        return {"check_runs": checks}
+        assert "--slurp" in args  # --paginate alone concatenates the pages' objects
+        return [{"check_runs": checks[:1]}, {"check_runs": checks[1:]}]
 
     return run, calls
 
@@ -99,3 +100,9 @@ def test_main_exits_1_for_a_visible_file(capsys):
     assert decide.main(["7"], run) == 1
     out = json.loads(capsys.readouterr().out)
     assert out["ok"] is False and out["reasons"] == ["Needs the maintainer: look at it"]
+
+
+def test_main_reads_every_page_of_check_runs(capsys):
+    run, _ = _run([_check("tests"), _check("app", conclusion="failure")])
+    assert decide.main(["7"], run) == 1
+    assert "check app failed" in json.loads(capsys.readouterr().out)["reasons"]
