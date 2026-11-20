@@ -287,3 +287,46 @@ def test_the_draft_rules_allow_a_location_as_the_last_part_of_an_entry_heading()
     from door.commands import cv as cv_cmd
 
     assert "### Role | Company — dates | Location" in cv_cmd._RULES
+
+
+FIXTURES = REPO_ROOT / "tests" / "commands" / "fixtures"
+ICONS_FR = FIXTURES / "scrubbed-altacv-icons-fr.pdf"
+
+
+def _pdfium_text(pdf):
+    from door.render import pdf_render
+
+    return "\n".join(pdf_render.page_texts(pdf)).strip()
+
+
+# an icon-font glyph reads back as a stray character ("!", "Ó", "½"): the model would copy it into cv.md (#266)
+def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs():
+    text = cv_cmd._extract_text(FIXTURES / "scrubbed-pages-header-en.pdf")
+    assert "!" not in text
+    assert "Merle abeille parapluie lampe les chemise promenade printemps promenade." in text
+    assert "petit." in [line.strip() for line in text.splitlines()]
+
+
+def test_extract_text_of_a_pdf_leaves_out_its_icon_glyphs_in_the_contact_line():
+    text = cv_cmd._extract_text(ICONS_FR)
+    assert not set("[Ó½¯\x11") & set(text)
+    assert "(+89) 079788144 Ours, Tortue (paysage a couteau) bougie-nuageux" in " ".join(text.split())
+
+
+# a level written as dots is information and a bullet is list structure: neither is an icon, even drawn with the
+# icon font (#313)
+def test_extract_text_of_a_pdf_keeps_level_dots_and_bullets_drawn_with_the_icon_font():
+    text = cv_cmd._extract_text(ICONS_FR)
+    assert text.count("○") + text.count("●") == _pdfium_text(ICONS_FR).count("○")
+    assert "•" in text
+
+
+# a level in the dots' colour, not their shape: the same glyph in a dark colour is filled, in a pale one empty
+def test_extract_text_of_a_pdf_says_a_level_shown_by_the_colour_of_its_dots():
+    text = " ".join(cv_cmd._extract_text(ICONS_FR).split())
+    assert "Matinée ●●●●●" in text
+    assert "Crayon (IL6) ●●●●○" in text
+
+
+def test_extract_text_of_a_pdf_with_no_icons_is_pdfiums_text(env):
+    assert cv_cmd._extract_text(env.tmp / "old-cv.pdf") == _pdfium_text(env.tmp / "old-cv.pdf")

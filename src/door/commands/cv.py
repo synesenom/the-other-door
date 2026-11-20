@@ -10,7 +10,6 @@ profile/cv.md.
 
 import json
 import re
-import unicodedata
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree
@@ -20,6 +19,7 @@ import click
 from door import i18n
 from door.commands import _common as common
 from door.core import claude_cli, migrations, profile_loader, utils, workspace
+from door.render import pdf_draft
 
 _DEFAULT_MODEL = "sonnet"
 _DRAFT_NAME = "cv.draft.md"
@@ -62,35 +62,9 @@ _SCHEMA = {
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
-# The fonts whose letters are pictures, matched on the name in lowercase letters and digits: icon fonts and symbol fonts
-# (a phone or an envelope set in Wingdings reads back as a stray "(").
-_ICON_FONT = re.compile(r"awesome|icon|symbol|material|glyph|fontello|ionicons|dingbats|wingdings|webdings|mtextra"
-                        r"|marlett|^(cm(sy|mi|ex|bsy)|msam|msbm)")
-_BULLETS = set("•·‣◦▪●○■□–∙-*★☆")
-_SEQUENCE = set("\u200d\ufe0e\ufe0f") | {chr(c) for c in range(0x1F3FB, 0x1F400)}  # an emoji sequence's other pieces
-
-
-def _icon_font(name: str) -> bool:
-    """Whether the font called `name` draws pictures for letters (an icon or a symbol font)."""
-    return bool(_ICON_FONT.search(re.sub(r"[^a-z0-9]", "", name.lower())))
-
-
-def _pictographic(c: str) -> bool:
-    """A symbol (category So) set aside for pictures: Miscellaneous Symbols and Dingbats (U+2600-27BF) and the emoji and
-    pictograph planes from U+1F000. Box drawing, geometric shapes and rating stars are text marks."""
-    return unicodedata.category(c) == "So" and c not in _BULLETS and ("\u2600" <= c <= "\u27bf" or c >= "\U0001f000")
-
-
-def _glyph_only(text: str) -> bool:
-    """At least one private-use, control or pictographic character, and nothing else but spaces, control characters and
-    the pieces of an emoji sequence: what an icon font's glyphs read as."""
-    return (any(unicodedata.category(c) in ("Cc", "Co") and not c.isspace() or _pictographic(c) for c in text)
-            and all(unicodedata.category(c) in ("Cc", "Co") or c.isspace() or c in _SEQUENCE or _pictographic(c)
-                    for c in text))
-
 
 def _extract_text(path: Path) -> str:
-    """The text of a PDF (pypdfium2), a DOCX (its paragraphs, symbol-font runs left out, #297) or a Markdown/text file.
+    """The text of a PDF (`pdf_draft`: icon glyphs left out, level dots said, #266, #313), a DOCX (its paragraphs, symbol-font runs left out, #297) or a Markdown/text file.
 
     Raises:
         FileNotFoundError: no such file.
@@ -102,9 +76,7 @@ def _extract_text(path: Path) -> str:
     if not path.is_file():
         raise FileNotFoundError(f"{path}: no such file")
     if suffix == ".pdf":
-        from door.render import pdf_render
-
-        return "\n".join(pdf_render.page_texts(path)).strip()
+        return pdf_draft.draft_text(path)
     if suffix == ".docx":
         return _docx_text(path)
     return _decode_text_file(path.read_bytes()).strip()
@@ -112,7 +84,7 @@ def _extract_text(path: Path) -> str:
 
 def _docx_text(path: Path) -> str:
     """A DOCX's paragraphs, leaving out its icons, which read back as a stray "(" or "*" (#297): a run of only
-    private-use, control or pictographic characters, or one set in an icon or symbol font (`_icon_font`, as a PDF's) (its own
+    private-use, control or pictographic characters, or one set in an icon or symbol font (`pdf_draft.icon_font`, as a PDF's) (its own
     font, else its character style's, else its paragraph style's or the default one's, each style through the
     ones it is based on)."""
     with zipfile.ZipFile(path) as zf:
@@ -138,7 +110,7 @@ def _docx_text(path: Path) -> str:
             text = "".join(t.text or "" for t in run.findall(f"{_W}t"))
             font = (_font(run) or styled(_val(run, f"{_W}rPr/{_W}rStyle"))
                     or styled(_val(p, f"{_W}pPr/{_W}pStyle") or default))
-            if not (text and _glyph_only(text)) and not (font and _icon_font(font)):
+            if not (text and pdf_draft.glyph_only(text)) and not (font and pdf_draft.icon_font(font)):
                 texts.append(text)
         paragraphs.append("".join(texts))
     return "\n".join(p for p in paragraphs if p.strip()).strip()
