@@ -45,7 +45,7 @@ Check every finding against the rule's text and the screenshot or the line; a ma
 Base: <base_branch>  Goal: <issue or words>
 Screens looked at: <scene, state, theme, width — or "code only: <why>">
 Findings:
-1. <one sentence: what breaks the rule> — <rule: README section and point> — <evidence: file:line or screenshot path> — <fix here | issue>
+1. <one sentence: what breaks the rule> — <rule: README section and point> — <evidence: file:line or screenshot path> — <fix here (about this change) | issue (a bug a user would hit, outside the change) | out of scope (named, not filed)>
 2. ...
 Checked and fine: <a short list of the rules checked and met>
 ```

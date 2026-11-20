@@ -41,11 +41,11 @@ For each candidate, sketch the founding version concretely: which existing code 
 Base: <base_branch>  Goal: <issue or words>
 Landed: <modules/screens/files, +added −removed, net>
 Blast radius: <callers, surfaces, stored files, tests, docs touched>
-Verdict: integrated | refactor here | refactor as follow-up
+Verdict: integrated | refactor here
 Refactors:
-1. <one sentence: the founding version> — <what changes, merges, is deleted; where it lives> — <net lines vs the branch, from counted lines> — <evidence: file:line, callers> — <here (small, in scope) | issue (larger)>
+1. <one sentence: the founding version> — <what changes, merges, is deleted; where it lives> — <net lines vs the branch, from counted lines> — <evidence: file:line, callers> — <here (about this change) | out of scope (named, not filed)>
 2. ...
 Checked and fine: <where the change already fits the codebase's shape>
 ```
 
-`Verdict: integrated` with `Refactors: none` when the change already sits where a planned version would; never invent a refactor. Order refactors by net lines saved; one that reshapes code beyond the change's goal is a follow-up issue, written to stand alone.
+`Verdict: integrated` with `Refactors: none` when the change already sits where a planned version would; never invent a refactor. Order refactors by net lines saved; one that reshapes code beyond the change's goal is out of scope: name it in one line, it is not filed (CLAUDE.md "Review").

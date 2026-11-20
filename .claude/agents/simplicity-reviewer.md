@@ -34,7 +34,7 @@ Check every finding against the code: read the line, `grep` the callers, run the
 ## Simplicity review
 Base: <base_branch>  Goal: <issue or words>
 Findings:
-1. <one sentence: what is more complex than needed> — <evidence: file:line, the callers> — <the simpler version, in one line> — <fix here | issue>
+1. <one sentence: what is more complex than needed> — <evidence: file:line, the callers> — <the simpler version, in one line> — <fix here (about this change) | out of scope (code the change does not touch: named, not filed)>
 2. ...
 Checked and fine: <a short list of what you looked at and found as simple as it can be>
 ```

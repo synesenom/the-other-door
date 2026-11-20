@@ -36,7 +36,7 @@ Check every claim against the code before you report it: read the line, run the 
 ## Gap review
 Base: <base_branch>  Goal: <issue or words>
 Gaps:
-1. <one sentence: what is missing> — <evidence: file:line, test, or command output> — <fix here (small, in scope) | issue (larger or out of scope)>
+1. <one sentence: what is missing> — <evidence: file:line, test, or command output> — <fix here (about this change) | issue (a bug a user would hit, outside the change) | out of scope (anything else outside the change: named, not filed)>
 2. ...
 Checked and fine: <a short list of what you looked at and found complete>
 ```
