@@ -404,7 +404,7 @@ def _materials(output_dir: Path, posting: dict) -> dict | None:
     letter_html = output_dir / "cover_letter.html"
     words = html_doc.word_count(letter_html.read_text(encoding="utf-8")) if letter_html.is_file() else None
 
-    unsupported = facts_mod.load(output_dir)  # what the last check found: showing a job asks no model
+    unsupported = facts_mod.load(output_dir, workspace.PROFILE_DIR)  # what the last check found: showing a job asks no model
 
     config = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR)
     cv_max_pages = common._cv_max_pages(posting, config)

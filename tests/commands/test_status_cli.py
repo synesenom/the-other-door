@@ -648,8 +648,12 @@ def test_the_warning_counts_claims_and_names_skills(cli_env, monkeypatch):
 def test_the_figure_warning_joins_the_short_ad_warning(cli_env, monkeypatch):
     from door.commands import status as status_cmd
 
+    import facts_utils
+
     _invented(cli_env, monkeypatch)
-    (cli_env.jobs_dir / "output" / "job-1" / "posting.json").write_text(json.dumps({"description": "short"}))
+    out = cli_env.jobs_dir / "output" / "job-1"
+    (out / "posting.json").write_text(json.dumps({"description": "short"}))
+    facts_utils.checked(monkeypatch, out, cli_env.profile_dir, [facts_utils.finding("97%", "Cut churn by 97%")])
     warning = status_cmd._set_status_core("job-1", "applied", jobs_dir=cli_env.jobs_dir)["warning"]
     assert "characters" in warning and "97%" in warning and "; " in warning
 

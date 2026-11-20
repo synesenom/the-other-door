@@ -417,16 +417,15 @@ def test_show_without_cv_md_is_not_checked_and_does_not_crash(cli_env, one_page)
     assert "not checked" in buf.getvalue()
 
 
-def test_show_falls_back_to_the_stored_check_when_cv_md_is_gone(cli_env, one_page):
+def test_show_says_not_checked_when_cv_md_changed_since_the_check(cli_env, one_page):
     from door.commands import matches as matches_cmd
 
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc")
     _with_cv(cli_env, "<ul><li>Cut churn by 97%</li></ul>")
     out = cli_env.jobs_dir / "output" / "job-abc"
-    (out / "facts.json").write_text(json.dumps({"checked_at": "x", "unsupported": [
+    (out / "facts.json").write_text(json.dumps({"checked_at": "x", "inputs_sha": "of-other-inputs", "unsupported": [
         {"kind": "number", "value": "97%", "context": "c", "file": "cv"}]}))
-    (cli_env.profile_dir / "cv.md").unlink(missing_ok=True)
-    assert matches_cmd._materials(out, {})["unsupported"][0]["value"] == "97%"
+    assert matches_cmd._materials(out, {})["unsupported"] is None
 
 
 @pytest.mark.parametrize(

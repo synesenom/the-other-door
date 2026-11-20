@@ -45,7 +45,7 @@ def test_a_finding_whose_context_is_in_the_text_is_kept(dirs, model):
     model["answer"] = {"findings": [_finding()]}
     found = facts.check(out, prof)
     assert found == [{"kind": "number", "value": "40%", "context": "Cut churn by 40%", "file": "cv"}]
-    assert facts.load(out) == found
+    assert facts.load(out, prof) == found
 
 
 def test_the_model_is_shown_every_source_and_both_documents(dirs, model):
@@ -110,7 +110,7 @@ def test_a_todo_is_flagged_by_code_without_the_model(dirs, model):
 
 def test_clean_is_an_empty_list(dirs, model):
     out, prof = dirs
-    assert facts.check(out, prof) == [] and facts.load(out) == []
+    assert facts.check(out, prof) == [] and facts.load(out, prof) == []
 
 
 def test_nothing_to_check_is_none_and_asks_nothing(tmp_path, model):
@@ -164,9 +164,9 @@ def test_write_false_writes_nothing(dirs, model):
 
 
 def test_load_missing_or_corrupt(tmp_path):
-    assert facts.load(tmp_path) is None
+    assert facts.load(tmp_path, tmp_path) is None
     (tmp_path / "facts.json").write_text("{nope")
-    assert facts.load(tmp_path) is None
+    assert facts.load(tmp_path, tmp_path) is None
 
 
 def _keep(**kw):
@@ -179,7 +179,7 @@ def test_keep_writes_a_reason_and_a_cached_check_keeps_it_without_a_call(dirs, m
     facts.check(out, prof)
     found = facts.check(out, prof, keep=[_keep()])
     assert found[0]["reason"] == "from the ad" and len(model["inputs"]) == 1
-    assert facts.load(out)[0]["reason"] == "from the ad"
+    assert facts.load(out, prof)[0]["reason"] == "from the ad"
     assert facts.check(out, prof)[0]["reason"] == "from the ad"  # kept on a rerun while it is flagged
 
 
@@ -215,16 +215,14 @@ def test_write_false_merges_saved_reasons_without_writing(dirs, model):
     assert (out / "facts.json").read_text(encoding="utf-8") == before
 
 
-def test_findings_of_the_checked_documents_stay_for_show_when_a_later_check_fails_or_cv_md_is_edited(dirs, model):
+def test_load_is_none_for_documents_changed_since_the_check_and_for_a_file_without_a_key(dirs, model):
     out, prof = dirs
     model["answer"] = {"findings": [_finding()]}
     first = facts.check(out, prof)
     (out / "cv.html").write_text(BODY + "<p>revised</p>", encoding="utf-8")
     model["answer"] = claude_cli.ClaudeError("limit")
     assert facts.check(out, prof) is None  # a revise whose check fails
-    assert facts.load(out) == first
-    (prof / "cv.md").write_text(CV_MD + "- edited by hand\n", encoding="utf-8")
-    assert facts.load(out) == first  # showing asks no model and reads what was found
+    assert facts.load(out, prof) is None  # the documents changed since the check: not checked
 
 
 def test_facts_json_is_written_once_with_the_reasons_applied(dirs, model, monkeypatch):
@@ -246,3 +244,13 @@ def test_is_cached_follows_the_version(dirs, model, monkeypatch):
     assert facts.is_cached(out, prof)
     monkeypatch.setattr(facts, "VERSION", facts.VERSION + 1)
     assert not facts.is_cached(out, prof)
+
+
+def test_load_is_none_after_a_hand_edit_of_cv_md_and_for_an_old_file_without_the_key(dirs, model):
+    out, prof = dirs
+    model["answer"] = {"findings": [_finding()]}
+    assert len(facts.check(out, prof)) == 1 and len(facts.load(out, prof)) == 1
+    (prof / "cv.md").write_text(CV_MD + "- edited by hand\n", encoding="utf-8")
+    assert facts.load(out, prof) is None
+    (out / "facts.json").write_text(json.dumps({"checked_at": "x", "unsupported": [_finding()]}), encoding="utf-8")
+    assert facts.load(out, prof) is None

@@ -249,7 +249,8 @@ def check(
         if gathered is None:
             return None
         inputs, bodies = gathered
-        key, saved, store = _key(inputs), load(output_dir), _Store(output_dir)
+        key, store = _key(inputs), _Store(output_dir)
+        saved = (_saved(output_dir) or {}).get("unsupported")
         hit = store.read(key) is not None
         found = ask_cached.cached_answer(
             key=key, version=VERSION, label="facts",
@@ -269,11 +270,18 @@ def check(
     return found
 
 
-def load(output_dir: Path) -> list[dict] | None:
-    """The unsupported list `check` last wrote, or None when missing or unreadable."""
+def _saved(output_dir: Path) -> dict | None:
     try:
         data = json.loads((output_dir / FACTS_FILE).read_text(encoding="utf-8"))
-        items = data["unsupported"]
-        return items if isinstance(items, list) else None
-    except (OSError, ValueError, KeyError, TypeError):
+        return data if isinstance(data, dict) and isinstance(data.get("unsupported"), list) else None
+    except (OSError, ValueError):
         return None
+
+
+def load(output_dir: Path, profile_dir: Path) -> list[dict] | None:
+    """The unsupported list `check` last wrote for the documents and sources as they are now, or None (not checked)
+    when it is missing or unreadable, has no `inputs_sha`, or was made for other inputs. Reads files only, no model."""
+    saved, gathered = _saved(output_dir), _gather(output_dir, profile_dir)
+    if saved is None or gathered is None or saved.get("inputs_sha") != _key(gathered[0]):
+        return None
+    return saved["unsupported"]

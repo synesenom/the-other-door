@@ -45,7 +45,7 @@ def test_reports_unsupported_and_rounds(world, model):
     first = _core()
     assert first["job_id"] == "job-abc" and first["round"] == 1 and first["rounds_left"] == 1
     assert [i["value"] for i in first["unsupported"]] == ["40%"]
-    assert first["unsupported"] == facts.load(out)
+    assert first["unsupported"] == facts.load(out, workspace.PROFILE_DIR)
 
 
 def test_keep_persists_reason_with_no_second_call_and_no_round(world, model):
@@ -53,7 +53,7 @@ def test_keep_persists_reason_with_no_second_call_and_no_round(world, model):
     _core()
     result = _core(keep=[{"value": "40%", "kind": "number", "file": "cv", "reason": "from the ad"}])
     assert result["unsupported"][0]["reason"] == "from the ad"
-    assert facts.load(out)[0]["reason"] == "from the ad"
+    assert facts.load(out, workspace.PROFILE_DIR)[0]["reason"] == "from the ad"
     assert model["calls"] == 1 and result["round"] == 1 and result["rounds_left"] == 1
 
 
