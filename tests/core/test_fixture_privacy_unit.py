@@ -39,7 +39,8 @@ _FAKE_PHONES = {"00000000", "12345678", "0000000", "1234567"}
 def _files() -> list:
     listed = subprocess.run(["git", "ls-files", *_ROOTS], cwd=REPO_ROOT, capture_output=True, text=True, check=True)
     own = Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()  # its own examples are made up
-    return [REPO_ROOT / f for f in listed.stdout.splitlines() if not _BINARY.search(f) and f != own]
+    # the fonts' licences are third parties' texts, kept verbatim (their authors' public contact lines are in them)
+    return [REPO_ROOT / f for f in listed.stdout.splitlines() if not _BINARY.search(f) and f != own and not f.endswith("-OFL.txt")]
 
 
 def _text(path) -> str:

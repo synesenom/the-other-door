@@ -15,7 +15,7 @@ from door.core import stored
     "jobs/output/jobindex.123/cover_letter.html.bak", "jobs/output/jobindex.123/cv.tex", "jobs/output/jobindex.123/cv.tex.bak",
     "jobs/output/jobindex.123/sent/cv.pdf", "jobs/output/jobindex.123/photo.jpg", "jobs/market/report-2026-01-01.md",
     "jobs/drift/thehub/2026.html", "jobs/.lock",
-    ".door-import-ab12.part/profile/config.json",
+    ".door-import-ab12.part/profile/config.json", ".style/preview/0123abcd.png",
 ])
 def test_known_paths_are_named(path):
     assert stored.named(path) is not None
@@ -102,3 +102,7 @@ def test_a_tailor_run_stores_only_named_files(tmp_path, monkeypatch):
     assert prepare_cmd._run_tailor(job, model_copy) is True
     assert (jobs_dir / ".tailor" / job / "agents.json").is_file() and (jobs_dir / "output" / job / ".facts_rounds").is_file()
     assert seen == [[]]
+
+
+def test_the_cv_style_sample_stays_on_this_computer():
+    assert stored.named(".style/preview/0123abcd.png").kind == stored.LOCAL

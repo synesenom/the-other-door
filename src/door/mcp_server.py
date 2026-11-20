@@ -68,6 +68,7 @@ from door.commands import archive as archive_cmd
 from door.commands import check_facts as check_facts_cmd
 from door.commands import compile as compile_cmd
 from door.commands import companies as companies_cmd
+from door.commands import cv_style_sample as style_sample_cmd
 from door.commands import matches as matches_cmd
 from door.commands import prepare as prepare_cmd
 from door.commands import query as query_cmd
@@ -252,6 +253,7 @@ CONVERSATION_ONLY_TOOLS = (
     "revise", "mark_reviewed", "mark_seen", "compile", "check_facts", "save_cv", "job_result", "cancel_job",
     "save_photo", "remove_photo",  # the CV photo: the app's picker, `/onboard` and `init`'s photo question
     "preview_matches",  # onboarding's first look; `init` calls the core itself
+    "cv_style_sample",  # the app's Profile -> CV style: page 1 of the CV in a chosen style (#465)
     # the phone server, for the desktop app's "Set up your phone" and Claude Code (#444, #424)
     "phone_status", "phone_start", "phone_stop", "pair_phone", "unpair_phone",
 )
@@ -271,6 +273,7 @@ WRITING_TOOLS = frozenset({
     "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
     "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
     "remove_company", "merge_companies", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
+    "cv_style_sample",  # prints under HOME/.style/preview/
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
 })
 
@@ -1424,6 +1427,28 @@ async def preview_matches(
     cv_text = markdown or cv_cmd._onboarding_cv_text(workspace.PROFILE_DIR, {})
     # On a thread: it reads a board for up to a minute, and the wizard's other calls must not wait for it.
     return await asyncio.to_thread(preview_cmd._preview_core, config, cv_text, limit=limit)
+
+
+@mcp.tool()
+@_tool_errors
+async def cv_style_sample(cv_accent: str = "blue", cv_fonts: str = "door") -> dict:
+    """Page 1 of the CV printed in a chosen accent colour and font pair: what a prepared CV will look like.
+
+    The desktop app's Profile -> CV style shows it beside the pickers. Prints the user's own CV (else the example CV)
+    as it is, with no tailoring; the first one for a CV costs one cached reading of it, a later one about a second.
+    Nothing is saved: a pick is saved with `init_profile` (`cv_accent`, `cv_fonts`) and applies from the next CV
+    that is prepared or revised.
+
+    Args:
+        cv_accent: `none`, `navy`, `blue`, `teal`, `forest`, `burgundy`, `plum`, `slate` or `rust`.
+        cv_fonts: `door`, `editorial`, `friendly` or `plain`.
+
+    Returns:
+        ``{"png_base64", "own_cv"}`` (the page as a PNG; whether it is the user's own CV, not the example), or
+        ``{"error": "cv_unreadable"}`` (the CV cannot be read: say so and point at the Master CV) or
+        ``{"error": "print_failed"}`` (nothing the user can fix: say nothing).
+    """
+    return await asyncio.to_thread(style_sample_cmd._cv_style_sample_core, cv_accent, cv_fonts)
 
 
 @mcp.tool()

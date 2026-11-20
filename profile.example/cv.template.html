@@ -35,22 +35,36 @@
 @font-face { font-family: Figtree; font-weight: 600; font-style: normal; src: url(/fonts/Figtree-SemiBold.ttf) format("truetype"); }
 @font-face { font-family: Figtree; font-weight: 600; font-style: italic; src: url(/fonts/Figtree-SemiBoldItalic.ttf) format("truetype"); }
 @font-face { font-family: "Young Serif"; font-weight: 400; font-style: normal; src: url(/fonts/YoungSerif-Regular.ttf) format("truetype"); }
+/* the fonts of the other pairs (cv_fonts, #465); a face is loaded only when the page uses it */
+@font-face { font-family: "Playfair Display"; font-weight: 700; font-style: normal; src: url(/fonts/PlayfairDisplay-Bold.ttf) format("truetype"); }
+@font-face { font-family: Lato; font-weight: 400; font-style: normal; src: url(/fonts/Lato-Regular.ttf) format("truetype"); }
+@font-face { font-family: Lato; font-weight: 400; font-style: italic; src: url(/fonts/Lato-Italic.ttf) format("truetype"); }
+@font-face { font-family: Lato; font-weight: 700; font-style: normal; src: url(/fonts/Lato-Bold.ttf) format("truetype"); }
+@font-face { font-family: Lato; font-weight: 700; font-style: italic; src: url(/fonts/Lato-BoldItalic.ttf) format("truetype"); }
+@font-face { font-family: Montserrat; font-weight: 700; font-style: normal; src: url(/fonts/Montserrat-Bold.ttf) format("truetype"); }
+@font-face { font-family: Merriweather; font-weight: 400; font-style: normal; src: url(/fonts/Merriweather-Regular.ttf) format("truetype"); }
+@font-face { font-family: Merriweather; font-weight: 400; font-style: italic; src: url(/fonts/Merriweather-Italic.ttf) format("truetype"); }
+@font-face { font-family: Merriweather; font-weight: 700; font-style: normal; src: url(/fonts/Merriweather-Bold.ttf) format("truetype"); }
+@font-face { font-family: Merriweather; font-weight: 700; font-style: italic; src: url(/fonts/Merriweather-BoldItalic.ttf) format("truetype"); }
 
 @page { size: A4; margin: 2.2cm 2.4cm 2cm 2.4cm; }
 
 /* the app's colours: ink for the text, a muted ink for the details, a hairline, and one blue for the links */
-:root { --ink: #1E1A16; --muted: #6B6157; --hairline: #D6C7A8; --accent: #2F55C8; }
+/* what cv_accent and cv_fonts change (`compile` puts a :root block after this one): the heading colour and font, the text font, the strong weight, the rule under the name */
+:root { --ink: #1E1A16; --muted: #6B6157; --hairline: #D6C7A8; --accent: #2F55C8;
+  --heading: var(--accent); --rule: var(--accent); --heading-font: "Young Serif", serif; --text-font: Figtree, sans-serif; --heading-weight: 400; --strong: 600; }
 
 html { font-synthesis: none; hyphens: manual; }
-body { margin: 0; font: 10pt/1.35 Figtree, sans-serif; color: var(--ink); orphans: 2; widows: 2; }
+body { margin: 0; font: 10pt/1.35 var(--text-font); color: var(--ink); orphans: 2; widows: 2; }
 p, ul, ol, h1, h2, h3 { margin: 0; }
-a { color: var(--accent); text-decoration: none; }
-strong { font-weight: 600; }
+a { color: var(--heading); text-decoration: none; }
+strong { font-weight: var(--strong); }
 
-h1, h2 { font-family: "Young Serif", serif; font-weight: 400; }
+h1, h2 { font-family: var(--heading-font); font-weight: var(--heading-weight); }
+h2 { color: var(--heading); }
 h1 { font-size: 28pt; line-height: 32pt; }
 h2 { font-size: 15pt; line-height: 18pt; margin: 10pt 0 2pt; break-after: avoid; }
-h3 { font-size: 10pt; font-weight: 600; margin: 8pt 0 0; break-after: avoid; }
+h3 { font-size: 10pt; font-weight: var(--strong); margin: 8pt 0 0; break-after: avoid; }
 .entry { break-inside: avoid; }
 h3 .dates { font-weight: 400; color: var(--muted); }
 ul, ol { padding-left: 1.1em; margin-top: 2pt; }
@@ -59,7 +73,7 @@ li { break-inside: avoid; }
 p + p { margin-top: 3pt; }
 
 /* the name and the contact line; the details run on one line, apart by a middle dot (#142) */
-.cv-header { padding-bottom: 8pt; border-bottom: 0.6pt solid var(--hairline); margin-bottom: 4pt; }
+.cv-header { padding-bottom: 8pt; border-bottom: 0.6pt solid var(--rule); margin-bottom: 4pt; }
 .contact { margin-top: 8pt; font-size: 9pt; color: var(--muted); }
 .contact span { display: inline-block; white-space: nowrap; margin-right: 0.5em; } /* a line breaks between details, never inside one */
 .contact span:not(:last-child)::after { content: "\00B7"; margin-left: 0.5em; } /* the dot ends a line, never starts one */

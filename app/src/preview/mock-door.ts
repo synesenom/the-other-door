@@ -12,6 +12,11 @@ import letterPage1 from '../../test/fixtures/prepared/cover_letter_page_1.png'
 import { SAMPLE_RUN, type DataState, type Scene } from './scenes'
 import pairQr from './pair-qr.svg?raw'
 
+// Page 1 of the example CV as `cv_style_sample` prints it (downscaled): the default style, and Teal with Editorial.
+import sampleDefault from './cv-style-default.png?inline'
+import sampleStyled from './cv-style-teal-editorial.png?inline'
+const pngOf = (dataUrl: string) => dataUrl.slice(dataUrl.indexOf(',') + 1)
+
 type Answer = { data: unknown } | { error: string }
 
 /** The sidebar's own reads: they answer in every state, so a state shows on the screen under test. */
@@ -228,6 +233,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           unreachable: [],
           proposals: ENRICH_PROPOSALS.map((p) => ({ ...p, source: (args['urls'] as string[] | undefined)?.[0] ?? (args['files'] as string[] | undefined)?.[0] ?? fixtures.show_profile.enrich_sources[0] })),
         }
+      case 'cv_style_sample':
+        return { png_base64: pngOf(args['cv_accent'] === 'blue' && args['cv_fonts'] === 'door' ? sampleDefault : sampleStyled), own_cv: true }
       case 'list_stories':
         return { ...fixtures.list_stories, stories: state === 'empty' ? [] : fixtures.list_stories.stories }
       case 'draft_stories':

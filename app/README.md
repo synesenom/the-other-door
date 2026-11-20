@@ -226,7 +226,7 @@ renderer (React) -- window.door.call / onProgress --> main (ipc.ts) -- door-serv
   (`DoorServer.stop()`), the call rejects as stopped and the next call starts a new child; a
   run started elsewhere cannot be stopped from here. "Show run record" is `door:show-run` (the
   run's `started_at`, mapped to `jobs/runs/<name>.json` like `find.py` does).
-- Fonts: Young Serif and Figtree come from `@fontsource` packages (pinned,
+- Fonts: Young Serif and Figtree, and Playfair Display, Lato, Montserrat and Merriweather (the CV style's font blocks), come from `@fontsource` packages (pinned,
   bundled by Vite, no request at run time); a build copies their SIL OFL licences to
   `out/renderer/licenses/`.
 - Security: context isolation, sandbox, no Node in the renderer, a Content-Security-Policy

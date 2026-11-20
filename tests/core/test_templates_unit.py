@@ -1,6 +1,7 @@
 """The HTML templates come from the code unless the user keeps their own (#56, #146)."""
 
 import hashlib
+import re
 
 import pytest
 
@@ -79,8 +80,8 @@ def test_the_shipped_templates_carry_the_two_tokens_and_the_page():
 
 # A pinned hash: a change to a shipped template is deliberate (a user's own copy does not follow it).
 SHIPPED_HASHES = {
-    "cv_template": "c5c13af913e3502c2e465184644cac15e17782ef1fed5e8024632ef5712fcdf0",
-    "cover_letter_template": "2c917ca8f82bf1dd541c276a86eb4bde3049cd62161a8aa37e5d3871f1e1929f",
+    "cv_template": "1388842149a1476be99ae15c38ddb3676de4d7977d08e67394ed22a8e954d007",
+    "cover_letter_template": "014ae9272567bfc606efb35f8a936057b5e8f3b3c678c40ccba0c2623b578d42",
 }
 
 
@@ -89,3 +90,50 @@ def test_the_shipped_templates_are_pinned():
         digest = hashlib.sha256((REPO_ROOT / "profile.example" / name).read_text(encoding="utf-8")
                                 .replace("\r\n", "\n").encode()).hexdigest()
         assert digest == SHIPPED_HASHES[key], f"{name} changed: if that is meant, update its hash (now {digest})"
+
+
+# --- the CV style: an accent colour and a font pair (#465) ---------------------------------------------------------
+
+def test_the_defaults_add_no_style_at_all():
+    """The templates' own CSS is the default look: the app's blue headings and rule, the door fonts."""
+    assert templates.style_css({}) == ""
+    assert templates.style_css({"cv_accent": "blue", "cv_fonts": "door"}) == ""
+
+
+def test_no_colour_is_ink_headings_and_a_hairline_rule():
+    css = templates.style_css({"cv_accent": "none"})
+    assert "--heading:var(--ink)" in css and "--rule:var(--hairline)" in css
+
+
+def test_the_tables_list_every_name_the_profile_accepts_in_order():
+    assert list(templates.ACCENTS) == ["none", "navy", "blue", "teal", "forest", "burgundy", "plum", "slate", "rust"]
+    assert list(templates.FONT_PAIRS) == ["door", "editorial", "friendly", "plain"]
+    assert templates.ACCENTS["none"] == "#1E1A16"  # the template's ink: what the no-colour swatch shows is what prints
+
+
+def test_blue_is_the_apps_blue():
+    assert templates.ACCENTS["blue"] == "#2f55c8"
+
+
+def test_an_accent_colours_the_headings_and_the_rule():
+    css = templates.style_css({"cv_accent": "navy"})
+    assert "--heading:#1f3a5f" in css and "--rule:#1f3a5f" in css and css.startswith(":root{")
+
+
+def test_a_font_pair_names_its_two_families():
+    css = templates.style_css({"cv_fonts": "editorial"})
+    assert "Playfair Display" in css and "Lato" in css
+
+
+def test_an_unknown_value_falls_back_and_is_never_echoed():
+    assert templates.style_css({"cv_accent": "red; } body { display:none", "cv_fonts": "Comic"}) == ""  # the defaults
+    assert templates.style_css({"cv_accent": 3, "cv_fonts": None}) == ""
+
+
+def test_every_font_a_template_loads_is_a_shipped_truetype_file():
+    shipped = REPO_ROOT / "profile.example" / "fonts"
+    for template in ("cv.template.html", "cover-letter.template.html"):
+        text = (REPO_ROOT / "profile.example" / template).read_text()
+        for name in re.findall(r"/fonts/([\w.-]+\.ttf)", text):
+            assert (shipped / name).is_file(), f"{template}: {name}"
+            assert (shipped / f"{name.split('-')[0]}-OFL.txt").is_file(), f"{template}: the licence of {name}"

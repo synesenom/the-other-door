@@ -72,6 +72,24 @@ def test_a_body_is_wrapped_in_the_template_and_printed_to_a_pdf(world):
     assert (world.out / "cv.pdf").is_file()
 
 
+def test_the_chosen_style_is_in_the_cv_and_the_letter(world):
+    (world.profile / "config.json").write_text(json.dumps(
+        {"name": "Jane Doe", "location": "Copenhagen", "cv_accent": "burgundy", "cv_fonts": "friendly"}))
+    (world.example / "cv.template.html").write_text("<html><head></head><body><<body>></body></html>")
+    (world.example / "cover-letter.template.html").write_text("<html><head></head><body><<body>></body></html>")
+    world.make(cv="<h2>Experience</h2>", letter="<p>Dear</p>")
+    _compile(world)
+    assert len(world.print.calls) == 2
+    for call in world.print.calls:
+        assert "#8a1c3c" in call["html"] and "Montserrat" in call["html"]
+
+
+def test_no_style_keys_add_no_style_block(world):
+    world.make(cv="<h2>Experience</h2>")
+    _compile(world)
+    assert "<style>:root{" not in world.print.calls[0]["html"]
+
+
 def test_the_file_on_disk_stays_the_body_and_no_print_page_is_left_in_the_folder(world):
     world.make(cv="<<photo>><h2>Experience</h2>")
     _compile(world)

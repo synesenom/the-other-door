@@ -211,11 +211,14 @@ const SAVE_AFTER_MS = 1000
 export function CvEditor({
   onDraft,
   onSaved,
+  onCvSaved,
 }: {
   onDraft: () => void
   /** cv.md was written and the editor left (or the first CV written): what reads the profile (the sidebar's "no CV
    * yet") reads it again. */
   onSaved?: () => void
+  /** The CV text was saved (each autosave): what shows the CV, such as the CV style's sample, may read it again. */
+  onCvSaved?: () => void
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -313,6 +316,7 @@ export function CvEditor({
         savedRef.current = markdown
         setSaved(markdown)
         setSaveError(null)
+        onCvSaved?.()
         // the first CV: the sidebar's "no CV yet" goes at once
         if (profile && !profile.cv.exists && first) onSaved?.()
       } catch (e) {

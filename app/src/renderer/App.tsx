@@ -48,6 +48,8 @@ export interface AppStart {
   cv?: boolean
   /** Profile opens on its Stories part. */
   stories?: boolean
+  /** Profile opens on its CV style part. */
+  cvStyle?: boolean
   /** The Finding jobs screen, in this state. */
   run?: FindingState
   /** The wizard's answers and step, when the wizard opens. */
@@ -66,7 +68,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   const mainRef = useRef<HTMLElement>(null)
   // Profile opened from a problem line: on the CV.
   // Where Profile opens next, counted so the same place opens it again
-  const [profileStart, setProfileStart] = useState<{ n: number; at: ProfileStart } | null>(start?.cv ? { n: 1, at: { section: 'cv' } } : start?.stories ? { n: 1, at: { section: 'stories' } } : null)
+  const [profileStart, setProfileStart] = useState<{ n: number; at: ProfileStart } | null>(start?.cv ? { n: 1, at: { section: 'cv' } } : start?.stories ? { n: 1, at: { section: 'stories' } } : start?.cvStyle ? { n: 1, at: { section: 'cv-style' } } : null)
   // Where Settings opens next (Report a problem, from the sidebar's line), counted the same way
   const [settingsStart, setSettingsStart] = useState<{ n: number; at: 'report' | 'risky' } | null>(null)
   const narrow = useNarrow()

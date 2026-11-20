@@ -19,7 +19,7 @@ const profile = (cv: Partial<{ text: string | null; is_example: boolean; exists:
   enrich_sources: sources,
 })
 
-const NO_STORIES = { list_stories: { exists: false, stories: [] } }
+const NO_STORIES = { list_stories: { exists: false, stories: [] }, cv_style_sample: { png_base64: 'PNG', own_cv: true } } // the parts of Profile beside the CV
 
 /** The CV as Profile shows it: Profile's one save bar saves it. */
 async function open(handlers: Record<string, unknown> = {}, cv = {}, sources: string[] = []) {

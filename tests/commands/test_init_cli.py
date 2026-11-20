@@ -991,6 +991,13 @@ def test_show_profile_describes_every_config_key(init_env):
     by = {f["key"]: f for f in fields}
     assert by["name"] == {"key": "name", "type": "string", "required": True, "nullable": False}
     assert by["remote"] == {"key": "remote", "type": "choice", "required": True, "nullable": False, "choices": ["yes", "no", "hybrid"]}
+    styles = profile_cmd._show_profile_core(init_env.profile_dir, init_env.example_dir)["options"]["cv_styles"]
+    assert list(styles["accents"]) == by["cv_accent"]["choices"] and styles["accents"]["blue"] == "#2f55c8"
+    assert list(styles["fonts"]) == by["cv_fonts"]["choices"]
+    assert styles["fonts"]["editorial"] == {"heading": '"Playfair Display", serif', "text": "Lato, sans-serif", "weight": 700}
+    assert by["cv_accent"]["choices"] == ["none", "navy", "blue", "teal", "forest", "burgundy", "plum", "slate", "rust"]
+    assert by["cv_fonts"]["choices"] == ["door", "editorial", "friendly", "plain"]
+    assert by["cv_accent"]["default"] == "blue" and by["cv_fonts"]["default"] == "door"
     assert by["role_targets"]["type"] == "list" and by["role_targets"]["required"] is True
     assert by["cv_template"]["type"] == "path"
     assert by["min_score"] == {"key": "min_score", "type": "number", "required": False, "nullable": False, "default": 0.65}

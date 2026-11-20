@@ -104,6 +104,63 @@ def test_the_fonts_are_the_templates_own_truetype_ones_never_nameless_type_3_tex
     assert any(n.startswith("Figtree") for n in names) and any(n.startswith("YoungSerif") for n in names), names
 
 
+_PAIR_FONTS = {"door": ("YoungSerif", "Figtree"), "editorial": ("PlayfairDisplay", "Lato"),
+               "friendly": ("Montserrat", "Merriweather"), "plain": ("Figtree", "Figtree")}
+
+
+@pytest.mark.parametrize("pair", list(_PAIR_FONTS))
+def test_each_font_pair_prints_its_two_families_as_real_text_and_reads_back_clean(tmp_path, monkeypatch, pair):
+    """#465: a face the CSS asks for and the pair does not ship would be written as Type 3 text."""
+    cv = (FIXTURES / "example_cv.html").read_text(encoding="utf-8")
+    letter = (FIXTURES / "example_cover_letter.html").read_text(encoding="utf-8")
+    out, results = _setup(tmp_path, monkeypatch, cv=cv, letter=letter, extra={"cv_fonts": pair, "cv_accent": "teal"})
+    heading, text = _PAIR_FONTS[pair]
+    for name in ("cv", "cover_letter"):
+        assert results[f"{name}.html"]["status"] == "compiled", results[f"{name}.html"].get("stderr")
+        names = font_names(out / f"{name}.pdf")
+        assert names and all(n for n in names), names
+        assert any(n.startswith(heading) for n in names) and any(n.startswith(text) for n in names), (pair, names)
+    assert results["cv.html"]["readable"] == []
+
+
+def _has_colour(pdf, rgb, scale=1):
+    import pypdfium2 as pdfium
+
+    doc = pdfium.PdfDocument(str(pdf))
+    try:
+        image = doc[0].render(scale=scale).to_pil().convert("RGB")
+    finally:
+        doc.close()
+    return any(all(abs(a - b) < 10 for a, b in zip(px, rgb)) for px in image.getdata())
+
+
+def test_an_accent_colours_the_section_headings_and_the_rule_under_the_name(tmp_path, monkeypatch):
+    cv = (FIXTURES / "example_cv.html").read_text(encoding="utf-8")
+    letter = (FIXTURES / "example_cover_letter.html").read_text(encoding="utf-8")
+    plain, _ = _setup(tmp_path / "plain", monkeypatch, cv=cv, letter=letter)
+    teal, results = _setup(tmp_path / "teal", monkeypatch, cv=cv, letter=letter, extra={"cv_accent": "teal"})
+    assert results["cv.html"]["readable"] == []
+    ink, _ = _setup(tmp_path / "ink", monkeypatch, cv=cv, letter=letter, extra={"cv_accent": "none"})
+    for name in ("cv", "cover_letter"):
+        assert _has_colour(teal / f"{name}.pdf", (0x0F, 0x64, 0x66)), name
+        assert not _has_colour(plain / f"{name}.pdf", (0x0F, 0x64, 0x66)), name
+        assert _has_colour(plain / f"{name}.pdf", (0x2F, 0x55, 0xC8)), f"{name}: the default is the app's blue"
+        assert not _has_colour(ink / f"{name}.pdf", (0x2F, 0x55, 0xC8)), f"{name}: none is ink"
+
+
+_LINK_CV = '<header class="cv-header"><h1>Jane Doe</h1></header><p><a href="https://example.com/x">example</a></p>'
+_LINK_LETTER = '<p><a href="https://example.com/x">example</a></p>'
+
+
+@pytest.mark.parametrize("accent,rgb,present", [("teal", (0x0F, 0x64, 0x66), True), ("blue", (0x2F, 0x55, 0xC8), True),
+                                                 ("none", (0x2F, 0x55, 0xC8), False)])
+def test_a_link_follows_the_heading_colour_and_is_ink_under_no_colour(tmp_path, monkeypatch, accent, rgb, present):
+    """#465: no heading and no rule here, so the colour on the page is the link's; at a scale where 10 pt text shows its core."""
+    out, _ = _setup(tmp_path, monkeypatch, cv=_LINK_CV, letter=_LINK_LETTER, extra={"cv_accent": accent})
+    for name in ("cv", "cover_letter"):
+        assert _has_colour(out / f"{name}.pdf", rgb, scale=6) is present, name
+
+
 def test_the_example_cv_reads_back_with_every_heading_on_its_own_line_and_in_order(example):
     out, results, cv = example
     assert readability.check_pdf(out / "cv.pdf", cv, "Jane Doe", cv=True) == []

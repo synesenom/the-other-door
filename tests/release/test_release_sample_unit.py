@@ -27,6 +27,8 @@ NEW_SINCE_RELEASE: set[str] = {
     "jobs/output/*/cv.html", "jobs/output/*/cover_letter.html", "jobs/output/*/*.html.bak",
     # the fact check's round counter: v0.2.0 wrote it, but its saved sample was made without it (#140)
     "jobs/output/*/.facts_rounds",
+    # the CV style (#465)
+    "Profile.cv_accent", "Profile.cv_fonts",
 }
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).

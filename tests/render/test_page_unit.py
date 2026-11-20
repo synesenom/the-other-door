@@ -1,6 +1,7 @@
 """`render/page.py`: a body placed in a template's columns (#147), its photo and its print (#355)."""
 
 from door.render import page
+from paths import REPO_ROOT
 
 
 def test_a_heading_inside_the_header_stays_in_the_header_and_the_columns_start_after_it():
@@ -83,3 +84,21 @@ def test_placed_cv_is_the_body_itself_when_the_manifest_cannot_be_read(monkeypat
     body = "<h2>Experience</h2><p>e</p><h2>Skills</h2><p>s</p>"
     assert page.placed_cv(body, {}) == body
 
+
+
+def test_a_style_goes_right_before_the_head_closes_and_none_changes_nothing():
+    template = '<html lang="<<lang>>"><head><style>a{}</style></head><body><<body>></body></html>'
+    plain = page._wrap(template, "<p>x</p>", "en")
+    assert page._wrap(template, "<p>x</p>", "en", "") == plain
+    styled = page._wrap(template, "<p>x</p>", "en", ":root{--rule:#000}")
+    assert styled == plain.replace("</head>", "<style>:root{--rule:#000}</style></head>")
+
+
+def test_print_page_hands_the_style_to_the_page_it_prints(tmp_path, monkeypatch):
+    from door.render import html_pdf
+    seen = {}
+    monkeypatch.setattr(html_pdf, "print_html", lambda folder, html, pdf, **kw: seen.update(html=html))
+    template = "<html><head></head><body><<body>></body></html>"
+    page.print_page("<p>x</p>", template, REPO_ROOT / "profile.example" / "cv.template.html", "en", tmp_path, "cv",
+                    style=":root{--rule:#000}")
+    assert "<style>:root{--rule:#000}</style></head>" in seen["html"]
