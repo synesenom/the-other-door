@@ -32,5 +32,48 @@
   20,
   26,
   28
- ]
+ ],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "phone",
+   "label": ""
+  },
+  {
+   "id": 4,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 6,
+   "kind": "location",
+   "label": ""
+  },
+  {
+   "id": 11,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 16,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 21,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 27,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 29,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

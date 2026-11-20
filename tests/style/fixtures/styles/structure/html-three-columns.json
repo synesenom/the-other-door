@@ -1,9 +1,7 @@
 {
  "linkedin_export": false,
  "layout": {
-  "columns": "three_or_more",
-  "side_x0": 27,
-  "side_x1": 146
+  "columns": "three_or_more"
  },
  "name": 1,
  "headings": [
@@ -50,16 +48,54 @@
   8,
   11,
   16,
-  18,
-  29,
-  36,
-  41,
-  46,
-  51,
-  56,
-  67,
-  70,
-  73,
-  76
- ]
+  18
+ ],
+ "contacts": [
+  {
+   "id": 5,
+   "kind": "phone",
+   "label": ""
+  },
+  {
+   "id": 9,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 12,
+   "kind": "web",
+   "label": ""
+  },
+  {
+   "id": 14,
+   "kind": "location",
+   "label": ""
+  },
+  {
+   "id": 7,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 13,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 21,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 32,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 58,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

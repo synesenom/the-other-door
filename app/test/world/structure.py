@@ -1,15 +1,39 @@
 """What the stand-in `claude` answers the call that reads a CV's structure (#343): the CV's text lines come on stdin as
 `door.style.style_structure.rows` writes them, and the answer is a plain rule's, as in `tests/style_structure_utils`:
 the name is the largest text of the first page, the headings are the lines of at most six words set unlike the body
-text that a section kind names, one column, not LinkedIn. Run as `python structure.py` with the input on stdin; needs
+text that a section kind names, one column, not LinkedIn; the contact lines are those that look like an email, a link,
+a phone number or a period of years the footers the lines that are a page number or `Page N of M`. Run as `python structure.py` with the input on stdin; needs
 `door` importable."""
 
 import json
+import re
 import sys
 
 from door import i18n
 
 KINDS = tuple(i18n.CvSections.model_fields)
+_FOOTER = re.compile(r"\d+|page \d+ of \d+", re.I)
+_PHONE = re.compile(r"[\d\s()+.\-]{7,}")
+_PERIOD = re.compile(r"(19|20)\d\d\s*[-\u2013]\s*((19|20)\d\d|\w+)")
+
+
+def contact_kind(text: str) -> str | None:
+    """The kind of contact detail a line looks like, for a test's stand-in only: no language."""
+    text = text.strip()
+    low = text.lower()
+    if "@" in text:
+        return "email"
+    if "linkedin." in low:
+        return "linkedin"
+    if "github." in low:
+        return "github"
+    if _PERIOD.fullmatch(text):
+        return "date"
+    if _PHONE.fullmatch(text) and sum(c.isdigit() for c in text) >= 7:
+        return "phone"
+    if re.fullmatch(r"(https?://)?(www\.)?[\w-]+(\.[\w-]+)+(/\S*)?", text):
+        return "web"
+    return None
 
 
 def answer(text: str) -> dict:
@@ -35,7 +59,9 @@ def answer(text: str) -> dict:
     return {
         "linkedin_export": False, "layout": {"columns": "one"}, "name": name["id"],
         "headings": [{"id": r["id"], "kind": i18n.cv_section_kind(r["text"], KINDS) or "other"} for r in heads],
-        "entry_titles": []}
+        "entry_titles": [],
+        "contacts": [{"id": r["id"], "kind": kind} for r in lines if (kind := contact_kind(r["text"]))],
+        "footers": [r["id"] for r in lines if _FOOTER.fullmatch(r["text"].strip())]}
 
 
 if __name__ == "__main__":

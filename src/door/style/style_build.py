@@ -20,7 +20,6 @@ from pathlib import Path
 from PIL import Image
 from pypdfium2 import PdfiumError
 
-from door import i18n
 from door.core import claude_cli, cv_read, cv_sections, profile_loader, progress as progress_mod, templates, utils, workspace
 from door.core.downloads import pinned
 from door.style import fonts
@@ -67,39 +66,9 @@ def _font_notes(plan: list[dict]) -> str:
     return "\n".join(lines)
 
 
-_URL = re.compile(r"(?:https?://)?(?:www\.)?[\w-]+(?:\.[\w-]+)+(?:/\S*)?")
-_PHONE = re.compile(r"[\d\s()+.\-]{7,}")
-_YEAR = re.compile(r"\b(19[5-9]\d|20[0-3]\d)\b")
 _PATH = re.compile(r"[MLHVCSQTAZmlhvcsqtaz\d\s.,\-]+")
 _VIEWBOX = re.compile(r"[\d\s.\-]+")
 _COLOR = re.compile(r"#[0-9a-fA-F]{6}")
-
-
-def icon_kind(near: str | None) -> str | None:
-    """The kind of icon (one of `templates.ICON_KINDS`) that belongs beside `near`: a contact label in any supported
-    language, else what the text looks like (a number, a link, a date, a place name); None when it is none of them."""
-    text = " ".join((near or "").split())
-    if not text:
-        return None
-    if kind := i18n.contact_kind(text):
-        return kind
-    lower = text.lower()
-    if "@" in text:
-        return "email"
-    if "linkedin" in lower:
-        return "linkedin"
-    if "github" in lower:
-        return "github"
-    years = _YEAR.findall(text)
-    if (len(years) >= 2 or (years and re.search(r"[^\W\d_]{3}", text))) and text[0] not in "+(":
-        return "date"
-    if _PHONE.fullmatch(text) and sum(c.isdigit() for c in text) >= 7:
-        return "phone"
-    if _URL.fullmatch(text):
-        return "web"
-    if i18n.known_city(text) or i18n.country_for_location(text):
-        return "location"
-    return None
 
 
 def write_icons(icons: list[dict], folder: Path) -> tuple[dict[str, str], list[dict]]:
@@ -110,7 +79,7 @@ def write_icons(icons: list[dict], folder: Path) -> tuple[dict[str, str], list[d
     dropped: list[dict] = []
     for icon in icons:
         near = (icon.get("near") or {}).get("text")
-        kind = icon_kind(near)
+        kind = icon.get("kind")
         label = near[:30] if near else None
         if kind is None:
             dropped.append({"near": label, "reason": "no kind of contact detail or date recognised beside it"})
@@ -545,7 +514,7 @@ def _agent_style(style: dict, icon_files: dict[str, str]) -> dict:
     """`style` as the stylist reads and `profile/style/style.json` keeps it: only the icons of a kind `write_icons` wrote
     a file for, each with its ``file`` (a dropped one has nothing to draw, #248), their traced paths in the SVG files."""
     icons = [{**{k: v for k, v in icon.items() if k not in ("d", "viewBox", "fill_rule")}, "file": icon_files[kind]}
-             for icon in style["icons"] if (kind := icon_kind((icon.get("near") or {}).get("text"))) in icon_files]
+             for icon in style["icons"] if (kind := icon.get("kind")) in icon_files]
     return {**style, "icons": icons}
 
 

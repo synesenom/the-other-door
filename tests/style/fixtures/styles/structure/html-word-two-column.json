@@ -34,12 +34,57 @@
  ],
  "entry_titles": [
   12,
-  15,
   25,
-  28,
   36,
-  39,
   45,
   46
- ]
+ ],
+ "contacts": [
+  {
+   "id": 5,
+   "kind": "phone",
+   "label": ""
+  },
+  {
+   "id": 7,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 9,
+   "kind": "web",
+   "label": ""
+  },
+  {
+   "id": 10,
+   "kind": "location",
+   "label": ""
+  },
+  {
+   "id": 13,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 26,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 37,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 45,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 46,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

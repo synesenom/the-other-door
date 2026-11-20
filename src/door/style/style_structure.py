@@ -16,11 +16,10 @@ import json
 import re
 from pathlib import Path
 
-from door import i18n
 from door.core import claude_cli, problem_log, templates, utils, workspace
 from door.style import style_extract
 
-PROMPT_VERSION = 2  # bump with the prompt, the schema or `rows`: a cached answer of another version is asked again
+PROMPT_VERSION = 3  # bump with the prompt, the schema or `rows`: a cached answer of another version is asked again
 KINDS = ["experience", "education", "skills", "languages", "certifications", "interests", "summary", "contact",
          "projects", "other"]
 _MAX_HEADING_WORDS = 6
@@ -29,6 +28,7 @@ _STRAY = 2  # rows at the far side of a side column that are still no column
 _SIDE_SHARE = 0.6  # a side column is narrower than this share of the text's width
 _NEAR = 2.0  # pt of slack where a box is compared with a column
 _CONTINUES = 1.6  # a heading's next line is its second line within this many sizes below
+_FURNITURE_BAND = 0.08  # share of the page height at its top and foot where a footer or header can be
 _KEEP_CACHED = 20  # answers kept in the cache folder, the most recently written
 
 SYSTEM = """You read the structure of a CV from its text lines, as a typesetter would. The input lists each text style (font family, size in pt, weight, italic, colour, characters set in it) and each visual line of text with its page, baseline y, left and right x and style. Most text is body text in the most used style.
@@ -39,12 +39,14 @@ Answer with:
 - name: the id of the line with the candidate's name.
 - headings: every section heading line, by id, with its `kind`.
 - entry_titles: the ids of the entry title lines (a job title, employer, degree or school heading one entry).
+- contacts: every line that holds one contact detail or a date, by id, with its `kind` (phone, email, web, linkedin, github, location, or date for the dates of an entry or a period). A line is a contact detail by what it holds (a number, an address, a link, a place), not by its position; a section heading or a line of running text is none. List each line once.
+- footers: the ids of the lines that are page furniture and no content: a page number, a "Page N of M" line, a running footer or header repeated on the pages.
 
 A section heading names a section of the CV (in any language, also unknown words): it starts a section and the CV has a handful of them, set in one consistent style that stands out from the body. Entry titles repeat within a section, usually carry a date on their line or next to them, and are often in a style close to the headings: tell them apart by position (a heading comes first and groups several entries), by count and by wording, not by style alone. A heading may contain a year ("Projekte 2020"). Text in another column on the same baseline belongs to that column, not to the heading."""
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["linkedin_export", "layout", "name", "headings", "entry_titles"],
+    "required": ["linkedin_export", "layout", "name", "headings", "entry_titles", "contacts", "footers"],
     "properties": {
         "linkedin_export": {"type": "boolean"},
         "layout": {"type": "object", "additionalProperties": False, "required": ["columns"],
@@ -55,6 +57,10 @@ SCHEMA = {
             "type": "object", "additionalProperties": False, "required": ["id", "kind"],
             "properties": {"id": {"type": "integer"}, "kind": {"enum": KINDS}}}},
         "entry_titles": {"type": "array", "items": {"type": "integer"}},
+        "contacts": {"type": "array", "items": {
+            "type": "object", "additionalProperties": False, "required": ["id", "kind"],
+            "properties": {"id": {"type": "integer"}, "kind": {"enum": list(templates.ICON_KINDS)}}}},
+        "footers": {"type": "array", "items": {"type": "integer"}},
     },
 }
 
@@ -139,6 +145,26 @@ def _ids(values, rows_by_id: dict, what: str) -> list[int]:
     return values
 
 
+def _contacts(given, rows_by_id: dict) -> list[dict]:
+    """The model's contact lines as ``[{row, kind}]``: each a line that exists, once, of a kind an icon has."""
+    if not isinstance(given, list) or not all(isinstance(c, dict) for c in given):
+        raise _fail("the contacts are not a list")
+    ids = _ids([c.get("id") for c in given], rows_by_id, "the contacts")
+    out = []
+    for c, i in zip(given, ids):
+        if c.get("kind") not in templates.ICON_KINDS:
+            raise _fail(f"contact line {i} has no kind of contact detail")
+        out.append({"row": rows_by_id[i], "kind": c["kind"]})
+    return out
+
+
+def _in_foot_or_head(row: dict, pages: list[dict]) -> bool:
+    """Whether the row sits in the top or bottom `_FURNITURE_BAND` of its page: page furniture stands nowhere else, so
+    a footer the model names in the body is dropped."""
+    height = pages[row["page"] - 1]["size"][1]
+    return row["bbox"][3] <= _FURNITURE_BAND * height or row["bbox"][1] >= (1 - _FURNITURE_BAND) * height
+
+
 def _number(value) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
@@ -202,10 +228,10 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
     """The model's `answer` held to the code's checks, as the structure `style_extract.extract` reads.
 
     ``{linkedin, columns: "one" | "two" | "three", side_range: (x0, x1) | None, name, headings: [{kind, column,
-    row, text, bbox}], entry_titles: [id]}``, `name` and each heading's `row` the rows of `rows_list`. A heading's
-    column is worked out from its x and the side range (the model's is not used), its `kind` is the one `i18n` knows
-    its text by, else the model's, and a heading that wraps takes its second line in. LinkedIn is believed only with a
-    ``Page N of M`` line on every page.
+    row, text, bbox}], entry_titles: [id], contacts: [{row, kind}], footers: [row]}``, `name`, each heading's,
+    contact's and footer's `row` the rows of `rows_list` (a footer outside the top and bottom 8% of its page is dropped). A heading's column is worked out from its x and the side range
+    (the model's is not used), its `kind` is the model's, and a heading that wraps takes its second line in. LinkedIn
+    is believed only with a footer line the model named on every page.
 
     Raises:
         StructureError: an id that does not exist or is used twice, a name that is a heading, a heading of more than six
@@ -238,8 +264,10 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
     side = _side_range(layout, rows_list, pages[0]["size"]) if columns == "two" else None
     if side is not None and _text_both_sides(rows_list, side):
         columns, side = "three", None
-    footers = all(any(style_extract.PAGE_FOOTER.fullmatch(r["text"].strip()) for r in rows_list if r["page"] == n)
-                  for n in range(1, len(pages) + 1))
+    footer_rows = [r for r in (by_id[i] for i in _ids(answer.get("footers"), by_id, "the footers"))
+                   if _in_foot_or_head(r, pages)]
+    footers = all(any(r["page"] == n for r in footer_rows) for n in range(1, len(pages) + 1))
+    contacts = _contacts(answer.get("contacts"), by_id)
     body = _body_style(rows_list)
     headings = []
     for i in ids:
@@ -252,12 +280,13 @@ def check(answer: dict, rows_list: list[dict], pages: list[dict]) -> dict:
             text = f"{text} {second['text']}"
             bbox = [min(bbox[0], second["bbox"][0]), min(bbox[1], second["bbox"][1]),
                     max(bbox[2], second["bbox"][2]), max(bbox[3], second["bbox"][3])]
-        kind = i18n.cv_section_kind(text, templates.SECTION_KINDS) or next(h.get("kind") for h in given if h["id"] == i)
+        kind = next(h.get("kind") for h in given if h["id"] == i)
         if kind not in KINDS:
             raise _fail(f'"{row["text"][:40]}" has no section kind')
         headings.append({"kind": kind, "column": column, "row": row, "text": text, "bbox": bbox})
     return {"linkedin": bool(answer.get("linkedin_export")) and footers, "columns": columns, "side_range": side,
-            "name": by_id[name], "headings": headings, "entry_titles": entries}
+            "name": by_id[name], "headings": headings, "entry_titles": entries,
+            "contacts": contacts, "footers": footer_rows}
 
 
 def _body_style(rows_list: list[dict]) -> str:

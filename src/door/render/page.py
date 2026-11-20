@@ -10,7 +10,7 @@ from pathlib import Path
 
 from door import i18n
 from door.core import photo as photo_mod
-from door.core import templates, utils, workspace
+from door.core import cv_read, templates, utils, workspace
 from door.render import html_doc, html_pdf, typography
 
 # The CV photo (#605): the tailor writes `<<photo>>` where it wants one. After the guard has read the body, `compile`
@@ -49,7 +49,7 @@ def _with_photo(body: str, template: str, output_dir: Path, photo: Path | None) 
     return first + _PHOTO_HTML % name + rest.replace(_PHOTO_TOKEN, ""), name
 
 
-_CONTACT = re.compile(r'<span class="(%s)">' % "|".join(i18n.CONTACT_KINDS))
+_CONTACT = re.compile(r'<span class="(%s)">' % "|".join(cv_read.CONTACT_KINDS))
 
 
 def _with_labels(body: str, labels: dict[str, str]) -> str:

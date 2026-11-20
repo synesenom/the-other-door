@@ -145,13 +145,6 @@ def test_margins_are_the_space_around_the_text(tmp_path):
     assert 345 <= margins["right"] <= 355  # the longest line is about 185 wide
 
 
-def test_a_page_number_in_the_foot_is_not_the_bottom_margin(tmp_path):
-    plain = read_pages(tmp_path, [block(60, 780, 100), block(60, 780, 100)])["page"]["margins"]
-    footed = read_pages(tmp_path, [block(60, 780, 100) + text("F1", 9, 290, 20, "3"),
-                                   block(60, 780, 100) + text("F1", 9, 290, 20, "Page 2 of 2")])["page"]["margins"]
-    assert footed["bottom"] == plain["bottom"]
-
-
 def test_only_a_page_with_another_after_it_gives_the_bottom_margin(tmp_path):
     # a last page is as long as the text is: half empty says nothing about the margin the design keeps
     margins = read_pages(tmp_path, [block(60, 780, 100), block(60, 780, 500)])["page"]["margins"]

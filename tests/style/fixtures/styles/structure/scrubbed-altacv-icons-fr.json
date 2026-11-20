@@ -9,7 +9,7 @@
  "headings": [
   {
    "id": 7,
-   "kind": "summary"
+   "kind": "other"
   },
   {
    "id": 13,
@@ -38,5 +38,28 @@
   31,
   48,
   87
- ]
+ ],
+ "contacts": [
+  {
+   "id": 3,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 4,
+   "kind": "phone",
+   "label": ""
+  },
+  {
+   "id": 5,
+   "kind": "location",
+   "label": ""
+  },
+  {
+   "id": 6,
+   "kind": "location",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

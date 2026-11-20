@@ -60,5 +60,18 @@
   56,
   59,
   61
- ]
+ ],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "phone",
+   "label": "air:"
+  },
+  {
+   "id": 3,
+   "kind": "location",
+   "label": "midi:"
+  }
+ ],
+ "footers": []
 }

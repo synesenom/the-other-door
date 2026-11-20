@@ -16,20 +16,20 @@
    "kind": "skills"
   },
   {
-   "id": 17,
-   "kind": "languages"
-  },
-  {
-   "id": 25,
-   "kind": "certifications"
-  },
-  {
    "id": 8,
    "kind": "summary"
   },
   {
    "id": 15,
    "kind": "experience"
+  },
+  {
+   "id": 17,
+   "kind": "languages"
+  },
+  {
+   "id": 25,
+   "kind": "certifications"
   },
   {
    "id": 37,
@@ -42,5 +42,56 @@
   33,
   38,
   41
+ ],
+ "contacts": [
+  {
+   "id": 4,
+   "kind": "phone",
+   "label": ""
+  },
+  {
+   "id": 5,
+   "kind": "location",
+   "label": ""
+  },
+  {
+   "id": 6,
+   "kind": "email",
+   "label": ""
+  },
+  {
+   "id": 7,
+   "kind": "web",
+   "label": ""
+  },
+  {
+   "id": 20,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 28,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 35,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 40,
+   "kind": "date",
+   "label": ""
+  },
+  {
+   "id": 43,
+   "kind": "date",
+   "label": ""
+  }
+ ],
+ "footers": [
+  32,
+  44
  ]
 }

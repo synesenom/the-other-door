@@ -24,7 +24,6 @@ role_nouns = [
 
 # Connecting words that carry no meaning in a job title ("Chef for data").
 
-
 # English words that mean something unrelated in Danish: an exclude keyword
 # equal to one of these is not applied to a Danish ad.
 false_friends = ["intern", "chef"]  # intern = internal, chef = boss
@@ -67,12 +66,6 @@ certifications = ["certificeringer", "certifikater", "kurser", "certificeringer 
 languages = ["sprog", "sprogkundskaber"]
 interests = ["interesser", "fritidsinteresser", "hobbyer"]
 
-[contact_labels]
-phone = ["telefon", "tlf", "mobil"]
-email = ["e-mail", "mail"]
-web = ["hjemmeside", "websted", "portfolio"]
-location = ["sted", "by", "adresse"]
-
 [headings]
 requirement = ["vi forventer", "kvalifikationer", "krav", "hvem er du", "din profil"]
 responsibility = ["om jobbet", "dine opgaver", "om stillingen", "arbejdsopgaver", "ansvarsområder"]
@@ -102,7 +95,6 @@ advantage = [
     "dansk er en fordel", "gerne dansk",
     "Danish is a plus", "Danish is an advantage",
 ]
-
 
 [work_permit]
 no_sponsorship = [

@@ -22,5 +22,13 @@
    "kind": "other"
   }
  ],
- "entry_titles": []
+ "entry_titles": [],
+ "contacts": [
+  {
+   "id": 2,
+   "kind": "email",
+   "label": ""
+  }
+ ],
+ "footers": []
 }

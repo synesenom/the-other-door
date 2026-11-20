@@ -52,23 +52,14 @@ def test_blocks_of_a_reply_cut_off_before_its_closing_fence_has_nothing_of_it():
 
 # ---------- the icons ----------
 
-@pytest.mark.parametrize("text, kind", [
-    ("jane.doe@example.com", "email"), ("+45 00 00 00 00", "phone"), ("(+89) 079788144", "phone"),
-    ("example.com/jane.doe", "web"), ("www.example.com", "web"), ("linkedin.com/in/jane", "linkedin"),
-    ("github.com/jane", "github"), ("Email", "email"), ("Téléphone", "phone"), ("2019 - 2022", "date"),
-    ("Aarhus", "location"), ("Danmark", "location"), ("Reading", None), ("", None), (None, None),
-])
-def test_an_icon_gets_its_kind_from_the_text_it_sits_beside(text, kind):
-    assert style_build.icon_kind(text) == kind
-
-
-def _icon(near, *, d="M0 0 L10 0 L10 10 Z", color="#112233", view="0 0 10 10"):
+def _icon(near, kind=None, *, d="M0 0 L10 0 L10 10 Z", color="#112233", view="0 0 10 10"):
     return {"page": 1, "bbox": [0, 0, 10, 10], "source": "font", "font": "FontAwesome", "color": color, "viewBox": view,
-            "d": d, "fill_rule": "evenodd", "near": {"text": near, "side": "right"} if near else None}
+            "d": d, "fill_rule": "evenodd", "near": {"text": near, "side": "right"} if near else None, "kind": kind}
 
 
 def test_icons_are_written_as_svg_files_by_kind_the_first_of_each_kind_wins(tmp_path):
-    files, dropped = style_build.write_icons([_icon("a@example.com"), _icon("c@example.com", color="#ffffff"), _icon("+45 00 00 00 00")], tmp_path)
+    files, dropped = style_build.write_icons([_icon("a@example.com", "email"), _icon("c@example.com", "email", color="#ffffff"),
+                                         _icon("+45 00 00 00 00", "phone")], tmp_path)
     assert files == {"email": "email.svg", "phone": "phone.svg"}
     svg = (tmp_path / "email.svg").read_text()
     assert 'viewBox="0 0 10 10"' in svg and 'd="M0 0 L10 0 L10 10 Z"' in svg and 'fill="#112233"' in svg and 'evenodd' in svg
@@ -83,12 +74,12 @@ def test_icons_of_no_known_kind_are_dropped_and_named(tmp_path):
 
 
 def test_an_icon_with_a_path_that_is_more_than_numbers_and_commands_is_dropped(tmp_path):
-    files, dropped = style_build.write_icons([_icon("a@example.com", d='M0 0" onload="x')], tmp_path)
+    files, dropped = style_build.write_icons([_icon("a@example.com", "email", d='M0 0" onload="x')], tmp_path)
     assert files == {} and "path" in dropped[0]["reason"]
 
 
 def test_icon_files_are_accepted_by_the_manifest(tmp_path):
-    files, _ = style_build.write_icons([_icon("a@example.com")], tmp_path)
+    files, _ = style_build.write_icons([_icon("a@example.com", "email")], tmp_path)
     assert templates.Manifest(icons=files).icons == {"email": "email.svg"}
 
 
