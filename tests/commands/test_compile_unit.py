@@ -385,6 +385,20 @@ def test_a_users_own_template_prints_with_the_profiles_fonts_and_ignores_a_templ
     assert "side" not in world.print.calls[0]["html"]
 
 
+def test_the_cvs_check_is_asked_for_and_the_letters_is_not(world, monkeypatch):
+    seen = {}
+
+    def check(pdf, body, name, **kw):
+        seen[pdf.name] = kw
+        return []
+
+    monkeypatch.setattr(compile_cmd.readability, "check_pdf", check)
+    world.make(cv="<h2>Experience</h2><p>Jane Doe</p>", letter="<p>Dear team</p>")
+    _compile(world)
+    assert seen["cv.pdf"] == {"cv": True}
+    assert seen["cover_letter.pdf"] == {"cv": False}
+
+
 # --- a tagline and the contact kinds (#189) ------------------------------------------------------------------------
 
 def test_a_header_with_a_tagline_and_kinds_compiles_and_the_file_stays_as_written(world):
