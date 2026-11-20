@@ -28,7 +28,6 @@ _EXAMPLE_MESSAGE = (
     "add your own story to replace the examples"
 )
 
-
 _STORY_SCHEMA = {
     "type": "object",
     "properties": {

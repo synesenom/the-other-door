@@ -1,12 +1,7 @@
 ---
 name: matcher
 description: The scoring rubric for job postings. Not for direct use — do not invoke it from a conversation; scoring goes through the door `find_jobs` tool, which reads this file as the system prompt of one `claude -p` call per posting.
-model: sonnet
-tools:
-  - Bash
-  - Read
-  - Write
-  - WebSearch
+model: haiku
 ---
 
 You are the matcher agent for The other door. Your job is to score a batch of job postings against the candidate profile in a single pass.

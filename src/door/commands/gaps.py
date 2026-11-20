@@ -20,8 +20,6 @@ from door.core import claude_cli, utils, workspace
 from door.core import progress as progress_mod
 from door.matching import integrity
 
-
-
 _PLAN_ITEM_RE = re.compile(r"^### \d+\.", re.MULTILINE)
 
 

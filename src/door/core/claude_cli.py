@@ -9,6 +9,7 @@ The other door runs from a conversation, a terminal or cron.
 
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -217,13 +218,9 @@ def agent_definition(name: str) -> dict:
 
 
 def prompt(name: str, **fields: str) -> str:
-    """The system prompt in `.claude/agents/<name>.md`: its body exactly (the blank line after the closing `---`
-    and the file's last line break left off), with each `{field}` given replaced by its value. Only the fields passed
-    are replaced, so a prompt's other braces need no escaping."""
-    text = _agent_file(name)[1].removeprefix("\n\n").removesuffix("\n")
-    for field, value in fields.items():
-        text = text.replace("{" + field + "}", value)
-    return text
+    """The system prompt in `.claude/agents/<name>.md`: its body, with each `{field}` given replaced by its value
+    in one pass (a value is never read for fields, and a prompt's other braces need no escaping)."""
+    return re.sub(r"\{(\w+)\}", lambda m: fields.get(m[1], m[0]), _agent_file(name)[1].strip())
 
 
 def model_of(name: str) -> str:

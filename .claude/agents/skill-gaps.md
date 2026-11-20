@@ -44,4 +44,3 @@ Report structure (use the date you are given):
 
 ## Skipped gaps
 <gaps with no vetted resource, or "none">
-

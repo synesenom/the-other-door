@@ -69,6 +69,10 @@ Agents are not invoked directly; tools and skills run them.
 | Agent | Run by | Role |
 |-------|--------|------|
 | `matcher` | `match` | The scoring rubric, used as the system prompt of one `claude -p` call per posting. |
+| `scorer` | `door.matching.scorer` | The scoring prompt's wrapper: it fills in the matcher's rubric, the language and work-permit phrases, the profile and the CV. |
+| `stylist` | the CV style build (`door.style.style_build`) | Rebuilds the look of an uploaded CV as a CV template and a letter template, round by round. |
+| `ask`, `cv-drafter`, `cv-enricher`, `skill-gaps`, `keywords`, `skill-grouper`, `reviser`, `salary`, `story-from-text`, `story-from-cv`, `titles`, `posting-reader` | `door.commands.ask`, `cv`, `enrich`, `gaps`, `keywords`, `market`, `revise`, `salary`, `stories`, `titles`, `add` | One model prompt each: the file's body is the system prompt of one `claude -p` call, its frontmatter the model and tools (`claude_cli.prompt`). |
+| `cv-reader`, `fact-checker`, `cv-structure`, `careers-finder`, `title-translator` | `door.core.cv_read`, `door.tailoring.facts`, `door.style.style_structure`, `door.core.employers.careers_ai`, `door.matching.language` | The same, for the code below the commands. |
 | `tailor` | `prepare` | Writes the tailored CV and cover letter, compiles and checks page limits. |
 | `reviewer` | the tailor agent | Critiques the draft for relevance, evidence, fabrication and tone. |
 | `scraper-fixer` | `doctor --probe --fix` / the `setup` tool (`fix scraper: <site>`) | Repairs a scraper whose site changed, test-first, on its own branch (see [job-sites.md](job-sites.md#when-a-site-changes)). |

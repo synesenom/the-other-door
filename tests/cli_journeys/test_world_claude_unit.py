@@ -33,7 +33,7 @@ _PRICED = {
     "translate": ("You translate job titles into English.", json.dumps([{"id": "a", "title": "Analytiker"}]), 0.01),
     "read_ad": ("You read a job ad.", "Analyst at Acme", 0.01),
     "market": ("You group skill names.", json.dumps({"names": ["Python"]}), 0.01),
-    "revise": ("", "You are revising the body of an HTML letter.\nCurrent body:\nOne.\n\nTwo.\n\nThree.", 0.05),
+    "revise": (claude_cli.prompt("reviser"), "Document: cover letter\nCurrent body:\nOne.\n\nTwo.\n\nThree.", 0.05),
     "facts": ("You check a tailored CV and cover letter against the candidate's own sources.", "SOURCE CV:\n<<<\nx\n>>>\n", 0.01),
     "gaps": (claude_cli.prompt("skill-gaps"), "the CV and the targets", 0.03),
     "cv_read": (claude_cli.prompt("cv-reader"), "CV:\n<<<\n# A\n\n## Skills\n\nPython\n>>>\n", 0.01),
@@ -56,7 +56,7 @@ def test_every_answer_carries_its_price_the_usage_log_weighs(tmp_path, kind):
 def test_revise_and_facts_answer_in_their_schemas(tmp_path):
     (tmp_path / "world.json").write_text(json.dumps({}))
     for system, stdin, want in (
-        ("", "You are revising the body of an HTML letter.\nCurrent body:\nOne.\n\nTwo.\n\nThree.", {"body": "One.\n\nTwo."}),
+        (claude_cli.prompt("reviser"), "Document: cover letter\nCurrent body:\nOne.\n\nTwo.\n\nThree.", {"body": "One.\n\nTwo."}),
         ("You check a tailored CV and cover letter against the candidate's own sources.", "SOURCE CV:\n", {"findings": []}),
     ):
         argv = [sys.executable, str(CLAUDE), str(tmp_path), "-p", "--model", "haiku", "--system-prompt", system,

@@ -2,7 +2,7 @@
 
 import pytest
 
-from door.commands import revise as revise_cmd
+from door.core import claude_cli
 from door.matching import scorer
 from paths import REPO_ROOT
 
@@ -14,7 +14,7 @@ def test_agent_prompts_call_the_ad_untrusted(agent):
 
 
 def test_revise_prompt_calls_the_ad_untrusted():
-    assert "untrusted" in revise_cmd._REVISE_PROMPT.lower()
+    assert "untrusted" in claude_cli.prompt("reviser").lower()
 
 
 def test_scorer_system_prompt_calls_the_ad_untrusted():
