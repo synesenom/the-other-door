@@ -161,7 +161,7 @@ def _without_skills_todos(markdown: str, todos: list[str], headings: list[str]) 
     kept: list[str] = []
     gone: set[str] = set()  # what each removed TODO line said, and the section's title for a bare one
     for section in cv_sections.split(markdown):
-        title = " ".join(cv_sections.heading(section[0])[0].split()).casefold() if section and section[0].startswith("## ") else None
+        title = " ".join(cv_sections.heading(section[0]).split()).casefold() if section and section[0].startswith("## ") else None
         if title not in named or not any("TODO" in line for line in section):
             kept.extend(section)
             continue
