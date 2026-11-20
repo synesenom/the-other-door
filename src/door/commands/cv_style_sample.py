@@ -3,7 +3,7 @@
 The desktop app's Profile -> CV style shows it beside the pickers. It prints the user's own CV (else the example CV)
 as it is, with no model but the one cached reading of it (`cv_read`), through the same template and style that `compile`
 uses for a prepared CV, so the sample is what the next prepared CV looks like. Cached under `HOME/.style/preview/` by the
-CV, the style, the photo and the template. The picture is a close-up: the top of a narrow page (`SAMPLE_PAGE`), so the text
+CV, the style, the photo, the template and the fonts. The picture is a close-up: the top of a narrow page (`SAMPLE_PAGE`), so the text
 is large where the app shows it small.
 """
 
@@ -50,7 +50,8 @@ def _cv_style_sample_core(accent: str, fonts: str) -> dict:
     style = templates.style_css({"cv_accent": accent, "cv_fonts": fonts}) + SAMPLE_PAGE
     # `<the CV's hash>-<the rest's>.png`: a new CV drops the files of the old one, so the folder never grows
     cv_key = hashlib.sha256(cv_md.encode("utf-8")).hexdigest()[:16]
-    rest = "\0".join([style, template, photo.name if photo else "", hashlib.sha256(photo.read_bytes()).hexdigest() if photo else ""])
+    rest = "\0".join([style, template, photo.name if photo else "", hashlib.sha256(photo.read_bytes()).hexdigest() if photo else "",
+                      *(hashlib.sha256(font.read_bytes()).hexdigest() for font in templates.fonts())])
     folder = workspace.HOME / ".style" / "preview"
     cached = folder / f"{cv_key}-{hashlib.sha256(rest.encode('utf-8')).hexdigest()[:16]}.png"
     if cached.is_file():

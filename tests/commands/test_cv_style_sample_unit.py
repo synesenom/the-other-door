@@ -66,6 +66,16 @@ def test_a_changed_cv_prints_again(world):
     assert len(world.print.calls) == 2
 
 
+def test_a_changed_font_prints_again(world):
+    """An update that ships another cut of a font gives a sample in it, not the picture cached with the old one."""
+    font = workspace.PROFILE_EXAMPLE_DIR / "fonts" / "YoungSerif-Regular.ttf"
+    font.write_bytes(b"one cut")
+    sample_cmd._cv_style_sample_core("teal", "door")
+    font.write_bytes(b"another cut")
+    sample_cmd._cv_style_sample_core("teal", "door")
+    assert len(world.print.calls) == 2
+
+
 def test_a_changed_cv_drops_the_old_samples_and_a_new_style_keeps_the_cvs_others(world):
     sample_cmd._cv_style_sample_core("teal", "door")
     sample_cmd._cv_style_sample_core("rust", "door")
